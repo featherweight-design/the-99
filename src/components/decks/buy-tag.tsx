@@ -156,7 +156,8 @@ export const OVER_LIMIT_RING = "inset 0 0 0 1px color-mix(in oklab, var(--warnin
 export type BuyTagPressState = "rest" | "open" | "pending" | "disabled";
 
 export type BuyTagPress = {
-  onPress: () => void;
+  /** Called with the button pressed, so the confirm can hand focus back to it on close. */
+  onPress: (trigger: HTMLElement) => void;
   state: BuyTagPressState;
   /** The card's name, for the accessible name `gotItCopy.row.tagAria` (audit errata 1). */
   cardName: string;
@@ -169,10 +170,12 @@ export type BuyTagPress = {
 
 /**
  * Only the wash moves (R2 call 1): 13% at rest, 24% on hover or while the confirm is open, 30%
- * pressed. The same plate, word, slot and ring as the inert tag, so at rest it is main's tag.
+ * pressed. The same plate, word, slot and ring as the inert tag, so at rest it is main's tag. Hover
+ * is desktop's alone: the phone row draws none, and a touch browser keeps `:hover` after a tap,
+ * which would leave a closed tag at the open wash.
  */
 const WASH = {
-  rest: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
+  rest: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)] lg:group-hover/buy:bg-[color-mix(in_oklab,var(--warning)_24%,transparent)] group-active/buy:bg-[color-mix(in_oklab,var(--warning)_30%,transparent)]",
   open: "bg-[color-mix(in_oklab,var(--warning)_24%,transparent)]",
   idle: "bg-[color-mix(in_oklab,var(--warning)_13%,transparent)]",
 } as const;
@@ -356,7 +359,7 @@ function PressableTag({ press, overLimit, children }: { press: BuyTagPress; over
       onClick={(e) => {
         // The row opens the card's details on a press; this press is the tag's own.
         e.stopPropagation();
-        if (pressState === "rest") onPress();
+        if (pressState === "rest") onPress(e.currentTarget);
       }}
       // The ring is the plate's, not the button's: below lg the button is the whole 44px stack.
       className={`group/buy relative flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent p-0 font-[inherit] focus-visible:outline-none before:absolute before:inset-x-0 before:top-1/2 before:h-[44px] before:-translate-y-1/2 before:content-[''] lg:before:hidden ${

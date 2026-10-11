@@ -429,7 +429,7 @@ export function DecklistRow({
       // to `$` — and still speaks the word and the price in full.
       density={inShopping ? "full" : "collapsed"}
       press={pressable ? {
-        onPress: () => gotIt.open(card, fullName, newestAsOf),
+        onPress: (trigger) => gotIt.open(card, fullName, newestAsOf, trigger),
         state: confirmOpen ? (gotIt.pending ? "pending" : "open") : "rest",
         cardName: fullName,
         // Below lg the stack flips to `buy` over `over $X` with the feature on (finding 5).

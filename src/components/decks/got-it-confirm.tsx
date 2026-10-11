@@ -7,7 +7,7 @@
 // behind a LIVE figure, nothing otherwise, and a card's only printing is selected (gotItPreset).
 // Nothing is written until Add; Cancel, Escape, the ✕ and a press outside write nothing.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { loadPrintingChoices } from "../../app/collection/edit-actions";
 import { markBought } from "../../app/decks/mark-bought-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -15,7 +15,7 @@ import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { FINISHES, type Finish } from "../../lib/collection/key";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale } from "../../lib/decks/got-it-preset";
+import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale, type GotItChoice } from "../../lib/decks/got-it-preset";
 import { MARK_BOUGHT_MAX } from "../../lib/decks/mark-bought";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -31,7 +31,7 @@ const BANNER =
 type Notice = "stale" | "staleRemoved" | "failed" | null;
 
 export function GotItConfirm({
-  deckId, card, cardName, newestAsOf, onClose, onDone, onPendingChange,
+  deckId, card, cardName, newestAsOf, onClose, onDone, onPendingChange, returnFocusRef,
 }: {
   deckId: string;
   card: DeckDetailCard;
@@ -44,6 +44,8 @@ export function GotItConfirm({
   onDone: () => void;
   /** The tag behind the scrim reads `adding…` while this is true (A8). */
   onPendingChange: (pending: boolean) => void;
+  /** Where focus goes when the confirm closes: the tag that opened it, or a stable fallback. */
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const titleId = useId();
   const nameId = useId();
@@ -51,7 +53,7 @@ export function GotItConfirm({
   const dialogRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   const primaryRef = useRef<HTMLButtonElement>(null);
-  const [choices, setChoices] = useState<PrintingChoice[] | null>(null);
+  const [choices, setChoices] = useState<GotItChoice[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [finish, setFinish] = useState<Finish | null>(null);
@@ -63,7 +65,7 @@ export function GotItConfirm({
   // change to what would be written is a new decision.
   const pressId = useRef<string | null>(null);
 
-  useDialogA11y(dialogRef, onClose, { closeOnEscape: !pending });
+  useDialogA11y(dialogRef, onClose, { closeOnEscape: !pending, returnFocusRef });
 
   useEffect(() => {
     let live = true;
@@ -123,7 +125,7 @@ export function GotItConfirm({
     pressId.current ??= crypto.randomUUID();
     try {
       const out = await markBought(deckId, card.oracleId, {
-        scryfallId: choice.scryfallId, finish, quantity: qty, expected, id: pressId.current,
+        scryfallId: choice.idFor[finish] ?? choice.scryfallId, finish, quantity: qty, expected, id: pressId.current,
       });
       if ("applied" in out) {
         onDone();

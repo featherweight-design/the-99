@@ -145,6 +145,17 @@ describe("GotItConfirm", () => {
     expect(markBought.mock.calls[0][2]).toMatchObject({ scryfallId: MOM.scryfallId });
   });
 
+  it("offers a twin's finish on the one tile and writes it to the twin", async () => {
+    const FOIL_TWIN = choice({ scryfallId: "e0000000-0000-4000-8000-000000000000", finishes: ["foil"], owned: {} });
+    loadPrintingChoices.mockResolvedValue([{ ...MOM, finishes: ["nonfoil"] }, FOIL_TWIN, SHOWCASE]);
+    markBought.mockResolvedValue({ applied: { id: "e1", receipt: null } });
+    renderConfirm();
+    await waitFor(() => expect(printingRadios()).toHaveLength(2));
+    fireEvent.click(screen.getByRole("radio", { name: c.finishes.foil }));
+    await act(async () => fireEvent.click(add()));
+    expect(markBought.mock.calls[0][2]).toMatchObject({ scryfallId: FOIL_TWIN.scryfallId, finish: "foil" });
+  });
+
   it("writes nothing on Cancel or Escape", async () => {
     const { onClose } = renderConfirm();
     await waitFor(() => expect(printingRadios()).toHaveLength(3));

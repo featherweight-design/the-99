@@ -108,4 +108,12 @@ describe("collapseTwins", () => {
     expect(collapseTwins([a, b, c], "b").map((x) => x.scryfallId)).toEqual(["b", "c"]);
     expect(collapseTwins([a, b, c], null).map((x) => x.scryfallId)).toEqual(["a", "c"]);
   });
+  it("offers every finish the twins have, writing each to a variant that has it", () => {
+    const nonfoil = p("n");
+    const foil = { ...p("f"), finishes: ["foil" as const] };
+    const [tile] = collapseTwins([nonfoil, foil], "n");
+    expect(tile.scryfallId).toBe("n");
+    expect(tile.finishes).toEqual(["nonfoil", "foil"]);
+    expect(tile.idFor).toEqual({ nonfoil: "n", foil: "f" });
+  });
 });

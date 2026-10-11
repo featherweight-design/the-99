@@ -570,7 +570,7 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | B8 Stale | write returns `status: "stale"` with `current` | Same form + stale banner (role=status, focused), count re-based on new need | staleEdits/expected sent; need 0 → count kept + `staleBodyDone`; nothing written |
 | B9 Failed | write error | role=alert block above footer | choices kept; row unchanged |
 | B10 Pending | write in flight | fields .6, Cancel disabled, primary `Adding…` .7 | no reflow; tag under reads `adding…` |
-| B11 Cancel / Escape / outside / another row | Cancel, ✕, Escape, scrim click, or opening another row's confirm | Confirm closes | nothing written, no "discard?", focus returns to tag; reopening reads presets fresh |
+| B11 Cancel / Escape / outside / another row | Cancel, ✕, Escape, or a scrim click. "Another row's tag" was R1's popover; R2's confirm is a modal, so a press on another row lands on the scrim and closes it, and that row's tag is pressed next | Confirm closes | nothing written, no "discard?", focus returns to the tag (or the Shopping filter when the row has left); reopening reads presets fresh |
 
 ## State Coverage — Switch off (§E)
 

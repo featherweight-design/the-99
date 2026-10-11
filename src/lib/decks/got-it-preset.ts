@@ -88,18 +88,38 @@ export function rebaseStale(
   return { expected: now, need: Math.min(quantity, Math.max(0, need - moved)), added: moved > 0 };
 }
 
+/** A confirm's choice: one tile per holding, with the catalog id to write for each finish it offers. */
+export type GotItChoice = PrintingChoice & { idFor: Partial<Record<Finish, string>> };
+
 /**
  * One choice per (set, collector number). The collection holds a copy by that pair and a finish,
  * not by catalog id (`catalog-read.ts`, `write.ts`), so two catalog variants sharing the pair are
  * one holding: two tiles would show the same count and either press would write the same row. The
- * variant `keep` names (the printing behind the row's price) is the one kept; otherwise the first.
+ * variant `keep` names (the printing behind the row's price) is the tile kept, otherwise the first;
+ * the tile offers every finish any of them has, and `idFor` names the variant to write for each,
+ * the kept one first, since `markBought` checks the finish against the id it is sent.
  */
-export function collapseTwins(choices: readonly PrintingChoice[], keep: string | null | undefined): PrintingChoice[] {
-  const byPair = new Map<string, PrintingChoice>();
+export function collapseTwins(choices: readonly PrintingChoice[], keep: string | null | undefined): GotItChoice[] {
+  const groups = new Map<string, PrintingChoice[]>();
   for (const p of choices) {
     const key = `${p.setCode}|${p.collectorNumber}`;
-    const held = byPair.get(key);
-    if (!held || (p.scryfallId === keep && held.scryfallId !== keep)) byPair.set(key, p);
+    groups.set(key, [...(groups.get(key) ?? []), p]);
   }
-  return choices.filter((p) => byPair.get(`${p.setCode}|${p.collectorNumber}`) === p);
+  const out: GotItChoice[] = [];
+  for (const group of groups.values()) {
+    const head = group.find((p) => p.scryfallId === keep) ?? group[0];
+    const ordered = [head, ...group.filter((p) => p !== head)];
+    const idFor: Partial<Record<Finish, string>> = {};
+    const finishes: Finish[] = [];
+    for (const p of ordered) {
+      for (const f of p.finishes) {
+        if (idFor[f] === undefined) {
+          idFor[f] = p.scryfallId;
+          finishes.push(f);
+        }
+      }
+    }
+    out.push({ ...head, finishes, idFor });
+  }
+  return out;
 }

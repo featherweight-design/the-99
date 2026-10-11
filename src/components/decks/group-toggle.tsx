@@ -231,6 +231,7 @@ export function GroupToggle({
                 type="button"
                 aria-pressed={seg.selected}
                 onClick={seg.onClick}
+                data-shopping-filter={seg.key === "shopping" ? "" : undefined}
                 className={`${SEGMENT_BASE} ${seg.selected && seg.key === "all" ? "text-[color:var(--fg)]" : seg.ink} ${seg.selected ? "font-semibold bg-[color:var(--elevated)]" : "font-medium"}`}
               >
                 {seg.label}{" "}
@@ -267,6 +268,7 @@ export function GroupToggle({
         <button
           type="button"
           onClick={() => onFilterChange("shopping")}
+          data-shopping-filter=""
           className={[
             "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
             shown === "shopping"

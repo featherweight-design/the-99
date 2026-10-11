@@ -9,7 +9,7 @@
  * One confirm across the list (B11): opening one replaces whatever was open, and the confirm is a
  * modal, so no other row's tag can be pressed while it is up.
  */
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { GotItConfirm } from "./got-it-confirm";
@@ -22,7 +22,7 @@ export type GotIt = {
   openFor: string | null;
   /** That confirm's write is in flight. */
   pending: boolean;
-  open: (card: DeckDetailCard, name: string, newestAsOf: Date | null) => void;
+  open: (card: DeckDetailCard, name: string, newestAsOf: Date | null, trigger: HTMLElement) => void;
 };
 
 const GotItContext = createContext<GotIt | null>(null);
@@ -34,7 +34,21 @@ export function useGotIt(): GotIt | null {
 export function GotItProvider({ deckId, children }: { deckId: string; children: ReactNode }) {
   const [target, setTarget] = useState<Target | null>(null);
   const [pending, setPending] = useState(false);
-  const open = useCallback((card: DeckDetailCard, name: string, newestAsOf: Date | null) => {
+  // Focus goes back to the tag that opened the confirm, held explicitly: a pointer press does not
+  // focus a button in every browser. After a write the row usually leaves before the confirm
+  // unmounts, so a tag no longer in the document hands focus to the Shopping filter instead.
+  const trigger = useRef<HTMLElement | null>(null);
+  const returnFocus = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        const el = trigger.current;
+        return el?.isConnected ? el : document.querySelector<HTMLElement>("[data-shopping-filter]");
+      },
+    }),
+    [],
+  );
+  const open = useCallback((card: DeckDetailCard, name: string, newestAsOf: Date | null, from: HTMLElement) => {
+    trigger.current = from;
     setPending(false);
     setTarget({ card, name, newestAsOf });
   }, []);
@@ -58,6 +72,7 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
           cardName={target.name}
           newestAsOf={target.newestAsOf}
           onPendingChange={setPending}
+          returnFocusRef={returnFocus}
           onClose={close}
           // The action invalidates the deck page before it answers, so the list re-reads with the
           // write in it and the row leaves on its own. The receipt is PR 3's.

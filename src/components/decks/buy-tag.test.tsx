@@ -336,6 +336,15 @@ describe("BuyTag as I got it's button (press)", () => {
     expect(plate.className).toContain("group-focus-visible/buy:outline-offset-2");
   });
 
+  // A touch browser keeps :hover after a tap, so the hover wash is desktop's alone.
+  it("draws the hover wash from lg only, and the press wash at every width", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />);
+    const plate = screen.getByRole("button").firstElementChild as HTMLElement;
+    expect(plate.className).toContain("lg:group-hover/buy:bg-");
+    expect(plate.className).not.toMatch(/(^|\s)group-hover\/buy:/);
+    expect(plate.className).toMatch(/(^|\s)group-active\/buy:bg-/);
+  });
+
   it("opens on a press at rest, and does not let the press reach the row", () => {
     const p = press();
     const rowClick = vi.fn();
