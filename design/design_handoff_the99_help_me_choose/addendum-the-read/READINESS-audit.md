@@ -25,6 +25,22 @@ Design. F11 is accepted as a separately labeled change.
 - **`ABOUT_VERSION` 14 to 15** with the rework, decided by the orchestrator: the capability changed. The
   bump ships with the build, behind `HELP_ME_CHOOSE_ENABLED` like the entry.
 
+## Errata: where Design's files predate the rulings
+
+Design's files are kept as Design delivered them; these rulings supersede the lines named. Build from this
+table where the two disagree.
+
+| File | Says | Superseded by |
+|---|---|---|
+| `ADDENDUM-README.md`, calls table Q1 | the form needs a card picker, flagged for Hugh | F1: no picker. A card named in *Anything else?* goes to the paid read |
+| `READINESS.md`, Build 1 and *Not drawn* | the free match no longer reads the box; a card picker is needed | F1: the box text, card names included, reaches the paid read as a build-around ask, and the read picks commanders that use it and says so in the reason line. The free filters take no card |
+| `READINESS.md`, Tests | text never yields a chip, even a card name | Stands, plus: a card named in the box reaches the read's prompt as a build-around ask |
+| `STATES-the-read.md`, rows 4c / 4d / 4e | Open, the card answer needs a picker | Closed: the card case lives in the read |
+| `STATES-the-read.md`, 7l and the allowance table | disabled *Read it* with `0 left` | F10: no *Read it* and no pill on results. Title, lead and line only. The only way to run a read is submitting the form with text |
+| `Help Me Choose Read.dc.html`, scene `unread` | renders *Read it* and `0 left` | Same as above. The scene is a drawing; the build omits both |
+| `the read · copy strings.ts` | `read.readIt`, `read.costSpent` | Retired with F10 |
+| `about · help me choose r2.ts` | "If a card picker ships (Q1), a clause returns here" | F1: no picker. The caption may say a card can be named in *Anything else?*; that wording goes to /copy-review |
+
 ## Brief coverage
 
 | Check | Result |
