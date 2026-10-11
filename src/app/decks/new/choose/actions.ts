@@ -113,8 +113,9 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
   // bytes each run to 7,200 characters, and every theme and set comes on top.
   if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };
   const raw = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
-  // The parser bounds `w` to the cap, so the length is checked on what was sent, before it.
-  if ([...(raw.get("w") ?? "").trim()].length > READ_WORDS_MAX_CHARS) return { kind: "refused" };
+  // The parser cuts `w` to the cap, so it is checked first, on the raw value and in the parser's own
+  // unit (UTF-16, as the box's `maxLength` counts): anything the parser would cut is refused.
+  if ((raw.get("w") ?? "").length > READ_WORDS_MAX_CHARS) return { kind: "refused" };
   const p = { ...parseChooseParams(raw), card: null };
   const words = p.words.trim();
   if (!words) redirect(resultsTarget(p, null));

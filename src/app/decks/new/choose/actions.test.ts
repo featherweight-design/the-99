@@ -63,6 +63,9 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
 
   it("refuses words over the cap rather than trimming them", async () => {
     expect(await submitChoose(`?w=${"x".repeat(801)}`)).toEqual({ kind: "refused" });
+    // Leading space does not buy room, and an emoji counts as the box counts it (two units).
+    expect(await submitChoose(`?w=${encodeURIComponent(` ${"x".repeat(800)}`)}`)).toEqual({ kind: "refused" });
+    expect(await submitChoose(`?w=${encodeURIComponent("😀".repeat(401))}`)).toEqual({ kind: "refused" });
     expect(stub.begin).not.toHaveBeenCalled();
   });
 
