@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   manapoolAddDeckUrl,
+  manapoolAddDeckUrls,
   manapoolCardUrl,
+  MANAPOOL_URL_MAX,
   manapoolDeckText,
   MANAPOOL_ADD_DECK_URL,
 } from "./links";
@@ -72,5 +74,53 @@ describe("manapoolCardUrl", () => {
 
   it("encodes a non-ASCII name", () => {
     expect(manapoolCardUrl("Æther Vial")).toBe("https://manapool.com/cards?q=%C3%86ther%20Vial");
+  });
+});
+
+describe("manapoolAddDeckUrls (the all-decks cart)", () => {
+  // Hugh's staging cart, 2026-10-11: 291 merged lines, 307 copies, an 8,051-character URL that
+  // Mana Pool answered 200 with all 291 names decoded. Names here are sized so the URL lands near
+  // the measured 8,051 characters (about 27.7 per line), which the first case asserts.
+  const cart = Array.from({ length: 291 }, (_, i) => ({
+    name: `Evolving Wild ${i}`,
+    quantity: i < 16 ? 2 : 1,
+  }));
+
+  it("carries a 291-line cart in one link", () => {
+    const urls = manapoolAddDeckUrls(cart);
+    expect(urls).toHaveLength(1);
+    expect(urls[0].href).toBe(manapoolAddDeckUrl(cart));
+    expect(urls[0].href.length).toBeLessThanOrEqual(MANAPOOL_URL_MAX);
+    expect(urls[0].href.length).toBeGreaterThan(7_500);
+    expect(urls[0].href.length).toBeLessThan(8_600);
+    expect(urls[0].lineCount).toBe(291);
+  });
+
+  it("splits a cart over the limit into parts, each under it, no line split or lost", () => {
+    const big = Array.from({ length: 2500 }, (_, i) => ({ name: `Elminster's Simulacrum ${i}`, quantity: 1 + (i % 3) }));
+    const urls = manapoolAddDeckUrls(big);
+    expect(urls.length).toBeGreaterThan(1);
+    for (const u of urls) {
+      expect(u.href.length).toBeLessThanOrEqual(MANAPOOL_URL_MAX);
+      expect(decodeDeckParam(u.href).split("\n")).toHaveLength(u.lineCount);
+    }
+    expect(urls.map((u) => decodeDeckParam(u.href)).join("\n")).toBe(manapoolDeckText(big));
+    expect(urls.reduce((n, u) => n + u.lineCount, 0)).toBe(2500);
+  });
+
+  it("fills each part as far as it goes before starting the next", () => {
+    const lines = Array.from({ length: 10 }, (_, i) => ({ name: `Card ${i}`, quantity: 1 }));
+    const max = manapoolAddDeckUrl(lines.slice(0, 4))!.length;
+    const urls = manapoolAddDeckUrls(lines, max);
+    expect(urls[0]).toEqual({ href: manapoolAddDeckUrl(lines.slice(0, 4)), lineCount: 4 });
+    expect(urls.map((u) => decodeDeckParam(u.href)).join("\n")).toBe(manapoolDeckText(lines));
+  });
+
+  it("is empty for an empty cart", () => {
+    expect(manapoolAddDeckUrls([])).toEqual([]);
+  });
+
+  it("refuses a line too long for any link rather than emitting one over the limit", () => {
+    expect(() => manapoolAddDeckUrls([{ name: "x".repeat(40_000), quantity: 1 }])).toThrow(/longer than a whole link/);
   });
 });

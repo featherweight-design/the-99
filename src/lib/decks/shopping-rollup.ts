@@ -30,9 +30,9 @@
 // them, so counting an unowned Forest here would put a cost on this roll-up
 // that no deck's own Shopping list shows.
 
-import { loadDeckBuyRows } from "./availability-query";
+import { loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
 import { summarisePrices, type PricedCard } from "./price";
-import { loadPrices, priceFor } from "./price-query";
+import { loadPrices, priceFor, type PriceRead } from "./price-query";
 import { readHeldPricePicks } from "./printings";
 
 export type DeckShopping = { copies: number; cents: number; pricedCopies: number };
@@ -73,16 +73,25 @@ export async function loadShoppingRollup(
   deckIds?: string[],
 ): Promise<ShoppingRollup> {
   const rows = await loadDeckBuyRows(userId, deckIds);
-
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
+  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows));
+}
 
-  // Each deck's held printing picks ride in the one read (deck printings), and every row is priced
-  // through its OWN deck's pick: a card two decks picked differently is two figures, so a deck
-  // tile's figure and Home's total agree with that deck's own Shopping rows.
+/**
+ * The prices every buy row is drawn at. Each deck's held printing picks ride in the one read
+ * (deck printings), and every row is priced through its OWN deck's pick: a card two decks picked
+ * differently is two figures, so a deck tile's figure and Home's total agree with that deck's own
+ * Shopping rows. Shared with the all-decks cart (`cart-read.ts`), which reads it apart from the
+ * rows so a failed price read still leaves the cart its rows.
+ */
+export async function readBuyRowPrices(userId: string, rows: DeckBuyRow[]): Promise<PriceRead> {
   const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))]);
-  const read = await loadPrices([...new Set(rows.map((r) => r.oracleId))], picks);
-  const { newestAsOf } = read;
+  return loadPrices([...new Set(rows.map((r) => r.oracleId))], picks);
+}
 
+/** The roll-up over rows already priced: one summary per deck, and their sum. */
+export function rollupBuyRows(rows: DeckBuyRow[], read: PriceRead): ShoppingRollup {
+  const { newestAsOf } = read;
   const perDeck = new Map<string, PricedCard[]>();
   for (const row of rows) {
     const list = perDeck.get(row.deckId) ?? [];
