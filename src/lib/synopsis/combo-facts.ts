@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { GAME_ENDING_FEATURES } from "../spellbook/produces-kinds.generated";
-import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
+import { DRAW_THE_GAME, isInfiniteOrGameEnding, isMandatoryLoop } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
 import { fitsIdentity, MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
 
@@ -30,7 +30,7 @@ export type ComboPieceRow = {
 export type ComboFacts = { combos: ComboFact[]; nearCombos: NearComboFact[] };
 
 /**
- * Every infinite or game-ending, template-free variant of 2 to 6 pieces the deck assembles
+ * Every infinite, game-ending or mandatory-loop ("Draw the game"), template-free variant of 2 to 6 pieces the deck assembles
  * (gap 0) or is exactly one piece short of (gap 1). The commander counts as a piece, and a piece
  * that must be a commander counts only when it is one. Card count is never the test: what the
  * variant PRODUCES is. `count(*) = card_count` guards the table's deduped rows against a variant
@@ -46,7 +46,7 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
       from ${spellbookVariants} v
       where v.card_count between 2 and ${MAX_COMBO_PIECES}
         and cardinality(v.requires_template_ids) = 0
-        and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any(${gameEnding}::text[]))
+        and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any(${gameEnding}::text[]) or f = ${DRAW_THE_GAME})
         and exists (select 1 from ${spellbookVariantCards} vc0
                     where vc0.variant_id = v.variant_id and vc0.oracle_id = any(${presentP}::uuid[]))
     ), pieces as (
@@ -115,7 +115,9 @@ export function shapeComboFacts(
   const near: (NearComboFact & { pieceCount: number; mana: number | null; usesCommander: boolean; id: string })[] = [];
   for (const [id, pieces] of byVariant) {
     const first = pieces[0];
-    if (pieces.length !== first.card_count || !isInfiniteOrGameEnding(first.produces)) continue;
+    // A loop whose only feature is "Draw the game" (Pariah + Stuffy Doll) counts here: the verdict
+    // does not count it, but the overview must be able to name the risk.
+    if (pieces.length !== first.card_count || !(isInfiniteOrGameEnding(first.produces) || isMandatoryLoop(first.produces))) continue;
     const names = [...pieces].sort((a, b) => a.name.localeCompare(b.name));
     const missing = names.filter((p) => !p.held);
     if (missing.length === 0) {

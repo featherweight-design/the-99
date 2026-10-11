@@ -19,6 +19,11 @@ describe("shapeComboFacts", () => {
     expect(out.nearCombos).toEqual([]);
   });
 
+  it("keeps a loop whose only feature is \"Draw the game\", which no verdict counts but the overview must name", () => {
+    const rows = ["Pariah", "Stuffy Doll"].map((n) => piece("3799-4090", n, { produces: ["Draw the game"] }));
+    expect(shapeComboFacts(rows, ["W"], []).combos.map((c) => c.pieces)).toEqual([["Pariah", "Stuffy Doll"]]);
+  });
+
   it("ranks fewest pieces first, then free, and caps at six", () => {
     const rows = [
       ...["a", "b", "c"].map((n) => piece("big", n, { card_count: 3 })),
@@ -95,6 +100,12 @@ describe("anySizeComboQuery", () => {
     expect(bound).not.toBeNull();
     expect(q.params[Number(bound![1]) - 1]).toBe(6);
     expect(text).toContain("filter (where not p.held) <= 1");
+  });
+
+  it("admits a variant whose only feature is \"Draw the game\" at the candidate step", () => {
+    const q = new PgDialect().sqlToQuery(anySizeComboQuery(["p1"], []));
+    expect(q.params).toContain("Draw the game");
+    expect(q.sql.replace(/\s+/g, " ")).toMatch(/or f = \$\d+\)/);
   });
 
   it("pins both arms of the held rule to the commander and present lists", () => {

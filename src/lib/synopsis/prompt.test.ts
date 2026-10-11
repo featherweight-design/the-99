@@ -218,8 +218,12 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(user).toContain("- Forerunner of the Empire + Polyraptor: Infinite creature tokens (needs 8 mana to run)");
     expect(user).not.toContain("Draw the game");
     expect(system).toContain("Never call a mandatory loop a win condition, a plan, a backup or an alternate win");
-    expect(system).toContain('is always answered here, never left out: the verdict is "weakness"');
-    expect(system).toContain("sorcery-speed removal is not one");
+    expect(system).toContain('is always a "weakness" here, tier "critical"');
+    expect(system).toContain("Never claim the deck has or lacks an answer");
+    // A loop whose only feature is "Draw the game" still reads as a loop, with no empty produces list.
+    const drawOnly = { pieces: ["Pariah", "Stuffy Doll"], produces: ["Draw the game"], usesCommander: false, manaNeeded: 0 };
+    expect(buildSynopsisPrompt({ ...FACTS, combos: [drawOnly], nearCombos: [] }, undefined, C8).user)
+      .toContain("- mandatory loop: Pariah + Stuffy Doll (costs no mana to run); the game is drawn unless an outlet is available");
     // Contract 7 is the baseline the comparison runs against: it is not taught the fix.
     const v7 = buildSynopsisPrompt(facts, undefined, { v2: true });
     expect(v7.user).not.toContain("mandatory loop");
