@@ -89,6 +89,11 @@ function gestureAxis(e: Event): Axis {
   if (e instanceof WheelEvent) {
     dx = e.deltaX;
     dy = e.deltaY;
+    // A plain mouse's Shift+wheel scrolls sideways but reports the motion as `deltaY` alone.
+    if (e.shiftKey && dx === 0) {
+      dx = dy;
+      dy = 0;
+    }
   } else {
     const t = (e as TouchEvent).touches?.[0];
     if (t && touchStart) {
