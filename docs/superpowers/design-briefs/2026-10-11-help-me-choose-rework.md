@@ -168,8 +168,12 @@ own. That line is the new thing, and it is Design's to draw.
    from the same index the search reads and cached, so a press does not rebuild it, and the model call
    reads it as a cached prefix. At about 3,400 rows it is the dominant input; its token count is not
    measured yet. **The eval measures it** and the cost per press; Hugh's $0.05 to $0.08 is an estimate
-   until then. The input ceiling in `FEATURE_CALLS.intake` (6,000 tokens, measured for a vocabulary of
-   about 400 labels) will not hold and is re-measured by the build.
+   until then. **Caching is a build task, not a given.** The shared client sends no `cache_control`
+   (`src/lib/model/client.ts:183-189`), `FEATURE_CALLS.intake` reserves one call (`src/lib/model/prices.ts:92`),
+   and worst-case pricing assumes no cache write (`prices.ts:56-64`). The build adds the cache marker and
+   reprices the reservation for two calls and a cold cache write, or the estimate and the reservation
+   disagree. The input ceiling (6,000 tokens, measured for a vocabulary of about 400 labels) will not hold
+   and is re-measured.
 5. **The player's words go through `playerText`**, as today (`read.ts:67-78`): line breaks collapsed,
    delimiter tags neutralised, the cap re-checked. The 800-character cap is the starting point; raising it
    means re-measuring. The Server Action refuses a longer press rather than trimming it.
@@ -177,7 +181,11 @@ own. That line is the new thing, and it is Design's to draw.
    history are read. Decks reach the model as a short list of commander names and leading themes.
 7. **The existing credit rules carry over unless Design and Hugh change them.** Spend on a useful read;
    refund on a failed call, a Stop, or a read that finds nothing; a repeat of the same ask is answered from
-   the store at no charge; one read in flight per player; the allowance of 5 (10 for the owner) per rolling
+   the store at no charge, **but the ask's identity widens**: `wordsHash` today covers only the words, budget,
+   bracket and prompt version (`run-store.ts:65-68`), and the new result also depends on every filter, the
+   commander index, the collection's support counts and the player's deck commanders and themes. A stored
+   result is reused only under a fingerprint of all of them, or it can return stale commanders or a reason
+   that contradicts the current filters; one read in flight per player; the allowance of 5 (10 for the owner) per rolling
    24 hours is shared with Overview and Suggested changes. A press with an empty box runs the free search
    and charges nothing.
 8. **Off in production.** `HELP_ME_CHOOSE_ENABLED` (`src/lib/intake/flag.ts:10`) stays off in production
@@ -209,21 +217,19 @@ own. That line is the new thing, and it is Design's to draw.
 
 ## Open questions
 
-1. **One field or two.** Is "Anything else?" the existing words box, with the free match gone, or a second
-   field beside it with the free match kept? Typing "Landfall" into one box could be a free theme chip or
-   a paid read; the player should not have to know which.
-2. **Free match still alive?** If the box is read by the model only when it is filled in, does a short
-   phrase that is exactly a theme (for instance "dinosaurs") still match free and skip the credit?
-3. **Does a nothing-fits result refund?** Today a read that adds nothing refunds
+1. **Where the box sits.** Ruling 2 fixes what it does; its place in the form, and how it reads as the one
+   paid field among free ones, is yours. Typing a theme or card name stays a filter through the existing
+   pickers; the box text is never turned into chips.
+2. **Does a nothing-fits result refund?** Today a read that adds nothing refunds
    (`run-store.ts:258`, `271`). A scan that honestly finds nothing fits is a correct answer. Is it free?
-4. **How is "unlike my decks" shown?** The reason line can name the deck it differs from ("your Omnath deck
+3. **How is "unlike my decks" shown?** The reason line can name the deck it differs from ("your Omnath deck
    is the other Landfall deck you own"). Is that wanted on every row, only when the text asked for
    difference, or never?
-5. **When the player has no decks.** The comparison has nothing to compare. The box still works on tone
+4. **When the player has no decks.** The comparison has nothing to compare. The box still works on tone
    alone; does the reason line say so?
-6. **A second press.** Editing the text and pressing again is a new ask and a new credit (the hash changes).
+5. **A second press.** Editing the text and pressing again is a new ask and a new credit (the hash changes).
    Does the form warn when the player is about to spend a second credit on a near-identical ask?
-7. **The credit standing.** It already shows on the results page; the new press is on the form. Where does
+6. **The credit standing.** It already shows on the results page; the new press is on the form. Where does
    the standing live now?
 
 ## Fixtures
@@ -240,7 +246,7 @@ All on staging, read-only, figures as of 2026-10-11.
 - **Ask A with a color filter** (black on, others off): proves the filter holds when the text asks for
   more than the filter admits.
 - **Ask with no fit**, for instance Landfall inside a colorless identity filter: the nothing-fits state.
-- **An account with no decks:** the empty comparison (open question 5).
+- **An account with no decks:** the empty comparison (open question 4).
 
 Names and counts are real and drift with the index; Design may treat them as illustrative if the
 arithmetic stays consistent across frames.
