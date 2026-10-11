@@ -72,6 +72,10 @@ export type WriteResult =
   | { kind: "paused" }
   | { kind: "ownerShare" }
   | { kind: "in_flight" }
+  /** A press shown as FREE reached the lock after the free tries were spent (another tab used the
+   *  last one): nothing was reserved or charged, and the client's re-read shows the paid fallback
+   *  for a new, informed press. */
+  | { kind: "free_gone" }
   /** The reaper failed this run as `interrupted` before its answer landed; the answer was discarded
    *  and nothing was charged. */
   | { kind: "superseded" }
@@ -392,7 +396,7 @@ export async function startRun(
    * PLAYER path as `paid`, allowance check included, so a third attempt is the player's own.
    */
   method: "free" | "paid" | null = null,
-): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
+): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
@@ -437,7 +441,9 @@ export async function startRun(
         // A rewrite produced an overview since this press read the deck: whatever the press was
         // (a retry included), the answer is that overview, with nothing reserved.
         if (runs.succeeded) throw new AlreadyWrittenError();
-        else if (method === "free" && runs.attempts < FREE_ATTEMPTS) origin = "system";
+        else if (runs.attempts < FREE_ATTEMPTS) origin = "system";
+        // The UI promised a free press and the tries are gone: never turn it into a charge.
+        else if (method === "free") throw new FreeGoneError();
         else rewrite = "paid";
       }
       const unit = await reserveModelCall(tx, userId, "synopsis", model, now, origin);
@@ -469,6 +475,7 @@ export async function startRun(
     return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof IllegalDeckError) return { kind: "illegal" };
+    if (err instanceof FreeGoneError) return { kind: "free_gone" };
     if (err instanceof ListMovedError) return { kind: "no_reading" };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     if (err instanceof AlreadyWrittenError) {
@@ -482,6 +489,7 @@ export async function startRun(
 
 class AlreadyWrittenError extends Error {}
 class IllegalDeckError extends Error {}
+class FreeGoneError extends Error {}
 class ListMovedError extends Error {}
 
 /**

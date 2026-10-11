@@ -117,24 +117,31 @@ describe("startRun: the free method-change rewrite", () => {
 
   // The cap: a third attempt is not free. It becomes the PAID rewrite, which reserves under the
   // player's allowance and bypasses reuse for any overview below the new contract.
-  it("refuses a THIRD free attempt, whatever the two settled as: it falls to the player path", async () => {
+  // The cap, from a stale press: the tab shown "free" must never become a charge.
+  it("refuses a THIRD free attempt, whatever the two settled as, reserving and charging nothing", async () => {
     lock([run("done", false), run("pending", false)]);
-    queue.push([]); // the paid rewrite's reuse check: no overview at the new contract yet
-    const got = await free();
+    expect(await free()).toEqual({ kind: "free_gone" });
+    expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+
+  it("a press that already knew the tries were spent is the paid fallback, under the player's allowance", async () => {
+    lock([run("done", false), run("done", false)]);
+    queue.push([]);
+    const paid = await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid");
     expect(reserveModelCall.mock.calls[0][5]).toBe("player");
-    expect(got).toEqual({ kind: "started", runId: "run-1", callId: "call-1" });
+    expect(paid.kind).toBe("started");
   });
 
   it("the paid fallback is still the player's: a spent allowance refuses it", async () => {
     lock([run("done", false), run("done", false)]);
     reserveModelCall.mockResolvedValue({ refused: "allowance" });
-    expect(await free()).toEqual({ kind: "allowance" });
+    expect(await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).toEqual({ kind: "allowance" });
   });
 
   it("the paid fallback hands back an overview a concurrent rewrite already wrote at the new contract", async () => {
     lock([run("done", false), run("done", false)]);
     queue.push([{ id: "syn-new" }], [{ id: "syn-new", content: { verdicts: [] } }]);
-    expect((await free()).kind).toBe("reused");
+    expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).kind).toBe("reused");
   });
 
   it("a rewrite that produced an overview since the press read it returns that overview, reserving nothing", async () => {
