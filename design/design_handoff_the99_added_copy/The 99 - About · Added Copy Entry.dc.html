@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="kaldheim" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:36px;width:max-content;">
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT · NEW ENTRY</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">§G per-entry template · R6 rules</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:30px;margin:0;line-height:1.2;">Where a new copy goes</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">This entry is for the added-copy line and Keep it free (<a href="The%2099%20-%20Added%20Copy%20(R1).dc.html">The 99 - Added Copy (R1)</a>, in this handoff). It goes in chapter 01, after <i>Shopping for all your decks</i>, because both read the same allocation. It batches into that entry’s bump, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> 14 → 15, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since: 15</code>, under its own switch. The key lines quote no figure and no order beyond the rule the chooser already shows.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start;">
+    <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+        <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+          <div style="{{ sl.cell }}">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+            <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="2">
+      <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">01 · Your Collection</span>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+            <h3 style="{{ v.h3 }}">Where a new copy goes</h3>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/collection</span>
+          </div>
+          <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+          <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-rail);padding:4px 14px;display:flex;flex-direction:column;">
+            <span style="padding:8px 0 4px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Where it went</span>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 0;border-top:1px solid var(--border);">
+              <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Sol Ring</b> goes to <span style="color:var(--fg);">HD - Brago</span>, which needs one</span>
+              <span style="flex:none;font-size:13.5px;color:var(--accent);">Change</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;min-height:44px;padding:6px 8px;margin:2px 0 10px;border-radius:7px;background:var(--bg);border:1px solid var(--accent);">
+              <span style="flex:none;width:16px;height:16px;border-radius:999px;background:var(--accent);display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border-radius:999px;background:var(--bg);"></span></span>
+              <span style="flex:1;font-size:13px;color:var(--fg);">Keep it free</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">kept free</span>
+            </div>
+          </div>
+          <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+            <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="4">
+              <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span style="text-wrap:pretty;">{{ k.t }}</span></li>
+            </sc-for>
+          </ol>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const captionParas = [
+      "When you add a card one of your decks is missing, the app says which deck gets it: on Add cards, on I got it, and after an upload. Press Change to give it to a different deck, or to keep it free.",
+      "No deck counts a copy you keep free. Decks that need the card still show it missing, and it stays on their Shopping.",
+    ];
+    const keyLines = [
+      { n: 1, t: "A finished deck that’s missing the card gets the new copy first, and the deck that committed the card earliest goes first." },
+      { n: 2, t: "A brew holds a copy only once you give it one. Until then, a spare copy is free for every brew that needs it." },
+      { n: 3, t: "Keep it free counts copies. Keep one free and your decks still get the rest." },
+      { n: 4, t: "To use a kept copy again, press Change and deselect Keep it free, or pick a deck." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "Where a new copy goes", cell: {} },
+      { label: "Route", text: "/collection", cell: {} },
+      { label: "Chapter", text: "01 · Your Collection, after “Shopping for all your decks”", cell: {} },
+      { label: "opens", text: "opens Add cards", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One CopyLine (Add Cards’ Where it went row) and the chooser’s Keep it free row, selected. Read-only. Change and the row don’t press.", cell: full },
+      { label: "Fixture props", text: "fixtures.addedCopy · Sol Ring · deck HD - Brago (committed, needs 1) · keep 1 · copies 1. Hypothetical shortage, as the brief asks. Staging’s 18th Sol Ring covers three brews and names none.", cell: full },
+      { label: "Key lines · 4 of 4", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "The line wraps and Change stays at the right, centred on the text. The Keep it free row keeps one line. The specimen is the same component at 390.", cell: full },
+      { label: "since / switch", text: "since 15 · switch KEEP_FREE_ENABLED (new AboutSwitch member)", cell: {} },
+      { label: "Strings from", text: "copy/added-copy.ts · copy/card-assignments.ts", cell: {} },
+    ];
+    const view = (phone) => ({
+      screen: `About · Where a new copy goes · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, flex: "none", background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: phone ? 14 : 14.5, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+    });
+    return { captionParas, keyLines, slots, views: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>
