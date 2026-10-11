@@ -192,8 +192,14 @@ export function judgeRequest(args: {
 /** A reason as the row stores and draws it: text, and decks by their commander's oracle id. */
 export type ReasonPart = { text: string } | { deck: string };
 export type ReadPick = { oracleId: string; reason: ReasonPart[] };
-/** What a settled read stores (F9e). `picks` is the read's order; an empty list found nothing. */
-export type TheReadResult = { picks: ReadPick[] };
+/** The judgement's picks, in the read's order. */
+export type ReadPicks = { picks: ReadPick[] };
+/**
+ * What a settled read stores (F9e): the picks, and the two counts the panel says (`doneLead`,
+ * `emptyLead`): how many commanders the player's pool held, and how many the judgement weighed in
+ * full. An empty `picks` found nothing.
+ */
+export type TheReadResult = ReadPicks & { pool: number; weighed: number };
 
 /**
  * Digits, a percent sign, and the words that make a line read as a score (handoff, F3). Not `top` or
@@ -246,7 +252,7 @@ export function validJudgement(args: {
   shortlist: readonly number[];
   idOf: ReadonlyMap<number, string>;
   decks: readonly ReadDeck[];
-}): TheReadResult {
+}): ReadPicks {
   const allowed = new Set(args.shortlist);
   const seen = new Set<number>();
   const picks: ReadPick[] = [];
@@ -266,7 +272,7 @@ export function validJudgement(args: {
  * The free list re-ordered (ruling 4): the read's picks first in its order, then every other row in
  * its free order. Rows are never added or removed, so a filter can never be loosened here.
  */
-export function reorder<T>(rows: readonly T[], idOf: (row: T) => string, result: TheReadResult): T[] {
+export function reorder<T>(rows: readonly T[], idOf: (row: T) => string, result: ReadPicks): T[] {
   const byId = new Map(rows.map((r) => [idOf(r), r]));
   const first = result.picks.flatMap((p) => byId.get(p.oracleId) ?? []);
   const taken = new Set(first.map(idOf));

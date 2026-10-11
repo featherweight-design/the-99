@@ -47,7 +47,7 @@ describe("runTheRead", () => {
   it("runs the shortlist then the judgement, moving the phase before each, and spends on a pick with both bills", async () => {
     const d = deps(ok({ keys: [2, 1, 3] }), ok({ picks: [{ key: 2, reason: "Its horrors drain each opponent." }] }));
     const out = await runTheRead("u", input, d, inputs());
-    expect(out).toEqual({ kind: "read", readId: "r", repeat: false, result: { picks: [{ oracleId: "b", reason: [{ text: "Its horrors drain each opponent." }] }] } });
+    expect(out).toEqual({ kind: "read", readId: "r", repeat: false, result: { picks: [{ oracleId: "b", reason: [{ text: "Its horrors drain each opponent." }] }], pool: 2, weighed: 2 } });
     expect(store.setReadPhase.mock.calls.map((c) => c[1])).toEqual(["shortlist", "judge"]);
     expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }, { model: "j", usage }]);
     // Key 3 is outside the pool, so the judgement is never shown it.
@@ -56,14 +56,15 @@ describe("runTheRead", () => {
 
   it("finds nothing, refunded, when the shortlist holds no key in the pool, and never calls the judgement", async () => {
     const d = deps(ok({ keys: [3] }), ok({ picks: [] }));
-    expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "nothing", readId: "r", repeat: false });
+    const empty = { picks: [], pool: 2, weighed: 0 };
+    expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "nothing", readId: "r", result: empty, repeat: false });
     expect(d.judge).not.toHaveBeenCalled();
-    expect(store.settleTheRead.mock.calls[0][1]).toEqual({ kind: "read", result: { picks: [] } });
+    expect(store.settleTheRead.mock.calls[0][1]).toEqual({ kind: "read", result: empty });
   });
 
-  it("finds nothing when every judged reason is refused", async () => {
+  it("finds nothing when every judged reason is refused, and says how many it weighed", async () => {
     const d = deps(ok({ keys: [1, 2] }), ok({ picks: [{ key: 1, reason: "Makes 3 tokens." }] }));
-    expect(await runTheRead("u", input, d, inputs())).toMatchObject({ kind: "nothing" });
+    expect(await runTheRead("u", input, d, inputs())).toMatchObject({ kind: "nothing", result: { picks: [], pool: 2, weighed: 2 } });
   });
 
   it("settles a failed judgement as failed, still billing the shortlist", async () => {
@@ -81,7 +82,7 @@ describe("runTheRead", () => {
   });
 
   it("answers a repeat from the store and calls nothing", async () => {
-    const result = { picks: [{ oracleId: "a", reason: [{ text: "Fits." }] }] };
+    const result = { picks: [{ oracleId: "a", reason: [{ text: "Fits." }] }], pool: 2, weighed: 1 };
     store.startRead.mockResolvedValue({ kind: "stored", readId: "old", useful: true, result, read: { chips: [], notUsed: [], notUnderstood: [] } });
     const d = deps(ok({ keys: [] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "read", readId: "old", result, repeat: true });

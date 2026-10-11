@@ -32,7 +32,7 @@ import type { EdhrecTag } from "../edhrec/parse";
 export type TheReadOutcome =
   | { kind: "read"; readId: string; result: TheReadResult; repeat: boolean }
   /** Nothing fits: refunded (lock 7). `repeat` when the store already held this ask's empty answer. */
-  | { kind: "nothing"; readId: string; repeat: boolean }
+  | { kind: "nothing"; readId: string; result: TheReadResult; repeat: boolean }
   | { kind: "failed"; errorClass: ReadErrorClass }
   | { kind: "stopped" }
   | { kind: "allowance" | "paused" | "ownerShare" | "in_flight" | "reused" };
@@ -150,10 +150,10 @@ export async function runTheRead(
   const facts = inputs ?? await loadTheReadInputs(userId, input.words, input.filters);
   const started = await startRead(userId, facts.fingerprint, deps.modelName, { readId: input.readId });
   if (started.kind === "stored") {
-    const result = started.result ?? { picks: [] };
+    const result = started.result ?? { picks: [], pool: facts.pool.size, weighed: 0 };
     return started.useful
       ? { kind: "read", readId: started.readId, result, repeat: true }
-      : { kind: "nothing", readId: started.readId, repeat: true };
+      : { kind: "nothing", readId: started.readId, result, repeat: true };
   }
   if (started.kind !== "started") return { kind: started.kind };
   const handle = { ...started, userId };
@@ -163,14 +163,16 @@ export async function runTheRead(
     const errorClass = (o.errorClass === "upstream_rejected" ? "upstream_busy" : o.errorClass) as Exclude<ReadErrorClass, "nothing_valid" | "interrupted">;
     return (await settleTheRead(handle, { kind: "failed", errorClass }, billed)) ? { kind: "failed", errorClass } : { kind: "stopped" };
   };
-  const nothing = async (): Promise<TheReadOutcome> =>
-    (await settleTheRead(handle, { kind: "read", result: { picks: [] } }, billed))
-      ? { kind: "nothing", readId: started.readId, repeat: false }
+  const nothing = async (weighed: number): Promise<TheReadOutcome> => {
+    const result = { picks: [], pool: facts.pool.size, weighed };
+    return (await settleTheRead(handle, { kind: "read", result }, billed))
+      ? { kind: "nothing", readId: started.readId, result, repeat: false }
       : { kind: "stopped" };
+  };
 
   // Step 1, the shortlist.
   if (!(await setReadPhase(handle, "shortlist"))) return { kind: "stopped" };
-  if (facts.pool.size === 0) return nothing();
+  if (facts.pool.size === 0) return nothing(0);
   const first = await deps.shortlist({
     system: shortlistPrefix(facts),
     cache: !facts.narrowed,
@@ -180,7 +182,7 @@ export async function runTheRead(
   bill(deps.shortlistModel, first);
   if (!first.ok) return failed(first);
   const shortlist = validShortlist(first.value, facts.pool);
-  if (shortlist.length === 0) return nothing();
+  if (shortlist.length === 0) return nothing(0);
 
   // Step 2, the judgement, in whatever is left of the whole deadline.
   if (!(await setReadPhase(handle, "judge"))) {
@@ -197,8 +199,8 @@ export async function runTheRead(
   });
   bill(deps.judgeModel, second);
   if (!second.ok) return failed(second);
-  const result = validJudgement({ reply: second.value, shortlist, idOf: facts.list.idOf, decks: facts.decks });
-  if (result.picks.length === 0) return nothing();
+  const result = { ...validJudgement({ reply: second.value, shortlist, idOf: facts.list.idOf, decks: facts.decks }), pool: facts.pool.size, weighed: candidates.length };
+  if (result.picks.length === 0) return nothing(candidates.length);
   return (await settleTheRead(handle, { kind: "read", result }, billed))
     ? { kind: "read", readId: started.readId, result, repeat: false }
     : { kind: "stopped" };
