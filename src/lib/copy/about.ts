@@ -224,7 +224,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens Add cards',
     width: 'plate',
     caption:
-      'Opened a pack and don\'t feel like exporting? Press “Add cards” and search by name, for any card, not just ones you own. Pick the printing, mark it foil, set how many, and keep going. One Save adds the lot.\n\nNo collection yet? You can start here instead of with a file.',
+      'Cracked a pack and don’t want to export your whole Collection for four cards? Press “Add cards” and search by name. Any card works, even ones you don’t own yet.\n\nPick the printing, mark it foil if it is, set how many, and keep going. One Save adds the lot.\n\nIf you have no Collection yet, you can start here instead of with a file.',
     keys: [
       'Each line is one printing and finish, so a foil and a nonfoil are two lines.',
       'You choose the printing before a card goes on the list.',
@@ -264,7 +264,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the upload',
     width: 'plate',
     caption:
-      'Got a new export? When you upload a file, The 99 asks what it’s for. “Replace” makes your Collection exactly the file. “Add” puts its cards on top of what you have, which is right for a booster haul or a trade binder.\n\nBefore anything changes, you see every card that moves. Replace also warns you if it’ll overwrite changes you made in the app, and names any decks that will read short.',
+      'Drop in a fresh ManaBox export and The 99 asks what the file is for. “Replace” makes your Collection exactly the file. “Add” stacks its cards on top of what you have, which is what you want for a booster haul or a trade binder.\n\nEither way, you see every card that moves before anything changes. Replace also tells you if it’ll overwrite changes you made in the app, and names any decks that will read short.',
     keys: [
       'Replace: anything not in the file leaves your Collection.',
       'Add: quantities go up, nothing leaves, and your art picks stay.',
@@ -403,7 +403,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the card detail',
     width: 'plate',
     caption:
-      'Sold a copy, or logged the wrong printing? Open the card and press “Edit copies”. Each printing and finish you own is a line with its own count. If one’s under the wrong printing, tap it and pick the right one.\n\nIt’s separate from picking the art. The printings grid still only chooses which art your Collection shows.',
+      'Counts drift. Maybe you sold a copy, or logged the wrong printing. Open the card and press “Edit copies”. Every printing and finish you own gets a line with its own count. If a copy sits under the wrong printing, tap its line and pick the right one.\n\nThis is separate from choosing art. The printings grid still only decides which art your Collection shows.',
     keys: [
       'Adding copies needs no deck check. Press Save and it’s done.',
       'Taking copies away checks your decks first, and names any that would come up short.',
@@ -421,7 +421,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection',
     width: 'plate',
     caption:
-      'Traded it away? Open the card, press “Edit copies”, then “Remove from collection”. That takes every copy of every printing.\n\nIf a committed deck runs it, you’ll see which decks will come up short before anything changes. The deck is left alone. It just shows the card as short and puts it on its shopping list.',
+      'When a card has really left your binder, take it out here. Open the card, press “Edit copies”, then “Remove from collection”. That takes every copy of every printing.\n\nIf a committed deck plays it, you see which decks will come up short before anything changes. Those decks show the card as short and add it to their shopping lists.',
     keys: [
       'To take away only some copies, lower their line instead.',
       'Right after, “Undo” puts it all back. So does History, later.',
@@ -438,7 +438,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/collection/history',
     width: 'plate',
     caption:
-      `Every upload, add, edit and removal from the last ${HISTORY_RETENTION_DAYS} days is in History, newest first. Press “Revert” on any of them to undo it.\n\nA revert works on your Collection as it is today. If you’ve sold two of the three copies an add brought in, reverting it takes away the one that’s left. A revert is a change of its own, so you can revert that too, in case you change your mind about changing your mind.`,
+      `Every upload, add, edit and removal from the last ${HISTORY_RETENTION_DAYS} days lives in History, newest first. Press “Revert” on any of them to undo it.\n\nA revert works on your Collection as it is today. Say an add brought in three copies and you’ve since sold two. Reverting that add takes away the one that’s left.\n\nAnd a revert is a change of its own, so you can revert that too, in case you change your mind about changing your mind.`,
     keys: [
       'Open a change to see every card it moved.',
       'Reverting a Replace puts back every card that upload moved.',
