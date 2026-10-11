@@ -122,6 +122,16 @@ describe("variants", () => {
     expect(unresolvedCollisions('<i className="!border-r border-r-[color:var(--b)]" />')).toHaveLength(1);
   });
 
+  it("keeps a quoted attribute selector inside a bracketed variant whole", () => {
+    const x = "[&[data-x='a']]:border-r";
+    const y = "[&[data-y='a']]:border-r-[color:var(--border)]";
+    expect(unresolvedCollisions(`<i className="${x} ${y}" />`)).toHaveLength(1);
+    expect(unresolvedCollisions(`<i className="${x} [&[data-x='a']]:border-r-[color:var(--border)]" />`)).toEqual([]);
+    expect(unresolvedCollisions('<i className="[&[data-x=\\"a\\"]]:border-r" />')).toHaveLength(1);
+    // A quote inside the override's own bracketed value does not cut it short, so its `!` is still read.
+    expect(unresolvedCollisions(`<i className="border-r! border-r-[color:var(--x,'a')]!" />`)).toEqual([]);
+  });
+
   it("reads the legacy prefix ! after the variants: md:!border-r and [&>*]:!border-b", () => {
     expect(unresolvedCollisions('<i className="md:!border-r" />')).toHaveLength(1);
     expect(unresolvedCollisions('<i className="[&>*]:!border-b" />')).toHaveLength(1);

@@ -118,6 +118,12 @@ function scan(text) {
  * that fixes it has to carry the same one: see `hasSideOverride`. Offsets are kept so a caller can
  * report a line without re-deriving positions.
  */
+// A bracketed variant or value is ONE unit, quotes included: `[&[data-x='a']]:` is a single
+// variant, and cutting it at the quote would let `[&[data-x='a']]:border-r` and
+// `[&[data-y='a']]:border-r-[...]` read as the same chain. Tailwind writes a space as `_`, so a
+// bracket holds no whitespace; one level of nesting covers the attribute-selector form.
+const BRACKETED = "\\[(?:[^\\[\\]\\s]|\\[[^\\[\\]\\s]*\\])*\\]";
+
 function bareCollisions(text) {
   const found = [];
   for (const side of COLLIDING_SIDES) {
@@ -129,7 +135,7 @@ function bareCollisions(text) {
     //
     // A token starts at whitespace, a quote, a backtick, `{` or `(`; its variants are everything up
     // to the last `:` before the utility, so `[&>*]:` and `data-[x=y]:` are read whole.
-    const re = new RegExp(`(?<![^\\s"'\`{(])((?:[^\\s"'\`]*:)?!?)border-${side}(!?)(?![\\w-])`, "g");
+    const re = new RegExp(`(?<![^\\s"'\`{(])((?:(?:[^\\s"'\`\\[\\]]|${BRACKETED})*:)?!?)border-${side}(!?)(?![\\w-])`, "g");
     for (const m of text.matchAll(re)) {
       found.push({ side, index: m.index + m[1].length, variant: m[1], important: m[2] === "!" });
     }
@@ -155,7 +161,7 @@ const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * plain override loses to.
  */
 function hasSideOverride(text, side, variant, important) {
-  const re = new RegExp(`(?<![^\\s"'\`{(])${escapeRe(variant)}border-${side}-(?:\\[|[a-zA-Z])[^\\s"'\`]*`, "g");
+  const re = new RegExp(`(?<![^\\s"'\`{(])${escapeRe(variant)}border-${side}-(?=\\[|[a-zA-Z])(?:[^\\s"'\`\\[\\]]|${BRACKETED})*`, "g");
   return [...text.matchAll(re)].some((m) => m[0].endsWith("!") === important);
 }
 
