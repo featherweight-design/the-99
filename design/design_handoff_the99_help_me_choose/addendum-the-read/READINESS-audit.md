@@ -5,12 +5,25 @@ R1 audit, 2026-10-11. Audited against `docs/superpowers/design-briefs/2026-10-11
 and frame were read as source (their `SC` scenes, `WHY_*` fixtures and style tables); nothing in `design/` is
 imported.
 
-## Verdict: YELLOW
+## Verdict: GREEN
 
 Every state the brief asks for is drawn at 900 and 390, every lock is respected, and every open question is
-answered. The build can produce everything drawn from data the tree already holds. One product gap stays
-open: removing the free match from the box removes the only way to set the card answer (F1). That is a call
-for Hugh, and if he wants a picker, a layout for Design. Nothing else blocks the plan.
+answered. The build can produce everything drawn from data the tree already holds. The audit first read
+YELLOW on one product gap (F1); Hugh closed it and F10 the same day (rulings below), and nothing left needs
+Design. F11 is accepted as a separately labeled change.
+
+## Rulings 2026-10-11 (Hugh, and the orchestrator for the About version)
+
+- **F1: no card picker.** A card named in the box goes to the paid read, which picks commanders that use it
+  and says so in the reason line. The free filters do not take a card. STATES 4c to 4e are closed as: *the
+  card case lives in the read.* The read's prompt is told that a named card is a build-around ask, and its
+  step 1 list carries enough to find commanders that use it (rules text is read in step 2).
+- **F10: no *Read it* on the results page.** The one way to run a read is submitting the form with text in
+  the box, and the box keeps the text. 7l drops its *Read it* button and `0 left` pill; its title, lead and
+  line stay. `read.readIt` is retired with the other removed keys. This is a removal from a drawn frame, not
+  a new layout, so it does not go back to Design.
+- **`ABOUT_VERSION` 14 to 15** with the rework, decided by the orchestrator: the capability changed. The
+  bump ships with the build, behind `HELP_ME_CHOOSE_ENABLED` like the entry.
 
 ## Brief coverage
 
@@ -27,13 +40,13 @@ for Hugh, and if he wants a picker, a layout for Design. Nothing else blocks the
 
 ## Findings
 
-**F1. The card answer has no control once the box stops matching. Needs Hugh (product), then Design if yes.**
+**F1. The card answer has no control once the box stops matching. Closed by Hugh: no picker, the card lives in the read.**
 Verified: `intake-form.tsx:39-44` says the form "draws no card control, so its only card is one its words
 name". The brief's Q1 text assumed "the existing pickers" cover a card; they cover themes, sets, colors,
 budget and bracket only. After this round a player cannot set a build-around card at all. Design flagged it
 and did not draw a picker, which is right: whether the card answer survives is Hugh's call, and its layout
 is Design's. Until he rules, the build ships without the card answer (the search and rank already treat it
-as optional) and states 4c to 4e stay open.
+as optional) and states 4c to 4e stay open. *Ruled: see Rulings above.*
 
 **F2. The read's progress needs a server-side phase. Eng-resolvable.**
 The wait moves step 1's dot to step 2 when the shortlist ends. `intake_reads` has `status` and no phase
@@ -83,11 +96,12 @@ deck commanders with their index tags. To build: the cached compact list, the `c
 (lock 7) replacing `wordsHash`, a stored result shape for picks and reasons, a `repeat` flag for 7m's line,
 and the eval. The `n` and `d` params must still parse and be ignored, so an old link opens cleanly.
 
-**F10. *Read it* on 7l. Needs Hugh (ruling 2), low.**
+**F10. *Read it* on 7l. Closed by Hugh: removed.**
 7l draws a disabled *Read it* with `0 left`. Not drawn: the same panel once a credit has come back. A live
 *Read it* there is a second press on the results page, close to the *Look deeper* step ruling 2 retired.
 Recommendation: keep it, since the words are already written and the press names its cost; until Hugh says
-otherwise the build draws it live with the `1 credit` pill when the standing allows.
+otherwise the build draws it live with the `1 credit` pill when the standing allows. *Ruled the other way:
+no *Read it*; see Rulings above.*
 
 **F11. Best-fit art and phone rank changed outside the brief. Design's, accepted.**
 `design-tables · the read.md` changes the best-fit art to `aspect-ratio: 626 / 457` and moves the phone rank
@@ -105,6 +119,4 @@ drawn and lists them in the PR as a separate change so review reads them as such
 
 ## For Hugh
 
-1. F1: should the card answer survive, as a picker on the form? If yes, Design draws it.
-2. F10: a live *Read it* on the results page when a credit is back, or none.
-3. `ABOUT_VERSION` 14 to 15 with the revised entry (Design recommends the bump; the brief argues for it).
+Nothing open. F1, F10 and the About version were ruled on 2026-10-11.
