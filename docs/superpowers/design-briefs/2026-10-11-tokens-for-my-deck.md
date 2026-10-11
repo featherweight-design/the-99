@@ -95,13 +95,24 @@ These are engineering's reading of the rulings and of what the data allows. Hugh
    token oracle id. Neither is a `cards` column, so **the catalog fingerprint does not move and the copy harness is
    not involved**: the fingerprint exists for products built once and copied, and these come from the fetched
    bytes on both sides like `cards` does.
-5. **Ownership needs a new record, and it starts empty.** Upload must stop discarding token rows and keep them
-   (only the `token` and `double_faced_token` layouts: `TOKEN_LAYOUTS` also holds `emblem` and `art_series`, which
-   ruling 4 and the catalog leave out), keyed by the token's oracle id (any printing counts as holding it). Until the next upload after this ships, the
-   collection holds no token on record. Hugh's last upload skipped 155 rows by design (rows whose id is a known
-   `token`, `double_faced_token`, `emblem` or `art_series` printing; the split among them was not kept), and the file is not stored, so **the app cannot say today how
-   many tokens he owns, and the first screen must say it does not know, not that he owns none** (Open question 1).
-6. **A token's price is the cheapest priced printing**, from the Mana Pool feed rows the price ingest now drops.
+5. **Ownership needs a new record, and it starts empty.** Upload must stop discarding token rows and keep them,
+   keyed by the token's oracle id (any printing counts as holding it). **What is a token is decided by resolving
+   the uploaded printing to a token oracle object, never by the printing's layout:** `TOKEN_LAYOUTS` also holds
+   `emblem` and `art_series` (which ruling 4 and the catalog leave out), and some token stock is filed under another
+   layout, as the ingest already records for `sld/1969` Mechtitan, a `reversible_card` whose faces say
+   `Token Legendary Artifact Creature` (`transform-printings.ts:161-189`). The upload path therefore needs the
+   printing's token oracle id from the catalog (lock 4), not a filter on `skipped_printings.layout`.
+   **Ownership also needs a persisted "read" marker per account,** written in the same transaction as every
+   confirmed upload including one with zero tokens, so an empty ownership table can be told apart from an account
+   whose tokens were never read. Until the next upload after this ships there is no marker and no token on record.
+   Hugh's last upload skipped 155 rows by design (rows whose id is a known `token`, `double_faced_token`, `emblem`
+   or `art_series` printing; the split among them was not kept), and the file is not stored, so **the app cannot
+   say today how many tokens he owns, and the first screen must say it does not know, not that he owns none**
+   (Open question 1).
+6. **A token's price follows the deck price rule** (`src/lib/decks/price-query.ts:52-78`): among its printings, a
+   live one before a stale one (the ingest never deletes a sold-out row), real non-foil stock before foil-only at
+   any price, then the cheapest, then the printing id as a tie-break. The inputs are the Mana Pool feed rows the
+   price ingest now drops.
    It needs token printings in `printings` or a table of its own; engineering's plan decides which.
 7. **A token joins Shopping by the player's choice, one row at a time,** stored per deck and per token. It is a
    Shopping row for that deck, not a `deck_cards` row, so it never changes the deck's card counts, its status pill,
@@ -202,8 +213,8 @@ joined to the `oracle_cards` bulk fetched the same day (`pnpm catalog:fetch`). P
 `default_cards`: **128 of 128 resolved**. Nothing was written.
 
 **Every one of the 21 decks makes tokens: 121 deck-and-token pairs, 80 distinct tokens (61 distinct names).** Without
-`Copy`, 79 and 20 decks. The cheapest priced Mana Pool printing exists for **all 80** (median 15 cents, the 80
-together $27.17); the feed has 6,039 rows on token printings and the price ingest drops all of them.
+`Copy`, 79 and 20 decks. A priced printing exists in today's feed for **all 80** (the cheapest per token has a median of
+15 cents; the 80 together $27.17, measured on the feed as fetched, which lists only stock); the feed has 6,039 rows on token printings and the price ingest drops all of them.
 
 | Deck | Id | Committed | Tokens | Without `Copy` | Cards that make them |
 |---|---|---|---|---|---|
