@@ -251,6 +251,14 @@ describe("TuningHub opening a tool", () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: copy.title })));
   });
 
+  it("stays drawn for the visit when the last cut takes an unread deck to 100", () => {
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(false), cuts(1)]} />);
+    fireEvent.click(tile("cuts"));
+    // No reading and no longer over: on arrival this deck would draw no hub at all.
+    rerender(<TuningHub deckId="d" drawn={false} tools={[suggested(false), cuts(0, 100)]} />);
+    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+  });
+
   it("resets to the landing when it mounts again (the Analysis tabpanel unmounts on a tab switch)", () => {
     const { unmount } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));

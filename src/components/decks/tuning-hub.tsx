@@ -183,6 +183,9 @@ export function TuningHub({
 
   // A shortcut on Your deck, answered once per nonce and during render rather than in an effect,
   // so the tool is open in the same paint the tab arrives with.
+  const [drawnThisVisit, setDrawnThisVisit] = useState(drawn);
+  if (drawn && !drawnThisVisit) setDrawnThisVisit(true);
+
   const [answered, setAnswered] = useState<number | null>(null);
   if (request && request.nonce !== answered) {
     setAnswered(request.nonce);
@@ -246,7 +249,11 @@ export function TuningHub({
     open(id, { focus: false });
   };
 
-  if (!drawn || tools.length === 0) return null;
+  // Once drawn, the hub stays for the rest of this visit to the tab: the last cut on a deck that
+  // was never read brings it to 100 with no reading, and the tool must still finish in place (C8)
+  // rather than vanish with focus inside it. The tabpanel's unmount resets this on the next visit.
+  if (!drawn && !drawnThisVisit) return null;
+  if (tools.length === 0) return null;
   return (
     <section
       ref={sectionRef}
