@@ -53,6 +53,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 // I got it's confirm reads its choices and writes through these; the row tests only open it.
 vi.mock("../../app/collection/edit-actions", () => ({ loadPrintingChoices: vi.fn(async () => []) }));
 vi.mock("../../app/decks/mark-bought-actions", () => ({ markBought: vi.fn() }));
+// The receipt's undo checks and writes through these.
+vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 
 const { DecklistRow } = await import("./decklist-row");
 const { GotItProvider } = await import("./got-it");
@@ -1534,6 +1536,40 @@ describe("DecklistRow with I got it", () => {
     expect(screen.getByText(gotItCopy.row.pending)).toBeInTheDocument();
     await act(async () => resolve({ refused: "notInDeck" }));
     expect(row().style.opacity).toBe("");
+  });
+
+  it("disables the tag while an undo for its card is in flight, and only then", async () => {
+    const { markBought } = await import("../../app/decks/mark-bought-actions");
+    const { loadPrintingChoices } = await import("../../app/collection/edit-actions");
+    const { previewRevert } = await import("../../app/collection/history-actions");
+    const only = { scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "mom", setName: "March of the Machine", collectorNumber: "137", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {} };
+    vi.mocked(loadPrintingChoices).mockResolvedValueOnce([only]);
+    // The copy went to an older deck, so the row stays and its tag is still drawn.
+    vi.mocked(markBought).mockResolvedValueOnce({ applied: { id: "e0000000-0000-4000-8000-000000000001", receipt: { tookCopy: [], stillNeeds: 1 } } });
+    let settle!: (v: unknown) => void;
+    vi.mocked(previewRevert).mockReturnValueOnce(new Promise((r) => { settle = r; }) as never);
+    renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>);
+    const tag = screen.getByRole("button", { name: tagName });
+    await act(async () => fireEvent.click(tag));
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: gotItCopy.confirm.add(1) })));
+    expect(tag).not.toHaveAttribute("aria-disabled");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })));
+    expect(tag).toHaveAttribute("aria-disabled", "true");
+    expect((tag.firstElementChild as HTMLElement).style.opacity).toBe("0.45");
+    // A press while the undo is in flight opens nothing.
+    await act(async () => fireEvent.click(tag));
+    expect(screen.queryByRole("dialog", { name: gotItCopy.confirm.title })).toBeNull();
+    await act(async () => settle({ notFound: true }));
+    expect(tag).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("draws the held slot in the row's own shell, with no control in it, and fades back in on return", () => {
+    renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} held shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>);
+    const held = document.querySelector<HTMLElement>("[data-held-slot]")!;
+    expect(held.textContent).toBe(gotItCopy.slot.held("Sol Ring"));
+    expect(held.parentElement!.className).toContain("anim-slot-in");
+    expect(held.querySelector("button, a, [tabindex]")).toBeNull();
+    expect(screen.queryByRole("button", { name: tagName })).toBeNull();
   });
 
   it("leaves the All tab's collapsed tag inert with the feature on", () => {
