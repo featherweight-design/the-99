@@ -79,10 +79,12 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
  */
 function byRank(a: Ranked, b: Ranked): number {
   const free = (r: Ranked) => (r.mana === 0 ? 0 : 1);
-  return a.pieces - b.pieces || free(a) - free(b) || Number(b.commander) - Number(a.commander) || (a.mana ?? 99) - (b.mana ?? 99) || a.id.localeCompare(b.id);
+  // A mandatory loop leads whatever its size: the cap must never cost the overview the one risk
+  // that ends the game, and a deck rarely holds more than one or two.
+  return Number(b.mandatory) - Number(a.mandatory) || a.pieces - b.pieces || free(a) - free(b) || Number(b.commander) - Number(a.commander) || (a.mana ?? 99) - (b.mana ?? 99) || a.id.localeCompare(b.id);
 }
 
-type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string };
+type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string; mandatory?: boolean };
 
 /**
  * The top `cap` of a ranked list, one per distinct outcome first. Variants differing by one
@@ -146,7 +148,7 @@ export function shapeComboFacts(
   }
   const sig = (produces: readonly string[]) => [...produces].sort().join("|");
   return {
-    combos: pickTop(assembled, (c) => ({ pieces: c.pieceCount, mana: c.manaNeeded, commander: c.usesCommander, id: c.id, sig: sig(c.produces) }), MAX_COMBO_FACTS)
+    combos: pickTop(assembled, (c) => ({ pieces: c.pieceCount, mana: c.manaNeeded, commander: c.usesCommander, id: c.id, sig: sig(c.produces), mandatory: isMandatoryLoop(c.produces) }), MAX_COMBO_FACTS)
       .map(({ pieceCount: _p, id: _i, ...c }) => c),
     nearCombos: pickTop(near, (n) => ({ pieces: n.pieceCount, mana: n.mana, commander: n.usesCommander, id: n.id, sig: sig(n.produces) }), MAX_NEAR_COMBO_FACTS)
       .map(({ pieceCount: _p, mana: _m, usesCommander: _u, id: _i, ...n }) => n),

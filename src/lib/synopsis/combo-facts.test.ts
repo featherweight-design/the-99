@@ -24,6 +24,15 @@ describe("shapeComboFacts", () => {
     expect(shapeComboFacts(rows, ["W"], []).combos.map((c) => c.pieces)).toEqual([["Pariah", "Stuffy Doll"]]);
   });
 
+  it("keeps a mandatory loop inside the cap however many cheaper combos outrank it", () => {
+    const six = Array.from({ length: 6 }, (_, i) => [piece(`f${i}`, `f${i}a`, { produces: [`Infinite thing ${i}`] }), piece(`f${i}`, `f${i}b`, { produces: [`Infinite thing ${i}`] })]).flat();
+    // Three pieces and costly: ranked last on every other key.
+    const loop = ["x", "y", "z"].map((n) => piece("loop", n, { card_count: 3, mana_value_needed: 9, produces: ["Draw the game", "Infinite creature tokens"] }));
+    const out = shapeComboFacts([...six, ...loop], ["U"], []);
+    expect(out.combos).toHaveLength(6);
+    expect(out.combos[0].pieces).toEqual(["x", "y", "z"]);
+  });
+
   it("ranks fewest pieces first, then free, and caps at six", () => {
     const rows = [
       ...["a", "b", "c"].map((n) => piece("big", n, { card_count: 3 })),

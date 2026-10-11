@@ -360,7 +360,7 @@ export function v2FactLines(facts: SynopsisFacts, contract8 = false): string[] {
       // Contract 8 only: contract 7 stays the baseline the v7-against-v8 comparison is run against.
       const shown = producesShown(c.produces.filter((f) => f !== DRAW_THE_GAME)).join(", ");
       out.push(contract8 && isMandatoryLoop(c.produces)
-        ? `- mandatory loop: ${c.pieces.join(" + ")}${shown ? `: ${shown}` : ""}${mana(c.manaNeeded)}; the game is drawn unless an outlet is available`
+        ? `- mandatory loop: ${c.pieces.join(" + ")}${shown ? `: ${shown}` : ""}${mana(c.manaNeeded)}; the game is drawn unless the deck answers in response`
         : `- ${c.pieces.join(" + ")}: ${producesShown(c.produces).join(", ")}${mana(c.manaNeeded)}`);
     }
   }
