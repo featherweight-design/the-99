@@ -66,14 +66,13 @@ export async function loadProfileHead(
   deckId: string,
   userId: string,
 ): Promise<ProfileHead | null> {
-  // ONE read-only `repeatable read` transaction, because these two reads ARE the fingerprint.
+  // ONE `repeatable read` transaction, because these two reads ARE the fingerprint.
   // Read apart, an edit landing between them gives a head whose commander columns and card
   // list come from different instants — a deck state that never existed — and the profile is
   // then filed under a key describing it. `loadDraftState` takes the same snapshot for the
   // same reason.
   return db.transaction((tx) => readProfileHead(tx, deckId, userId), {
     isolationLevel: "repeatable read",
-    accessMode: "read only",
   });
 }
 

@@ -161,7 +161,7 @@ export async function readSynopsisState(
   if (!owned) return null;
   await db.transaction((tx) => reapSynopses(tx, deckId, now));
 
-  // THE LIVE LIST AND ITS OVERVIEW, from ONE read-only repeatable-read snapshot. The list is two
+  // THE LIVE LIST AND ITS OVERVIEW, from ONE repeatable-read snapshot. The list is two
   // reads (the deck row and its cards), and the overview shown is the one written for that list:
   // read apart, an edit landing between them pairs list A with A's overview while the deck is
   // already B, and the press note would describe a list that is no longer live. Whether that list
@@ -173,7 +173,7 @@ export async function readSynopsisState(
     const illegal = !!head && noticesEnabled()
       && (await liveOffendingIds(tx, deckId, [head.commanderOracleId, ...(head.partnerOracleId ? [head.partnerOracleId] : [])])).length > 0;
     return { live: list, synopsis: await readShownSynopsis(deckId, userId, list ?? undefined, tx), illegal };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   const [reading, row, newest, allowance] = await Promise.all([
     readStoredReading(deckId, userId, deps),
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)

@@ -171,7 +171,7 @@ async function versionHolding(deckId: string, list: string): Promise<{ id: strin
   return held === list ? { id: version.id, number: version.number } : null;
 }
 
-const READ_ONLY = { isolationLevel: "repeatable read", accessMode: "read only" } as const;
+const SNAPSHOT = { isolationLevel: "repeatable read" } as const;
 
 /**
  * The stored reading for the Analysis tab, fresh or stale, or null — and never a press.
@@ -186,7 +186,7 @@ export async function readStoredReading(
   userId: string,
   deps: StoredProfileDeps = REQUEST_DEPS,
 ): Promise<StoredReading | null> {
-  const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
+  const { head, row } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), SNAPSHOT);
   if (!head || !row) return null;
   // A row a NEWER deployment wrote is a document this code cannot read, and never rebuilds: it
   // reads as nothing here until the newer code serves the request (see REBUILD RULES).
@@ -286,7 +286,7 @@ export async function computeAndStoreProfile(
     };
   } = {},
 ): Promise<AnalyzeResult | null> {
-  const { head, row, editedAt } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), READ_ONLY);
+  const { head, row, editedAt } = await db.transaction((tx) => readHeadAndRow(tx, deckId, userId), SNAPSHOT);
   if (!head) return null;
   const legality = deckLegality(head);
   if (!legality.legal) return { kind: "illegal", built: legality.built, size: legality.size };

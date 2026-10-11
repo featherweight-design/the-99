@@ -158,7 +158,7 @@ export async function readStatus(
       .where(and(eq(intakeReads.userId, userId), eq(intakeReads.status, "pending"), gte(intakeReads.createdAt, reapCutoff(now))))
       .limit(1);
     return pending ? { kind: "running" as const } : { kind: "idle" as const };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
 }
 
 export function reapCutoff(now: Date): Date {

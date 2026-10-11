@@ -50,7 +50,7 @@ export async function overviewDataMovedFor(deckId: string, userId: string, overv
     if (!row || overviewSeen >= row.seenSeq) return null;
     const head = await readProfileHead(tx, deckId, userId);
     return head ? { row, head } : null;
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   if (!read) return false;
   const { row, head } = read;
   return overviewDataMoved(overviewSeen, row.seenSeq, {
