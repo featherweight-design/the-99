@@ -61,6 +61,10 @@ export function IntakeForm({
   standing?: Standing | null;
 }) {
   const [submitting, startSubmit] = useTransition();
+  // Synchronous, as commit-sheet's is: `submitting` is a transition update and is not visible to a
+  // second press in the same tick, so a double click would begin two reads and land the second on
+  // the unread results. This ref covers that window and nothing else.
+  const inFlightRef = useRef(false);
   const wide = useIsDesktop();
   const [words, setWords] = useState(initial.words);
   const [colors, setColors] = useState<string[]>(initial.colors);
@@ -108,7 +112,8 @@ export function IntakeForm({
         : copy.intake.colorsAny(names);
 
   const submit = () => {
-    if (submitting) return;
+    if (submitting || inFlightRef.current) return;
+    inFlightRef.current = true;
     const query = submitQuery({
       ...initial,
       words: words.trim(),
@@ -123,7 +128,10 @@ export function IntakeForm({
     });
     // The action redirects; it returns only when it refused a malformed or over-long ask, which
     // this form cannot send (its box is capped, and the address bound is far past the cap).
-    startSubmit(async () => { await submitChoose(query); });
+    // A return or a failure releases the press; a redirect leaves the page.
+    startSubmit(async () => {
+      try { await submitChoose(query); } finally { inFlightRef.current = false; }
+    });
   };
 
   // What the press does with the words (states 7a to 7c, 7n): with none, nothing is said; with a

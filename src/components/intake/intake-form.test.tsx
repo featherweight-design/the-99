@@ -1,7 +1,7 @@
 // The form mounts where the platform lacks ResizeObserver (older WebViews): the dock is measured
 // once and on resize instead, and the form renders rather than throwing on mount.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -128,6 +128,15 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={null} />);
     expect(screen.queryByText("1 credit")).toBeNull();
     expect(screen.queryByText(/Uses a credit|Won’t be read|left/)).toBeNull();
+  });
+
+  it("begins one read for a double click in one tick", () => {
+    push.mockClear();
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "x" }} standing={credit} />);
+    // One act, so React commits nothing between the two presses: the same tick a double click lands in.
+    const press = presses()[0];
+    act(() => { press.click(); press.click(); });
+    expect(push).toHaveBeenCalledTimes(1);
   });
 
   it("submits the words whole with the answers, and never a card", () => {
