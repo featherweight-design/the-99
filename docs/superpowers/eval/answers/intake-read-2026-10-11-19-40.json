@@ -1,0 +1,831 @@
+[
+  {
+    "fixture": "askA",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Jenara, Asura of War",
+      "Judge Magister Gabranth",
+      "Silumgar, the Drifting Death",
+      "Henrika Domnathi // Henrika, Infernal Seer",
+      "Junji, the Midnight Sky",
+      "Witch-king of Angmar",
+      "Ebondeath, Dracolich",
+      "Grimgrin, Corpse-Born",
+      "Jerren, Corrupted Bishop // Ormendahl, the Corrupter",
+      "Liliana, Heretical Healer // Liliana, Defiant Necromancer",
+      "Winter, Misanthropic Guide",
+      "The Last Ride",
+      "Kangee, Sky Warden",
+      "Oona, Queen of the Fae",
+      "Toxrill, the Corrosive",
+      "K'rrik, Son of Yawgmoth",
+      "Rin and Seri, Inseparable"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Toxrill, the Corrosive",
+        "reason": [
+          {
+            "text": "As a Slug Horror, it shrinks every opposing creature with slime counters each end step, a properly nasty grinding effect."
+          }
+        ]
+      },
+      {
+        "name": "K'rrik, Son of Yawgmoth",
+        "reason": [
+          {
+            "text": "This Phyrexian Horror lets you pay life for black mana and grows with each black spell, a creepy and ruthless engine."
+          }
+        ]
+      },
+      {
+        "name": "Grimgrin, Corpse-Born",
+        "reason": [
+          {
+            "text": "A reanimated Zombie Warrior that destroys a creature on every attack by feeding it sacrificed creatures, which is truly nasty."
+          }
+        ]
+      },
+      {
+        "name": "Henrika Domnathi // Henrika, Infernal Seer",
+        "reason": [
+          {
+            "text": "Forces each player to sacrifice a creature, then flips into a flying, deathtouch, lifelink vampire, which is menacing and spiteful."
+          }
+        ]
+      },
+      {
+        "name": "Witch-king of Angmar",
+        "reason": [
+          {
+            "text": "A flying Wraith that makes attackers sacrifice creatures and tempts you with the Ring, giving a dread-filled, vengeful feel."
+          }
+        ]
+      },
+      {
+        "name": "Junji, the Midnight Sky",
+        "reason": [
+          {
+            "text": "A flying menace Dragon Spirit that makes opponents discard and lose life or steals a creature when it dies, which is vicious."
+          }
+        ]
+      },
+      {
+        "name": "Ebondeath, Dracolich",
+        "reason": [
+          {
+            "text": "A Zombie Dragon that returns from the graveyard with flash whenever a creature dies, relentless and undead in a scary way."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 2333,
+        "usd": 0.092865,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 59,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 148282
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "shortlistWarm": {
+        "model": "claude-haiku-5-5",
+        "ms": 1583,
+        "usd": 0.007733,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 111,
+          "cacheReadTokens": 148282,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4865,
+        "usd": 0.013858,
+        "usage": {
+          "inputTokens": 4889,
+          "outputTokens": 408,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 3110,
+            "reason": "As a Slug Horror, it shrinks every opposing creature with slime counters each end step, a properly nasty grinding effect."
+          },
+          {
+            "key": 1376,
+            "reason": "This Phyrexian Horror lets you pay life for black mana and grows with each black spell, a creepy and ruthless engine."
+          },
+          {
+            "key": 1047,
+            "reason": "A reanimated Zombie Warrior that destroys a creature on every attack by feeding it sacrificed creatures, which is truly nasty."
+          },
+          {
+            "key": 1138,
+            "reason": "Forces each player to sacrifice a creature, then flips into a flying, deathtouch, lifelink vampire, which is menacing and spiteful."
+          },
+          {
+            "key": 3323,
+            "reason": "A flying Wraith that makes attackers sacrifice creatures and tempts you with the Ring, giving a dread-filled, vengeful feel."
+          },
+          {
+            "key": 1370,
+            "reason": "A flying menace Dragon Spirit that makes opponents discard and lose life or steals a creature when it dies, which is vicious."
+          },
+          {
+            "key": 684,
+            "reason": "A Zombie Dragon that returns from the graveyard with flash whenever a creature dies, relentless and undead in a scary way."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.106723
+  },
+  {
+    "fixture": "askB",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Omnath, Locus of the Roil",
+      "Omnath, Locus of Rage",
+      "Greensleeves, Maro-Sorcerer",
+      "Bristly Bill, Spine Sower",
+      "Ashaya, Soul of the Wild",
+      "Uro, Titan of Nature's Wrath",
+      "Averna, the Chaos Bloom",
+      "Aesi, Tyrant of Gyre Strait",
+      "Bonny Pall, Clearcutter",
+      "Flubs, the Fool",
+      "Mina and Denn, Wildborn",
+      "Phylath, World Sculptor",
+      "Strider, Ranger of the North",
+      "Tannuk, Memorial Ensign",
+      "Gladiolus Amicitia",
+      "Hugs, Grisly Guardian",
+      "Rydia, Summoner of Mist",
+      "Tifa Lockhart",
+      "The Earth King",
+      "Zimone and Dina",
+      "Tam, Observant Sequencer // Deep Sight",
+      "Sutina, Speaker of the Tajuru",
+      "Mole Man, Moloid Master",
+      "Sandman, Shifting Scoundrel",
+      "Loot, Exuberant Explorer",
+      "Azusa, Lost but Seeking",
+      "Braulios of Pheres Band",
+      "Molten Man, Inferno Incarnate",
+      "Zell Dincht",
+      "Yarok, the Desecrated",
+      "Soul of Windgrace",
+      "Szarel, Genesis Shepherd",
+      "Sazh Katzroy",
+      "Hearthhull, the Worldseed",
+      "Lord Windgrace",
+      "Thalia and The Gitrog Monster",
+      "Ambrosia Whiteheart"
+    ],
+    "droppedOutsidePool": 1,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Omnath, Locus of Rage",
+        "reason": [
+          {
+            "text": "Landfall makes a large Elemental token each time a land enters, a token-and-burn plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "'s ramp shell."
+          }
+        ]
+      },
+      {
+        "name": "Greensleeves, Maro-Sorcerer",
+        "reason": [
+          {
+            "text": "Landfall creates Badger tokens while its size scales with lands, a mono-green land swarm unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Zimone and Dina",
+        "reason": [
+          {
+            "text": "Sacrificing creatures to draw and put lands onto the battlefield gives a landfall engine unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Yarok, the Desecrated",
+        "reason": [
+          {
+            "text": "Doubling triggers from permanents entering turns every land drop into extra triggers, a different angle from "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Aesi, Tyrant of Gyre Strait",
+        "reason": [
+          {
+            "text": "Extra land drops and a card draw on every landfall make a blue-green draw engine unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Tannuk, Memorial Ensign",
+        "reason": [
+          {
+            "text": "Each land drop pings opponents and can draw cards, a burn-focused landfall plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Thalia and The Gitrog Monster",
+        "reason": [
+          {
+            "text": "Extra land drops with creatures and nonbasic lands entering tapped give a stax-flavored landfall deck unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Mole Man, Moloid Master",
+        "reason": [
+          {
+            "text": "Playing lands from the graveyard and making Moloid tokens on landfall gives a self-mill landfall plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Bonny Pall, Clearcutter",
+        "reason": [
+          {
+            "text": "Attacking draws cards and puts lands onto the battlefield, with a land-sized Ox token, unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Soul of Windgrace",
+        "reason": [
+          {
+            "text": "Returning lands from graveyards to the battlefield in three colors makes a discard-driven landfall deck unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation"
+    ],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 9782,
+        "usd": 0.0128,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 2138,
+          "cacheReadTokens": 148282,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4751,
+        "usd": 0.021552,
+        "usage": {
+          "inputTokens": 8106,
+          "outputTokens": 534,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2115,
+            "reason": "Landfall makes a large Elemental token each time a land enters, a token-and-burn plan unlike {D14}'s ramp shell."
+          },
+          {
+            "key": 1035,
+            "reason": "Landfall creates Badger tokens while its size scales with lands, a mono-green land swarm unlike {D14}."
+          },
+          {
+            "key": 3435,
+            "reason": "Sacrificing creatures to draw and put lands onto the battlefield gives a landfall engine unlike {D14}."
+          },
+          {
+            "key": 3361,
+            "reason": "Doubling triggers from permanents entering turns every land drop into extra triggers, a different angle from {D14}."
+          },
+          {
+            "key": 43,
+            "reason": "Extra land drops and a card draw on every landfall make a blue-green draw engine unlike {D14}."
+          },
+          {
+            "key": 2805,
+            "reason": "Each land drop pings opponents and can draw cards, a burn-focused landfall plan unlike {D14}."
+          },
+          {
+            "key": 2859,
+            "reason": "Extra land drops with creatures and nonbasic lands entering tapped give a stax-flavored landfall deck unlike {D14}."
+          },
+          {
+            "key": 1910,
+            "reason": "Playing lands from the graveyard and making Moloid tokens on landfall gives a self-mill landfall plan unlike {D14}."
+          },
+          {
+            "key": 378,
+            "reason": "Attacking draws cards and puts lands onto the battlefield, with a land-sized Ox token, unlike {D14}."
+          },
+          {
+            "key": 2664,
+            "reason": "Returning lands from graveyards to the battlefield in three colors makes a discard-driven landfall deck unlike {D14}."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.034352
+  },
+  {
+    "fixture": "askA-black",
+    "arm": "haiku-medium",
+    "pool": 329,
+    "narrowed": true,
+    "cards": [],
+    "shortlist": [
+      "Arvinox, the Mind Flail",
+      "Drivnod, Carnage Dominus",
+      "Greel, Mind Raker",
+      "Gollum, Patient Plotter",
+      "Gollum, Riddle Master",
+      "Gollum the Abandoned",
+      "Gollum, Scheming Guide",
+      "Gollum, Obsessed Stalker",
+      "Gollum, Silent Slinker // Meager Meal",
+      "Madame Hydra, Reanimated",
+      "Sauron, the Necromancer",
+      "Gallowbraid",
+      "Morinfen",
+      "K'rrik, Son of Yawgmoth",
+      "Loot, the Anomaly",
+      "Armaggon, Future Shark"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Armaggon, Future Shark",
+        "reason": [
+          {
+            "text": "Flash Horror that destroys up to three creatures on entering, a properly nasty ambush for a scary Horror deck."
+          }
+        ]
+      },
+      {
+        "name": "Arvinox, the Mind Flail",
+        "reason": [
+          {
+            "text": "Horror that steals opponents' library cards each end step and casts them, a sneaky and nasty theft engine."
+          }
+        ]
+      },
+      {
+        "name": "Greel, Mind Raker",
+        "reason": [
+          {
+            "text": "Horror that makes opponents discard at random for X, a cruel and nasty way to grind them down."
+          }
+        ]
+      },
+      {
+        "name": "Sauron, the Necromancer",
+        "reason": [
+          {
+            "text": "Menacing Horror that attacks with reanimated copies from your graveyard, a scary, necromantic threat."
+          }
+        ]
+      },
+      {
+        "name": "Madame Hydra, Reanimated",
+        "reason": [
+          {
+            "text": "Menace Horror that grows from creatures in your graveyard and mills each attack, grim and menacing."
+          }
+        ]
+      },
+      {
+        "name": "Drivnod, Carnage Dominus",
+        "reason": [
+          {
+            "text": "Phyrexian Horror that doubles death triggers and exiles graveyard creatures to turn indestructible, dark and nasty."
+          }
+        ]
+      },
+      {
+        "name": "K'rrik, Son of Yawgmoth",
+        "reason": [
+          {
+            "text": "Lifelink Phyrexian Horror that pays life for black mana and grows with each black spell, aggressively scary."
+          }
+        ]
+      },
+      {
+        "name": "Gollum the Abandoned",
+        "reason": [
+          {
+            "text": "Horror that drains opponents on entering, exiles their graveyard card, and keeps coming back from the graveyard."
+          }
+        ]
+      },
+      {
+        "name": "Gollum, Riddle Master",
+        "reason": [
+          {
+            "text": "Horror that punishes opponents' spells by draining them, growing, or drawing, a little nasty to play against."
+          }
+        ]
+      },
+      {
+        "name": "Gollum, Silent Slinker // Meager Meal",
+        "reason": [
+          {
+            "text": "Menace Horror with counters and lifegain on an adventure, a more modest creepy option."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 3468,
+        "usd": 0.001778,
+        "usage": {
+          "inputTokens": 14468,
+          "outputTokens": 662,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4436,
+        "usd": 0.013958,
+        "usage": {
+          "inputTokens": 4519,
+          "outputTokens": 492,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 176,
+            "reason": "Flash Horror that destroys up to three creatures on entering, a properly nasty ambush for a scary Horror deck."
+          },
+          {
+            "key": 189,
+            "reason": "Horror that steals opponents' library cards each end step and casts them, a sneaky and nasty theft engine."
+          },
+          {
+            "key": 1031,
+            "reason": "Horror that makes opponents discard at random for X, a cruel and nasty way to grind them down."
+          },
+          {
+            "key": 2481,
+            "reason": "Menacing Horror that attacks with reanimated copies from your graveyard, a scary, necromantic threat."
+          },
+          {
+            "key": 1754,
+            "reason": "Menace Horror that grows from creatures in your graveyard and mills each attack, grim and menacing."
+          },
+          {
+            "key": 671,
+            "reason": "Phyrexian Horror that doubles death triggers and exiles graveyard creatures to turn indestructible, dark and nasty."
+          },
+          {
+            "key": 1376,
+            "reason": "Lifelink Phyrexian Horror that pays life for black mana and grows with each black spell, aggressively scary."
+          },
+          {
+            "key": 999,
+            "reason": "Horror that drains opponents on entering, exiles their graveyard card, and keeps coming back from the graveyard."
+          },
+          {
+            "key": 1002,
+            "reason": "Horror that punishes opponents' spells by draining them, growing, or drawing, a little nasty to play against."
+          },
+          {
+            "key": 1004,
+            "reason": "Menace Horror with counters and lifegain on an adventure, a more modest creepy option."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.015736
+  },
+  {
+    "fixture": "noDecks",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Omnath, Locus of Rage",
+      "Ashaya, Soul of the Wild",
+      "Aesi, Tyrant of Gyre Strait",
+      "Averna, the Chaos Bloom",
+      "Braulios of Pheres Band",
+      "Bristly Bill, Spine Sower",
+      "Bonny Pall, Clearcutter",
+      "Gladiolus Amicitia",
+      "Hugs, Grisly Guardian",
+      "Greensleeves, Maro-Sorcerer",
+      "Mina and Denn, Wildborn",
+      "Phylath, World Sculptor",
+      "Obuun, Mul Daya Ancestor",
+      "Sandman, Shifting Scoundrel",
+      "Tannuk, Memorial Ensign",
+      "Thalia and The Gitrog Monster",
+      "Strider, Ranger of the North",
+      "Sutina, Speaker of the Tajuru",
+      "Tam, Observant Sequencer // Deep Sight",
+      "Tatyova, Benthic Druid",
+      "Titania, Voice of Gaea",
+      "Uro, Titan of Nature's Wrath",
+      "Yarok, the Desecrated",
+      "Radha, Heart of Keld",
+      "Rydia, Summoner of Mist",
+      "Sazh Katzroy",
+      "The Earth King",
+      "Zimone, Quandrix Prodigy",
+      "Zimone, Mystery Unraveler",
+      "Zimone and Dina",
+      "Zell Dincht",
+      "Loot, Exuberant Explorer",
+      "Szarel, Genesis Shepherd",
+      "Toph, Earthbending Master",
+      "Tifa Lockhart",
+      "Ka-Zar of the Savage Land",
+      "Soul of Windgrace",
+      "Nissa, Leyline Tamer",
+      "Nissa, Resurgent Animist"
+    ],
+    "droppedOutsidePool": 1,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Omnath, Locus of Rage",
+        "reason": [
+          {
+            "text": "Landfall makes a large Elemental token for each land that enters, a direct and powerful payoff for a landfall deck."
+          }
+        ]
+      },
+      {
+        "name": "Greensleeves, Maro-Sorcerer",
+        "reason": [
+          {
+            "text": "Landfall creates a Badger token every time a land enters, and its size grows with your land count."
+          }
+        ]
+      },
+      {
+        "name": "Tatyova, Benthic Druid",
+        "reason": [
+          {
+            "text": "Landfall gains life and draws a card whenever a land enters, a simple engine that rewards every land drop."
+          }
+        ]
+      },
+      {
+        "name": "Phylath, World Sculptor",
+        "reason": [
+          {
+            "text": "Makes Plant tokens for basic lands, then landfall puts counters on a Plant, which builds a landfall board quickly."
+          }
+        ]
+      },
+      {
+        "name": "Nissa, Resurgent Animist",
+        "reason": [
+          {
+            "text": "Landfall adds mana and finds Elves or Elementals on the second trigger, so land drops give mana and card advantage."
+          }
+        ]
+      },
+      {
+        "name": "Tannuk, Memorial Ensign",
+        "reason": [
+          {
+            "text": "Landfall pings each opponent and draws on the second trigger, a landfall plan that wins through damage."
+          }
+        ]
+      },
+      {
+        "name": "Nissa, Leyline Tamer",
+        "reason": [
+          {
+            "text": "Landfall draws a card and puts a creature onto the battlefield, giving a value-heavy landfall plan."
+          }
+        ]
+      },
+      {
+        "name": "Obuun, Mul Daya Ancestor",
+        "reason": [
+          {
+            "text": "Landfall adds counters and Obuun animates a land each combat, so land drops build a threatening board."
+          }
+        ]
+      },
+      {
+        "name": "Aesi, Tyrant of Gyre Strait",
+        "reason": [
+          {
+            "text": "Allows extra land drops and draws a card on landfall, so you trigger landfall more often."
+          }
+        ]
+      },
+      {
+        "name": "Yarok, the Desecrated",
+        "reason": [
+          {
+            "text": "Doubles landfall triggers whenever a land enters, which makes any landfall effect count twice."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 8350,
+        "usd": 0.011862,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 1763,
+          "cacheReadTokens": 148282,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4434,
+        "usd": 0.020508,
+        "usage": {
+          "inputTokens": 7854,
+          "outputTokens": 480,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2115,
+            "reason": "Landfall makes a large Elemental token for each land that enters, a direct and powerful payoff for a landfall deck."
+          },
+          {
+            "key": 1035,
+            "reason": "Landfall creates a Badger token every time a land enters, and its size grows with your land count."
+          },
+          {
+            "key": 2816,
+            "reason": "Landfall gains life and draws a card whenever a land enters, a simple engine that rewards every land drop."
+          },
+          {
+            "key": 2187,
+            "reason": "Makes Plant tokens for basic lands, then landfall puts counters on a Plant, which builds a landfall board quickly."
+          },
+          {
+            "key": 2040,
+            "reason": "Landfall adds mana and finds Elves or Elementals on the second trigger, so land drops give mana and card advantage."
+          },
+          {
+            "key": 2805,
+            "reason": "Landfall pings each opponent and draws on the second trigger, a landfall plan that wins through damage."
+          },
+          {
+            "key": 2039,
+            "reason": "Landfall draws a card and puts a creature onto the battlefield, giving a value-heavy landfall plan."
+          },
+          {
+            "key": 2078,
+            "reason": "Landfall adds counters and Obuun animates a land each combat, so land drops build a threatening board."
+          },
+          {
+            "key": 43,
+            "reason": "Allows extra land drops and draws a card on landfall, so you trigger landfall more often."
+          },
+          {
+            "key": 3361,
+            "reason": "Doubles landfall triggers whenever a land enters, which makes any landfall effect count twice."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.032369999999999996
+  }
+]

@@ -1,0 +1,290 @@
+[
+  {
+    "fixture": "nothing",
+    "arm": "haiku-medium",
+    "pool": 308,
+    "narrowed": true,
+    "cards": [],
+    "shortlist": [
+      "Nezahal, Primal Tide",
+      "Tromokratis",
+      "Thryx, the Sudden Storm"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Nezahal, Primal Tide",
+        "reason": [
+          {
+            "text": "An Elder Dinosaur that can't be countered and draws off opposing noncreature spells, so a big-dino deck gets a resilient Dinosaur leader."
+          }
+        ]
+      },
+      {
+        "name": "Thryx, the Sudden Storm",
+        "reason": [
+          {
+            "text": "Makes spells with high mana value cheaper and uncounterable, which suits a deck full of huge creatures that land safely."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 2707,
+        "usd": 0.001505,
+        "usage": {
+          "inputTokens": 13287,
+          "outputTokens": 352,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 2240,
+        "usd": 0.005504,
+        "usage": {
+          "inputTokens": 2112,
+          "outputTokens": 128,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2020,
+            "reason": "An Elder Dinosaur that can't be countered and draws off opposing noncreature spells, so a big-dino deck gets a resilient Dinosaur leader."
+          },
+          {
+            "key": 3039,
+            "reason": "Makes spells with high mana value cheaper and uncounterable, which suits a deck full of huge creatures that land safely."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.0070090000000000005
+  },
+  {
+    "fixture": "card",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [
+      "Doubling Season"
+    ],
+    "shortlist": [
+      "The Goose Mother",
+      "Ghave, Guru of Spores",
+      "Mutagen Man, Living Ooze",
+      "Primo, the Unbounded",
+      "Vorinclex, Monstrous Raider",
+      "Quina, Qu Gourmet",
+      "Spiders-Man, Heroic Horde",
+      "The Astonishing Ant-Man",
+      "The Thing",
+      "Slurrk, All-Ingesting",
+      "Adrix and Nev, Twincasters",
+      "Finneas, Ace Archer",
+      "Jiang Yanggu, Never Alone",
+      "Black Panther, Wakandan King",
+      "The Third Doctor",
+      "Carth the Lion",
+      "The Unbeatable Squirrel Girl",
+      "Pir, Imaginative Rascal",
+      "W'Kabi, Shield of the Nation",
+      "Rhys the Redeemed",
+      "Vrestin, Menoptra Leader",
+      "Zaxara, the Exemplary",
+      "Tam, the Possibility",
+      "Bilbo, Fellow Conspirator",
+      "Koma, Cosmos Serpent",
+      "Michelangelo, the Heart",
+      "Nemata, Grove Guardian",
+      "Lucky the Pizza Dog",
+      "Tippy-Toe, Terrific Partner",
+      "Sekki, Seasons' Guide"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Adrix and Nev, Twincasters",
+        "reason": [
+          {
+            "text": "Doubles token creation itself, so it stacks with a token and counter doubler and fills the board quickly."
+          }
+        ]
+      },
+      {
+        "name": "Vorinclex, Monstrous Raider",
+        "reason": [
+          {
+            "text": "Doubles counters you put on permanents, matching a deck that wants counter and token multiplication to pile up."
+          }
+        ]
+      },
+      {
+        "name": "Pir, Imaginative Rascal",
+        "reason": [
+          {
+            "text": "Adds an extra counter on every counter placement, which compounds with doubled counters on your permanents."
+          }
+        ]
+      },
+      {
+        "name": "Quina, Qu Gourmet",
+        "reason": [
+          {
+            "text": "Each token creation also brings a Frog, so doubled tokens turn into a wide board that feeds counters onto itself."
+          }
+        ]
+      },
+      {
+        "name": "Vrestin, Menoptra Leader",
+        "reason": [
+          {
+            "text": "Enters with counters and makes flying Insect tokens, so doubling gives a bigger body and twice the tokens."
+          }
+        ]
+      },
+      {
+        "name": "Zaxara, the Exemplary",
+        "reason": [
+          {
+            "text": "Each X spell makes a Hydra token with X counters, and both the token and its counters get doubled."
+          }
+        ]
+      },
+      {
+        "name": "The Unbeatable Squirrel Girl",
+        "reason": [
+          {
+            "text": "Makes Squirrel tokens on entering and attacking and can pump out more, all of which get doubled."
+          }
+        ]
+      },
+      {
+        "name": "Rhys the Redeemed",
+        "reason": [
+          {
+            "text": "Taps to create tokens and can copy every token, so doubled tokens quickly snowball."
+          }
+        ]
+      },
+      {
+        "name": "Ghave, Guru of Spores",
+        "reason": [
+          {
+            "text": "Moves counters into Saproling tokens and back, and doubling gives extra of each for a combo-ready engine."
+          }
+        ]
+      },
+      {
+        "name": "Tippy-Toe, Terrific Partner",
+        "reason": [
+          {
+            "text": "Adds a Food with each token creation, so token doublers multiply the Food and lifegain card draw."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 4759,
+        "usd": 0.009562,
+        "usage": {
+          "inputTokens": 295,
+          "outputTokens": 800,
+          "cacheReadTokens": 148282,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "shortlistWarm": {
+        "model": "claude-haiku-5-5",
+        "ms": 2169,
+        "usd": 0.008262,
+        "usage": {
+          "inputTokens": 295,
+          "outputTokens": 280,
+          "cacheReadTokens": 148282,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4864,
+        "usd": 0.019528,
+        "usage": {
+          "inputTokens": 7404,
+          "outputTokens": 472,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 37,
+            "reason": "Doubles token creation itself, so it stacks with a token and counter doubler and fills the board quickly."
+          },
+          {
+            "key": 3270,
+            "reason": "Doubles counters you put on permanents, matching a deck that wants counter and token multiplication to pile up."
+          },
+          {
+            "key": 2199,
+            "reason": "Adds an extra counter on every counter placement, which compounds with doubled counters on your permanents."
+          },
+          {
+            "key": 2252,
+            "reason": "Each token creation also brings a Frog, so doubled tokens turn into a wide board that feeds counters onto itself."
+          },
+          {
+            "key": 3278,
+            "reason": "Enters with counters and makes flying Insect tokens, so doubling gives a bigger body and twice the tokens."
+          },
+          {
+            "key": 3412,
+            "reason": "Each X spell makes a Hydra token with X counters, and both the token and its counters get doubled."
+          },
+          {
+            "key": 2998,
+            "reason": "Makes Squirrel tokens on entering and attacking and can pump out more, all of which get doubled."
+          },
+          {
+            "key": 2357,
+            "reason": "Taps to create tokens and can copy every token, so doubled tokens quickly snowball."
+          },
+          {
+            "key": 939,
+            "reason": "Moves counters into Saproling tokens and back, and doubling gives extra of each for a combo-ready engine."
+          },
+          {
+            "key": 3056,
+            "reason": "Adds a Food with each token creation, so token doublers multiply the Food and lifegain card draw."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.029089999999999998
+  }
+]
