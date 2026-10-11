@@ -16,6 +16,7 @@ import { resultsTarget } from "../../../../lib/intake/submit";
 import { beginTheRead } from "../../../../lib/intake/the-read-run";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
+import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store";
 
 /**
  * *Look deeper* (plan, PR 4). It takes the id the panel chose for the press, so the Stop (a route
@@ -147,4 +148,16 @@ async function filtersKnown(themes: readonly string[], sets: readonly string[]):
   } catch {
     return false;
   }
+}
+
+/**
+ * Where the read `r` names stands (rework plan PR 4, F2): the panel polls this while a read runs, to
+ * move its step from the shortlist to the judgement and to learn when it settled. Read only, scoped
+ * to the reader, so polling it costs nothing and reveals nothing of anyone else's.
+ */
+export async function theReadState(readId: string): Promise<TheReadState> {
+  const userId = await requireUserId();
+  if (!helpMeChooseEnabled()) throw new Error("not found");
+  if (typeof readId !== "string" || !isUuid(readId)) return { kind: "none" };
+  return loadTheRead(readId, userId);
 }

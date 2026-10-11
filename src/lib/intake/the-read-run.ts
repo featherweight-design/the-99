@@ -12,7 +12,7 @@ import { colorsKey, leadingThemes, loadPoolList, type PoolList } from "./pool-li
 import { rankCandidates } from "./rank";
 import { hasRunningRead, setReadPhase, settleTheRead, startRead, type ReadErrorClass } from "./run-store";
 import { loadIntakeCatalog, loadSearchFacts } from "./search";
-import { intakeLive, STUB_MODEL } from "./stub";
+import { intakeLive, STUB_MODEL, stubDelayMs, stubMode } from "./stub";
 import {
   judgeRequest, judgeSchema, JUDGE_SYSTEM, readFingerprint, shortlistRequest, shortlistSchema, shortlistSystem,
   validJudgement, validShortlist, type JudgeCandidate, type JudgeReply, type ReadCard, type ReadDeck, type ReadFilters,
@@ -75,17 +75,28 @@ export function defaultTheReadDeps(): TheReadDeps {
 
 const NO_USAGE = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
-/** No API call: the shortlist takes the pool's first keys, the judgement the first three with a plain reason. */
-export function stubTheReadDeps(): TheReadDeps {
+/**
+ * No API call: the shortlist takes the pool's first keys, the judgement the first three with a plain
+ * reason. `INTAKE_STUB` reaches the panel's other states: `nothing` (no pick fits), `busy` (the
+ * judgement fails), and `INTAKE_STUB_DELAY_MS` holds each call that long, so the wait and Stop can
+ * be seen. The same switches the retired read's stub reads (`stub.ts`).
+ */
+export function stubTheReadDeps(env: Record<string, string | undefined> = process.env): TheReadDeps {
+  const mode = stubMode(env);
+  const hold = async () => { const ms = stubDelayMs(env); if (ms > 0) await new Promise((r) => setTimeout(r, ms)); };
   return {
     modelName: STUB_MODEL,
     shortlistModel: STUB_MODEL,
     judgeModel: STUB_MODEL,
     shortlist: async (req) => {
+      await hold();
       const keys = [...req.system.matchAll(/^(\d+)\|/gm)].slice(0, 12).map((m) => Number(m[1]));
       return { ok: true, value: { keys }, usage: NO_USAGE };
     },
     judge: async (req) => {
+      await hold();
+      if (mode === "busy") return { ok: false, errorClass: "upstream_busy", usage: NO_USAGE };
+      if (mode === "nothing") return { ok: true, value: { picks: [] }, usage: NO_USAGE };
       const keys = [...req.user.matchAll(/^(\d+)\|/gm)].slice(0, 3).map((m) => Number(m[1]));
       return { ok: true, value: { picks: keys.map((key) => ({ key, reason: "Its rules text builds the deck you described." })) }, usage: NO_USAGE };
     },
