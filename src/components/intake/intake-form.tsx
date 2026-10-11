@@ -73,6 +73,10 @@ export function IntakeForm({
   const [bracket, setBracket] = useState<Bracket | null>(initial.bracket);
   const themeLabelId = useId();
   const budgetId = useId();
+  // Each press is described by its own line, so a keyboard or screen-reader user hears that the
+  // words will not be read before a free search runs.
+  const lineDeskId = useId();
+  const linePhoneId = useId();
   const wordsId = useId();
 
   // The dock is `fixed` and reserves nothing of its own; measured, as create-picker measures its
@@ -245,10 +249,10 @@ export function IntakeForm({
         {/* Desktop: the submit closes the panel, its credit line beside it. Never disabled: a
             blank submit searches. */}
         <div className="hidden md:flex items-center gap-[18px] pt-[20px] border-0 border-t border-solid border-[color:var(--border)]">
-          <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} className={`${submitClass} h-[44px]`}>
+          <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} aria-describedby={line ? lineDeskId : undefined} className={`${submitClass} h-[44px]`}>
             {press}
           </button>
-          {line && <p className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
+          {line && <p id={lineDeskId} className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
         </div>
       </div>
 
@@ -257,10 +261,10 @@ export function IntakeForm({
         data-testid="choose-dock"
         className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20 p-[10px_16px_12px] border-0 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)]"
       >
-        <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} className={`${submitClass} w-full h-[48px]`}>
+        <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
           {press}
         </button>
-        {line && <p className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
+        {line && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
       </div>
     </form>
   );

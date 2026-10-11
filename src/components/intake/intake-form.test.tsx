@@ -108,6 +108,16 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     expect(html).not.toContain("Won’t be read");
   });
 
+  it("describes each press by its own line, so the words going unread is announced with the button", () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10 }} />);
+    const presses = screen.getAllByRole("button", { name: "Find commanders" });
+    expect(presses).toHaveLength(2);
+    for (const b of presses) {
+      expect(b.getAttribute("aria-describedby")).toBeTruthy();
+      expect(document.getElementById(b.getAttribute("aria-describedby")!)!.textContent).toMatch(/^Won’t be read/);
+    }
+  });
+
   it("7n: paused says why, before a spent allowance", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10, paused: "2026-11-01T00:00:00.000Z" }} />);
     expect(screen.getAllByText(/^Paused until November 1\./).length).toBeGreaterThan(0);
