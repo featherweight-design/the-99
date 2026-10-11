@@ -4,6 +4,7 @@ import { db } from "../../db";
 import {
   cards,
   collectionItems,
+  collectionHistory,
   csvUploads,
   deckGames,
   deckCards,
@@ -74,7 +75,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
   }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
   const { head, readVersion, locked } = snapshot;
-  const [games, [deck], [upload]] = await Promise.all([
+  const [games, [deck], [upload], [history]] = await Promise.all([
     listDeckGames(deckId, userId),
     db.select({
       intent: decks.intent,
@@ -87,6 +88,11 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     db.select({ confirmedAt: max(csvUploads.confirmedAt) })
       .from(csvUploads)
       .where(and(eq(csvUploads.userId, userId), isNotNull(csvUploads.confirmedAt))),
+    // The newest collection write of ANY kind (an add, an edit, a revert, a bought mark, an upload):
+    // `confirmedAt` above moves only on an upload, and an owned-only run's shortlist moves with every write.
+    db.select({ seq: max(collectionHistory.seq) })
+      .from(collectionHistory)
+      .where(eq(collectionHistory.userId, userId)),
   ]);
   if (!deck) return null;
   const intent = deck.intent;
@@ -100,6 +106,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     games,
     intent,
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
+    collectionSeq: history?.seq ?? null,
     locks: locked,
     limits,
   });

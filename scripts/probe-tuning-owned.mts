@@ -98,7 +98,9 @@ async function ask() {
   // Two guards. The ledger's own $3 cap (Hugh, 2026-10-10) holds for the file; THIS fix's $0.50 holds for
   // the probe's own settled lines plus this call's worst case, so a different eval's pending lines on
   // the shared file cannot starve it, and this probe cannot spend past its own budget.
-  const probeSpent = readLedger(LEDGER).entries.filter((e) => e.settles && e.note?.startsWith("probe-tuning-owned")).reduce((n, e) => n + e.usd, 0);
+  // The shared `spent`, over this probe's own lines only: a pending worst case no settle has closed (a
+  // crash after the call) still counts, which is what keeps the cap hard across a killed run.
+  const probeSpent = spent({ entries: readLedger(LEDGER).entries.filter((e) => e.note?.startsWith("probe-tuning-owned")) });
   const stop = probeSpent + worst > CAP
     ? `probe spend $${probeSpent.toFixed(3)} plus this call's worst case $${worst.toFixed(3)} would cross its $${CAP} cap`
     : refusal(readLedger(LEDGER), worst, 1, { hardCapUsd: 3, askAtUsd: 3 });

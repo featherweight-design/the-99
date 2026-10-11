@@ -74,6 +74,9 @@ export async function loadOwnedCandidates(args: {
         sql`${cards.colorIdentity} <@ ${sql.param([...colorIdentity])}::text[]`,
         ...(inDeck.size > 0 ? [sql`${cards.oracleId} <> all(${sql.param([...inDeck])}::uuid[])`] : []),
         sql`${printedIn(cards.oracleId, limits.sets)}`,
+        // Catalog names are not unique (`resolve-names.ts`), and the model answers by NAME: a name two
+        // oracle cards share resolves to neither and drops as `cardExists`, so it is not offered.
+        sql`not exists (select 1 from ${cards} twin where twin.name = ${cards.name} and twin.oracle_id <> ${cards.oracleId})`,
         sql`exists (select 1 from ${collectionItems} ci where ci.user_id = ${userId} and ci.oracle_id = ${cards.oracleId})`,
       ))
       .groupBy(cards.oracleId)
