@@ -42,7 +42,6 @@ function contestedCard(): ContestedCard {
     ownedBefore: 0,
     fromImport: true,
     owned: 1,
-    brewNames: [],
     claimants: [
       { deckId: DECK, deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 7, allocated: 1 },
       { deckId: "d2", deckName: "Elemental Dragons", quantity: 1, commanderCopies: 0, granted: 0, since: 2, versionNumber: 1, allocated: 0 },

@@ -114,19 +114,28 @@ export type DeckClaim = {
  * full reading unchanged; `/collection` ships only this much (list payload plan, PR 2).
  */
 export type AvailabilitySummary = Omit<Availability, "claims"> & {
-  claims: Pick<DeckClaim, "id" | "name" | "mature">[];
+  claims: (Pick<DeckClaim, "id" | "name" | "mature"> & Partial<Pick<DeckClaim, "granted">>)[];
 };
+
+/**
+ * Whether a claim HOLDS a copy against every other deck: a committed deck (its version is
+ * sleeved), or a brew the player gave a copy to (2026-10-11, all-decks cart). A brew's ask
+ * beyond what it was given stays soft.
+ */
+export function holdsCopy(c: Pick<DeckClaim, "mature"> & { granted?: number }): boolean {
+  return c.mature || (c.granted ?? 0) > 0;
+}
 
 /** A deck holding a hard claim. The projection every marker string reads. */
 export type HardDeck = { id: string; name: string };
 
 /**
- * The mature claimants, in the order the query returned them. Derived rather
- * than stored: `claims` is the whole truth and a second stored field could
- * disagree with it.
+ * The claimants holding a copy (`holdsCopy`), in the order the query returned them. Derived
+ * rather than stored: `claims` is the whole truth and a second stored field could disagree
+ * with it.
  */
 export function hardDecks(a: Pick<AvailabilitySummary, "claims">): HardDeck[] {
-  return a.claims.filter((c) => c.mature).map(({ id, name }) => ({ id, name }));
+  return a.claims.filter(holdsCopy).map(({ id, name }) => ({ id, name }));
 }
 
 /**

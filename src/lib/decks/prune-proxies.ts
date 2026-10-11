@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { db } from "../../db";
+import { pruneOrphanAssignments } from "./prune-assignments";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -45,6 +46,8 @@ type Runner = Pick<Tx, "execute">;
  * before they touch a list, so the two serialise on the same row and the
  * validate-insert pair cannot straddle a prune.
  *
+ * A BREW'S RESERVATIONS GO WITH IT as well (`pruneOrphanAssignments`), for the same reason.
+ *
  * A DECK'S PRINTING PICKS GO WITH IT. `deck_printings` is the same kind of row (one deck's
  * statement about one slot, outside versioning) and has the same failure: a card re-added later
  * would arrive silently already picked. Pruned here rather than beside every caller, so the guard
@@ -78,4 +81,9 @@ export async function pruneOrphanProxies(tx: Runner, deckId: string): Promise<vo
           and (d.commander_oracle_id = dp.oracle_id or d.partner_oracle_id = dp.oracle_id)
       )
   `);
+  // A BREW'S RESERVATIONS GO WITH IT TOO. A brew claims off its live list, so a card leaving that
+  // list ends the claim a reservation was made about, exactly as a commit without the card ends a
+  // committed deck's (2026-10-11: brews can be given a copy). For a committed deck the list
+  // edited here is the draft, which a reservation never read, so the call changes nothing there.
+  await pruneOrphanAssignments(tx, deckId);
 }

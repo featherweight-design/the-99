@@ -364,7 +364,10 @@ export function countMoves(rows: { before: HistoryRowState | null; after: Histor
  * covered, so it is never named.
  */
 export function committedShortfalls(a: Pick<Availability, "owned" | "claims">): Map<string, { name: string; short: number }> {
-  return new Map(allocateClaims(a).map((c) => [c.deckId, { name: c.deckName, short: Math.max(c.quantity - c.allocated, 0) }]));
+  // `since !== null` is a committed claim; `allocateClaims` lists brews too, last.
+  return new Map(allocateClaims(a)
+    .filter((c) => c.since !== null)
+    .map((c) => [c.deckId, { name: c.deckName, short: Math.max(c.quantity - c.allocated, 0) }]));
 }
 
 /**

@@ -483,7 +483,6 @@ export const CONTESTED_ARRIVAL = {
       allocated: 0,
     },
   ],
-  brewNames: [],
 };
 
 /** §3's own figures for the set head and its cost strip. */

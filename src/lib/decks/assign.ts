@@ -20,7 +20,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cardAssignments, deckVersionCards, deckVersions, decks, pullReleases } from "../../db/schema";
+import { cardAssignments, deckCards, deckVersionCards, deckVersions, decks, pullReleases } from "../../db/schema";
 import { isUuid } from "../uuid";
 
 /**
@@ -82,13 +82,17 @@ export async function assignCopyFor(
       .for("update");
     if (!deck) return "not-your-deck";
 
-    // A CURRENT HARD CLAIM, not merely a committed deck. A deck can hold the card as a draft add
-    // its version does not contain, and reserving on that basis would let a draft-only ask
-    // displace a hard claimant — the precise thing seniority exists to prevent.
-    // THE VERSION'S OWN COMMANDER COLUMNS, not the deck's live ones. The claim model unions the
-    // snapshot's columns — a deck claims what it is SLEEVED as — so a commander changed in the
-    // draft since the last commit does not move the claim, and reading `decks` here would answer
-    // for a list the player has not committed.
+    // WHAT THIS DECK ASKS FOR, read the way the claim model reads it. A committed deck asks for
+    // what its NEWEST VERSION lists, never what its draft is toying with: reserving on a draft add
+    // would let a draft-only ask displace a hard claimant, the precise thing seniority exists to
+    // prevent. A BREW (no version at all) asks for its live list and its live commander columns,
+    // which is exactly what `claim_decks_all` carries for it. Brews could not be given a copy
+    // until 2026-10-11 (all-decks cart, Hugh's answer 2): when a purchase covers fewer decks than
+    // want the card, the player chooses, brews included.
+    //
+    // THE VERSION'S OWN COMMANDER COLUMNS for a committed deck, not the deck's live ones: a deck
+    // claims what it is SLEEVED as, so a commander changed in the draft since the last commit
+    // does not move the claim.
     const [newest] = await tx.select({
       id: deckVersions.id,
       commanderOracleId: deckVersions.commanderOracleId,
@@ -98,32 +102,9 @@ export async function assignCopyFor(
       .where(eq(deckVersions.deckId, deckId))
       .orderBy(sql`${deckVersions.number} desc`)
       .limit(1);
-    if (!newest) return "claimant-no-longer-asks";
-    const [listCard] = await tx.select({ quantity: deckVersionCards.quantity })
-      .from(deckVersionCards)
-      .where(and(
-        eq(deckVersionCards.versionId, newest.id),
-        eq(deckVersionCards.oracleId, oracleId),
-      ));
-    // Less any copy a pull released, bounded exactly as the claim model bounds it (`all_claims`):
-    // never more than the version lists beyond what the draft still holds. A deck whose only copy
-    // was pulled claims nothing, and reserving for it would hand a copy to a deck that gave it up.
-    // Summed: a card pulled for two asking decks is two rows.
-    const [released] = await tx.select({
-      copies: sql<number>`coalesce(sum(${pullReleases.copies}), 0)::int`,
-      draft: sql<number>`coalesce((
-        select sum(dc.quantity) from deck_cards dc
-        where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
-      ), 0)::int`,
-    })
-      .from(pullReleases)
-      .where(and(eq(pullReleases.sourceDeckId, deckId), eq(pullReleases.oracleId, oracleId)));
-    const versionQuantity = listCard?.quantity ?? 0;
-    const releasedCopies = Math.min(released?.copies ?? 0, Math.max(versionQuantity - (released?.draft ?? 0), 0));
-    const listQuantity = versionQuantity - releasedCopies;
-    const commanderCopies =
-      (newest.commanderOracleId === oracleId ? 1 : 0)
-      + (newest.partnerOracleId === oracleId ? 1 : 0);
+    const { listQuantity, commanderCopies } = newest
+      ? await versionAsk(tx, deckId, oracleId, newest)
+      : await brewAsk(tx, deckId, oracleId, deck);
     // No claim at all — neither on the list nor as a commander.
     if (listQuantity + commanderCopies === 0) return "claimant-no-longer-asks";
 
@@ -236,4 +217,74 @@ export async function assignCopyFor(
     return null;
   });
 
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** What a deck asks for: list copies (reservable) and commander copies (never reservable). */
+interface Ask {
+  listQuantity: number;
+  commanderCopies: number;
+}
+
+/**
+ * A committed deck's ask: its newest version's list, less any copy a pull released, bounded
+ * exactly as the claim model bounds it (`all_claims`): never more than the version lists beyond
+ * what the draft still holds. A deck whose only copy was pulled claims nothing, and reserving for
+ * it would hand a copy to a deck that gave it up. Summed: a card pulled for two asking decks is
+ * two rows.
+ */
+async function versionAsk(
+  tx: Tx,
+  deckId: string,
+  oracleId: string,
+  newest: { id: string; commanderOracleId: string; partnerOracleId: string | null },
+): Promise<Ask> {
+  const [listCard] = await tx.select({ quantity: deckVersionCards.quantity })
+    .from(deckVersionCards)
+    .where(and(
+      eq(deckVersionCards.versionId, newest.id),
+      eq(deckVersionCards.oracleId, oracleId),
+    ));
+  const [released] = await tx.select({
+    copies: sql<number>`coalesce(sum(${pullReleases.copies}), 0)::int`,
+    draft: sql<number>`coalesce((
+      select sum(dc.quantity) from deck_cards dc
+      where dc.deck_id = ${deckId} and dc.oracle_id = ${oracleId}
+    ), 0)::int`,
+  })
+    .from(pullReleases)
+    .where(and(eq(pullReleases.sourceDeckId, deckId), eq(pullReleases.oracleId, oracleId)));
+  const versionQuantity = listCard?.quantity ?? 0;
+  const releasedCopies = Math.min(released?.copies ?? 0, Math.max(versionQuantity - (released?.draft ?? 0), 0));
+  return {
+    listQuantity: versionQuantity - releasedCopies,
+    commanderCopies:
+      (newest.commanderOracleId === oracleId ? 1 : 0)
+      + (newest.partnerOracleId === oracleId ? 1 : 0),
+  };
+}
+
+/**
+ * A brew's ask: its live list and its live commander columns, as `claim_decks_all` carries it. A
+ * pull release never reduces a brew's claim (`all_claims` subtracts releases from a version only),
+ * so none is read here either.
+ */
+async function brewAsk(
+  tx: Tx,
+  deckId: string,
+  oracleId: string,
+  deck: { commanderOracleId: string; partnerOracleId: string | null },
+): Promise<Ask> {
+  const [listCard] = await tx.select({
+    quantity: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
+  })
+    .from(deckCards)
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
+  return {
+    listQuantity: listCard?.quantity ?? 0,
+    commanderCopies:
+      (deck.commanderOracleId === oracleId ? 1 : 0)
+      + (deck.partnerOracleId === oracleId ? 1 : 0),
+  };
 }

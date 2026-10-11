@@ -22,7 +22,6 @@ function card(over: Partial<ContestedCard> = {}): ContestedCard {
     ownedBefore: 1,
     fromImport: true,
     owned: 1,
-    brewNames: [],
     claimants: [
       {
         deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 0,
@@ -365,17 +364,24 @@ describe("ContestedCardRow", () => {
     expect(rows[1].getAttribute("style")).toContain("solid");
   });
 
-  it("names a brew and excludes it, rather than counting it or offering it", () => {
-    render(<ContestedCardRow card={card({ brewNames: ["Muldrotha Lands"] })} />);
-    expect(screen.getByText(copy.contested.draftNote("Muldrotha Lands"))).toBeTruthy();
-    // The supply line counts committed decks only — a brew cannot be given a copy, so counting
-    // it would make the figure quietly wrong.
-    expect(screen.getByText(copy.contested.supply(1, 2))).toBeTruthy();
-  });
-
-  it("folds several brews into one line", () => {
-    render(<ContestedCardRow card={card({ brewNames: ["One", "Two", "Three"] })} />);
-    expect(screen.getByText(copy.contested.draftNoteMany(3))).toBeTruthy();
+  it("offers a brew as an option, last, with no version stamp (2026-10-11)", () => {
+    const base = card();
+    render(<ContestedCardRow card={card({
+      claimants: [
+        ...base.claimants,
+        {
+          deckId: "d3", deckName: "Muldrotha Lands", quantity: 1, commanderCopies: 0, granted: 0,
+          since: null, versionNumber: null, allocated: 0,
+        },
+      ],
+    })} />);
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(3);
+    expect(radios[2].textContent).toContain("Muldrotha Lands");
+    // No `v7 · 2 Aug` stamp: a brew has no version to stamp.
+    expect(radios[2].textContent).not.toMatch(/\bv\d+\b/);
+    // The supply line counts every deck that can be given a copy, the brew included.
+    expect(screen.getByText(copy.contested.supply(1, 3))).toBeTruthy();
   });
 
 });

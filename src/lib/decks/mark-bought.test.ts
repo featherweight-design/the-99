@@ -29,9 +29,17 @@ describe("receiptFacts", () => {
       .toEqual([{ deckId: "a", deckName: "deck a", copies: 1 }]);
   });
 
-  it("never allocates to a brew", () => {
-    const after = snap(1, [claim("brew", 1, 1, false), claim("source", 2)]);
+  it("never names a brew for its soft share (a brew has no since)", () => {
+    const brew = { ...claim("brew", 0, 1, false), since: null };
+    const after = snap(1, [brew, claim("source", 2)]);
     expect(receiptFacts(null, after, { owned: 1, free: 0, soft: 0 }, "source").tookCopy).toEqual([]);
+  });
+
+  it("names a brew the player gave the copy to (2026-10-11)", () => {
+    const brew = { ...claim("brew", 0, 1, false), since: null, granted: 1 };
+    const after = snap(1, [brew, claim("source", 2)]);
+    expect(receiptFacts(null, after, { owned: 1, free: -1, soft: 0 }, "source").tookCopy)
+      .toEqual([{ deckId: "brew", deckName: "deck brew", copies: 1 }]);
   });
 
   it("reads the remaining need from the deck's own vantage only when it is over", () => {

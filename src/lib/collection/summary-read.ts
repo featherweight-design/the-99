@@ -20,7 +20,7 @@ import { db } from "../../db";
 import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { withoutUndecided, type ArrivalsSummary } from "./arrivals";
-import type { Availability } from "../decks/availability";
+import { holdsCopy, type Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 
 /** One committed deck's place in a contested card's queue. */
@@ -58,8 +58,6 @@ export type ContestedCard = {
   /** Copies the collection holds now. Live. */
   owned: number;
   claimants: ContestedClaimant[];
-  /** Brews wanting the card. Named, never options — a brew cannot be given a copy. */
-  brewNames: string[];
 };
 
 export type SummaryView = {
@@ -76,11 +74,11 @@ export type SummaryView = {
 
 /**
  * The two tests a card must pass to count as contested: demand above supply, and at least two
- * committed claimants. Shared by `loadContestedCards` and `countContestedCards`, so the two can
+ * claimants holding a copy (`holdsCopy`: a committed deck, or a brew the player gave one to). Shared by `loadContestedCards` and `countContestedCards`, so the two can
  * never drift into disagreeing about which cards are contested.
  */
 function isContested(a: Availability): boolean {
-  return a.hard > a.owned && a.claims.filter((c) => c.mature).length >= 2;
+  return a.hard > a.owned && a.claims.filter(holdsCopy).length >= 2;
 }
 
 export async function loadContestedCards(
@@ -175,7 +173,6 @@ function buildContestedCard(
     fromImport: frozen.fromImport,
     owned: a.owned,
     claimants: allocateClaims(a),
-    brewNames: a.claims.filter((c) => !c.mature).map((c) => c.name),
   };
 }
 

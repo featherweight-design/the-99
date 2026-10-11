@@ -15,7 +15,7 @@
 //
 // Decoding restores exactly what was encoded, nothing invented: `decodeCollection(encode…)`
 // equals the list it started from, which `list-wire.test.ts` asserts on every field.
-import type { AvailabilitySummary } from "../decks/availability";
+import { holdsCopy, type AvailabilitySummary } from "../decks/availability";
 import type { BrowseListCard } from "./browse";
 
 const HOST = "https://cards.scryfall.io/normal/front/";
@@ -110,7 +110,9 @@ export function encodeCollection(
           hard: figures.hard,
           soft: figures.soft,
           free: figures.free,
-          claims: claims.map((c) => deck(c.id, c.name) * 2 + (c.mature ? 1 : 0)),
+          // The bit is `holdsCopy`, the one question a marker asks of it: a brew the player gave a
+          // copy to holds it as a committed deck does, so it decodes as `mature`.
+          claims: claims.map((c) => deck(c.id, c.name) * 2 + (holdsCopy(c) ? 1 : 0)),
         };
       } else {
         wire.availability = null;

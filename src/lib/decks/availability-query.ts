@@ -273,9 +273,13 @@ const claimModel = (userId: string) => sql`
   -- a reservation of 2 against a folded ask of 2 would grant two copies on top of
   -- the commander's one.
   --
-  -- The join to claim_decks_all is what refuses a brew and a draft-only add without
-  -- a rule of its own: a sleeved deck's row there states its VERSION, so a card the
-  -- deck holds only in its draft has no row to match, and a brew fails sleeved.
+  -- The join to claim_decks_all is what refuses a draft-only add without a rule of
+  -- its own: a sleeved deck's row there states its VERSION, so a card the deck holds
+  -- only in its draft has no row to match. A BREW's row states its live list, and a
+  -- reservation naming a brew is granted against it: since 2026-10-11 the player may
+  -- give a contested copy to a brew (all-decks cart, Hugh's answer 2), and a granted
+  -- copy is HARD for that brew and ranks ahead of seniority, exactly as one given to
+  -- a committed deck does.
   reservation_wants as (
     select
       a.oracle_id,
@@ -287,7 +291,7 @@ const claimModel = (userId: string) => sql`
       )::int as want
     from card_assignments a
     join claim_decks_all cda
-      on cda.oracle_id = a.oracle_id and cda.deck_id = a.deck_id and cda.sleeved
+      on cda.oracle_id = a.oracle_id and cda.deck_id = a.deck_id
     where a.user_id = ${userId}
   ),
   -- Each reservation, capped a second time at the supply still unallocated when its
@@ -485,7 +489,11 @@ export async function loadAvailability(
     claims as (
       select
         cd.oracle_id,
-        sum(case when cd.sleeved then cd.quantity else 0 end)::int as hard,
+        -- A brew's GRANTED copies are hard too: a copy the player gave to a brew is held
+        -- by it against every other deck, ahead of seniority, exactly as a committed
+        -- deck's grant is (2026-10-11). The rest of a brew's ask stays soft.
+        sum(case when cd.sleeved then cd.quantity
+                 else least(cd.quantity, coalesce(rv.granted, 0)) end)::int as hard,
         -- The unreserved part of the hard total, for the no-vantage and brew-vantage
         -- branches of free, which subtract reserved copies separately. Without the
         -- split those branches would count a reserved copy twice. With it the
@@ -494,7 +502,8 @@ export async function loadAvailability(
         sum(case when cd.sleeved
                  then greatest(cd.quantity - coalesce(rv.granted, 0), 0)
                  else 0 end)::int as hard_unreserved,
-        sum(case when cd.sleeved then 0 else cd.quantity end)::int as soft,
+        sum(case when cd.sleeved then 0
+                 else greatest(cd.quantity - coalesce(rv.granted, 0), 0) end)::int as soft,
         -- json, not a composite array: the pg driver hands a Postgres array of
         -- records back as an unparsed "(uuid,name)" string, and a name with a
         -- comma or a quote in it is then unrecoverable. jsonb_agg arrives as a

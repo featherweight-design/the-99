@@ -203,6 +203,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   - **A brew's commander sets no ceiling**, and the brew has to be led BY the contested card for
     the restriction to committed decks to matter at all.
 
+  **A brew can hold a reservation** (2026-10-11, all-decks cart: when a purchase covers fewer
+  decks than want the card, the player chooses, brews included). The case that used to assert a
+  reservation naming a brew grants nothing now asserts the opposite, in full: the grant lands,
+  covers the brew, bills it nothing, makes the senior committed deck it displaced buy instead,
+  counts as HARD off any decklist with none of the brew's ask left soft, and is pruned when the
+  card leaves the brew's list. The write section adds the brew's own refusals (a brew not listing
+  the card; a brew led by it). Measured on a scratch branch of staging the same day:
+  `diff:claim-model` against `origin/main` compared 307 buy rows and 64,240 availability rows with
+  0 differing (no reservations exist there, so nothing moved), and giving one of Hugh's 17 Sol
+  Rings to HD - Gishath moved the purchase to the most junior committed deck, HD - Gods, with the
+  roll-up still 307 copies.
+
   The off-decklist read is asserted too, since it takes the one branch nothing else here
   reaches, and its check is an INVARIANCE: two committed decks claiming one copy read -1 with or
   without a reservation, because a reserved copy is still sleeved in the same deck it was.

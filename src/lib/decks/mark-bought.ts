@@ -26,12 +26,19 @@ export function receiptFacts(
   afterFromDeck: Pick<Availability, "owned" | "free" | "soft"> | null,
   sourceDeckId: string,
 ): ReceiptFacts {
+  // What each deck HOLDS: a committed deck its allocation, a brew only what the player gave it.
+  // A brew's soft share is not a copy taken (every brew reads the same leftover), so naming it
+  // would tell the player a copy went to several decks at once.
+  const held = (c: ReturnType<typeof allocateClaims>[number]) => (c.since !== null ? c.allocated : c.granted);
   const allocated = (a: Snap) =>
     new Map(a ? allocateClaims(a).map((c) => [c.deckId, c]) : []);
   const was = allocated(before);
   const tookCopy = [...allocated(after).values()]
     .filter((c) => c.deckId !== sourceDeckId)
-    .map((c) => ({ deckId: c.deckId, deckName: c.deckName, copies: c.allocated - (was.get(c.deckId)?.allocated ?? 0) }))
+    .map((c) => {
+      const prior = was.get(c.deckId);
+      return { deckId: c.deckId, deckName: c.deckName, copies: held(c) - (prior ? held(prior) : 0) };
+    })
     .filter((c) => c.copies > 0);
   const stillNeeds = afterFromDeck && availabilityState(afterFromDeck, { selfExcluded: true }) === "over"
     ? -afterFromDeck.free

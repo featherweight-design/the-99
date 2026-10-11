@@ -535,18 +535,6 @@ export function ContestedCardRow({
         })}
       </ul>
 
-      {/* A brew is named and excluded in one line. Omitting it silently would make the supply
-          count above quietly wrong; listing it as an option would invite a certain refusal. */}
-      {card.brewNames.length === 1 ? (
-        <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.draftNote(card.brewNames[0])}
-        </p>
-      ) : card.brewNames.length > 1 ? (
-        <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.draftNoteMany(card.brewNames.length)}
-        </p>
-      ) : null}
-
       {nothingToChoose ? (
         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
           {copy.contested.commanderNote(payer)}

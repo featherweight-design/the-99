@@ -10,7 +10,7 @@
 // a draft merely lists is still in the box, and a card you own three
 // of and lent out one of is not a conflict.
 
-import { availabilityState, type Availability } from "./availability";
+import { availabilityState, holdsCopy, type Availability } from "./availability";
 
 /**
  * Per deck id, how many of its owned cards a *different* committed deck has
@@ -36,12 +36,12 @@ export function inUseElsewhereByDeck(
     let matureClaims = 0;
     let soleMatureId: string | null = null;
     for (const claim of a.claims) {
-      if (!claim.mature) continue;
+      if (!holdsCopy(claim)) continue;
       matureClaims += 1;
       soleMatureId = claim.id;
     }
-    // A brew's claim is not "in use", so a card no committed deck has sleeved
-    // is nobody's conflict.
+    // A brew's claim is not "in use" unless the player gave it a copy, so a card
+    // no deck holds is nobody's conflict.
     if (matureClaims === 0) continue;
     for (const claim of a.claims) {
       if (matureClaims === 1 && soleMatureId === claim.id) continue;
