@@ -22,22 +22,11 @@ import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { INTAKE_POLL_MS, INTAKE_WAIT_MS } from "../../lib/intake/limits";
 import type { ChooseParams } from "../../lib/intake/params";
 import { deeperTarget } from "../../lib/intake/submit";
+import { bareStanding, closedBy, standingLine, type Standing } from "../../lib/intake/standing";
 
-/** The allowance as the page read it, serialized: dates as ISO strings. */
-export type Standing = {
-  used: number;
-  limit: number;
-  nextAt: string | null;
-  reopensAt: string | null;
-  /** The 1st of next month, while the app-wide spend cap refuses every call. */
-  paused: string | null;
-  ownerShare: boolean;
-  now: string;
-};
+export { closedBy, standingLine, type Standing };
 
 type Phase = "offer" | "looking" | "failed" | "done" | "nothing";
-/** Why the press is closed, in the tuning panel's precedence: paused, the owner's share, spent. */
-type Closed = "paused" | "ownerShare" | "spent" | null;
 
 const Looking = createContext<{ looking: boolean; setLooking: (v: boolean) => void }>({ looking: false, setLooking: () => {} });
 
@@ -58,25 +47,7 @@ export function DimWhileLooking({ children }: { children: ReactNode }) {
   return <div data-testid="results-dim" data-looking={looking || undefined}>{children}</div>;
 }
 
-export function closedBy(s: Standing): Closed {
-  if (s.paused) return "paused";
-  if (s.ownerShare) return "ownerShare";
-  return s.used >= s.limit ? "spent" : null;
-}
-
-/** The line under the button, by allowance (STATES "Credit line, by allowance"). */
-export function standingLine(s: Standing): string {
-  const next = s.nextAt ? new Date(s.nextAt) : null;
-  switch (closedBy(s)) {
-    // The look is drawn only with the feature on, so its lines always name the looks.
-    case "paused": return creditsCopy.paused(new Date(s.paused!), true);
-    case "ownerShare": return creditsCopy.ownerShare(new Date(s.now));
-    case "spent": return creditsCopy.spent(s.limit, s.reopensAt ? new Date(s.reopensAt) : next, true);
-    default: return creditsCopy.first(s.limit - s.used, s.limit, next);
-  }
-}
-
-const bare = (s: Standing) => creditsCopy.standing(s.limit - s.used, s.limit, s.nextAt ? new Date(s.nextAt) : null);
+const bare = bareStanding;
 
 export function DeeperLook({
   params,

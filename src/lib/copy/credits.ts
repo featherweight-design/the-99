@@ -15,7 +15,7 @@
 // with the rolling form and is undrawn; a reader with every credit in hand is undrawn too, and
 // the line then gives the count alone, since no credit is out to come back. The feature noun in
 // `spent` is Hugh's (2026-09-23): "overview", the Analysis tab's word, where Design wrote
-// "Synopses". Help me choose widens `spent` and the pause's reason to name its deeper looks too
+// "Synopses". Help me choose widens `spent` and the pause's reason to name it too (the read addendum)
 // (READINESS-audit F9), since they spend the same units; Hugh's wording (2026-09-25) leads with
 // what the panel's reader just used, in one order in both. The widening is flag-aware (below).
 
@@ -31,8 +31,8 @@ export function monthName(at: Date): string {
 }
 
 /**
- * Help me choose's deeper looks spend these credits too, so the lines that name what shares them
- * name the looks as well, but only where the deployment draws them (`HELP_ME_CHOOSE_ENABLED`):
+ * Help me choose's reads spend these credits too, so the lines that name what shares them
+ * name Help me choose as well, but only where the deployment draws them (`HELP_ME_CHOOSE_ENABLED`):
  * production shows nothing of a feature until its switch flips (orchestrator, 2026-09-25). A caller
  * passes the flag it was handed on the server; the default is the wording from before the looks.
  *
@@ -47,10 +47,10 @@ export function monthName(at: Date): string {
 const pausedReason = (deeperLooks = false, tuning = true) =>
   tuning
     ? deeperLooks
-      ? "The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this."
+      ? "The app has reached its monthly limit for suggestions, overviews and Help me choose. Nothing you did caused this."
       : "The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this."
     : deeperLooks
-      ? "The app has reached its monthly limit for overviews and deeper looks. Nothing you did caused this."
+      ? "The app has reached its monthly limit for overviews and Help me choose. Nothing you did caused this."
       : "The app has reached its monthly limit for overviews. Nothing you did caused this.";
 
 /** The count and, when one is out, when the next comes back. "reset at", not "next one at"
@@ -76,8 +76,8 @@ export const creditsCopy = {
   spent: (total: number, next: Date | null, deeperLooks = false, tuning = true) =>
     `${standing(0, total, next)}. ${
       tuning
-        ? deeperLooks ? "Suggestions, overviews and deeper looks share" : "Your overview and suggestions share"
-        : deeperLooks ? "Your overview and deeper looks share" : "Your overview shares"
+        ? deeperLooks ? "Suggestions, overviews and Help me choose share" : "Your overview and suggestions share"
+        : deeperLooks ? "Your overview and Help me choose share" : "Your overview shares"
     } these credits.`,
   /**
    * The app-wide spend cap has been reached (`src/lib/model/spend-rule.ts`): every press is

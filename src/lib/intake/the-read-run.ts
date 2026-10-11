@@ -142,12 +142,29 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
   return shortlistSystem(lines.join("\n"));
 }
 
+/** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
   input: { readId: string; words: string; filters: ReadFilters },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
+  const begun = await beginTheRead(userId, input, deps, inputs);
+  return begun.kind === "started" ? begun.finish() : begun;
+}
+
+/**
+ * The press's first half, which the submit awaits (F8): the inputs, the fingerprint and the
+ * reservation. A repeat or a refusal is the answer already; a started read hands back `finish`,
+ * the two calls and the settle, which the submit schedules with `after()` and redirects past, so
+ * the results page attaches to a read that is already running.
+ */
+export async function beginTheRead(
+  userId: string,
+  input: { readId: string; words: string; filters: ReadFilters },
+  deps: TheReadDeps = defaultTheReadDeps(),
+  inputs?: TheReadInputs,
+): Promise<TheReadOutcome | { kind: "started"; readId: string; finish: () => Promise<TheReadOutcome> }> {
   const started0 = deps.now();
   const facts = inputs ?? await loadTheReadInputs(userId, input.words, input.filters);
   const started = await startRead(userId, facts.fingerprint, deps.modelName, { readId: input.readId });
@@ -158,6 +175,17 @@ export async function runTheRead(
       : { kind: "nothing", readId: started.readId, result, repeat: true };
   }
   if (started.kind !== "started") return { kind: started.kind };
+  return { kind: "started", readId: started.readId, finish: () => finishTheRead(userId, input, deps, facts, started, started0) };
+}
+
+async function finishTheRead(
+  userId: string,
+  input: { readId: string; words: string; filters: ReadFilters },
+  deps: TheReadDeps,
+  facts: TheReadInputs,
+  started: { readId: string; callId: string },
+  started0: number,
+): Promise<TheReadOutcome> {
   const handle = { ...started, userId };
   const readId = started.readId;
   const billed: Billed[] = [];

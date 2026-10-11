@@ -15,7 +15,7 @@ vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: dbRows.ro
 import type { ModelOutcome } from "../model/client";
 import { formatPoolList } from "./pool-list";
 import type { JudgeReply, ShortlistReply } from "./the-read";
-import { runTheRead, shortlistPrefix, type TheReadDeps, type TheReadInputs } from "./the-read-run";
+import { beginTheRead, runTheRead, shortlistPrefix, type TheReadDeps, type TheReadInputs } from "./the-read-run";
 
 const usage = { inputTokens: 100, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 };
 const commander = (id: string, name: string) => ({ oracleId: id, name, colorIdentity: ["B"], typeLine: "Legendary Creature — Horror", tags: [] });
@@ -131,6 +131,18 @@ describe("runTheRead", () => {
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "failed", errorClass: "interrupted" });
     expect(store.settleTheRead.mock.calls[0][1]).toEqual({ kind: "failed", errorClass: "interrupted" });
     expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }]);
+  });
+
+  it("begins by reserving alone: no model is called until the submit's after() runs finish (F8)", async () => {
+    const d = deps(ok({ keys: [1] }), ok({ picks: [{ key: 1, reason: "Draws cards." }] }));
+    const begun = await beginTheRead("u", input, d, inputs());
+    expect(begun.kind).toBe("started");
+    expect(store.startRead).toHaveBeenCalledTimes(1);
+    expect(d.shortlist).not.toHaveBeenCalled();
+    expect(store.setReadPhase).not.toHaveBeenCalled();
+    if (begun.kind !== "started") return;
+    expect(await begun.finish()).toMatchObject({ kind: "read", readId: "r" });
+    expect(d.shortlist).toHaveBeenCalledTimes(1);
   });
 
   it("reserves under the fingerprint and the joined model", async () => {

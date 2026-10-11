@@ -55,7 +55,8 @@ export const READ_SHORTLIST_MODEL = "claude-haiku-5-5";
 /**
  * MEDIUM, measured (eval 2026-10-11, `scripts/eval/intake-read.mts`): at low, Haiku 5.5 returned no
  * keys at all inside a mono-black pool and five for an unfiltered Landfall ask, which the judgement
- * then found nothing in. At medium it shortlisted 16 to 39 every time and the judgement kept 7 to 10,
+ * then found nothing in. At medium it shortlisted 16 to 39 for every ask the pool could answer and
+ * the judgement kept 7 to 10 (3 and 2 for mono-blue Dinosaurs, a pool built to hold almost no fit),
  * for about $0.004 more a warm press. Its longest reply was 2,138 tokens and its slowest 9.8s.
  */
 export const READ_SHORTLIST_EFFORT = "medium" as const;

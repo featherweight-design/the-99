@@ -1,8 +1,8 @@
 // /decks/new/choose: Help me choose (sub-project 8, PR 5b). One route, three moments, told apart
 // by `v` (see `src/lib/intake/params.ts`):
 //  - no `v`: the form, pre-filled from the URL (*Change answers* lands here; bare is *Start over*);
-//  - `v=submit`: the form's submit. The words are matched once, here, and the page redirects to
-//    the results address carrying the RESOLVED answers, so the results never match again;
+//  - `v=submit`: the retired GET submit. It lands on the form with its answers, never charging:
+//    the submit is a Server Action now (`submitChoose`, rework plan PR 3), which starts the read;
 //  - `v=results`: the results. The bar is drawn at once, and the search streams in under it.
 //
 // Behind `HELP_ME_CHOOSE_ENABLED` (F3): off, the route is not found, before any read.
@@ -25,7 +25,8 @@ import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
-import { CHOOSE_PATH, submitTarget } from "../../../../lib/intake/submit";
+import { CHOOSE_PATH, formTarget } from "../../../../lib/intake/submit";
+import { toStanding } from "../../../../lib/intake/standing";
 import { DeeperLook, DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
 import { loadOwnRead, wordsHash } from "../../../../lib/intake/run-store";
 import { readAllowance } from "../../../../lib/model/allowance";
@@ -51,11 +52,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const sp = toSearchParams(await searchParams);
   const p = parseChooseParams(sp);
 
-  if (sp.get("v") === "submit") {
-    // Outside any try: `redirect` throws, and a catch would swallow it.
-    const index = p.words.trim() ? (await loadIntakeCatalog()).index : null;
-    redirect(submitTarget(p, index));
-  }
+  // Outside any try: `redirect` throws, and a catch would swallow it.
+  if (sp.get("v") === "submit") redirect(formTarget(p));
 
   // The labels only: the card-name index is built for a submit, never for a page that just draws.
   // The form needs the vocabulary to draw its picker, and fails without it. The results only name
@@ -67,6 +65,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const sets = await loadCommanderPrintings().then((x) => x.sets).catch(() => []);
 
   if (!p.results) {
+    // The press's credit standing (F7). A failed read draws the plain button: the submit re-checks.
+    const now = new Date();
+    const allowance = await readAllowance(userId, now, "intake").catch(() => null);
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
         <ChooseHeader
@@ -76,7 +77,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.intake.subPhone}
           centered
         />
-        <IntakeForm themes={themes} sets={sets} initial={p} />
+        <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} />
       </div>
     );
   }
@@ -87,10 +88,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const now = new Date();
   // Three decorations, none of which may take the page down: the card's chip, the credit standing
   // the deeper look reads (only when there are words to look at), and the read `r` names.
-  const [card, allowance, loaded] = await Promise.all([
+  const [card, loaded] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
     p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
-    p.words.trim() ? readAllowance(userId, now, "intake").catch(() => null) : null,
     p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
   ]);
   const settled = readForThisAsk(p, loaded, wordsHash);
@@ -126,19 +126,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           <ReadAsBar
             chips={answerChips(p, labels, verifiedDeeperMarks(p, settled))}
             afterDeeper={settled !== null}
-            offer={(allowance || settled) && (
-              // Keyed on the read: the look's own results are a new panel, drawn from what the page found.
-              // A failed standing read closes only the press: a look already settled at `r` still draws.
-              <DeeperLook key={p.readId ?? "first"} params={lookParams} settled={settled?.kind ?? null} standing={allowance && {
-                used: allowance.used,
-                limit: allowance.limit,
-                nextAt: allowance.nextAt?.toISOString() ?? null,
-                reopensAt: allowance.reopensAt?.toISOString() ?? null,
-                paused: allowance.paused?.until.toISOString() ?? null,
-                ownerShare: allowance.ownerShare === true,
-                now: now.toISOString(),
-              }} />
-            )}
+            // The read's panel lands with the results rework (plan PR 4). Until then the results draw
+            // the free order, and the read the submit started settles out of sight.
+            offer={null}
             card={card ?? null}
             notUsed={p.notUsed}
             changeHref={changeHref}

@@ -5,6 +5,10 @@ import type { StoredRead } from "./run-store";
 export const CHOOSE_PATH = "/decks/new/choose";
 
 /**
+ * RETIRED AS THE SUBMIT (rework plan PR 3): the form now submits through `submitChoose`, and its
+ * words are never matched into answers (ruling 2). Kept for `scripts/measure-intake-tribes.mts`,
+ * which measures what the free match makes of an ask.
+ *
  * The form's submit, resolved (plan decision 2): the words are matched ONCE, here, their chips
  * folded into the controls the player set, and the results address carries what that produced.
  * The words stay in `w` for *Change answers*; *Not used* goes in `n`, the words' unmatched
@@ -57,6 +61,29 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
     deeper: [],
     results: true,
   })}`;
+}
+
+/**
+ * Where the form's submit lands (rework plan PR 3): the answers as the player set them, the words
+ * kept whole for *Change answers* and for the read, and `r` naming the read the submit started, if
+ * it started one. NOTHING IS MATCHED (ruling 2): the words never become answers, so no card, no
+ * *Not used* and no marks. A card a stale address carries is dropped (F1: the form has no card).
+ */
+export function resultsTarget(p: ChooseParams, readId: string | null): string {
+  return `${CHOOSE_PATH}${serializeChooseParams({
+    ...p,
+    words: p.words.slice(0, READ_WORDS_MAX_CHARS).trim(),
+    card: null,
+    notUsed: [],
+    deeper: [],
+    readId,
+    results: true,
+  })}`;
+}
+
+/** The form with these answers in it: where an old `v=submit` address goes, so a GET never charges. */
+export function formTarget(p: ChooseParams): string {
+  return `${CHOOSE_PATH}${serializeChooseParams({ ...p, card: null, notUsed: [], deeper: [], readId: null, results: false })}`;
 }
 
 /**

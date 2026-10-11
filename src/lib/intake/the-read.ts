@@ -223,6 +223,11 @@ export type TheReadResult = ReadPicks & { pool: number; weighed: number };
  * `first`, which rules language needs (the top of a library, first strike).
  */
 const SCORE_WORDS = /\b(best|better|good|great(?:est)?|strong(?:er|est)?|solid|perfect(?:ly)?|ideal(?:ly)?|excellent|superb|amazing|awesome|fantastic|score[sd]?|rank(?:ed|s)?|rating|rated|number one)\b/i;
+/**
+ * Ranking phrases: a choice, pick or place by its ordinal, a runner-up, a number spelled out. Not a
+ * bare `first`, which rules language needs (first strike).
+ */
+const RANKS = /\b(?:(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|top)\s+(?:choice|pick|option|place|spot)|runner[- ]up|number\s+(?:one|two|three|four|five|six|seven|eight|nine|ten))\b/i;
 /** Digits, a percent sign, and stars of any kind, which read as a rating. */
 const FIGURES = /[\p{Nd}%★☆⭐✩✪✫✬✭✮✯]/u;
 const DECK_TOKEN = /\{D(\d+)\}/g;
@@ -259,7 +264,7 @@ export function parseReason(raw: string, decks: readonly ReadDeck[], ownCommande
   drawn += tail;
   // The figure test runs on the model's own words, never on a drawn deck name, which may hold one.
   const own = parts.map((p) => ("text" in p ? p.text : " ")).join("");
-  if (/[{}]/.test(own) || FIGURES.test(own) || SCORE_WORDS.test(own)) return null;
+  if (/[{}]/.test(own) || FIGURES.test(own) || SCORE_WORDS.test(own) || RANKS.test(own)) return null;
   if (namesADeck(own, decks, ownCommander)) return null;
   if (drawn.length === 0 || drawn.length > READ_REASON_MAX_CHARS) return null;
   return parts;
@@ -294,9 +299,14 @@ function namesADeck(text: string, decks: readonly ReadDeck[], ownCommander?: str
   }));
 }
 
-/** Text as space-padded lower-case words, so `includes` matches whole words only. */
+/**
+ * Text as space-padded lower-case words, so `includes` matches whole words only. Apostrophes of
+ * every form are dropped, after a possessive `'s`, so `K’rrik's deck` reads as `krrik deck` and
+ * matches the name `K'rrik`.
+ */
 function wordForm(text: string): string {
-  return ` ${text.toLowerCase().replace(/[^\p{L}\p{N}']+/gu, " ").trim()} `;
+  const plain = text.toLowerCase().replace(/[\u2018\u2019\u02bc`]/g, "'").replace(/'s\b/g, "").replace(/'/g, "");
+  return ` ${plain.replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
 }
 
 /**

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildPhraseIndex } from "./match";
 import { emptyParams, parseChooseParams, READ_WORDS_MAX_CHARS } from "./params";
-import { deeperTarget, submitTarget } from "./submit";
+import { deeperTarget, formTarget, resultsTarget, submitTarget } from "./submit";
 
 const DS = "0000aaaa-0000-4000-8000-000000000001";
 const SOL = "0000aaaa-0000-4000-8000-000000000002";
@@ -130,5 +130,21 @@ describe("the submit's theme join", () => {
     expect(landed(target({ words: "dinosaurs or landfall" })).themeJoin).toBe("any");
     expect(landed(target({ words: "dinosaurs and landfall" })).themeJoin).toBe("all");
     expect(landed(target({ words: "dinosaurs or landfall", themes: ["dinosaurs", "landfall"], themeJoin: "all" })).themeJoin).toBe("all");
+  });
+});
+
+describe("resultsTarget and formTarget (rework plan PR 3)", () => {
+  const p = { ...emptyParams(), words: "  a Landfall deck  ", themes: ["landfall"], card: "0000aaaa-0000-4000-8000-000000000001", notUsed: ["x"], deeper: ["a"] };
+
+  it("lands on the results with the words kept whole and unmatched, r naming the read, and never a card", () => {
+    const sp = new URLSearchParams(resultsTarget(p, "r1").split("?")[1]);
+    expect([sp.get("v"), sp.get("w"), sp.get("t"), sp.get("r"), sp.get("a"), sp.get("n"), sp.get("d")])
+      .toEqual(["results", "a Landfall deck", "landfall", "r1", null, null, null]);
+    expect(new URLSearchParams(resultsTarget(p, null).split("?")[1]).get("r")).toBeNull();
+  });
+
+  it("sends an old GET submit back to the form with its answers", () => {
+    const sp = new URLSearchParams(formTarget(p).split("?")[1]);
+    expect([sp.get("v"), sp.get("t"), sp.get("a")]).toEqual([null, "landfall", null]);
   });
 });

@@ -1,15 +1,15 @@
 "use client";
-// Help me choose's form (HANDOFF §2, screens 2a and 2b). Five optional inputs and one submit.
-// NOTHING IS INTERPRETED HERE (§8.0, §8.1): no matching while typing, no count, no commander, no
-// credit line. The submit is a navigation to `?…&v=submit`, where the server reads the words once
-// and redirects to the results, so the results page never matches again.
+// Help me choose's form (HANDOFF §2, screens 2a and 2b; the read addendum R1, states 7a to 7c and
+// 7n). Optional answers, then the one paid field, *Anything else?*, and one submit.
+// NOTHING IS INTERPRETED HERE: no matching while typing, no commander. The box's text is never
+// turned into answers (rework ruling 2). With text in it and a credit free, the press says it uses
+// one; the submit is a Server Action that starts the read and lands on the results (F8).
 //
 // One component at both widths. The submit sits at the foot of the panel on desktop and in a
 // dock over the tab bar on the phone (create-picker's dock), whose measured height the form
 // reserves under itself. No motion anywhere (STATES invariant).
 
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useId, useLayoutEffect, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 
 import { PRIMARY } from "../ui/button";
 import { ColourControl } from "../commanders/rack/colour-control";
@@ -25,7 +25,8 @@ import { SetsField } from "./sets-field";
 import { ThemeJoinControl } from "./theme-join";
 import { ThemePicker } from "./theme-picker";
 
-import { CHOOSE_PATH } from "../../lib/intake/submit";
+import { closedBy, formLine, type Standing } from "../../lib/intake/standing";
+import { submitChoose } from "../../app/decks/new/choose/actions";
 
 /** What the budget box holds, as a whole-dollar answer: `$` and commas stripped, 1 to 100,000. */
 export function parseBudget(raw: string): number | null {
@@ -36,13 +37,11 @@ export function parseBudget(raw: string): number | null {
 }
 
 /**
- * The submit's address: the form's answers, then `v=submit` for the server to resolve. The card is
- * dropped: the form draws no card control, so its only card is one its words name, and the words
- * go with it. A card the player deleted from the words must not come back from the address.
+ * The submit's answers, as the address they describe. The card is dropped: the form draws no card
+ * control (F1), so a card a stale address carried must not come back.
  */
-export function submitHref(p: ChooseParams): string {
-  const qs = serializeChooseParams({ ...p, card: null, readId: null, deeper: [], notUsed: [], results: false });
-  return `${CHOOSE_PATH}${qs ? `${qs}&` : "?"}v=submit`;
+export function submitQuery(p: ChooseParams): string {
+  return serializeChooseParams({ ...p, card: null, readId: null, deeper: [], notUsed: [], results: false });
 }
 
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
@@ -51,13 +50,16 @@ export function IntakeForm({
   themes,
   sets = [],
   initial,
+  standing = null,
 }: {
   themes: readonly VocabularyTheme[];
   /** Every set that printed a commander, for the Sets answer. */
   sets?: readonly PrintedInSet[];
   initial: ChooseParams;
+  /** The player's credits (F7); null when the read failed, and the press then draws plain. */
+  standing?: Standing | null;
 }) {
-  const router = useRouter();
+  const [submitting, startSubmit] = useTransition();
   const wide = useIsDesktop();
   const [words, setWords] = useState(initial.words);
   const [colors, setColors] = useState<string[]>(initial.colors);
@@ -100,23 +102,43 @@ export function IntakeForm({
         ? copy.intake.colorsExactly(names)
         : copy.intake.colorsAny(names);
 
-  const submit = () =>
-    router.push(
-      submitHref({
-        ...initial,
-        words: words.trim(),
-        colors,
-        match,
-        themes: picked,
-        themeJoin,
-        sets: pickedSets,
-        pool,
-        budgetDollars: parseBudget(budget),
-        bracket,
-      }),
-    );
+  const submit = () => {
+    if (submitting) return;
+    const query = submitQuery({
+      ...initial,
+      words: words.trim(),
+      colors,
+      match,
+      themes: picked,
+      themeJoin,
+      sets: pickedSets,
+      pool,
+      budgetDollars: parseBudget(budget),
+      bracket,
+    });
+    // The action redirects; it returns only when it refused, which the box's own cap prevents.
+    startSubmit(async () => { await submitChoose(query); });
+  };
 
-  const submitClass = `${PRIMARY} font-sans font-semibold cursor-pointer rounded-[10px] text-[15px] px-[24px] border-0 whitespace-nowrap`;
+  // What the press does with the words (states 7a to 7c, 7n): with none, nothing is said; with a
+  // credit free, the pill and the first-use line; with none, the line says they will not be read.
+  const written = words.trim().length > 0;
+  const closed = standing ? closedBy(standing) : null;
+  const paid = written && standing !== null && closed === null;
+  const line = written && standing ? formLine(standing) : null;
+  const caption = !written ? copy.intake.extra.caption : standing && closed !== null ? copy.intake.extra.captionSpent : copy.intake.extra.captionFilled;
+
+  const submitClass = `${PRIMARY} inline-flex items-center justify-center gap-[10px] font-sans font-semibold cursor-pointer rounded-[10px] text-[15px] border-0 whitespace-nowrap ${paid ? "pl-[8px] pr-[24px]" : "px-[24px]"}`;
+  const press = (
+    <>
+      {paid && (
+        <span aria-hidden className="inline-flex items-center h-[32px] md:h-[30px] px-[10px] rounded-[7px] font-mono text-[11px] font-semibold text-[color:var(--bg)] bg-[color:color-mix(in_oklab,var(--bg)_22%,transparent)]">
+          {copy.intake.extra.cost}
+        </span>
+      )}
+      {copy.intake.submit}
+    </>
+  );
 
   return (
     <form
@@ -129,23 +151,6 @@ export function IntakeForm({
       style={{ "--dock-reserve": `${dockHeight + 12}px` } as CSSProperties}
     >
       <div className="flex flex-col gap-[20px] p-[18px] md:gap-[22px] md:w-[680px] md:max-w-full md:mx-auto md:p-[24px_26px] md:rounded-[12px] md:border md:border-solid md:border-[color:var(--border)] md:bg-[color:var(--surface-rail)]">
-        <Field label={copy.intake.words} htmlFor={wordsId} caption={copy.intake.wordsCaption} captionMono>
-          <textarea
-            id={wordsId}
-            value={words}
-            maxLength={READ_WORDS_MAX_CHARS}
-            placeholder={copy.intake.wordsPlaceholder}
-            onChange={(e) => setWords(e.target.value)}
-            className={[
-              "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
-              "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] outline-none",
-              words ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
-            ].join(" ")}
-          />
-        </Field>
-
-        <hr className="m-0 border-0 border-t border-solid border-[color:var(--border)]" />
-
         <Field label={copy.intake.colors} caption={colorsCaption}>
           <ColourControl
             colors={colors}
@@ -205,12 +210,40 @@ export function IntakeForm({
           <BracketRadios value={bracket} onChange={setBracket} labelId={`${themeLabelId}-bracket`} />
         </Field>
 
-        {/* Desktop: the submit closes the panel, with no note beside it. Never disabled: a blank
-            submit searches. */}
-        <div className="hidden md:block pt-[20px] border-0 border-t border-solid border-[color:var(--border)]">
-          <button type="submit" className={`${submitClass} h-[44px]`}>
-            {copy.intake.submit}
+        <hr className="m-0 border-0 border-t border-solid border-[color:var(--border)]" />
+
+        <Field
+          label={copy.intake.extra.label}
+          tag={copy.intake.extra.optional}
+          htmlFor={wordsId}
+          caption={caption}
+          captionTone={written && closed !== null ? "muted" : "faint"}
+          // Counted as `maxLength` counts (UTF-16 units), so the count and the box stop together.
+          count={written ? copy.intake.extra.count(words.length, READ_WORDS_MAX_CHARS) : null}
+        >
+          <textarea
+            id={wordsId}
+            value={words}
+            maxLength={READ_WORDS_MAX_CHARS}
+            placeholder={copy.intake.extra.placeholder}
+            onChange={(e) => setWords(e.target.value)}
+            className={[
+              "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
+              "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] outline-none",
+              // Accent while the words will be read: a credit free, or a standing that could not be
+              // read (the press then draws plain, and the submit decides).
+              written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
+            ].join(" ")}
+          />
+        </Field>
+
+        {/* Desktop: the submit closes the panel, its credit line beside it. Never disabled: a
+            blank submit searches. */}
+        <div className="hidden md:flex items-center gap-[18px] pt-[20px] border-0 border-t border-solid border-[color:var(--border)]">
+          <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} className={`${submitClass} h-[44px]`}>
+            {press}
           </button>
+          {line && <p className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
         </div>
       </div>
 
@@ -219,9 +252,10 @@ export function IntakeForm({
         data-testid="choose-dock"
         className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20 p-[10px_16px_12px] border-0 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)]"
       >
-        <button type="submit" className={`${submitClass} w-full h-[48px]`}>
-          {copy.intake.submit}
+        <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} className={`${submitClass} w-full h-[48px]`}>
+          {press}
         </button>
+        {line && <p className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
       </div>
     </form>
   );
@@ -233,17 +267,23 @@ function Field({
   htmlFor,
   labelId,
   caption,
-  captionMono = false,
+  captionTone = "faint",
+  tag,
+  count = null,
   aside,
   children,
 }: {
   label: string;
+  /** Beside the label: *optional* on the paid field. */
+  tag?: string;
+  captionTone?: "faint" | "muted";
+  /** At the caption's right: the box's character count, while it has text. */
+  count?: string | null;
   /** Drawn at the label's right, on its line: the Theme field's join. */
   aside?: ReactNode;
   htmlFor?: string;
   labelId?: string;
   caption: string;
-  captionMono?: boolean;
   children: ReactNode;
 }) {
   const labelClass = "font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]";
@@ -251,21 +291,22 @@ function Field({
     <div className="flex flex-col gap-[9px]">
       <div className={aside ? "flex items-center gap-[10px] min-h-[28px]" : "contents"}>
         {htmlFor ? (
-          <label htmlFor={htmlFor} className={labelClass}>{label}</label>
+          <label htmlFor={htmlFor} className={tag ? `${labelClass} inline-flex items-baseline gap-[8px]` : labelClass}>
+            {label}
+            {tag && <span className="font-mono text-[9.5px] tracking-[.06em] normal-case text-[color:var(--fg-locked)]">{tag}</span>}
+          </label>
         ) : (
           <span id={labelId} className={labelClass}>{label}</span>
         )}
         {aside}
       </div>
       {children}
-      <p
-        className={[
-          "m-0 text-[color:var(--fg-faint)]",
-          captionMono ? "font-mono text-[10.5px] leading-[1.5]" : "text-[12px] leading-[1.5]",
-        ].join(" ")}
-      >
-        {caption}
-      </p>
+      <div className={count ? "flex items-start justify-between gap-[12px]" : "contents"}>
+        <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
+          {caption}
+        </p>
+        {count && <span className="shrink-0 font-mono text-[10px] text-[color:var(--fg-faint)]">{count}</span>}
+      </div>
     </div>
   );
 }

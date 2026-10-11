@@ -1,0 +1,59 @@
+{
+  "feature": "Help me choose rework (the read addendum R1): the form's paid field and press (PR 3)",
+  "out": "/tmp/contact-sheet/help-me-choose-read",
+  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true on a database carrying migration 0090. The model is the stub a dev server uses by default, so a press spends a credit of the fixture account's allowance and calls nothing. 7c (no credit) and 7n (paused, owner's share) are pinned by intake-form.test.tsx: reaching them here would mean spending the account's credits.",
+  "rows": [
+    {
+      "id": "form-empty",
+      "label": "/decks/new/choose: 7a, the box empty, the press plain",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose",
+          "wait": "textarea",
+          "settle": 1500
+        },
+        {
+          "click": "textarea",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "form-filled",
+      "label": "/decks/new/choose: 7b, the box filled, the press carries 1 credit",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?w=a+horrors+deck+that%27s+scary+and+a+little+nasty&c=b",
+          "wait": "textarea",
+          "settle": 1500
+        },
+        {
+          "click": "textarea",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "submitted",
+      "label": "/decks/new/choose?\u2026v=results&r=\u2026: after the press, the results with the read's id",
+      "view": "src/app/decks/new/choose/page.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?w=a+Landfall+deck+unlike+mine",
+          "wait": "textarea",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^1 credit\\. Find commanders"
+        },
+        {
+          "wait": "[data-testid=results-dim]",
+          "settle": 3000
+        }
+      ]
+    }
+  ]
+}
