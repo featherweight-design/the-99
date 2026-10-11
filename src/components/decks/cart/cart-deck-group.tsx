@@ -64,7 +64,7 @@ export function CartDeckGroup({
               {deck.name}
             </span>
             <span className="flex-none font-mono text-[11px]" style={{ color: on ? "var(--fg-body)" : "var(--fg-locked)" }}>
-              {priced && deck.pricedCopies > 0
+              {priced && deck.cents > 0
                 ? copy.selections.figure(deck.copies, formatCents(deck.cents))
                 : copy.selections.figureNoPrice(deck.copies)}
             </span>

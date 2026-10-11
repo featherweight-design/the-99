@@ -18,7 +18,7 @@ export function CartEntry({ total, deckCount }: { total: DeckShopping; deckCount
         <span className="text-[14px] font-medium text-[color:var(--fg)] [text-wrap:pretty]">{copy.entry.label}</span>
         {/* A missing price is never $0.00 (A1-np): the figure drops to copies and decks. */}
         <span className="font-mono text-[11px] text-[color:var(--fg-muted)] [text-wrap:pretty]">
-          {total.pricedCopies > 0
+          {total.cents > 0
             ? copy.entry.figure(total.copies, formatCents(total.cents), deckCount)
             : copy.entry.figureNoPrice(total.copies, deckCount)}
         </span>

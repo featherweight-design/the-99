@@ -37,8 +37,13 @@ export function CartView({
   const chooseView = (next: CartViewMode) => {
     setView(next);
     // Mirrored, not routed: the payload already holds both views. Dropping `?deck=` too, which
-    // was a one-time focus for arrival.
-    mirrorUrl(next === "deck" ? `${window.location.pathname}?view=deck` : window.location.pathname);
+    // was a one-time focus for arrival. Every parameter this view does not own is read back off
+    // the live URL and kept; the default view is an absence.
+    const live = new URLSearchParams(window.location.search);
+    live.delete("deck");
+    if (next === "deck") live.set("view", "deck"); else live.delete("view");
+    const query = live.toString();
+    mirrorUrl(query ? `${window.location.pathname}?${query}` : window.location.pathname);
   };
   const fold = (id: string) => setOpen((prev) => {
     const next = new Set(prev);

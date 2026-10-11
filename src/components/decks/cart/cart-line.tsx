@@ -14,7 +14,7 @@ import { BuyTag } from "../buy-tag";
  */
 export function lineFact(line: SelectedLine, newestAsOf: Date | null): PriceFact | null {
   if (!newestAsOf) return null;
-  if (line.pricedCopies > 0) {
+  if (line.cents > 0) {
     // Every priced copy of ONE finish other than normal: the sum is that finish's figure, and the
     // tag says `foil` or `etched` as each deck's own Shopping row does. A normal-priced copy, or a
     // mix of finishes, makes it an ordinary figure with no qualifier, since none is true of it all.

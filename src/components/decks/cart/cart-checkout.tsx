@@ -23,7 +23,7 @@ export function CartCheckout({
   provenance: ProvenanceForm | null;
   links: { href: string; lineCount: number }[];
 }) {
-  const showFigure = priced && total.pricedCopies > 0;
+  const showFigure = priced && total.cents > 0;
   const showClause = showFigure && total.pricedCopies < total.copies;
   const first = !priced
     ? copy.checkout.unread

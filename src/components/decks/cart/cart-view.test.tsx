@@ -199,6 +199,23 @@ describe("CartView by deck (A5)", () => {
     expect(screen.getByText(copy.list.owned(3))).toBeTruthy();
   });
 
+  it("draws a group whose copies sum to $0.00 without a figure, as DeckSelect does", () => {
+    const free = cart();
+    free.decks[0] = { ...free.decks[0], cents: 0, pricedCopies: free.decks[0].copies };
+    render(<CartView cart={free} provenance={provenance} initialView="deck" />);
+    expect(screen.queryByText(copy.selections.figure(free.decks[0].copies, "$0.00"))).toBeNull();
+  });
+
+  it("keeps every parameter it does not own when the view changes, and drops the one-time ?deck=", () => {
+    window.history.replaceState(null, "", "/?deck=gishath&utm=x");
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    fireEvent.click(screen.getByRole("button", { name: copy.view.byCard }));
+    expect(window.location.search).toBe("?utm=x");
+    fireEvent.click(screen.getByRole("button", { name: copy.view.byDeck }));
+    expect(window.location.search).toBe("?utm=x&view=deck");
+    window.history.replaceState(null, "", "/");
+  });
+
   it("folds everything, without an error, when ?deck= names a deck not on the cart (A5-t)", () => {
     render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="00000000-0000-0000-0000-000000000000" />);
     expect(screen.queryByText("Sol Ring")).toBeNull();

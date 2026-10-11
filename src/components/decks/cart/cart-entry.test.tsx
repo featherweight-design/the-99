@@ -22,4 +22,9 @@ describe("CartEntry (A1)", () => {
     expect(screen.getByRole("link").textContent).toContain(copy.entry.figureNoPrice(307, 7));
     expect(screen.getByRole("link").textContent).not.toContain("$");
   });
+
+  it("draws a total that sums to $0.00 as the no-price form, as the tile does", () => {
+    render(<CartEntry total={{ copies: 3, cents: 0, pricedCopies: 3 }} deckCount={1} />);
+    expect(screen.getByRole("link").textContent).toContain(copy.entry.figureNoPrice(3, 1));
+  });
 });
