@@ -31,7 +31,7 @@ All paths are on `main`; line numbers were read on 2026-10-11 and move.
   (`availabilityState(..., { selfExcluded: true }) === "over"`). `isSpokenFor(c)` is "owned and on the Shopping
   list". `commanderShoppingRows` (`:95`) adds an unowned commander as a row of its own, only when the deck has a
   body.
-- `src/components/decks/decklist.tsx:598-610`: `listShoppingCards`, `shoppingCards` (commanders first) and
+- `src/components/decks/decklist.tsx:606-618`: `listShoppingCards`, `shoppingCards` (commanders first) and
   `shoppingCount`, which counts copies, not rows. Every Shopping figure on a deck page reads this one basket.
 - `src/components/decks/group-toggle.tsx:219`: the `Shopping` segment and its count. `price-strip.tsx` shows the
   basket's total and the Mana Pool link (`:56` builds it).
@@ -121,7 +121,7 @@ These are engineering's reading of the rulings. Hugh can override any of them.
 5. **The single link-out is one `manapoolAddDeckUrl` call over merged lines.** Lines are merged by card name with
    quantities added, so Sol Ring needed by three decks is one line, `3 Sol Ring`. Names and quantities only, as
    the per-deck link does today; the printing choice stays on Mana Pool. **Engineering owes a measurement before
-   the build**: the whole of Hugh's staging cart is about 290 lines (roughly 8KB of URL by estimate), against a
+   the build**: the whole of Hugh's staging cart is 291 lines (roughly 8KB of URL by estimate), against a
    guard written for 99 lines. If Mana Pool refuses a URL that long, the cart cannot be one link and Hugh decides
    (Open question 6). Design draws one link.
 6. **Prices are the roll-up's.** The cart total is the sum of the ticked decks' `cents`, each deck priced through
@@ -238,8 +238,8 @@ roll-up and 66 from its cards: the roll-up includes its unowned commander as a r
 `cc306935-26c9-4e30-8f0c-e0cec410cf8b`, Avatar Aang `0f585441-203e-475b-be7c-f11e67e20d79`, Eldrazi
 `0b49cb44-8ae2-4c19-b558-633344a2f4ed`. (Aang is the example in Hugh's ruling; on staging today it is complete.)
 
-**Cards several decks need.** 12 of the 289 distinct cards on the cart are needed by two or more decks, 16 extra
-copies in all (307 copies make about 291 lines):
+**Cards several decks need.** 12 of the 289 distinct non-commander cards on the cart are needed by two or more
+decks, 16 extra copies in all. Adding the two unowned commanders (Omnath's and Gishath's), 307 copies make 291 lines:
 
 | Card | Decks | Owned | Reading |
 |---|---|---|---|
@@ -249,7 +249,8 @@ copies in all (307 copies make about 291 lines):
 | Fabled Passage | Omnath, Gishath, Mutant Menace (3) | 3 | buys 3 |
 | Cinder Glade, Evolving Wilds, Nature's Lore | Omnath, Gishath (2) | n/a | |
 | Rogue's Passage | Kratos, Thorin (2) | n/a | |
-| Shatterskull Smashing // Shatterskull, the Hammer Pass, Star of Extinction | Kratos, Gishath (2) | n/a | |
+| Shatterskull Smashing // Shatterskull, the Hammer Pass (one two-faced card) | Kratos, Gishath (2) | n/a | |
+| Star of Extinction | Kratos, Gishath (2) | n/a | |
 | Clifftop Retreat | Gishath, Thorin (2) | n/a | |
 | An Offer You Can't Refuse | Counter Intelligence, Mutant Menace (2) | n/a | |
 
