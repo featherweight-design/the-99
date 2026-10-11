@@ -193,6 +193,11 @@ describe("collisionFindings", () => {
       expect(unresolvedCollisions(text)).toHaveLength(1);
     });
 
+    it("does not let a plain zero cancel an important width", () => {
+      const text = '<i className="border-l! border-l-0 border-b border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
     it("flags a width under a variant the bare token lacks: both apply from md up", () => {
       const text = '<div className="md:border border-b border-b-[color:var(--s)]" />';
       expect(unresolvedCollisions(text)).toHaveLength(1);

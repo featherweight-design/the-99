@@ -210,7 +210,7 @@ function paintsOtherSide(text, side, variant, important) {
   for (const raw of classTokens(text)) {
     const m = TOKEN.exec(raw);
     const w = m && widthSides(m[3]);
-    if (w) parsed.push({ ...w, variants: m[1].split(":").filter(Boolean) });
+    if (w) parsed.push({ ...w, variants: m[1].split(":").filter(Boolean), important: m[2] === "!" || m[4] === "!" });
   }
   const within = (t) => t.variants.every((v) => mine.has(v));
   // A side with a color of its own (`border-t-[color:...]`) is not repainted where that color is
@@ -239,7 +239,7 @@ function paintsOtherSide(text, side, variant, important) {
           s !== side &&
           !covered(s, t) &&
           !parsed.some(
-            (z) => z.zero && z.sides.includes(s) && z.variants.length >= t.variants.length && t.variants.every((v) => z.variants.includes(v)) && within(z),
+            (z) => z.zero && (z.important || !t.important) && z.sides.includes(s) && z.variants.length >= t.variants.length && t.variants.every((v) => z.variants.includes(v)) && within(z),
           ),
       ),
   );
