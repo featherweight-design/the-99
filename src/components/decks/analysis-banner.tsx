@@ -67,9 +67,11 @@ export function AnalysisBanner(props:
       role={mode === "failed" ? "alert" : "status"}
       data-testid="analysis-banner"
       data-mode={mode}
-      className="flex flex-col items-stretch gap-[12px] rounded-[11px] border border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[15px] py-[14px] md:flex-row md:items-center md:gap-[18px] md:py-[14px] md:pl-[20px] md:pr-[16px]"
+      // THE 1300 FORM IS A GRID (benchmarks audit rule 9): the line over its note on the left,
+      // left-aligned, the button on the right spanning both. The phone keeps its column, in DOM order.
+      className="flex flex-col items-stretch gap-[12px] rounded-[11px] border border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[15px] py-[14px] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-[18px] md:gap-y-[4px] md:py-[14px] md:pl-[20px] md:pr-[16px]"
     >
-      <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:order-1 md:min-w-0 md:flex-1 md:text-[13.5px]">
+      <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:col-start-1 md:row-start-1 md:min-w-0 md:text-[13.5px]">
         {sentence}
       </p>
       <button
@@ -78,7 +80,7 @@ export function AnalysisBanner(props:
         aria-disabled={disabled || undefined}
         aria-describedby={shownNote ? noteId : undefined}
         className={
-          "min-h-[44px] flex-none whitespace-nowrap rounded-[8px] text-[14px] font-semibold md:order-3 md:min-h-[36px] md:text-[13.5px] "
+          "min-h-[44px] flex-none whitespace-nowrap rounded-[8px] text-[14px] font-semibold md:col-start-2 md:row-span-2 md:row-start-1 md:min-h-[36px] md:text-[13.5px] "
           + (busy ? "px-[16px] " : "px-[18px] ")
           + (disabled
             ? "cursor-default bg-[color:var(--elevated)] text-[color:var(--fg-faint)]"
@@ -95,7 +97,7 @@ export function AnalysisBanner(props:
       {shownNote ? (
         <p
           data-testid="press-note"
-          className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:order-2 md:max-w-[340px] md:text-right md:text-[11px]"
+          className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:col-start-1 md:row-start-2 md:text-left md:text-[11px]"
         >
           {/* The button's description is the note's TEXT: a control inside it would be read as
               part of the description, so the id sits on the words alone. */}
