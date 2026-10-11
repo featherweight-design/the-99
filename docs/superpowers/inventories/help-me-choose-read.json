@@ -138,6 +138,18 @@
           "settle": 2500
         }
       ]
+    },
+    {
+      "id": "read-busy",
+      "label": "results: 7l, unread because another read was still running",
+      "view": "src/components/intake/read-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&rb=1",
+          "wait": "[data-testid=read-panel]",
+          "settle": 2500
+        }
+      ]
     }
   ]
 }
