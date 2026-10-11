@@ -5,7 +5,7 @@
   "rows": [
     {
       "id": "based-on-sheet",
-      "label": "/decks/[id] Analysis: the full overview, Key tips and Key cards each with a Based on line",
+      "label": "/decks/[id] Analysis: the full overview, each Key tip with its Based on line (the stub cites only a Key card's own card, which its line leaves out, so no Key card line draws)",
       "view": "src/components/decks/synopsis-body.tsx",
       "steps": [
         { "goto": "/decks/${MN_CONTRACT_8}", "wait": "[role=tablist]", "settle": 1500 },
