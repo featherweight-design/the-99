@@ -29,12 +29,22 @@ const written = (over: Partial<GotItWritten> = {}): GotItWritten => ({
 const preview = (decks: ShortDeck[] = []) => ({ rows: [], entryRows: [], differs: false, decks, expected: { k: 1 } });
 const atraxa: ShortDeck = { deckId: "d2", deckName: "HD Atraxa", oracleId: ORACLE, cardName: NAME, short: 1 };
 
-function hostMock(onList: boolean | null = false) {
-  return { start: vi.fn(), end: vi.fn(), undone: vi.fn(), failedAway: vi.fn(), onList: vi.fn(() => onList) };
+/**
+ * `before`: whether the list bills the card when Undo is pressed (on it, the row stayed). `after`:
+ * whether the refreshed list bills it once the revert's refresh has landed.
+ */
+function hostMock(before: boolean | null = false, after: boolean | null = true) {
+  const list = { billed: before };
+  return {
+    start: vi.fn(), end: vi.fn(), undone: vi.fn(), failedAway: vi.fn(),
+    onList: vi.fn(() => list.billed),
+    generation: vi.fn(() => 0),
+    afterRefresh: vi.fn(async () => { list.billed = after; }),
+  };
 }
 
-function draw(w: GotItWritten = written(), name = NAME, opts: { onList?: boolean | null; failed?: boolean } = {}) {
-  const host = hostMock(opts.onList ?? false);
+function draw(w: GotItWritten = written(), name = NAME, opts: { onList?: boolean | null; after?: boolean | null; failed?: boolean } = {}) {
+  const host = hostMock(opts.onList ?? false, opts.after === undefined ? true : opts.after);
   const onExpire = vi.fn();
   const ui = (h = host, ww = w) => (
     <>
@@ -193,8 +203,9 @@ describe("Undo", () => {
     expect(actionId).toMatch(/^[0-9a-f-]{36}$/);
     await act(async () => resolve({ reverted: { id: "r1" } }));
     expect(toast().textContent).toBe(c.undone(NAME));
-    // The row had left the list (onList false), so it comes back; the action invalidated.
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, false, true);
+    // The row had left the list and the refreshed list bills it again, so it comes back.
+    expect(host.undone).toHaveBeenCalledWith(ORACLE, true);
+    expect(host.afterRefresh).toHaveBeenCalledWith(0);
     expect(undoingNow()).toBe(false);
     // The revert action invalidated the page itself.
     expect(refresh).not.toHaveBeenCalled();
@@ -208,7 +219,32 @@ describe("Undo", () => {
     await act(async () => fireEvent.click(undo()));
     expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
     // It never left, so nothing fades back in.
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, false, false);
+    expect(host.undone).toHaveBeenCalledWith(ORACLE, false);
+  });
+
+  it("decides from the list AFTER the refresh: still covered by copies added since, nothing comes back", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    // Off the list when pressed (the slot held), and still off it once the refresh lands.
+    const { host } = draw(written(), NAME, { onList: false, after: false });
+    await act(async () => fireEvent.click(undo()));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    // The held entry is released (and with the last purchase, dropped): no row to fade back in.
+    expect(host.undone).toHaveBeenCalledWith(ORACLE, false);
+  });
+
+  it("reads Undoing… and keeps the held entry until the refreshed list has landed", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    const { host } = draw();
+    let land!: () => void;
+    host.afterRefresh.mockReturnValueOnce(new Promise<void>((r) => { land = r; }));
+    await act(async () => fireEvent.click(undo()));
+    expect(screen.getByRole("button", { name: c.undoing })).toBeInTheDocument();
+    expect(host.undone).not.toHaveBeenCalled();
+    expect(host.end).not.toHaveBeenCalled();
+    await act(async () => land());
+    expect(host.undone).toHaveBeenCalled();
   });
 
   it("decides stayed from the list, not the facts: an idempotent retry's stayed row is undone elsewhere", async () => {
@@ -225,7 +261,7 @@ describe("Undo", () => {
     await act(async () => fireEvent.click(undo()));
     expect(toast().textContent).toBe(c.undone(NAME));
     // Re-read, not invalidated: the held slot is kept until the fresh list bills the card (finding 3).
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, true, true);
+    expect(host.undone).toHaveBeenCalledWith(ORACLE, true);
     expect(revertCollectionEntry).not.toHaveBeenCalled();
     // Nothing was written, so nothing invalidated: the list is re-read here (C7).
     expect(refresh).toHaveBeenCalledTimes(1);

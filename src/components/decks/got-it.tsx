@@ -20,6 +20,9 @@ type Receipt = { card: DeckDetailCard; name: string; written: GotItWritten; fail
 
 const NONE: ReadonlyMap<string, DeckDetailCard> = new Map();
 const NO_IDS: ReadonlySet<string> = new Set();
+const BOUGHT_NONE: ReadonlyMap<string, { card: DeckDetailCard; live: number }> = new Map();
+/** How long an undo waits for the refreshed list before reading the one it has. */
+const REFRESH_WAIT_MS = 5000;
 
 export type GotIt = {
   deckId: string;
@@ -57,10 +60,20 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
   const [target, setTarget] = useState<Target | null>(null);
   const [pending, setPending] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  const [held, setHeld] = useState<ReadonlyMap<string, DeckDetailCard>>(NONE);
+  // One baseline per card, the row as first drawn, until the list is read again, with how many
+  // live purchases hold it: a second press keeps the first snapshot (it pins the row's group), and
+  // undoing one purchase leaves the baseline while another stands.
+  const [bought, setBought] = useState<ReadonlyMap<string, { card: DeckDetailCard; live: number }>>(BOUGHT_NONE);
+  const held = useMemo<ReadonlyMap<string, DeckDetailCard>>(
+    () => (bought.size === 0 ? NONE : new Map([...bought].map(([id, b]) => [id, b.card]))),
+    [bought],
+  );
   const [returning, setReturning] = useState<ReadonlySet<string>>(NO_IDS);
   const [undoing, setUndoing] = useState<ReadonlySet<string>>(NO_IDS);
   const list = useRef<((oracleId: string) => boolean) | null>(null);
+  // Every fresh list registers anew; an undo waits for one newer than its request.
+  const generation = useRef(0);
+  const waiters = useRef<(() => void)[]>([]);
   // Focus goes back to the tag that opened the confirm, held explicitly: a pointer press does not
   // focus a button in every browser. After a write the row usually leaves before the confirm
   // unmounts, so a tag no longer in the document hands focus to the Shopping filter instead.
@@ -94,7 +107,10 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
     close();
     if (!t) return;
     const id = t.card.oracleId;
-    setHeld((h) => new Map(h).set(id, t.card));
+    setBought((b) => {
+      const was = b.get(id);
+      return new Map(b).set(id, was ? { card: was.card, live: was.live + 1 } : { card: t.card, live: 1 });
+    });
     setReturning((r) => (r.has(id) ? new Set([...r].filter((x) => x !== id)) : r));
     setReceipt({ card: t.card, name: t.name, written });
   }, [close]);
@@ -102,25 +118,40 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
     start: (id: string) => setUndoing((u) => (u.has(id) ? u : new Set(u).add(id))),
     end: (id: string) => setUndoing((u) => (u.has(id) ? new Set([...u].filter((x) => x !== id)) : u)),
     onList: (id: string) => list.current?.(id) ?? null,
-    // A row that left fades back in where its slot was; one that stayed never left, so it does not.
-    // After `alreadyReverted` the list is re-read rather than invalidated, so the held entry stays
-    // and the slot steps aside only once the fresh list bills the card (the decklist's own rule).
-    undone: (id: string, refreshed: boolean, left: boolean) => {
-      if (left) setReturning((r) => new Set(r).add(id));
-      if (refreshed) return;
-      setHeld((h) => {
-        if (!h.has(id)) return h;
-        const next = new Map(h);
-        next.delete(id);
+    generation: () => generation.current,
+    afterRefresh: (since: number) => new Promise<void>((resolve) => {
+      if (generation.current > since) return resolve();
+      // Bounded: a list that never re-renders (the page left) must not hold the undo for good.
+      const timer = setTimeout(resolve, REFRESH_WAIT_MS);
+      waiters.current.push(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    }),
+    // Called once the refreshed list has landed. A row that came back fades in where its slot was;
+    // one purchase is released, and the baseline goes with the last.
+    undone: (id: string, back: boolean) => {
+      if (back) setReturning((r) => new Set(r).add(id));
+      setBought((b) => {
+        const was = b.get(id);
+        if (!was) return b;
+        const next = new Map(b);
+        if (was.live > 1) next.set(id, { card: was.card, live: was.live - 1 });
+        else next.delete(id);
         return next;
       });
     },
   }), []);
   const registerList = useCallback((bills: ((oracleId: string) => boolean) | null) => {
     list.current = bills;
+    if (!bills) return;
+    generation.current += 1;
+    const ready = waiters.current;
+    waiters.current = [];
+    ready.forEach((w) => w());
   }, []);
   const clearHeld = useCallback(() => {
-    setHeld(NONE);
+    setBought(BOUGHT_NONE);
     setReturning(NO_IDS);
   }, []);
   const expire = useCallback(() => setReceipt(null), []);

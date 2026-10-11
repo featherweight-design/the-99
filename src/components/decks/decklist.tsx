@@ -569,7 +569,9 @@ export function Decklist({
     const billed = new Set(billedKey.split(","));
     registerList?.((id) => billed.has(id));
     return () => registerList?.(null);
-  }, [registerList, billedKey]);
+    // `cards` too: every fresh list from the server registers anew, even one billing the same
+    // cards, because an undo waits for the list its revert refreshed.
+  }, [registerList, billedKey, cards]);
   const visibleCards = filter === "shopping" ? listShoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.

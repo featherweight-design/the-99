@@ -148,8 +148,9 @@ describe("I got it's held slot", () => {
     previewRevert.mockResolvedValueOnce({ rows: [], entryRows: [], differs: false, decks: [], expected: { k: 1 } });
     revertCollectionEntry.mockResolvedValueOnce({ reverted: { id: "r1" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
+    // The revert's refresh lands; only then does the toast settle.
+    await act(async () => rerender(tree([signet, talisman, remora], "shopping")));
     expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
-    rerender(tree([signet, talisman, remora], "shopping"));
     expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") }).closest(".anim-slot-in")).toBeNull();
     // The next read: it joins Spoken for.
     rerender(tree([owned(signet), talisman, remora], "all"));
@@ -175,9 +176,48 @@ describe("I got it's held slot", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
     // The refresh has not landed: the slot still holds rather than blinking out.
     expect(slot("Arcane Signet")).toBeInTheDocument();
-    rerender(tree([signet, talisman], "shopping"));
+    await act(async () => rerender(tree([signet, talisman], "shopping")));
     expect(slot("Arcane Signet")).toBeNull();
+    expect(screen.getByText(gotItCopy.receipt.undone("Arcane Signet"))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") }).closest(".anim-slot-in")).not.toBeNull();
+  });
+
+  it("after an undo whose refreshed list still covers the card, drops the slot and says so", async () => {
+    previewRevert.mockResolvedValue({ rows: [], entryRows: [], differs: false, decks: [], expected: { k: 1 } });
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    const { rerender } = render(tree([signet, talisman], "shopping"));
+    await buy("Arcane Signet");
+    rerender(tree([{ ...signet, owned: true }, talisman], "shopping"));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
+    // Copies were added elsewhere since: the refreshed list still does not bill the card.
+    await act(async () => rerender(tree([{ ...signet, owned: true }, talisman], "shopping")));
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(slot("Arcane Signet")).toBeNull();
+  });
+
+  it("keeps one baseline per card: a second press keeps the first snapshot, and undoing one releases only it", async () => {
+    previewRevert.mockResolvedValue({ rows: [], entryRows: [], differs: false, decks: [], expected: { k: 1 } });
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    const claimed = {
+      ...signet, owned: true,
+      availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [{ id: "d2", name: "HD Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] },
+    } as DeckDetailCard;
+    const stayed = { tookCopy: [{ deckId: "d2", deckName: "HD Atraxa", copies: 1 }], stillNeeds: 1 };
+    const { rerender } = render(tree([signet, talisman, remora], "shopping"));
+    await buy("Arcane Signet", stayed);
+    rerender(tree([claimed, talisman, remora], "shopping"));
+    // The second press starts from the row as it now reads (owned, spoken for).
+    markBought.mockResolvedValueOnce({ applied: { id: "e0000000-0000-4000-8000-000000000002", receipt: stayed } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") })));
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: gotItCopy.confirm.add(1) })));
+    rerender(tree([claimed, talisman, remora], "shopping"));
+    // Still pinned to Ramp by the FIRST snapshot.
+    expect(screen.queryByText(recommendationsCopy.shopping.spokenForGroupLabel)).toBeNull();
+    // Undo the second purchase: the first still stands, so the baseline (and the pin) does too.
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
+    await act(async () => rerender(tree([claimed, talisman, remora], "shopping")));
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.shopping.spokenForGroupLabel)).toBeNull();
   });
 
   it("holds a bought commander's slot in the commander group", async () => {
@@ -196,9 +236,12 @@ describe("I got it's held slot", () => {
     await buy("Arcane Signet");
     rerender(tree([{ ...signet, owned: true }, talisman], "shopping"));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
+    // Until the revert's revalidation lands, the slot stands and the toast reads Undoing….
+    expect(slot("Arcane Signet")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: gotItCopy.receipt.undoing })).toBeInTheDocument();
+    // It lands, listing the card again.
+    await act(async () => rerender(tree([signet, talisman], "shopping")));
     expect(screen.getByText(gotItCopy.receipt.undone("Arcane Signet"))).toBeInTheDocument();
-    // The revert's revalidation lists the card again.
-    rerender(tree([signet, talisman], "shopping"));
     expect(slot("Arcane Signet")).toBeNull();
     const tag = screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") });
     expect(tag.closest(".anim-slot-in")).not.toBeNull();

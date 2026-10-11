@@ -63,11 +63,15 @@ export type GotItUndoHost = {
   /** It settled, or was cancelled: the tag is live again. */
   end: (oracleId: string) => void;
   /**
-   * The revert committed. `refreshed`: nothing invalidated (alreadyReverted), so the list is being
-   * re-read and the held slot stays until the fresh list bills the card again. `left`: the row had
-   * left the list (a held slot), so it comes back.
+   * The revert committed and the refreshed list has landed: one purchase of this card is released
+   * (its held slot goes when none is left). `back`: the row had left and the refreshed list bills
+   * the card again, so it fades back in where its slot was.
    */
-  undone: (oracleId: string, refreshed: boolean, left: boolean) => void;
+  undone: (oracleId: string, back: boolean) => void;
+  /** How many fresh lists have registered so far: taken before a request whose refresh we await. */
+  generation: () => number;
+  /** Resolves once a list newer than `since` has registered (or after a bounded wait). */
+  afterRefresh: (since: number) => Promise<void>;
   /** It failed after this toast was replaced: the provider brings this receipt back, failed. */
   failedAway: () => void;
   /** Whether the fresh Shopping list bills the card now; null with no list to ask. */
@@ -94,9 +98,11 @@ export function GotItReceipt({
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const actionId = useRef<string | null>(null);
-  // Whether the row stayed, read off the list when Undo is pressed, before the revert moves it.
-  const [stayed, setStayed] = useState(false);
+  // Whether the row had stayed, read off the list when Undo is pressed, before the revert moves it.
   const stayedNow = useRef(false);
+  // Whether the undo gave the row back, read off the list AFTER the revert's refresh has landed:
+  // copies added elsewhere since can keep the deck covered, and then nothing comes back.
+  const [back, setBack] = useState(false);
   // Where the undo is: a warning open (this toast owns it) or a request out (the host waits on it).
   const stage = useRef<"idle" | "warning" | "network">("idle");
   const mounted = useRef(true);
@@ -135,10 +141,12 @@ export function GotItReceipt({
     stage.current = "network";
     setPhase({ k: "undoing" });
     actionId.current ??= crypto.randomUUID();
+    // Taken before the request: the action's revalidation may land before it answers.
+    const since = host.generation();
     try {
       const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId);
-      if ("reverted" in out) return done();
-      if ("alreadyReverted" in out) return done(true);
+      if ("reverted" in out) return await done(since);
+      if ("alreadyReverted" in out) return await done(null);
       if ("wouldShort" in out) {
         const before = new Set((was ?? []).map((d) => d.deckId));
         // Asked again, but the toast that would ask has gone: nothing was written, so it ends.
@@ -167,7 +175,7 @@ export function GotItReceipt({
     setPhase({ k: "checking" });
     try {
       const p = await previewRevert(written.entryId, deckId);
-      if ("alreadyReverted" in p) return done(true);
+      if ("alreadyReverted" in p) return await done(null);
       if (!("rows" in p)) return fail();
       if (p.decks.length > 0) {
         if (!mounted.current) return abandon();
@@ -182,16 +190,25 @@ export function GotItReceipt({
   }
 
   /**
-   * `reverted` invalidated the deck page in the action. `alreadyReverted` wrote nothing, so nothing
-   * did: the list is re-read here, or the held slot would clear with no row to replace it and the
-   * counts would stay down (C7).
+   * The revert committed. `since` is the list generation before a `reverted` request, whose action
+   * invalidated the page; null for `alreadyReverted`, which wrote nothing, so the list is re-read
+   * here (C7). Either way the toast reads Undoing… and the held slot stands until the refreshed
+   * list has landed, and that list decides: billed again, the row is back on it; not billed (the
+   * deck is still covered), the copy is only out of the collection again.
    */
-  function done(refresh = false) {
-    if (refresh) router.refresh();
+  async function done(since: number | null) {
+    setPhase({ k: "undoing" });
+    if (since === null) {
+      since = host.generation();
+      router.refresh();
+    }
+    await host.afterRefresh(since);
+    const cameBack = !stayedNow.current && (host.onList(oracleId) ?? true);
     stage.current = "idle";
     host.end(oracleId);
-    host.undone(oracleId, refresh, !stayedNow.current);
+    host.undone(oracleId, cameBack);
     restart();
+    setBack(cameBack);
     setPhase({ k: "undone" });
   }
 
@@ -199,7 +216,6 @@ export function GotItReceipt({
     // Off the list now means the row left (its held slot is drawn); on it, the row stayed. With no
     // list to ask, the write's own facts say whether it stayed.
     stayedNow.current = host.onList(oracleId) ?? body !== null;
-    setStayed(stayedNow.current);
     void check();
   }
 
@@ -261,7 +277,7 @@ export function GotItReceipt({
         frameRef={ref}
         placement="deck"
         onHold={hold}
-        title={stayed ? c.undoneElsewhere(cardName) : c.undone(cardName)}
+        title={back ? c.undone(cardName) : c.undoneElsewhere(cardName)}
       />
     );
   }
