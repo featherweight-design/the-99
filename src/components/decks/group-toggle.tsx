@@ -38,13 +38,6 @@ export function isDeckView(value: string): value is DeckView {
 
 export type DeckPanel = "list" | "stats";
 
-/** Which body the All / Shopping / Stats control last showed, per device. */
-export const DECK_PANEL_KEY = "the99:deck-panel";
-
-export function isDeckPanel(value: string): value is DeckPanel {
-  return value === "list" || value === "stats";
-}
-
 const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
   { value: "list", glyph: "≣", label: viewToggleCopy.deck.list },
   { value: "card", glyph: "▦", label: viewToggleCopy.deck.card },

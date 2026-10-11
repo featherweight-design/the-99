@@ -30,7 +30,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DeckStatsView } from "./deck-stats-view";
-import { DECK_PANEL_KEY, DECK_VIEW_KEY, GroupToggle, isDeckPanel, isDeckView, type AutoControls } from "./group-toggle";
+import { useDeckPanel } from "./deck-panel";
+import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
 import { deckCardComparator } from "../../lib/decks/sort-cards";
 import {
   DECK_SORT_STORAGE_KEY,
@@ -367,10 +368,10 @@ export function Decklist({
   // List until this browser says otherwise, which is also what the server
   // renders: the stored choice arrives on the pass after hydration.
   const [storedView, chooseView] = useStoredView(DECK_VIEW_KEY, isDeckView);
-  // The panel's body, remembered per device beside the list view. Stats is a third
-  // segment of the All / Shopping control, so choosing either list segment returns here.
-  const [storedPanel, choosePanel] = useStoredView(DECK_PANEL_KEY, isDeckPanel);
-  const statsOpen = statsEnabled && storedPanel === "stats";
+  // The panel's body, held for this visit to this deck (`useDeckPanel`), not remembered. Stats is a
+  // third segment of the All / Shopping control, so choosing either list segment returns here.
+  const [panel, choosePanel] = useDeckPanel();
+  const statsOpen = statsEnabled && panel === "stats";
   // I got it's held slots (call 8) last until the list is read again: a switch of tab or panel, or
   // leaving the deck, clears them; the action's revalidation does not.
   const gotIt = useGotIt();

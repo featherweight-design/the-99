@@ -507,6 +507,10 @@ export default async function DeckBuilderPage({
 
   const shell = (
     <BuilderShell
+      // One builder per deck: a client navigation to another deck reuses this element, and its
+      // state (the tab, the list's Stats panel) would otherwise carry across. The providers
+      // around it are keyed per deck only while their switches are on.
+      key={id}
       mix={shellMix}
       labelRows={labelRows}
       labelQueried={labelQueried}
