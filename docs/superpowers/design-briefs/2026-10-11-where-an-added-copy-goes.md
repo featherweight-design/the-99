@@ -88,7 +88,7 @@ each before Design draws against it.
    as `receiptFacts` does. Reason in the open question below.
 3. **Change reuses `assignCopyFor` and the radiogroup chooser unchanged.** It is not a new write path. #1442 already
    let a brew take a copy. Any deck that needs the card is offered; a deck that does not claim it is not.
-4. **`Keep it free` is a supply subtraction, not a reservation to a deck.** `card_assignments` cannot hold a row with
+4. **`Keep it free` reduces allocatable supply, not a reservation to a deck.** `card_assignments` cannot hold a row with
    no deck (see above), and a sentinel deck id would cascade, join and prune wrongly. Engineering's lean is one new
    table keyed `(user_id, oracle_id)` with a count of copies held back. It must NOT be subtracted from `owned`:
    the query deliberately returns true `owned` unreduced (`availability-query.ts:590-591`, the `owned <= 0`
