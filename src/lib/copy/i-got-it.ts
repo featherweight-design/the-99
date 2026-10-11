@@ -62,9 +62,10 @@ export const gotItCopy = {
     /**
      * Every done undo: true whatever the list then shows (the row may come back, or the deck may
      * still be covered by copies added since). The handoff's `undone` form ("back on the list") is
-     * not built: deciding it needed the refreshed list, which #1403 settled against.
+     * not built: deciding it needed the refreshed list, which #1403 settled against. It names
+     * only the copies this write added: a spoken-for row's card was already held, and still is.
      */
-    undoneElsewhere: (card: string) => `Undone. ${card} is out of your collection again.`,
+    undoneElsewhere: (card: string, q: number) => `Undone. ${card} ×${n(q)} removed from your collection.`,
     undoFailed: "Couldn't undo that.",
     undoFailedBody: "The copy is still in your collection. You can revert it from History.",
     openHistory: "Open History",

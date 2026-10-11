@@ -148,7 +148,7 @@ describe("the receipt's window", () => {
     fireEvent.pointerEnter(toast());
     act(() => undo().focus());
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
     await tick(TOAST_MS * 3);
     expect(onExpire).not.toHaveBeenCalled();
     fireEvent.pointerLeave(toast());
@@ -208,7 +208,7 @@ describe("Undo", () => {
     expect(actionId).toMatch(/^[0-9a-f-]{36}$/);
     await act(async () => resolve({ reverted: { id: "r1" } }));
     // What the revert did, true whatever the list then shows.
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
     expect(undoingNow()).toBe(false);
     // The revert action invalidated the page itself.
     expect(refresh).not.toHaveBeenCalled();
@@ -220,14 +220,14 @@ describe("Undo", () => {
     revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
     draw(written({ facts: { tookCopy: [], stillNeeds: 1 } }));
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
   });
 
   it("an entry already reverted reads as undone (audit finding 2)", async () => {
     previewRevert.mockResolvedValue({ alreadyReverted: true });
     draw();
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
     expect(revertCollectionEntry).not.toHaveBeenCalled();
     // Nothing was written, so nothing invalidated: the list is re-read here (C7).
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -238,7 +238,7 @@ describe("Undo", () => {
     revertCollectionEntry.mockResolvedValue({ alreadyReverted: true });
     draw();
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
@@ -255,7 +255,7 @@ describe("Undo", () => {
     expect(undoingNow()).toBe(true);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.shortWarning.confirmUndo })));
     expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, [atraxa], DECK);
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
   });
 
   it("cancelling the warning writes nothing and gives the toast back with Undo", async () => {
@@ -288,7 +288,7 @@ describe("Undo", () => {
     revertCollectionEntry.mockRejectedValue(new Error("lost"));
     draw();
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 1));
   });
 
   it("claims nothing about the copy when the entry cannot be read back either", async () => {
@@ -301,6 +301,15 @@ describe("Undo", () => {
     expect(t.textContent).toContain(c.undoFailed);
     expect(t.textContent).not.toContain(c.undoFailedBody);
     expect(screen.getByRole("link", { name: c.openHistory })).toBeInTheDocument();
+  });
+
+  // A spoken-for row's card was held before this write and still is: the line names only what it added.
+  it("names the copies this write added, not the card's whole holding", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ quantity: 2 }));
+    await act(async () => fireEvent.click(undo()));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME, 2));
   });
 
   it("an entry that is gone fails the same way", async () => {

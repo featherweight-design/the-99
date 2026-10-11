@@ -262,7 +262,7 @@ export function GotItReceipt({
         frameRef={ref}
         placement="deck"
         onHold={hold}
-        title={c.undoneElsewhere(cardName)}
+        title={c.undoneElsewhere(cardName, written.quantity)}
       />
     );
   }

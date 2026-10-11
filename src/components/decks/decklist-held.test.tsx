@@ -148,7 +148,7 @@ describe("I got it's held slot", () => {
     previewRevert.mockResolvedValueOnce({ rows: [], entryRows: [], differs: false, decks: [], expected: { k: 1 } });
     revertCollectionEntry.mockResolvedValueOnce({ reverted: { id: "r1" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
-    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet", 1))).toBeInTheDocument();
     // The revert's refresh lands. The row never left (no slot was drawn), so it does not fade in.
     rerender(tree([signet, talisman, remora], "shopping"));
     expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") }).closest(".anim-slot-in")).toBeNull();
@@ -176,7 +176,7 @@ describe("I got it's held slot", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
     // The refresh has not landed: the slot still holds rather than blinking out.
     expect(slot("Arcane Signet")).toBeInTheDocument();
-    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet", 1))).toBeInTheDocument();
     rerender(tree([signet, talisman], "shopping"));
     expect(slot("Arcane Signet")).toBeNull();
     expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") }).closest(".anim-slot-in")).not.toBeNull();
@@ -191,7 +191,7 @@ describe("I got it's held slot", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
     // Copies were added elsewhere since: the refreshed list still does not bill the card.
     rerender(tree([{ ...signet, owned: true }, talisman], "shopping"));
-    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet", 1))).toBeInTheDocument();
     expect(slot("Arcane Signet")).toBeInTheDocument();
     // The next read ends it.
     rerender(tree([{ ...signet, owned: true }, talisman], "all"));
@@ -220,7 +220,7 @@ describe("I got it's held slot", () => {
     // Undo the second purchase: the baseline (and the pin) stays until the next read.
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
     rerender(tree([claimed, talisman, remora], "shopping"));
-    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet", 1))).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.shopping.spokenForGroupLabel)).toBeNull();
   });
 
@@ -241,7 +241,7 @@ describe("I got it's held slot", () => {
     rerender(tree([{ ...signet, owned: true }, talisman], "shopping"));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
     // Done: the toast says what the revert did; the slot stands until a list billing the card lands.
-    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet", 1))).toBeInTheDocument();
     expect(slot("Arcane Signet")).toBeInTheDocument();
     // It lands, listing the card again: the row is back, fading in from the render that draws it.
     rerender(tree([signet, talisman], "shopping"));
