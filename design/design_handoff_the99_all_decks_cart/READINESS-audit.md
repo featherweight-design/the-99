@@ -5,21 +5,66 @@ R1 audit, 2026-10-11. Audited against `docs/superpowers/design-briefs/2026-10-11
 `673b657fc`. The canvases were read as source (scene data and props in `All Decks Cart.dc.html`, the section list
 in `The 99 - All Decks Cart (R1).dc.html`); nothing under `design/` is imported.
 
-## Verdict: YELLOW
+## Verdict: GREEN
 
-The drop honours all four rulings and does not contradict any lock, except where Hugh's own R1 LGTM amended
-lock 7 (S1b, below). Every deliverable the brief lists is drawn at 900 and 390. That covers the fixture cart, the
-Sol Ring line as listed, being bought and bought, all selected, some and none, the empty and thin states,
-checkout and return, the STATES rows, the design table and the About entry. Two product calls are still Hugh's,
-G1 and G11. Neither blocks planning, and each has a shippable default. The link-size measurement engineering owed
-(lock 5) is now done (finding 1). Q6 is no longer urgent: it applies only to carts about four times the size of
-Hugh's.
+Updated 2026-10-11 with Hugh's answers to the four questions the first pass raised (below). That pass was YELLOW
+on G1 and G11. Both are now ruled, and nothing left needs Design.
+
+The drop honours all four rulings and the eight locks. Hugh amended two of the locks: lock 7, by the S1b chooser
+(his R1 LGTM, widened to brews below), and lock 5, by the split-link answer to Q6. Every deliverable the brief
+lists is drawn at 900 and 390. That covers the fixture cart, the Sol Ring line as listed, being bought and
+bought, all selected, some and none, the empty and thin states, checkout and return, the STATES rows, the design
+table and the About entry. The link-size measurement engineering owed (lock 5) is done (finding 1).
+
+## Hugh's answers (2026-10-11)
+
+1. **G1, deck names on a cart line: the FULL deck name.** `3 · HD - Gishath, HD - Kratos, HD -Thorin`. The
+   canvases draw short names (`short:` in the scene data). The build uses the full name everywhere a deck is
+   named: the decks line, the confirm's deck list and the receipt. The string swaps its value, Design already
+   wraps it and never truncates it, so there is no redraw.
+2. **G11, when fewer copies are bought than decks want, the player CHOOSES, brews included.** The S1b chooser
+   extends to brews. **Build lock 9**, recorded here for the plan: `assignCopyFor` and the claim model accept a
+   `card_assignments` row for a deck with no committed version. Today they refuse one
+   (`src/lib/decks/assign.ts:85-91`), and a brew claims softly off its live list. This changes the claim model
+   for the whole app, not just the cart. **Blast radius**, each surface needing its own tests and a probe on a
+   brew that holds an assignment:
+   - availability: `claimModel`, `availabilityState`, the pills and the card marks
+   - Deck printings
+   - Shopping: `isShoppingCard`, `loadDeckBuyRows`, the roll-up, the tile figure and Home's Commitments
+   - I got it: `markBought`, the held slot and the receipt
+   - the cart
+
+   ContestedCardRow's `draftNote` and `draftNoteMany` sentences ("only committed decks can be given a copy")
+   become false once brews can be chosen, so they go to `/copy-review` with the build. S1c (brews drawn inert) is
+   retired.
+3. **Q6, a cart over about 1,150 lines: split into several Mana Pool links, labeled `part 1 of 2`.** Decided for
+   this round: CartCheckout's link slot draws one `ExternalLink` row per part, stacked in the shipped 44px row
+   shape. Each part is cut so its URL is at most 32,000 characters (finding 1), and a merged line is never split
+   across parts. The label is `exportLinkOutCopy.shopping` plus the part, worded by `/copy-review`, and
+   `checkout.sends` names each part's line count. Repeating a drawn row adds no layout, and no cart on staging
+   reaches this state (Hugh's is 291 lines), so it does not go back to Design. K3 becomes this state.
+4. **Q1, unselected decks stay unselected for this visit only**, as drawn.
+
+## Vocabulary: select / unselect
+
+Hugh asked Design to stop using tick and untick. The cart's verbs are **select** and **unselect**, everywhere.
+No tick or untick string appears in any file of the drop except `support.js`, which was not searched; this
+audit's text now uses select and unselect. Design's copy uses **`Deselect`**, which is neither. These strings go
+to `/copy-review` to become `Unselect`:
+
+- `selections.deselectAll`, `Deselect all` (`all-decks-cart · copy strings.ts:39`, `All Decks Cart.dc.html:581`,
+  STATES A2 and the DeckSelect row of the design table)
+- the About caption, `Deselect a deck to leave it out of this visit’s cart.` (`about · all decks cart.ts:14` and
+  the AB section of the R1 canvas)
+
+README, STATES and the R1 canvas notes also use `deselected` and `Deselecting never writes`. That is reference
+prose, not shipped copy, so it stays as Design wrote it.
 
 ## Rulings and locks, checked
 
 | Item | Drop | Result |
 |---|---|---|
-| Ruling 1: an entry on `/decks`, every deck missing cards starts selected, brews included, complete decks absent | A1 entry line, A2 7 of 7 selected (3 brews), the 14 complete decks absent, A3/A4 deselect | holds |
+| Ruling 1: an entry on `/decks`, every deck missing cards starts selected, brews included, complete decks absent | A1 entry line, A2 7 of 7 selected (3 brews), the 14 complete decks absent, A3/A4 unselect | holds |
 | Ruling 2: one copy per deck, `2 · Gishath, Aang` | `list.decks(qty, names)`, Sol Ring `3 · Gishath, Kratos, Thorin`; names wrap, never truncated | holds (short names are G1) |
 | Ruling 3: one Mana Pool link-out, reusing the per-deck checkout and its prices | CartCheckout = PriceStrip's box + `exportLinkOutCopy.shopping`; one `manapoolAddDeckUrl` (K2) | holds |
 | Ruling 4: bought cards come back through I got it | S1–S4 extend GotItConfirm / receipt / held slot | holds (G2) |
@@ -28,13 +73,13 @@ Hugh's.
 | Lock 4: an owned card can be a cart line, said without hiding it | `you own 17 · all 17 in other decks`, `--fg-faint`, no verdict word, no warning colour (checked in the source: `--warning` appears only on the shipped buy tag) | holds (finding 4) |
 | Lock 5: one link over merged lines | one link, K3 not drawn | holds; measured below |
 | Lock 7: a purchase's effect is read again, never assumed | S3/S4 receipts read from the roll-up; S6 names the decks the read covers | holds. **S1b's chooser writes `card_assignments`**, an explicit override of seniority Hugh approved in the R1 LGTM; G11 |
-| Lock 8: deselecting is a view, never a write | Selections are view state for this visit only, and `selections.note` says so; Must-nots repeat it | holds |
+| Lock 8: unselecting is a view, never a write | Selections are view state for this visit only, and `selections.note` says so; Must-nots repeat it | holds |
 
 ## Open questions, accounted for
 
 Q1 this visit only (engineering's preference). Q2 both views, by card by default. Q3 call 6. Q4 one confirm, the
-decks listed. Q5 the line stays with `N added this visit`. **Q6 explicitly left to Hugh, K3 not drawn**, as the
-brief asked. Q7 yes (E2). Q8 yes, `?deck=<id>` (finding 6). All eight are answered or explicitly left.
+decks listed. Q5 the line stays with `N added this visit`. **Q6 was left to Hugh, K3 not drawn**, as the brief
+asked; Hugh has since answered it (split links, answer 3). Q7 yes (E2). Q8 yes, `?deck=<id>` (finding 6). All eight are answered or explicitly left.
 
 ## Findings
 
@@ -45,20 +90,13 @@ brief asked. Q7 yes (E2). Q8 yes, `?deck=<id>` (finding 6). All eight are answer
    response**, so the whole list decodes on their side. The ceiling is between **32,099 characters (200) and
    40,115 (414 URI Too Long)**, measured by padding the payload. At about 27.7 characters per line that is roughly
    1,150 lines, four times Hugh's cart. **Engineering owes:** (a) a `links.test.ts` case for a 291-line cart and a
-   guard that refuses a URL over 32,000 characters (the Q6 path, an engineering refusal until Hugh answers);
+   splitter that cuts the cart into parts of at most 32,000 characters each (Hugh's answer 3), with a test;
    (b) one manual press in a browser before launch to confirm Mana Pool's add step takes all 291 lines into its
    mass entry. The GET proves transport and decoding, not their client's add step. No cart is bought.
-2. **needs-Hugh · G1 deck short names.** Hugh's form names `Gishath, Aang`. The decks are named `HD - Gishath`,
-   `HD -Thorin`, `HD Tune - Mutant Menace`, and no short-name rule exists. Options: (a) full deck names, (b) the
-   commander's short name where it is unique among the decks on the line, (c) a stored per-deck short name. This
-   is a naming decision about Hugh's own data, so there is no single defensible answer. Default if unanswered:
-   (a), which is always true. Only the decks line changes.
-3. **needs-Hugh · G11 the S1b chooser for brews.** S1b turns the decks on the line into ContestedCardRow when
-   fewer copies are bought than decks need. Pressing Add writes `card_assignments`. `assignCopyFor`
-   (`src/lib/decks/assign.ts:85-91`) gives a copy only to a deck with a current committed claim, and **all three
-   Sol Ring decks are brews**, so S1b as drawn cannot happen on the fixture today. Lifting the refusal changes
-   the claim model for every surface, not only the cart. Default if unanswered: S1c, brew options inert with the
-   shipped `draftNoteMany`, and seniority (first listed) decides. Committed decks can always be chosen.
+2. **ruled (was needs-Hugh) · G1 deck short names.** Full deck names. See Hugh's answer 1.
+3. **ruled (was needs-Hugh) · G11 the S1b chooser for brews.** `assignCopyFor` refused brews, and all three Sol
+   Ring decks are brews, so S1b could not happen on the fixture. Hugh ruled that brews are choosable. Build lock 9,
+   with its blast radius, is in Hugh's answer 2.
 4. **eng-resolvable · Owned fact assumes held = owned.** `list.owned(owned)` prints `all N in other decks`
    on the reasoning that every owned copy is held elsewhere whenever the card is a buy row. That fails for a
    deck that needs more than one copy and holds some of its own (Relentless Rats and the like). Staging has no
@@ -105,12 +143,15 @@ brief asked. Q7 yes (E2). Q8 yes, `?deck=<id>` (finding 6). All eight are answer
 Findings 4, 5, 7 (the stale rule and default printing), 8 and 9 are logic decisions made above. They are not
 layout, and they are not copy wording: any wording they imply goes to `/copy-review`.
 
+Also decided here: how Hugh's split-link answer is drawn (answer 3). Two of Design's own files now read against
+Hugh's rulings. They are left as Design wrote them, and the build follows the rulings:
+
+| Design's line | Superseded by |
+|---|---|
+| STATES Must-nots: `One link. No per-deck links, no chunked links, no clipboard fallback this round.` | Answer 3: split links over about 1,150 lines |
+| README G11 / STATES S1c: brew options inert | Answer 2: brews are choosable (build lock 9) |
+| Scene data `short:` deck names on the decks line | Answer 1: full deck names |
+
 ## Questions for Hugh
 
-1. **G1:** On a cart line, name decks by (a) full deck name, (b) commander short name, or (c) a short name you
-   set per deck?
-2. **G11:** When you buy fewer copies than the decks need, should brews be choosable (that changes the claim
-   model app-wide), or should seniority decide among brews (S1c)?
-3. **Q6 (not urgent):** A cart over about 1,150 lines exceeds Mana Pool's URL limit. Should it split into several
-   links, cap with a "more" link, offer copy to clipboard, or be refused?
-4. **Q1 (optional):** Should deselected decks stay deselected on your next visit? The default is this visit only.
+None open. All four were answered on 2026-10-11 (above).
