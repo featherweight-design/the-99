@@ -32,6 +32,11 @@ const clock = (ms: number) => {
 };
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+/** Each tool's own, stable heading: the one focus moves to on opening. A tool draws a temporary
+ *  heading while its first read is pending, which is replaced when it lands, so the first heading
+ *  found is not the one to take. */
+const HEADING_IDS: Partial<Record<TuningTool, string>> = { suggested: "tuning-heading", cuts: "cuts-heading" };
+
 const NAMES: Record<TuningTool, string> = {
   suggested: copy.tools.suggested.name,
   mana: copy.tools.mana.name,
@@ -136,11 +141,19 @@ export function TuningHub({
   // On mount, whether or not a shortcut opened a tool in the first render (the tab's opening
   // loader waits on this read), and each time the reader comes back to the tiles: a tool's own run
   // may have settled.
+  //
+  // Back on the tiles it reads once more a moment later: a run or an Apply pressed in the tool just
+  // left can still be in its preflight when the reader leaves, so the first read may not see its
+  // pending row yet; the second does, and a run it finds starts the watch below.
   const readOnce = useRef(false);
   useEffect(() => {
     if (openTool !== null && readOnce.current) return;
+    const returning = readOnce.current;
     readOnce.current = true;
     read();
+    if (!returning) return;
+    const again = setTimeout(read, WATCH_MS);
+    return () => clearTimeout(again);
   }, [openTool, read]);
 
   const running = !!tiles && Object.values(tiles).some((t) => t?.kind === "running");
@@ -197,7 +210,8 @@ export function TuningHub({
       if (!scrolled) { sectionRef.current?.scrollIntoView({ block: "start" }); scrolled = true; }
       if (!opening.focus) return true;
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
-      const heading = toolRef.current?.querySelector<HTMLElement>("h2, h3");
+      const id = HEADING_IDS[opening.tool];
+      const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
       if (!heading) return false;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });

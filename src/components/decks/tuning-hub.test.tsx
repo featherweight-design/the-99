@@ -11,8 +11,8 @@ vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn() })
 const read = vi.mocked(readTuningHub);
 
 const empty: HubTiles = { suggested_changes: null, proposed_cuts: null };
-const suggested = (panel: boolean = true): HubToolSpec => ({ tool: "suggested", panel: panel ? <h2>Suggested changes</h2> : null });
-const cuts = (over: number, total = 99 + 1 + over): HubToolSpec => ({ tool: "cuts", panel: <h2>Proposed cuts</h2>, over, total });
+const suggested = (panel: boolean = true): HubToolSpec => ({ tool: "suggested", panel: panel ? <h2 id="tuning-heading">Suggested changes</h2> : null });
+const cuts = (over: number, total = 99 + 1 + over): HubToolSpec => ({ tool: "cuts", panel: <h2 id="cuts-heading">Proposed cuts</h2>, over, total });
 
 function tile(tool: string) {
   return document.querySelector(`[data-tool-tile="${tool}"]`) as HTMLElement;
@@ -123,11 +123,30 @@ describe("TuningHub opening a tool", () => {
     function LatePanel() {
       const [ready, setReady] = useState(false);
       useEffect(() => { const t = setTimeout(() => setReady(true), 30); return () => clearTimeout(t); }, []);
-      return ready ? <h2>Proposed cuts</h2> : null;
+      // A temporary heading while the read is pending, then the tool's own: focus must land on the
+      // second, which replaces the first.
+      return ready ? <section><h2 id="cuts-heading">Proposed cuts</h2></section> : <div><h2>Counting</h2></div>;
     }
     render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "cuts", panel: <LatePanel />, over: 6, total: 106 }]} />);
     fireEvent.click(tile("cuts"));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" })));
+  });
+
+  it("reads again a moment after returning to the tiles, catching a run the tool just started", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+      await act(async () => { await Promise.resolve(); });
+      fireEvent.click(tile("suggested"));
+      read.mockResolvedValue({ suggested_changes: { kind: "running", startedAt: new Date().toISOString() }, proposed_cuts: null });
+      fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
+      const before = read.mock.calls.length;
+      await act(async () => { vi.advanceTimersByTime(3000); await Promise.resolve(); await Promise.resolve(); });
+      expect(read.mock.calls.length).toBeGreaterThan(before);
+      expect(tile("suggested").hasAttribute("data-running")).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("gives the phone a way back and says which tool of how many", () => {
