@@ -130,6 +130,10 @@ full width. Whichever of the two features ships first builds the row; the second
    line's `185 decklists · newest …` is catalog data, keyed on the catalog generation, so the precon ingest
    must stamp `catalog_refreshes` like the other ingests. L4 means the precon tables are empty or unreadable,
    not that MTGJSON is down.
+   The /decks line reads those same tables, and STATES L4 keeps the door lines standing when the list cannot
+   be read, so its summary loader is failure-tolerant: a failed or empty read keeps the line and drops its
+   meta (`Commander precons` alone at 900, `Precons` alone at 390), and never fails /decks. The line goes
+   only when the switch is off (P4). `/decks/precons` then renders L4.
 10. **eng-resolvable · About entry shape (G7).** As in the cart audit: `keys` for `keyLines`, a required
     `width`, the specimen becomes a figure in `src/components/about/`, `switch: 'PRECONS_ENABLED'` needs a new
     `AboutSwitch` member. `ABOUT_VERSION` is 14 today; the entry takes the next free number when its PR
@@ -144,6 +148,16 @@ full width. Whichever of the two features ships first builds the row; the second
     Shopping count can differ on arrival. No `tick` strings anywhere; selection copy, if G6 is ever drawn, is
     select / unselect.
 
+## Errata (Design's files, for the next round; not edited here)
+
+Raised in review round 1 (Copilot, 2026-10-11). The handoff is Design's record, so these are corrections
+the build follows, not edits to the drawing.
+
+| File | Says | Build follows |
+|---|---|---|
+| `design-tables/precons.md` (Route: /decks/precons, URL row) | `replaceState` as `decks-view` | `mirrorUrl` (`src/lib/url/mirror.ts`), which is what `decks-view` actually uses (AGENTS.md, "Writing the address bar without navigating") |
+| `The 99 - Precons (R2).dc.html`, `README.md` R2 change 2, `STATES-precons.md` R2 deltas, `design-tables/precons.md` | R1's stacked phone lines cost +123px; R2's single cell costs +60px | The frame's own values give R1 14 + 56 + 8 + 56 + 12 = 146px and R2 12 + 52 + 4 = 68px whether one or two cells draw. R2's two-cell geometry is what ships either way, so nothing built changes; the build measures the real fold on staging (tile start against the tab bar's top at 390 × 844) rather than quoting either figure |
+
 ## Decisions made here (only one answer defensible)
 
 - Build from R2; R1 files are history (README status line).
@@ -152,6 +166,7 @@ full width. Whichever of the two features ships first builds the row; the second
 - MTGJSON credit as a key line on the precon entry, notice verbatim (finding 5).
 - No printing picks written on a precon start (finding 7, per Design's approved Q3 answer).
 - Copy keys move to the files that own those surfaces (finding 11).
+- The /decks precon line survives a failed summary read, meta dropped (finding 9).
 
 ## Questions for Hugh
 
