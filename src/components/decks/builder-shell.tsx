@@ -477,7 +477,13 @@ export function BuilderShell({
   const [hubSettledKey, setHubSettledKey] = useState<string | null>(null);
   const onHubSettled = useCallback(() => setHubSettledKey(visitKey), [visitKey]);
   // A shortcut's ask for the hub (the trim line's `Proposed cuts →`), answered once per nonce.
+  // Dropped once the hub has answered it, so a later visit to the tab opens on the landing.
   const [hubRequest, setHubRequest] = useState<HubRequest | null>(null);
+  const hubNonce = useRef(0);
+  const onHubRequestAnswered = useCallback(
+    (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
+    [],
+  );
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.
@@ -1399,7 +1405,7 @@ export function BuilderShell({
               notice={headerNoticeTag}
               onOpenNotices={openNoticesSheet}
               onProposedCuts={tuningHubEnabled && proposedCutsEnabled
-                ? () => { setView("analysis"); setHubRequest((r) => ({ tool: "cuts", nonce: (r?.nonce ?? 0) + 1 })); }
+                ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
                 : undefined}
               // State 2: a list that has never been committed and has reached a
               // full body.
@@ -1701,6 +1707,7 @@ export function BuilderShell({
                       deckId={deck.id}
                       drawn={permits !== null || built > bodySize}
                       request={hubRequest}
+                      onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
                         ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits) : null }] : []),

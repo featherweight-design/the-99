@@ -92,6 +92,7 @@ export function TuningHub({
   tools,
   drawn,
   request,
+  onRequestAnswered,
   onSettled,
 }: {
   deckId: string;
@@ -100,6 +101,9 @@ export function TuningHub({
    *  either way, so its first read still settles the tab's opening loader. */
   drawn: boolean;
   request?: HubRequest | null;
+  /** Told when a request has been answered, so its owner can drop it: the hub remounts on every
+   *  visit to the tab, and a request still held then would reopen the tool over the landing. */
+  onRequestAnswered?: (nonce: number) => void;
   /** Called once the landing's first read has landed or failed (the tab's opening loader). */
   onSettled?: () => void;
 }) {
@@ -158,6 +162,12 @@ export function TuningHub({
       setOpening((prev) => ({ tool: request.tool, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
     }
   }
+
+  const answeredRef = useRef(onRequestAnswered);
+  useEffect(() => { answeredRef.current = onRequestAnswered; });
+  useEffect(() => {
+    if (answered !== null) answeredRef.current?.(answered);
+  }, [answered]);
 
   useEffect(() => {
     if (!opening) return;

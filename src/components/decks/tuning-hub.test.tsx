@@ -65,8 +65,9 @@ describe("TuningHub landing", () => {
   it("shows the last run and what came of it, the outcome on desktop only", async () => {
     read.mockResolvedValue({ suggested_changes: { kind: "ok", at: "2026-10-03T15:00:00Z", total: 5, accepted: 2 }, proposed_cuts: null });
     render(<TuningHub deckId="d" drawn tools={[suggested()]} />);
-    await waitFor(() => expect(tile("suggested").textContent).toContain(copy.lastRun("Oct 3", copy.outcome.applied(2, 5))));
-    expect(tile("suggested").textContent).toContain(copy.lastRun("Oct 3"));
+    // Desktop carries the outcome, the phone's copy of the line drops it (A1b).
+    await waitFor(() => expect(tile("suggested").querySelector(".md\\:inline")?.textContent).toBe(copy.lastRun("Oct 3", copy.outcome.applied(2, 5))));
+    expect(tile("suggested").querySelector(".md\\:hidden")?.textContent).toBe(copy.lastRun("Oct 3"));
   });
 
   it("marks a run in flight on its own tile, with the elapsed time ticking", async () => {
@@ -128,10 +129,13 @@ describe("TuningHub opening a tool", () => {
     expect(document.activeElement).toBe(next);
   });
 
-  it("answers a shortcut's request once, and a second press again", () => {
+  it("answers a shortcut's request once, and a second press again", async () => {
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
-    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
+    const answered = vi.fn();
+    const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} onRequestAnswered={answered} />);
+    // Its owner is told, so it can drop the request before the next visit remounts the hub.
+    await waitFor(() => expect(answered).toHaveBeenCalledWith(1));
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
     // The Tuning heading is brought to the top.
     expect(scroll).toHaveBeenCalledWith({ block: "start" });
