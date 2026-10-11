@@ -7,6 +7,19 @@
     "listFingerprint": "9a05c11f7060e228e7795438c477371d1433a64cbdf844db7a05d218a88d4d10"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Krenko"
+        ],
+        "words": [
+          "token",
+          "go wide",
+          "swarm"
+        ]
+      },
+      "backups": []
+    },
     "combos": [],
     "keyCards": [
       "Skirk Prospector",

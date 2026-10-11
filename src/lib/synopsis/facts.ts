@@ -58,6 +58,11 @@ export type SynopsisFacts = {
   combos?: ComboFact[];
   /** v2: combos one card short, named so the model does not claim them. */
   nearCombos?: NearComboFact[];
+  /**
+   * The colors the deck's lands make (the profile's `producibleColors`: each land's color identity,
+   * so approximate). Absent on facts built before it existed.
+   */
+  landColors?: string[];
   /** v2: ramp, the commander's expected cast turn, interaction by speed and cost. */
   stats?: DeckStatsFact;
 };
@@ -138,6 +143,7 @@ export function buildSynopsisFacts(
     commanders: profile.commanderOracleIds.map((id) => byId.get(id)?.name).filter((n): n is string => !!n),
     identity: profile.colours.identity,
     identityName: colorLabel(profile.colours.identity),
+    landColors: profile.colours.producibleColors,
     unproducible: profile.colours.unproducible,
     lands,
     ramp,

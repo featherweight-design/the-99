@@ -7,6 +7,18 @@
     "listFingerprint": null
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Imotekh"
+        ],
+        "words": [
+          "sacrifice",
+          "aristocrat"
+        ]
+      },
+      "backups": []
+    },
     "combos": [],
     "keyCards": [
       "Biotransference",

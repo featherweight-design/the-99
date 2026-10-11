@@ -7,6 +7,23 @@
     "listFingerprint": "c7cf7003858446268111a46545ca5e79a9a7f6ce956e90be9bbef7a108bf75e5"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Kratos"
+        ],
+        "words": [
+          "experience"
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "All Will Be One"
+          ]
+        }
+      ]
+    },
     "combos": [],
     "keyCards": [
       "All Will Be One",

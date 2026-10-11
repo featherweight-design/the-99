@@ -157,7 +157,7 @@ describe("buildSynopsisPrompt under the v2 method", () => {
   it("states the assembled combo by name and by what it produces, free of cost", () => {
     const { user, system } = buildSynopsisPrompt(V2, undefined, { v2: true });
     expect(user).toContain("- Ghostly Flicker + Naru Meha, Master Wizard: Infinite mana, Infinite ETB (costs no mana to run)");
-    expect(system).toContain("name the primary win condition");
+    expect(system).toContain("primary win condition only when the deck is built to assemble it");
   });
 
   it("marks a near combo as not in the deck and gives the app's own turn and counts", () => {
@@ -177,7 +177,7 @@ describe("buildSynopsisPrompt under the v2 method", () => {
 
   it("carries the same rules in a repair, so the second call is not looser than the first", () => {
     const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
-    expect(buildSynopsisPrompt(V2, { keep, refused: ["tips"] as never }, { v2: true }).system).toContain("name the primary win condition");
+    expect(buildSynopsisPrompt(V2, { keep, refused: ["tips"] as never }, { v2: true }).system).toContain("primary win condition only when the deck is built to assemble it");
   });
 });
 
@@ -243,7 +243,34 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(system).not.toContain("untiered and unranked");
     expect(system).toContain("names an engine piece");
     expect(system).toContain("use the interaction figures in the facts exactly as given");
-    expect(system).toContain("name the primary win condition");
+    expect(system).toContain("primary win condition only when the deck is built to assemble it");
+  });
+
+  it("asks for the plans first, and keeps a listed combo the primary only when the deck is built for it", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, C8);
+    expect(system).toContain("- plans: fill this FIRST");
+    expect(system).toContain('"No clear win condition."');
+    expect(system).toContain("A backup gets its own step after them");
+    // Key cards no longer put a listed combo's pieces first.
+    expect(system).not.toContain("the first combo's first");
+  });
+
+  it("names no universal staple in a worked example, and refuses one in a mulligan line", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, C8);
+    expect(system).not.toContain("[[Sol Ring]] with nothing to cast");
+    expect(system).not.toContain("[[Sol Ring]] into");
+    expect(system).toContain('never name a card marked "universal staple" in a mulligan line');
+    // Contract 7 keeps its own bytes; only contract 8's copy changed.
+    expect(buildSynopsisPrompt(FACTS).system).toContain("[[Sol Ring]] with nothing to cast after it stalls out.");
+  });
+
+  it("states the colors the lands make only when they are fewer than the identity, under contract 8", () => {
+    const fewer = { ...FACTS, identity: ["W", "U", "B", "R", "G"], identityName: "5-color", landColors: ["W", "U", "R", "G"] };
+    expect(buildSynopsisPrompt(fewer, undefined, C8).user).toContain("Colors the lands make: Non-black");
+    expect(buildSynopsisPrompt(fewer).user).not.toContain("Colors the lands make");
+    const same = { ...fewer, landColors: ["W", "U", "B", "R", "G"] };
+    expect(buildSynopsisPrompt(same, undefined, C8).user).not.toContain("Colors the lands make");
+    expect(buildSynopsisPrompt({ ...fewer, landColors: [] }, undefined, C8).user).not.toContain("Colors the lands make");
   });
 
   it("tells a repair to give kept sections empty evidence", () => {

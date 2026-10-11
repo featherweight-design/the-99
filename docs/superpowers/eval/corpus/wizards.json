@@ -7,6 +7,18 @@
     "listFingerprint": "b662fff8071fd8e284ff636dcf9035a0a1210050f52866985eb67af322dcc3e3"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Ghostly Flicker",
+          "Naru Meha"
+        ],
+        "words": [
+          "infinite"
+        ]
+      },
+      "backups": []
+    },
     "combos": [
       {
         "cards": [

@@ -371,6 +371,9 @@ export function validateSynopsis(
     if (statesLandCount(text)) r.refuse("land_count");
     if (commanderInHand(text, facts.commanders)) r.refuse("commander_in_hand");
     if (headingPrefix(text)) r.refuse("heading_prefix");
+    // "Never keep Sol Ring" was a prompt rule with nothing behind it, and the worked example broke
+    // it (Avatar Aang, 2026-10-11): a card in nearly every deck says nothing about this one.
+    if (marksIn(text).some((name) => universal.has(deck.get(normalizeName(name))?.oracleId ?? ""))) r.refuse("universal_staple");
     applyExtra(r, extra[key], i);
   });
   const tipLine = (tip: SynopsisResponse["primer"]["tips"][number], i: number) => line((r) => {

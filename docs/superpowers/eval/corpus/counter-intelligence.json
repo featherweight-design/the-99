@@ -7,6 +7,26 @@
     "listFingerprint": "40f85f9fa24304fd6fa1fa8140251eb9cfd98ed2c40c933ead9ce4bc7f67ddd3"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Magistrate's Scepter",
+          "Inspirit",
+          "Flagship Vessel"
+        ],
+        "words": [
+          "extra turn"
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "Basalt Monolith",
+            "Zirda"
+          ]
+        }
+      ]
+    },
     "combos": [
       {
         "cards": [
