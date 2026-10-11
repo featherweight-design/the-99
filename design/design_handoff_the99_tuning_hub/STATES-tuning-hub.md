@@ -1,4 +1,4 @@
-# States — Tuning hub (R1 approved; Proposed cuts R2 approved, 2026-10-10)
+# States — Tuning hub (R1 approved; Proposed cuts R2 approved, 2026-10-10; Mana Balance R3 for review, 2026-10-10)
 
 Brief §7: ready / running / results / refused / failed, for every tool, at 900 and 390. Frame ids refer to the canvases.
 
@@ -26,7 +26,27 @@ Unchanged from `design_handoff_the99_deck_tuning`, except **results become two l
 
 All other states are unchanged.
 
-## Mana Balance
+## Mana Balance (R3, evidence)
+Hugh, 2026-10-10: evidence, never a verdict. Frames are in `… (R3) · B Mana Balance, evidence.dc.html`. R1 B1, B1b, B6 and B7 and the R1 table below are superseded; B8 stands; B2 to B6 (Look deeper) are out of scope.
+
+**Must not, on every Mana Balance state:** a word, color, icon or order that says a color is short, fine, met, covered or balanced; `--warning`, `--success` or `--danger` on any figure; highlighting whichever of two side-by-side figures is lower; sorting colors by any comparison (always W U B R G, the Colors card's order); a label mention.
+
+| State | Drawn | What shows | Must not |
+|---|---|---|---|
+| Ready, several colors (R3a: Karsten column → Needed) | M1 / M1b (Gishath) | Lead; color table (pips with the commander, the figure without it under it, sources with lands · other and the Colors card's bars and shares, Karsten's figure for the hardest card, captioned `to cast {card} ({code})`); the Karsten note under the table; Hardest costs with color chips, six rows; Lands (count, three tapped kinds, average MV, Karsten's land count with its formula and the draw caveat); colorless line; Help with a color (picker only); citation foot | a run button; a suggestion before a color is picked; a figure that differs from the Colors card |
+| Ready, one color | M2 / M2b (Wizards) | Same; no color chips on Hardest costs; picker offers the one color | an empty column for the absent colors |
+| A color with sources and no pips | M1 (Gishath blue, black) | Its row: pips `0`, its sources, Karsten `—` with `no pips to cast` | hide the row (the Colors card draws it) |
+| Pattern rows | M3 / M3b | Code, copies, names (commander tagged; 3 then `+N more`), Karsten: a number, `at most N`, or `no published figure` | estimate a missing figure; color the figure |
+| Colorless | M6 / M6b (Eldrazi) | One line: no colored pip; colorless line; Lands block in full; land-count citation; no picker | refuse; a color table of zeros |
+| No sources | M7 / M7b | Lead says no card adds colored mana yet; table with sources `0`; Lands block; picker | refuse |
+| Failed (count) | R1 B8 / B8b, unchanged | `We couldn't count this deck's mana`, `Couldn't count` mark | a picker with no count |
+| Help: picked | M4a, M5a | Pressed chip, `aria-pressed`; the result below | ask before a pick |
+| Help: result | M4b / M4c (Gishath green), M5b / M5c (Aang blue) | Header with the color's sources now; Swap basics rows (`up to N`, before → after per changed color) or the neutral none row; Staples, owned first (owned · N free / to buy + BuyTag + link-out; how often, labelled by its source; colors it adds; a trade line when a basic can trade for it) | Apply / Add / Cut; a staple of a color outside the identity; a to-buy staple above an owned one; a price when `priceCents` is null |
+| Help: no basic swap | M4b (Gishath green) | Dashed row, `No basic swap for green.` + ⓘ `How moves are picked` | name a color as the reason |
+| Help: no staples | M8 / M8b | Dashed row, `No staples to show for green.`, no reason given | guess a reason (thin data, all held) |
+| Help: failed | M9 | B8's shape, smaller: mark (`Couldn't read`), one sentence, Try again; the evidence above stands | hide the evidence |
+
+### Superseded (R1, kept for the record)
 | State | Drawn | What shows | Must not |
 |---|---|---|---|
 | Ready = results (tier 1) | B1 / B1b | Deeper band on top; lead; Color · Cost · Sources · Status table; Deck Stats legend + tick; `1 not counted ⓘ` (tooltip open in B1); Additions and Cuts with counted strips, Apply all, tally | a run button; a running frame; a percentage; a separate cost tag |
@@ -73,5 +93,35 @@ Hugh, 2026-10-09: the free ranked list is withdrawn. The free pass is counted fa
 |---|---|---|
 | Short, shelf exists | A5 | `consider →` |
 | Short, no shelf / met | A5 | dash |
-| Land, a color short | A5 / A5b | `balance mana →` / `balance →` |
-| Land, short, colors covered | rule table | `consider →` |
+| Land, a color short | A5 / A5b | **Superseded (R3):** no color is ever short |
+| Land count under its target, shelf exists | rule table (R3) | `consider →` (the strip's own land count, not Mana Balance's) |
+| Land otherwise, deck has a colored pip | rule table (R3) | `balance mana →` / `balance →` |
+| Land otherwise, colorless deck | rule table (R3) | dash |
+
+
+**Whole view:** `… (R3b) · B Mana Balance, full view.dc.html` puts R3 and R3a into one page (Gishath).
+
+## Mana Balance R3a (Needed, one door; Hugh, 2026-10-11, Ruling 1 revised the same day)
+Frames: `… (R3a) · B Mana Balance, pointer.dc.html`. Overrides R3 where they meet. Gone: R3's per-color picker (`Help adding a color`), the `Reading the Karsten figure` box, and `Karsten` as a column, row or caption label. **No lead line:** no color is named until the player opens Improve my mana.
+
+| State | Drawn | What shows | Must not |
+|---|---|---|---|
+| View on open | N1 / N1b | the R3 evidence; the door at the foot | any color named, ranked or pointed at |
+| Pattern rows | N2 / N2b | `You have N · Needs N` · `Needs at most N` · `No published figure`; column `Needed` | tint by gap |
+| Explanation, closed / open | N1 / N2, N3; R3b F1 | the role strip's rationale disclosure: mono link closed; open, the accent-ruled panel with Hide, **Needs** (Hugh's sentence) and **Source** (the article, TCGplayer link) | an ⓘ per row; Karsten named without his source |
+| Door, closed | N1, N1b | `Improve my mana` button | a color preselected |
+| Color step | N3 (Gishath), N3b (Aang), N3c (Blood Rites) | one line on the order; radio rows tightest first (sources against the tightest cost shared by 2+ nonland cards, commander excluded; ties W U B R G), none checked; cost + Have · Needs; pipless color last (`9 sources · no pips`); ✕ | a star, tint or weight on the first row |
+| Color step, one color | N4 | skipped: the door opens blue's help directly | a one-row step |
+| Door, colorless | N5 | absent | |
+
+## Mana Balance R3b (full view, folded sections; LGTM 2026-10-11)
+Frames: `… (R3b) · B Mana Balance, full view.dc.html`. **This is the build target.**
+
+| State | Drawn | What shows | Must not |
+|---|---|---|---|
+| On open, default | F3 / F3b | title + sub; color table (Needed); "What 'Needs' means" (closed); Hardest costs folded; Lands folded; Improve my mana (closed); citation | any color named or ranked; a section open by default |
+| Hardest costs open | F3c, F1 | ▸ rotated 90°; color chips, pattern rows (You have · Needs), foot | |
+| Lands open | F1 | ▸ rotated; the six fact rows + caveat | |
+| Folded state | — | remembered per deck; restored on return | resetting on every visit |
+| Explanation open | F1 | StripRationale panel: **Needs** (Hugh's sentence) + **Source** (article, TCGplayer link) + Hide | |
+| Door → step → result | F2 → F2b → F1 | step tightest first, none selected; pick → help result with `Change color` | preselecting the first row |

@@ -13,7 +13,11 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-08-tuning.md` (main), �
 | File | Holds |
 |---|---|
 | `… (R1) · A Landing, shortcuts and the strip.dc.html` | A0 the calls. A1 landing (offered), A2 Proposed cuts not offered, A3 a run in flight on the landing, A4 a tool open (Suggested changes inside the hub), A5 Your deck: trim-line link, land-cell caption, the strip in one place, A6 what resets the view. |
-| `… (R1) · B Mana Balance.dc.html` | B1 free result with Look deeper on top, B2 deeper running, B3 deeper result above the count, B4 deeper refused, B5 deeper failed, B6 credits used up + an applied suggestion, B7 thin EDHREC data, B8 the count failed, B9 counted fact vs hedged claim. |
+| `… (R3b) · B Mana Balance, full view.dc.html` | **Build target for Mana Balance.** F3 is the folded view on open, F1 each section open with help for green, and F2 the door and color step. |
+| `… (R3a) · B Mana Balance, pointer.dc.html` | The rulings per deck: Gishath, Aang, Blood Rites, Wizards (step skipped), Eldrazi (no door). |
+| `… (R3) · B Mana Balance, evidence.dc.html` | Thin and failed states, staples and trades, About entry. M1–M2 the evidence (Gishath, Wizards), M3 pattern rows, M4–M5 help from pick to result (Gishath green, Aang blue), M6–M9 thin states, M10 the About entry. |
+| `… (R1) · B Mana Balance.dc.html` | B1, B1b, B6, B7 superseded by R3; B8 stands; B2–B6 out of scope; B10 is Suggested changes. |
+| (R1 B, as it was) | B1 free result with Look deeper on top, B2 deeper running, B3 deeper result above the count, B4 deeper refused, B5 deeper failed, B6 credits used up + an applied suggestion, B7 thin EDHREC data, B8 the count failed, B9 counted fact vs hedged claim. |
 | `… (R2) · C Proposed cuts and History.dc.html` | **Current.** C1 the count (free, no list), C2 deeper running, C3 six named, C4 part answered and short, C5 thin data, C6 refused (deeper, all locked), C7 failed, C8 back to 99, C9 counted fact vs model claim. H1–H4 History (R1, Cuts summaries updated). |
 | `… (R1) · C Proposed cuts and History.dc.html` | Superseded by R2 (2026-10-10), kept for the record. C1–C3 drew the withdrawn free ranking. |
 | `TuningToolMark.dc.html` | The four tool marks, as one component (`tool`, `size`, `ink`). Imported by all three canvases. |
@@ -136,3 +140,40 @@ Source: `docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md` (main; t
 - **View state** (`openTool`) lives in the hub and resets on the Analysis tabpanel's unmount. Runs are read from the ledger on mount, so a running run reappears on its tile.
 - **Credits:** Look deeper uses `creditsCopy.first` / `spent` / `paused` with the deeper-looks flag. Stop and failure refund, as Help me choose does.
 - **Live region:** the existing one, one message per settle per tool. The landing announces nothing.
+
+
+---
+
+## R3 · Mana Balance, evidence (2026-10-10, for review)
+Source: `docs/superpowers/design-briefs/2026-10-10-mana-balance-evidence.md`. Hugh's ruling: evidence, never a verdict. Canvas: `… (R3) · B Mana Balance, evidence.dc.html`. Fixtures are the brief's, with full deck ids; Gishath's figures are the golden check's.
+
+**Design's calls on the five open questions**
+1. **`balance mana →` appears on the land cell whenever the deck has a colored pip,** unless the strip's own land count is under its target with a shelf, which keeps `consider →`. It's a door to the evidence, not an alarm. A colorless deck draws a dash.
+2. **Pips lead with the commander,** as the Colors card does, so the two surfaces show one number. The figure without it sits under it in mono (`55 without Gishath`), only when it differs. That's Deckcheck's figure, so a player comparing tools finds it.
+3. **Help rows stay as information this round.** No Apply, Add or Cut. Card names open the card detail; a to-buy staple carries the BuyTag and the link-out. An apply would read as a recommendation the engine doesn't make, and rebalance's `up to N` would need a quantity choice. If Hugh wants it, it's the deck's existing swap action in the row's right slot.
+4. **The citation lives in two places:** `Karsten` by name on every column, row and caption that carries one of his figures, and the full citation once, as the panel's last line, with the link. That line also names the land count as his Commander formula, with its quoted constants, and says his figures are a reference, not a target.
+5. **An empty staple list doesn't explain itself:** one neutral dashed row, `No staples to show for green.` No build task asked.
+
+**Other calls**
+- **The evidence comes first; help comes last,** under its own card, with a color picker that shows only the commander's identity. Tapping a color is the request. Nothing is suggested before it.
+- **Hardest costs shows one color at a time,** behind color chips (default: most pips). Three colors × six rows was 18 rows on a phone.
+- **Trades are folded into the staple rows** as each staple's trade line (the engine builds trades from the staple list, in its order). That gives one list, owned first.
+- **No figure is tinted, ordered or marked by comparison.** Karsten's figure sits in the same ink as the deck's count.
+
+**Retired from R1 B:** the Status column, the covers tick, `have of covers`, the Additions/Cuts lists with Apply all and the tally, B7's thin-EDHREC sentence, and the `whenever a color is short` trigger.
+
+**Needs from engineering:** `MANA_BALANCE_ENABLED` added to `AboutSwitch` for the About entry (M10). The entry rides the Tuning line's batched close-out bump.
+
+
+## R3a · Needed, one door (2026-10-11, for review)
+Hugh's rulings: `You have · Needs` with a `Needed` column, and one `Improve my mana` door. Ruling 1 was revised the same day: **no lead line**, and the pointer is only the color step's order (tightest first, nothing chosen). Canvas: `… (R3a) · B Mana Balance, pointer.dc.html`. Fixtures: uploads/mana-pointer-calibration-2026-10-11.md (Blood Rites `783df427-d0c5-456a-805e-cdc94ecb0952`).
+- **Open call:** the explanation is an inline tap-open line, under Hardest costs and in the step, not an InfoTip per row.
+- **Wizards:** the step skips itself. **Eldrazi:** no door.
+- **The color table's Needed** uses the step's rule (tightest cost shared by 2+ cards), so the two agree.
+- **The whole view** is `… (R3b) · B Mana Balance, full view.dc.html`: Gishath top to bottom at 900 and 390, opened on green, plus the door closed and the step. The explanation matches the shipped `StripRationale` disclosure and cites the article.
+
+## R3b · full view (2026-10-11, LGTM)
+`… (R3b) · B Mana Balance, full view.dc.html` is the build target.
+- **Hardest costs and Lands** fold using Consider's shelf header, folded by default and remembered per deck. That puts Improve my mana about one and a half phone screens down, rather than four.
+- **Not hoisted:** putting the door above the table would open on "fix your mana" before the count, which is a verdict. If people miss it, add an "Improve my mana" link next to the title that scrolls to the door. That's smaller than moving it.
+- **Copy strings:** `mana-balance R3 · copy strings.ts` (current).

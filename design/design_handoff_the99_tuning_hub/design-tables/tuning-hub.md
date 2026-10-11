@@ -99,8 +99,8 @@
 | Property | Mobile | Desktop |
 |---|---|---|
 | caption | `balance →`, mono 9 `--accent` | `balance mana →`, mono 10 `--accent` |
-| condition | Mana Balance tier 1 finds any color short | same |
-| precedence | replaces `consider →`; one action per cell | same |
+| condition | **R3:** the deck has a colored pip (state `ok` or `noSources`) and the land count is not under its target with a shelf. Was: tier 1 finds any color short (superseded, no verdict) | same |
+| precedence | land count under target with a shelf → `consider →`; else colored pip → `balance mana →`; else dash. One action per cell | same |
 | border | `--border-strong` (as the shipped interactive cell) | same |
 | action | switch to Analysis, open Mana Balance, scroll Tuning heading to top, focus tool heading | same |
 
@@ -156,6 +156,8 @@
 
 ## ManaSourceTable
 
+> **Superseded by R3 (Hugh, 2026-10-10: no verdicts).** The Status column, the covers tick and `have of covers` are withdrawn. Build `ManaEvidenceTable` (end of this file) instead.
+
 | Property | Mobile | Desktop |
 |---|---|---|
 | columns | `1fr auto auto`; bar spans the full second row | `120px 90px 1fr 110px`, gap 14 |
@@ -171,6 +173,8 @@
 | below | legend line, dork caveat (`--fg-muted`), not-counted line (dashed box) | same |
 
 ## BalanceSuggestion
+
+> **Superseded by R3.** Nothing is suggested on open; help is asked for, per color, and its rows are information (`HelpResult`, end of this file).
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -268,3 +272,161 @@
 | read-only note | `1px dashed --border-dashed`, radius 9, `9px 12px`, 12.5 `--fg-faint` | same |
 | rows | `AnsweredRow` tones, plus `left open` (sunken, dashed border, `--fg-faint`) | same |
 | write controls | none | none |
+
+
+---
+
+# R3 · Mana Balance, evidence (2026-10-10)
+
+Source: `docs/superpowers/design-briefs/2026-10-10-mana-balance-evidence.md`. Frames: `… (R3) · B Mana Balance, evidence.dc.html`. No new tokens. **No component on this screen takes `--warning`, `--success` or `--danger` on a figure.** The one `--danger` is the failure mark (B8, M9b).
+
+## ManaEvidenceTable
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| rows | colors with a pip or a source, W U B R G (the Colors card's filter and order) | same |
+| columns | two: name + Karsten on row 1, pips + sources on row 2; mono 9 `--fg-locked` cell labels | `104px minmax(0,1fr) minmax(0,1fr) 156px`, gap 16; head mono 9.5 / 0.12em uppercase `--fg-locked`: COLOR · PIPS · SOURCES · KARSTEN, HARDEST CARD |
+| row | padding `11px 2px`, `1px solid --border` bottom | same |
+| color | 18 pip disc (`--w --u --b --r --g`, mono 10 / 600) + name 13 `--fg` | same |
+| pips | Colors card bar (14 tall, radius 3, width = share / widest × 60%) + mono 11 `{n} · {share}%` `--fg-body`; under it mono 10 `--fg-faint` `{n} without {commander}` (only when it differs) | same |
+| sources | Colors card `SourceBar` (solid lands, striped other) + mono 11 `{n} · {share}%`; under it mono 10 `--fg-faint` `{lands} lands · {other} other` | same |
+| shares | the Colors card's: of all pips, and of all sources **including colorless** | same |
+| Karsten | mono 13 / 500 `--fg` `karstenHardest`; under it mono 10 `--fg-faint` `to cast {card} ({code})`. None published: `—` + `no pips to cast` | same |
+| Karsten note | under the table, `--surface`, `1px --border`, radius 9, `11px 13px`; mono 9.5 uppercase `--fg-muted` `Reading the Karsten figure` + 12.5 / 1.6 `--fg-body`: what it counts, the lead color's hardest card and figure, how to read it beside Sources. Absent when colorless | same |
+| zero | `0` in `--fg-locked`, no bar | same |
+| ink | every figure `--fg` / `--fg-body`; nothing is tinted by comparison | same |
+
+## PatternRows (Hardest costs)
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| heading | `Hardest costs` 13.5 / 600 `--fg-body` + mono 10.5 `--fg-faint` `Karsten, 99-card column` | same |
+| color chips | one per color with a pip (absent for one color); single select, 44 tall, scroll sideways | 30 tall, wrap; default = most pips |
+| row grid | `auto minmax(0,1fr) auto`; names on row 2, full width | `72px minmax(0,1fr) 140px`, gap 14 |
+| code | mono 13 / 600 `--fg`; copies mono 10 `--fg-faint` (`×3`) | same |
+| names | 12.5 / 1.5 `--fg-body`, dotted `--accent` underline (opens card detail), comma-separated; `×2` after a name with two copies; commander tagged mono 9 uppercase `commander` on `1px --border-strong` | same |
+| long list | 3 names, then `+{n} more` mono 11 `--accent` (44 tall on phone), expands in place | same |
+| Karsten | right-aligned mono 13 `--fg`: `28` · `at most 26` (mono 11 `--fg-body` `at most` + 13 figure) · `no published figure` mono 11 `--fg-muted` | same |
+| count | at most 6 per color (`PATTERNS_SHOWN`), hardest first; foot mono 10.5 `--fg-faint` | same |
+
+## LandFacts
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| layout | fact rows, Proposed cuts' `What we counted` grid: label + mono figure + mono comparison | same |
+| rows | Lands · Enter tapped · Tapped unless a condition holds · Fetch a land that enters tapped · Average mana value · Karsten's land count | same |
+| tapped rows | open to the land names (Jobs card pattern, `›` / `⌃`) | same |
+| land count | figure to one decimal, unrounded; comparison is the formula with the deck's inputs | same |
+| caveat | 12 / 1.5 `--fg-muted`, always shown, never behind ⓘ: cheap ramp counts sources of MV 3 or less, draw spells aren't counted | same |
+| colorless | one row: `{C} pips` and colorless sources | same |
+
+## HelpPicker
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| container | `--surface`, `1px --border`, radius 10, padding 14 | same |
+| title / lead | 13.5 / 600 `--fg` · 12.5 / 1.5 `--fg-body` | same |
+| chips | one per color in the commander's identity, W U B R G; pip disc 14 + name; `<button aria-pressed>`; 44 tall, flex 1, wrap | 32 tall |
+| pressed | `--fg-body` fill, `--bg` ink (the History filter's selected chip) | same |
+| absent | colors outside the identity are not drawn, not disabled | same |
+| none | colorless identity: no picker. No meta line under the chips | same |
+| outside the colors | no state: the picker can't ask for one | same |
+
+## HelpResult
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| container | under the picker, `border-top 1px --border`, padding-top 12, gap 12 | same |
+| head | `Help adding {color}` 13.5 / 600 + mono 10.5 `--fg-faint` `{n} {color} sources now` | same |
+| section heads | mono 10 / 0.14em uppercase `--fg-faint` + 1px rule (`Swap basics`, `Staples {commander} decks run · owned first`) | same |
+| swap row | `--surface-sunken`, `1px --border`, radius 9, `10px 12px`; `Up to {n} {Basic}s → {Basic}s` 13 `--fg`; changes mono 10.5 `--fg-muted`, picked color first, `{color} {before} → {after}` | same |
+| staple row | thumbnail 22 × 31 (dashed when not in the collection), name 13 / 600 dotted `--accent`, ownership: 7px `--success` dot + mono 10.5 `owned · {n} free`, or dashed dot + `to buy` + shipped BuyTag + `↗` (`manapoolCardUrl`); price absent when `priceCents` is null | same |
+| staple fact | mono 10.5 `--fg-faint`: how often, labelled by its kind (`in {p}% of {commander} decks` · `of this pairing's decks` · `{bucket} average`), then `adds` + 10px pip discs | same |
+| trade line | the R1 `CountedStrip` shape, tag `trade`: `1 {Basic} for it: {changes}`; else mono 10.5 `--fg-faint` `no basic trade for it` | same |
+| none rows | `1px dashed --border-dashed`, radius 9, 12.5 `--fg-faint`; no reason given | same |
+| how moves are picked | 18px ⓘ after the Swap basics head, tooltip on `--elevated` | same |
+| actions | **none** (open 3: information only this round) | same |
+
+## KarstenCitation
+
+| Property | Value |
+|---|---|
+| by name | `Karsten` heads every column, row and caption that carries one of his figures |
+| in full | once, the panel's last line: 12 / 1.6 `--fg-muted`, `border-top 1px --border`, padding-top 12; the article title in quotes, `TCGplayer` + 14px link-out glyph (stroke 1.6) as the link (`--accent`, 500) |
+| land count | the same line names it his Commander formula, constants as quoted in secondary write-ups |
+| reference | the line says his figures are a reference point, not a target |
+
+
+---
+
+# R3a · Needed, one door (2026-10-11; Ruling 1 revised: no lead line)
+Frames: `… (R3a) · B Mana Balance, pointer.dc.html`. No new tokens; no `--warning` / `--danger` / `--success` on any figure below.
+
+## NeedsExplainer (Design: inline, not an InfoTip; the shipped `StripRationale` disclosure)
+| Property | Value |
+|---|---|
+| shape | `src/components/decks/strip-rationale.tsx`, the role strip's "Why these numbers?": one tree for both states, focus returned to the trigger on Hide |
+| closed | own row; mono 11 `--accent`, `border-bottom 1px --accent-dim` (accent-shadow), pb 1; 44 tall hit area on phone |
+| open | `--surface-sunken`, `1px --border`, `border-left 3px --accent`, radius 9, `11px 13px`, gap 7; header row: the trigger (mono 11 `--accent`, no rule) + `Hide` (mono 11 `--fg-faint`) |
+| lines | 12 / 1.55 `--fg-body`, bold lead-in 600 `--fg`: **Needs** Hugh's sentence · **Source** Karsten's article title, `TCGplayer` + 14px link-out, "A reference point for reading the count, not a target." |
+| place | under the Hardest costs heading, and in the color step under its order line |
+
+## PatternRows (R3a changes)
+| Property | Mobile | Desktop |
+|---|---|---|
+| figure | mono 12 `--fg`: `You have N · Needs N` · `You have N · Needs at most N` · `No published figure` (`--fg-muted`) | column 200px |
+| head | — | `Needed` (was `Karsten · 99 cards`) |
+| sub | `six hardest per color` (Karsten dropped) | same |
+
+## ManaEvidenceTable (R3a changes)
+| Property | Value |
+|---|---|
+| column | `Needed` (was `Karsten · hardest card`); figure = the color's tightest cost shared by 2+ cards, the step's ordering rule |
+| Karsten note box | withdrawn |
+
+## ImproveDoor
+| Property | Mobile | Desktop |
+|---|---|---|
+| container | `--surface`, `1px --border`, radius 10, padding 14 (R3 HelpPicker's) | same |
+| title / lead | `Improve my mana` 13.5 / 600 · 12.5 / 1.5 `--fg-body` | same |
+| button | full width, 44, `1px --accent`, `--accent` ink 13 / 600, `aria-expanded` | right, 32 |
+| one color | opens the color's help directly | same |
+| colorless | absent | same |
+
+## ColorStep
+| Property | Mobile | Desktop |
+|---|---|---|
+| head | mono 10 uppercase `--fg-faint` `Which color?` + ✕ (44) | ✕ 28 |
+| rows | `role=radio`, none checked; 56 tall, two lines (name / cost), Have · Needs right | 44 tall, one line: radio · name 120 · cost · Have · Needs |
+| row style | `--surface-sunken`, `1px --border-strong`, radius 9; identical for every row | same |
+| order line | 12.5 / 1.55 `--fg-body`: how the list is ordered, `Pick any.` | same |
+| order | lowest have/needs over patterns with ≥2 nonland cards (commander excluded) with a published figure; tie → W U B R G; pipless identity colors last, `N sources · no pips` in `--fg-muted` | same |
+| pick | runs HelpResult (R3) for that color; the step closes into it | same |
+
+
+---
+
+# R3b · Mana Balance, full view (2026-10-11, LGTM). Build target: F3.
+
+## Order, top to bottom
+title + sub → lead sentence → ManaEvidenceTable (Needed) → NeedsExplainer → ManaSection "Hardest costs" (PatternRows) → ManaSection "Lands" (LandFacts) → ImproveDoor (ColorStep → HelpResult) → KarstenCitation. Panel gap 18.
+
+## ManaSection (Consider's `ShelfSection` header, `consider-panel.tsx`)
+| Property | Mobile | Desktop |
+|---|---|---|
+| rule | `border-top 1px --border-strong` | same |
+| trigger | the whole header row, `aria-expanded`, `aria-controls` only while the body is mounted | same |
+| row | min-height 52, gap 8; label and clause stacked (column, gap-y 2) | min-height 44, gap 10; one row, baseline, gap-x 10 |
+| chevron | `▸` `--fg-muted`, rotate 90° when open (150ms transform) | same |
+| label | sans 600 16 / 1.2 `--fg` | 17 |
+| clause | mono 10.5 `--fg-muted` | 11 |
+| clauses | Hardest costs: `six per color · {colors with a pip, W U B R G}` · Lands: `{n} lands · {n} can enter tapped · Karsten’s count {x}` | same |
+| body | mounted only when open; mt 9 | mt 11 |
+| default | folded; state persisted per deck | same |
+| clause must not | name, rank or order colors by comparison | same |
+
+## ColorStep (R3b)
+| Property | Value |
+|---|---|
+| order line | "Listed by how close each color’s sources are to what its tightest cost needs, counting costs two or more cards share. Pick any." |
+| result head | the color + `You have N · Needs N` + `Change color` (mono 11 `--accent`, returns to the step) |

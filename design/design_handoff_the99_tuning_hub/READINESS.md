@@ -1,4 +1,29 @@
-# Readiness — Tuning hub R1 + Proposed cuts R2
+# Readiness — Tuning hub R1 + Proposed cuts R2 + Mana Balance R3
+
+## Mana Balance R3 / R3a / R3b (LGTM, Hugh, 2026-10-11). Self-assessed: Green.
+**Build from `… (R3b) · B Mana Balance, full view.dc.html`, frame F3** (the folded view), with F1 for each section open and F2 for the door before a pick. R3 (`evidence`) holds the thin and failed states (M6–M9), the staple and trade rows, and the About entry (M10). R3a (`pointer`) holds the rulings' per-deck frames: Gishath, Aang, Blood Rites, Wizards and Eldrazi. R1 B is superseded except B8 (count failed).
+
+**Hugh's rulings, 2026-10-10 and 2026-10-11, all closed**
+1. Evidence, never a verdict. No color is ever named on open. The only pointer is the order inside Improve my mana (tightest first, nothing selected).
+2. You have · Needs on every pattern row, under a `Needed` column. Karsten is named only in the "What 'Needs' means" panel and the citation.
+3. One door, Improve my mana. It opens a color step, which a one-color deck skips and a colorless deck never shows.
+
+**Design's calls**
+- **Needed** uses the step's rule: the color's tightest cost shared by 2+ nonland cards, commander excluded, ties in W U B R G order. It's the same in the color table, so the table and the step agree.
+- **"What 'Needs' means"** is the shipped `StripRationale` disclosure, placed under the color table and in the step.
+- **Hardest costs and Lands** are Consider's `ShelfSection` header, folded by default, with the folded state remembered per deck (`useFoldedShelves`).
+- **Help rows** are information only: no Apply. Not hoisting the door is deliberate (see README).
+
+**Settle in the plan**
+1. **Folded state's key.** Per deck, shared with Consider's `useFoldedShelves` key or its own. Design's view: its own key, so a fold on one tab doesn't fold the other.
+2. **Calibration.** `uploads/mana-pointer-calibration-2026-10-11.md` found no threshold that separates the colors Hugh calls short from those he calls fine. The step's order is still a true ranking, so it ships as ranked, never thresholded.
+3. **`MANA_BALANCE_ENABLED`** is added to `AboutSwitch` for the About entry, on the Tuning line's batched bump.
+
+**Flagged**
+- Blood Rites' figures come from staging (the calibration file), not a committed fixture.
+- Aang's and Wizards' help results and staple percentages are illustrative.
+
+---
 
 **R2 approved (LGTM, Hugh, 2026-10-10). Self-assessed: Green.** Proposed cuts is model-first per `docs/superpowers/plans/2026-10-09-proposed-cuts-model-tier.md`. The current canvas is `… (R2) · C`, with C1–C9 at 900 and 390. R1 C is superseded. PR 4 (UI) of the plan builds from these frames.
 
