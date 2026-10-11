@@ -1,0 +1,79 @@
+{
+  "feature": "I got it: the buy tag as the way in, and the confirm (PR 2)",
+  "note": "Run against a server started with SHOPPING_MARK_BOUGHT_ENABLED=true and COLLECTION_EDIT_ENABLED=true. READ-ONLY: no step submits the confirm. IGI_DECK is a deck the signed-in account owns with at least one Shopping row (an unowned or short card). Pull real decks with pull:staging onto a scratch branch first; a fixture account rarely has a Shopping list worth reading.",
+  "rows": [
+    {
+      "id": "shopping",
+      "label": "/decks/[id] Shopping: the buy tag at rest as the button, and the head's key",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "rows",
+      "label": "/decks/[id] Shopping rows: the tag at rest beside every neighbor; below lg, buy over `over $X` as one target",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "scroll": 1100,
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "confirm",
+      "label": "/decks/[id] Shopping: the confirm open from a row's tag, preset to the printing behind the price",
+      "view": "src/components/decks/got-it-confirm.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Bought ",
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "all-tab",
+      "label": "/decks/[id] All: the collapsed $ tag stays inert (no Bought button)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

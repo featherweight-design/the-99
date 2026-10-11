@@ -112,17 +112,36 @@ type ChooseRegionProps = {
   layout?: "grid" | "row";
   id: string;
   printings: PrintingChoice[];
-  intro: string;
+  /** The line above the tiles; omitted where the caller heads the step itself (I got it). */
+  intro?: string;
   cardName: string;
   colorIdentity: string[];
   onPick: (p: PrintingChoice) => void;
   /** Move focus into the picker's own search (else its first tile) when it opens. */
   autoFocus?: boolean;
+  /**
+   * I got it's confirm (plan PR 2, B1/B2): the printing selected now, by catalog id, or null for
+   * none yet. Passing it makes the role a CONTROLLED radio group inside a form: the tile wears
+   * `aria-checked` and the accent outline (no badge, no label, no price), a pick and an arrow key
+   * both select and the step stays open, and while a search narrows the tiles the selected one
+   * stays first, so the way back to it is never lost. The tiles are the confirm's larger size. The
+   * Add cards sheet does not pass it, and is exactly as before.
+   */
+  selected?: string | null;
+  /**
+   * `confirm`: I got it's confirm draws the tiles at its own size (R2 §B: 100px phone, 104px
+   * desktop, art radius 9px) in a row padded 4px 4px 2px. The row still scrolls sideways: a card
+   * has up to 57 printings and the modal fits about four 104px tiles, so hiding the overflow would
+   * leave most of them out of a pointer's reach. Absent, the tiles are the Add cards sheet's.
+   */
+  tiles?: "confirm";
 };
 
 export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const choose = props.role === "choose";
   const row = choose && props.layout === "row";
+  const selectMode = props.role === "choose" && props.selected !== undefined;
+  const confirmTiles = props.role === "choose" && props.tiles === "confirm";
   const { id, cardName, colorIdentity } = props;
   const preferred = props.role === "choose" ? null : props.preferred;
   const deckScope = props.role !== "choose" && props.scope === "deck";
@@ -130,8 +149,17 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const sourcePrintings = props.printings;
   // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
   // the search and the keyboard are written once. `quantity` is what the player holds of it.
+  // A catalog tile is keyed by its catalog id: (set, collector number) is not unique in the
+  // catalog, since two variants can share it (price-query.ts), and a pair key would check both
+  // tiles and hand back either variant. An owned printing (art role) has no id to key on and keeps
+  // the pair, which is also what its stored preference names.
+  const tileKey = useCallback(
+    (p: { setCode: string; collectorNumber: string; scryfallId?: string | null }) =>
+      choose && p.scryfallId ? p.scryfallId : printingKey(p),
+    [choose],
+  );
   const catalogByKey = useMemo(
-    () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [printingKey(c), c])) : null),
+    () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [c.scryfallId, c])) : null),
     [choose, sourcePrintings],
   );
   const printings: BrowsePrinting[] = useMemo(
@@ -156,7 +184,10 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   useEffect(() => {
     if (!autoFocus) return;
     const root = rootRef.current;
-    (root?.querySelector<HTMLElement>("input") ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus();
+    // A selected tile takes focus first (I got it: focus starts on the selected printing).
+    (root?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')
+      ?? root?.querySelector<HTMLElement>("input")
+      ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus();
   }, [autoFocus]);
   const [query, setQuery] = useState("");
   const [finish, setFinish] = useState<FinishFilter>("all");
@@ -238,10 +269,23 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     [entries],
   );
 
-  const visible = useMemo(
+  const selectedId = props.role === "choose" ? props.selected ?? null : null;
+  const selectedKey = useMemo(() => {
+    if (!choose || selectedId === null) return null;
+    const hit = (sourcePrintings as PrintingChoice[]).find((c) => c.scryfallId === selectedId);
+    return hit ? hit.scryfallId : null;
+  }, [choose, selectedId, sourcePrintings]);
+
+  const matched = useMemo(
     () => (overflow ? matching(query.trim().toLowerCase(), finish) : entries),
     [entries, overflow, query, finish, matching],
   );
+  // A selected tile a search has narrowed out stays first (B2): the way back is never lost.
+  const visible = useMemo(() => {
+    if (selectedKey === null || matched.some((p) => p.scryfallId === selectedKey)) return matched;
+    const sel = entries.find((p) => p.scryfallId === selectedKey);
+    return sel ? [sel, ...matched] : matched;
+  }, [matched, entries, selectedKey]);
 
   // Past the threshold the tiles are grouped under set headers; below it they are one flat
   // grid in the order aggregateCollection produced.
@@ -275,33 +319,35 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
 
   /** Built once per render so the grid does not scan `navigable` for every tile it draws. */
   const navigableIndex = useMemo(
-    () => new Map(navigable.map((p, i) => [printingKey(p), i])),
-    [navigable],
+    () => new Map(navigable.map((p, i) => [tileKey(p), i])),
+    [navigable, tileKey],
   );
 
   const preferredKey = preferred === null ? null : printingKey(preferred);
   // Decision 10: with no preference stored nothing is checked, and the roving tabindex parks
   // on the shown-now entry instead.
   const tabStopKey =
-    navigable.find((p) => printingKey(p) === preferredKey) !== undefined
+    selectedKey !== null && navigableIndex.has(selectedKey)
+      ? selectedKey
+      : navigable.find((p) => printingKey(p) === preferredKey) !== undefined
       ? preferredKey
       : navigable.find((p) => printingKey(p) === resolvedKey) !== undefined
         ? resolvedKey
         : navigable.length > 0
-          ? printingKey(navigable[0])
+          ? tileKey(navigable[0])
           : null;
 
   function focusAndSelect(index: number) {
     const next = navigable[index];
     if (next === undefined) return;
-    tileRefs.current.get(printingKey(next))?.focus();
-    // Choosing ends the required step, so an arrow key only moves.
-    if (!choose) pick(next);
+    tileRefs.current.get(tileKey(next))?.focus();
+    // Choosing ends the required step, so an arrow key only moves; a controlled group selects.
+    if (!choose || selectMode) pick(next);
   }
 
   function pick(p: Entry) {
     if (props.role === "choose") {
-      const chosen = catalogByKey?.get(printingKey(p));
+      const chosen = p.scryfallId ? catalogByKey?.get(p.scryfallId) : undefined;
       if (chosen) props.onPick(chosen);
       return;
     }
@@ -343,13 +389,15 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     <div
       ref={rootRef}
       className={
-        choose
+        selectMode
+          ? ""
+          : choose
           ? "border-t border-dashed border-[color:var(--border-dashed)] pt-[12px]"
           : "-mt-px rounded-b-[10px] border border-t-0 border-dashed border-[color:var(--border-dashed)] p-[14px] " +
             "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
       }
     >
-      <div className="flex items-start justify-between gap-[12px]">
+      {(props.role !== "choose" || props.intro !== undefined) && <div className="flex items-start justify-between gap-[12px]">
         <p className="text-[13.5px] m-0" style={{ color: "var(--fg-muted)" }}>
           {props.role === "choose"
             ? props.intro
@@ -369,7 +417,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             {copy.resetToDefault}
           </button>
         )}
-      </div>
+      </div>}
 
       {dormantPick !== null && (
         <div
@@ -419,7 +467,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
         </div>
       )}
 
-      {visible.length === 0 && (
+      {matched.length === 0 && (
         <div className="mt-[18px]">
           <p className="m-0 text-[14px]" style={{ color: "var(--fg)" }}>{copy.emptyTitle}</p>
           <p className="mt-[4px] mb-0 text-[13px]" style={{ color: "var(--fg-muted)" }}>
@@ -439,7 +487,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           a11y tree. It stays mounted through the empty-search branch — an empty radiogroup is
           valid, a dangling aria-controls is not. Search and chips sit outside it deliberately:
           they are not radios. */}
-      <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 ? "" : "mt-[16px]"}>
+      <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 || (selectMode && !overflow) ? "" : selectMode ? "mt-[12px]" : "mt-[16px]"}>
         {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
               {grouped && (
@@ -455,12 +503,14 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
               <div
                 className={
                   row
-                    ? "-mx-[4px] flex gap-[10px] overflow-x-auto p-[4px]"
+                    ? confirmTiles
+                      ? "-mx-[4px] flex gap-[12px] overflow-x-auto px-[4px] pb-[2px] pt-[4px] md:gap-[14px]"
+                      : "-mx-[4px] flex gap-[10px] overflow-x-auto p-[4px]"
                     : "grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-[12px] md:grid-cols-3 md:gap-[16px]"
                 }
               >
                 {g.items.map((p) => {
-                  const key = printingKey(p);
+                  const key = tileKey(p);
                   const picked = key === preferredKey && !p.dormant;
                   const shownNow = !picked && !p.dormant && key === resolvedKey;
                   const index = navigableIndex.get(key) ?? -1;
@@ -472,6 +522,8 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
                       row={row}
                       picked={picked}
                       shownNow={shownNow}
+                      checked={selectMode ? key === selectedKey : undefined}
+                      confirmTiles={confirmTiles}
                       colorIdentity={colorIdentity}
                       tabStop={key === tabStopKey}
                       onSelect={() => pick(p)}
@@ -526,6 +578,8 @@ function PrintingTile({
   row,
   picked,
   shownNow,
+  checked,
+  confirmTiles = false,
   colorIdentity,
   tabStop,
   onSelect,
@@ -537,6 +591,10 @@ function PrintingTile({
   row: boolean;
   picked: boolean;
   shownNow: boolean;
+  /** A controlled choose group's selection (I got it): checked, outlined, and no badge. */
+  checked?: boolean;
+  /** I got it's confirm size: 100/104px wide, art radius 9px. */
+  confirmTiles?: boolean;
   colorIdentity: string[];
   tabStop: boolean;
   onSelect: () => void;
@@ -565,7 +623,7 @@ function PrintingTile({
       // The dormant tile is the stored pick — it wears the ✓ badge and "Your pick" label, so
       // reporting it unchecked would tell assistive tech nothing is selected while the screen
       // says otherwise. `picked` stays false because it drives the selectable styling.
-      aria-checked={picked || entry.dormant}
+      aria-checked={checked ?? (picked || entry.dormant)}
       // Both, and neither is redundant: the focus trap collects `button:not([disabled])`, so
       // only the native attribute keeps the tile out of the Tab cycle — but `role="radio"`
       // overrides the button role that native `disabled` maps from, so AT needs the ARIA one
@@ -582,11 +640,11 @@ function PrintingTile({
       tabIndex={entry.dormant ? -1 : tabStop ? 0 : -1}
       onClick={entry.dormant ? undefined : onSelect}
       onKeyDown={entry.dormant ? undefined : onKeyDown}
-      className={`text-left ${row ? "w-[96px] shrink-0" : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
+      className={`text-left ${row ? (confirmTiles ? "w-[100px] md:w-[104px] shrink-0" : "w-[96px] shrink-0") : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
       style={{ opacity: entry.dormant ? 0.55 : undefined }}
     >
       <div
-        className="relative w-full rounded-[10px]"
+        className={`relative w-full ${confirmTiles ? "rounded-[9px]" : "rounded-[10px]"}`}
         style={{
           aspectRatio: "63/88",
           ...artStyle,
@@ -594,7 +652,7 @@ function PrintingTile({
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
           // Three signals, none of them color (decision 3) — the tile sits on card art, so
           // contrast under it is unpredictable. Outline, not border: it must not eat the frame.
-          outline: picked
+          outline: picked || checked
             ? "2px solid var(--accent)"
             : entry.dormant
               ? "2px dashed var(--accent)"
@@ -608,7 +666,7 @@ function PrintingTile({
         {!entry.dormant && foilCount(entry) > 0 && (
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-[10px]"
+            className={`pointer-events-none absolute inset-0 ${confirmTiles ? "rounded-[9px]" : "rounded-[10px]"}`}
             style={{
               background:
                 "linear-gradient(115deg, rgba(255,255,255,0.20) 4%, transparent 24%, " +
@@ -645,7 +703,7 @@ function PrintingTile({
       </div>
       <div
         className="mt-[7px] text-[12px] md:text-[13px]"
-        style={{ color: "var(--fg)", fontWeight: picked ? 600 : 400 }}
+        style={{ color: "var(--fg)", fontWeight: picked || checked ? 600 : 400 }}
       >
         {setLabel}
         {setHint ? (

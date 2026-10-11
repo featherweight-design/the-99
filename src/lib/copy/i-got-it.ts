@@ -1,0 +1,45 @@
+// The copy of I got it (collection home sub-project 4), behind SHOPPING_MARK_BOUGHT_ENABLED and
+// COLLECTION_EDIT_ENABLED. From the handoff's `i-got-it · copy strings.ts`, adopted as drawn; this PR
+// carries the row, the key and the confirm, and later PRs add the receipt, History and the details
+// link. Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
+
+const n = (x: number) => x.toLocaleString("en-US");
+const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
+
+export const gotItCopy = {
+  row: {
+    /** The buy tag's accessible name (audit errata 1); the tag's shipped sentence becomes its description. */
+    tagAria: (card: string) => `Bought ${card}? Add it to your collection`,
+    /** Drawn in the tag's figure slot while the write is in flight. */
+    pending: "adding…",
+    /** The key item after a drawn `buy` plate. */
+    keyBuy: "bought it? press to add it",
+    /** Replaces `swapToolsCopy.limit.key` in the key while I got it is on (R2 review: shorter). */
+    keySwap: "cheaper stand-ins",
+  },
+  confirm: {
+    /** The card's name follows on its own line. */
+    title: "Bought this card?",
+    printing: "Printing",
+    printingCount: (k: number) => (k === 1 ? "the only printing" : `${n(k)} printings`),
+    finish: "Finish",
+    finishes: { nonfoil: "Nonfoil", foil: "Foil", etched: "Etched" },
+    foilOnly: "This printing only comes foil.",
+    etchedOnly: "This printing only comes etched.",
+    howMany: "How many",
+    fewer: "One fewer",
+    more: "One more",
+    need: (k: number) => `The deck needs ${n(k)}`,
+    spare: (k: number) => (k === 1 ? "1 spare" : `${n(k)} spares`),
+    add: (q: number) => `Add ${copies(q)}`,
+    choosePrinting: "Choose a printing",
+    adding: "Adding…",
+    cancel: "Cancel",
+    close: "Close",
+    staleTitle: "This changed while it was open.",
+    staleBody: (need: number) => `A copy was added somewhere else, so the deck needs ${n(need)} now. Nothing was added yet.`,
+    staleBodyDone: "A copy was added somewhere else, so the deck needs no more. Add anyway if this is a spare.",
+    failedTitle: "That didn't go through.",
+    failedBody: "Nothing was added. Try again in a moment.",
+  },
+} as const;

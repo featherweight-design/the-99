@@ -19,6 +19,8 @@ type Row = {
   price_cents_foil: number | null;
   price_cents_etched: number | null;
   as_of: Timestamp | null;
+  /** The printing the figure belongs to; null only on the placeholder row. */
+  scryfall_id: string | null;
 };
 
 /**
@@ -103,7 +105,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
   const pickedCte = picks.length === 0 ? sql`` : sql`,
     picked as (
       select w.deck_id, p.oracle_id,
-             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of
+             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id
       from unnest(
         ${sql.param(picks.map((k) => k.deckId))}::uuid[],
         ${sql.param(picks.map((k) => k.oracleId))}::uuid[],
@@ -135,7 +137,8 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
         pp.price_cents,
         pp.price_cents_foil,
         pp.price_cents_etched,
-        pp.as_of
+        pp.as_of,
+        p.scryfall_id
       from printings p
       join printing_prices pp on pp.scryfall_id = p.scryfall_id
       where p.oracle_id = any(${only}::uuid[])
@@ -157,7 +160,8 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       facts.price_cents,
       facts.price_cents_foil,
       facts.price_cents_etched,
-      facts.as_of
+      facts.as_of,
+      facts.scryfall_id
     from newest
     left join facts on true
   `);
@@ -172,6 +176,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       foilCents: row.price_cents_foil,
       etchedCents: row.price_cents_etched,
       asOf: parseAsOf(row.as_of),
+      ...(row.scryfall_id ? { printing: { scryfallId: row.scryfall_id } } : {}),
     };
     if (row.deck_id === null) prices.set(row.oracle_id, fact);
     else picked.set(pickKey(row.deck_id, row.oracle_id), fact);

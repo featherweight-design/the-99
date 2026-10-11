@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 import { BuyTag } from "./buy-tag";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
@@ -286,5 +287,111 @@ describe("BuyTag collapsed density", () => {
   it("is the full tag by default", () => {
     render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} />);
     expect(screen.queryByText("$")).toBeNull();
+  });
+});
+
+describe("BuyTag as I got it's button (press)", () => {
+  const press = (over: Partial<import("./buy-tag").BuyTagPress> = {}) => ({
+    onPress: vi.fn(),
+    state: "rest" as const,
+    cardName: "Etali, Primal Conqueror",
+    ...over,
+  });
+
+  it("is a plain span with no press: no button anywhere", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
+  });
+
+  it("is a button with a press, named by tagAria and described by the tag's own sentence", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />);
+    const button = screen.getByRole("button", { name: gotItCopy.row.tagAria("Etali, Primal Conqueror") });
+    expect(button).toHaveAccessibleDescription(/^buy\s?\$2\.10$/);
+    expect(button).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("carries the spoken-for sentence as its description, not as its name", () => {
+    render(
+      <BuyTag variant="row" label="a second copy to buy" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />,
+    );
+    const button = screen.getByRole("button", { name: gotItCopy.row.tagAria("Etali, Primal Conqueror") });
+    expect(button.getAttribute("aria-describedby")).toBeTruthy();
+    expect(button).toHaveAccessibleDescription(/a second copy to buy/);
+  });
+
+  it("puts `over $X` under the plate, inside the button, and in the description", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press({ under: "over $10" })} />);
+    const button = screen.getByRole("button");
+    expect(button).toContainElement(screen.getByText("over $10"));
+    expect(button).toHaveAccessibleDescription(/over \$10/);
+  });
+
+  it("draws the focus ring on the plate, not around the 44px stack", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press({ under: "over $10" })} />);
+    const button = screen.getByRole("button");
+    expect(button.className).toContain("focus-visible:outline-none");
+    const plate = button.firstElementChild as HTMLElement;
+    expect(plate.className).toContain("group-focus-visible/buy:outline-[color:var(--accent)]");
+    expect(plate.className).toContain("group-focus-visible/buy:outline-offset-2");
+  });
+
+  // A touch browser keeps :hover after a tap, so the hover wash is desktop's alone.
+  it("draws the hover wash from lg only, and the press wash at every width", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />);
+    const plate = screen.getByRole("button").firstElementChild as HTMLElement;
+    expect(plate.className).toContain("lg:group-hover/buy:bg-");
+    expect(plate.className).not.toMatch(/(^|\s)group-hover\/buy:/);
+    expect(plate.className).toMatch(/(^|\s)group-active\/buy:bg-/);
+  });
+
+  it("opens on a press at rest, and does not let the press reach the row", () => {
+    const p = press();
+    const rowClick = vi.fn();
+    render(
+      <div onClick={rowClick}>
+        <BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={p} />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    expect(p.onPress).toHaveBeenCalledTimes(1);
+    expect(rowClick).not.toHaveBeenCalled();
+  });
+
+  it("holds the open wash while the confirm is up", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press({ state: "open" })} />);
+    const button = screen.getByRole("button");
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(button.firstElementChild?.className).toContain("var(--warning)_24%");
+  });
+
+  it("reads `adding…` in the figure slot while pending, and takes no second press", () => {
+    const p = press({ state: "pending" });
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={p} />);
+    expect(screen.getByText(gotItCopy.row.pending)).toBeInTheDocument();
+    expect(screen.queryByText("$2.10")).toBeNull();
+    const button = screen.getByRole("button");
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).toHaveAttribute("aria-busy", "true");
+    fireEvent.click(button);
+    expect(p.onPress).not.toHaveBeenCalled();
+  });
+
+  it("reads `adding…` on a bare tag too", () => {
+    render(<BuyTag variant="row" price={null} newestAsOf={NEWEST} density="full" press={press({ state: "pending" })} />);
+    expect(screen.getByText(gotItCopy.row.pending)).toBeInTheDocument();
+  });
+
+  it("takes no press while disabled", () => {
+    const p = press({ state: "disabled" });
+    render(<BuyTag variant="row" price={SOLD_OUT} newestAsOf={NEWEST} density="full" press={p} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(p.onPress).not.toHaveBeenCalled();
+    expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("stays inert on the All tab's collapsed tag even when handed a press", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="collapsed" press={press()} />);
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });

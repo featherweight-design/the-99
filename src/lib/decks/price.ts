@@ -26,6 +26,14 @@ export type PriceFact = {
   foilCents: number | null;
   etchedCents: number | null;
   asOf: Date;
+  /**
+   * The printing the figure was read from (I got it, audit gap 1): the deck's pick when the read
+   * priced it, else the printing `loadPrices` chose. Never drawn; I got it's confirm presets this
+   * printing. Filled by `loadPrices` only, so every other source of a fact leaves it absent. The
+   * catalog id alone: the confirm matches its choices by it, and the fact rides on every row of a
+   * deck page's payload.
+   */
+  printing?: { scryfallId: string };
 };
 
 export type PriceState = "priced" | "foilOnly" | "soldOut" | "absent";
