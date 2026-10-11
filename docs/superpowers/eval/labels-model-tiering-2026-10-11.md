@@ -6,10 +6,10 @@ Hugh approved this eval with a $1 cap and no production change. Nothing here tou
 
 ## Method
 
-- **Sample.** 299 cards, drawn deterministically (FNV hash, no RNG) from staging's 32,099 fresh `card_labels` rows written by Sonnet 4.5 under prompt version 8. Nine strata of up to 30 cards each, overlaps counted once: nonland ramp, draw, removal, wipes, protection and tutor; lands with a job; empty labels; two-faced layouts; anything. This oversamples hard cases (lands, two-faced, empty), so the percentages below are a floor for the catalog at large, not an estimate of it.
+- **Sample.** 299 cards, drawn deterministically (FNV hash, no RNG) from staging's 32,099 fresh `card_labels` rows written by Sonnet 4.5 under prompt version 8. Ten strata of up to 30 cards each, overlaps counted once: nonland ramp, draw, removal, wipes, protection and tutor; lands with a job; empty labels; two-faced layouts; anything. This oversamples hard cases (lands, two-faced, empty), so the percentages below are a floor for the catalog at large, not an estimate of it.
 - **Calls.** The app's own `buildRequest` prompt (SYSTEM, `renderBody`), 12 cards per request as production does, one call per model per request, `max_tokens` at production's ceiling.
 - **Scoring.** The label scorer's own `bestPairing` and the six limit fields plus `affects`, `to` and `method`. Reference and candidate both drop a land-only tutor the way `freshLabels` does. Agreement is not accuracy: two models can agree and both be wrong, and the stored labels are Sonnet 4.5's opinion, not gold.
-- **Script.** `scripts/eval/labels-tiering.mts`, resumable, staging read-only, every reply priced as it lands against the cap.
+- **Script.** `scripts/eval/labels-tiering.mts`, resumable, staging read-only, every reply priced as it lands against the cap. It prints the job-set and full agreement, role and theme recall and precision, identical-role cards, rejected-job counts and the per-role table; re-running it on a finished out file re-scores without a call. The 20 disagreements per model were read by hand from the `-diffs.json` files it writes next to the out file.
 
 ## Findings that block use before the numbers matter
 

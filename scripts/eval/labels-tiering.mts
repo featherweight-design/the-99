@@ -35,7 +35,7 @@ const flag = (name: string, d: number) => {
 };
 const CAP = flag("cap", 1);
 const PER = flag("per-stratum", 30);
-const BATCH = flag("batch", 10);
+const BATCH = flag("batch", 12); // production's CARDS_PER_REQUEST (src/lib/labels/plan.ts)
 const MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5"] as const;
 const REFERENCE = "claude-sonnet-4-5";
 
@@ -97,6 +97,7 @@ const spent = () => Object.values(run.models).reduce((n, m) => n + m.usd, 0);
 
 for (const model of MODELS) {
   const m = (run.models[model] ??= { replies: {}, rejected: [], usd: 0, usage: [], failed: 0 });
+  m.failed = 0; // counted per invocation: a resumed run retries what is missing and must not inherit the last run's tally
   const todo = run.sample.filter((s) => !(s.card.oracleId in m.replies));
   for (let i = 0; i < todo.length; i += BATCH) {
     const group = todo.slice(i, i + BATCH);
@@ -180,6 +181,29 @@ for (const model of MODELS) {
   for (const [k, e] of [...per].sort((x, y) => y[1].stored - x[1].stored)) {
     console.log(`  ${k.padEnd(22)} stored ${String(e.stored).padStart(3)}  reproduced ${pct(e.both, e.stored).padStart(6)}  model-only ${e.extra}`);
   }
+  // Role and theme jobs counted as a multiset per card, the same pairing as above: recall is the share of
+  // stored jobs the model also returned, precision the share of its jobs the stored label also holds.
+  let identicalRoles = 0;
+  const tally = { role: { tp: 0, fn: 0, fp: 0 }, theme: { tp: 0, fn: 0, fp: 0 } };
+  for (const s of asked) {
+    const count = (jobs: Job[], space: string) => jobs.filter((j) => j.space === space).reduce((c, j) => c.set(j.kind, (c.get(j.kind) ?? 0) + 1), new Map<string, number>());
+    let same = true;
+    for (const space of ["role", "theme"] as const) {
+      const a = count(s.stored, space), b = count(m.replies[s.card.oracleId], space);
+      for (const k of new Set([...a.keys(), ...b.keys()])) {
+        const x = a.get(k) ?? 0, y = b.get(k) ?? 0, both = Math.min(x, y);
+        tally[space].tp += both; tally[space].fn += x - both; tally[space].fp += y - both;
+        if (x !== y && space === "role") same = false;
+      }
+    }
+    if (same) identicalRoles++;
+  }
+  console.log(`  role jobs identical on the card: ${identicalRoles} (${pct(identicalRoles, asked.length)})`);
+  for (const space of ["role", "theme"] as const) {
+    const t = tally[space];
+    console.log(`  ${space} recall ${pct(t.tp, t.tp + t.fn)}  precision ${pct(t.tp, t.tp + t.fp)}`);
+  }
+  console.log(`  jobs the parser rejected: ${m.rejected.length}`);
   console.log(`  per 1,000 cards: standard $${((m.usd / Math.max(1, asked.length)) * 1000).toFixed(2)}, batch $${((m.usd / Math.max(1, asked.length)) * 500).toFixed(2)}`);
   writeFileSync(out.replace(/\.json$/, `-${model}-diffs.json`), JSON.stringify(diffs, null, 1));
 }
