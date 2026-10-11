@@ -2,7 +2,7 @@ import { refOf } from "./claims";
 import { engineCandidates } from "./engine-candidates";
 import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
-import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
+import { isInfiniteOrGameEnding, isMandatoryLoop, DRAW_THE_GAME } from "../spellbook/combo-features";
 import { identityNameOf, ownWinConditions, type SynopsisFacts } from "./facts";
 import { normalizeV8, weaknessLines } from "./validate-v8";
 import type { SynopsisReply } from "./response-schema";
@@ -85,7 +85,7 @@ const CHECKLIST_V8 = [
   "- interaction_speed: use the interaction figures in the facts exactly as given, never your own count. When few of the deck's interaction pieces are cheap or at instant speed, that is the weakness against a fast combo; name what it cannot stop in time.",
   "- commander_dependence: how much of the plan stops if the commander is removed or taxed repeatedly, and what the deck loses without it.",
   "- win_path: a deck that wins mostly through combat or one route: fogs and pillowfort such as [[Propaganda]], [[Ghostly Prison]], and what stops that route.",
-  "- combo_vulnerability: only when the facts list a combo or the plan depends on one piece. A combo that is only a backup is never \"critical\", since the primary plan still wins without it: the removal or disruption that breaks it at its key window (the commander's combat or enter-the-battlefield trigger, the engine piece), naming the piece. If no combo is listed, answer \"not_a_weakness\" or \"unknown\".",
+  "- combo_vulnerability: only when the facts list a combo or the plan depends on one piece. A combo that is only a backup is never \"critical\", since the primary plan still wins without it: the removal or disruption that breaks it at its key window (the commander's combat or enter-the-battlefield trigger, the engine piece), naming the piece. A combo listed as a \"mandatory loop\" is always a \"weakness\" here, tier \"critical\" (it ends the game in a draw), whatever else the deck holds: its line names its pieces and says that if they meet the game is drawn unless the deck answers in response. Never claim the deck has or lacks an answer, and never leave it out. If no combo is listed, answer \"not_a_weakness\" or \"unknown\".",
   "- mana_and_colors: the deck's own color needs, the basic-land count against its colors, tapped lands, or tapping out for its expensive spells. Judge the colors against the colors the lands make when the facts give them, otherwise against the identity named above; a single-color deck has no color-flexibility weakness.",
 ].join("\n");
 
@@ -183,6 +183,7 @@ const V2_COMBO_RULES_V8 = [
   "The facts may list combos this deck assembles. Name each listed combo by its cards and by what it produces (for example: [[Card A]] and [[Card B]] together make infinite mana), and never describe it as value, a bonus or a side effect. A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.",
   "When the facts give \"Colors the lands make\", that name REPLACES the identity name wherever you name the deck's colors (the rule to name them by the identity given applies to it instead): a deck whose lands make fewer colors than its identity plays as the colors they make.",
   "Whenever the overview or a strategy step names a listed combo, that sentence names every card of the combo.",
+  "A combo listed as a \"mandatory loop\" cannot be stopped by choice: once it starts, the game is drawn unless something answers its triggers in response. Never call a mandatory loop a win condition, a plan, a backup or an alternate win. Name it only as a risk, and only in the weakness checklist.",
   "A combo listed as one card short is not a plan, but the card the deck holds may still win by its own rules text: a card under \"Cards with their own win condition\" is judged by that condition, never dismissed for the combo it lacks.",
 ].join("\n");
 
@@ -277,7 +278,7 @@ export function buildSynopsisPrompt(
     lines.push(`- Commander mana value (a turn to cast it on is this number): ${facts.commanderManaValues.join(" and ")}`);
   }
 
-  if (opts.v2) lines.push(...v2FactLines(facts));
+  if (opts.v2) lines.push(...v2FactLines(facts, !!opts.contract8));
   if (opts.contract8) {
     const wins = ownWinConditions(facts.cards);
     if (wins.length > 0) {
@@ -348,12 +349,21 @@ export function producesShown(produces: readonly string[]): string[] {
 }
 
 /** The combo and deck-stats section of the user message. Empty parts are left out, never stated as none. */
-export function v2FactLines(facts: SynopsisFacts): string[] {
+export function v2FactLines(facts: SynopsisFacts, contract8 = false): string[] {
   const out: string[] = [];
   const mana = (n: number | null) => (n === null ? "" : n === 0 ? " (costs no mana to run)" : ` (needs ${n} mana to run)`);
   if (facts.combos && facts.combos.length > 0) {
     out.push("", "Combos this deck assembles (Commander Spellbook; every card named is in the deck):");
-    for (const c of facts.combos) out.push(`- ${c.pieces.join(" + ")}: ${producesShown(c.produces).join(", ")}${mana(c.manaNeeded)}`);
+    for (const c of facts.combos) {
+      // A mandatory loop is not a win: nothing in it can be declined, so the game is drawn unless
+      // the deck answers in response. The model is never asked to name or claim an answer (it could
+      // not be checked), so the fact states the condition and the weakness rule words it the same way.
+      // Contract 8 only: contract 7 stays the baseline the v7-against-v8 comparison is run against.
+      const shown = producesShown(c.produces.filter((f) => f !== DRAW_THE_GAME)).join(", ");
+      out.push(contract8 && isMandatoryLoop(c.produces)
+        ? `- mandatory loop: ${c.pieces.join(" + ")}${shown ? `: ${shown}` : ""}${mana(c.manaNeeded)}; the game is drawn unless the deck answers in response`
+        : `- ${c.pieces.join(" + ")}: ${producesShown(c.produces).join(", ")}${mana(c.manaNeeded)}`);
+    }
   }
   if (facts.nearCombos && facts.nearCombos.length > 0) {
     out.push("", "Combos one card short (the missing card is NOT in the deck):");

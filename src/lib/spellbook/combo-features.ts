@@ -35,6 +35,23 @@ export function isInfiniteOrGameEnding(features: readonly string[]): boolean {
 }
 
 /**
+ * Spellbook's own feature for a loop that cannot be stopped by choice: every trigger in it is
+ * mandatory, so once it starts the game is drawn unless something outside the loop breaks it.
+ * Marauding Raptor's 2 damage to each creature entering, with Polyraptor copying itself when
+ * dealt damage, is the case (variant 2062-3356). A loop with a "may" in it (Forerunner of the
+ * Empire's damage) carries no such feature, because its controller can decline and end it.
+ * Read from `produces`, so the any-size read and the profile's two-card fallback agree. Measured on
+ * staging 2026-10-11: 294 variants, 134 of them two-card (the generated vocabulary's own count, from
+ * its own run, is 289).
+ */
+export const DRAW_THE_GAME = "Draw the game";
+
+/** Whether a variant's features say its loop is mandatory. */
+export function isMandatoryLoop(features: readonly string[]): boolean {
+  return features.includes(DRAW_THE_GAME);
+}
+
+/**
  * Specifically a TURN loop, which WotC's B2/B3 clause forbids by name: extra-turn cards
  * "are not intended to be chained in succession or looped".
  *

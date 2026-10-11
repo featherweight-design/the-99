@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { GAME_ENDING_FEATURES } from "../spellbook/produces-kinds.generated";
-import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
+import { DRAW_THE_GAME, isInfiniteOrGameEnding, isMandatoryLoop } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
 import { fitsIdentity, MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
 
@@ -30,7 +30,7 @@ export type ComboPieceRow = {
 export type ComboFacts = { combos: ComboFact[]; nearCombos: NearComboFact[] };
 
 /**
- * Every infinite or game-ending, template-free variant of 2 to 6 pieces the deck assembles
+ * Every infinite, game-ending or mandatory-loop ("Draw the game"), template-free variant of 2 to 6 pieces the deck assembles
  * (gap 0) or is exactly one piece short of (gap 1). The commander counts as a piece, and a piece
  * that must be a commander counts only when it is one. Card count is never the test: what the
  * variant PRODUCES is. `count(*) = card_count` guards the table's deduped rows against a variant
@@ -46,7 +46,7 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
       from ${spellbookVariants} v
       where v.card_count between 2 and ${MAX_COMBO_PIECES}
         and cardinality(v.requires_template_ids) = 0
-        and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any(${gameEnding}::text[]))
+        and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any(${gameEnding}::text[]) or f = ${DRAW_THE_GAME})
         and exists (select 1 from ${spellbookVariantCards} vc0
                     where vc0.variant_id = v.variant_id and vc0.oracle_id = any(${presentP}::uuid[]))
     ), pieces as (
@@ -79,10 +79,12 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
  */
 function byRank(a: Ranked, b: Ranked): number {
   const free = (r: Ranked) => (r.mana === 0 ? 0 : 1);
-  return a.pieces - b.pieces || free(a) - free(b) || Number(b.commander) - Number(a.commander) || (a.mana ?? 99) - (b.mana ?? 99) || a.id.localeCompare(b.id);
+  // A mandatory loop leads whatever its size: the cap must never cost the overview the one risk
+  // that ends the game, and a deck rarely holds more than one or two.
+  return Number(b.mandatory) - Number(a.mandatory) || a.pieces - b.pieces || free(a) - free(b) || Number(b.commander) - Number(a.commander) || (a.mana ?? 99) - (b.mana ?? 99) || a.id.localeCompare(b.id);
 }
 
-type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string };
+type Ranked = { pieces: number; mana: number | null; commander: boolean; id: string; sig: string; mandatory?: boolean };
 
 /**
  * The top `cap` of a ranked list, one per distinct outcome first. Variants differing by one
@@ -115,7 +117,9 @@ export function shapeComboFacts(
   const near: (NearComboFact & { pieceCount: number; mana: number | null; usesCommander: boolean; id: string })[] = [];
   for (const [id, pieces] of byVariant) {
     const first = pieces[0];
-    if (pieces.length !== first.card_count || !isInfiniteOrGameEnding(first.produces)) continue;
+    // A loop whose only feature is "Draw the game" (Pariah + Stuffy Doll) counts here: the verdict
+    // does not count it, but the overview must be able to name the risk.
+    if (pieces.length !== first.card_count || !(isInfiniteOrGameEnding(first.produces) || isMandatoryLoop(first.produces))) continue;
     const names = [...pieces].sort((a, b) => a.name.localeCompare(b.name));
     const missing = names.filter((p) => !p.held);
     if (missing.length === 0) {
@@ -127,7 +131,8 @@ export function shapeComboFacts(
         usesCommander: pieces.some((p) => commanderIds.includes(p.oracle_id)),
         manaNeeded: first.mana_value_needed,
       });
-    } else if (missing.length === 1) {
+    } else if (missing.length === 1 && !isMandatoryLoop(first.produces)) {
+      // A loop that draws the game is never a piece to want: a near-combo only invites completing it.
       const m = missing[0];
       // The missing piece must be a card this deck could add: not command-zone-only, legal, in colour.
       if (m.must_be_commander || !m.commander_legal || !fitsIdentity(identity, m.color_identity)) continue;
@@ -144,7 +149,7 @@ export function shapeComboFacts(
   }
   const sig = (produces: readonly string[]) => [...produces].sort().join("|");
   return {
-    combos: pickTop(assembled, (c) => ({ pieces: c.pieceCount, mana: c.manaNeeded, commander: c.usesCommander, id: c.id, sig: sig(c.produces) }), MAX_COMBO_FACTS)
+    combos: pickTop(assembled, (c) => ({ pieces: c.pieceCount, mana: c.manaNeeded, commander: c.usesCommander, id: c.id, sig: sig(c.produces), mandatory: isMandatoryLoop(c.produces) }), MAX_COMBO_FACTS)
       .map(({ pieceCount: _p, id: _i, ...c }) => c),
     nearCombos: pickTop(near, (n) => ({ pieces: n.pieceCount, mana: n.mana, commander: n.usesCommander, id: n.id, sig: sig(n.produces) }), MAX_NEAR_COMBO_FACTS)
       .map(({ pieceCount: _p, mana: _m, usesCommander: _u, id: _i, ...n }) => n),

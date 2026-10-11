@@ -1,4 +1,5 @@
 import { edictEntry, keywordClaims, nonWeakness, readEvidence, refIndex } from "./claims";
+import { isMandatoryLoop } from "../spellbook/combo-features";
 import { deckNameIndex, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
 import type { SynopsisReplyV8Wire, SynopsisResponse, SynopsisResponseV8 } from "./response-schema";
 import {
@@ -43,7 +44,20 @@ type Normalized = {
   /** Evidence ids per line, parallel to `reply`'s arrays (weaknesses: the ranked candidates). */
   evidence: { strategy: string[][]; keep: string[][]; sendBack: string[][]; tips: string[][]; keyCards: string[][]; weaknesses: string[][] };
   assessment: StoredAssessment[] | null;
+  /** The checklist is whole but leaves a listed mandatory loop unanswered; the Weaknesses are refused for it. */
+  loopMissed: boolean;
 };
+
+/**
+ * A listed mandatory loop ends the game in a draw, so the prompt asks for it as a critical
+ * `combo_vulnerability` weakness every time. That is a rule about the facts, which only the
+ * validator can hold the model to: a stochastic miss would otherwise be stored and rendered.
+ */
+function mandatoryLoopMissed(reply: Pick<SynopsisResponseV8, "assessment">, facts: SynopsisFacts): boolean {
+  if (!(facts.combos ?? []).some((c) => isMandatoryLoop(c.produces))) return false;
+  const entry = reply.assessment.find((a) => a.topic === "combo_vulnerability");
+  return !(entry && entry.verdict === "weakness" && entry.tier === "critical");
+}
 
 const word = (w: string) => w.trim().toLowerCase().replace(/[\s-]+/g, "_");
 
@@ -132,7 +146,9 @@ function normalize(reply: SynopsisResponseV8, facts: SynopsisFacts): Normalized 
     return { card: k.card, claims: k.claims, job: k.job };
   });
 
-  const complete = checklistComplete(reply);
+  const whole = checklistComplete(reply);
+  const loopMissed = whole && mandatoryLoopMissed(reply, facts);
+  const complete = whole && !loopMissed;
   const ranked = complete ? rank(reply) : [];
   const weaknesses = ranked.map((a) => {
     const line = `${TIER_WORD[a.tier!]}: ${a.line!.trim()}`;
@@ -146,6 +162,7 @@ function normalize(reply: SynopsisResponseV8, facts: SynopsisFacts): Normalized 
     reply: { overview: reply.overview, primer: { strategy, mulligan: { keep, sendBack }, tips }, keyCards, weaknesses },
     checks,
     evidence: ev,
+    loopMissed,
     assessment: complete ? reply.assessment.map((a) => ({ topic: a.topic, verdict: a.verdict, ...(a.tier ? { tier: a.tier } : {}) })) : null,
   };
 }
@@ -178,7 +195,7 @@ export function validateSynopsisV8(
   // An incomplete checklist refuses the Weaknesses whole: there is nothing sound to choose from.
   const verdicts = checked.verdicts.map((v) =>
     v.section === "weaknesses" && !complete
-      ? { section: "weaknesses" as const, status: "refused" as const, reason: "checklist_incomplete" as const, failed: 0, total: v.total }
+      ? { section: "weaknesses" as const, status: "refused" as const, reason: n.loopMissed ? "mandatory_loop_missed" as const : "checklist_incomplete" as const, failed: 0, total: v.total }
       : v);
   const weaknesses = complete ? checked.weaknesses : null;
 

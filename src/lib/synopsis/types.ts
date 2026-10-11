@@ -63,6 +63,8 @@ export const REFUSAL_REASONS = [
   "non_weakness",
   /** A checklist that does not assess every topic exactly once, or a weakness verdict with no tier or line. */
   "checklist_incomplete",
+  /** The facts list a mandatory loop and the checklist does not answer combo_vulnerability as a critical weakness. */
+  "mandatory_loop_missed",
 ] as const;
 export type RefusalReason = (typeof REFUSAL_REASONS)[number];
 

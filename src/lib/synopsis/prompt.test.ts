@@ -209,6 +209,27 @@ describe("buildSynopsisPrompt under contract 8", () => {
     }
   });
 
+  it("states a mandatory loop as a loop that draws the game, never as a combo, and rules it a weakness", () => {
+    const loop = { pieces: ["Marauding Raptor", "Polyraptor"], produces: ["Draw the game", "Infinite creature tokens"], usesCommander: false, manaNeeded: 8 };
+    const may = { pieces: ["Forerunner of the Empire", "Polyraptor"], produces: ["Infinite creature tokens"], usesCommander: false, manaNeeded: 8 };
+    const facts = { ...FACTS, combos: [loop, may], nearCombos: [] };
+    const { user, system } = buildSynopsisPrompt(facts, undefined, C8);
+    expect(user).toContain("- mandatory loop: Marauding Raptor + Polyraptor: Infinite creature tokens (needs 8 mana to run); the game is drawn unless the deck answers in response");
+    expect(user).toContain("- Forerunner of the Empire + Polyraptor: Infinite creature tokens (needs 8 mana to run)");
+    expect(user).not.toContain("Draw the game");
+    expect(system).toContain("Never call a mandatory loop a win condition, a plan, a backup or an alternate win");
+    expect(system).toContain('is always a "weakness" here, tier "critical"');
+    expect(system).toContain("Never claim the deck has or lacks an answer");
+    // A loop whose only feature is "Draw the game" still reads as a loop, with no empty produces list.
+    const drawOnly = { pieces: ["Pariah", "Stuffy Doll"], produces: ["Draw the game"], usesCommander: false, manaNeeded: 0 };
+    expect(buildSynopsisPrompt({ ...FACTS, combos: [drawOnly], nearCombos: [] }, undefined, C8).user)
+      .toContain("- mandatory loop: Pariah + Stuffy Doll (costs no mana to run); the game is drawn unless the deck answers in response");
+    // Contract 7 is the baseline the comparison runs against: it is not taught the fix.
+    const v7 = buildSynopsisPrompt(facts, undefined, { v2: true });
+    expect(v7.user).not.toContain("mandatory loop");
+    expect(v7.system).not.toContain("mandatory loop");
+  });
+
   it("lists the engine candidates in the user message and asks for a weakness when none stands out", () => {
     const facts = { ...FACTS, commanders: ["Kratos"], cards: [
       { oracleId: "k", name: "Kratos", typeLine: "Legendary Creature - God", quantity: 1, categories: [], oracleText: "Whenever a god attacks, create a spirit." },

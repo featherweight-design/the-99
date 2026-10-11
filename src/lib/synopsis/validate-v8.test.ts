@@ -117,6 +117,26 @@ describe("validateSynopsisV8", () => {
     expect(verdictOf(validateSynopsisV8(repeated, FACTS, CATALOG), "weaknesses")).toMatchObject({ reason: "checklist_incomplete" });
   });
 
+  it("holds the model to the mandatory-loop rule: a listed loop must be a critical combo_vulnerability weakness", () => {
+    const loop = { pieces: ["Kratos", "Sol Ring"], produces: ["Draw the game", "Infinite creature tokens"], usesCommander: true, manaNeeded: 0 };
+    const withLoop: SynopsisFacts = { ...FACTS, combos: [loop] };
+    const answered = good();
+    answered.assessment = assessAll({ combo_vulnerability: { verdict: "weakness", tier: "critical", line: "[[Kratos]] and [[Sol Ring]] loop and the game is drawn unless the deck answers in response.", evidence: ["c1", "c2"] } });
+    expect(verdictOf(validateSynopsisV8(answered, withLoop, CATALOG), "weaknesses")).toMatchObject({ status: "ok" });
+
+    for (const over of [
+      { combo_vulnerability: { verdict: "not_a_weakness" as const } },
+      { combo_vulnerability: { verdict: "weakness" as const, tier: "moderate" as const, line: "[[Kratos]] and [[Sol Ring]] loop.", evidence: [] } },
+    ]) {
+      const missed = good();
+      missed.assessment = assessAll(over);
+      expect(verdictOf(validateSynopsisV8(missed, withLoop, CATALOG), "weaknesses")).toMatchObject({ status: "refused", reason: "mandatory_loop_missed" });
+      expect(validateSynopsisV8(missed, withLoop, CATALOG).weaknesses).toBeNull();
+      // With no loop listed the same checklist is fine: the rule is about the facts.
+      expect(verdictOf(validateSynopsisV8(missed, FACTS, CATALOG), "weaknesses")).not.toMatchObject({ reason: "mandatory_loop_missed" });
+    }
+  });
+
   it("refuses the Weaknesses when a weakness verdict has no tier or no line, naming the checklist", () => {
     const reply = good();
     reply.assessment = assessAll({ win_path: { verdict: "weakness", line: "No tier given." }, mana_and_colors: { verdict: "weakness", tier: "minor" } });
