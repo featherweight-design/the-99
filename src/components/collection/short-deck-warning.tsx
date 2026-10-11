@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 
 type DeckRow = { deckId: string; deckName: string; cards: { oracleId: string; cardName: string; short: number }[]; short: number };
 
@@ -46,7 +47,7 @@ export function ShortDeckWarning({
    */
   variant?: "dialog" | "embedded";
   /** What the decks would be left short by: it words the title and the confirm. */
-  source?: "replace" | "revert" | "save" | "remove";
+  source?: "replace" | "revert" | "save" | "remove" | "undo";
   /** The card a `save` or `remove` is about: the title of a removal and the body name it. */
   cardName?: string;
   /** The id the host's `aria-labelledby` names. Unused when embedded. */
@@ -69,11 +70,14 @@ export function ShortDeckWarning({
   const [open, setOpen] = useState<string | null>(null);
   const title =
     source === "revert" ? c.titleRevert(rows.length)
+    // I got it's toast Undo (call 6): a revert, worded as the undo the player pressed.
+    : source === "undo" ? gotItCopy.shortWarning.titleUndo(rows.length)
     : source === "remove" ? c.titleRemove(cardName ?? "", rows.length)
     : source === "save" ? c.titleSave(rows.length)
     : c.titleReplace(rows.length);
   const confirmLabel =
     source === "revert" ? c.confirmRevert
+    : source === "undo" ? gotItCopy.shortWarning.confirmUndo
     : source === "remove" ? c.confirmRemove
     : source === "save" ? c.confirmSave
     : c.confirmReplace;

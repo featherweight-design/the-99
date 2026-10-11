@@ -22,6 +22,13 @@ describe("groupShortDecks", () => {
 });
 
 describe("ShortDeckWarning", () => {
+  it("words I got it's toast Undo with its own verb, Cancel still focused", () => {
+    draw([line("a", "x", 1)], { source: "undo" });
+    expect(screen.getByRole("heading", { name: "Undoing leaves a deck short" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Undo anyway" })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
+  });
+
   it("focuses Cancel, and the confirm is the elevated secondary rather than the accent or red", () => {
     draw([line("a", "x", 1)]);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
