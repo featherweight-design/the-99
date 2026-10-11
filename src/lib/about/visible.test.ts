@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -46,6 +46,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["collection-history", "COLLECTION_EDIT_ENABLED"],
       ["help-me-choose", "HELP_ME_CHOOSE_ENABLED"],
       ["deck-analysis", "ANALYSIS_TAB_ENABLED"],
+      ["deck-benchmarks", "DECK_BENCHMARKS_ENABLED"],
       ["card-marks", "ANALYSIS_TAB_ENABLED"],
       ["locked-cards", "NEVER_CUT_ENABLED"],
       ["fits-your-decks", "SWAP_TOOLS_ENABLED"],
@@ -54,8 +55,8 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["suggested-changes", "TUNING_ENABLED"],
       ["deck-stats", "DECK_STATS_ENABLED"],
     ]);
-    // Version 12 added only switched entries (collection edit), so the newest UNSWITCHED entry is
-    // still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
+    // Versions 12 (collection edit) and 13 (evidence benchmarks) added only switched entries, so
+    // the newest UNSWITCHED entry is still 11's: a version no unswitched entry carries moves the cookie and nothing else. Pinned
     // exactly, so an unswitched entry added (or since moved) without a deliberate edit here fails.
     expect(Math.max(...unswitched.map((e) => e.since))).toBe(11);
     expect(ABOUT_VERSION).toBeGreaterThanOrEqual(11);
@@ -103,12 +104,14 @@ describe("an entry tied to a switch", () => {
     // so neither stamp can make one of them unseen again.
     const launch = aboutEntries.filter((e) => e.switch && e.switch !== "COLLECTION_EDIT_ENABLED");
     // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
-    const later = ["suggested-changes", "deck-stats"];
-    const [suggestedChanges, deckStats] = ["suggested-changes", "deck-stats"].map((id) => launch.filter((e) => e.id === id));
+    // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump.
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks"];
+    const [suggestedChanges, deckStats, deckBenchmarks] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
+    expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "upload-choice",
@@ -117,6 +120,7 @@ describe("an entry tied to a switch", () => {
       "collection-history",
       "help-me-choose",
       "deck-analysis",
+      "deck-benchmarks",
       "card-marks",
       "locked-cards",
       "fits-your-decks",
@@ -255,5 +259,24 @@ describe("a negated line switch, and `import`'s two warnings (collection edit)",
     const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!COLLECTION_EDIT_ENABLED", New: "COLLECTION_EDIT_ENABLED" } };
     expect(resolveEntry(e, env()).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("true")).keys).toEqual(["New"]);
+  });
+});
+
+describe("deck-benchmarks follows DECK_BENCHMARKS_ENABLED", () => {
+  const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
+
+  it("is hidden while the switch is off, and drawn after deck-analysis once it is on", () => {
+    expect(ids({ ANALYSIS_TAB_ENABLED: "true" })).not.toContain("deck-benchmarks");
+    const on = ids({ ANALYSIS_TAB_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true" });
+    expect(on[on.indexOf("deck-analysis") + 1]).toBe("deck-benchmarks");
+    // The feature's own flag rule: anything but the exact string 'true' is off.
+    expect(ids({ DECK_BENCHMARKS_ENABLED: "1" })).not.toContain("deck-benchmarks");
+  });
+
+  it("is the evidence line's one bump", () => {
+    const entry = aboutEntries.find((e) => e.id === "deck-benchmarks")!;
+    expect(entry.since).toBe(ABOUT_VERSION);
+    expect(entry.chapter).toBe("03");
+    expect(entry.width).toBe("plate");
   });
 });

@@ -56,3 +56,24 @@ describe("the legacy page (no sheet), for a reader current by version", () => {
     expect(screen.queryByRole("button", { name: /got it/i })).toBeNull();
   });
 });
+
+describe("deck-benchmarks, on the page", () => {
+  const benchmarks = () => document.getElementById("deck-benchmarks");
+  afterEach(() => {
+    delete process.env.DECK_BENCHMARKS_ENABLED;
+  });
+
+  it("is not on the page while DECK_BENCHMARKS_ENABLED is off", () => {
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    expect(benchmarks()).toBeNull();
+  });
+
+  it("draws with its specimen, and is new, once the switch is on", () => {
+    process.env.DECK_BENCHMARKS_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    expect(benchmarks()).not.toBeNull();
+    expect(benchmarks()!.querySelector("[data-specimen] [data-benchmarks]")).not.toBeNull();
+    const links = within(index()!).getAllByRole("link");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["#deck-benchmarks"]);
+  });
+});

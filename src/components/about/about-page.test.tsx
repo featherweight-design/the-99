@@ -61,7 +61,7 @@ import { DECK_VERSIONS,
 // Every feature switch ON for this file, so every entry is drawn, figures included. The page with
 // the switches off is `about-page-r6.test.tsx`'s, and a switched entry's own rules are
 // `about-page-switch.test.tsx`'s.
-const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED", "COLLECTION_EDIT_ENABLED"] as const;
+const SWITCHES = ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED", "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "DECK_STATS_ENABLED", "COLLECTION_EDIT_ENABLED", "DECK_BENCHMARKS_ENABLED"] as const;
 beforeAll(() => {
   for (const k of SWITCHES) process.env[k] = "true";
 });
@@ -335,6 +335,27 @@ describe("the figures", () => {
     expect(columns.map((c) => c.querySelector("span")?.textContent)).toEqual(["1", "9", "14", "13", "11", "8", "4", "4"]);
     expect(plate.querySelector('[data-type-chip="creature"]')).toHaveAttribute("aria-pressed", "true");
     expect(plate.querySelector('[data-type-chip="land"]')?.textContent).toContain("36");
+  });
+
+  it("draws How it plays in its rows layout for Scrappy Survivors: four dependency rows and no opener", () => {
+    const { container } = render(<AboutPage seen={0} />);
+    const plate = figures(container)["deck-benchmarks"];
+    const block = plate.querySelector("[data-benchmarks]")!;
+    expect(block).not.toBeNull();
+    // `rows` draws the phone layout at any width: no `md:` class reaches the grades container.
+    expect(block.querySelector("[data-grades]")!.className).not.toMatch(/md:/);
+    expect([...block.querySelectorAll("[data-grade]")].map((g) => g.getAttribute("data-grade"))).toEqual(["velocity", "flow", "interaction", "win"]);
+    expect(block.querySelector('[data-grade="win"]')).toHaveAttribute("data-no-combo");
+    expect([...block.querySelectorAll("[data-dependency]")].map((d) => [d.getAttribute("data-dependency"), d.getAttribute("data-strength")])).toEqual([
+      ["graveyard", "heavy"],
+      ["enchantments", "heavy"],
+      ["creatures", "light"],
+      ["combat", "heavy"],
+    ]);
+    // A figure offers no control that does nothing: no ledger opener anywhere. Two things hold this
+    // (the figure passes no `onOpen`, and the fixture's ledgers are empty), so dropping either alone
+    // leaves it green; the handoff gives the ledger counts but not their cards, so none are invented.
+    expect(block.querySelectorAll('button[aria-haspopup="dialog"]')).toHaveLength(0);
   });
 
   it("mounts a real bar in each fit shape", () => {

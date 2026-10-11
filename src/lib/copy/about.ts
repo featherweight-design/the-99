@@ -56,8 +56,9 @@
 // deliberate bump or a deliberate re-pin.
 
 import { HISTORY_RETENTION_DAYS } from '../collection/retention';
+import { benchmarksAboutEntry } from './deck-benchmarks';
 
-export const ABOUT_VERSION = 12;
+export const ABOUT_VERSION = 13;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -77,7 +78,8 @@ export type AboutSwitch =
   | 'TUNING_ENABLED'
   | 'DECK_STATS_ENABLED'
   | 'COLLECTION_EDIT_ENABLED'
-  | 'OVERVIEW_V2_ENABLED';
+  | 'OVERVIEW_V2_ENABLED'
+  | 'DECK_BENCHMARKS_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -629,6 +631,21 @@ export const aboutEntries: readonly AboutEntry[] = [
     // switch, and nothing bumps the version for it.
     marksPending: true,
     since: 9,
+  },
+  // Evidence benchmarks (plan `2026-10-10-evidence-benchmarks.md` PR 5, handoff
+  // `addendum_evidence_benchmarks` §4a): the copy lives in `deck-benchmarks.ts` beside the block's,
+  // after its /copy-review pass. It follows DECK_BENCHMARKS_ENABLED (audit rule 8), so the page
+  // never describes a block nobody can see. `since: 13` is the evidence line's ONE bump. The
+  // specimen is the block's phone layout (`layout="rows"`, E1) with no openers; the figure carries
+  // no numerals yet, so the key draws unnumbered (`marksPending`).
+  {
+    ...benchmarksAboutEntry,
+    // Restated, the same value: `scripts/lib/about-clear.mjs` reads the catalog's ids from this
+    // file's source (`    id: '…',`), and a spread id is invisible to it.
+    id: 'deck-benchmarks',
+    keys: [...benchmarksAboutEntry.keys],
+    switch: 'DECK_BENCHMARKS_ENABLED',
+    marksPending: true,
   },
   {
     id: 'auto-fill',

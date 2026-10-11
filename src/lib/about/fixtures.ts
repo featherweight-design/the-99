@@ -18,6 +18,7 @@ import type { OwnedLegalCommander } from "../decks/read";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
 import type { PriceSlot } from "../discovery/price";
+import type { BenchmarksWire } from "../benchmarks/wire";
 import type { LaneParams } from "../commanders/lane-params";
 import type { FitLegendSegment } from "../../components/commanders/fit-legend";
 import type { CommanderListItem } from "../recs/recommend";
@@ -2206,3 +2207,29 @@ export const HISTORY_OPEN_ROWS: import("../../db/schema").HistoryRow[] = [
   before: null,
   after: { quantity: after as number, scryfallId: null, condition: null },
 }));
+
+/**
+ * The `deck-benchmarks` specimen: "How it plays" for Scrappy Survivors (Dogmeat, Ever Loyal), the
+ * handoff's 1e fixture (`addendum_evidence_benchmarks/benchmark-fixtures.js`, `scrappy`), chosen
+ * because its Dependencies box draws four rows. The figures are the fixture's; the ledgers are empty
+ * because the specimen draws no openers, so no card list is ever read. Win speed is `null`: this
+ * deck assembles no combo, so the tile states "No combo line" rather than a grade.
+ */
+export const BENCHMARKS_SCRAPPY: BenchmarksWire = {
+  velocity: {
+    step: 3, index: 3, lands: 36, points: 6.5, averageManaValue: 2.97,
+    commanderTurn: null, commanderName: "Dogmeat, Ever Loyal", counted: [], notCounted: [],
+  },
+  flow: { step: 4, points: 14, engines: 6, oneShots: 8, lines: [] },
+  interaction: { step: 1, answers: 6, weighted: 6, cheapInstant: 0, counterspells: 0, lines: [] },
+  win: null,
+  dependencies: [
+    { row: "graveyard", strength: "heavy", count: 13, commander: true, groups: [], landsLeftOut: [] },
+    { row: "enchantments", strength: "heavy", count: 26, payoffs: 9, groups: [] },
+    { row: "creatures", strength: "light", payoffs: 17, groups: [] },
+    { row: "combat", strength: "heavy", routes: 0, groups: [] },
+  ],
+};
+
+/** The reading's instant, which the block reads only for a stale caption; the specimen is never stale. */
+export const BENCHMARKS_ANALYZED_AT = "2026-10-10T12:00:00.000Z";
