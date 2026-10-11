@@ -130,6 +130,20 @@ describe("RevertConfirm", () => {
     expect(onReverted).toHaveBeenCalled();
   });
 
+  it("never leaves a deck out of the check: a Shopping purchase reverted from History warns about its own deck too (call B)", async () => {
+    // Call B's exclusion is the toast's undo alone, on the deck the copy was bought for. From History
+    // the player is not looking at that deck, so both reads go out with no deck to ignore.
+    const decks = [deck("d-source", "HD Gishath")];
+    preview.mockResolvedValue({ ...matches, decks });
+    revert.mockResolvedValue({ reverted: { id: "r1" } });
+    open();
+    await pressRevert();
+    expect(preview.mock.calls[0]).toEqual(["e1"]);
+    expect(screen.getByText("HD Gishath", { exact: false })).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Revert anyway" })));
+    expect(revert.mock.calls[0]).toHaveLength(4);
+  });
+
   it("redraws the warning with a notice and `new` when the decks moved, and writes nothing", async () => {
     preview.mockResolvedValue({ ...matches, decks: [deck("d1", "Atraxa")] });
     revert.mockResolvedValue({ wouldShort: [deck("d1", "Atraxa"), deck("d2", "Korvold")] });

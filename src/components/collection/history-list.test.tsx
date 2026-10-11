@@ -13,13 +13,13 @@ vi.mock("../../app/collection/history-actions", () => ({
   loadCollectionHistory: (...a: unknown[]) => loadPage(...a),
 }));
 
-const { HistoryList } = await import("./history-list");
+const { HistoryList, HistoryEntryItem } = await import("./history-list");
 
 const NOW = Date.parse("2026-10-09T20:00:00Z");
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e1", seq: 5, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 2, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, ...over,
 });
 const row = (name: string, before: number | null, after: number | null): HistoryRow => ({
   oracleId: name, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name,
@@ -143,6 +143,48 @@ describe("HistoryList", () => {
     const link = screen.getByRole("link", { name: "Reverted by the revert at 15:30" });
     expect(link.getAttribute("href")).toBe("#entry-rv");
     expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
+  });
+
+  it("tags a Shopping purchase From Shopping and links its deck by the name it has now (§D1)", () => {
+    const deck = "7284ff0a-6e76-4dc0-8af5-fc630a403b2b";
+    draw([entry({ kind: "edit", source: `shopping:${deck}`, firstName: "Swords to Plowshares", shoppingDeck: { id: deck, name: "HD Gishath" } })]);
+    expect(screen.getByText("From Shopping")).toBeTruthy();
+    const link = screen.getByRole("link", { name: "HD Gishath" });
+    expect(link.getAttribute("href")).toBe(`/decks/${deck}`);
+    expect(link.closest("p")?.textContent).toBe("From HD Gishath's Shopping list");
+    // The link sits beside the disclosure, never inside it: a link in a button is invalid.
+    expect(link.closest("button")).toBeNull();
+    expect(screen.getByRole("button", { name: "Revert Swords to Plowshares" })).toBeTruthy();
+  });
+
+  it("names a deleted deck without a link and keeps Revert (§D3)", () => {
+    draw([entry({ kind: "edit", source: "shopping:x", firstName: "Swords to Plowshares", shoppingDeck: { id: "x", name: null } })]);
+    expect(screen.getByText("From the Shopping list of a deck you've since deleted")).toBeTruthy();
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByRole("button", { name: "Revert Swords to Plowshares" })).toBeTruthy();
+  });
+
+  it("keeps the two-way link between a Shopping purchase and the undo that reverted it (§D2)", () => {
+    draw([
+      entry({ id: "rv", kind: "revert", revertsId: "e1", revertsVisible: true, createdAt: new Date("2026-10-09T15:30:00Z"), firstName: null }),
+      entry({ id: "e1", kind: "edit", source: "shopping:d1", revertedBy: "rv", revertedByVisible: true, shoppingDeck: { id: "d1", name: "Goblins" } }),
+    ]);
+    expect(screen.getByRole("link", { name: "Reverted by the revert at 15:30" }).getAttribute("href")).toBe("#entry-rv");
+    expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Goblins" })).toBeTruthy();
+    // Reverted, so no Revert control of its own; the revert entry keeps one.
+    expect(screen.queryByRole("button", { name: "Revert Sol Ring" })).toBeNull();
+  });
+
+  it("draws the deck name unlinked in a specimen drawn without anchors (/about)", () => {
+    const e = entry({ kind: "edit", source: "shopping:d1", shoppingDeck: { id: "d1", name: "Goblins" } });
+    render(
+      <ul>
+        <HistoryEntryItem e={e} title="Sol Ring" isOpen={false} detail={undefined} onToggle={() => {}} onRevert={() => {}} onRetry={() => {}} anchor={false} />
+      </ul>,
+    );
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByText("Goblins")).toBeTruthy();
   });
 
   it("names a revert whose original has aged out, and draws no link to it", () => {

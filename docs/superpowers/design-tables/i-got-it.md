@@ -218,6 +218,42 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 
 ---
 
+## Component: History deck line (§D, PR 4)
+
+Source: `The 99 - I Got It (R1) · C Receipt, D History and E Switch off.dc.html` §D. README call 7:
+"F1's row, unchanged", so the entry's own chrome (the tag, title, figures, Revert) is the shipped
+`HistoryEntryItem`, not the canvas's redraw; only the tag's kind and the deck line are new.
+
+### `From Shopping` tag
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| renders when | `kind = 'edit'` and `source` starts `shopping:` (no new ledger kind) | same |
+| color | var(--success) | var(--success) |
+| copy key | `history.kinds.shopping` | same |
+| shown with the switch off | yes (E2) | yes |
+
+### Deck line
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | under the figures line, before the reverted line | same |
+| font-size | 12px | 12.5px |
+| color | var(--fg-muted) | var(--fg-muted) |
+| deck name | link: var(--accent), underline, offset 2px | same |
+| deck name source | `shopping:<id>` resolved at read time (never copied into the entry) | same |
+| deleted deck | `history.fromDeleted`, no link, Revert kept | same |
+| reverted entry | keeps F1's two-way link (`Reverted by the revert at …` ↔ `Undid …`) | same |
+
+## State Coverage — History (§D)
+
+| State | Triggering condition | Component rendered | Key props required |
+|-------|---------------------|-------------------|-------------------|
+| D1 live | shopping entry, deck exists, not reverted | HistoryEntryItem + deck line link | `shoppingDeck.name` |
+| D2 reverted | `revertedBy` set | deck line + reverted line, no Revert | `revertedByVisible` |
+| D3 deck deleted | source deck id matches no deck of this user | `fromDeleted`, no link, Revert | `shoppingDeck.name = null` |
+| D4 expanded | entry opened | F1's rows | — |
+
+---
+
 ## Component: GotItConfirm
 
 ### Overlay / container

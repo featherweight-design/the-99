@@ -5,6 +5,7 @@
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
 import { useSwapTools } from "../../lib/swaps/context";
+import { GotItDoorRegistration } from "./got-it-door";
 import { StandInsSheet } from "./stand-ins-sheet";
 import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
@@ -619,6 +620,8 @@ export function Decklist({
   const swapTools = useSwapTools();
   // The stand-ins sheet, mounted by the list rather than by its row: a take takes the row away, and
   // the sheet has to stay to say so. Both views mount it, since a take moves the reader nowhere.
+  // I got it's link in the card modal, for a card a Shopping row opened (A11): commander rows too.
+  const gotItDoor = gotIt ? <GotItDoorRegistration shoppingCards={shoppingCards} newestAsOf={newestAsOf} /> : null;
   const standInsSheet = swapTools ? (
     <>
       {swapTools.standIns ? (
@@ -1037,6 +1040,7 @@ export function Decklist({
     return (
       <div className="flex flex-col">
         {standInsSheet}
+        {gotItDoor}
         <GroupToggle
           allCount={built}
           shoppingCount={shoppingCount}
@@ -1174,6 +1178,7 @@ export function Decklist({
   return (
     <div className="flex flex-col">
       {standInsSheet}
+      {gotItDoor}
       {/* Toggle bar */}
       <GroupToggle
         allCount={built}

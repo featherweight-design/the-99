@@ -21,13 +21,13 @@ const CARD = {
   price: null, manaCost: "{5}{R}{G}", imageUri: null, printedName: null, printedSetCode: null, printedCollectorNumber: null,
 } as unknown as DeckDetailCard;
 
-function Harness({ row }: { row: boolean }) {
+function Harness({ row, onClose }: { row: boolean; onClose?: (wrote: boolean) => void }) {
   const gotIt = useGotIt()!;
   return (
     <>
       <button type="button" data-shopping-filter="">Shopping</button>
       {row ? (
-        <button type="button" onClick={(e) => gotIt.open(CARD, CARD.name, null, e.currentTarget)}>tag</button>
+        <button type="button" onClick={(e) => gotIt.open(CARD, CARD.name, null, e.currentTarget, onClose ? { onClose } : undefined)}>tag</button>
       ) : null}
     </>
   );
@@ -88,6 +88,26 @@ describe("GotItProvider", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "tag" })));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.cancel })));
     expect(screen.getByRole("button", { name: "tag" })).toHaveFocus();
+  });
+
+  // Card details' way in (A11): the opener hears the close, and returns focus itself.
+  it("tells an opener that hears the close whether it wrote, and leaves focus to it", async () => {
+    const only = { scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "mom", setName: "MOM", collectorNumber: "137", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {} };
+    loadPrintingChoices.mockResolvedValue([only]);
+    const onClose = vi.fn();
+    render(<GotItProvider deckId="d1"><Harness row onClose={onClose} /></GotItProvider>);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "tag" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.cancel })));
+    expect(onClose).toHaveBeenLastCalledWith(false);
+    // Not handed to the trigger, and not to the Shopping filter: the opener lands it.
+    expect(screen.getByRole("button", { name: "tag" })).not.toHaveFocus();
+    expect(screen.getByRole("button", { name: "Shopping" })).not.toHaveFocus();
+    markBought.mockResolvedValueOnce({ applied: { id: "e0000000-0000-4000-8000-000000000003", receipt: { tookCopy: [], stillNeeds: 0 } } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "tag" })));
+    await act(async () => fireEvent.click(await screen.findByRole("button", { name: gotItCopy.confirm.add(1) })));
+    expect(onClose).toHaveBeenLastCalledWith(true);
+    expect(onClose).toHaveBeenCalledTimes(2);
+    loadPrintingChoices.mockResolvedValue([]);
   });
 
   // After a write the list re-reads and the row leaves before the confirm closes.

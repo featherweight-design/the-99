@@ -102,6 +102,12 @@ export type HistoryListEntry = {
   uploadFilename: string | null;
   /** The first changed row's card name: what an add, edit or removal is titled by. */
   firstName: string | null;
+  /**
+   * The deck a Shopping purchase came from (source `shopping:<deck id>`), resolved at read time so
+   * a renamed deck reads its new name. `name` is null when that deck has since been deleted: the
+   * source has no FK, so the id outlives the deck. Null for every entry not sourced from Shopping.
+   */
+  shoppingDeck: { id: string; name: string | null } | null;
 };
 
 export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
@@ -114,6 +120,7 @@ type ListRow = {
   reverts_id: string | null; reverted_by: string | null;
   reverts_visible: boolean; reverted_by_visible: boolean;
   upload_filename: string | null; first_name: string | null;
+  shopping_deck_id: string | null; shopping_deck_name: string | null;
   rows?: HistoryRow[];
 };
 
@@ -123,6 +130,8 @@ type ListRow = {
  * Aliased and qualified throughout: the two link checks are correlated subqueries over the same
  * table, the shape that compares a row with itself when written bare (AGENTS.md).
  */
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
 export const listColumns = sql`
   h.id, h.seq, h.created_at, h.kind, h.source, h.raised, h.lowered,
   jsonb_array_length(h.rows) as row_count, h.reverts_id, h.reverted_by,
@@ -164,6 +173,15 @@ export const listColumns = sql`
       and u.id = case when h.source ~ '^csv_uploads:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
                       then substr(h.source, 13)::uuid end
   ) as upload_filename,
+  -- The deck a Shopping purchase came from: the source is shopping:<deck uuid>, written by markBought.
+  -- The name is read now, never copied into the entry, so a rename shows; a deleted deck reads null.
+  -- Scoped to the entry's own user like the upload above, and guarded the same way.
+  case when h.source ~ '^shopping:${sql.raw(UUID)}$' then substr(h.source, 10) end as shopping_deck_id,
+  (
+    select d.name from decks d
+    where d.user_id = h.user_id
+      and d.id = case when h.source ~ '^shopping:${sql.raw(UUID)}$' then substr(h.source, 10)::uuid end
+  ) as shopping_deck_name,
   h.rows -> 0 ->> 'name' as first_name
 `;
 
@@ -180,6 +198,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     revertsId: r.reverts_id, revertedBy: r.reverted_by,
     revertsVisible: r.reverts_visible, revertedByVisible: r.reverted_by_visible,
     uploadFilename: r.upload_filename, firstName: r.first_name,
+    shoppingDeck: r.shopping_deck_id ? { id: r.shopping_deck_id, name: r.shopping_deck_name } : null,
   };
 }
 

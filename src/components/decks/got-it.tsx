@@ -15,7 +15,15 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { GotItConfirm } from "./got-it-confirm";
 import { GotItReceipt, type GotItUndoHost, type GotItWritten } from "./got-it-receipt";
 
-type Target = { card: DeckDetailCard; name: string; newestAsOf: Date | null };
+type Target = { card: DeckDetailCard; name: string; newestAsOf: Date | null; onClose?: (wrote: boolean) => void };
+
+/**
+ * How a confirm opened from somewhere other than its row's tag hears it close. Card details pass it
+ * (A11): the card is held under the confirm while it is up, so the caller withdraws that hold, re-reads
+ * the card after a write, and returns focus itself, since the link it was opened from is inert until
+ * the card comes back.
+ */
+export type GotItOpenOptions = { onClose: (wrote: boolean) => void };
 type Receipt = { card: DeckDetailCard; name: string; written: GotItWritten; failed?: boolean };
 
 const NONE: ReadonlyMap<string, DeckDetailCard> = new Map();
@@ -27,7 +35,7 @@ export type GotIt = {
   openFor: string | null;
   /** That confirm's write is in flight. */
   pending: boolean;
-  open: (card: DeckDetailCard, name: string, newestAsOf: Date | null, trigger: HTMLElement) => void;
+  open: (card: DeckDetailCard, name: string, newestAsOf: Date | null, trigger: HTMLElement, opts?: GotItOpenOptions) => void;
   /**
    * The rows bought in this read of the list, as they were drawn before the write (call 8). The
    * decklist draws one as a held slot where its row was while the card is off the Shopping list,
@@ -59,33 +67,42 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
   // focus a button in every browser. After a write the row usually leaves before the confirm
   // unmounts, so a tag no longer in the document hands focus to the Shopping filter instead.
   const trigger = useRef<HTMLElement | null>(null);
+  const selfFocus = useRef(false);
   // The confirm's card, read when its write lands.
   const current = useRef<Target | null>(null);
   const returnFocus = useMemo<RefObject<HTMLElement | null>>(
     () => ({
       get current() {
+        // A caller that hears the close returns focus itself (`GotItOpenOptions`). Read from the
+        // trigger's own slot: the confirm's card is cleared before the dialog unmounts.
+        if (selfFocus.current) return null;
         const el = trigger.current;
         return el?.isConnected ? el : document.querySelector<HTMLElement>("[data-shopping-filter]");
       },
     }),
     [],
   );
-  const open = useCallback((card: DeckDetailCard, name: string, newestAsOf: Date | null, from: HTMLElement) => {
+  const open = useCallback((card: DeckDetailCard, name: string, newestAsOf: Date | null, from: HTMLElement, opts?: GotItOpenOptions) => {
+    // Replacing an open confirm closes it unwritten, so a caller holding a card hears that.
+    current.current?.onClose?.(false);
     trigger.current = from;
-    current.current = { card, name, newestAsOf };
+    selfFocus.current = opts !== undefined;
+    current.current = { card, name, newestAsOf, onClose: opts?.onClose };
     setPending(false);
     setTarget(current.current);
   }, []);
-  const close = useCallback(() => {
+  const close = useCallback((wrote = false) => {
+    const closing = current.current;
     current.current = null;
     setPending(false);
     setTarget(null);
+    closing?.onClose?.(wrote);
   }, []);
   // The write landed: the confirm closes, the row's slot is held, and the receipt replaces any
   // standing one (call 5: "or until the next write").
   const done = useCallback((written: GotItWritten) => {
     const t = current.current;
-    close();
+    close(true);
     if (!t) return;
     const id = t.card.oracleId;
     setHeld((h) => (h.has(id) ? h : new Map(h).set(id, t.card)));
@@ -120,7 +137,7 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
           newestAsOf={target.newestAsOf}
           onPendingChange={setPending}
           returnFocusRef={returnFocus}
-          onClose={close}
+          onClose={() => close()}
           // The action invalidates the deck page before it answers, so the list re-reads with the
           // write in it: the row leaves into its held slot, or redraws in place if it stays.
           onDone={done}

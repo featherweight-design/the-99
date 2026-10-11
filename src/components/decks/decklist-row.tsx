@@ -222,12 +222,14 @@ export function DecklistRow({
   const commanderRow = card.commander === true;
   const swapTools = useSwapTools();
   const overLimit = swapTools !== null && inShopping && !commanderRow && isOverLimit(card.price, newestAsOf, swapTools.limitCents);
-  // From a Shopping row with the swap tools on, the card draws the door to its stand-ins (audit F17).
-  const opensDoor = swapTools !== null && inShopping && !commanderRow;
   const overText = overLimit ? swapToolsCopy.row.over(formatLimit(swapTools!.limitCents)) : null;
   // I got it (both switches on, mounted by the deck page): a Shopping row's tag is the button that
   // opens the confirm, on body and commander rows alike. Null with either switch off: main's row.
   const gotIt = useGotIt();
+  // The card opened from a Shopping row draws what is registered for that: the door to its stand-ins
+  // with the swap tools on (audit F17; never a commander's, H28), and with I got it on the receipt's
+  // `Bought this card?` (A11), commander rows too. Each registration finds its own rows.
+  const opensDoor = inShopping && ((swapTools !== null && !commanderRow) || gotIt !== null);
   // `over $X` never rides the meta line (it stacks on the buy tag), so being over the limit is no
   // reason to draw one.
   const hasMetaLine = hasShoppingMeta || !inLandsGroup;
