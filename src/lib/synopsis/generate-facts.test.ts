@@ -5,8 +5,9 @@ vi.mock("./combo-facts", () => ({ loadComboFacts: (...a: unknown[]) => loadCombo
 vi.mock("../staples/universal", () => ({ loadUniversalStaples: async () => new Set<string>() }));
 const readLabels = vi.fn();
 vi.mock("../labels/read", () => ({ readLabels: (...a: unknown[]) => readLabels(...a) }));
+const cardRows = vi.fn(async (): Promise<unknown[]> => []);
 vi.mock("../../db", () => ({
-  db: { select: () => ({ from: () => ({ where: async () => [] }) }) },
+  db: { select: () => ({ from: () => ({ where: () => cardRows() }) }) },
 }));
 
 import { factsFor } from "./generate";
@@ -66,9 +67,13 @@ describe("factsFor interaction, behind DECK_BENCHMARKS_ENABLED", () => {
     expect(facts.stats?.interaction.total).toBe(0);
   });
 
-  it("keeps the classifier's figures when the label read fails", async () => {
+  it("keeps the classifier's figures when the label read fails, never a text-only reading", async () => {
+    // Heliod's text reads as a counterspell, so a reading built from text alone would count 1.
+    cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
+    readLabels.mockResolvedValueOnce(new Map());
+    expect((await factsFor(profile, false, true)).stats?.interaction.total).toBe(1);
+    cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockRejectedValueOnce(new Error("down"));
-    const facts = await factsFor(profile, false, true);
-    expect(facts.stats?.interaction.total).toBe(0);
+    expect((await factsFor(profile, false, true)).stats?.interaction.total).toBe(0);
   });
 });

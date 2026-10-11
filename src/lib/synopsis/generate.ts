@@ -512,6 +512,7 @@ async function run(
   if (noticesEnabled() && (await holdsIllegalCard(deckId, userId))) return { kind: "illegal" };
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
   const v2 = overviewV2Enabled();
+  const benchmarks = deckBenchmarksEnabled();
   const contract = synopsisContractVersion(v2);
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
@@ -537,7 +538,7 @@ async function run(
     return { kind: "reused", synopsis: current };
   }
 
-  const facts = await factsFor(reading.profile, v2);
+  const facts = await factsFor(reading.profile, v2, benchmarks);
   const refused = base ? refusedSections(base.content) : null;
   const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2 });
 
