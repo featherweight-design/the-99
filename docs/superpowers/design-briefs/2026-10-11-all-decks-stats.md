@@ -67,8 +67,10 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
 - `loadDeckStats` (`src/lib/decks/stats-query.ts:84`) returns record, color spread, curve and cost for every deck
   of a user in a FIXED number of reads (its header: "Home's roll-up over every deck therefore costs the same round
   trips as a single deck page"). `sumPlayRecords` and `sumColourSpreads` (`src/lib/decks/stats.ts:73`, `:142`) add
-  them up. It shipped in #524 for a Home roll-up that was never drawn; nothing calls it today. It covers four of
-  the seven groups (no jobs, colors-as-supply, average or money-as-value).
+  them up. It shipped in #524 for a Home roll-up that was never drawn; nothing calls it today. It covers part of
+  the seven groups: the curve without card types, the to-buy cost without the owned value, and the record without
+  trend or versions. Its color figure is the identity spread, not pips against sources. Jobs and the average are
+  absent.
 
 **`/decks` and its cache**
 - `src/app/decks/page.tsx:46`: the whole payload (`listDecksWithStats`, `loadShoppingRollup`, `listFolders`) is
@@ -89,7 +91,7 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
 
 **The About entry for round 1**
 - `deck-stats` (`src/lib/copy/about.ts:1124`), `since: 11`, follows `DECK_STATS_ENABLED`, and took NO version
-  bump because the switch is off in production (comment at `:1130-1137`). `ABOUT_VERSION` is 14 (`:61`).
+  bump because the switch is off in production (comment at `:1130-1138`). `ABOUT_VERSION` is 14 (`:61`).
 
 ## What engineering has locked
 
@@ -224,9 +226,12 @@ as figures.** Comparison elsewhere is two decks at a time, or one deck against a
 A cross-deck view is a new capability a reader would not find unaided, so it owes an entry in the round that ships
 it (`AGENTS.md`, "No FEATURE launches without an About entry"), drawn on the per-entry artboard in
 `design/design_handoff_the99_about/`. Two things to know:
-- The round-1 `deck-stats` entry never took a bump (production switch off). If this feature ships behind the same
-  switch, the two can share one bump when the switch turns on in production, and Design may draw this as an
-  extension of that entry rather than a new one. If it ships on its own switch, it is its own entry and its own bump.
+- A switch-gated entry is announced by its switch, not by a bump: `src/proxy.ts` keys the About gate on the entries
+  the deployment's switches draw, so turning a switch on is what shows the entry (the `deck-stats` comment,
+  `about.ts:1130-1138`). The round-1 entry never took a bump for that reason. If this feature rides
+  `DECK_STATS_ENABLED`, Design may draw it as an extension of the `deck-stats` entry, announced when that switch
+  turns on in production. If it ships on its own switch, it is its own entry, announced by that switch; a bump is
+  owed only if it ships with no switch.
 - If Hugh folds in round-2 items (Question 2), this becomes a multi-round line and the entry batches at the end of
   the line.
 
