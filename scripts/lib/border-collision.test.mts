@@ -183,6 +183,16 @@ describe("collisionFindings", () => {
       expect(unresolvedCollisions(text)).toEqual([]);
     });
 
+    it("reads a quoted attribute selector inside a bracketed variant as one token", () => {
+      const text = `<i className="[&[data-x='a']]:border-b [&[data-x='a']]:border-b-[color:var(--s)] [&[data-x='a']]:border-l" />`;
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
+    it("does not let a color active only at md cover a side drawn below it", () => {
+      const text = '<i className="border-b border-b-[color:var(--s)] border-l md:border-l-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
     it("flags a width under a variant the bare token lacks: both apply from md up", () => {
       const text = '<div className="md:border border-b border-b-[color:var(--s)]" />';
       expect(unresolvedCollisions(text)).toHaveLength(1);

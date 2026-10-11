@@ -185,6 +185,12 @@ function widthSides(utility) {
   return { sides, zero: size !== undefined && /^\[?0(px)?\]?$/.test(size) };
 }
 
+/**
+ * A string's class tokens. Split on whitespace only, then peel the string's own quote or brace off
+ * each end: a quote INSIDE a bracketed variant (`[&[data-x='a']]:border-b`) is part of the class.
+ */
+const classTokens = (text) => text.split(/\s+/).map((t) => t.replace(/^["'`{(]+|["'`})]+$/g, "")).filter(Boolean);
+
 const TOKEN = new RegExp(`^((?:(?:[^\\s"'\`\\[\\]:]|${BRACKETED})*:)*)(!?)(.+?)(!?)$`);
 
 /**
@@ -198,32 +204,40 @@ const TOKEN = new RegExp(`^((?:(?:[^\\s"'\`\\[\\]:]|${BRACKETED})*:)*)(!?)(.+?)(
  * `md:border` beside a plain `border-b` still shows a mana side from `md` up. A zero on that side (`md:border-r-0`) whose
  * variants lie between the two takes the width back, and then nothing is left to paint.
  */
-function paintsOtherSide(text, side, variant) {
+function paintsOtherSide(text, side, variant, important) {
   const mine = new Set(variant.split(":").filter(Boolean));
   const parsed = [];
-  for (const raw of text.split(/[\s"'`]+/)) {
+  for (const raw of classTokens(text)) {
     const m = TOKEN.exec(raw);
     const w = m && widthSides(m[3]);
     if (w) parsed.push({ ...w, variants: m[1].split(":").filter(Boolean) });
   }
   const within = (t) => t.variants.every((v) => mine.has(v));
-  // A side with a color of its own (`border-t-[color:...]`) is not repainted: a longhand wins over
-  // the bare token's shorthand, the same premise `hasSideOverride` rests on.
-  const colored = new Set();
-  for (const raw of text.split(/[\s"'`]+/)) {
+  // A side with a color of its own (`border-t-[color:...]`) is not repainted where that color is
+  // active: a longhand wins over the bare token's shorthand, the same premise `hasSideOverride`
+  // rests on. It has to cover the overlap, so its variants (and `!`) must be ones the bare token or
+  // the width carries; `border-l md:border-l-[color:...]` leaves the left painted below md.
+  const colors = [];
+  for (const raw of classTokens(text)) {
     const m = TOKEN.exec(raw);
     const c = m && !widthSides(m[3]) && /^border-([xytrbl])-(?=\[|[a-zA-Z])/.exec(m[3]);
     if (c) {
-      for (const sd of { x: ["l", "r"], y: ["t", "b"] }[c[1]] ?? [c[1]]) colored.add(sd);
+      colors.push({
+        sides: { x: ["l", "r"], y: ["t", "b"] }[c[1]] ?? [c[1]],
+        variants: m[1].split(":").filter(Boolean),
+        important: m[2] === "!" || m[4] === "!",
+      });
     }
   }
+  const covered = (s, t) =>
+    colors.some((c) => c.sides.includes(s) && c.important === important && c.variants.every((v) => mine.has(v) || t.variants.includes(v)));
   return parsed.some(
     (t) =>
       !t.zero &&
       t.sides.some(
         (s) =>
           s !== side &&
-          !colored.has(s) &&
+          !covered(s, t) &&
           !parsed.some(
             (z) => z.zero && z.sides.includes(s) && z.variants.length >= t.variants.length && t.variants.every((v) => z.variants.includes(v)) && within(z),
           ),
@@ -254,7 +268,7 @@ export function unresolvedCollisions(text, kind = "js") {
   const out = [];
   for (const span of kind === "css" ? cssSpans(text) : scan(text)) {
     for (const { side, index, variant, important } of bareCollisions(span.text)) {
-      if (!hasSideOverride(span.text, side, variant, important) || paintsOtherSide(span.text, side, variant)) {
+      if (!hasSideOverride(span.text, side, variant, important) || paintsOtherSide(span.text, side, variant, important)) {
         const offsetInFile = span.start + index;
         const key = `${side}:${offsetInFile}`;
         if (seen.has(key)) continue;

@@ -12,7 +12,7 @@ if (findings.length === 0) {
   process.exit(0);
 }
 for (const { path, side, line } of findings) {
-  console.error(`${path}:${line} bare "border-${side}" with no same-variant border-${side}-[color:...] override`);
+  console.error(`${path}:${line} bare "border-${side}" repaints its own side (no same-variant border-${side}-[color:...] override) or another drawn side (use a width-only border-${side}-[1px])`);
 }
 console.error(`\n${findings.length} unresolved border collision(s)`);
 process.exit(1);
