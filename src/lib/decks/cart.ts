@@ -27,6 +27,17 @@ export type CartLine = {
   name: string;
   /** An unowned commander, which leads its own deck's list (H28). */
   commander: boolean;
+  /**
+   * Copies the player owns (lock 4: an owned card can be a cart line, when other decks hold every
+   * copy). Zero for a card they own none of, and the line then says nothing about ownership.
+   */
+  owned: number;
+  /**
+   * Owned copies held by decks NOT on this line (audit finding 4). The line's `all N in other
+   * decks` form is true only when this equals `owned`; a deck on the line can hold some of its
+   * own (Relentless Rats and the like), and then the two differ.
+   */
+  heldElsewhere: number;
   rows: CartRow[];
 };
 

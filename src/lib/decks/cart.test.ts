@@ -84,6 +84,23 @@ describe("buildCart", () => {
   });
 });
 
+describe("the owned fact (lock 4, audit finding 4)", () => {
+  it("counts every owned copy held by decks not on the line", () => {
+    // 17 Sol Rings, every one held by committed decks that are not buying it.
+    const ownership = new Map([[SOL, { owned: 17, heldByDeck: new Map([["a", 9], ["b", 8]]) }]]);
+    const cart = buildCart(rows, read, deckRows, names, ownership);
+    expect(cart.lines.find((l) => l.oracleId === SOL)).toMatchObject({ owned: 17, heldElsewhere: 17 });
+    expect(cart.lines.find((l) => l.oracleId === TOWER)).toMatchObject({ owned: 0, heldElsewhere: 0 });
+  });
+
+  it("leaves out copies a deck on the line holds itself, so the two counts differ", () => {
+    // Thorin holds one of its own Rogue's Passages and buys the second; another deck holds two.
+    const ownership = new Map([[PASSAGE, { owned: 3, heldByDeck: new Map([["thorin", 1], ["other", 2]]) }]]);
+    const cart = buildCart(rows, read, deckRows, names, ownership);
+    expect(cart.lines.find((l) => l.oracleId === PASSAGE)).toMatchObject({ owned: 3, heldElsewhere: 2 });
+  });
+});
+
 describe("selections are a view", () => {
   const cart = buildCart(rows, read, deckRows, names);
 

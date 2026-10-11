@@ -1,7 +1,8 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
-import { loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
+import { allocateClaims } from "./allocate";
+import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
 import type { CartDeck, CartLine, CartPayload } from "./cart";
 import { priceOf, priceState } from "./price";
 import { priceFor, type PriceRead } from "./price-query";
@@ -33,7 +34,7 @@ export async function loadCart(userId: string): Promise<CartPayload> {
 
   const deckIds = [...new Set(rows.map((r) => r.deckId))];
   const oracleIds = [...new Set(rows.map((r) => r.oracleId))];
-  const [deckRows, cardRows] = await Promise.all([
+  const [deckRows, cardRows, availability] = await Promise.all([
     db.select({
       id: decks.id,
       name: decks.name,
@@ -47,10 +48,23 @@ export async function loadCart(userId: string): Promise<CartPayload> {
     db.select({ oracleId: cards.oracleId, name: cards.name })
       .from(cards)
       .where(inArray(cards.oracleId, oracleIds)),
+    // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
+    loadAvailability(userId, { oracleIds }),
   ]);
 
-  return buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])));
+  const ownership = new Map<string, Ownership>();
+  for (const [oracleId, a] of availability) {
+    // What each deck HOLDS: a committed deck its allocation, a brew only what it was given (its
+    // soft share is not a held copy), the same reading I got it's receipt takes.
+    const heldByDeck = new Map(allocateClaims(a).map((c) => [c.deckId, c.brew ? c.granted : c.allocated]));
+    ownership.set(oracleId, { owned: a.owned, heldByDeck });
+  }
+
+  return buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership);
 }
+
+/** Per card: copies owned, and how many each deck holds. Absent for a card owned in no copies. */
+export type Ownership = { owned: number; heldByDeck: Map<string, number> };
 
 type DeckRow = {
   id: string;
@@ -66,6 +80,7 @@ export function buildCart(
   read: PriceRead | null,
   deckRows: DeckRow[],
   cardNames: Map<string, string>,
+  ownership: Map<string, Ownership> = new Map(),
 ): CartPayload {
   const rollup = read ? rollupBuyRows(rows, read) : null;
   const deckById = new Map(deckRows.map((d) => [d.id, d]));
@@ -94,6 +109,8 @@ export function buildCart(
       oracleId: r.oracleId,
       name: cardNames.get(r.oracleId) ?? "",
       commander: false,
+      owned: ownership.get(r.oracleId)?.owned ?? 0,
+      heldElsewhere: 0,
       rows: [],
     };
     if (deck.commanderOracleId === r.oracleId || deck.partnerOracleId === r.oracleId) line.commander = true;
@@ -116,7 +133,13 @@ export function buildCart(
   // A line's decks in the selections' order, so `3 · HD - Gishath, HD - Kratos, HD -Thorin` reads
   // in the same order as the list of decks above it.
   const rank = new Map(decksOut.map((d, i) => [d.id, i]));
-  for (const l of lines) l.rows.sort((a, b) => (rank.get(a.deckId) ?? 0) - (rank.get(b.deckId) ?? 0));
+  for (const l of lines) {
+    l.rows.sort((a, b) => (rank.get(a.deckId) ?? 0) - (rank.get(b.deckId) ?? 0));
+    const own = ownership.get(l.oracleId);
+    if (!own) continue;
+    const onLine = new Set(l.rows.map((r) => r.deckId));
+    for (const [deckId, held] of own.heldByDeck) if (!onLine.has(deckId)) l.heldElsewhere += held;
+  }
 
   return {
     decks: decksOut,
