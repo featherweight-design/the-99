@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
 const transaction = vi.hoisted(() => vi.fn());
@@ -29,7 +30,7 @@ function sources(dir: string): string[] {
 
 describe("every app snapshot", () => {
   it("passes no accessMode to a transaction", () => {
-    const offenders = sources(join(__dirname, "..", "..")).filter((f) =>
+    const offenders = sources(join(dirname(fileURLToPath(import.meta.url)), "..", "..")).filter((f) =>
       /accessMode\s*:/.test(readFileSync(f, "utf8").replace(/\/\/.*$/gm, "")),
     );
     expect(offenders).toEqual([]);
