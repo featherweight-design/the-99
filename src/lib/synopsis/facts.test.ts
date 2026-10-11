@@ -61,6 +61,15 @@ describe("buildSynopsisFacts — the colors the lands make", () => {
     expect(buildSynopsisFacts(deck, new Map()).landColors).toEqual(["W", "U", "R", "G"]);
   });
 
+  it("does not count a land that only filters mana into a color it cannot make", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [
+      ["Rumble Arena", "Land", ""], ["Plains", "Basic Land — Plains", ""], ["Island", "Basic Land — Island", ""],
+      ["Mountain", "Basic Land — Mountain", ""], ["Forest", "Basic Land — Forest", ""],
+    ]);
+    const texts = new Map([["id-Rumble Arena", "Vigilance\nWhen this land enters, scry 1.\n{T}: Add {C}.\n{1}, {T}: Add one mana of any color."]]);
+    expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "R", "G"]);
+  });
+
   it("counts an any-color land as every color the identity holds", () => {
     const deck = withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""], ["Plains", "Basic Land — Plains", ""]]);
     const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);

@@ -106,8 +106,19 @@ export function categoriesOf(profile: DeckProfile): Map<string, Set<Category>> {
   return out;
 }
 
+/**
+ * An ability whose cost spends mana (`{1}, {T}: Add one mana of any color.`) only FILTERS mana: it
+ * turns mana the deck already makes into another color, so it is not a source of that color. Avatar
+ * Aang's deck reads as five-color through Rumble Arena alone, a colorless land with that filter,
+ * where Hugh's ruling (2026-10-11) is that the deck plays as non-black four-color.
+ */
+const FILTER_ABILITY = /^[^:\n]*\{(?![TQ]\})[^}]+\}[^:\n]*:[^\n]*$/gim;
+
 function landColorsOf(profile: DeckProfile, oracleTexts: ReadonlyMap<string, string | null>): string[] {
-  const made = producibleColors(profile.cards.map((c) => ({ typeLine: c.typeLine, oracleText: oracleTexts.get(c.oracleId) ?? null })));
+  const made = producibleColors(profile.cards.map((c) => ({
+    typeLine: c.typeLine,
+    oracleText: (oracleTexts.get(c.oracleId) ?? "").replace(FILTER_ABILITY, ""),
+  })));
   return profile.colours.identity.filter((c) => made.has(c));
 }
 
