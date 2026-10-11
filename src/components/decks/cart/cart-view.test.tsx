@@ -27,14 +27,14 @@ function cart(over: Partial<CartPayload> = {}): CartPayload {
     ],
     lines: [
       { oracleId: "omn", name: "Omnath, Locus of All", commander: true, owned: 0, heldElsewhere: 0,
-        rows: [{ deckId: "omnath", quantity: 1, cents: 400, state: "priced", commander: true, held: 0 }] },
+        rows: [{ deckId: "omnath", quantity: 1, cents: 400, state: "priced", commander: true, held: 0, finish: null }] },
       { oracleId: "sol", name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17,
         rows: [
-          { deckId: "gishath", quantity: 1, cents: 150, state: "priced", commander: false, held: 0 },
-          { deckId: "kratos", quantity: 1, cents: 150, state: "priced", commander: false, held: 0 },
+          { deckId: "gishath", quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null },
+          { deckId: "kratos", quantity: 1, cents: 150, state: "priced", commander: false, held: 0, finish: null },
         ] },
       { oracleId: "tower", name: "Command Tower", commander: false, owned: 0, heldElsewhere: 0,
-        rows: [{ deckId: "gishath", quantity: 1, cents: 30, state: "priced", commander: false, held: 0 }] },
+        rows: [{ deckId: "gishath", quantity: 1, cents: 30, state: "priced", commander: false, held: 0, finish: null }] },
     ],
     ...over,
   };
@@ -100,7 +100,7 @@ describe("CartView", () => {
 
   it("says how many copies a sold-out line leaves unpriced (T1)", () => {
     const soldOut = cart();
-    soldOut.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: null, state: "soldOut", commander: false, held: 0 }];
+    soldOut.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: null, state: "soldOut", commander: false, held: 0, finish: null }];
     soldOut.decks[0] = { ...soldOut.decks[0], cents: 150, pricedCopies: 1 };
     render(<CartView cart={soldOut} provenance={provenance} />);
     expect(screen.getByText(priceCopy.strip.pricedClause(3, 4))).toBeTruthy();
@@ -108,10 +108,26 @@ describe("CartView", () => {
 
   it("tags a line whose every priced copy is foil-only as a foil figure, as the deck's own row does", () => {
     const foil = cart();
-    foil.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: 90, state: "foilOnly", commander: false, held: 0 }];
+    foil.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: 90, state: "foilOnly", commander: false, held: 0, finish: "foil" }];
     render(<CartView cart={foil} provenance={provenance} />);
     const tower = list().getAllByRole("listitem").find((li) => li.textContent?.includes("Command Tower"))!;
     expect(tower.textContent).toMatch(/\$0\.90.*foil/);
+  });
+
+  it("tags an etched-only line as etched, and a foil and etched mix with no qualifier", () => {
+    const etched = cart();
+    etched.lines[1].rows = [
+      { deckId: "gishath", quantity: 1, cents: 200, state: "foilOnly", commander: false, held: 0, finish: "etched" },
+      { deckId: "kratos", quantity: 1, cents: 200, state: "foilOnly", commander: false, held: 0, finish: "etched" },
+    ];
+    const { unmount } = render(<CartView cart={etched} provenance={provenance} />);
+    const sol = () => list().getAllByRole("listitem").find((li) => li.textContent?.includes("Sol Ring"))!;
+    expect(sol().textContent).toMatch(/etched/);
+    expect(sol().textContent).not.toMatch(/foil/);
+    unmount();
+    etched.lines[1].rows[1] = { ...etched.lines[1].rows[1], finish: "foil" };
+    render(<CartView cart={etched} provenance={provenance} />);
+    expect(sol().textContent).not.toMatch(/foil|etched/);
   });
 
   it("has nothing to select between with one deck (E1)", () => {
@@ -132,7 +148,7 @@ describe("CartView", () => {
   it("splits a cart too long for one link into named parts (K3)", () => {
     const long = (id: string) => ({
       oracleId: id, name: `${id} ${"x".repeat(13_000)}`, commander: false, owned: 0, heldElsewhere: 0,
-      rows: [{ deckId: "omnath", quantity: 1, cents: 100, state: "priced" as const, commander: false, held: 0 }],
+      rows: [{ deckId: "omnath", quantity: 1, cents: 100, state: "priced" as const, commander: false, held: 0, finish: null }],
     });
     render(<CartView cart={cart({ lines: [long("a"), long("b"), long("c")] })} provenance={provenance} />);
     const links = screen.getAllByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) });

@@ -28,6 +28,11 @@ export type CartRow = {
   commander: boolean;
   /** Owned copies THIS deck holds of the card (a deck can hold some and buy the rest). */
   held: number;
+  /**
+   * Which finish a `foilOnly` price came from, since `foilOnly` covers both: `foil` when the fact
+   * carried a foil price, `etched` when only an etched one. Null for every other state.
+   */
+  finish: "foil" | "etched" | null;
 };
 
 export type CartLine = {
