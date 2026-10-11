@@ -85,11 +85,17 @@ function FindingItem({
       data-testid={`finding-${finding.id}`}
       data-state={finding.state}
       className={
+        // Desktop: one 1px `--border-strong` box on all four sides for every tile, zero or not (the
+        // verdict frames draw `border:1px solid var(--border-strong)`); a zero is dimmed through its
+        // content, never its border. The phone's rows divide with a bottom `--border` rule.
+        // A bare `border-b` also paints `border-color: var(--b)` (the mana palette) on all four sides,
+        // and `md:last:border-b` repainted it over the tile's own color. Wherever the base rule has to
+        // come back at `md`, bring only the WIDTH (`border-b-[1px]`), never the bare utility.
         "flex flex-col border-b border-b-[color:var(--border)] last:border-b-0 "
-        + "md:rounded-[9px] md:border md:last:border-b md:last:border-b-[color:var(--border)] md:bg-[color:var(--surface)] md:gap-[7px] md:px-[14px] md:py-[12px] "
+        + "md:rounded-[9px] md:border md:border-[color:var(--border-strong)] md:last:border-b-[1px] md:bg-[color:var(--surface)] md:gap-[7px] md:px-[14px] md:py-[12px] "
         + (empty
           ? "px-[13px] py-[11px] max-md:opacity-50 "
-          : "px-[13px] pt-[11px] md:border-[color:var(--border-strong)] md:last:border-b-[color:var(--border-strong)] ")
+          : "px-[13px] pt-[11px] ")
       }
     >
       <div className="flex flex-wrap items-center gap-x-[10px] gap-y-[7px] md:gap-x-[7px]">

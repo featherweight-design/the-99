@@ -79,6 +79,23 @@ describe("a finding", () => {
     expect(within(empty).getByText(copy.findings.empty)).toBeTruthy();
   });
 
+  // jsdom computes no styles, so the class list is the property: every desktop tile carries the
+  // same four-sided `--border-strong` box, and none brings back a BARE border-b at md, whose
+  // `border-color: var(--b)` (the mana palette) repaints the other three sides pink.
+  it("draws every tile in one box, zero or not, with no bare md border-b to repaint it", () => {
+    mount();
+    const ids = ["gameChangers", "massLandDenial", "extraTurns", "twoCardCombos", "tutors"] as const;
+    for (const id of ids) {
+      const cls = item(id).className.split(/\s+/);
+      expect(cls, id).toContain("md:border");
+      expect(cls, id).toContain("md:border-[color:var(--border-strong)]");
+      expect(cls.filter((c) => /^md:(last:)?border-[br]$/.test(c)), id).toEqual([]);
+    }
+    // The last tile has `last:border-b-0` for the phone's stacked rows; at md its bottom comes back
+    // by WIDTH alone, so deleting this class reopens Tutors' bottom edge.
+    expect(item("tutors").className.split(/\s+/)).toContain("md:last:border-b-[1px]");
+  });
+
   it("names its cards before counting the rest, in the printed name", () => {
     mount();
     const gc = item("gameChangers");

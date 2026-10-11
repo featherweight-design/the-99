@@ -2,25 +2,14 @@
 
 import { useId, useRef, useState } from "react";
 
-import type { Bracket } from "../../lib/bracket/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
-import { BracketMark } from "./bracket-mark";
+import { AnalysisRing } from "./analysis-ring";
 import { DeckDescriptionField } from "./deck-description-field";
 import { ProvenanceOpener } from "./provenance-panel";
 
 const copy = deckAnalysisCopy.panel;
-
-/** The ring's five marks, 1 at twelve o'clock and running clockwise: a 150px box, 50px radius, 44px marks. */
-const RING: { bracket: Bracket; left: number; top: number }[] = ([1, 2, 3, 4, 5] as const).map((bracket, i) => {
-  const t = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-  return {
-    bracket,
-    left: Math.round(75 + 50 * Math.cos(t) - 22),
-    top: Math.round(75 + 50 * Math.sin(t) - 22),
-  };
-});
 
 /**
  * The Analysis tab before a first reading (Analysis tab handoff §2, 2a to 2c): one empty state,
@@ -136,22 +125,7 @@ export function AnalysisEmpty({
         {copy.overview}
       </h3>
       <div className="flex flex-col items-center text-center px-[4px] pt-[22px] pb-[8px] md:flex-row md:items-start md:justify-center md:gap-[40px] md:text-left md:px-[24px] md:pt-[28px] md:pb-[18px]">
-        <span
-          aria-hidden="true"
-          data-testid="analysis-ring"
-          className="relative mx-auto block h-[150px] w-[150px] flex-none md:mx-0"
-          style={{ opacity: phase === "failed" ? 0.3 : undefined }}
-        >
-          {RING.map(({ bracket, left, top }, i) => (
-            <span
-              key={bracket}
-              className={"absolute " + (busy ? "anim-at-wave" : "")}
-              style={{ left, top, animationDelay: busy ? `${i * 0.16}s` : undefined }}
-            >
-              <BracketMark bracket={bracket} px={44} />
-            </span>
-          ))}
-        </span>
+        <AnalysisRing busy={busy} opacity={phase === "failed" ? 0.3 : undefined} testId="analysis-ring" />
         <div className="flex flex-col items-center md:min-w-0 md:max-w-[640px] md:flex-1 md:items-start">
           <h2
             aria-live="polite"

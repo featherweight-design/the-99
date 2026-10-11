@@ -12,7 +12,7 @@ verified the table and Agent 3 confirmed the fix.
 
 | # | Gap | Resolution |
 |---|---|---|
-| 1 | The loader's marks had no resting opacity. With the 0.16s stagger and no fill mode, marks 2 to 5 sat at full ink until their delay ended. A browser running no animation drew all five at full ink. | FIXED. `.at-wave-rest { opacity: 0.22 }`, the wave's low point, applies to the loader's marks only; the ring's marks are untouched. `probe:tab-opening` reads mark 5 at 0.22 on the loader's first frame. Removing the rule reads 1 and fails. |
+| 1 | The loader's marks had no resting opacity. With the 0.16s stagger and no fill mode, marks 2 to 5 sat at full ink until their delay ended. A browser running no animation drew all five at full ink. | FIXED. `.at-wave-rest { opacity: 0.22 }`, the wave's low point, applied to the loader's marks only. Superseded 2026-10-11: the loader is now the reading ring, and `.anim-at-wave` carries `animation-fill-mode: backwards`, which holds a waiting mark at the same 0.22 for the ring everywhere; `.at-wave-rest` is gone. `probe:tab-opening` reads mark 5 at 0.22 on the loader's first frame. Removing the rule reads 1 and fails. |
 
 ## State reachability
 
@@ -24,7 +24,7 @@ verified the table and Agent 3 confirmed the fix.
 
 - **The reading is not loaded server-side.** The gate is the stored permits the page already ships (the audit's "cheaper route"). No stored analysis draws 2a at once, with no loader and no delay. Otherwise the tab draws 8a until the peek settles. Shipping the reading would put a 33-40 KB document on every deck page load, and would need a variant of `readStoredReading` that never runs its quiet rebuild inside a render.
 - **The header chip stays drawn** (audit correction 1). It is server-rendered from the permits, so it is already known.
-- **Reduced motion:** the loader's marks hold still at 0.5, by a rule that outranks the ring's `opacity: 1` without changing it (correction 2). `probe:tab-opening` reads 0.5, and reads 1 with the rule removed.
+- **Reduced motion:** the loader's marks held still at 0.5, by a rule that outranked the ring's `opacity: 1` without changing it (correction 2). Superseded 2026-10-11: the loader is now the reading ring itself, so its marks hold at the ring's own full ink (`opacity: 1`), and `probe:tab-opening` reads 1.
 
 ## Copy, for /copy-review
 

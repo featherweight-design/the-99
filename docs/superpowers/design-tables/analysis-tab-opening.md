@@ -11,24 +11,24 @@ Sources are in `design/design_handoff_the99_analysis_tab/`. Abbreviations: **H**
 | Sr-only announcer | The panel's existing announcer stays and says nothing when a peek lands (RA:184-185) | Same |
 | display / direction | `flex`, `column` (F39:114) | `flex`, `column` (F13:109) |
 | align / justify | `align-items:center; justify-content:center` (F39:114) | Same (F13:109) |
-| Gap between mark row and word | `12px` (F39:114) | `14px` (F13:109) |
+| Gap between the ring and the word | `12px` (F39:114) | `14px` (F13:109) |
 | Min height | `320px` (F39:114; H:120; C:481 "420 / 320px block so the tab row does not jump") | `420px` (F13:109; H:120; C:481) |
 | Host container (context) | Tab body `padding:18px 16px 32px; gap:22px` (F39:102) | Tab body `padding:24px 30px 40px; gap:28px` (F13:97) |
 
-## Mark row (`fetchRow`, the same element at both widths)
+## Opening ring (`AnalysisRing`, the same element at both widths; originally the straight mark row `fetchRow`, superseded 2026-10-11)
 
 | Property | Mobile (390) | Desktop (1300) |
 |---|---|---|
 | Element | `span`, `aria-hidden="true"` (FX:374) | Same |
-| Layout | `display:flex; align-items:center; gap:10px` (FX:374) | Same |
-| Marks | The five bracket marks, 1→5, left to right (FX:375; C:479) | Same |
-| Mark size | `22` px square (FX:375 `mark(b, 22)`; H:120; C:479). Size <26 uses the `-chip` art variant (FX:38) | Same |
+| Layout | **Superseded 2026-10-11 (Hugh): the loader draws `AnalysisRing`, the reading ring: a 150px box, `position:relative`, marks absolutely placed.** Originally `display:flex; align-items:center; gap:10px` (FX:374) | Same |
+| Marks | The five bracket marks, 1 at twelve o'clock and running clockwise on a 50px radius. Originally 1→5 left to right (FX:375; C:479) | Same |
+| Mark size | `44` px square, as the reading ring. Originally `22` (FX:375 `mark(b, 22)`; H:120; C:479; the `-chip` art variant is no longer used here) | Same |
 | Mark ink | `color: ink(b)`, each rank in its own ink (FX:39) | Same |
-| Base opacity | `0.22` per mark wrapper (FX:375) | Same |
+| Base opacity | A waiting mark holds the wave's `0.22` through its stagger delay: `.anim-at-wave` has `animation-fill-mode: backwards` (was `.at-wave-rest`, FX:375) | Same |
 | Animation | `at-wave 1.6s ease-in-out ${i*0.16}s infinite`, stagger `0.16s` per mark (FX:375; C:479 "1.6s") | Same |
 | Keyframe | `@keyframes at-wave { 0%,100% {opacity:0.22} 35% {opacity:1} 60% {opacity:1} }` (F39:27) | Same (F13:28) |
-| Direction of the light | Left to right (C:479) | Same |
-| Reduced motion | Marks are static at `0.5` and only the word reads as the signal (H:120; C:481). **(RA corr. 2)** This needs 8a's own still state, e.g. a modifier class. It must not change the ring's shipped reduced-motion rule, which is `opacity:1` (RA:177-179) | Same |
+| Direction of the light | Clockwise round the ring, mark 1 first. Originally left to right (C:479) | Same |
+| Reduced motion | **Superseded 2026-10-11 (Hugh): the loader is the reading ring, so under reduced motion its marks are static at the ring's own `opacity:1`, and only the word reads as the signal.** Originally static at `0.5` (H:120; C:481) by a modifier class that left the ring's rule alone (RA corr. 2) | Same |
 
 ## "Loading…" word (for identification only)
 
@@ -53,9 +53,9 @@ Sources are in `design/design_handoff_the99_analysis_tab/`. Abbreviations: **H**
 | Element | Mobile (390) | Desktop (1300) |
 |---|---|---|
 | Analysis tab row / active tab | Drawn (F39:96) | Drawn (F13:91) |
-| Loader (mark row + Loading…) | Drawn (F39:113-118) | Drawn (F13:108-113) |
+| Loader (opening ring + Loading…) | Drawn (F39:113-118) | Drawn (F13:108-113) |
 | "Overview" label | Withheld (C:479; H:120) | Withheld |
-| Empty-state ring (2a/2b `preAnalysis`) | Withheld. A row is used, not the ring, because the ring means "not analyzed" and would reproduce the flash (C:479-480; H:120; FX `base` has `invite:false`) | Withheld |
+| Empty-state ring (2a/2b `preAnalysis`) | The empty state's own ring instance stays withheld (mounted behind the loader, not drawn), because the empty state means "not analyzed" and would reproduce the flash (C:479-480; H:120; FX `base` has `invite:false`). The loader draws its OWN ring, `AnalysisRing` with testid `opening-ring`, in place of the original mark row (2026-10-11, Hugh) | Withheld |
 | Bracket box / climb / findings (`ready`) | Withheld (C:479; H:120; FX:219 `ready:false`) | Withheld |
 | Stale banner | Withheld (C:479; H:120; FX:219 `staleBanner:false`) | Withheld |
 | Recommended mix | Withheld: `notFetching` gate (F39:297; FX:380; C:479). **(RA corr. 3)** This is the first state to withhold the panel's `children`; build it as drawn (RA:180-182) | Withheld (F13:297) |
@@ -68,7 +68,7 @@ Sources are in `design/design_handoff_the99_analysis_tab/`. Abbreviations: **H**
 | State | Triggering condition (data terms) | What renders |
 |---|---|---|
 | 8a pending, first 150ms | Tab shown; profile `idle`; stored permits **present**; stored-reading fetch **pending**; elapsed < 150ms | Nothing new in the tab body. Loader not yet drawn (C:481). Header chip drawn (RA corr. 1) |
-| 8a loader | Tab shown; profile `idle`; permits **present**; fetch **pending**; elapsed ≥ 150ms | Loader only (mark row + Loading…); every other element withheld, per the table above. Header chip kept |
+| 8a loader | Tab shown; profile `idle`; permits **present**; fetch **pending**; elapsed ≥ 150ms | Loader only (opening ring + Loading…); every other element withheld, per the table above. Header chip kept |
 | 8a hold | Loader drawn; fetch **settled**; less than 400ms since the loader appeared | Loader stays until 400ms; reading held back (RA:186-187) |
 | Resolved to a reading | Permits present; fetch settled with a reading; hold satisfied (or loader never drawn) | The analyzed state (2d/2e etc.) |
 | Resolved to empty (fail-soft) | Permits present; fetch settled with no usable reading (e.g. an old version over an edited list) | 8a, then 2a (RA:132-134) |
