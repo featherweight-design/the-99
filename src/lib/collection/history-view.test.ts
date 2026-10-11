@@ -30,6 +30,19 @@ describe("groupByDay", () => {
     expect(g[0].entries.map((e) => e.id)).toEqual(["a", "b"]);
   });
 
+  it("keeps one group, and so one key, per day when createdAt is not monotonic", () => {
+    const g = groupByDay(
+      [
+        entry({ id: "a", createdAt: new Date("2026-10-09T14:02:00Z") }),
+        entry({ id: "b", createdAt: new Date("2026-10-08T21:10:00Z") }),
+        entry({ id: "c", createdAt: new Date("2026-10-09T09:14:00Z") }),
+      ],
+      NOW,
+    );
+    expect(new Set(g.map((x) => x.key)).size).toBe(g.length);
+    expect(g.map((x) => x.entries.map((e) => e.id))).toEqual([["a", "c"], ["b"]]);
+  });
+
   it("reads a late-evening UTC entry on its UTC day, not the reader's", () => {
     expect(groupByDay([entry({ createdAt: new Date("2026-10-09T23:59:00Z") })], NOW)[0].label).toBe("Today · 9 Oct");
     expect(timeLabel(new Date("2026-10-09T09:05:00Z"))).toBe("09:05");

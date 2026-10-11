@@ -5,7 +5,8 @@
 
 const n = (x: number) => x.toLocaleString("en-US");
 const decks = (x: number) => (x === 1 ? "a deck" : `${n(x)} decks`);
-const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
+export const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
+export const rows = (x: number) => (x === 1 ? "1 row" : `${n(x)} rows`);
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 
 export const collectionEditCopy = {

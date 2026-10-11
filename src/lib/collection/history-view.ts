@@ -21,21 +21,28 @@ const startOfDay = (ms: number) => ms - (((ms % DAY_MS) + DAY_MS) % DAY_MS);
 
 export type DayGroup = { key: string; label: string; entries: HistoryListEntry[] };
 
-/** Entries newest first, grouped by UTC day, the first two days named `Today` and `Yesterday`. */
+/**
+ * Entries newest first, grouped by UTC day, the first two days named `Today` and `Yesterday`.
+ * A day is one group however the entries arrive: `createdAt` is not guaranteed monotonic down the
+ * list, and a day that came back after another would otherwise repeat its key.
+ */
 export function groupByDay(entries: readonly HistoryListEntry[], nowMs: number): DayGroup[] {
   const c = collectionEditCopy.history;
   const today = startOfDay(nowMs);
   const groups: DayGroup[] = [];
+  const byKey = new Map<string, DayGroup>();
   for (const e of entries) {
     const start = startOfDay(e.createdAt.getTime());
-    const last = groups[groups.length - 1];
-    if (last && last.key === String(start)) {
-      last.entries.push(e);
+    const seen = byKey.get(String(start));
+    if (seen) {
+      seen.entries.push(e);
       continue;
     }
     const date = dayLabel(e.createdAt);
     const label = start === today ? c.today(date) : start === today - DAY_MS ? c.yesterday(date) : date;
-    groups.push({ key: String(start), label, entries: [e] });
+    const group = { key: String(start), label, entries: [e] };
+    byKey.set(group.key, group);
+    groups.push(group);
   }
   return groups;
 }

@@ -10,7 +10,7 @@ import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { Crown } from "../ui/crown";
 import { replaceCopy } from "../../lib/copy/replace";
-import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { cards, collectionEditCopy, rows } from "../../lib/copy/collection-edit";
 import { ReplaceReviewDetail, type ReviewChange } from "./replace-review-detail";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
@@ -106,7 +106,7 @@ export function ReviewScreen({
           className="hidden md:block font-mono text-[11px] tracking-[0.06em]"
           style={{ color: "var(--fg-faint)" }}
         >
-          {step} · {preview.filename} · {preview.rowCount.toLocaleString()} rows
+          {step} · {preview.filename} · {rows(preview.rowCount)}
         </p>
         <h1
           className="hidden md:block font-display font-bold text-[29px] mt-[12px]"
@@ -195,14 +195,14 @@ export function ReviewScreen({
                 <span className="font-mono text-[16px]" style={{ color: "var(--fg-faint)" }}>
                   {skippedByDesign.toLocaleString()}
                 </span>
-                <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>token and emblem rows skipped</span>
+                <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>token and emblem {skippedByDesign === 1 ? "row" : "rows"} skipped</span>
               </div>
             )}
             <div
               className="text-[11.5px] pt-[9px]"
               style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
             >
-              {skippedTotal.toLocaleString()} rows will be skipped
+              {rows(skippedTotal)} will be skipped
             </div>
           </div>
 
@@ -217,7 +217,7 @@ export function ReviewScreen({
                 would squeeze all four below the label's legible width on a 360px viewport. */}
             {skippedByDesign > 0 && (
               <p className="text-[11px]" style={{ color: "var(--fg-faint)" }}>
-                {skippedByDesign.toLocaleString()} token and emblem rows skipped
+                {skippedByDesign.toLocaleString()} token and emblem {skippedByDesign === 1 ? "row" : "rows"} skipped
               </p>
             )}
           </div>
@@ -375,19 +375,19 @@ export function ReviewScreen({
           ) : isInitialImport ? (
             <>
               <span className="md:hidden">
-                Imports {importCount.toLocaleString()} cards · skips {skipped} rows
+                Imports {cards(importCount)} · skips {rows(skipped)}
               </span>
               <span className="hidden md:inline">
-                Importing {importCount.toLocaleString()} cards and skipping {skipped}.
+                Importing {cards(importCount)} and skipping {skipped}.
               </span>
             </>
           ) : (
             <>
               <span className="md:hidden">
-                Skips {skipped} rows · replaces your {preview.currentCollectionCount.toLocaleString()} cards with {importCount.toLocaleString()}
+                Skips {rows(skipped)} · replaces your {cards(preview.currentCollectionCount)} with {importCount.toLocaleString()}
               </span>
               <span className="hidden md:inline">
-                Importing {importCount.toLocaleString()} cards and skipping {skipped}. This replaces your current {preview.currentCollectionCount.toLocaleString()} cards.
+                Importing {cards(importCount)} and skipping {skipped}. This replaces your current {cards(preview.currentCollectionCount)}.
               </span>
             </>
           )}
