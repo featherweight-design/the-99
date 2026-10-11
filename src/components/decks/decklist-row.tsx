@@ -458,7 +458,11 @@ export function DecklistRow({
           ? "bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]"
           : `bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}`}
-        style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
+        style={{
+          ...(rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : {}),
+          // The row dims while its I got it write is in flight (A8).
+          ...(confirmOpen && gotIt.pending ? { opacity: 0.6 } : {}),
+        }}
       >
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned).
             No label — unlabelled it marks itself aria-hidden, which is the

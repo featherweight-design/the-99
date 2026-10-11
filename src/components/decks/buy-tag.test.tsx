@@ -327,6 +327,15 @@ describe("BuyTag as I got it's button (press)", () => {
     expect(button).toHaveAccessibleDescription(/over \$10/);
   });
 
+  it("draws the focus ring on the plate, not around the 44px stack", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="full" press={press({ under: "over $10" })} />);
+    const button = screen.getByRole("button");
+    expect(button.className).toContain("focus-visible:outline-none");
+    const plate = button.firstElementChild as HTMLElement;
+    expect(plate.className).toContain("group-focus-visible/buy:outline-[color:var(--accent)]");
+    expect(plate.className).toContain("group-focus-visible/buy:outline-offset-2");
+  });
+
   it("opens on a press at rest, and does not let the press reach the row", () => {
     const p = press();
     const rowClick = vi.fn();

@@ -1511,6 +1511,24 @@ describe("DecklistRow with I got it", () => {
     expect(row().className).toContain("bg-[color:var(--elevated-hover)] [--row-bg:var(--elevated-hover)]");
   });
 
+  it("dims the row to 0.6 while its write is in flight, and only then", async () => {
+    const { markBought } = await import("../../app/decks/mark-bought-actions");
+    const { loadPrintingChoices } = await import("../../app/collection/edit-actions");
+    const only = { scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "mom", setName: "March of the Machine", collectorNumber: "137", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {} };
+    vi.mocked(loadPrintingChoices).mockResolvedValueOnce([only]);
+    let resolve!: (v: unknown) => void;
+    vi.mocked(markBought).mockReturnValueOnce(new Promise((r) => { resolve = r; }) as never);
+    renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} shoppingFigure={24} inShopping newestAsOf={asOf} /></GotItProvider>);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: tagName })));
+    expect(row().style.opacity).toBe("");
+    const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(1) });
+    await act(async () => fireEvent.click(add));
+    expect(row().style.opacity).toBe("0.6");
+    expect(screen.getByText(gotItCopy.row.pending)).toBeInTheDocument();
+    await act(async () => resolve({ refused: "notInDeck" }));
+    expect(row().style.opacity).toBe("");
+  });
+
   it("leaves the All tab's collapsed tag inert with the feature on", () => {
     renderRow(<GotItProvider deckId="d1"><DecklistRow deckId="d1" card={priced(300)} newestAsOf={asOf} /></GotItProvider>);
     expect(screen.queryByRole("button", { name: tagName })).toBeNull();

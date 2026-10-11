@@ -189,7 +189,7 @@ export function GotItConfirm({
         // Phone: the bottom sheet, 16px top corners, top border only. Desktop: the 520px modal.
         className="relative flex max-h-[92vh] w-full flex-col gap-[18px] overflow-y-auto overscroll-contain rounded-[16px_16px_0_0] bg-[color:var(--surface)] px-[18px] pb-[18px] pt-[10px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[20px] md:pt-[24px] md:[border:1px_solid_var(--border-strong)] md:[box-shadow:var(--modal-shadow)]"
       >
-        <span aria-hidden className="-mb-[2px] h-[4px] w-[36px] self-center rounded-[2px] bg-[color:var(--border-dashed)] md:hidden" />
+        <span aria-hidden className="mb-[2px] h-[4px] w-[36px] self-center rounded-[2px] bg-[color:var(--border-dashed)] md:hidden" />
         <button
           type="button"
           aria-label={c.close}
@@ -201,7 +201,7 @@ export function GotItConfirm({
         </button>
 
         <div className="flex flex-col gap-[6px] md:pr-[44px]">
-          <h2 id={titleId} className="m-0 font-display text-[19px] font-bold leading-[1.25] text-[color:var(--fg)] md:text-[21px]">{c.title}</h2>
+          <h3 id={titleId} className="m-0 font-display text-[19px] font-bold leading-[1.25] text-[color:var(--fg)] md:text-[21px]">{c.title}</h3>
           <span id={nameId} className="text-[15px] leading-[1.4] text-[color:var(--fg-body)]">{cardName}</span>
         </div>
 
@@ -234,6 +234,7 @@ export function GotItConfirm({
             ) : (
               <PrintingRegion
                 role="choose"
+                tiles="confirm"
                 source="catalog"
                 layout="row"
                 id={`${titleId}-printings`}
@@ -348,10 +349,12 @@ export function GotItConfirm({
             ref={primaryRef}
             type="button"
             onClick={() => void submit()}
-            disabled={!ready || pending}
+            // aria-disabled, not native: the button keeps its focus (and is announced) while a
+            // press does nothing; `submit` refuses without a printing and while pending.
+            aria-disabled={!ready || pending || undefined}
             className={`inline-flex h-[46px] flex-1 items-center justify-center whitespace-nowrap rounded-[10px] text-[14px] font-semibold md:h-[40px] md:flex-none md:rounded-[8px] md:px-[20px] ${
               ready
-                ? "cursor-pointer bg-[color:var(--accent)] text-[color:var(--bg)] disabled:cursor-wait disabled:opacity-70"
+                ? `bg-[color:var(--accent)] text-[color:var(--bg)] ${pending ? "cursor-wait opacity-70" : "cursor-pointer"}`
                 : "cursor-default bg-[color:var(--elevated)] text-[color:var(--fg-locked)]"
             }`}
           >

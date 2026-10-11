@@ -21,7 +21,9 @@ export function ShoppingKey({ shoppingCount }: { shoppingCount: number }) {
   return (
     <div
       data-testid="shopping-key"
-      className="mt-[6px] grid grid-cols-2 items-center gap-x-[12px] gap-y-[6px] px-[2px] md:flex md:flex-wrap md:gap-x-[22px] md:px-[4px]"
+      // Phone: a two-column grid with 10px above and 10px below. From lg (where the Shopping row
+      // goes to one line): one wrapping row, 6px above.
+      className="mt-[10px] grid grid-cols-2 items-center gap-x-[12px] gap-y-[6px] px-0 pb-[10px] lg:mt-[6px] lg:flex lg:flex-wrap lg:gap-x-[22px] lg:px-[4px] lg:pb-0"
     >
       {tools ? (
         <span className={ITEM}>

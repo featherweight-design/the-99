@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
@@ -491,6 +491,19 @@ describe("PrintingRegion role=choose source=catalog", () => {
       expect(radios[0]).toHaveAttribute("aria-checked", "true");
       expect(radios[0]).toHaveAccessibleName(/Set 4/);
       expect(radios[1]).toHaveAccessibleName(/Set 12/);
+    });
+
+    it("draws the confirm's tiles only when asked, leaving the sheet's as they were", () => {
+      renderChoose({ selected: "id-1", layout: "row", tiles: "confirm" });
+      const tile = screen.getAllByRole("radio")[0];
+      expect(tile.className).toContain("md:w-[104px]");
+      expect((tile.firstElementChild as HTMLElement).className).toContain("rounded-[9px]");
+      expect(tile.parentElement!.className).toContain("pb-[2px]");
+      cleanup();
+      renderChoose({ layout: "row" });
+      const sheetTile = screen.getAllByRole("radio")[0];
+      expect(sheetTile.className).toContain("w-[96px]");
+      expect((sheetTile.firstElementChild as HTMLElement).className).toContain("rounded-[10px]");
     });
 
     it("focuses the selected tile when asked", () => {

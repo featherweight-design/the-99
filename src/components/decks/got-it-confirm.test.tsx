@@ -72,6 +72,7 @@ describe("GotItConfirm", () => {
   it("opens on the printing behind the live figure, nonfoil, at the need", async () => {
     renderConfirm();
     expect(screen.getByRole("dialog", { name: c.title })).toHaveAccessibleDescription("Etali, Primal Conqueror");
+    expect(screen.getByRole("heading", { level: 3, name: c.title })).toBeInTheDocument();
     await waitFor(() => expect(printingRadios()).toHaveLength(3));
     expect([...printingRadios()].map((r) => r.getAttribute("aria-checked"))).toEqual(["true", "false", "false"]);
     expect(screen.getByRole("radio", { name: c.finishes.nonfoil })).toHaveAttribute("aria-checked", "true");
@@ -86,8 +87,13 @@ describe("GotItConfirm", () => {
     await waitFor(() => expect(printingRadios()).toHaveLength(3));
     for (const r of printingRadios()) expect(r).toHaveAttribute("aria-checked", "false");
     expect(add()).toHaveTextContent(c.choosePrinting);
-    expect(add()).toBeDisabled();
+    // aria-disabled, not native: it stays focusable, and a press writes nothing.
+    expect(add()).toHaveAttribute("aria-disabled", "true");
+    expect(add()).not.toBeDisabled();
+    await act(async () => fireEvent.click(add()));
+    expect(markBought).not.toHaveBeenCalled();
     fireEvent.click(printingRadios()[1]);
+    expect(add()).not.toHaveAttribute("aria-disabled");
     expect(add()).toHaveTextContent(c.add(1));
   });
 
@@ -106,7 +112,7 @@ describe("GotItConfirm", () => {
     await waitFor(() => expect(screen.getByText(c.printingCount(1))).toBeInTheDocument());
     expect(screen.queryByRole("radiogroup", { name: "Printings" })).toBeNull();
     expect(add()).toHaveTextContent(c.add(1));
-    expect(add()).toBeEnabled();
+    expect(add()).not.toHaveAttribute("aria-disabled");
   });
 
   it("sends the chosen printing, finish, count and the holding's count as expected", async () => {
@@ -144,6 +150,9 @@ describe("GotItConfirm", () => {
     expect(onPendingChange).toHaveBeenLastCalledWith(true);
     expect(screen.getByRole("button", { name: c.cancel })).toBeDisabled();
     expect(add()).toHaveTextContent(c.adding);
+    expect(add()).toHaveAttribute("aria-disabled", "true");
+    await act(async () => fireEvent.click(add()));
+    expect(markBought).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).not.toHaveBeenCalled();
     await act(async () => resolve({ applied: { id: "e1", receipt: null } }));

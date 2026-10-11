@@ -128,12 +128,20 @@ type ChooseRegionProps = {
    * Add cards sheet does not pass it, and is exactly as before.
    */
   selected?: string | null;
+  /**
+   * `confirm`: I got it's confirm draws the tiles at its own size (R2 §B: 100px phone, 104px
+   * desktop, art radius 9px) in a row padded 4px 4px 2px. The row still scrolls sideways: a card
+   * has up to 57 printings and the modal fits about four 104px tiles, so hiding the overflow would
+   * leave most of them out of a pointer's reach. Absent, the tiles are the Add cards sheet's.
+   */
+  tiles?: "confirm";
 };
 
 export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const choose = props.role === "choose";
   const row = choose && props.layout === "row";
   const selectMode = props.role === "choose" && props.selected !== undefined;
+  const confirmTiles = props.role === "choose" && props.tiles === "confirm";
   const { id, cardName, colorIdentity } = props;
   const preferred = props.role === "choose" ? null : props.preferred;
   const deckScope = props.role !== "choose" && props.scope === "deck";
@@ -486,7 +494,9 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
               <div
                 className={
                   row
-                    ? `-mx-[4px] flex ${selectMode ? "gap-[12px] md:gap-[14px]" : "gap-[10px]"} overflow-x-auto p-[4px]`
+                    ? confirmTiles
+                      ? "-mx-[4px] flex gap-[12px] overflow-x-auto px-[4px] pb-[2px] pt-[4px] md:gap-[14px]"
+                      : "-mx-[4px] flex gap-[10px] overflow-x-auto p-[4px]"
                     : "grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-[12px] md:grid-cols-3 md:gap-[16px]"
                 }
               >
@@ -504,6 +514,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
                       picked={picked}
                       shownNow={shownNow}
                       checked={selectMode ? key === selectedKey : undefined}
+                      confirmTiles={confirmTiles}
                       colorIdentity={colorIdentity}
                       tabStop={key === tabStopKey}
                       onSelect={() => pick(p)}
@@ -559,6 +570,7 @@ function PrintingTile({
   picked,
   shownNow,
   checked,
+  confirmTiles = false,
   colorIdentity,
   tabStop,
   onSelect,
@@ -572,6 +584,8 @@ function PrintingTile({
   shownNow: boolean;
   /** A controlled choose group's selection (I got it): checked, outlined, and no badge. */
   checked?: boolean;
+  /** I got it's confirm size: 100/104px wide, art radius 9px. */
+  confirmTiles?: boolean;
   colorIdentity: string[];
   tabStop: boolean;
   onSelect: () => void;
@@ -617,11 +631,11 @@ function PrintingTile({
       tabIndex={entry.dormant ? -1 : tabStop ? 0 : -1}
       onClick={entry.dormant ? undefined : onSelect}
       onKeyDown={entry.dormant ? undefined : onKeyDown}
-      className={`text-left ${row ? (checked === undefined ? "w-[96px] shrink-0" : "w-[100px] md:w-[104px] shrink-0") : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
+      className={`text-left ${row ? (confirmTiles ? "w-[100px] md:w-[104px] shrink-0" : "w-[96px] shrink-0") : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
       style={{ opacity: entry.dormant ? 0.55 : undefined }}
     >
       <div
-        className="relative w-full rounded-[10px]"
+        className={`relative w-full ${confirmTiles ? "rounded-[9px]" : "rounded-[10px]"}`}
         style={{
           aspectRatio: "63/88",
           ...artStyle,
@@ -643,7 +657,7 @@ function PrintingTile({
         {!entry.dormant && foilCount(entry) > 0 && (
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-[10px]"
+            className={`pointer-events-none absolute inset-0 ${confirmTiles ? "rounded-[9px]" : "rounded-[10px]"}`}
             style={{
               background:
                 "linear-gradient(115deg, rgba(255,255,255,0.20) 4%, transparent 24%, " +

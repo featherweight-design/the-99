@@ -40,6 +40,14 @@ describe("the Shopping head's key", () => {
     expect(screen.queryByText(swapToolsCopy.limit.key, { exact: false })).toBeNull();
   });
 
+  it("is a grid on the phone and one row from lg", () => {
+    render(<GotItProvider deckId={DECK}>{head()}</GotItProvider>);
+    const key = screen.getByTestId("shopping-key");
+    expect(key.className).toContain("grid-cols-2");
+    expect(key.className).toContain("lg:flex");
+    expect(key.className).not.toContain("md:flex");
+  });
+
   it("draws the buy item alone with the swap tools off", () => {
     render(<GotItProvider deckId={DECK}>{head()}</GotItProvider>);
     expect(screen.getByText(gotItCopy.row.keyBuy)).toBeInTheDocument();

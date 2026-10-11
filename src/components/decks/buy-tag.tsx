@@ -357,13 +357,14 @@ function PressableTag({ press, overLimit, children }: { press: BuyTagPress; over
         e.stopPropagation();
         if (pressState === "rest") onPress();
       }}
-      className={`group/buy flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent px-0 py-[8px] -my-[8px] lg:py-0 lg:my-0 font-[inherit] ${
+      // The ring is the plate's, not the button's: below lg the button is the whole 44px stack.
+      className={`group/buy flex flex-none flex-col items-end gap-[2px] border-0 bg-transparent px-0 py-[8px] -my-[8px] lg:py-0 lg:my-0 font-[inherit] focus-visible:outline-none ${
         live ? "cursor-pointer" : "cursor-default"
       }`}
     >
       <span
         id={descriptionId}
-        className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} ${
+        className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT.row} group-focus-visible/buy:outline-2 group-focus-visible/buy:outline-offset-2 group-focus-visible/buy:[outline-style:solid] group-focus-visible/buy:outline-[color:var(--accent)] ${
           pressState === "rest" ? WASH.rest : pressState === "open" ? WASH.open : WASH.idle
         }`}
         style={{
