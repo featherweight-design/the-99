@@ -16,6 +16,8 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { collectionEditEnabled } from "../collection/edit-flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
+import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
+import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
@@ -37,6 +39,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // The block lives on the Analysis tab, so the entry needs the tab too, as tuning's does: it
   // would otherwise describe a tab that is off.
   DECK_BENCHMARKS_ENABLED: (env) => deckBenchmarksEnabled(env) && analysisTabEnabled(env),
+  // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
+  SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
+  DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
