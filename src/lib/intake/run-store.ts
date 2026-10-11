@@ -167,6 +167,19 @@ export async function readStatus(
 
 const EMPTY_READ: StoredRead = { chips: [], notUsed: [], notUnderstood: [] };
 
+/**
+ * Whether the player has a read running, read cheaply BEFORE a press loads its inputs: a second
+ * tab or a scripted burst then costs one indexed lookup, never the pool's whole read. Not the
+ * race-safe check, which stays `startRead`'s unique index; a pending read past the reaper's cutoff
+ * is abandoned, not running.
+ */
+export async function hasRunningRead(userId: string, now: Date = new Date()): Promise<boolean> {
+  const [pending] = await db.select({ id: intakeReads.id }).from(intakeReads)
+    .where(and(eq(intakeReads.userId, userId), eq(intakeReads.status, "pending"), gte(intakeReads.createdAt, reapCutoff(now))))
+    .limit(1);
+  return pending !== undefined;
+}
+
 export function reapCutoff(now: Date): Date {
   return new Date(now.getTime() - INTAKE_REAPER_CUTOFF_MS);
 }

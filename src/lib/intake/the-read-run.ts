@@ -10,7 +10,7 @@ import {
 } from "./limits";
 import { colorsKey, leadingThemes, loadPoolList, type PoolList } from "./pool-list";
 import { rankCandidates } from "./rank";
-import { setReadPhase, settleTheRead, startRead, type ReadErrorClass } from "./run-store";
+import { hasRunningRead, setReadPhase, settleTheRead, startRead, type ReadErrorClass } from "./run-store";
 import { loadIntakeCatalog, loadSearchFacts } from "./search";
 import { intakeLive, STUB_MODEL } from "./stub";
 import {
@@ -166,6 +166,10 @@ export async function beginTheRead(
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome | { kind: "started"; readId: string; finish: () => Promise<TheReadOutcome> }> {
   const started0 = deps.now();
+  // Admission first: a read already running refuses this one before its inputs (the pool's whole
+  // read) are loaded. A repeat of a stored ask is then refused too while another runs, which is
+  // the cheaper error: its words are kept, and the next press answers it.
+  if (await hasRunningRead(userId, new Date(started0))) return { kind: "in_flight" };
   const facts = inputs ?? await loadTheReadInputs(userId, input.words, input.filters);
   const started = await startRead(userId, facts.fingerprint, deps.modelName, { readId: input.readId });
   if (started.kind === "stored") {

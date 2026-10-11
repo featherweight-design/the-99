@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const store = vi.hoisted(() => ({
+  hasRunningRead: vi.fn(async () => false),
   startRead: vi.fn(),
   setReadPhase: vi.fn(),
   settleTheRead: vi.fn(),
@@ -143,6 +144,15 @@ describe("runTheRead", () => {
     if (begun.kind !== "started") return;
     expect(await begun.finish()).toMatchObject({ kind: "read", readId: "r" });
     expect(d.shortlist).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses as in flight before loading anything when a read is already running", async () => {
+    store.hasRunningRead.mockResolvedValueOnce(true);
+    store.startRead.mockClear();
+    const d = deps(ok({ keys: [1] }), ok({ picks: [] }));
+    expect(await beginTheRead("u", input, d)).toEqual({ kind: "in_flight" });
+    expect(load.loadReadDecks).not.toHaveBeenCalled();
+    expect(store.startRead).not.toHaveBeenCalled();
   });
 
   it("reserves under the fingerprint and the joined model", async () => {
