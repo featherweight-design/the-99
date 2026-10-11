@@ -121,7 +121,8 @@ export function buildCart(
       heldElsewhere: 0,
       rows: [],
     };
-    if (deck.commanderOracleId === r.oracleId || deck.partnerOracleId === r.oracleId) line.commander = true;
+    const commander = deck.commanderOracleId === r.oracleId || deck.partnerOracleId === r.oracleId;
+    if (commander) line.commander = true;
     const fact = read ? priceFor(read, r.deckId, r.oracleId) : null;
     const state = read ? priceState(fact, read.newestAsOf) : null;
     line.rows.push({
@@ -129,6 +130,8 @@ export function buildCart(
       quantity: r.quantity,
       cents: fact && state ? priceOf(fact, state) : null,
       state,
+      commander,
+      held: ownership.get(r.oracleId)?.heldByDeck.get(r.deckId) ?? 0,
     });
     byCard.set(r.oracleId, line);
   }

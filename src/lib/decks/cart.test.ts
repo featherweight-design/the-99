@@ -60,7 +60,7 @@ describe("buildCart", () => {
     );
     expect(fromLines).toEqual(cartTotal(cart.decks, all));
     const passage = cart.lines.find((l) => l.oracleId === PASSAGE)!;
-    expect(passage.rows).toEqual([{ deckId: "thorin", quantity: 2, cents: null, state: "soldOut" }]);
+    expect(passage.rows).toEqual([{ deckId: "thorin", quantity: 2, cents: null, state: "soldOut", commander: false, held: 0 }]);
     expect(figuresOf(cart.lines.find((l) => l.oracleId === SOL)!.rows)).toEqual({ copies: 3, cents: 450, pricedCopies: 3 });
     expect(cartTotal(cart.decks, all)).toMatchObject({ copies: 8, pricedCopies: 6 });
   });
@@ -98,6 +98,25 @@ describe("the owned fact (lock 4, audit finding 4)", () => {
     const ownership = new Map([[PASSAGE, { owned: 3, heldByDeck: new Map([["thorin", 1], ["other", 2]]) }]]);
     const cart = buildCart(rows, read, deckRows, names, ownership);
     expect(cart.lines.find((l) => l.oracleId === PASSAGE)).toMatchObject({ owned: 3, heldElsewhere: 2 });
+  });
+});
+
+describe("selection-derived line facts", () => {
+  it("is a commander line only while the deck it commands is selected", () => {
+    // Omnath's own commander, also wanted in Gishath's 99.
+    const both = [...rows, { deckId: "gishath", oracleId: OMNATH, quantity: 1 }];
+    const line = buildCart(both, read, deckRows, names).lines.find((l) => l.oracleId === OMNATH)!;
+    expect(selectLine(line, all)?.commander).toBe(true);
+    expect(selectLine(line, new Set(["gishath"]))?.commander).toBe(false);
+  });
+
+  it("counts an unselected deck's own held copies among the other decks'", () => {
+    // Thorin holds one of its Rogue's Passages; with Thorin unselected that copy is elsewhere.
+    const both = [...rows, { deckId: "gishath", oracleId: PASSAGE, quantity: 1 }];
+    const ownership = new Map([[PASSAGE, { owned: 3, heldByDeck: new Map([["thorin", 1], ["other", 2]]) }]]);
+    const line = buildCart(both, read, deckRows, names, ownership).lines.find((l) => l.oracleId === PASSAGE)!;
+    expect(selectLine(line, all)?.heldElsewhere).toBe(2);
+    expect(selectLine(line, new Set(["gishath"]))?.heldElsewhere).toBe(3);
   });
 });
 

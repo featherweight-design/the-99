@@ -19,13 +19,22 @@ import type { PriceState } from "./price";
  * says why (`soldOut`, `absent`), the same states the per-deck buy tag reads, and is null when the
  * price read failed outright.
  */
-export type CartRow = { deckId: string; quantity: number; cents: number | null; state: PriceState | null };
+export type CartRow = {
+  deckId: string;
+  quantity: number;
+  cents: number | null;
+  state: PriceState | null;
+  /** The card is this deck's own unowned commander (H28), so the line leads while this deck is selected. */
+  commander: boolean;
+  /** Owned copies THIS deck holds of the card (a deck can hold some and buy the rest). */
+  held: number;
+};
 
 export type CartLine = {
   oracleId: string;
   /** The oracle name: what the Mana Pool line carries, and what the line is merged by. */
   name: string;
-  /** An unowned commander, which leads its own deck's list (H28). */
+  /** Some deck on the line buys it as its unowned commander (H28). Per selection: `selectLine`. */
   commander: boolean;
   /**
    * Copies the player owns (lock 4: an owned card can be a cart line, when other decks hold every
@@ -35,7 +44,8 @@ export type CartLine = {
   /**
    * Owned copies held by decks NOT on this line (audit finding 4). The line's `all N in other
    * decks` form is true only when this equals `owned`; a deck on the line can hold some of its
-   * own (Relentless Rats and the like), and then the two differ.
+   * own (Relentless Rats and the like), and then the two differ. Per selection: `selectLine` adds
+   * what an unselected deck on the line holds, since that deck is then one of the others.
    */
   heldElsewhere: number;
   rows: CartRow[];
@@ -68,7 +78,12 @@ export type SelectedLine = CartLine & { selectedRows: CartRow[] } & CartFigures;
 export function selectLine(line: CartLine, selected: ReadonlySet<string>): SelectedLine | null {
   const selectedRows = line.rows.filter((r) => selected.has(r.deckId));
   if (selectedRows.length === 0) return null;
-  return { ...line, selectedRows, ...figuresOf(selectedRows) };
+  // Read from the selected rows, never carried from the whole line: unselecting the deck that
+  // leads with this card as its commander must not leave the line labelled and ordered as one.
+  const commander = selectedRows.some((r) => r.commander);
+  const heldElsewhere = line.heldElsewhere
+    + line.rows.reduce((n, r) => n + (selected.has(r.deckId) ? 0 : r.held), 0);
+  return { ...line, commander, heldElsewhere, selectedRows, ...figuresOf(selectedRows) };
 }
 
 export function figuresOf(rows: readonly CartRow[]): CartFigures {
