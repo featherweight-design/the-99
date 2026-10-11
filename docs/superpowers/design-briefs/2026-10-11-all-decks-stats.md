@@ -55,7 +55,7 @@ All paths are on `main`; line numbers read 2026-10-11, and they move.
   of a user in a FIXED number of reads (its header: "Home's roll-up over every deck therefore costs the same round
   trips as a single deck page"). `sumPlayRecords` and `sumColourSpreads` (`src/lib/decks/stats.ts:73`, `:142`) add
   them up. It shipped in #524 for a Home roll-up that was never drawn; nothing calls it today. It covers part of
-  the seven groups: the curve without card types, the to-buy cost without the owned value, and the record without
+  round 1's seven card groups: the curve without card types, the to-buy cost without the owned value, and the record without
   trend or versions. Its color figure is the identity spread, not pips against sources. Jobs and the average are
   absent.
 
@@ -127,7 +127,7 @@ Engineering's reading of the rulings. Hugh can override any of it.
 
 ## Open questions for Design
 
-1. **One chart per figure, or one card per deck?** A row per figure answers "which deck was played last"; a card
+1. **One chart per figure, or one card per deck?** A row per figure answers "which deck holds the most shared staples"; a card
    per deck answers "what is this deck like", and the tile grid already does that.
 2. **Never-played as a group** (ruling 2): 15 of 21 decks have no game. On a recency chart that group is most of
    the lineup; how is it drawn so it is visible without swamping the 6 that have dates?
@@ -176,7 +176,7 @@ deck's printing picks. Lands are cards whose type line contains Land.
   2,580 copies are idle. By cheapest current price: about $2,134 of value in decks, about $934 idle.
 - **Wanted more than owned:** 77 cards are needed by the decks in more copies than the player owns (Sol Ring: 20
   wanted, 17 owned). No card assignments exist on this account, so every contested copy is placed by seniority.
-- **Idle cards the commanders would want:** 144 idle cards sit in one of these 22 commanders' index lists
+- **Idle cards the commanders would want:** 144 idle cards sit in one of these decks' commanders' index lists (21 distinct commanders, plus Atreus as Gods' partner)
   (`commander_support_cards.inclusion`, a percent) at 20% or more, 67 at 40% or more.
 - **Play recency:** last played, newest first: Scrappy Survivors 2026-10-05, Omnath 2026-09-28, Avatar Aang
   2026-09-26, Gods 2026-09-25, Tovolar 2026-09-12, Blood Rites 2026-09-12. The other 15 decks have never been
@@ -190,7 +190,7 @@ deck's printing picks. Lands are cards whose type line contains Land.
 - **Curve:** average nonland mana value 2.18 to 4.78, median 2.97. Lands 27 to 40, median 36.
 - **Jobs:** ramp 7 to 38, draw 1 to 24, removal 3 to 25. Wipes, protection and finisher rows are small or empty on
   most decks (finisher is empty on 12 of 21).
-- **Value:** $41.35 to $432.67, $3,026 summed per deck (a per-deck sum counts a shared card once per deck; ruling 3 counts per copy owned instead, below).
+- **Value:** $41.35 to $432.67, $3,026 summed per deck (a per-deck sum counts a shared card once per deck; ruling 3 counts per copy owned instead; see the Lineup figures above).
   The cart's to-buy figure, from the shopping brief, is 7 of 21 decks and $843.99.
 - **Overlap:** 1,366 distinct nonbasic cards across the 21 decks; 157 are in two or more decks and 13 in five or
   more. Most shared: Sol Ring 20, Arcane Signet 18, Command Tower 14, Exotic Orchard 8, Mind Stone 8, Fabled
