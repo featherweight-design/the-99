@@ -10,6 +10,9 @@
 //
 // `t` and `l` are NOT mana letters (no `--color-t`/`--color-l`), so `border-t` and `border-l`
 // never collide — confirmed against the compiled stylesheet, not assumed.
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 export const COLLIDING_SIDES = ["r", "b"];
 
 /**
@@ -109,11 +112,18 @@ function scan(text) {
 }
 
 /**
- * A bare colliding utility, found anywhere in the stripped source — `\bborder-b\b` and
- * `\bborder-r\b`, never `border-b-2`/`border-b-0`/`border-b-[...]`/`border-bottom-*`, all of
- * which are distinct identifiers a word-boundary match already excludes. Each match's offset is
- * kept so a caller can check for a companion override nearby without re-deriving positions.
+ * A bare colliding utility, found anywhere in the stripped source — `border-b` and `border-r`,
+ * never `border-b-2`/`border-b-0`/`border-b-[...]`/`border-bottom-*`, all of which are distinct
+ * identifiers. Each match keeps its VARIANT chain (`md:`, `last:hover:`) and the legacy `!` that follows it (`md:!border-r`), because the override
+ * that fixes it has to carry the same one: see `hasSideOverride`. Offsets are kept so a caller can
+ * report a line without re-deriving positions.
  */
+// A bracketed variant or value is ONE unit, quotes included: `[&[data-x='a']]:` is a single
+// variant, and cutting it at the quote would let `[&[data-x='a']]:border-r` and
+// `[&[data-y='a']]:border-r-[...]` read as the same chain. Tailwind writes a space as `_`, so a
+// bracket holds no whitespace; one level of nesting covers the attribute-selector form.
+const BRACKETED = "\\[(?:[^\\[\\]\\s]|\\[[^\\[\\]\\s]*\\])*\\]";
+
 function bareCollisions(text) {
   const found = [];
   for (const side of COLLIDING_SIDES) {
@@ -122,11 +132,18 @@ function bareCollisions(text) {
     // `border-b-0`/`md:border-b-0` — a different, unambiguous utility with no color collision at
     // all. The bare, colliding form is only the EXACT token with nothing after it but a
     // non-identifier character (space, quote, end of string) — never another `-`.
-    const re = new RegExp(`(?<![\\w-])border-${side}(?![\\w-])`, "g");
-    for (const m of text.matchAll(re)) found.push({ side, index: m.index });
+    //
+    // A token starts at whitespace, a quote, a backtick, `{` or `(`; its variants are everything up
+    // to the last `:` before the utility, so `[&>*]:` and `data-[x=y]:` are read whole.
+    const re = new RegExp(`(?<![^\\s"'\`{(])((?:(?:[^\\s"'\`\\[\\]]|${BRACKETED})*:)?!?)border-${side}(!?)(?![\\w-])`, "g");
+    for (const m of text.matchAll(re)) {
+      found.push({ side, index: m.index + m[1].length, variant: m[1], important: m[2] === "!" });
+    }
   }
   return found.sort((a, b) => a.index - b.index);
 }
+
+const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Whether `text` already fixes a bare collision at `side` with an explicit SIDE-SPECIFIC color
@@ -136,9 +153,32 @@ function bareCollisions(text) {
  * SIDE-SPECIFIC only — a GENERIC `[border-color:...]` or unprefixed `border-{token}` utility sits
  * EARLIER in the compiled stylesheet than the bare collision and loses to it, confirmed against
  * the compiled output, so it does not count as a fix here.
+ *
+ * AND THE SAME VARIANT CHAIN. Tailwind emits every variant rule after the unprefixed ones, so a
+ * `md:border-r` repaints red from `md` up over a plain `border-r-[color:...]`, and a `md:`
+ * override does nothing below `md` for a plain `border-r`. Each bare token needs an override
+ * spelled with exactly its own variants, and its own `!`: `border-r!` is `!important`, which a
+ * plain override loses to.
+ *
+ * DELIBERATELY CONSERVATIVE. A stronger override beside a plain bare token (`md:border-r
+ * md:border-r-[color:...]!`) is safe in the browser and is still reported, and so are the legacy
+ * prefix and the suffix spelling of `!` against each other. Telling those apart means modelling
+ * Tailwind's importance order, which the five-line fix (write the override with the bare token's
+ * own variants and `!`) does not need; `src` holds no such token (it holds no `!` form at all), so
+ * the strictness costs nothing today and a guard that errs toward a report is the safe side.
  */
-function hasSideOverride(text, side) {
-  return new RegExp(`\\bborder-${side}-(\\[|[a-zA-Z])`).test(text);
+function hasSideOverride(text, side, variant, important) {
+  const re = new RegExp(`(?<![^\\s"'\`{(])${escapeRe(variant)}border-${side}-(?=\\[|[a-zA-Z])(?:[^\\s"'\`\\[\\]]|${BRACKETED})*`, "g");
+  return [...text.matchAll(re)].some((m) => m[0].endsWith("!") === important);
+}
+
+/**
+ * A stylesheet's class strings are its `@apply` statements, one span each. Comments are blanked
+ * to spaces rather than cut, so every offset still lands on the same line.
+ */
+function cssSpans(text) {
+  const blanked = text.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+  return [...blanked.matchAll(/@apply\b[^;}]*/g)].map((m) => ({ start: m.index, text: m[0] }));
 }
 
 /**
@@ -147,15 +187,15 @@ function hasSideOverride(text, side) {
  * SPAN BY SPAN (each class-string literal in isolation) because a fix co-located in a different
  * className on the same file does not reach this one.
  */
-export function unresolvedCollisions(text) {
+export function unresolvedCollisions(text, kind = "js") {
   // A nested template literal's text is covered by two spans — the outer template's full raw
   // text (which includes the interpolation verbatim) and the inner template's own span — so the
   // same physical collision can surface twice at the identical offset. Deduped by (side, offset).
   const seen = new Set();
   const out = [];
-  for (const span of scan(text)) {
-    for (const { side, index } of bareCollisions(span.text)) {
-      if (!hasSideOverride(span.text, side)) {
+  for (const span of kind === "css" ? cssSpans(text) : scan(text)) {
+    for (const { side, index, variant, important } of bareCollisions(span.text)) {
+      if (!hasSideOverride(span.text, side, variant, important)) {
         const offsetInFile = span.start + index;
         const key = `${side}:${offsetInFile}`;
         if (seen.has(key)) continue;
@@ -172,4 +212,35 @@ export function lineAt(text, offset) {
   let line = 1;
   for (let i = 0; i < offset && i < text.length; i++) if (text[i] === "\n") line++;
   return line;
+}
+
+const SOURCE = /\.(tsx?|css)$/;
+const TEST = /\.test\.tsx?$/;
+
+async function sourceFiles(dir) {
+  const out = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await sourceFiles(full)));
+    else if (SOURCE.test(entry.name) && !TEST.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+/**
+ * Every unresolved collision under `root`, as `{ path, side, line }`. `.ts` and `.css` are read
+ * as well as `.tsx`: a class string in a constants module or an `@apply` reaches the same
+ * stylesheet. The script and the shipped-tree test both call this, so they cannot disagree about
+ * which files are the tree.
+ */
+export async function collisionFindings(root = "src") {
+  const files = await sourceFiles(root);
+  const findings = [];
+  for (const path of files) {
+    const source = await readFile(path, "utf8");
+    for (const { side, offsetInFile } of unresolvedCollisions(source, path.endsWith(".css") ? "css" : "js")) {
+      findings.push({ path, side, line: lineAt(source, offsetInFile) });
+    }
+  }
+  return { files: files.length, findings };
 }

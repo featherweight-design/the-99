@@ -498,6 +498,21 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   defeated an earlier version — because every failure mode here is a SILENT PASS, the same
   hazard as the bug it catches.
 
+- `pnpm check:border-collision` fails when a `.tsx`, `.ts` or `.css` file under `src` uses a bare
+  `border-r` or `border-b`. The mana palette is registered as theme colors named `w`, `u`, `b`,
+  `r`, `g`, and Tailwind 4 turns each into a color utility, so `border-r` and `border-b` are
+  ALSO `border-color: var(--r)` / `var(--b)`, and the color rule is emitted after the width rule
+  and wins: a neutral divider paints mana red or black. Measured by compiling the real stylesheet
+  against every utility prefix with each of the five letters: those two are the only ones that
+  collide (`border-t`/`border-l` have no color token, and `rounded-r`/`rounded-b` take no color).
+  A bare one needs a SIDE-SPECIFIC color beside it (`border-r-[color:var(--border)]`); a generic
+  `[border-color:...]` or `border-{token}` is emitted earlier and loses. The override must carry
+  the SAME VARIANT CHAIN as the token it fixes, because variant rules are emitted after the plain
+  ones: `md:border-r` repaints red from `md` up over a plain override. Static, no browser, and
+  `scripts/lib/border-collision.test.mts` runs the whole check against the shipped tree inside
+  `pnpm test` as well as in its own CI step. It first shipped as #1272 (44 files fixed at once);
+  the second pass added the variant rule and the `.ts` and `.css` files, and found none
+  outstanding: 90 bare tokens in `src`, every one overridden at its own variant.
 - `pnpm check:collection-routes` fails when a route renders a figure read out of
   `collection_items` and the collection replace does not invalidate it. It walks every
   `page.tsx`, follows its imports through `src/`, and compares what it finds against
