@@ -181,7 +181,7 @@ const V2_COMBO_RULE_V7 = "The facts may list combos this deck assembles. When on
  */
 const V2_COMBO_RULES_V8 = [
   "The facts may list combos this deck assembles. Name each listed combo by its cards and by what it produces (for example: [[Card A]] and [[Card B]] together make infinite mana), and never describe it as value, a bonus or a side effect. A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.",
-  "When the facts give the colors the lands make, describe the deck by those colors: a deck whose lands make fewer colors than its identity plays as the colors they make.",
+  "When the facts give \"Colors the lands make\", that name REPLACES the identity name wherever you name the deck's colors (the rule to name them by the identity given applies to it instead): a deck whose lands make fewer colors than its identity plays as the colors they make.",
 ].join("\n");
 
 const V2_SHARED_RULES = [

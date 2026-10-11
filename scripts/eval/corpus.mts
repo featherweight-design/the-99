@@ -227,6 +227,7 @@ if (command === "run") {
     let rendered = checked;
     let repairUsd: number | undefined;
     let repairReply: unknown;
+    let repairUsage: unknown;
     const failing = refusedSections(checked);
     // Production sends the repair only with what is left of the write's ONE budget, and not at all under SYNOPSIS_REPAIR_MIN_MS.
     const remaining = deadlineMs - (Date.now() - startedAt);
@@ -235,11 +236,12 @@ if (command === "run") {
       const repair = await ask(repairPrompt(facts, checked, failing, v8, first.out.value), "repair", remaining);
       if (!repair) break;
       repairUsd = repair.usd;
+      repairUsage = repair.usage;
       if (repair.out.ok) repairReply = repair.out.value;
       rendered = await applyRepair(checked, repair.out, failing, facts, v8);
       console.log(`  repaired: ${show(rendered.verdicts)}`);
     }
-    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, stops, latencyMs, usage: first.usage, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
+    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, stops, latencyMs, totalLatencyMs: Date.now() - startedAt, usage: first.usage, repairUsage, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
   }
   process.exit(0);
 }

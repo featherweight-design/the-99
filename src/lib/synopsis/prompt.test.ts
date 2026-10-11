@@ -272,6 +272,8 @@ describe("buildSynopsisPrompt under contract 8", () => {
   it("states the colors the lands make only when they are fewer than the identity, under contract 8", () => {
     const fewer = { ...FACTS, identity: ["W", "U", "B", "R", "G"], identityName: "5-color", landColors: ["W", "U", "R", "G"] };
     expect(buildSynopsisPrompt(fewer, undefined, C8).user).toContain("Colors the lands make: Non-black");
+    // It names the deck's colors in place of the identity, so the two rules never both apply.
+    expect(buildSynopsisPrompt(fewer, undefined, C8).system).toContain("that name REPLACES the identity name");
     expect(buildSynopsisPrompt(fewer).user).not.toContain("Colors the lands make");
     const same = { ...fewer, landColors: ["W", "U", "B", "R", "G"] };
     expect(buildSynopsisPrompt(same, undefined, C8).user).not.toContain("Colors the lands make");
