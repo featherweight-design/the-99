@@ -76,6 +76,12 @@ describe("buildSynopsisFacts — the colors the lands make", () => {
     expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "B", "R", "G"]);
   });
 
+  it("never reports a color as one no land produces when the lands make it", () => {
+    const deck = { ...withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""]]), colours: { identity: ["W", "U", "B", "R", "G"], unproducible: ["B", "G"] } } as unknown as DeckProfile;
+    const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);
+    expect(buildSynopsisFacts(deck, texts).unproducible).toEqual([]);
+  });
+
   it("counts an any-color land as every color the identity holds", () => {
     const deck = withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""], ["Plains", "Basic Land — Plains", ""]]);
     const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);

@@ -143,6 +143,7 @@ export function buildSynopsisFacts(
   const commanderManaValues = profile.commanderOracleIds
     .map((id) => byId.get(id)?.cmc)
     .filter((n): n is number => typeof n === "number");
+  const landColors = landColorsOf(profile, oracleTexts);
   const factCards: FactCard[] = profile.cards.map((c) => ({
     oracleId: c.oracleId,
     name: c.name,
@@ -162,8 +163,11 @@ export function buildSynopsisFacts(
     // makes all five, a fetchland makes none), kept to the identity and in WUBRG order. Not the
     // profile's set, which unions each land's color identity and so drops a color the deck gets
     // only from Command Tower or City of Brass.
-    landColors: landColorsOf(profile, oracleTexts),
-    unproducible: profile.colours.unproducible,
+    landColors,
+    // Kept consistent with `landColors`: a color the lands DO make by what they add (Command Tower,
+    // City of Brass, which the profile's identity-based set misses) is never reported as one no land
+    // produces. This only ever removes a false shortfall; the hybrid grouping is the profile's own.
+    unproducible: profile.colours.unproducible.filter((c) => !landColors.includes(c)),
     lands,
     ramp,
     keep,
