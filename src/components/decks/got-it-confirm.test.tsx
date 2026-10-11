@@ -132,18 +132,17 @@ describe("GotItConfirm", () => {
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it("sends the variant chosen when two share a set and number", async () => {
+  it("draws one tile for two variants the collection holds as one, keeping the one priced", async () => {
+    // The collection holds a copy by set, number and finish, so twins are one holding.
     const TWIN = choice({ scryfallId: "d0000000-0000-4000-8000-000000000000", owned: {} });
-    loadPrintingChoices.mockResolvedValue([MOM, TWIN, SHOWCASE]);
+    loadPrintingChoices.mockResolvedValue([TWIN, MOM, SHOWCASE]);
     markBought.mockResolvedValue({ applied: { id: "e1", receipt: null } });
     renderConfirm();
-    await waitFor(() => expect(printingRadios()).toHaveLength(3));
-    // The figure is MOM's: only it is checked, not its twin.
-    expect([...printingRadios()].map((r) => r.getAttribute("aria-checked"))).toEqual(["true", "false", "false"]);
-    fireEvent.click(printingRadios()[1]);
-    expect([...printingRadios()].map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+    await waitFor(() => expect(printingRadios()).toHaveLength(2));
+    // The figure is MOM's: its variant is the tile kept, and it is the one checked.
+    expect([...printingRadios()].map((r) => r.getAttribute("aria-checked"))).toEqual(["true", "false"]);
     await act(async () => fireEvent.click(add()));
-    expect(markBought.mock.calls[0][2]).toMatchObject({ scryfallId: TWIN.scryfallId, expected: 0 });
+    expect(markBought.mock.calls[0][2]).toMatchObject({ scryfallId: MOM.scryfallId });
   });
 
   it("writes nothing on Cancel or Escape", async () => {

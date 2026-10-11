@@ -87,3 +87,19 @@ export function rebaseStale(
   const moved = now - expected;
   return { expected: now, need: Math.min(quantity, Math.max(0, need - moved)), added: moved > 0 };
 }
+
+/**
+ * One choice per (set, collector number). The collection holds a copy by that pair and a finish,
+ * not by catalog id (`catalog-read.ts`, `write.ts`), so two catalog variants sharing the pair are
+ * one holding: two tiles would show the same count and either press would write the same row. The
+ * variant `keep` names (the printing behind the row's price) is the one kept; otherwise the first.
+ */
+export function collapseTwins(choices: readonly PrintingChoice[], keep: string | null | undefined): PrintingChoice[] {
+  const byPair = new Map<string, PrintingChoice>();
+  for (const p of choices) {
+    const key = `${p.setCode}|${p.collectorNumber}`;
+    const held = byPair.get(key);
+    if (!held || (p.scryfallId === keep && held.scryfallId !== keep)) byPair.set(key, p);
+  }
+  return choices.filter((p) => byPair.get(`${p.setCode}|${p.collectorNumber}`) === p);
+}

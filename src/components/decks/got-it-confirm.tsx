@@ -15,7 +15,7 @@ import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { FINISHES, type Finish } from "../../lib/collection/key";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale } from "../../lib/decks/got-it-preset";
+import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale } from "../../lib/decks/got-it-preset";
 import { MARK_BOUGHT_MAX } from "../../lib/decks/mark-bought";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -68,8 +68,9 @@ export function GotItConfirm({
   useEffect(() => {
     let live = true;
     loadPrintingChoices(card.oracleId)
-      .then((cs) => {
+      .then((all) => {
         if (!live) return;
+        const cs = collapseTwins(all, card.price?.printing?.scryfallId);
         const preset = gotItPreset(card.price, newestAsOf, cs);
         setChoices(cs);
         setSelected(preset.scryfallId);

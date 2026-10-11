@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PrintingChoice } from "../collection/catalog-read";
 import type { Finish } from "../collection/key";
-import { finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale } from "./got-it-preset";
+import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale } from "./got-it-preset";
 import type { PriceFact } from "./price";
 
 const NEWEST = new Date("2026-10-10T09:00:00Z");
@@ -97,5 +97,15 @@ describe("rebaseStale (STATES B8)", () => {
   it("raises the need by copies removed elsewhere, never past the deck's quantity", () => {
     expect(rebaseStale([row(1)], A, "nonfoil", 2, 1, 4)).toEqual({ expected: 1, need: 2, added: false });
     expect(rebaseStale([], A, "nonfoil", 3, 1, 2)).toEqual({ expected: 0, need: 2, added: false });
+  });
+});
+
+describe("collapseTwins", () => {
+  const p = (scryfallId: string, setCode = "mom", collectorNumber = "137") =>
+    ({ scryfallId, setCode, setName: "x", collectorNumber, releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil" as const], owned: {} });
+  it("keeps one choice per set and number, preferring the one named", () => {
+    const [a, b, c] = [p("a"), p("b"), p("c", "mom", "200")];
+    expect(collapseTwins([a, b, c], "b").map((x) => x.scryfallId)).toEqual(["b", "c"]);
+    expect(collapseTwins([a, b, c], null).map((x) => x.scryfallId)).toEqual(["a", "c"]);
   });
 });
