@@ -287,6 +287,7 @@ export async function confirmUpload(
   // entry for the upload, a fresh id per confirm because the upload's own stamp is what makes a
   // double submit apply once, and the deck check a Replace now carries. Off, it is main's replace.
   let ownedAfter: OwnedCounts;
+  let nowShort: ShortDeck[] = [];
   if (ledger) {
     const result = await applyCollectionChange(
       userId,
@@ -308,6 +309,7 @@ export async function confirmUpload(
     // snapshot above was read before the lock, and an Add's items are only what it added.
     ownedBefore = result.owned!.before;
     ownedAfter = result.owned!.after;
+    nowShort = result.short;
   } else {
     ownedBefore = await ownedByOracle(userId);
     const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
@@ -338,6 +340,7 @@ export async function confirmUpload(
     ownedAfter,
     ownedBefore,
     buyBefore,
+    nowShort,
     unmatched: preview.unmatched ?? [],
     parseErrorCount: (preview.parseErrors ?? []).length,
   });

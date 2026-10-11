@@ -160,6 +160,12 @@ export type ChangeResult =
       status: "applied";
       entry: AppliedEntry;
       owned?: { before: OwnedCounts; after: OwnedCounts };
+      /**
+       * The committed decks this change left shorter, by the same rule as the warning (`newlyShort`),
+       * whether or not a warning was confirmed. Empty when nothing went down. The upload receipt
+       * freezes it, so the player is told afterwards what they agreed to beforehand.
+       */
+      short: ShortDeck[];
       /** With `opts.receipt` alone. */
       receipt?: ReceiptSnapshots;
     }
@@ -653,6 +659,7 @@ export async function applyCollectionChange(
       }
 
       const moves = countMoves(rows);
+      let short: ShortDeck[] = [];
       if (claimsBefore) {
         const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
@@ -662,6 +669,7 @@ export async function applyCollectionChange(
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
           throw new Refused({ status: "wouldShort", decks });
         }
+        short = decks;
       }
       if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [] });
 
@@ -683,6 +691,7 @@ export async function applyCollectionChange(
       return {
         status: "applied" as const,
         entry: { id: opts.id, seq: Number(claimed.seq), kind: entryKind(change), rows, ...moves },
+        short,
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
       };

@@ -84,6 +84,20 @@ export const cardAssignmentsCopy = {
     ledeNothingToReport:
       "Nothing your decks care about moved. No purchase cleared, nothing went back on the " +
       "buy list, and no copy is contested. Your collection is the new file.",
+    /**
+     * Appended to whichever lede is drawn when this upload left committed decks short. The same
+     * decks, by the same rule, the warning before the confirm named, so the receipt says
+     * afterwards what the player agreed to beforehand. Three names at most; the rest are counted.
+     */
+    nowShort: (names: string[]) => {
+      if (names.length === 1) return `Replacing left ${names[0]} short.`;
+      const shown = names.slice(0, 3);
+      const rest = names.length - shown.length;
+      const list = rest > 0
+        ? `${shown.join(", ")} and ${fmt(rest)} more`
+        : `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}`;
+      return `Replacing left ${fmt(names.length)} decks short: ${list}.`;
+    },
     fileStamp: (date: string, filename: string) => `uploaded ${date} · ${filename}`,
     fileDelta: (n: number) => `${n} cards differ from the old list`,
 

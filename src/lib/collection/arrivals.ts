@@ -83,6 +83,14 @@ export type ContestedRow = {
   ownedBefore: number;
 };
 
+/**
+ * A committed deck this upload left shorter on one card, as the write's own deck check counted it
+ * (`newlyShort` in `write.ts`, the rule behind the pre-confirm warning). VERSION-SHAPED, like the
+ * warning: a brew was never covered, so it is never named here. Not a money row, and never summed
+ * with one; `still` is draft-shaped and answers a different question.
+ */
+export type NowShortRow = { deckId: string; oracleId: string; short: number };
+
 export type ArrivalsSummary = {
   /**
    * Bumped when the shape changes, so a stored payload stays readable by a later build.
@@ -90,8 +98,11 @@ export type ArrivalsSummary = {
    * 2 adds `ContestedRow.ownedBefore`. A version-1 receipt has no such field, and the reader
    * treats its absence as nought — which makes `keeps it` unavailable on those rows rather than
    * wrong, the safe direction for a word that claims the deck had the card before the import.
+   *
+   * 3 adds `nowShort`. A version-2 receipt has none, and the reader treats its absence as no deck
+   * named, which is what it was written as: those receipts never said.
    */
-  version: 2;
+  version: 2 | 3;
   totalBefore: number;
   totalAfter: number;
   /** Copies gained and lost across the whole collection, not per deck. */
@@ -101,6 +112,8 @@ export type ArrivalsSummary = {
   cleared: ClearedRow[];
   still: StillRow[];
   contested: ContestedRow[];
+  /** Committed decks this upload left short. Absent on a version-2 receipt. */
+  nowShort?: NowShortRow[];
   /**
    * Frozen names for the rows above. A card renamed in the catalog later must not
    * rewrite a receipt, and a deck deleted later still has to render its own row.
@@ -115,6 +128,8 @@ export type ArrivalsInput = {
   buyAfter: BuyRow[];
   /** Keyed by oracle id, for the arrived cards only. */
   claims: Record<string, ArrivedClaimState>;
+  /** The write's own deck check: committed decks the change left shorter. */
+  nowShort: NowShortRow[];
   unmatched: UnmatchedLine[];
   parseErrorCount: number;
   cardNames: Record<string, string>;
@@ -229,7 +244,7 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
 
   const cards: Record<string, string> = {};
   const decks: Record<string, string> = {};
-  for (const r of [...cleared, ...still]) {
+  for (const r of [...cleared, ...still, ...input.nowShort]) {
     const card = input.cardNames[r.oracleId];
     const deck = input.deckNames[r.deckId];
     if (card) cards[r.oracleId] = card;
@@ -241,7 +256,7 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
   }
 
   return {
-    version: 2,
+    version: 3,
     totalBefore: total(ownedBefore),
     totalAfter: total(ownedAfter),
     arrived,
@@ -250,13 +265,15 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
     cleared,
     still,
     contested,
+    nowShort: input.nowShort,
     names: { cards, decks },
   };
 }
 
 /** Nothing about the decks moved. The receipt still renders — see STATES 6. */
 export function summaryIsEmpty(s: ArrivalsSummary): boolean {
-  return s.cleared.length === 0 && s.still.length === 0 && s.contested.length === 0;
+  return s.cleared.length === 0 && s.still.length === 0 && s.contested.length === 0
+    && (s.nowShort ?? []).length === 0;
 }
 
 /**

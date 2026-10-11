@@ -18,7 +18,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, csvUploads, collectionItems, decks } from "../../db/schema";
 import {
-  buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type OwnedCounts,
+  buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
 } from "./arrivals";
 import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
@@ -98,6 +98,13 @@ export async function writeArrivalsReceipt(args: {
   ownedAfter: OwnedCounts;
   ownedBefore: OwnedCounts;
   buyBefore: { deckId: string; oracleId: string; quantity: number }[];
+  /**
+   * Committed decks the write left shorter, from the write's own deck check. Only the ledger's
+   * write computes it; main's replace has no deck check and passes none. The names are the ones
+   * the write read inside its transaction, and win over the lookups below, which run after the
+   * commit: a deck renamed or deleted in between still reads as the warning named it.
+   */
+  nowShort?: (NowShortRow & { deckName?: string; cardName?: string })[];
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
 }): Promise<ArrivalsSummary> {
@@ -131,8 +138,17 @@ export async function writeArrivalsReceipt(args: {
   // thousand cards would otherwise put three thousand parameters into one `IN` on every
   // confirm, to name a handful of rows. Frozen into the payload, so a later rename or a
   // deleted deck cannot rewrite a receipt.
+  const nowShort: NowShortRow[] = (args.nowShort ?? [])
+    .map(({ deckId, oracleId, short }) => ({ deckId, oracleId, short }));
+  const shortDeckNames: Record<string, string> = {};
+  const shortCardNames: Record<string, string> = {};
+  for (const r of args.nowShort ?? []) {
+    if (r.deckName) shortDeckNames[r.deckId] = r.deckName;
+    if (r.cardName) shortCardNames[r.oracleId] = r.cardName;
+  }
   const named = new Set([
     ...buyBefore.map((r) => r.oracleId),
+    ...nowShort.map((r) => r.oracleId),
     ...buyAfter.map((r) => r.oracleId),
     ...Object.keys(claims),
   ]);
@@ -143,10 +159,11 @@ export async function writeArrivalsReceipt(args: {
     buyBefore,
     buyAfter,
     claims,
+    nowShort,
     unmatched: args.unmatched,
     parseErrorCount: args.parseErrorCount,
-    cardNames: await cardNamesFor([...named]),
-    deckNames: await deckNamesFor(userId),
+    cardNames: { ...(await cardNamesFor([...named])), ...shortCardNames },
+    deckNames: { ...(await deckNamesFor(userId)), ...shortDeckNames },
   });
   await db.update(csvUploads).set({ summaryPayload: summary })
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));

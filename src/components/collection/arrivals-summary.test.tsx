@@ -159,3 +159,63 @@ describe("ArrivalsSummary", () => {
     expect(screen.queryByText(/nothing here needs saving/)).toBeNull();
   });
 });
+
+describe("ArrivalsSummary — decks left short", () => {
+  const decks = { d1: "Gishath", d2: "Brago", d3: "Tovolar", d4: "Gods" };
+  const withShort = (rows: { deckId: string; short: number }[]) => summary({
+    version: 3,
+    arrived: 0,
+    left: 40,
+    nowShort: rows.map((r) => ({ ...r, oracleId: CARD })),
+    names: { cards: { [CARD]: "Brushland" }, decks },
+  });
+
+  it("names the decks the upload left short, most short first, after the lede", () => {
+    render(view(withShort([{ deckId: "d2", short: 1 }, { deckId: "d1", short: 3 }])));
+    expect(screen.getByText(/Replacing left 2 decks short: Gishath and Brago\./)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
+  });
+
+  it("sums a deck's shortfall across its cards before ordering, and names each deck once", () => {
+    const s = summary({
+      version: 3, arrived: 0, left: 40,
+      nowShort: [
+        { deckId: "d1", oracleId: "o1", short: 1 }, { deckId: "d2", oracleId: "o1", short: 2 },
+        { deckId: "d1", oracleId: "o2", short: 2 },
+      ],
+      names: { cards: { o1: "Brushland", o2: "Sol Ring" }, decks },
+    });
+    render(view(s));
+    // Gishath is short 3 across two cards, Brago 2 on one: Gishath first, each named once.
+    expect(screen.getByText(/Replacing left 2 decks short: Gishath and Brago\./)).toBeTruthy();
+  });
+
+  it("counts past three names", () => {
+    render(view(withShort([
+      { deckId: "d1", short: 4 }, { deckId: "d2", short: 3 }, { deckId: "d3", short: 2 }, { deckId: "d4", short: 1 },
+    ])));
+    expect(screen.getByText(/Replacing left 4 decks short: Gishath, Brago, Tovolar and 1 more\./)).toBeTruthy();
+  });
+
+  it("never pairs a short deck with the nothing-to-decide lede", () => {
+    // A committed deck can go short on a card its draft already dropped: no buy row, no still row.
+    const s = withShort([{ deckId: "d1", short: 1 }]);
+    render(view(s));
+    expect(screen.getByText(new RegExp(copy.summary.ledeOwing(s.totalBefore, s.arrived, s.left).slice(0, 20)))).toBeTruthy();
+    expect(screen.queryByText(/nothing to decide/)).toBeNull();
+  });
+
+  it("says nothing about short decks on a version-2 receipt", () => {
+    render(view(summary({ left: 40 })));
+    expect(screen.queryByText(/Replacing left/)).toBeNull();
+  });
+});
+
+describe("copy.summary.nowShort", () => {
+  it("names one deck without a count", () => {
+    expect(copy.summary.nowShort(["Gishath"])).toBe("Replacing left Gishath short.");
+  });
+  it("joins three with and", () => {
+    expect(copy.summary.nowShort(["A", "B", "C"])).toBe("Replacing left 3 decks short: A, B and C.");
+  });
+});
