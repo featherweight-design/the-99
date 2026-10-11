@@ -9,8 +9,12 @@ permissions:
   contents: read
 
 jobs:
-  checks:
+  # Static checks and the build. Tests run in their own sharded job so the slowest step of the old
+  # single job (about 80% of its wall clock) no longer serialises behind everything else.
+  static:
     runs-on: ubuntu-latest
+    # A hang fails here in minutes instead of sitting until GitHub's 6-hour default.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -56,11 +60,46 @@ jobs:
             pnpm -s check:shared "$inventory" || exit 1
           done
 
-      - name: Test
-        run: pnpm test
-
       - name: Build
         env:
           # next build only needs the var to exist — no queries run at build time.
           DATABASE_URL: postgres://stub:stub@localhost/stub
         run: pnpm build
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # A failing shard must not cancel the others: a rerun of one red shard is cheaper than
+      # losing the results of three that were still running.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test (shard ${{ matrix.shard }}/6)
+        run: pnpm test --shard=${{ matrix.shard }}/6
+
+  # The one status the rest of the process looks at keeps its old name, `checks`, and is green
+  # only when every job above is. `always()` so a skipped or cancelled dependency fails it
+  # rather than leaving it skipped, which a reader would take for passing.
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [static, test]
+    if: ${{ always() }}
+    steps:
+      - name: Every job succeeded
+        run: |
+          [ "${{ needs.static.result }}" = success ] && [ "${{ needs.test.result }}" = success ]
