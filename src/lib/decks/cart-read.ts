@@ -25,16 +25,15 @@ export async function loadCart(userId: string): Promise<CartPayload> {
   const rows = await loadDeckBuyRows(userId);
   if (rows.length === 0) return { decks: [], lines: [], priced: true, newestAsOf: null };
 
-  let read: PriceRead | null = null;
-  try {
-    read = await readBuyRowPrices(userId, rows);
-  } catch (err) {
-    console.error("[cart] price read failed; drawing rows without figures", err);
-  }
-
   const deckIds = [...new Set(rows.map((r) => r.deckId))];
   const oracleIds = [...new Set(rows.map((r) => r.oracleId))];
-  const [deckRows, cardRows, availability] = await Promise.all([
+  // All four reads at once, and only the price read caught: a failure there degrades the cart to
+  // its rows (T2), while a failure in any other read is the page's own error.
+  const [read, deckRows, cardRows, availability] = await Promise.all([
+    readBuyRowPrices(userId, rows).catch((err): PriceRead | null => {
+      console.error("[cart] price read failed; drawing rows without figures", err);
+      return null;
+    }),
     cartDecksQuery(userId, deckIds),
     db.select({ oracleId: cards.oracleId, name: cards.name })
       .from(cards)

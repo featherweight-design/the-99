@@ -55,6 +55,17 @@ describe("loadCart", () => {
     expect(cart.decks.map((d) => [d.name, d.copies, d.cents])).toEqual([["HD - Gishath", 1, 0], ["HD - Kratos", 1, 0]]);
   });
 
+  it("starts the other reads without waiting on the price read", async () => {
+    let settle: (v: null) => void = () => {};
+    readBuyRowPrices.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
+    const pending = loadCart("user");
+    await new Promise((r) => setTimeout(r, 0));
+    // Both metadata selects were consumed while the price read is still in flight.
+    expect(selects).toHaveLength(0);
+    settle(null);
+    await pending;
+  });
+
   it("prices the rows when the read succeeds", async () => {
     const now = new Date("2026-10-11T00:00:00Z");
     readBuyRowPrices.mockResolvedValue({
