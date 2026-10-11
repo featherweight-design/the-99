@@ -119,8 +119,11 @@ export function deckStatsFact(
   cards: Parameters<typeof interactionCounts>[0],
   /** Ramp that can be drawn BEFORE the commander: the 99's, since a ramp commander cannot cast itself. */
   castRamp: number = ramp,
+  /** The benchmarks' shared reading (`interaction` in src/lib/benchmarks), when DECK_BENCHMARKS_ENABLED
+   *  is on, so the Overview and the Analysis tab's grade quote one figure. Absent, the text classifier's. */
+  interaction: InteractionCounts | null = null,
 ): DeckStatsFact {
   // The slowest commander of a pair sets the turn both can be out; a single commander is its own.
   const mv = commanderManaValues.length > 0 ? Math.max(...commanderManaValues) : null;
-  return { ramp, commanderCastTurn: mv === null ? null : expectedCastTurn(mv, castRamp), interaction: interactionCounts(cards) };
+  return { ramp, commanderCastTurn: mv === null ? null : expectedCastTurn(mv, castRamp), interaction: interaction ?? interactionCounts(cards) };
 }

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const loadComboFacts = vi.fn();
 vi.mock("./combo-facts", () => ({ loadComboFacts: (...a: unknown[]) => loadComboFacts(...a) }));
 vi.mock("../staples/universal", () => ({ loadUniversalStaples: async () => new Set<string>() }));
+const readLabels = vi.fn();
+vi.mock("../labels/read", () => ({ readLabels: (...a: unknown[]) => readLabels(...a) }));
 vi.mock("../../db", () => ({
   db: { select: () => ({ from: () => ({ where: async () => [] }) }) },
 }));
@@ -45,5 +47,28 @@ describe("factsFor combo wiring", () => {
     const facts = await factsFor(profile, false);
     expect(loadComboFacts).not.toHaveBeenCalled();
     expect(facts.combos?.length).toBe(1);
+  });
+});
+
+describe("factsFor interaction, behind DECK_BENCHMARKS_ENABLED", () => {
+  const counter = { space: "role", kind: "counterspell", restrictedTo: null, affects: "opponents", trigger: "none", recurrence: "oneShot", threshold: null, modal: false, to: null, method: null };
+  beforeEach(() => readLabels.mockReset());
+
+  it("quotes the benchmarks' reading when on: a counterspell is interaction", async () => {
+    readLabels.mockResolvedValueOnce(new Map([["id-Heliod", [counter]]]));
+    const facts = await factsFor(profile, false, true);
+    expect(facts.stats?.interaction).toMatchObject({ total: 1, cheap: 1 });
+  });
+
+  it("reads no labels and keeps the classifier's figures when off", async () => {
+    const facts = await factsFor(profile, false, false);
+    expect(readLabels).not.toHaveBeenCalled();
+    expect(facts.stats?.interaction.total).toBe(0);
+  });
+
+  it("keeps the classifier's figures when the label read fails", async () => {
+    readLabels.mockRejectedValueOnce(new Error("down"));
+    const facts = await factsFor(profile, false, true);
+    expect(facts.stats?.interaction.total).toBe(0);
   });
 });

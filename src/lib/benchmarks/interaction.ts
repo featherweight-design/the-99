@@ -1,4 +1,4 @@
-import { CHEAP_MANA_VALUE } from "../synopsis/facts-extra";
+import { CHEAP_MANA_VALUE, type InteractionCounts } from "../synopsis/facts-extra";
 import { isLand } from "./cards";
 import type { BenchCard } from "./types";
 
@@ -64,4 +64,9 @@ export function interaction(cards: readonly BenchCard[]): Interaction {
     wipes: count((l) => l.kind === "wipe"),
     lines,
   };
+}
+
+/** The Overview fact's shape of this reading (`DeckStatsFact.interaction`): one figure for both. */
+export function factCounts(i: Interaction): InteractionCounts {
+  return { total: i.answers, instantSpeed: i.instantSpeed, cheap: i.cheap, cheapInstant: i.cheapInstant, wipes: i.wipes };
 }

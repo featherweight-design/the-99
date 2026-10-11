@@ -1,5 +1,10 @@
 import { overviewV2Enabled } from "./overview-v2";
 import { loadComboFacts } from "./combo-facts";
+import { factCounts, interaction } from "../benchmarks/interaction";
+import { benchmarkInput } from "../benchmarks/load";
+import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
+import { readLabels } from "../labels/read";
+import type { InteractionCounts } from "./facts-extra";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
@@ -260,6 +265,9 @@ export async function factsFor(
   profile: Parameters<typeof buildSynopsisFacts>[0],
   /** Read the combos of any size, assembled or one card short (one query). Off unless the v2 method is on. */
   v2: boolean = overviewV2Enabled(),
+  /** Quote the evidence benchmarks' interaction reading (plan PR 1b), so the Overview and the
+   *  Analysis tab's grade agree. Off with the switch: the facts are exactly the classifier's. */
+  benchmarks: boolean = deckBenchmarksEnabled(),
 ): Promise<SynopsisFacts> {
   const ids = profile.cards.map((c) => c.oracleId);
   const texts = ids.length === 0 ? [] : await db
@@ -268,7 +276,24 @@ export async function factsFor(
     .where(inArray(cards.oracleId, ids));
   const anySize = v2 ? await loadComboFacts(profile) : null;
   return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize,
-    v2 ? new Map(texts.map((t) => [t.oracleId, t.keywords])) : null);
+    v2 ? new Map(texts.map((t) => [t.oracleId, t.keywords])) : null,
+    benchmarks ? await sharedInteraction(profile, texts) : null);
+}
+
+/** The benchmarks' interaction reading over the profile's own list: fresh labels, and a card's rules
+ *  text where it has none. Null when the label read fails, which keeps the classifier's figures. */
+async function sharedInteraction(
+  profile: Parameters<typeof buildSynopsisFacts>[0],
+  texts: readonly { oracleId: string; oracleText: string | null; keywords: string[] }[],
+): Promise<InteractionCounts | null> {
+  try {
+    const labels = await readLabels(profile.cards.map((c) => c.oracleId));
+    const rows = texts.map((t) => ({ ...t, manaCost: null, colorIdentity: [] }));
+    return factCounts(interaction(benchmarkInput(profile, rows, labels, []).cards));
+  } catch (error) {
+    console.error("shared interaction read failed", error);
+    return null;
+  }
 }
 
 /** Check a reply under the contract it was written for: the one validator the write, the repair and the eval harness all call. */
