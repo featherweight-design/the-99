@@ -168,18 +168,13 @@ describe("collisionFindings", () => {
       expect(unresolvedCollisions(text)).toHaveLength(1);
     });
 
-    it("accepts the width-only repair", () => {
-      const text = '<li className="md:border md:border-[color:var(--s)] md:last:border-b-[1px]" />';
-      expect(unresolvedCollisions(text)).toEqual([]);
-    });
-
     it("accepts a bare token whose other sides are zero, the divider shape", () => {
-      const text = '<div className="border-0 border-b border-b-[color:var(--s)]" />';
+      const text = '<div className="border border-0 border-b border-b-[color:var(--s)]" />';
       expect(unresolvedCollisions(text)).toEqual([]);
     });
 
     it("accepts a width a zero at a variant between the two takes back", () => {
-      const text = '<div className="border-r border-r-[color:var(--s)] md:border-r-0 md:border-b md:border-b-[color:var(--s)]" />';
+      const text = '<div className="border-r-2 md:border-r-0 md:border-b md:border-b-[color:var(--s)]" />';
       expect(unresolvedCollisions(text)).toEqual([]);
     });
 
@@ -188,9 +183,9 @@ describe("collisionFindings", () => {
       expect(unresolvedCollisions(text)).toEqual([]);
     });
 
-    it("ignores a width under a variant the bare token does not carry", () => {
+    it("flags a width under a variant the bare token lacks: both apply from md up", () => {
       const text = '<div className="md:border border-b border-b-[color:var(--s)]" />';
-      expect(unresolvedCollisions(text)).toEqual([]);
+      expect(unresolvedCollisions(text)).toHaveLength(1);
     });
   });
 

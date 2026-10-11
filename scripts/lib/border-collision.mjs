@@ -194,8 +194,8 @@ const TOKEN = new RegExp(`^((?:(?:[^\\s"'\`\\[\\]:]|${BRACKETED})*:)*)(!?)(.+?)(
  * other drawn side painted in mana black or red; a generic color loses to it, so the only repair
  * is to bring the WIDTH alone (`border-b-[1px]`). This is the shape of `findings-block.tsx`,
  * where `md:border` and `md:last:border-b` painted three sides pink with the bottom overridden.
- * "Shares its variants" is read as the other token's variants being a subset of the bare token's:
- * whenever the bare one applies, so does that width. A zero on that side (`md:border-r-0`) whose
+ * The other width counts under ANY variants: the bare token paints wherever it applies, so
+ * `md:border` beside a plain `border-b` still shows a mana side from `md` up. A zero on that side (`md:border-r-0`) whose
  * variants lie between the two takes the width back, and then nothing is left to paint.
  */
 function paintsOtherSide(text, side, variant) {
@@ -213,14 +213,13 @@ function paintsOtherSide(text, side, variant) {
   for (const raw of text.split(/[\s"'`]+/)) {
     const m = TOKEN.exec(raw);
     const c = m && !widthSides(m[3]) && /^border-([xytrbl])-(?=\[|[a-zA-Z])/.exec(m[3]);
-    if (c && within({ variants: m[1].split(":").filter(Boolean) })) {
+    if (c) {
       for (const sd of { x: ["l", "r"], y: ["t", "b"] }[c[1]] ?? [c[1]]) colored.add(sd);
     }
   }
   return parsed.some(
     (t) =>
       !t.zero &&
-      within(t) &&
       t.sides.some(
         (s) =>
           s !== side &&
