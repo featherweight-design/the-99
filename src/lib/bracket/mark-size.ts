@@ -39,3 +39,16 @@ export function markAsset(bracket: Bracket, px: number): string | null {
   if (form === "numeral") return null;
   return `/brackets/${SLUG[bracket]}${form === "chip" ? "-chip" : ""}.svg`;
 }
+
+/**
+ * The disc the full mark's mask subtracts from its art, so the file's own serif numeral never
+ * draws under the Cinzel one (`BracketMark`). 35% of `closest-side`: 7 units of the 40-unit
+ * viewBox, inside the nearest ornament at ~8.13. A hard stop, or a halo of half-painted ink stays.
+ */
+export const MARK_NUMERAL_DISC = "radial-gradient(circle closest-side at 50% 50%, transparent 0 35%, #000 35%)";
+
+/** The class key a mark's art is drawn by: the asset's file name, or null where no file is used. */
+export function markArt(bracket: Bracket, px: number): string | null {
+  const asset = markAsset(bracket, px);
+  return asset === null ? null : asset.slice(asset.lastIndexOf("/") + 1, -".svg".length);
+}

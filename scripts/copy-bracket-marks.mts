@@ -2,7 +2,7 @@ import "./lib/env.mjs";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { EXPECTED, SOURCE, TARGET, strip } from "./lib/bracket-marks.mjs";
+import { bracketMarksCss, CSS_TARGET, EXPECTED, SOURCE, TARGET, strip } from "./lib/bracket-marks.mjs";
 
 /**
  * Copy the bracket marks out of the design handoff and into `public/brackets/`, stripping the
@@ -53,3 +53,7 @@ console.log(
   `copied ${EXPECTED.length} marks to ${TARGET}: ${before} bytes in, ${after} out `
   + `(${Math.round((1 - after / before) * 100)}% was provenance)`,
 );
+
+// The stylesheet the marks draw from, built from the files just written (`bracketMarksCss`).
+writeFileSync(CSS_TARGET, bracketMarksCss((file) => readFileSync(join(TARGET, file), "utf8")));
+console.log(`wrote ${CSS_TARGET}`);

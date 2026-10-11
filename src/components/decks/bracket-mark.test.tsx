@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { markAsset } from "../../lib/bracket/mark-size";
 import { BracketMark, DIM_OPACITY, bracketInk } from "./bracket-mark";
 
 /**
@@ -19,9 +18,11 @@ describe("BracketMark", () => {
   it("draws the full mark with a subtracted numeral above 26px", () => {
     render(<BracketMark bracket={4} px={36} />);
     expect(screen.getByTestId("bracket-mark").dataset.form).toBe("full");
-    const style = art().getAttribute("style") ?? "";
-    expect(style).toContain(markAsset(4, 36));
-    expect(style).toContain("radial-gradient");
+    // Drawn from the stylesheet's inline art, never a fetched url (a fetched mask paints a square
+    // until it lands): the full form's rule subtracts the numeral disc.
+    expect(art().dataset.art).toBe("bracket-4-optimized");
+    expect(art().dataset.form).toBe("full");
+    expect(art().getAttribute("style") ?? "").not.toContain("url(");
     expect(screen.getByTestId("bracket-mark-numeral").textContent).toBe("4");
   });
 
@@ -32,8 +33,8 @@ describe("BracketMark", () => {
   it("keeps the chip's own numeral and draws none of its own", () => {
     render(<BracketMark bracket={2} px={22} />);
     expect(screen.getByTestId("bracket-mark").dataset.form).toBe("chip");
-    expect(art().getAttribute("style")).toContain("bracket-2-core-chip.svg");
-    expect(art().getAttribute("style")).not.toContain("radial-gradient");
+    expect(art().dataset.art).toBe("bracket-2-core-chip");
+    expect(art().dataset.form).toBe("chip");
     expect(screen.queryByTestId("bracket-mark-numeral")).toBeNull();
   });
 

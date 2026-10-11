@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { markAsset, markForm, SLUG } from "../../lib/bracket/mark-size";
+import { markArt, markForm, SLUG } from "../../lib/bracket/mark-size";
 import type { Bracket } from "../../lib/bracket/types";
 
 /**
@@ -26,21 +26,15 @@ import type { Bracket } from "../../lib/bracket/types";
  * the nearest ornament to the centre is an inner diamond whose EDGE passes at 11.5/sqrt(2) ~ 8.13
  * units. No ornament in any of the ten files crosses it.
  *
- * INLINING THE SVG WAS THE OTHER ANSWER AND IS REJECTED. It fixes both halves and costs a third
- * copy of the art, kept in step by hand with `public/` and with the design package — which is
- * exactly the drift #837 closed.
+ * THE MASK'S ART IS INLINE DATA, NOT A FETCHED URL (Hugh, 2026-10-11). A mask fetched by url paints
+ * its other layer alone until the file lands, and the full form's other layer is the numeral disc
+ * (`MARK_NUMERAL_DISC`): a cold load drew a filled square. `pnpm assets:brackets` builds `app/bracket-marks.css`
+ * from the files in `public/brackets/` (data URIs, ~1KB gzipped), so the art arrives with the
+ * stylesheet, before first paint; `copy-bracket-marks.test.mts` fails when the build drifts from
+ * the files. Inlining the SVG MARKUP stays rejected: that would be a hand-kept third copy.
  */
 
 /** Spelled per rank rather than interpolated, so `check:tokens` can see every read. */
-/**
- * The disc that subtracts the file's own numeral from the mask.
- *
- * 35% of `closest-side`, which on a square box is 35% of the half-width: 7 units of the 40-unit
- * viewBox. The numeral is drawn at `font-size` 16 there and fits inside it; the nearest ornament
- * to the centre is an inner diamond whose EDGE passes at 11.5/sqrt(2) ~ 8.13 units, so nothing
- * any of the ten files draws crosses it. A hard stop rather than a ramp, or the subtraction
- * leaves a halo of half-painted ink where the numeral was.
- */
 /**
  * How far the unlit half of a range is dimmed.
  *
@@ -50,7 +44,6 @@ import type { Bracket } from "../../lib/bracket/types";
  */
 export const DIM_OPACITY = 0.65;
 
-const DISC = "radial-gradient(circle closest-side at 50% 50%, transparent 0 35%, #000 35%)";
 
 const INK: Record<Bracket, string> = {
   1: "var(--bracket-1)",
@@ -110,7 +103,7 @@ export function BracketMark({
       + `form, so one element cannot serve both widths`,
     );
   }
-  const asset = markAsset(bracket, px);
+  const art = markArt(bracket, px);
   const ink = INK[bracket];
   // THE CHIP KEEPS THE FILE'S OWN NUMERAL, and that is `ASSETS.md`'s rule rather than a saving:
   // at 22px the chip's numeral renders at ~9px and is not legible, so "the silhouette carries
@@ -133,26 +126,17 @@ export function BracketMark({
         } as CSSProperties
       }
     >
-      {asset === null ? null : (
+      {art === null ? null : (
+        // The art is a mask drawn from `app/bracket-marks.css`, inline data rather than a fetched
+        // file: a fetched mask paints its numeral-disc layer alone until the file lands, which a
+        // cold load showed as a filled square (Hugh, 2026-10-11).
         <span
           data-testid="bracket-mark-art"
+          data-art={art}
+          data-form={form}
           aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            backgroundColor: ink,
-            // BOTH PREFIXES. Safari still needs `-webkit-mask-*`, and a mark that draws as a
-            // solid painted square there is a worse failure than one that draws nothing.
-            WebkitMaskImage: drawsOwnNumeral ? `url(${asset}), ${DISC}` : `url(${asset})`,
-            maskImage: drawsOwnNumeral ? `url(${asset}), ${DISC}` : `url(${asset})`,
-            WebkitMaskSize: drawsOwnNumeral ? "contain, 100% 100%" : "contain",
-            maskSize: drawsOwnNumeral ? "contain, 100% 100%" : "contain",
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-            WebkitMaskPosition: "center",
-            maskPosition: "center",
-            WebkitMaskComposite: "source-in",
-            maskComposite: "intersect",
-          }}
+          className="bracket-art absolute inset-0"
+          style={{ backgroundColor: ink }}
         />
       )}
       {/*
