@@ -75,6 +75,23 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Same fixture discipline as `probe:claims`: a per-run `user_id` deleted in a `finally`, pointed
   at `local-dev` or a scratch branch, **never production**.
 
+- `pnpm probe:tab-opening` times the Analysis tab's opening loader at 1300 and 390 (see the script
+  header). **Six checks FAIL on `main` as of 2026-10-11, and are not a regression.** Run on a
+  clean `origin/main` (`cecd606db`) and on the parent of #1440 (`769f3be2f`), both against
+  `local-dev`: the same six fail, identically, at both widths. Three checks times two widths:
+
+  - `analyzed: nothing else drawn beside it` (5 frames with more). The check compares the
+    tabpanel's text with the loader's, and since #1025 the panel also holds the tab's body mounted
+    behind the loader, so the text is never the loader's alone.
+  - `unanalyzed: no loader` and `unanalyzed: the empty state at once` (loader drawn about 180ms,
+    empty state at about 2.4s against a 140ms bar). #1025 made `holdsOpening` wait for the whole
+    tab to be able to paint, for an unanalyzed deck as well. #911 wrote these two checks for the
+    earlier design, where an unanalyzed deck drew its empty state at once.
+
+  The probe predates #1025 and was never rewritten for it. Updating it means deciding what an
+  unanalyzed deck should show while the opening is held, which is a design question rather than a
+  probe edit, so it is left failing and recorded here instead of loosened.
+
 - `pnpm probe:profile-store` proves the stored deck analysis against a real Postgres, through
   its lifecycle (Hugh's rulings, 2026-09-23), by calling the real `computeAndStoreProfile`,
   `readStoredReading`, `readStoredPermits`, `pinAnalysisToVersion` and `touchDeck`. Pressing
