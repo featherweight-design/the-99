@@ -14,6 +14,11 @@
 //      deck: naming another deck changes nothing.
 //   5. MEMBERSHIP IS CHECKED INSIDE THE WRITE: a card removed from the deck is refused `notInDeck`
 //      and nothing is written.
+//   6. THE ALL-DECKS CART (cart PR 5): one write for several decks, sourced `shopping:cart`. The
+//      chooser's pick lands as the card's reservation in the same transaction, a brew included, and
+//      the receipt reads every deck from its own vantage. A refused pick, a deck that dropped the
+//      card and a deck that is not the player's each refuse the whole press with nothing written.
+//      The cart's undo leaves out every deck the line listed, and only for a `shopping:cart` entry.
 //
 // It writes under a per-run user_id and deletes everything that id created in a `finally`.
 // Refused on production and staging; point DATABASE_URL at local-dev or a scratch branch.
@@ -25,13 +30,14 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
-import { receiptFacts } from "../src/lib/decks/mark-bought";
+import { cartReceiptFacts, receiptFacts } from "../src/lib/decks/mark-bought";
 
 neonConfig.webSocketConstructor = ws;
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL, max: 4 });
 const USER = `probe-mark-bought-${Date.now()}`;
+const OTHER = `${USER}-other`;
 const PRODUCTION = "br-noisy-violet-a6vw4ess";
 const STAGING = "br-polished-pond-a6e63y0b";
 
@@ -52,12 +58,12 @@ const buy = (deckId: string, oracleId: string, collectorNumber: string, expected
       kind: "edit",
       rows: [{ oracleId, setCode: "prb", collectorNumber, finish: "nonfoil", quantity: expected + quantity, expected, condition: null }],
     },
-    { id: randomUUID(), source: `shopping:${deckId}`, receipt: { oracleId, deckId } },
+    { id: randomUUID(), source: `shopping:${deckId}`, receipt: { oracleId, deckIds: [deckId] } },
   );
 
 const factsOf = (r: ChangeResult, deckId: string) => {
   if (r.status !== "applied" || !r.receipt) throw new Error(`expected an applied receipt, got ${r.status}`);
-  return receiptFacts(r.receipt.before, r.receipt.after, r.receipt.afterFromDeck, deckId);
+  return receiptFacts(r.receipt.before, r.receipt.after, r.receipt.afterFromDecks[deckId] ?? null, deckId);
 };
 
 async function main() {
@@ -68,16 +74,16 @@ async function main() {
     throw new Error(`refusing branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch`);
   }
   const picked = (await pool.query(
-    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 5",
+    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 7",
   )).rows as { oracle_id: string; name: string }[];
-  if (picked.length < 5) throw new Error("the catalog holds fewer than five cards");
-  const [A, B, C, CMD1, CMD2] = picked.map((p) => p.oracle_id);
+  if (picked.length < 7) throw new Error("the catalog holds fewer than seven cards");
+  const [A, B, C, CMD1, CMD2, D, E] = picked.map((p) => p.oracle_id);
   console.log(`branch ${branch} · fixture ${USER}`);
 
-  const deck = async (name: string, commander: string, cards: string[], commit: boolean) => {
+  const deck = async (name: string, commander: string, cards: string[], commit: boolean, owner = USER) => {
     const { id } = await one<{ id: string }>(
       "insert into decks (user_id, name, commander_oracle_id) values ($1, $2, $3) returning id",
-      [USER, name, commander],
+      [owner, name, commander],
     );
     for (const c of cards) await pool.query("insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)", [id, c]);
     if (commit) await commitVersion(id, null);
@@ -123,7 +129,7 @@ async function main() {
     const gone = await applyCollectionChange(
       USER,
       { kind: "edit", rows: [{ oracleId: C, setCode: "prb", collectorNumber: "1", finish: "nonfoil", quantity: owned + 1, expected: owned, condition: null }] },
-      { id: randomUUID(), source: `shopping:${brew}`, requireMember: { deckId: brew, oracleId: C } },
+      { id: randomUUID(), source: `shopping:${brew}`, requireMember: { deckIds: [brew], oracleId: C } },
     );
     const after = Number((await one<{ q: number } | undefined>(
       "select quantity as q from collection_items where user_id = $1 and oracle_id = $2", [USER, C],
@@ -150,11 +156,114 @@ async function main() {
     check("the toast's undo leaves the source deck out", !fromToast.includes(junior), JSON.stringify(fromToast));
     const forged = await preview(senior);
     check("naming another deck excludes nothing", JSON.stringify(forged) === JSON.stringify(all), JSON.stringify(forged));
+
+    // ---- 6. The all-decks cart ---------------------------------------------------------------
+    const cartSenior = await deck("probe cart senior", CMD1, [D], true);
+    const cartJunior = await deck("probe cart junior", CMD2, [D], true);
+    const cartBrew = await deck("probe cart brew", CMD1, [D], false);
+    const notTheirs = await deck("probe cart stranger", CMD1, [D], false, OTHER);
+    const heldD = async () => Number((await one<{ q: number } | null>(
+      "select coalesce(sum(quantity), 0)::int as q from collection_items where user_id = $1 and oracle_id = $2", [USER, D],
+    ))?.q ?? 0);
+    const reservedFor = async () => ((await pool.query(
+      "select deck_id from card_assignments where user_id = $1 and oracle_id = $2", [USER, D],
+    )).rows as { deck_id: string }[]).map((r) => r.deck_id);
+    const buyCart = (deckIds: string[], quantity: number, pick: string | null, id = randomUUID()) => heldD().then((expected) =>
+      applyCollectionChange(
+        USER,
+        { kind: "edit", rows: [{ oracleId: D, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + quantity, expected, condition: null }] },
+        {
+          id, source: "shopping:cart", receipt: { oracleId: D, deckIds }, requireMember: { deckIds, oracleId: D },
+          ...(pick ? { assign: { oracleId: D, deckId: pick } } : {}),
+        },
+      ));
+    const lineDecks = [cartSenior, cartJunior, cartBrew];
+
+    const picked1 = await buyCart(lineDecks, 1, cartBrew);
+    const facts = picked1.status === "applied" && picked1.receipt
+      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, picked1.receipt.afterFromDecks, lineDecks) : null;
+    check("one copy for three decks, picked for the brew, lands as the brew's reservation",
+      picked1.status === "applied" && JSON.stringify(await reservedFor()) === JSON.stringify([cartBrew]),
+      `${JSON.stringify(picked1).slice(0, 120)}; reserved ${JSON.stringify(await reservedFor())}`);
+    check("and the receipt covers the brew and leaves both committed decks one short",
+      facts !== null && facts.covered.map((d) => d.deckId).join() === cartBrew
+        && facts.still.map((d) => `${d.deckId}:${d.need}`).sort().join() === [`${cartSenior}:1`, `${cartJunior}:1`].sort().join(),
+      JSON.stringify(facts));
+
+    // A pick's reservation never reads as already made: one E, held by a senior deck off the line.
+    // One more bought for {P, Q} with P picked goes to P, and the senior deck kept its copy all
+    // along, so the receipt must not name it as covered.
+    const offSenior = await deck("probe cart off-line senior", CMD1, [E], true);
+    const lineP = await deck("probe cart P", CMD2, [E], true);
+    const lineQ = await deck("probe cart Q", CMD1, [E], false);
+    await applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 1, expected: 0, condition: null }] },
+      { id: randomUUID() },
+    );
+    const pq = [lineP, lineQ];
+    const pickedP = await applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 2, expected: 1, condition: null }] },
+      {
+        id: randomUUID(), source: "shopping:cart", receipt: { oracleId: E, deckIds: pq },
+        requireMember: { deckIds: pq, oracleId: E }, assign: { oracleId: E, deckId: lineP },
+      },
+    );
+    const pFacts = pickedP.status === "applied" && pickedP.receipt
+      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pickedP.receipt.afterFromDecks, pq) : null;
+    check("a pick's receipt never names a deck off the line that held its copy all along",
+      pFacts !== null && !pFacts.covered.some((d) => d.deckId === offSenior) && pFacts.covered.some((d) => d.deckId === lineP),
+      JSON.stringify(pFacts));
+
+    // Made only now: a committed deck with D as its commander takes a copy no pick can give.
+    const cartCommander = await deck("probe cart commander", D, [], true);
+    const before = await heldD();
+    const refusedPick = await buyCart([cartCommander, cartSenior], 1, cartCommander);
+    check("a pick the deck cannot take refuses the whole press, nothing written",
+      refusedPick.status === "assignRefused" && refusedPick.reason === "target-is-commander" && await heldD() === before,
+      `${JSON.stringify(refusedPick)}; count ${before} -> ${await heldD()}`);
+
+    const dropped = await buyCart([cartSenior, brew], 1, null);
+    check("a line deck that no longer holds the card refuses, nothing written",
+      dropped.status === "notInDeck" && await heldD() === before, `${dropped.status}; count ${await heldD()}`);
+    const stranger = await buyCart([cartSenior, notTheirs], 1, null);
+    check("a deck that is not the player's refuses, nothing written",
+      stranger.status === "notInDeck" && await heldD() === before, `${stranger.status}; count ${await heldD()}`);
+
+    // Three more for the committed decks: every claim on D is met. Reverting this purchase leaves
+    // one copy, so committed decks go short again: a line deck, and the commander deck, which was
+    // never on the line.
+    const cartBought = randomUUID();
+    await buyCart([cartSenior, cartJunior], 3, null, cartBought);
+    const cartPreview = async (ignore: { ignoreDeckId?: string; ignoreDeckIds?: string[] }) => {
+      const r = await applyCollectionChange(USER, { kind: "revert", entryId: cartBought, ...ignore }, { id: randomUUID(), dryRun: true });
+      return r.status === "preview" ? r.decks.map((d) => d.deckId).sort() : [`(${r.status})`];
+    };
+    const cartAll = await cartPreview({});
+    check("a revert of a cart purchase from History warns a deck the line listed",
+      cartAll.includes(cartSenior) || cartAll.includes(cartJunior), JSON.stringify(cartAll));
+    const cartToast = await cartPreview({ ignoreDeckIds: [cartSenior, cartJunior] });
+    // The commander deck was never on the line, so the undo still warns it if the revert shorts it.
+    check("the cart's undo leaves out every deck the line listed, and only those",
+      !cartToast.includes(cartSenior) && !cartToast.includes(cartJunior)
+        && JSON.stringify(cartToast) === JSON.stringify(cartAll.filter((d) => d !== cartSenior && d !== cartJunior)),
+      `${JSON.stringify(cartToast)}; commander deck ${cartCommander}`);
+    const oneDeck = await cartPreview({ ignoreDeckId: cartSenior });
+    check("a single deck's exemption does nothing for a cart entry",
+      JSON.stringify(oneDeck) === JSON.stringify(cartAll), JSON.stringify(oneDeck));
+    const deckEntry = await applyCollectionChange(
+      USER, { kind: "revert", entryId: bought, ignoreDeckIds: [junior] }, { id: randomUUID(), dryRun: true },
+    );
+    const deckEntryDecks = deckEntry.status === "preview" ? deckEntry.decks.map((d) => d.deckId).sort() : [`(${deckEntry.status})`];
+    check("and the cart's exemption does nothing for a deck's own entry",
+      JSON.stringify(deckEntryDecks) === JSON.stringify(all), JSON.stringify(deckEntryDecks));
   } finally {
     await pool.query("delete from collection_history where user_id = $1", [USER]);
     await pool.query("delete from collection_items where user_id = $1", [USER]);
     await pool.query("delete from commander_scores where user_id = $1", [USER]);
-    await pool.query("delete from decks where user_id = $1", [USER]);
+    await pool.query("delete from card_assignments where user_id = $1", [USER]);
+    await pool.query("delete from decks where user_id = any($1)", [[USER, OTHER]]);
     await pool.query("delete from user_data_stamps where user_id = $1", [USER]);
   }
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);

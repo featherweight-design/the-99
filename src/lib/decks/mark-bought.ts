@@ -40,8 +40,61 @@ export function receiptFacts(
       return { deckId: c.deckId, deckName: c.deckName, copies: held(c) - (prior ? held(prior) : 0) };
     })
     .filter((c) => c.copies > 0);
-  const stillNeeds = afterFromDeck && availabilityState(afterFromDeck, { selfExcluded: true }) === "over"
-    ? -afterFromDeck.free
-    : 0;
-  return { tookCopy, stillNeeds };
+  return { tookCopy, stillNeeds: stillNeedsOf(afterFromDeck) };
+}
+
+/** Copies a deck still needs, from its own vantage: the figure its Shopping row draws. */
+function stillNeedsOf(fromDeck: Pick<Availability, "owned" | "free" | "soft"> | null): number {
+  return fromDeck && availabilityState(fromDeck, { selfExcluded: true }) === "over" ? -fromDeck.free : 0;
+}
+
+export type CartReceiptFacts = {
+  /**
+   * Every deck the purchase covered, as the read says (S6): the line's decks that need no more
+   * copies now, in the line's order, then any deck off the line that the copies went to instead (a
+   * senior deck the player unselected, say), which needed copies before the write and none after.
+   */
+  covered: { deckId: string; deckName: string }[];
+  /** The line's decks still short, with what each still needs from its own vantage. */
+  still: { deckId: string; deckName: string; need: number }[];
+};
+
+/**
+ * The cart's receipt (S3, S4, S6), read after the write and never assumed (lock 7). A deck on the
+ * line is read from its own vantage, the figure its Shopping row draws. A deck off the line is
+ * read from who holds each copy either side of the write (`allocateClaims`, as `receiptFacts`
+ * does): what it holds against what it asks. A line deck whose own vantage reads nothing short (a
+ * proxy printed since, say) is covered: it buys nothing now.
+ *
+ * Names come from the read's claims, so a deck renamed since the cart loaded prints its new name.
+ * A deck the read lists no claim for (that proxy, or a draft holding the card its newest version
+ * does not) has no name here and reads `""`: the caller names it by id from its own list.
+ */
+export function cartReceiptFacts(
+  before: Snap,
+  after: Snap,
+  afterFromDecks: Record<string, Pick<Availability, "owned" | "free" | "soft"> | null>,
+  deckIds: string[],
+): CartReceiptFacts {
+  const names = new Map((after?.claims ?? []).map((c) => [c.id, c.name]));
+  const facts: CartReceiptFacts = { covered: [], still: [] };
+  for (const deckId of deckIds) {
+    const deckName = names.get(deckId) ?? "";
+    const need = stillNeedsOf(afterFromDecks[deckId] ?? null);
+    if (need > 0) facts.still.push({ deckId, deckName, need });
+    else facts.covered.push({ deckId, deckName });
+  }
+  // What each claimant is short of: a committed deck against its allocation, a brew against only
+  // what the player gave it (its soft share is a leftover every brew reads, never a copy held).
+  const short = (a: Snap) => new Map(a
+    ? allocateClaims(a).map((c) => [c.deckId, Math.max(c.quantity - (c.brew ? c.granted : c.allocated), 0)])
+    : []);
+  const was = short(before);
+  const line = new Set(deckIds);
+  for (const [deckId, now] of short(after)) {
+    if (!line.has(deckId) && now === 0 && (was.get(deckId) ?? 0) > 0) {
+      facts.covered.push({ deckId, deckName: names.get(deckId) ?? "" });
+    }
+  }
+  return facts;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { receiptFacts } from "./mark-bought";
+import { cartReceiptFacts, receiptFacts } from "./mark-bought";
 import type { Availability } from "./availability";
 
 const claim = (id: string, since: number, quantity = 1, mature = true) =>
@@ -47,5 +47,45 @@ describe("receiptFacts", () => {
     expect(receiptFacts(null, null, { owned: 3, free: -2, soft: 0 }, "s").stillNeeds).toBe(2);
     expect(receiptFacts(null, null, { owned: 3, free: 0, soft: 1 }, "s").stillNeeds).toBe(0);
     expect(receiptFacts(null, null, null, "s").stillNeeds).toBe(0);
+  });
+});
+
+describe("cartReceiptFacts", () => {
+  const after = snap(3, [claim("g", 1), claim("k", 2), claim("t", 3)]);
+
+  it("splits the line's decks into covered and still short, in the line's order", () => {
+    const facts = cartReceiptFacts(null, after, {
+      t: { owned: 3, free: 0, soft: 0 },
+      k: { owned: 3, free: -1, soft: 0 },
+      g: { owned: 3, free: 1, soft: 0 },
+    }, ["g", "k", "t"]);
+    expect(facts).toEqual({
+      covered: [{ deckId: "g", deckName: "deck g" }, { deckId: "t", deckName: "deck t" }],
+      still: [{ deckId: "k", deckName: "deck k", need: 1 }],
+    });
+  });
+
+  it("reads a line deck with no vantage as covered rather than short", () => {
+    expect(cartReceiptFacts(null, after, {}, ["g"]).still).toEqual([]);
+  });
+
+  it("names a senior deck off the line that the copy went to instead (S6)", () => {
+    // The senior deck was unselected; one copy bought for the junior goes to it by seniority.
+    const was = snap(0, [claim("senior", 1), claim("junior", 2)]);
+    const now = snap(1, [claim("senior", 1), claim("junior", 2)]);
+    const facts = cartReceiptFacts(was, now, { junior: { owned: 1, free: -1, soft: 0 } }, ["junior"]);
+    expect(facts).toEqual({
+      covered: [{ deckId: "senior", deckName: "deck senior" }],
+      still: [{ deckId: "junior", deckName: "deck junior", need: 1 }],
+    });
+  });
+
+  it("never names an off-line deck that was already covered, or a brew for its soft share", () => {
+    const brew = { ...claim("brew", 0, 1, false), since: null };
+    // Two copies covered both committed decks before; the third is a spare the brew only reads.
+    const was = snap(2, [claim("held", 1), brew, claim("line", 2)]);
+    const now = snap(3, [claim("held", 1), brew, claim("line", 2)]);
+    expect(cartReceiptFacts(was, now, { line: { owned: 3, free: 1, soft: 0 } }, ["line"]).covered)
+      .toEqual([{ deckId: "line", deckName: "deck line" }]);
   });
 });

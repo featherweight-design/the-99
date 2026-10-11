@@ -6,6 +6,7 @@
 // through `Show older changes`. Each entry that is not already reverted has its own Revert control,
 // which opens the revert confirmation.
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadCollectionHistory, loadCollectionHistoryEntry } from "../../app/collection/history-actions";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
@@ -16,6 +17,7 @@ import {
 import type { HistoryRow } from "../../db/schema";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { PendingReporter } from "../shell/pending-reporter";
 import { ReplaceIcon } from "./replace-icon";
 import { RevertConfirm } from "./revert-confirm";
 
@@ -49,6 +51,9 @@ function RowLine({ row }: { row: HistoryRow }) {
   );
 }
 
+/** The line under a `From Shopping` entry, beside the disclosure. */
+const DECK_LINE = "m-0 px-[14px] pb-[10px] text-[12px] text-[color:var(--fg-muted)] md:pl-[176px] md:text-[12.5px]";
+
 /**
  * §D's deck line under a `From Shopping` entry: the deck's name as it reads now, a link to the deck,
  * or the deleted form with no link (Revert stays: it only touches the collection). The link opens the
@@ -56,7 +61,7 @@ function RowLine({ row }: { row: HistoryRow }) {
  * Beside the disclosure rather than in it, like the reverted line: a link in a button is invalid.
  */
 function ShoppingDeckLine({ deck, linked }: { deck: NonNullable<HistoryListEntry["shoppingDeck"]>; linked: boolean }) {
-  const cls = "m-0 px-[14px] pb-[10px] text-[12px] text-[color:var(--fg-muted)] md:pl-[176px] md:text-[12.5px]";
+  const cls = DECK_LINE;
   if (deck.name === null) return <p className={cls}>{gotItCopy.history.fromDeleted}</p>;
   const line = gotItCopy.history.fromDeck(deck.name);
   return (
@@ -66,6 +71,25 @@ function ShoppingDeckLine({ deck, linked }: { deck: NonNullable<HistoryListEntry
         <a href={`/decks/${deck.id}`} className="text-[color:var(--accent)] underline underline-offset-2">{line.link}</a>
       ) : (
         // Drawn without links (/about's figure), as the reverted line is: a link out of the page's specimen is a dead end.
+        <span>{line.link}</span>
+      )}
+      {line.post}
+    </p>
+  );
+}
+
+/** The cart's line: a purchase from Shopping for all decks names the cart, never one deck. */
+function ShoppingCartLine({ linked }: { linked: boolean }) {
+  const line = gotItCopy.history.fromCart;
+  return (
+    <p className={DECK_LINE}>
+      {line.pre}{" "}
+      {linked ? (
+        <Link href="/decks/shopping" className="text-[color:var(--accent)] underline underline-offset-2">
+          {line.link}
+          <PendingReporter href="/decks/shopping" />
+        </Link>
+      ) : (
         <span>{line.link}</span>
       )}
       {line.post}
@@ -182,6 +206,7 @@ export function HistoryEntryItem({
       ) : null}
       </div>
       {e.shoppingDeck ? <ShoppingDeckLine deck={e.shoppingDeck} linked={anchor} /> : null}
+      {e.shoppingCart ? <ShoppingCartLine linked={anchor} /> : null}
       {reverted ? (
         <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
           {c.reverted}

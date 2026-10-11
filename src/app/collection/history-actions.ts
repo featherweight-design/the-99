@@ -65,20 +65,34 @@ export type RevertRefusal =
 const keyOf = (r: CollectionItemIdentity) => collectionItemKey(r);
 
 /**
+ * The undo's deck exemption: one deck id from a deck's Shopping list, or every deck a bought cart
+ * line listed (`shopping:cart`). The write honours each only for an entry with the matching source.
+ */
+function ignoredDecks(value: string | string[] | undefined): { ignoreDeckId?: string; ignoreDeckIds?: string[] } {
+  if (value === undefined) return {};
+  if (Array.isArray(value)) {
+    if (value.length > 100 || !value.every((v) => typeof v === "string" && isUuid(v))) throw new Error("bad deck id");
+    return { ignoreDeckIds: value.map((v) => v.toLowerCase()) };
+  }
+  if (!isUuid(value)) throw new Error("bad deck id");
+  return { ignoreDeckId: value.toLowerCase() };
+}
+
+/**
  * What reverting `entryId` would do now, answered by a dry run of the revert itself, so the
  * confirmation and the save are one computation.
  */
 export async function previewRevert(
   entryId: string,
-  ignoreDeckId?: string,
+  ignoreDeckId?: string | string[],
 ): Promise<RevertPreview | RevertRefusal> {
   const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
-  if (ignoreDeckId !== undefined && !isUuid(ignoreDeckId)) throw new Error("bad deck id");
+  const ignore = ignoredDecks(ignoreDeckId);
   const entry = await getHistoryEntry(userId, entryId);
   if (!entry) return { notFound: true };
   const result = await applyCollectionChange(
-    userId, { kind: "revert", entryId, ignoreDeckId: ignoreDeckId?.toLowerCase() }, { id: randomUUID(), dryRun: true },
+    userId, { kind: "revert", entryId, ...ignore }, { id: randomUUID(), dryRun: true },
   );
   switch (result.status) {
     case "preview": break;
@@ -120,17 +134,18 @@ export async function revertCollectionEntry(
   confirmShort?: ShortDeck[],
   /**
    * I got it's toast undo, on the deck the copy was bought for: that deck is left out of the deck
-   * check (call B). The write honours it only for an entry sourced `shopping:<this id>`.
+   * check (call B). The write honours it only for an entry sourced `shopping:<this id>`. From the
+   * all-decks cart it is every deck the line listed, honoured only for `shopping:cart`.
    */
-  ignoreDeckId?: string,
+  ignoreDeckId?: string | string[],
 ): Promise<{ reverted: { id: string } } | RevertRefusal> {
   const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
   if (!isUuid(actionId)) throw new Error("bad action id");
-  if (ignoreDeckId !== undefined && !isUuid(ignoreDeckId)) throw new Error("bad deck id");
+  const ignore = ignoredDecks(ignoreDeckId);
   const result = await applyCollectionChange(
     userId,
-    { kind: "revert", entryId, expected: parseExpected(expected), ignoreDeckId: ignoreDeckId?.toLowerCase() },
+    { kind: "revert", entryId, expected: parseExpected(expected), ...ignore },
     { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
   switch (result.status) {
