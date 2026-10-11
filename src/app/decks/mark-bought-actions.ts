@@ -14,7 +14,7 @@ import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
-  MARK_BOUGHT_MAX, cartReceiptFacts, receiptFacts, type CartReceiptFacts, type ReceiptFacts,
+  MARK_BOUGHT_MAX, cartReceiptFacts, cartSource, receiptFacts, type CartReceiptFacts, type ReceiptFacts,
 } from "../../lib/decks/mark-bought";
 import { warmCommanderScores } from "../../lib/recs/warm";
 
@@ -124,8 +124,8 @@ export async function markBought(
 }
 
 
-/** The most decks one cart line can name: far above any real line, and a bound on the locks taken. */
-const CART_DECKS_MAX = 100;
+/** The most decks one cart line can name: above any real line, and a bound on what the write locks and reads per deck. */
+const CART_DECKS_MAX = 30;
 
 export type MarkBoughtForDecksOutcome =
   | { applied: { id: string; receipt: CartReceiptFacts | null } }
@@ -141,7 +141,8 @@ export type MarkBoughtForDecksOutcome =
 
 /**
  * I got it from the all-decks cart (cart PR 5, audit G2): `quantity` copies of one printing, bought
- * for the line's selected decks, as ONE absolute write under one press id, sourced `shopping:cart`.
+ * for the line's selected decks, as ONE absolute write under one press id, sourced `cartSource`
+ * (the line's deck ids, which the cart's undo is checked against).
  * Every deck in `deckIds` must still hold the card, checked per deck inside the write under its
  * row lock; one that dropped it refuses the whole press, and the cart reads the line again.
  *
@@ -206,7 +207,7 @@ export async function markBoughtForDecks(
     },
     {
       id: id as string,
-      source: "shopping:cart",
+      source: cartSource(deckIds),
       receipt: { oracleId, deckIds },
       // Ownership and membership per deck, under each deck's row lock (see `markBought`).
       requireMember: { deckIds, oracleId },

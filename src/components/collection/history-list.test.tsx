@@ -160,7 +160,7 @@ describe("HistoryList", () => {
   });
 
   it("tags a cart purchase From Shopping and links the cart, never one deck", () => {
-    draw([entry({ kind: "edit", source: "shopping:cart", firstName: "Sol Ring", shoppingCart: true })]);
+    draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true })]);
     expect(screen.getByText("From Shopping")).toBeTruthy();
     const link = screen.getByRole("link", { name: "Shopping for all decks" });
     expect(link.getAttribute("href")).toBe("/decks/shopping");

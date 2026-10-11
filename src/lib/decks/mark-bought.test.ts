@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cartReceiptFacts, receiptFacts } from "./mark-bought";
+import { cartReceiptFacts, cartSource, cartSourceDecks, receiptFacts, regrant } from "./mark-bought";
 import type { Availability } from "./availability";
 
 const claim = (id: string, since: number, quantity = 1, mature = true) =>
@@ -87,5 +87,32 @@ describe("cartReceiptFacts", () => {
     const now = snap(3, [claim("held", 1), brew, claim("line", 2)]);
     expect(cartReceiptFacts(was, now, { line: { owned: 3, free: 1, soft: 0 } }, ["line"]).covered)
       .toEqual([{ deckId: "line", deckName: "deck line" }]);
+  });
+});
+
+describe("cartSource", () => {
+  it("records the line's decks, and reads them back only off a cart entry", () => {
+    expect(cartSourceDecks(cartSource(["a", "b"]))).toEqual(["a", "b"]);
+    expect(cartSourceDecks("shopping:a")).toBeNull();
+    expect(cartSourceDecks("shopping:cart")).toBeNull();
+    expect(cartSourceDecks(null)).toBeNull();
+  });
+});
+
+describe("regrant", () => {
+  const withGrant = (c: Availability["claims"][number], granted: number) => ({ ...c, granted });
+
+  it("grants the prior reservation out of the copies no commander holds, and nothing else", () => {
+    const after = snap(2, [withGrant(claim("picked", 2), 1), claim("prior", 1), claim("other", 3)]);
+    const before = regrant({ ...after, owned: 1 }, [{ deckId: "prior", copies: 1 }]);
+    expect(before.claims.map((c) => [c.id, c.granted])).toEqual([["picked", 0], ["prior", 1], ["other", 0]]);
+  });
+
+  it("caps a want at the list ask and the supply left after earlier wants", () => {
+    const cmd = { ...claim("cmd", 0, 1), commander: true, commanderCopies: 1 };
+    const after = snap(2, [cmd, claim("a", 1, 2), claim("b", 2, 1)]);
+    // Two owned, one held as a commander: one copy reservable. a wants 2 and gets 1; b gets none.
+    const before = regrant(after, [{ deckId: "a", copies: 2 }, { deckId: "b", copies: 1 }]);
+    expect(before.claims.map((c) => [c.id, c.granted])).toEqual([["cmd", 0], ["a", 1], ["b", 0]]);
   });
 });

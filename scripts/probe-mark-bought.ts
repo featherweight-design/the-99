@@ -30,7 +30,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
-import { cartReceiptFacts, receiptFacts } from "../src/lib/decks/mark-bought";
+import { cartReceiptFacts, cartSource, receiptFacts } from "../src/lib/decks/mark-bought";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -173,7 +173,7 @@ async function main() {
         USER,
         { kind: "edit", rows: [{ oracleId: D, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + quantity, expected, condition: null }] },
         {
-          id, source: "shopping:cart", receipt: { oracleId: D, deckIds }, requireMember: { deckIds, oracleId: D },
+          id, source: cartSource(deckIds), receipt: { oracleId: D, deckIds }, requireMember: { deckIds, oracleId: D },
           ...(pick ? { assign: { oracleId: D, deckId: pick } } : {}),
         },
       ));
@@ -206,7 +206,7 @@ async function main() {
       USER,
       { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 2, expected: 1, condition: null }] },
       {
-        id: randomUUID(), source: "shopping:cart", receipt: { oracleId: E, deckIds: pq },
+        id: randomUUID(), source: cartSource(pq), receipt: { oracleId: E, deckIds: pq },
         requireMember: { deckIds: pq, oracleId: E }, assign: { oracleId: E, deckId: lineP },
       },
     );
@@ -243,7 +243,9 @@ async function main() {
     const cartAll = await cartPreview({});
     check("a revert of a cart purchase from History warns a deck the line listed",
       cartAll.includes(cartSenior) || cartAll.includes(cartJunior), JSON.stringify(cartAll));
-    const cartToast = await cartPreview({ ignoreDeckIds: [cartSenior, cartJunior] });
+    // The commander deck is named too, and was never on the line: the entry did not record it, so
+    // naming it exempts nothing.
+    const cartToast = await cartPreview({ ignoreDeckIds: [cartSenior, cartJunior, cartCommander] });
     // The commander deck was never on the line, so the undo still warns it if the revert shorts it.
     check("the cart's undo leaves out every deck the line listed, and only those",
       !cartToast.includes(cartSenior) && !cartToast.includes(cartJunior)
@@ -264,7 +266,7 @@ async function main() {
     await pool.query("delete from commander_scores where user_id = $1", [USER]);
     await pool.query("delete from card_assignments where user_id = $1", [USER]);
     await pool.query("delete from decks where user_id = any($1)", [[USER, OTHER]]);
-    await pool.query("delete from user_data_stamps where user_id = $1", [USER]);
+    await pool.query("delete from user_data_stamps where user_id = any($1)", [[USER, OTHER]]);
   }
   console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
   if (failures > 0) process.exitCode = 1;

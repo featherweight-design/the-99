@@ -66,7 +66,8 @@ const keyOf = (r: CollectionItemIdentity) => collectionItemKey(r);
 
 /**
  * The undo's deck exemption: one deck id from a deck's Shopping list, or every deck a bought cart
- * line listed (`shopping:cart`). The write honours each only for an entry with the matching source.
+ * line listed. The write honours each only for an entry with the matching source, and a cart's only
+ * for the decks that entry recorded.
  */
 function ignoredDecks(value: string | string[] | undefined): { ignoreDeckId?: string; ignoreDeckIds?: string[] } {
   if (value === undefined) return {};
@@ -135,7 +136,7 @@ export async function revertCollectionEntry(
   /**
    * I got it's toast undo, on the deck the copy was bought for: that deck is left out of the deck
    * check (call B). The write honours it only for an entry sourced `shopping:<this id>`. From the
-   * all-decks cart it is every deck the line listed, honoured only for `shopping:cart`.
+   * all-decks cart it is every deck the line listed, honoured only for the decks that cart entry recorded.
    */
   ignoreDeckId?: string | string[],
 ): Promise<{ reverted: { id: string } } | RevertRefusal> {

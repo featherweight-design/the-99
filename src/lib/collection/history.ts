@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { HistoryRow } from "../../db/schema";
+import { cartSourceDecks } from "../decks/mark-bought";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { HISTORY_RETENTION_DAYS } from "./write";
 
@@ -108,7 +109,7 @@ export type HistoryListEntry = {
    * source has no FK, so the id outlives the deck. Null for every entry not sourced from Shopping.
    */
   shoppingDeck: { id: string; name: string | null } | null;
-  /** Bought from the all-decks cart (source `shopping:cart`): no one deck to name. */
+  /** Bought from the all-decks cart (source `shopping:cart:<deck ids>`): no one deck to name. */
   shoppingCart: boolean;
 };
 
@@ -201,7 +202,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     revertsVisible: r.reverts_visible, revertedByVisible: r.reverted_by_visible,
     uploadFilename: r.upload_filename, firstName: r.first_name,
     shoppingDeck: r.shopping_deck_id ? { id: r.shopping_deck_id, name: r.shopping_deck_name } : null,
-    shoppingCart: r.source === "shopping:cart",
+    shoppingCart: cartSourceDecks(r.source) !== null,
   };
 }
 

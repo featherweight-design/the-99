@@ -1,13 +1,14 @@
 import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
+  cardAssignments, cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
   type HistoryRow, type HistoryRowState,
 } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 import { assignCopyIn, lockCardClaims, type AssignRefusal } from "../decks/assign";
+import { cartSourceDecks, regrant } from "../decks/mark-bought";
 import { proxiedMembership } from "../decks/proxies";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
@@ -89,7 +90,7 @@ export type CollectionChange =
       ignoreDeckId?: string;
       /**
        * The same for an undo from the all-decks cart: every deck the bought line listed. Honoured
-       * only when the entry's own source is `shopping:cart`.
+       * only for a cart entry, and only for the decks that entry recorded (`cartSource`).
        */
       ignoreDeckIds?: string[];
     };
@@ -118,8 +119,8 @@ export type ChangeOptions = {
    */
   ownedCounts?: boolean;
   /**
-   * Where the change came from, for history: `shopping:<deck id>`, or `shopping:cart` from the
-   * all-decks cart. Uploads set their own.
+   * Where the change came from, for history: `shopping:<deck id>`, or `cartSource(deck ids)` from
+   * the all-decks cart. Uploads set their own.
    */
   source?: string;
   /**
@@ -533,19 +534,23 @@ export async function applyCollectionChange(
       // no edit can remove the card between this check and the commit.
       if (opts.assign) await lockCardClaims(tx, userId, opts.assign.oracleId);
       if (opts.requireMember) {
-        const { deckIds, oracleId } = opts.requireMember;
-        // Sorted, so two writes naming overlapping decks lock them in one order.
-        for (const deckId of [...new Set(deckIds)].sort()) {
-          // Scoped to this player: a deck id that is not theirs holds nothing of theirs.
-          const { rows: [own] } = await tx.execute(
-            sql`select 1 from ${decks} where ${decks.id} = ${deckId} and ${decks.userId} = ${userId} for update`,
-          );
-          if (!own) throw new Refused({ status: "notInDeck" });
-          const { rows: [member] } = await tx.execute<{ held: boolean }>(
-            sql`select ${proxiedMembership(deckId, oracleId)} as held`,
-          );
-          if (!member?.held) throw new Refused({ status: "notInDeck" });
-        }
+        const ids = [...new Set(opts.requireMember.deckIds)].sort();
+        const { oracleId } = opts.requireMember;
+        // ONE statement locks them all, in id order, so two writes naming overlapping decks lock
+        // them in one order. Scoped to this player: a deck id that is not theirs holds nothing of
+        // theirs, and comes back as a missing row.
+        const { rows: owned } = await tx.execute<{ id: string }>(sql`
+          select ${decks.id} as id from ${decks}
+          where ${decks.id} in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)}) and ${decks.userId} = ${userId}
+          order by ${decks.id}
+          for update
+        `);
+        if (owned.length !== ids.length) throw new Refused({ status: "notInDeck" });
+        // And every one still holds the card, in one read.
+        const { rows: [member] } = await tx.execute<{ held: boolean[] }>(sql`
+          select array[${sql.join(ids.map((id) => proxiedMembership(id, oracleId)), sql`, `)}]::boolean[] as held
+        `);
+        if (!member || !member.held.every(Boolean)) throw new Refused({ status: "notInDeck" });
       }
 
       // ---- 3. The upload stamp is the upload's own lock, as in `replaceCollection`. The change's
@@ -605,8 +610,10 @@ export async function applyCollectionChange(
         if (change.ignoreDeckId !== undefined && row.source === `shopping:${change.ignoreDeckId}`) {
           ignoredDecks.add(change.ignoreDeckId);
         }
-        if (change.ignoreDeckIds !== undefined && row.source === "shopping:cart") {
-          for (const id of change.ignoreDeckIds) ignoredDecks.add(id);
+        // Only decks the entry itself recorded: an undo naming any other deck exempts nothing.
+        const listed = cartSourceDecks(row.source);
+        if (change.ignoreDeckIds !== undefined && listed) {
+          for (const id of change.ignoreDeckIds) if (listed.includes(id)) ignoredDecks.add(id);
         }
       }
 
@@ -665,18 +672,21 @@ export async function applyCollectionChange(
       // deck's commit and credit this purchase with it. `before` is that same snapshot less the
       // copies this write added, which is exactly what the write changed.
       //
-      // Except with a pick: `opts.assign` also moves a reservation, which the snapshot after it
-      // carries and `owned` cannot take back, so `before` would credit the pick as already made
-      // and name a deck the purchase covered as one it had covered all along. With a pick, `before`
-      // is read before the rows and the pick land, under the card's claim lock and every line
-      // deck's row lock, which no pick and no edit of those decks can cross.
+      // With a pick, `opts.assign` also moved a reservation, which that snapshot carries and
+      // `owned` cannot take back: `before` would credit the pick as already made. So the
+      // reservations as they stood before the pick (read under the card's claim lock, which every
+      // reservation write takes) are granted again over the same snapshot (`regrant`).
       const receiptSnapshots = async (oracleId: string): Promise<ReceiptSnapshots> => {
         const after = await receiptOf();
         const added = plan
           .filter((p) => p.oracleId === oracleId)
           .reduce((n, p) => n + qty(p.after) - qty(p.before), 0);
         return {
-          before: pickBefore !== undefined ? pickBefore : after ? { ...after, owned: after.owned - added } : null,
+          before: after
+            ? priorReservations
+              ? regrant({ ...after, owned: after.owned - added }, priorReservations)
+              : { ...after, owned: after.owned - added }
+            : null,
           after,
           afterFromDecks: Object.fromEntries(await Promise.all(
             opts.receipt!.deckIds.map(async (id) => [id, await receiptOf(id)] as const),
@@ -688,7 +698,12 @@ export async function applyCollectionChange(
           .get(opts.receipt.oracleId) ?? null
         : null;
 
-      const pickBefore = opts.assign && opts.receipt && !opts.dryRun ? await receiptOf() : undefined;
+      const priorReservations = opts.assign && opts.receipt && !opts.dryRun
+        ? await tx.select({ deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+          .from(cardAssignments)
+          .where(and(eq(cardAssignments.userId, userId), eq(cardAssignments.oracleId, opts.assign.oracleId)))
+          .orderBy(cardAssignments.createdAt, cardAssignments.deckId)
+        : null;
 
       // ---- 6. The rows.
       if (change.kind === "replace") {

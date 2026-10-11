@@ -4,6 +4,22 @@
 import { allocateClaims } from "./allocate";
 import { availabilityState, type Availability } from "./availability";
 
+/**
+ * A cart purchase's history source: `shopping:cart:` and the line's deck ids. Recording the decks
+ * on the entry is what lets the cart's undo leave out exactly those decks (`ignoreDeckIds` is
+ * checked against this list), where a bare `shopping:cart` would trust whatever ids an undo sent.
+ */
+const CART_SOURCE = "shopping:cart:";
+
+export function cartSource(deckIds: readonly string[]): string {
+  return CART_SOURCE + deckIds.join(",");
+}
+
+/** The deck ids a cart entry recorded, or null for any other source. */
+export function cartSourceDecks(source: string | null | undefined): string[] | null {
+  return source?.startsWith(CART_SOURCE) ? source.slice(CART_SOURCE.length).split(",").filter(Boolean) : null;
+}
+
 /** The most copies one press records (call D). */
 export const MARK_BOUGHT_MAX = 20;
 
@@ -97,4 +113,34 @@ export function cartReceiptFacts(
     }
   }
   return facts;
+}
+
+/**
+ * `a` with its reservations granted as `prior` would grant them: what the claim model's
+ * `reservations` CTE computes, in TypeScript, over one snapshot. Each reservation in `prior`
+ * (oldest first, the model's order) wants its copies capped at the deck's LIST ask, and is
+ * granted that less every earlier reservation's want, out of the copies no committed commander
+ * holds. A deck `prior` does not name is granted nothing.
+ *
+ * What the cart's receipt builds its `before` from when a press also made a pick: the snapshot
+ * after the write, less the copies added, with the reservations as they stood before the pick. One
+ * snapshot either side, so no deck edit landing between two reads can be credited to the purchase.
+ */
+export function regrant<A extends Pick<Availability, "owned" | "claims">>(
+  a: A,
+  prior: readonly { deckId: string; copies: number }[],
+): A {
+  const commanderOf = (c: A["claims"][number]) => c.commanderCopies ?? (c.commander ? 1 : 0);
+  const heldAsCommander = a.claims.filter((c) => c.mature).reduce((n, c) => n + commanderOf(c), 0);
+  const supply = Math.max(a.owned - heldAsCommander, 0);
+  const granted = new Map<string, number>();
+  let wanted = 0;
+  for (const r of prior) {
+    const claim = a.claims.find((c) => c.id === r.deckId);
+    if (!claim) continue;
+    const want = Math.min(r.copies, Math.max(claim.quantity - commanderOf(claim), 0));
+    granted.set(r.deckId, Math.min(want, Math.max(supply - wanted, 0)));
+    wanted += want;
+  }
+  return { ...a, claims: a.claims.map((c) => ({ ...c, granted: granted.get(c.id) ?? 0 })) };
 }

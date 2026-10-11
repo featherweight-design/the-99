@@ -170,7 +170,7 @@ describe("markBoughtForDecks", () => {
   it("refuses malformed decks and a pick off the line", async () => {
     for (const over of [
       { deckIds: [] }, { deckIds: "x" }, { deckIds: [DECK, "nope"] },
-      { deckIds: Array.from({ length: 101 }, () => DECK) },
+      { deckIds: Array.from({ length: 31 }, () => DECK) },
       { pickDeckId: "nope" }, { pickDeckId: SCRY }, { quantity: 21 },
     ]) {
       await expect(cartPress(over)).rejects.toThrow("bad mark-bought input");
@@ -183,7 +183,7 @@ describe("markBoughtForDecks", () => {
     const out = await cartPress({ deckIds: [DECK.toUpperCase(), OTHER, DECK] });
     const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
     expect(opts).toEqual({
-      id: ID, source: "shopping:cart",
+      id: ID, source: `shopping:cart:${DECK},${OTHER}`,
       receipt: { oracleId: CARD, deckIds: [DECK, OTHER] },
       requireMember: { deckIds: [DECK, OTHER], oracleId: CARD },
     });
