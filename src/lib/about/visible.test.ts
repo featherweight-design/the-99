@@ -271,6 +271,8 @@ describe("deck-benchmarks follows DECK_BENCHMARKS_ENABLED", () => {
     expect(on[on.indexOf("deck-analysis") + 1]).toBe("deck-benchmarks");
     // The feature's own flag rule: anything but the exact string 'true' is off.
     expect(ids({ DECK_BENCHMARKS_ENABLED: "1" })).not.toContain("deck-benchmarks");
+    // The block lives on the Analysis tab: with the tab off, the entry would describe nothing.
+    expect(ids({ DECK_BENCHMARKS_ENABLED: "true" })).not.toContain("deck-benchmarks");
   });
 
   it("is the evidence line's one bump", () => {

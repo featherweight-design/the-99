@@ -61,6 +61,13 @@ describe("deck-benchmarks, on the page", () => {
   const benchmarks = () => document.getElementById("deck-benchmarks");
   afterEach(() => {
     delete process.env.DECK_BENCHMARKS_ENABLED;
+    delete process.env.ANALYSIS_TAB_ENABLED;
+  });
+
+  it("is not on the page while the Analysis tab is off, whatever its own switch says", () => {
+    process.env.DECK_BENCHMARKS_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    expect(benchmarks()).toBeNull();
   });
 
   it("is not on the page while DECK_BENCHMARKS_ENABLED is off", () => {
@@ -70,10 +77,12 @@ describe("deck-benchmarks, on the page", () => {
 
   it("draws with its specimen, and is new, once the switch is on", () => {
     process.env.DECK_BENCHMARKS_ENABLED = "true";
+    process.env.ANALYSIS_TAB_ENABLED = "true";
     render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
     expect(benchmarks()).not.toBeNull();
     expect(benchmarks()!.querySelector("[data-specimen] [data-benchmarks]")).not.toBeNull();
     const links = within(index()!).getAllByRole("link");
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["#deck-benchmarks"]);
+    // The Analysis tab's own entries come up new with it here; this entry is among them.
+    expect(links.map((a) => a.getAttribute("href"))).toContain("#deck-benchmarks");
   });
 });

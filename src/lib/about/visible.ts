@@ -34,7 +34,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   DECK_STATS_ENABLED: deckStatsEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
-  DECK_BENCHMARKS_ENABLED: deckBenchmarksEnabled,
+  // The block lives on the Analysis tab, so the entry needs the tab too, as tuning's does: it
+  // would otherwise describe a tab that is off.
+  DECK_BENCHMARKS_ENABLED: (env) => deckBenchmarksEnabled(env) && analysisTabEnabled(env),
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
