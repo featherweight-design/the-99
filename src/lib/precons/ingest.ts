@@ -26,6 +26,7 @@ export type PreconPlan = {
     listed: number;
     kept: number;
     twins: number;
+    /** Copies across the decks of the right size: the unmapped share's denominator. */
     copies: number;
     unmappedCopies: number;
     printingsMissing: number;
@@ -56,9 +57,10 @@ export function planPrecons(feed: PreconFeed, knownOracles: ReadonlySet<string>,
   for (const deck of feed.decks) {
     const size = deck.cards.reduce((n, c) => n + c.count, 0);
     const unmapped = deck.cards.reduce((n, c) => (c.oracleId === null || !knownOracles.has(c.oracleId) ? n + c.count : n), 0);
-    // Every listed deck counts on both sides of the unmapped share, dropped or kept, so a
-    // malformed deck can neither dilute the share nor hide its own unmapped copies.
-    copies += size;
+    // The share's numerator takes every listed deck's unmapped copies, dropped or kept, so a
+    // malformed deck cannot hide its own; its denominator takes only decks of the right size, so
+    // a malformed deck cannot dilute the share either.
+    if (size === PRECON_SIZE) copies += size;
     unmappedCopies += unmapped;
     if (size !== PRECON_SIZE) { dropped.push(`${deck.fileName}: ${size} cards, not ${PRECON_SIZE}`); continue; }
     if (!deck.cards.some((c) => c.commander)) { dropped.push(`${deck.fileName}: no commander`); continue; }

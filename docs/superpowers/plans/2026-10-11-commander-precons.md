@@ -26,7 +26,7 @@ Approved by the orchestrator as Hugh's proxy on 2026-10-11, with three amendment
 ### Measured on staging, 2026-10-11 (`pnpm measure:precons`)
 
 - 197 listed, 197 kept, 19,700 copies, 0 unmapped, 0 printings missing.
-- **16 twins, 181 rows**, not the brief's 12 and 185: the four `FIC` Collector's Editions were
+- **16 twins: 197 stored rows, 181 distinct lists shown**, not the brief's 12 and 185: the four `FIC` Collector's Editions were
   missed. A first rule (identical list, any set) also folded 8 Commander Anthology reprints (`CMA`,
   `CM2`) into their originals; twins are now one set's identical lists, which is what the design's
   `also sold as a Collector's Edition` line says.

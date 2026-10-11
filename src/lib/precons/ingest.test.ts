@@ -136,6 +136,19 @@ describe("planPrecons", () => {
     expect(plan.refusals.join()).toMatch(/cap/);
   });
 
+  it("does not let a fully mapped dropped deck dilute the share", () => {
+    const f = feed(many(181));
+    const [o, p] = known(f);
+    // 190 unmapped copies across the kept decks: 190 of 18,100 is over 1%.
+    for (const d of f.decks.slice(0, 95)) d.cards.push(c("gone", 2)), d.cards[d.cards.length - 2].count -= 2;
+    // A 1,600-card deck, every card mapped, dropped for its size.
+    f.decks.push({ fileName: "Huge", name: "Huge", code: "X", releaseDate: "2024-01-01", cards: [c("cmd-huge", 1, true), c("plains", 1599)] });
+    o.add("cmd-huge");
+    const plan = planPrecons(f, o, p);
+    expect(plan.report.copies).toBe(18_100);
+    expect(plan.refusals.join()).toMatch(/cap/);
+  });
+
   it("never folds a deck with an unmapped card into a twin", () => {
     const a1 = deck("A1", [c("sol-ring"), c("gone-a")]);
     const a2 = deck("A2", [c("sol-ring"), c("gone-b")]);
