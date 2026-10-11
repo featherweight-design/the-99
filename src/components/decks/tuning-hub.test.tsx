@@ -155,8 +155,15 @@ describe("TuningHub opening a tool", () => {
       return ready ? <section><h2 id="cuts-heading">Proposed cuts</h2></section> : <div><h2>Counting</h2></div>;
     }
     render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "cuts", panel: <LatePanel />, over: 6, total: 106 }]} />);
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
     fireEvent.click(tile("cuts"));
+    // No scroll while only the temporary heading is drawn: the page is not yet tall enough to
+    // bring the hub to the top, and the tool would then grow below the fold.
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Counting" })).toBeTruthy());
+    expect(scroll).not.toHaveBeenCalled();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" })));
+    expect(scroll).toHaveBeenCalledWith({ block: "start" });
   });
 
   it("reads again a moment after returning to the tiles, catching a run the tool just started", async () => {
@@ -214,8 +221,8 @@ describe("TuningHub opening a tool", () => {
     // Its owner is told, so it can drop the request before the next visit remounts the hub.
     await waitFor(() => expect(answered).toHaveBeenCalledWith(1));
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
-    // The Tuning heading is brought to the top.
-    expect(scroll).toHaveBeenCalledWith({ block: "start" });
+    // The Tuning heading is brought to the top, once the tool's heading has drawn.
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start" }));
     expect(scroll.mock.contexts[0]).toBe(document.querySelector("[data-tuning-hub]"));
     fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
     // A re-render with the same request leaves the landing alone.

@@ -248,17 +248,18 @@ export function TuningHub({
     // A shortcut lands on the tab while its opening loader still hides the body under a `hidden`
     // ancestor (`analysis-panel`), and a hidden box can be neither scrolled to nor focused; and both
     // tools draw nothing until their own first read lands, so their heading arrives later still.
-    // So scroll once the section is shown, and focus once the tool's heading exists.
+    // So wait for the section to be shown AND the tool's heading to exist, then scroll and focus:
+    // scrolled any sooner, the page is not yet tall enough to bring the hub to the top, and the
+    // tool then grows below the fold (measured: the hub stopped 508px down at 1300).
     const shown = () => !!sectionRef.current && !sectionRef.current.closest("[hidden]");
-    let scrolled = !opening.scroll;
     const step = () => {
       if (!shown()) return false;
-      if (!scrolled) { sectionRef.current?.scrollIntoView({ block: "start" }); scrolled = true; }
-      if (!opening.focus) return true;
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
       const id = HEADING_IDS[opening.tool];
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
-      if (!heading) return false;
+      if (opening.focus && !heading) return false;
+      if (opening.scroll) sectionRef.current?.scrollIntoView({ block: "start" });
+      if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });
       return true;
