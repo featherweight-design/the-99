@@ -4,7 +4,7 @@ import { NO_TAPPED_LANDS, tappedLands } from "./lands-tapped";
 const land = (name: string, oracleText: string | null, quantity = 1, typeLine = "Land") => ({ name, typeLine, oracleText, quantity });
 
 describe("tappedLands", () => {
-  it("names each tapped land once with its copies, and never a basic", () => {
+  it("names a tapped land with its copies, and leaves out a land that enters untapped", () => {
     const out = tappedLands([
       land("Forest", "({T}: Add {G}.)", 6, "Basic Land — Forest"),
       land("Guildless Commons", "This land enters tapped.\n{T}: Add {W}.", 2),

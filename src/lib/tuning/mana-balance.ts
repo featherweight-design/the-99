@@ -74,14 +74,15 @@ export type ColorEvidence = {
    *  ones shown, and not a ceiling), 0 when none does. */
   karstenHardest: number;
   /** The tightest pattern two or more nonland copies share (else the worst single-copy one), commander
-   *  excluded. Null when no pattern of this color the deck's nonland cards carry has a published figure. */
+   *  excluded. Null when no pattern the deck's nonland cards carry in this color has a published figure. */
   needed: NeededEvidence | null;
 };
 
 /** One color in the order `Improve my mana` lists them. */
 export type ColorOrderEntry = {
   color: BalanceColor;
-  /** `ranked`: has a Needed, ordered by its ratio. `noPublished`: has pips but no published pattern, after every
+  /** `ranked`: has a Needed, ordered by its ratio. `noPublished`: has pips but none of its nonland cards carries a pattern with a published figure (a pattern only the
+   *  commander carries leaves it here too), after every
    *  ranked color. `noPips`: in the commander's identity with no colored pip, last. */
   kind: "ranked" | "noPublished" | "noPips";
   needed: NeededEvidence | null;
