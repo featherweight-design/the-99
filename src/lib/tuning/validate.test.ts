@@ -171,8 +171,10 @@ describe("validateSuggestions", () => {
       response: { additions: [{ ...good, evidence: [{ kind, value }] }], cuts: [] }, pack: withNotes, resolveName,
     });
     expect(cite('"swap out Sol Ring"').droppedCount).toBe(0);
-    expect(cite("go wide").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "notes", value: "go wide" } });
+    expect(cite("go wide").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "notes" } });
     expect(cite("go wide", "intent").drops[0].rule).toBe("citation");
+    // The drop names the kind and carries none of the player's words: the report is saved.
+    expect(JSON.stringify(cite("go wide").drops)).not.toContain("go wide");
   });
 
   it("corrects a citation's kind to the source its words are from", () => {

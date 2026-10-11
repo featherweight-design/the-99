@@ -69,6 +69,11 @@ export function tuningFingerprint(input: FingerprintInput): string {
         sets: [...input.limits.sets].sort(byteOrder),
         ownedOnly: input.limits.ownedOnly,
       },
+      // The owned shortlist (a run's prompt shows an owned-only run the cards it owns, 2026-10-11)
+      // changes what an owned-only deck's answer is, and `PROMPT_VERSION` would reopen EVERY deck's
+      // gate for a prompt only these send. So it joins the hash for them alone: an owned-only deck
+      // reads as changed once, and every other deck hashes exactly as before.
+      ...(input.limits.ownedOnly ? { ownedShortlist: 1 } : {}),
     }))
     .digest("hex");
 }

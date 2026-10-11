@@ -126,7 +126,10 @@ console.log(`asked ${askedCount}, survived ${kept.length}, kept ${sized.length}`
 for (const [side, lines] of [["add", outcome.value.additions], ["cut", outcome.value.cuts]] as const) {
   lines.forEach((line, position) => {
     const d = drops.find((x) => x.side === side && x.position === position);
-    console.log(`  ${side} ${position}: ${line.card}  ${d ? `DROPPED ${d.rule}${d.cite ? ` [${d.cite.kind}: ${d.cite.value}]` : ""}` : "kept"}`);
+    // The report keeps only the failing citation's kind (it is saved); the probe has the reply, so it
+    // prints the citations of a dropped `citation` line itself.
+    const cited = d?.rule === "citation" ? ` [${line.evidence.map((c) => `${c.kind}: ${c.value}`).join(" | ")}]` : "";
+    console.log(`  ${side} ${position}: ${line.card}  ${d ? `DROPPED ${d.rule}${d.cite ? ` (${d.cite.kind})` : ""}${cited}` : "kept"}`);
   });
 }
 process.exit(0);

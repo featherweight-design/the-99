@@ -48,6 +48,9 @@ describe("tuningFingerprint", () => {
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, capCents: 500 } })).not.toBe(at);
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3"] } })).not.toBe(at);
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true } })).not.toBe(at);
+    // Only an owned-only deck's hash carries the shortlist marker, so no other deck's gate reopens.
+    const ownedOnly = tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true } });
+    expect(ownedOnly).not.toBe(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: false } }));
     const ordered = tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3", "lci"] } });
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["lci", "mh3"] } })).toBe(ordered);
   });

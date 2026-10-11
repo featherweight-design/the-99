@@ -96,12 +96,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   READ-ONLY and PAID (about $0.03 a call): the pack the app builds (owned shortlist included), one
   `callModel` call at production's model, effort and ceiling, and `resolveAnswer`, the code the action
   calls, over the reply. It prints the shortlist, each line kept or dropped, and for a `citation` drop
-  the citation that failed. `--notes` adds run notes, `--limits '{...}'` tries a deck under limits it
+  the kind of the citation that failed, with its text when the reply is in hand. `--notes` adds run notes, `--limits '{...}'` tries a deck under limits it
   does not carry (read for this run only), `--save` keeps the reply and `--replay` validates a saved
   reply against the pack built now with no call, so a drop can be read back for free. Spend lands on
   `ledger-tuning-lists.jsonl` under a $0.50 cap of its own. The model's reply is NOT stored by the app,
   which is why a past run's `citation` drops could not be read back: `Drop.cite` now keeps the failing
-  citation in the run's report.
+  citation's KIND in the run's report (never its text: the run's notes are not saved).
 
   **What it found (2026-10-11, HD - Soldiers, owned-only).** Before: 2 of 11 kept, all five adds
   `notOwned`. After: 9 of 10 kept with no notes. With run notes, 3 of 12 kept until a citation of the

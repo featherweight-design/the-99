@@ -78,9 +78,10 @@ export type Drop = {
    *  spelling (`s.cut`/`s.add`), not a resolved catalog name, since drops the model got wrong
    *  before a card ever resolved (`cardExists`) have none to give. */
   name?: string;
-  /** For a `citation` drop: the citation that failed, so a run whose cuts all dropped can be read back
-   *  without the model's reply (which is not stored). Its kind and the text it carried. */
-  cite?: { kind: string; value: string };
+  /** For a `citation` drop: the KIND of the citation that failed, so a run whose cuts all dropped can be
+   *  read back without the model's reply (which is not stored). Never its text: an `intent` or `notes`
+   *  citation quotes the player's words, and the run's notes are never saved. */
+  cite?: { kind: string };
 };
 
 /**
@@ -270,7 +271,7 @@ export function validateSuggestions(args: {
     }
 
     for (const c of s.evidence) {
-      if (!citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind, value: c.value } };
+      if (!citationHolds(c, s)) return { rule: "citation", cite: { kind: c.kind } };
     }
 
     const rationaleCheck = presentationFailures(s.rationale, quotable);
@@ -289,7 +290,7 @@ export function validateSuggestions(args: {
     const repairedEvidence = evidenceChecks.map((e) => ({ ...e.c, value: e.check.text }));
     const repaired: TuningLine = { ...s, rationale: rationaleCheck.text, rationaleShort: shortCheck.text, evidence: repairedEvidence };
     for (const c of repairedEvidence) {
-      if (!citationHolds(c, repaired)) return { rule: "citation", cite: { kind: c.kind, value: c.value } };
+      if (!citationHolds(c, repaired)) return { rule: "citation", cite: { kind: c.kind } };
     }
 
     repairs.set(s, {
