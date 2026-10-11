@@ -440,7 +440,7 @@ export function DecklistRow({
       press={pressable ? {
         onPress: (trigger) => gotIt.open(card, fullName, newestAsOf, trigger),
         // Disabled while an undo for this card is in flight (A9): a second write would go stale.
-        state: confirmOpen ? (gotIt.pending ? "pending" : "open") : gotIt.undoingFor === card.oracleId ? "disabled" : "rest",
+        state: confirmOpen ? (gotIt.pending ? "pending" : "open") : gotIt.undoing.has(card.oracleId) ? "disabled" : "rest",
         cardName: fullName,
         // Below lg the stack flips to `buy` over `over $X` with the feature on (finding 5).
         under: overText,

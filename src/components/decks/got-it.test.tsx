@@ -9,7 +9,8 @@ const { loadPrintingChoices, markBought } = vi.hoisted(() => ({
 }));
 vi.mock("../../app/collection/edit-actions", () => ({ loadPrintingChoices }));
 vi.mock("../../app/decks/mark-bought-actions", () => ({ markBought }));
-vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
+const { previewRevert, revertCollectionEntry } = vi.hoisted(() => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
+vi.mock("../../app/collection/history-actions", () => ({ previewRevert, revertCollectionEntry }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { GotItProvider, useGotIt } = await import("./got-it");
@@ -52,6 +53,33 @@ describe("GotItProvider", () => {
     expect(screen.getAllByRole("status")).toHaveLength(1);
     expect(screen.getByRole("link", { name: gotItCopy.receipt.history })).toHaveAttribute("href", "/collection/history?entry=e0000000-0000-4000-8000-000000000002");
     expect(screen.getByTestId("held").textContent).toBe(CARD.oracleId);
+    loadPrintingChoices.mockResolvedValue([]);
+  });
+
+  // Finding 2: the undo is the provider's, so it outlives a toast a newer write replaced.
+  it("keeps the tag disabled through a replaced toast's undo, and brings that receipt back failed", async () => {
+    const only = { scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "mom", setName: "MOM", collectorNumber: "137", releasedAt: null, imageUri: null, flavorName: null, finishes: ["nonfoil"], owned: {} };
+    loadPrintingChoices.mockResolvedValue([only]);
+    previewRevert.mockResolvedValue({ rows: [], entryRows: [], differs: false, decks: [], expected: {} });
+    let reject!: (e: unknown) => void;
+    revertCollectionEntry.mockReturnValue(new Promise((_, r) => { reject = r; }));
+    function Undoing() {
+      return <span data-testid="undoing">{[...useGotIt()!.undoing].join(",")}</span>;
+    }
+    render(<GotItProvider deckId="d1"><Harness row /><Undoing /></GotItProvider>);
+    const write = async (id: string) => {
+      markBought.mockResolvedValueOnce({ applied: { id, receipt: { tookCopy: [], stillNeeds: 0 } } });
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "tag" })));
+      await act(async () => fireEvent.click(await screen.findByRole("button", { name: gotItCopy.confirm.add(1) })));
+    };
+    await write("e0000000-0000-4000-8000-000000000001");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria(CARD.name) })));
+    await write("e0000000-0000-4000-8000-000000000002");
+    expect(screen.getByTestId("undoing").textContent).toBe(CARD.oracleId);
+    await act(async () => reject(new Error("down")));
+    expect(screen.getByTestId("undoing").textContent).toBe("");
+    expect(screen.getByRole("alert").textContent).toContain(gotItCopy.receipt.undoFailed);
+    expect(screen.getByRole("link", { name: gotItCopy.receipt.openHistory })).toHaveAttribute("href", "/collection/history?entry=e0000000-0000-4000-8000-000000000001");
     loadPrintingChoices.mockResolvedValue([]);
   });
 

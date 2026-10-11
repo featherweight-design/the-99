@@ -691,7 +691,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | white-space | nowrap | nowrap |
 | color | var(--accent) | var(--accent) |
 
-### History button
+### History link (a `Link`, styled as the action buttons)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | key | `receipt.history`; failed form: `receipt.openHistory` | same |
@@ -817,7 +817,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | property animated | opacity only | opacity only |
 | duration | 150ms | 150ms |
 | start | when the write answers (0ms) | same |
-| midpoint (75ms) | held slot at opacity 0.55 | same |
+| easing | ease-out (`anim-slot-in`: the `backdrop-in` keyframes, 0 to 1) | same |
 | end (150ms) | held slot at opacity 1 | same |
 | height animated | never (same shell, same height by construction) | never |
 | neighbours | do not move | do not move |
@@ -948,6 +948,6 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | C5 Undo raises §E | a committed deck other than the source would go short | ShortDeckWarning `titleUndo` / `confirmUndo`: sheet (phone, scrim .62) or 480px dialog (desktop); Cancel focused | deck list excludes the source deck; Undo anyway not destructive-styled; Cancel → copy stays, toast leaves its pending state |
 | C6 Undo in flight | no deck would go short, or Undo anyway pressed | Toast: Undo → `receipt.undoing`, aria-busy, History hidden; slot still held | timer held |
 | C7 Undo done | revert applied, or answered `alreadyReverted` | Toast: L1 `receipt.undone` (row had left) or `receipt.undoneElsewhere` (row had stayed), no L2/L3, no actions; held slot fades back to the live row in place (150ms); counts/total return | no held slot left behind; toast goes after 8s |
-| C8 Undo failed | revert errors, or answered `notFound` | Toast role=alert: L1 `receipt.undoFailed`, L3 `receipt.undoFailedBody`, `receipt.openHistory` button; Undo withdrawn | nothing changes: copy still owned, slot still held; no retry offered |
-| C9 Leave transition | write answers for a row that leaves | live row → held slot, 150ms opacity crossfade (0.55 at 75ms); reduced motion: one-frame swap | no height animation; neighbours do not move; slot holds until the next read and survives revalidation |
+| C8 Undo failed | revert errors, or answered `notFound` | Toast role=alert: L1 `receipt.undoFailed`, L3 `receipt.undoFailedBody`, `receipt.openHistory` link (a `Link` to the entry in History); Undo withdrawn | nothing changes: copy still owned, slot still held; no retry offered |
+| C9 Leave transition | write answers for a row that leaves | live row → held slot, 150ms ease-out opacity fade; reduced motion: one-frame swap | no height animation; neighbours do not move; slot holds until the next read and survives revalidation |
 | — Commander receipt | (requested in scope) | **not designed**: no distinct form in the handoff; a commander row's receipt follows C1/C2/C3 by outcome | — |

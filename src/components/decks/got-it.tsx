@@ -13,10 +13,10 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { GotItConfirm } from "./got-it-confirm";
-import { GotItReceipt, type GotItWritten } from "./got-it-receipt";
+import { GotItReceipt, type GotItUndoHost, type GotItWritten } from "./got-it-receipt";
 
 type Target = { card: DeckDetailCard; name: string; newestAsOf: Date | null };
-type Receipt = { card: DeckDetailCard; name: string; written: GotItWritten };
+type Receipt = { card: DeckDetailCard; name: string; written: GotItWritten; failed?: boolean };
 
 const NONE: ReadonlyMap<string, DeckDetailCard> = new Map();
 const NO_IDS: ReadonlySet<string> = new Set();
@@ -36,10 +36,15 @@ export type GotIt = {
   held: ReadonlyMap<string, DeckDetailCard>;
   /** Cards whose undo brought the row back: it fades in where the slot was. */
   returning: ReadonlySet<string>;
-  /** The card an undo is in flight for: its tag is disabled (A9). */
-  undoingFor: string | null;
+  /** The cards an undo is in flight for, whichever toast is showing: their tags are disabled (A9). */
+  undoing: ReadonlySet<string>;
   /** The list is read again (a tab switch): every held slot goes. */
   clearHeld: () => void;
+  /**
+   * The Shopping list registers how to ask whether it bills a card now, so an undo can tell a row
+   * that left from one that stayed even when the write's facts are unknown (an idempotent retry).
+   */
+  registerList: (bills: ((oracleId: string) => boolean) | null) => void;
 };
 
 const GotItContext = createContext<GotIt | null>(null);
@@ -54,7 +59,8 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [held, setHeld] = useState<ReadonlyMap<string, DeckDetailCard>>(NONE);
   const [returning, setReturning] = useState<ReadonlySet<string>>(NO_IDS);
-  const [undoingFor, setUndoingFor] = useState<string | null>(null);
+  const [undoing, setUndoing] = useState<ReadonlySet<string>>(NO_IDS);
+  const list = useRef<((oracleId: string) => boolean) | null>(null);
   // Focus goes back to the tag that opened the confirm, held explicitly: a pointer press does not
   // focus a button in every browser. After a write the row usually leaves before the confirm
   // unmounts, so a tag no longer in the document hands focus to the Shopping filter instead.
@@ -92,23 +98,41 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
     setReturning((r) => (r.has(id) ? new Set([...r].filter((x) => x !== id)) : r));
     setReceipt({ card: t.card, name: t.name, written });
   }, [close]);
-  const undone = useCallback((oracleId: string) => {
-    setHeld((h) => {
-      if (!h.has(oracleId)) return h;
-      const next = new Map(h);
-      next.delete(oracleId);
-      return next;
-    });
-    setReturning((r) => new Set(r).add(oracleId));
+  const undoHost = useMemo(() => ({
+    start: (id: string) => setUndoing((u) => (u.has(id) ? u : new Set(u).add(id))),
+    end: (id: string) => setUndoing((u) => (u.has(id) ? new Set([...u].filter((x) => x !== id)) : u)),
+    onList: (id: string) => list.current?.(id) ?? null,
+    // A row that left fades back in where its slot was; one that stayed never left, so it does not.
+    // After `alreadyReverted` the list is re-read rather than invalidated, so the held entry stays
+    // and the slot steps aside only once the fresh list bills the card (the decklist's own rule).
+    undone: (id: string, refreshed: boolean, left: boolean) => {
+      if (left) setReturning((r) => new Set(r).add(id));
+      if (refreshed) return;
+      setHeld((h) => {
+        if (!h.has(id)) return h;
+        const next = new Map(h);
+        next.delete(id);
+        return next;
+      });
+    },
+  }), []);
+  const registerList = useCallback((bills: ((oracleId: string) => boolean) | null) => {
+    list.current = bills;
   }, []);
   const clearHeld = useCallback(() => {
     setHeld(NONE);
     setReturning(NO_IDS);
   }, []);
   const expire = useCallback(() => setReceipt(null), []);
+  // An undo that fails after a newer write replaced its toast brings that receipt back in its
+  // failed form (an alert pointing to History), so the failure is never silent.
+  const hostFor = (r: Receipt): GotItUndoHost => ({
+    ...undoHost,
+    failedAway: () => setReceipt((cur) => (cur?.written.entryId === r.written.entryId ? cur : { ...r, failed: true })),
+  });
   const value = useMemo<GotIt>(
-    () => ({ deckId, openFor: target?.card.oracleId ?? null, pending, open, held, returning, undoingFor, clearHeld }),
-    [deckId, target, pending, open, held, returning, undoingFor, clearHeld],
+    () => ({ deckId, openFor: target?.card.oracleId ?? null, pending, open, held, returning, undoing, clearHeld, registerList }),
+    [deckId, target, pending, open, held, returning, undoing, clearHeld, registerList],
   );
   return (
     <GotItContext.Provider value={value}>
@@ -131,13 +155,13 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
       ) : null}
       {receipt ? (
         <GotItReceipt
-          key={receipt.written.entryId}
+          key={`${receipt.written.entryId}${receipt.failed ? ":failed" : ""}`}
           deckId={deckId}
           oracleId={receipt.card.oracleId}
           cardName={receipt.name}
           written={receipt.written}
-          onUndoing={setUndoingFor}
-          onUndone={undone}
+          failed={receipt.failed}
+          host={hostFor(receipt)}
           onExpire={expire}
         />
       ) : null}

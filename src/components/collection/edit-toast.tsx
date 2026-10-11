@@ -88,19 +88,20 @@ export function ToastFrame({
   detail?: ReactNode;
   body?: ReactNode;
   actions?: ReactNode;
-  /** Hover and focus hold the window (call 5); told when either starts or both end. */
-  onHold?: (held: boolean) => void;
+  /**
+   * Hover and focus hold the window (call 5), reported apart so the caller can end one (a focused
+   * control the toast unmounts fires no blur) and leave the other standing.
+   */
+  onHold?: (kind: "hover" | "focus", on: boolean) => void;
 }) {
-  const hover = useRef(false);
-  // Focus is read off the document rather than tracked: a focused control the toast unmounts
-  // fires no blur, and a flag left set would hold the toast for good.
-  const focused = (next?: Node | null) => !!frameRef.current?.contains(next ?? document.activeElement);
   const holds = onHold
     ? {
-        onPointerEnter: () => { hover.current = true; onHold(true); },
-        onPointerLeave: () => { hover.current = false; onHold(focused()); },
-        onFocus: () => onHold(true),
-        onBlur: (e: React.FocusEvent<HTMLDivElement>) => onHold(hover.current || focused(e.relatedTarget as Node | null) && e.relatedTarget !== null),
+        onPointerEnter: () => onHold("hover", true),
+        onPointerLeave: () => onHold("hover", false),
+        onFocus: () => onHold("focus", true),
+        onBlur: (e: React.FocusEvent<HTMLDivElement>) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onHold("focus", false);
+        },
       }
     : {};
   if (placement === "center") {

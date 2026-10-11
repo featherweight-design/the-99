@@ -20,7 +20,8 @@ vi.mock("../../app/decks/actions", () => ({
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 const { loadPrintingChoices, markBought, previewRevert, revertCollectionEntry } = vi.hoisted(() => ({
   loadPrintingChoices: vi.fn(),
   markBought: vi.fn(),
@@ -143,6 +144,13 @@ describe("I got it's held slot", () => {
     const row = screen.getByRole("button", { name: /View details for Arcane Signet/ });
     const next = screen.getByRole("button", { name: /View details for Talisman of Progress/ });
     expect(row.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Undoing it (it never left): the row redraws, with no fade-in, since nothing came back.
+    previewRevert.mockResolvedValueOnce({ rows: [], entryRows: [], differs: false, decks: [], expected: { k: 1 } });
+    revertCollectionEntry.mockResolvedValueOnce({ reverted: { id: "r1" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
+    expect(screen.getByText(gotItCopy.receipt.undoneElsewhere("Arcane Signet"))).toBeInTheDocument();
+    rerender(tree([signet, talisman, remora], "shopping"));
+    expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") }).closest(".anim-slot-in")).toBeNull();
     // The next read: it joins Spoken for.
     rerender(tree([owned(signet), talisman, remora], "all"));
     rerender(tree([owned(signet), talisman, remora], "shopping"));
@@ -156,6 +164,20 @@ describe("I got it's held slot", () => {
     rerender(tree([{ ...signet }, remora], "shopping"));
     expect(slot("Arcane Signet")).toBeNull();
     expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") })).toBeInTheDocument();
+  });
+
+  it("after an undo answered alreadyReverted, keeps the slot until the re-read list bills the card", async () => {
+    previewRevert.mockResolvedValueOnce({ alreadyReverted: true });
+    const { rerender } = render(tree([signet, talisman], "shopping"));
+    await buy("Arcane Signet");
+    rerender(tree([{ ...signet, owned: true }, talisman], "shopping"));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Arcane Signet") })));
+    expect(refresh).toHaveBeenCalledTimes(1);
+    // The refresh has not landed: the slot still holds rather than blinking out.
+    expect(slot("Arcane Signet")).toBeInTheDocument();
+    rerender(tree([signet, talisman], "shopping"));
+    expect(slot("Arcane Signet")).toBeNull();
+    expect(screen.getByRole("button", { name: gotItCopy.row.tagAria("Arcane Signet") }).closest(".anim-slot-in")).not.toBeNull();
   });
 
   it("holds a bought commander's slot in the commander group", async () => {

@@ -52,47 +52,87 @@ type Phase =
   | { k: "undone" }
   | { k: "failed" };
 
+/**
+ * What the provider does for an undo. The undo is the PROVIDER's, not the toast's: a newer write
+ * replaces the toast while a revert may still be in flight, and the tag stays disabled until that
+ * revert settles, whichever toast is showing.
+ */
+export type GotItUndoHost = {
+  /** The undo for this card started (from the first frame of the check): its tag is disabled. */
+  start: (oracleId: string) => void;
+  /** It settled, or was cancelled: the tag is live again. */
+  end: (oracleId: string) => void;
+  /**
+   * The revert committed. `refreshed`: nothing invalidated (alreadyReverted), so the list is being
+   * re-read and the held slot stays until the fresh list bills the card again. `left`: the row had
+   * left the list (a held slot), so it comes back.
+   */
+  undone: (oracleId: string, refreshed: boolean, left: boolean) => void;
+  /** It failed after this toast was replaced: the provider brings this receipt back, failed. */
+  failedAway: () => void;
+  /** Whether the fresh Shopping list bills the card now; null with no list to ask. */
+  onList: (oracleId: string) => boolean | null;
+};
+
 export function GotItReceipt({
-  deckId, oracleId, cardName, written, onUndoing, onUndone, onExpire,
+  deckId, oracleId, cardName, written, host, failed = false, onExpire,
 }: {
   deckId: string;
   oracleId: string;
   /** The name the row prints. */
   cardName: string;
   written: GotItWritten;
-  /** An undo for this card is (or is no longer) in flight: its buy tag is disabled meanwhile. */
-  onUndoing: (oracleId: string | null) => void;
-  /** The revert committed: the held slot gives the row back. */
-  onUndone: (oracleId: string) => void;
+  host: GotItUndoHost;
+  /** Drawn straight in the failed form: an undo that failed after its toast was replaced. */
+  failed?: boolean;
   onExpire: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
-  const [phase, setPhase] = useState<Phase>({ k: "shown" });
-  const [held, setHeld] = useState(false);
+  const [phase, setPhase] = useState<Phase>({ k: failed ? "failed" : "shown" });
+  // Hover and focus hold apart: ending one (focus, when its control unmounts) leaves the other.
+  const [hover, setHover] = useState(false);
+  const [focus, setFocus] = useState(false);
   const actionId = useRef<string | null>(null);
+  // Whether the row stayed, read off the list when Undo is pressed, before the revert moves it.
+  const [stayed, setStayed] = useState(false);
+  const stayedNow = useRef(false);
+  // Where the undo is: a warning open (this toast owns it) or a request out (the host waits on it).
+  const stage = useRef<"idle" | "warning" | "network">("idle");
+  const mounted = useRef(true);
   const router = useRouter();
   const busy = phase.k === "checking" || phase.k === "undoing";
   const inFlight = busy || phase.k === "warning";
-  const { restart } = useToastClock(ref, !held && !inFlight, onExpire);
+  const { restart } = useToastClock(ref, !hover && !focus && !inFlight, onExpire);
 
-  // The tag is disabled from the first frame of the check until the undo has settled.
+  // A warning closes with its toast; a request out is still the host's, and ends when it settles.
   useEffect(() => {
-    onUndoing(inFlight ? oracleId : null);
-  }, [inFlight, oracleId, onUndoing]);
-  useEffect(() => () => onUndoing(null), [onUndoing]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (stage.current === "warning") host.end(oracleId);
+    };
+  }, [host, oracleId]);
 
   const body = receiptBody(written.facts);
-  // The row stayed (claimed or partial), so an undo leaves nothing to come back on the list.
-  const stayed = body !== null;
+
+  // The check asked for a warning, but the toast that would show it has gone: nothing was written.
+  function abandon() {
+    stage.current = "idle";
+    host.end(oracleId);
+  }
 
   // A settled undo's own line gets the whole 8s (C3: "goes after 8 seconds").
   function fail() {
+    stage.current = "idle";
+    host.end(oracleId);
+    if (!mounted.current) return host.failedAway();
     restart();
     setPhase({ k: "failed" });
   }
 
   async function revert(expected: Record<string, number>, confirmShort?: ShortDeck[], was?: ShortDeck[]) {
+    stage.current = "network";
     setPhase({ k: "undoing" });
     actionId.current ??= crypto.randomUUID();
     try {
@@ -101,6 +141,9 @@ export function GotItReceipt({
       if ("alreadyReverted" in out) return done(true);
       if ("wouldShort" in out) {
         const before = new Set((was ?? []).map((d) => d.deckId));
+        // Asked again, but the toast that would ask has gone: nothing was written, so it ends.
+        if (!mounted.current) return abandon();
+        stage.current = "warning";
         setPhase({
           k: "warning", decks: out.wouldShort, expected, changed: true,
           fresh: new Set(out.wouldShort.map((d) => d.deckId).filter((id) => !before.has(id))),
@@ -119,12 +162,16 @@ export function GotItReceipt({
   }
 
   async function check() {
+    stage.current = "network";
+    host.start(oracleId);
     setPhase({ k: "checking" });
     try {
       const p = await previewRevert(written.entryId, deckId);
       if ("alreadyReverted" in p) return done(true);
       if (!("rows" in p)) return fail();
       if (p.decks.length > 0) {
+        if (!mounted.current) return abandon();
+        stage.current = "warning";
         setPhase({ k: "warning", decks: p.decks, expected: p.expected, fresh: new Set(), changed: false });
         return;
       }
@@ -141,9 +188,19 @@ export function GotItReceipt({
    */
   function done(refresh = false) {
     if (refresh) router.refresh();
+    stage.current = "idle";
+    host.end(oracleId);
+    host.undone(oracleId, refresh, !stayedNow.current);
     restart();
     setPhase({ k: "undone" });
-    onUndone(oracleId);
+  }
+
+  function press() {
+    // Off the list now means the row left (its held slot is drawn); on it, the row stayed. With no
+    // list to ask, the write's own facts say whether it stayed.
+    stayedNow.current = host.onList(oracleId) ?? body !== null;
+    setStayed(stayedNow.current);
+    void check();
   }
 
   // The button that had focus goes when the undo settles: focus moves to the Shopping filter
@@ -152,16 +209,20 @@ export function GotItReceipt({
     if (phase.k !== "undone" && phase.k !== "failed") return;
     if (ref.current?.contains(document.activeElement) || document.activeElement === document.body) {
       document.querySelector<HTMLElement>("[data-shopping-filter]")?.focus();
-      // The control that had focus unmounted without a blur: the focus hold ends here.
-      setHeld(false);
+      // The control that had focus unmounted without a blur: the focus hold ends here, and only it.
+      setFocus(false);
     }
   }, [phase.k]);
+
+  const hold = (kind: "hover" | "focus", on: boolean) => (kind === "hover" ? setHover : setFocus)(on);
 
   if (phase.k === "warning") {
     return (
       <UndoWarning
         phase={phase}
         onCancel={() => {
+          stage.current = "idle";
+          host.end(oracleId);
           setPhase({ k: "shown" });
           requestAnimationFrame(() => undoRef.current?.focus());
         }}
@@ -182,7 +243,7 @@ export function GotItReceipt({
         frameRef={ref}
         role="alert"
         placement="deck"
-        onHold={setHeld}
+        onHold={hold}
         title={c.undoFailed}
         body={c.undoFailedBody}
         actions={
@@ -199,7 +260,7 @@ export function GotItReceipt({
       <ToastFrame
         frameRef={ref}
         placement="deck"
-        onHold={setHeld}
+        onHold={hold}
         title={stayed ? c.undoneElsewhere(cardName) : c.undone(cardName)}
       />
     );
@@ -208,7 +269,7 @@ export function GotItReceipt({
     <ToastFrame
       frameRef={ref}
       placement="deck"
-      onHold={setHeld}
+      onHold={hold}
       title={added}
       detail={detail}
       body={body}
@@ -228,7 +289,7 @@ export function GotItReceipt({
             // Not the native attribute: the button keeps focus while it reads Checking or Undoing.
             aria-disabled={busy || undefined}
             aria-busy={busy || undefined}
-            onClick={() => { if (!busy) void check(); }}
+            onClick={() => { if (!busy) press(); }}
             className={`${btn} font-semibold ${busy ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
           >
             {phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}

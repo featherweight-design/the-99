@@ -562,6 +562,14 @@ export function Decklist({
   // are what the type and role groups section, since a commander draws in a group of its own.
   const listShoppingCards = cards.filter(isShoppingCard);
   const shoppingCards = [...commanderShopping, ...listShoppingCards];
+  // I got it asks the list whether it bills a card when Undo is pressed: off the list, the row left.
+  const registerList = gotIt?.registerList;
+  const billedKey = shoppingCards.map((c) => c.oracleId).join(",");
+  useEffect(() => {
+    const billed = new Set(billedKey.split(","));
+    registerList?.((id) => billed.has(id));
+    return () => registerList?.(null);
+  }, [registerList, billedKey]);
   const visibleCards = filter === "shopping" ? listShoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
