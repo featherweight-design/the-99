@@ -147,6 +147,9 @@ describe("BenchmarkLedger, win speed", () => {
       `${L.byT8}14%${L.foundBy}Fabricate · Whir`,
       `${L.byT8}4%`,
     ]);
+    // Each piece's name opens its card, as the plates do (State Coverage, "Row press").
+    const heading = within(sections[0]).getByRole("heading");
+    expect(within(heading).getAllByRole("button").map((b) => b.textContent)).toEqual(["Isochron", "Dramatic"]);
   });
 });
 

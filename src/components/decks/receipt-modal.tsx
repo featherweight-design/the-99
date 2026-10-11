@@ -369,7 +369,18 @@ export function ComboBody({
             {names.map((n, i) => (
               <span key={i}>
                 {i > 0 ? <span style={{ color: "var(--fg-faint)", fontWeight: 400 }}> + </span> : null}
-                {n}
+                {/* In the benchmarks ledger (which passes its own siblings) each name opens its card
+                    too, as the ledger's State Coverage draws it; the receipt keeps plain names. */}
+                {allSiblings ? (
+                  <CardDetailTrigger
+                    oracleId={combo.cards[i].oracleId}
+                    name={n}
+                    siblings={siblings}
+                    className="inline cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left"
+                  >
+                    {n}
+                  </CardDetailTrigger>
+                ) : n}
               </span>
             ))}
           </h3>
