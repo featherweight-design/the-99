@@ -264,7 +264,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens the upload',
     width: 'plate',
     caption:
-      'Drop in a fresh ManaBox export and The 99 asks what the file is for. “Replace” makes your Collection exactly the file. “Add” stacks its cards on top of what you have, which is what you want for a booster haul or a trade binder.\n\nEither way, you see every card that moves before anything changes. Replace also tells you if it’ll overwrite changes you made in the app, and names any decks that will read short.',
+      'Drop in a fresh export from ManaBox, Moxfield or any of the others and The 99 asks what the file is for. “Replace” makes your Collection exactly the file. “Add” stacks its cards on top of what you have, which is what you want for a booster haul or a trade binder.\n\nEither way, you see every card that moves before anything changes. Replace also tells you if it’ll overwrite changes you made in the app, and names any decks that will read short.',
     keys: [
       'Replace: anything not in the file leaves your Collection.',
       'Add: quantities go up, nothing leaves, and your art picks stay.',
