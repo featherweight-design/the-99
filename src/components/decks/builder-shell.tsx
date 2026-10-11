@@ -1308,8 +1308,9 @@ export function BuilderShell({
   const openExport = () => setExportOpen(true);
 
   // The two tools, built once and mounted either directly (hub off) or inside the hub's tiles.
-  const cutsPanel = (
+  const cutsPanel = (freshEachVisit: boolean) => (
     <CutsPanelView
+      freshEachVisit={freshEachVisit}
       key={deck.id}
       deckId={deck.id}
       deeperLooks={deeperLooks}
@@ -1317,8 +1318,9 @@ export function BuilderShell({
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
   );
-  const suggestedPanel = (permits: readonly Bracket[]) => (
+  const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
+      freshEachVisit={freshEachVisit}
       deckId={deck.id}
       permits={permits}
       deeperLooks={deeperLooks}
@@ -1701,7 +1703,7 @@ export function BuilderShell({
                       />
                     ) : null
                   }
-                  cuts={proposedCutsEnabled ? cutsPanel : undefined}
+                  cuts={proposedCutsEnabled ? cutsPanel(false) : undefined}
                   hub={!tuningHubEnabled ? undefined : (permits) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
@@ -1713,10 +1715,12 @@ export function BuilderShell({
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
-                        ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits) : null }] : []),
+                        ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits, true) : null }] : []),
                         ...(proposedCutsEnabled
-                          ? [{ tool: "cuts" as const, panel: cutsPanel, over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
+                          ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
                           : []),
+                        // History is part of the hub, not a switch of its own: last, whenever the hub draws.
+                        { tool: "history" as const },
                       ]}
                     />
                   )}

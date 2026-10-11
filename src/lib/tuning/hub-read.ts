@@ -2,15 +2,19 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { deckCutItems, deckSuggestionItems, deckSuggestionRuns } from "../../db/schema";
-import { shapeHubTiles, type HubRunCounts, type HubRunRow, type HubTiles } from "./hub-tiles";
+import type { HistoryTool } from "./history";
+import { readHistoryCountIn } from "./history-read";
+import { hubSeen, shapeHubTiles, type HubRunCounts, type HubRunRow, type HubTiles } from "./hub-tiles";
 
 /** Per tool: at most one run is pending at a time (`deck_suggestion_runs_one_pending_tool_idx`), so
  *  its two newest runs always hold the run in flight, if any, and the newest finished one. Read per
  *  tool, so a tool used often never pushes the other's runs out of the read. */
 const RUNS_PER_TOOL = 2;
 
-export async function readHubTiles(deckId: string, userId: string, now: Date = new Date()): Promise<HubTiles> {
-  const { rows, counts } = await db.transaction(async (tx) => {
+export async function readHubTiles(
+  deckId: string, userId: string, drawn: readonly HistoryTool[], now: Date = new Date(),
+): Promise<HubTiles> {
+  const { rows, counts, history, lastOk } = await db.transaction(async (tx) => {
     const newest = (tool: HubRunRow["tool"]) => tx.select({
       id: deckSuggestionRuns.id,
       tool: deckSuggestionRuns.tool,
@@ -34,7 +38,16 @@ export async function readHubTiles(deckId: string, userId: string, now: Date = n
     const counts = new Map<string, HubRunCounts>(
       [...suggested, ...cuts].map((c) => [c.runId, { total: c.total, accepted: c.accepted }]),
     );
-    return { rows, counts };
+    const history = await readHistoryCountIn(tx, deckId, userId, now, drawn);
+    // Each tool's last ok run, whatever came after it: the visit baseline's result identity.
+    const okRows = await tx.select({
+      tool: deckSuggestionRuns.tool,
+      at: sql<Date>`max(${deckSuggestionRuns.createdAt})`.mapWith(deckSuggestionRuns.createdAt),
+    }).from(deckSuggestionRuns)
+      .where(and(eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId), eq(deckSuggestionRuns.status, "ok")))
+      .groupBy(deckSuggestionRuns.tool);
+    const lastOk = new Map(okRows.map((r) => [r.tool as HubRunRow["tool"], r.at] as const));
+    return { rows, counts, history, lastOk };
   }, { isolationLevel: "repeatable read" });
-  return shapeHubTiles(rows, counts, now);
+  return { ...shapeHubTiles(rows, counts, now), history, seen: hubSeen(rows, lastOk, now) };
 }

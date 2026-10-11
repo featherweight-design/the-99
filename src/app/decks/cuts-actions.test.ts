@@ -28,9 +28,16 @@ const calls = vi.hoisted(() => ({
   verdictCalls: [] as string[],
   state: undefined as unknown,
   fingerprints: ["fp0", "fp1"] as string[],
+  recorded: [] as { listFingerprint: string; tool: string }[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+// History's free row is keyed on the LIST alone, never on the tool's input fingerprint ("fp").
+vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: () => "list-fp" }));
+vi.mock("../../lib/tuning/tool-counts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/tuning/tool-counts")>()),
+  recordToolCount: async (row: { listFingerprint: string; tool: string }) => { calls.recorded.push(row); },
+}));
 vi.mock("../../lib/tuning/flag", () => ({ proposedCutsEnabled: () => calls.enabled }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
 vi.mock("../../db", () => ({
@@ -379,6 +386,14 @@ describe("readCutsPanel", () => {
   const state = (lastOkFingerprint: string | null, moved = false) => ({
     run: null, items: [], itemsReport: { over: 6 }, lastOkFingerprint, lastOkAt: null, modelVersionMoved: moved,
     allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null },
+  });
+
+  it("records History's free row under the list's own fingerprint, not the tool's inputs", async () => {
+    calls.recorded = [];
+    calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.state = state(null);
+    await readCutsPanel(DECK);
+    expect(calls.recorded.map((r) => [r.tool, r.listFingerprint])).toEqual([["proposed_cuts", "list-fp"]]);
   });
 
   it("a result is current only while the deck matches the fingerprint it was made against", async () => {

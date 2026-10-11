@@ -11,7 +11,10 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Reac
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
+import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
+import type { HistoryRow, HistoryTool } from "../../lib/tuning/history";
+import { TuningHistory } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 
 /** While a run is in flight the landing re-reads at the tools' own cadence. */
@@ -21,7 +24,9 @@ const SHOWN_WAIT_MS = 10_000;
 
 export type HubToolSpec =
   | { tool: "suggested"; panel: ReactNode | null }
-  | { tool: "cuts"; panel: ReactNode; over: number; total: number };
+  | { tool: "cuts"; panel: ReactNode; over: number; total: number }
+  /** History is part of the hub: drawn last whenever the hub draws, and its panel is the hub's own. */
+  | { tool: "history" };
 
 /** A shortcut's ask: open this tool. `nonce` makes a second press of the same shortcut count. */
 export type HubRequest = { tool: TuningTool; nonce: number };
@@ -35,7 +40,7 @@ const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { m
 /** Each tool's own, stable heading: the one focus moves to on opening. A tool draws a temporary
  *  heading while its first read is pending, which is replaced when it lands, so the first heading
  *  found is not the one to take. */
-const HEADING_IDS: Partial<Record<TuningTool, string>> = { suggested: "tuning-heading", cuts: "cuts-heading" };
+const HEADING_IDS: Partial<Record<TuningTool, string>> = { suggested: "tuning-heading", cuts: "cuts-heading", history: "history-heading" };
 
 const NAMES: Record<TuningTool, string> = {
   suggested: copy.tools.suggested.name,
@@ -69,6 +74,11 @@ function runStatus(run: HubTileRun | null, words: string, outcome: (run: Extract
 }
 
 function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number): TileView {
+  if (spec.tool === "history") {
+    const h = tiles?.history;
+    const status = h ? copy.tools.history.runs(h.runs, h.running) : "";
+    return { tool: "history", purpose: copy.tools.history.purpose, cost: "", status, statusPhone: status, running: false, offer: false, inert: false };
+  }
   if (spec.tool === "suggested") {
     const t = copy.tools.suggested;
     if (spec.panel === null) {
@@ -124,7 +134,17 @@ export function TuningHub({
   const toolRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
+  // A tool opened before the hub's first read lands (a shortcut opens one in the first render, and
+  // a tile can be pressed while the status lines load) waits for it: the read records the visit's
+  // baseline, and a tool reading first would record its own, which can already hold a run that
+  // settled since arrival and would then be hidden as a prior one. The tab's opening loader waits
+  // on the same read, so nothing visible is held back.
+  const [baselineRead, setBaselineRead] = useState(false);
   const settledRef = useRef(onSettled);
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+  const toolsRef = useRef<TuningTool[]>([]);
+  useEffect(() => { toolsRef.current = tools.map((t) => t.tool); });
   useEffect(() => { settledRef.current = onSettled; });
   // Reads overlap (the mount read, the watch and a return to the tiles), so only the newest one
   // asked for is applied: an older answer landing late would put a finished run back to running.
@@ -132,10 +152,20 @@ export function TuningHub({
   const read = useCallback(() => {
     const ask = ++latest.current;
     readTuningHub(deckId)
-      .then((t) => { if (ask === latest.current) setTiles(t); })
+      .then((t) => {
+        // The visit's baseline, recorded here first (`visitBaseline` keeps the first it is given):
+        // a run in flight now that settles before its tool is opened is then this visit's, not
+        // a prior one. Not after the hub has gone: the reader may have left the deck.
+        if (t?.seen && mountedRef.current) {
+          for (const tool of ["suggested", "cuts"] as const) {
+            if (toolsRef.current.includes(tool)) visitBaseline(deckId, tool, t.seen[tool]);
+          }
+        }
+        if (ask === latest.current) setTiles(t);
+      })
       // A failed read leaves the tiles without a status line; every tool still opens.
       .catch(() => {})
-      .finally(() => settledRef.current?.());
+      .finally(() => { setBaselineRead(true); settledRef.current?.(); });
   }, [deckId]);
 
   // On mount, whether or not a shortcut opened a tool in the first render (the tab's opening
@@ -157,7 +187,7 @@ export function TuningHub({
     return () => clearTimeout(again);
   }, [openTool, read]);
 
-  const running = !!tiles && Object.values(tiles).some((t) => t?.kind === "running");
+  const running = !!tiles && [tiles.suggested_changes, tiles.proposed_cuts].some((t) => t?.kind === "running");
   useEffect(() => {
     if (!running) return;
     const watch = setInterval(read, WATCH_MS);
@@ -168,7 +198,10 @@ export function TuningHub({
   // Back on the landing, focus returns to the tile of the tool just left: the control that took
   // the reader there (All tools, or the phone's back) is gone with the tool.
   const [leftTool, setLeftTool] = useState<TuningTool | null>(null);
+  // The past run History has open: the hub's, so the phone's switch slot can say `‹ History`.
+  const [past, setPast] = useState<HistoryRow | null>(null);
   const open = useCallback((tool: TuningTool | null, how: { focus: boolean; scroll?: boolean } = { focus: true }) => {
+    setPast(null);
     if (tool === null) setLeftTool(openTool);
     setOpening((prev) => (tool === null ? null : { tool, focus: how.focus, scroll: how.scroll ?? false, seq: (prev?.seq ?? 0) + 1 }));
   }, [openTool]);
@@ -230,6 +263,8 @@ export function TuningHub({
   }, [opening]);
 
   const views = tools.map((spec) => tileOf(spec, tiles, now));
+  // History's chips: the run-making tools this hub draws.
+  const historyTools = tools.flatMap((t): HistoryTool[] => (t.tool === "history" ? [] : [t.tool]));
   // A tool that stopped being offered while it was open finishes in place (C8); one that is not
   // drawn at all (its switch is off) never opens.
   const opened = openTool ? tools.find((t) => t.tool === openTool) ?? null : null;
@@ -306,16 +341,24 @@ export function TuningHub({
           </div>
           {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
           <div className="flex items-center justify-between md:hidden">
-            <button type="button" onClick={() => open(null)} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
-              {copy.back}
-            </button>
+            {opened.tool === "history" && past ? (
+              <button type="button" data-history-back="" onClick={() => setPast(null)} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
+                {copy.history.back}
+              </button>
+            ) : (
+              <button type="button" onClick={() => open(null)} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
+                {copy.back}
+              </button>
+            )}
             <span className="flex items-center gap-[7px] font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>
               <span style={{ color: "var(--fg-body)" }}><TuningToolMark tool={opened.tool} size={14} /></span>
               {copy.toolOf(tools.findIndex((t) => t.tool === opened.tool) + 1, tools.length)}
             </span>
           </div>
           <div ref={toolRef} id="tuning-tool-panel" role="tabpanel" aria-labelledby={`tuning-tab-${opened.tool}`} data-tuning-tool={opened.tool}>
-            {opened.panel}
+            {opened.tool === "history" ? (
+              <TuningHistory deckId={deckId} tools={historyTools} past={past} onOpenPast={setPast} />
+            ) : baselineRead ? opened.panel : null}
           </div>
         </>
       ) : (

@@ -361,3 +361,27 @@ describe("a code-started push", () => {
     expect(overlay()?.className).not.toContain("pointer-events-none");
   });
 });
+
+// The deck visit (`lib/decks/visit`): the provider reports every committed path, so a Tuning
+// tool's result stays across the deck's own sub-pages and resets on leaving it.
+describe("NavigationPendingProvider: the deck visit", () => {
+  it("keeps the visit across the deck's sub-pages and ends it on another route", async () => {
+    const { resetDeckVisitForTests, visitBaseline } = await import("../../lib/decks/visit");
+    const A = "11111111-1111-4111-8111-111111111111";
+    const first = { okKey: "1", runId: null };
+    const later = { okKey: "2", runId: null };
+    const go = (path: string) => {
+      state.path = path;
+      act(() => rerender(<App links={LINKS} />));
+    };
+    resetDeckVisitForTests();
+    go(`/decks/${A}`);
+    visitBaseline(A, "suggested", first);
+    go(`/decks/${A}/changes`);
+    go(`/decks/${A}`);
+    expect(visitBaseline(A, "suggested", later)).toEqual(first);
+    go("/collection");
+    go(`/decks/${A}`);
+    expect(visitBaseline(A, "suggested", later)).toEqual(later);
+  });
+});

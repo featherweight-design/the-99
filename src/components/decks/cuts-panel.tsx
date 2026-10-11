@@ -16,6 +16,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { overCopy } from "../../lib/copy/decks-builder";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
+import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
 import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip, type CountRow } from "../../lib/tuning/cuts-count";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
@@ -70,9 +71,14 @@ export function CutsPanelView({
   deeperLooks = false,
   onSettled,
   revision,
+  freshEachVisit = false,
 }: {
   deckId: string;
   deps?: CutsDeps;
+  /** Hide a prior visit's result and open on the offer (`lib/decks/visit.ts`). Only where the
+   *  prior is still reachable: inside the Tuning hub, beside History. Mounted on its own, the tool
+   *  keeps showing its stored result, as it did before the hub. */
+  freshEachVisit?: boolean;
   deeperLooks?: boolean;
   onSettled?: () => void;
   /** Changes whenever an input of the count changes elsewhere on the page (the list, the intent, the
@@ -80,6 +86,13 @@ export function CutsPanelView({
   revision?: string;
 }) {
   const [panel, setPanel] = useState<CutsPanel | null>(null);
+  // What was already stored when this visit to the deck began (`lib/decks/visit`, Hugh
+  // 2026-10-11): a prior visit's cuts are not drawn and live only in History, and Look deeper
+  // over them runs anew. Recorded by the first read that lands, in the same render as its panel,
+  // so a prior result never paints once; a run finishing during the visit, or a remount within
+  // it, still shows. The ref (the deck it was recorded for) keeps a later read from recording again.
+  const [baseline, setBaseline] = useState<ToolBaseline | null>(null);
+  const baselineDeck = useRef<string | null>(null);
   const [counting, setCounting] = useState(false);
   // The first read threw: the count failed, which is its own state and never a panel that vanishes
   // or a counting frame that never ends.
@@ -104,10 +117,22 @@ export function CutsPanelView({
   // Reads can overlap (the mount's, a watch's, one after each verdict), and a slow one that was
   // ASKED first must not land over a newer answer: only the latest-asked read is drawn.
   const asked = useRef(0);
+  // A read landing after the panel has gone (the reader left the deck mid-read) must not open a
+  // visit for a deck the reader is no longer on.
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const reread = useCallback(async () => {
     const mine = ++asked.current;
     try {
       const next = await deps.read(deckId);
+      if (next && freshEachVisit && mounted.current && baselineDeck.current !== deckId) {
+        baselineDeck.current = deckId;
+        setBaseline(visitBaseline(deckId, "cuts", {
+          okKey: okKeyOf(next.lastOkAt),
+          // A pending run is drawn as running, and what it settles to happened during this visit.
+          runId: next.run && next.run.status !== "pending" ? next.run.id : null,
+        }));
+      }
       if (mine === asked.current) {
         setPanel(next);
         setLoadFailed(false);
@@ -119,7 +144,7 @@ export function CutsPanelView({
       if (mine === asked.current) { setLoadFailed(true); setPanel(null); }
       return null;
     }
-  }, [deps, deckId]);
+  }, [deps, deckId, freshEachVisit]);
 
   // The first read; `onSettled` tells the tab its opening may finish.
   useEffect(() => {
@@ -177,11 +202,14 @@ export function CutsPanelView({
   const { items, over, run } = panel;
   const answered = items.filter((i) => i.verdict !== "pending").length;
   const cutCount = items.filter((i) => i.verdict === "accepted").length;
-  const resultShown = panel.resultCurrent && items.length > 0;
+  // A prior visit's result, and a prior visit's failed run, are hidden: the tool opens on its offer.
+  const priorResult = isPriorResult(baseline, okKeyOf(panel.lastOkAt));
+  const priorRun = isPriorRun(baseline, run?.id);
+  const resultShown = panel.resultCurrent && items.length > 0 && !priorResult;
   // Back to 99: the cuts made from a result took the deck to the line, and it finishes in place.
   if (over === 0 && !(resultShown && cutCount > 0)) return null;
 
-  const failed = !running && run?.status === "failed";
+  const failed = !running && !priorRun && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";
   const left = Math.max(0, panel.allowance.limit - panel.allowance.used);
   const spent = panel.allowance.used >= panel.allowance.limit;

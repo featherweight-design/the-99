@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import { MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { CutsPanelView, type CutsDeps } from "./cuts-panel";
@@ -29,6 +30,7 @@ const panelOf = (over: Partial<CutsPanel> = {}): CutsPanel => ({
 const withResult = (n: number, asked: number, extra: Partial<CutsPanel> = {}) => panelOf({
   items: Array.from({ length: n }, (_, i) => item(i + 1)), asked, resultCurrent: true,
   itemsReport: { askedCount: asked, survivedCount: n, keptCount: n, over: asked, drops: [] },
+  lastOkAt: new Date("2026-10-01T12:00:00Z"),
   run: { id: "r1", status: "ok", errorClass: null, createdAt: new Date(), droppedCount: 0 }, ...extra,
 });
 
@@ -40,6 +42,14 @@ function deps(read: CutsPanel | null, over: Partial<CutsDeps> = {}): CutsDeps {
   };
 }
 const mount = async (d: CutsDeps) => { render(<CutsPanelView deckId="d1" deps={d} />); await screen.findByRole("heading", { name: copy.heading }); };
+
+// Every test below but the visit's own models a result produced DURING this visit to the deck:
+// the visit began, and its baseline was recorded, before anything was stored (`lib/decks/visit`).
+// The "a visit to the deck" block resets without this, to model a result from a previous visit.
+beforeEach(() => {
+  resetDeckVisitForTests();
+  visitBaseline("d1", "cuts", { okKey: null, runId: null });
+});
 
 describe("CutsPanelView", () => {
   it("C1: the count, Look deeper first, no card named", async () => {
@@ -273,5 +283,83 @@ describe("CutsPanelView", () => {
   it("draws nothing for a deck that is not over", async () => {
     const { container } = render(<CutsPanelView deckId="d1" deps={deps(panelOf({ over: 0, total: 99 }))} />);
     await waitFor(() => expect(container.querySelector("section")).toBeNull());
+  });
+});
+
+// The deck visit (`lib/decks/visit`, Hugh 2026-10-11): a result stays for the visit, and the next
+// visit opens on the offer. Each test resets the visit WITHOUT the file's seed, so the first read
+// records whatever is stored as a prior visit's.
+describe("CutsPanelView: a visit to the deck", () => {
+  const D1 = "11111111-1111-4111-8111-111111111111";
+  const later = new Date("2026-10-11T12:00:00Z");
+  const newResult = withResult(6, 6, { lastOkAt: later, run: { id: "r2", status: "ok", errorClass: null, createdAt: later, droppedCount: 0 } });
+  const mountOn = async (d: CutsDeps, freshEachVisit = true) => { render(<CutsPanelView deckId={D1} deps={d} freshEachVisit={freshEachVisit} />); await screen.findByRole("heading", { name: copy.heading }); };
+  const offer = "Look deeper. Uses 1 credit.";
+  beforeEach(() => {
+    resetDeckVisitForTests();
+    noteDeckRoute(`/decks/${D1}`);
+  });
+
+  it("opens on the offer over a result stored by a previous visit, even one still current", async () => {
+    await mountOn(deps(withResult(6, 6)));
+    expect(screen.queryAllByRole("article")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: offer })).toBeTruthy();
+  });
+
+  it("on its own, outside the hub (no History to reach it from), still shows the stored result", async () => {
+    await mountOn(deps(withResult(6, 6)), false);
+    expect(screen.queryAllByRole("article")).toHaveLength(6);
+  });
+
+  it("hides a previous visit's failed run", async () => {
+    await mountOn(deps(panelOf({ run: { id: "r1", status: "failed", errorClass: "timeout", createdAt: new Date(), droppedCount: 0 } })));
+    expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
+    expect(screen.getByRole("button", { name: offer })).toBeTruthy();
+  });
+
+  it("Look deeper over a hidden current result runs anew and shows the new one", async () => {
+    let finish: (r: { ok: true }) => void = () => {};
+    const run = vi.fn(() => new Promise<{ ok: true }>((r) => { finish = r; }));
+    const read = vi.fn().mockResolvedValueOnce(withResult(6, 6)).mockResolvedValue(newResult);
+    await mountOn(deps(null, { read, run }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: offer })); });
+    expect(run).toHaveBeenCalledWith(D1, { runId: expect.any(String) });
+    expect(screen.getByText(copy.deeper.pending)).toBeTruthy();
+    await act(async () => { finish({ ok: true }); });
+    await waitFor(() => expect(screen.getAllByRole("article")).toHaveLength(6));
+  });
+
+  it("a run already going when the visit began shows as running, and its result when it finishes", async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = withResult(6, 6, { run: { id: "r2", status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
+      const read = vi.fn().mockResolvedValueOnce(pending).mockResolvedValue(newResult);
+      render(<CutsPanelView deckId={D1} deps={deps(null, { read })} freshEachVisit />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByText(copy.deeper.pending)).toBeTruthy();
+      expect(screen.queryAllByRole("article")).toHaveLength(0);
+      // The watch re-reads every 3s until the run settles.
+      await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+      expect(screen.getAllByRole("article")).toHaveLength(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a result from this visit survives a remount within it, and a new visit opens on the offer", async () => {
+    const read = vi.fn().mockResolvedValueOnce(panelOf()).mockResolvedValue(newResult);
+    await mountOn(deps(null, { read }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: offer })); });
+    await waitFor(() => expect(screen.getAllByRole("article")).toHaveLength(6));
+    cleanup();
+    noteDeckRoute(`/decks/${D1}`);
+    await mountOn(deps(newResult));
+    expect(screen.getAllByRole("article")).toHaveLength(6);
+    cleanup();
+    noteDeckRoute("/decks");
+    noteDeckRoute(`/decks/${D1}`);
+    await mountOn(deps(newResult));
+    expect(screen.queryAllByRole("article")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: offer })).toBeTruthy();
   });
 });

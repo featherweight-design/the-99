@@ -36,7 +36,7 @@ export const tuningHubCopy = {
     history: {
       name: "History",
       purpose: "Every run of every tool on this deck, newest first.",
-      runs: (n: number, running: number) => `${n} runs${running ? ` · ${running} running` : ""}`,
+      runs: (n: number, running: number) => `${n} ${n === 1 ? "run" : "runs"}${running ? ` · ${running} running` : ""}`,
     },
   },
   /** Dates are US short form, month first: `Oct 7`. */
@@ -56,5 +56,61 @@ export const tuningHubCopy = {
   tileLabel: (name: string, status: string) => (status ? `${name}, ${status}` : name),
   shortcuts: {
     proposedCuts: "Proposed cuts →",
+  },
+  /** History (handoff `history` block, canvas C H1 to H4b). Engineering additions are marked. */
+  history: {
+    sub: "every run of every tool · newest first",
+    /** Engineering: the empty state's sub as canvas H2b draws it, with nothing to order. */
+    subEmpty: "every run of every tool",
+    filterAll: "All",
+    /** Engineering: the chip row's and the scroll region's accessible names. */
+    filterLabel: "Show runs of",
+    regionLabel: "Runs",
+    tool: { suggested: "Suggested", mana: "Mana", cuts: "Cuts" },
+    tier: { free: "free", credit: "1 credit", deeper: "deeper look" },
+    outcome: { ok: "ok", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
+    more: "Show 20 more",
+    foot: "Kept for as long as the deck is. A free count is recorded once per version of the list.",
+    empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first, and opens again read-only." },
+    emptyFiltered: "No runs of this tool yet",
+    back: "‹ History",
+    pastMeta: (date: string, version: number, tier: string) => `${date} · version ${version} · ${tier}`,
+    /** Engineering: a run that read a deck with no committed version. */
+    pastMetaNoVersion: (date: string, tier: string) => `${date} · ${tier}`,
+    pastNote: (n: number) => `A past run, read-only. The list has changed by ${n} cards since; nothing here can be applied now.`,
+    /** Engineering: the note when the list has not moved, or the version it read is gone. */
+    pastNoteUncounted: "A past run, read-only. Nothing here can be applied now.",
+    leftOpen: "left open",
+    /** Engineering: the other verdict labels on a past run's lines. */
+    verdict: { applied: "applied", rejected: "rejected", cut: "cut", kept: "kept" },
+    /** Canvas H3 foot (drawn, no key), and engineering's Proposed cuts form of it. */
+    pastFoot: { suggested: "Each swap opens to its full reason and citations, as it read that day.", cuts: "Each cut opens to its full reason, as it read that day." },
+    /** Engineering: a past run that returned no lines, and a free count's own body. */
+    pastNothing: "This run returned nothing to change.",
+    loadFailed: { tag: "Couldn’t load", body: "This deck’s history didn’t load. The runs are kept; only the list failed to arrive." },
+    /** Engineering: the failed state's retry and a past run that will not open. */
+    retry: "Try again",
+    pastFailed: "This run didn’t load. Try again from History.",
+    /** Engineering: each row's summary, from the canvas fixtures (§5 of the build spec). */
+    summary: {
+      running: { suggested: "Reading your deck", cuts: "Looking deeper", mana: "Looking deeper" },
+      suggestedOk: (inN: number, outN: number, added: number, cut: number, rejected: number) => {
+        const answered = [
+          ...(added || cut ? [`${added} added, ${cut} cut`] : []),
+          ...(rejected ? [`${rejected} rejected`] : []),
+        ].join(", ");
+        return `${inN} in, ${outN} out${answered ? ` · ${answered}` : ""}`;
+      },
+      cutsDeeperOk: (named: number, asked: number, cut: number, kept: number) => {
+        const answered = [...(cut ? [`${cut} cut`] : []), ...(kept ? [`${kept} kept`] : [])].join(", ");
+        return `${named} of ${asked} named${answered ? ` · ${answered}` : ""}`;
+      },
+      cutsFree: (over: number, roles: readonly { label: string; over: number }[]) =>
+        `${over} over${roles.length ? ` · ${roles.map((r) => `${r.label} ${r.over} over`).join(", ")}` : ""}`,
+      failed: "didn’t finish · credit back",
+      refused: "found nothing it could check · credit back",
+      stopped: { suggested: "stopped while reading · credit back", deeper: "stopped while looking · credit back" },
+      counted: "counted",
+    },
   },
 } as const;

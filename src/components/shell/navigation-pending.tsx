@@ -21,6 +21,7 @@ import { Report, targetOf, useReportPending, type PendingScope, type Reporter } 
 import { PendingOverlay } from "./pending-overlay";
 import { ShellLoading } from "./shell-loading";
 import { setRoutePath } from "../../lib/url/mirror";
+import { noteDeckRoute } from "../../lib/decks/visit";
 
 /**
  * Navigation pending, and its escalation to the full screen (the navigation-pending handoff and its
@@ -69,6 +70,10 @@ export function NavigationPendingProvider({ children }: { children: ReactNode })
   // page's mirror runs in a passive effect after it.
   useLayoutEffect(() => {
     setRoutePath(pathname);
+    // The deck visit (`lib/decks/visit`): a Tuning tool's result stays for the visit to one deck.
+    // Noted here and never cleared in the cleanup, which runs between EVERY two paths: clearing
+    // there would end the visit on a move from `/decks/A` to `/decks/A/changes`.
+    noteDeckRoute(pathname);
     return () => setRoutePath(null);
   }, [pathname]);
   // Which reporters are pending, and where each goes. A Map so a press that moves from one link to
