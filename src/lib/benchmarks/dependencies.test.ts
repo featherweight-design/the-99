@@ -85,6 +85,14 @@ describe("dependencies", () => {
     expect(rows(dependencies([win], 0, cuts))).toEqual(["combat:light"]);
   });
 
+  it("does not count a combat-triggered win, or the commander's own drain, as a route", () => {
+    const phage = card("Phage the Untouchable", { oracleText: "Whenever Phage the Untouchable deals combat damage to a player, that player loses the game." });
+    const vorpal = card("Vorpal Sword", { oracleText: "Whenever equipped creature deals combat damage to a player, that player loses the game." });
+    const lathril = card("Lathril", { commander: true, typeLine: "Legendary Creature — Elf", jobs: [job({ kind: "drain", affects: "opponents", recurrence: "repeatable", trigger: "activated" })] });
+    expect(rows(dependencies([phage, vorpal], 0, cuts))).toEqual(["combat:heavy"]);
+    expect(rows(dependencies([lathril, card("Bear")], 0, cuts)).filter((r) => r.startsWith("combat"))).toEqual(["combat:heavy"]);
+  });
+
   it("does not count a one-time burn as a route", () => {
     const bolt = card("Lightning Bolt", { jobs: [job({ kind: "drain", affects: "opponents" })] });
     expect(rows(dependencies([bolt], 0, cuts))).toEqual(["combat:heavy"]);

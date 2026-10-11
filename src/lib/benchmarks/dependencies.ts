@@ -39,6 +39,11 @@ const ARTIFACT_PAYOFF_KEYWORDS = ["Affinity", "Improvise", "Metalcraft"];
 const ENCHANTMENT_PAYOFF = /\benchantments? you control\b|\bfor each enchantment\b|\bwhenever an(?:other)? enchantment\b|\benchantment spells?\b|\bconstellation\b|\bnumber of enchantments\b|\baura spells?\b/i;
 /** Winning outright, or making an opponent lose: never "you lose the game" or "can't lose the game". */
 const WINS_OUTRIGHT = /\byou win the game\b|\b(?:target|each|that|an|any) (?:opponent|player)s? loses? the game\b|\bopponents? loses? the game\b/i;
+/** A win clause fired by an attack or by combat damage (Phage, Vorpal Sword) is a combat route. */
+const IN_COMBAT = /\bcombat damage\b|\battacks?\b/i;
+/** A route outside combat wins outright in a sentence no attack or combat damage triggers. */
+const winsOutsideCombat = (c: BenchCard) =>
+  (c.oracleText ?? "").split(/(?<=[.\n])/).some((s) => WINS_OUTRIGHT.test(s) && !IN_COMBAT.test(s));
 
 const strengthOf = (value: number, cut: RowCut): Strength | null =>
   value >= cut.heavy ? "heavy" : value >= cut.light ? "light" : null;
@@ -112,7 +117,8 @@ function readRows(cards: readonly BenchCard[]) {
     activated: byName(withCommanders.filter((c) => isType(c, "Creature") && hasActivated(c))),
     activatedCommander: commanders.some((c) => isType(c, "Creature") && hasActivated(c)),
     // A route is repeatable: a one-time burn spell is reach, not a route.
-    routes: byName(withCommanders.filter((c) => WINS_OUTRIGHT.test(c.oracleText ?? "") || c.jobs.some((j) =>
+    // Over the 99, as the brief measured it: a commander's drain is its own figure there, not a route.
+    routes: byName(deck.filter((c) => winsOutsideCombat(c) || c.jobs.some((j) =>
       (j.kind === "drain" || j.kind === "poison" || j.kind === "mill") && (j.affects === "opponents" || j.affects === "each")
       && j.recurrence === "repeatable" && outsideCombat(j)))),
   };
