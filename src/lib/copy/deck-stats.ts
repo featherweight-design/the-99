@@ -1,5 +1,9 @@
-// Deck Stats copy. Every string is a PLACEHOLDER owed to /copy-review, transcribed from the
-// handoff's `deck-stats · copy strings.ts`. US English. No em dashes.
+// Deck Stats copy, from the handoff's `deck-stats · copy strings.ts`, reviewed by /copy-review
+// (2026-10-11): every string kept as written. US English. No em dashes.
+//
+// `colors.onlyLands` is the one string the pass would tighten ("Every source is a land: no mana
+// rocks, dorks or land search."). The mana handoff's README quotes it verbatim, so it stays until
+// Design re-draws that state.
 
 export const deckStatsCopy = {
   segment: {
@@ -47,8 +51,8 @@ export const deckStatsCopy = {
     title: "The curve, by card type",
     denom: (cast: number) => `${cast} cast`,
     ceiling: "7+",
-  column: (label: string, n: number, parts: string[]) =>
-    n === 0 ? `Mana value ${label}: no cards` : `Mana value ${label}: ${n} ${n === 1 ? "card" : "cards"}, ${parts.join(", ")}`,
+    column: (label: string, n: number, parts: string[]) =>
+      n === 0 ? `Mana value ${label}: no cards` : `Mana value ${label}: ${n} ${n === 1 ? "card" : "cards"}, ${parts.join(", ")}`,
     // No average to name at zero cast: a deck of nothing but lands has none, and 0.0 would read as one.
     noAverage: "none",
     caption: (avg: string, lands: number) =>
