@@ -217,3 +217,113 @@ drop omitted `READINESS-audit.md`; main's copy is kept and this section is appen
 ### To `/copy-review` (not decided here)
 The `cuts` block of `tuning-hub · copy strings.ts`: offer lead, `Name the six cuts`, the shortfall slot, the
 refused and failed sentences, and the tile purpose `Counts where the deck runs long. A deeper look names the cuts.`
+
+## R3 Mana Balance audit, 2026-10-11
+
+Audited against `docs/superpowers/design-briefs/2026-10-10-mana-balance-evidence.md`, its "Rulings 2026-10-11"
+(Hugh, closed) and the engine on main (`src/lib/tuning/mana-balance*.ts`, `mana-help.ts`, `src/lib/mana/karsten.ts`,
+`pattern.ts`, `lands-tapped.ts`). The canvases were read from their data blocks, not opened in a browser. Figures
+were checked against staging read-only (`pnpm eval:mana`, plus a one-off read of the same loader for the five
+fixture decks; nothing written, no model call).
+
+**Verdict: GREEN.** Build from R3b F3 (folded view), F1 (each section open) and F2 (door and step), with R3a's
+per-deck frames and R3's thin, failed and help-row states. Every finding below is engineering-resolvable or
+goes to `/copy-review`; none needs a Design round.
+
+### Checked against the ask
+- **(a) No always-on pointer.** Holds in R3a and R3b. R3a's header and notes state revised ruling 1, and no
+  frame renders a lead line: R3a's data still builds a `lc` lead object per deck and a `leadName` size, but the
+  template never reads either (dead data, harmless). R3b draws the view with no color named on open; its one
+  sentence under the title ("Pips and sources for each color ... beside what each color's tightest cost needs")
+  names no color and is not the forbidden line. **R3b supersedes R3a for the whole view; R3a stays the source for
+  the per-deck step frames (N3, N3b, N3c), Wizards (N4) and Eldrazi (N5).** R3 (`evidence`) M1 and M2 still draw
+  the pre-ruling `Karsten, hardest card` column and the `Reading the Karsten figure` box; both are superseded by
+  R3a/R3b, as the README and STATES say.
+- **(b) Pattern rows.** `You have N · Needs M`, `Needs at most N`, `No published figure`, column `Needed`: drawn
+  (R3a N2/N2b, R3b F1/F3c). The tap-open line is Hugh's sentence verbatim (copy strings `needs.needsBody`). Karsten
+  is NOT confined to that line and the citation; see finding 1.
+- **(c) One door.** `Improve my mana` opens a radio step, tightest first, nothing checked (R3a N3/N3b/N3c, R3b F2b).
+  The order and figures are right for Gishath (G 28·28, R 27·22, W 26·15) and Blood Rites (W 24·26 before B 30·30,
+  March of the Canonized's single-card `CC` not deciding). Aang's order is wrong at its tie; see finding 2.
+- **(d) No verdicts.** No `short`, no pass/fail, no tint by gap, no word `labels`. `--warning` appears only in the
+  shipped BuyTag's `buy` pill and `--danger` only on the help-failed mark (B8's shape); neither is on a figure.
+- **(e) Fixtures.** Gishath matches staging on every figure (pips 18/26/56, sources 26/27/28 + 1 U + 1 B, 6
+  colorless; 36 lands, 4/5/4 tapped, average 4.34, ramp 10, land figure 42.2; patterns). Blood Rites' step and rows
+  match. Wizards, Eldrazi and Aang's sub lines do not; see finding 5.
+- **(f) Widths.** 900 and 390 both drawn: R3b F3/F3b/F3c, F1/F1b; F2 is phone only, with the desktop step in R3a
+  N3. STATES gains R3, R3a and R3b tables; design tables gain ManaEvidenceTable, PatternRows, LandFacts,
+  HelpPicker, HelpResult, KarstenCitation, NeedsExplainer, ImproveDoor, ColorStep and ManaSection.
+- **(g) Design's open calls**, all answered: the explanation is inline (the shipped `StripRationale` disclosure),
+  not an InfoTip per row; a one-color deck skips the step and the door opens that color's help; a colorless deck
+  has no door. Also answered: help rows are information only (no Apply); the land cell shows `balance mana →`
+  whenever the deck has a colored pip (a door, not an alarm); pips lead with the commander.
+
+### Findings
+1. **Karsten is named outside the tap-open line and the citation** (ruling 2: "nowhere else on the screen").
+   R3b's Lands row `Karsten’s land count`, the Lands clause `Karsten’s count {x}`, `thin.noSources` ("Pips and
+   Karsten’s figures still show"), and design-tables `KarstenCitation` ("`Karsten` heads every column, row and
+   caption") and `LandFacts`. R3a's own STATES says `Karsten` is gone as a label, so R3b contradicts it.
+   *eng-resolvable, to `/copy-review`* (decision 1).
+2. **Aang's step breaks a tie the wrong way.** White and green both read 22 · 19 (`1C`); the ruling breaks a
+   tie on more pips with the commander, then W U B R G. Staging: green 22 pips, white 20, so green lists before
+   white. R3a N3b draws white first, and STATES, design-tables `ColorStep` and the R3a note all state the tie as
+   W U B R G alone. *eng-resolvable* (decision 2).
+3. **The ranking rule as written in the handoff is incomplete.** `ColorStep` (design tables) omits the ruling's
+   fallback: a color with no pattern two or more cards share ranks by its worst single-card published pattern.
+   It also does not place a color whose patterns are all ceilings or unpublished. *eng-resolvable* (decision 3).
+4. **`How moves are picked` contradicts the engine.** The copy strings say a move keeps every other color "at or
+   above what its tightest cost needs", i.e. the `Needed` figure. The engine's guard (`mana-help.ts`,
+   `requirement`) uses `karstenHardest`, the hardest published pattern over all patterns, shared or not: for
+   Gishath red that is 30 (`CC`, Shatterskull Smashing), while the table shows Needed 22. R3's canvas text
+   ("Karsten’s figure for its hardest card") matched the engine; the R3b copy file does not.
+   *eng-resolvable, to `/copy-review`* (decision 4).
+5. **Fixture drift.** Against staging: Aang's sub `94 pips · 102 sources` is 83 · 100; Wizards' `75 · 41` is 75 · 39,
+   with `73 without Baral` (74), `33 lands · 4 other` (35 · 2), average 2.71 (2.52), cheap ramp 8 (4), land figure
+   37.7 (38.2); Eldrazi's `21 pips · 17 sources` is 15 {C} pips · 47 sources, and 36 lands is 38. Aang's R3 help draws
+   red 23 and green 24 where the step reads 21 and 22, and a rebalance and a Hinterland Harbor trade that take red
+   below its guard figure, which the engine refuses (staging: no rebalance for Aang blue). Blood Rites' sub
+   (`white 24, black 30 sources`) breaks the Colors card's `N pips · M sources` form. The brief allows
+   illustrative figures; the build reads the engine. *eng-resolvable*.
+6. **Engine gap: the `Needed` figure and the step's ranking do not exist yet.** `readManaBalance` keeps every
+   pattern internally but exposes only the six hardest and `karstenHardest` (over all patterns, regardless of how
+   many cards share them). Gishath white's Needed is `4C` (2 cards, 15), which is not among its six shown
+   patterns, and `karstenHardest` reads 26. Needed per color (pattern, figure, cards behind it, commander
+   excluded) and the ranking over it are new pure functions over the same pattern map. *eng-resolvable*.
+7. **Engine gap: tapped-land names.** R3/R3b open each tapped kind to its land names; `TappedLands` carries counts
+   only. *eng-resolvable* (extend `lands-tapped.ts` to return names, or drop the disclosure).
+8. **The step needs the commander's identity**, which `ManaBalance` does not carry (Gishath's blue and black have
+   sources and are outside its identity, so they are not listed). `loadManaHelp` already reads it from the deck;
+   pass it to the view. *eng-resolvable*.
+9. **STATES R3 "Must not" says "sorting colors by any comparison (always W U B R G)".** That holds for the evidence
+   view and is overridden inside the step by revised ruling 1. *eng-resolvable* (doc wording, at the build).
+10. **Blood Rites' white rows (R3a N2b) show two patterns**; staging has at least `CC`, `2CC` and `4CC`. Illustrative.
+    *eng-resolvable*.
+
+### Decided, override if you disagree
+1. **Karsten's name leaves the Lands block.** The row reads as a land-count figure without his name (wording to
+   `/copy-review`), and the citation, already the panel's last line, credits the formula to him. `thin.noSources`
+   drops his name the same way. This is the only reading of ruling 2's "nowhere else on the screen".
+2. **The step and the table follow the ruling's tie-break, not the drawn order:** lowest ratio first, then more
+   pips with the commander, then W U B R G. Aang lists U, R, G, W, B.
+3. **The full ranking rule**, as the build implements it: a pattern counts only with a published figure (`known`);
+   "two or more cards" counts nonland COPIES behind the pattern with the commander excluded, as the calibration
+   table does; a color's figure is its worst ratio over those patterns, else its worst single-card published
+   pattern; colors with pips but no published pattern come after every color with a ratio, in W U B R G order;
+   identity colors with no pips come last (`N sources · no pips`), as drawn; under `noSources` every ratio is 0
+   and the tie-break orders them. The `Needed` cell of a color with no published pattern reads like a pipless
+   one (`—`), wording to `/copy-review`.
+4. **The guard stays as built** (hardest published pattern, `karstenHardest`); `How moves are picked` is reworded to
+   describe it without the word "tightest", so it never reads against the table's Needed column.
+5. **Build figures come from the engine**, never the canvas; finding 5's figures are not errata for Design.
+
+### To `/copy-review` (not decided here)
+`mana-balance R3 · copy strings.ts` in full, with findings 1 and 4 and the Needed cell for a color with no
+published pattern; the About entry (M10) rides the Tuning line's batched bump with `MANA_BALANCE_ENABLED` added
+to `AboutSwitch`.
+
+### Landing notes
+- Design's package deleted `READINESS-audit.md`; it is kept (this file).
+- Design's `README.md` was built on a copy older than main and reverted two R2 errata already merged: the
+  "SUPERSEDED by R2" note over the Proposed cuts feedback bullets, and the C3 chip sentence ("a figure the
+  validator checked ... audit decision 6"). Both are restored to main's text; Design's R3 additions stand as drawn.
+- Every earlier canvas (R1 A, R1 B, R1 C, R2 C, `TuningToolMark`) is kept.
