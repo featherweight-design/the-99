@@ -18,6 +18,7 @@ import { SetCell } from "../sets/set-cell";
 import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 import { CurveCard } from "../decks/deck-stats-view";
+import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { BrowseFigureBody } from "./browse-figure";
 import { KeyNumeral } from "./numeral";
@@ -98,6 +99,8 @@ import {
   PRICES,
   STATUSES,
   DECK_STATS,
+  BENCHMARKS_SCRAPPY,
+  BENCHMARKS_ANALYZED_AT,
 } from "../../lib/about/fixtures";
 
 /** The four availability states, including the one that draws nothing. */
@@ -743,6 +746,18 @@ function DeckAnalysisFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/**
+ * "How it plays" in its phone layout (`layout="rows"`, handoff E1), because the four tiles do not
+ * fit the 760 column. No `onOpen`, so no opener is drawn: a figure offers no control that does nothing.
+ */
+function DeckBenchmarksFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="deck-benchmarks" width={width}>
+      <BenchmarksBlock benchmarks={BENCHMARKS_SCRAPPY} analyzedAt={BENCHMARKS_ANALYZED_AT} layout="rows" />
+    </Specimen>
+  );
+}
+
 /** The decklist's mark key above two rows that carry three of the four bracket facts between them. */
 function CardMarksFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1057,6 +1072,7 @@ export const FIGURES: Partial<
   partners: PartnersFigure,
   "deck-page": DeckPageFigure,
   "deck-analysis": DeckAnalysisFigure,
+  "deck-benchmarks": DeckBenchmarksFigure,
   "card-marks": CardMarksFigure,
   "auto-fill": AutoFillFigure,
   roles: RolesFigure,

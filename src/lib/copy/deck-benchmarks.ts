@@ -152,7 +152,8 @@ export const deckBenchmarksCopy = {
 } as const;
 
 // About entry · chapter 03, after 'deck-analysis'. `since` is the bump at the evidence line’s
-// close (batched with the Overview claim tap-through).
+// close (batched with the Overview claim tap-through): ABOUT_VERSION 13. A literal, because
+// `about.ts` imports this entry and importing the version back would make the two modules a cycle.
 export const benchmarksAboutEntry = {
   id: 'deck-benchmarks',
   chapter: '03',
@@ -168,5 +169,5 @@ export const benchmarksAboutEntry = {
     'Dependencies lists what the deck leans on, Heavy or Light, and the cards that break it. It’s a risk to know about, never a score, and an empty list doesn’t mean the deck is safe.',
     'Every grade and every dependency opens the cards behind it, where there are any. The block is part of the reading, so it goes out of date with it.',
   ],
-  since: 'ABOUT_VERSION at the evidence line close',
+  since: 13,
 } as const;
