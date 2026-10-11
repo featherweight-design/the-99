@@ -50,7 +50,9 @@ type Phase =
   | { k: "warning"; decks: ShortDeck[]; expected: Record<string, number>; fresh: ReadonlySet<string>; changed: boolean }
   | { k: "undoing" }
   | { k: "undone" }
-  | { k: "failed" };
+  // `known`: the revert is known not to have landed. False when the answer was lost and the
+  // entry could not be read back either, so the toast claims nothing about the copy.
+  | { k: "failed"; known: boolean };
 
 /**
  * What the provider does for an undo. The undo is the PROVIDER's, not the toast's: a newer write
@@ -81,7 +83,7 @@ export function GotItReceipt({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
-  const [phase, setPhase] = useState<Phase>({ k: failed ? "failed" : "shown" });
+  const [phase, setPhase] = useState<Phase>(failed ? { k: "failed", known: true } : { k: "shown" });
   // Hover and focus hold apart: ending one (focus, when its control unmounts) leaves the other.
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
@@ -112,12 +114,24 @@ export function GotItReceipt({
   }
 
   // A settled undo's own line gets the whole 8s (C3: "goes after 8 seconds").
-  function fail() {
+  function fail(known = true) {
     stage.current = "idle";
     host.end(oracleId);
     if (!mounted.current) return host.failedAway();
     restart();
-    setPhase({ k: "failed" });
+    setPhase({ k: "failed", known });
+  }
+
+  // A thrown revert is not proof it failed: it commits before it invalidates, so a lost answer or
+  // an invalidation error can follow a write that landed. The entry is read back first.
+  async function reconcile() {
+    try {
+      const p = await previewRevert(written.entryId, deckId);
+      if ("alreadyReverted" in p) return done(true);
+      fail();
+    } catch {
+      fail(false);
+    }
   }
 
   async function revert(expected: Record<string, number>, confirmShort?: ShortDeck[], was?: ShortDeck[]) {
@@ -145,7 +159,7 @@ export function GotItReceipt({
       }
       fail();
     } catch {
-      fail();
+      await reconcile();
     }
   }
 
@@ -232,7 +246,7 @@ export function GotItReceipt({
         placement="deck"
         onHold={hold}
         title={c.undoFailed}
-        body={c.undoFailedBody}
+        body={phase.known ? c.undoFailedBody : undefined}
         actions={
           <Link href={history} className={`${btn} text-[color:var(--accent)]`}>
             {c.openHistory}

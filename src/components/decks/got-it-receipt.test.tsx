@@ -282,6 +282,27 @@ describe("Undo", () => {
     expect(screen.getByRole("link", { name: c.openHistory })).toHaveAttribute("href", `/collection/history?entry=${ENTRY}`);
   });
 
+  // The revert commits before it invalidates, so a lost answer can follow a write that landed.
+  it("reads the entry back after a thrown revert: one that landed is done", async () => {
+    previewRevert.mockResolvedValueOnce(preview()).mockResolvedValueOnce({ alreadyReverted: true });
+    revertCollectionEntry.mockRejectedValue(new Error("lost"));
+    draw();
+    await act(async () => fireEvent.click(undo()));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+  });
+
+  it("claims nothing about the copy when the entry cannot be read back either", async () => {
+    previewRevert.mockResolvedValueOnce(preview()).mockRejectedValueOnce(new Error("down"));
+    revertCollectionEntry.mockRejectedValue(new Error("lost"));
+    draw();
+    await act(async () => fireEvent.click(undo()));
+    const t = toast();
+    expect(t).toHaveAttribute("role", "alert");
+    expect(t.textContent).toContain(c.undoFailed);
+    expect(t.textContent).not.toContain(c.undoFailedBody);
+    expect(screen.getByRole("link", { name: c.openHistory })).toBeInTheDocument();
+  });
+
   it("an entry that is gone fails the same way", async () => {
     previewRevert.mockResolvedValue({ notFound: true });
     draw();
