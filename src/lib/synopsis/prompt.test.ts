@@ -210,8 +210,8 @@ describe("buildSynopsisPrompt under contract 8", () => {
   });
 
   it("states a mandatory loop as a loop that draws the game, never as a combo, and rules it a weakness", () => {
-    const loop = { pieces: ["Marauding Raptor", "Polyraptor"], produces: ["Draw the game", "Infinite creature tokens"], usesCommander: false, manaNeeded: 8, mandatory: true };
-    const may = { pieces: ["Forerunner of the Empire", "Polyraptor"], produces: ["Infinite creature tokens"], usesCommander: false, manaNeeded: 8, mandatory: false };
+    const loop = { pieces: ["Marauding Raptor", "Polyraptor"], produces: ["Draw the game", "Infinite creature tokens"], usesCommander: false, manaNeeded: 8 };
+    const may = { pieces: ["Forerunner of the Empire", "Polyraptor"], produces: ["Infinite creature tokens"], usesCommander: false, manaNeeded: 8 };
     const facts = { ...FACTS, combos: [loop, may], nearCombos: [] };
     const { user, system } = buildSynopsisPrompt(facts, undefined, C8);
     expect(user).toContain("- mandatory loop: Marauding Raptor + Polyraptor: Infinite creature tokens (needs 8 mana to run); the game is drawn unless an outlet is available");

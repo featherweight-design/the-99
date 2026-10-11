@@ -2,7 +2,7 @@ import { refOf } from "./claims";
 import { engineCandidates } from "./engine-candidates";
 import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
-import { isInfiniteOrGameEnding, DRAW_THE_GAME } from "../spellbook/combo-features";
+import { isInfiniteOrGameEnding, isMandatoryLoop, DRAW_THE_GAME } from "../spellbook/combo-features";
 import { identityNameOf, ownWinConditions, type SynopsisFacts } from "./facts";
 import { normalizeV8, weaknessLines } from "./validate-v8";
 import type { SynopsisReply } from "./response-schema";
@@ -359,7 +359,7 @@ export function v2FactLines(facts: SynopsisFacts, contract8 = false): string[] {
       // the deck has an outlet. The decklist is what names one, so the fact says what to look for.
       // Contract 8 only: contract 7 stays the baseline the v7-against-v8 comparison is run against.
       const shown = producesShown(c.produces.filter((f) => f !== DRAW_THE_GAME)).join(", ");
-      out.push(contract8 && c.mandatory
+      out.push(contract8 && isMandatoryLoop(c.produces)
         ? `- mandatory loop: ${c.pieces.join(" + ")}: ${shown}${mana(c.manaNeeded)}; the game is drawn unless an outlet is available`
         : `- ${c.pieces.join(" + ")}: ${producesShown(c.produces).join(", ")}${mana(c.manaNeeded)}`);
     }

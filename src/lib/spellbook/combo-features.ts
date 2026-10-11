@@ -40,7 +40,9 @@ export function isInfiniteOrGameEnding(features: readonly string[]): boolean {
  * Marauding Raptor's 2 damage to each creature entering, with Polyraptor copying itself when
  * dealt damage, is the case (variant 2062-3356). A loop with a "may" in it (Forerunner of the
  * Empire's damage) carries no such feature, because its controller can decline and end it.
- * Measured on staging 2026-10-11: 294 variants, 134 of them two-card.
+ * Read from `produces`, so the any-size read and the profile's two-card fallback agree. Measured on
+ * staging 2026-10-11: 294 variants, 134 of them two-card (the generated vocabulary's own count, from
+ * its own run, is 289).
  */
 export const DRAW_THE_GAME = "Draw the game";
 

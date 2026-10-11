@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { GAME_ENDING_FEATURES } from "../spellbook/produces-kinds.generated";
-import { isInfiniteOrGameEnding, isMandatoryLoop } from "../spellbook/combo-features";
+import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
 import { fitsIdentity, MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
 
@@ -126,7 +126,6 @@ export function shapeComboFacts(
         produces: first.produces,
         usesCommander: pieces.some((p) => commanderIds.includes(p.oracle_id)),
         manaNeeded: first.mana_value_needed,
-        mandatory: isMandatoryLoop(first.produces),
       });
     } else if (missing.length === 1) {
       const m = missing[0];

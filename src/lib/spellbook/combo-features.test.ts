@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isInfiniteOrGameEnding, producesInfiniteTurns } from "./combo-features";
+import { isInfiniteOrGameEnding, isMandatoryLoop, producesInfiniteTurns } from "./combo-features";
 import { GAME_ENDING_FEATURES, INFINITE_TURN_FEATURES } from "./produces-kinds.generated";
 
 describe("isInfiniteOrGameEnding", () => {
@@ -90,5 +90,15 @@ describe("producesInfiniteTurns", () => {
 
   it("refuses a game-ending name that is not a turn loop", () => {
     expect(producesInfiniteTurns(["Win the game"])).toBe(false);
+  });
+});
+
+describe("isMandatoryLoop", () => {
+  it("is Spellbook's \"Draw the game\" feature and nothing else", () => {
+    // 2062-3356, Marauding Raptor + Polyraptor: every trigger is mandatory.
+    expect(isMandatoryLoop(["Draw the game", "Infinite creature tokens"])).toBe(true);
+    // 2259-3356, Forerunner of the Empire + Polyraptor: a "may" ends it on request.
+    expect(isMandatoryLoop(["Infinite creature tokens", "Infinite damage to all creatures"])).toBe(false);
+    expect(isMandatoryLoop([])).toBe(false);
   });
 });
