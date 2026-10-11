@@ -18,10 +18,11 @@ export function recursionReads(c: BenchCard): boolean {
   return /\bgraveyard\b/i.test(text(c)) || /\bdies\b[^.]*\breturn/i.test(text(c));
 }
 
-/** Fix 3: self-mill counts when the card actually mills, or puts cards into your graveyard. */
+/** Fix 3: self-mill counts when the card actually mills (however the amount is worded: "mill
+ *  three", "mill cards equal to...", "mill twice that many"), or puts cards into your graveyard. An
+ *  exile from the library mills nothing. */
 export function selfMillReads(c: BenchCard): boolean {
-  return /\bmills? (?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|x|\d+) cards?\b/i.test(text(c))
-    || /\binto your graveyard\b/i.test(text(c));
+  return /\bmills?\b/i.test(text(c)) || /\binto your graveyard\b/i.test(text(c));
 }
 
 /** Keywords whose ability is used from the hand or a graveyard, never on the battlefield. */

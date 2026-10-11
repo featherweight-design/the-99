@@ -40,11 +40,17 @@ describe("winSpeed", () => {
     expect(withCreature.odds).toBeCloseTo(without.odds, 2);
   });
 
-  it("never spends a search that is itself a piece of the line", () => {
-    const tutorPiece = card("Tutor Piece", { typeLine: "Artifact", oracleText: "Search your library for an artifact card, reveal it, put it into your hand, then shuffle.", quantity: 40 });
-    const lines = [line("v", [tutorPiece, monument])];
-    // Forty copies of the searching piece are almost always seen; the line still needs Monument itself.
-    expect(winSpeed(padded([tutorPiece, monument]), lines)!.odds).toBeLessThan(0.3);
+  it("spends one copy of a searching piece as the piece, and lets further copies search", () => {
+    const search = "Search your library for an artifact card, reveal it, put it into your hand, then shuffle.";
+    const single = card("Tutor Piece", { typeLine: "Artifact", oracleText: search });
+    const plain = card("Tutor Piece", { typeLine: "Artifact" });
+    // One copy cannot be both the piece and the search for Monument: the odds are the plain pair's.
+    expect(winSpeed(padded([single, monument]), [line("v", [single, monument])])!.odds)
+      .toBeCloseTo(winSpeed(padded([plain, monument]), [line("v", [plain, monument])])!.odds, 3);
+    // Two copies: when both are seen, the second one finds Monument, so the odds rise above the plain pair's.
+    const two = { ...single, quantity: 2 };
+    expect(winSpeed(padded([two, monument]), [line("v", [two, monument])])!.odds)
+      .toBeGreaterThan(winSpeed(padded([{ ...plain, quantity: 2 }, monument]), [line("v", [plain, monument])])!.odds + 0.005);
   });
 
   it("keeps every line, uncapped", () => {

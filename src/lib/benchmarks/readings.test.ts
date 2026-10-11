@@ -12,6 +12,7 @@ describe("the spot check's read-side filters", () => {
   });
   it("self-mill actually mills", () => {
     expect(selfMillReads(t("Mill three cards."))).toBe(true);
+    expect(selfMillReads(t("Mill cards equal to the number of lands you control."))).toBe(true);
     expect(selfMillReads(t("Exile the top card of your library."))).toBe(false);
   });
   it("an activated ability counts only on the battlefield", () => {

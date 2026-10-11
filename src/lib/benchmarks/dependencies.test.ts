@@ -48,6 +48,14 @@ describe("dependencies", () => {
     expect(rows(dependencies([card("Bear")], 1, cuts))).toEqual([]);
   });
 
+  it("does not count losing yourself, or not losing, as a route", () => {
+    const self = card("Lab Risk", { oracleText: "If you would draw from an empty library, you lose the game." });
+    const shield = card("Platinum Angel", { oracleText: "You can't lose the game and your opponents can't win the game." });
+    const win = card("Thassa's Oracle", { oracleText: "If X is greater than or equal to the number of cards in your library, you win the game." });
+    expect(rows(dependencies([self, shield], 0, cuts))).toEqual(["combat:heavy"]);
+    expect(rows(dependencies([win], 0, cuts))).toEqual(["combat:light"]);
+  });
+
   it("does not count a one-time burn as a route", () => {
     const bolt = card("Lightning Bolt", { jobs: [job({ kind: "drain", affects: "opponents" })] });
     expect(rows(dependencies([bolt], 0, cuts))).toEqual(["combat:heavy"]);

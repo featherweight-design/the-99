@@ -37,7 +37,8 @@ const GRAVEYARD_KEYWORDS = new Set([
 const ARTIFACT_PAYOFF = /\bartifacts? you control\b|\bfor each artifact\b|\bwhenever an(?:other)? artifact\b|\bartifact spells?\b|\bnumber of artifacts\b/i;
 const ARTIFACT_PAYOFF_KEYWORDS = ["Affinity", "Improvise", "Metalcraft"];
 const ENCHANTMENT_PAYOFF = /\benchantments? you control\b|\bfor each enchantment\b|\bwhenever an(?:other)? enchantment\b|\benchantment spells?\b|\bconstellation\b|\bnumber of enchantments\b|\baura spells?\b/i;
-const WINS_OUTRIGHT = /\byou win the game\b|\bloses? the game\b/i;
+/** Winning outright, or making an opponent lose: never "you lose the game" or "can't lose the game". */
+const WINS_OUTRIGHT = /\byou win the game\b|\b(?:target|each|that|an|any) (?:opponent|player)s? loses? the game\b|\bopponents? loses? the game\b/i;
 
 const strengthOf = (value: number, cut: RowCut): Strength | null =>
   value >= cut.heavy ? "heavy" : value >= cut.light ? "light" : null;
