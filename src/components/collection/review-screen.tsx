@@ -211,7 +211,7 @@ export function ReviewScreen({
             <div className="flex gap-[8px]">
               <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label="unmatched" />
               <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label={preview.parseErrors.length === 1 ? "parse error" : "parse errors"} />
-              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label={preview.preview.rowCount === 1 ? "row read" : "rows read"} />
+              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label={preview.rowCount === 1 ? "row read" : "rows read"} />
             </div>
             {/* Matches the mini-stat label's 11px/--fg-faint. Its own line because a fourth cell
                 would squeeze all four below the label's legible width on a 360px viewport. */}
