@@ -158,14 +158,15 @@ Mobile = the `phone` layout (drawn at 358 content width inside the 390 frame). D
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Ring element | `tabindex=0`, `role="button"`, `aria-label = deps.tipAria`, `aria-describedby` → tooltip id | Same |
+| As built | **The shared `InfoTip` (O2) wins over every drawn value below**; the drawn values are kept for the record and marked *(drawn)*. | Same |
+| Ring element | a `<button>`, `aria-label = deps.tipAria`, `aria-describedby` → tooltip id, `aria-expanded` | Same |
 | Ring box | `position:relative; flex:none; display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--fg-faint)` | Same |
-| Ring glyph | mono 10.5px / 600, `line-height:1`, `var(--fg-muted)`, letter `i` | Same |
-| Ring cursor | help | help |
-| Hit area | 44px (`::before` band) — **O2, not drawn** | 18px as drawn |
+| Ring glyph | mono 10.5px, `var(--fg-muted)` (`--fg` open), letter `i` *(drawn: 600, `line-height:1`)* | Same |
+| Ring cursor | default *(drawn: help)* | default *(drawn: help)* |
+| Hit area | 44px (`::after` band, `-inset-[13px]`) — **O2, not drawn** | 28px (`::after`, `-inset-[5px]`) *(drawn: 18px)* |
 | Opens on | tap | hover or focus |
-| Tooltip | `role="tooltip"`; `position:absolute; left:-10px; top:calc(100% + 8px); z-index:5; width:260px; padding:9px 11px; border-radius:8px; background:var(--elevated); border:1px solid var(--border-strong); box-shadow:0 10px 28px rgba(0,0,0,0.45)` | Same |
-| Tooltip font | sans 12px / 400, `line-height:1.5`, `var(--fg-body)`, `text-align:left`, `white-space:normal` | Same |
+| Tooltip | `role="tooltip"`; absolute against the Dependencies head row, full width of it; `top:calc(100% + 6px)`; `z-index:10`; padding 12px 14px; `border-radius:8px`; `background:var(--elevated)`; `border:1px solid var(--border-strong)`; `box-shadow:0 8px 24px rgba(0,0,0,0.45)` *(drawn: left -10px, width 260, padding 9 by 11, +8px, z 5, shadow 0 10px 28px)* | Same, `width:340px`, from the left |
+| Tooltip font | sans 12.5px, `line-height:1.5`, `var(--fg-body)` *(drawn: 12px)* | Same |
 | Tooltip copy key | `deps.tip` (the handoff's `deps.sub`, renamed by /copy-review) | `deps.tip` |
 | Component | the Deck stats `InfoTip`, lifted to shared (O2) | Same |
 
@@ -235,12 +236,12 @@ Mobile = the `phone` layout (drawn at 358 content width inside the 390 frame). D
 
 | Property | Mobile (390, unchanged) | Desktop (1300, changed) |
 |---|---|---|
-| Container | `role="status"`; flex, column, `align-items:stretch`, gap 12px; `padding:14px 15px`; `border-radius:11px`; `background:var(--surface-rail)`; `border:1px solid var(--border-strong)` | `role="status"`; flex, row, `align-items:center`, gap 18px; `padding:14px 16px 14px 20px`; `border-radius:11px`; `background:var(--surface-rail)`; `border:1px solid var(--border-strong)` |
-| Text column | — (line, button, note are siblings) | flex, column, gap 4px, `flex:1`, `min-width:0` |
+| Container | `role="status"`; flex, column, `align-items:stretch`, gap 12px; `padding:14px 15px`; `border-radius:11px`; `background:var(--surface-rail)`; `border:1px solid var(--border-strong)` | `role="status"`; **grid**, `grid-template-columns: minmax(0,1fr) auto`, `align-items:center`, gap 4px 18px; `padding:14px 16px 14px 20px`; `border-radius:11px`; `background:var(--surface-rail)`; `border:1px solid var(--border-strong)` |
+| Text column | — (line, button, note are siblings) | none: the line (column 1, row 1) and the note (column 1, row 2) are direct grid children, `min-width:0` on the line *(drawn: a flex text column)* |
 | Line | `p`, sans 13px, `line-height:1.5`, `var(--fg-body)` | `p`, sans 13.5px, `line-height:1.5`, `var(--fg-body)`, `text-wrap:pretty` |
 | Note | after the button; mono 9.5px, `line-height:1.55`, `var(--fg-faint)`, `text-align:center` | **under the line, inside the text column, left-aligned**; mono 11px, `line-height:1.55`, `var(--fg-faint)`, `text-wrap:pretty` |
 | Note rendered when | `bannerNote` non-empty | Same |
-| Button (idle) | inline-flex, centered; `min-height:44px`; `padding:0 18px`; `border-radius:8px`; `background:var(--fg)`; `color:var(--bg)`; 600 14px; nowrap | inline-flex, centered; `min-height:36px`; `padding:0 18px`; `border-radius:8px`; `background:var(--fg)`; `color:var(--bg)`; 600 13.5px; `flex:none`; nowrap; at the right |
+| Button (idle) | inline-flex, centered; `min-height:44px`; `padding:0 18px`; `border-radius:8px`; `background:var(--fg)`; `color:var(--bg)`; 600 14px; nowrap | inline-flex, centered; `min-height:36px`; `padding:0 18px`; `border-radius:8px`; `background:var(--fg)`; `color:var(--bg)`; 600 13.5px; `flex:none`; nowrap; column 2, spanning both rows when the note is drawn, row 1 alone when it is not |
 | Button (busy) | disables in place, as shipped | `aria-disabled="true"`; `min-height:36px`; `padding:0 16px`; `border-radius:8px`; `background:var(--elevated)`; `color:var(--fg-faint)`; 600 13.5px; inner flex gap 9px (pulse + label) |
 
 ## 12. Hover / focus
