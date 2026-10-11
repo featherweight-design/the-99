@@ -105,6 +105,7 @@ function renderDecklist(
     statsEnabled?: boolean;
     statsData?: DeckStatsInput | null;
     statsFocus?: { card: "curve" | "jobs"; n: number } | null;
+    onStatsFocused?: () => void;
     games?: { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
     versions?: { number: number; committedAt: Date }[];
     onLogGame?: () => void;
@@ -172,6 +173,7 @@ function renderDecklist(
           statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
           statsFocus={opts.statsFocus}
+          onStatsFocused={opts.onStatsFocused}
           games={opts.games}
           versions={opts.versions}
           onLogGame={opts.onLogGame}
@@ -1448,9 +1450,12 @@ describe("the Stats panel", () => {
     const before = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = scroll;
     onTestFinished(() => { Element.prototype.scrollIntoView = before; });
-    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, statsFocus: { card: "jobs", n: 1 } });
+    const focused = vi.fn();
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, statsFocus: { card: "jobs", n: 1 }, onStatsFocused: focused });
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
+    // The shell is told, so it drops the request: a remount on a tab switch must not answer it again.
+    expect(focused).toHaveBeenCalledTimes(1);
     expect(scroll.mock.contexts[0]).toBe(document.querySelector('[data-stats-card="jobs"]'));
     // Back to the list: the answered request does not reopen Stats.
     fireEvent.click(screen.getAllByRole("button", { name: /^All/ })[0]);

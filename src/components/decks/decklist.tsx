@@ -150,6 +150,9 @@ type DecklistProps = {
    * rule 6). `n` moves on every request, so the same card asked for twice scrolls twice.
    */
   statsFocus?: { card: "curve" | "jobs"; n: number } | null;
+  /** Called once the Stats link's request is answered, so the shell drops it: Decklist remounts on
+   *  every tab switch, and a request it still held would reopen Stats the reader had since closed. */
+  onStatsFocused?: () => void;
   /** The logged games (newest first, as `listDeckGames` returns them) and the deck's versions (newest
    *  first) for the Results card. A brew has no versions, so the card's by-version section is absent. */
   games?: readonly { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
@@ -326,6 +329,7 @@ export function Decklist({
   statsEnabled = false,
   statsData = null,
   statsFocus = null,
+  onStatsFocused,
   games = NO_GAMES,
   versions = NO_VERSIONS,
   onLogGame,
@@ -382,7 +386,9 @@ export function Decklist({
     : undefined;
   const view = storedView ?? "list";
   // The ledger's Stats link: open the panel, then, once it is drawn, bring the card into view.
-  // Each request is answered once, so closing Stats afterwards is never undone by a stale one.
+  // Each request is answered once, here and in the shell, so closing Stats afterwards is never undone
+  // by a stale one: not by a re-render (`answered`) and not by this list remounting on a tab switch
+  // (the shell drops the request through `onStatsFocused`).
   const answered = useRef(0);
   useEffect(() => {
     if (!statsFocus || !statsEnabled || answered.current === statsFocus.n) return;
@@ -392,7 +398,8 @@ export function Decklist({
     }
     answered.current = statsFocus.n;
     document.querySelector(`[data-stats-card="${statsFocus.card}"]`)?.scrollIntoView({ block: "start" });
-  }, [statsFocus, statsEnabled, statsOpen, choosePanel]);
+    onStatsFocused?.();
+  }, [statsFocus, statsEnabled, statsOpen, choosePanel, onStatsFocused]);
 
   // The marks this view actually contains, which is what the key decodes. Only
   // what the current view DRAWS — rows under `Shopping` and under `All`'s list,

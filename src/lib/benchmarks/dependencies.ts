@@ -69,8 +69,6 @@ export function usesGraveyard(c: BenchCard): boolean {
   return u.fills || u.returns || u.grows || u.keywords.length > 0;
 }
 
-/** A card that wins, or makes an opponent lose, outright: the combat ledger's "you win the game". */
-
 export function paysOffArtifacts(c: BenchCard): boolean {
   return ARTIFACT_PAYOFF.test(c.oracleText ?? "")
     || c.jobs.some((j) => j.threshold?.stat === "artifacts")

@@ -303,6 +303,7 @@ export function BuilderShell({
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
+  const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {
     setView("deck");
     setStatsFocus((f) => ({ card, n: (f?.n ?? 0) + 1 }));
@@ -1853,6 +1854,7 @@ export function BuilderShell({
               statsEnabled={statsEnabled}
               statsData={statsData}
               statsFocus={statsFocus}
+              onStatsFocused={clearStatsFocus}
               games={games}
               versions={versions}
               onLogGame={() => setView("games")}

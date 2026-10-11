@@ -111,6 +111,10 @@ describe("BenchmarkLedger, graded", () => {
     fireEvent.click(within(dialog()).getByRole("button", { name: new RegExp(L.linkJobs) }));
     expect(onStats).toHaveBeenCalledWith("jobs");
     unmount();
+    const second = mount("interaction", { onStats });
+    fireEvent.click(within(dialog()).getByRole("button", { name: new RegExp(L.linkJobs) }));
+    expect(onStats).toHaveBeenLastCalledWith("jobs");
+    second.unmount();
     mount("interaction");
     expect(dialog().querySelector("[data-stats-link]")).toBeNull();
   });
