@@ -36,7 +36,7 @@ Why the lead line ranks within a deck instead of flagging a color: no absolute t
 colors Hugh calls short from the ones he calls fine. Ratio is a color's sources over Karsten's
 requirement for its tightest pattern shared by two or more cards. Gishath's green at 1.00 is one of his
 short calls, while Counter Intelligence's blue at 0.69 and Brago's white at 0.93 are fine; catching
-Gishath needs a cut at 1.00, which flags every fine color. Ranking within each deck does name the right
+Gishath needs a cut at 1.00, which also flags five of the six colors he calls fine (all but Tovolar's green). Ranking within each deck does name the right
 color on Gishath, Avatar Aang and Blood Rites. Gods is discounted: its "short" red was a call about a
 past version, and its list has changed since.
 
@@ -66,7 +66,7 @@ past version, and its list has changed since.
 | HD - Avatar Aang | G | 22 | `1C` (6) | 19 | 1.16 | none |
 
 Cards are nonland copies behind the pattern, commander excluded; counting the commander's own pattern
-changes none of these. Omnath is left out (no data) and Yuriko was borderline with no per-color call.
+changes none of the ten colors Hugh made a call on; the rest were not checked. Omnath is left out (no data) and Yuriko was borderline with no per-color call.
 
 ## What is already drawn, and what it changes
 
