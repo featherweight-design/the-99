@@ -72,9 +72,9 @@ resolving through `default_cards`; PR 1 re-measured the catalog on the fetched b
 
 ## Pure rules (unit-tested, no database)
 
-- **`tokenLinks(printing)`** (`src/lib/tokens/links.ts`): from one card printing's `all_parts`, the ids of parts with
+- **`tokenPartIds(raw)`** (`src/lib/tokens/catalog.ts`): from one card printing's `all_parts`, the ids of parts with
   `component === "token"`. A card's own `combo_piece` self-entry and meld parts never qualify.
-- **`isTokenPrinting(entry)`**: a printing whose layout is `token` or `double_faced_token`, plus the `reversible_card`
+- **`classifyTokenEntry(raw)` / `isTokenEntry(raw)`** (same module): a printing whose layout is `token` or `double_faced_token`, plus the `reversible_card`
   whose faces say `Token` (the `sld/1969` Mechtitan case the ingest already records, `transform-printings.ts:161-189`).
   `emblem` and `art_series` are excluded. Upload decides "is a token" by resolving to `token_printings`, never by layout.
 - **`tokenPrice(printings, prices)`**: the deck price rule (`price-query.ts:52-78`) applied to a token's printings: live
@@ -91,7 +91,7 @@ Each PR is under about 20 files and 800 lines. Nothing is stacked: open, review,
 
 ### PR 1: Catalog tokens (data, dark)
 
-Migration 0092 (`tokens`, `token_printings`, `card_tokens`). `src/lib/tokens/links.ts` and a collector in the
+Migration 0092 (`tokens`, `token_printings`, `card_tokens`). `src/lib/tokens/catalog.ts` (rules and `TokenCatalogBuilder`), `publish.ts` and a collector in the
 `seedPrintings` loop (`seed-printings.ts`) that builds token rows, token printings and maker-to-token links in one
 pass over `default_cards`, then publishes them in ONE transaction that clears and refills (the denominators' rule:
 a refused run leaves the previous tables standing and exits non-zero). **Floors, measured on the first real run
@@ -100,11 +100,11 @@ resolved. `scripts/check-scryfall-contract.ts` scans for ANY entry with a token 
 entry. `pnpm probe:tokens` (read-only, staging) reproduces the brief's Fixtures: 21 decks, 121 deck-token pairs, 80
 distinct tokens, 61 names, every deck's token and making-card counts, and Aang's four tokens (a part id that stopped resolving shows as a moved count, unless another printing keeps the link, which is correct).
 
-- Files (about 12): migration + journal + snapshot, `schema.ts`, `src/lib/tokens/links.ts` + test, `seed-printings.ts`,
+- Files (about 12): migration + journal + snapshot, `schema.ts`, `src/lib/tokens/catalog.ts`, `contract.ts`, `publish.ts` + tests, `seed-printings.ts`,
   `transform-printings.ts`, `check-scryfall-contract.ts`, `scripts/probe-tokens.mts`, `docs/probes.md`, this plan.
 - **No switch.** The tables are inert until a reader exists; production's migration applies at its next build
   (`MIGRATE_DATABASE_URL`, Production scope). After merge, dispatch `Catalog refresh job=all` on both environments
-  rather than waiting for 09:00 UTC, and read `probe:tokens` on each.
+  rather than waiting for 09:00 UTC. The evidence that a database is populated is PERSISTED, not the probe: the refresh log's `Tokens: published N tokens, ...` line, and `select count(*) from card_tokens` on that database. `probe:tokens` builds the catalog in memory and is the staging fixture check only.
 - Risk: the printings pass is the one with the denominator blast radius. The token collector must not change
   `skippedOrphan`, `upserted` or the `unsizedRunFailure` rule; a test pins all three against the existing fixtures.
 
@@ -204,7 +204,7 @@ inventory below with the switch on, against a `pull:staging` copy.
 NOT READ: no loader call, no group, no Shopping rows, no card-details line, no About entry. The ingest (PR 1), prices
 (PR 2) and ownership writes (PR 3) run regardless, because they are data; a production account's first upload after
 PR 3 starts recording tokens whether or not anyone can see them, and the marker is why that is safe. Turning the
-switch on in production needs: the catalog tables populated there (read `probe:tokens`), the Mana Pool probe passing
+switch on in production needs: the catalog tables populated there (the production refresh logged `Tokens: published`, and `card_tokens` is non-empty), the Mana Pool probe passing
 there, and one upload on that account so the first screen is not "not known".
 
 ## Route and viewport inventory
