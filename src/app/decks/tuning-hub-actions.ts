@@ -6,6 +6,7 @@ import { readHubTiles } from "../../lib/tuning/hub-read";
 import type { HubTiles } from "../../lib/tuning/hub-tiles";
 import { parseHistoryId, type HistoryPage, type HistoryTool, type PastRun } from "../../lib/tuning/history";
 import { readHistory, readPastRun } from "../../lib/tuning/history-read";
+import { reapReaderRuns } from "../../lib/tuning/reap-runs";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -16,6 +17,8 @@ import { isUuid } from "../../lib/uuid";
 export async function readTuningHub(deckId: string): Promise<HubTiles | null> {
   const userId = await requireUserId();
   if (!tuningHubEnabled() || !isUuid(deckId)) return null;
+  // Abandoned runs are failed and refunded first, so a tile never says a credit came back early.
+  await reapReaderRuns(deckId, userId);
   return readHubTiles(deckId, userId, hubTools());
 }
 
@@ -30,6 +33,8 @@ export async function readTuningHistory(deckId: string, tool?: HistoryTool | nul
   const userId = await requireUserId();
   if (!tuningHubEnabled() || !isUuid(deckId)) return null;
   if (tool != null && !HISTORY_TOOLS.has(tool)) return null;
+  // As the landing's read: a row saying `credit back` describes a credit already returned.
+  await reapReaderRuns(deckId, userId);
   return readHistory(deckId, userId, { tool: tool ?? undefined, cursor: typeof cursor === "string" ? cursor : null, drawn: hubTools() });
 }
 
@@ -39,5 +44,6 @@ export async function readTuningPastRun(deckId: string, id: string): Promise<Pas
   if (!tuningHubEnabled() || !isUuid(deckId) || typeof id !== "string") return null;
   const ref = parseHistoryId(id);
   if (!ref || !isUuid(ref.uuid)) return null;
+  await reapReaderRuns(deckId, userId);
   return readPastRun(deckId, userId, ref);
 }

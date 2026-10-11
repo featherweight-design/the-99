@@ -393,13 +393,21 @@ function verdictLabel(kind: "suggested" | "cuts", v: PastVerdict): string {
 
 export function PastRunView({ deckId, row, onBack }: { deckId: string; row: HistoryRow; onBack: () => void }) {
   const [run, setRun] = useState<PastRun | null | "loading" | "failed">("loading");
+  // A run opened while still in flight is read again at the list's cadence until it settles, so
+  // the view lands on its result rather than staying on `running`. One read at a time.
+  const [reads, setReads] = useState(0);
   useEffect(() => {
     let live = true;
+    let again: ReturnType<typeof setTimeout> | undefined;
     readTuningPastRun(deckId, row.id)
-      .then((r) => { if (live) setRun(r ?? "failed"); })
+      .then((r) => {
+        if (!live) return;
+        setRun(r ?? "failed");
+        if (r && "outcome" in r && r.outcome === "running") again = setTimeout(() => setReads((n) => n + 1), HISTORY_WATCH_MS);
+      })
       .catch(() => { if (live) setRun("failed"); });
-    return () => { live = false; };
-  }, [deckId, row.id]);
+    return () => { live = false; clearTimeout(again); };
+  }, [deckId, row.id, reads]);
 
   // Opening a run moves focus to its heading, as opening a tool does.
   const headingRef = useRef<HTMLHeadingElement>(null);

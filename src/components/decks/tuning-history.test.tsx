@@ -168,6 +168,23 @@ describe("HistoryList", () => {
 });
 
 describe("PastRun", () => {
+  it("reads a run opened in flight again until it settles", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      readPast.mockResolvedValueOnce({ kind: "suggested", at: rows[0].at, outcome: "running", readVersion: null, moved: null, lines: [] });
+      readPast.mockResolvedValue({ kind: "suggested", at: rows[0].at, outcome: "failed", readVersion: null, moved: null, lines: [] });
+      render(<PastRunView deckId="d" row={rows[0]} onBack={() => {}} />);
+      await waitFor(() => expect(screen.getByText(copy.summary.running.suggested)).toBeTruthy());
+      await vi.advanceTimersByTimeAsync(3000);
+      await waitFor(() => expect(screen.getByText(copy.summary.failed)).toBeTruthy());
+      const calls = readPast.mock.calls.length;
+      await vi.advanceTimersByTimeAsync(3000 * 2);
+      expect(readPast.mock.calls.length).toBe(calls);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("says what the run settled to, not the running state the list drew it in", async () => {
     readPast.mockResolvedValue({ kind: "suggested", at: rows[0].at, outcome: "failed", readVersion: null, moved: null, lines: [] });
     render(<PastRunView deckId="d" row={rows[0]} onBack={() => {}} />);

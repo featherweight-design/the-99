@@ -57,8 +57,8 @@ export type RunStatus = "pending" | "ok" | "failed" | "cancelled";
 
 /**
  * A stored status as the History reads it. A pending run past the reaper's cutoff was abandoned:
- * the tool's own read fails it when the tool next opens, and History says so already rather than
- * drawing it running for ever.
+ * History's own read reaps it first (`reapReaderRuns`), and a row read in the instant it crosses
+ * the cutoff says failed rather than drawing it running for ever.
  */
 export function runOutcome(status: RunStatus, createdAt: Date, now: Date, errorClass: string | null = null): HistoryOutcome {
   if (status === "pending") return createdAt.getTime() >= reapCutoff(now).getTime() ? "running" : "failed";
