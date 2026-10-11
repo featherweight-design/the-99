@@ -12,7 +12,7 @@ import type { BenchmarkCuts } from "./compute";
  */
 export const BENCHMARK_CUTS: BenchmarkCuts = {
   grades: {
-    velocity: [2.73, 3.37, 4.01, 4.88],
+    velocity: [2.73, 3.37, 4.02, 4.88],
     flow: [13, 17, 20, 24],
     interaction: [16, 21, 26, 32],
     win: [0.02, 0.07, 0.13, 0.27],
