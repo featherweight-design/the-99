@@ -30,7 +30,7 @@ describe("BenchmarksBlock", () => {
   });
 
   it("grades win speed when a line exists, with odds and its opener", () => {
-    const line = { variantId: "v1", cards: [], produces: ["Infinite mana"], mana: { kind: "unknown" as const }, steps: [], prerequisites: null, odds: 0.18 };
+    const line = { variantId: "v1", cards: [], produces: ["Infinite mana"], mana: { kind: "unknown" as const }, steps: [], prerequisites: null, odds: 0.18, foundBy: [] };
     const onOpen = vi.fn();
     const { container } = render(<BenchmarksBlock benchmarks={wire({ win: { step: 4, odds: 0.18, lines: [line], tutors: [] } })} analyzedAt="2026-10-01T12:00:00Z" onOpen={onOpen} />);
     const win = container.querySelector('[data-grade="win"]') as HTMLElement;

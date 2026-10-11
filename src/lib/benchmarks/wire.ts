@@ -1,6 +1,6 @@
 import type { ComboModal } from "../bracket/combo-modal";
 import type { Benchmarks } from "./compute";
-import type { Dependency } from "./dependencies";
+import { graveyardUses, winsOutsideCombat, type Dependency, type GraveyardUse } from "./dependencies";
 import type { InteractionKind } from "./interaction";
 import type { BenchCard, Step, Strength } from "./types";
 import type { RampWhy } from "./velocity";
@@ -10,6 +10,15 @@ import type { RampWhy } from "./velocity";
  * the card row draws them. Never a card's jobs or rules text, which only the server reads.
  */
 export type WireCard = { oracleId: string; name: string; manaCost: string | null; typeLine: string; manaValue: number; quantity: number; commander: boolean };
+
+/**
+ * A ledger group's card. A graveyard card carries how it uses the graveyard, and a combat route
+ * whether it wins outright, for its row's why: read by the rows' own readers, never restated.
+ */
+export type LedgerWireCard = WireCard & { uses?: GraveyardUse; winsOutright?: boolean };
+
+/** A win line: Spellbook's line, its own odds, and the searches that can find one of its pieces. */
+export type WinLineWire = ComboModal & { odds: number; foundBy: WireCard[] };
 
 export type BenchmarksWire = {
   velocity: {
@@ -24,7 +33,7 @@ export type BenchmarksWire = {
     lines: { card: WireCard; weight: number; kind: InteractionKind; instantSpeed: boolean; cheap: boolean }[];
   };
   /** Null when the deck assembles no line: "No combo line", never a grade. */
-  win: { step: Step; odds: number; lines: (ComboModal & { odds: number })[]; tutors: WireCard[] } | null;
+  win: { step: Step; odds: number; lines: WinLineWire[]; tutors: WireCard[] } | null;
   dependencies: DependencyWire[];
 };
 
@@ -33,7 +42,7 @@ export type DependencyWire = Dependency extends infer D
   ? D extends Dependency
     ? Omit<D, "groups" | "landsLeftOut"> & {
         strength: Strength;
-        groups: { group: D["groups"][number]["group"]; cards: WireCard[] }[];
+        groups: { group: D["groups"][number]["group"]; cards: LedgerWireCard[] }[];
         landsLeftOut?: WireCard[];
       }
     : never
@@ -62,12 +71,16 @@ export function toWire(b: Benchmarks, commanderName: string | null): BenchmarksW
     },
     win: b.win && {
       step: b.win.step, odds: b.win.odds,
-      lines: b.win.lines.map((l) => ({ variantId: l.variantId, cards: l.cards, produces: l.produces, mana: l.mana, steps: l.steps, prerequisites: l.prerequisites, odds: l.odds })),
+      lines: b.win.lines.map((l) => ({ variantId: l.variantId, cards: l.cards, produces: l.produces, mana: l.mana, steps: l.steps, prerequisites: l.prerequisites, odds: l.odds, foundBy: l.foundBy.map(wireCard) })),
       tutors: b.win.tutors.map(wireCard),
     },
     dependencies: b.dependencies.map((d) => ({
       ...d,
-      groups: d.groups.map((g) => ({ group: g.group, cards: g.cards.map(wireCard) })),
+      groups: d.groups.map((g) => ({
+        group: g.group,
+        cards: g.cards.map((c) => (d.row === "graveyard" ? { ...wireCard(c), uses: graveyardUses(c) }
+          : d.row === "combat" ? { ...wireCard(c), winsOutright: winsOutsideCombat(c) } : wireCard(c))),
+      })),
       ...(d.row === "graveyard" ? { landsLeftOut: d.landsLeftOut.map(wireCard) } : {}),
     }) as DependencyWire),
   };

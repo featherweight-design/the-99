@@ -3,7 +3,7 @@
 // variants, empty-covered state, row heights, and the EDHREC figure meta line.
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckCommander } from "../../lib/decks/read";
 import type { DeckStatsInput } from "../../lib/decks/stats";
@@ -104,6 +104,8 @@ function renderDecklist(
     lockMode?: boolean;
     statsEnabled?: boolean;
     statsData?: DeckStatsInput | null;
+    statsFocus?: { card: "curve" | "jobs"; n: number } | null;
+    onStatsFocused?: () => void;
     games?: { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
     versions?: { number: number; committedAt: Date }[];
     onLogGame?: () => void;
@@ -170,6 +172,8 @@ function renderDecklist(
           lockMode={opts.lockMode}
           statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
+          statsFocus={opts.statsFocus}
+          onStatsFocused={opts.onStatsFocused}
           games={opts.games}
           versions={opts.versions}
           onLogGame={opts.onLogGame}
@@ -1439,6 +1443,26 @@ describe("the Stats panel", () => {
 
     expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+
+  it("opens at the card a ledger's Stats link asks for, and scrolls it into view once", () => {
+    const scroll = vi.fn();
+    const before = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scroll;
+    onTestFinished(() => { Element.prototype.scrollIntoView = before; });
+    const focused = vi.fn();
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, statsFocus: { card: "jobs", n: 1 }, onStatsFocused: focused });
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+    expect(scroll).toHaveBeenCalledTimes(1);
+    // The shell is told, so it drops the request: a remount on a tab switch must not answer it again.
+    expect(focused).toHaveBeenCalledTimes(1);
+    expect(scroll.mock.contexts[0]).toBe(document.querySelector('[data-stats-card="jobs"]'));
+    // Focus lands on that card, not the body: the ledger that held it has unmounted.
+    expect(document.activeElement).toBe(document.querySelector('[data-stats-card="jobs"]'));
+    // Back to the list: the answered request does not reopen Stats.
+    fireEvent.click(screen.getAllByRole("button", { name: /^All/ })[0]);
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    expect(scroll).toHaveBeenCalledTimes(1);
   });
 
   it("draws the segment with the switch on, and the six shells once Stats is chosen", () => {

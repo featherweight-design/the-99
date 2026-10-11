@@ -12,7 +12,8 @@ import { BracketMark } from "./bracket-mark";
 import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
-import { BenchmarksBlock } from "./benchmarks-block";
+import { BenchmarksBlock, type LedgerKey } from "./benchmarks-block";
+import { BenchmarkLedger, type LedgerAvailability, type StatsCard } from "./benchmark-ledger";
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { LeanLine } from "./lean-line";
 import type { FindingArt } from "./receipt-modal";
@@ -58,6 +59,8 @@ export function AnalysisPanel({
   description = null,
   onSaveDescription,
   tuningEnabled = true,
+  ledgerAvailability,
+  onStats,
 }: {
   state: ProfileState;
   /**
@@ -114,6 +117,10 @@ export function AnalysisPanel({
    *  to feed a Suggested changes run, per its own help text) — defaults true, same as `tuning`
    *  itself being left undrawn is what withholds the panel below a reading. */
   tuningEnabled?: boolean;
+  /** Each deck card's ownership and availability, for the benchmark ledger's rows (decision 6). */
+  ledgerAvailability?: LedgerAvailability;
+  /** The ledger's Stats link: switch the deck page to Deck stats and scroll to `card`. */
+  onStats?: (card: StatsCard) => void;
 }) {
   // SAID ONCE, WHEN A READING LANDS (§E): a press settling, never a stored reading painted on open.
   // Adjusted during render, React's pattern for deriving state from a changed prop.
@@ -187,6 +194,8 @@ export function AnalysisPanel({
             declaration={declaration}
             overview={overview}
             benchmarks={held.benchmarks ?? null}
+            ledgerAvailability={ledgerAvailability}
+            onStats={onStats}
           />
         </div>
       ) : null}
@@ -238,6 +247,8 @@ function Verdict({
   declaration,
   overview,
   benchmarks,
+  ledgerAvailability,
+  onStats,
 }: {
   profile: import("../../lib/profile/types").DeckProfile;
   analyzedAt: string;
@@ -249,8 +260,11 @@ function Verdict({
   overview?: ReactNode;
   /** The reading's evidence benchmarks (null with the switch off, or when their read failed). */
   benchmarks: BenchmarksWire | null;
+  ledgerAvailability?: LedgerAvailability;
+  onStats?: (card: StatsCard) => void;
 }) {
   const verdict = slotDeck(profile);
+  const [ledger, setLedger] = useState<LedgerKey | null>(null);
   return (
     <>
       {/* DOM order is the phone's reading order: the overview, the box, then the climb. At 1300 the
@@ -287,7 +301,17 @@ function Verdict({
       <FindingsBlock profile={profile} art={art} />
       {/* Last in the reading, under the findings: verdict, climb and findings stay together as the
           bracket story, so no grade reads as a bracket input (design call 1). */}
-      {benchmarks ? <BenchmarksBlock benchmarks={benchmarks} stale={!fresh} analyzedAt={analyzedAt} /> : null}
+      {benchmarks ? <BenchmarksBlock benchmarks={benchmarks} stale={!fresh} analyzedAt={analyzedAt} onOpen={setLedger} /> : null}
+      {benchmarks && ledger ? (
+        <BenchmarkLedger
+          benchmarks={benchmarks}
+          which={ledger}
+          art={art}
+          availability={ledgerAvailability}
+          onClose={() => setLedger(null)}
+          onStats={onStats}
+        />
+      ) : null}
     </>
   );
 }

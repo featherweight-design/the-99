@@ -42,7 +42,7 @@ const WINS_OUTRIGHT = /\byou win the game\b|\b(?:target|each|that|an|any) (?:opp
 /** A win clause fired by an attack or by combat damage (Phage, Vorpal Sword) is a combat route. */
 const IN_COMBAT = /\bcombat damage\b|\battacks?\b/i;
 /** A route outside combat wins outright in a sentence no attack or combat damage triggers. */
-const winsOutsideCombat = (c: BenchCard) =>
+export const winsOutsideCombat = (c: Pick<BenchCard, "oracleText">) =>
   (c.oracleText ?? "").split(/(?<=[.\n])/).some((s) => WINS_OUTRIGHT.test(s) && !IN_COMBAT.test(s));
 
 const strengthOf = (value: number, cut: RowCut): Strength | null =>
@@ -52,11 +52,21 @@ const stronger = (a: Strength | null, b: Strength | null): Strength | null =>
 const sum = (cards: readonly BenchCard[]) => cards.reduce((n, c) => n + c.quantity, 0);
 const byName = (cards: BenchCard[]) => cards.sort((a, b) => a.name.localeCompare(b.name));
 
+/** How a card uses the graveyard, each reason read once: what the ledger's row says and what counts it. */
+export type GraveyardUse = { fills: boolean; returns: boolean; grows: boolean; keywords: string[] };
+
+export function graveyardUses(c: BenchCard): GraveyardUse {
+  return {
+    fills: c.jobs.some((j) => j.kind === "mill" && (j.affects === "self" || j.affects === "each") && selfMillReads(c)),
+    returns: c.jobs.some((j) => j.kind === "recursion" && recursionReads(c)),
+    grows: c.jobs.some((j) => j.threshold?.stat === "cardsInGraveyard"),
+    keywords: c.keywords.filter((k) => GRAVEYARD_KEYWORDS.has(k)),
+  };
+}
+
 export function usesGraveyard(c: BenchCard): boolean {
-  return c.jobs.some((j) => (j.kind === "recursion" && recursionReads(c))
-      || (j.kind === "mill" && (j.affects === "self" || j.affects === "each") && selfMillReads(c))
-      || j.threshold?.stat === "cardsInGraveyard")
-    || c.keywords.some((k) => GRAVEYARD_KEYWORDS.has(k));
+  const u = graveyardUses(c);
+  return u.fills || u.returns || u.grows || u.keywords.length > 0;
 }
 
 export function paysOffArtifacts(c: BenchCard): boolean {

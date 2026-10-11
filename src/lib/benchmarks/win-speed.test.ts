@@ -53,6 +53,26 @@ describe("winSpeed", () => {
       .toBeGreaterThan(winSpeed(padded([{ ...plain, quantity: 2 }, monument]), [line("v", [plain, monument])])!.odds + 0.005);
   });
 
+  it("names, per line, only the searches that reach one of its pieces", () => {
+    const creature = card("Elf", { typeLine: "Creature", manaValue: 1 });
+    const other = card("Thing", { typeLine: "Creature", manaValue: 1 });
+    const fabricate = card("Fabricate", { oracleText: "Search your library for an artifact card, reveal it, put it into your hand, then shuffle." });
+    const worldly = card("Worldly Tutor", { oracleText: "Search your library for a creature card, reveal it, then shuffle and put the card on top." });
+    const win = winSpeed(padded([monolith, monument, creature, other, fabricate, worldly]), [line("art", [monolith, monument]), line("cre", [creature, other])])!;
+    const byId = Object.fromEntries(win.lines.map((l) => [l.variantId, l.foundBy.map((c) => c.name)]));
+    expect(byId).toEqual({ art: ["Fabricate"], cre: ["Worldly Tutor"] });
+  });
+
+  it("never names a line's own single-copy piece as its search, and names a second copy", () => {
+    const search = "Search your library for an artifact card, reveal it, put it into your hand, then shuffle.";
+    const single = card("Tutor Piece", { typeLine: "Artifact", oracleText: search });
+    const once = winSpeed(padded([single, monument]), [line("v", [single, monument])])!;
+    expect(once.lines[0].foundBy).toEqual([]);
+    const two = { ...single, quantity: 2 };
+    const twice = winSpeed(padded([two, monument]), [line("v", [two, monument])])!;
+    expect(twice.lines[0].foundBy.map((c) => c.name)).toEqual(["Tutor Piece"]);
+  });
+
   it("keeps every line, uncapped", () => {
     const pieces = Array.from({ length: 8 }, (_, i) => card(`P${i}`, { typeLine: "Artifact" }));
     const lines = pieces.slice(1).map((p, i) => line(`v${i}`, [pieces[0], p]));

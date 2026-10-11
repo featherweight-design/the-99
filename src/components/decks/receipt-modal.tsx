@@ -335,10 +335,24 @@ export function ReceiptTile({
 /**
  * One combo: the pair, what it produces, what it costs to execute, Spellbook's steps, and what
  * must already be true. Every word in the body but the labels is Spellbook's.
+ *
+ * Shared with the benchmark ledger's win speed (audit build rule 4), which passes `stats` (the
+ * line's odds and what finds it, under the chips) and `siblings` (every piece of every line, so a
+ * plate's Prev/Next walks the whole ledger).
  */
-function ComboBody({ combo, art }: { combo: ComboModal; art: FindingArt }) {
+export function ComboBody({
+  combo,
+  art,
+  stats,
+  siblings: allSiblings,
+}: {
+  combo: ComboModal;
+  art: FindingArt;
+  stats?: React.ReactNode;
+  siblings?: readonly Sibling[];
+}) {
   const names = combo.cards.map((c) => art.get(c.oracleId)?.name ?? c.name);
-  const siblings = combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
+  const siblings = allSiblings ?? combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
   return (
     <section className="border-b border-b-[color:var(--border)] border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
       <div className="flex flex-col md:flex-row gap-[14px] md:gap-[16px] px-[16px] py-[14px] md:px-[18px] md:py-[16px]">
@@ -355,7 +369,18 @@ function ComboBody({ combo, art }: { combo: ComboModal; art: FindingArt }) {
             {names.map((n, i) => (
               <span key={i}>
                 {i > 0 ? <span style={{ color: "var(--fg-faint)", fontWeight: 400 }}> + </span> : null}
-                {n}
+                {/* In the benchmarks ledger (which passes its own siblings) each name opens its card
+                    too, as the ledger's State Coverage draws it; the receipt keeps plain names. */}
+                {allSiblings ? (
+                  <CardDetailTrigger
+                    oracleId={combo.cards[i].oracleId}
+                    name={n}
+                    siblings={siblings}
+                    className="inline cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left"
+                  >
+                    {n}
+                  </CardDetailTrigger>
+                ) : n}
               </span>
             ))}
           </h3>
@@ -372,6 +397,7 @@ function ComboBody({ combo, art }: { combo: ComboModal; art: FindingArt }) {
               ))}
             </ul>
           ) : null}
+          {stats}
           <Field label={copy.receipt.manaNeeded}>
             <Mana mana={combo.mana} />
           </Field>

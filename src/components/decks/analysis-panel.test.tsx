@@ -407,6 +407,16 @@ describe("AnalysisPanel", () => {
       expect(container.querySelector("[data-benchmarks]")).toBeNull();
     });
 
+    it("opens a grade's ledger from its opener, and closes it", () => {
+      draw({ kind: "ready", ...reading(), benchmarks: benchmarksWire() });
+      expect(screen.queryByRole("dialog")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: deckBenchmarksCopy.openAria("Card flow", "High") }));
+      const ledger = screen.getByRole("dialog", { name: "Card flow" });
+      expect(within(ledger).getByText("Rhystic Study")).toBeInTheDocument();
+      fireEvent.click(within(ledger).getByRole("button", { name: deckBenchmarksCopy.ledger.closeAria("Card flow") }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
     it("goes stale with the reading, saying so in its caption", () => {
       draw({ kind: "ready", ...reading({ fresh: false }), benchmarks: benchmarksWire() });
       expect(screen.queryByText(deckBenchmarksCopy.caption)).toBeNull();

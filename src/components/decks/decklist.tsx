@@ -60,7 +60,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useGotIt } from "./got-it";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
@@ -145,6 +145,14 @@ type DecklistProps = {
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
   statsData?: DeckStatsInput | null;
+  /**
+   * A request to open Deck stats at one card, from the benchmark ledger's Stats link (audit build
+   * rule 6). `n` moves on every request, so the same card asked for twice scrolls twice.
+   */
+  statsFocus?: { card: "curve" | "jobs"; n: number } | null;
+  /** Called once the Stats link's request is answered, so the shell drops it: Decklist remounts on
+   *  every tab switch, and a request it still held would reopen Stats the reader had since closed. */
+  onStatsFocused?: () => void;
   /** The logged games (newest first, as `listDeckGames` returns them) and the deck's versions (newest
    *  first) for the Results card. A brew has no versions, so the card's by-version section is absent. */
   games?: readonly { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
@@ -320,6 +328,8 @@ export function Decklist({
   filled = false,
   statsEnabled = false,
   statsData = null,
+  statsFocus = null,
+  onStatsFocused,
   games = NO_GAMES,
   versions = NO_VERSIONS,
   onLogGame,
@@ -375,6 +385,28 @@ export function Decklist({
     ? { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") }
     : undefined;
   const view = storedView ?? "list";
+  // The ledger's Stats link: open the panel, then, once it is drawn, bring the card into view.
+  // Each request is answered once, here and in the shell, so closing Stats afterwards is never undone
+  // by a stale one: not by a re-render (`answered`) and not by this list remounting on a tab switch
+  // (the shell drops the request through `onStatsFocused`).
+  const answered = useRef(0);
+  useEffect(() => {
+    if (!statsFocus || !statsEnabled || answered.current === statsFocus.n) return;
+    if (!statsOpen) {
+      choosePanel("stats");
+      return;
+    }
+    answered.current = statsFocus.n;
+    const target = document.querySelector<HTMLElement>(`[data-stats-card="${statsFocus.card}"]`);
+    target?.scrollIntoView({ block: "start" });
+    // The ledger and the control that opened it are gone (the tab switched), so focus would fall to
+    // the body: it lands on the card the link named instead.
+    if (target) {
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    }
+    onStatsFocused?.();
+  }, [statsFocus, statsEnabled, statsOpen, choosePanel, onStatsFocused]);
 
   // The marks this view actually contains, which is what the key decodes. Only
   // what the current view DRAWS — rows under `Shopping` and under `All`'s list,
