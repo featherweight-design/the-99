@@ -75,15 +75,20 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
  * The toast itself. `center` is /collection's slot, bottom centre. `deck` is the deck page's: the
  * phone column's foot above the tab bar, and bottom left of the deck pane from md (I got it, C1),
  * with the receipt's three lines (`title`, a mono `detail`, a `body` sentence) as IGI Toast draws
- * them. The role is the caller's: `status` for a receipt, `alert` for a failure, and never an
+ * them. `inline` is that deck toast drawn in flow, for /about's specimen: same look, no fixed slot.
+ * The role is the caller's: `status` for a receipt, `alert` for a failure, and never an
  * explicit `aria-live`, which would override `alert` (audit errata 2).
  */
+/** The deck page's toast slot: the phone column's foot above the tab bar, bottom left of the pane from md. */
+const DECK_SLOT =
+  "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
+
 export function ToastFrame({
   frameRef, role = "status", placement = "center", title, detail, body, actions, onHold,
 }: {
   frameRef: RefObject<HTMLDivElement | null>;
   role?: "status" | "alert";
-  placement?: "center" | "deck";
+  placement?: "center" | "deck" | "inline";
   title: ReactNode;
   detail?: ReactNode;
   body?: ReactNode;
@@ -122,8 +127,8 @@ export function ToastFrame({
       ref={frameRef}
       role={role}
       {...holds}
-      data-toast="deck"
-      className="fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] flex min-h-[52px] items-start gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] pl-[14px] pr-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.45)] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]"
+      data-toast={placement}
+      className={`${placement === "inline" ? "w-full max-w-[440px]" : DECK_SLOT} flex min-h-[52px] items-start gap-[10px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] pl-[14px] pr-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.45)]`}
     >
       <span className="flex min-w-0 flex-1 flex-col gap-[3px] py-[10px]">
         <span className="text-[13.5px] leading-[1.35] text-[color:var(--fg)]">{title}</span>

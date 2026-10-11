@@ -21,6 +21,7 @@ import { CurveCard } from "../decks/deck-stats-view";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { BrowseFigureBody } from "./browse-figure";
+import { DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
 import { SetsColourFigure } from "./sets-colour-figure";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -1037,6 +1038,24 @@ function FitsYourDecksFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** `shopping-got-it`: two Shopping rows whose buy tag is the button, and the receipt one leaves. */
+function GotItFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="shopping-got-it" width={width}>
+      <GotItFigureBody />
+    </Specimen>
+  );
+}
+
+/** `deck-printings`: the Set region opened from a deck, the deck's pick among three Sol Rings. */
+function DeckPrintingsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="deck-printings" width={width}>
+      <DeckPrintingFigureBody />
+    </Specimen>
+  );
+}
+
 function StandInsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="stand-ins" width={width}>
@@ -1088,9 +1107,11 @@ export const FIGURES: Partial<
   "help-me-choose": HelpMeChooseFigure,
   "fits-your-decks": FitsYourDecksFigure,
   "stand-ins": StandInsFigure,
+  "shopping-got-it": GotItFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,
+  "deck-printings": DeckPrintingsFigure,
   shopping: ShoppingFigure,
   "log-a-game": LogAGameFigure,
   folders: FoldersFigure,

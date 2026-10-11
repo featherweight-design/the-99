@@ -2233,3 +2233,55 @@ export const BENCHMARKS_SCRAPPY: BenchmarksWire = {
 
 /** The reading's instant, which the block reads only for a stale caption; the specimen is never stale. */
 export const BENCHMARKS_ANALYZED_AT = "2026-10-10T12:00:00.000Z";
+
+/**
+ * The `shopping-got-it` specimen (I got it PR 5, handoff `about-entry` README "Specimen"): two
+ * Shopping rows the reader can buy, one unowned and one spoken for, and the receipt the first
+ * leaves. Real cards from Hugh's Gishath list, priced like the rows the canvas draws.
+ */
+export const GOT_IT_ROWS: DeckDetailCard[] = [
+  {
+    ...DECKLIST_MARK_ROWS[0],
+    oracleId: "about-got-it-polyraptor",
+    name: "Polyraptor",
+    typeLine: "Creature — Dinosaur",
+    cardTypeGroup: "Creatures",
+    role: "other",
+    cmc: 8,
+    owned: false,
+    manaCost: "{6}{G}{G}",
+    imageUri: "https://cards.scryfall.io/normal/front/f/8/f8965a3a-93fe-4021-a665-b6013bdc86f7.jpg?1783935282",
+    availability: null,
+    price: { cents: 1_499, foilCents: null, etchedCents: null, asOf: PRICES[0].fact.asOf },
+  },
+  {
+    ...DECKLIST_MARK_ROWS[0],
+    oracleId: "about-got-it-natures-lore",
+    name: "Nature’s Lore",
+    typeLine: "Sorcery",
+    cardTypeGroup: "Sorceries",
+    role: "ramp",
+    cmc: 2,
+    owned: false,
+    manaCost: "{1}{G}",
+    availability: null,
+    price: { cents: 254, foilCents: null, etchedCents: null, asOf: PRICES[0].fact.asOf },
+  },
+];
+
+export const GOT_IT_RECEIPT = { card: "Polyraptor", quantity: 1, printing: "RIX #144", finish: "nonfoil" };
+
+/** The `deck-printings` specimen: three Sol Rings the reader owns, one of them this deck's pick. */
+export const DECK_PRINTING: {
+  cardName: string;
+  printings: import("../collection/browse").BrowsePrinting[];
+  pick: { setCode: string; collectorNumber: string };
+} = {
+  cardName: "Sol Ring",
+  printings: [
+    { setCode: "SLD", setName: "Secret Lair Drop", collectorNumber: "910", releasedAt: "2019-12-02", quantity: 1, finishes: { foil: 1 }, flavorName: null, imageUri: "https://cards.scryfall.io/normal/front/3/e/3e10052f-b3e5-4a2c-b268-9a12ce354eb9.jpg?1783907941" },
+    { setCode: "CMM", setName: "Commander Masters", collectorNumber: "410", releasedAt: "2023-08-04", quantity: 1, finishes: { nonfoil: 1 }, flavorName: null, imageUri: "https://cards.scryfall.io/normal/front/4/6/46ca0b66-a000-4483-b916-f5b89e710244.jpg?1783915591" },
+    { setCode: "C21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23", quantity: 1, finishes: { nonfoil: 1 }, flavorName: null, imageUri: "https://cards.scryfall.io/normal/front/4/c/4cbc6901-6a4a-4d0a-83ea-7eefa3b35021.jpg?1783927506" },
+  ],
+  pick: { setCode: "SLD", collectorNumber: "910" },
+};

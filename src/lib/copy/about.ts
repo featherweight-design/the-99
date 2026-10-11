@@ -58,7 +58,7 @@
 import { HISTORY_RETENTION_DAYS } from '../collection/retention';
 import { benchmarksAboutEntry } from './deck-benchmarks';
 
-export const ABOUT_VERSION = 13;
+export const ABOUT_VERSION = 14;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -79,7 +79,9 @@ export type AboutSwitch =
   | 'DECK_STATS_ENABLED'
   | 'COLLECTION_EDIT_ENABLED'
   | 'OVERVIEW_V2_ENABLED'
-  | 'DECK_BENCHMARKS_ENABLED';
+  | 'DECK_BENCHMARKS_ENABLED'
+  | 'SHOPPING_MARK_BOUGHT_ENABLED'
+  | 'DECK_PRINTINGS_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -894,6 +896,30 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     since: 9,
   },
+  // I got it (plan `2026-10-10-i-got-it.md` PR 5, handoff `design_handoff_the99_i_got_it/about-entry`):
+  // after `stand-ins`, the order a card is bought in. `since: 14` is the ONE bump this launch makes,
+  // shared with `deck-printings`. Its switch reads `shoppingMarkBoughtEnabled`, which is already on
+  // only with COLLECTION_EDIT_ENABLED too, so the entry never describes a tag that does nothing
+  // (handoff README open 1, answered without an array form). Copy through /prose-pass.
+  {
+    id: 'shopping-got-it',
+    chapter: '03',
+    title: 'Marking a card you bought',
+    route: '/decks',
+    opens: 'opens a deck’s Shopping filter',
+    width: 'plate',
+    switch: 'SHOPPING_MARK_BOUGHT_ENABLED',
+    caption:
+      'The cards showed up. Now comes the part nobody looks forward to: logging them.\n\nSo do it right where you shopped. Mark a card off a deck’s Shopping list with the printing and how many came, and it goes straight into your Collection. The deck counts the new copy, and the card usually drops off the list.',
+    keys: [
+      'Press a card’s “buy” tag, or “Bought this card?” in its details.',
+      'It starts on the printing the list priced. Change it if another came.',
+      'If an older deck was short too, the copy goes there first.',
+      'Undo is on the receipt. After that, the change is in History.',
+    ],
+    marksPending: true,
+    since: 14,
+  },
   {
     id: 'deck-import',
     chapter: '03',
@@ -1017,6 +1043,28 @@ export const aboutEntries: readonly AboutEntry[] = [
       '“Buy these at Mana Pool” opens that list in a new tab.',
     ],
     since: 1,
+  },
+  // Deck printings (plan `2026-10-10-deck-printings.md`, written in I got it's PR 5 with its bump,
+  // handoff `design_handoff_the99_deck_printings/about-entry`): after `export`, where printings come
+  // in and go out. Copy through /prose-pass.
+  {
+    id: 'deck-printings',
+    chapter: '03',
+    title: 'Choosing a printing for a deck',
+    route: '/decks',
+    opens: 'opens a card from a deck',
+    width: 'plate',
+    switch: 'DECK_PRINTINGS_ENABLED',
+    caption:
+      'Own three Sol Rings? Your cEDH deck can run the borderless one while your Goblins deck keeps the one that came in its precon.\n\nPick a printing for a card in one deck, and that deck shows it, prices it and exports it. Your other decks keep their own.',
+    keys: [
+      'Open a card from the deck and choose under “Set”.',
+      'A deck with no pick shows your Collection’s printing.',
+      'Picking isn’t a deck change, so there’s nothing to commit.',
+      'Import a list that names a printing you own, and it’s picked.',
+    ],
+    marksPending: true,
+    since: 14,
   },
 
   // ---- 04 · Playing and tuning --------------------------------------------
