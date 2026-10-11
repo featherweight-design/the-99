@@ -640,7 +640,9 @@ function PrintingTile({
       tabIndex={entry.dormant ? -1 : tabStop ? 0 : -1}
       onClick={entry.dormant ? undefined : onSelect}
       onKeyDown={entry.dormant ? undefined : onKeyDown}
-      className={`text-left ${row ? (confirmTiles ? "w-[100px] md:w-[104px] shrink-0" : "w-[96px] shrink-0") : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
+      // `self-start`: a tile is stretched to its row's (or grid line's) tallest, and a button centers its
+      // content vertically, so a title wrapping to three lines pushed every shorter tile's art down.
+      className={`self-start text-left ${row ? (confirmTiles ? "w-[100px] md:w-[104px] shrink-0" : "w-[96px] shrink-0") : ""} ${entry.dormant ? "" : "cursor-pointer"}`}
       style={{ opacity: entry.dormant ? 0.55 : undefined }}
     >
       <div

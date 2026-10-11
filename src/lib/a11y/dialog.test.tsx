@@ -137,8 +137,8 @@ describe("useDialogA11y scroll lock", () => {
   // Two fixes that looked right were dropped after they broke `position: sticky` in
   // Firefox instead (see the module doc comment); this is the one that didn't: block the
   // wheel/touchmove directly, and leave `overflow`/`position` exactly as they already were.
-  function wheelAt(target: EventTarget, deltaY = 100) {
-    const event = new WheelEvent("wheel", { deltaY, cancelable: true, bubbles: true });
+  function wheelAt(target: EventTarget, deltaY = 100, deltaX = 0) {
+    const event = new WheelEvent("wheel", { deltaY, deltaX, cancelable: true, bubbles: true });
     target.dispatchEvent(event);
     return event;
   }
@@ -166,6 +166,63 @@ describe("useDialogA11y scroll lock", () => {
 
     const event = wheelAt(row);
     expect(event.defaultPrevented).toBe(false);
+  });
+
+  // A touch gesture needs a start point to have a direction: touchstart, then a touchmove.
+  function touch(type: "touchstart" | "touchmove", target: EventTarget, x: number, y: number) {
+    const e = new Event(type, { cancelable: true, bubbles: true });
+    Object.defineProperty(e, "touches", { value: [{ clientX: x, clientY: y }] });
+    target.dispatchEvent(e);
+    return e;
+  }
+
+  function sidewaysRow() {
+    // The Bought modal's printing row: wider than its box, nothing to scroll vertically.
+    const row = document.createElement("div");
+    row.style.overflowX = "auto";
+    Object.defineProperty(row, "scrollWidth", { value: 900, configurable: true });
+    Object.defineProperty(row, "clientWidth", { value: 300, configurable: true });
+    const tile = document.createElement("button");
+    row.appendChild(tile);
+    document.body.appendChild(row);
+    appended.push(row);
+    renderDialog({ lockScroll: true });
+    return tile;
+  }
+
+  it("lets a sideways gesture through inside a region that scrolls sideways only", () => {
+    const tile = sidewaysRow();
+    expect(wheelAt(tile, 0, 300).defaultPrevented).toBe(false);
+    touch("touchstart", tile, 200, 100);
+    expect(touch("touchmove", tile, 120, 104).defaultPrevented).toBe(false);
+  });
+
+  it("reads a Shift+wheel (a plain mouse's sideways scroll, reported as deltaY) as sideways", () => {
+    const tile = sidewaysRow();
+    const shifted = new WheelEvent("wheel", { deltaY: 100, shiftKey: true, cancelable: true, bubbles: true });
+    tile.dispatchEvent(shifted);
+    expect(shifted.defaultPrevented).toBe(false);
+  });
+
+  it("still blocks a vertical gesture over that sideways-only region", () => {
+    // Nothing there scrolls vertically; letting it through would move the page behind the dialog.
+    const tile = sidewaysRow();
+    expect(wheelAt(tile, 100, 0).defaultPrevented).toBe(true);
+    touch("touchstart", tile, 200, 100);
+    expect(touch("touchmove", tile, 196, 20).defaultPrevented).toBe(true);
+  });
+
+  it("still blocks a sideways-overflow region that does not overflow", () => {
+    const row = document.createElement("div");
+    row.style.overflowX = "auto";
+    Object.defineProperty(row, "scrollWidth", { value: 300, configurable: true });
+    Object.defineProperty(row, "clientWidth", { value: 300, configurable: true });
+    document.body.appendChild(row);
+    appended.push(row);
+    renderDialog({ lockScroll: true });
+
+    // A SIDEWAYS wheel, so the axis is `x` and only the overflow check can decide it.
+    expect(wheelAt(row, 0, 300).defaultPrevented).toBe(true);
   });
 
   // The same rule, for touch — iOS Safari's rubber-band failure of `overflow: hidden`
