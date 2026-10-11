@@ -138,12 +138,14 @@ async function main() {
       // The CURRENT payload shape. A v1 fixture would exercise the reader's legacy fallback
       // (`ownedBefore ?? 0`) rather than the shape production writes, so the contact sheet would
       // photograph a path no import takes.
-      version: 2,
+      version: 3,
       totalBefore: 2731,
       totalAfter: 2733,
       arrived: 3,
       left: 1,
       issues: { unmatched: 2, parseErrors: 1 },
+      // No committed deck went short: this fixture photographs an import that only added.
+      nowShort: [],
       cleared: [
         { deckId: DECK_A, oracleId: cleared.oracle_id, copies: 1 },
         // THE CONTESTED CARD, CLEARED FOR THE SENIOR DECK — the state a real import produces and

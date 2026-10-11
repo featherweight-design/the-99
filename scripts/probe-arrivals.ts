@@ -157,7 +157,7 @@ async function main() {
     // what this case exists to prove, and a helper that computed perfectly and wrote
     // nowhere would pass on the figures alone.
     check("the receipt is stored on the upload row", stored.payload?.arrived, 2);
-    check("with its own version stamp", stored.payload?.version, 2);
+    check("with its own version stamp", stored.payload?.version, 3);
     // The frozen name of a card the receipt mentions, proving the name lookup ran rather
     // than an empty map being stored beside real rows.
     check("the cleared row names the deck that stopped owing it",
