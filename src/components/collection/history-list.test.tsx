@@ -140,8 +140,10 @@ describe("HistoryList", () => {
       entry({ id: "e1", revertedBy: "rv", revertedByVisible: true }),
     ]);
     expect(screen.getAllByText(/Reverted/).length).toBeGreaterThan(0);
-    const link = screen.getByRole("link", { name: "Reverted at 15:30" });
+    const link = screen.getByRole("link", { name: "by the revert at 15:30" });
     expect(link.getAttribute("href")).toBe("#entry-rv");
+    // The composed line says "Reverted" once: the status, a separator, then the link.
+    expect(link.parentElement?.textContent).toBe("Reverted · by the revert at 15:30");
     expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
   });
 
@@ -169,7 +171,7 @@ describe("HistoryList", () => {
       entry({ id: "rv", kind: "revert", revertsId: "e1", revertsVisible: true, createdAt: new Date("2026-10-09T15:30:00Z"), firstName: null }),
       entry({ id: "e1", kind: "edit", source: "shopping:d1", revertedBy: "rv", revertedByVisible: true, shoppingDeck: { id: "d1", name: "Goblins" } }),
     ]);
-    expect(screen.getByRole("link", { name: "Reverted at 15:30" }).getAttribute("href")).toBe("#entry-rv");
+    expect(screen.getByRole("link", { name: "by the revert at 15:30" }).getAttribute("href")).toBe("#entry-rv");
     expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Goblins" })).toBeTruthy();
     // Reverted, so no Revert control of its own; the revert entry keeps one.

@@ -241,7 +241,7 @@ Source: `The 99 - I Got It (R1) · C Receipt, D History and E Switch off.dc.html
 | deck name | link: var(--accent), underline, offset 2px | same |
 | deck name source | `shopping:<id>` resolved at read time (never copied into the entry) | same |
 | deleted deck | `history.fromDeleted`, no link, Revert kept | same |
-| reverted entry | keeps F1's two-way link (`Reverted at …` ↔ `Undid …`) | same |
+| reverted entry | keeps F1's two-way link (`Reverted · by the revert at …` ↔ `Undid …`) | same |
 
 ## State Coverage — History (§D)
 

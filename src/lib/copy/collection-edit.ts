@@ -189,7 +189,8 @@ export const collectionEditCopy = {
     /** (new) An opened entry that recorded no rows: a Replace that matched the collection exactly. */
     noRows: "This change didn't move anything. Your collection already matched.",
     reverted: "Reverted",
-    revertedBy: (when: string) => `Reverted at ${when}`,
+    /** Reads after `reverted` and a separator: "Reverted · by the revert at 15:30". */
+    revertedBy: (when: string) => `by the revert at ${when}`,
     undid: (title: string) => `Undid “${title}”`,
     /** (new) A revert whose own entry is not on this page, so it cannot be titled. */
     undidOlder: "Undid an earlier change",
