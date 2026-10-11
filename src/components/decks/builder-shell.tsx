@@ -658,9 +658,10 @@ export function BuilderShell({
   // the commanders' (a commander's absent `owned` means owned, as everywhere else).
   const ledgerAvailability = useMemo(
     () => new Map([
-      ...cards.map((c) => [c.oracleId, { owned: c.owned && !c.proxied, availability: c.availability ?? null }] as const),
+      // A proxied slot is filled by its proxy, so it draws no marker, as the decklist row suppresses it.
+      ...cards.map((c) => [c.oracleId, { owned: c.owned && !c.proxied, availability: c.proxied ? null : c.availability ?? null }] as const),
       ...[deck.commander, ...(deck.partner ? [deck.partner] : [])].map((c) =>
-        [c.oracleId, { owned: (c.owned ?? true) && !c.proxied, availability: c.availability ?? null }] as const),
+        [c.oracleId, { owned: (c.owned ?? true) && !c.proxied, availability: c.proxied ? null : c.availability ?? null }] as const),
     ]),
     [cards, deck.commander, deck.partner],
   );

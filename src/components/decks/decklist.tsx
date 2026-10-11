@@ -397,7 +397,14 @@ export function Decklist({
       return;
     }
     answered.current = statsFocus.n;
-    document.querySelector(`[data-stats-card="${statsFocus.card}"]`)?.scrollIntoView({ block: "start" });
+    const target = document.querySelector<HTMLElement>(`[data-stats-card="${statsFocus.card}"]`);
+    target?.scrollIntoView({ block: "start" });
+    // The ledger and the control that opened it are gone (the tab switched), so focus would fall to
+    // the body: it lands on the card the link named instead.
+    if (target) {
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    }
     onStatsFocused?.();
   }, [statsFocus, statsEnabled, statsOpen, choosePanel, onStatsFocused]);
 

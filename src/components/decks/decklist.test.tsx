@@ -1457,6 +1457,8 @@ describe("the Stats panel", () => {
     // The shell is told, so it drops the request: a remount on a tab switch must not answer it again.
     expect(focused).toHaveBeenCalledTimes(1);
     expect(scroll.mock.contexts[0]).toBe(document.querySelector('[data-stats-card="jobs"]'));
+    // Focus lands on that card, not the body: the ledger that held it has unmounted.
+    expect(document.activeElement).toBe(document.querySelector('[data-stats-card="jobs"]'));
     // Back to the list: the answered request does not reopen Stats.
     fireEvent.click(screen.getAllByRole("button", { name: /^All/ })[0]);
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
