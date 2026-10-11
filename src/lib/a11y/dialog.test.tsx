@@ -168,6 +168,36 @@ describe("useDialogA11y scroll lock", () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
+  it("lets a gesture through inside a region that scrolls sideways only", () => {
+    // The Bought modal's printing row: wider than its box, nothing to scroll vertically.
+    const row = document.createElement("div");
+    row.style.overflowX = "auto";
+    Object.defineProperty(row, "scrollWidth", { value: 900, configurable: true });
+    Object.defineProperty(row, "clientWidth", { value: 300, configurable: true });
+    const tile = document.createElement("button");
+    row.appendChild(tile);
+    document.body.appendChild(row);
+    appended.push(row);
+    renderDialog({ lockScroll: true });
+
+    expect(wheelAt(tile).defaultPrevented).toBe(false);
+    const touch = new Event("touchmove", { cancelable: true, bubbles: true });
+    tile.dispatchEvent(touch);
+    expect(touch.defaultPrevented).toBe(false);
+  });
+
+  it("still blocks a sideways-overflow region that does not overflow", () => {
+    const row = document.createElement("div");
+    row.style.overflowX = "auto";
+    Object.defineProperty(row, "scrollWidth", { value: 300, configurable: true });
+    Object.defineProperty(row, "clientWidth", { value: 300, configurable: true });
+    document.body.appendChild(row);
+    appended.push(row);
+    renderDialog({ lockScroll: true });
+
+    expect(wheelAt(row).defaultPrevented).toBe(true);
+  });
+
   // The same rule, for touch — iOS Safari's rubber-band failure of `overflow: hidden`
   // is the same underlying weakness as Firefox's wheel-chaining, by a different input.
   it("blocks a touchmove the same way", () => {

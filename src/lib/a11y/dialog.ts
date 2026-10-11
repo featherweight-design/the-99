@@ -50,15 +50,22 @@ const dialogStack: HTMLElement[] = [];
 
 /**
  * While locked, true unless the wheel/touchmove's own target sits inside a region that
- * can genuinely scroll — a sheet's own options list, for one. Walking up rather than
- * checking the event's own target alone: the target is usually some inner span or row,
- * not the scrollable element itself.
- */
+ * can genuinely scroll — a sheet's own options list, or a row of tiles that scrolls sideways.
+ * Walking up rather than checking the event's own target alone: the target is usually some
+ * inner span or row, not the scrollable element itself.
+ *
+ * BOTH AXES. It first looked at the vertical axis alone, so a sideways row (printing tiles) inside
+ * a dialog whose own content fits was "not scrollable", and its touchmove and wheel were cancelled:
+ * the Bought modal's printing row would not scroll. Measured: the same row scrolled once the viewport
+ * was short enough for the dialog to overflow vertically, because the walk then found the dialog.
+  */
 function hasScrollableAncestor(target: EventTarget | null): boolean {
   let node = target as HTMLElement | null;
   while (node && node !== document.body) {
-    const canScrollY = /(auto|scroll)/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight;
-    if (canScrollY) return true;
+    const style = getComputedStyle(node);
+    const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight;
+    const canScrollX = /(auto|scroll)/.test(style.overflowX) && node.scrollWidth > node.clientWidth;
+    if (canScrollY || canScrollX) return true;
     node = node.parentElement;
   }
   return false;

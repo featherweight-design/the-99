@@ -57,6 +57,11 @@ describe("PrintingRegion", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(3);
   });
 
+  it("top-aligns every tile: a stretched button would center a short tile's art under a tall title", () => {
+    renderRegion();
+    for (const tile of screen.getAllByRole("radio")) expect(tile.className).toContain("self-start");
+  });
+
   it("checks nothing when no pick is stored (decision 10)", () => {
     renderRegion();
     for (const tile of screen.getAllByRole("radio")) {
