@@ -9,6 +9,7 @@ import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCal
 import type { ModelErrorClass } from "../model/client";
 import { INTAKE_REAPER_CUTOFF_MS } from "./limits";
 import { INTAKE_PROMPT_VERSION, type ReadResult } from "./read";
+import type { TheReadResult } from "./the-read";
 
 /**
  * The deeper read's writes (plan, decision 1). SERVER-ONLY: it imports the database. Kept out of
@@ -96,7 +97,7 @@ async function purgeStops(tx: Tx, userId: string, now: Date): Promise<void> {
 }
 
 class StoredFound extends Error {
-  constructor(readonly read: StoredRead, readonly readId: string, readonly useful: boolean) { super("stored"); }
+  constructor(readonly read: StoredRead, readonly readId: string, readonly useful: boolean, readonly result: TheReadResult | null) { super("stored"); }
 }
 
 /**
@@ -121,15 +122,18 @@ export async function loadOwnRead(readId: string, userId: string): Promise<{ kin
  * one that found nothing to add. Both are the ask's answer, so neither is asked again; a repeat of
  * a nothing read would otherwise call the model again for the same words.
  */
-async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: string; read: StoredRead; useful: boolean } | null> {
-  const [row] = await tx.select({ id: intakeReads.id, chips: intakeReads.chips, status: intakeReads.status }).from(intakeReads)
+async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: string; read: StoredRead; useful: boolean; result: TheReadResult | null } | null> {
+  const [row] = await tx.select({ id: intakeReads.id, chips: intakeReads.chips, result: intakeReads.result, status: intakeReads.status }).from(intakeReads)
     .where(and(
       eq(intakeReads.userId, userId),
       eq(intakeReads.wordsHash, hash),
       or(eq(intakeReads.status, "ok"), and(eq(intakeReads.status, "failed"), eq(intakeReads.errorClass, "nothing_valid"))),
     ))
     .orderBy(desc(intakeReads.createdAt)).limit(1);
-  return row?.chips ? { id: row.id, read: row.chips as StoredRead, useful: row.status === "ok" } : null;
+  // A row from the retired one-call read carries `chips`; one from the two-step read, `result`. A
+  // fingerprint names one kind only (the two hash different payloads), so a caller meets its own.
+  if (!row || (!row.chips && !row.result)) return null;
+  return { id: row.id, read: (row.chips ?? EMPTY_READ) as StoredRead, useful: row.status === "ok", result: (row.result ?? null) as TheReadResult | null };
 }
 
 /**
@@ -160,6 +164,8 @@ export async function readStatus(
     return pending ? { kind: "running" as const } : { kind: "idle" as const };
   }, { isolationLevel: "repeatable read" });
 }
+
+const EMPTY_READ: StoredRead = { chips: [], notUsed: [], notUnderstood: [] };
 
 export function reapCutoff(now: Date): Date {
   return new Date(now.getTime() - INTAKE_REAPER_CUTOFF_MS);
@@ -196,7 +202,7 @@ export async function startRead(
   model: string,
   /** `readId` is the id the panel chose for this press, so its Stop cancels exactly this read. */
   opts: { readId?: string; now?: Date } = {},
-): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead; readId: string; useful: boolean } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
+): Promise<({ kind: "started" } & ReadHandle) | { kind: "stored"; read: StoredRead; readId: string; useful: boolean; result: TheReadResult | null } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "reused" } | { kind: "stopped" }> {
   const now = opts.now ?? new Date();
   // The reap commits on its own, first: inside the reservation's transaction a refusal would roll
   // it back and leave the stranded read holding the one-pending slot.
@@ -217,7 +223,7 @@ export async function startRead(
         if (consumed.length > 0) return "stopped";
       }
       const stored = await storedRead(tx, userId, hash);
-      if (stored) throw new StoredFound(stored.read, stored.id, stored.useful);
+      if (stored) throw new StoredFound(stored.read, stored.id, stored.useful, stored.result);
       const unit = await reserveModelCall(tx, userId, "intake", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(intakeReads).values({
@@ -230,7 +236,7 @@ export async function startRead(
     return { kind: "started", ...handle };
   } catch (err) {
     // The stored read's OWN id, not the press's: the results page verifies the read by it.
-    if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId, useful: err.useful };
+    if (err instanceof StoredFound) return { kind: "stored", read: err.read, readId: err.readId, useful: err.useful, result: err.result };
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
     // Two unique indexes can refuse this insert, and only one of them means a read is in flight.
     // The id is the panel's, so a press that reuses one names a read that already exists.
@@ -269,6 +275,50 @@ export async function settleRead(
       return false;
     }
     await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", billed);
+    return true;
+  });
+}
+
+/**
+ * Move a pending read to its next call (F2), so the waiting panel can say which step it is on.
+ * False when the read is no longer pending: a Stop or the reaper settled it, and the runner stops.
+ */
+export async function setReadPhase({ readId, userId }: { readId: string; userId: string }, phase: "shortlist" | "judge"): Promise<boolean> {
+  const rows = await db.update(intakeReads).set({ phase })
+    .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
+    .returning({ id: intakeReads.id });
+  return rows.length > 0;
+}
+
+/**
+ * Settle a two-step read (rework plan PR 1), in ONE transaction with its unit, as `settleRead` does
+ * the one-call read: a result with a pick is `ok` and spends; one with none found nothing and
+ * refunds (lock 7); a failed call refunds. Every call that came back is billed, the shortlist's too.
+ * False when the read was no longer pending: its bill still lands, and nothing else does.
+ */
+export async function settleTheRead(
+  { readId, callId, userId }: ReadHandle & { userId: string },
+  outcome: { kind: "read"; result: TheReadResult } | { kind: "failed"; errorClass: Exclude<ModelErrorClass, "upstream_rejected"> },
+  billed: readonly Billed[],
+): Promise<boolean> {
+  const useful = outcome.kind === "read" && outcome.result.picks.length > 0;
+  const set = outcome.kind === "failed"
+    ? { status: "failed", errorClass: outcome.errorClass, phase: null }
+    : useful
+      ? { status: "ok", result: outcome.result, phase: null }
+      : { status: "failed", errorClass: "nothing_valid" as const, result: outcome.result, phase: null };
+  return db.transaction(async (tx) => {
+    await lockAsks(tx, userId);
+    const rows = await tx.update(intakeReads)
+      .set(set)
+      .where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId), eq(intakeReads.status, "pending")))
+      .returning({ callId: intakeReads.modelCallId });
+    const bill = billed.length > 0 ? billed : undefined;
+    if (rows.length === 0) {
+      if (bill) await recordModelUsage(tx, callId, bill);
+      return false;
+    }
+    await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", bill);
     return true;
   });
 }

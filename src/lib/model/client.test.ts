@@ -95,6 +95,15 @@ describe("callModel", () => {
     expect(calls[0].opts.maxRetries).toBe(0);
   });
 
+  it("marks the system prompt as a cached prefix only when asked", async () => {
+    const plain = scripted([reply({ answer: "x" })]);
+    await callModel(req, { messages: plain.messages, log: quiet });
+    expect((plain.calls[0].body as { system?: unknown }).system).toBe("s");
+    const cached = scripted([reply({ answer: "x" })]);
+    await callModel({ ...req, cacheSystem: true }, { messages: cached.messages, log: quiet });
+    expect((cached.calls[0].body as { system?: unknown }).system).toEqual([{ type: "text", text: "s", cache_control: { type: "ephemeral" } }]);
+  });
+
   // Additive: a caller that names no effort sends the request it always sent.
   it("sends an effort only when the caller names one", async () => {
     const plain = scripted([reply({ answer: "x" })]);

@@ -234,7 +234,7 @@ export async function settleModelCall(
    * month). Undefined for a settle that knows nothing: a reaper, a Stop. Their row counts at its
    * worst case until the late outcome records its meters (`recordModelUsage`).
    */
-  billed: Billed | undefined,
+  billed: Billed | readonly Billed[] | undefined,
   now: Date = new Date(),
 ): Promise<void> {
   const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
@@ -248,6 +248,23 @@ export async function settleModelCall(
 export type Billed = { model: string; usage: ModelUsage };
 
 /**
+ * Several calls billed under one reservation (Help me choose's read: a shortlist and a judgement,
+ * on different models), as the one ledger row records them: the models joined with `+`, the
+ * meters summed, and the cost summed per call, each on its own model's rates. Never re-priced from
+ * the joined model, which no rate names.
+ */
+export function joinBilled(parts: readonly Billed[]): { model: string; usage: ModelUsage; costMicroUsd: number } {
+  const models = [...new Set(parts.map((p) => p.model))];
+  const usage = parts.reduce<ModelUsage>((sum, p) => ({
+    inputTokens: sum.inputTokens + p.usage.inputTokens,
+    outputTokens: sum.outputTokens + p.usage.outputTokens,
+    cacheReadTokens: sum.cacheReadTokens + p.usage.cacheReadTokens,
+    cacheWriteTokens: sum.cacheWriteTokens + p.usage.cacheWriteTokens,
+  }), { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 });
+  return { model: models.join("+"), usage, costMicroUsd: parts.reduce((sum, p) => sum + costMicroUsd(p.model, p.usage), 0) };
+}
+
+/**
  * Write what a call was billed for onto its ledger row, and report an alarm line it carried the
  * month over. The one writer of the meters: `settleModelCall` calls it, and so does an outcome
  * that arrives LATE, after a Stop or the reaper already settled the row, since that call billed
@@ -257,16 +274,21 @@ export type Billed = { model: string; usage: ModelUsage };
  * record one call once and never count it twice. Whatever the row's status: meters are a fact
  * about the bill, not about whether the player was charged a credit.
  */
-export async function recordModelUsage(tx: Tx, callId: string, billed: Billed, now: Date = new Date()): Promise<void> {
+function isBilledList(b: Billed | readonly Billed[]): b is readonly Billed[] {
+  return Array.isArray(b);
+}
+
+export async function recordModelUsage(tx: Tx, callId: string, billed: Billed | readonly Billed[], now: Date = new Date()): Promise<void> {
+  const one = isBilledList(billed) ? joinBilled(billed) : { ...billed, costMicroUsd: costMicroUsd(billed.model, billed.usage) };
   const [row] = await tx
     .update(modelCalls)
     .set({
-      model: billed.model,
-      inputTokens: billed.usage.inputTokens,
-      outputTokens: billed.usage.outputTokens,
-      cacheReadTokens: billed.usage.cacheReadTokens,
-      cacheWriteTokens: billed.usage.cacheWriteTokens,
-      costMicroUsd: costMicroUsd(billed.model, billed.usage),
+      model: one.model,
+      inputTokens: one.usage.inputTokens,
+      outputTokens: one.usage.outputTokens,
+      cacheReadTokens: one.usage.cacheReadTokens,
+      cacheWriteTokens: one.usage.cacheWriteTokens,
+      costMicroUsd: one.costMicroUsd,
     })
     .where(and(eq(modelCalls.id, callId), isNull(modelCalls.costMicroUsd)))
     .returning({ createdAt: modelCalls.createdAt, cost: modelCalls.costMicroUsd });

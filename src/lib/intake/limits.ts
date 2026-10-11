@@ -44,3 +44,34 @@ export const INTAKE_POLL_MS = 2_000;
  * deadline by a wide margin, so no live read is ever reaped.
  */
 export const INTAKE_REAPER_CUTOFF_MS = 5 * 60 * 1000;
+
+/**
+ * THE READ (rework plan 2026-10-11, the orchestrator's ruling of the same day as Hugh's proxy): two
+ * calls under one credit. The shortlist scans the whole commander list on Claude Haiku 5.5, whose
+ * long-prompt rate is a fifth of Sonnet's; the judgement reads only the shortlist, on Claude Sonnet
+ * 5.5 at medium, as the Overview does. The eval (PR 2) measures both and may move either.
+ */
+export const READ_SHORTLIST_MODEL = "claude-haiku-5-5";
+export const READ_SHORTLIST_EFFORT = "low" as const;
+/** Room for 40 keys and the thinking that picks them. */
+export const READ_SHORTLIST_MAX_TOKENS = 4_000;
+export const READ_JUDGE_MODEL = "claude-sonnet-5-5";
+export const READ_JUDGE_EFFORT = "medium" as const;
+/** Ten reasons of at most 140 characters each, plus medium thinking; the request streams. */
+export const READ_JUDGE_MAX_TOKENS = 12_000;
+
+/** How many commanders the shortlist asks for, and the fewest a reply may carry and still count. */
+export const READ_SHORTLIST_SIZE = 40;
+/** The top of the re-ordered list that carries a reason line. */
+export const READ_TOP = 10;
+/** A reason line's length, in characters, after the app has drawn any deck name into it. Over it,
+ *  the row is refused, never cut (handoff, "The reason line"). */
+export const READ_REASON_MAX_CHARS = 140;
+
+/**
+ * Both calls run inside the submit's `after()`, which the choose page's 120s `maxDuration` bounds.
+ * The shortlist gets its own deadline so a slow first call leaves the judgement its share; the
+ * judgement gets what is left of the whole.
+ */
+export const READ_SHORTLIST_DEADLINE_MS = 40_000;
+export const READ_TOTAL_DEADLINE_MS = 110_000;

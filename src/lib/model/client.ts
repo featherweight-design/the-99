@@ -35,8 +35,8 @@ export type ModelErrorClass = "upstream_busy" | "upstream_rejected" | "timeout" 
 
 /**
  * What the call was billed for, ACCUMULATED across both attempts: a malformed first reply still
- * came back, and still burned its tokens. The cache meters are zero while the app sends no
- * `cache_control`, and are read anyway so a price can never silently leave them out.
+ * came back, and still burned its tokens. The cache meters are zero for a call that sends no
+ * `cache_control` (`cacheSystem`), and are read anyway so a price can never silently leave them out.
  */
 export type ModelUsage = {
   inputTokens: number;
@@ -71,6 +71,10 @@ export type ModelRequest<T> = {
    *  non-streaming request would risk the SDK's HTTP timeout, as with thinking at a higher effort.
    *  Omitted, the request is the plain `create` it always was. */
   stream?: boolean;
+  /** Mark the system prompt as a cached prefix (`cache_control`, the 5-minute TTL). For a large,
+   *  byte-stable system prompt shared across calls, like the read's commander list: a later call
+   *  inside the TTL reads it at 0.1x input. Omitted, the system prompt is the plain string it was. */
+  cacheSystem?: boolean;
   /** Called with every response that came back, before it is parsed: what the eval harness records
    *  per arm (why the model stopped). The outcome itself is unchanged. */
   onResponse?: (meta: { stopReason: string | null; outputTokens: number }) => void;
@@ -190,7 +194,9 @@ async function tryOnce<T>(
     const params = {
       model: req.model,
       max_tokens: req.maxTokens,
-      system: req.system,
+      system: req.cacheSystem
+        ? [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }]
+        : req.system,
       messages: [{ role: "user" as const, content: req.user }],
       output_config: req.effort ? { format, effort: req.effort } : { format },
     };

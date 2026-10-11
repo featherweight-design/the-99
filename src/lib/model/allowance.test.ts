@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { callMicroFor, dailyLimitFor, reserveModelCall } from "./allowance";
+import { callMicroFor, dailyLimitFor, joinBilled, reserveModelCall } from "./allowance";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "./allowance-rule";
@@ -81,5 +81,19 @@ describe("reserveModelCall and the origins", () => {
     // No lock, no month's spend, no allowance: the player path's three reads never ran.
     expect(tx.execute).not.toHaveBeenCalled();
     expect(tx.select).not.toHaveBeenCalled();
+  });
+});
+
+describe("joinBilled", () => {
+  // Help me choose's read bills two calls on two models under one reservation.
+  it("sums the meters, joins the models, and prices each call on its own model", () => {
+    const shortlist = { model: "claude-haiku-5-5", usage: { inputTokens: 2_000, outputTokens: 100, cacheReadTokens: 0, cacheWriteTokens: 150_000 } };
+    const judge = { model: "claude-sonnet-5-5", usage: { inputTokens: 10_000, outputTokens: 2_000, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+    expect(joinBilled([shortlist, judge])).toEqual({
+      model: "claude-haiku-5-5+claude-sonnet-5-5",
+      usage: { inputTokens: 12_000, outputTokens: 2_100, cacheReadTokens: 0, cacheWriteTokens: 150_000 },
+      // Haiku on its >100K card: (2,000 + 150,000 x 1.25) x 0.5 + 100 x 2.5; Sonnet: 20,000 + 20,000.
+      costMicroUsd: Math.ceil((2_000 + 187_500) * 0.5 + 250) + 40_000,
+    });
   });
 });
