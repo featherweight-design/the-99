@@ -389,11 +389,13 @@ export async function startRun(
    * reuse early return, because the point is to rewrite an overview the list already has.
    *
    * DECIDED AGAIN under the deck's lock, which every rewrite for a deck takes. A rewrite that
-   * produced an overview since the press read it ends the need, and the press is a plain one
-   * (so reuse hands that overview back). `free` is granted only while fewer than `FREE_ATTEMPTS`
-   * `system` calls exist for the deck at the new contract: granted, the call is reserved as
-   * `origin = 'system'` and takes no credit; refused (the cap), the press falls through to the
-   * PLAYER path as `paid`, allowance check included, so a third attempt is the player's own.
+   * produced an overview since the press read it ends the need: the press returns that overview
+   * (`reused`) and reserves nothing, a retry included. `free` is granted only while fewer than
+   * `FREE_ATTEMPTS` `system` calls exist for the deck at the new contract: granted, the call is
+   * reserved as `origin = 'system'` and takes no credit. A `free` press that reaches the lock
+   * AFTER the cap returns `free_gone` and reserves nothing: its UI promised no credit, so it is
+   * never turned into a charge. Only a press already classified `paid` (it saw the tries spent)
+   * takes the PLAYER path, allowance check included.
    */
   method: "free" | "paid" | null = null,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {

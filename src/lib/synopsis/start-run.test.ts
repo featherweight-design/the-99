@@ -103,10 +103,11 @@ describe("startRun: the free method-change rewrite", () => {
 
   it("reserves the first attempt as a system call, which skips the reuse check", async () => {
     lock([]);
+    queue.push([{ id: "sentinel-reuse-row" }]);
     expect(await free()).toEqual({ kind: "started", runId: "run-1", callId: "call-1" });
     expect(reserveModelCall).toHaveBeenCalledWith(tx, "user", "synopsis", "stub", expect.any(Date), "system");
-    // No fourth read: a reuse check would have taken the next queue entry and found none.
-    expect(queue).toHaveLength(0);
+    // A reuse check would have consumed the sentinel: the system path never makes one.
+    expect(queue).toHaveLength(1);
   });
 
   it("reserves the second attempt after a failed first one", async () => {
