@@ -269,15 +269,27 @@ export async function factsFor(
    *  Analysis tab's grade agree. Off with the switch: the facts are exactly the classifier's. */
   benchmarks: boolean = deckBenchmarksEnabled(),
 ): Promise<SynopsisFacts> {
+  return (await factsWithSource(profile, v2, benchmarks)).facts;
+}
+
+/** `factsFor`, saying whether the interaction figures are the benchmarks' (`shared`) or the
+ *  classifier's: a failed label read falls back, and the write stamps the contract it really used. */
+export async function factsWithSource(
+  profile: Parameters<typeof buildSynopsisFacts>[0],
+  v2: boolean,
+  benchmarks: boolean,
+): Promise<{ facts: SynopsisFacts; shared: boolean }> {
   const ids = profile.cards.map((c) => c.oracleId);
   const texts = ids.length === 0 ? [] : await db
     .select({ oracleId: cards.oracleId, oracleText: cards.oracleText, keywords: cards.keywords })
     .from(cards)
     .where(inArray(cards.oracleId, ids));
   const anySize = v2 ? await loadComboFacts(profile) : null;
-  return buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize,
+  const shared = benchmarks ? await sharedInteraction(profile, texts) : null;
+  const facts = buildSynopsisFacts(profile, new Map(texts.map((t) => [t.oracleId, t.oracleText])), await loadUniversalStaples(), anySize,
     v2 ? new Map(texts.map((t) => [t.oracleId, t.keywords])) : null,
-    benchmarks ? await sharedInteraction(profile, texts) : null);
+    shared);
+  return { facts, shared: shared !== null };
 }
 
 /** The benchmarks' interaction reading over the profile's own list: fresh labels, and a card's rules
@@ -513,22 +525,10 @@ async function run(
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
   const v2 = overviewV2Enabled();
   const benchmarks = deckBenchmarksEnabled();
-  const contract = synopsisContractVersion(v2, benchmarks);
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
-
-  // A section retry works only on the synopsis for this very list, under this very contract. One
-  // written under an older contract is rewritten whole instead: a document never mixes two
-  // contracts (plan, decision 2).
-  let base: SynopsisRow | null = null;
-  if (retry) {
-    if (!current || current.id !== retry.id || current.fingerprint !== reading.list) return { kind: "nothing_to_retry" };
-    if (current.contractVersion === contract) {
-      if (refusedSections(current.content).length === 0) return { kind: "nothing_to_retry" };
-      base = current;
-    }
-  }
+  if (retry && (!current || current.id !== retry.id || current.fingerprint !== reading.list)) return { kind: "nothing_to_retry" };
   const replacing = !retry && !!current && current.fingerprint === reading.list
     && (await overviewDataMovedFor(deckId, userId, current.seenSeq ?? 0));
   if (!retry && current && current.fingerprint === reading.list && !replacing) {
@@ -538,7 +538,19 @@ async function run(
     return { kind: "reused", synopsis: current };
   }
 
-  const facts = await factsFor(reading.profile, v2, benchmarks);
+  // The contract is the one the facts were really built under: with the switch on, a failed label
+  // read falls back to the classifier's figures and is stamped 7 or 8, not 9 or 10.
+  const { facts, shared } = await factsWithSource(reading.profile, v2, benchmarks);
+  const contract = synopsisContractVersion(v2, shared);
+
+  // A section retry works only on the synopsis for this very list, under this very contract. One
+  // written under another contract is rewritten whole instead: a document never mixes two
+  // contracts (plan, decision 2), so it never quotes two interaction readings either.
+  let base: SynopsisRow | null = null;
+  if (retry && current && current.contractVersion === contract) {
+    if (refusedSections(current.content).length === 0) return { kind: "nothing_to_retry" };
+    base = current;
+  }
   const refused = base ? refusedSections(base.content) : null;
   const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2 });
 

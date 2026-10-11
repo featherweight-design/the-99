@@ -10,7 +10,7 @@ vi.mock("../../db", () => ({
   db: { select: () => ({ from: () => ({ where: () => cardRows() }) }) },
 }));
 
-import { factsFor } from "./generate";
+import { factsFor, factsWithSource } from "./generate";
 
 const ref = (name: string) => ({ oracleId: `id-${name}`, name });
 // The same minimal profile facts.test.ts builds: one two-card combo the profile itself holds.
@@ -75,5 +75,13 @@ describe("factsFor interaction, behind DECK_BENCHMARKS_ENABLED", () => {
     cardRows.mockResolvedValueOnce([{ oracleId: "id-Heliod", oracleText: "Counter target spell.", keywords: [] }]);
     readLabels.mockRejectedValueOnce(new Error("down"));
     expect((await factsFor(profile, false, true)).stats?.interaction.total).toBe(0);
+  });
+
+  it("says which reading the figures are, so a write stamps the contract it really used", async () => {
+    readLabels.mockResolvedValueOnce(new Map());
+    expect((await factsWithSource(profile, false, true)).shared).toBe(true);
+    readLabels.mockRejectedValueOnce(new Error("down"));
+    expect((await factsWithSource(profile, false, true)).shared).toBe(false);
+    expect((await factsWithSource(profile, false, false)).shared).toBe(false);
   });
 });
