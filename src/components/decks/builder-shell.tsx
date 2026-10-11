@@ -496,6 +496,7 @@ export function BuilderShell({
     [deck.id],
   );
   const holding = holdsOpening({
+    analyzed: storedPermits !== null || reading !== null,
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled }),
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
