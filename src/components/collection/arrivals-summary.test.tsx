@@ -176,6 +176,20 @@ describe("ArrivalsSummary — decks left short", () => {
     expect(screen.queryByText(copy.summary.ledeNothingToReport)).toBeNull();
   });
 
+  it("sums a deck's shortfall across its cards before ordering, and names each deck once", () => {
+    const s = summary({
+      version: 3, arrived: 0, left: 40,
+      nowShort: [
+        { deckId: "d1", oracleId: "o1", short: 1 }, { deckId: "d2", oracleId: "o1", short: 2 },
+        { deckId: "d1", oracleId: "o2", short: 2 },
+      ],
+      names: { cards: { o1: "Brushland", o2: "Sol Ring" }, decks },
+    });
+    render(view(s));
+    // Gishath is short 3 across two cards, Brago 2 on one: Gishath first, each named once.
+    expect(screen.getByText(/Replacing left 2 decks short: Gishath and Brago\./)).toBeTruthy();
+  });
+
   it("counts past three names", () => {
     render(view(withShort([
       { deckId: "d1", short: 4 }, { deckId: "d2", short: 3 }, { deckId: "d3", short: 2 }, { deckId: "d4", short: 1 },
