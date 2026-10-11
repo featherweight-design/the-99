@@ -90,7 +90,7 @@ export const cardAssignmentsCopy = {
      * afterwards what the player agreed to beforehand. Three names at most; the rest are counted.
      */
     nowShort: (names: string[]) => {
-      if (names.length === 1) return `Replacing left ${names[0]} short.`;
+      if (names.length === 1) return `Replacing left a deck short: ${names[0]}.`;
       const shown = names.slice(0, 3);
       const rest = names.length - shown.length;
       const list = rest > 0

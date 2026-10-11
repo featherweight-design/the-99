@@ -46,7 +46,7 @@ export const collectionEditCopy = {
     overwriteCount: (k: number, since: string) =>
       `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
     choiceOverwriteUnknown: (last: string) =>
-      `Changes you made in the app may be overwritten. Your last upload was ${last}, before the 90 days history keeps, so we can't count them.`,
+      `Changes you made in the app may be overwritten. Your last upload was ${last}, further back than the 90 days of history we keep, so we can't count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
     choiceOverwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
     overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file raises those counts.`,
@@ -81,7 +81,7 @@ export const collectionEditCopy = {
       `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload.`,
     /** (new) History does not reach the last upload, so no number is quoted. */
     overwriteUnknown: (last: string) =>
-      `This may overwrite changes you made in the app. Your last upload was ${last}, before the 90 days history keeps, so we can't count them.`,
+      `This may overwrite changes you made in the app. Your last upload was ${last}, further back than the 90 days of history we keep, so we can't count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
     overwriteNoUpload: (k: number) => `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app.`,
     decksShortHeading: (k: number) => `Decks that will read short · ${n(k)}`,
@@ -189,7 +189,7 @@ export const collectionEditCopy = {
     /** (new) An opened entry that recorded no rows: a Replace that matched the collection exactly. */
     noRows: "This change didn't move anything. Your collection already matched.",
     reverted: "Reverted",
-    revertedBy: (when: string) => `Reverted by the revert at ${when}`,
+    revertedBy: (when: string) => `Reverted at ${when}`,
     undid: (title: string) => `Undid “${title}”`,
     /** (new) A revert whose own entry is not on this page, so it cannot be titled. */
     undidOlder: "Undid an earlier change",
@@ -212,7 +212,7 @@ export const collectionEditCopy = {
       `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven't. They're all still in your collection.`,
     emptyTitle: "Nothing's changed yet",
     emptyBody: (ship: string) =>
-      `Uploads and edits from ${ship} on show up here, ready to undo. Your collection from before that has no history to show.`,
+      `Uploads and edits since ${ship} show up here, ready to undo. Your collection from before that has no history to show.`,
     revert: "Revert",
     reverting: "Reverting…",
     /** (new) The expanded row's per-row quantity change. */

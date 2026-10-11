@@ -63,7 +63,7 @@ describe("HistoryList", () => {
   it("draws the empty state dated from the ship date, with the foot under it", () => {
     draw([], { shipLabel: "9 Oct" });
     expect(screen.getByText("Nothing's changed yet")).toBeTruthy();
-    expect(screen.getByText(/Uploads and edits from 9 Oct on show up here/)).toBeTruthy();
+    expect(screen.getByText(/Uploads and edits since 9 Oct show up here/)).toBeTruthy();
     expect(screen.getByText(/History keeps 90 days/)).toBeTruthy();
   });
 
@@ -140,7 +140,7 @@ describe("HistoryList", () => {
       entry({ id: "e1", revertedBy: "rv", revertedByVisible: true }),
     ]);
     expect(screen.getAllByText(/Reverted/).length).toBeGreaterThan(0);
-    const link = screen.getByRole("link", { name: "Reverted by the revert at 15:30" });
+    const link = screen.getByRole("link", { name: "Reverted at 15:30" });
     expect(link.getAttribute("href")).toBe("#entry-rv");
     expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
   });
@@ -169,7 +169,7 @@ describe("HistoryList", () => {
       entry({ id: "rv", kind: "revert", revertsId: "e1", revertsVisible: true, createdAt: new Date("2026-10-09T15:30:00Z"), firstName: null }),
       entry({ id: "e1", kind: "edit", source: "shopping:d1", revertedBy: "rv", revertedByVisible: true, shoppingDeck: { id: "d1", name: "Goblins" } }),
     ]);
-    expect(screen.getByRole("link", { name: "Reverted by the revert at 15:30" }).getAttribute("href")).toBe("#entry-rv");
+    expect(screen.getByRole("link", { name: "Reverted at 15:30" }).getAttribute("href")).toBe("#entry-rv");
     expect(screen.getByText("Undid “Sol Ring”")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Goblins" })).toBeTruthy();
     // Reverted, so no Revert control of its own; the revert entry keeps one.

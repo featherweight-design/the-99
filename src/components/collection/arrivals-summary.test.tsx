@@ -213,7 +213,7 @@ describe("ArrivalsSummary — decks left short", () => {
 
 describe("copy.summary.nowShort", () => {
   it("names one deck without a count", () => {
-    expect(copy.summary.nowShort(["Gishath"])).toBe("Replacing left Gishath short.");
+    expect(copy.summary.nowShort(["Gishath"])).toBe("Replacing left a deck short: Gishath.");
   });
   it("joins three with and", () => {
     expect(copy.summary.nowShort(["A", "B", "C"])).toBe("Replacing left 3 decks short: A, B and C.");
