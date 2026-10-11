@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "./flag";
+import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "./flag";
 
 describe("the Tuning flag", () => {
   it("is off for every value but the exact string 'true', with Analysis also on", () => {
@@ -89,5 +89,29 @@ describe("the Mana Balance flag", () => {
 
   it("is off with everything unset, the production default", () => {
     expect(manaBalanceEnabled(env({}))).toBe(false);
+  });
+});
+
+describe("the Tuning hub flag", () => {
+  const env = (vars: Record<string, string | undefined>) => vars as unknown as NodeJS.ProcessEnv;
+
+  it("is off for every value but the exact string 'true', with Analysis also on", () => {
+    for (const v of [undefined, "", "false", "TRUE", "1", "yes", " true"]) {
+      expect(tuningHubEnabled(env({ TUNING_HUB_ENABLED: v, ANALYSIS_TAB_ENABLED: "true" }))).toBe(false);
+    }
+  });
+
+  it("is on for 'true' with Analysis also on", () => {
+    expect(tuningHubEnabled(env({ TUNING_HUB_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" }))).toBe(true);
+  });
+
+  it("is off whenever Analysis is off, even with the switch itself on", () => {
+    for (const analysis of [undefined, "", "false", "1"]) {
+      expect(tuningHubEnabled(env({ TUNING_HUB_ENABLED: "true", ANALYSIS_TAB_ENABLED: analysis }))).toBe(false);
+    }
+  });
+
+  it("is off with everything unset, the production default", () => {
+    expect(tuningHubEnabled(env({}))).toBe(false);
   });
 });

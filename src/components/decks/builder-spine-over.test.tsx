@@ -8,6 +8,7 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetail } from "../../lib/decks/read";
 import { overCopy, overWord } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
 
@@ -35,7 +36,7 @@ const deck = {
   toBuyCount: 8,
 } as unknown as DeckDetail;
 
-function mount(built: number) {
+function mount(built: number, onProposedCuts?: () => void) {
   const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
   render(
     <CardDetailProvider fetchCard={fetchCard}>
@@ -46,6 +47,7 @@ function mount(built: number) {
         status="Building"
         overCommitted={0}
         softClaimed={0}
+        onProposedCuts={onProposedCuts}
       />
     </CardDetailProvider>,
   );
@@ -90,6 +92,29 @@ describe("BuilderSpine over 99", () => {
     const buttons = screen.getAllByRole("button", { name: /export/i });
     expect(buttons.length).toBeGreaterThan(0);
     for (const button of buttons) expect(button).toBeEnabled();
+  });
+});
+
+// The Tuning hub's shortcut (hub handoff A5): the trim line offers Proposed cuts at both widths.
+describe("The trim line's Proposed cuts shortcut", () => {
+  it("is offered at both widths on a deck over, and opens the tool", () => {
+    const open = vi.fn();
+    mount(104, open);
+    const links = screen.getAllByRole("button", { name: tuningHubCopy.shortcuts.proposedCuts });
+    expect(links).toHaveLength(2);
+    fireEvent.click(links[1]);
+    expect(open).toHaveBeenCalledTimes(1);
+  });
+
+  it("is absent at 99", () => {
+    mount(99, vi.fn());
+    expect(screen.queryByRole("button", { name: tuningHubCopy.shortcuts.proposedCuts })).not.toBeInTheDocument();
+  });
+
+  it("is absent with no handler (the hub off), the trim line unchanged", () => {
+    mount(104);
+    expect(screen.queryByRole("button", { name: tuningHubCopy.shortcuts.proposedCuts })).not.toBeInTheDocument();
+    expect(screen.getAllByText(overCopy.trim.lead(overWord(5)))).toHaveLength(2);
   });
 });
 

@@ -1,0 +1,193 @@
+{
+  "feature": "Tuning hub, PR 1: the landing, the tool switch and the trim-line shortcut",
+  "note": "Tuning hub handoff R1 canvas A (A1, A2, A4, A5, A6) plus the plan's no-reading row. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED and TUNING_HUB_ENABLED all 'true', on a scratch branch holding a pull:staging copy, and three decks the signed-in account owns: HUB_OVER_DECK, a read deck since built past 100; HUB_FULL_DECK, a read deck at 100; HUB_UNREAD_OVER_DECK, a deck past 100 that was never read. A3, a run in flight on its tile, needs a pending paid run and is covered by tuning-hub.test (the running tile, its elapsed time and the re-read).",
+  "rows": [
+    {
+      "id": "A1-landing-over",
+      "label": "/decks/[id] Analysis, a read deck now over 100: four-tile landing order, Proposed cuts offered with `this deck is N over`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "A2-landing-at-100",
+      "label": "/decks/[id] Analysis, a read deck at 100: Proposed cuts present and inert, its reason as the purpose line",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_FULL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tool-tile='cuts'][data-inert]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "NR-no-reading-over",
+      "label": "/decks/[id] Analysis, a deck built long and never read: the hub draws, Suggested changes inert and saying why",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_UNREAD_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tool-tile='suggested'][data-inert]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "A4-tool-open",
+      "label": "/decks/[id] Analysis, Proposed cuts opened from its tile: desktop tab row, phone `\u2039 Tuning` and `n of N tools`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tool-tile='cuts']",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='cuts']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tuning-tool='cuts']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "A6-reset",
+      "label": "/decks/[id] Analysis, a tool opened, Your deck pressed, Analysis again: the landing, not the tool",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tool-tile='cuts']",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='cuts']",
+          "settle": 900
+        },
+        {
+          "clickRole": "tab",
+          "name": "Your deck",
+          "settle": 900
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 900
+        },
+        {
+          "wait": "[data-tool-tile='cuts']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "A5-trim-shortcut",
+      "label": "/decks/[id] Your deck, a deck over: the trim line's `Proposed cuts \u2192` (inline on desktop, its own 44px line on the phone)",
+      "view": "src/components/decks/spine-desktop.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-shortcut='proposed-cuts']:visible",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "A5-trim-shortcut-pressed",
+      "label": "/decks/[id] the trim line's `Proposed cuts \u2192` pressed: Analysis opens with Proposed cuts open and the Tuning heading at the top",
+      "view": "src/components/decks/builder-shell.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${HUB_OVER_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "settle": 1500,
+          "click": "[data-shortcut='proposed-cuts']:visible"
+        },
+        {
+          "wait": "[data-tuning-tool='cuts']",
+          "settle": 900
+        }
+      ]
+    }
+  ]
+}

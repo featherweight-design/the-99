@@ -37,3 +37,15 @@ export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boole
 export function manaBalanceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.MANA_BALANCE_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
+
+/**
+ * Whether this deployment draws the Tuning hub: the `Tuning` section on the Analysis tab, with a
+ * tile for each tool and the tools opening in place (tuning hub handoff R1, canvas A), plus the
+ * trim line's `Proposed cuts →` shortcut. The same shape as the switches above, and OFF for
+ * anything but the exact string `'true'`. Off, the Analysis tab mounts Suggested changes and
+ * Proposed cuts directly, exactly as before the hub. On, a tile draws only for a tool whose own
+ * switch is on, so the hub never offers a tool this deployment does not.
+ */
+export function tuningHubEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.TUNING_HUB_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
+}

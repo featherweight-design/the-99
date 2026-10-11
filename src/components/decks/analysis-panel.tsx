@@ -50,6 +50,7 @@ export function AnalysisPanel({
   legality,
   tuning,
   cuts,
+  hub,
   opening = "off",
   overview,
   hold = null,
@@ -94,6 +95,10 @@ export function AnalysisPanel({
    *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
    *  `held`. Absent with `PROPOSED_CUTS_ENABLED` off. */
   cuts?: ReactNode;
+  /** The Tuning hub (`TUNING_HUB_ENABLED`): when present it is drawn INSTEAD of `tuning` and `cuts`,
+   *  which it mounts inside its own tiles. Handed the held reading's permits, or null with no
+   *  reading (a deck built long), and it decides for itself whether it draws at all. */
+  hub?: (permits: readonly Bracket[] | null) => ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -214,7 +219,10 @@ export function AnalysisPanel({
       ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
-      {held && tuning ? (
+      {hub ? (
+        <div hidden={behind} className="contents">{hub(held ? slotDeck(held.profile).permits : null)}</div>
+      ) : null}
+      {!hub && held && tuning ? (
         <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
           {tuning(slotDeck(held.profile).permits)}
         </div>
@@ -223,7 +231,7 @@ export function AnalysisPanel({
           size), and the tool exists for a deck that is over it, so the two preconditions exclude each
           other: a deck built long was never read. Its facts come from the profile it builds for itself
           and it draws nothing for a deck that is not over 100. */}
-      {cuts ? <div hidden={behind} className="contents">{cuts}</div> : null}
+      {!hub && cuts ? <div hidden={behind} className="contents">{cuts}</div> : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>
