@@ -79,9 +79,10 @@ describe("manapoolCardUrl", () => {
 
 describe("manapoolAddDeckUrls (the all-decks cart)", () => {
   // Hugh's staging cart, 2026-10-11: 291 merged lines, 307 copies, an 8,051-character URL that
-  // Mana Pool answered 200 with all 291 names decoded. Names here are about the same length.
+  // Mana Pool answered 200 with all 291 names decoded. Names here are sized so the URL lands near
+  // the measured 8,051 characters (about 27.7 per line), which the first case asserts.
   const cart = Array.from({ length: 291 }, (_, i) => ({
-    name: `Shatterskull Smashing // Hammer ${i}`,
+    name: `Evolving Wild ${i}`,
     quantity: i < 16 ? 2 : 1,
   }));
 
@@ -90,6 +91,8 @@ describe("manapoolAddDeckUrls (the all-decks cart)", () => {
     expect(urls).toHaveLength(1);
     expect(urls[0].href).toBe(manapoolAddDeckUrl(cart));
     expect(urls[0].href.length).toBeLessThanOrEqual(MANAPOOL_URL_MAX);
+    expect(urls[0].href.length).toBeGreaterThan(7_500);
+    expect(urls[0].href.length).toBeLessThan(8_600);
     expect(urls[0].lineCount).toBe(291);
   });
 
