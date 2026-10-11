@@ -356,7 +356,8 @@ export function v2FactLines(facts: SynopsisFacts, contract8 = false): string[] {
     out.push("", "Combos this deck assembles (Commander Spellbook; every card named is in the deck):");
     for (const c of facts.combos) {
       // A mandatory loop is not a win: nothing in it can be declined, so the game is drawn unless
-      // the deck has an outlet. The decklist is what names one, so the fact says what to look for.
+      // the deck answers in response. The model is never asked to name or claim an answer (it could
+      // not be checked), so the fact states the condition and the weakness rule words it the same way.
       // Contract 8 only: contract 7 stays the baseline the v7-against-v8 comparison is run against.
       const shown = producesShown(c.produces.filter((f) => f !== DRAW_THE_GAME)).join(", ");
       out.push(contract8 && isMandatoryLoop(c.produces)
