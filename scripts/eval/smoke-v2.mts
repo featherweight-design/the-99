@@ -41,8 +41,10 @@ const { buildSynopsisPrompt } = await import("../../src/lib/synopsis/prompt");
 const { callModel } = await import("../../src/lib/model/client");
 const { synopsisResponseSchema } = await import("../../src/lib/synopsis/response-schema");
 const { validateSynopsis } = await import("../../src/lib/synopsis/validate");
-// Contract 7 under --v1, the v2 contracts otherwise: each on its own model, effort and ceiling.
-const { model: SYNOPSIS_MODEL, effort: SYNOPSIS_EFFORT, maxTokens: SYNOPSIS_MAX_TOKENS, stream } = synopsisCallSettings(!v1);
+// Both arms here are contract 7: the facts-on prompt still parses with the contract-7 wire and
+// validator, so it runs on contract 7's own model, effort and ceiling. The v2 contracts' prompt
+// (contract 8) is measured by `eval:corpus run --prompt v8`.
+const { model: SYNOPSIS_MODEL, effort: SYNOPSIS_EFFORT, maxTokens: SYNOPSIS_MAX_TOKENS, stream } = synopsisCallSettings(false);
 const { costUsd, worstCaseUsd } = await import("./lib/pricing.mjs");
 
 const rows = (await db.execute(sql`select id, user_id, name from decks order by name`)).rows as { id: string; user_id: string; name: string }[];
