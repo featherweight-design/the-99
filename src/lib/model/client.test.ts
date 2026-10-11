@@ -66,6 +66,12 @@ describe("callModel", () => {
     expect(seen).toEqual([{ stopReason: "end_turn", outputTokens: 7 }]);
   });
 
+  it("keeps the reply when the onResponse recorder throws", async () => {
+    const { messages } = scripted([reply({ answer: "x" })]);
+    const out = await callModel({ ...req, onResponse: () => { throw new Error("recorder broke"); } }, { messages, log: quiet });
+    expect(out).toMatchObject({ ok: true, value: { answer: "x" } });
+  });
+
   it("returns the parsed value and the usage the response reported", async () => {
     const { messages } = scripted([reply({ answer: "x" }, { input_tokens: 812, output_tokens: 90 })]);
     expect(await callModel(req, { messages, log: quiet })).toEqual({

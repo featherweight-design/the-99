@@ -206,7 +206,12 @@ async function tryOnce<T>(
 
   // The reply is here and billed: every outcome from now on carries its usage.
   const usage = usageOf(response.usage);
-  req.onResponse?.({ stopReason: response.stop_reason ?? null, outputTokens: usage.outputTokens });
+  // A recorder's fault is the recorder's: the reply is billed and in hand, so it is never lost to it.
+  try {
+    req.onResponse?.({ stopReason: response.stop_reason ?? null, outputTokens: usage.outputTokens });
+  } catch (err) {
+    log(`[model] onResponse threw: ${err instanceof Error ? err.message : String(err)}`);
+  }
   // Every text block, joined, as the eval harness reads a reply (`scripts/eval/lib/request.mts`), so
   // the app and the harness judge one reply the same way. No text at all (a refusal, or a reply
   // that was all thinking when it hit max_tokens) is the shape not met.
