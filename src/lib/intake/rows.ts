@@ -57,6 +57,11 @@ export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
   rows: ResultRow[];
   /** More rows past this slice: *Show 12 more* is drawn only then. */
   hasMore: boolean;
+  /**
+   * How many commanders the answers allow: the read's pool, which its panel names while it reads
+   * (`read.stepScan`). Never printed as a count of results (F6).
+   */
+  total: number;
 };
 
 /**
@@ -76,6 +81,7 @@ export async function loadResultsPage(userId: string, answers: Answers, offset =
     card: outcome.card,
     rows: rows.map((r) => (reasons.has(r.oracleId) ? { ...r, reason: reasons.get(r.oracleId) } : r)),
     hasMore: ordered.length > offset + RESULT_PAGE,
+    total: ordered.length,
   };
 }
 

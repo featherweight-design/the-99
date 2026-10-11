@@ -1,11 +1,11 @@
 "use client";
-// *We read this as* (HANDOFF §4, the results' first block). The answers the search ran on, READ
-// ONLY after the submit (H1): no chip is editable or removable here, and the only ways back are
-// *Change answers* (the form, pre-filled) and *Start over* (the form, blank). The one control
-// among the chips is the build-around card's name, which opens its card.
+// *Your answers* (HANDOFF §4, the results' first block; the read addendum R1). The answers the
+// search ran on, READ ONLY after the submit (H1): no chip is editable or removable here, and the
+// only ways back are *Change answers* (the form, pre-filled) and *Start over* (the form, blank). The
+// one control among the chips is the build-around card's name, which opens its card.
 //
-// *Not used* is not a chip: it is what the submit read in the words and set aside, quoted as the
-// player wrote it. PR 6's deeper-read offer mounts in `offer`, under the top row.
+// The words are never chips (ruling 2, T1): *You wrote* quotes them whole under the answers. The
+// read's panel mounts in `offer`, under the top row.
 
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -23,22 +23,21 @@ import { priceFactOf } from "./price-fact";
 export function ReadAsBar({
   chips,
   card,
-  notUsed,
+  words = "",
   changeHref,
   startOverHref,
   offer,
-  afterDeeper = false,
 }: {
   chips: readonly AnswerChip[];
   /** The build-around card's facts; its chip is the one in `chips` of kind `card`. */
   card: CardChip | null;
-  notUsed: readonly string[];
+  /** What the player wrote in *Anything else?*, quoted whole when there is any. */
+  words?: string;
   changeHref: string;
   startOverHref: string;
   offer?: ReactNode;
-  /** A deeper look has settled on these answers: its leftovers are what even it could not place. */
-  afterDeeper?: boolean;
 }) {
+  const wrote = words.trim();
   return (
     <section
       aria-labelledby="read-as-label"
@@ -47,21 +46,18 @@ export function ReadAsBar({
       <div className="flex flex-col gap-[12px] md:flex-row md:items-start md:gap-[24px]">
         <div className="flex flex-col gap-[9px] flex-1 min-w-0">
           <h2 id="read-as-label" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]">
-            {copy.readAs.label}
+            {copy.readAs.yourAnswers}
           </h2>
           {chips.length === 0 ? (
-            // Said only when nothing at all was read: beside a Not used line it would contradict it.
-            notUsed.length === 0 && <p className="m-0 flex items-center h-[26px] text-[13px] text-[color:var(--fg-muted)]">{copy.readAs.none}</p>
+            <p className="m-0 flex items-center min-h-[26px] text-[13px] text-[color:var(--fg-muted)]">{copy.readAs.noneAll}</p>
           ) : (
             <ul className="m-0 p-0 list-none flex flex-wrap gap-[6px]">
-              {/* The deeper look's chips follow every free-match chip, each group in the form's order. */}
-              {[...chips.filter((c) => !c.deeper), ...chips.filter((c) => c.deeper)].map((chip, i) => (
+              {chips.map((chip, i) => (
                 <li
                   key={`${chip.kind}-${i}`}
                   data-testid="answer-chip"
                   // One line, always: a long card name truncates inside the chip rather than wrapping out of it.
-                  data-deeper={chip.deeper || undefined}
-                  className={`inline-flex items-center gap-[6px] max-w-full min-w-0 whitespace-nowrap h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border ${chip.deeper ? "border-dashed border-[color:var(--accent)]" : "border-solid border-[color:var(--border-strong)]"} bg-[color:var(--surface)]`}
+                  className="inline-flex items-center gap-[6px] max-w-full min-w-0 whitespace-nowrap h-[32px] md:h-[28px] pl-[9px] pr-[8px] rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]"
                 >
                   <span className="shrink-0 font-mono text-[9px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{chip.kind}</span>
                   {chip.codes ? (
@@ -96,26 +92,15 @@ export function ReadAsBar({
                     <span className="min-w-0 truncate text-[12.5px] text-[color:var(--fg-body)]">{chip.value}</span>
                   )}
                   {chip.tail && <span className="shrink-0 font-mono text-[9.5px] text-[color:var(--fg-faint)]">{chip.tail}</span>}
-                  {chip.deeper && (
-                    <span className="shrink-0 font-mono text-[9px] tracking-[.06em] text-[color:var(--accent)]">{copy.readAs.deeperMark}</span>
-                  )}
                 </li>
               ))}
             </ul>
           )}
-          {notUsed.length > 0 && (
-            <div data-testid="not-used" className="flex flex-wrap items-baseline gap-[4px_10px]">
-              <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{afterDeeper ? copy.readAs.stillNotUsed : copy.readAs.notUsed}</span>
-              {notUsed.map((phrase) => (
-                // The quotes are the text's own, not a `q` element's: those are the browser's to draw.
-                <span
-                  key={phrase}
-                  data-testid="not-used-phrase"
-                  className="text-[13px] text-[color:var(--fg-muted)] border-0 border-b border-b-[color:var(--border-dashed)] border-dotted border-[color:var(--border-dashed)]"
-                >
-                  {`“${phrase}”`}
-                </span>
-              ))}
+          {wrote && (
+            <div data-testid="you-wrote" className="flex flex-col gap-[4px] pt-[10px] border-0 border-t border-solid border-[color:var(--border)]">
+              <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{copy.readAs.wrote}</span>
+              {/* The quotes are the text's own, not a `q` element's: those are the browser's to draw. */}
+              <p className="m-0 text-[14px] leading-[1.5] [overflow-wrap:anywhere] text-[color:var(--fg)]">{`“${wrote}”`}</p>
             </div>
           )}
         </div>

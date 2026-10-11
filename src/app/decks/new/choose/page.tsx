@@ -19,20 +19,21 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
-import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../lib/intake/present";
+import { answerChips } from "../../../../lib/intake/present";
 import { isAnyOf } from "../../../../lib/intake/rank";
 import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
-import { CHOOSE_PATH, formTarget } from "../../../../lib/intake/submit";
+import { CHOOSE_PATH, formTarget, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { toStanding } from "../../../../lib/intake/standing";
-import { DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
-import { loadOwnRead, wordsHash } from "../../../../lib/intake/run-store";
+import { DimWhileReading, phaseOf, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
+import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store";
+import { loadReadDecks } from "../../../../lib/intake/the-read-load";
+import { shortName, type ReadPicks } from "../../../../lib/intake/the-read";
 import { readAllowance } from "../../../../lib/model/allowance";
 
-// A row's figures come from a real fill run in a Server Action posted from this page (PR 4's
-// deeper read runs from it too).
+// A row's figures come from a real fill run in a Server Action posted from this page.
 export const maxDuration = 120;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -85,13 +86,23 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const themeLabels = Object.fromEntries(themes.map((t) => [t.slug, t.label]));
   // A decoration, read outside the results' own recovery: a failure here draws the page without the
   // card's chip rather than taking the whole route down before *Search failed* could offer a retry.
-  // Two decorations, neither of which may take the page down: the card's chip, and the read `r` names.
-  const [card, loaded] = await Promise.all([
+  // Three decorations, none of which may take the page down: the card's chip, the read `r` names,
+  // and the credit standing its panel's line says.
+  const words = p.words.trim();
+  const now = new Date();
+  const [card, served, allowance] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
     p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
-    p.readId ? loadOwnRead(p.readId, userId).catch(() => null) : null,
+    // A failed read of the read's state draws it as running: the panel then asks again itself.
+    words && p.readId
+      ? loadTheRead(p.readId, userId, now).catch((): TheReadState => ({ kind: "pending", phase: null }))
+      : null,
+    words ? readAllowance(userId, now, "intake").catch(() => null) : null,
   ]);
-  const settled = readForThisAsk(p, loaded, wordsHash);
+  // A done read orders the results, and its reasons name the player's decks by their commanders.
+  const picks: ReadPicks | null = served?.kind === "done" ? served.result : null;
+  const decks = picks ? await loadReadDecks(userId).catch(() => null) : null;
+  const deckNames = Object.fromEntries((decks ?? []).map((d) => [d.commanderOracleId, shortName(d.commander)]));
   const setNames = new Map(sets.map((s) => [s.code, s.name]));
   const labels = {
     theme: (slug: string) => themeLabels[slug] ?? slug,
@@ -100,6 +111,17 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   };
   // A change of answers is a new ask: it carries neither the read nor its marks.
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
+  const panel = words ? (
+    <ReadPanel
+      readId={p.readId}
+      served={served}
+      standing={allowance && toStanding(allowance, now)}
+      params={p}
+      changeHref={changeHref}
+      repeat={sp.get(REPEAT_PARAM) === "1"}
+      hasDecks={decks === null ? null : decks.length > 0}
+    />
+  ) : null;
   const queryString = serializeChooseParams(p).slice(1);
   const ranking = [...p.themes.map(labels.theme), ...(card ? [card.name] : [])];
   // Said as the order line will say it: any of with no card ranks by the best-fitting theme.
@@ -117,19 +139,18 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.results.subPhone}
         />
         <div className={RESULTS_COLUMN}>
-          <DeeperLookScope>
+          {/* Keyed on the server's state: a refresh that finds the read settled starts the panel and
+              the results afresh, in the read's order. */}
+          <ReadScope key={served?.kind ?? "unread"} initial={words ? phaseOf(served) : null}>
           <ReadAsBar
-            chips={answerChips(p, labels, verifiedDeeperMarks(p, settled))}
-            afterDeeper={settled !== null}
-            // The read's panel lands with the results rework (plan PR 4). Until then the results draw
-            // the free order, and the read the submit started settles out of sight.
-            offer={null}
+            chips={answerChips(p, labels)}
+            words={words}
+            offer={panel}
             card={card ?? null}
-            notUsed={p.notUsed}
             changeHref={changeHref}
             startOverHref={CHOOSE_PATH}
           />
-          <DimWhileLooking>
+          <DimWhileReading>
           <Suspense key={queryString} fallback={<ResultsSkeleton by={by} />}>
             <Results
               userId={userId}
@@ -140,10 +161,12 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               cardUnpriced={!!card && buysCard(card) && card.price.kind !== "priced"}
               queryString={queryString}
               changeHref={changeHref}
+              picks={picks}
+              deckNames={deckNames}
             />
           </Suspense>
-          </DimWhileLooking>
-          </DeeperLookScope>
+          </DimWhileReading>
+          </ReadScope>
         </div>
       </div>
     </CardDetailProvider>
@@ -159,6 +182,8 @@ async function Results({
   cardUnpriced,
   queryString,
   changeHref,
+  picks,
+  deckNames,
 }: {
   userId: string;
   params: ChooseParams;
@@ -167,10 +192,12 @@ async function Results({
   cardUnpriced: boolean;
   queryString: string;
   changeHref: string;
+  picks: ReadPicks | null;
+  deckNames: Record<string, string>;
 }) {
   let page;
   try {
-    page = await loadResultsPage(userId, answersOf(params));
+    page = await loadResultsPage(userId, answersOf(params), 0, picks);
   } catch (error) {
     // Next's own control flow (a bailout, a redirect) passes through untouched.
     unstable_rethrow(error);
@@ -186,6 +213,7 @@ async function Results({
       cardUnpriced={cardUnpriced}
       queryString={queryString}
       changeHref={changeHref}
+      deckNames={deckNames}
     />
   );
 }

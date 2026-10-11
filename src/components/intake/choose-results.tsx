@@ -16,7 +16,7 @@ import { figures, narrowOptions, orderLine, type Labels } from "../../lib/intake
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
 import { TOO_NARROW_BELOW } from "../../lib/intake/vocabulary";
 import { ChooseRow, type Trial } from "./choose-row";
-import { useDeeperLooking } from "./deeper-look";
+import { useReadPhase, useReportPool } from "./read-panel";
 import { NarrowNote } from "./narrow-note";
 
 const BEST_FITS = 3;
@@ -29,6 +29,7 @@ export function ChooseResults({
   cardUnpriced = false,
   queryString,
   changeHref,
+  deckNames,
 }: {
   page: ResultsPage;
   params: ChooseParams;
@@ -40,6 +41,8 @@ export function ChooseResults({
   /** The page's own query string, which the row and paging actions re-parse. */
   queryString: string;
   changeHref: string;
+  /** A deck commander's oracle id to its short name, for the read's reasons. */
+  deckNames?: Readonly<Record<string, string>>;
 }) {
   const labels: Labels = useMemo(
     () => ({ theme: (slug: string) => themeLabels[slug] ?? slug, card: cardName }),
@@ -48,8 +51,12 @@ export function ChooseResults({
   const [rows, setRows] = useState<ResultRow[]>(page.rows);
   const [hasMore, setHasMore] = useState(page.hasMore);
   const [failed, setFailed] = useState(false);
-  // While a deeper look runs, the first results stay, dimmed: the rows only, never the labels.
-  const dim = useDeeperLooking();
+  // While the read runs, the results stay, dimmed: the rows and best fits, never the labels (T3).
+  const read = useReadPhase();
+  const dim = read === "reading";
+  // The read's step 1 names how many commanders the answers allow: this list is that pool.
+  const reportPool = useReportPool();
+  useEffect(() => { reportPool(page.total); }, [reportPool, page.total]);
   const [pending, startTransition] = useTransition();
 
   // THE ROWS' OWNERSHIP FIGURES, counted a slice at a time in ONE action per slice: Next runs a
@@ -89,7 +96,14 @@ export function ChooseResults({
     return <NarrowNote count={0} options={options} changeHref={changeHref} />;
   }
 
-  const line = orderLine(page.order, params, labels);
+  const free = orderLine(page.order, params, labels);
+  // The read's order (the read addendum R1): its picks lead once it is done; while it runs, and
+  // when it was never read into this order, the free order's own title says what orders the rows.
+  const line =
+    read === "done" ? { title: copy.results.byWords, sub: copy.results.byWordsSub }
+    : read === "reading" ? { title: free.title, sub: copy.results.pendingSub }
+    : read !== null && page.order === "owned" ? { title: free.title, sub: copy.results.notReadSub }
+    : free;
   const owned = page.order === "owned";
   const withBest = narrow === null && rows.length >= TOO_NARROW_BELOW;
   const best = withBest ? rows.slice(0, BEST_FITS) : [];
@@ -106,8 +120,13 @@ export function ChooseResults({
       best={rank}
       trial={trials[r.oracleId] ?? { state: "pending" }}
       retry={() => retry(r.oracleId)}
+      deckNames={deckNames}
     />
   );
+  // After the read's picks, the divider: the first row of the rest with no reason, once any row
+  // above it carried one. Picks always lead, so it falls between the two.
+  const picked = rows.some((r) => r.reason);
+  const restAt = picked ? rest.findIndex((r) => !r.reason) : -1;
 
   const showMore = () =>
     startTransition(async () => {
@@ -149,7 +168,9 @@ export function ChooseResults({
         </section>
       )}
 
-      <ol data-dim={dim || undefined} className={`m-0 p-0 list-none flex flex-col gap-[10px] ${dim ? "opacity-[0.45]" : ""}`}>{rest.map((r) => row(r))}</ol>
+      <ol data-dim={dim || undefined} className={`m-0 p-0 list-none flex flex-col gap-[10px] ${dim ? "opacity-[0.45]" : ""}`}>
+        {rest.map((r, i) => (i === restAt ? [<RestDivider key="rest-divider" owned={owned} />, row(r)] : row(r)))}
+      </ol>
 
       {hasMore && (
         <div className="flex flex-wrap items-center justify-center gap-[14px]">
@@ -168,6 +189,18 @@ export function ChooseResults({
         </div>
       )}
     </div>
+  );
+}
+
+/** Between the read's picks and the rest of the results, in the free order (the read addendum R1). */
+function RestDivider({ owned }: { owned: boolean }) {
+  return (
+    <li data-testid="rest-divider" role="presentation" className="flex items-center gap-[12px] mt-[8px]">
+      <span className="font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)] whitespace-nowrap">{copy.results.restHead}</span>
+      <span aria-hidden className="flex-1 h-px bg-[color:var(--border)]" />
+      {/* The tail names the owned order, so it is drawn only when that is the rest's order. */}
+      {owned && <span className="hidden md:inline font-mono text-[10.5px] text-[color:var(--fg-faint)] whitespace-nowrap">{copy.results.restTail}</span>}
+    </li>
   );
 }
 

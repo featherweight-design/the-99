@@ -48,8 +48,6 @@ export const helpMeChooseCopy = {
       captionSpent: "Kept here for when a credit comes back.",
       count: (n: number, max: number) => `${n} / ${max}`,
       spentLine: (standing: string) => `Won’t be read: ${standing}.`,
-      cost: "1 credit",
-      pressAria: "1 credit. Find commanders and read what you wrote.",
     },
     colors: "Colors", // canvas
     colorsNone: "No preference: every identity, five-color included.",
@@ -93,9 +91,10 @@ export const helpMeChooseCopy = {
     submit: "Find commanders", // canvas
   },
   readAs: {
-    label: "We read this as",
-    none: "No answers given",
-    notUsed: "Not used",
+    yourAnswers: "Your answers",
+    noneAll: "No answers given: every commander you haven’t built",
+    /** Above the words the player wrote, quoted whole. */
+    wrote: "You wrote",
     change: "Change answers", // canvas
     startOver: "Start over", // canvas
     noPrice: "buy · no price", // canvas
@@ -106,10 +105,52 @@ export const helpMeChooseCopy = {
     /** The the-99 chip's value, and the mono tail after it. */
     poolValue: "from cards you own",
     poolTail: "commander owned or not",
-    /** After a deeper look: what even it could not place. */
-    stillNotUsed: "Still not used",
-    /** The tag on a chip the deeper look added. */
-    deeperMark: "deeper",
+  },
+  /**
+   * The read's panel on the results (the read addendum R1, `the read · copy strings.ts`; STATES 7d
+   * to 7n). It never offers: the read starts at the submit, and the panel reports on it. Retired with
+   * F10: `readIt`, `costSpent` and `costPaused` (no press on the results). `cost` and `pressAria` are
+   * the form's press too: one key for the pill wherever it is drawn.
+   */
+  read: {
+    cost: "1 credit",
+    pressAria: "1 credit. Find commanders and read what you wrote.",
+    pendingTitle: "Reading what you wrote…",
+    pendingLead: "These results stay until it’s done. It usually takes under a minute.",
+    stepScan: (n: string) => `Scanning the ${n} commanders your answers allow`,
+    /** eng: step 1 before the results below have said how many commanders the answers allow. */
+    stepScanAll: "Scanning the commanders your answers allow",
+    stepWeigh: "Weighing the closest few in full",
+    stepNow: "now",
+    stepNext: "next",
+    actionPending: "Reading…",
+    pendingLine: "Stopping gives the credit back.",
+    stop: "Stop",
+    title: "Read what you wrote",
+    doneTag: "done",
+    doneLead: (pool: string, short: number) =>
+      `It read the ${pool} commanders your answers allow and weighed the closest ${short} in full. The ten that fit best come first, each with a line on why.`,
+    heldColors: (colors: string) => `Your colors held: nothing outside ${colors} was read.`,
+    noDecks: (subject: string) => `You have no decks yet, so the lines speak to ${subject} alone.`,
+    /** eng: `noDecks`'s subject. */
+    noDecksSubject: "what you wrote",
+    doneLine: (standing: string) => `1 credit used · ${standing}`,
+    repeatLine: "No credit used · you asked this already",
+    stoppedTag: "stopped",
+    stoppedLead: "Nothing was read, and no credit was used. These are the results for your answers alone.",
+    failTag: "didn’t finish",
+    failedLead: "The read didn’t finish, so your credit came back. These are the results for your answers alone.",
+    retry: "Try again",
+    emptyTitle: "Nothing fits what you wrote",
+    emptyLead: (pool: string, what: string) =>
+      `It read all ${pool} commanders your answers allow, and none of them makes ${what}. Your answers hold, so it didn’t look outside them.`,
+    /** eng: `emptyLead`'s `what`. */
+    emptyWhat: "the deck you described",
+    emptyWiden: "to let it look wider, for instance with more colors.", // after a "Change answers" link
+    emptyLine: (standing: string) => `No credit used · ${standing}`,
+    unreadTitle: "What you wrote wasn’t read",
+    unreadLead: "No credits were left, so these results use your answers alone. Your words are kept.",
+    stopped: "Stopped. No credit was used.", // announced
   },
   /**
    * The deeper look's panel (HANDOFF §3, STATES 3a–3g). Credit lines reuse `creditsCopy`; nothing
@@ -195,6 +236,13 @@ export const helpMeChooseCopy = {
     // eng: the `by` for the two orders that name no one answer.
     loadingBy: { owned: "cards you already have", all: "fit to everything you asked", bestTheme: "the theme each fits best" },
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
+    // The read's order (the read addendum R1).
+    byWords: "Ordered by what you wrote",
+    byWordsSub: "The first ten are the read’s picks, closest first, each with why. After them come the rest of your results, ordered by cards you already have.",
+    pendingSub: "What you wrote isn’t in this order yet. These are your answers’ results, and they stay until the read is done.",
+    notReadSub: "What you wrote isn’t in this order. These are commanders your answers allow, owned or not, whose decks run the most cards you already have.",
+    restHead: "The rest of your results",
+    restTail: "ordered by cards you already have",
     more: "Show 12 more",
     moreNote: "The next 12 count what you own as they load.", // canvas
     // When the next slice itself fails to load (no count ran); the button beside it is the retry.

@@ -7,6 +7,8 @@ vi.mock("../../app/decks/new/choose/results-actions", () => ({ trialFillRows, mo
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { ChooseResults } = await import("./choose-results");
+const { ReadScope } = await import("./read-panel");
+import type { ReadPhase } from "./read-panel";
 const { emptyParams } = await import("../../lib/intake/params");
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
 
@@ -16,24 +18,99 @@ const row = (i: number): ResultRow => ({
   cardFit: null, ownedSupport: 0, supportTotal: 0,
 });
 const page = (n: number, over: Partial<ResultsPage> = {}): ResultsPage => ({
-  order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, ...over,
+  order: "fit", tooNarrow: null, card: null, rows: Array.from({ length: n }, (_, i) => row(i + 1)), hasMore: false, total: n, ...over,
 });
 const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null };
 
-function draw(p: ResultsPage) {
+function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}) {
   return render(
     <CardDetailProvider fetchCard={vi.fn()}>
-      <ChooseResults
-        page={p}
-        params={{ ...emptyParams(), results: true, themes: ["dinosaurs"] }}
-        themeLabels={{ dinosaurs: "Dinosaurs" }}
-        cardName={null}
-        queryString="t=dinosaurs&v=results"
-        changeHref="/decks/new/choose?t=dinosaurs"
-      />
+      <ReadScope initial={read}>
+        <ChooseResults
+          page={p}
+          params={{ ...emptyParams(), results: true, themes }}
+          themeLabels={{ dinosaurs: "Dinosaurs" }}
+          cardName={null}
+          queryString="t=dinosaurs&v=results"
+          changeHref="/decks/new/choose?t=dinosaurs"
+          deckNames={deckNames}
+        />
+      </ReadScope>
     </CardDetailProvider>,
   );
 }
+
+const DECK = "0000bbbb-0000-4000-8000-000000000001";
+/** The first `k` rows carry the read's reasons, as a done read's page does. */
+const picked = (n: number, k: number, order: ResultsPage["order"] = "owned") => page(n, {
+  order,
+  rows: Array.from({ length: n }, (_, i) => (i < k
+    ? { ...row(i + 1), reason: i === 0 ? [{ text: "Unlike " }, { deck: DECK }, { text: ", it wins with lands." }] : [{ text: "It builds what you wrote." }] }
+    : row(i + 1))),
+});
+
+describe("the results under a read (the read addendum R1)", () => {
+  it("orders a done read's head by what was written, with its reasons and the rest under a divider", () => {
+    draw(picked(14, 10), "done", [], { [DECK]: "Omnath" });
+    expect(screen.getByTestId("order-line").textContent).toBe("Ordered by what you wrote");
+    expect(document.body.textContent).toContain("The first ten are the read’s picks");
+    // Best fits carry their reasons too.
+    for (const b of screen.getAllByTestId("best-fit")) expect(b.querySelector("[data-testid='row-reason']")).toBeTruthy();
+    expect(screen.getAllByTestId("row-reason")).toHaveLength(10);
+    // The deck part is the commander's short name, in 600 --fg.
+    const deck = screen.getAllByTestId("reason-deck")[0];
+    expect(deck.textContent).toBe("Omnath");
+    expect(deck.className).toContain("font-semibold");
+    expect(screen.getAllByTestId("row-reason")[0].textContent).toBe("Unlike Omnath, it wins with lands.");
+    // One divider, after the tenth pick and before the first free row.
+    const divider = screen.getByTestId("rest-divider");
+    expect(divider.textContent).toBe("The rest of your resultsordered by cards you already have");
+    const items = [...divider.parentElement!.children];
+    const at = items.indexOf(divider);
+    expect(items[at - 1].querySelector("[data-testid='row-reason']")).toBeTruthy();
+    expect(items[at + 1].querySelector("[data-testid='row-reason']")).toBeNull();
+  });
+
+  it("draws the divider's tail only when the rest are in the owned order", () => {
+    draw(picked(14, 10, "fit"), "done");
+    expect(screen.getByTestId("rest-divider").textContent).toBe("The rest of your results");
+  });
+
+  it("draws no divider with no picks, or when every row is a pick", () => {
+    draw(page(14), "done");
+    expect(screen.queryByTestId("rest-divider")).toBeNull();
+    cleanup();
+    draw(picked(10, 10), "done");
+    expect(screen.queryByTestId("rest-divider")).toBeNull();
+  });
+
+  it("keeps the free order's title while reading, says it is not in it yet, and dims the rows and best fits", () => {
+    draw(page(14), "reading");
+    expect(screen.getByTestId("order-line").textContent).toBe("Ordered by Dinosaurs");
+    expect(document.body.textContent).toContain("What you wrote isn’t in this order yet.");
+    const dimmed = document.querySelectorAll("ol[data-dim]");
+    expect(dimmed).toHaveLength(2);
+    for (const ol of dimmed) expect(ol.className).toContain("opacity-[0.45]");
+  });
+
+  it("says an unread, stopped or failed read is not in the owned order, and keeps a fit order's own sub", () => {
+    for (const phase of ["unread", "stopped", "failed", "nothing"] as const) {
+      draw(page(4, { order: "owned" }), phase, []);
+      expect(screen.getByTestId("order-line").textContent).toBe("Ordered by cards you already have");
+      expect(document.body.textContent).toContain("What you wrote isn’t in this order. These are commanders");
+      expect(document.querySelector("ol[data-dim]")).toBeNull();
+      cleanup();
+    }
+    draw(page(4), "stopped");
+    expect(document.body.textContent).toContain("Each figure is the share of that commander’s decks on EDHREC tagged Dinosaurs.");
+    expect(document.body.textContent).not.toContain("What you wrote");
+  });
+
+  it("says nothing of a read with no words", () => {
+    draw(page(4, { order: "owned" }), null, []);
+    expect(document.body.textContent).not.toContain("What you wrote");
+  });
+});
 
 beforeEach(() => {
   moreRows.mockReset();

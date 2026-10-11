@@ -71,7 +71,7 @@ describe("trialFillRows", () => {
 describe("moreRows", () => {
   it("hands the parsed answers and the offset to the page loader", async () => {
     await moreRows("?t=dinosaurs&b=150", 12);
-    expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12);
+    expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null);
   });
 
   it("ignores the retired card answer (F1)", async () => {

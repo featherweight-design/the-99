@@ -68,8 +68,8 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
  * it started one. NOTHING IS MATCHED (ruling 2): the words never become answers, so no card, no
  * *Not used* and no marks. A card a stale address carries is dropped (F1: the form has no card).
  */
-export function resultsTarget(p: ChooseParams, readId: string | null): string {
-  return `${CHOOSE_PATH}${serializeChooseParams({
+export function resultsTarget(p: ChooseParams, readId: string | null, repeat = false): string {
+  const target = `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
     words: p.words.slice(0, READ_WORDS_MAX_CHARS).trim(),
     card: null,
@@ -78,7 +78,16 @@ export function resultsTarget(p: ChooseParams, readId: string | null): string {
     readId,
     results: true,
   })}`;
+  return repeat && readId ? `${target}&${REPEAT_PARAM}=1` : target;
 }
+
+/**
+ * Marks a results address whose read `r` was this ask's stored answer, charged nothing (state 7m).
+ * Outside `ChooseParams`: it says how the player arrived, not what they asked, so *Change answers*,
+ * the paging actions and the row's press never carry it. Hand-written, it changes one line of the
+ * player's own panel and nothing else.
+ */
+export const REPEAT_PARAM = "rr";
 
 /** The form with these answers in it: where an old `v=submit` address goes, so a GET never charges. */
 export function formTarget(p: ChooseParams): string {

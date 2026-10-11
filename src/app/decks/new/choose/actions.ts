@@ -132,7 +132,9 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
     after(begun.finish);
     redirect(resultsTarget(p, begun.readId));
   }
-  redirect(resultsTarget(p, begun.kind === "read" || begun.kind === "nothing" ? begun.readId : null));
+  // A repeat lands on the stored read, marked so its line says no credit was used (7m).
+  if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(p, begun.readId, true));
+  redirect(resultsTarget(p, null));
 }
 
 /** Whether every theme and set is one the form's pickers offer now. */

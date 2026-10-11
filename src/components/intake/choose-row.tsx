@@ -25,6 +25,7 @@ import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
 import type { Figure } from "../../lib/intake/present";
 import type { CommanderMark, ResultRow } from "../../lib/intake/rows";
+import type { ReasonPart } from "../../lib/intake/the-read";
 import type { TrialFigures } from "../../lib/intake/trial";
 import { priceFactOf } from "./price-fact";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -58,6 +59,7 @@ export function ChooseRow({
   best,
   trial,
   retry,
+  deckNames = {},
 }: {
   row: ResultRow;
   figures: readonly Figure[];
@@ -72,8 +74,11 @@ export function ChooseRow({
   /** This row's ownership figures, counted by the list a slice at a time. */
   trial: Trial;
   retry: () => void;
+  /** A deck commander's oracle id to the short name a reason draws it by (`shortName`). */
+  deckNames?: Readonly<Record<string, string>>;
 }) {
   const href = handOffHref(row.oracleId, params);
+  const reason = row.reason && row.reason.length > 0 ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
   const own = (
     <OwnershipLine
       mark={row.mark}
@@ -86,8 +91,17 @@ export function ChooseRow({
       best={best !== undefined}
     />
   );
-  const name = (size: string) => (
+  const name = (size: string, rank?: number) => (
     <div className="flex items-center gap-[8px] min-w-0">
+      {/* F11: on a phone a best fit's rank leaves the art and leads the name line. */}
+      {rank !== undefined && (
+        <span
+          data-testid="best-rank-phone"
+          className="md:hidden flex-none flex items-center justify-center w-[20px] h-[20px] rounded-full font-mono text-[10.5px] font-semibold text-[color:var(--accent)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]"
+        >
+          {rank}
+        </span>
+      )}
       <CardDetailTrigger
         oracleId={row.oracleId}
         name={row.name}
@@ -132,17 +146,19 @@ export function ChooseRow({
       >
         <div
           aria-hidden
-          className="relative shrink-0 w-[88px] md:w-full md:h-[132px] border-0 border-r border-r-[color:var(--border)] md:border-r-0 md:border-b md:border-b-[color:var(--border)] border-solid border-[color:var(--border)] bg-[color:var(--elevated)] bg-cover bg-center"
+          // F11: the art crop's own ratio on desktop, so the commander is never cut off.
+          className="relative shrink-0 w-[88px] md:w-full md:aspect-[626/457] border-0 border-r border-r-[color:var(--border)] md:border-r-0 md:border-b md:border-b-[color:var(--border)] border-solid border-[color:var(--border)] bg-[color:var(--elevated)] bg-cover bg-center"
           // The crop, or the card's own image where the catalog has no crop, as the row's thumb does:
           // a best fit is never a blank block.
           style={row.artCropUri ?? row.imageUri ? { backgroundImage: `url(${row.artCropUri ?? row.imageUri})` } : undefined}
         >
-          <span className="absolute left-[10px] top-[10px] flex items-center justify-center w-[26px] h-[26px] rounded-full font-mono text-[12px] font-semibold text-[color:var(--accent)] bg-[color:var(--bg)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]">
+          <span data-testid="best-rank" className="absolute left-[10px] top-[10px] hidden md:flex items-center justify-center w-[26px] h-[26px] rounded-full font-mono text-[12px] font-semibold text-[color:var(--accent)] bg-[color:var(--bg)] border border-solid border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]">
             {best}
           </span>
         </div>
         <div className="flex flex-col gap-[9px] min-w-0 flex-1 p-[11px_12px] md:p-[14px_15px_15px]">
-          {name("text-[14.5px] md:text-[17px]")}
+          {name("text-[14.5px] md:text-[17px]", best)}
+          {reason}
           <Figures figures={figures} owned={owned} best />
           <hr className="m-0 border-0 border-t border-solid border-[color:var(--border)]" />
           {own}
@@ -161,19 +177,41 @@ export function ChooseRow({
         "md:grid-cols-[40px_minmax(0,1fr)_340px_14px] md:gap-x-[16px] md:gap-y-[7px] md:p-[12px_15px]",
       ].join(" ")}
     >
-      <div className="col-start-1 row-start-1 row-span-3 md:row-span-2 self-center">
+      {/* With a reason (the read's picks), it takes the line under the name: before the figure on
+          a phone, before the ownership line on desktop. Every class is spelled out for Tailwind. */}
+      <div className={`col-start-1 row-start-1 self-center ${reason ? "row-span-4 md:row-span-3" : "row-span-3 md:row-span-2"}`}>
         <CommanderThumb imageUri={row.imageUri} colorIdentity={row.colorIdentity} size="result" />
       </div>
       <div className="col-start-2 row-start-1 min-w-0">{name("text-[14px] md:text-[16px]")}</div>
-      <div className="col-start-2 row-start-2 md:col-start-3 md:row-start-1 md:row-span-2 self-center min-w-0">
+      {reason && <div className="col-start-2 row-start-2 min-w-0">{reason}</div>}
+      <div className={`col-start-2 md:col-start-3 md:row-start-1 self-center min-w-0 ${reason ? "row-start-3 md:row-span-3" : "row-start-2 md:row-span-2"}`}>
         <Figures figures={figures} owned={owned} />
       </div>
-      <div className="col-start-2 row-start-3 md:row-start-2 min-w-0">{own}</div>
+      <div className={`col-start-2 min-w-0 ${reason ? "row-start-4 md:row-start-3" : "row-start-3 md:row-start-2"}`}>{own}</div>
       {press(
         <span aria-hidden>›</span>,
-        "col-start-3 row-start-1 row-span-3 md:col-start-4 md:row-span-2 self-center text-[18px] text-[color:var(--fg-faint)]",
+        `col-start-3 row-start-1 md:col-start-4 self-center text-[18px] text-[color:var(--fg-faint)] ${reason ? "row-span-4 md:row-span-3" : "row-span-3 md:row-span-2"}`,
       )}
     </li>
+  );
+}
+
+/**
+ * The read's line on why this commander (handoff "The reason line"): never truncated, wrapped
+ * pretty, and a deck the read names drawn by its commander's short name, which the app supplies
+ * from the id the read returned. A deck id with no name here (a deck deleted since) draws nothing.
+ */
+function Reason({ parts, deckNames }: { parts: readonly ReasonPart[]; deckNames: Readonly<Record<string, string>> }) {
+  return (
+    <p data-testid="row-reason" className="m-0 text-[12.5px] md:text-[13px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-body)]">
+      {parts.map((part, i) =>
+        "text" in part ? (
+          <span key={i}>{part.text}</span>
+        ) : deckNames[part.deck] ? (
+          <span key={i} data-testid="reason-deck" className="font-semibold text-[color:var(--fg)]">{deckNames[part.deck]}</span>
+        ) : null,
+      )}
+    </p>
   );
 }
 

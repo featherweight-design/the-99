@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildPhraseIndex } from "./match";
 import { emptyParams, parseChooseParams, READ_WORDS_MAX_CHARS } from "./params";
-import { deeperTarget, formTarget, resultsTarget, submitTarget } from "./submit";
+import { deeperTarget, formTarget, REPEAT_PARAM, resultsTarget, submitTarget } from "./submit";
 
 const DS = "0000aaaa-0000-4000-8000-000000000001";
 const SOL = "0000aaaa-0000-4000-8000-000000000002";
@@ -141,6 +141,12 @@ describe("resultsTarget and formTarget (rework plan PR 3)", () => {
     expect([sp.get("v"), sp.get("w"), sp.get("t"), sp.get("r"), sp.get("a"), sp.get("n"), sp.get("d")])
       .toEqual(["results", "a Landfall deck", "landfall", "r1", null, null, null]);
     expect(new URLSearchParams(resultsTarget(p, null).split("?")[1]).get("r")).toBeNull();
+  });
+
+  it("marks a repeat outside the answers, and only with a read to name (7m)", () => {
+    expect(new URLSearchParams(resultsTarget(p, "r1", true).split("?")[1]).get(REPEAT_PARAM)).toBe("1");
+    expect(new URLSearchParams(resultsTarget(p, "r1").split("?")[1]).get(REPEAT_PARAM)).toBeNull();
+    expect(new URLSearchParams(resultsTarget(p, null, true).split("?")[1]).get(REPEAT_PARAM)).toBeNull();
   });
 
   it("sends an old GET submit back to the form with its answers", () => {
