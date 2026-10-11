@@ -92,11 +92,11 @@ describe("confirmUpload", () => {
     expect(stub.receipt.mock.calls[0][0]).toMatchObject({ ownedBefore: { [A]: 5 }, ownedAfter: { [A]: 6 } });
   });
 
-  it("hands the receipt the decks the write left short, as ids and counts only", async () => {
+  it("hands the receipt the decks the write left short, with the names it read in its transaction", async () => {
     stub.ledger = true;
     stub.apply.mockResolvedValue({ ...applied("upload_replace"), short: [deck] });
     await confirmUpload(UPLOAD, { confirmShort: [deck] });
-    expect(stub.receipt.mock.calls[0][0].nowShort).toEqual([{ deckId: "d", oracleId: A, short: 1 }]);
+    expect(stub.receipt.mock.calls[0][0].nowShort).toEqual([deck]);
   });
 
   it("gives an Add's receipt the counts the write read under its lock, not the earlier snapshot", async () => {

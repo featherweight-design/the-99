@@ -16,7 +16,7 @@ import { loadMatchInputs, replaceCollection } from "../../lib/collection/import"
 import {
   ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
 } from "../../lib/collection/arrivals-write";
-import type { NowShortRow, OwnedCounts } from "../../lib/collection/arrivals";
+import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
@@ -287,7 +287,7 @@ export async function confirmUpload(
   // entry for the upload, a fresh id per confirm because the upload's own stamp is what makes a
   // double submit apply once, and the deck check a Replace now carries. Off, it is main's replace.
   let ownedAfter: OwnedCounts;
-  let nowShort: NowShortRow[] = [];
+  let nowShort: ShortDeck[] = [];
   if (ledger) {
     const result = await applyCollectionChange(
       userId,
@@ -309,7 +309,7 @@ export async function confirmUpload(
     // snapshot above was read before the lock, and an Add's items are only what it added.
     ownedBefore = result.owned!.before;
     ownedAfter = result.owned!.after;
-    nowShort = result.short.map(({ deckId, oracleId, short }) => ({ deckId, oracleId, short }));
+    nowShort = result.short;
   } else {
     ownedBefore = await ownedByOracle(userId);
     const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {

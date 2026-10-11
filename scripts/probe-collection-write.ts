@@ -144,6 +144,9 @@ async function main() {
     const confirmed = await applyCollectionChange(USER, lower, { id: lowerId, confirmShort: shown });
     check("the same action confirmed applies", confirmed.status === "applied" && await count(A) === 0,
       `${confirmed.status}; count ${await count(A)}`);
+    check("the applied result carries the decks the warning named, for the receipt",
+      confirmed.status === "applied" && JSON.stringify(confirmed.short) === JSON.stringify(shown),
+      confirmed.status === "applied" ? JSON.stringify(confirmed.short) : confirmed.status);
 
     // A revert whose inverse is a no-op today still records itself and marks its target: add one
     // card, take it off again by hand, then revert the add, which has nothing left to take.
