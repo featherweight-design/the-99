@@ -41,6 +41,8 @@ export function synopsisState(over: Partial<SynopsisState> = {}): SynopsisState 
     art: {},
     pending: false,
     illegal: false,
+    methodNotice: null,
+    lastFree: false,
     ...over,
   };
 }

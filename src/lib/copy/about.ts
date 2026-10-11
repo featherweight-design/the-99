@@ -76,7 +76,8 @@ export type AboutSwitch =
   | 'HOW_IT_WORKS_ENABLED'
   | 'TUNING_ENABLED'
   | 'DECK_STATS_ENABLED'
-  | 'COLLECTION_EDIT_ENABLED';
+  | 'COLLECTION_EDIT_ENABLED'
+  | 'OVERVIEW_V2_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -1109,7 +1110,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'A run that comes back empty-handed, or that you stop, gives the credit back.',
       'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
+      'If we change how overviews are written, rewriting one written the old way is free, once per deck.',
     ],
+    // 2026-10-10 (overview accuracy, PR 5): an ORDINARY EDIT to this entry, no bump (plan 7.4, 8): the
+    // free rewrite is not a new capability. It follows `OVERVIEW_V2_ENABLED`, the switch that
+    // makes the notice exist. Owed to /copy-review.
+    keySwitches: {
+      'If we change how overviews are written, rewriting one written the old way is free, once per deck.': 'OVERVIEW_V2_ENABLED',
+    },
     marksPending: true,
     since: 11,
   },

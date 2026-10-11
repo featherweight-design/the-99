@@ -482,3 +482,172 @@ describe("SynopsisOverview on a deck holding a card that is not legal", () => {
     expect(screen.queryByTestId("overview-withheld")).toBeNull();
   });
 });
+
+// THE METHOD-CHANGED NOTICE (addendum_method_notice 1a to 1f; READINESS build rules 2, 5, 6, 7, 8, 10).
+describe("the method-changed notice", () => {
+  const m = copy.method;
+  const out = { used: 3, limit: 3, reopensAt: new Date(), nextAt: new Date() };
+  const old = (over: Partial<SynopsisState> = {}) => synopsisState({ methodNotice: { attemptsLeft: 2 }, ...over });
+  const notice = () => screen.getByTestId("method-notice");
+
+  it("1a: line A, the free note and the outlined press, which writes", () => {
+    draw(old());
+    expect(within(notice()).getByText(m.line)).toBeTruthy();
+    expect(within(notice()).getByText(m.note)).toBeTruthy();
+    fireEvent.click(within(notice()).getByRole("button", { name: copy.writeNew }));
+    expect(onWrite).toHaveBeenCalledOnce();
+    // Not an alert, and the paragraph is still held under it.
+    expect(within(notice()).getByText(m.line).getAttribute("role")).toBe("status");
+    expect(screen.getByTestId("synopsis-overview").textContent).toContain("then close with");
+  });
+
+  // Rule 2: it reads the same at 0 credits or paused, and the press stays live.
+  it("1a: reads the same, and stays pressable, with every credit out or the allowance paused", () => {
+    for (const allowance of [out, { ...out, used: 0, paused: { until: new Date("2026-11-01") } }, { ...out, used: 0, ownerShare: true as const }]) {
+      cleanup();
+      draw(old({ allowance } as never));
+      expect(within(notice()).getByText(m.note)).toBeTruthy();
+      const press = within(notice()).getByRole("button", { name: copy.writeNew });
+      expect(inert(press)).toBe(false);
+      fireEvent.click(press);
+      expect(onWrite).toHaveBeenCalled();
+      onWrite.mockClear();
+    }
+  });
+
+  it("1b: the notice goes while the free rewrite runs, the label row says so, and the held paragraph stays", () => {
+    draw(old(), { busy: true });
+    expect(screen.queryByTestId("method-notice")).toBeNull();
+    expect(screen.getByTestId("overview-writing-new").textContent).toContain(m.writing);
+    expect(screen.getByTestId("synopsis-overview").textContent).toContain("then close with");
+  });
+
+  it("1b: a press moves focus to the label row's status", () => {
+    const view = draw(old());
+    fireEvent.click(within(notice()).getByRole("button", { name: copy.writeNew }));
+    view.rerender(tree(old(), { busy: true }));
+    expect(document.activeElement).toBe(screen.getByTestId("overview-writing-new"));
+  });
+
+  it("1b: a run another page load started reads as the new method's only when the ledger marks it free", () => {
+    draw(old({ pending: true, lastFree: true, methodNotice: { attemptsLeft: 1 } }));
+    expect(screen.getByTestId("overview-writing-new").textContent).toContain(m.writing);
+    cleanup();
+    draw(old({ pending: true, lastFree: false, methodNotice: { attemptsLeft: 0 } }));
+    expect(screen.getByTestId("overview-writing-new").textContent).toContain(copy.writingNew);
+  });
+
+  it("1c: no notice once the shown overview is the new method's, and the landing is announced", () => {
+    const view = draw(old(), { busy: true });
+    view.rerender(tree(synopsisState({ synopsis: { ...synopsisRow(), id: "syn-2", contractVersion: 8 } }), { busy: false }));
+    expect(screen.queryByTestId("method-notice")).toBeNull();
+    expect(screen.getAllByRole("status").some((el) => el.textContent === copy.ready)).toBe(true);
+  });
+
+  it("1d: a failed free try with one left is line B, an alert, and Try again; the slot draws no failure of its own", () => {
+    draw(old({ methodNotice: { attemptsLeft: 1 }, lastFree: true, lastFailed: true, stale: false }));
+    const n = notice();
+    const line = within(n).getByText(m.failed);
+    expect(line.getAttribute("role")).toBe("alert");
+    expect(within(n).getByText(m.oneLeft)).toBeTruthy();
+    fireEvent.click(within(n).getByRole("button", { name: copy.tryAgain }));
+    expect(onWrite).toHaveBeenCalledOnce();
+    // The slot's own ruling A row is left out (rule 5): the failure line appears once, in the notice.
+    expect(screen.queryByText(copy.failed)).toBeNull();
+    expect(screen.getAllByRole("button", { name: copy.tryAgain })).toHaveLength(1);
+  });
+
+  it("1d: a refusal and a rejection read as line B too, and a rejection still offers the one try left", () => {
+    draw(old({ methodNotice: { attemptsLeft: 1 }, lastFree: true, lastRefused: { failed: 1, total: 2 } }));
+    expect(screen.queryByText(copy.notWritten)).toBeNull();
+    expect(within(notice()).getByText(m.failed)).toBeTruthy();
+    cleanup();
+    draw(old({ methodNotice: { attemptsLeft: 1 }, lastFree: true, lastFailed: true, lastRejected: true }));
+    expect(screen.queryByText(copy.rejected)).toBeNull();
+    expect(within(notice()).getByRole("button", { name: copy.tryAgain })).toBeTruthy();
+  });
+
+  it("1e: both tries used is line C and the shipped paid press with its credit note", () => {
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: true }));
+    const n = notice();
+    expect(within(n).getByText(m.triesUsed).getAttribute("role")).toBe("alert");
+    expect(within(n).getByText(/^Uses a credit\./)).toBeTruthy();
+    fireEvent.click(within(n).getByRole("button", { name: copy.writeNew }));
+    expect(onWrite).toHaveBeenCalledOnce();
+  });
+
+  it("1e: with no credit to spend the line drops the clause and the press is disabled with the shipped note", () => {
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: true, allowance: out }));
+    const n = notice();
+    expect(within(n).getByText(m.triesUsedNoCredit)).toBeTruthy();
+    expect(within(n).queryByText(m.triesUsed)).toBeNull();
+    const press = within(n).getByRole("button", { name: copy.writeNew });
+    expect(inert(press)).toBe(true);
+    fireEvent.click(press);
+    expect(onWrite).not.toHaveBeenCalled();
+  });
+
+  // Rule 6 and the audit's precedence: the banner leads, the notice keeps its line, loses its button.
+  it("1f: with the stale banner above, line A keeps its place with no button and points to Re-analyze", () => {
+    draw(old({ stale: true, pressWrites: true }), { readingFresh: false });
+    const n = notice();
+    expect(within(n).getByText(m.line)).toBeTruthy();
+    expect(within(n).getByText(m.withStale)).toBeTruthy();
+    expect(within(n).queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
+  });
+
+  it("1f does not apply where Re-analyze would write nothing: the notice keeps its own press, held until the reading is fresh", () => {
+    draw(old({ stale: true, pressWrites: false }), { readingFresh: false });
+    const press = within(notice()).getByRole("button", { name: copy.writeNew });
+    expect(within(notice()).queryByText(m.withStale)).toBeNull();
+    expect(inert(press)).toBe(true);
+  });
+
+  // Rule 7: one button, not two with different notes.
+  it("keeps ruling D's caption and drops its button while the notice holds the press", () => {
+    draw(old({ stale: true, pressWrites: true }));
+    expect(screen.getByText(copy.olderThanList)).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: copy.writeNew })).toHaveLength(1);
+    expect(within(notice()).getByRole("button", { name: copy.writeNew })).toBeTruthy();
+  });
+
+  // Rule 8.
+  it("is withheld while the deck holds a card a legality notice stands for", () => {
+    draw(old({ illegal: true }));
+    expect(screen.queryByTestId("method-notice")).toBeNull();
+  });
+
+  it("is not drawn without it", () => {
+    draw(synopsisState());
+    expect(screen.queryByTestId("method-notice")).toBeNull();
+  });
+
+  // Rule 2 beyond the notice: a section retry is the free write too, so its credit note is gone.
+  it("draws no credit note and no second press over a refused Overview while a free try is left", () => {
+    const refused = checkedSynopsis({ overview: null, verdicts: [{ section: "overview", status: "refused", reason: "unknown_card", failed: 1, total: 2 }, ...checkedSynopsis().verdicts.slice(1)] });
+    draw(old({ synopsis: synopsisRow(refused), allowance: out }));
+    // The notice holds the one press; the refused slot's own retry is not drawn beside it.
+    expect(screen.queryByRole("button", { name: copy.tryAgain })).toBeNull();
+    const press = within(notice()).getByRole("button", { name: copy.writeNew });
+    expect(inert(press)).toBe(false);
+    expect(screen.queryByText(/Uses a credit/)).toBeNull();
+  });
+
+  // Copilot r6: the paid fallback's own failure must show, and a rejection offers no retry.
+  it("1e: a failed paid press says so with Try again, and a rejected one offers no press", () => {
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: false, lastFailed: true }));
+    expect(within(notice()).getByText(copy.failed)).toBeTruthy();
+    expect(within(notice()).getByRole("button", { name: copy.tryAgain })).toBeTruthy();
+    cleanup();
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: false, lastFailed: true, lastRejected: true }));
+    expect(within(notice()).getByText(copy.rejected)).toBeTruthy();
+    expect(within(notice()).queryByRole("button")).toBeNull();
+  });
+
+  it("1e: both free tries failing reads line C, not a paid-write failure", () => {
+    draw(old({ methodNotice: { attemptsLeft: 0 }, lastFree: true, lastFailed: true, lastRejected: true }));
+    expect(within(notice()).getByText(m.triesUsed)).toBeTruthy();
+    expect(within(notice()).getByRole("button", { name: copy.writeNew })).toBeTruthy();
+  });
+});

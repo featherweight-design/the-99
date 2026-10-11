@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
@@ -8,6 +8,7 @@ import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
 import type { FindingArt } from "./receipt-modal";
+import { MethodNotice } from "./method-notice";
 import { SynopsisModal } from "./synopsis-body";
 import { Press, RefusedSlot, WriteRow } from "./synopsis-controls";
 import { SynopsisText } from "./synopsis-text";
@@ -107,7 +108,9 @@ export function SynopsisOverview({
   const [announced, setAnnounced] = useState("");
   if (wasWriting !== writing) {
     setWasWriting(writing);
-    setAnnounced(announceReady && !writing && state.synopsis?.content?.overview && !state.stale ? synopsisCopy.ready : "");
+    // A notice still standing after the write means it produced no new-method overview (a free try
+    // failed), so nothing is ready to announce: the notice's own alert speaks instead.
+    setAnnounced(announceReady && !writing && !state.methodNotice && state.synopsis?.content?.overview && !state.stale ? synopsisCopy.ready : "");
   }
   // The page's art covers the deck; the read's covers every card the overview names, which is how
   // a Weaknesses card the deck does not hold still previews. The page's entry wins where both do.
@@ -119,12 +122,22 @@ export function SynopsisOverview({
     return out;
   }, [art, state.art]);
   const { synopsis, stale, allowance } = state;
+  // THE METHOD-CHANGE NOTICE (addendum_method_notice). A legality notice owns the slot (rule 8).
+  const mn = state.illegal ? null : state.methodNotice;
+  // A free try is left: the write spends no credit, so no refusal point below reads the allowance.
+  const freeLeft = !!mn && mn.attemptsLeft > 0;
+  // The notice carries a free run's failure (rule 5): the slot draws no failure row, rejection or
+  // refusal of its own for it.
+  const freeFailed = !!mn && state.lastFree;
+  const lastFailed = state.lastFailed && !freeFailed;
+  const lastRejected = state.lastRejected && !freeFailed;
+  const lastRefused = freeFailed ? null : state.lastRefused;
   const content = synopsis?.content ?? null;
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
   const left = Math.max(0, allowance.limit - allowance.used);
   // No write can reserve: every credit out, the app-wide cap reached, or the owner's share used.
   // Each disables the press in 7g's form and says which, never "uses a credit".
-  const spent = left === 0 || !!allowance.paused || !!allowance.ownerShare;
+  const spent = !freeLeft && (left === 0 || !!allowance.paused || !!allowance.ownerShare);
   // A withheld overview offers no write at all (the server refuses one before its reservation).
   const canWrite = readingFresh && settled && !state.pending && !state.illegal;
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,
@@ -138,12 +151,13 @@ export function SynopsisOverview({
       ? creditsCopy.ownerShare(new Date())
       : creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt, deeperLooks, tuning);
   const spendNote = creditsCopy.first(left, allowance.limit, allowance.nextAt);
-  const note = spent ? spentNote : state.wouldSpend ? spendNote : null;
-  const retryNote = spent ? spentNote : spendNote;
+  // While a free try is left the press spends nothing, so no credit note stands over it.
+  const note = freeLeft ? null : spent ? spentNote : state.wouldSpend ? spendNote : null;
+  const retryNote = freeLeft ? null : spent ? spentNote : spendNote;
 
   const failedRow = (
     <FailedRow
-      rejected={state.lastRejected}
+      rejected={lastRejected}
       note={pressed ? null : canWrite ? note : null}
       disabled={!canWrite || spent}
       busy={busy}
@@ -151,19 +165,66 @@ export function SynopsisOverview({
     />
   );
 
+  // THE NOTICE (rule 6): over a reading the stale banner leads, and Re-analyze would write this
+  // overview, the banner's press is the one press and the notice keeps its line and loses its
+  // button (1f). Otherwise the notice carries the press itself, and ruling D's row beside it keeps
+  // its caption and drops its button (rule 7): two buttons with different notes would run one write.
+  const showNotice = !!mn && !!synopsis && !writing;
+  const noticeLeads = showNotice && freeLeft && !readingFresh && state.pressWrites;
+  const showsNoticePress = showNotice && !noticeLeads;
+
   // 1d over a held overview: the new write failed, so the failure leads, and the held paragraph under
   // it is labelled as older than the list.
-  const heldFailed = !!content?.overview && !writing && stale && readingFresh && !state.illegal && !state.lastRefused && state.lastFailed;
+  const heldFailed = !!content?.overview && !writing && stale && readingFresh && !state.illegal && !lastRefused && lastFailed;
   // Ruling D, drawn under whatever the older overview shows (its paragraph, or its refused
   // Overview slot): the write it offers, or what became of the last one. Not while a new one is
   // written: the label row says so.
   const followUp = stale && readingFresh && !state.illegal && !writing && !heldFailed
-    ? state.lastRefused
-      ? <RefusedSlot sentence={synopsisCopy.overviewRefused} failed={state.lastRefused.failed} total={state.lastRefused.total} onRetry={canWrite ? onWrite : null} busy={busy} note={note} spent={spent} />
-      : state.lastFailed
+    ? lastRefused
+      ? <RefusedSlot sentence={synopsisCopy.overviewRefused} failed={lastRefused.failed} total={lastRefused.total} onRetry={canWrite ? onWrite : null} busy={busy} note={note} spent={spent} />
+      : lastFailed
       ? failedRow
-      : <WriteRow line={synopsisCopy.olderThanList} label={synopsisCopy.writeNew} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
+      : <WriteRow line={synopsisCopy.olderThanList} label={showsNoticePress ? null : synopsisCopy.writeNew} note={note} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />
     : null;
+
+  // WHICH NOTICE (addendum_method_notice 1a, 1d, 1e, 1f). Line B is a free try that failed with one
+  // left; line C is both used, and the press is the paid one under the normal rules: when no credit
+  // can be spent this month its "you can still write one with a credit" would be false, so it drops
+  // the clause and the shipped note beside the disabled press says why.
+  const method = synopsisCopy.method;
+  // The label row says the rewrite is the new method's while a free try is being spent: this
+  // page's press with one left, or a run another page load started and the ledger marks as free.
+  const writingFree = writing && !!state.methodNotice && (busy ? state.methodNotice.attemptsLeft > 0 : state.lastFree);
+  const oneLeft = mn?.attemptsLeft === 1;
+  const none = mn?.attemptsLeft === 0;
+  // The press moves focus to the label row's status as the notice goes (README, focus).
+  const focusStatus = useRef(false);
+  const statusRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (writing && focusStatus.current) {
+      focusStatus.current = false;
+      statusRef.current?.focus();
+    }
+  }, [writing]);
+  const pressNotice = () => {
+    focusStatus.current = true;
+    onWrite();
+  };
+  const notice = showNotice && mn ? (
+    <MethodNotice
+      line={none ? (lastRejected ? synopsisCopy.rejected : lastFailed ? synopsisCopy.failed : spent ? method.triesUsedNoCredit : method.triesUsed) : oneLeft ? method.failed : method.line}
+      note={noticeLeads ? method.withStale : none ? retryNote : oneLeft ? method.oneLeft : method.note}
+      alert={oneLeft || none}
+      // The paid press's own failure (the free tries are spent, so the slot's failure row is not
+      // drawn over a held same-list overview): a rejection offers no retry, as everywhere else.
+      cta={noticeLeads || (none && lastRejected) ? null : {
+        label: oneLeft || (none && lastFailed) ? synopsisCopy.tryAgain : synopsisCopy.writeNew,
+        disabled: !canWrite || (none && spent),
+        busy,
+        onPress: pressNotice,
+      }}
+    />
+  ) : null;
 
   let body: React.ReactNode;
   if (!synopsis && state.illegal) {
@@ -175,13 +236,13 @@ export function SynopsisOverview({
         <span className="text-[13px] leading-[1.55] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[13.5px]">{synopsisCopy.writing}</span>
       </div>
     );
-  } else if (!synopsis && state.lastRefused) {
+  } else if (!synopsis && lastRefused) {
     // Every section refused: Round 0's refused state, and no entry point.
     body = (
       <RefusedSlot
         sentence={synopsisCopy.overviewRefused}
-        failed={state.lastRefused.failed}
-        total={state.lastRefused.total}
+        failed={lastRefused.failed}
+        total={lastRefused.total}
         onRetry={canWrite ? onWrite : null}
         busy={busy}
         note={note}
@@ -189,7 +250,7 @@ export function SynopsisOverview({
       />
     );
   } else if (!synopsis) {
-    body = state.lastFailed
+    body = lastFailed
       ? failedRow
       : <WriteRow line={synopsisCopy.absent} label={synopsisCopy.writeOne} note={canWrite ? note : null} disabled={!canWrite || spent} busy={busy} onPress={onWrite} />;
   } else if (content?.overview) {
@@ -216,7 +277,8 @@ export function SynopsisOverview({
         sentence={synopsisCopy.overviewRefused}
         failed={overviewVerdict.failed}
         total={overviewVerdict.total}
-        onRetry={canWrite && !stale ? () => onRetry(synopsis.id) : null}
+        // The notice holds the press when it is drawn (a partial new-method run left no overview).
+        onRetry={canWrite && !stale && !showsNoticePress ? () => onRetry(synopsis.id) : null}
         busy={busy}
         note={retryNote}
         spent={spent}
@@ -233,14 +295,15 @@ export function SynopsisOverview({
           {synopsisCopy.label}
         </h3>
         {synopsis && writing ? (
-          <span role="status" data-testid="overview-writing-new" className="inline-flex items-center gap-[8px]">
+          <span ref={statusRef} tabIndex={-1} role="status" data-testid="overview-writing-new" className="inline-flex items-center gap-[8px] outline-none">
             <WorkPulse />
-            <span className="font-mono text-[10px] text-[var(--fg-muted)] md:text-[10.5px]">{synopsisCopy.writingNew}</span>
+            <span className="font-mono text-[10px] text-[var(--fg-muted)] md:text-[10.5px]">{writingFree ? method.writing : synopsisCopy.writingNew}</span>
           </span>
         ) : null}
       </div>
       <p role="status" className="sr-only">{announced}</p>
       {synopsis && state.illegal ? <CheckLine line={deckNoticesCopy.check.warning} onSee={onSeeWhich} /> : null}
+      {notice}
       {body}
       {synopsis ? (
         <div className="flex min-h-[44px] items-center md:min-h-0 md:mt-[2px]">

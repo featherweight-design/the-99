@@ -1,0 +1,235 @@
+{
+  "feature": "Overview accuracy PR 5: the method-changed notice and the free rewrite (addendum_method_notice 1a to 1f)",
+  "note": "Needs a server with ANALYSIS_TAB_ENABLED=true, OVERVIEW_V2_ENABLED=true, SYNOPSIS_STUB_DELAY_MS=7000 and the stub model, signed in as the account the decks belong to. Seed the decks with `PROBE_USER_ID=<clerk id> pnpm probe:method-notice --seed` (local-dev only; it prints the MN_* ids this file reads) and remove them with `--unseed`. The two writing rows and their done rows PRESS the free rewrite, one deck per width, so reseed before a second run. check:shared does not apply: there is no shared-control claim.",
+  "out": "contact-sheets/method-notice",
+  "rows": [
+    {
+      "id": "eligible",
+      "label": "/decks/[id] Analysis: 1a, the method-changed notice over the held overview, with the free note",
+      "view": "src/components/decks/method-notice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_ELIGIBLE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 900,
+          "scrollTo": "[data-testid='method-notice']"
+        }
+      ]
+    },
+    {
+      "id": "writing-phone",
+      "label": "/decks/[id] Analysis: 1b, the notice gone while the free rewrite runs; the label row says so, the held paragraph stays",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_PRESS_PHONE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Write a new overview",
+          "settle": 200
+        },
+        {
+          "wait": "[data-testid='overview-writing-new']",
+          "settle": 900,
+          "scrollTo": "[data-testid='synopsis-overview']"
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "writing-desktop",
+      "label": "/decks/[id] Analysis: 1b at 1300",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_PRESS_DESKTOP}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Write a new overview",
+          "settle": 200
+        },
+        {
+          "wait": "[data-testid='overview-writing-new']",
+          "settle": 900,
+          "scrollTo": "[data-testid='synopsis-overview']"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "done-phone",
+      "label": "/decks/[id] Analysis: 1c, the rewrite landed; no notice, the new overview shown",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_PRESS_PHONE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 12000,
+          "scrollTo": "[data-testid='synopsis-overview']"
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "done-desktop",
+      "label": "/decks/[id] Analysis: 1c at 1300",
+      "view": "src/components/decks/synopsis-overview.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_PRESS_DESKTOP}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 12000,
+          "scrollTo": "[data-testid='synopsis-overview']"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "one-left",
+      "label": "/decks/[id] Analysis: 1d, a free try failed with one left: line B, Try again, the one-left note",
+      "view": "src/components/decks/method-notice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_ONE_LEFT}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 900,
+          "scrollTo": "[data-testid='method-notice']"
+        }
+      ]
+    },
+    {
+      "id": "both-used",
+      "label": "/decks/[id] Analysis: 1e, both free tries used: line C and the shipped paid press with its credit note",
+      "view": "src/components/decks/method-notice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_BOTH_USED}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 900,
+          "scrollTo": "[data-testid='method-notice']"
+        }
+      ]
+    },
+    {
+      "id": "with-stale-banner",
+      "label": "/decks/[id] Analysis: 1f, the stale banner leads; the notice keeps its line, no button, and points to Re-analyze",
+      "view": "src/components/decks/method-notice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_WITH_STALE}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 900,
+          "scrollTo": "[data-testid='method-notice']"
+        }
+      ]
+    },
+    {
+      "id": "with-older-row",
+      "label": "/decks/[id] Analysis: the notice holds the one press; ruling D's older-than-list row keeps its caption and drops its button",
+      "view": "src/components/decks/method-notice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MN_WITH_OLDER_ROW}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='method-notice']",
+          "settle": 900,
+          "scrollTo": "[data-testid='method-notice']"
+        }
+      ]
+    }
+  ]
+}

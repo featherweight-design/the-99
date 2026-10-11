@@ -11,12 +11,12 @@ import type { ProfileHead } from "../profile/load";
 const queue: unknown[][] = [];
 function chain() {
   const q: Record<string, unknown> = {};
-  for (const m of ["from", "where", "for", "limit", "orderBy"]) q[m] = () => q;
+  for (const m of ["from", "where", "for", "limit", "orderBy", "innerJoin"]) q[m] = () => q;
   q.then = (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(queue.shift() ?? []).then(ok, bad);
   return q;
 }
 const tx = { select: () => chain(), insert: vi.fn() };
-vi.mock("../../db", () => ({ db: { transaction: async (fn: (t: unknown) => unknown) => fn(tx) } }));
+vi.mock("../../db", () => ({ db: { transaction: async (fn: (t: unknown) => unknown) => fn(tx), select: () => chain() } }));
 const reserveModelCall = vi.fn();
 vi.mock("../model/allowance", () => ({
   reserveModelCall: (...a: unknown[]) => reserveModelCall(...a),
@@ -78,5 +78,94 @@ describe("startRun: the list under the lock", () => {
     queue.push([], [{ fingerprint: LIST, profileVersion: 1, dirty: false }]);
     expect(await start()).toEqual({ kind: "no_reading" });
     expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+});
+
+// THE FREE METHOD-CHANGE REWRITE (plan 7.4, audit rules 1 and 11): reserved as a `system` call,
+// capped at two per deck per contract, and decided under the deck's lock. A refused free press
+// falls through to the PLAYER path, reuse check and allowance included.
+describe("startRun: the free method-change rewrite", () => {
+  const free = () => startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "free");
+  const run = (status: string, ok: boolean) => ({ status, content: ok ? { verdicts: [{ section: "overview", status: "ok" }] } : null });
+  /** deck row, stored reading, then the free-run count (the queue is read in this order). */
+  const lock = (runs: ReturnType<typeof run>[]) => {
+    queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }], runs);
+  };
+
+  beforeEach(() => {
+    queue.length = 0;
+    reserveModelCall.mockReset();
+    tx.insert.mockReset();
+    tx.insert.mockReturnValue({ values: () => ({ returning: async () => [{ id: "run-1" }] }) });
+    reserveModelCall.mockResolvedValue({ id: "call-1" });
+    head = HEAD;
+  });
+
+  it("reserves the first attempt as a system call, which skips the reuse check", async () => {
+    lock([]);
+    queue.push([{ id: "sentinel-reuse-row" }]);
+    expect(await free()).toEqual({ kind: "started", runId: "run-1", callId: "call-1" });
+    expect(reserveModelCall).toHaveBeenCalledWith(tx, "user", "synopsis", "stub", expect.any(Date), "system");
+    // A reuse check would have consumed the sentinel: the system path never makes one.
+    expect(queue).toHaveLength(1);
+  });
+
+  it("reserves the second attempt after a failed first one", async () => {
+    lock([run("done", false)]);
+    await free();
+    expect(reserveModelCall.mock.calls[0][5]).toBe("system");
+  });
+
+  // The cap: a third attempt is not free. It becomes the PAID rewrite, which reserves under the
+  // player's allowance and bypasses reuse for any overview below the new contract.
+  // The cap, from a stale press: the tab shown "free" must never become a charge.
+  it("refuses a THIRD free attempt, whatever the two settled as, reserving and charging nothing", async () => {
+    lock([run("done", false), run("pending", false)]);
+    expect(await free()).toEqual({ kind: "free_gone" });
+    expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+
+  it("a press that already knew the tries were spent is the paid fallback, under the player's allowance", async () => {
+    lock([run("done", false), run("done", false)]);
+    queue.push([]);
+    const paid = await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid");
+    expect(reserveModelCall.mock.calls[0][5]).toBe("player");
+    expect(paid.kind).toBe("started");
+  });
+
+  it("the paid fallback is still the player's: a spent allowance refuses it", async () => {
+    lock([run("done", false), run("done", false)]);
+    reserveModelCall.mockResolvedValue({ refused: "allowance" });
+    expect(await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).toEqual({ kind: "allowance" });
+  });
+
+  it("the paid fallback hands back an overview a concurrent rewrite already wrote at the new contract", async () => {
+    lock([run("done", false), run("done", false)]);
+    queue.push([{ id: "syn-new" }], [{ id: "syn-new", content: { verdicts: [] } }]);
+    expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid")).kind).toBe("reused");
+  });
+
+  it("a rewrite that produced an overview since the press read it returns that overview, reserving nothing", async () => {
+    lock([run("done", true)]);
+    queue.push([{ id: "syn-new", content: { verdicts: [] } }]);
+    expect((await free()).kind).toBe("reused");
+    expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+
+  it("does so for a section retry too, even with the allowance spent", async () => {
+    lock([run("done", true)]);
+    queue.push([{ id: "syn-new", content: { verdicts: [] } }]);
+    reserveModelCall.mockResolvedValue({ refused: "allowance" });
+    const retry = await startRun("deck", "user", LIST, "stub", new Date(), "syn-old", false, 0, false, 8, "free");
+    expect(retry.kind).toBe("reused");
+    expect(reserveModelCall).not.toHaveBeenCalled();
+  });
+
+  it("a press that never asked for a free run never reads the count", async () => {
+    queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }], []);
+    await start();
+    expect(reserveModelCall.mock.calls[0][5]).toBe("player");
+    // Only the reuse check read after the reservation, not the free-run count.
+    expect(queue).toHaveLength(0);
   });
 });

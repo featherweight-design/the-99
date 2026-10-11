@@ -2,13 +2,15 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { db } from "../../db";
-import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks } from "../../db/schema";
+import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, modelCalls } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
+import { methodNoticeOf, freeRunsFor, type MethodNotice } from "./method-notice";
+import { overviewV2Enabled } from "./overview-v2";
 import { reapSynopses } from "./reaper";
 import { overviewDataMovedFor } from "../notices/overview";
 import { noticesEnabled } from "../notices/flag";
@@ -75,6 +77,19 @@ export type SynopsisState = {
    * saved overview stays shown under a warning line (H3).
    */
   illegal: boolean;
+  /**
+   * The method-changed notice (addendum_method_notice): the shown overview was written under an
+   * older contract and no free rewrite has produced one. `attemptsLeft` 2 or 1 is the free press;
+   * 0 is the paid fallback. Null otherwise, and whenever a legality notice holds the slot.
+   *
+   * It is NOT `stale` and never a reason added to it (ruling B: a contract change never stales an
+   * overview). While `attemptsLeft > 0` the press spends no credit, so the client's refusal points
+   * (the press note, the disabled press) read it and not the allowance. `wouldSpend` stays what
+   * it was, because it means a credit would be spent.
+   */
+  methodNotice: MethodNotice | null;
+  /** The deck's newest run was a free (`system`) one: the notice carries its failure, so the slot draws none of its own. */
+  lastFree: boolean;
 };
 
 const FAILED: readonly SynopsisOutcome[] = ["upstream_busy", "upstream_rejected", "timeout", "malformed", "interrupted"];
@@ -157,8 +172,8 @@ export async function readSynopsisState(
     readStoredReading(deckId, userId, deps),
     db.select({ list: deckProfiles.fingerprint }).from(deckProfiles)
       .where(and(eq(deckProfiles.deckId, deckId), eq(deckProfiles.userId, userId))).then((r) => r[0]),
-    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint })
-      .from(deckSynopses).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
+    db.select({ status: deckSynopses.status, outcome: deckSynopses.outcome, createdAt: deckSynopses.createdAt, content: deckSynopses.content, fingerprint: deckSynopses.fingerprint, origin: modelCalls.origin })
+      .from(deckSynopses).innerJoin(modelCalls, eq(modelCalls.id, deckSynopses.modelCallId)).where(and(eq(deckSynopses.deckId, deckId), eq(deckSynopses.userId, userId)))
       .orderBy(desc(deckSynopses.createdAt)).limit(1).then((r) => r[0]),
     readAllowance(userId, now, "synopsis"),
   ]);
@@ -181,7 +196,11 @@ export async function readSynopsisState(
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
   const art = synopsis ? await namedArt(synopsis.content, userId, deckId) : {};
+  // Behind the switch, so a deployment on contract 7 reads nothing more.
+  const v2 = overviewV2Enabled();
+  const methodNotice = illegal ? null : methodNoticeOf({ v2, shown: synopsis && { contractVersion: synopsis.contractVersion, overviewOk: !!synopsis.content?.overview }, runs: v2 ? await freeRunsFor(db, deckId) : { attempts: 0, succeeded: false } });
   return {
+    methodNotice, lastFree: newest?.origin === "system",
     synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art,
     pending: newest?.status === "pending",
     illegal,

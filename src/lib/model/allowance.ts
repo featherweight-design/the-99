@@ -124,6 +124,9 @@ async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise
     .from(modelCalls)
     .where(and(
       eq(modelCalls.userId, userId),
+      // The player's own presses only: a free method-change rewrite (`origin = 'system'`) is not a
+      // credit, reserved or spent, and must never count toward the window.
+      eq(modelCalls.origin, "player"),
       gt(modelCalls.createdAt, since),
       inArray(modelCalls.status, ["reserved", "spent"]),
     ));
@@ -175,7 +178,23 @@ export async function reserveModelCall(
   feature: ModelFeature,
   model: string,
   now: Date = new Date(),
+  /**
+   * WHO STARTED THE CALL. `system` is the free method-change rewrite (plan 7.4): it is written
+   * `origin = 'system'` and checks NOTHING here, neither the spend cap nor the player's allowance,
+   * and nothing it spends is counted toward either (both read `origin = 'player'` only). The
+   * caller owns its bound (`method-notice.ts`: two attempts per deck per contract) and must
+   * decide it under its own lock, so this function has no way to be asked for a system call
+   * that bypasses that rule by accident: the default is the player path.
+   */
+  origin: "player" | "system" = "player",
 ): Promise<{ id: string } | { refused: ReserveRefusal }> {
+  if (origin === "system") {
+    const [row] = await tx
+      .insert(modelCalls)
+      .values({ userId, feature, model, origin: "system", createdAt: now })
+      .returning({ id: modelCalls.id });
+    return row;
+  }
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`model-allowance:${userId}`}, 0))`);
   const spend = await monthSpend(tx, userId, now);
   const refusal = spendRefusal({
