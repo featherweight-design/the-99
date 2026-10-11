@@ -135,10 +135,18 @@ export function ownerCheck(q: Pick<typeof db, "select">, deckId: string, userId:
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
 }
 
+// NO `accessMode: "read only"`. A read-only transaction on the pooled Neon connection left the
+// connection in a state the NEXT transaction taken from the pool inherited, and a later
+// `begin isolation level repeatable read` failed with "SET TRANSACTION ISOLATION LEVEL must be
+// called before any query" (seen once under the browser harness, right after a page closed
+// mid-action). `cuts-read.ts` dropped it for the same reason. The snapshot writes nothing, so
+// `repeatable read` alone keeps what it needs: one instant.
+export const READ_SNAPSHOT = { isolationLevel: "repeatable read" } as const;
+
 /**
  * The newest version, its cards and the deck's own rows as of one instant.
  *
- * One read-only `repeatable read` transaction, because these three reads ARE the
+ * One `repeatable read` transaction, because these three reads ARE the
  * comparison. Read separately, a commit landing between them pairs v1's snapshot
  * with the draft that has already become v2, and the deck page tells a player
  * with nothing pending that every card in their newest version is a pending
@@ -176,7 +184,7 @@ async function readSnapshot(deckId: string, userId: string) {
       }).from(decks).where(eq(decks.id, deckId));
     }
     return { version, before, draft, live };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, READ_SNAPSHOT);
 }
 
 /** Name, type line and mana value per card, over the CHANGED cards. The strip's
