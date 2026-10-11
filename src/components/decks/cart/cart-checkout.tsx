@@ -23,11 +23,14 @@ export function CartCheckout({
   provenance: ProvenanceForm | null;
   links: { href: string; lineCount: number }[];
 }) {
-  const showFigure = priced && total.cents > 0;
+  // Whether ManaPool priced anything and whether the sum is worth drawing are two questions: a
+  // live copy at $0.00 is priced, and draws no figure (as the tile draws none for a zero total).
+  const anyPriced = priced && total.pricedCopies > 0;
+  const showFigure = anyPriced && total.cents > 0;
   const showClause = showFigure && total.pricedCopies < total.copies;
   const first = !priced
     ? copy.checkout.unread
-    : showFigure ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced;
+    : anyPriced ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced;
   const provenanceLine = [
     first,
     ...(priced && provenance ? [priceCopy.strip.lastChecked(provenance.when)] : []),

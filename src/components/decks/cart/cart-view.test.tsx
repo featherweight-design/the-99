@@ -126,6 +126,16 @@ describe("CartView", () => {
     expect(sol.textContent).not.toContain("$0.00");
   });
 
+  it("says ManaPool priced a cart whose live copies sum to $0.00, and draws no figure", () => {
+    const zero = cart();
+    zero.lines = zero.lines.map((l) => ({ ...l, rows: l.rows.map((r) => ({ ...r, cents: 0 })) }));
+    zero.decks = zero.decks.map((d) => ({ ...d, cents: 0, pricedCopies: d.copies }));
+    render(<CartView cart={zero} provenance={provenance} />);
+    expect(screen.queryByText(/\$0\.00/)).toBeNull();
+    expect(screen.queryByText(new RegExp(priceCopy.strip.provenanceUnpriced))).toBeNull();
+    expect(screen.getByText(new RegExp(priceCopy.strip.provenance))).toBeTruthy();
+  });
+
   it("tags a line whose every priced copy is foil-only as a foil figure, as the deck's own row does", () => {
     const foil = cart();
     foil.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: 90, state: "foilOnly", commander: false, held: 0, finish: "foil" }];
