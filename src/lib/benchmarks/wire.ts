@@ -29,11 +29,15 @@ export type BenchmarksWire = {
 };
 
 /** A dependency row with its ledger groups as wire cards; the row's figures are copied as they are. */
-export type DependencyWire = Omit<Dependency, "groups" | "landsLeftOut"> & {
-  strength: Strength;
-  groups: { group: Dependency["groups"][number]["group"]; cards: WireCard[] }[];
-  landsLeftOut?: WireCard[];
-};
+export type DependencyWire = Dependency extends infer D
+  ? D extends Dependency
+    ? Omit<D, "groups" | "landsLeftOut"> & {
+        strength: Strength;
+        groups: { group: D["groups"][number]["group"]; cards: WireCard[] }[];
+        landsLeftOut?: WireCard[];
+      }
+    : never
+  : never;
 
 export function wireCard(c: BenchCard): WireCard {
   return { oracleId: c.oracleId, name: c.name, manaCost: c.manaCost, typeLine: c.typeLine, manaValue: c.manaValue, quantity: c.quantity, commander: c.commander };
@@ -58,7 +62,7 @@ export function toWire(b: Benchmarks, commanderName: string | null): BenchmarksW
     },
     win: b.win && {
       step: b.win.step, odds: b.win.odds,
-      lines: b.win.lines.map(({ pieceIds: _p, ...line }) => line),
+      lines: b.win.lines.map((l) => ({ variantId: l.variantId, cards: l.cards, produces: l.produces, mana: l.mana, steps: l.steps, prerequisites: l.prerequisites, odds: l.odds })),
       tutors: b.win.tutors.map(wireCard),
     },
     dependencies: b.dependencies.map((d) => ({
