@@ -1,4 +1,4 @@
-// Fails when a .tsx, .ts or .css file under src uses a bare `border-r` or `border-b` with no SIDE-SPECIFIC color
+// Fails when a .tsx, .ts or .css file under src uses a bare `border-r` or `border-b` with no SIDE-SPECIFIC color (or beside a drawn side it would repaint)
 // override. Tailwind 4 registers a color utility for every theme color, and this app's mana
 // palette names five colors `w`/`u`/`b`/`r`/`g` — two of which are also Tailwind's own side
 // abbreviations, so `border-r`/`border-b` silently repaint the border in mana red/black instead

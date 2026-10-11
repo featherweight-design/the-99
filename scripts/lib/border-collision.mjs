@@ -173,6 +173,66 @@ function hasSideOverride(text, side, variant, important) {
 }
 
 /**
+ * The sides a width utility sets and whether it sets them to zero, or null when `utility` is not
+ * a width. `border`, `border-2` and `border-[1px]` set all four; `-x`, `-y`, `-t`, `-r`, `-b`,
+ * `-l` set theirs. A color (`border-solid`, `border-b-[color:...]`, `border-accent`) is no width.
+ */
+function widthSides(utility) {
+  const m = /^border(?:-([xytrbl]))?(?:-(\d+|\[[^\]]*px\]))?$/.exec(utility);
+  if (!m) return null;
+  const [, axis, size] = m;
+  const sides = { x: ["l", "r"], y: ["t", "b"] }[axis] ?? (axis ? [axis] : ["t", "r", "b", "l"]);
+  return { sides, zero: size !== undefined && /^\[?0(px)?\]?$/.test(size) };
+}
+
+const TOKEN = new RegExp(`^((?:(?:[^\\s"'\`\\[\\]:]|${BRACKETED})*:)*)(!?)(.+?)(!?)$`);
+
+/**
+ * Whether `text` gives some OTHER side a nonzero width alongside a bare `border-{side}` whose
+ * variants it shares. The bare utility is also `border-color: var(--b)` on ALL FOUR sides, so a
+ * side-specific override (what `hasSideOverride` looks for) repairs the one side and leaves every
+ * other drawn side painted in mana black or red; a generic color loses to it, so the only repair
+ * is to bring the WIDTH alone (`border-b-[1px]`). This is the shape of `findings-block.tsx`,
+ * where `md:border` and `md:last:border-b` painted three sides pink with the bottom overridden.
+ * "Shares its variants" is read as the other token's variants being a subset of the bare token's:
+ * whenever the bare one applies, so does that width. A zero on that side (`md:border-r-0`) whose
+ * variants lie between the two takes the width back, and then nothing is left to paint.
+ */
+function paintsOtherSide(text, side, variant) {
+  const mine = new Set(variant.split(":").filter(Boolean));
+  const parsed = [];
+  for (const raw of text.split(/[\s"'`]+/)) {
+    const m = TOKEN.exec(raw);
+    const w = m && widthSides(m[3]);
+    if (w) parsed.push({ ...w, variants: m[1].split(":").filter(Boolean) });
+  }
+  const within = (t) => t.variants.every((v) => mine.has(v));
+  // A side with a color of its own (`border-t-[color:...]`) is not repainted: a longhand wins over
+  // the bare token's shorthand, the same premise `hasSideOverride` rests on.
+  const colored = new Set();
+  for (const raw of text.split(/[\s"'`]+/)) {
+    const m = TOKEN.exec(raw);
+    const c = m && !widthSides(m[3]) && /^border-([xytrbl])-(?=\[|[a-zA-Z])/.exec(m[3]);
+    if (c && within({ variants: m[1].split(":").filter(Boolean) })) {
+      for (const sd of { x: ["l", "r"], y: ["t", "b"] }[c[1]] ?? [c[1]]) colored.add(sd);
+    }
+  }
+  return parsed.some(
+    (t) =>
+      !t.zero &&
+      within(t) &&
+      t.sides.some(
+        (s) =>
+          s !== side &&
+          !colored.has(s) &&
+          !parsed.some(
+            (z) => z.zero && z.sides.includes(s) && z.variants.length >= t.variants.length && t.variants.every((v) => z.variants.includes(v)) && within(z),
+          ),
+      ),
+  );
+}
+
+/**
  * A stylesheet's class strings are its `@apply` statements, one span each. Comments are blanked
  * to spaces rather than cut, so every offset still lands on the same line.
  */
@@ -195,7 +255,7 @@ export function unresolvedCollisions(text, kind = "js") {
   const out = [];
   for (const span of kind === "css" ? cssSpans(text) : scan(text)) {
     for (const { side, index, variant, important } of bareCollisions(span.text)) {
-      if (!hasSideOverride(span.text, side, variant, important)) {
+      if (!hasSideOverride(span.text, side, variant, important) || paintsOtherSide(span.text, side, variant)) {
         const offsetInFile = span.start + index;
         const key = `${side}:${offsetInFile}`;
         if (seen.has(key)) continue;
