@@ -1,13 +1,13 @@
 import type { BenchmarkCuts } from "./compute";
 
 /**
- * The benchmarks' cut points, printed by `pnpm measure:benchmarks` against staging on 2026-10-10
+ * The benchmarks' cut points, printed by `pnpm measure:benchmarks` against staging on 2026-10-11
  * (3,467 ok commanders, 10,401 sampled decks) and pasted here by hand. The derivation is in that
  * script's header and in the PR that set them; re-run it after an index rebuild moves the population.
  *
  * Grades are weighted quintiles. A dependency row is light at the smallest value whose upper tail is
  * at most 25% of the population, heavy at most 10%. Combat reliance has no light cut on this
- * population (`lightMax: 0`): no-line decks with no route outside combat are already 19% of their
+ * population (`lightMax: 0`): no-line decks with no route outside combat are already 22% of their
  * group, so a deck either has no route at all (heavy) or does not lean on combat.
  */
 export const BENCHMARK_CUTS: BenchmarkCuts = {

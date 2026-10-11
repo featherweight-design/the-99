@@ -39,10 +39,10 @@
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { requireEnv } from "./lib/env.mjs";
-import { dependencyFigures, type DependencyFigures } from "../src/lib/benchmarks/dependencies";
+import { dependencyFigures, dependencyStrengths, DEPENDENCY_ROWS, type DependencyFigures } from "../src/lib/benchmarks/dependencies";
 import { flow } from "../src/lib/benchmarks/flow";
 import { interaction } from "../src/lib/benchmarks/interaction";
-import { benchmarkInput, type TextRow } from "../src/lib/benchmarks/load";
+import { assembledLines, benchmarkInput, type TextRow } from "../src/lib/benchmarks/load";
 import { jobsFromText } from "../src/lib/benchmarks/text-jobs";
 import type { BenchCard, BenchLine } from "../src/lib/benchmarks/types";
 import { velocity } from "../src/lib/benchmarks/velocity";
@@ -53,7 +53,7 @@ import type { Job } from "../src/lib/labels/types";
 import type { DeckProfile } from "../src/lib/profile/types";
 import { isInfiniteOrGameEnding } from "../src/lib/spellbook/combo-features";
 import { GAME_ENDING_FEATURES } from "../src/lib/spellbook/produces-kinds.generated";
-import type { ComboPieceRow } from "../src/lib/synopsis/combo-facts";
+import { MAX_COMBO_PIECES, type ComboPieceRow } from "../src/lib/synopsis/combo-facts";
 
 neonConfig.webSocketConstructor = ws;
 const { BENCHMARKS_SOURCE_URL } = requireEnv(["BENCHMARKS_SOURCE_URL"]);
@@ -121,8 +121,8 @@ const BASIC: BenchCard = {
 const variantRows = await q<{ variant_id: string; produces: string[]; card_count: number; oracle_id: string; must_be_commander: boolean }>(`
   select v.variant_id, v.produces, v.card_count, vc.oracle_id, vc.must_be_commander
     from spellbook_variants v join spellbook_variant_cards vc on vc.variant_id = v.variant_id
-   where v.card_count between 2 and 6 and cardinality(v.requires_template_ids) = 0
-     and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any($1::text[]))`, [[...GAME_ENDING_FEATURES]]);
+   where v.card_count between 2 and $2 and cardinality(v.requires_template_ids) = 0
+     and exists (select 1 from unnest(v.produces) f where f ~* '^infinite ' or f = any($1::text[]))`, [[...GAME_ENDING_FEATURES], MAX_COMBO_PIECES]);
 type Variant = { id: string; pieces: { id: string; commanderOnly: boolean }[]; count: number; produces: string[] };
 const variants = new Map<string, Variant>();
 for (const r of variantRows) {
@@ -135,21 +135,22 @@ for (const v of variants.values()) {
   if (v.pieces.length !== v.count || !isInfiniteOrGameEnding(v.produces)) continue;
   for (const p of v.pieces) byPiece.set(p.id, [...(byPiece.get(p.id) ?? []), v]);
 }
+/**
+ * The rows `anySizeComboQuery` would return for this deck, built from the variants held in memory
+ * (one query per sampled deck would be 10,401 round trips), then assembled by the app's own
+ * `assembledLines`, so a sampled deck's lines follow the rule a reading's do.
+ */
 function linesFor(cards: readonly BenchCard[]): BenchLine[] {
-  const held = new Set(cards.filter((c) => !c.commander).map((c) => c.oracleId));
-  const commanders = new Set(cards.filter((c) => c.commander).map((c) => c.oracleId));
-  const seen = new Set<string>();
-  const out: BenchLine[] = [];
-  for (const id of [...held, ...commanders]) {
-    for (const v of byPiece.get(id) ?? []) {
-      if (seen.has(v.id)) continue;
-      seen.add(v.id);
-      if (v.pieces.every((p) => (p.commanderOnly ? commanders.has(p.id) : held.has(p.id) || commanders.has(p.id)))) {
-        out.push({ variantId: v.id, cards: [], produces: v.produces, mana: { kind: "unknown" }, steps: [], prerequisites: null, pieceIds: v.pieces.map((p) => p.id) });
-      }
-    }
-  }
-  return out;
+  const present = new Set(cards.map((c) => c.oracleId));
+  const commanders = cards.filter((c) => c.commander).map((c) => c.oracleId);
+  const candidates = new Set([...present].flatMap((id) => byPiece.get(id) ?? []));
+  const rows: ComboPieceRow[] = [...candidates].flatMap((v) => v.pieces.map((p) => ({
+    variant_id: v.id, produces: v.produces, card_count: v.count, mana_value_needed: null,
+    oracle_id: p.id, name: p.id, must_be_commander: p.commanderOnly,
+    held: p.commanderOnly ? commanders.includes(p.id) : present.has(p.id),
+    commander_legal: true, color_identity: [],
+  })));
+  return assembledLines(rows, commanders);
 }
 
 // ---- sampling --------------------------------------------------------------------------------
@@ -253,7 +254,7 @@ describe("interaction weight", series((s) => s.interaction), grades.interaction)
 describe("win odds, decks with a line", series((s) => s.win, (s) => s.win !== null), grades.win);
 console.log(`- decks with at least one line: ${(series((s) => s.win, (s) => s.win !== null).length / samples.length * 100).toFixed(1)}%\n`);
 
-console.log("## Dependencies (light at p75, heavy at p90)\n");
+console.log("## Dependencies (light where at most 25% of the weight is at or above, heavy at most 10%)\n");
 const dep = (f: (d: DependencyFigures) => number) => series((s) => f(s.deps));
 const dependencies = {
   graveyard: lightHeavy(dep((d) => d.graveyard)),
@@ -286,23 +287,14 @@ describe("creatures with abilities", dep((d) => d.activated), both(dependencies.
 describe("routes outside combat, decks with no line", series((s) => s.deps.routes, (s) => s.deps.lines === 0), [dependencies.combat.lightMax + 1]);
 
 // ---- how often each row is drawn, over the whole population -----------------------------------
-type Cuts = typeof dependencies;
-function rowsOf(d: DependencyFigures, c: Cuts): string[] {
-  const at = (v: number, cut: { light: number; heavy: number }) => (v >= cut.heavy ? "heavy" : v >= cut.light ? "light" : null);
-  const stronger = (a: string | null, b: string | null) => (a === "heavy" || b === "heavy" ? "heavy" : a ?? b);
-  const rows: [string, string | null][] = [
-    ["graveyard", d.graveyardCommander ? "heavy" : at(d.graveyard, c.graveyard)],
-    ["artifacts", stronger(at(d.artifacts, c.artifacts.cards), at(d.artifactPayoffs, c.artifacts.payoffs))],
-    ["enchantments", stronger(at(d.enchantments, c.enchantments.cards), at(d.enchantmentPayoffs, c.enchantments.payoffs))],
-    ["creatures", at(d.creaturePayoffs, c.creatures)],
-    ["activated", stronger(at(d.activated, c.activated), d.activatedCommander ? "light" : null)],
-    ["combat", d.lines === 0 && d.routes <= c.combat.lightMax ? (d.routes === 0 ? "heavy" : "light") : null],
-  ];
-  return rows.filter(([, s]) => s).map(([r, s]) => `${r} ${s}`);
+/** The rows a reading would draw, through the app's own `dependencyStrengths`. */
+function rowsOf(d: DependencyFigures, c: typeof dependencies): string[] {
+  const s = dependencyStrengths(d, c);
+  return DEPENDENCY_ROWS.flatMap((row) => (s[row] ? [`${row} ${s[row]}`] : []));
 }
 const totalWeight = samples.reduce((s, x) => s + x.weight, 0);
 console.log("\n## How often each row is drawn (share of the population's weight)\n");
-for (const row of ["graveyard", "artifacts", "enchantments", "creatures", "activated", "combat"]) {
+for (const row of DEPENDENCY_ROWS) {
   const share = (strength: string) => samples.filter((x) => rowsOf(x.deps, dependencies).includes(`${row} ${strength}`)).reduce((s, x) => s + x.weight, 0) / totalWeight;
   console.log(`- ${row}: light ${(share("light") * 100).toFixed(1)}%, heavy ${(share("heavy") * 100).toFixed(1)}%`);
 }
