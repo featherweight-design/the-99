@@ -21,8 +21,12 @@ export const SYNOPSIS_MODEL = "claude-sonnet-5-5";
  * Sonnet 5.5 at `medium` from 2026-10-11 (Hugh), measured on the eight staging decks of the Overview
  * corpus, one answer each, under the plans-first prompt: $0.051 an answer, a median of 12s (36s at
  * most), and no failed or truncated reply in 25 answers across four runs, against Sonnet 5 at `low` at $0.060, a
- * median of 24s and one deck failing twice on the reply's shape. It matched or beat Sonnet 5 low on
- * every corpus check (`docs/superpowers/eval/metrics-plan-first-*.md`). The ceiling it needs is
+ * median of 24s and one deck failing twice on the reply's shape. On the seven decks both
+ * runs answered (`docs/superpowers/eval/metrics-plan-first-*.md`) it named more key cards (16/58
+ * against 9/58) and weaknesses (7/22 against 6/22) and led more strategies with the primary plan
+ * (3/7 against 2/7), tied on mulligans (1/5) and primary plans (7/7), and named one combo fewer
+ * (1/4 against 2/4: Gishath's). One answer each, so a single combo is within noise; the switch rests
+ * on the cost, the speed and the failures. The ceiling it needs is
  * `SYNOPSIS_MAX_TOKENS_V8`, and the request streams.
  */
 export const SYNOPSIS_EFFORT = "medium" as const;
