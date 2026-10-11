@@ -197,7 +197,8 @@ async function run() {
       report(`${tag} analyzed: the tabpanel is aria-busy while it loads`, log.some((e) => e.loader && e.busy) && !log.some((e) => e.loader === "drawn" && !e.busy), "busy with the loader");
       // The loader is the reading ring: five marks, each on the wave.
       const firstOps = log.find((e) => e.ops)?.ops ?? [];
-      report(`${tag} analyzed: the loader draws the ring's five waving marks`, firstOps.length === 5, `${firstOps.length} marks`);
+      // The fifth mark waits 0.64s for its wave: it must wait FAINT, not at full ink.
+      report(`${tag} analyzed: the loader draws the ring's five marks, a waiting one faint`, firstOps.length === 5 && firstOps[4] <= 0.3, `${firstOps.length} marks, mark 5 at ${firstOps[4]}`);
       report(`${tag} analyzed: the header chip stays drawn`, log.every((e) => e.chip), log.every((e) => e.chip) ? "drawn throughout" : "dropped");
 
       // The hold, on a fetch that answers soon after the loader appears.

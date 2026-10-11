@@ -12,7 +12,7 @@ verified the table and Agent 3 confirmed the fix.
 
 | # | Gap | Resolution |
 |---|---|---|
-| 1 | The loader's marks had no resting opacity. With the 0.16s stagger and no fill mode, marks 2 to 5 sat at full ink until their delay ended. A browser running no animation drew all five at full ink. | FIXED. `.at-wave-rest { opacity: 0.22 }`, the wave's low point, applies to the loader's marks only; the ring's marks are untouched. `probe:tab-opening` reads mark 5 at 0.22 on the loader's first frame. Removing the rule reads 1 and fails. |
+| 1 | The loader's marks had no resting opacity. With the 0.16s stagger and no fill mode, marks 2 to 5 sat at full ink until their delay ended. A browser running no animation drew all five at full ink. | FIXED. `.at-wave-rest { opacity: 0.22 }`, the wave's low point, applied to the loader's marks only. Superseded 2026-10-11: the loader is now the reading ring, and `.anim-at-wave` carries `animation-fill-mode: backwards`, which holds a waiting mark at the same 0.22 for the ring everywhere; `.at-wave-rest` is gone. `probe:tab-opening` reads mark 5 at 0.22 on the loader's first frame. Removing the rule reads 1 and fails. |
 
 ## State reachability
 

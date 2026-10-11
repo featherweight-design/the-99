@@ -789,7 +789,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   0%, 100% { opacity: 0.22; }
   35%, 60% { opacity: 1; }
 }
-.anim-at-wave { animation: at-wave 1.6s ease-in-out infinite; }
+/* `backwards`: a mark waiting out its stagger delay sits at the wave's low ink (the 0%
+   keyframe) instead of full ink, so the ring never flashes bright before it starts to wave. */
+.anim-at-wave { animation: at-wave 1.6s ease-in-out infinite backwards; }
 
 /* There is no exit animation. The layer unmounts on close — see the note at
    `closeZoom` in `cards/card-modal.tsx` for why the 160ms fade was dropped. */
