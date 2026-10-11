@@ -364,6 +364,26 @@ describe("ContestedCardRow", () => {
     expect(rows[1].getAttribute("style")).toContain("solid");
   });
 
+  it("a brew led by the card sets no ceiling: the list decks stay choosable", () => {
+    // One owned copy, two committed list decks, and a brew whose commander is the card. Only a
+    // committed commander holds its copy; the brew's claims it softly.
+    const base = card();
+    render(<ContestedCardRow card={card({
+      claimants: [
+        ...base.claimants,
+        {
+          deckId: "d3", deckName: "Brew Led By It", quantity: 1, commanderCopies: 1, granted: 0,
+          since: null, versionNumber: null, allocated: 0,
+        },
+      ],
+    })} />);
+    const radios = screen.getAllByRole("radio");
+    expect(radios[0].getAttribute("aria-disabled")).toBeNull();
+    expect(radios[1].getAttribute("aria-disabled")).toBeNull();
+    // The brew's own option is all commander, so it is the one nobody can choose.
+    expect(radios[2].getAttribute("aria-disabled")).toBe("true");
+  });
+
   it("offers a brew as an option, last, with no version stamp (2026-10-11)", () => {
     const base = card();
     render(<ContestedCardRow card={card({
