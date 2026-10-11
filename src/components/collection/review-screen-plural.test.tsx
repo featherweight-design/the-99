@@ -8,7 +8,7 @@ const preview = (over: Partial<UploadPreview>): UploadPreview => ({
   matchedCardCount: 1,
   unmatchedRows: [{ name: "X", setCode: "abc", line: 2, quantity: 1 }],
   skippedByDesignCount: 1,
-  parseErrors: [],
+  parseErrors: [{ line: 3, reason: "bad" }],
   currentCollectionCount: 1,
   filename: "c.csv",
   rowCount: 1,
@@ -25,9 +25,11 @@ const text = (p: UploadPreview) => {
 describe("ReviewScreen counts", () => {
   it("says 1 row and 1 card, never 1 rows or 1 cards", () => {
     const t = text(preview({}));
-    expect(t).not.toMatch(/\b1 (rows|cards)\b/);
-    expect(t).toMatch(/1 row\b/);
-    expect(t).toMatch(/1 card\b/);
+    expect(t).not.toMatch(/\b1\s*(rows|cards|parse errors)/);
+    expect(t).toMatch(/ · 1 row/);
+    expect(t).toMatch(/1\s*card matched/);
+    expect(t).toMatch(/1\s*row read/);
+    expect(t).toMatch(/replaces your 1 card with/);
   });
 
   it("keeps the plural for more than one", () => {

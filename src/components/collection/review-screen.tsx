@@ -162,8 +162,8 @@ export function ReviewScreen({
                   e.addedLabel(addDetail.copiesAfter - addDetail.copiesBefore, addDetail.distinctCards)
                 ) : (
                   <>
-                    <span className="md:hidden">cards matched &amp; ready</span>
-                    <span className="hidden md:inline">cards matched to the Oracle database: ready to import</span>
+                    <span className="md:hidden">{importCount === 1 ? "card" : "cards"} matched &amp; ready</span>
+                    <span className="hidden md:inline">{importCount === 1 ? "card" : "cards"} matched to the Oracle database: ready to import</span>
                   </>
                 )}
               </div>
@@ -187,7 +187,7 @@ export function ReviewScreen({
               <span className="font-mono text-[16px]" style={{ color: "var(--danger)" }}>
                 {preview.parseErrors.length.toLocaleString()}
               </span>
-              <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>parse errors</span>
+              <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>{preview.parseErrors.length === 1 ? "parse error" : "parse errors"}</span>
             </div>
             {skippedByDesign > 0 && (
               <div className="flex items-center gap-[10px]">
@@ -210,8 +210,8 @@ export function ReviewScreen({
           <div className="md:hidden flex flex-col gap-[8px] mt-[14px]">
             <div className="flex gap-[8px]">
               <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label="unmatched" />
-              <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label="parse errors" />
-              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label="rows read" />
+              <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label={preview.parseErrors.length === 1 ? "parse error" : "parse errors"} />
+              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label={preview.preview.rowCount === 1 ? "row read" : "rows read"} />
             </div>
             {/* Matches the mini-stat label's 11px/--fg-faint. Its own line because a fourth cell
                 would squeeze all four below the label's legible width on a 360px viewport. */}
