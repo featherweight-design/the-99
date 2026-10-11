@@ -16,9 +16,9 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
-import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
+import { SYNOPSIS_EFFORT, SYNOPSIS_EFFORT_V7, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
 import { reapSynopses } from "./reaper";
 import { synopsisResponseSchema, synopsisResponseSchemaV8Wire, type SynopsisReply, type SynopsisReplyV8Wire, type SynopsisResponse } from "./response-schema";
@@ -91,44 +91,37 @@ export type ModelCall = (req: { system: string; user: string; deadlineMs: number
 
 export type GenerateDeps = {
   /** Stored on the run, so the harness can tell models apart and a probe can prove the stub ran. */
+  /** The model a contract-7 write records. */
   modelName: string;
+  /** The model a v2 write records, when it differs from `modelName` (the real model does). */
+  modelNameV2?: string;
   model: ModelCall;
   now: () => Date;
   profile?: StoredProfileDeps;
 };
 
+/**
+ * The model call each contract makes, tied to the contract (decided 2026-10-11): contract 7 is
+ * exactly what production ran before Sonnet 5.5, and only the v2 contracts, where Sonnet 5.5 at
+ * medium was measured, use it, streamed under their larger ceiling.
+ */
+export function synopsisCallSettings(v2: boolean): { model: string; effort: "low" | "medium" | "high"; maxTokens: number; stream: boolean } {
+  return v2
+    ? { model: SYNOPSIS_MODEL, effort: SYNOPSIS_EFFORT, maxTokens: SYNOPSIS_MAX_TOKENS_V8, stream: true }
+    : { model: SYNOPSIS_MODEL_V7, effort: SYNOPSIS_EFFORT_V7, maxTokens: SYNOPSIS_MAX_TOKENS, stream: false };
+}
+
 /** The real model in production or under `SYNOPSIS_LIVE=1`; the stub everywhere else. */
 export function defaultDeps(): GenerateDeps {
   const live = synopsisLive();
   return {
-    modelName: live ? SYNOPSIS_MODEL : STUB_MODEL,
+    modelName: live ? synopsisCallSettings(false).model : STUB_MODEL,
+    modelNameV2: live ? synopsisCallSettings(true).model : STUB_MODEL,
     model: live
       // Contract 8 (the v2 method) asks for a bigger reply and constrains it to its own schema.
       ? (req): Promise<ModelOutcome<SynopsisReply>> => req.v2
-        ? callModel({
-          model: SYNOPSIS_MODEL,
-          system: req.system,
-          user: req.user,
-          maxTokens: SYNOPSIS_MAX_TOKENS_V8,
-          effort: SYNOPSIS_EFFORT,
-          schema: synopsisResponseSchemaV8Wire,
-          deadlineMs: req.deadlineMs,
-          // Streamed: thinking at medium counts inside a 16,000 ceiling, which a plain request
-          // risks running past the SDK's HTTP timeout for.
-          stream: true,
-        })
-        : callModel({
-          model: SYNOPSIS_MODEL,
-          system: req.system,
-          user: req.user,
-          // The same model and effort as contract 8, so the same ceiling and streaming: the
-          // contract-7 ceiling was sized for Sonnet 5 at low and would cut medium's thinking off.
-          maxTokens: SYNOPSIS_MAX_TOKENS_V8,
-          effort: SYNOPSIS_EFFORT,
-          schema: synopsisResponseSchema,
-          deadlineMs: req.deadlineMs,
-          stream: true,
-        })
+        ? callModel({ ...synopsisCallSettings(true), system: req.system, user: req.user, schema: synopsisResponseSchemaV8Wire, deadlineMs: req.deadlineMs })
+        : callModel({ ...synopsisCallSettings(false), system: req.system, user: req.user, schema: synopsisResponseSchema, deadlineMs: req.deadlineMs })
       : async (req, facts) => {
         await stubDelay();
         return stubReply(facts, stubMode(), isRepair(req.user), !!req.v2);
@@ -606,7 +599,9 @@ async function run(
   const refused = base ? refusedSections(base.content) : null;
   const prompt = buildSynopsisPrompt(facts, base && refused ? { keep: base.content, refused } : undefined, { v2, contract8: v2 });
 
-  const started = await startRun(deckId, userId, reading.list, deps.modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method);
+  // The model this write runs on, which is what its run and its bill record.
+  const modelName = v2 ? deps.modelNameV2 ?? deps.modelName : deps.modelName;
+  const started = await startRun(deckId, userId, reading.list, modelName, deps.now(), base?.id ?? null, !retry, reading.seenSeq, replacing, contract, method);
   if (started.kind !== "started") return started;
 
   // EVERY PATH AFTER THE RESERVATION SETTLES THE RUN. A throw anywhere past here (the catalog
@@ -631,7 +626,7 @@ async function run(
   };
   try {
     const outcome = await call(prompt);
-    if (outcome.usage) billed = { model: deps.modelName, usage: outcome.usage };
+    if (outcome.usage) billed = { model: modelName, usage: outcome.usage };
 
     if (!outcome.ok) {
       const settled = await finishRun(started, failedRunSet(outcome, billed), deps.now());
@@ -651,7 +646,7 @@ async function run(
       const failing = refusedSections(content);
       const repair = await call(repairPrompt(facts, content, failing, v2, outcome.value));
       usage = sumUsage(usage, repair.usage);
-      if (usage) billed = { model: deps.modelName, usage };
+      if (usage) billed = { model: modelName, usage };
       content = await applyRepair(content, repair, failing, facts, v2);
     }
     const charge = chargeFor(content);

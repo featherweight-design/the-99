@@ -82,9 +82,9 @@ export const SYNOPSIS_ANSWER_TOKENS_WORST_CASE = 2_000;
 
 /**
  * Room for the model's reasoning at `effort: "low"`, which counts inside `max_tokens`: the
- * contract-7 ceiling as it was sized for Sonnet 5 at low (eval harness, 2026-09-24). Since
- * 2026-10-11 the Overview runs Sonnet 5.5 at `medium` (`model.ts`), and both contracts' calls use
- * `SYNOPSIS_MAX_TOKENS_V8` (`generate.ts`); this ceiling now sizes only the eval's v1 baseline.
+ * contract-7 ceiling, sized for Sonnet 5 at low (eval harness, 2026-09-24), which contract 7 still
+ * runs (`SYNOPSIS_EFFORT_V7`); the v2 contracts run Sonnet 5.5 at medium under
+ * `SYNOPSIS_MAX_TOKENS_V8` (`synopsisCallSettings`).
  */
 export const SYNOPSIS_REASONING_HEADROOM_TOKENS = 1_000;
 
@@ -121,7 +121,7 @@ export const SYNOPSIS_MAX_TOKENS = 3_000;
  * with no reply cut off (stop reason `end_turn` on all 25 answers across its four runs, the largest
  * 5,082 tokens). The request streams (`generate.ts`), so a ceiling this high carries no HTTP-timeout
  * risk. The reservation is $0.832 a write, $0.40 above 6,000's, and settles to the actual cost.
- * Both contracts' calls use it: contract 7 runs the same model and effort.
+ * Only the v2 contracts use it; contract 7 keeps Sonnet 5 at low under `SYNOPSIS_MAX_TOKENS`.
  */
 export const SYNOPSIS_MAX_TOKENS_V8 = 16_000;
 

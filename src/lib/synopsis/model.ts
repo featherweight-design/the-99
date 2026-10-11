@@ -1,5 +1,14 @@
 /**
- * The model the synopsis is written by (lane brief, "Model"). A named constant and nothing more:
+ * Contract 7's model and effort, unchanged: what production runs while `OVERVIEW_V2_ENABLED` is
+ * off. Contract 7 was never measured on Sonnet 5.5, so the switch below is tied to the contracts it
+ * was measured on, and merging it changes no production Overview until the v2 switch flips
+ * (decided 2026-10-11).
+ */
+export const SYNOPSIS_MODEL_V7 = "claude-sonnet-5";
+export const SYNOPSIS_EFFORT_V7 = "low" as const;
+
+/**
+ * The model the v2 contracts (11 and 12) are written by (lane brief, "Model"). A named constant and nothing more:
  * the eval harness (sub-project 10) may change it before launch, so no code branches on its value.
  * Every run stores the model it used, so a change is visible in the outcomes it produces.
  */
