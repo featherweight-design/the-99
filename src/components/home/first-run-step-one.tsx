@@ -83,6 +83,7 @@ export function FirstRunStepOne({ fan, addByHand = false }: { fan: React.ReactNo
             currentCardCount={0}
             entry="buttons"
             embedded
+            history={addByHand}
             onReviewing={setReviewing}
             onAddByHand={
               addByHand

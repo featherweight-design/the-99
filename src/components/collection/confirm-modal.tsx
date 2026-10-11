@@ -27,6 +27,7 @@ export function ConfirmModal({
   onClose,
   onConfirm,
   checking = false,
+  history = checking,
   warning,
 }: {
   preview: UploadPreview;
@@ -36,6 +37,8 @@ export function ConfirmModal({
   onConfirm: () => Promise<void> | void;
   /** The press starts a deck check as well as the write (collection editing on). */
   checking?: boolean;
+  /** History can revert this replace: say so. Follows `checking` unless a caller turns it on alone (first run). */
+  history?: boolean;
   /** The decks the confirm would leave short: the dialog shows §E in place of the confirm. */
   warning?: { decks: ShortDeck[]; changed: boolean; fresh: ReadonlySet<string>; onConfirm: () => void };
 }) {
@@ -54,9 +57,9 @@ export function ConfirmModal({
       }
     : {
         title: c.title,
-        // Collection editing on (`checking`): History can revert the replace, so say that.
-        body: checking ? c.bodyHistory : c.body,
-        bodyShort: checking ? c.bodyShortHistory : c.bodyShort,
+        // Collection editing on (`history`): History can revert the replace, so say that.
+        body: history ? c.bodyHistory : c.body,
+        bodyShort: history ? c.bodyShortHistory : c.bodyShort,
         keep: c.keep,
         confirm: c.replace(preview.matchedCardCount),
         pending: c.replacing,

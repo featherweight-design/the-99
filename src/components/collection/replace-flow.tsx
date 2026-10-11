@@ -25,6 +25,7 @@ export function ReplaceFlow({
   onReviewing,
   onAddByHand,
   deckCheck = false,
+  history = false,
 }: {
   currentCardCount: number;
   embedded?: boolean;
@@ -41,6 +42,8 @@ export function ReplaceFlow({
   onAddByHand?: React.ComponentProps<typeof UploadEntry>["onAddByHand"];
   /** Collection editing is on: a confirm checks the decks first, and can answer with §E. */
   deckCheck?: boolean;
+  /** Collection editing is on without the deck check (first run): a replace it finds still lands in History. */
+  history?: boolean;
 }) {
   const nav = usePendingPush();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
@@ -366,6 +369,7 @@ export function ReplaceFlow({
           }}
           onConfirm={() => onConfirm()}
           checking={deckCheck}
+          history={deckCheck || history}
           warning={warning ? { ...warning, onConfirm: () => onConfirm(warning.decks) } : undefined}
         />
       )}
