@@ -376,13 +376,13 @@
       "view": "src/components/cards/card-modal.tsx",
       "steps": [
         {
-          "goto": "/collection?q=${IGI_OWNED_CARD}&view=list",
+          "goto": "/collection?q=${IGI_OWNED_CARD}&view=rows",
           "wait": "input",
           "settle": 2000
         },
         {
           "clickRole": "button",
-          "name": "^${IGI_OWNED_CARD}",
+          "name": "^(View details for )?${IGI_OWNED_CARD}",
           "wait": "[role=dialog]",
           "settle": 1500
         }
