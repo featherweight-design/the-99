@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { availabilityState, drawsMarker, type Availability } from "./availability";
+import { availabilityState, drawsMarker, hardDecks, holdsCopy, type Availability } from "./availability";
 
 describe("availabilityState", () => {
   it("is free when nothing claims the card", () => {
@@ -128,5 +128,22 @@ describe("drawsMarker", () => {
   // carry no `owned` field at all.
   it("treats an absent owned flag as owned", () => {
     expect(drawsMarker({ availability: a({ hard: 2, free: 0 }) })).toBe(true);
+  });
+});
+
+describe("holdsCopy / hardDecks (2026-10-11)", () => {
+  const claim = (id: string, mature: boolean, granted?: number) =>
+    ({ id, name: id, quantity: 1, mature, pending: false, commander: false, senior: true, granted });
+
+  it("a committed deck holds; a brew holds only what the player gave it", () => {
+    expect(holdsCopy(claim("c", true))).toBe(true);
+    expect(holdsCopy(claim("b", false))).toBe(false);
+    expect(holdsCopy(claim("b", false, 0))).toBe(false);
+    expect(holdsCopy(claim("b", false, 1))).toBe(true);
+  });
+
+  it("names a brew given a copy among the decks holding the card", () => {
+    expect(hardDecks({ claims: [claim("c", true), claim("b1", false), claim("b2", false, 1)] }).map((d) => d.id))
+      .toEqual(["c", "b2"]);
   });
 });

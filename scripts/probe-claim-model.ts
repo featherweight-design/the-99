@@ -24,6 +24,7 @@ import { writePullRelease } from "../src/lib/decks/pull-release";
 import { commitVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
 import { addCardToDeckFor } from "../src/lib/decks/add-card";
 import { assignCopyFor } from "../src/lib/decks/assign";
+import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
 import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 import { loadContestedCards, countContestedCards } from "../src/lib/collection/summary-read";
 
@@ -318,20 +319,37 @@ async function reservationSection() {
       String(senior?.since), vsince.ms);
     check("a list copy is no commander copies", senior?.commanderCopies, 0);
 
-    // 8. A BREW IS NOT RESERVABLE. It claims softly by design, and a reservation
-    //    for one would let it make a sleeved deck short — the inversion the whole
-    //    model is built to prevent. The join to the committed claim refuses it
-    //    with no rule of its own.
+    // 8. A BREW IS RESERVABLE (2026-10-11, all-decks cart: when a purchase covers fewer
+    //    decks than want the card, the player chooses, brews included). A copy given to a
+    //    brew is HARD for it and ranks ahead of seniority, exactly as one given to a
+    //    committed deck does: the brew is covered, and the senior committed deck that held
+    //    the only copy goes and buys one. The brew's claim still carries no version.
     await own(1);
     const brew = await makeDeck("Brew", cmdB);
     await fixture.execute(sql`
       insert into deck_cards (deck_id, oracle_id, quantity) values (${brew}, ${card}, 1)
     `);
+    check("unreserved, a brew is behind every committed deck", await free(brew), -1);
+    const hardBefore = (await loadAvailability(USER_R, { oracleIds: [card] })).get(card)?.hard ?? 0;
     await assign(brew);
-    check("a reservation naming a brew grants nothing", await free(a), 0);
     const brewClaim = await claimOn(a, brew);
+    check("a reservation naming a brew is granted", brewClaim?.granted, 1);
+    check("and covers the brew", await free(brew), 0);
+    check("and the brew is billed for none",
+      (await loadDeckBuyRows(USER_R, [brew])).find((r) => r.oracleId === card)?.quantity ?? 0, 0);
+    check("the senior committed deck it displaced buys instead", await free(a), -1);
+    const offList = (await loadAvailability(USER_R, { oracleIds: [card] })).get(card);
+    check("off any decklist the brew's granted copy is hard", offList?.hard, hardBefore + 1);
+    check("and none of its ask is soft", offList?.soft, 0);
     check("and a brew's claim carries no version", brewClaim?.versionNumber, null);
     check("nor a since stamp", brewClaim?.since, null);
+    // The brew's list edit is its claim: a card leaving the brew takes the reservation with it.
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${brew} and oracle_id = ${card}`);
+    await pruneOrphanProxies(fixture, brew);
+    const { rows: [brewLeft] } = await fixture.execute<{ n: number }>(sql`
+      select count(*)::int as n from card_assignments where deck_id = ${brew}
+    `);
+    check("a card leaving a brew's list prunes its reservation", brewLeft.n, 0);
     await clearAssignments();
 
     // 9. A DRAFT-ONLY ADD IS NOT RESERVABLE either, and for the same reason read
@@ -664,6 +682,33 @@ async function assignmentWriteSection() {
     check("a draft-only add is refused by name",
       await assignCopyFor(USER_W, card, drafter), "claimant-no-longer-asks");
     check("and writes nothing", await rowsFor(drafter), 0);
+
+    // 4b. A BREW IS ACCEPTED (2026-10-11). No version, so its claim is its live list: a brew
+    //     holding the card is given the copy, and one holding it only as its commander is
+    //     refused by that name, as a committed deck is.
+    const { rows: [brewDeck] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_W}, 'Write brew', ${otherCmd}) returning id
+    `);
+    decksMade.push(brewDeck.id);
+    check("a brew not listing the card is refused by name",
+      await assignCopyFor(USER_W, card, brewDeck.id), "claimant-no-longer-asks");
+    await fixture.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${brewDeck.id}, ${card}, 1)
+    `);
+    check("a brew listing the card is given the copy",
+      await assignCopyFor(USER_W, card, brewDeck.id), null);
+    check("and writes exactly one row", await rowsFor(brewDeck.id), 1);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_W}`);
+    const { rows: [brewCmd] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id)
+      values (${USER_W}, 'Write brew commander', ${card}) returning id
+    `);
+    decksMade.push(brewCmd.id);
+    check("a brew whose commander is the card is refused by that name",
+      await assignCopyFor(USER_W, card, brewCmd.id), "target-is-commander");
+    // Out of the way of the supply cases below: they count committed commanders only.
+    await fixture.execute(sql`delete from deck_cards where deck_id = ${brewDeck.id}`);
 
     // 5. A COMMANDER IS REFUSED BY ITS OWN NAME, and before the claim check: a player told
     //    instead that the deck is not asking for the card would go looking for a problem with a

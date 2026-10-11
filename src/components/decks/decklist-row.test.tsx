@@ -309,7 +309,7 @@ describe("DecklistRow availability marker (#43)", () => {
     );
 
     expect(
-      screen.getByText("you own 1 too few for the committed decks that include it"),
+      screen.getByText("you own 1 too few for the decks that include it"),
     ).toBeInTheDocument();
   });
 

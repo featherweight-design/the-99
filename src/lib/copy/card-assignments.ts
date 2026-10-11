@@ -182,8 +182,8 @@ export const cardAssignmentsCopy = {
   contested: {
     /**
      * Supply first, demand second, every time: the shortage is the reason the row exists.
-     * COUNTS COMMITTED DECKS ONLY — a brew cannot be given a copy, so counting one here would
-     * make the figure quietly wrong. `draftNote` carries it instead.
+     * COUNTS EVERY DECK THAT CAN BE GIVEN A COPY, brews included since 2026-10-11 (all-decks
+     * cart): every one of them is an option below.
      *
      * No quantity arithmetic. An earlier form read "2 copies arrived · 3 committed decks want
      * 4", which asks a player to hold a subtraction in their head to learn a fact the options
@@ -208,12 +208,6 @@ export const cardAssignmentsCopy = {
 
     /** The cap, stated beside the heading whenever it is above one. */
     cap: (given: number, copies: number) => `${given} of ${copies} given`,
-    draftNote: (deck: string) =>
-      `${deck} wants it too, but it has no committed version — only committed decks can be ` +
-      "given a copy.",
-    draftNoteMany: (n: number) =>
-      `${n} drafts want it too, but only committed decks can be given a copy.`,
-
     /** THE VERB. Never rendered as a button. */
     heading: (copies: number) =>
       copies === 1 ? "Give the new copy to" : `Give the ${copies} new copies to`,

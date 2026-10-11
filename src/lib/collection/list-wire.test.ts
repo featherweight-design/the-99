@@ -34,7 +34,7 @@ const card = (oracleId: string, over: Partial<BrowseListCard> = {}): BrowseListC
 const claim = (id: string, name: string, mature: boolean) => ({
   id, name, mature, quantity: 1, pending: false, commander: false, senior: true, since: 3, versionNumber: 2,
 });
-const full = (claims: ReturnType<typeof claim>[]): Availability => ({
+const full = (claims: (ReturnType<typeof claim> & { granted?: number })[]): Availability => ({
   owned: 2, hard: claims.filter((c) => c.mature).length, soft: claims.filter((c) => !c.mature).length,
   free: 1, claims,
 });
@@ -88,6 +88,19 @@ describe("encodeCollection / decodeCollection", () => {
         { id: "d1", name: "Izzet Spells", mature: true },
       ] } },
       { ...cards[2], availability: null },
+    ]);
+  });
+
+  // The claim bit is `holdsCopy`: a brew the player gave a copy to decodes as holding it, so the
+  // `/collection` marker names it. An ungranted brew stays unsleeved (the case above).
+  it("decodes a brew given a copy as holding it", () => {
+    const granted = new Map<string, Availability>([
+      ["a", full([claim("d1", "Izzet Spells", true), { ...claim("d2", "Brew", false), granted: 1 }])],
+    ]);
+    const decoded = decodeCollection(encodeCollection([cards[0]], granted));
+    expect(decoded[0].availability?.claims).toEqual([
+      { id: "d1", name: "Izzet Spells", mature: true },
+      { id: "d2", name: "Brew", mature: true },
     ]);
   });
 

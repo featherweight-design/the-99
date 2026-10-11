@@ -257,7 +257,10 @@ export function BracketFactsDetail({ card }: { card: BrowseCard }) {
  */
 function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): string {
   const c = availabilityCopy.collection;
-  if (!claim.mature) return c.detailClaimWants(claim.quantity);
+  // A brew holds only what the player GAVE it (2026-10-11); the rest of its ask is a want.
+  if (!claim.mature) {
+    return (claim.granted ?? 0) > 0 ? c.detailClaimHolds(claim.granted ?? 0) : c.detailClaimWants(claim.quantity);
+  }
   const holds = c.detailClaimHolds(claim.quantity);
   if (!contested) return holds;
   if (allocated === 0) return `${holds} · ${c.detailClaimBuys}`;
@@ -368,10 +371,13 @@ function AvailabilityDetail({
   const allocated = new Map(allocation.map((cl) => [cl.deckId, cl.allocated]));
   // Contested means a committed deck asked for a copy the supply could not give it. Only then
   // does saying who gets it tell the reader anything.
-  const contested = allocation.some((cl) => cl.allocated < cl.quantity);
+  // Brews are in the allocation (they can be given a copy) but their unmet ask is soft, so it
+  // never makes the card contested on its own.
+  const contested = allocation.some((cl) => !cl.brew && cl.allocated < cl.quantity);
   // The brews, which no figure in this block counts. Named where a committed deck is already
   // in play; in the soft state every claimant is one and `detailSoftNote` says so already.
-  const brews = a.claims.filter((cl) => !cl.mature).length;
+  // A brew holding a copy the player gave it IS counted (in hard), so it is not one of these.
+  const brews = a.claims.filter((cl) => !cl.mature && !(cl.granted ?? 0)).length;
   const note =
     state === "hard" ? c.detailHardNote
     : state === "soft" ? c.detailSoftNote(a.claims.filter((cl) => !cl.mature).length)

@@ -8,7 +8,7 @@
 // client component can reach it and the queries stay behind the server module
 // that re-exports both.
 
-import type { Availability, DeckClaim } from "./availability";
+import { holdsCopy, type Availability, type DeckClaim } from "./availability";
 import type { AddBucket, BucketedAdd, DraftChange } from "./draft-diff";
 import type { DeckVersion } from "./versions";
 import type { CommanderPair } from "../commander-change/pending";
@@ -264,7 +264,8 @@ export function heldElsewhere(
   a: Availability | undefined | null,
   shortfall: number,
 ): boolean {
-  return shortfall > 0 && (a?.claims ?? []).some((c) => c.mature);
+  // `holdsCopy`: a brew the player gave a copy to holds it as a committed deck does.
+  return shortfall > 0 && (a?.claims ?? []).some(holdsCopy);
 }
 
 /**

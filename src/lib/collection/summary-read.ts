@@ -20,7 +20,7 @@ import { db } from "../../db";
 import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { withoutUndecided, type ArrivalsSummary } from "./arrivals";
-import type { Availability } from "../decks/availability";
+import { holdsCopy, type Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 
 /** One committed deck's place in a contested card's queue. */
@@ -36,6 +36,12 @@ export type ContestedClaimant = {
   /** `deck_version_cards.since`, epoch millis. The order this list is in, and the stamp it draws. */
   since: number | null;
   versionNumber: number | null;
+  /**
+   * A brew (no committed version), which can be given a copy since 2026-10-11 but otherwise
+   * claims softly. Absent or false for a committed deck. Carried rather than read off a null
+   * `since`, because `since` is optional on a claim and its absence is not brewness.
+   */
+  brew?: boolean;
   /** How many copies this deck gets under the allocation as it currently stands. */
   allocated: number;
 };
@@ -58,8 +64,6 @@ export type ContestedCard = {
   /** Copies the collection holds now. Live. */
   owned: number;
   claimants: ContestedClaimant[];
-  /** Brews wanting the card. Named, never options — a brew cannot be given a copy. */
-  brewNames: string[];
 };
 
 export type SummaryView = {
@@ -76,11 +80,11 @@ export type SummaryView = {
 
 /**
  * The two tests a card must pass to count as contested: demand above supply, and at least two
- * committed claimants. Shared by `loadContestedCards` and `countContestedCards`, so the two can
+ * claimants holding a copy (`holdsCopy`: a committed deck, or a brew the player gave one to). Shared by `loadContestedCards` and `countContestedCards`, so the two can
  * never drift into disagreeing about which cards are contested.
  */
 function isContested(a: Availability): boolean {
-  return a.hard > a.owned && a.claims.filter((c) => c.mature).length >= 2;
+  return a.hard > a.owned && a.claims.filter(holdsCopy).length >= 2;
 }
 
 export async function loadContestedCards(
@@ -175,7 +179,6 @@ function buildContestedCard(
     fromImport: frozen.fromImport,
     owned: a.owned,
     claimants: allocateClaims(a),
-    brewNames: a.claims.filter((c) => !c.mature).map((c) => c.name),
   };
 }
 

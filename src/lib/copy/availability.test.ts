@@ -110,7 +110,7 @@ describe("availabilityCopy", () => {
       "short 5, also in 1 deck",
     );
     expect(availabilityCopy.marker.overAria(5, 1)).toBe(
-      "1 of your committed decks includes this card and you own 5 too few",
+      "1 of your decks includes this card and you own 5 too few",
     );
     expect(availabilityCopy.deckSummary.ariaLabel(1)).toBe(
       "1 card in this deck is over-committed",

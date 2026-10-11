@@ -296,8 +296,13 @@ export function ContestedCardRow({
     });
   };
   // A commander's copy can never be given away, so a row where every copy is a commander's has
-  // nothing to choose — and says so rather than drawing a queue nobody can change.
-  const spare = Math.max(card.owned - card.claimants.reduce((n, c) => n + c.commanderCopies, 0), 0);
+  // nothing to choose — and says so rather than drawing a queue nobody can change. Only a
+  // COMMITTED commander holds its copy (not `brew`); a brew led by the card claims it softly and
+  // sets no ceiling, exactly as the claim model's `commander_copies_committed` reads it.
+  const spare = Math.max(
+    card.owned - card.claimants.reduce((n, c) => n + (c.brew ? 0 : c.commanderCopies), 0),
+    0,
+  );
   const nothingToChoose = spare === 0;
   const folded = card.claimants.some((c) => c.commanderCopies > 0 && c.quantity > c.commanderCopies);
   // Copies that could go to any deck: the supply less what commanders hold, capped at what this
@@ -328,7 +333,8 @@ export function ContestedCardRow({
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
-    claimants.reduce((n, c) => n + Math.max(c.allocated - c.commanderCopies, 0), 0),
+    // A brew holds only the copy it was given; its soft share of the leftover is not given out.
+    claimants.reduce((n, c) => n + (c.brew ? c.granted : Math.max(c.allocated - c.commanderCopies, 0)), 0),
     inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the
@@ -534,18 +540,6 @@ export function ContestedCardRow({
           );
         })}
       </ul>
-
-      {/* A brew is named and excluded in one line. Omitting it silently would make the supply
-          count above quietly wrong; listing it as an option would invite a certain refusal. */}
-      {card.brewNames.length === 1 ? (
-        <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.draftNote(card.brewNames[0])}
-        </p>
-      ) : card.brewNames.length > 1 ? (
-        <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
-          {copy.contested.draftNoteMany(card.brewNames.length)}
-        </p>
-      ) : null}
 
       {nothingToChoose ? (
         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>

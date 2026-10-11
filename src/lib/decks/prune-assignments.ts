@@ -15,7 +15,8 @@ type Runner = Pick<Tx, "execute">;
  * claims that card":
  *
  *   A COMMIT that produces a version without the card. The reservation was made about a list
- *   the deck has since changed.
+ *   the deck has since changed. For a BREW, which claims off its live list, the list edit itself
+ *   (every `delete(deckCards)` reaches here through `pruneOrphanProxies`).
  *   A PROXY. The claim model anti-joins deck_proxies, so a proxied card is not claimed at all —
  *   the deck is covered while owning nothing, which is the whole point of the feature.
  *
@@ -38,19 +39,31 @@ export async function pruneOrphanAssignments(tx: Runner, deckId: string): Promis
     delete from card_assignments a
     where a.deck_id = ${deckId}
       and (
-        -- No committed claim on this card: either the deck has no version at all, or its newest
-        -- one does not list it. distinct-on rather than a max(), because the newest version is
-        -- identified by its number and this has to agree with the claim model's own choice.
-        not exists (
-          select 1
-          from (
-            select distinct on (v.deck_id) v.id
-            from deck_versions v
-            where v.deck_id = a.deck_id
-            order by v.deck_id, v.number desc
-          ) nv
-          join deck_version_cards vc on vc.version_id = nv.id
-          where vc.oracle_id = a.oracle_id
+        -- No claim on this card. A COMMITTED deck claims what its newest version lists;
+        -- distinct-on rather than a max(), because the newest version is identified by its number
+        -- and this has to agree with the claim model's own choice. A BREW (no version) claims its
+        -- live list, and since 2026-10-11 may hold a reservation against it (all-decks cart).
+        -- Commander copies are never reservable, so the commander columns are no claim here.
+        (
+          exists (select 1 from deck_versions v where v.deck_id = a.deck_id)
+          and not exists (
+            select 1
+            from (
+              select distinct on (v.deck_id) v.id
+              from deck_versions v
+              where v.deck_id = a.deck_id
+              order by v.deck_id, v.number desc
+            ) nv
+            join deck_version_cards vc on vc.version_id = nv.id
+            where vc.oracle_id = a.oracle_id
+          )
+        )
+        or (
+          not exists (select 1 from deck_versions v where v.deck_id = a.deck_id)
+          and not exists (
+            select 1 from deck_cards dc
+            where dc.deck_id = a.deck_id and dc.oracle_id = a.oracle_id
+          )
         )
         -- …or the deck prints it, which removes the claim just as surely.
         or exists (

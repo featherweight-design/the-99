@@ -311,6 +311,28 @@ describe("CardModal allocation receipt", () => {
     expect(screen.getByText(c.detailDraftsUncounted(1))).toBeInTheDocument();
   });
 
+  // A brew the player GAVE a copy to holds it (2026-10-11): it reads `holds`, not `wants`, and it
+  // is counted, so it is not one of the uncommitted decks the line says the figures leave out.
+  it("reads a brew given a copy as holding it, and leaves it out of the uncounted line", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: {
+        owned: 1, hard: 2, soft: 1, free: -1,
+        claims: [
+          { ...claim("d1", "Prismari Artistry", 1, true), since: 1_000 },
+          { ...claim("d2", "HD - Gishath", 1, false), granted: 1 },
+          { ...claim("d3", "Sketchbook", 1, false) },
+        ],
+      },
+    });
+    const brewRow = screen.getByText("HD - Gishath").closest("li")!;
+    expect(brewRow.textContent).toContain(c.detailClaimHolds(1));
+    expect(brewRow.textContent).not.toContain(c.detailClaimWants(1));
+    expect(screen.getByText(c.detailDraftsUncounted(1))).toBeInTheDocument();
+    expect(screen.queryByText(c.detailDraftsUncounted(2))).toBeNull();
+  });
+
   // In the soft state every claimant is a brew and `detailSoftNote` is the whole story,
   // so this line would be the same fact twice.
   it("leaves the line out when no committed deck is involved", () => {

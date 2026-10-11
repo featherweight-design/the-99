@@ -10,11 +10,11 @@
 // a draft merely lists is still in the box, and a card you own three
 // of and lent out one of is not a conflict.
 
-import { availabilityState, type Availability } from "./availability";
+import { availabilityState, holdsCopy, type Availability } from "./availability";
 
 /**
- * Per deck id, how many of its owned cards a *different* committed deck has
- * sleeved. A deck with no such card is absent from the map rather than present
+ * Per deck id, how many of its owned cards a *different* deck holds: a committed
+ * deck that has sleeved it, or a brew the player gave a copy to (`holdsCopy`). A deck with no such card is absent from the map rather than present
  * at zero — the clause is not drawn at zero, so the two are the same fact.
  *
  * The vantage is the whole collection's, not the deck's own: `free === 0`
@@ -36,12 +36,12 @@ export function inUseElsewhereByDeck(
     let matureClaims = 0;
     let soleMatureId: string | null = null;
     for (const claim of a.claims) {
-      if (!claim.mature) continue;
+      if (!holdsCopy(claim)) continue;
       matureClaims += 1;
       soleMatureId = claim.id;
     }
-    // A brew's claim is not "in use", so a card no committed deck has sleeved
-    // is nobody's conflict.
+    // A brew's claim is not "in use" unless the player gave it a copy, so a card
+    // no deck holds is nobody's conflict.
     if (matureClaims === 0) continue;
     for (const claim of a.claims) {
       if (matureClaims === 1 && soleMatureId === claim.id) continue;
