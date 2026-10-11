@@ -52,6 +52,20 @@ afterEach(() => {
 });
 
 describe("callModel", () => {
+  it("streams when asked, reads the final message, and reports each response's stop reason", async () => {
+    const create = vi.fn();
+    const stream = vi.fn(() => ({ finalMessage: async () => reply({ answer: "x" }, { input_tokens: 5, output_tokens: 7 }) }));
+    const seen: unknown[] = [];
+    const out = await callModel(
+      { ...req, stream: true, onResponse: (m) => seen.push(m) },
+      { messages: { create, stream } as unknown as ModelDeps["messages"], log: quiet },
+    );
+    expect(out).toMatchObject({ ok: true, value: { answer: "x" } });
+    expect(stream).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
+    expect(seen).toEqual([{ stopReason: "end_turn", outputTokens: 7 }]);
+  });
+
   it("returns the parsed value and the usage the response reported", async () => {
     const { messages } = scripted([reply({ answer: "x" }, { input_tokens: 812, output_tokens: 90 })]);
     expect(await callModel(req, { messages, log: quiet })).toEqual({

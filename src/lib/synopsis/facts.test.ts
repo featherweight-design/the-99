@@ -41,6 +41,33 @@ function profile(): DeckProfile {
   } as unknown as DeckProfile;
 }
 
+describe("buildSynopsisFacts — the colors the lands make", () => {
+  const withLands = (identity: string[], lands: [string, string, string][]) => {
+    const p = profile();
+    return {
+      ...p,
+      colours: { ...p.colours, identity },
+      cards: [...p.cards.filter((c) => c.name !== "Mountain"), ...lands.map(([name, typeLine]) => ({
+        oracleId: `id-${name}`, name, typeLine, cmc: 0, quantity: 1, layout: "normal",
+      }))],
+    } as unknown as DeckProfile;
+  };
+
+  it("reads what the lands ADD, so a five-color deck with no black source makes four", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [
+      ["Plains", "Basic Land — Plains", ""], ["Island", "Basic Land — Island", ""],
+      ["Mountain", "Basic Land — Mountain", ""], ["Forest", "Basic Land — Forest", ""],
+    ]);
+    expect(buildSynopsisFacts(deck, new Map()).landColors).toEqual(["W", "U", "R", "G"]);
+  });
+
+  it("counts an any-color land as every color the identity holds", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""], ["Plains", "Basic Land — Plains", ""]]);
+    const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);
+    expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "B", "R", "G"]);
+  });
+});
+
 describe("buildSynopsisFacts", () => {
   // The harness's refusals (2026-09-24): 41 of 56 `uncomputed_figure` Mulligan lines stated the
   // complement of the keepable range, and 23 a turn or a mana total the facts did not hold. Both
