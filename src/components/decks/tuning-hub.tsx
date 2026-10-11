@@ -190,13 +190,16 @@ export function TuningHub({
   const opened = openTool ? tools.find((t) => t.tool === openTool) ?? null : null;
   const openedView = opened ? views.find((v) => v.tool === opened.tool)! : null;
 
+  // The keys step over an inert tool's tab, as a press cannot open it either (it is disabled), so
+  // focus never lands on a control that cannot take it.
   const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const ids: (TuningTool | null)[] = [null, ...tools.map((t) => t.tool)];
-    const next = e.key === "ArrowRight" ? (index + 1) % ids.length
-      : e.key === "ArrowLeft" ? (index - 1 + ids.length) % ids.length
-      : e.key === "Home" ? 0 : e.key === "End" ? ids.length - 1 : -1;
-    if (next < 0) return;
+    const live = (i: number) => ids[i] === null || ids[i] === openTool || !views.find((v) => v.tool === ids[i])?.inert;
+    const step = e.key === "ArrowRight" || e.key === "Home" ? 1 : e.key === "ArrowLeft" || e.key === "End" ? -1 : 0;
+    if (step === 0) return;
     e.preventDefault();
+    let next = e.key === "Home" ? 0 : e.key === "End" ? ids.length - 1 : (index + step + ids.length) % ids.length;
+    while (!live(next)) next = (next + step + ids.length) % ids.length;
     const id = ids[next];
     tabRefs.current.get(id ?? "all")?.focus();
     open(id, { focus: false });
@@ -208,7 +211,7 @@ export function TuningHub({
       ref={sectionRef}
       aria-labelledby="tuning-hub-heading"
       data-tuning-hub=""
-      className="flex flex-col gap-[12px] pt-[16px] md:gap-[14px]"
+      className={`flex flex-col gap-[12px] pt-[16px] ${opened ? "md:gap-[14px]" : ""}`}
       style={{ borderTop: "1px solid var(--border)", scrollMarginTop: 16 }}
     >
       <h2 id="tuning-hub-heading" className="font-display text-[17px] font-normal md:text-[19px]" style={{ color: "var(--fg)" }}>
@@ -238,7 +241,12 @@ export function TuningHub({
                       : `border-transparent font-medium ${view?.inert ? "text-[var(--fg-locked)]" : "text-[var(--fg-muted)]"}`
                   }`}
                 >
-                  {id ? <span style={{ color: active ? "var(--accent)" : "inherit" }}><TuningToolMark tool={id} size={14} /></span> : null}
+                  {id ? (
+                    // The mark's own ink by state (design table `TuningToolMark`), apart from its label's.
+                    <span style={{ color: active ? "var(--accent)" : view?.inert ? "var(--fg-locked)" : "var(--fg-body)" }}>
+                      <TuningToolMark tool={id} size={14} />
+                    </span>
+                  ) : null}
                   {id ? NAMES[id] : copy.allTools}
                   {view?.running ? <span aria-hidden="true" className="anim-dots h-[6px] w-[6px] rounded-full" style={{ background: "var(--accent)" }} /> : null}
                 </button>

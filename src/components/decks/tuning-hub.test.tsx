@@ -70,14 +70,18 @@ describe("TuningHub landing", () => {
   });
 
   it("marks a run in flight on its own tile, with the elapsed time ticking", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // A fixed clock, advanced by hand: the elapsed time is read off Date.now, so a real clock
+    // under a loaded machine would move it by an unknown amount.
+    vi.useFakeTimers();
     try {
+      vi.setSystemTime(new Date("2026-10-11T12:00:00Z"));
       const start = new Date(Date.now() - 14_000).toISOString();
       read.mockResolvedValue({ suggested_changes: { kind: "running", startedAt: start }, proposed_cuts: null });
       render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
-      await waitFor(() => expect(tile("suggested").hasAttribute("data-running")).toBe(true));
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(tile("suggested").hasAttribute("data-running")).toBe(true);
       expect(tile("suggested").textContent).toContain(copy.running(copy.runningWords.suggested, "0:14"));
-      await act(async () => { vi.advanceTimersByTime(3000); });
+      await act(async () => { vi.advanceTimersByTime(3000); await Promise.resolve(); });
       expect(tile("suggested").textContent).toContain(copy.running(copy.runningWords.suggested, "0:17"));
       // Re-read at the tools' cadence while it runs; the other tile is untouched.
       expect(read.mock.calls.length).toBeGreaterThan(1);
@@ -152,6 +156,14 @@ describe("TuningHub opening a tool", () => {
     rerender(<div><TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} /></div>);
     await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start" }));
     expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" }));
+  });
+
+  it("steps the arrow keys over an inert tool's tab", () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
+    fireEvent.click(tile("suggested"));
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Suggested changes" }), { key: "ArrowRight" });
+    // Proposed cuts is inert at 100, so the next stop wraps to All tools: the landing.
+    expect(tile("cuts")?.hasAttribute("data-inert")).toBe(true);
   });
 
   it("resets to the landing when it mounts again (the Analysis tabpanel unmounts on a tab switch)", () => {

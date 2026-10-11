@@ -617,7 +617,7 @@ export function SpineDesktop({
                   type="button"
                   data-shortcut="proposed-cuts"
                   onClick={onProposedCuts}
-                  className="ml-[10px] border-b border-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent)]"
+                  className="ml-[10px] border-b border-b-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent)]"
                 >
                   {tuningHubCopy.shortcuts.proposedCuts}
                 </button>
