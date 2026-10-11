@@ -22,6 +22,7 @@ import {
 } from "./arrivals";
 import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
+import { holdsCopy } from "../decks/availability";
 
 /** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
 export async function deckNamesFor(userId: string): Promise<Record<string, string>> {
@@ -126,10 +127,11 @@ export async function writeArrivalsReceipt(args: {
     claims[oracleId] = {
       owned: a.owned,
       hard: a.hard,
-      // Committed claimants, counted as DECKS. A contested row is a choice between decks, so one
-      // deck wanting three copies of a card the player owns one of is short rather than
-      // contested — see the note in `arrivals.ts`.
-      committedDecks: a.claims.filter((c) => c.mature).length,
+      // Claimants holding a copy (`holdsCopy`: a committed deck, or a brew the player gave one
+      // to), counted as DECKS. A contested row is a choice between decks, so one deck wanting
+      // three copies of a card the player owns one of is short rather than contested — see the
+      // note in `arrivals.ts`. The same test `isContested` reads, so the two agree.
+      committedDecks: a.claims.filter(holdsCopy).length,
     };
   }
 

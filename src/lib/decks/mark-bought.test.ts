@@ -31,8 +31,9 @@ describe("receiptFacts", () => {
 
   it("never names a brew for its soft share (a brew has no since)", () => {
     const brew = { ...claim("brew", 0, 1, false), since: null };
-    const after = snap(1, [brew, claim("source", 2)]);
-    expect(receiptFacts(null, after, { owned: 1, free: 0, soft: 0 }, "source").tookCopy).toEqual([]);
+    // Two copies: the source takes one and the brew reads the spare as its soft share.
+    const after = snap(2, [brew, claim("source", 2)]);
+    expect(receiptFacts(null, after, { owned: 2, free: 0, soft: 0 }, "source").tookCopy).toEqual([]);
   });
 
   it("names a brew the player gave the copy to (2026-10-11)", () => {

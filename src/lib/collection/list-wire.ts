@@ -14,7 +14,9 @@
 //     sends a one-year `max-age`. A URL of any other shape crosses unchanged.
 //
 // Decoding restores exactly what was encoded, nothing invented: `decodeCollection(encode…)`
-// equals the list it started from, which `list-wire.test.ts` asserts on every field.
+// equals the list it started from, which `list-wire.test.ts` asserts on every field. One
+// deliberate exception: the claim bit carries `holdsCopy`, so a brew the player gave a copy to
+// decodes as `mature: true` without its `granted` (a marker asks only whether the deck holds it).
 import { holdsCopy, type AvailabilitySummary } from "../decks/availability";
 import type { BrowseListCard } from "./browse";
 

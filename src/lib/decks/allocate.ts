@@ -39,7 +39,7 @@ export function allocate(
 /**
  * Who holds each copy, read straight off an availability.
  *
- * The committed claims in seniority order with `allocate` applied, which is the pair every
+ * Every claim in seniority order (brews last) with `allocate` applied, which is the pair every
  * caller wants and the pair that has to stay together: `allocate` is documented as taking its
  * claimants in `(since, deckId)` order, and `claims` arrives ordered by deck NAME. A caller
  * that forgot the sort would get a plausible allocation in the wrong queue order, which is

@@ -13,8 +13,8 @@
 import { availabilityState, holdsCopy, type Availability } from "./availability";
 
 /**
- * Per deck id, how many of its owned cards a *different* committed deck has
- * sleeved. A deck with no such card is absent from the map rather than present
+ * Per deck id, how many of its owned cards a *different* deck holds: a committed
+ * deck that has sleeved it, or a brew the player gave a copy to (`holdsCopy`). A deck with no such card is absent from the map rather than present
  * at zero — the clause is not drawn at zero, so the two are the same fact.
  *
  * The vantage is the whole collection's, not the deck's own: `free === 0`
