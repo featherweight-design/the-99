@@ -148,7 +148,7 @@ function GradeTile({ grade, benchmarks, rows, onOpen }: { grade: Grade; benchmar
     // No combo line: no meter (five empty segments would read as zero) and no opener. A dashed
     // panel at full height, inside the row on the phone (design call 5).
     return (
-      <div data-grade={grade} data-no-combo className={w("md:min-w-0 md:rounded-[9px] md:border md:border-dashed md:border-[color:var(--border-dashed)] md:p-0", "border-b border-[color:var(--border)] p-[10px]")}>
+      <div data-grade={grade} data-no-combo className={w("md:min-w-0 md:rounded-[9px] md:border md:border-dashed md:border-[color:var(--border-dashed)] md:p-0", "border-b border-b-[color:var(--border)] p-[10px]")}>
         <div className={w("md:min-h-0 md:justify-start md:gap-[8px] md:rounded-none md:border-0 md:px-[14px] md:pb-[11px] md:pt-[12px]", "flex min-h-[104px] flex-col justify-center gap-[7px] rounded-[8px] border border-dashed border-[color:var(--border-dashed)] px-[12px] py-[10px]")}>
           <div className={w("md:flex-col md:items-start md:gap-[8px]", "flex items-baseline justify-between gap-[10px]")}>
             <span className={w("md:text-[12px]", "text-[12.5px] font-semibold text-[color:var(--fg)]")}>{name}</span>
@@ -168,12 +168,12 @@ function GradeTile({ grade, benchmarks, rows, onOpen }: { grade: Grade; benchmar
       data-step={step}
       className={w(
         "md:gap-[8px] md:rounded-[9px] md:border md:border-[color:var(--border-strong)] md:bg-[color:var(--surface)] md:px-[14px] md:pb-[11px] md:pt-[12px] md:min-w-0",
-        "flex flex-col border-b border-[color:var(--border)] px-[13px] pt-[12px]",
+        "flex flex-col border-b border-b-[color:var(--border)] px-[13px] pt-[12px]",
       )}
     >
       <div className={w("md:flex-col md:items-start md:gap-[8px]", "flex items-baseline justify-between gap-[10px]")}>
         <span className={w("md:text-[12px]", "text-[12.5px] font-semibold text-[color:var(--fg)]")}>{name}</span>
-        <span className={w("md:text-[18px]", "font-[family-name:var(--display)] text-[15px] font-bold leading-[1.1] text-[color:var(--fg)]")}>{word}</span>
+        <span className={w("md:text-[18px]", "font-display text-[15px] font-bold leading-[1.1] text-[color:var(--fg)]")}>{word}</span>
       </div>
       <span role="img" aria-label={copy.stepAria(name, word, step)} className={w("md:mt-0", "mt-[9px] grid grid-cols-[repeat(5,minmax(0,1fr))] gap-[3px]")}>
         {[1, 2, 3, 4, 5].map((i) => (
@@ -267,7 +267,7 @@ function Opener({ label, aria, rows, onPress }: { label: string; aria: string; r
         + (rows ? "" : "md:min-h-0 md:text-[9.5px]")
       }
     >
-      <span className="whitespace-nowrap border-b border-dotted border-[color:var(--accent)]">
+      <span className="whitespace-nowrap border-b border-dotted border-b-[color:var(--accent)]">
         {label}
         <span aria-hidden="true" className={rows ? "" : "md:hidden"}> →</span>
       </span>
