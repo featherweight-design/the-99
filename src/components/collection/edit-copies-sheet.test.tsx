@@ -221,6 +221,14 @@ describe("Edit copies, removal", () => {
     expect(save().textContent).toBe(c.save);
   });
 
+  it("pairs the keep button with the confirm: one copy reads Remove 1 copy and Keep it", async () => {
+    await mount([held("c21", "263", 1)]);
+    fireEvent.click(screen.getByRole("button", { name: r.action }));
+    expect(save().textContent).toBe(r.confirm(1));
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(save().textContent).toBe(c.save);
+  });
+
   it("says it is the last copy when the lines are taken off one by one, and saves it as a removal", async () => {
     const { onClose } = await mount([held("c21", "263", 1)]);
     fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.add.removeLineAria("Sol Ring") }));
