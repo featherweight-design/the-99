@@ -20,6 +20,7 @@ import { MARK_BOUGHT_MAX } from "../../lib/decks/mark-bought";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { PrintingRegion } from "../cards/printing-region";
+import type { GotItWritten } from "./got-it-receipt";
 
 const c = gotItCopy.confirm;
 const MONO_LABEL = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
@@ -40,8 +41,8 @@ export function GotItConfirm({
   /** The price table's newest `as_of`, which decides whether the row's figure is live. */
   newestAsOf: Date | null;
   onClose: () => void;
-  /** The write landed. */
-  onDone: () => void;
+  /** The write landed: what it recorded, for the receipt (call 5). */
+  onDone: (written: GotItWritten) => void;
   /** The tag behind the scrim reads `adding…` while this is true (A8). */
   onPendingChange: (pending: boolean) => void;
   /** Where focus goes when the confirm closes: the tag that opened it, or a stable fallback. */
@@ -128,7 +129,10 @@ export function GotItConfirm({
         scryfallId: choice.idFor[finish] ?? choice.scryfallId, finish, quantity: qty, expected, id: pressId.current,
       });
       if ("applied" in out) {
-        onDone();
+        onDone({
+          entryId: out.applied.id, facts: out.applied.receipt, quantity: qty,
+          setCode: choice.setCode, collectorNumber: choice.collectorNumber, finish,
+        });
         return;
       }
       if ("stale" in out) {

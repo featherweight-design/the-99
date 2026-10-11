@@ -129,7 +129,10 @@ describe("GotItConfirm", () => {
     // The player holds two nonfoil copies of that printing: the write raises them.
     expect(input).toMatchObject({ scryfallId: MOM.scryfallId, finish: "nonfoil", quantity: 3, expected: 2 });
     expect(input.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(onDone).toHaveBeenCalledTimes(1);
+    // The receipt's facts: the entry, the count, the printing and finish written.
+    expect(onDone).toHaveBeenCalledWith({
+      entryId: "e1", facts: null, quantity: 3, setCode: "mom", collectorNumber: "137", finish: "nonfoil",
+    });
   });
 
   it("draws one tile for two variants the collection holds as one, keeping the one priced", async () => {
