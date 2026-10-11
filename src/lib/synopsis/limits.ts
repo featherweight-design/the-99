@@ -23,9 +23,17 @@ export const SYNOPSIS_CONTRACT_VERSION = 7;
 // 8: the v2 method (plan 2026-10-10-overview-accuracy.md): a weakness checklist with tiers and
 //    evidence refs on every claim. Written only while `OVERVIEW_V2_ENABLED` is on.
 export const SYNOPSIS_CONTRACT_VERSION_V2 = 8;
+// 9 and 10: contracts 7 and 8 with the interaction figures read from the evidence benchmarks'
+//    shared reading (plan 2026-10-10-evidence-benchmarks.md, PR 1b). Written only while
+//    `DECK_BENCHMARKS_ENABLED` is on. A section retry across the switch rewrites the whole
+//    document, so one Overview never quotes both readings.
+export const SYNOPSIS_CONTRACT_VERSION_BENCHMARKS = 9;
+export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 10;
 
-/** The contract a write is made under: 8 while the v2 method is on, 7 otherwise. */
-export function synopsisContractVersion(v2: boolean): number {
+/** The contract a write is made under: 8 while the v2 method is on, 7 otherwise; 10 and 9 when
+ *  the interaction figures are the benchmarks' too. */
+export function synopsisContractVersion(v2: boolean, benchmarks = false): number {
+  if (benchmarks) return v2 ? SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS : SYNOPSIS_CONTRACT_VERSION_BENCHMARKS;
   return v2 ? SYNOPSIS_CONTRACT_VERSION_V2 : SYNOPSIS_CONTRACT_VERSION;
 }
 

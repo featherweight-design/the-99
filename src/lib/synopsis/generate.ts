@@ -513,7 +513,7 @@ async function run(
   // Read once: a write is made wholly under one contract, whatever the switch does mid-flight.
   const v2 = overviewV2Enabled();
   const benchmarks = deckBenchmarksEnabled();
-  const contract = synopsisContractVersion(v2);
+  const contract = synopsisContractVersion(v2, benchmarks);
   const reading = await freshReading(deckId, userId, deps.profile);
   if (!reading) return { kind: "no_reading" };
   const current = await readShownSynopsis(deckId, userId, reading.list);
