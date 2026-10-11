@@ -63,6 +63,16 @@ describe("winSpeed", () => {
     expect(byId).toEqual({ art: ["Fabricate"], cre: ["Worldly Tutor"] });
   });
 
+  it("never names a line's own single-copy piece as its search, and names a second copy", () => {
+    const search = "Search your library for an artifact card, reveal it, put it into your hand, then shuffle.";
+    const single = card("Tutor Piece", { typeLine: "Artifact", oracleText: search });
+    const once = winSpeed(padded([single, monument]), [line("v", [single, monument])])!;
+    expect(once.lines[0].foundBy).toEqual([]);
+    const two = { ...single, quantity: 2 };
+    const twice = winSpeed(padded([two, monument]), [line("v", [two, monument])])!;
+    expect(twice.lines[0].foundBy.map((c) => c.name)).toEqual(["Tutor Piece"]);
+  });
+
   it("keeps every line, uncapped", () => {
     const pieces = Array.from({ length: 8 }, (_, i) => card(`P${i}`, { typeLine: "Artifact" }));
     const lines = pieces.slice(1).map((p, i) => line(`v${i}`, [pieces[0], p]));

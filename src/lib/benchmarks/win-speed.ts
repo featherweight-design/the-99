@@ -76,7 +76,11 @@ export function winSpeed(cards: readonly BenchCard[], lines: readonly BenchLine[
     lines: lines
       .map((l, i) => ({
         ...l, odds: hits[i] / SHUFFLES,
-        foundBy: useful.filter((t) => needs[i].some((id) => reaches(t.oracleId, id))).sort((a, b) => a.name.localeCompare(b.name)),
+        // A single copy that is one of this line's pieces is spent as the piece, as the odds spend it;
+        // only a further copy can search for the rest.
+        foundBy: useful
+          .filter((t) => (!l.pieceIds.includes(t.oracleId) || t.quantity > 1) && needs[i].some((id) => reaches(t.oracleId, id)))
+          .sort((a, b) => a.name.localeCompare(b.name)),
       }))
       .sort((a, b) => b.odds - a.odds || a.variantId.localeCompare(b.variantId)),
     tutors: useful.sort((a, b) => a.name.localeCompare(b.name)),
