@@ -84,7 +84,8 @@ type CardDetailContextValue = {
     siblings?: readonly Sibling[],
     atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
     /**
-     * `door`: the card was opened from a Shopping row, so the swap tools' door draws in it (audit F17).
+     * `door`: the card was opened from a Shopping row, so what is registered for that draws in it: the
+     * swap tools' door (audit F17) and I got it's receipt link (A11).
      * A deck alone does not say that, since every opener on the deck page passes one. Kept across
      * Prev/Next, which pages the same list, and dropped on close.
      *
@@ -160,6 +161,13 @@ type CardDetailContextValue = {
    * modal knows neither.
    */
   registerDoor: (door: CardDoor) => () => void;
+  /**
+   * Declare the link a card opened with `{ door: true }` draws on its `In your collection` label line
+   * (I got it, A11), and get back the call that withdraws it. The deck page's Shopping list is the
+   * one caller, for the reason it registers the door. A card it draws a link for always draws the
+   * receipt, even with nothing in it, so the link has a line to sit on.
+   */
+  registerReceiptLink: (link: ReceiptLink) => () => void;
 };
 
 /**
@@ -184,6 +192,9 @@ export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
 
 /** The swap tools' door for one card, in the desktop art column or the phone's strip, or null. */
 export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
+
+/** I got it's link for one card, on the receipt's label line, or null. */
+export type ReceiptLink = (oracleId: string) => ReactNode;
 
 /**
  * A sheet's footer for a card stacked over it, or null for a card that is not one of the sheet's
@@ -1105,6 +1116,12 @@ export function CardDetailProvider({
     return () => setDoorRender((current: CardDoor | null) => (current === render ? null : current));
   }, []);
 
+  const [receiptLinkRender, setReceiptLinkRender] = useState<ReceiptLink | null>(null);
+  const registerReceiptLink = useCallback((render: ReceiptLink) => {
+    setReceiptLinkRender(() => render);
+    return () => setReceiptLinkRender((current: ReceiptLink | null) => (current === render ? null : current));
+  }, []);
+
   const evict = useCallback(
     /**
      * `reread: false` drops the entry and stops there, for a caller whose write has not
@@ -1212,8 +1229,9 @@ export function CardDetailProvider({
       deckOracleIds: deckOracleIds ?? EMPTY_IDS,
       registerSheet,
       registerDoor,
+      registerReceiptLink,
     }),
-    [open, prefetch, pendingOracleId, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor],
+    [open, prefetch, pendingOracleId, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
   );
 
   const index = card ? siblingIds.indexOf(card.oracleId) : -1;
@@ -1345,6 +1363,7 @@ export function CardDetailProvider({
           returnFocusRef={returnFocusRef}
           covered
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
+          receiptLink={held.door && receiptLinkRender ? receiptLinkRender(held.card.oracleId) : null}
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
           onFindDeck={fitsDoor(held.card)}
           fitsOpen={fitsFor !== null}
@@ -1395,6 +1414,8 @@ export function CardDetailProvider({
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.
           door={liveDoor ? (layout) => doorRender!(card.oracleId, layout) : null}
+          // Never beside Edit copies (A11): that link is /collection's, and this one is the deck page's.
+          receiptLink={door && receiptLinkRender && !(collectionEdit && sheetsBelow === 0 && partnerOf === null) ? receiptLinkRender(card.oracleId) : null}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the

@@ -54,4 +54,12 @@ describe("the list's copies figure", () => {
     expect(text).not.toContain("'csv_uploads:' || u.id");
     expect(text).toContain("h.rows -> 0 ->> 'name' as first_name");
   });
+
+  it("resolves a Shopping source to the deck's name now, qualified and scoped to the entry's own user", () => {
+    expect(text).toContain("select d.name from decks d where d.user_id = h.user_id");
+    expect(text).toContain("and d.id = case when h.source ~ '^shopping:[0-9a-f]{8}-");
+    expect(text).toContain("then substr(h.source, 10)::uuid end ) as shopping_deck_name");
+    // The id is read off the source alone, so a deleted deck still yields its id with a null name.
+    expect(text).toContain("then substr(h.source, 10) end as shopping_deck_id");
+  });
 });

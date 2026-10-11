@@ -291,11 +291,19 @@ function OwnedLine({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) 
 }
 
 /**
- * The receipt's label line: its heading, and on /collection the link that edits what the reader
- * owns (collection edit R2 §C1), right-aligned in the modal's accent-underline link style. The
- * phone's tap area is the 44px row; the negative margin keeps the row from growing the block.
+ * The receipt's link style: the modal's accent underline, right-aligned on the label line. The
+ * phone's tap area is the 44px row; the negative margin keeps the row from growing the block. Shared
+ * by /collection's Edit copies and the Shopping door's `Bought this card?` (I got it A11), which
+ * take the same slot and never draw together.
  */
-function ReceiptHeading({ owned, onEditCopies }: { owned: number; onEditCopies: (() => void) | null }) {
+export const RECEIPT_LINK_CLASS =
+  "-my-[16px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] underline underline-offset-2 md:-my-[8px] md:min-h-[32px]";
+
+/**
+ * The receipt's label line: its heading, and the one link it carries: on /collection the link that
+ * edits what the reader owns (collection edit R2 §C1), or from a Shopping row I got it's (A11).
+ */
+function ReceiptHeading({ owned, onEditCopies, link = null }: { owned: number; onEditCopies: (() => void) | null; link?: ReactNode }) {
   const c = availabilityCopy.collection;
   const heading = (
     <div
@@ -305,35 +313,30 @@ function ReceiptHeading({ owned, onEditCopies }: { owned: number; onEditCopies: 
       {c.detailHeading}
     </div>
   );
-  // Without the link the heading is exactly what shipped: no wrapper, nothing reserved.
-  if (!onEditCopies) return heading;
+  // Without a link the heading is exactly what shipped: no wrapper, nothing reserved.
+  if (!onEditCopies && !link) return heading;
   return (
     <div className="flex items-center justify-between gap-[12px]">
       {heading}
       {onEditCopies ? (
-        <button
-          type="button"
-          data-testid="edit-copies-link"
-          onClick={onEditCopies}
-          className="-my-[16px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] underline underline-offset-2 md:-my-[8px] md:min-h-[32px]"
-        >
+        <button type="button" data-testid="edit-copies-link" onClick={onEditCopies} className={RECEIPT_LINK_CLASS}>
           {owned > 0 ? collectionEditCopy.copies.edit : collectionEditCopy.copies.addToCollection}
         </button>
-      ) : null}
+      ) : link}
     </div>
   );
 }
 
 function AvailabilityDetail({
-  card, deckPage, onEditCopies = null,
-}: { card: BrowseCard; deckPage: boolean; onEditCopies?: (() => void) | null }) {
+  card, deckPage, onEditCopies = null, receiptLink = null,
+}: { card: BrowseCard; deckPage: boolean; onEditCopies?: (() => void) | null; receiptLink?: ReactNode }) {
   const a = card.availability;
   const c = availabilityCopy.collection;
   const state = a ? availabilityState(a) : "free";
-  // From /collection the receipt draws even when it has nothing to report, because the link to
-  // edit copies lives on its label line: a card with no claims would otherwise have nowhere to
-  // put it. Anywhere else a receipt with nothing in it stays absent, as it was.
-  if (onEditCopies && (!a || (state === "free" && a.claims.length === 0))) {
+  // From /collection, and from a Shopping row with I got it on, the receipt draws even when it has
+  // nothing to report, because a link lives on its label line: a card with no claims would otherwise
+  // have nowhere to put it. Anywhere else a receipt with nothing in it stays absent, as it was.
+  if ((onEditCopies || receiptLink) && (!a || (state === "free" && a.claims.length === 0))) {
     const owned = a ? a.owned : card.quantity;
     return (
       <div
@@ -341,11 +344,14 @@ function AvailabilityDetail({
         className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
         style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
       >
-        <ReceiptHeading owned={owned} onEditCopies={onEditCopies} />
+        <ReceiptHeading owned={owned} onEditCopies={onEditCopies} link={receiptLink} />
         {owned > 0 ? (
           <div className="mt-[8px] flex items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
             <span className="font-mono" style={{ color: "var(--accent)" }}>×{owned}</span>
           </div>
+        ) : receiptLink ? (
+          // A4: the Shopping door says `none`, so the receipt reads `none → ×1` once a purchase lands.
+          <div className="mt-[8px] font-mono text-[13px]" style={{ color: "var(--fg-faint)" }}>{collectionEditCopy.copies.none}</div>
         ) : null}
       </div>
     );
@@ -379,7 +385,7 @@ function AvailabilityDetail({
       className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
     >
-      <ReceiptHeading owned={a.owned} onEditCopies={onEditCopies} />
+      <ReceiptHeading owned={a.owned} onEditCopies={onEditCopies} link={receiptLink} />
       <div
         className="mt-[8px] flex items-center gap-[8px] text-[13px]"
         style={{ color: "var(--fg-body)" }}
@@ -687,6 +693,7 @@ export function CardModal({
   footer = null,
   onFindDeck = null,
   onEditCopies = null,
+  receiptLink = null,
   fitsOpen = false,
   door = null,
   covered = false,
@@ -758,6 +765,12 @@ export function CardModal({
    * already drawn.
    */
   onEditCopies?: (() => void) | null;
+  /**
+   * I got it's `Bought this card?` (A11), for a card a Shopping row opened: drawn right-aligned on
+   * the receipt's label line, in Edit copies' slot, and the receipt draws even with nothing in it.
+   * The provider never passes both.
+   */
+  receiptLink?: ReactNode;
   /** The picker the door opened is up, so its close hands focus back to the door. */
   fitsOpen?: boolean;
   /** The deck this card was opened from, which scopes the proxy control. Null
@@ -2467,7 +2480,7 @@ export function CardModal({
                 deckName={deckName}
                 onSelectPartner={onSelectCard}
               />
-              <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} />
+              <AvailabilityDetail card={card} deckPage={deckPage} onEditCopies={onEditCopies} receiptLink={receiptLink} />
               <ProxyDetail card={card} />
 
               {/* Deck-scoped, and absent without a deck: opened from `/collection`

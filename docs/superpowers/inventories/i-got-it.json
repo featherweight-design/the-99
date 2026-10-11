@@ -1,6 +1,6 @@
 {
-  "feature": "I got it: the buy tag as the way in, the confirm (PR 2), and the receipt, undo and held slot (PR 3)",
-  "note": "Run against a server started with SHOPPING_MARK_BOUGHT_ENABLED=true and COLLECTION_EDIT_ENABLED=true. The PR 2 rows are READ-ONLY: no step submits the confirm. IGI_DECK is a deck the signed-in account owns with at least one Shopping row (an unowned or short card). Pull real decks with pull:staging onto a scratch branch first; a fixture account rarely has a Shopping list worth reading. PR 3's rows `receipt` and `undo-warning` WRITE and never revert: each presses Add, so the signed-in account's collection grows by one copy per cell, and contact-sheet.mjs has no cleanup step. A phone run therefore changes what the desktop run finds (the row may have left the Shopping list). Give each width its own deck (one IGI_DECK, or IGI_SHORT_DECK, per run), or run the widths separately with `\"widths\": [\"phone\"]` and then `[\"desktop\"]` against a fresh copy. Run them on a scratch Neon branch holding a pull:staging copy, never on staging or production. `undo-warning` opens the warning and stops there, writing nothing further; it needs IGI_SHORT_DECK: a deck whose Shopping row's card a second, OLDER committed deck also lacks, so the undo would leave that other deck short. Without one the undo goes straight through (and that run reverts its own write) and the row photographs the done form instead.",
+  "feature": "I got it: the buy tag as the way in, the confirm (PR 2), the receipt, undo and held slot (PR 3), and History's deck line and the card details' way in (PR 4)",
+  "note": "Run against a server started with SHOPPING_MARK_BOUGHT_ENABLED=true and COLLECTION_EDIT_ENABLED=true. The PR 2 rows are READ-ONLY: no step submits the confirm. IGI_DECK is a deck the signed-in account owns with at least one Shopping row (an unowned or short card). Pull real decks with pull:staging onto a scratch branch first; a fixture account rarely has a Shopping list worth reading. PR 3's rows `receipt` and `undo-warning` WRITE and never revert: each presses Add, so the signed-in account's collection grows by one copy per cell, and contact-sheet.mjs has no cleanup step. A phone run therefore changes what the desktop run finds (the row may have left the Shopping list). Give each width its own deck (one IGI_DECK, or IGI_SHORT_DECK, per run), or run the widths separately with `\"widths\": [\"phone\"]` and then `[\"desktop\"]` against a fresh copy. Run them on a scratch Neon branch holding a pull:staging copy, never on staging or production. `undo-warning` opens the warning and stops there, writing nothing further; it needs IGI_SHORT_DECK: a deck whose Shopping row's card a second, OLDER committed deck also lacks, so the undo would leave that other deck short. Without one the undo goes straight through (and that run reverts its own write) and the row photographs the done form instead. PR 4's rows are READ-ONLY. `history` and `history-revert` need entries on /collection/history written by a Shopping purchase (any PR 3 WRITING run leaves them; a deleted deck's form needs a purchase whose deck was deleted after). IGI_HISTORY_CARD is the card such a live entry is titled by; `history-revert` opens the revert confirmation and stops, so it writes nothing. IGI_CARD is an unowned card on IGI_DECK's Shopping list and IGI_OWNED_CARD a spoken-for one (owned, every copy claimed); the details rows open each from its name, and `details-confirm` presses Bought this card? and stops at the confirm.",
   "rows": [
     {
       "id": "shopping",
@@ -136,6 +136,255 @@
           "name": "^Undo adding ",
           "wait": "[role=dialog]",
           "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "label": "/collection/history: From Shopping entries with their deck line (live, reverted pair, deleted deck)",
+      "view": "src/components/collection/history-list.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "li[id^=entry-]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "history-revert",
+      "label": "/collection/history: Revert on a From Shopping entry warns about every deck, its own included",
+      "view": "src/components/collection/revert-confirm.tsx",
+      "steps": [
+        {
+          "goto": "/collection/history",
+          "wait": "li[id^=entry-]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Revert ${IGI_HISTORY_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "details-unowned",
+      "label": "/decks/[id] Shopping, card details from an unowned row: the receipt reads none, with Bought this card? on its label line",
+      "view": "src/components/decks/got-it-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "details-unowned-phone",
+      "label": "/decks/[id] Shopping, card details from an unowned row: the receipt reads none, with Bought this card? on its label line (phone: the sheet opened to All details, where the receipt sits)",
+      "view": "src/components/decks/got-it-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "details-owned",
+      "label": "/decks/[id] Shopping, card details from a spoken-for row: the shipped receipt, with Bought this card? on its label line",
+      "view": "src/components/decks/got-it-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_OWNED_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "details-owned-phone",
+      "label": "/decks/[id] Shopping, card details from a spoken-for row: the shipped receipt, with Bought this card? on its label line (phone: the sheet opened to All details, where the receipt sits)",
+      "view": "src/components/decks/got-it-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_OWNED_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "details-confirm",
+      "label": "/decks/[id] Shopping, card details: Bought this card? opens the confirm stacked over the card",
+      "view": "src/components/decks/got-it-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Bought this card\\?$",
+          "wait": "[aria-modal=true]",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "details-confirm-phone",
+      "label": "/decks/[id] Shopping, card details: Bought this card? opens the confirm stacked over the card (phone: the sheet opened to All details, where the receipt sits)",
+      "view": "src/components/decks/got-it-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^All details",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Bought this card\\?$",
+          "wait": "[aria-modal=true]",
+          "settle": 1200
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "details-all-tab",
+      "label": "/decks/[id] All, the same card's details: no Bought this card? (A11)",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${IGI_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for ${IGI_OWNED_CARD}$",
+          "wait": "[role=dialog]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "details-collection",
+      "label": "/collection, an owned card's details: Edit copies alone, no Bought this card? (A11)",
+      "view": "src/components/cards/card-modal.tsx",
+      "steps": [
+        {
+          "goto": "/collection?q=${IGI_OWNED_CARD}&view=list",
+          "wait": "input",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^${IGI_OWNED_CARD}",
+          "wait": "[role=dialog]",
+          "settle": 1500
         }
       ]
     }

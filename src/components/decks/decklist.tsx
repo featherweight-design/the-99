@@ -5,6 +5,7 @@
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
 import { useSwapTools } from "../../lib/swaps/context";
+import { GotItDoorRegistration } from "./got-it-door";
 import { StandInsSheet } from "./stand-ins-sheet";
 import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
@@ -600,8 +601,10 @@ export function Decklist({
   // basket is what every Shopping FIGURE reads (the pill, the strip, both Mana Pool hrefs, the
   // intro and the footer), so the list and its figures bill one set of cards. The list rows alone
   // are what the type and role groups section, since a commander draws in a group of its own.
-  const listShoppingCards = cards.filter(isShoppingCard);
-  const shoppingCards = [...commanderShopping, ...listShoppingCards];
+  // Memoized on the list itself: I got it's card-details link re-registers when this changes, so a
+  // stable identity between reads keeps that from happening on every render.
+  const listShoppingCards = useMemo(() => cards.filter(isShoppingCard), [cards]);
+  const shoppingCards = useMemo(() => [...commanderShopping, ...listShoppingCards], [commanderShopping, listShoppingCards]);
   const visibleCards = filter === "shopping" ? listShoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
@@ -624,6 +627,8 @@ export function Decklist({
   const swapTools = useSwapTools();
   // The stand-ins sheet, mounted by the list rather than by its row: a take takes the row away, and
   // the sheet has to stay to say so. Both views mount it, since a take moves the reader nowhere.
+  // I got it's link in the card modal, for a card a Shopping row opened (A11): commander rows too.
+  const gotItDoor = gotIt ? <GotItDoorRegistration shoppingCards={shoppingCards} newestAsOf={newestAsOf} /> : null;
   const standInsSheet = swapTools ? (
     <>
       {swapTools.standIns ? (
@@ -1042,6 +1047,7 @@ export function Decklist({
     return (
       <div className="flex flex-col">
         {standInsSheet}
+        {gotItDoor}
         <GroupToggle
           allCount={built}
           shoppingCount={shoppingCount}
@@ -1179,6 +1185,7 @@ export function Decklist({
   return (
     <div className="flex flex-col">
       {standInsSheet}
+      {gotItDoor}
       {/* Toggle bar */}
       <GroupToggle
         allCount={built}

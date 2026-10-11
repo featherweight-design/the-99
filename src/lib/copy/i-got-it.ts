@@ -1,7 +1,7 @@
 // The copy of I got it (collection home sub-project 4), behind SHOPPING_MARK_BOUGHT_ENABLED and
-// COLLECTION_EDIT_ENABLED. From the handoff's `i-got-it · copy strings.ts`, adopted as drawn; these carry
-// the row, the key, the confirm, the held slot and the receipt; later PRs add History and the
-// details link. Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
+// COLLECTION_EDIT_ENABLED. From the handoff's `i-got-it · copy strings.ts`, adopted as drawn: the row,
+// the key, the confirm, the held slot, the receipt, History's deck line and the details link.
+// Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
 
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
@@ -16,6 +16,8 @@ export const gotItCopy = {
     keyBuy: "bought it? press to add it",
     /** Replaces `swapToolsCopy.limit.key` in the key while I got it is on (R2 review: shorter). */
     keySwap: "cheaper stand-ins",
+    /** Card details opened from a Shopping row: on the In your collection label line, in Edit copies' slot. */
+    detailsLink: "Bought this card?",
   },
   confirm: {
     /** The card's name follows on its own line. */
@@ -69,6 +71,15 @@ export const gotItCopy = {
     undoFailed: "Couldn't undo that.",
     undoFailedBody: "The copy is still in your collection. You can revert it from History.",
     openHistory: "Open History",
+  },
+  /**
+   * History's deck line under a `From Shopping` entry (§D). The deck name is a link, read at render
+   * from the entry's source, so it is split around the name; the tag's own word is
+   * `collectionEditCopy.history.kinds.shopping`.
+   */
+  history: {
+    fromDeck: (deck: string) => ({ pre: "From", link: deck, post: "'s Shopping list" }),
+    fromDeleted: "From the Shopping list of a deck you've since deleted",
   },
   /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
   shortWarning: {
