@@ -104,7 +104,7 @@ describe("the metrics document", () => {
   it("prints counts and recalls, names what was missed, and lists the decks without an answer", () => {
     const c = base({ keyCards: ["Brainstorm"], weaknesses: [{ topic: "wipes", names: ["Farewell"] }], mulliganPieces: ["Brainstorm"] });
     const text = renderMetrics("t", [scoreCase(c, reply({ keyCards: [{ card: "Brainstorm", job: "j" }] }))], ["imotekh"]);
-    expect(text).toContain("| t | 1 | 0 | 0 | 1 | n/a | 1/1 | 0/1 | no | none |");
+    expect(text).toContain("| t | 1 | 0 | 0 | 1 | n/a | 1/1 | 0/1 | no | n/a | n/a | none |");
     expect(text).toContain("weaknesses: wipes");
     expect(text).toContain("Skipped (no answer supplied): imotekh.");
   });
@@ -144,5 +144,44 @@ describe("toReply", () => {
       assessment: [{ topic: "win_path", verdict: "Weakness", tier: "Critical", line: "One route.", evidence: [] }],
     });
     expect(out.weaknesses).toEqual(["Critical: One route."]);
+  });
+});
+
+describe("the plan check", () => {
+  const AANG = base({
+    plans: {
+      primary: { cards: ["Avatar Aang"], words: ["transform", "flip"] },
+      backups: [{ cards: ["Appa, Steadfast Guardian", "Aang, the Last Airbender"] }],
+    },
+  });
+
+  it("passes a primary plan that states the gold primary", () => {
+    const s = scoreCase(AANG, reply({
+      plans: { primary: "Bend four ways to flip [[Avatar Aang]] and cast spells free.", backups: ["Appa and Aang, the Last Airbender."] },
+      primer: { strategy: ["Bend all four elements to transform [[Avatar Aang]]."] },
+    }));
+    expect(s.plan).toEqual({ primary: true, leads: true });
+  });
+
+  it("fails an answer that leads with the backup combo, in its plans and in its first step", () => {
+    const s = scoreCase(AANG, reply({
+      plans: { primary: "[[Appa, Steadfast Guardian]] and [[Aang, the Last Airbender]] make infinite tokens with the flip.", backups: [] },
+      primer: { strategy: ["[[Appa, Steadfast Guardian]] loops with [[Aang, the Last Airbender]] after the transform."] },
+    }));
+    expect(s.plan).toEqual({ primary: false, leads: false });
+  });
+
+  it("is null without plan gold, and null for the reply's plans when it carries none", () => {
+    expect(scoreCase(base({}), reply({})).plan).toEqual({ primary: null, leads: null });
+    expect(scoreCase(AANG, reply({ primer: { strategy: ["Flip [[Avatar Aang]]."] } })).plan).toEqual({ primary: null, leads: true });
+  });
+
+  it("reads a contract-8 reply's plans through toReply", () => {
+    const raw = {
+      plans: { primary: "Flip it.", backups: ["Combo."] },
+      overview: "O.", primer: { strategy: [], mulligan: { keep: [], sendBack: [] }, tips: [] }, keyCards: [], assessment: [],
+    };
+    expect(toReply(raw).plans).toEqual({ primary: "Flip it.", backups: ["Combo."] });
+    expect(toReply({ ...raw, plans: undefined }).plans).toBeUndefined();
   });
 });

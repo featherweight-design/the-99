@@ -16,6 +16,10 @@ export const RATES: Readonly<Record<string, { input: number; output: number }>> 
   // platform.claude.com/docs/en/about-claude/pricing: $3 in, $15 out, the Sonnet 4.5 rate.
   "claude-sonnet-4-6": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
+  // Checked 2026-10-11 against the claude-api skill's model table (cached 2026-10-06). Haiku 5.5's
+  // rate is for prompts up to 100K tokens; every Overview prompt is far under that.
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
   "claude-opus-5": { input: 5, output: 25 },
   // Opus 5.5, assumed at the Opus 5 rate; the Cuts eval compares the bill to this.
   "claude-opus-5-5": { input: 5, output: 25 },

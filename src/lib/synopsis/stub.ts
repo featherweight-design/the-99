@@ -64,6 +64,7 @@ function asV8(facts: SynopsisFacts, r: SynopsisResponse): SynopsisResponseV8 {
   const ref = (name: string) => refOf(Math.max(0, facts.cards.findIndex((c) => c.name === name)));
   const line = (text: string) => ({ text, evidence: [] as string[] });
   return {
+    plans: { primary: "The commander's own plan.", backups: [] },
     overview: r.overview,
     primer: {
       strategy: r.primer.strategy.map(line),
