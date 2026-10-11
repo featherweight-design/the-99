@@ -1685,7 +1685,7 @@ export const catalogSources = pgTable("catalog_sources", {
   sha256: text("sha256").notNull(),
   ingestedAt: timestamp("ingested_at").notNull().defaultNow(),
 }, (t) => [
-  check("catalog_sources_source_check", sql`${t.source} in ('sets', 'oracle_cards', 'default_cards', 'prices')`),
+  check("catalog_sources_source_check", sql`${t.source} in ('sets', 'oracle_cards', 'default_cards', 'prices', 'precons')`),
 ]);
 
 /**
@@ -2540,3 +2540,44 @@ export const userDataStamps = pgTable("user_data_stamps", {
   userId: text("user_id").primaryKey(),
   stamp: bigint("stamp", { mode: "number" }).notNull().default(0),
 });
+
+/**
+ * MTGJSON's Commander precons (`type === "Commander Deck"`), one row per deck file, replaced whole
+ * by `db:seed:precons` from the `Catalog refresh` artifact (plan `2026-10-11-commander-precons.md`).
+ * Catalog data: no reader owns a row, so it carries no stamp trigger and a cached page keys on the
+ * catalog generation the ingest stamps. `file_name` is the key because names repeat across sets.
+ *
+ * `twin_of` names the deck whose list this one repeats exactly (a Collector's Edition beside its
+ * plain edition), so a reader shows one row for both. `unmapped_count` is the copies the feed lists
+ * that the catalog could not hold (brief lock 3): dropped from `precon_cards`, never hidden.
+ */
+export const precons = pgTable("precons", {
+  fileName: text("file_name").primaryKey(),
+  name: text("name").notNull(),
+  setCode: text("set_code").notNull(),
+  releaseDate: date("release_date").notNull(),
+  twinOf: text("twin_of"),
+  unmappedCount: integer("unmapped_count").notNull().default(0),
+}, (t) => [
+  check("precons_twin_check", sql`${t.twinOf} is null or ${t.twinOf} <> ${t.fileName}`),
+  check("precons_unmapped_check", sql`${t.unmappedCount} >= 0`),
+]);
+
+/**
+ * A precon's cards, exactly as the feed lists them: one row per (card, printing, commander) with
+ * its count, so a deck started from it holds the feed's 100 and never an assumed 99. `scryfall_id`
+ * is the precon's own printing, shown read-only; null when the catalog lacks that printing but has
+ * the card.
+ */
+export const preconCards = pgTable("precon_cards", {
+  fileName: text("file_name").notNull().references(() => precons.fileName, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  scryfallId: uuid("scryfall_id").references(() => printings.scryfallId, { onDelete: "set null" }),
+  quantity: integer("quantity").notNull(),
+  isCommander: boolean("is_commander").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.fileName, t.position] }),
+  check("precon_cards_quantity_check", sql`${t.quantity} > 0`),
+  index("precon_cards_oracle_idx").on(t.oracleId),
+]);

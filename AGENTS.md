@@ -100,6 +100,23 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   so presence is not the same as being stocked now: a sold-out printing keeps its last row with a
   frozen `as_of`, and any reader needing "stocked now" compares that `as_of` to the newest one in
   the table.
+- `pnpm db:seed:precons` replaces `precons` and `precon_cards` from MTGJSON's `Commander Deck`
+  files (plan `2026-10-11-commander-precons.md`). It runs in each `Catalog refresh` leg after
+  printings and before prices, from the same artifact as the rest: `catalog:fetch` keeps MTGJSON's
+  `DeckList.json` as fetched and writes ONE derived file of its own (`mtgjson-precons.json`, the kept
+  fields of every Commander deck), because 197 deck responses cannot be one hash-checkable upstream
+  file. The 197 deck files (~31MB gzipped) are fetched again only when the decks the index lists
+  move or the cached derived file is a week old (`canReuse`); the fetch job keeps it in the Actions
+  cache. Cards map by `scryfallOracleId` and `scryfallId`, never by name: a card the catalog lacks
+  is dropped and counted on its precon (`unmapped_count`), a printing it lacks keeps the card with
+  no printing. Twins are one set's decks with identical lists (16 Collector's Editions on
+  2026-10-11); a Commander Anthology reprint of an older list is its own row. The publish is one
+  transaction under the `catalog-ingest` lock, stamps `catalog_refreshes`, and REFUSES (exit 2,
+  nothing written) under 180 kept decks or over 1% unmapped copies. On a database the precon
+  migration has not reached it warns and exits 0, and `db:catalog-sources record` records nothing
+  for `precons` there, so a refresh that outruns a deploy stays green. `pnpm check:mtgjson` checks
+  the contract daily in `Upstream contract checks`; `pnpm measure:precons` runs the planner against
+  staging, read-only, and names every precon card a started deck would meet as illegal.
 - `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC,
   about 4,750 rate-limited requests. Since the card-data replicate plan (2026-09-28) it is built
   ONCE, on staging, and copied to production. The `Commander index` workflow chains on every

@@ -16,6 +16,10 @@ import {
   type FetchSource, type Manifest, type ManifestFile, type ManifestSource,
 } from "../src/lib/catalog/fetch-dir";
 import { MANAPOOL_HEADERS, MANAPOOL_SINGLES_URL } from "../src/lib/manapool/client";
+import {
+  canReuse, commanderDeckEntries, fetchPreconDecks, indexKey, MTGJSON_BASE, MTGJSON_DECKLIST_URL, MTGJSON_HEADERS,
+  parseFeed, PRECON_FEED_FILE, PRECON_INDEX_FILE, type PreconFeed,
+} from "../src/lib/precons/feed";
 import { SCRYFALL_HEADERS, SETS_INDEX } from "../src/lib/scryfall/http";
 
 const dir = process.argv[2] ?? process.env.CATALOG_FETCH_DIR;
@@ -48,6 +52,33 @@ async function single(source: FetchSource, url: string, headers: Record<string, 
   return { source, updatedAt: at, sha256: f.sha256, files: [f] };
 }
 
+// MTGJSON's precons: the index as fetched, then our derived file of its Commander decks. The 197
+// deck files (~31MB gzipped) are fetched again only when the decks the index lists have moved, or
+// the cached derived file is a week old; otherwise the file a previous run cached is reused.
+// `PRECON_REUSE_FILE` names that cached file (the workflow restores it from the Actions cache).
+async function precons(): Promise<ManifestSource> {
+  const at = new Date().toISOString();
+  const index = await download(MTGJSON_DECKLIST_URL, PRECON_INDEX_FILE, MTGJSON_HEADERS, 60_000);
+  const entries = commanderDeckEntries(JSON.parse(readFileSync(fetchedPath(dir!, PRECON_INDEX_FILE), "utf8")));
+  const key = indexKey(entries);
+  let cached: PreconFeed | null = null;
+  const reuse = process.env.PRECON_REUSE_FILE;
+  if (reuse) {
+    try { cached = parseFeed(JSON.parse(readFileSync(reuse, "utf8"))); } catch { cached = null; }
+  }
+  const reused = canReuse(cached, key, new Date());
+  const feed = reused ? cached! : await fetchPreconDecks(entries, key);
+  console.log(`precons: ${entries.length} Commander decks, ${reused ? `reused the deck files fetched ${feed.fetchedAt}` : "fetched every deck file"}`);
+  writeFileSync(fetchedPath(dir!, PRECON_FEED_FILE), JSON.stringify(feed));
+  const body: ManifestFile = {
+    file: PRECON_FEED_FILE,
+    // Derived, not downloaded: the URL names where its decks come from, the hash is our bytes.
+    url: `${MTGJSON_BASE}/decks/{fileName}.json`,
+    ...(await sha256File(fetchedPath(dir!, PRECON_FEED_FILE))),
+  };
+  return { source: "precons", updatedAt: at, sha256: body.sha256, files: [index, body] };
+}
+
 async function main() {
   const fetchedAt = new Date().toISOString();
   const sources = [
@@ -55,6 +86,7 @@ async function main() {
     await bulk("oracle_cards"),
     await bulk("default_cards"),
     await single("prices", MANAPOOL_SINGLES_URL, MANAPOOL_HEADERS, 5 * 60_000),
+    await precons(),
   ];
   const manifest: Manifest = { fetchedAt, sources };
   writeFileSync(fetchedPath(dir!, MANIFEST_FILE), JSON.stringify(manifest, null, 2));
