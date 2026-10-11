@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#454E50;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --btn:#EDE6D8;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#E6E8F0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:none;width:58px;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 0;">
+      <span style="font-family:'Metamorphous',serif;font-size:22px;color:var(--fg);margin-bottom:10px;">99</span>
+      <sc-for list="{{ railIcons }}" as="ri" hint-placeholder-count="5"><span style="{{ ri }}"></span></sc-for>
+      <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">HH</span>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative;">
+
+    <sc-if value="{{ phoneTop }}" hint-placeholder-val="{{ false }}">
+      <div style="height:56px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);">
+        <span style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.3em;color:var(--accent);">THE</span><span style="font-family:'Metamorphous',serif;font-size:24px;color:var(--fg);">99</span></span>
+        <span style="width:36px;height:36px;border-radius:9px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent);">HH</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showHero }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.hero }}">
+        <span style="position:absolute;top:12px;left:14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">commander art</span>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <span style="position:absolute;left:14px;bottom:12px;display:flex;border:1px solid var(--border-strong);border-radius:7px;background:color-mix(in oklab, var(--bg) 70%, transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);white-space:nowrap;"><span style="padding:6px 10px;border-right:1px solid var(--border-strong);">⛶ Card details</span><span style="padding:6px 10px;">⇄ Change commander</span></span>
+        </sc-if>
+        <div style="{{ s.heroText }}">
+          <div style="display:flex;align-items:center;gap:8px;"><h1 style="{{ s.deckName }}">{{ deck.name }}</h1><span style="font-size:13px;color:var(--fg-faint);">✎</span></div>
+          <sc-if value="{{ deck.hasIntent }}" hint-placeholder-val="{{ false }}"><p data-deck-intent style="{{ s.intent }}">{{ deck.intent }}</p></sc-if>
+          <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:{{ s.cmdSize }};color:var(--fg-body);white-space:nowrap;"><span style="flex:none;width:9px;height:9px;border-radius:2px;background:{{ deck.pip }};"></span>{{ deck.commander }}</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><sc-for list="{{ deck.pills }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.t }}</span></sc-for></div>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:12px;margin-top:4px;"><span style="flex:0 1 180px;min-width:60px;height:4px;border-radius:2px;background:var(--border-strong);overflow:hidden;"><span style="display:block;height:4px;width:{{ deck.pct }};background:var(--success);"></span></span><span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg);">{{ deck.built }} <span style="color:var(--fg-faint);">/ 99</span></span><span style="margin-left:auto;flex:none;display:flex;gap:8px;"><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;">Update from a list</span><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;background:var(--btn);font-size:12.5px;font-weight:600;color:var(--bg);">Export</span></span></div>
+          </sc-if>
+        </div>
+      </div>
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px 16px 18px;display:flex;flex-direction:column;gap:16px;background:var(--surface-sunken);">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="flex:1;height:5px;border-radius:3px;background:var(--border-strong);overflow:hidden;"><span style="display:block;height:5px;width:{{ deck.pct }};background:var(--success);"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg);white-space:nowrap;">{{ deck.built }} <span style="color:var(--fg-faint);">/ 99</span></span></div>
+          <div style="display:flex;gap:8px;justify-content:center;"><span style="display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">Update from a list</span><span style="display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">⤓ Export</span></div>
+        </div>
+      </sc-if>
+      <div style="{{ s.versionLine }}">{{ deck.versionLine }}</div>
+      <div style="{{ s.mixWrap }}">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Recommended mix</span>
+        <div style="{{ s.mixGrid }}">
+          <sc-for list="{{ mix }}" as="m" hint-placeholder-count="5">
+            <div style="{{ s.mixCell }}">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--fg-faint);">{{ m.k }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:{{ s.mixFig }};font-weight:600;color:var(--success);">{{ m.v }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">rec {{ m.r }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ compactBar }}" hint-placeholder-val="{{ false }}">
+      <div style="height:44px;flex:none;display:flex;align-items:center;gap:10px;padding:{{ s.barPad }};border-bottom:1px solid var(--border);background:var(--surface-rail);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">↑ hero, version line and Recommended mix, as shipped</span>
+        <span style="margin-left:auto;font-size:13.5px;font-weight:600;color:var(--fg);">{{ deck.name }}</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.tabsWrap }}">
+        <div style="display:flex;align-items:baseline;gap:{{ s.tabGap }};">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><span style="{{ t.box }}"><span style="{{ t.lab }}">{{ t.label }}</span><sc-if value="{{ t.hasCount }}" hint-placeholder-val="{{ true }}"><span style="{{ t.num }}">{{ t.count }}</span></sc-if></span></sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showSegRow }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.segRow }}">
+        <div role="group" aria-label="What this tab shows" data-comment-target="notes-segment" style="{{ s.segGroup }}">
+          <sc-for list="{{ segs }}" as="sg" hint-placeholder-count="4">
+            <sc-if value="{{ sg.divider }}" hint-placeholder-val="{{ false }}"><span aria-hidden style="margin:6px 3px;width:1px;flex:none;align-self:stretch;background:var(--border-strong);"></span></sc-if>
+            <span role="button" aria-pressed="{{ sg.selected }}" style="{{ sg.st }}">{{ sg.label }}<sc-if value="{{ sg.hasCount }}" hint-placeholder-val="{{ true }}"><span style="{{ sg.numSt }}">{{ sg.count }}</span></sc-if></span>
+          </sc-for>
+        </div>
+        <sc-if value="{{ notesView }}" hint-placeholder-val="{{ true }}">
+          <span style="{{ s.prov }}">{{ provLine }}</span>
+        </sc-if>
+        <sc-if value="{{ listView }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+            <span style="margin-left:auto;display:flex;align-items:center;gap:8px;white-space:nowrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">99 cards are yours now</span>
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Lock cards</span>
+              <span style="width:1px;height:22px;background:var(--border-strong);"></span>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:14px;background:var(--elevated);border:1px solid var(--border-strong);font-size:12px;font-weight:600;color:var(--fg);">By type</span>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:14px;border:1px solid var(--border);font-size:12px;color:var(--fg-faint);">By role</span>
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:7px;background:var(--surface);font-size:12px;color:var(--fg);">Name · A–Z ▾</span>
+            </span>
+          </sc-if>
+          <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-body);">Lock cards</span>
+              <span style="display:inline-flex;border:1px solid var(--border-strong);border-radius:8px;padding:3px;"><span style="width:40px;height:38px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-faint);">≣</span><span style="width:40px;height:38px;border-radius:6px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg);">▦</span></span>
+            </div>
+            <div style="flex-basis:100%;display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;height:30px;padding:0 10px;border-radius:15px;background:var(--elevated);border:1px solid var(--border-strong);font-size:12px;font-weight:600;color:var(--fg);">By type</span>
+              <span style="display:inline-flex;align-items:center;height:30px;padding:0 6px;font-size:12px;color:var(--fg-faint);">By role</span>
+              <span style="display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:22px;background:var(--surface);font-size:13px;color:var(--fg);">Name · A–Z ▾</span>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ listView }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.listBody }}">
+        <div style="display:flex;align-items:center;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span>⏶ tutor</span><span>locked</span><span>game changer</span></div>
+        <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'Metamorphous',serif;font-size:{{ s.groupSize }};color:var(--fg);">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ deck.creatures }}</span></div>
+        <div style="{{ s.tileGrid }}">
+          <sc-for list="{{ deckRows }}" as="r" hint-placeholder-count="4"><div style="{{ s.tile }}"><span style="display:block;padding:5px 7px;border-radius:5px 5px 0 0;background:color-mix(in oklab, var(--accent) 30%, var(--surface));font-family:'Metamorphous',serif;font-size:10.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r }}</span></div></sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ notesView }}" hint-placeholder-val="{{ true }}">
+      <section data-deck-notes data-comment-target="notes-view" style="{{ s.notesBody }}">
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div data-comment-target="notes-empty" style="{{ s.emptyWrap }}">
+            <div aria-hidden style="{{ mark.box }}">
+              <span style="{{ mark.back }}"></span>
+              <span style="{{ mark.slip }}">
+                <span style="{{ mark.line }}"><span style="{{ mark.tick }}"></span><span style="{{ mark.bar1 }}"></span></span>
+                <span style="{{ mark.line }}"><span style="{{ mark.boxSt }}"></span><span style="{{ mark.bar2 }}"></span><span style="{{ mark.tag }}"></span></span>
+                <span style="{{ mark.line }}"><span style="{{ mark.boxSt }}"></span><span style="{{ mark.bar3 }}"></span></span>
+              </span>
+            </div>
+            <div style="{{ s.emptyText }}">
+              <h3 style="{{ s.emptyHead }}">The swap you meant to try.</h3>
+              <p style="{{ s.emptyBody }}">Notes keep the small stuff with the deck: a card to test, a cut to make, a question for the pod. One line each, dated when you add it. Select one when it’s done and it folds away.</p>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ atCap }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.capLine }}"><span style="font-size:13px;line-height:1.5;color:var(--fg-body);">This deck holds 100 notes, the most it keeps. Delete one to add another.</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">done ones count too</span></div>
+        </sc-if>
+        <sc-if value="{{ showAdd }}" hint-placeholder-val="{{ true }}">
+          <div style="position:relative;display:flex;flex-direction:column;gap:6px;">
+            <div style="{{ s.addRow }}">
+              <div data-comment-target="notes-add" style="{{ add.box }}">
+                <span style="{{ add.textSt }}"><sc-for list="{{ add.segs }}" as="g" hint-placeholder-count="1"><span style="{{ g.st }}">{{ g.t }}</span></sc-for><sc-if value="{{ add.caret }}" hint-placeholder-val="{{ false }}"><span style="display:inline-block;width:1.5px;height:16px;margin-left:1px;vertical-align:-3px;background:var(--accent);"></span></sc-if><sc-for list="{{ add.after }}" as="g" hint-placeholder-count="0"><span style="{{ g.st }}">{{ g.t }}</span></sc-for></span>
+                <span role="button" aria-label="How card tags work" aria-expanded="{{ tipOpen }}" aria-describedby="notes-tag-tip" data-comment-target="notes-info" style="{{ add.info }}">i</span>
+                <sc-if value="{{ tipOpen }}" hint-placeholder-val="{{ false }}">
+                  <span id="notes-tag-tip" role="tooltip" style="{{ s.tip }}"><sc-for list="{{ tipLines }}" as="tl" hint-placeholder-count="3"><span>{{ tl }}</span></sc-for></span>
+                </sc-if>
+              </div>
+              <div style="{{ s.addBtns }}">
+                <span role="button" aria-label="Insert a card tag" data-comment-target="notes-insert-tag" style="{{ add.help }}">[[ ]]</span>
+                <sc-if value="{{ add.phoneCount }}" hint-placeholder-val="{{ false }}"><span style="{{ add.countPhone }}">{{ add.count }} / 140</span></sc-if>
+                <span style="{{ add.btn }}">Add</span>
+              </div>
+            </div>
+            <sc-if value="{{ add.showMeta }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:baseline;gap:10px;min-height:14px;">
+                <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ add.hint }}</span></sc-if>
+                <span style="{{ add.countSt }}">{{ add.count }} / 140</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ add.hasError }}" hint-placeholder-val="{{ false }}"><p role="alert" style="margin:0;font-size:{{ s.errSize }};line-height:1.45;color:var(--warning);">{{ add.error }}</p></sc-if>
+
+            <sc-if value="{{ hasPicker }}" hint-placeholder-val="{{ false }}">
+              <div role="listbox" data-comment-target="notes-picker" style="{{ s.picker }}">
+                <sc-for list="{{ picker.groups }}" as="pg" hint-placeholder-count="2">
+                  <div style="display:flex;flex-direction:column;">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 12px 4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ pg.head }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">{{ pg.note }}</span></div>
+                    <sc-if value="{{ pg.none }}" hint-placeholder-val="{{ false }}"><span style="padding:4px 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ pg.noneText }}</span></sc-if>
+                    <sc-for list="{{ pg.rows }}" as="pr" hint-placeholder-count="3">
+                      <div role="option" aria-selected="{{ pr.active }}" style="{{ pr.row }}">
+                        <span style="flex:none;width:24px;height:34px;border-radius:3px;background:repeating-linear-gradient(135deg,var(--surface) 0 4px,var(--elevated) 4px 8px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;"><span style="font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b style="font-weight:600;">{{ pr.hit }}</b>{{ pr.rest }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ pr.meta }}</span></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><div style="padding:7px 12px 8px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">↑ ↓ to move · Enter picks · Esc keeps what you typed</div></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+
+
+        <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ true }}">
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;">
+            <sc-for list="{{ openRows }}" as="n" hint-placeholder-count="4">
+              <li style="{{ n.li }}">
+                <sc-if value="{{ n.editing }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="{{ s.inputFocus }}"><span style="flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg);"><sc-for list="{{ n.raw }}" as="g" hint-placeholder-count="3"><span style="{{ g.st }}">{{ g.t }}</span></sc-for><span style="display:inline-block;width:1.5px;height:16px;margin-left:1px;vertical-align:-3px;background:var(--accent);"></span></span></div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <span style="{{ s.btnPrimary }}">Save</span><span style="{{ s.btnHair }}">Cancel</span>
+                      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Enter saves · Esc cancels · the date stays {{ n.date }}</span></sc-if>
+                      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ n.count }} / 140</span>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ n.normal }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:relative;display:flex;align-items:flex-start;gap:{{ s.rowGap }};">
+                    <span role="checkbox" aria-checked="{{ n.checked }}" style="{{ n.box }}">{{ n.tick }}</span>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                      <span style="{{ n.text }}"><sc-for list="{{ n.segs }}" as="g" hint-placeholder-count="2"><span style="{{ g.st }}">{{ g.t }}</span></sc-for></span>
+                      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ n.date }}</span></sc-if>
+                    </div>
+                    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                      <span style="flex:none;padding-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);white-space:nowrap;">{{ n.date }}</span>
+                      <span style="display:flex;gap:2px;flex:none;"><span aria-label="Edit this note" style="{{ n.edBtn }}">✎</span><span aria-label="Delete this note" style="{{ n.delBtn }}">×</span></span>
+                    </sc-if>
+                    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span aria-label="More for this note" style="{{ n.moreBtn }}">⋯</span></sc-if>
+                    <sc-if value="{{ n.deleting }}" hint-placeholder-val="{{ false }}">
+                      <div style="{{ s.pane }}">
+                        <span style="font-size:14px;font-weight:600;color:var(--fg);">Delete this note?</span>
+                        <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);">It goes for good. The deck and its cards are unchanged.</span>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;"><span style="{{ s.btnHair }}">Keep it</span><span style="{{ s.btnDanger }}">Delete</span></div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </li>
+            </sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{ showMore }}" hint-placeholder-val="{{ false }}"><span style="{{ s.moreLine }}">{{ moreLabel }}</span></sc-if>
+
+
+
+        <sc-if value="{{ hasDone }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
+            <span role="button" aria-expanded="{{ doneOpen }}" data-comment-target="notes-done" style="{{ s.doneBtn }}"><span style="font-size:9px;width:10px;">{{ doneChevron }}</span>{{ doneLabel }}</span>
+            <sc-if value="{{ doneOpen }}" hint-placeholder-val="{{ false }}">
+              <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;">
+                <sc-for list="{{ doneRows }}" as="n" hint-placeholder-count="2">
+                  <li style="{{ n.li }}">
+                    <div style="display:flex;align-items:flex-start;gap:{{ s.rowGap }};">
+                      <span role="checkbox" aria-checked="true" style="{{ n.box }}">✓</span>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                        <span style="{{ n.text }}"><sc-for list="{{ n.segs }}" as="g" hint-placeholder-count="2"><span style="{{ g.st }}">{{ g.t }}</span></sc-for></span>
+                        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ n.date }}</span></sc-if>
+                      </div>
+                      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                        <span style="flex:none;padding-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);white-space:nowrap;">{{ n.date }}</span>
+                        <span style="display:flex;gap:2px;flex:none;"><span style="{{ n.edBtn }}">✎</span><span style="{{ n.delBtn }}">×</span></span>
+                      </sc-if>
+                      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="{{ n.moreBtn }}">⋯</span></sc-if>
+                    </div>
+                  </li>
+                </sc-for>
+              </ul>
+              <sc-if value="{{ showMoreDone }}" hint-placeholder-val="{{ false }}"><span style="{{ s.moreLine }}">{{ moreDoneLabel }}</span></sc-if>
+            </sc-if>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ showAddBar }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.addBar }}">
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:10px;height:{{ s.addBarH }};padding:0 14px;border-radius:9px;border:1px solid var(--border-strong);font-size:{{ s.addBarFont }};color:var(--fg-faint);white-space:nowrap;overflow:hidden;"><span style="flex:none;">⌕</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">Add a card by name · {{ deck.colourName }} only</span></span>
+        <span style="flex:none;display:flex;align-items:center;gap:8px;font-size:{{ s.addBarFont }};color:var(--fg);white-space:nowrap;"><span style="width:34px;height:20px;border-radius:10px;background:var(--accent);position:relative;"><span style="position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--bg);"></span></span>Owned only</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showNav }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;height:64px;display:flex;border-top:1px solid var(--border);background:var(--surface-rail);">
+        <sc-for list="{{ navItems }}" as="ni" hint-placeholder-count="5"><span style="{{ ni.st }}"><span style="width:16px;height:16px;border-radius:4px;border:1.5px solid currentColor;"></span>{{ ni.t }}</span></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ keyboard }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:0;right:0;bottom:0;height:291px;background:var(--surface-rail);border-top:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">phone keyboard · the add-card bar and tab bar hide while a note has focus</span></div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1000},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;notes&quot;,&quot;options&quot;:[&quot;segment&quot;,&quot;empty&quot;,&quot;info&quot;,&quot;insert&quot;,&quot;adding&quot;,&quot;added&quot;,&quot;notes&quot;,&quot;pickDeck&quot;,&quot;pickAny&quot;,&quot;doneOpen&quot;,&quot;markDone&quot;,&quot;edit&quot;,&quot;delete&quot;,&quot;capNote&quot;,&quot;capDeck&quot;,&quot;many&quot;,&quot;manyDone&quot;,&quot;refused&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;kaldheim&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const scene = this.props.scene ?? "notes";
+    const phone = !!this.props.phone;
+    const desktop = !phone;
+    const theme = this.props.theme ?? "kaldheim";
+    const M = "'IBM Plex Mono',monospace";
+
+    const pill = (t, kind) => ({ t, st: {
+      display: "inline-flex", alignItems: "center", height: phone ? 30 : 26, padding: "0 10px", borderRadius: 6, fontFamily: M, fontSize: phone ? 12 : 11.5, whiteSpace: "nowrap",
+      ...(kind === "ok" ? { background: "color-mix(in oklab, var(--success) 14%, transparent)", border: "1px solid color-mix(in oklab, var(--success) 22%, transparent)", color: "var(--success)" }
+        : kind === "gold" ? { background: "color-mix(in oklab, var(--warning) 12%, transparent)", border: "1px solid color-mix(in oklab, var(--warning) 55%, transparent)", color: "color-mix(in oklab, var(--warning) 55%, var(--fg))" }
+        : { background: "color-mix(in oklab, var(--accent) 14%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 28%, transparent)", color: "var(--accent)" }) } });
+    const decks = {
+      wizards: { name: "HD - Wizards", intent: null, commander: "Baral, Chief of Compliance · Blue", pip: "var(--accent)", colourName: "Blue", built: 99, shop: 0, creatures: 21,
+        pills: [pill("Complete", "ok"), pill("◈ Optimized", "gold")], versionLine: "v2 · committed 30 Sep 2026",
+        tabs: [["Your deck", 99], ["Analysis"], ["Consider", 88], ["Games"], ["Versions", 2]],
+        rows: ["Archmage of Runes", "Azami, Lady of Scrolls", "Barrin, Master Wizard", "Barrin, Tolarian Archmage"] },
+      gishath: { name: "HD - Gishath", intent: null, commander: "Gishath, Sun’s Avatar · Naya", pip: "var(--success)", colourName: "Naya", built: 74, shop: 9, creatures: 38,
+        pills: [pill("Draft")], versionLine: "draft · no version committed",
+        tabs: [["Your deck", 74], ["Analysis"], ["Consider", 58], ["Games"]], rows: ["Regisaur Alpha", "Etali, Primal Storm", "Ripjaw Raptor", "Wayward Swordtooth"] },
+      aang: { name: "HD - Avatar Aang", intent: "Air, water, earth and fire in one deck: cast a spell of each element a turn and let Aang flip into the finisher.", commander: "Avatar Aang · Four-colour", pip: "var(--warning)", colourName: "Four-colour", built: 99, shop: 4, creatures: 22,
+        pills: [pill("Complete", "ok")], versionLine: "v2 · committed 3 Oct 2026",
+        tabs: [["Your deck", 99], ["Analysis"], ["Consider", 31], ["Games", 3], ["Versions", 2]], rows: ["Arcane Signet", "Mind Stone", "Spellbook Vendor", "Sakashima of a Thousand Faces"] },
+      omnath: { name: "HD - Omnath", intent: "Four-colour landfall. Every land drop is a turn.", commander: "Omnath, Locus of Creation · Four-colour", pip: "var(--success)", colourName: "Four-colour", built: 99, shop: 2, creatures: 19,
+        pills: [pill("Complete", "ok")], versionLine: "v1 · committed 12 Aug 2026",
+        tabs: [["Your deck", 99], ["Analysis"], ["Consider", 64], ["Games", 11], ["Versions", 1]], rows: ["Lotus Cobra", "Tatyova, Benthic Druid", "Avenger of Zendikar", "Risen Reef"] },
+      kratos: { name: "HD - Kratos", intent: "Swing every turn and make the table pay for every block. No mercy.", commander: "‹Kratos, God of War› · Red", pip: "var(--danger)", colourName: "Red", built: 96, shop: 11, creatures: 27,
+        pills: [pill("Draft")], versionLine: "draft · no version committed",
+        tabs: [["Your deck", 96], ["Analysis"], ["Consider", 47], ["Games", 2]], rows: ["Blood Artist", "Zurgo Helmsmasher", "Goblin Bombardment", "Fervent Champion"] },
+    };
+    const W = {
+      a: { t: "Try [[Laboratory Maniac|h]] with [[Thassa’s Oracle|o]]", d: "2 Oct" },
+      b: { t: "[[Mystic Sanctuary|o]] back in if the counterspells run dry", d: "4 Oct" },
+      c: { t: "Look for a second board wipe", d: "6 Oct" },
+      dd: { t: "Ask Chris whether [[Jace, Arcane Tinkerer|p]] was ever printed", d: "7 Oct" },
+      e: { t: "Hold [[Counterspell|h]] for the turn the combo goes off, not for the first big threat; the deck loses when it taps out early and can’t protect it.", d: "10 Oct" },
+    };
+    const wDone = [{ t: "Add [[Jace, Wielder of Mysteries|h]] as a second way to win", d: "done 9 Oct" }, { t: "Settle the land count at 35 before committing v2", d: "done 8 Oct" }];
+    const omn = ["Count the fetch lands again before buying more", "[[Lotus Cobra|h]] or [[Tireless Provisioner|o]]?", "Is four colours worth the mana base", "Try [[Field of the Dead|o]] in place of a basic", "Cut a ramp spell if the curve stays low", "Second copy of the deck for Chris to borrow"];
+    const omnDone = ["Swap [[Rampant Growth|h]] for [[Nature’s Lore|o]]", "Check whether [[Scapeshift|o]] is too much for the pod", "Proxy the [[Fabled Passage|h]] until it arrives", "Play three games before cutting anything", "Order the sleeves", "Ask what the pod thinks of extra turns"];
+    const kra = ["Every swing needs a reason to block badly", "[[Blood Artist|h]] earns its slot?", "More haste on the cheap drops", "Try [[Goblin Bombardment|h]] as the outlet", "Fewer than ten removal spells feels light", "Look at [[Fervent Champion|h]] again"];
+
+    const tagSt = (k, done) => k === "p" ? { color: done ? "var(--fg-faint)" : "var(--fg-body)" }
+      : { color: done ? "var(--fg-muted)" : "var(--fg)", fontWeight: 500, borderBottom: `1px ${k === "h" ? "solid" : "dashed"} ${done ? "var(--fg-locked)" : "var(--fg-faint)"}`, cursor: "pointer" };
+    const parse = (str, done) => { const out = []; const re = /\[\[([^|\]]+)\|([hop])\]\]/g; let at = 0, m;
+      while ((m = re.exec(str))) { if (m.index > at) out.push({ t: str.slice(at, m.index), st: {} }); out.push({ t: m[1], st: tagSt(m[2], done) }); at = m.index + m[0].length; }
+      if (at < str.length) out.push({ t: str.slice(at), st: {} }); return out; };
+    const rawSegs = (str) => { const out = []; const re = /\[\[([^|\]]+)(?:\|[hop])?\]\]/g; let at = 0, m; const br = { color: "var(--fg-faint)", fontFamily: M, fontSize: 12 };
+      while ((m = re.exec(str))) { if (m.index > at) out.push({ t: str.slice(at, m.index), st: {} }); out.push({ t: "[[", st: br }, { t: m[1], st: { color: "var(--fg)" } }, { t: "]]", st: br }); at = m.index + m[0].length; }
+      if (at < str.length) out.push({ t: str.slice(at), st: {} }); return out; };
+    const len = (str) => [...str.replace(/\[\[([^|\]]+)(?:\|[hop])?\]\]/g, "$1")].length;
+
+    const iconBtn = (danger) => ({ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 7, fontFamily: M, fontSize: danger ? 14 : 12, color: "var(--fg-locked)", cursor: "pointer" });
+    const moreBtn = { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, margin: "-6px -8px -6px 0", fontSize: 16, color: "var(--fg-muted)" };
+    const boxBase = { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", width: phone ? 22 : 18, height: phone ? 22 : 18, marginTop: phone ? 1 : 2, borderRadius: 5, fontFamily: M, fontSize: phone ? 12 : 11, cursor: "pointer" };
+    const boxOpen = { ...boxBase, border: "1px solid var(--border-strong)", color: "transparent" };
+    const boxDone = { ...boxBase, border: "1px solid var(--fg-locked)", background: "var(--elevated)", color: "var(--fg-muted)" };
+    const liBase = { borderRadius: 9, background: "var(--surface)", border: "1px solid var(--border)", padding: phone ? "10px 10px 10px 12px" : "8px 8px 8px 14px", minHeight: phone ? 48 : 42 };
+    const textSt = (faint) => ({ fontSize: phone ? 14 : 14, lineHeight: 1.5, color: faint ? "var(--fg-faint)" : "var(--fg)", overflowWrap: "anywhere", textWrap: "pretty" });
+    const mkOpen = (n, opt = {}) => ({
+      li: { ...liBase, ...(opt.editing ? { background: "var(--surface-sunken)", borderColor: "var(--border-strong)", padding: phone ? 10 : "10px 12px" } : {}) },
+      editing: !!opt.editing, normal: !opt.editing, deleting: !!opt.deleting, checked: opt.checked ? "true" : "false",
+      box: opt.checked ? boxDone : boxOpen, tick: opt.checked ? "✓" : "", text: textSt(opt.checked),
+      segs: parse(n.t, !!opt.checked), raw: rawSegs(n.t + (opt.append ?? "")), count: len(n.t + (opt.append ?? "")), date: n.d,
+      edBtn: iconBtn(false), delBtn: { ...iconBtn(true), ...(opt.deleting ? { color: "var(--danger)", background: "var(--elevated)" } : {}) }, moreBtn: { ...moreBtn, ...(opt.deleting ? { color: "var(--fg)" } : {}) },
+    });
+    const mkDone = (n) => ({ li: { ...liBase, background: "transparent" }, box: boxDone, text: textSt(true), segs: parse(n.t, true), date: n.d, edBtn: iconBtn(false), delBtn: iconBtn(true), moreBtn });
+
+    let addAfter = "", deckKey = "wizards", open = [], done = [], doneOpen = false, more = 0, moreDone = 0, addText = "", focus = false, picker = null, error = null, atCap = false, keyboard = false, opts = {}, full = false, view = "notes", tipOpen = false;
+    const wOpen = [W.e, W.dd, W.c, W.b, W.a]; // newest first (R4)
+    const fill = (n) => Array.from({ length: n }, () => ({ t: "", d: "" }));
+    switch (scene) {
+      case "segment": view = "list"; open = wOpen; done = wDone; full = true; break;
+      case "empty": deckKey = "gishath"; full = true; break;
+      case "info": deckKey = "gishath"; tipOpen = true; break;
+      case "insert": open = wOpen; done = wDone; addText = "Swap in [["; addAfter = "]]"; focus = true; keyboard = phone;
+        picker = { q: "", groups: [{ head: "Tag a card", note: "", none: "Type a card name. This deck’s cards come first.", rows: [] }] }; break;
+      case "adding": deckKey = "gishath"; addText = "More ramp before the dinosaurs land"; focus = true; keyboard = phone; break;
+      case "added": deckKey = "gishath"; open = [{ t: "More ramp before the dinosaurs land", d: "11 Oct" }]; focus = true; keyboard = phone; break;
+      case "notes": open = wOpen; done = wDone; full = true; break;
+      case "pickDeck": open = wOpen; done = wDone; addText = "Swap in [[jace"; focus = true; keyboard = phone;
+        picker = { q: "jace", groups: [{ head: "In this deck", note: "1", rows: [["Jace, Wielder of Mysteries", "Legendary Creature — Human Wizard"]] }, { head: "Any card", note: "", rows: [["Jace, the Mind Sculptor", "Legendary Planeswalker — Jace"], ["Jace Beleren", "Legendary Planeswalker — Jace"], ["Jace, Vryn’s Prodigy", "Legendary Creature — Human Wizard"], ["Jace, Cunning Castaway", "Legendary Planeswalker — Jace"]] }] }; break;
+      case "pickAny": open = wOpen; done = wDone; addText = "Try [[Laboratory Maniac|h]] with [[thassa"; focus = true; keyboard = phone;
+        picker = { q: "thassa", groups: [{ head: "In this deck", note: "", none: "Nothing in this deck by that name", rows: [] }, { head: "Any card", note: "", rows: [["Thassa’s Oracle", "Creature — Merfolk Wizard"], ["Thassa, Deep-Dwelling", "Legendary Enchantment Creature — God"], ["Thassa, God of the Sea", "Legendary Enchantment Creature — God"], ["Thassa’s Intervention", "Instant"]] }] }; break;
+      case "doneOpen": deckKey = "aang"; full = true; open = [{ t: "[[Arcane Signet|h]] stays, whatever else gets cut", d: "9 Oct" }, { t: "Earth has one cheap spell; the other elements have two", d: "5 Oct" }, { t: "Try [[Lightning Greaves|o]] so Aang stops dying on curve", d: "1 Oct" }];
+        done = [{ t: "Swap [[Mind Stone|h]] for [[Fellwar Stone|o]]", d: "done 10 Oct" }, { t: "Play three games before cutting anything", d: "done 6 Oct" }]; doneOpen = true; break;
+      case "markDone": open = wOpen; done = [{ t: W.a.t, d: "done 11 Oct" }, ...wDone]; opts = { 4: { checked: true } }; break;
+      case "edit": open = wOpen; done = wDone; opts = { 2: { editing: true, append: ", maybe [[Aetherspouts]]" } }; break;
+      case "delete": open = wOpen; done = wDone; opts = { 3: { deleting: true } }; break;
+      case "capNote": deckKey = "kratos"; open = kra.slice(0, 3).map((t, i) => ({ t, d: ["8 Oct", "3 Oct", "1 Oct"][i] })); done = [{ t: "Cut the second [[Sol Ring|o]] the import doubled", d: "done 2 Oct" }];
+        addText = "Find out if [[Blood Artist|h]] earns its slot: two games it drained the table for six, two games it sat there while Kratos ate all of the removal."; focus = true; keyboard = phone; break;
+      case "capDeck": deckKey = "kratos"; open = [...kra.map((t, i) => ({ t, d: `${10 - i} Oct` })), ...fill(6)]; more = 12; done = fill(88); atCap = true; break;
+      case "many": deckKey = "omnath"; open = [...omn.map((t, i) => ({ t, d: `${10 - i} Oct` })), ...fill(24)]; more = 30; done = fill(40); break;
+      case "manyDone": deckKey = "omnath"; open = [...omn.map((t, i) => ({ t, d: `${10 - i} Oct` })), ...fill(24)]; more = 30; done = [...omnDone.map((t, i) => ({ t, d: `done ${10 - i} Oct` })), ...fill(34)]; doneOpen = true; moreDone = 40; break;
+      case "refused": deckKey = "kratos"; open = kra.slice(0, 3).map((t, i) => ({ t, d: ["8 Oct", "3 Oct", "1 Oct"][i] })); done = [{ t: "Cut the second [[Sol Ring|o]] the import doubled", d: "done 2 Oct" }];
+        addText = "Ask the pod if [[Hellrider|h]] is too much"; error = "We couldn’t save that note. It’s still in the box, so you can try again."; break;
+    }
+    const deck = decks[deckKey];
+    const openReal = open.filter((n) => n.t);
+    const pickerPhone = !!picker && phone;
+    const isEmpty = view === "notes" && open.length === 0 && done.length === 0;
+    const openRows = openReal.slice(0, 6).map((n, i) => mkOpen(n, opts[i] ?? {}));
+    const doneRows = done.filter((d) => d.t).slice(0, 6).map(mkDone);
+    const openN = open.length, doneN = done.length;
+    const notesView = view === "notes", listView = view === "list";
+
+    const tabs = deck.tabs.map(([label, count], i) => { const sel = i === 0; return {
+      label, count: count ?? "", hasCount: typeof count === "number",
+      box: { display: "inline-flex", alignItems: "baseline", gap: 6, whiteSpace: "nowrap", minHeight: 44, paddingTop: phone ? 12 : 16, paddingBottom: phone ? 10 : 14, borderBottom: `2px solid ${sel ? "var(--accent)" : "transparent"}`, flex: "none" },
+      lab: { fontSize: phone ? 14 : 15, fontWeight: sel ? 600 : 500, color: sel ? "var(--fg)" : "var(--fg-muted)" },
+      num: { fontFamily: M, fontSize: phone ? 12 : 13, color: sel ? "var(--accent)" : "var(--fg-faint)" } }; });
+
+    // segment: All · Shopping | Stats · Notes
+    const segBase = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: phone ? 44 : 32, padding: phone ? "6px 10px" : "6px 14px", borderRadius: 6, fontSize: phone ? 14 : 13.5, whiteSpace: "nowrap", flex: phone ? "1 1 auto" : "none" };
+    const segDef = [
+      { key: "all", label: "All", count: deck.built, ink: "var(--fg-muted)" },
+      { key: "shopping", label: "Shopping", count: deck.shop, ink: "var(--warning)" },
+      { key: "stats", label: "Stats", count: null, ink: "var(--fg-muted)", divider: true },
+      { key: "notes", label: "Notes", count: openN > 0 ? openN : null, ink: "var(--fg-muted)" },
+    ];
+    const selKey = notesView ? "notes" : "all";
+    const segs = segDef.map((d) => { const sel = d.key === selKey; return {
+      label: d.label, count: d.count ?? "", hasCount: d.count !== null, divider: !!d.divider, selected: sel ? "true" : "false",
+      st: { ...segBase, fontWeight: sel ? 600 : 500, background: sel ? "var(--elevated)" : "transparent", color: sel && d.key !== "shopping" ? "var(--fg)" : d.ink },
+      numSt: { fontFamily: M, fontSize: 11.5, color: d.key === "notes" ? "var(--fg-faint)" : "inherit" } }; });
+
+    const addCount = len(addText);
+    const add = {
+      box: { position: "relative", flex: 1, minWidth: 0, display: "flex", alignItems: "center", minHeight: phone ? 48 : 40, padding: phone ? "11px 44px 11px 13px" : "9px 40px 9px 12px", borderRadius: 8, background: "var(--surface-sunken)", border: `1px solid ${focus ? "var(--accent)" : "var(--border-strong)"}` },
+      textSt: { fontSize: 14, lineHeight: 1.5, color: "var(--fg)", overflowWrap: "anywhere", minWidth: 0 },
+      after: addAfter ? [{ t: "]]", st: { color: "var(--fg-faint)", fontFamily: M, fontSize: 12 } }] : [], segs: addText === "Swap in [[" ? [{ t: "Swap in ", st: {} }, { t: "[[", st: { color: "var(--fg-faint)", fontFamily: M, fontSize: 12 } }] : addText ? rawSegs(addText) : [{ t: phone ? "Add a note · [[ tags a card" : "Add a note. Type [[ to tag a card.", st: { color: "var(--fg-faint)" } }], caret: focus,
+      help: { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-start", width: phone ? 56 : 44, height: phone ? 48 : 40, borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: M, fontSize: 12, color: addAfter ? "var(--fg)" : "var(--fg-muted)", background: addAfter ? "var(--elevated)" : "transparent", cursor: "pointer" },
+      info: { position: "absolute", right: phone ? 13 : 11, top: "50%", marginTop: -9, display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", border: "1px solid var(--fg-faint)", fontFamily: M, fontSize: 10.5, color: tipOpen ? "var(--fg)" : "var(--fg-muted)", cursor: "pointer" },
+      phoneCount: phone && (focus || !!error), countPhone: { order: -1, marginRight: "auto", textAlign: "left", fontFamily: M, fontSize: 10, color: addCount >= 120 ? "var(--warning)" : "var(--fg-locked)" },
+      btn: isEmpty
+        ? { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-start", height: phone ? 48 : 40, minWidth: phone ? 104 : 0, padding: "0 18px", borderRadius: 8, background: "var(--btn)", fontSize: phone ? 14 : 13.5, fontWeight: 600, color: "var(--bg)", opacity: addText ? 1 : 0.5 }
+        : { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-start", height: phone ? 48 : 40, minWidth: phone ? 104 : 0, padding: phone ? "0 16px" : "0 14px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: phone ? 14 : 13, fontWeight: 500, color: addText ? "var(--fg)" : "var(--fg-disabled)" },
+      showMeta: desktop && (focus || !!error), hint: addText ? "Enter adds · dated today, 11 Oct" : "One line each, dated for you.", count: addCount,
+      countSt: { marginLeft: "auto", fontFamily: M, fontSize: 10, color: addCount >= 120 ? "var(--warning)" : "var(--fg-locked)" },
+      hasError: !!error, error: error ?? "",
+    };
+    const pickerOut = picker ? { groups: picker.groups.map((g) => ({ head: g.head, note: g.note, none: !!g.none, noneText: g.none ?? "",
+      rows: g.rows.map(([name, type], j) => { const active = g === picker.groups.find((x) => x.rows.length) && j === 0; const qi = name.toLowerCase().indexOf(picker.q);
+        return { active: active ? "true" : "false", hit: qi === 0 ? name.slice(0, picker.q.length) : "", rest: qi === 0 ? name.slice(picker.q.length) : name,
+          meta: g.head === "Any card" ? `${type} · not in this deck` : type,
+          row: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 48 : 42, padding: "4px 12px", background: active ? "var(--elevated)" : "transparent" } }; }) })) } : { groups: [] };
+
+    // the Notes mark: a card behind a note slip, the brand fan's vocabulary (CSS shapes only)
+    const big = !phone;
+    const mark = {
+      box: { position: "relative", flex: "none", width: big ? 150 : 96, height: big ? 150 : 96, margin: big ? 0 : "0 auto" },
+      back: { position: "absolute", left: big ? 34 : 22, top: big ? 46 : 30, width: big ? 100 : 64, height: big ? 74 : 48, borderRadius: big ? 9 : 6, border: "1.5px solid var(--border-strong)", background: "var(--elevated)" },
+      slip: { position: "absolute", left: big ? 18 : 12, top: big ? 30 : 20, width: big ? 100 : 64, height: big ? 74 : 48, borderRadius: big ? 9 : 6, border: "1.5px solid var(--accent)", background: "color-mix(in srgb, var(--accent) 14%, var(--surface))", display: "flex", flexDirection: "column", justifyContent: "center", gap: big ? 10 : 6, padding: big ? "0 12px" : "0 8px" },
+      line: { display: "flex", alignItems: "center", gap: big ? 7 : 4 },
+      boxSt: { flex: "none", width: big ? 9 : 6, height: big ? 9 : 6, borderRadius: 2, border: "1.5px solid var(--fg-faint)" },
+      tick: { flex: "none", width: big ? 9 : 6, height: big ? 9 : 6, borderRadius: 2, background: "var(--fg-faint)" },
+      bar1: { height: big ? 3 : 2, width: "58%", borderRadius: 2, background: "var(--fg-locked)" },
+      bar2: { height: big ? 3 : 2, width: "26%", borderRadius: 2, background: "var(--fg-faint)" },
+      tag: { height: big ? 3 : 2, width: "36%", borderRadius: 2, background: "var(--accent)" },
+      bar3: { height: big ? 3 : 2, width: "70%", borderRadius: 2, background: "var(--fg-faint)" },
+    };
+
+    const railIcons = [0, 1, 2, 3, 4].map((i) => ({ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${i === 4 ? "var(--fg)" : "var(--fg-faint)"}`, ...(i === 4 ? { boxShadow: "0 0 0 9px var(--elevated)" } : {}), margin: "9px 0" }));
+    const navItems = ["Home", "Collection", "Commanders", "Discover", "Decks"].map((t, i) => ({ t, st: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: M, fontSize: 10, color: i === 4 ? "var(--fg)" : "var(--fg-faint)", background: i === 4 ? "var(--elevated)" : "transparent" } }));
+    const mix = [["RAMP", 11, 10], ["DRAW", 23, 12], ["REMOVAL", 6, 4], ["WIPES", 0, 0], ["LAND", 35, "~34"]].map(([k, v, r]) => ({ k, v, r }));
+    const pad = phone ? 16 : 28;
+
+    return {
+      theme, phone, desktop, label: `${scene} · ${phone ? 390 : 900}`,
+      deck: { ...deck, hasIntent: !!deck.intent, intent: deck.intent ?? "", pct: `${Math.round((deck.built / 99) * 100)}%` },
+      railIcons, navItems, mix, mark,
+      phoneTop: phone && full && !keyboard, showHero: full && !keyboard, compactBar: !full || keyboard,
+      showTabs: !pickerPhone, tabs, showSegRow: !pickerPhone, segs, notesView, listView,
+      provLine: isEmpty ? "yours only · on this deck, not a version" : (openN ? `${openN} open · newest first` : "newest first"),
+      tipLines: ["Type [[ and the start of a card’s name to tag it, or press [[ ]] to start one. This deck’s cards come first, then any card.", "A tagged name opens that card: underlined solid if it’s in this deck, dashed if it isn’t.", "A name typed without picking it from the list stays plain text."],
+      isEmpty, tipOpen,
+      hasOpen: openRows.length > 0, openRows,
+      showMore: more > 6, moreLabel: `Show all ${more}`,
+      showAdd: !atCap, add, atCap,
+      hasPicker: !!picker, picker: pickerOut,
+      hasDone: doneN > 0 && !pickerPhone, doneOpen, doneChevron: doneOpen ? "▾" : "▸", doneLabel: `Done (${doneN})`, doneRows,
+      showMoreDone: moreDone > 6, moreDoneLabel: `Show all ${moreDone} done`,
+      deckRows: deck.rows,
+      showAddBar: !keyboard, showNav: phone && !keyboard, keyboard,
+      s: {
+        root: { width: phone ? 390 : 900, minHeight: phone ? 844 : 640, position: "relative", overflow: phone ? "hidden" : "visible", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex" },
+        hero: { position: "relative", flex: "none", height: phone ? 300 : 236, background: phone ? "repeating-linear-gradient(135deg,#2a2440 0 9px,#221d33 9px 18px)" : "linear-gradient(90deg, transparent 30%, var(--bg) 52%), repeating-linear-gradient(135deg,#2a2440 0 9px,#221d33 9px 18px)" },
+        heroText: phone ? { position: "absolute", left: 16, right: 60, bottom: 14, display: "flex", flexDirection: "column", gap: 8 } : { position: "absolute", left: "40%", right: 16, top: 40, display: "flex", flexDirection: "column", gap: 8 },
+        deckName: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 26 : 28, lineHeight: 1.15, color: "var(--fg)", whiteSpace: "nowrap" },
+        intent: phone ? { margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "var(--fg-body)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } : { margin: "-2px 0 0", fontSize: 14, lineHeight: 1.45, color: "var(--fg-body)" },
+        cmdSize: phone ? "11.5px" : "12px",
+        versionLine: { flex: "none", padding: `12px ${pad}px`, borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)", fontFamily: M, fontSize: phone ? 12 : 11.5, color: "var(--fg-muted)" },
+        mixWrap: { flex: "none", padding: phone ? "16px 16px 18px" : "18px 28px 20px", display: "flex", flexDirection: "column", gap: 12, borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" },
+        mixGrid: { display: "grid", gridTemplateColumns: "repeat(5,minmax(0,1fr))", gap: phone ? 6 : 10 },
+        mixCell: { display: "flex", flexDirection: "column", gap: 4, alignItems: phone ? "center" : "flex-start", padding: phone ? "10px 4px" : "10px 14px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg)" },
+        mixFig: phone ? "16px" : "18px",
+        barPad: `0 ${pad}px`,
+        tabsWrap: { flex: "none", padding: `0 ${pad}px`, borderBottom: "1px solid var(--border)", overflow: "hidden" },
+        tabGap: phone ? "20px" : "28px",
+        segRow: { flex: "none", display: "flex", flexWrap: "wrap", alignItems: "center", gap: phone ? "10px 8px" : 10, padding: phone ? "10px 16px" : "14px 26px 10px", borderBottom: phone ? "1px solid var(--border)" : "none" },
+        segGroup: { display: phone ? "flex" : "inline-flex", width: phone ? "100%" : "auto", alignItems: "stretch", gap: 2, borderRadius: 9, border: "1px solid var(--border-strong)", padding: 3 },
+        prov: phone ? { flexBasis: "100%", fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" } : { marginLeft: "auto", fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" },
+        listBody: { flex: 1, display: "flex", flexDirection: "column", gap: 14, padding: phone ? "14px 16px 20px" : "6px 28px 20px" },
+        notesBody: { flex: 1, display: "flex", flexDirection: "column", gap: phone ? 8 : 6, padding: phone ? (keyboard ? "12px 16px" : "16px 16px 24px") : (picker || tipOpen ? "10px 28px 300px" : "10px 28px 28px"), maxWidth: phone ? "none" : 820 },
+        emptyWrap: phone ? { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "18px 4px 14px" } : { display: "flex", alignItems: "flex-start", gap: 30, padding: "18px 0 18px" },
+        emptyText: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 9 : 10, maxWidth: 560 },
+        emptyHead: { margin: phone ? "18px 0 2px" : "6px 0 2px", fontFamily: "'Metamorphous',serif", fontWeight: 700, fontSize: phone ? 21 : 26, lineHeight: 1.25, color: "var(--fg)" },
+        emptyBody: { margin: 0, fontSize: phone ? 13.5 : 14.5, lineHeight: phone ? 1.6 : 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+        rowGap: phone ? "12px" : "12px",
+        inputFocus: { display: "flex", alignItems: "center", minHeight: phone ? 48 : 40, padding: phone ? "11px 13px" : "9px 12px", borderRadius: 8, background: "var(--bg)", border: "1px solid var(--accent)" },
+        btnPrimary: { display: "inline-flex", alignItems: "center", height: phone ? 44 : 32, padding: "0 16px", borderRadius: 8, background: "var(--btn)", color: "var(--bg)", fontSize: phone ? 14 : 12.5, fontWeight: 600 },
+        btnHair: { display: "inline-flex", alignItems: "center", height: phone ? 44 : 32, padding: "0 14px", borderRadius: 8, border: "1px solid var(--border-strong)", color: "var(--fg-muted)", fontSize: phone ? 14 : 12.5, fontWeight: 500 },
+        btnDanger: { display: "inline-flex", alignItems: "center", height: phone ? 44 : 32, padding: "0 14px", borderRadius: 8, border: "1px solid var(--danger)", color: "var(--danger)", fontSize: phone ? 14 : 12.5, fontWeight: 600 },
+        pane: { position: "absolute", right: phone ? -2 : 0, top: phone ? 38 : 32, zIndex: 3, width: 280, display: "flex", flexDirection: "column", gap: 6, padding: "14px 14px 12px", borderRadius: 10, background: "var(--surface)", border: "1px solid var(--border-strong)", boxShadow: "0 12px 28px rgba(0,0,0,.45)" },
+        addRow: phone ? { display: "flex", flexDirection: "column", gap: 8 } : { display: "flex", gap: 8, alignItems: "stretch" },
+        addBtns: phone ? { display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" } : { display: "flex", gap: 8, flex: "none" },
+        tip: { position: "absolute", left: phone ? 0 : "auto", right: 0, top: "calc(100% + 6px)", zIndex: 6, width: phone ? "auto" : 340, display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--elevated)", fontSize: 12.5, lineHeight: 1.5, color: "var(--fg-body)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" },
+        picker: phone ? { position: "absolute", left: 0, right: 0, top: "calc(100% + 6px)", zIndex: 4, borderRadius: 10, background: "var(--surface)", border: "1px solid var(--border-strong)", boxShadow: "0 12px 28px rgba(0,0,0,.45)", overflow: "hidden" }
+          : { position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 4, width: 460, borderRadius: 10, background: "var(--surface)", border: "1px solid var(--border-strong)", boxShadow: "0 12px 28px rgba(0,0,0,.45)", overflow: "hidden" },
+        moreLine: { display: "inline-flex", alignItems: "center", alignSelf: "flex-start", minHeight: phone ? 44 : 30, fontFamily: M, fontSize: 11, color: "var(--fg-muted)", cursor: "pointer" },
+        doneBtn: { display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", minHeight: phone ? 44 : 32, fontFamily: M, fontSize: 11, color: "var(--fg-muted)", cursor: "pointer" },
+        capLine: { display: "flex", flexDirection: "column", gap: 3, padding: phone ? "11px 13px" : "9px 12px", borderRadius: 8, border: "1px dashed var(--border-dashed)" },
+        errSize: phone ? "11px" : "11.5px",
+        groupSize: phone ? "17px" : "19px",
+        tileGrid: { display: "grid", gridTemplateColumns: phone ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: phone ? 10 : 14 },
+        tile: { height: phone ? 70 : 64, borderRadius: 8, padding: 5, background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden" },
+        addBar: { flex: "none", position: phone ? "relative" : "sticky", bottom: 0, display: "flex", alignItems: "center", gap: 14, padding: phone ? "10px 16px" : "10px 28px", borderTop: "1px solid var(--border)", background: "color-mix(in oklab, var(--bg) 92%, transparent)" },
+        addBarH: phone ? "48px" : "40px", addBarFont: phone ? "14px" : "13.5px",
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
