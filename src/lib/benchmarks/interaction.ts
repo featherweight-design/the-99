@@ -1,4 +1,4 @@
-import { CHEAP_MANA_VALUE } from "../synopsis/facts-extra";
+import { CHEAP_MANA_VALUE, type InteractionCounts } from "../synopsis/facts-extra";
 import { isLand } from "./cards";
 import type { BenchCard } from "./types";
 
@@ -34,8 +34,8 @@ export function isInstantSpeed(card: Pick<BenchCard, "typeLine" | "keywords">): 
 }
 
 /**
- * Interaction, the reader the Overview's facts move onto in PR 1b (brief lock 7: one reader per
- * figure); until then `interactionCounts` still counts the Overview's. Instant speed is the keyword
+ * Interaction, the one reader of the figure (brief lock 7): the Overview's facts quote it too when
+ * DECK_BENCHMARKS_ENABLED is on, and keep `interactionCounts` with the switch off. Instant speed is the keyword
  * Flash, never "flash" in the text, which a card granting flash to others carries too. Removal, board wipes and counterspells, each
  * weighed 1 plus 1 at instant speed plus 1 at mana value 2 or less. A counterspell is interaction
  * and never removal (Hugh, 2026-10-10), so it is its own kind here and in the figure.
@@ -64,4 +64,9 @@ export function interaction(cards: readonly BenchCard[]): Interaction {
     wipes: count((l) => l.kind === "wipe"),
     lines,
   };
+}
+
+/** The Overview fact's shape of this reading (`DeckStatsFact.interaction`): one figure for both. */
+export function factCounts(i: Interaction): InteractionCounts {
+  return { total: i.answers, instantSpeed: i.instantSpeed, cheap: i.cheap, cheapInstant: i.cheapInstant, wipes: i.wipes };
 }

@@ -1,7 +1,7 @@
 import { colorLabel } from "../decks/format";
 import type { DeckProfile } from "../profile/types";
 import { CATEGORIES, type Category } from "./types";
-import { comboFacts, deckStatsFact, type ComboFact, type DeckStatsFact, type NearComboFact } from "./facts-extra";
+import { comboFacts, deckStatsFact, type ComboFact, type DeckStatsFact, type InteractionCounts, type NearComboFact } from "./facts-extra";
 
 /**
  * What the synopsis is written from and checked against. Pure: the profile is the stored
@@ -111,6 +111,8 @@ export function buildSynopsisFacts(
   anySize: { combos: ComboFact[]; nearCombos: NearComboFact[] } | null = null,
   /** `cards.keywords` by oracle id (v2); absent leaves every card's `keywords` unset. */
   keywords: ReadonlyMap<string, readonly string[]> | null = null,
+  /** The benchmarks' interaction reading, when the switch is on; null keeps the classifier's. */
+  interaction: InteractionCounts | null = null,
 ): SynopsisFacts {
   const cats = categoriesOf(profile);
   const byId = new Map(profile.cards.map((c) => [c.oracleId, c]));
@@ -151,7 +153,7 @@ export function buildSynopsisFacts(
     cards: factCards,
     combos: anySize ? anySize.combos : comboFacts(profile),
     nearCombos: anySize ? anySize.nearCombos : [],
-    stats: deckStatsFact(ramp, commanderManaValues, factCards, profile.roles.excludingCommanders?.ramp ?? ramp),
+    stats: deckStatsFact(ramp, commanderManaValues, factCards, profile.roles.excludingCommanders?.ramp ?? ramp, interaction),
   };
 }
 
