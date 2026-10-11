@@ -1,6 +1,6 @@
 {
   "feature": "Tuning hub, PR 1: the landing, the tool switch and the trim-line shortcut",
-  "note": "Tuning hub handoff R1 canvas A (A1, A2, A4, A5, A6) plus the plan's no-reading row. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED and TUNING_HUB_ENABLED all 'true', on a scratch branch holding a pull:staging copy, and three decks the signed-in account owns: HUB_OVER_DECK, a read deck since built past 100; HUB_FULL_DECK, a read deck at 100; HUB_UNREAD_OVER_DECK, a deck past 100 that was never read. A3, a run in flight on its tile, needs a pending paid run and is covered by tuning-hub.test (the running tile, its elapsed time and the re-read).",
+  "note": "Tuning hub handoff R1 canvas A (A1, A2, A4, A5, A6) plus the plan's no-reading row. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED and PROPOSED_CUTS_ENABLED all 'true' (two tools on draws the hub), on a scratch branch holding a pull:staging copy, and three decks the signed-in account owns: HUB_OVER_DECK, a read deck since built past 100; HUB_FULL_DECK, a read deck at 100; HUB_UNREAD_OVER_DECK, a deck past 100 that was never read. A3, a run in flight on its tile, needs a pending paid run and is covered by tuning-hub.test (the running tile, its elapsed time and the re-read).",
   "rows": [
     {
       "id": "A1-landing-over",

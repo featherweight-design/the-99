@@ -8,7 +8,7 @@ cuts (`cuts-panel.tsx`, #1362), both mounted directly in the Analysis tab today
 
 ## PR boundaries (one at a time, no stacking)
 
-### PR 1: the landing, the switch, the trim-line shortcut
+### PR 1: the landing, the tool switch, the trim-line shortcut
 
 - `TuningToolMark` (four 24-unit inline SVG marks, `currentColor`, `aria-hidden`).
 - `TuningHub`: heading `Tuning`, tiles in fixed order, `openTool` state held in the hub, so it
@@ -33,12 +33,12 @@ cuts (`cuts-panel.tsx`, #1362), both mounted directly in the Analysis tab today
 - Design table: `docs/superpowers/design-tables/tuning-hub.md` already exists (moved in #1362);
   this PR checks the hub rows against what ships and fixes the A1 status ink row.
 
-**Which tiles draw before their tool exists.** The hub ships behind a new switch,
-`TUNING_HUB_ENABLED` (`'true'` AND `ANALYSIS_TAB_ENABLED`), on staging only until all four tools
-are in. Off, the Analysis tab is exactly today's. On, a tile draws only when its tool's own switch
-is on and its tool is built: PR 1 draws Suggested changes and Proposed cuts, PR 2 adds History,
-PR 3 adds Mana Balance. The two-tile grid is a staging-only transition; production turns the hub
-on once the four are there. `docs/deployment.md` gets the row.
+**When the hub draws (revised by the orchestrator, 2026-10-11, after Hugh questioned a new
+switch).** The hub has no switch of its own. It follows the tools' own switches, read by one
+function, `tuningHubEnabled` / `hubTools` in `src/lib/tuning/flag.ts`: two or more tools on draws
+the hub with a tile per tool; exactly one mounts that tool directly, as today; none leaves the tab
+unchanged. A tile counts only once its UI is built (PR 1: Suggested changes and Proposed cuts;
+PR 3 adds Mana Balance), and History is part of the hub, appearing with it from PR 2.
 
 **Where the hub mounts (the one call this plan makes beyond the drawing).** The canvas mounts the
 hub "with the reading, absent before one", but Proposed cuts deliberately does not wait for a

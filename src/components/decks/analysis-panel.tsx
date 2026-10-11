@@ -95,7 +95,7 @@ export function AnalysisPanel({
    *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
    *  `held`. Absent with `PROPOSED_CUTS_ENABLED` off. */
   cuts?: ReactNode;
-  /** The Tuning hub (`TUNING_HUB_ENABLED`): when present it is drawn INSTEAD of `tuning` and `cuts`,
+  /** The Tuning hub (`tuningHubEnabled`, two or more tools on): when present it is drawn INSTEAD of `tuning` and `cuts`,
    *  which it mounts inside its own tiles. Handed the held reading's permits, or null with no
    *  reading (a deck built long), and it decides for itself whether it draws at all. */
   hub?: (permits: readonly Bracket[] | null) => ReactNode;

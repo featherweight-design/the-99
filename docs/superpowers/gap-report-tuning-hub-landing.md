@@ -9,7 +9,8 @@ cell, Mana Balance and History (later PRs of `plans/2026-10-11-tuning-hub-build.
 
 - The hub also mounts for a deck over 100 with no reading; Suggested changes is then inert and
   says why (the canvas mounts the hub "with the reading" only).
-- A tile draws only for a tool whose switch is on and whose UI is built: two of four this PR.
+- The hub draws when two or more tools are on, a tile per tool; its UI must be built to count: two of
+  four this PR (History from PR 2, Mana Balance from PR 3).
 - The A1 offer figure is `--fg-muted`, never `--warning` (R2 audit decision 1; the table row now
   says so).
 
