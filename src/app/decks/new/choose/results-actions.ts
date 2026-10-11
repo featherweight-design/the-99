@@ -5,16 +5,16 @@ import { sql } from "drizzle-orm";
 import { db } from "../../../../db";
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
-import { answersOf, parseChooseParams } from "../../../../lib/intake/params";
+import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
-import { isCandidate, loadCardRow } from "../../../../lib/intake/search";
+import { isCandidate } from "../../../../lib/intake/search";
 import { trialFill, type TrialFigures } from "../../../../lib/intake/trial";
 import { isUuid } from "../../../../lib/uuid";
 
 /**
  * The results screen's two reads after the page (plan, PR 5b). Both take the page's own query
  * string rather than a parsed object: a Server Action's arguments are untrusted input, and the one
- * parser that already refuses a malformed answer is `parseChooseParams`.
+ * parser that already refuses a malformed answer is `parseLiveParams`.
  *
  * Every argument is checked before any read, and the reader is signed in before either.
  */
@@ -41,7 +41,7 @@ export async function moreRows(queryString: string, offset: number): Promise<Res
   if (typeof offset !== "number" || !Number.isInteger(offset) || offset < 0 || offset > MAX_OFFSET) {
     throw new Error("bad offset");
   }
-  return loadResultsPage(userId, answersOf(parseChooseParams(new URLSearchParams(qs))), offset);
+  return loadResultsPage(userId, answersOf(parseLiveParams(new URLSearchParams(qs))), offset);
 }
 
 /** At most one slice of rows is counted per call. */
@@ -69,7 +69,7 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
     throw new Error("bad commanders");
   }
   const ids = [...new Set(commanderOracleIds)];
-  const p = parseChooseParams(new URLSearchParams(checkQuery(queryString)));
+  const p = parseLiveParams(new URLSearchParams(checkQuery(queryString)));
   // Only a commander the search could list is filled: an id naming any other card, or a commander
   // this player has already built, comes back null without a fill being run for it.
   const found = ids.length === 0 ? [] : (await db.execute(sql`
@@ -82,13 +82,11 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
     oracle_id: string; name: string; color_identity: string[] | null; mana_cost: string | null;
   }[];
   const byId = new Map(found.map((c) => [c.oracle_id, c]));
-  // The card through the search's own rule: a card the search drops (a basic, one not legal, one
-  // gone) is dropped here too, or the figures would count a card the results never applied.
-  const card = p.card === null ? null : (await loadCardRow(userId, p.card, false)) === null ? null : p.card;
   const answers = {
     budgetCents: p.budgetDollars === null ? null : p.budgetDollars * 100,
     bracket: p.bracket,
-    cardOracleId: card,
+    // No card: the results rank by none any more (F1), so the figures count none.
+    cardOracleId: null,
   };
   const out: Record<string, TrialFigures | null> = {};
   const queue = [...ids];

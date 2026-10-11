@@ -58,7 +58,7 @@ describe("pressNote", () => {
     expect(n.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.");
     // With Help me choose on, the reason names its deeper looks too.
     const on = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze", true)!;
-    expect(on.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this.");
+    expect(on.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit for suggestions, overviews and Help me choose. Nothing you did caused this.");
     expect(n.text).not.toMatch(/waits for a credit/);
     expect(n.text).not.toMatch(/uses a credit/i);
   });

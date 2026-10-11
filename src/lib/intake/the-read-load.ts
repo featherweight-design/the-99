@@ -17,6 +17,12 @@ const DECK_THEMES = 3;
 const READ_CARDS_MAX = 3;
 /** Commanders named per card: the ones whose decks run it most, inside the player's pool. */
 const RUN_BY_MAX = 30;
+/**
+ * The most decks the judgement is shown. A player can import any number, and each is a line of the
+ * request, so without a bound the request could outgrow the input ceiling its reservation priced
+ * (`FEATURE_CALLS.intake`). Forty lines is about 1,000 tokens against the 30,000 ceiling.
+ */
+export const READ_DECKS_MAX = 40;
 
 /**
  * The player's decks as the read sees them (lock 6): each deck's commander, its partner, and its
@@ -37,7 +43,8 @@ export async function loadReadDecks(userId: string): Promise<ReadDeck[]> {
     .sort((a, b) => a.name.localeCompare(b.name, "en") || (a.partner ?? "").localeCompare(b.partner ?? "", "en"))
     // Two decks led by one commander read as one to the model: the same commander, the same themes.
     .filter((r) => { const k = `${r.id}:${r.partner ?? ""}`; if (seen.has(k)) return false; seen.add(k); return true; })
-    .map((r) => ({ commanderOracleId: r.id, commander: r.name, partner: r.partner, themes: leadingThemes(r.tags ?? [], DECK_THEMES) }));
+    .map((r) => ({ commanderOracleId: r.id, commander: r.name, partner: r.partner, themes: leadingThemes(r.tags ?? [], DECK_THEMES) }))
+    .slice(0, READ_DECKS_MAX);
 }
 
 /** A digest of the cards the player owns: any card coming or going is a new ask (lock 7). */

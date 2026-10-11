@@ -79,7 +79,7 @@ export function SynopsisOverview({
   onRetry: (synopsisId: string) => void;
   /** Opens the Notices sheet, from the check's `See which →`. */
   onSeeWhich: () => void;
-  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
+  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name Help me choose as sharing the credits. Off,
       they read exactly as before the looks existed. */
   deeperLooks?: boolean;
   /** `tuningEnabled()`: whether the credit lines still name Suggested changes as sharing the

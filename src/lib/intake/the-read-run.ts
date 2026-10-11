@@ -10,7 +10,7 @@ import {
 } from "./limits";
 import { colorsKey, leadingThemes, loadPoolList, type PoolList } from "./pool-list";
 import { rankCandidates } from "./rank";
-import { setReadPhase, settleTheRead, startRead, type ReadErrorClass } from "./run-store";
+import { hasRunningRead, setReadPhase, settleTheRead, startRead, type ReadErrorClass } from "./run-store";
 import { loadIntakeCatalog, loadSearchFacts } from "./search";
 import { intakeLive, STUB_MODEL } from "./stub";
 import {
@@ -142,13 +142,34 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
   return shortlistSystem(lines.join("\n"));
 }
 
+/** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
   input: { readId: string; words: string; filters: ReadFilters },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
+  const begun = await beginTheRead(userId, input, deps, inputs);
+  return begun.kind === "started" ? begun.finish() : begun;
+}
+
+/**
+ * The press's first half, which the submit awaits (F8): the inputs, the fingerprint and the
+ * reservation. A repeat or a refusal is the answer already; a started read hands back `finish`,
+ * the two calls and the settle, which the submit schedules with `after()` and redirects past, so
+ * the results page attaches to a read that is already running.
+ */
+export async function beginTheRead(
+  userId: string,
+  input: { readId: string; words: string; filters: ReadFilters },
+  deps: TheReadDeps = defaultTheReadDeps(),
+  inputs?: TheReadInputs,
+): Promise<TheReadOutcome | { kind: "started"; readId: string; finish: () => Promise<TheReadOutcome> }> {
   const started0 = deps.now();
+  // Admission first: a read already running refuses this one before its inputs (the pool's whole
+  // read) are loaded. A repeat of a stored ask is then refused too while another runs, which is
+  // the cheaper error: its words are kept, and the next press answers it.
+  if (await hasRunningRead(userId, new Date(started0))) return { kind: "in_flight" };
   const facts = inputs ?? await loadTheReadInputs(userId, input.words, input.filters);
   const started = await startRead(userId, facts.fingerprint, deps.modelName, { readId: input.readId });
   if (started.kind === "stored") {
@@ -158,6 +179,17 @@ export async function runTheRead(
       : { kind: "nothing", readId: started.readId, result, repeat: true };
   }
   if (started.kind !== "started") return { kind: started.kind };
+  return { kind: "started", readId: started.readId, finish: () => finishTheRead(userId, input, deps, facts, started, started0) };
+}
+
+async function finishTheRead(
+  userId: string,
+  input: { readId: string; words: string; filters: ReadFilters },
+  deps: TheReadDeps,
+  facts: TheReadInputs,
+  started: { readId: string; callId: string },
+  started0: number,
+): Promise<TheReadOutcome> {
   const handle = { ...started, userId };
   const readId = started.readId;
   const billed: Billed[] = [];

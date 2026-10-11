@@ -75,10 +75,18 @@ describe("a reason line", () => {
     const dragon = { commanderOracleId: "ud", commander: "The Ur-Dragon", partner: null, themes: [] };
     expect(parseReason("The Ur-Dragon pays off every Dragon you cast.", [dragon], "The Ur-Dragon")).not.toBeNull();
     expect(parseReason("Unlike The Ur-Dragon.", [dragon], "Omnath, Locus of Rage")).toBeNull();
+    // An apostrophe of either form, and a possessive, still name the deck.
+    const krrik = { commanderOracleId: "kr", commander: "K'rrik, Son of Yawgmoth", partner: null, themes: [] };
+    expect(parseReason("Unlike K'rrik's deck.", [krrik])).toBeNull();
+    expect(parseReason("Unlike K\u2019rrik.", [krrik])).toBeNull();
   });
 
   it("refuses a digit, a percent sign, a score word, or a stray brace (F3)", () => {
-    for (const bad of ["Makes 5/3 Elementals on each land.", "Wins most games.%", "The best landfall commander.", "A strong fit for horrors.", "A good fit.", "★★★★★", "Unlike your {deck} deck."]) {
+    for (const bad of [
+      "Makes 5/3 Elementals on each land.", "Wins most games.%", "The best landfall commander.", "A strong fit for horrors.",
+      "A good fit.", "★★★★★", "Unlike your {deck} deck.", "My second choice for horrors.", "The third pick here.",
+      "A runner-up to the others.", "Number two on the list.", "My second-choice for horrors.", "A runner\u2011up here.", "The number-two option.", "Top\u2014pick for tokens.",
+    ]) {
       expect(parseReason(bad, decks)).toBeNull();
     }
   });

@@ -100,7 +100,7 @@ describe("SynopsisOverview", () => {
     expect(screen.getByText("0 of 3 left. Your overview and suggestions share these credits.")).toBeTruthy();
     cleanup();
     draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: out }), { deeperLooks: true });
-    expect(screen.getByText("0 of 3 left. Suggestions, overviews and deeper looks share these credits.")).toBeTruthy();
+    expect(screen.getByText("0 of 3 left. Suggestions, overviews and Help me choose share these credits.")).toBeTruthy();
   });
 
   it("names when a credit truly comes back once every one is out, not the earliest expiry", () => {

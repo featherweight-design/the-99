@@ -393,7 +393,7 @@ describe("TuningPanel", () => {
     expect(screen.getByText("0 of 5 left. Your overview and suggestions share these credits.")).toBeInTheDocument();
     cleanup();
     await draw(deps([{ ...results, stale: true, allowance: out }]), facts, true);
-    expect(screen.getByText("0 of 5 left. Suggestions, overviews and deeper looks share these credits.")).toBeInTheDocument();
+    expect(screen.getByText("0 of 5 left. Suggestions, overviews and Help me choose share these credits.")).toBeInTheDocument();
     cleanup();
     const until = new Date("2026-10-01T00:00:00Z");
     await draw(deps([{ ...results, stale: true, allowance: { ...out, paused: { until } } }]));

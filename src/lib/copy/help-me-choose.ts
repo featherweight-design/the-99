@@ -37,9 +37,20 @@ export const helpMeChooseCopy = {
     back: "‹ New deck", // canvas
     sub: "Say as much or as little as you like. Every answer is optional, and the more you give, the closer the fit.",
     subPhone: "Every answer is optional.",
-    words: "In your own words",
-    wordsPlaceholder: "e.g. Dinosaurs that go big, under $150, bracket 2, built around Regisaur Alpha",
-    wordsCaption: "Themes, cards, a budget or a bracket, in any words.",
+    // The free-text box, last in the form (the read addendum R1, `the read · copy strings.ts`).
+    // Its text is never turned into answers: with a credit free it is read by the model on submit.
+    extra: {
+      label: "Anything else?",
+      optional: "optional",
+      placeholder: "e.g. something scary and a little nasty, or a Landfall deck unlike the ones I’ve built",
+      caption: "Describe the deck in your own words: how it should feel, or how it should differ from decks you’ve built. Leave it empty and the answers above search on their own, for free.",
+      captionFilled: "Read against every commander your answers allow, and your decks’ commanders and themes. It uses a credit when you press Find commanders.",
+      captionSpent: "Kept here for when a credit comes back.",
+      count: (n: number, max: number) => `${n} / ${max}`,
+      spentLine: (standing: string) => `Won’t be read: ${standing}.`,
+      cost: "1 credit",
+      pressAria: "1 credit. Find commanders and read what you wrote.",
+    },
     colors: "Colors", // canvas
     colorsNone: "No preference: every identity, five-color included.",
     colorsAny: (names: string) => `Any identity that includes ${names}.`,

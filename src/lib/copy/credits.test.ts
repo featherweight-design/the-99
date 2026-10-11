@@ -12,8 +12,8 @@ describe("the lines naming what shares the credits, by Help me choose's switch",
   });
 
   it("name the deeper looks, in Hugh's order, with the switch on", () => {
-    expect(creditsCopy.spent(3, null, true)).toBe("0 of 3 left. Suggestions, overviews and deeper looks share these credits.");
-    expect(creditsCopy.pausedReason(true)).toBe("The app has reached its monthly limit for suggestions, overviews and deeper looks. Nothing you did caused this.");
+    expect(creditsCopy.spent(3, null, true)).toBe("0 of 3 left. Suggestions, overviews and Help me choose share these credits.");
+    expect(creditsCopy.pausedReason(true)).toBe("The app has reached its monthly limit for suggestions, overviews and Help me choose. Nothing you did caused this.");
   });
 });
 
@@ -27,8 +27,8 @@ describe("the lines naming what shares the credits, by the Tuning switch", () =>
   });
 
   it("drop suggestions alone with Tuning off, deeper looks on", () => {
-    expect(creditsCopy.spent(3, null, true, false)).toBe("0 of 3 left. Your overview and deeper looks share these credits.");
-    expect(creditsCopy.pausedReason(true, false)).toBe("The app has reached its monthly limit for overviews and deeper looks. Nothing you did caused this.");
+    expect(creditsCopy.spent(3, null, true, false)).toBe("0 of 3 left. Your overview and Help me choose share these credits.");
+    expect(creditsCopy.pausedReason(true, false)).toBe("The app has reached its monthly limit for overviews and Help me choose. Nothing you did caused this.");
   });
 
   it("composes paused from its reason with Tuning off too", () => {

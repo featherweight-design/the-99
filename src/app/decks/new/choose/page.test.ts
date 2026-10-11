@@ -17,6 +17,7 @@ vi.mock("../../../../lib/intake/run-store", async (actual) => ({
 
 const { default: ChoosePage } = await import("./page");
 const { DeeperLook } = await import("../../../../components/intake/deeper-look");
+const { IntakeForm } = await import("../../../../components/intake/intake-form");
 
 /** The first element of `type` anywhere in a rendered tree, props included (the look is a prop). */
 function find(node: unknown, type: unknown): { props: Record<string, unknown> } | null {
@@ -46,35 +47,39 @@ describe("the choose page", () => {
     await expect(ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs", a: CARD }) })).resolves.toBeTruthy();
   });
 
-  it("hands the look only a card the search applied, so a stale a never sets aside the card a read finds", async () => {
+  it("ignores the retired card answer on a results address: no chip read, no card in the search (F1)", async () => {
     stub.themes.mockResolvedValue([]);
-    stub.chip.mockResolvedValue(null);
-    const stale = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "big lizards", a: CARD }) });
-    expect((find(stale, DeeperLook)!.props.params as { card: string | null }).card).toBeNull();
-    // A chip read that FAILED says nothing about the card, which stays the answer.
-    stub.chip.mockRejectedValue(new Error("prices down"));
-    const unknown = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "big lizards", a: CARD }) });
-    expect((find(unknown, DeeperLook)!.props.params as { card: string | null }).card).toBe(CARD);
+    stub.chip.mockClear();
+    await ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs", a: CARD }) });
+    expect(stub.chip).not.toHaveBeenCalled();
   });
 
-  it("draws a settled look when the credit read fails, closing only its press", async () => {
-    const { wordsHash } = await import("../../../../lib/intake/run-store");
+  it("draws no Look deeper panel on the results: the read starts at the submit now (rework plan PR 3)", async () => {
     stub.themes.mockResolvedValue([]);
     stub.chip.mockResolvedValue(null);
+    const page = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary horrors" }) });
+    expect(find(page, DeeperLook)).toBeNull();
+  });
+
+  it("hands the form the player's credit standing, and none when that read fails (F7)", async () => {
+    stub.themes.mockResolvedValue([]);
+    const form = find(await ChoosePage({ searchParams: Promise.resolve({ w: "scary" }) }), IntakeForm)!;
+    expect(form.props.standing).toMatchObject({ used: 0, limit: 3, paused: null, ownerShare: false });
     stub.allowance.mockRejectedValue(new Error("ledger down"));
-    const words = "big lizards";
-    stub.read.mockResolvedValue({
-      kind: "read",
-      read: { chips: [], notUsed: [], notUnderstood: [] },
-      wordsHash: wordsHash(words, { budgetDollars: null, bracket: null }),
-    });
-    const done = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: words, r: "00000000-0000-4000-8000-000000000002" }) });
-    const look = find(done, DeeperLook)!;
-    expect(look.props.settled).toBe("read");
-    expect(look.props.standing).toBeNull();
-    // Nothing settled: with no standing there is no press to offer, so no panel.
-    const fresh = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: words }) });
-    expect(find(fresh, DeeperLook)).toBeNull();
+    const plain = find(await ChoosePage({ searchParams: Promise.resolve({ w: "scary" }) }), IntakeForm)!;
+    expect(plain.props.standing).toBeNull();
+  });
+
+  it("sends an old GET submit to the form with its answers, never starting a read", async () => {
+    await expect(ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) }))
+      .rejects.toThrow(/NEXT_REDIRECT/);
+    try {
+      await ChoosePage({ searchParams: Promise.resolve({ v: "submit", w: "scary", t: "horrors" }) });
+    } catch (e) {
+      const digest = String((e as { digest?: string }).digest);
+      expect(digest).toContain("/decks/new/choose?");
+      expect(digest).not.toContain("v=results");
+    }
   });
 
   it("still fails the form, which cannot draw its picker without the vocabulary", async () => {
