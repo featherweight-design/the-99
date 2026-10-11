@@ -35,16 +35,7 @@ export async function loadCart(userId: string): Promise<CartPayload> {
   const deckIds = [...new Set(rows.map((r) => r.deckId))];
   const oracleIds = [...new Set(rows.map((r) => r.oracleId))];
   const [deckRows, cardRows, availability] = await Promise.all([
-    db.select({
-      id: decks.id,
-      name: decks.name,
-      commanderOracleId: decks.commanderOracleId,
-      partnerOracleId: decks.partnerOracleId,
-      // Aliased and qualified: a bare column in this projection would bind to `deck_versions`.
-      brew: sql<boolean>`not exists (select 1 from deck_versions dv where dv.deck_id = ${decks}.id)`,
-    })
-      .from(decks)
-      .where(and(eq(decks.userId, userId), inArray(decks.id, deckIds))),
+    cartDecksQuery(userId, deckIds),
     db.select({ oracleId: cards.oracleId, name: cards.name })
       .from(cards)
       .where(inArray(cards.oracleId, oracleIds)),
@@ -65,6 +56,24 @@ export async function loadCart(userId: string): Promise<CartPayload> {
 
 /** Per card: copies owned, and how many each deck holds. Absent for a card owned in no copies. */
 export type Ownership = { owned: number; heldByDeck: Map<string, number> };
+
+/**
+ * The cart's decks: name, live commanders, and whether each is a brew (no committed version).
+ * Exported so its emitted SQL is asserted (`cart-read.sql.test.ts`): a correlated subquery in a
+ * single-table projection is where Drizzle drops the outer table's qualifier (AGENTS.md).
+ */
+export function cartDecksQuery(userId: string, deckIds: string[]) {
+  return db.select({
+    id: decks.id,
+    name: decks.name,
+    commanderOracleId: decks.commanderOracleId,
+    partnerOracleId: decks.partnerOracleId,
+    // Aliased and qualified: a bare column in this projection would bind to `deck_versions`.
+    brew: sql<boolean>`not exists (select 1 from deck_versions dv where dv.deck_id = ${decks}.id)`,
+  })
+    .from(decks)
+    .where(and(eq(decks.userId, userId), inArray(decks.id, deckIds)));
+}
 
 type DeckRow = {
   id: string;
