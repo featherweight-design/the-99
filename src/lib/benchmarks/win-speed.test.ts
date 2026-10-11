@@ -40,6 +40,13 @@ describe("winSpeed", () => {
     expect(withCreature.odds).toBeCloseTo(without.odds, 2);
   });
 
+  it("never spends a search that is itself a piece of the line", () => {
+    const tutorPiece = card("Tutor Piece", { typeLine: "Artifact", oracleText: "Search your library for an artifact card, reveal it, put it into your hand, then shuffle.", quantity: 40 });
+    const lines = [line("v", [tutorPiece, monument])];
+    // Forty copies of the searching piece are almost always seen; the line still needs Monument itself.
+    expect(winSpeed(padded([tutorPiece, monument]), lines)!.odds).toBeLessThan(0.3);
+  });
+
   it("keeps every line, uncapped", () => {
     const pieces = Array.from({ length: 8 }, (_, i) => card(`P${i}`, { typeLine: "Artifact" }));
     const lines = pieces.slice(1).map((p, i) => line(`v${i}`, [pieces[0], p]));

@@ -31,7 +31,8 @@ describe("dependencies", () => {
   });
 
   it("takes the stronger of the artifact figures and lists a card once, under its first group", () => {
-    const payoff = (i: number) => card(`Pay${i}`, { typeLine: "Artifact", oracleText: "Whenever an artifact enters, draw a card.", jobs: [job({ kind: "draw", trigger: "activated" })] });
+    // Pay0 also has an ability, so it qualifies for both groups and must be listed once, as a payoff.
+    const payoff = (i: number) => card(`Pay${i}`, { typeLine: "Artifact", oracleText: i === 0 ? "Whenever an artifact enters, draw a card.\n{T}: Add {C}." : "Whenever an artifact enters, draw a card.", jobs: [job({ kind: "draw", trigger: "activated" })] });
     const deps = dependencies([route, route, ...many(3, payoff), card("Rock", { typeLine: "Artifact", oracleText: "{T}: Add {C}.", jobs: [job({ kind: "ramp", trigger: "activated" })] })], 0, cuts);
     const row = deps.find((d) => d.row === "artifacts")!;
     expect(row.strength).toBe("heavy");

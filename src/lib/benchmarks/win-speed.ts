@@ -56,7 +56,9 @@ export function winSpeed(cards: readonly BenchCard[], lines: readonly BenchLine[
     let found = false;
     needs.forEach((need, i) => {
       const missing = need.filter((id) => !inHand.has(id));
-      if (missing.length <= searches.length && everyFound(missing, searches, reaches)) {
+      // A search that is itself a piece of this line is already spent as that piece.
+      const free = searches.filter((id) => !lines[i].pieceIds.includes(id));
+      if (missing.length <= free.length && everyFound(missing, free, reaches)) {
         hits[i]++;
         found = true;
       }
