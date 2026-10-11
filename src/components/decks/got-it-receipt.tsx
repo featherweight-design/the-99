@@ -70,8 +70,8 @@ export type GotItUndoHost = {
   undone: (oracleId: string, back: boolean) => void;
   /** How many fresh lists have registered so far: taken before a request whose refresh we await. */
   generation: () => number;
-  /** Resolves once a list newer than `since` has registered (or after a bounded wait). */
-  afterRefresh: (since: number) => Promise<void>;
+  /** True once a list newer than `since` has registered; false when the bounded wait ran out. */
+  afterRefresh: (since: number) => Promise<boolean>;
   /** It failed after this toast was replaced: the provider brings this receipt back, failed. */
   failedAway: () => void;
   /** Whether the fresh Shopping list bills the card now; null with no list to ask. */
@@ -202,11 +202,14 @@ export function GotItReceipt({
       since = host.generation();
       router.refresh();
     }
-    await host.afterRefresh(since);
-    const cameBack = !stayedNow.current && (host.onList(oracleId) ?? true);
+    const landed = await host.afterRefresh(since);
+    // With no fresh list seen, nothing is decided from the old one: the toast says only what the
+    // revert did (the copies left the collection), and the held entry stays, so the slot steps
+    // aside on its own once a list billing the card arrives, or at the next read.
+    const cameBack = landed && !stayedNow.current && (host.onList(oracleId) ?? true);
     stage.current = "idle";
     host.end(oracleId);
-    host.undone(oracleId, cameBack);
+    if (landed) host.undone(oracleId, cameBack);
     restart();
     setBack(cameBack);
     setPhase({ k: "undone" });

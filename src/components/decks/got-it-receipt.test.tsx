@@ -39,7 +39,7 @@ function hostMock(before: boolean | null = false, after: boolean | null = true) 
     start: vi.fn(), end: vi.fn(), undone: vi.fn(), failedAway: vi.fn(),
     onList: vi.fn(() => list.billed),
     generation: vi.fn(() => 0),
-    afterRefresh: vi.fn(async () => { list.billed = after; }),
+    afterRefresh: vi.fn(async () => { list.billed = after; return true; }),
   };
 }
 
@@ -238,13 +238,25 @@ describe("Undo", () => {
     revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
     const { host } = draw();
     let land!: () => void;
-    host.afterRefresh.mockReturnValueOnce(new Promise<void>((r) => { land = r; }));
+    host.afterRefresh.mockReturnValueOnce(new Promise<boolean>((r) => { land = () => r(true); }));
     await act(async () => fireEvent.click(undo()));
     expect(screen.getByRole("button", { name: c.undoing })).toBeInTheDocument();
     expect(host.undone).not.toHaveBeenCalled();
     expect(host.end).not.toHaveBeenCalled();
     await act(async () => land());
     expect(host.undone).toHaveBeenCalled();
+  });
+
+  // A refresh slower than the bounded wait: nothing is decided from the list read before the revert.
+  it("says only what the revert did and keeps the held entry when no fresh list lands in time", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    const { host } = draw();
+    host.afterRefresh.mockResolvedValueOnce(false);
+    await act(async () => fireEvent.click(undo()));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
+    expect(host.undone).not.toHaveBeenCalled();
+    expect(host.end).toHaveBeenCalled();
   });
 
   it("decides stayed from the list, not the facts: an idempotent retry's stayed row is undone elsewhere", async () => {

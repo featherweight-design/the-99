@@ -119,13 +119,15 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
     end: (id: string) => setUndoing((u) => (u.has(id) ? new Set([...u].filter((x) => x !== id)) : u)),
     onList: (id: string) => list.current?.(id) ?? null,
     generation: () => generation.current,
-    afterRefresh: (since: number) => new Promise<void>((resolve) => {
-      if (generation.current > since) return resolve();
-      // Bounded: a list that never re-renders (the page left) must not hold the undo for good.
-      const timer = setTimeout(resolve, REFRESH_WAIT_MS);
+    afterRefresh: (since: number) => new Promise<boolean>((resolve) => {
+      if (generation.current > since) return resolve(true);
+      // Bounded: a list that never re-renders (the page left) must not hold the undo for good. A
+      // wait that runs out answers false, and the undo then decides nothing from a list it has not
+      // seen (`got-it-receipt.tsx`).
+      const timer = setTimeout(() => resolve(false), REFRESH_WAIT_MS);
       waiters.current.push(() => {
         clearTimeout(timer);
-        resolve();
+        resolve(true);
       });
     }),
     // Called once the refreshed list has landed. A row that came back fades in where its slot was;
