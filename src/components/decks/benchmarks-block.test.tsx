@@ -76,6 +76,17 @@ describe("BenchmarksBlock", () => {
     expect(within(combat).queryByRole("button")).toBeNull();
   });
 
+  it("anchors the Dependencies tooltip to its own head row, not the whole box", () => {
+    render(<BenchmarksBlock benchmarks={wire({ dependencies: [graveyard] })} analyzedAt="2026-10-01T12:00:00Z" />);
+    const tip = screen.getByRole("tooltip", { hidden: true });
+    expect(screen.getByRole("button", { name: copy.deps.tipAria }).getAttribute("aria-describedby")).toBe(tip.id);
+    let el = tip.parentElement;
+    while (el && !el.className.split(" ").includes("relative")) el = el.parentElement;
+    expect(el?.hasAttribute("data-dependencies")).toBe(false);
+    expect(el?.textContent).toContain(copy.deps.name);
+    expect(el?.querySelector("[data-dependency]")).toBeNull();
+  });
+
   it("captions a stale reading with its date, and never with the scale line", () => {
     render(<BenchmarksBlock benchmarks={wire()} stale analyzedAt="2026-10-01T12:00:00Z" />);
     expect(screen.queryByText(copy.caption)).toBeNull();

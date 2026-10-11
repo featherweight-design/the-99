@@ -445,7 +445,14 @@ describe("AnalysisPanel", () => {
       // Benchmarks audit rule 9: the 1300 form is a grid, the note under the line, left-aligned.
       expect(note.className).toMatch(/md:col-start-1 md:row-start-2/);
       expect(note.className).toMatch(/md:text-left/);
-      expect(button.className).toMatch(/md:col-start-2 md:row-span-2/);
+      expect(button.className).toMatch(/md:col-start-2/);
+      expect(button.className).toMatch(/md:row-span-2/);
+    });
+
+    it("keeps the button on one row when the banner has no note", () => {
+      draw(ready({ fresh: false }));
+      const button = within(screen.getByTestId("analysis-banner")).getByRole("button");
+      expect(button.className).not.toMatch(/md:row-span-2/);
     });
 
     // Finding 10b: a blocked press writes nothing, so it names no cost.

@@ -35,6 +35,7 @@ export function InfoTip({ id, lines, label }: { id: string; lines: readonly stri
         type="button"
         aria-label={label}
         aria-expanded={open}
+        aria-describedby={id}
         onClick={() => setPinned((v) => !v)}
         onFocus={(e) => {
           // Keyboard focus only: a tap focuses a button too, and would then hold it open against the next tap.

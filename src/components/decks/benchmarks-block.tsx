@@ -119,7 +119,7 @@ export function BenchmarksBlock({
         data-dependencies
         className={w("md:rounded-[9px]", "relative flex flex-col rounded-[11px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)]")}
       >
-        <div className={w("md:min-h-0 md:px-[16px] md:pb-[10px] md:pt-[12px]", "flex min-h-[44px] items-center gap-[8px] px-[13px]")}>
+        <div className={w("md:min-h-0 md:px-[16px] md:pb-[10px] md:pt-[12px]", "relative flex min-h-[44px] items-center gap-[8px] px-[13px]")}>
           <span className={w("md:text-[12px]", "text-[12.5px] font-semibold text-[color:var(--fg)]")}>{copy.deps.name}</span>
           <InfoTip id={tipId} lines={[copy.deps.tip]} label={copy.deps.tipAria} />
         </div>
@@ -130,7 +130,7 @@ export function BenchmarksBlock({
           >
             <p className={w("md:text-[13px]", "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]")}>{copy.deps.noneHead}</p>
             <p className={w("md:text-[12px]", "m-0 text-[11.5px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]")}>{copy.deps.noneLine}</p>
-            <span className={w("md:text-[10px]", "font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-faint)]")}>{copy.deps.checked}</span>
+            <span className={w("md:text-[10px] md:leading-normal", "font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-faint)]")}>{copy.deps.checked}</span>
           </div>
         ) : (
           benchmarks.dependencies.map((d) => <DependencyRow key={d.row} dep={d} rows={rows} onOpen={onOpen} />)
@@ -148,7 +148,7 @@ function GradeTile({ grade, benchmarks, rows, onOpen }: { grade: Grade; benchmar
     // No combo line: no meter (five empty segments would read as zero) and no opener. A dashed
     // panel at full height, inside the row on the phone (design call 5).
     return (
-      <div data-grade={grade} data-no-combo className={w("md:rounded-[9px] md:border md:border-dashed md:border-[color:var(--border-dashed)] md:p-0", "border-b border-[color:var(--border)] p-[10px]")}>
+      <div data-grade={grade} data-no-combo className={w("md:min-w-0 md:rounded-[9px] md:border md:border-dashed md:border-[color:var(--border-dashed)] md:p-0", "border-b border-[color:var(--border)] p-[10px]")}>
         <div className={w("md:min-h-0 md:justify-start md:gap-[8px] md:rounded-none md:border-0 md:px-[14px] md:pb-[11px] md:pt-[12px]", "flex min-h-[104px] flex-col justify-center gap-[7px] rounded-[8px] border border-dashed border-[color:var(--border-dashed)] px-[12px] py-[10px]")}>
           <div className={w("md:flex-col md:items-start md:gap-[8px]", "flex items-baseline justify-between gap-[10px]")}>
             <span className={w("md:text-[12px]", "text-[12.5px] font-semibold text-[color:var(--fg)]")}>{name}</span>
