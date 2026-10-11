@@ -8,6 +8,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckCommander } from "../../lib/decks/read";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { proxyCopy } from "../../lib/copy/proxies";
 import { recommendedMix } from "../../lib/decks/mix";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 
@@ -93,6 +94,22 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+});
+
+describe("I got it's Shopping key", () => {
+  // The wiring `buildMarkKeyEntries` is told about: with I got it mounted, the Shopping key above the
+  // list decodes the buy mark and the mark key under it must not say `to buy` again. Mutation: pass
+  // `shoppingKeyDraws: false` in `Decklist` and the first assertion fails.
+  it("is the only place Shopping says `to buy`, and the All view's key still does", () => {
+    const { rerender } = render(tree([signet, talisman], "shopping"));
+    expect(screen.getByTestId("shopping-key")).toBeInTheDocument();
+    expect(screen.getByText(gotItCopy.row.keyBuy)).toBeInTheDocument();
+    expect(screen.queryByText(proxyCopy.key.buy)).toBeNull();
+
+    rerender(tree([signet, talisman], "all"));
+    expect(screen.queryByTestId("shopping-key")).toBeNull();
+    expect(screen.getByText(proxyCopy.key.buy)).toBeInTheDocument();
+  });
 });
 
 describe("I got it's held slot", () => {

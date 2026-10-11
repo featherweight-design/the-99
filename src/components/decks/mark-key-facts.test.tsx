@@ -85,4 +85,14 @@ describe("the key's composition rule", () => {
     const words = entries.filter((e) => (CARD_FACTS as readonly string[]).includes(e.id));
     expect(words.map((e) => e.word)).toEqual(CARD_FACTS.map((f) => cardMarkCopy[f]));
   });
+
+  it("says `to buy` under Shopping only when the Shopping key is not drawn", () => {
+    // I got it on: `ShoppingKey` decodes the buy mark above the list, and every Shopping row
+    // carries it, so this key stops repeating it (Hugh, 2026-10-11). Off, it is the only decoder.
+    const cards = [card({ owned: false })];
+    expect(ids(buildMarkKeyEntries({ cards, filter: "shopping", inCardView: false, shoppingKeyDraws: true }))).not.toContain("buy");
+    expect(ids(buildMarkKeyEntries({ cards, filter: "shopping", inCardView: false }))).toContain("buy");
+    // Outside Shopping the buy mark marks only some rows, so it is still glossed.
+    expect(ids(buildMarkKeyEntries({ cards, filter: "all", inCardView: false, shoppingKeyDraws: true }))).toContain("buy");
+  });
 });

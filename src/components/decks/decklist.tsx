@@ -240,18 +240,22 @@ export function buildMarkKeyEntries({
   filter,
   inCardView,
   commanderRows = [],
+  shoppingKeyDraws = false,
 }: {
   cards: DeckDetailCard[];
   filter: string;
   inCardView: boolean;
   /** The commanders' Shopping rows (`commanderShoppingRows`), glossed under Shopping alone. */
   commanderRows?: DeckDetailCard[];
+  /** `ShoppingKey` is drawn above the list (I got it on). It decodes the buy mark itself, so under
+   *  Shopping, where every row carries it, this key does not say `to buy` a second time (Hugh, 2026-10-11). */
+  shoppingKeyDraws?: boolean;
 }): MarkKeyEntry[] {
     const shown = filter === "shopping"
       ? [...commanderRows, ...cards].filter(isShoppingCard)
       : cards;
     const entries: MarkKeyEntry[] = [];
-    if (shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
+    if (!(shoppingKeyDraws && filter === "shopping") && shown.some((c) => deckRowTag(c, filter === "shopping" && isSpokenFor(c)) === "buy")) {
       entries.push({
         id: "buy",
         // The word the surface beneath it already speaks. The tile's `$` carries
@@ -376,6 +380,7 @@ export function Decklist({
   // leaving the deck, clears them; the action's revalidation does not.
   const gotIt = useGotIt();
   const clearHeld = gotIt?.clearHeld;
+  const shoppingKeyDraws = gotIt !== null;
   const [slotsLeft, setSlotsLeft] = useState<ReadonlySet<string>>(NO_SLOTS_LEFT);
   useEffect(() => () => clearHeld?.(), [filter, statsOpen, clearHeld]);
   const onFilterChange = (f: "all" | "shopping") => {
@@ -508,8 +513,8 @@ export function Decklist({
   );
 
   const markKey = useMemo(
-    () => buildMarkKeyEntries({ cards, filter, inCardView, commanderRows: commanderShopping }),
-    [cards, filter, inCardView, commanderShopping],
+    () => buildMarkKeyEntries({ cards, filter, inCardView, commanderRows: commanderShopping, shoppingKeyDraws }),
+    [cards, filter, inCardView, commanderShopping, shoppingKeyDraws],
   );
 
   // One label, computed beside the entries and passed to every instance: the
