@@ -28,6 +28,14 @@ describe("the hub's reads reap the reader's abandoned runs before they describe 
     expect(order).toEqual(["reap", "read"]);
   });
 
+  it("never returns a past run of a tool this deployment does not draw", async () => {
+    const { readPastRun } = await import("../../lib/tuning/history-read");
+    vi.mocked(readPastRun).mockResolvedValueOnce({ kind: "count", tool: "mana", at: "2026-10-11T12:00:00Z", summary: { kind: "none" } } as never);
+    expect(await readTuningPastRun(DECK, `count:${DECK}`)).toBeNull();
+    vi.mocked(readPastRun).mockResolvedValueOnce({ kind: "count", tool: "cuts", at: "2026-10-11T12:00:00Z", summary: { kind: "none" } } as never);
+    expect(await readTuningPastRun(DECK, `count:${DECK}`)).not.toBeNull();
+  });
+
   it("reaps nothing for an id that is not a deck's", async () => {
     await readTuningHistory("nope", null, null);
     expect(reapReaderRuns).not.toHaveBeenCalled();

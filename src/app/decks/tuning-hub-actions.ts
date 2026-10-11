@@ -4,7 +4,7 @@ import { requireUserId } from "../../lib/auth";
 import { hubTools, tuningHubEnabled } from "../../lib/tuning/flag";
 import { readHubTiles } from "../../lib/tuning/hub-read";
 import type { HubTiles } from "../../lib/tuning/hub-tiles";
-import { parseHistoryId, type HistoryPage, type HistoryTool, type PastRun } from "../../lib/tuning/history";
+import { parseHistoryId, pastRunTool, type HistoryPage, type HistoryTool, type PastRun } from "../../lib/tuning/history";
 import { readHistory, readPastRun } from "../../lib/tuning/history-read";
 import { reapReaderRuns } from "../../lib/tuning/reap-runs";
 import { isUuid } from "../../lib/uuid";
@@ -45,5 +45,9 @@ export async function readTuningPastRun(deckId: string, id: string): Promise<Pas
   const ref = parseHistoryId(id);
   if (!ref || !isUuid(ref.uuid)) return null;
   await reapReaderRuns(deckId, userId);
-  return readPastRun(deckId, userId, ref);
+  const run = await readPastRun(deckId, userId, ref);
+  // Only the tools this deployment draws, as History's list: a tool whose switch is off is not
+  // reachable through an old id either.
+  const drawn: readonly HistoryTool[] = hubTools();
+  return run && drawn.includes(pastRunTool(run)) ? run : null;
 }

@@ -227,6 +227,11 @@ export function pastVerdict(v: string): PastVerdict {
 
 
 /** Parse a past-run id the History wrote (`run:<uuid>` / `count:<uuid>`). */
+/** The tool a past run belongs to. */
+export function pastRunTool(run: PastRun): HistoryTool {
+  return run.kind === "count" ? run.tool : run.kind === "cutsDeeper" ? "cuts" : "suggested";
+}
+
 export function parseHistoryId(id: string): { kind: "run" | "count"; uuid: string } | null {
   const m = /^(run|count):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(id);
   return m ? { kind: m[1] as "run" | "count", uuid: m[2] } : null;
