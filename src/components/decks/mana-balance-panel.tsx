@@ -28,7 +28,7 @@ const COUNTING_DELAY_MS = 400;
 /** The OPEN sections, per deck (both start folded: R3b, design table `ManaSection`). */
 export const manaOpenKey = (deckId: string) => `the99.mana.open.${deckId}`;
 
-const SHELL = "mt-[18px] flex flex-col gap-[18px] rounded-[11px] px-[14px] py-[16px] md:mt-6 md:rounded-[12px] md:px-[20px] md:py-[18px]";
+const SHELL = "mt-[18px] flex flex-col gap-[18px] rounded-[12px] px-[14px] py-[16px] md:mt-6 md:px-[20px] md:py-[18px]";
 const SHELL_STYLE = { background: "var(--surface-sunken)", border: "1px solid var(--border)" } as const;
 const HEADING = "font-display text-[17px] font-semibold outline-none md:text-[19px]";
 
@@ -122,18 +122,18 @@ export function ManaBalancePanel({
 
   return (
     <section aria-labelledby="mana-heading" data-mana-state={balance.state} className={SHELL} style={SHELL_STYLE}>
-      <div className="flex flex-col gap-[8px]">
+      <div className="flex flex-col gap-[6px]">
         <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[3px]">
           <h2 id="mana-heading" tabIndex={-1} className={HEADING} style={{ color: "var(--fg)" }}>{copy.title}</h2>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.sub(pipTotal, sourceTotal)}</span>
         </div>
         {colorless ? (
           <div className="flex items-start gap-[10px] rounded-[10px] border border-[color:var(--border-strong)] bg-[var(--surface)] px-[14px] py-[12px]">
-            <span aria-hidden className="inline-flex size-[18px] flex-none items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10px] text-[color:var(--fg-faint)]">i</span>
-            <p className="text-[13px] leading-[1.55] text-[color:var(--fg-body)]">{copy.thin.colorless}</p>
+            <span aria-hidden className="inline-flex size-[18px] flex-none items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] font-semibold text-[color:var(--fg-faint)]">i</span>
+            <p className="min-w-0 flex-1 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.thin.colorless}</p>
           </div>
         ) : (
-          <p className="max-w-[660px] text-[13px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13.5px]">
+          <p className="max-w-[660px] text-[13px] leading-[1.6] [text-wrap:pretty] text-[color:var(--fg-body)] md:text-[13.5px]">
             {balance.state === "noSources" && noLands ? `${deckStatsCopy.colors.noLands} ${copy.thin.noSources}` : copy.lead}
           </p>
         )}
@@ -142,7 +142,7 @@ export function ManaBalancePanel({
       {colorless ? (
         colorlessRow ? <ColorlessLine row={colorlessRow} /> : null
       ) : (
-        <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-col gap-[8px]">
           <ManaEvidenceTable balance={balance} commander={commander} />
           <NeedsExplainer />
         </div>
@@ -155,6 +155,8 @@ export function ManaBalancePanel({
       ) : null}
       <ManaSection
         id="lands"
+        // R3b sets the two sections 12 apart, not the panel's 18.
+        tight={!colorless && !!initial}
         label={copy.sections.lands.label}
         clause={copy.sections.lands.clause(balance.lands.count, tappedTotal(balance.lands.tapped), balance.lands.karstenLands.toFixed(1))}
         open={sections.has("lands")}

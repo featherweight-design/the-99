@@ -7,12 +7,14 @@
 
 import { useId, useRef, useState } from "react";
 
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { KARSTEN_ARTICLE_URL, manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import { colorRows, type ColorRow } from "../../lib/mana/color-rows";
 import type { BalanceColor, ColorEvidence } from "../../lib/tuning/mana-balance";
 import { colorName, neededFor, type ClientManaBalance } from "../../lib/tuning/mana-view";
 import { PIP_STYLE, SourceBar } from "./mana-color-parts";
 
+const capitalized = (s: string) => s[0].toUpperCase() + s.slice(1);
 const MINI = "font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:hidden";
 const FIGURE = "whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)]";
 const SUB = "font-mono text-[10px] leading-[1.45] text-[color:var(--fg-faint)]";
@@ -43,28 +45,29 @@ function Row({ row, e, widest, commander }: { row: ColorRow; e: ColorEvidence; w
   const needed = neededText(e);
   const pipsText = row.pips ? copy.table.share(row.pips, row.pipShare) : "0";
   const sourcesText = sources ? copy.table.share(sources, row.sourceShare) : "0";
-  const without = e.pips.withoutCommander !== e.pips.withCommander ? copy.table.without(e.pips.withoutCommander, commander) : null;
+  // Under every color with a pip, equal or not (R3b), so the commander's share is always readable.
+  const without = row.pips ? copy.table.without(e.pips.withoutCommander, commander) : null;
   const split = sources ? copy.table.split(row.lands, row.other) : null;
   const name = colorName(e.color);
   return (
     <li
       data-mana-row={e.color}
       aria-label={copy.table.rowAria(name, [pipsText, without].filter(Boolean).join(", "), [sourcesText, split].filter(Boolean).join(", "), [needed.figure === "—" ? "" : needed.figure, needed.sub].filter(Boolean).join(", "))}
-      className={`${GRID} border-b border-b-[color:var(--border)] px-[2px] py-[11px]`}
+      className={`${GRID} items-start border-b border-b-[color:var(--border)] px-[2px] py-[11px]`}
     >
       <span aria-hidden="true" className="flex items-center gap-[8px]">
         <ColorDisc c={e.color} size={18} />
         <span className="text-[13px] text-[color:var(--fg)]">{name}</span>
       </span>
-      <span aria-hidden="true" className="order-last flex min-w-0 flex-col gap-[3px] md:order-none">
+      <span aria-hidden="true" className="order-last flex min-w-0 flex-col gap-[4px] md:order-none">
         <span className={MINI}>{copy.table.head.pips}</span>
         <span className="flex items-center gap-[8px]">
-          {row.pips ? <span className="h-[14px] flex-none rounded-[3px]" style={{ width: `${(row.pipShare / widest) * 60}%`, background: PIP_STYLE[e.color].bg }} /> : null}
+          {row.pips ? <span className="h-[14px] min-w-[8px] flex-none rounded-[3px]" style={{ width: `${(row.pipShare / widest) * 60}%`, background: PIP_STYLE[e.color].bg }} /> : null}
           <span className={row.pips ? FIGURE : `${FIGURE} text-[color:var(--fg-locked)]`}>{pipsText}</span>
         </span>
         {without ? <span className={SUB}>{without}</span> : null}
       </span>
-      <span aria-hidden="true" className="order-last flex min-w-0 flex-col gap-[3px] md:order-none">
+      <span aria-hidden="true" className="order-last flex min-w-0 flex-col gap-[4px] md:order-none">
         <span className={MINI}>{copy.table.head.sources}</span>
         <span className="flex items-center gap-[8px]">
           <SourceBar c={e.color} lands={row.lands} other={row.other} widthPct={(row.sourceShare / widest) * 60} />
@@ -84,9 +87,12 @@ function Row({ row, e, widest, commander }: { row: ColorRow; e: ColorEvidence; w
 /** The colorless line: `{C}` pips and colorless sources, drawn under the colored rows (or alone). */
 export function ColorlessLine({ row }: { row: ColorRow }) {
   return (
-    <p data-mana-colorless className="flex items-center gap-[8px] px-[2px] py-[9px] font-mono text-[11px] text-[color:var(--fg-body)]">
-      <ColorDisc c="C" size={18} />
-      {copy.table.colorless(row.pips, row.lands + row.other, row.sourceShare)}
+    <p data-mana-colorless className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px] border-b border-b-[color:var(--border)] px-[2px] py-[10px]">
+      <span className="flex items-center gap-[8px]">
+        <ColorDisc c="C" size={18} />
+        <span className="text-[13px] text-[color:var(--fg-body)]">{capitalized(deckStatsCopy.colors.names.C)}</span>
+      </span>
+      <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{copy.table.colorless(row.pips, row.lands + row.other, row.sourceShare)}</span>
     </p>
   );
 }
@@ -97,14 +103,14 @@ export function ManaEvidenceTable({ balance, commander }: { balance: ClientManaB
   const colorless = rows.find((r) => r.c === "C");
   const byColor = new Map(balance.colors.map((e) => [e.color, e]));
   return (
-    <div data-mana-table>
-      <div aria-hidden="true" className={`hidden border-b border-b-[color:var(--border-strong)] px-[2px] pb-[7px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid ${GRID}`}>
+    <div data-mana-table className="border-t border-t-[color:var(--border)]">
+      <div aria-hidden="true" className={`hidden border-b border-b-[color:var(--border)] px-[2px] py-[8px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid ${GRID}`}>
         <span>{copy.table.head.color}</span>
         <span>{copy.table.head.pips}</span>
         <span>{copy.table.head.sources}</span>
         <span>{copy.table.head.needed}</span>
       </div>
-      <ul className="border-t border-t-[color:var(--border)] md:border-t-0">
+      <ul>
         {colored.map((r) => <Row key={r.c} row={r} e={byColor.get(r.c)!} widest={widest} commander={commander} />)}
       </ul>
       {colorless ? <ColorlessLine row={colorless} /> : null}
@@ -114,22 +120,22 @@ export function ManaEvidenceTable({ balance, commander }: { balance: ClientManaB
 
 export function LinkOut() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" className="ml-[2px] inline-block align-[-2px]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" className="block flex-none" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 3.5h6.5V10M12.5 3.5 4 12" />
     </svg>
   );
 }
 
-function ArticleLink() {
+function ArticleLink({ label }: { label: string }) {
   return (
     <a
       href={KARSTEN_ARTICLE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={copy.newTab(copy.cite.link)}
-      className="font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+      aria-label={copy.newTab(label)}
+      className="inline-flex items-center gap-[4px] whitespace-nowrap font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
     >
-      {copy.cite.link}
+      {label}
       <LinkOut />
     </a>
   );
@@ -148,7 +154,7 @@ export function NeedsExplainer() {
       data-needs-explainer
       className={open ? "flex flex-col gap-[7px] rounded-[9px] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--accent)] bg-[var(--surface-sunken)] px-[13px] py-[11px]" : ""}
     >
-      <div className="flex items-center justify-between gap-[10px]">
+      <div className="flex items-baseline justify-between gap-[10px]">
         <button
           ref={triggerRef}
           type="button"
@@ -171,11 +177,11 @@ export function NeedsExplainer() {
       </div>
       {open ? (
         <div id={panelId} role="region" aria-label={copy.needs.toggle} className="flex flex-col gap-[7px]">
-          <p className="text-[12px] leading-[1.55] text-[color:var(--fg-body)]">
+          <p className="text-[12px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">
             <b className="font-semibold text-[color:var(--fg)]">{copy.needs.needsLabel}</b> {copy.needs.needsBody}
           </p>
-          <p className="text-[12px] leading-[1.55] text-[color:var(--fg-body)]">
-            <b className="font-semibold text-[color:var(--fg)]">{copy.needs.sourceLabel}</b> {copy.needs.sourceBody} <ArticleLink />. {copy.needs.sourceTail}
+          <p className="text-[12px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">
+            <b className="font-semibold text-[color:var(--fg)]">{copy.needs.sourceLabel}</b> {copy.needs.sourceBody} <ArticleLink label={copy.needs.sourceLink} />. {copy.needs.sourceTail}
           </p>
         </div>
       ) : null}
@@ -186,8 +192,8 @@ export function NeedsExplainer() {
 /** The panel's last line. The colorless deck has no Needed column, so it cites the land formula alone. */
 export function KarstenCitation({ landOnly }: { landOnly: boolean }) {
   return (
-    <p data-mana-citation className="max-w-[700px] border-t border-t-[color:var(--border)] pt-[12px] text-[12px] leading-[1.6] text-[color:var(--fg-muted)]">
-      {landOnly ? copy.cite.landOnlyBefore : copy.cite.before} <ArticleLink />, {landOnly ? copy.cite.landOnlyAfter : copy.cite.after}
+    <p data-mana-citation className="max-w-[700px] border-t border-t-[color:var(--border)] pt-[12px] text-[12px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
+      {landOnly ? copy.cite.landOnlyBefore : copy.cite.before} <ArticleLink label={copy.cite.link} />, {landOnly ? copy.cite.landOnlyAfter : copy.cite.after}
     </p>
   );
 }

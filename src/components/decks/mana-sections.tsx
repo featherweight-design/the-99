@@ -10,13 +10,15 @@ import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { BalanceColor, ColorEvidence, LandEvidence, PatternEvidence } from "../../lib/tuning/mana-balance";
 import { colorName, colorWord } from "../../lib/tuning/mana-view";
 import { useCardDetail } from "../cards/card-detail-provider";
-import { ColorDisc } from "./mana-evidence";
+import { PIP_STYLE } from "./mana-color-parts";
 
 /** Names a pattern row shows before `+N more`. */
 const NAMES_SHOWN = 3;
 
-export function ManaSection({ id, label, clause, open, onToggle, children }: {
+export function ManaSection({ id, label, clause, open, onToggle, tight = false, children }: {
   id: string;
+  /** Set 12 after the section above it rather than the panel's 18 (R3b). */
+  tight?: boolean;
   label: string;
   clause: string;
   open: boolean;
@@ -25,7 +27,7 @@ export function ManaSection({ id, label, clause, open, onToggle, children }: {
 }) {
   const bodyId = useId();
   return (
-    <section data-mana-section={id} aria-label={label} className="border-t border-t-[color:var(--border-strong)]">
+    <section data-mana-section={id} aria-label={label} className={`border-t border-t-[color:var(--border-strong)] ${tight ? "-mt-[6px]" : ""}`}>
       <h3 className="m-0">
         <button
           type="button"
@@ -33,7 +35,7 @@ export function ManaSection({ id, label, clause, open, onToggle, children }: {
           // The body is unmounted while folded, so the reference would dangle.
           aria-controls={open ? bodyId : undefined}
           onClick={onToggle}
-          className="flex min-h-[52px] w-full cursor-pointer items-baseline gap-x-[8px] border-none bg-transparent p-0 pt-[12px] text-left md:min-h-[44px] md:gap-x-[10px]"
+          className="flex min-h-[52px] w-full cursor-pointer items-center gap-x-[8px] border-none bg-transparent p-0 text-left md:min-h-[44px] md:gap-x-[10px]"
         >
           <span aria-hidden className={`inline-block text-[color:var(--fg-muted)] transition-transform duration-150 ${open ? "rotate-90" : ""}`}>▸</span>
           <span className="flex flex-col gap-x-[10px] gap-y-[2px] md:flex-row md:items-baseline">
@@ -73,13 +75,13 @@ function ColorChips({ colors, picked, onPick }: { colors: BalanceColor[]; picked
             data-mana-chip={c}
             onClick={() => onPick(c)}
             onKeyDown={(e) => onKey(e, i)}
-            className={`inline-flex h-[44px] flex-none cursor-pointer items-center gap-[7px] whitespace-nowrap rounded-full px-[12px] text-[12.5px] md:h-[30px] ${
+            className={`inline-flex h-[44px] flex-none cursor-pointer items-center gap-[7px] whitespace-nowrap rounded-full px-[12px] text-[12px] md:h-[30px] ${
               on
                 ? "border border-[color:var(--fg-body)] bg-[var(--fg-body)] font-semibold text-[color:var(--bg)]"
-                : "border border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)]"
+                : "border border-[color:var(--border-strong)] bg-transparent font-medium text-[color:var(--fg-muted)]"
             }`}
           >
-            <ColorDisc c={c} size={12} />
+            <span aria-hidden className="size-[12px] flex-none rounded-full" style={{ background: PIP_STYLE[c].bg }} />
             {colorName(c)}
           </button>
         );
@@ -104,14 +106,15 @@ function CardNames({ pattern, ids }: { pattern: PatternEvidence; ids: Readonly<R
               <button
                 type="button"
                 onClick={(e) => open(id, siblings, undefined, { opener: e.currentTarget })}
-                className="cursor-pointer text-left underline decoration-[color:var(--accent)] decoration-dotted underline-offset-[3px]"
+                className="cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left"
               >
                 {c.name}
               </button>
             ) : c.name}
             {c.copies > 1 ? <span className="font-mono text-[10px] text-[color:var(--fg-faint)]"> {copy.patterns.copies(c.copies)}</span> : null}
+            {c.commander ? " " : null}
             {c.commander ? (
-              <span className="ml-[5px] rounded-[4px] border border-[color:var(--border-strong)] px-[4px] align-[1px] font-mono text-[9px] uppercase text-[color:var(--fg-muted)]">
+              <span className="rounded-[4px] border border-[color:var(--border-strong)] px-[4px] align-[1px] font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--fg-muted)]">
                 {copy.patterns.commander}
               </span>
             ) : null}
@@ -152,8 +155,8 @@ export function PatternRows({ colors, initial, ids }: { colors: readonly ColorEv
   return (
     <div className="flex flex-col gap-[10px]">
       {pipped.length > 1 ? <ColorChips colors={pipped.map((c) => c.color)} picked={current.color} onPick={setPicked} /> : null}
-      <div>
-        <div aria-hidden="true" className="hidden grid-cols-[72px_minmax(0,1fr)_200px] gap-[14px] border-b border-b-[color:var(--border-strong)] px-[2px] pb-[7px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid">
+      <div className="border-t border-t-[color:var(--border)]">
+        <div aria-hidden="true" className="hidden grid-cols-[72px_minmax(0,1fr)_200px] gap-[14px] border-b border-b-[color:var(--border)] px-[2px] py-[8px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid">
           <span>{copy.patterns.head.cost}</span>
           <span>{copy.patterns.head.cards}</span>
           <span className="text-right">{copy.patterns.head.needed}</span>
@@ -165,22 +168,22 @@ export function PatternRows({ colors, initial, ids }: { colors: readonly ColorEv
               <li
                 key={p.pattern}
                 data-mana-pattern={p.pattern}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-x-[14px] gap-y-[4px] border-b border-b-[color:var(--border)] px-[2px] py-[10px] md:grid-cols-[72px_minmax(0,1fr)_200px]"
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-x-[14px] gap-y-[5px] border-b border-b-[color:var(--border)] px-[2px] py-[10px] md:grid-cols-[72px_minmax(0,1fr)_200px]"
               >
-                <span className="whitespace-nowrap">
-                  <span className="font-mono text-[13px] font-semibold text-[color:var(--fg)]">{p.pattern}</span>{" "}
+                <span className="flex items-baseline gap-[6px] whitespace-nowrap">
+                  <span className="font-mono text-[13px] font-semibold text-[color:var(--fg)]">{p.pattern}</span>
                   <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.patterns.copies(p.copies)}</span>
                 </span>
                 <span className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"><CardNames pattern={p} ids={ids} /></span>
-                <span className={`col-start-3 row-start-1 text-right font-mono text-[12px] md:col-start-auto md:row-start-auto ${figure.known ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}>
+                <span className={`col-start-3 row-start-1 whitespace-nowrap text-right font-mono text-[12px] md:col-start-auto md:row-start-auto ${figure.known ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}>
                   {figure.text}
                 </span>
               </li>
             );
           })}
         </ul>
-        <p className="mt-[9px] font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-faint)]">{copy.patterns.foot(colorName(current.color))}</p>
       </div>
+      <p className="font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-faint)]">{copy.patterns.foot(colorName(current.color))}</p>
     </div>
   );
 }
@@ -193,7 +196,7 @@ function FactRow({ label, figure, note, names }: { label: string; figure: string
   const discloses = !!names && names.length > 0;
   const face = (
     <>
-      <span className="text-[13px] text-[color:var(--fg-body)]">{label}</span>
+      <span className="text-[13px] leading-[1.4] text-[color:var(--fg-body)]">{label}</span>
       <span className="text-right font-mono text-[13px] font-medium text-[color:var(--fg)]">{figure}</span>
       <span className="col-span-3 font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:col-span-1">{note}</span>
       <span aria-hidden className="col-start-3 row-start-1 text-right font-mono text-[12px] text-[color:var(--fg-muted)] md:col-start-auto md:row-start-auto">
@@ -201,9 +204,9 @@ function FactRow({ label, figure, note, names }: { label: string; figure: string
       </span>
     </>
   );
-  const grid = "grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto_16px] items-baseline gap-x-[12px] gap-y-[2px] px-[2px] py-[9px] text-left md:min-h-0 md:grid-cols-[minmax(0,1fr)_64px_minmax(0,1.3fr)_16px]";
+  const grid = "grid min-h-[44px] w-full border-b border-b-[color:var(--border)] grid-cols-[minmax(0,1fr)_auto_16px] items-baseline gap-x-[12px] gap-y-[2px] px-[2px] py-[9px] text-left md:min-h-0 md:grid-cols-[minmax(0,1fr)_64px_minmax(0,1.3fr)_16px]";
   return (
-    <li className="border-b border-b-[color:var(--border)]" data-land-fact>
+    <li data-land-fact>
       {discloses ? (
         <button type="button" aria-expanded={open} aria-controls={open ? listId : undefined} onClick={() => setOpen((v) => !v)} className={`${grid} cursor-pointer`}>
           {face}
@@ -212,7 +215,7 @@ function FactRow({ label, figure, note, names }: { label: string; figure: string
         <div className={grid}>{face}</div>
       )}
       {discloses && open ? (
-        <p id={listId} className="px-[2px] pb-[10px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
+        <p id={listId} className="border-b border-b-[color:var(--border)] px-[2px] py-[10px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
           {names.map((n) => (n.copies > 1 ? `${n.name} ${copy.patterns.copies(n.copies)}` : n.name)).join(", ")}
         </p>
       ) : null}
@@ -230,11 +233,12 @@ export function LandFacts({ lands, cards, commander }: { lands: LandEvidence; ca
   ];
   const avg = lands.averageManaValue.toFixed(2);
   return (
-    <div className="flex flex-col gap-[10px]">
-      <ul>
+    <div className="flex flex-col gap-[8px]">
+      <ul className="border-t border-t-[color:var(--border)]">
         <FactRow label={copy.lands.count} figure={String(lands.count)} note={copy.lands.countOf(cards)} />
         {tapped.map((r) => (
-          <FactRow key={r.key} label={r.label} figure={String(t[r.key])} note={r.note} names={t[r.key] > 0 ? t.names[r.key] : undefined} />
+          // A row reading 0 says nothing about which kind of land: no note and nothing to open.
+          <FactRow key={r.key} label={r.label} figure={String(t[r.key])} note={t[r.key] > 0 ? r.note : ""} names={t[r.key] > 0 ? t.names[r.key] : undefined} />
         ))}
         <FactRow label={copy.lands.average} figure={avg} note={copy.lands.averageNote(commander)} />
         <FactRow label={copy.lands.formulaLabel} figure={lands.karstenLands.toFixed(1)} note={copy.lands.formula(avg, lands.cheapRamp)} />
