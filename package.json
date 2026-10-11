@@ -55,6 +55,7 @@
     "probe:help-me-choose-doors": "node scripts/probe-help-me-choose-doors.mjs",
     "probe:analysis-load-order": "node scripts/probe-analysis-load-order.mjs",
     "probe:help-me-choose-read": "tsx scripts/probe-help-me-choose-read.ts",
+    "probe:the-read": "tsx scripts/probe-the-read.ts",
     "probe:profile-store": "tsx scripts/probe-profile-store.ts",
     "probe:notices": "tsx scripts/probe-notices.ts",
     "probe:notices-log": "tsx scripts/probe-notices-log.ts",

@@ -1980,8 +1980,18 @@ export const intakeReads = pgTable("intake_reads", {
   status: text("status").notNull().default("pending"),
   errorClass: text("error_class"),
   chips: jsonb("chips"),
+  /**
+   * The read (rework plan, F2): which of its two calls a pending read is in, so the waiting panel
+   * can move from the shortlist to the judgement. Null before the first call starts and once the read
+   * is settled, however it settled: an outcome, a Stop or the reaper.
+   */
+  phase: text("phase"),
+  /** The read's settled answer (F9e): the picks and their reasons. Null on a row from the retired
+   *  one-call read, whose answer is `chips`. */
+  result: jsonb("result"),
 }, (t) => [
   check("intake_reads_status_check", sql`${t.status} in ('pending', 'ok', 'failed', 'cancelled')`),
+  check("intake_reads_phase_check", sql`${t.phase} is null or ${t.phase} in ('shortlist', 'judge')`),
   check(
     "intake_reads_error_class_check",
     sql`${t.errorClass} is null or ${t.errorClass} in ('upstream_busy', 'timeout', 'malformed', 'nothing_valid', 'interrupted')`,

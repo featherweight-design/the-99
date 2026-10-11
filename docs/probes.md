@@ -120,6 +120,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `neon.branch_id`. `PROBE_USER_ID=<clerk id> ... --seed` leaves eight `mn-probe-fixture-` decks (the eighth, `contract-8`, holds a contract-8 overview with its evidence, for the Based on contact sheet) for
   `docs/superpowers/inventories/method-notice.json`'s contact sheet and prints the ids it reads;
   `--unseed` removes them, and touches only those decks and the calls their overviews hold.
+- `pnpm probe:the-read` proves Help me choose's two-step read (rework plan PR 1) against a real
+  Postgres by calling the real `runTheRead` and the run store, with injected models that spend
+  nothing: a read with a pick is `ok`, stores its picks in `result`, clears its phase and spends,
+  with BOTH calls billed on the one ledger row, each priced on its own model; the row names its
+  phase while the shortlist runs (F2); a repeat answers from the store and reserves nothing; a read
+  that finds nothing refunds and still records its cost; a Stop during the shortlist refunds,
+  never calls the judgement, and lands the shortlist's late bill. Needs migration 0090 on the
+  target; refuses staging and production by `neon.branch_id`. Its failure path was run: a settle
+  that spent on an empty result fails it.
 - `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
   (sub-project 6) by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
   `readVersionSynopsis` and `pinSynopsisToVersion`. Every rule those apply to what they READ is
