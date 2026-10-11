@@ -2236,7 +2236,7 @@ export const BENCHMARKS_ANALYZED_AT = "2026-10-10T12:00:00.000Z";
 
 /**
  * The `shopping-got-it` specimen (I got it PR 5, handoff `about-entry` README "Specimen"): two
- * Shopping rows the reader can buy, one unowned and one spoken for, and the receipt the first
+ * unowned Shopping rows the reader can buy, and the receipt the first
  * leaves. Real cards from Hugh's Gishath list, priced like the rows the canvas draws.
  */
 export const GOT_IT_ROWS: DeckDetailCard[] = [
