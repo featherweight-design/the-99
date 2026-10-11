@@ -53,6 +53,7 @@ function summaryOf(summary: HistorySummary): string {
     case "suggestedOk": return s.suggestedOk(summary.in, summary.out, summary.added, summary.cut, summary.rejected);
     case "cutsDeeperOk": return s.cutsDeeperOk(summary.named, summary.asked, summary.cut, summary.kept);
     case "cutsFree": return s.cutsFree(summary.over, summary.roles);
+    case "manaFree": return s.manaFree(summary.pips, summary.sources);
     case "none": return s.counted;
   }
 }

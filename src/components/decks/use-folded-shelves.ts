@@ -20,25 +20,34 @@ export function useFoldedShelves(deckId: string): {
   isFolded: (key: string) => boolean;
   toggleFold: (key: string) => void;
 } {
-  const storageKey = shelfFoldKey(deckId);
+  const { has, toggle } = useStoredKeys(shelfFoldKey(deckId));
+  return useMemo(() => ({ isFolded: has, toggleFold: toggle }), [has, toggle]);
+}
 
+/**
+ * A set of keys persisted under one localStorage key, the store behind `useFoldedShelves` and
+ * Mana Balance's open sections. The server snapshot is the empty set.
+ */
+export function useStoredKeys(storageKey: string): {
+  has: (key: string) => boolean;
+  toggle: (key: string) => void;
+} {
   const subscribe = useCallback(
     (onStoreChange: () => void) => subscribeToKey(storageKey, onStoreChange),
     [storageKey],
   );
   const raw = useSyncExternalStore(subscribe, () => readRaw(storageKey), () => null);
-  const folded = useMemo(() => parseFoldedShelves(raw), [raw]);
+  const keys = useMemo(() => parseFoldedShelves(raw), [raw]);
 
-  const isFolded = useCallback((key: string) => folded.has(key), [folded]);
+  const has = useCallback((key: string) => keys.has(key), [keys]);
 
-  // Reads storage fresh rather than closing over `folded`: two shelves toggled
+  // Reads storage fresh rather than closing over `keys`: two keys toggled
   // in the same tick (unlikely, but this is the one place two writers could
   // race) would otherwise both compute their `next` from the same stale set
   // and the second write would silently drop the first's change.
-  const toggleFold = useCallback(
+  const toggle = useCallback(
     (key: string) => {
-      const current = parseFoldedShelves(readRaw(storageKey));
-      const next = new Set(current);
+      const next = new Set(parseFoldedShelves(readRaw(storageKey)));
       if (next.has(key)) next.delete(key);
       else next.add(key);
       writeRaw(storageKey, encodeFoldedShelves(next));
@@ -46,5 +55,5 @@ export function useFoldedShelves(deckId: string): {
     [storageKey],
   );
 
-  return useMemo(() => ({ isFolded, toggleFold }), [isFolded, toggleFold]);
+  return useMemo(() => ({ has, toggle }), [has, toggle]);
 }

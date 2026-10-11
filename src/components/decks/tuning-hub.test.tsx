@@ -107,6 +107,28 @@ describe("TuningHub landing", () => {
 });
 
 describe("TuningHub opening a tool", () => {
+  it("draws Mana Balance second, free, with its last count's date and never a running or inert state", async () => {
+    read.mockResolvedValue({ ...empty, mana: "2026-10-07T12:00:00.000Z" });
+    const mana: HubToolSpec = { tool: "mana", panel: <h2 id="mana-heading">Mana Balance</h2> };
+    render(<TuningHub deckId="d" drawn tools={[suggested(), mana, cuts(6), { tool: "history" }]} />);
+    await waitFor(() => expect(tile("mana").textContent).toContain(copy.lastRun("Oct 7")));
+    const tiles = [...document.querySelectorAll("[data-tool-tile]")].map((t) => t.getAttribute("data-tool-tile"));
+    expect(tiles).toEqual(["suggested", "mana", "cuts", "history"]);
+    expect(tile("mana").tagName).toBe("BUTTON");
+    expect(tile("mana").textContent).toContain(copy.tools.mana.cost);
+    fireEvent.click(tile("mana"));
+    const heading = await screen.findByRole("heading", { name: "Mana Balance" });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+
+  it("draws the Mana Balance tile with no status before its first count", async () => {
+    read.mockResolvedValue({ ...empty, mana: null });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "mana", panel: null }]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    await act(async () => {});
+    expect(tile("mana").getAttribute("aria-label")).toBe(copy.tools.mana.name);
+  });
+
   it("opens a tool in place of the tiles, focuses its heading, and All tools returns to the landing", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));

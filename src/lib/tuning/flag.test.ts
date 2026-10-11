@@ -113,6 +113,13 @@ describe("the Tuning hub", () => {
     expect(tuningHubEnabled(both)).toBe(true);
   });
 
+  it("draws Mana Balance between the other two, in the hub's fixed order", () => {
+    const all = env({ ...on, TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" });
+    expect(hubTools(all)).toEqual(["suggested", "mana", "cuts"]);
+    expect(tuningHubEnabled(env({ ...on, MANA_BALANCE_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toBe(true);
+    expect(tuningHubEnabled(env({ ...on, MANA_BALANCE_ENABLED: "true" }))).toBe(false);
+  });
+
   it("is off whenever Analysis is off, whatever the tools say", () => {
     expect(tuningHubEnabled(env({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toBe(false);
   });

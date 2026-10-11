@@ -9,7 +9,9 @@ import { InfoTip } from "../ui/info-tip";
 import { MoneyCard } from "./deck-stats-money";
 import { ResultsCard } from "./deck-stats-results";
 import { JOB_ROWS, type JobTally } from "../../lib/decks/job-tally";
-import { MANA_COLORS, type ManaColor, type ManaSupply } from "../../lib/mana/supply";
+import type { ManaSupply } from "../../lib/mana/supply";
+import { colorRows } from "../../lib/mana/color-rows";
+import { PIP_STYLE, SourceBar } from "./mana-color-parts";
 import { CARD_TYPES, CURVE_MAX, type CardType, type DeckStatsSlice } from "../../lib/decks/stats";
 
 const CARDS = [
@@ -193,57 +195,11 @@ function JobsCard({ tally }: { tally: JobTally }) {
   );
 }
 
-const PIP_STYLE: Record<ManaColor, { bg: string; ink: string }> = {
-  W: { bg: "var(--w)", ink: "var(--pip-ink-dark)" },
-  U: { bg: "var(--u)", ink: "var(--pip-ink-light)" },
-  B: { bg: "var(--b)", ink: "var(--pip-ink-dark)" },
-  R: { bg: "var(--r)", ink: "var(--pip-ink-black)" },
-  G: { bg: "var(--g)", ink: "var(--pip-ink-light)" },
-  C: { bg: "var(--fg-muted)", ink: "var(--pip-ink-dark)" },
-};
-
-const share = (n: number, total: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
-
-const STRIPE = (c: ManaColor) =>
-  `repeating-linear-gradient(135deg, ${PIP_STYLE[c].bg} 0 2px, transparent 2px 5px)`;
-
-function SourceBar({ c, lands, other, widthPct }: { c: ManaColor; lands: number; other: number; widthPct: number }) {
-  const total = lands + other;
-  if (total === 0) return null;
-  return (
-    <span
-      className={`flex h-[14px] flex-none gap-[1px] ${lands > 0 && other > 0 ? "min-w-[13px] md:min-w-[15px]" : "min-w-[8px] md:min-w-[10px]"}`}
-      style={{ width: `${widthPct}%` }}
-      data-source-bar
-    >
-      {lands > 0 ? (
-        <span
-          className={`h-full ${other > 0 ? "rounded-l-[3px]" : "rounded-[3px]"}`}
-          style={{ flex: `${lands} 1 0`, minWidth: 4, background: PIP_STYLE[c].bg }}
-          data-segment="land"
-        />
-      ) : null}
-      {other > 0 ? (
-        <span
-          className={`h-full ${lands > 0 ? "rounded-r-[3px]" : "rounded-[3px]"}`}
-          style={{ flex: `${other} 1 0`, minWidth: 4, backgroundImage: STRIPE(c), boxShadow: `inset 0 0 0 1px ${PIP_STYLE[c].bg}` }}
-          data-segment="nonland"
-        />
-      ) : null}
-    </span>
-  );
-}
-
 function ColorsCard({ mana }: { mana: ManaSupply }) {
   const copy = deckStatsCopy.colors;
   const tipId = useId();
-  const rows = MANA_COLORS.map((c) => ({ c, pips: mana.demand[c], lands: mana.supply[c].lands, other: mana.supply[c].nonland })).filter(
-    (r) => r.pips > 0 || r.lands + r.other > 0,
-  );
-  const pipTotal = rows.reduce((a, r) => a + r.pips, 0);
-  const sourceTotal = rows.reduce((a, r) => a + r.lands + r.other, 0);
-  const shares = rows.map((r) => ({ pips: share(r.pips, pipTotal), sources: share(r.lands + r.other, sourceTotal) }));
-  const widest = Math.max(1, ...shares.flatMap((s) => [s.pips, s.sources]));
+  const { rows, pipTotal, sourceTotal, widest } = colorRows(mana);
+  const shares = rows.map((r) => ({ pips: r.pipShare, sources: r.sourceShare }));
   // The displayed total and the legend are the bars' own: a source counts once for each color it adds.
   const landSegments = rows.reduce((a, r) => a + r.lands, 0);
   const otherSegments = rows.reduce((a, r) => a + r.other, 0);

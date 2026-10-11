@@ -38,8 +38,8 @@ export function manaBalanceEnabled(env: NodeJS.ProcessEnv = process.env): boolea
   return env.MANA_BALANCE_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
 
-/** A Tuning tool the hub can draw a tile for. Mana Balance joins when its view ships. */
-export type HubTool = "suggested" | "cuts";
+/** A Tuning tool the hub can draw a tile for, in the hub's fixed order. */
+export type HubTool = "suggested" | "mana" | "cuts";
 
 /**
  * The tools the Tuning hub would draw, read from each tool's own switch: no switch of its own
@@ -48,6 +48,7 @@ export type HubTool = "suggested" | "cuts";
 export function hubTools(env: NodeJS.ProcessEnv = process.env): HubTool[] {
   return [
     ...(tuningEnabled(env) ? ["suggested" as const] : []),
+    ...(manaBalanceEnabled(env) ? ["mana" as const] : []),
     ...(proposedCutsEnabled(env) ? ["cuts" as const] : []),
   ];
 }

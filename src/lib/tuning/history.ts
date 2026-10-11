@@ -4,6 +4,7 @@ import type { CutCite } from "./cuts-schema";
 // one deck, newest first. Pure and client-safe: the row shapes, the outcome a stored status reads
 // as, the summary facts per tool, and the opaque keyset cursor. `history-read.ts` reads the rows.
 
+import { isManaCountSummary, type ManaCountSummary } from "./mana-view";
 import { reapCutoff } from "./reaper";
 
 /** A FREE tool pass, recorded once per tool per version of the list (`deck_tool_counts`). */
@@ -16,8 +17,8 @@ export type CutsCountSummary = {
   roles: { role: string; label: string; over: number }[];
 };
 
-/** What `deck_tool_counts.summary` holds. Mana Balance's shape joins in PR 3. */
-export type ToolCountSummary = CutsCountSummary | Record<string, unknown>;
+/** What `deck_tool_counts.summary` holds. */
+export type ToolCountSummary = CutsCountSummary | ManaCountSummary | Record<string, unknown>;
 
 /** The filter chips' tools, and a row's tool. */
 export type HistoryTool = "suggested" | "mana" | "cuts";
@@ -29,6 +30,8 @@ export type HistorySummary =
   | { kind: "suggestedOk"; in: number; out: number; added: number; cut: number; rejected: number }
   | { kind: "cutsDeeperOk"; named: number; asked: number; cut: number; kept: number }
   | { kind: "cutsFree"; over: number; roles: { label: string; over: number }[] }
+  /** Mana Balance's free count: the Colors card's totals, never a verdict on a color. */
+  | { kind: "manaFree"; pips: number; sources: number }
   | { kind: "none" };
 
 export type HistoryRow = {
@@ -125,7 +128,9 @@ export function shapeCount(c: CountRecord): HistoryRow {
   const s = c.summary;
   const summary: HistorySummary = c.tool === "proposed_cuts" && isCutsCountSummary(s)
     ? { kind: "cutsFree", over: s.over, roles: s.roles.map((r) => ({ label: r.label, over: r.over })) }
-    : { kind: "none" };
+    : c.tool === "mana_balance" && isManaCountSummary(s)
+      ? { kind: "manaFree", pips: s.pips, sources: s.sources }
+      : { kind: "none" };
   return {
     id: `count:${c.id}`,
     tool: c.tool === "proposed_cuts" ? "cuts" : "mana",

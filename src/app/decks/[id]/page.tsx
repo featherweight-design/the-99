@@ -52,7 +52,7 @@ import { loadStatsLabels } from "../../../lib/decks/stats-labels";
 import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
-import { proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
+import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
@@ -575,6 +575,7 @@ export default async function DeckBuilderPage({
         : null}
       tuningEnabled={tuned}
       proposedCutsEnabled={proposedCutsEnabled()}
+      manaBalanceEnabled={manaBalanceEnabled()}
       tuningHubEnabled={tuningHubEnabled()}
       noticesEnabled={noticesEnabled()}
       initialNotices={notices}

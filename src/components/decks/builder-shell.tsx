@@ -19,6 +19,7 @@ import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
+import { ManaBalancePanel } from "./mana-balance-panel";
 import { TuningPanel } from "./tuning-panel";
 import { TuningHub, type HubRequest } from "./tuning-hub";
 import { pressNote } from "./synopsis-note";
@@ -248,6 +249,9 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `proposedCutsEnabled()`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
+  /** `manaBalanceEnabled()`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
+   *  directly when it is the only tool on). */
+  manaBalanceEnabled?: boolean;
   /** `tuningHubEnabled()`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
@@ -304,6 +308,7 @@ export function BuilderShell({
   deeperLooks = false,
   tuningEnabled = false,
   proposedCutsEnabled = false,
+  manaBalanceEnabled = false,
   tuningHubEnabled = false,
 }: BuilderShellProps) {
   // UI state
@@ -1312,7 +1317,7 @@ export function BuilderShell({
 
   const openExport = () => setExportOpen(true);
 
-  // The two tools, built once and mounted either directly (hub off) or inside the hub's tiles.
+  // The tools, built once and mounted either directly (hub off) or inside the hub's tiles.
   const cutsPanel = (freshEachVisit: boolean) => (
     <CutsPanelView
       freshEachVisit={freshEachVisit}
@@ -1323,6 +1328,8 @@ export function BuilderShell({
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
   );
+  // Read fresh on every open, and again whenever the list moves: the count is of the list alone.
+  const manaPanel = <ManaBalancePanel key={deck.id} deckId={deck.id} revision={listKey} />;
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
       freshEachVisit={freshEachVisit}
@@ -1709,18 +1716,21 @@ export function BuilderShell({
                     ) : null
                   }
                   cuts={proposedCutsEnabled ? cutsPanel(false) : undefined}
+                  mana={manaBalanceEnabled ? manaPanel : undefined}
                   hub={!tuningHubEnabled ? undefined : (permits) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      drawn={permits !== null || built > bodySize}
+                      // Mana Balance needs no reading, so with it on the hub draws for any deck.
+                      drawn={permits !== null || built > bodySize || manaBalanceEnabled}
                       request={hubRequest}
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
                         ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits, true) : null }] : []),
+                        ...(manaBalanceEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
                         ...(proposedCutsEnabled
                           ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
                           : []),

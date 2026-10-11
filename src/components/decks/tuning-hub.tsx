@@ -24,6 +24,8 @@ const SHOWN_WAIT_MS = 10_000;
 
 export type HubToolSpec =
   | { tool: "suggested"; panel: ReactNode | null }
+  /** Free and read on every open: no run in flight, never inert. */
+  | { tool: "mana"; panel: ReactNode }
   | { tool: "cuts"; panel: ReactNode; over: number; total: number }
   /** History is part of the hub: drawn last whenever the hub draws, and its panel is the hub's own. */
   | { tool: "history" };
@@ -40,7 +42,9 @@ const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { m
 /** Each tool's own, stable heading: the one focus moves to on opening. A tool draws a temporary
  *  heading while its first read is pending, which is replaced when it lands, so the first heading
  *  found is not the one to take. */
-const HEADING_IDS: Partial<Record<TuningTool, string>> = { suggested: "tuning-heading", cuts: "cuts-heading", history: "history-heading" };
+const HEADING_IDS: Partial<Record<TuningTool, string>> = {
+  suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading",
+};
 
 const NAMES: Record<TuningTool, string> = {
   suggested: copy.tools.suggested.name,
@@ -87,6 +91,11 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number): TileVie
     const run = runStatus(tiles?.suggested_changes ?? null, copy.runningWords.suggested,
       (r) => (r.total === 0 ? copy.outcome.nothing : copy.outcome.applied(r.accepted, r.total)), now);
     return { tool: "suggested", purpose: t.purpose, cost: t.cost, ...run, offer: false, inert: false };
+  }
+  if (spec.tool === "mana") {
+    // Its last count's date and nothing more: a free count has no outcome to report (R3: no verdict).
+    const status = tiles?.mana ? copy.lastRun(shortDate(tiles.mana)) : "";
+    return { tool: "mana", purpose: copy.tools.mana.purpose, cost: copy.tools.mana.cost, status, statusPhone: status, running: false, offer: false, inert: false };
   }
   const t = copy.tools.cuts;
   const run = runStatus(tiles?.proposed_cuts ?? null, copy.runningWords.deeper,

@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { deckCutItems, deckSuggestionItems, deckSuggestionRuns } from "../../db/schema";
+import { deckCutItems, deckSuggestionItems, deckSuggestionRuns, deckToolCounts } from "../../db/schema";
 import type { HistoryTool } from "./history";
 import { readHistoryCountIn } from "./history-read";
 import { hubSeen, shapeHubTiles, type HubRunCounts, type HubRunRow, type HubTiles } from "./hub-tiles";
@@ -14,7 +14,7 @@ const RUNS_PER_TOOL = 2;
 export async function readHubTiles(
   deckId: string, userId: string, drawn: readonly HistoryTool[], now: Date = new Date(),
 ): Promise<HubTiles> {
-  const { rows, counts, history, lastOk } = await db.transaction(async (tx) => {
+  const { rows, counts, history, lastOk, mana } = await db.transaction(async (tx) => {
     const newest = (tool: HubRunRow["tool"]) => tx.select({
       id: deckSuggestionRuns.id,
       tool: deckSuggestionRuns.tool,
@@ -47,7 +47,15 @@ export async function readHubTiles(
       .where(and(eq(deckSuggestionRuns.deckId, deckId), eq(deckSuggestionRuns.userId, userId), eq(deckSuggestionRuns.status, "ok")))
       .groupBy(deckSuggestionRuns.tool);
     const lastOk = new Map(okRows.map((r) => [r.tool as HubRunRow["tool"], r.at] as const));
-    return { rows, counts, history, lastOk };
+    // Mana Balance's tile: its newest free count, read only when the hub draws the tool.
+    const [manaRow] = drawn.includes("mana")
+      ? await tx.select({ at: sql<Date | null>`max(${deckToolCounts.createdAt})`.mapWith(deckToolCounts.createdAt) }).from(deckToolCounts)
+        .where(and(eq(deckToolCounts.deckId, deckId), eq(deckToolCounts.userId, userId), eq(deckToolCounts.tool, "mana_balance")))
+      : [];
+    return { rows, counts, history, lastOk, mana: manaRow?.at ?? null };
   }, { isolationLevel: "repeatable read" });
-  return { ...shapeHubTiles(rows, counts, now), history, seen: hubSeen(rows, lastOk, now) };
+  return {
+    ...shapeHubTiles(rows, counts, now), history, seen: hubSeen(rows, lastOk, now),
+    ...(drawn.includes("mana") ? { mana: mana ? mana.toISOString() : null } : {}),
+  };
 }
