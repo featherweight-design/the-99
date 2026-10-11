@@ -146,10 +146,12 @@ index and an ownership count against the reader's own collection are not. Both a
 ## What engineering has locked
 
 1. **Fetched once, ingested into both databases from the same bytes**, through `catalog:fetch` and its manifest,
-   after MTGJSON's 06:10 UTC build and before the daily 09:00 UTC refresh. A new source is added to
-   `FETCH_SOURCES` and read through one seam, as `fetchManapoolSingles` is. The deck files are many, so the fetch
-   writes them as one file. Whether that file is the raw bytes (about 100 MB, hash-checkable against upstream) or
-   a reduced file (the fields below, a few MB, hash of our own output) is an engineering call made in the plan.
+   as the first phase of the daily `Catalog refresh` (09:00 UTC, a cron GitHub can start later), which reads
+   MTGJSON's 06:10 UTC build. A new source is added to `FETCH_SOURCES` and read through one seam, as
+   `fetchManapoolSingles` is. The manifest gives each file one source URL and hashes that file's bytes, so 197
+   deck responses cannot be one hash-checkable upstream file. The plan picks one honest model: each response kept
+   as its own manifest file (about 100 MB raw), or one combined file classified as derived output (the fields
+   below, a few MB, hash of our own output).
 2. **The data kept is small.** 197 deck rows (`fileName`, `name`, `code`, `releaseDate`, the commander ids) and
    17,156 card rows (deck, oracle id, printing id, count, whether it is a commander). Tokens and the other
    per-card fields are not kept.
@@ -160,11 +162,14 @@ index and an ownership count against the reader's own collection are not. Both a
    Commander deck, assert the index shape, `type`, and that a deck's cards carry `scryfallId` and
    `scryfallOracleId` and total 100, and run daily in `Upstream contract checks`.
 5. **The ingest holds the `catalog-ingest` lock** and replaces the precon tables in one transaction, as the
-   other ingests do, and is copied to production under the same rules.
+   other catalog ingests do. Staging and production each ingest the same fetched artifact; this is not a
+   staging-to-production copy, which is how derived builds (the commander index, combos) travel.
 6. **"Owned" is the app's one notion**: a `collection_items` row for the oracle id, any printing. The count is
    computed from the reader's collection when the page is read; it is not stored.
 7. **A draft deck, not a commit.** "Start from a precon" creates a deck the same way a draft is created today
-   (commander chosen, the 99 added), not a committed version. The player's own copies, claims and the I got it
+   (commander chosen, the feed's list added), not a committed version. The body is 99 cards beside one
+   commander and 98 beside two (`deckBodySize`, `src/lib/decks/deck-size.ts:17`), and five precons list two
+   commander entries, so the import keeps the feed's exact 100 cards and never assumes 99. The player's own copies, claims and the I got it
    flow behave exactly as they do for any draft.
 8. **MTGJSON's licence notice is kept** where the data is credited (the About page's data credits).
 9. **Off until Hugh walks it.** Ships behind its own switch, off in production, as every feature here does.
@@ -176,7 +181,7 @@ index and an ownership count against the reader's own collection are not. Both a
 - **The precon tab on `/decks`.** `/decks` has no tabs today, only shelves. Whether the precon surface is a
   true tab, a segment above the shelves, or a separate page the shelf line links to, and how it coexists with
   the shopping cart surface, is Design's. Shelves are navigation and not filters.
-- **The list.** 185 distinct decks across 15 years on a phone and at 900. Order (newest first is the data's
+- **The list.** Up to 197 entries (185 distinct decklists) across 15 years on a phone and at 900. Order (newest first is the data's
   natural order), grouping (by year, by set), a search or color filter if any, and how a row reads: precon name,
   commander (five have more than one), colors, release, and the owned count.
 - **The Collector's Edition twins.** 12 pairs share a decklist. Show both, show one, or show one with a note.
