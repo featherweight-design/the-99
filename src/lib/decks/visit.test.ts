@@ -18,6 +18,14 @@ function after(paths: (string | null)[], tool: "suggested" | "cuts" = "suggested
 }
 
 describe("the deck visit", () => {
+  it("a read landing after the player left records nothing and cannot revive the visit", () => {
+    noteDeckRoute(`/decks/${A}`);
+    noteDeckRoute("/decks");
+    expect(visitBaseline(A, "suggested", first)).toEqual(first);
+    noteDeckRoute(`/decks/${A}`);
+    expect(visitBaseline(A, "suggested", later)).toEqual(later);
+  });
+
   it("an uppercase deck URL and the deck's own lowercase id are one visit", () => {
     const C = "abcdef12-3456-4abc-8def-abcdef123456";
     noteDeckRoute(`/decks/${C.toUpperCase()}`);
@@ -68,11 +76,11 @@ describe("the deck visit", () => {
     expect(after(["/decks/new", `/decks/${A}`])).toEqual(later);
   });
 
-  it("a panel asking for another deck than the visit's starts that deck's visit", () => {
+  it("a read for another deck than the visit's records nothing and leaves the visit as it was", () => {
     noteDeckRoute(`/decks/${A}`);
     visitBaseline(A, "suggested", first);
     expect(visitBaseline(B, "suggested", later)).toEqual(later);
-    expect(visitBaseline(A, "suggested", later)).toEqual(later);
+    expect(visitBaseline(A, "suggested", later)).toEqual(first);
   });
 });
 

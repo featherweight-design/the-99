@@ -49,10 +49,12 @@ export function okKeyOf(lastOkAt: Date | string | null | undefined): string | nu
 }
 
 /** This visit's baseline for one tool: `seen` the first time it is asked in the visit, the
- *  recorded one thereafter. Starts a visit for `deckId` when none is open for it. */
+ *  recorded one thereafter. Only `noteDeckRoute` opens a visit: a read that lands after the
+ *  player left the deck (the shell notes the new path in a layout effect, before a panel's own
+ *  cleanup runs) gets `seen` back and records nothing, so it cannot revive the visit just ended. */
 export function visitBaseline(anyCaseId: string, tool: DeckTool, seen: ToolBaseline): ToolBaseline {
   const deckId = anyCaseId.toLowerCase();
-  if (visit?.deckId !== deckId) visit = { deckId, baselines: {} };
+  if (visit?.deckId !== deckId) return { okKey: seen.okKey, runId: seen.runId };
   const recorded = visit.baselines[tool];
   if (recorded) return recorded;
   visit.baselines[tool] = { okKey: seen.okKey, runId: seen.runId };
