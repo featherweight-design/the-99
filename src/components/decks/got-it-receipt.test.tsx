@@ -10,6 +10,8 @@ const { previewRevert, revertCollectionEntry } = vi.hoisted(() => ({
 }));
 vi.mock("../../app/collection/history-actions", () => ({ previewRevert, revertCollectionEntry }));
 vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: vi.fn() }));
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const { GotItReceipt, receiptBody } = await import("./got-it-receipt");
 const { TOAST_MS } = await import("../collection/edit-toast");
@@ -170,6 +172,8 @@ describe("Undo", () => {
     expect(toast().textContent).toBe(c.undone(NAME));
     expect(onUndone).toHaveBeenCalledWith(ORACLE);
     expect(onUndoing).toHaveBeenLastCalledWith(null);
+    // The revert action invalidated the page itself.
+    expect(refresh).not.toHaveBeenCalled();
     expect(screen.queryByRole("button")).toHaveAccessibleName("Shopping");
   });
 
@@ -188,6 +192,17 @@ describe("Undo", () => {
     expect(toast().textContent).toBe(c.undone(NAME));
     expect(onUndone).toHaveBeenCalled();
     expect(revertCollectionEntry).not.toHaveBeenCalled();
+    // Nothing was written, so nothing invalidated: the list is re-read here (C7).
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("a revert answered alreadyReverted re-reads the list too", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ alreadyReverted: true });
+    draw();
+    await act(async () => fireEvent.click(undo()));
+    expect(toast().textContent).toBe(c.undone(NAME));
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   it("raises §E with the undo verb when another deck would be short, Cancel focused, then writes with it confirmed", async () => {

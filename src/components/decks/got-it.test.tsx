@@ -10,6 +10,7 @@ const { loadPrintingChoices, markBought } = vi.hoisted(() => ({
 vi.mock("../../app/collection/edit-actions", () => ({ loadPrintingChoices }));
 vi.mock("../../app/decks/mark-bought-actions", () => ({ markBought }));
 vi.mock("../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { GotItProvider, useGotIt } = await import("./got-it");
 

@@ -130,6 +130,25 @@ describe("I got it's held slot", () => {
     expect(slot("Arcane Signet")).toBeNull();
   });
 
+  it("pins a row that stays to the group it was drawn in until the next read, then it joins Spoken for", async () => {
+    const owned = (c: DeckDetailCard): DeckDetailCard => ({
+      ...c, owned: true,
+      availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [{ id: "d2", name: "HD Atraxa", quantity: 1, mature: true, pending: false, commander: false, senior: true }] },
+    } as DeckDetailCard);
+    const { rerender } = render(tree([signet, talisman, remora], "shopping"));
+    await buy("Arcane Signet", { tookCopy: [{ deckId: "d2", deckName: "HD Atraxa", copies: 1 }], stillNeeds: 1 });
+    // The revalidation: owned now, claimed by the older deck, so the filter alone calls it spoken for.
+    rerender(tree([owned(signet), talisman, remora], "shopping"));
+    expect(screen.queryByText(recommendationsCopy.shopping.spokenForGroupLabel)).toBeNull();
+    const row = screen.getByRole("button", { name: /View details for Arcane Signet/ });
+    const next = screen.getByRole("button", { name: /View details for Talisman of Progress/ });
+    expect(row.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The next read: it joins Spoken for.
+    rerender(tree([owned(signet), talisman, remora], "all"));
+    rerender(tree([owned(signet), talisman, remora], "shopping"));
+    expect(screen.getByText(recommendationsCopy.shopping.spokenForGroupLabel)).toBeInTheDocument();
+  });
+
   it("is not drawn for a row that stays: it redraws in place", async () => {
     const { rerender } = render(tree([{ ...signet, quantity: 1 }, remora], "shopping"));
     await buy("Arcane Signet", { tookCopy: [{ deckId: "d2", deckName: "HD Atraxa", copies: 1 }], stillNeeds: 1 });

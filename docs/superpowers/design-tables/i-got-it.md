@@ -577,3 +577,377 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | State | Triggering condition | Component rendered | Key props required |
 |-------|---------------------|-------------------|-------------------|
 | E1 Either switch off | `!SHOPPING_MARK_BOUGHT_ENABLED \|\| !COLLECTION_EDIT_ENABLED` | BuyTag as plain span (main's); key without buy item and with main's ⇄ text; no details link; phone stack in main's order (`over $X` above tag) | no onPress; no slot reserved |
+
+---
+
+## §C — Receipt, undo and the held slot (PR 3)
+
+Source: `The 99 - I Got It (R1) · C Receipt, D History and E Switch off.dc.html` §C1–C4 (and the `IGI Row`
+held-slot branch it imports), `IGI Toast.dc.html`, README calls 5, 6 and 8 plus "Other decisions",
+STATES §C, READINESS-audit.md. Mobile = the 390 frames (`ph: true`); Desktop = the desktop frames.
+Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib/copy/i-got-it.ts`), not its text.
+
+**Audit overrides applied:**
+- Toast live region: `role="status"` for every receipt/undo form, `role="alert"` for the failed form, and **no explicit `aria-live`** (erratum 2; the canvas's hard-coded `aria-live="polite"` is not built).
+- Undo answering `alreadyReverted` renders the `undone` form; `notFound` renders the `failed` form (finding 2).
+- The held slot must survive the revalidation the write triggers; the decklist's existing `spent` slot (`spent-slot-undo`) is the model (finding 3).
+- The undo's short-deck check excludes the source deck (`shopping:<deck id>`) (gap 3, call 6).
+- `claimedMany` is a receipt form named by READINESS.md item 8 and the copy file; the canvas draws only the single-deck `claimed` form, so `claimedMany` takes `claimed`'s structure.
+- **No `commander` receipt form exists in the handoff.** No canvas, STATES row, README call or copy key draws one; a commander row (A4) is pressable and its receipt takes whichever of clean / claimed / partial its write produces. Record as not-designed rather than infer a shape.
+
+**Built as shared components, not as redrawn (PR 3):**
+- The undo warning's chrome (scrim, phone sheet, desktop dialog, grabber) and its content are the app's shared `ShortDeckWarning` inside the confirm-dialog chrome `RevertConfirm` already uses, reused per README "Reused: `ShortDeckWarning` (gains `undo`)". So the canvas's redraw values (the 480px dialog, the 16px sheet radius, the phone button row, the h3 title, and the like) are not applied, and the revert, replace, save, remove and undo warnings stay one component. The rows under "ShortDeckWarning — undo verb" below record the canvas, not the build.
+- The held slot's text size follows the decklist's spent-slot shape (`UndoRow`: 11.5px phone, 12px from md), per README call 8's "by construction", not the canvas's flat 11.5px.
+
+## Component: Receipt toast (the app's 1+2 toast, R2 §D)
+
+### Toast slot / placement
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| slot | the app's toast slot, not on the row | the app's toast slot, not on the row |
+| position | absolute; left 16px; right 16px; bottom 84px (10px above the 74px tab bar) | absolute; left 16px; bottom 16px, inside the deck pane |
+| width | 100% of the slot (390 − 32) | 440px |
+| clearance | above the tab bar (tab bar: 74px, border-top 1px var(--border), bg var(--surface-rail)) | clear of the 2-column grid's right column |
+| survives the row leaving | yes (not a child of the row) | yes |
+
+### Toast shell
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| role | `status` (failed form: `alert`) | `status` (failed form: `alert`) |
+| aria-live | — (not set; audit erratum 2) | — |
+| display | flex | flex |
+| align-items | flex-start | flex-start |
+| gap | 10px | 10px |
+| padding | 0 6px 0 14px | 0 6px 0 14px |
+| min-height | 52px | 52px |
+| border-radius | 10px | 10px |
+| background | var(--elevated) | var(--elevated) |
+| border | 1px solid var(--border-strong) | 1px solid var(--border-strong) |
+| box-shadow | 0 12px 30px rgba(0,0,0,0.45) | 0 12px 30px rgba(0,0,0,0.45) |
+
+### Text column
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | 1 |
+| min-width | 0 | 0 |
+| display / direction | flex / column | flex / column |
+| gap | 3px | 3px |
+| padding | 10px 0 | 10px 0 |
+
+### Line 1 (headline)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key (clean, claimed, claimedMany, partial, checking, undoing) | `receipt.added(card, q)` | same |
+| key (undone, row had left) | `receipt.undone(card)` | same |
+| key (undone, row had stayed) | `receipt.undoneElsewhere(card)` | same |
+| key (failed) | `receipt.undoFailed` | same |
+| font-size | 13.5px | 13.5px |
+| line-height | 1.35 | 1.35 |
+| color | var(--fg) | var(--fg) |
+| font-family | sans (inherited) | sans (inherited) |
+
+### Line 2 (printing · finish)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | `receipt.detail(printing, finish)` (set code + #collector · finish) | same |
+| renders in | clean, claimed, claimedMany, partial, checking, undoing | same |
+| absent in | undone, failed | same |
+| font-family | 'IBM Plex Mono', monospace (var(--font-plex-mono)) | same |
+| font-size | 11px | 11px |
+| color | var(--fg-muted) | var(--fg-muted) |
+
+### Line 3 (sentence)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key (claimed) | `receipt.claimed(deck, need)` | same |
+| key (claimedMany) | `receipt.claimedMany(decks, need)` | same |
+| key (partial) | `receipt.partial(need)` | same |
+| key (failed) | `receipt.undoFailedBody` | same |
+| absent in | clean, checking, undoing, undone | same |
+| font-size | 12.5px | 12.5px |
+| line-height | 1.45 | 1.45 |
+| color | var(--fg-body) | var(--fg-body) |
+| text-wrap | pretty | pretty |
+
+### Actions group
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | none | none |
+| display | flex | flex |
+| align-items | center | center |
+| align-self | center | center |
+| gap | 2px | 2px |
+| order | History, then Undo | History, then Undo |
+| renders | every form except `undone` | same |
+
+### Action button (History / Undo) — base
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | inline-flex | inline-flex |
+| align-items | center | center |
+| height | 44px | 44px |
+| padding | 0 10px | 0 10px |
+| font-size | 13.5px | 13.5px |
+| white-space | nowrap | nowrap |
+| color | var(--accent) | var(--accent) |
+
+### History button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | `receipt.history`; failed form: `receipt.openHistory` | same |
+| font-weight | 400 | 400 |
+| renders | clean, claimed, claimedMany, partial, failed | same |
+| absent | checking, undoing ("History steps aside"), undone | same |
+| target | /collection/history scrolled to this entry, expanded | same |
+
+### Undo button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key (rest) | `receipt.undo` | same |
+| accessible name | `receipt.undoAria(card)` | same |
+| font-weight | 600 | 600 |
+| renders | clean, claimed, claimedMany, partial, checking, undoing | same |
+| absent | undone, failed (withdrawn, no retry; UndoRow rule) | same |
+
+### Undo button — busy (checking / undoing)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | `receipt.checking` (from the first frame) / `receipt.undoing` | same |
+| aria-busy | true | true |
+| color | var(--fg-muted) | var(--fg-muted) |
+| opacity | 0.8 | 0.8 |
+| enabled | no (second press ignored) | no |
+
+### Toast hold (timer)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| duration | 8s (the 1+2 value) | 8s |
+| held while | hovered, focused, an undo in flight (checking, warning open, undoing) | same |
+| ended early by | the next write (replaced) | same |
+| undone form | shows, then goes after 8s | same |
+| claimed fallback (Open 3, unratified) | 12s for the claimed form only, if Hugh rules | same |
+
+## Component: Shopping list during and after the write (C1, C2)
+
+### Row while the write is in flight
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| row opacity | 0.6 | 0.6 |
+| BuyTag state | pending (`row.pending` in figure slot) | pending |
+| anything else on the page | unchanged | unchanged |
+
+### Clean: list figures on the write
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| tab count (`Shopping N`) | drops at once | drops at once |
+| group count | drops at once | drops at once |
+| price-strip total | drops at once | drops at once |
+| Mana Pool link | loses the card at once | same |
+| height change of any of these | none | none |
+| row's slot | becomes the held slot (below) | same |
+
+### Stayed row: claimed / claimedMany (C2)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | redraws in place | in place |
+| tab count / total | unchanged | unchanged |
+| owned dot | 7×7, radius 50%, var(--success) | 8×8, var(--success) |
+| short marker | `◆ short`, mono 11px, var(--avail-over-fg) | mono 11.5px, var(--avail-over-fg) |
+| joins `Spoken for` | only at the next read | same |
+| BuyTag | rest (ready) | rest |
+
+### Stayed row: partial (C3)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | stays put | stays put |
+| total | drops by one copy's price × q | same |
+| short marker | `◆ short N` (remaining need), var(--avail-over-fg) | same |
+| owned dot | var(--success) | var(--success) |
+| BuyTag | rest, ready for the next copy | rest |
+
+## Component: Held slot (DecklistRow held-slot state, beside `spent`)
+
+### Slot shell
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| shell | the row's own `rowShell` (H29), `data-decklist-row` | same |
+| display | flex | flex |
+| align-items | center | center |
+| gap | 9px | 10px |
+| border-radius | 7px | 7px |
+| padding | 0 4px 0 8px | 7px 9px |
+| min-height | 52px | 34px |
+| background | var(--surface-sunken) | var(--surface-sunken) |
+| border | 1px dashed var(--border-strong) | 1px dashed var(--border-strong) |
+| controls | none (no Undo, no tag, no ⇄, no ✕) | none |
+| tab order | out of it | out of it |
+| decklist live region | does not re-read it | same |
+
+### Slot leading spacer
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| aria-hidden | true | true |
+| flex | none | none |
+| size | 7×7 | 8×8 |
+
+### Slot text
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | `slot.held(card)` | same |
+| font-family | 'IBM Plex Mono', monospace | same |
+| font-size | 11.5px | 11.5px |
+| color | var(--fg-locked) (canvas; README prose says "muted") | var(--fg-locked) |
+| flex / min-width | 1 / 0 | 1 / 0 |
+| overflow | white-space nowrap; overflow hidden; text-overflow ellipsis | same |
+
+### Slot lifetime
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| holds until | the next read of the list (tab switch, return to the deck) | same |
+| survives | the action's revalidation (audit finding 3) | same |
+| next read | slot gone, list shorter, group count already dropped | same |
+| undo done while held | slot swaps back to the live row in place | same |
+| undo failed while held | slot stays held | same |
+
+## Component: Leave transition (C4, C9)
+
+### Crossfade
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| property animated | opacity only | opacity only |
+| duration | 150ms | 150ms |
+| start | when the write answers (0ms) | same |
+| midpoint (75ms) | held slot at opacity 0.55 | same |
+| end (150ms) | held slot at opacity 1 | same |
+| height animated | never (same shell, same height by construction) | never |
+| neighbours | do not move | do not move |
+| reduced motion | swap in one frame, no fade | same |
+| reverse (undo done) | same 150ms fade, slot → live row | same |
+
+## Component: ShortDeckWarning — undo verb (C3 / C5)
+
+### Phone: scrim
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute; inset 0 | — |
+| background | rgba(5,5,8,0.62) | — |
+
+### Phone: sheet
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| role | dialog | — |
+| position | absolute; left 0; right 0; bottom 0 | — |
+| border-radius | 16px 16px 0 0 | — |
+| background | var(--surface) | — |
+| border-top | 1px solid var(--border-strong) | — |
+| padding | 10px 18px 18px | — |
+| display / direction | flex / column | — |
+| gap | 12px | — |
+
+### Phone: grabber
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| align-self | center | — |
+| size | 36×4 | — |
+| border-radius | 2px | — |
+| background | var(--border-dashed) | — |
+
+### Desktop: dialog
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| role | — | dialog |
+| width | — | 480px |
+| border-radius | — | 14px |
+| background | — | var(--surface) |
+| border | — | 1px solid var(--border-strong) |
+| box-shadow | — | 0 24px 60px rgba(0,0,0,0.55) |
+| padding | — | 24px 24px 20px |
+| display / direction | — | flex / column |
+| gap | — | 14px |
+
+### Title (h3)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | `shortWarning.titleUndo(k)` | same |
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 700 | 700 |
+| font-size | 18px | 20px |
+| line-height | 1.3 | 1.3 |
+| margin | 4px 0 0 | 0 |
+
+### Body
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | shipped `shortWarning` body (collection-edit.ts), unchanged | same |
+| font-size | 13px | 13.5px |
+| line-height | 1.55 | 1.55 |
+| color | var(--fg-body) | var(--fg-body) |
+| margin | 0 | 0 |
+
+### Deck list box + deck row
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| box border-radius | 10px | 10px |
+| box background | var(--bg) | var(--bg) |
+| box border | 1px solid var(--border) | 1px solid var(--border) |
+| row display / align | flex / center | flex / center |
+| row gap | 12px | 12px |
+| row padding | 0 14px | 0 14px |
+| row min-height | 48px | 44px |
+| deck name | 14px, flex 1, no underline | 14px, flex 1, underline (decoration var(--border-strong), offset 2px) |
+| short mark | `◆ short N`, mono 12px, var(--danger) | same |
+| decks listed | committed decks that would go short, **source deck excluded** | same |
+
+### Buttons row
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| justify-content | — (buttons flex 1) | flex-end |
+| gap | 10px | 10px |
+| margin-top | 4px | 4px |
+| order | Cancel, then Undo anyway | Cancel, then Undo anyway |
+
+### Cancel button (focused on open)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | shipped `shortWarning` cancel | same |
+| size | flex 1; height 46px | padding 10px 18px |
+| border-radius | 10px | 8px |
+| border | 1px solid var(--accent) | 1px solid var(--accent) |
+| box-shadow (focus ring) | 0 0 0 2px var(--accent) | 0 0 0 2px var(--accent) |
+| font-size | 14px | 14px |
+| initial focus | yes | yes |
+| on press | closes the warning and the toast's pending state; copy stays | same |
+
+### Undo anyway button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| key | `shortWarning.confirmUndo` | same |
+| size | flex 1; height 46px | padding 10px 18px |
+| border-radius | 10px | 8px |
+| background | var(--elevated) | var(--elevated) |
+| border | 1px solid var(--border-strong) | 1px solid var(--border-strong) |
+| font-size / weight | 14px / 600 | 14px / 600 |
+| destructive styling | none (no --danger) | none |
+| on press | writes the revert (toast → undoing) | same |
+
+### While the warning is open
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| toast timer | held | held |
+| row's BuyTag | disabled (dashed border, tag opacity .45) | disabled |
+
+## State Coverage — Receipt, undo and the held slot (§C)
+
+| State | Triggering condition | Component rendered | Key props required |
+|-------|---------------------|-------------------|-------------------|
+| C1 Clean | write applied and the deck's need for the card reaches 0 | Toast (status): L1 `receipt.added`, L2 `receipt.detail`, History + Undo; row → held slot via 150ms crossfade; tab/group count, total, Mana Pool link drop at once | card, q, printing, finish; slot 52px phone / 34px desktop; toast bottom 84 phone / bottom-left 16 desktop, 440 wide |
+| C2 Claimed by an older deck | write applied, `allocateClaims` gives the copy to an older committed deck that was short | Toast: L1 + L2 + L3 `receipt.claimed` (one deck) or `receipt.claimedMany` (several), History + Undo; row redraws in place with owned dot + `◆ short`; counts/total unchanged | deck name (or deck count), remaining need; never says the deck is done; joins Spoken for at next read |
+| C3 Partial | write applied, need still > 0 for this deck | Toast: L1 + L2 + L3 `receipt.partial`; row stays, `◆ short N`; total drops by the copies' price | remaining need; row not moved; tag back to rest |
+| C4 Undo checking | Undo pressed | Toast: Undo → `receipt.checking`, aria-busy, muted .8; History hidden; row tag disabled; timer held | check excludes source deck; Undo not pressable |
+| C5 Undo raises §E | a committed deck other than the source would go short | ShortDeckWarning `titleUndo` / `confirmUndo`: sheet (phone, scrim .62) or 480px dialog (desktop); Cancel focused | deck list excludes the source deck; Undo anyway not destructive-styled; Cancel → copy stays, toast leaves its pending state |
+| C6 Undo in flight | no deck would go short, or Undo anyway pressed | Toast: Undo → `receipt.undoing`, aria-busy, History hidden; slot still held | timer held |
+| C7 Undo done | revert applied, or answered `alreadyReverted` | Toast: L1 `receipt.undone` (row had left) or `receipt.undoneElsewhere` (row had stayed), no L2/L3, no actions; held slot fades back to the live row in place (150ms); counts/total return | no held slot left behind; toast goes after 8s |
+| C8 Undo failed | revert errors, or answered `notFound` | Toast role=alert: L1 `receipt.undoFailed`, L3 `receipt.undoFailedBody`, `receipt.openHistory` button; Undo withdrawn | nothing changes: copy still owned, slot still held; no retry offered |
+| C9 Leave transition | write answers for a row that leaves | live row → held slot, 150ms opacity crossfade (0.55 at 75ms); reduced motion: one-frame swap | no height animation; neighbours do not move; slot holds until the next read and survives revalidation |
+| — Commander receipt | (requested in scope) | **not designed**: no distinct form in the handoff; a commander row's receipt follows C1/C2/C3 by outcome | — |

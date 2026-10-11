@@ -11,6 +11,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { previewRevert, revertCollectionEntry } from "../../app/collection/history-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { Finish } from "../../lib/collection/key";
@@ -70,6 +71,7 @@ export function GotItReceipt({
   const [phase, setPhase] = useState<Phase>({ k: "shown" });
   const [held, setHeld] = useState(false);
   const actionId = useRef<string | null>(null);
+  const router = useRouter();
   const busy = phase.k === "checking" || phase.k === "undoing";
   const inFlight = busy || phase.k === "warning";
   const { restart } = useToastClock(ref, !held && !inFlight, onExpire);
@@ -95,7 +97,8 @@ export function GotItReceipt({
     actionId.current ??= crypto.randomUUID();
     try {
       const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId);
-      if ("reverted" in out || "alreadyReverted" in out) return done();
+      if ("reverted" in out) return done();
+      if ("alreadyReverted" in out) return done(true);
       if ("wouldShort" in out) {
         const before = new Set((was ?? []).map((d) => d.deckId));
         setPhase({
@@ -119,7 +122,7 @@ export function GotItReceipt({
     setPhase({ k: "checking" });
     try {
       const p = await previewRevert(written.entryId, deckId);
-      if ("alreadyReverted" in p) return done();
+      if ("alreadyReverted" in p) return done(true);
       if (!("rows" in p)) return fail();
       if (p.decks.length > 0) {
         setPhase({ k: "warning", decks: p.decks, expected: p.expected, fresh: new Set(), changed: false });
@@ -131,7 +134,13 @@ export function GotItReceipt({
     }
   }
 
-  function done() {
+  /**
+   * `reverted` invalidated the deck page in the action. `alreadyReverted` wrote nothing, so nothing
+   * did: the list is re-read here, or the held slot would clear with no row to replace it and the
+   * counts would stay down (C7).
+   */
+  function done(refresh = false) {
+    if (refresh) router.refresh();
     restart();
     setPhase({ k: "undone" });
     onUndone(oracleId);

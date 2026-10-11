@@ -721,8 +721,17 @@ export function Decklist({
     // has to appear — without the group promising a card that is no longer in the
     // deck. `notSpent` is the one place the difference is spelled.
     const notSpent = (c: DeckDetailCard) => !isSpentCard(c) && !isHeldCard(c);
-    const spokenForCards = listedCards.filter(isSpokenFor);
-    const missingCards = listedCards.filter((c) => !c.owned);
+    // A row that STAYED after I got it (claimed or partial) redraws in place and joins Spoken for
+    // only at the next read (C2, C3): the card is owned now, so the filter alone would move it at
+    // once. It stays in the group the provider's held copy was drawn in, cleared on the same
+    // triggers as the held slot.
+    const pinnedMissing = (c: DeckDetailCard) =>
+      c.owned && !isHeldCard(c) && gotIt?.held.get(c.oracleId)?.owned === false;
+    const spokenForCards = listedCards.filter((c) => isSpokenFor(c) && !pinnedMissing(c));
+    const missingCards = listedCards.filter((c) => !c.owned || pinnedMissing(c));
+    // A pinned row is owned, so `from` already counts it: the clause's `n` leaves it out, or
+    // from + n would overshoot `to` by its copies.
+    const moveable = (c: DeckDetailCard) => notSpent(c) && !pinnedMissing(c);
 
     // The marked rows this branch actually draws — the three groups below hold
     // every row it has. The rows carry the brass rule here exactly as they do
@@ -742,7 +751,7 @@ export function Decklist({
       const roleCards = missingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
-      const listed = cardCopies(roleCards.filter(notSpent));
+      const listed = cardCopies(roleCards.filter(moveable));
       // Where the deck lands if the player buys this group, not the baseline.
       // For a group the fill built they are the same number — the fill buys a
       // role up to its target and no further, so from + n is the target. They
@@ -753,7 +762,7 @@ export function Decklist({
       // be fewer than the group's size (the group is the classifier's), so `to` stays the figure the
       // strip will read after the purchase.
       const moves = countRoles.byLabel
-        ? cardCopies(roleCards.filter(notSpent).filter((c) => {
+        ? cardCopies(roleCards.filter(moveable).filter((c) => {
             // An unlabeled card is the classifier's call, and the group is already its role.
             const rows = labelRows?.[c.oracleId];
             return rows ? labelRolesOf(rows).includes(role) : true;
