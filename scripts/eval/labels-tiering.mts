@@ -5,12 +5,13 @@
  * claude-sonnet-4-5? A stratified sample of staging's FRESH labels is re-asked under the SAME prompt
  * (`buildRequest`, version 8) of each candidate, real time, and compared with the scorer's own pairing.
  *
- *   pnpm tsx scripts/eval/labels-tiering.mts <out.json> [--cap 1] [--per-stratum 30] [--batch 10]
+ *   pnpm tsx scripts/eval/labels-tiering.mts <out.json> [--cap 1] [--per-stratum 30] [--batch 12]
  *
  * STAGING is read-only (`connectStaging`); nothing is written to any database. Every reply is priced
  * as it lands and the run refuses a request whose worst case could cross `--cap`, counting what the
  * out file already holds, so a resumed run cannot overspend.
  */
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import { sql } from "drizzle-orm";
@@ -18,7 +19,7 @@ import { requireEnv } from "../lib/env.mjs";
 import { bestPairing } from "../lib/card-labels-pairing.mjs";
 import { connectStaging } from "./lib/staging.mjs";
 import { costUsd, worstCaseUsd } from "./lib/pricing.mjs";
-import { buildRequest, labelIsFresh, renderBody, SYSTEM_TOKENS_BOUND } from "../../src/lib/labels/prompt";
+import { buildRequest, LABEL_PROMPT_VERSION, labelIsFresh, renderBody, SYSTEM, SYSTEM_TOKENS_BOUND } from "../../src/lib/labels/prompt";
 import { readReply } from "../../src/lib/labels/parse";
 import { searchesOnlyLands } from "../../src/lib/bracket/tutor-targets";
 import type { Job } from "../../src/lib/labels/types";
@@ -41,6 +42,8 @@ const REFERENCE = "claude-sonnet-4-5";
 
 type Card = { oracleId: string; name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string };
 type Run = {
+  /** What the replies were asked under. A resume under any other identity is refused, so one file is one prompt. */
+  config?: { promptVersion: string; systemSha: string; batch: number };
   sample: { card: Card; stratum: string[]; stored: Job[] }[];
   models: Record<string, { replies: Record<string, Job[]>; rejected: string[]; usd: number; usage: { input: number; output: number }[]; failed: number }>;
 };
@@ -86,7 +89,11 @@ async function loadSample(): Promise<Run["sample"]> {
   return [...chosen.values()];
 }
 
-const run: Run = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : { sample: await loadSample(), models: {} };
+const config = { promptVersion: LABEL_PROMPT_VERSION, systemSha: createHash("sha256").update(SYSTEM).digest("hex"), batch: BATCH };
+const run: Run = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : { config, sample: await loadSample(), models: {} };
+if (JSON.stringify(run.config) !== JSON.stringify(config)) {
+  throw new Error(`${out} was asked under ${JSON.stringify(run.config)}, this run is ${JSON.stringify(config)}; refusing to mix them. Use a new out file.`);
+}
 const save = () => writeFileSync(out, JSON.stringify(run));
 console.log(`sample: ${run.sample.length} cards`);
 
@@ -109,7 +116,8 @@ for (const model of MODELS) {
     // Thinking off: Haiku 5.5 takes "disabled"; Sonnet 5.5 answers 400 and asks for "between_tools" instead.
     const thinking = model === "claude-sonnet-5-5" ? { type: "between_tools" as const } : { type: "disabled" as const };
     const req = { ...base, thinking, max_tokens: base.max_tokens as number };
-    const approxIn = Math.ceil((SYSTEM_TOKENS_BOUND + renderBody(cards).length) / 3);
+    // One token per character is a ceiling (no tokenizer emits more tokens than characters), so the reservation bounds the call.
+    const approxIn = SYSTEM_TOKENS_BOUND + renderBody(cards).length;
     const worst = worstCaseUsd(model, approxIn, req.max_tokens, { batch: false });
     if (spent() + worst > CAP) { console.log(`STOP ${model}: worst case $${worst.toFixed(3)} would cross the $${CAP} cap (spent $${spent().toFixed(3)})`); save(); process.exit(0); }
     let message;
@@ -154,7 +162,7 @@ for (const model of MODELS) {
   const asked = run.sample.filter((s) => s.card.oracleId in m.replies);
   let sameSet = 0, sameAll = 0;
   const per = new Map<string, { stored: number; both: number; extra: number }>();
-  const diffs: { name: string; stored: string; model: string }[] = [];
+  const diffs: { name: string; stored: string; model: string; storedJobs?: Job[]; modelJobs?: Job[] }[] = [];
   for (const s of asked) {
     const a = s.stored, b = m.replies[s.card.oracleId];
     const ak = a.map(kindKey), bk = b.map(kindKey);
@@ -173,7 +181,7 @@ for (const model of MODELS) {
     const pairs = bestPairing(a, b, agree);
     for (const [x, y] of pairs) for (const f of LIMITS) if (lim(x, f) !== lim(y, f)) all = false;
     if (all) sameAll++;
-    else diffs.push({ name: s.card.name, stored: `${ak.join(",") || "(none)"}`, model: `${bk.join(",") || "(none)"}` });
+    else diffs.push({ name: s.card.name, stored: `${ak.join(",") || "(none)"}`, model: `${bk.join(",") || "(none)"}`, ...(setMatch ? { storedJobs: a, modelJobs: b } : {}) });
   }
   const tokens = m.usage.reduce((t, u) => ({ input: t.input + u.input, output: t.output + u.output }), { input: 0, output: 0 });
   console.log(`\n== ${model}: ${asked.length} cards compared, ${m.failed} failed, $${m.usd.toFixed(4)} (${tokens.input} in, ${tokens.output} out)`);
@@ -205,6 +213,6 @@ for (const model of MODELS) {
   }
   console.log(`  jobs the parser rejected: ${m.rejected.length}`);
   console.log(`  per 1,000 cards: standard $${((m.usd / Math.max(1, asked.length)) * 1000).toFixed(2)}, batch $${((m.usd / Math.max(1, asked.length)) * 500).toFixed(2)}`);
-  writeFileSync(out.replace(/\.json$/, `-${model}-diffs.json`), JSON.stringify(diffs, null, 1));
+  writeFileSync(`${out.replace(/\.json$/, "")}-${model}-diffs.json`, JSON.stringify(diffs, null, 1));
 }
 process.exit(0);
