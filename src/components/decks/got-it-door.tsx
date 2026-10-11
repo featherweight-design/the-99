@@ -10,7 +10,7 @@
  * The confirm stacks over the card (stacked sheets): the card is held under it, inert, and comes back
  * when it closes, re-read after a write so its receipt reads the copy in (`none` to `×1`).
  */
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { printedNameOf } from "../../lib/collection/browse";
 import { gotItCopy } from "../../lib/copy/i-got-it";
@@ -83,23 +83,17 @@ function GotItDetailsLink({ card, newestAsOf }: { card: DeckDetailCard; newestAs
  */
 export function GotItDoorRegistration({ shoppingCards, newestAsOf }: { shoppingCards: DeckDetailCard[]; newestAsOf: Date | null }) {
   const { registerReceiptLink } = useCardDetail();
-  const rows = useRef({ shoppingCards, newestAsOf });
-  useEffect(() => {
-    rows.current = { shoppingCards, newestAsOf };
-  });
-  // The provider calls the renderer during its own render, before the effect above refreshes `rows`,
-  // so a card leaving the list while it is open would keep its link. Re-registering on the buyable ids
-  // hands the provider a new renderer, which re-renders against the fresh rows.
-  const buyable = shoppingCards.filter(buysFrom).map((c) => c.oracleId).join(" ");
+  // Re-registered whenever the rows are read again, not only when which cards are buyable moves: a
+  // partial purchase leaves the card buyable with a smaller need, and the provider renders the link
+  // during its own render, so a renderer holding the previous rows would preset the old need.
+  // The decklist memoizes `shoppingCards`, so this runs once per read of the list.
   useEffect(
     () =>
       registerReceiptLink((oracleId) => {
-        const { shoppingCards: list, newestAsOf: asOf } = rows.current;
-        const card = list.find((c) => c.oracleId === oracleId);
-        return card && buysFrom(card) ? <GotItDetailsLink card={card} newestAsOf={asOf} /> : null;
+        const card = shoppingCards.find((c) => c.oracleId === oracleId);
+        return card && buysFrom(card) ? <GotItDetailsLink card={card} newestAsOf={newestAsOf} /> : null;
       }),
-    // `buyable` is read by nothing inside: it is here to re-register (see above).
-    [registerReceiptLink, buyable],
+    [registerReceiptLink, shoppingCards, newestAsOf],
   );
   return null;
 }

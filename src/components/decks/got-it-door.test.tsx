@@ -37,16 +37,17 @@ const POLY = row("o-poly", "Polyraptor");
 const reads: Record<string, BrowseCard> = { "o-poly": browse("o-poly", "Polyraptor"), "o-sol": browse("o-sol", "Sol Ring") };
 const fetchCard = vi.fn(async (id: string) => reads[id] ?? null);
 
-function draw() {
-  return render(
+function tree(rows: DeckDetailCard[] = [POLY]) {
+  return (
     <CardDetailProvider deckPage fetchCard={fetchCard}>
-      <GotItDoorRegistration shoppingCards={[POLY]} newestAsOf={asOf} />
+      <GotItDoorRegistration shoppingCards={rows} newestAsOf={asOf} />
       <CardDetailTrigger oracleId="o-poly" name="Polyraptor" door>shop poly</CardDetailTrigger>
       <CardDetailTrigger oracleId="o-poly" name="Polyraptor">all poly</CardDetailTrigger>
       <CardDetailTrigger oracleId="o-sol" name="Sol Ring" door>shop sol</CardDetailTrigger>
-    </CardDetailProvider>,
+    </CardDetailProvider>
   );
 }
+const draw = () => render(tree());
 
 async function press(el: HTMLElement) {
   await act(async () => {
@@ -116,6 +117,18 @@ describe("Bought this card? in card details (A11)", () => {
     await act(async () => gotItOpen.mock.calls[0][4]!.onClose(false));
     expect(fetchCard.mock.calls.length).toBe(before);
     expect(links()[0].closest("[inert]")).toBeNull();
+  });
+
+  // Round 2: a partial purchase leaves the card buyable with a smaller need. The link must open the
+  // confirm on the row as read now, or it presets the need from before the purchase.
+  it("opens the confirm on the row as the list reads it now, after a partial purchase", async () => {
+    const { rerender } = render(tree([POLY]));
+    await press(screen.getByText("shop poly"));
+    const after = row("o-poly", "Polyraptor", { quantity: 2 });
+    rerender(tree([after]));
+    gotItOpen.mockClear();
+    await press(links()[0]);
+    expect(gotItOpen.mock.calls[0][0]).toBe(after);
   });
 
   it("is disabled while an undo for the card is in flight (A9)", async () => {

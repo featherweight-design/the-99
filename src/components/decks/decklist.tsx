@@ -596,8 +596,10 @@ export function Decklist({
   // basket is what every Shopping FIGURE reads (the pill, the strip, both Mana Pool hrefs, the
   // intro and the footer), so the list and its figures bill one set of cards. The list rows alone
   // are what the type and role groups section, since a commander draws in a group of its own.
-  const listShoppingCards = cards.filter(isShoppingCard);
-  const shoppingCards = [...commanderShopping, ...listShoppingCards];
+  // Memoized on the list itself: I got it's card-details link re-registers when this changes, so a
+  // stable identity between reads keeps that from happening on every render.
+  const listShoppingCards = useMemo(() => cards.filter(isShoppingCard), [cards]);
+  const shoppingCards = useMemo(() => [...commanderShopping, ...listShoppingCards], [commanderShopping, listShoppingCards]);
   const visibleCards = filter === "shopping" ? listShoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
