@@ -251,9 +251,12 @@ before it opens.
 ## Rollout
 
 - **Before the switch goes on, one paid v8 corpus pass** (about $0.51, inside the Overview
-  accuracy line's approved October budget, `eval:corpus run --prompt v8`), because PR 1b moves an
-  Overview input when the switch is on and the free check can only re-check stored answers, not
-  show how a new Overview reads the new figures (f0, 2026-10-10; Hugh may override).
+  accuracy line's approved October budget), because PR 1b moves an Overview input when the switch
+  is on and the free check can only re-check stored answers, not show how a new Overview reads the
+  new figures (f0, 2026-10-10; Hugh may override). The harness reads the switch from the
+  environment (`factsFor` defaults it), so the run sets it, or it measures the classifier's figures:
+  `DECK_BENCHMARKS_ENABLED=true pnpm eval:corpus run --prompt v8 --out <file.jsonl>`. `env.mjs` loads
+  `.env` over the shell, so the worktree's `.env` must not set the switch.
 - `DECK_BENCHMARKS_ENABLED` on staging after PRs 1 to 4 and Task S; on production after Hugh has
   read it on staging and `LABEL_ROLE_COUNTS_ENABLED` is live there (the benchmarks read labels,
   and the role strip should not disagree with them on the same page).
