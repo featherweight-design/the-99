@@ -26,6 +26,8 @@ const { loadCart } = await import("./cart-read");
 beforeEach(() => {
   selects.length = 0;
   selects.push(
+    // The reader's deck count, for `7 of 21 decks are missing cards`.
+    [{ total: 21 }],
     [
       { id: "gishath", name: "HD - Gishath", commanderOracleId: "g", partnerOracleId: null, brew: true },
       { id: "kratos", name: "HD - Kratos", commanderOracleId: "k", partnerOracleId: null, brew: true },
@@ -43,12 +45,13 @@ describe("loadCart", () => {
     spy.mockRestore();
     expect(cart.priced).toBe(false);
     expect(cart.newestAsOf).toBeNull();
+    expect(cart.totalDecks).toBe(21);
     expect(cart.lines).toEqual([
       expect.objectContaining({
         name: "Sol Ring",
         rows: [
-          { deckId: "gishath", quantity: 1, cents: null, state: null, commander: false, held: 0 },
-          { deckId: "kratos", quantity: 1, cents: null, state: null, commander: false, held: 0 },
+          { deckId: "gishath", quantity: 1, cents: null, state: null, commander: false, held: 0, finish: null },
+          { deckId: "kratos", quantity: 1, cents: null, state: null, commander: false, held: 0, finish: null },
         ],
       }),
     ]);

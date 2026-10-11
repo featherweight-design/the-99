@@ -1,7 +1,7 @@
 /**
  * A whole page's payload, cached for one reader and keyed on their data stamp (Performance PR 6).
  *
- * Home and `/decks` spend most of their time assembling figures from a dozen per-user tables.
+ * Home, `/decks` and `/decks/shopping` spend most of their time assembling figures from a dozen per-user tables.
  * Nothing they draw changes unless one of those tables does, and every one of them carries the
  * `user_data_touch` trigger, which moves the stamp at commit. So an entry keyed on the stamp is
  * correct for exactly as long as it is asked for, whatever wrote the change: an action, an

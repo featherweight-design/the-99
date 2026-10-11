@@ -100,7 +100,7 @@ describe("declareBracket", () => {
     // deck page into the reply, and the page drawing the answer already has it.
     expect(stub.paths).toEqual([]);
     for (const fn of stub.deferred) fn();
-    expect(stub.paths).toEqual([`/decks/${DECK}`, "/decks", "/"]);
+    expect(stub.paths).toEqual([`/decks/${DECK}`, "/decks", "/decks/shopping", "/"]);
   });
 
   // OWNERSHIP IS IN THE STATEMENT, not only in the read that preceded it. Both columns, so

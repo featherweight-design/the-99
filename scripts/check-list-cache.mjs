@@ -1,6 +1,6 @@
-// Fails when Home or `/decks` reads a per-user table the reader's data stamp does not cover.
+// Fails when Home, `/decks` or `/decks/shopping` reads a per-user table the reader's data stamp does not cover.
 //
-// Both pages cache their whole payload keyed on `user_data_stamps.stamp`, and only the
+// All three pages cache their whole payload keyed on `user_data_stamps.stamp`, and only the
 // `user_data_touch` trigger moves it. A table the pages read without that trigger is a write
 // that leaves them stale until the hour ceiling, with nothing to notice. The tables read are
 // COMPUTED by following the pages' imports through their loaders, never listed by reading, and
@@ -24,7 +24,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `Every one of the ${perUser.length} per-user tables Home and /decks read moves the reader's stamp, ` +
+  `Every one of the ${perUser.length} per-user tables Home, /decks and /decks/shopping read moves the reader's stamp, ` +
   "and every fallback on their path keeps its payload out of the cache. " +
   `The ${catalog.length} catalog tables they read are retired by the catalog generation instead: ` +
   `${catalog.map((t) => t.name).join(", ")}.`,

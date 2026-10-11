@@ -60,7 +60,7 @@ describe("buildCart", () => {
     );
     expect(fromLines).toEqual(cartTotal(cart.decks, all));
     const passage = cart.lines.find((l) => l.oracleId === PASSAGE)!;
-    expect(passage.rows).toEqual([{ deckId: "thorin", quantity: 2, cents: null, state: "soldOut", commander: false, held: 0 }]);
+    expect(passage.rows).toEqual([{ deckId: "thorin", quantity: 2, cents: null, state: "soldOut", commander: false, held: 0, finish: null }]);
     expect(figuresOf(cart.lines.find((l) => l.oracleId === SOL)!.rows)).toEqual({ copies: 3, cents: 450, pricedCopies: 3 });
     expect(cartTotal(cart.decks, all)).toMatchObject({ copies: 8, pricedCopies: 6 });
   });
@@ -81,6 +81,23 @@ describe("buildCart", () => {
     expect(unpriced.lines).toHaveLength(4);
     expect(cartTotal(unpriced.decks, all)).toEqual({ copies: 8, cents: 0, pricedCopies: 0 });
     expect(unpriced.lines.every((l) => l.rows.every((r) => r.cents === null && r.state === null))).toBe(true);
+  });
+});
+
+describe("a foil-only price carries its finish", () => {
+  it("names foil or etched from the fact, and nothing for a normal price", () => {
+    const etched: PriceRead = {
+      prices: new Map([
+        [SOL, { cents: null, foilCents: null, etchedCents: 300, asOf: NOW }],
+        [TOWER, { cents: null, foilCents: 120, etchedCents: 300, asOf: NOW }],
+        [OMNATH, fact(400)],
+      ]),
+      newestAsOf: NOW,
+    };
+    const cart = buildCart(rows.slice(0, 5), etched, deckRows, names);
+    expect(cart.lines.find((l) => l.oracleId === SOL)!.rows.every((r) => r.finish === "etched" && r.cents === 300)).toBe(true);
+    expect(cart.lines.find((l) => l.oracleId === TOWER)!.rows[0]).toMatchObject({ finish: "foil", cents: 120 });
+    expect(cart.lines.find((l) => l.oracleId === OMNATH)!.rows[0].finish).toBeNull();
   });
 });
 

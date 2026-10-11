@@ -1,6 +1,6 @@
-// Which per-user tables Home and /decks read.
+// Which per-user tables Home, /decks and /decks/shopping read.
 //
-// Both pages cache their whole payload, keyed on the reader's data stamp, and the stamp only
+// The pages cache their whole payload, keyed on the reader's data stamp, and the stamp only
 // moves when a table carrying the `user_data_touch` trigger is written. So a page reading a
 // per-user table the trigger is not on is a page that goes stale without anything noticing.
 // This computes the set the pages read instead of listing it, because a list assembled by
@@ -15,7 +15,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
-export const CACHED_PAGES = ["src/app/page.tsx", "src/app/decks/page.tsx"];
+export const CACHED_PAGES = ["src/app/page.tsx", "src/app/decks/page.tsx", "src/app/decks/shopping/page.tsx"];
 const OWNER_COLUMNS = ["user_id", "deck_id", "version_id"];
 export const STAMP_TABLE = "user_data_stamps";
 

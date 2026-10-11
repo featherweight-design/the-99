@@ -28,6 +28,11 @@ export type CartRow = {
   commander: boolean;
   /** Owned copies THIS deck holds of the card (a deck can hold some and buy the rest). */
   held: number;
+  /**
+   * Which finish a `foilOnly` price came from, since `foilOnly` covers both: `foil` when the fact
+   * carried a foil price, `etched` when only an etched one. Null for every other state.
+   */
+  finish: "foil" | "etched" | null;
 };
 
 export type CartLine = {
@@ -62,6 +67,8 @@ export type CartDeck = {
 };
 
 export type CartPayload = {
+  /** Every deck the player owns, for `7 of 21 decks are missing cards`. */
+  totalDecks: number;
   decks: CartDeck[];
   lines: CartLine[];
   /** False when the price read failed (T2): rows still load, and no figure is drawn. */
