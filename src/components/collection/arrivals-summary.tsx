@@ -177,7 +177,7 @@ export function ArrivalsSummary({
           ? copy.summary.ledeNothingToReport
           : (summary?.contested.length ?? 0) > 0
             ? copy.summary.lede(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
-            : still.length > 0
+            : still.length > 0 || nowShort.length > 0
               ? copy.summary.ledeOwing(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)
               : copy.summary.ledeNoContention(summary?.totalBefore ?? 0, summary?.arrived ?? 0, summary?.left ?? 0)}
         {nowShort.length > 0 ? ` ${copy.summary.nowShort(nowShort)}` : ""}

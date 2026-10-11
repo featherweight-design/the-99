@@ -183,6 +183,14 @@ describe("ArrivalsSummary — decks left short", () => {
     expect(screen.getByText(/Replacing left 4 decks short: Gishath, Brago, Tovolar and 1 more\./)).toBeTruthy();
   });
 
+  it("never pairs a short deck with the nothing-to-decide lede", () => {
+    // A committed deck can go short on a card its draft already dropped: no buy row, no still row.
+    const s = withShort([{ deckId: "d1", short: 1 }]);
+    render(view(s));
+    expect(screen.getByText(new RegExp(copy.summary.ledeOwing(s.totalBefore, s.arrived, s.left).slice(0, 20)))).toBeTruthy();
+    expect(screen.queryByText(/nothing to decide/)).toBeNull();
+  });
+
   it("says nothing about short decks on a version-2 receipt", () => {
     render(view(summary({ left: 40 })));
     expect(screen.queryByText(/Replacing left/)).toBeNull();
