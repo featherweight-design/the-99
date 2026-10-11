@@ -120,8 +120,13 @@ describe("7d: reading", () => {
     expect(router.refresh).not.toHaveBeenCalled();
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
     expect(router.refresh).toHaveBeenCalledTimes(1);
-    expect(panel().dataset.phase).toBe("done");
-    expect(screen.getByTestId("results-dim").dataset.reading).toBeUndefined();
+    // A done read waits for the refresh, whose server draws its order and counts: until then the
+    // panel still reads and the results stay dimmed, never a done head over the free order.
+    expect(panel().dataset.phase).toBe("reading");
+    expect(screen.getByTestId("results-dim").dataset.reading).toBe("true");
+    // And it asks no more.
+    await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
+    expect(state).toHaveBeenCalledTimes(3);
   });
 
   it("keeps asking through a failed poll, and reports a read that did not finish", async () => {

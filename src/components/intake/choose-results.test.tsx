@@ -22,7 +22,7 @@ const page = (n: number, over: Partial<ResultsPage> = {}): ResultsPage => ({
 });
 const narrow = { without: [{ answers: [{ kind: "theme" as const, slug: "dinosaurs" }], count: 30 }], widen: null, anyOf: null, cardOverBracket: null };
 
-function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}) {
+function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaurs"], deckNames: Record<string, string> = {}, queryString = "t=dinosaurs&v=results") {
   return render(
     <CardDetailProvider fetchCard={vi.fn()}>
       <ReadScope initial={read}>
@@ -31,7 +31,7 @@ function draw(p: ResultsPage, read: ReadPhase | null = null, themes = ["dinosaur
           params={{ ...emptyParams(), results: true, themes }}
           themeLabels={{ dinosaurs: "Dinosaurs" }}
           cardName={null}
-          queryString="t=dinosaurs&v=results"
+          queryString={queryString}
           changeHref="/decks/new/choose?t=dinosaurs"
           deckNames={deckNames}
         />
@@ -50,6 +50,25 @@ const picked = (n: number, k: number, order: ResultsPage["order"] = "owned") => 
 });
 
 describe("the results under a read (the read addendum R1)", () => {
+  it("draws only the read's picks as best fits when it made fewer than three, the divider straight after", () => {
+    draw(picked(14, 2), "done", [], {});
+    expect(screen.getAllByTestId("best-fit")).toHaveLength(2);
+    expect(screen.getByTestId("rest-divider").nextElementSibling?.textContent).toContain("Commander 3");
+  });
+
+  it("asks for the next slice in the order the list was drawn in", async () => {
+    moreRows.mockResolvedValue(page(0, { rows: [], hasMore: false }));
+    // Drawn before the read settled: the free order, so the next slice is asked without `r`.
+    draw(page(14, { hasMore: true }), "reading", ["dinosaurs"], {}, "t=dinosaurs&v=results&r=abc");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    expect(moreRows.mock.calls.at(-1)![0]).toBe("t=dinosaurs&v=results");
+    cleanup();
+    // Drawn in the read's order: `r` rides along, so the slice continues that order.
+    draw({ ...picked(14, 3), hasMore: true }, "done", [], {}, "t=dinosaurs&v=results&r=abc");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show 12 more" })));
+    expect(moreRows.mock.calls.at(-1)![0]).toBe("t=dinosaurs&v=results&r=abc");
+  });
+
   it("counts the read's own picks in the head, and names the rest's order as it is", () => {
     draw(picked(14, 3, "fit"), "done", [], {});
     expect(document.body.textContent).toContain("The read’s three picks lead, closest first, each with a line on why. The rest follow in your answers’ order.");

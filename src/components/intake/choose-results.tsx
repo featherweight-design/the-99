@@ -105,9 +105,15 @@ export function ChooseResults({
     : read !== null && page.order === "owned" ? { title: free.title, sub: copy.results.notReadSub }
     : free;
   const owned = page.order === "owned";
+  // The read's picks, as drawn: the rows the server ordered first, each carrying its line.
+  const picks = rows.filter((r) => r.reason).length;
+  const picked = picks > 0;
   const withBest = narrow === null && rows.length >= TOO_NARROW_BELOW;
-  const best = withBest ? rows.slice(0, BEST_FITS) : [];
-  const rest = withBest ? rows.slice(BEST_FITS) : rows;
+  // Best fits are the read's picks when there are any, so a free row never takes a pick's rank
+  // above the divider: fewer than three picks draw fewer best fits.
+  const bestCount = picked ? Math.min(BEST_FITS, picks) : BEST_FITS;
+  const best = withBest ? rows.slice(0, bestCount) : [];
+  const rest = withBest ? rows.slice(bestCount) : rows;
   const row = (r: ResultRow, rank?: number) => (
     <ChooseRow
       key={r.oracleId}
@@ -125,13 +131,15 @@ export function ChooseResults({
   );
   // After the read's picks, the divider: the first row of the rest with no reason, once any row
   // above it carried one. Picks always lead, so it falls between the two.
-  const picked = rows.some((r) => r.reason);
   const restAt = picked ? rest.findIndex((r) => !r.reason) : -1;
+  // The next slice in the order this list was drawn in: a page drawn before its read settled asks
+  // without `r`, so a settle between two slices cannot cut the second from a different order.
+  const moreQuery = picked ? queryString : withoutRead(queryString);
 
   const showMore = () =>
     startTransition(async () => {
       try {
-        const next = await moreRows(queryString, rows.length);
+        const next = await moreRows(moreQuery, rows.length);
         const seen = new Set(rows.map((r) => r.oracleId));
         const fresh = next.rows.filter((r) => !seen.has(r.oracleId));
         setRows((prev) => [...prev, ...fresh]);
@@ -236,4 +244,11 @@ export function ResultsSkeleton({ by }: { by?: string }) {
       </ol>
     </div>
   );
+}
+
+/** A query string with its read `r` taken out. */
+function withoutRead(queryString: string): string {
+  const sp = new URLSearchParams(queryString);
+  sp.delete("r");
+  return sp.toString();
 }

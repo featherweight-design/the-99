@@ -131,7 +131,10 @@ export function ReadPanel({
       const next = phaseOf(s);
       if (next === "failed") setAnnounced(copy.read.failed);
       if (next === "stopped") setAnnounced(copy.read.stopped);
-      setPhase(next);
+      // A read with an answer (done, nothing fits) stays reading until the refresh lands: its
+      // order and its counts come from the server, and the scope, keyed on the server's state,
+      // remounts on them. Stopped and failed change nothing below, so they show at once.
+      if (next !== "done" && next !== "nothing") setPhase(next);
       router.refresh();
     };
     timer = setTimeout(ask, INTAKE_POLL_MS);
