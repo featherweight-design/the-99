@@ -30,7 +30,7 @@ All paths are on `main`; line numbers were read on 2026-10-11 and move.
   `allocateClaims` (`:52`) is the pair every caller wants: it sorts brews last and calls `allocate`.
 - `src/lib/decks/availability-query.ts:233` `owned` (basic lands excluded), `:283` `reservation_wants` and `:307`
   `reservations`: a reservation is capped at the deck's list ask and again at the supply still unallocated when its
-  turn comes. This SQL is the single place the supply is subtracted.
+  turn comes. This SQL is where supply is netted against reservations; `owned` itself leaves it unreduced (`:590-591`).
 - `src/lib/decks/availability.ts:125` `holdsCopy`: a claim holds a copy when its deck is committed, or when it is a
   brew the player gave one to.
 - `src/db/schema.ts:1017` `card_assignments (user_id, oracle_id, deck_id, copies, created_at)`, primary key on the
@@ -90,9 +90,13 @@ each before Design draws against it.
    let a brew take a copy. Any deck that needs the card is offered; a deck that does not claim it is not.
 4. **`Keep it free` is a supply subtraction, not a reservation to a deck.** `card_assignments` cannot hold a row with
    no deck (see above), and a sentinel deck id would cascade, join and prune wrongly. Engineering's lean is one new
-   table keyed `(user_id, oracle_id)` with a count of copies held back, subtracted from `owned` in the one place
-   supply is read (`availability-query.ts:233`) and in `assign.ts`'s own supply count (`:150-182`). Whether that
-   is the right shape is an open engineering question, not Design's.
+   table keyed `(user_id, oracle_id)` with a count of copies held back. It must NOT be subtracted from `owned`:
+   the query deliberately returns true `owned` unreduced (`availability-query.ts:590-591`, the `owned <= 0`
+   guard's input), and a kept-free copy has to keep reading as owned (lock 6). The model needs a separate
+   **allocatable supply** (owned less copies kept free), fed to `allocate`/`allocateClaims` (today they take
+   `{ owned, claims }`, so the contract is extended), to `free`, and to `assignCopyFor`'s supply count
+   (`assign.ts:150-182`), while display keeps reading `owned`. Whether that is the right shape is an open
+   engineering question, not Design's.
 5. **Every reader of "how many copies are spoken for" is in scope for `Keep it free`.** At least the claim SQL,
    `assignCopyFor`, `committedShortfalls` and the removal warning, Shopping rows (`shopping.ts`), the roll-up
    (`shopping-rollup.ts`) and so the cart, `receiptFacts`, and `pruneOrphanAssignments`. The plan must list them by
