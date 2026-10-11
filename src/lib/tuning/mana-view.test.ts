@@ -6,7 +6,7 @@ import { NO_TAPPED_LANDS } from "../mana/lands-tapped";
 import type { ManaColor, ManaSupplyCardRow } from "../mana/supply";
 import { shapeCount } from "./history";
 import { readManaBalance } from "./mana-balance";
-import { defaultPatternColor, isManaCountSummary, manaCountSummary, neededFor, pippedColors, toClientBalance } from "./mana-view";
+import { defaultPatternColor, hasColoredPip, isManaCountSummary, manaCountSummary, neededFor, pippedColors, toClientBalance } from "./mana-view";
 
 const land = (id: string, quantity: number, produces: ManaColor[]): ManaSupplyCardRow => ({ id, typeLine: "Land", manaCost: null, quantity, produces });
 const spell = (id: string, manaCost: string, quantity = 1): ManaSupplyCardRow => ({ id, typeLine: "Creature", manaCost, quantity });
@@ -96,4 +96,22 @@ describe("the source split and the tapped figure", () => {
     const { tappedTotal } = await import("./mana-view");
     expect(tappedTotal({ ...NO_TAPPED_LANDS, always: 2, unless: 3, fetch: 4 })).toBe(5);
   });
+});
+
+describe("hasColoredPip", () => {
+  const cases: { name: string; rows: ManaSupplyCardRow[]; commander: string | null }[] = [
+    { name: "a colored spell", rows: [spell("a", "{1}{G}")], commander: "{4}" },
+    { name: "only a commander's pip", rows: [spell("a", "{3}")], commander: "{2}{R}" },
+    { name: "colorless only", rows: [spell("a", "{C}{C}"), land("w", 9, ["C"])], commander: "{7}" },
+    { name: "a Phyrexian or two-generic hybrid alone", rows: [spell("a", "{W/P}"), spell("b", "{2/U}")], commander: "{3}" },
+    { name: "a land's cost never counts", rows: [{ id: "l", typeLine: "Land", manaCost: "{G}", quantity: 1, produces: ["G"] }], commander: null },
+  ];
+  for (const c of cases) {
+    it(`agrees with the engine's colorless state: ${c.name}`, () => {
+      const rows = c.commander ? [...c.rows, { id: "commander:0", typeLine: "Legendary Creature", manaCost: c.commander, quantity: 1 }] : c.rows;
+      const engine = readManaBalance({ rows, nameOf: (id) => id, tapped: NO_TAPPED_LANDS, identity: [] }).state !== "colorless";
+      const view = hasColoredPip(c.rows.map((r) => ({ typeLine: r.typeLine, manaCost: r.manaCost })), c.commander ? [{ manaCost: c.commander }] : []);
+      expect(view).toBe(engine);
+    });
+  }
 });

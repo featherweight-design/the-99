@@ -3,7 +3,6 @@
 // `docs/superpowers/gap-report-tuning-hub-mana.md`. Two rulings shape every string here:
 //   - No verdict (Hugh, 2026-10-10): nothing says a color is short, fine, met or covered.
 //   - Karsten is named only in the "What Needs means" line and the citation (brief ruling 2).
-// The Improve my mana door and its help result join in PR 3b.
 
 /** Karsten's article, the source of every Needed figure and the land formula. */
 export const KARSTEN_ARTICLE_URL =
@@ -95,6 +94,56 @@ export const manaBalanceCopy = {
     /** Cause-neutral: the panel lands here for any failed read, not only the catalog's. */
     body: "The count didn’t finish, so there is nothing to show yet. Open Mana Balance again to count once more.",
     kept: "your list is untouched · nothing was spent",
+  },
+  door: {
+    title: "Improve my mana",
+    lead: (commander: string) => `Basic swaps and staples ${commander} decks run, the ones you own first, for a color you pick.`,
+    leadOne: (commander: string, color: string) => `Basic swaps and staples ${commander} decks run, the ones you own first, for ${color}.`,
+    button: "Improve my mana",
+  },
+  step: {
+    head: "Which color?",
+    close: "Close",
+    order: "Listed by how close each color’s sources are to what its tightest cost needs, counting costs two or more cards share. Pick any.",
+    group: "Which color",
+    cost: (code: string, cards: number) => `${code} · ${cards} ${cards === 1 ? "card" : "cards"}`,
+    noPips: (sources: number) => `${sources} ${sources === 1 ? "source" : "sources"} · no pips`,
+    /** A color with pips and no cost Karsten publishes a figure for. */
+    noPublished: "no published figure",
+    have: (have: number) => `You have ${have}`,
+  },
+  help: {
+    head: (color: string) => `Help adding ${color}`,
+    change: "Change color",
+    swaps: "Swap basics",
+    swap: (n: number, out: string, into: string) => (n === 1 ? `1 ${out} → ${into}` : `Up to ${n} ${out}s → ${into}s`),
+    change_: (color: string, before: number, after: number) => `${color} ${before} → ${after}`,
+    noSwap: (color: string) => `No basic swap for ${color}.`,
+    howLabel: "How moves are picked",
+    /** Reworded by /copy-review (audit finding 4): the guard is each color's HARDEST published cost,
+     *  which can sit above the table's Needed, so it never says "tightest". */
+    how: (color: string) =>
+      `A swap or a trade is offered only if ${color} gains a source and no other color drops below what its hardest published cost needs, or loses a source while already below it. A locked basic never moves.`,
+    staples: (commander: string) => `Staples ${commander} decks run · owned first`,
+    owned: (free: number) => `owned · ${free} free`,
+    toBuy: "to buy",
+    buyLink: "Mana Pool ↗",
+    buyAria: (name: string) => `Buy ${name} at Mana Pool, opens in a new tab`,
+    rate: {
+      commander: (p: number, name: string) => `in ${p}% of ${name} decks`,
+      pair: (p: number) => `in ${p}% of this pairing’s decks`,
+      identity: (p: number, bucket: string) => `${bucket} average, ${p}%`,
+      /** The bucket a commander with no page of its own falls back to: `3-color`. */
+      countBucket: (n: number) => `${n}-color`,
+    },
+    adds: "adds",
+    trade: (basic: string, changes: string) => `1 ${basic} for it: ${changes}`,
+    tradeTag: "trade",
+    noTrade: "no basic trade for it",
+    noStaples: (color: string) => `No staples to show for ${color}.`,
+    failed: (color: string) => `We couldn’t read help for ${color}. The count above is unchanged, and nothing was spent.`,
+    failedMark: "Couldn’t read",
+    retry: "Try again",
   },
   cite: {
     before: "Needed figures are from Frank Karsten, “How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update”,",

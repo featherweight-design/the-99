@@ -33,6 +33,8 @@ export type StapleCandidate = {
   /** Copies not spoken for, from this deck's vantage (`loadAvailability`). */
   free: number;
   priceCents: number | null;
+  /** The card's art, for Mana Balance's 22×31 thumbnail. */
+  imageUri?: string | null;
 };
 
 const strength = (f: StapleFact) => (f.kind === "identity" ? f.commanders / Math.max(1, f.commanderTotal) : (f.inclusion ?? -1));
@@ -96,7 +98,7 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
   if (ids.length === 0) return [];
 
   const rows = await db
-    .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, manaCost: cards.manaCost, oracleText: cards.oracleText, keywords: cards.keywords, layout: cards.layout, colorIdentity: cards.colorIdentity })
+    .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, manaCost: cards.manaCost, oracleText: cards.oracleText, keywords: cards.keywords, layout: cards.layout, colorIdentity: cards.colorIdentity, imageUri: cards.imageUri })
     .from(cards)
     .where(and(inArray(cards.oracleId, ids), eq(cards.commanderLegal, true)));
   const pool = eligibleRows(rows, held, identity);
@@ -125,6 +127,7 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
       fact,
       free: availability.get(r.oracleId)?.free ?? 0,
       priceCents: prices.get(r.oracleId)?.liveCents ?? null,
+      imageUri: r.imageUri,
     }];
   });
 }

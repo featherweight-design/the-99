@@ -10,6 +10,7 @@
 
 import { roleCellState } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 
 interface RoleCounterCellProps {
@@ -30,6 +31,9 @@ interface RoleCounterCellProps {
    *  has met its target or one that is short of a role Consider built no shelf
    *  for. */
   onSeeShelf?: () => void;
+  /** The land cell's other action (Tuning hub R3, `Land cell — balance mana`): open Mana Balance.
+   *  `onSeeShelf` takes precedence, so a cell carries one action at most. */
+  onBalanceMana?: () => void;
   /** True when the deck was just filled (`deck.filled && autoCount > 0`). A
    *  short cell in this state takes `border-border-strong` in place of the
    *  default `border-border`. A met cell is unaffected. */
@@ -47,9 +51,11 @@ export function RoleCounterCell({
   target,
   advisory,
   onSeeShelf,
+  onBalanceMana,
   justFilled = false,
   was,
 }: RoleCounterCellProps) {
+  const balance = onSeeShelf ? undefined : onBalanceMana;
   // A3: `have === null` means count is not yet known — in-flight treatment.
   // `have === 0` is a real known zero and follows the ordinary short path.
   const inFlight = have === null;
@@ -161,6 +167,11 @@ export function RoleCounterCell({
           <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid">
             {addPanelCopy.strip.cellLink}
           </span>
+        ) : balance ? (
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid">
+            <span className="hidden md:inline">{tuningHubCopy.shortcuts.balanceMana}</span>
+            <span className="md:hidden">{tuningHubCopy.shortcuts.balanceManaShort}</span>
+          </span>
         ) : (
           /* Whenever the cell is not a control — met, short with no shelf built
              for it, or handed no handler at all — the caption goes and a dash
@@ -183,6 +194,21 @@ export function RoleCounterCell({
   // accessible name. Both names take it so the move is spoken, not just seen.
   const named = (base: string) =>
     was !== undefined ? deckVersioningCopy.pending.mixCellWasA11y(base, was) : base;
+
+  if (!onSeeShelf && balance) {
+    return (
+      <button
+        type="button"
+        onClick={balance}
+        data-shortcut="balance-mana"
+        aria-label={named(tuningHubCopy.shortcuts.balanceManaAria(have ?? 0, target))}
+        // The shipped interactive cell's border (design table, `Land cell — balance mana`).
+        className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
+      >
+        {face}
+      </button>
+    );
+  }
 
   if (!onSeeShelf) {
     return (

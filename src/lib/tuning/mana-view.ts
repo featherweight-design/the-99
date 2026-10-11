@@ -1,7 +1,9 @@
 // Mana Balance's view model (Tuning hub handoff R3b): what the panel reads, shaped on the server,
 // and the small derivations its pieces share. Pure and client-safe, so every rule is unit tested.
 
+import { isLandFace } from "../cards/facet";
 import { deckStatsCopy } from "../copy/deck-stats";
+import { manaNeeds } from "../profile/build";
 import { colorRows } from "../mana/color-rows";
 import type { ManaSupply } from "../mana/supply";
 import type { BalanceColor, ColorEvidence, ManaBalance, NeededEvidence } from "./mana-balance";
@@ -68,3 +70,13 @@ export function defaultPatternColor(colors: readonly ColorEvidence[]): BalanceCo
 /** The lands clause's tapped figure: the lands that can themselves enter tapped. A fetcher enters
  *  untapped and only puts its land onto the battlefield tapped, so it is not one of them. */
 export const tappedTotal = (t: ManaBalance["lands"]["tapped"]) => t.always + t.unless;
+
+/** Whether any card the deck casts has a colored pip: the engine's own test (`state !== "colorless"`),
+ *  read from the list the page already holds, so the land cell needs no read to offer Mana Balance.
+ *  A land's cost is never counted, and a commander always is. */
+export function hasColoredPip(
+  cards: readonly { typeLine: string; manaCost?: string | null }[],
+  commanders: readonly { manaCost: string | null }[],
+): boolean {
+  return cards.some((c) => !isLandFace(c.typeLine) && manaNeeds(c.manaCost ?? null).length > 0) || commanders.some((c) => manaNeeds(c.manaCost).length > 0);
+}

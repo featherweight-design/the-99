@@ -59,6 +59,11 @@ export const tuningHubCopy = {
   tileLabel: (name: string, status: string) => (status ? `${name}, ${status}` : name),
   shortcuts: {
     proposedCuts: "Proposed cuts →",
+    balanceMana: "balance mana →",
+    balanceManaShort: "balance →",
+    /** Reworded by /copy-review: R3 retired the handoff's `{color} is short`, so the name says what
+     *  the press does and never judges a color. */
+    balanceManaAria: (have: number, target: number) => `Land, ${have} of ${target}. Open Mana Balance.`,
   },
   /** History (handoff `history` block, canvas C H1 to H4b). Engineering additions are marked. */
   history: {
