@@ -3,10 +3,10 @@
 Audited against `docs/superpowers/design-briefs/2026-10-11-deck-notes.md` (Hugh's seven rulings, engineering's
 eight locks, the eight open questions, the Fixtures) and against `origin/main` at `bbf0594fe`.
 
-## Verdict: YELLOW
+## Verdict: GREEN
 
-One product confirmation is open (ruling 5, placement). Everything else is answered or eng-resolvable below.
-Nothing goes back to Design.
+R4 is current. Hugh confirmed the ruling 5 placement on 2026-10-11 (F1). Everything else is eng-resolvable
+below. Nothing goes back to Design.
 
 ## Current round and history
 
@@ -42,7 +42,7 @@ that is Hugh's own call, so this audit does not reopen it.
 | R2 done, `Done (N)` | Yes. Closed by default; select or unselect, never "tick" |
 | R3 edit and delete | Yes. Edit in place; delete uses the shipped `DeleteConfirm` (`ui/delete-confirm.tsx`) |
 | R4 `[[` tags | Yes. Deck's cards first (local), then any card; held is solid, not held or departed is dashed, unresolvable is plain; a tag opens `useCardDetail().open` |
-| R5 under the description | **Read as "in Your deck"**: a fourth segment cell beside Stats. See F1 |
+| R5 under the description | A fourth segment cell beside Stats, confirmed by Hugh 2026-10-11 (F1) |
 | R6 no reminders, due dates, sharing | Yes, and Must-nots ban ageing, progress, `3 of 5 done`, green and strikethrough |
 | R7 simple | One table, four actions, one `DeckPanel` value, no new tokens |
 | Drafts | Yes. E1/A1/A2 are drawn on Gishath, a draft; notes key on the deck |
@@ -55,10 +55,12 @@ that is Hugh's own call, so this audit does not reopen it.
 
 ## Findings
 
-**F1 · needs-Hugh · ruling 5, placement.** Ruling 5 said "in `Your deck`, under the description". The brief's
+**F1 · resolved by Hugh, 2026-10-11 · ruling 5, placement.** Ruling 5 said "in `Your deck`, under the description". The brief's
 open question 1 allowed "beside the other panels there", and R4 puts Notes in a fourth cell, `All · Shopping |
 Stats · Notes`. The cost: notes are one press away rather than on screen when the tab opens; the cell's open
-count is what keeps them in view. Design asks Hugh to confirm before build, and so does this audit.
+count is what keeps them in view. **Hugh, 2026-10-11: accepted.** Notes is a fourth view beside Stats,
+`All · Shopping | Stats · Notes`, and with Stats off `All · Shopping | Notes` (F2). That is the reading of
+"under the description".
 
 **F2 · eng-resolvable · Notes with Stats off.** The segment group exists only when `DECK_STATS_ENABLED` is on
 (`group-toggle.tsx`, the `stats` prop); with it off, the toolbar is the old one and has nowhere to draw Notes.
