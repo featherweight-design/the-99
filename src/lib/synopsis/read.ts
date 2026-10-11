@@ -8,6 +8,7 @@ import type { Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
 import { readStoredReading, type StoredProfileDeps } from "../profile/stored";
+import { allEvidenceIds } from "./based-on";
 import { readShownSynopsis, type SynopsisRow } from "./generate";
 import { methodNoticeOf, freeRunsFor, type MethodNotice } from "./method-notice";
 import { overviewV2Enabled } from "./overview-v2";
@@ -69,6 +70,11 @@ export type SynopsisState = {
    * catalog, and its name must preview like any other.
    */
   art: Record<string, string | null>;
+  /**
+   * The names of the cards the shown overview's claims cite, by oracle id, for the "Based on" lines.
+   * Empty while `OVERVIEW_V2_ENABLED` is off, which is what keeps the lines dark.
+   */
+  evidenceNames: Record<string, string>;
   /** A run is in flight on this deck. */
   pending: boolean;
   /**
@@ -195,13 +201,14 @@ export async function readSynopsisState(
     && !newest!.content.verdicts.some((v) => v.status === "ok")
     ? newest!.content.verdicts.reduce((sum, v) => ({ failed: sum.failed + v.failed, total: sum.total + v.total }), { failed: 0, total: 0 })
     : null;
-  const art = synopsis ? await namedArt(synopsis.content, userId, deckId) : {};
   // Behind the switch, so a deployment on contract 7 reads nothing more.
   const v2 = overviewV2Enabled();
+  const art = synopsis ? await namedArt(synopsis.content, userId, deckId, v2) : {};
+  const evidenceNames = synopsis && v2 ? await evidenceNamesOf(synopsis.content) : {};
   const methodNotice = illegal ? null : methodNoticeOf({ v2, shown: synopsis && { contractVersion: synopsis.contractVersion, overviewOk: !!synopsis.content?.overview }, runs: v2 ? await freeRunsFor(db, deckId) : { attempts: 0, succeeded: false } });
   return {
     methodNotice, lastFree: newest?.origin === "system",
-    synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art,
+    synopsis, ...status, pressWrites: pressWrites(live, synopsis), allowance, lastFailed, lastRejected, lastRefused, art, evidenceNames,
     pending: newest?.status === "pending",
     illegal,
   };
@@ -213,8 +220,8 @@ export async function readSynopsisState(
  * and the card it opened drew different frames). The deck's own printing picks come first, since the
  * details it opens draw them too. Fail-soft through `resolveDeckOwnedPrintings`.
  */
-async function namedArt(content: CheckedSynopsis, userId: string, deckId: string): Promise<Record<string, string | null>> {
-  const named = [...new Set(Object.values(content.cards).map((c) => c.oracleId))];
+async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, withEvidence: boolean): Promise<Record<string, string | null>> {
+  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(withEvidence ? allEvidenceIds(content) : [])])];
   if (named.length === 0) return {};
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)),
@@ -223,11 +230,19 @@ async function namedArt(content: CheckedSynopsis, userId: string, deckId: string
   return Object.fromEntries(rows.map((r) => [r.oracleId, owned.get(r.oracleId)?.imageUri ?? r.imageUri]));
 }
 
+/** The names of the cards an overview's claims cite, by oracle id, for its "Based on" lines. */
+async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string, string>> {
+  const ids = allEvidenceIds(content);
+  if (ids.length === 0) return {};
+  const rows = await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards).where(inArray(cards.oracleId, ids));
+  return Object.fromEntries(rows.map((r) => [r.oracleId, r.name]));
+}
+
 /** A version's synopsis, as copied at its commit, or null. Never stale (`SYNOPSIS-modal.md` §4.4). */
 export async function readVersionSynopsis(
   versionId: string,
   userId: string,
-): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null> } | null> {
+): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
     .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content })
     .from(deckVersionSynopses)
@@ -237,5 +252,7 @@ export async function readVersionSynopsis(
   if (!row?.content) return null;
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
-  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art: await namedArt(row.content, userId, row.deckId) };
+  const v2 = overviewV2Enabled();
+  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2), v2 ? evidenceNamesOf(row.content) : {}]);
+  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art, evidenceNames };
 }

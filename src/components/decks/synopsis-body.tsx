@@ -3,6 +3,7 @@
 import { useId } from "react";
 
 import { synopsisCopy } from "../../lib/copy/synopsis";
+import { basedOnIds, type EvidenceKind } from "../../lib/synopsis/based-on";
 import { normalizeName } from "../../lib/synopsis/facts";
 import type { SynopsisRow } from "../../lib/synopsis/generate";
 import type { CheckedSynopsis, SectionId, SectionVerdict } from "../../lib/synopsis/types";
@@ -27,6 +28,7 @@ export function SynopsisModal({
   stale,
   deckName,
   art,
+  evidenceNames,
   busy,
   action,
   onRetry,
@@ -38,6 +40,7 @@ export function SynopsisModal({
   stale: boolean;
   deckName: string;
   art: FindingArt;
+  evidenceNames: Record<string, string>;
   busy: boolean;
   /** The banner's control: Re-analyze, or ruling D's write with its line and credit note. */
   action: { label: string; line: string | null; note: string | null; disabled: boolean; onPress: () => void } | null;
@@ -89,7 +92,7 @@ export function SynopsisModal({
             ) : null}
           </div>
         ) : null}
-        <SynopsisSections content={synopsis.content} art={art} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
+        <SynopsisSections content={synopsis.content} art={art} evidenceNames={evidenceNames} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
       </div>
     </ModalChrome>
   );
@@ -105,12 +108,14 @@ export function VersionSynopsisModal({
   committedAt,
   content,
   art,
+  evidenceNames,
   onClose,
 }: {
   versionNumber: number;
   committedAt: Date;
   content: CheckedSynopsis;
   art: FindingArt;
+  evidenceNames: Record<string, string>;
   onClose: () => void;
 }) {
   const aside = synopsisCopy.version.aside(versionNumber, formatDeckDate(committedAt));
@@ -128,7 +133,7 @@ export function VersionSynopsisModal({
         <p data-testid="synopsis-version-record" className="m-0 border-b border-b-[color:var(--border)] border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
           {synopsisCopy.version.record(versionNumber)}
         </p>
-        <SynopsisSections content={content} art={art} onRetry={null} busy={false} />
+        <SynopsisSections content={content} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
       </div>
     </ModalChrome>
   );
@@ -138,6 +143,7 @@ export function VersionSynopsisModal({
 export function SynopsisSections({
   content,
   art,
+  evidenceNames = {},
   onRetry,
   busy,
   note = null,
@@ -145,6 +151,8 @@ export function SynopsisSections({
 }: {
   content: CheckedSynopsis;
   art: FindingArt;
+  /** The names of the cards the claims cite, by oracle id. Empty draws no "Based on" line. */
+  evidenceNames?: Record<string, string>;
   onRetry: (() => void) | null;
   busy: boolean;
   /** The retry's credit note, and whether every credit is out (7g's disabled form). */
@@ -165,6 +173,9 @@ export function SynopsisSections({
     />
   );
   const text = (t: string) => <SynopsisText text={t} cards={content.cards} art={art} />;
+  const basedOn = (kind: EvidenceKind, index: number, except?: string) => (
+    <BasedOn ids={basedOnIds(content, kind, index, except)} names={evidenceNames} art={art} />
+  );
   const body = "text-[13px] leading-[1.6] md:text-[13.5px] text-[var(--fg-body)]";
 
   return (
@@ -183,7 +194,7 @@ export function SynopsisSections({
                 {content.primer.strategy.map((step, i) => (
                   <li key={i} className="grid grid-cols-[22px_minmax(0,1fr)] items-baseline">
                     <span className="font-mono text-[11px] text-[var(--fg-faint)]">{i + 1}</span>
-                    <span className={body}>{text(step)}</span>
+                    <span className={body}>{text(step)}{basedOn("strategy", i)}</span>
                   </li>
                 ))}
               </ol>
@@ -196,6 +207,7 @@ export function SynopsisSections({
                   fixed={content.lands ? synopsisCopy.modal.lands.keep(content.lands.keep.low, content.lands.keep.high) : null}
                   lines={content.primer.mulligan.keep}
                   render={text}
+                  basedOn={(i) => basedOn("keep", i)}
                 />
                 <Hand
                   label={synopsisCopy.modal.sendBack}
@@ -205,15 +217,17 @@ export function SynopsisSections({
                     : null}
                   lines={content.primer.mulligan.sendBack}
                   render={text}
+                  basedOn={(i) => basedOn("sendBack", i)}
                 />
               </div>
             </Sub>
             <Sub title={synopsisCopy.modal.primer.tips}>
               <div className="flex flex-col gap-[10px]">
                 {content.primer.tips.map((tip, i) => (
-                  <p key={i} className={`border-l border-[var(--border-strong)] pl-[12px] ${body}`}>
-                    {text(tip.text)}
-                  </p>
+                  <div key={i} className={`border-l border-[var(--border-strong)] pl-[12px] ${body}`}>
+                    <p className="m-0">{text(tip.text)}</p>
+                    {basedOn("tips", i)}
+                  </div>
                 ))}
               </div>
             </Sub>
@@ -237,7 +251,7 @@ export function SynopsisSections({
                       ? <CardName oracleId={card.oracleId} name={k.card} imageUri={art.get(card.oracleId)?.imageUri ?? null} />
                       : <span className="font-semibold text-[var(--fg)]">{k.card}</span>}
                   </span>
-                  <span className="text-[13px] leading-[1.5] text-[var(--fg-muted)]">{text(k.job)}</span>
+                  <span className="text-[13px] leading-[1.5] text-[var(--fg-muted)]">{text(k.job)}{basedOn("keyCards", i, card?.oracleId)}</span>
                 </div>
               );
             })}
@@ -251,7 +265,7 @@ export function SynopsisSections({
             {content.weaknesses.map((w, i) => (
               <p key={i} className={`m-0 grid grid-cols-[14px_minmax(0,1fr)] items-baseline ${body}`}>
                 <span aria-hidden className="mt-[2px] block h-[5px] w-[5px] rotate-45 bg-[var(--fg-faint)]" />
-                <span>{text(w)}</span>
+                <span>{text(w)}{basedOn("weaknesses", i)}</span>
               </p>
             ))}
           </div>
@@ -285,7 +299,7 @@ function Sub({ title, children }: { title: string; children: React.ReactNode }) 
 }
 
 function Hand({
-  label, glyph, fixed, lines, render,
+  label, glyph, fixed, lines, render, basedOn,
 }: {
   label: string;
   glyph: string;
@@ -294,6 +308,7 @@ function Hand({
   fixed: string | null;
   lines: string[];
   render: (t: string) => React.ReactNode;
+  basedOn: (index: number) => React.ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-[8px] rounded-[9px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[14px] py-[12px]">
@@ -307,9 +322,28 @@ function Hand({
       {lines.map((line, i) => (
         <div key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-baseline text-[13px] leading-[1.55] text-[var(--fg-body)]">
           <span aria-hidden className="font-mono text-[11px] text-[var(--fg-faint)]">{glyph}</span>
-          <span>{render(line)}</span>
+          <span>{render(line)}{basedOn(i)}</span>
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * The cards a claim is about, under it (Overview accuracy PR 6, Hugh's ruling 2026-10-10): each one
+ * the same card-open name a `[[mark]]` draws, so a press opens the details sheet and a hover shows
+ * the shared preview. It says what the claim is ABOUT and nothing of whether it is true (plan 3.4),
+ * so there is no verified mark. A card with no name read draws nothing; a claim with none, no line.
+ */
+function BasedOn({ ids, names, art }: { ids: string[]; names: Record<string, string>; art: FindingArt }) {
+  const shown = ids.filter((id) => names[id]);
+  if (shown.length === 0) return null;
+  return (
+    <span data-testid="synopsis-based-on" className="mt-[3px] flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px] text-[12px] leading-[1.5]">
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--fg-faint)]">{synopsisCopy.modal.basedOn}</span>
+      {shown.map((id) => (
+        <CardName key={id} oracleId={id} name={names[id]} imageUri={art.get(id)?.imageUri ?? null} />
+      ))}
+    </span>
   );
 }

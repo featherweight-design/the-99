@@ -153,6 +153,13 @@ async function seed() {
     await touchDeck(tx, e);
   });
   await computeAndStoreProfile(e, USER, profileDeps);
+  // Overview accuracy PR 6: a deck whose shown overview is contract 8 (the free rewrite wrote it,
+  // evidence refs and all), for the "Based on" contact sheet. No model call: the stub is injected.
+  const f = await oldDeck(`${SEED_PREFIX}contract-8`, 7);
+  queue = ["survived"];
+  const wrote = await writeSynopsisFor(f, USER, deps);
+  if (wrote.kind !== "written") throw new Error(`the contract-8 seed failed: ${JSON.stringify(wrote)}`);
+  console.log(`export MN_CONTRACT_8=${f}`);
   console.log(`export MN_ELIGIBLE=${a} MN_PRESS_PHONE=${pp} MN_PRESS_DESKTOP=${pd} MN_ONE_LEFT=${b} MN_BOTH_USED=${c} MN_WITH_STALE=${d} MN_WITH_OLDER_ROW=${e}`);
 }
 

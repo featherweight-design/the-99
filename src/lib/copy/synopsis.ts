@@ -116,6 +116,9 @@ export const synopsisCopy = {
     primer: { strategy: "Core strategy", mulligan: "Mulligan", tips: "Key tips" },
     keep: "Keep",
     sendBack: "Send back",
+    /** The label of the line under a claim that lists the cards it is about (Overview accuracy,
+     *  PR 6). Owed to /copy-review. */
+    basedOn: "Based on",
     /**
      * The land range, drawn by the app as each box's first line; the model never writes it
      * (contract 6, the-99-d9's copy, 2026-09-24).
