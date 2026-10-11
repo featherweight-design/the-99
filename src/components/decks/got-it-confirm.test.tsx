@@ -195,6 +195,22 @@ describe("GotItConfirm", () => {
     expect(second.id).not.toBe(first.id);
   });
 
+  it("raises the need when copies left elsewhere, without saying one was added", async () => {
+    markBought.mockResolvedValueOnce({
+      stale: [{ oracleId: ORACLE, setCode: "mom", collectorNumber: "137", finish: "nonfoil", quantity: 1 }],
+    });
+    renderConfirm({ card: card({ quantity: 4 }) });
+    await waitFor(() => expect(printingRadios()).toHaveLength(3));
+    const before = Number(/\d+/.exec(add().textContent ?? "")![0]);
+    await act(async () => fireEvent.click(add()));
+    // One copy went elsewhere (2 → 1): the deck needs one more, and the banner names no addition.
+    expect(banner()).toHaveTextContent(c.staleTitle);
+    expect(banner().textContent).not.toMatch(/added somewhere else/);
+    expect(banner()).toHaveFocus();
+    expect(add()).toHaveTextContent(c.add(Math.min(4, before + 1)));
+    expect(markBought.mock.calls).toHaveLength(1);
+  });
+
   it("keeps the count and says so when a stale answer leaves no need", async () => {
     markBought.mockResolvedValueOnce({
       stale: [{ oracleId: ORACLE, setCode: "mom", collectorNumber: "137", finish: "nonfoil", quantity: 3 }],

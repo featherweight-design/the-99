@@ -26,7 +26,9 @@ const MONO_LABEL = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-[col
 const BANNER =
   "flex gap-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] [border-left:3px_solid_var(--warning)] bg-[color:var(--elevated-hover)] px-[12px] py-[10px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] outline-none";
 
-type Notice = "stale" | "failed" | null;
+// `staleRemoved`: the holding fell elsewhere. The banner's sentence names an addition, so only
+// its title is drawn; the need line under the stepper carries the new need.
+type Notice = "stale" | "staleRemoved" | "failed" | null;
 
 export function GotItConfirm({
   deckId, card, cardName, newestAsOf, onClose, onDone, onPendingChange,
@@ -87,7 +89,7 @@ export function GotItConfirm({
   // The stale banner takes focus (README "Other decisions"); pending holds focus on the dialog,
   // since Add and Cancel disable under it.
   useEffect(() => {
-    if (notice === "stale") bannerRef.current?.focus();
+    if (notice === "stale" || notice === "staleRemoved") bannerRef.current?.focus();
   }, [notice]);
   useEffect(() => {
     if (pending) dialogRef.current?.focus();
@@ -128,7 +130,7 @@ export function GotItConfirm({
       }
       if ("stale" in out) {
         // Nothing was written. Re-base on the count the server holds now, and confirm again.
-        const next = rebaseStale(out.stale, choice, finish, expected, need);
+        const next = rebaseStale(out.stale, choice, finish, expected, need, card.quantity);
         setChoices((cs) => cs?.map((p) => (p.scryfallId === choice.scryfallId
           ? { ...p, owned: { ...p.owned, [finish]: next.expected } }
           : p)) ?? cs);
@@ -136,7 +138,7 @@ export function GotItConfirm({
         // At need 0 the count stays: the banner says Add anyway if this is a spare.
         if (next.need > 0) setQty(presetQuantity(next.need));
         pressId.current = null;
-        setNotice("stale");
+        setNotice(next.added ? "stale" : "staleRemoved");
       } else {
         // Refused or the catalog no longer holds it: nothing was written; the choices stay (B9).
         setNotice("failed");
@@ -205,12 +207,12 @@ export function GotItConfirm({
           <span id={nameId} className="text-[15px] leading-[1.4] text-[color:var(--fg-body)]">{cardName}</span>
         </div>
 
-        {notice === "stale" ? (
+        {notice === "stale" || notice === "staleRemoved" ? (
           <div ref={bannerRef} role="status" tabIndex={-1} className={BANNER}>
             <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
             <span>
               <b className="font-semibold text-[color:var(--fg)]">{c.staleTitle}</b>{" "}
-              {need > 0 ? c.staleBody(need) : c.staleBodyDone}
+              {notice === "staleRemoved" ? null : need > 0 ? c.staleBody(need) : c.staleBodyDone}
             </span>
           </div>
         ) : null}

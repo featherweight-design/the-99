@@ -89,10 +89,13 @@ describe("rebaseStale (STATES B8)", () => {
   const row = (quantity: number, finish: Finish = "nonfoil") =>
     ({ oracleId: ORACLE, setCode: "mom", collectorNumber: "137", finish, quantity });
   it("takes the holding's count now as the next expected, and lowers the need by what landed", () => {
-    expect(rebaseStale([row(1)], A, "nonfoil", 0, 3)).toEqual({ expected: 1, need: 2 });
+    expect(rebaseStale([row(1)], A, "nonfoil", 0, 3, 4)).toEqual({ expected: 1, need: 2, added: true });
   });
   it("reads only the holding the confirm sent, and never drops the need below zero", () => {
-    expect(rebaseStale([row(5, "foil"), row(4)], A, "nonfoil", 0, 2)).toEqual({ expected: 4, need: 0 });
-    expect(rebaseStale([], A, "nonfoil", 2, 2)).toEqual({ expected: 0, need: 2 });
+    expect(rebaseStale([row(5, "foil"), row(4)], A, "nonfoil", 0, 2, 4)).toEqual({ expected: 4, need: 0, added: true });
+  });
+  it("raises the need by copies removed elsewhere, never past the deck's quantity", () => {
+    expect(rebaseStale([row(1)], A, "nonfoil", 2, 1, 4)).toEqual({ expected: 1, need: 2, added: false });
+    expect(rebaseStale([], A, "nonfoil", 3, 1, 2)).toEqual({ expected: 0, need: 2, added: false });
   });
 });

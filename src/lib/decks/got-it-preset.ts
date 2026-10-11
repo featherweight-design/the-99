@@ -68,8 +68,10 @@ export function presetQuantity(need: number): number {
 
 /**
  * What a `stale` answer re-bases to (STATES B8). `current` is the server's rows for the holding the
- * confirm sent; the copies it holds beyond `expected` were added somewhere else, so the need falls
- * by that much and the next press sends the new count as its `expected`. Nothing was written.
+ * confirm sent. The holding moved by `now - expected` somewhere else, either way: copies added lower
+ * the need, copies removed raise it, never past the deck's own `quantity`. The next press sends the
+ * new count as its `expected`. `added` says which way it moved, because the banner's sentence names
+ * an addition. Nothing was written.
  */
 export function rebaseStale(
   current: readonly (CollectionItemIdentity & { quantity: number })[],
@@ -77,9 +79,11 @@ export function rebaseStale(
   finish: Finish,
   expected: number,
   need: number,
-): { expected: number; need: number } {
+  quantity: number,
+): { expected: number; need: number; added: boolean } {
   const now = current
     .filter((r) => r.setCode === printing.setCode && r.collectorNumber === printing.collectorNumber && r.finish === finish)
     .reduce((n, r) => n + r.quantity, 0);
-  return { expected: now, need: Math.max(0, need - Math.max(0, now - expected)) };
+  const moved = now - expected;
+  return { expected: now, need: Math.min(quantity, Math.max(0, need - moved)), added: moved > 0 };
 }
