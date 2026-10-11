@@ -1704,6 +1704,9 @@ export function BuilderShell({
                   cuts={proposedCutsEnabled ? cutsPanel : undefined}
                   hub={!tuningHubEnabled ? undefined : (permits) => (
                     <TuningHub
+                      // Per deck: the shell survives a move between decks, and the hub's open tool,
+                      // tiles and first-read latch belong to the deck they were read for.
+                      key={deck.id}
                       deckId={deck.id}
                       drawn={permits !== null || built > bodySize}
                       request={hubRequest}
