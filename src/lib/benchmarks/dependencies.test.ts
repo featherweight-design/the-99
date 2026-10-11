@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dependencies, type DependencyCuts } from "./dependencies";
+import { dependencies, graveyardUses, usesGraveyard, type DependencyCuts } from "./dependencies";
 import { card, job, land } from "./fixtures";
 
 const cuts: DependencyCuts = {
@@ -104,5 +104,19 @@ describe("dependencies", () => {
       ...many(3, (i) => card(`Elf${i}`, { typeLine: "Creature — Elf", oracleText: "{T}: Add {G}.", jobs: [job({ kind: "ramp", trigger: "activated" })] })),
     ];
     expect(rows(dependencies(deck, 0, cuts))).toEqual(["activated:heavy", "combat:heavy", "graveyard:light"]);
+  });
+});
+
+describe("graveyardUses", () => {
+  it("says which ways a card uses the graveyard, and counts it when any applies", () => {
+    const both = card("Mulch-back", {
+      oracleText: "Mill three cards. Return target card from your graveyard to your hand.",
+      jobs: [job({ kind: "mill", affects: "self" }), job({ kind: "recursion" })],
+    });
+    const keyword = card("Flash Thing", { keywords: ["Flashback", "Flying"] });
+    expect(graveyardUses(both)).toMatchObject({ returns: true, grows: false, keywords: [] });
+    expect(graveyardUses(keyword)).toEqual({ fills: false, returns: false, grows: false, keywords: ["Flashback"] });
+    expect(usesGraveyard(keyword)).toBe(true);
+    expect(usesGraveyard(card("Plain"))).toBe(false);
   });
 });

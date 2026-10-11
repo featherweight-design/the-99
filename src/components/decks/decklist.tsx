@@ -60,7 +60,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useGotIt } from "./got-it";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
@@ -145,6 +145,11 @@ type DecklistProps = {
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
   statsData?: DeckStatsInput | null;
+  /**
+   * A request to open Deck stats at one card, from the benchmark ledger's Stats link (audit build
+   * rule 6). `n` moves on every request, so the same card asked for twice scrolls twice.
+   */
+  statsFocus?: { card: "curve" | "jobs"; n: number } | null;
   /** The logged games (newest first, as `listDeckGames` returns them) and the deck's versions (newest
    *  first) for the Results card. A brew has no versions, so the card's by-version section is absent. */
   games?: readonly { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
@@ -320,6 +325,7 @@ export function Decklist({
   filled = false,
   statsEnabled = false,
   statsData = null,
+  statsFocus = null,
   games = NO_GAMES,
   versions = NO_VERSIONS,
   onLogGame,
@@ -375,6 +381,18 @@ export function Decklist({
     ? { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") }
     : undefined;
   const view = storedView ?? "list";
+  // The ledger's Stats link: open the panel, then, once it is drawn, bring the card into view.
+  // Each request is answered once, so closing Stats afterwards is never undone by a stale one.
+  const answered = useRef(0);
+  useEffect(() => {
+    if (!statsFocus || !statsEnabled || answered.current === statsFocus.n) return;
+    if (!statsOpen) {
+      choosePanel("stats");
+      return;
+    }
+    answered.current = statsFocus.n;
+    document.querySelector(`[data-stats-card="${statsFocus.card}"]`)?.scrollIntoView({ block: "start" });
+  }, [statsFocus, statsEnabled, statsOpen, choosePanel]);
 
   // The marks this view actually contains, which is what the key decodes. Only
   // what the current view DRAWS — rows under `Shopping` and under `All`'s list,

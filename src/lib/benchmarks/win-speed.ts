@@ -8,7 +8,8 @@ export const SHUFFLES = 4000;
 /** Fixed, so the same list always gives the same odds (brief lock 8). */
 const SEED = 0x99c0ffee;
 
-export type WinLine = BenchLine & { odds: number };
+/** `foundBy`: the searches whose reach finds at least one of this line's pieces, by name. */
+export type WinLine = BenchLine & { odds: number; foundBy: BenchCard[] };
 
 export type WinSpeed = {
   /** The chance at least one line is in hand by turn 8, 0 to 1. */
@@ -73,7 +74,10 @@ export function winSpeed(cards: readonly BenchCard[], lines: readonly BenchLine[
   return {
     odds: any / SHUFFLES,
     lines: lines
-      .map((l, i) => ({ ...l, odds: hits[i] / SHUFFLES }))
+      .map((l, i) => ({
+        ...l, odds: hits[i] / SHUFFLES,
+        foundBy: useful.filter((t) => needs[i].some((id) => reaches(t.oracleId, id))).sort((a, b) => a.name.localeCompare(b.name)),
+      }))
       .sort((a, b) => b.odds - a.odds || a.variantId.localeCompare(b.variantId)),
     tutors: useful.sort((a, b) => a.name.localeCompare(b.name)),
   };

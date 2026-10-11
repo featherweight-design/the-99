@@ -300,6 +300,13 @@ export function BuilderShell({
   const [view, setView] = useState<BuilderView>(
     initialBuilderView(initialView, versions.length, analysisEnabled),
   );
+  // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
+  // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
+  const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
+  const openStatsAt = useCallback((card: "curve" | "jobs") => {
+    setView("deck");
+    setStatsFocus((f) => ({ card, n: (f?.n ?? 0) + 1 }));
+  }, []);
 
   // IN THE SHELL, not the panel. One tab panel renders at a time, so the Analysis panel unmounts
   // on every tab switch — a hook owned by the panel would lose its answer each time, and a
@@ -646,6 +653,11 @@ export function BuilderShell({
   // The deck's locked cards, for the climb's sheet (Locked, D5): read off the rows this page holds,
   // so the sheet agrees with whatever the list shows, and the stored profile never sees a lock.
   const lockedIds = useMemo(() => new Set(cards.filter((c) => c.locked).map((c) => c.oracleId)), [cards]);
+  // What the benchmark ledger's rows draw for each card's copies: the decklist row's own facts.
+  const ledgerAvailability = useMemo(
+    () => new Map(cards.map((c) => [c.oracleId, { owned: c.owned && !c.proxied, availability: c.availability ?? null }])),
+    [cards],
+  );
   const findingArt = useMemo(() => {
     const art = new Map<string, { name: string; imageUri: string | null }>();
     for (const c of [...cards, deck.commander, ...(deck.partner ? [deck.partner] : [])]) {
@@ -1597,6 +1609,8 @@ export function BuilderShell({
                     refused: declaration.refused,
                   }}
                   art={findingArt}
+                  ledgerAvailability={ledgerAvailability}
+                  onStats={statsEnabled ? openStatsAt : undefined}
                   overview={
                     synopsis.view.kind === "ready" ? (
                       <SynopsisOverview
@@ -1838,6 +1852,7 @@ export function BuilderShell({
               <Decklist
               statsEnabled={statsEnabled}
               statsData={statsData}
+              statsFocus={statsFocus}
               games={games}
               versions={versions}
               onLogGame={() => setView("games")}

@@ -18,7 +18,7 @@ const GRADES: readonly Grade[] = ["velocity", "flow", "interaction", "win"];
  * One hue (the `--fact` blue, h 250), each step more saturated: a grade is never a success or a
  * warning colour (handoff README, design call 2). Segment i of 1..step takes `STEP_INK[i - 1]`.
  */
-const STEP_INK = ["oklch(0.68 0.02 250)", "oklch(0.69 0.045 250)", "oklch(0.70 0.07 250)", "oklch(0.71 0.10 250)", "oklch(0.72 0.135 250)"] as const;
+export const STEP_INK = ["oklch(0.68 0.02 250)", "oklch(0.69 0.045 250)", "oklch(0.70 0.07 250)", "oklch(0.71 0.10 250)", "oklch(0.72 0.135 250)"] as const;
 
 const trim = (n: number, digits = 2) => String(Number(n.toFixed(digits)));
 const percent = (odds: number) => `${Math.round(odds * 100)}%`;
@@ -238,12 +238,14 @@ function DependencyRow({ dep, rows, onOpen }: { dep: DependencyWire; rows: boole
   );
 }
 
-function StrengthTag({ strength, label }: { strength: "heavy" | "light"; label: string }) {
+/** The Heavy / Light tag. `ledger` is the ledger header's: mono 10, padding 2px 7px, no minimum width. */
+export function StrengthTag({ strength, label, ledger = false }: { strength: "heavy" | "light"; label: string; ledger?: boolean }) {
   return (
     <span
       data-strength-tag={strength}
       className={
-        "inline-block min-w-[50px] flex-none whitespace-nowrap rounded-[4px] border px-[6px] py-[2px] text-center font-mono text-[9px] uppercase tracking-[0.12em] "
+        "inline-block flex-none whitespace-nowrap rounded-[4px] border py-[2px] text-center font-mono uppercase tracking-[0.12em] "
+        + (ledger ? "px-[7px] text-[10px] " : "min-w-[50px] px-[6px] text-[9px] ")
         + (strength === "heavy"
           ? "border-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)] text-[color:var(--fg)]"
           : "border-[color:var(--border-strong)] text-[color:var(--fg-muted)]")
