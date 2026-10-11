@@ -32,7 +32,7 @@ function buysFrom(card: DeckDetailCard): boolean {
  * Back from the confirm, focus lands on the link. The confirm's own focus return cannot do it: the
  * link it was pressed in went with the card that was lifted, and the one drawn now is inert until the
  * card comes back, a render after the confirm goes. A card the purchase took off the list draws no
- * link, so focus lands on the card's dialog instead.
+ * link, so focus lands on the card dialog's first visible control instead.
  */
 function landOnLink() {
   let tries = 0;
@@ -41,8 +41,11 @@ function landOnLink() {
     const link = document.querySelector(`[data-testid="${LINK}"]`);
     if (live(link)) return link.focus();
     if (tries++ < 10) return void requestAnimationFrame(land);
+    // The dialog itself takes no focus (no tabIndex), so land on its first control a reader can see:
+    // the phone and desktop each draw their own close, one of them hidden by CSS.
     const dialog = [...document.querySelectorAll("[role=dialog]")].find(live);
-    if (dialog instanceof HTMLElement) dialog.focus();
+    const controls = dialog ? [...dialog.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])")].filter(live) : [];
+    (controls.find((el) => el.getClientRects().length > 0) ?? controls[0])?.focus();
   };
   requestAnimationFrame(land);
 }

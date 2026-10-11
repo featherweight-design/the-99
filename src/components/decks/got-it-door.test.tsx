@@ -131,6 +131,34 @@ describe("Bought this card? in card details (A11)", () => {
     expect(gotItOpen.mock.calls[0][0]).toBe(after);
   });
 
+  it("returns focus to the link once the card is back", async () => {
+    draw();
+    await press(screen.getByText("shop poly"));
+    gotItOpen.mockClear();
+    await press(links()[0]);
+    await act(async () => gotItOpen.mock.calls[0][4]!.onClose(false));
+    await waitFor(() => expect(document.activeElement).toBe(links()[0]));
+  });
+
+  // Round 3: the dialog has no tabIndex, so focusing it did nothing and focus fell to the body.
+  it("lands focus on a control in the card's dialog when the purchase took the card off the list", async () => {
+    const { rerender } = render(tree([POLY]));
+    await press(screen.getByText("shop poly"));
+    gotItOpen.mockClear();
+    await press(links()[0]);
+    rerender(tree([]));
+    act(() => gotItOpen.mock.calls[0][4]!.onClose(true));
+    // The remounting card's own trap focuses a control on mount; drop that, so what is asserted is
+    // where the fallback (which runs on the next frames) puts focus, not where the trap left it.
+    (document.activeElement as HTMLElement | null)?.blur();
+    await waitFor(() => {
+      const el = document.activeElement as HTMLElement;
+      expect(el.tagName).toBe("BUTTON");
+      expect(el.closest("[role=dialog]")).not.toBeNull();
+    });
+    expect(links()).toHaveLength(0);
+  });
+
   it("is disabled while an undo for the card is in flight (A9)", async () => {
     undoing = new Set(["o-poly"]);
     draw();
