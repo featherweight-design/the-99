@@ -100,7 +100,7 @@ export function ChooseResults({
   // The read's order (the read addendum R1): its picks lead once it is done; while it runs, and
   // when it was never read into this order, the free order's own title says what orders the rows.
   const line =
-    read === "done" ? { title: copy.results.byWords, sub: copy.results.byWordsSub }
+    read === "done" ? { title: copy.results.byWords, sub: copy.results.byWordsSub(page.rows.filter((r) => r.reason).length, page.order === "owned") }
     : read === "reading" ? { title: free.title, sub: copy.results.pendingSub }
     : read !== null && page.order === "owned" ? { title: free.title, sub: copy.results.notReadSub }
     : free;

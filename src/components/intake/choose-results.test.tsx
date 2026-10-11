@@ -50,10 +50,15 @@ const picked = (n: number, k: number, order: ResultsPage["order"] = "owned") => 
 });
 
 describe("the results under a read (the read addendum R1)", () => {
+  it("counts the read's own picks in the head, and names the rest's order as it is", () => {
+    draw(picked(14, 3, "fit"), "done", [], {});
+    expect(document.body.textContent).toContain("The read’s three picks lead, closest first, each with a line on why. The rest follow in your answers’ order.");
+  });
+
   it("orders a done read's head by what was written, with its reasons and the rest under a divider", () => {
     draw(picked(14, 10), "done", [], { [DECK]: "Omnath" });
     expect(screen.getByTestId("order-line").textContent).toBe("Ordered by what you wrote");
-    expect(document.body.textContent).toContain("The first ten are the read’s picks");
+    expect(document.body.textContent).toContain("The read’s ten picks lead, closest first, each with a line on why. The rest follow, ordered by cards you already have.");
     // Best fits carry their reasons too.
     for (const b of screen.getAllByTestId("best-fit")) expect(b.querySelector("[data-testid='row-reason']")).toBeTruthy();
     expect(screen.getAllByTestId("row-reason")).toHaveLength(10);
@@ -97,7 +102,7 @@ describe("the results under a read (the read addendum R1)", () => {
     for (const phase of ["unread", "stopped", "failed", "nothing"] as const) {
       draw(page(4, { order: "owned" }), phase, []);
       expect(screen.getByTestId("order-line").textContent).toBe("Ordered by cards you already have");
-      expect(document.body.textContent).toContain("What you wrote isn’t in this order. These are commanders");
+      expect(document.body.textContent).toContain("Commanders your answers allow, owned or not");
       expect(document.querySelector("ol[data-dim]")).toBeNull();
       cleanup();
     }

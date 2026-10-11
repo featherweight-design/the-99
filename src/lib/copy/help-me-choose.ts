@@ -13,7 +13,7 @@
 // Never the words AI, model or LLM: the deeper read is "a deeper look" (audit wording rule).
 
 import { availabilityCopy } from "./availability";
-import { BRACKET_NAMES, nameList } from "./deck-analysis";
+import { BRACKET_NAMES, nameList, numberWord } from "./deck-analysis";
 
 /** Names joined by "or", with no serial comma, as `nameList` joins by "and": *Orcs, Elves or Wizards*. */
 export const orList = (names: readonly string[]) =>
@@ -129,27 +129,25 @@ export const helpMeChooseCopy = {
     title: "Read what you wrote",
     doneTag: "done",
     doneLead: (pool: string, short: number) =>
-      `It read the ${pool} commanders your answers allow and weighed the closest ${short} in full. The ten that fit best come first, each with a line on why.`,
+      `It read the ${pool} commanders your answers allow and weighed the closest ${short} in full.`,
     heldColors: (colors: string) => `Your colors held: nothing outside ${colors} was read.`,
-    noDecks: (subject: string) => `You have no decks yet, so the lines speak to ${subject} alone.`,
-    /** eng: `noDecks`'s subject. */
-    noDecksSubject: "what you wrote",
+    noDecks: "You have no decks yet, so the lines speak to what you wrote alone.",
     doneLine: (standing: string) => `1 credit used · ${standing}`,
     repeatLine: "No credit used · you asked this already",
     stoppedTag: "stopped",
     stoppedLead: "Nothing was read, and no credit was used. These are the results for your answers alone.",
     failTag: "didn’t finish",
     failedLead: "The read didn’t finish, so your credit came back. These are the results for your answers alone.",
+    failed: "The read didn’t finish, so your credit came back.", // announced
     retry: "Try again",
     emptyTitle: "Nothing fits what you wrote",
-    emptyLead: (pool: string, what: string) =>
-      `It read all ${pool} commanders your answers allow, and none of them makes ${what}. Your answers hold, so it didn’t look outside them.`,
-    /** eng: `emptyLead`'s `what`. */
-    emptyWhat: "the deck you described",
+    emptyLead: (pool: string) =>
+      `It read all ${pool} commanders your answers allow, and none of them makes the deck you described. Your answers hold, so it didn’t look outside them.`,
     emptyWiden: "to let it look wider, for instance with more colors.", // after a "Change answers" link
     emptyLine: (standing: string) => `No credit used · ${standing}`,
     unreadTitle: "What you wrote wasn’t read",
-    unreadLead: "No credits were left, so these results use your answers alone. Your words are kept.",
+    // Claims no cause: the line under it gives one (no credit left, paused, the owner's share).
+    unreadLead: "These results use your answers alone. Your words are kept for another try.",
     stopped: "Stopped. No credit was used.", // announced
   },
   /**
@@ -184,7 +182,7 @@ export const helpMeChooseCopy = {
   results: {
     back: "‹ Your answers", // canvas
     title: "Commanders for you", // canvas
-    sub: "Suggested from your answers, best fit first.", // canvas
+    sub: "Suggested from what you asked, best fit first.", // canvas, copy-reviewed
     subPhone: "From your answers.", // canvas
     all: "Ordered by fit to everything you asked",
     byOne: (label: string) => `Ordered by ${label}`, // canvas
@@ -238,9 +236,11 @@ export const helpMeChooseCopy = {
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
     // The read's order (the read addendum R1).
     byWords: "Ordered by what you wrote",
-    byWordsSub: "The first ten are the read’s picks, closest first, each with why. After them come the rest of your results, ordered by cards you already have.",
+    /** `picks`: how many the read chose; `owned`: whether the rest are in the owned order. */
+    byWordsSub: (picks: number, owned: boolean) =>
+      `${picks === 1 ? "The read’s one pick leads, with a line on why." : `The read’s ${numberWord(picks)} picks lead, closest first, each with a line on why.`} ${owned ? "The rest follow, ordered by cards you already have." : "The rest follow in your answers’ order."}`,
     pendingSub: "What you wrote isn’t in this order yet. These are your answers’ results, and they stay until the read is done.",
-    notReadSub: "What you wrote isn’t in this order. These are commanders your answers allow, owned or not, whose decks run the most cards you already have.",
+    notReadSub: "Commanders your answers allow, owned or not, whose decks run the most cards you already have.",
     restHead: "The rest of your results",
     restTail: "ordered by cards you already have",
     more: "Show 12 more",

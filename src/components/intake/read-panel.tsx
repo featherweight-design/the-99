@@ -126,7 +126,7 @@ export function ReadPanel({
         return;
       }
       const next = phaseOf(s);
-      if (next === "failed") setAnnounced(copy.read.failTag);
+      if (next === "failed") setAnnounced(copy.read.failed);
       if (next === "stopped") setAnnounced(copy.read.stopped);
       setPhase(next);
       router.refresh();
@@ -182,9 +182,9 @@ export function ReadPanel({
       // 7i: an exact identity held, so nothing outside it was read.
       ...(exactly ? [copy.read.heldColors(copy.intake.colorsJoin(colorNames(params.colors.map((c) => c.toUpperCase()))))] : []),
       // 7k: no deck to set the picks against.
-      ...(hasDecks === false ? [copy.read.noDecks(copy.read.noDecksSubject)] : []),
+      ...(hasDecks === false ? [copy.read.noDecks] : []),
     ].join(" ")
-    : phase === "nothing" && result ? copy.read.emptyLead(fmt(result.pool), copy.read.emptyWhat)
+    : phase === "nothing" && result ? copy.read.emptyLead(fmt(result.pool))
     : null;
   const line =
     phase === "reading" ? copy.read.pendingLine

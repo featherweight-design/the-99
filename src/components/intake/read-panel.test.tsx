@@ -131,7 +131,7 @@ describe("7d: reading", () => {
     expect(panel().dataset.phase).toBe("reading");
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
     expect(panel().dataset.phase).toBe("failed");
-    expect(screen.getByRole("status").textContent).toBe("didn’t finish");
+    expect(screen.getByRole("status").textContent).toBe("The read didn’t finish, so your credit came back.");
     expect(router.refresh).toHaveBeenCalled();
   });
 });
@@ -201,7 +201,7 @@ describe("7g to 7k, 7m: done", () => {
     draw(done());
     expect(screen.getByTestId("read-tag").textContent).toBe("done");
     expect(screen.getByTestId("read-lead").textContent).toBe(
-      "It read the 3,445 commanders your answers allow and weighed the closest 36 in full. The ten that fit best come first, each with a line on why.",
+      "It read the 3,445 commanders your answers allow and weighed the closest 36 in full.",
     );
     expect(screen.getByTestId("read-line").textContent).toBe("1 credit used · 8 of 10 left");
     expect(screen.queryByRole("button")).toBeNull();
@@ -260,7 +260,7 @@ describe("7l, 7n: unread", () => {
     draw(null, { over: { used: 10 } });
     expect(panel().dataset.phase).toBe("unread");
     expect(text()).toContain("What you wrote wasn’t read");
-    expect(text()).toContain("No credits were left, so these results use your answers alone. Your words are kept.");
+    expect(text()).toContain("These results use your answers alone. Your words are kept for another try.");
     expect(screen.getByTestId("read-line").textContent).toBe("0 of 10 left");
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.queryByTestId("read-tag")).toBeNull();
