@@ -37,7 +37,7 @@ export type OwnedCandidate = { oracleId: string; name: string; typeLine: string 
  */
 export const OWNED_SHORTLIST_MAX = 80;
 
-/** Rows read before the owned-and-free filters thin them: free copies, caps and sets drop some. */
+/** Rows read before the two filters SQL cannot apply cheaply thin them: a copy free of other decks, and the price cap. */
 const READ_AHEAD = 400;
 
 export async function loadOwnedCandidates(args: {
@@ -58,9 +58,6 @@ export async function loadOwnedCandidates(args: {
       oracleId: cards.oracleId,
       name: cards.name,
       typeLine: cards.typeLine,
-      colorIdentity: cards.colorIdentity,
-      commanderLegal: cards.commanderLegal,
-      printedInSelectedSets: sql<boolean>`${printedIn(cards.oracleId, limits.sets)}`,
       inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})`,
     })
     .from(commanderSupportCards)
@@ -68,20 +65,23 @@ export async function loadOwnedCandidates(args: {
     .where(and(
       inArray(commanderSupportCards.commanderOracleId, [...commanderOracleIds]),
       eq(cards.commanderLegal, true),
-      sql`${cards.typeLine} not like 'Basic Land%'`,
+      // `isBasicLand`'s own word test (grouping.ts): "Basic Snow Land" is a basic too.
+      sql`${cards.typeLine} !~ '\\yBasic\\y'`,
+      // The identity, the deck and the set limit are filtered HERE, before the cut: a read-ahead that
+      // counted cards already in the deck (the biggest share, since the index ranks what decks like
+      // this play) would leave the shortlist empty while lower-ranked owned cards fit, and an empty
+      // list sends the run to cards to buy.
+      sql`${cards.colorIdentity} <@ ${sql.param([...colorIdentity])}::text[]`,
+      ...(inDeck.size > 0 ? [sql`${cards.oracleId} <> all(${sql.param([...inDeck])}::uuid[])`] : []),
+      sql`${printedIn(cards.oracleId, limits.sets)}`,
       sql`exists (select 1 from ${collectionItems} ci where ci.user_id = ${userId} and ci.oracle_id = ${cards.oracleId})`,
     ))
     .groupBy(cards.oracleId)
     .orderBy(sql`max(${commanderSupportCards.inclusion}) desc nulls last`, cards.name)
     .limit(READ_AHEAD);
 
-  const identity = new Set(colorIdentity);
-  const commanders = new Set(commanderOracleIds);
-  const fits = rows.filter((r) =>
-    !inDeck.has(r.oracleId)
-    && !commanders.has(r.oracleId)
-    && r.printedInSelectedSets
-    && r.colorIdentity.every((c) => identity.has(c)));
+  // The commanders are in `inDeck`; the SQL left only what the free-copy and price reads can still thin.
+  const fits = rows;
   if (fits.length === 0) return [];
 
   const ids = fits.map((r) => r.oracleId);
