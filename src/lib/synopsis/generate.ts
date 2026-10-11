@@ -16,7 +16,7 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } from "./limits";
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
 import { SYNOPSIS_EFFORT, SYNOPSIS_MODEL } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
@@ -121,10 +121,13 @@ export function defaultDeps(): GenerateDeps {
           model: SYNOPSIS_MODEL,
           system: req.system,
           user: req.user,
-          maxTokens: SYNOPSIS_MAX_TOKENS,
+          // The same model and effort as contract 8, so the same ceiling and streaming: the
+          // contract-7 ceiling was sized for Sonnet 5 at low and would cut medium's thinking off.
+          maxTokens: SYNOPSIS_MAX_TOKENS_V8,
           effort: SYNOPSIS_EFFORT,
           schema: synopsisResponseSchema,
           deadlineMs: req.deadlineMs,
+          stream: true,
         })
       : async (req, facts) => {
         await stubDelay();

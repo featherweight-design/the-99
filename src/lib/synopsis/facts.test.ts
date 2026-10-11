@@ -179,6 +179,7 @@ describe("ownWinConditions", () => {
       card("Door to Nothingness", "{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}, {T}, Sacrifice Door to Nothingness: Target player loses the game."),
       card("Phyrexian Vatmother", "Infect\nAt the beginning of your upkeep, you get a poison counter."),
       card("Platinum Angel", "Flying\nYou can't lose the game and your opponents can't win the game."),
+      card("Abyssal Persecutor", "Flying, trample\nYou can't win the game and your opponents can't lose the game."),
       card("Grand Abolisher", "During your turn, your opponents can't cast spells or activate abilities of artifacts, creatures, enchantments, or planeswalkers."),
       card("Sol Ring", ""),
     ])).toEqual([]);
