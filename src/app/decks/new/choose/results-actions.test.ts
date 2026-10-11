@@ -52,19 +52,11 @@ describe("trialFillRows", () => {
     expect(stub.trial.mock.calls[0][1]).toMatchObject({ oracleId: LEGAL });
   });
 
-  it("fills with a card only when the search's card rule keeps it", async () => {
+  it("fills with no card, whatever an old address's retired card answer says (F1)", async () => {
     const CARD = "0000aaaa-0000-4000-8000-0000000000cc";
-    // The card's read comes back empty: a basic, a card that is not legal, or one that is gone.
-    stub.execute
-      .mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] })
-      .mockResolvedValueOnce({ rows: [] });
+    stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
     await trialFillRows([LEGAL], `?a=${CARD}`);
     expect(stub.trial.mock.calls[0][2]).toMatchObject({ cardOracleId: null });
-    stub.execute
-      .mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] })
-      .mockResolvedValueOnce({ rows: [{ name: "Sol Ring", game_changer: true, type_line: "Artifact", owned: true }] });
-    await trialFillRows([LEGAL], `?a=${CARD}`);
-    expect(stub.trial.mock.calls[1][2]).toMatchObject({ cardOracleId: CARD });
   });
 
   it("refuses more than a slice, a non-uuid, or an oversized query before any read", async () => {
@@ -80,6 +72,11 @@ describe("moreRows", () => {
   it("hands the parsed answers and the offset to the page loader", async () => {
     await moreRows("?t=dinosaurs&b=150", 12);
     expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12);
+  });
+
+  it("ignores the retired card answer (F1)", async () => {
+    await moreRows("?t=dinosaurs&a=0000aaaa-0000-4000-8000-000000000001", 0);
+    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.objectContaining({ card: null }), 0);
   });
 
   it("refuses a forged offset or query before any read", async () => {

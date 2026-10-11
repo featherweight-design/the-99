@@ -47,6 +47,13 @@ describe("the choose page", () => {
     await expect(ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs", a: CARD }) })).resolves.toBeTruthy();
   });
 
+  it("ignores the retired card answer on a results address: no chip read, no card in the search (F1)", async () => {
+    stub.themes.mockResolvedValue([]);
+    stub.chip.mockClear();
+    await ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs", a: CARD }) });
+    expect(stub.chip).not.toHaveBeenCalled();
+  });
+
   it("draws no Look deeper panel on the results: the read starts at the submit now (rework plan PR 3)", async () => {
     stub.themes.mockResolvedValue([]);
     stub.chip.mockResolvedValue(null);

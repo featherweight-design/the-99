@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
-import { answersOf, parseChooseParams } from "../../../../lib/intake/params";
+import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { resultsTarget } from "../../../../lib/intake/submit";
 import { beginTheRead } from "../../../../lib/intake/the-read-run";
 
@@ -116,7 +116,7 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
   // The parser cuts `w` to the cap, so it is checked first, on the raw value and in the parser's own
   // unit (UTF-16, as the box's `maxLength` counts): anything the parser would cut is refused.
   if ((raw.get("w") ?? "").length > READ_WORDS_MAX_CHARS) return { kind: "refused" };
-  const p = { ...parseChooseParams(raw), card: null };
+  const p = parseLiveParams(raw);
   const words = p.words.trim();
   if (!words) redirect(resultsTarget(p, null));
   // The card is null (above), so the answers are exactly the read's filters.

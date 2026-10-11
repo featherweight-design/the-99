@@ -92,6 +92,15 @@ function wholeNumber(raw: string | null, min: number, max: number): number | nul
   return n >= min && n <= max ? n : null;
 }
 
+/**
+ * The answers the route acts on now: `a`, the card the form no longer has a control for, is parsed
+ * (an old link still opens) and then ignored, so no old address draws or ranks by a card (F1). The
+ * box carries a card now, through the read.
+ */
+export function parseLiveParams(sp: URLSearchParams): ChooseParams {
+  return { ...parseChooseParams(sp), card: null };
+}
+
 export function parseChooseParams(sp: URLSearchParams): ChooseParams {
   const raw = parseColors(sp.get("c"));
   const readId = sp.get("r");

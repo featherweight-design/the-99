@@ -18,7 +18,7 @@ import { SearchFailed } from "../../../../components/intake/search-failed";
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseCopy as copy } from "../../../../lib/copy/help-me-choose";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
-import { answersOf, parseChooseParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
+import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../lib/intake/present";
 import { isAnyOf } from "../../../../lib/intake/rank";
 import { buysCard } from "../../../../lib/intake/buys-card";
@@ -50,7 +50,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   if (!helpMeChooseEnabled()) notFound();
   const userId = await requireUserId();
   const sp = toSearchParams(await searchParams);
-  const p = parseChooseParams(sp);
+  const p = parseLiveParams(sp);
 
   // Outside any try: `redirect` throws, and a catch would swallow it.
   if (sp.get("v") === "submit") redirect(formTarget(p));
