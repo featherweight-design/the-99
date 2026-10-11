@@ -7,6 +7,18 @@
     "listFingerprint": "32094e7ec1b2bd0dc5917406db22ea564dad374e524ea33d44bd2ace07bdeb43"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Yuriko"
+        ],
+        "words": [
+          "ninjutsu",
+          "reveal"
+        ]
+      },
+      "backups": []
+    },
     "combos": [],
     "keyCards": [
       "Brainstorm",

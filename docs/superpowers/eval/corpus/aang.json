@@ -7,8 +7,48 @@
     "listFingerprint": "adef447b225a484872ac0940305e42fc9cff342a70e157b94004a278f1e6ee86"
   },
   "gold": {
-    "combos": [],
-    "keyCards": [],
+    "plans": {
+      "primary": {
+        "cards": [
+          "Avatar Aang"
+        ],
+        "words": [
+          "transform",
+          "flip",
+          "Master of Elements"
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "Appa, Steadfast Guardian",
+            "Aang, the Last Airbender"
+          ]
+        }
+      ]
+    },
+    "combos": [
+      {
+        "cards": [
+          "Appa, Steadfast Guardian",
+          "Aang, the Last Airbender"
+        ],
+        "produces": "the backup win Hugh names (an alternate win con, not the deck's point)",
+        "forced": false
+      }
+    ],
+    "keyCards": [
+      "Avatar Aang",
+      "Toph",
+      "Katara",
+      "Iroh",
+      "Haru",
+      "Guru Pathik",
+      "Bumi",
+      "Southern Air Temple",
+      "Earthshape",
+      "Great Divide Guide"
+    ],
     "weaknesses": [
       {
         "topic": "a mana base of mostly basics for a four or five color deck",
@@ -22,9 +62,18 @@
         "names": [
           "airbend"
         ]
+      },
+      {
+        "topic": "commander dependence: the plan is flipping the commander (Hugh, 2026-10-11)",
+        "names": [
+          "Avatar Aang",
+          "commander"
+        ]
       }
     ],
-    "mulliganPieces": [],
+    "mulliganPieces": [
+      "Great Divide Guide"
+    ],
     "wrong": [
       {
         "id": "iroh-countered",
@@ -33,6 +82,69 @@
         ],
         "pattern": "countered creature",
         "why": "Iroh, Dragon of the West gives firebending to modified creatures"
+      },
+      {
+        "id": "staple-strategy",
+        "cards": [
+          "Sol Ring"
+        ],
+        "sections": [
+          "strategy",
+          "mulligan"
+        ],
+        "why": "Sol Ring is in nearly every deck; as a strategy step or mulligan line it says nothing about this one (Hugh, 2026-10-11)"
+      },
+      {
+        "id": "signet-strategy",
+        "cards": [
+          "Arcane Signet"
+        ],
+        "sections": [
+          "strategy",
+          "mulligan"
+        ],
+        "why": "Arcane Signet is a universal staple, not this deck's strategy or mulligan evidence (Hugh, 2026-10-11)"
+      },
+      {
+        "id": "shrines-core",
+        "cards": [
+          "Sanctum of Calm Waters"
+        ],
+        "sections": [
+          "strategy"
+        ],
+        "why": "The Shrines are a minor subtheme, not part of the strategy (Hugh, 2026-10-11)"
+      },
+      {
+        "id": "gran-gran-wisdom",
+        "cards": [
+          "Gran-Gran",
+          "Accumulate Wisdom"
+        ],
+        "sections": [
+          "tip"
+        ],
+        "why": "Rules-valid but no play insight: both just want three Lessons in the graveyard (Hugh, 2026-10-11)"
+      },
+      {
+        "id": "appa-critical",
+        "cards": [
+          "Appa"
+        ],
+        "pattern": "^critical",
+        "sections": [
+          "weakness"
+        ],
+        "why": "Appa removal is not critical: the Appa combo is an alternate win, and the real critical dependence is the commander (Hugh, 2026-10-11)"
+      },
+      {
+        "id": "five-color",
+        "pattern": "five[- ]colou?r|5-color|wubrg",
+        "sections": [
+          "overview",
+          "strategy"
+        ],
+        "why": "The lands make no black: the deck plays as non-black four-color, though its identity is five (Hugh, 2026-10-11)"
       }
     ],
     "right": []

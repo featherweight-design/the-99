@@ -7,21 +7,33 @@
     "listFingerprint": "40f85f9fa24304fd6fa1fa8140251eb9cfd98ed2c40c933ead9ce4bc7f67ddd3"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Magistrate's Scepter",
+          "Inspirit, Flagship Vessel"
+        ],
+        "words": [
+          "extra turn"
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "Basalt Monolith",
+            "Zirda"
+          ]
+        }
+      ]
+    },
     "combos": [
       {
         "cards": [
-          "Magistrate's Scepter",
-          "Inspirit"
+          "Inspirit, Flagship Vessel",
+          "Kilo",
+          "Magistrate's Scepter"
         ],
-        "produces": "infinite extra turns",
-        "forced": false
-      },
-      {
-        "cards": [
-          "Flagship Vessel",
-          "Kilo"
-        ],
-        "produces": "infinite extra turns through proliferate, no mana",
+        "produces": "infinite turns (one card, Inspirit, Flagship Vessel, with Kilo and the Scepter: the Spellbook listing)",
         "forced": false
       },
       {
