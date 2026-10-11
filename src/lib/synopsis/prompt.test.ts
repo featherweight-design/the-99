@@ -317,6 +317,18 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(buildSynopsisPrompt({ ...fewer, identity: [], identityName: "Colorless", landColors: [] }, undefined, C8).user).not.toContain("Colors the lands make");
   });
 
+  it("keeps a color count out of every section and ties the send-back to the lands' colors, under contract 8", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, C8);
+    expect(system).toContain("Never work out or state how many colors the deck has or plays");
+    // The identity name the facts give is still allowed verbatim, so a five-color deck whose lands
+    // make every color is not told both to use "5-color" and to avoid a count.
+    expect(system).toContain("word for word, even when that name itself holds a number such as 5-color");
+    expect(system).toContain("for the colors the deck's lands make");
+    expect(system).not.toContain("lacks for the deck's colors");
+    // Contract 7's prompt is frozen for the v7-against-v8 comparison.
+    expect(buildSynopsisPrompt(FACTS, undefined, { v2: true }).system).not.toContain("Never work out or state how many colors");
+  });
+
   it("tells a repair to give kept sections empty evidence", () => {
     const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
     const { user } = buildSynopsisPrompt(FACTS, { keep, refused: ["tips"] as never }, C8);
