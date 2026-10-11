@@ -18,8 +18,10 @@ export async function readTuningHub(deckId: string): Promise<HubTiles | null> {
   const userId = await requireUserId();
   if (!tuningHubEnabled() || !isUuid(deckId)) return null;
   // Abandoned runs are failed and refunded first, so a tile never says a credit came back early.
-  await reapReaderRuns(deckId, userId);
-  return readHubTiles(deckId, userId, hubTools());
+  // One instant for both, so a run cannot cross the cutoff between the reap and the read.
+  const now = new Date();
+  await reapReaderRuns(deckId, userId, now);
+  return readHubTiles(deckId, userId, hubTools(), now);
 }
 
 const HISTORY_TOOLS: ReadonlySet<string> = new Set<HistoryTool>(["suggested", "mana", "cuts"]);
@@ -34,8 +36,9 @@ export async function readTuningHistory(deckId: string, tool?: HistoryTool | nul
   if (!tuningHubEnabled() || !isUuid(deckId)) return null;
   if (tool != null && !HISTORY_TOOLS.has(tool)) return null;
   // As the landing's read: a row saying `credit back` describes a credit already returned.
-  await reapReaderRuns(deckId, userId);
-  return readHistory(deckId, userId, { tool: tool ?? undefined, cursor: typeof cursor === "string" ? cursor : null, drawn: hubTools() });
+  const now = new Date();
+  await reapReaderRuns(deckId, userId, now);
+  return readHistory(deckId, userId, { tool: tool ?? undefined, cursor: typeof cursor === "string" ? cursor : null, drawn: hubTools() }, now);
 }
 
 /** One past run, read-only. Null on refusal, or when the id names nothing this reader holds here. */
@@ -44,8 +47,9 @@ export async function readTuningPastRun(deckId: string, id: string): Promise<Pas
   if (!tuningHubEnabled() || !isUuid(deckId) || typeof id !== "string") return null;
   const ref = parseHistoryId(id);
   if (!ref || !isUuid(ref.uuid)) return null;
-  await reapReaderRuns(deckId, userId);
-  const run = await readPastRun(deckId, userId, ref);
+  const now = new Date();
+  await reapReaderRuns(deckId, userId, now);
+  const run = await readPastRun(deckId, userId, ref, now);
   // Only the tools this deployment draws, as History's list: a tool whose switch is off is not
   // reachable through an old id either.
   const drawn: readonly HistoryTool[] = hubTools();

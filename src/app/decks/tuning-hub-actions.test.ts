@@ -4,10 +4,11 @@ const order: string[] = [];
 vi.mock("../../lib/auth", () => ({ requireUserId: vi.fn(async () => "u1") }));
 vi.mock("../../lib/tuning/flag", () => ({ tuningHubEnabled: () => true, hubTools: () => ["suggested", "cuts"] }));
 vi.mock("../../lib/tuning/reap-runs", () => ({ reapReaderRuns: vi.fn(async () => { order.push("reap"); }) }));
-vi.mock("../../lib/tuning/hub-read", () => ({ readHubTiles: vi.fn(async () => { order.push("read"); return null; }) }));
+const readArgs: unknown[][] = [];
+vi.mock("../../lib/tuning/hub-read", () => ({ readHubTiles: vi.fn(async (...a: unknown[]) => { order.push("read"); readArgs.push(a); return null; }) }));
 vi.mock("../../lib/tuning/history-read", () => ({
-  readHistory: vi.fn(async () => { order.push("read"); return { rows: [], nextCursor: null }; }),
-  readPastRun: vi.fn(async () => { order.push("read"); return null; }),
+  readHistory: vi.fn(async (...a: unknown[]) => { order.push("read"); readArgs.push(a); return { rows: [], nextCursor: null }; }),
+  readPastRun: vi.fn(async (...a: unknown[]) => { order.push("read"); readArgs.push(a); return null; }),
 }));
 
 import { reapReaderRuns } from "../../lib/tuning/reap-runs";
@@ -15,7 +16,7 @@ import { readTuningHistory, readTuningHub, readTuningPastRun } from "./tuning-hu
 
 const DECK = "00000000-0000-4000-8000-000000000001";
 
-beforeEach(() => { order.length = 0; vi.mocked(reapReaderRuns).mockClear(); });
+beforeEach(() => { order.length = 0; readArgs.length = 0; vi.mocked(reapReaderRuns).mockClear(); });
 
 describe("the hub's reads reap the reader's abandoned runs before they describe them", () => {
   it.each([
@@ -24,8 +25,11 @@ describe("the hub's reads reap the reader's abandoned runs before they describe 
     ["a past run", () => readTuningPastRun(DECK, `run:${DECK}`)],
   ])("%s", async (_, read) => {
     await read();
-    expect(reapReaderRuns).toHaveBeenCalledWith(DECK, "u1");
+    expect(reapReaderRuns).toHaveBeenCalledWith(DECK, "u1", expect.any(Date));
     expect(order).toEqual(["reap", "read"]);
+    // The read is shaped at the very instant the reap cut off at.
+    const reapedAt = vi.mocked(reapReaderRuns).mock.calls[0][2];
+    expect(readArgs.at(-1)!.at(-1)).toBe(reapedAt);
   });
 
   it("never returns a past run of a tool this deployment does not draw", async () => {
