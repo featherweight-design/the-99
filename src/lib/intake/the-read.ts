@@ -34,7 +34,7 @@ import type { Answers } from "./rank";
  * Folded into the fingerprint, so a prompt change is a new ask and never answers from a result the
  * old prompt wrote. 1 (2026-10-11): the two-step read.
  */
-export const THE_READ_PROMPT_VERSION = 1;
+export const THE_READ_PROMPT_VERSION = 2;
 
 /** The free filters the read obeys: every answer but the card, which the box now carries (F1). */
 export type ReadFilters = Omit<Answers, "card">;
@@ -73,12 +73,22 @@ export const shortlistSchema = z.object({
 });
 export type ShortlistReply = z.infer<typeof shortlistSchema>;
 
+/**
+ * A creature type, keyword or mechanic the player names is a requirement, never a mood (Hugh,
+ * 2026-10-11): asked for horrors, the eval's shortlist held five commanders that were not Horrors
+ * by type, theme or text. Both steps carry it, so a near miss is dropped rather than filled in.
+ */
+const REQUIREMENT_RULE =
+  "A creature type, keyword or mechanic the words name (for instance horrors, Landfall, Elves, proliferate) is a requirement, not a mood: a commander qualifies only if it has it in its creature types or type line, its rules text, or its leading deck themes.";
+
 const SHORTLIST_RULES = [
   "You help a Magic: The Gathering Commander player choose a commander for a new deck.",
   PLAYER_TEXT_SYSTEM_RULE,
   "Below is a list of commanders, one per line: key|name|color identity|creature types|leading deck themes.",
   `Read what the player wrote and return the keys of up to ${READ_SHORTLIST_SIZE} commanders that could best build the deck they describe, best first. Judge each by its name, colors, creature types and themes, and by what you know of the card.`,
   "Return only keys from the list. Obey every filter the request states: a commander outside a filter is never a pick, whatever the words ask.",
+  REQUIREMENT_RULE,
+  "If only a few commanders have what the words require, return only those; never fill the list with near misses.",
   "If the words name a card to build around, prefer the commanders whose decks run it.",
   "If nothing in the list fits, return no keys.",
 ].join("\n");
@@ -155,7 +165,10 @@ export const JUDGE_SYSTEM = [
   // The prompt asks for less than the validator allows: replies ran 141 to 160 characters when
   // asked for 140 (eval, 2026-10-11), and an over-long reason is refused, never cut.
   `A reason is at most ${READ_REASON_MAX_CHARS - 20} characters. It never contains a digit, a percentage, a score, a rank, or words like strong, great or best. It never names a card other than the commander.`,
+  REQUIREMENT_RULE,
+  "Never keep a pick that lacks what the words require. If only a few qualify, return only those, however few; never fill with near misses.",
   "Name one of the player's decks only when what they wrote asks for something like or unlike what they own, and then only as its token, for instance {D2}. Never write a deck's name or its commander's name yourself.",
+  "Each deck token may appear in one reason only: once a reason has used {D2}, no other reason may use {D2}, so name a different deck or none. A reason that repeats a token is thrown away. Never name a deck whose commander shares a name with the pick.",
   "Leave out a commander that does not fit. If none fits, return no picks.",
 ].join("\n");
 
@@ -231,6 +244,8 @@ export function parseReason(raw: string, decks: readonly ReadDeck[], ownCommande
   for (const m of text.matchAll(DECK_TOKEN)) {
     const deck = decks[Number(m[1]) - 1];
     if (!deck) return null;
+    // A deck led by a commander of the pick's own name reads as the pick itself (Hugh, 2026-10-11).
+    if (ownCommander !== undefined && sharesAName(deck, ownCommander)) return null;
     const before = text.slice(last, m.index);
     if (before) parts.push({ text: before });
     parts.push({ deck: deck.commanderOracleId });
@@ -246,6 +261,17 @@ export function parseReason(raw: string, decks: readonly ReadDeck[], ownCommande
   if (namesADeck(own, decks, ownCommander)) return null;
   if (drawn.length === 0 || drawn.length > READ_REASON_MAX_CHARS) return null;
   return parts;
+}
+
+/**
+ * Whether a deck's commander or partner shares a name with `commander`: either one's short name is a
+ * whole-word part of the other's full name (`Edgar, Charmed Groom` and `Edgar Markov`).
+ */
+function sharesAName(deck: ReadDeck, commander: string): boolean {
+  const ownFull = wordForm(commander);
+  const ownShort = wordForm(shortName(commander));
+  return [deck.commander, deck.partner].some((name) =>
+    name !== null && (wordForm(name).includes(ownShort) || ownFull.includes(wordForm(shortName(name)))));
 }
 
 /**
@@ -285,6 +311,9 @@ export function validJudgement(args: {
 }): ReadPicks {
   const allowed = new Set(args.shortlist);
   const seen = new Set<number>();
+  // Each deck is named at most once across the list (Hugh, 2026-10-11): a reason naming one an
+  // earlier pick already named, or naming one twice, is refused like any other.
+  const named = new Set<string>();
   const picks: ReadPick[] = [];
   for (const p of args.reply.picks) {
     if (picks.length === READ_TOP) break;
@@ -292,6 +321,9 @@ export function validJudgement(args: {
     const oracleId = args.idOf.get(p.key);
     const reason = parseReason(p.reason, args.decks, args.nameOf?.get(p.key));
     if (!oracleId || !reason) continue;
+    const decks = reason.flatMap((r) => ("deck" in r ? [r.deck] : []));
+    if (new Set(decks).size < decks.length || decks.some((d) => named.has(d))) continue;
+    for (const d of decks) named.add(d);
     seen.add(p.key);
     picks.push({ oracleId, reason });
   }

@@ -94,3 +94,31 @@ the state the panel's no-decks line describes; it does not measure a new player'
 No list of "the right commanders" exists for a tone, so recall is not scored. What is reported is the
 READINESS assertions above, and the picks themselves, quoted whole in the answers files, for a person
 to read.
+
+## Prompt version 2: a named type or mechanic is a requirement (2026-10-11)
+
+Hugh ruled that a creature type, keyword or mechanic the player names (`horrors`, `Landfall`, `Elves`,
+`proliferate`) is a requirement for the shortlist, not a mood. Both steps now say so, and step 2
+keeps no pick that lacks it. When only a few commanders qualify, it returns only those rather than
+filling with near misses. Two deck rules came in at the same time, and the validator enforces both:
+a deck is named at most once across the list, and never a deck whose commander shares a name with
+the pick.
+
+These runs used the shipped configuration: step 1 on Haiku 5.5 at medium, step 2 on Sonnet 5.5 at
+medium, with no warm repeat. They cost $0.216 in all, against Hugh's $0.50 cap for the exercise. The
+answers are in `intake-read-2026-10-11-21-27.json` (Ask A and Ask B) and
+`intake-read-2026-10-11-21-30.json` (Ask B, with the deck-once wording that ships).
+
+| Ask | Before (v1) | After (v2) |
+|---|---|---|
+| A (horrors) | 5 of 10 picks Horrors by type line | 10 of 10 Horrors by type line; shortlist narrowed to 16 |
+| B (Landfall, unlike my decks) | 10 picks | 9 picks, every one a Landfall commander |
+
+**The deck-once wording took two tries.** The first wording ("name each deck at most once") was
+ignored: three reasons reused `{D14}`, and the validator refused two of them, taking Omnath, Locus
+of Rage and Aesi out of a 7-pick list. Stating it as a token that appears in one reason only, with
+the consequence spelled out, gave 9 picks and no repeats. The trade-off is fewer deck mentions: 1
+reason in 9 names a deck, against 7 before.
+
+The validator still refuses a reason that repeats a deck rather than stripping the token, because
+the sentence left behind ("a plan unlike .") does not read whole.

@@ -1,0 +1,419 @@
+[
+  {
+    "fixture": "askA",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Arvinox, the Mind Flail",
+      "Umbris, Fear Manifest",
+      "Captain N'ghathrod",
+      "Zellix, Sanity Flayer",
+      "Gollum, Obsessed Stalker",
+      "Old Stickfingers",
+      "Loot, the Anomaly",
+      "Madame Hydra, Reanimated",
+      "The Master of Keys",
+      "Grazilaxx, Illithid Scholar",
+      "Gollum, Patient Plotter",
+      "Gollum, Riddle Master",
+      "Gollum the Abandoned",
+      "Gollum, Silent Slinker // Meager Meal",
+      "Gollum, Scheming Guide",
+      "Abomination of Llanowar"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Umbris, Fear Manifest",
+        "reason": [
+          {
+            "text": "A Nightmare Horror that grows from opponents' exiled cards and exiles their library whenever Horrors enter, nasty and scary."
+          }
+        ]
+      },
+      {
+        "name": "Captain N'ghathrod",
+        "reason": [
+          {
+            "text": "Gives Horrors menace, mills opponents on combat damage, and steals creatures that fell from their library, a nasty Horror plan."
+          }
+        ]
+      },
+      {
+        "name": "Madame Hydra, Reanimated",
+        "reason": [
+          {
+            "text": "A menace Horror that mills itself and grows with creature cards in the graveyard, a scary reanimator body."
+          }
+        ]
+      },
+      {
+        "name": "Arvinox, the Mind Flail",
+        "reason": [
+          {
+            "text": "A Horror that exiles opponents' library cards each end step and lets you cast their permanents, which is properly nasty."
+          }
+        ]
+      },
+      {
+        "name": "Zellix, Sanity Flayer",
+        "reason": [
+          {
+            "text": "A Horror that mills players and makes Horror tokens whenever creature cards are milled, building a nasty Horror army."
+          }
+        ]
+      },
+      {
+        "name": "Old Stickfingers",
+        "reason": [
+          {
+            "text": "A Horror that fills the graveyard on cast and grows huge from creature cards there, a scary reanimator threat."
+          }
+        ]
+      },
+      {
+        "name": "The Master of Keys",
+        "reason": [
+          {
+            "text": "A flying Horror that mills heavily and recasts enchantments from the graveyard, scary and grindy."
+          }
+        ]
+      },
+      {
+        "name": "Gollum, Obsessed Stalker",
+        "reason": [
+          {
+            "text": "A skulking Horror that drains opponents by the life you gained, a sneaky and nasty way to win."
+          }
+        ]
+      },
+      {
+        "name": "Abomination of Llanowar",
+        "reason": [
+          {
+            "text": "A vigilant menace Horror that grows with Elves, a scary beater in a Horror-themed shell."
+          }
+        ]
+      },
+      {
+        "name": "Gollum, Riddle Master",
+        "reason": [
+          {
+            "text": "A Horror that punishes opponents' spells by draining them or growing, giving a nasty and sneaky feel."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 7141,
+        "usd": 0.095878,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 1236,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 148395
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4756,
+        "usd": 0.014572,
+        "usage": {
+          "inputTokens": 4736,
+          "outputTokens": 510,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 3168,
+            "reason": "A Nightmare Horror that grows from opponents' exiled cards and exiles their library whenever Horrors enter, nasty and scary."
+          },
+          {
+            "key": 465,
+            "reason": "Gives Horrors menace, mills opponents on combat damage, and steals creatures that fell from their library, a nasty Horror plan."
+          },
+          {
+            "key": 1754,
+            "reason": "A menace Horror that mills itself and grows with creature cards in the graveyard, a scary reanimator body."
+          },
+          {
+            "key": 189,
+            "reason": "A Horror that exiles opponents' library cards each end step and lets you cast their permanents, which is properly nasty."
+          },
+          {
+            "key": 3416,
+            "reason": "A Horror that mills players and makes Horror tokens whenever creature cards are milled, building a nasty Horror army."
+          },
+          {
+            "key": 2104,
+            "reason": "A Horror that fills the graveyard on cast and grows huge from creature cards there, a scary reanimator threat."
+          },
+          {
+            "key": 2937,
+            "reason": "A flying Horror that mills heavily and recasts enchantments from the graveyard, scary and grindy."
+          },
+          {
+            "key": 1000,
+            "reason": "A skulking Horror that drains opponents by the life you gained, a sneaky and nasty way to win."
+          },
+          {
+            "key": 14,
+            "reason": "A vigilant menace Horror that grows with Elves, a scary beater in a Horror-themed shell."
+          },
+          {
+            "key": 1002,
+            "reason": "A Horror that punishes opponents' spells by draining them or growing, giving a nasty and sneaky feel."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.11045
+  },
+  {
+    "fixture": "askB",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Aesi, Tyrant of Gyre Strait",
+      "Ambrosia Whiteheart",
+      "Ashaya, Soul of the Wild",
+      "Averna, the Chaos Bloom",
+      "Baru, Fist of Krosa",
+      "Azusa, Lost but Seeking",
+      "Bonny Pall, Clearcutter",
+      "Braulios of Pheres Band",
+      "Bristly Bill, Spine Sower",
+      "Gladiolus Amicitia",
+      "Greensleeves, Maro-Sorcerer",
+      "Hugs, Grisly Guardian",
+      "Loot, Exuberant Explorer",
+      "Mina and Denn, Wildborn",
+      "Mole Man, Moloid Master",
+      "Molten Man, Inferno Incarnate",
+      "Omnath, Locus of Rage",
+      "Omnath, Locus of the Roil",
+      "Phylath, World Sculptor",
+      "Sandman, Shifting Scoundrel",
+      "Sazh Katzroy",
+      "Sméagol, Helpful Guide",
+      "Sutina, Speaker of the Tajuru",
+      "Tannuk, Memorial Ensign",
+      "The Earth King",
+      "Thalia and The Gitrog Monster",
+      "Strider, Ranger of the North",
+      "Tam, Observant Sequencer // Deep Sight",
+      "Radha, Heart of Keld",
+      "Titania, Voice of Gaea",
+      "Toph, Earthbending Master",
+      "Tifa Lockhart",
+      "Uro, Titan of Nature's Wrath",
+      "Zimone, Mystery Unraveler",
+      "Zimone, Quandrix Prodigy",
+      "Zimone and Dina",
+      "Zell Dincht",
+      "Yarok, the Desecrated",
+      "Thranduil, Sindarin Liege // Silvan Rally"
+    ],
+    "droppedOutsidePool": 1,
+    "refusedReasons": 3,
+    "picks": [
+      {
+        "name": "Greensleeves, Maro-Sorcerer",
+        "reason": [
+          {
+            "text": "Landfall makes a Badger token each land drop, a pure land-driven token engine unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "'s ramp-and-value plan."
+          }
+        ]
+      },
+      {
+        "name": "Phylath, World Sculptor",
+        "reason": [
+          {
+            "text": "Landfall puts counters on Plant tokens made from basic lands, a distinct land-and-counters plan that differs from "
+          },
+          {
+            "deck": "7a884166-de5a-43ba-8855-4999f39f2059"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Tannuk, Memorial Ensign",
+        "reason": [
+          {
+            "text": "Landfall pings each opponent and draws extra cards, a burn-flavored landfall plan that is different from "
+          },
+          {
+            "deck": "42e55b84-8250-441d-a09e-7c61bf7661cc"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Mole Man, Moloid Master",
+        "reason": [
+          {
+            "text": "Landfall makes Moloid tokens and it lets you replay lands from the graveyard, giving a mill-flavored angle unlike "
+          },
+          {
+            "deck": "7656f93b-336f-49cb-b8fe-c2b5c014258f"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Tifa Lockhart",
+        "reason": [
+          {
+            "text": "Landfall doubles its power each time a land enters, a voltron-style landfall plan unlike "
+          },
+          {
+            "deck": "5232fcc0-5dba-4569-8e99-c0b2c230e9f0"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Toph, Earthbending Master",
+        "reason": [
+          {
+            "text": "Landfall builds experience counters that feed earthbending on attack, a different take on land animation than "
+          },
+          {
+            "deck": "b4872bac-5822-4c35-9b73-38c4e3ffa477"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Tam, Observant Sequencer // Deep Sight",
+        "reason": [
+          {
+            "text": "Landfall readies its prepared spell for card draw, a blue-green landfall plan unlike "
+          },
+          {
+            "deck": "baf80db7-2ca8-4bfc-b5b6-25ed51878dd7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [
+      "Omnath, Locus of Creation",
+      "Kilo, Apogee Mind",
+      "Kratos, God of War",
+      "The Wise Mothman",
+      "Dogmeat, Ever Loyal",
+      "Avatar Aang // Aang, Master of Elements",
+      "Baral, Chief of Compliance"
+    ],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 9769,
+        "usd": 0.013058,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 2239,
+          "cacheReadTokens": 148395,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4663,
+        "usd": 0.022634,
+        "usage": {
+          "inputTokens": 8657,
+          "outputTokens": 532,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 1035,
+            "reason": "Landfall makes a Badger token each land drop, a pure land-driven token engine unlike {D14}'s ramp-and-value plan."
+          },
+          {
+            "key": 2115,
+            "reason": "Landfall creates a large Elemental token each time a land enters, and its death trigger gives a burn finish unlike {D14}."
+          },
+          {
+            "key": 2187,
+            "reason": "Landfall puts counters on Plant tokens made from basic lands, a distinct land-and-counters plan that differs from {D8}."
+          },
+          {
+            "key": 2805,
+            "reason": "Landfall pings each opponent and draws extra cards, a burn-flavored landfall plan that is different from {D9}."
+          },
+          {
+            "key": 1910,
+            "reason": "Landfall makes Moloid tokens and it lets you replay lands from the graveyard, giving a mill-flavored angle unlike {D17}."
+          },
+          {
+            "key": 3046,
+            "reason": "Landfall doubles its power each time a land enters, a voltron-style landfall plan unlike {D5}."
+          },
+          {
+            "key": 414,
+            "reason": "Landfall puts a +1/+1 counter on a creature and it can double counters, a counters plan distinct from {D12}."
+          },
+          {
+            "key": 3089,
+            "reason": "Landfall builds experience counters that feed earthbending on attack, a different take on land animation than {D1}."
+          },
+          {
+            "key": 2797,
+            "reason": "Landfall readies its prepared spell for card draw, a blue-green landfall plan unlike {D2}."
+          },
+          {
+            "key": 43,
+            "reason": "Extra land drops with Landfall card draw give a blue-green land-focused engine unlike {D14}."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.035692
+  }
+]
