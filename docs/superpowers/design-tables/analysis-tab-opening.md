@@ -20,14 +20,14 @@ Sources are in `design/design_handoff_the99_analysis_tab/`. Abbreviations: **H**
 | Property | Mobile (390) | Desktop (1300) |
 |---|---|---|
 | Element | `span`, `aria-hidden="true"` (FX:374) | Same |
-| Layout | `display:flex; align-items:center; gap:10px` (FX:374) | Same |
-| Marks | The five bracket marks, 1→5, left to right (FX:375; C:479) | Same |
-| Mark size | `22` px square (FX:375 `mark(b, 22)`; H:120; C:479). Size <26 uses the `-chip` art variant (FX:38) | Same |
+| Layout | **Superseded 2026-10-11 (Hugh): the loader draws `AnalysisRing`, the reading ring: a 150px box, `position:relative`, marks absolutely placed.** Originally `display:flex; align-items:center; gap:10px` (FX:374) | Same |
+| Marks | The five bracket marks, 1 at twelve o'clock and running clockwise on a 50px radius. Originally 1→5 left to right (FX:375; C:479) | Same |
+| Mark size | `44` px square, as the reading ring. Originally `22` (FX:375 `mark(b, 22)`; H:120; C:479; the `-chip` art variant is no longer used here) | Same |
 | Mark ink | `color: ink(b)`, each rank in its own ink (FX:39) | Same |
-| Base opacity | `0.22` per mark wrapper (FX:375) | Same |
+| Base opacity | A waiting mark holds the wave's `0.22` through its stagger delay: `.anim-at-wave` has `animation-fill-mode: backwards` (was `.at-wave-rest`, FX:375) | Same |
 | Animation | `at-wave 1.6s ease-in-out ${i*0.16}s infinite`, stagger `0.16s` per mark (FX:375; C:479 "1.6s") | Same |
 | Keyframe | `@keyframes at-wave { 0%,100% {opacity:0.22} 35% {opacity:1} 60% {opacity:1} }` (F39:27) | Same (F13:28) |
-| Direction of the light | Left to right (C:479) | Same |
+| Direction of the light | Clockwise round the ring, mark 1 first. Originally left to right (C:479) | Same |
 | Reduced motion | **Superseded 2026-10-11 (Hugh): the loader is the reading ring, so under reduced motion its marks are static at the ring's own `opacity:1`, and only the word reads as the signal.** Originally static at `0.5` (H:120; C:481) by a modifier class that left the ring's rule alone (RA corr. 2) | Same |
 
 ## "Loading…" word (for identification only)
