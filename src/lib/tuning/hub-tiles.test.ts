@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { shapeHubTiles, type HubRunRow } from "./hub-tiles";
+import { hubSeen, shapeHubTiles, type HubRunRow } from "./hub-tiles";
 import { REAPER_CUTOFF_MS } from "./limits";
 
 const now = new Date("2026-10-11T12:00:00Z");
@@ -46,5 +46,23 @@ describe("shapeHubTiles", () => {
   it("reads an ok run with no counted lines as zero of zero", () => {
     const tiles = shapeHubTiles([row("s", "suggested_changes", "ok", ago(1000))], new Map(), now);
     expect(tiles.suggested_changes).toEqual({ kind: "ok", at: ago(1000).toISOString(), total: 0, accepted: 0 });
+  });
+});
+
+describe("hubSeen", () => {
+  it("keys each tool's last ok run and names its newest settled run, never a pending one", () => {
+    const okAt = ago(60_000);
+    const seen = hubSeen(
+      [row("p", "suggested_changes", "pending", ago(1000)), row("f", "suggested_changes", "failed", ago(5000))],
+      new Map([["suggested_changes", okAt]]),
+      now,
+    );
+    expect(seen.suggested).toEqual({ okKey: String(okAt.getTime()), runId: "f" });
+    expect(seen.cuts).toEqual({ okKey: null, runId: null });
+  });
+
+  it("counts a pending run past the reaper's cutoff as settled: its reaped failure is a prior one", () => {
+    const seen = hubSeen([row("gone", "proposed_cuts", "pending", ago(REAPER_CUTOFF_MS + 1000))], new Map(), now);
+    expect(seen.cuts.runId).toBe("gone");
   });
 });

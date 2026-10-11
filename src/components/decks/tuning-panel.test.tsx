@@ -1,11 +1,12 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveDeckLimits } from "../../app/decks/tuning-actions";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import type { LineItem, TuningItem, TuningState } from "../../lib/tuning/state";
 import { manifestRows, readSteps, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
 
@@ -74,6 +75,14 @@ async function press(name: string) {
     fireEvent.click(screen.getByRole("button", { name }));
   });
 }
+
+// Every test below but the visit's own models a result produced DURING this visit to the deck:
+// the visit began, and its baseline was recorded, before anything was stored (`lib/decks/visit`).
+// The "a visit to the deck" block resets without this, to model a result from a previous visit.
+beforeEach(() => {
+  resetDeckVisitForTests();
+  visitBaseline("d1", "suggested", { okKey: null, runId: null });
+});
 
 describe("TuningPanel", () => {
   // The tab's opening holds its loader until this read settles, so Suggested changes and its
@@ -1571,3 +1580,93 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
   });
 });
 
+
+// The deck visit (`lib/decks/visit`, Hugh 2026-10-11): a set stays for the visit, and the next
+// visit opens on the offer. Each test resets the visit WITHOUT the file's seed, so the first read
+// records whatever is stored as a prior visit's.
+describe("TuningPanel: a visit to the deck", () => {
+  const D1 = "11111111-1111-4111-8111-111111111111";
+  const later = new Date("2026-10-11T12:00:00Z");
+  const newSet: TuningState = { ...results, run: { ...okRun, id: "r2", createdAt: later }, lastOkAt: later };
+  const drawOn = async (d: TuningDeps, freshEachVisit = true) => {
+    await act(async () => {
+      render(<TuningPanel deckId={D1} permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} freshEachVisit={freshEachVisit} />);
+    });
+  };
+  beforeEach(() => {
+    resetDeckVisitForTests();
+    noteDeckRoute(`/decks/${D1}`);
+  });
+
+  it("opens on the offer over a set stored by a previous visit", async () => {
+    await drawOn(deps([results]));
+    expect(screen.queryByText("Rhystic Study")).toBeNull();
+    expect(screen.getByText(copy.noGamesLead)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: copy.suggest })).toBeInTheDocument();
+  });
+
+  it("on its own, outside the hub (no History to reach it from), still shows the stored set", async () => {
+    await drawOn(deps([results]), false);
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+  });
+
+  it("hides a previous visit's failed run too", async () => {
+    await drawOn(deps([{ ...results, run: { ...okRun, id: "r2", status: "failed", errorClass: "timeout" } }]));
+    expect(screen.queryByTestId("tuning-failure")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.suggest })).toBeInTheDocument();
+  });
+
+  it("a press over a hidden set that is still current runs anew, past the unchanged gate", async () => {
+    const d = deps([results, newSet]);
+    await drawOn(d);
+    await press(copy.suggest);
+    expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
+    expect(d.run).toHaveBeenCalledWith(D1, { anyway: true, runId: expect.any(String), notes: "" });
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+  });
+
+  it("a second press on this visit's own unchanged set still draws the unchanged note", async () => {
+    const d = deps([results, newSet]);
+    await drawOn(d);
+    await press(copy.suggest);
+    expect(d.run).toHaveBeenCalledTimes(1);
+    await press(copy.again);
+    expect(screen.getByTestId("tuning-unchanged")).toBeInTheDocument();
+    expect(d.run).toHaveBeenCalledTimes(1);
+  });
+
+  it("a run already going when the visit began shows as running, and its set when it finishes", async () => {
+    vi.useFakeTimers();
+    try {
+      const pending: TuningState = { ...results, run: { ...okRun, id: "r2", status: "pending", createdAt: new Date() } };
+      await drawOn(deps([pending, newSet]));
+      expect(screen.getByText(copy.loadingHeading)).toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      expect(screen.queryByText(copy.loadingHeading)).toBeNull();
+      expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a set from this visit survives a remount within it, and a new visit opens on the offer", async () => {
+    await drawOn(deps([fresh, newSet]));
+    await press(copy.suggest);
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    cleanup();
+    // A tab switch and a sub-page, then back: the same visit.
+    noteDeckRoute(`/decks/${D1}/changes`);
+    noteDeckRoute(`/decks/${D1}`);
+    await drawOn(deps([newSet]));
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    cleanup();
+    // Away and back: a new visit.
+    noteDeckRoute("/collection");
+    noteDeckRoute(`/decks/${D1}`);
+    await drawOn(deps([newSet]));
+    expect(screen.queryByText("Rhystic Study")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.suggest })).toBeInTheDocument();
+  });
+});

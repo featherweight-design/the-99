@@ -62,6 +62,30 @@ reading. No new visual; the reason string goes to `/copy-review`.
   versions since the run's `read_version`), empty (H2b) and failed (H4).
 - The History tile's status: `N runs · 1 running`.
 
+As built (migration 0091), where it departs from or adds to the above:
+
+- The free count is written only for a deck that is over (`summary` = `{ over, roles }`), and the
+  write is non-fatal: a failed insert never stops the panel drawing.
+- The free count is keyed on the LIST alone (`listFingerprint`), not on the tool's input
+  fingerprint, which also moves with a lock, the intent or a declared bracket: one row per version
+  of the list, as the foot says.
+- A past run states no version and no "changed by N cards" figure. A run reads the live list,
+  which can hold edits no committed version has, and no run stores the list it read, so neither
+  figure could be stated truthfully; the note reads without one (`pastNoteUncounted`, an
+  engineering string for `/copy-review`). Storing the list a run read is a follow-up if the figure
+  is wanted.
+- History lists and counts only the tools this deployment draws (`hubTools`): a tool whose switch
+  is off has no chip and cannot be opened, so its runs are not shown either.
+- A Proposed cuts deeper look opens to each named line's reason and its chips, quoted from the
+  figures the run stored with its report.
+- The desktop row's date column is 114px, not the canvas's 110: `Oct 17 · 10:40 PM` in 11px
+  Plex Mono measures about 112px.
+- A pending run past the reaper's cutoff reads `failed` in History, never `running`.
+- Pages are keyed on `created_at` to the millisecond and the row's uuid, across both tables.
+- A past run's line opens to its stored reason (and, for Suggested changes, its citations) as it
+  read that day. Suggested's `read from …` manifest line is not drawn: runs do not store it.
+- The Mana Balance chip draws only when the hub draws that tool (PR 3).
+
 ### PR 3: Mana Balance view (waits for the orchestrator's go on the addendum audit)
 
 Canvas B as revised by the addendum, the land cell's `balance mana →`, the tile, and its free

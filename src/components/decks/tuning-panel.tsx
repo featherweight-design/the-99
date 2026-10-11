@@ -19,6 +19,7 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { axisCopy } from "../../lib/copy/game-log";
 import { formatCents } from "../../lib/decks/price";
+import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { Bracket } from "../../lib/profile/types";
 import { gateReason } from "../../lib/tuning/gate";
@@ -111,6 +112,7 @@ export function TuningPanel({
   deeperLooks = false,
   onSettled,
   onSaveDescription,
+  freshEachVisit = false,
 }: {
   deckId: string;
   permits: readonly Bracket[];
@@ -131,8 +133,15 @@ export function TuningPanel({
    *  are mutually exclusive mounts (this panel only exists once a reading has happened). The
    *  same save `builder-shell.tsx` already wires to `AnalysisPanel`'s empty-state field. */
   onSaveDescription?: (value: string) => Promise<DeckMutationResult>;
+  /** Hide a prior visit's set and open on the offer (`lib/decks/visit.ts`). Only inside the Tuning
+   *  hub, where History keeps the prior reachable; on its own the tool shows its stored set. */
+  freshEachVisit?: boolean;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
+  // What was already stored when this visit to the deck began (`lib/decks/visit`, Hugh
+  // 2026-10-11): a set from a prior visit is not drawn, and lives only in History. Recorded by the
+  // first read, so a run that finishes during the visit, or a remount within it, still shows.
+  const [baseline, setBaseline] = useState<ToolBaseline | null>(null);
   // Mirrors `state`, written SYNCHRONOUSLY alongside every `setState` below, for code that must
   // read the LATEST value after an `await` inside an event handler, where the handler's own
   // `state` closure is frozen at the render that created it (`press`'s gate check, pre-open
@@ -399,6 +408,14 @@ export function TuningPanel({
     deps.read(deckId).then(
       (next) => {
         if (!live) return;
+        if (next && freshEachVisit) {
+          setBaseline(visitBaseline(deckId, "suggested", {
+            okKey: okKeyOf(next.lastOkAt),
+            // A pending run is drawn as running whatever the baseline says, and what it settles
+            // to happened during this visit, so only a SETTLED run can be a prior visit's.
+            runId: next.run && next.run.status !== "pending" ? next.run.id : null,
+          }));
+        }
         setState(next);
         stateRef.current = next;
         settledRef.current?.();
@@ -411,7 +428,7 @@ export function TuningPanel({
     return () => {
       live = false;
     };
-  }, [deps, deckId]);
+  }, [deps, deckId, freshEachVisit]);
 
   // Computed here, ahead of the `state === null` early return below, since the following effect
   // (every hook must run unconditionally) needs them as a dependency.
@@ -429,6 +446,14 @@ export function TuningPanel({
   const watchedRunId = useRef<string | null>(null);
   useEffect(() => {
     if (pendingRunId === null || pendingRunCreatedAt === null) {
+      // A WATCHED run (begun elsewhere, or before this mount) just settled: its reconstructed
+      // stagger ends here, or `ticked` would hold the panel in its reading state over the result
+      // it is waiting for. This panel's own press settles its own stagger in `pressRun`.
+      if (watchedRunId.current !== null && ownRun.current === null) {
+        setTicked(null);
+        setWritingActive(false);
+        setLongWait(false);
+      }
       watchedRunId.current = null;
       return;
     }
@@ -492,6 +517,12 @@ export function TuningPanel({
   }, []);
 
   if (state === null) return null;
+
+  // A prior visit's set, and a prior visit's failed run, are hidden: the panel opens on its offer.
+  // A press made over a hidden set runs anew (Hugh, 2026-10-11: "I don't want to see prior
+  // suggestions, I just want a new one"), so it passes the `unchanged` gate as `anyway` does.
+  const priorResult = isPriorResult(baseline, okKeyOf(state.lastOkAt));
+  const priorRun = isPriorRun(baseline, state.run?.id);
 
   const reading = ticked !== null || state.run?.status === "pending";
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
@@ -777,15 +808,15 @@ export function TuningPanel({
   let note: string | null = null;
   let neverRun = false;
 
-  const failure = !reading && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
+  const failure = !reading && !priorRun && state.run?.status === "failed" ? failureCopy(state.run.errorClass) : null;
   // "Refusal" (STATES §3 state 9): AnalysisBanner's own frame, one sentence, no button, above
   // the set — never the generic Failure chrome. Only `ungrounded` carries a `refusal` the
   // validator can name; `locked_only` keeps its own established copy (F10, Hugh 2026-09-25).
-  const refusal = !reading && state.run?.status === "failed" && state.run.errorClass === "ungrounded"
+  const refusal = !reading && !priorRun && state.run?.status === "failed" && state.run.errorClass === "ungrounded"
     ? refusalBody(state.run.validationReport?.refusal ?? { reason: "nothingLeft" })
     : null;
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
-  const hasSet = !reading && !state.retired && state.items.length > 0;
+  const hasSet = !reading && !state.retired && !priorResult && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
   // "Describing in place" (STATES §3 state 2) replaces the checklist with its own editor; Cancel
   // and a successful Save both return to the ordinary checklist.
@@ -824,7 +855,7 @@ export function TuningPanel({
         <ManifestRows rows={runRows} writingLong={longWait ? descriptionManifest.writingLong : null} />
       </>
     );
-  } else if (state.retired) {
+  } else if (state.retired && !priorResult) {
     // A failed run after a commit still says it failed, over the retired lead.
     if (failure) primary = { label: deckTuningCopy.failure.retry, again: false };
     body = (
@@ -1039,7 +1070,7 @@ export function TuningPanel({
           <>
             <button
               type="button"
-              onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null))}
+              onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null || priorResult))}
               aria-disabled={blocked || undefined}
               className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${blocked ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"}`}
             >

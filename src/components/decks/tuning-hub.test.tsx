@@ -2,13 +2,16 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { useEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { readTuningHub } from "../../app/decks/tuning-hub-actions";
+import { readTuningHistory, readTuningHub, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
 import type { HubTiles } from "../../lib/tuning/hub-tiles";
 import { TuningHub, type HubToolSpec } from "./tuning-hub";
+import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 
-vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn() }));
+vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn(), readTuningHistory: vi.fn(), readTuningPastRun: vi.fn() }));
 const read = vi.mocked(readTuningHub);
+const readHistoryPage = vi.mocked(readTuningHistory);
+const readPast = vi.mocked(readTuningPastRun);
 
 const empty: HubTiles = { suggested_changes: null, proposed_cuts: null };
 const suggested = (panel: boolean = true): HubToolSpec => ({ tool: "suggested", panel: panel ? <h2 id="tuning-heading">Suggested changes</h2> : null });
@@ -108,7 +111,7 @@ describe("TuningHub opening a tool", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
     expect(document.querySelector("[data-tool-tile]")).toBeNull();
-    const heading = screen.getByRole("heading", { name: "Proposed cuts" });
+    const heading = await screen.findByRole("heading", { name: "Proposed cuts" });
     await waitFor(() => expect(document.activeElement).toBe(heading));
     const tabs = screen.getByRole("tablist");
     expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual([copy.allTools, "Suggested changes", "Proposed cuts"]);
@@ -174,7 +177,7 @@ describe("TuningHub opening a tool", () => {
     fireEvent.keyDown(tab, { key: "ArrowRight" });
     const next = screen.getByRole("tab", { name: "Proposed cuts" });
     expect(next.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
     await act(async () => {});
     expect(document.activeElement).toBe(next);
   });
@@ -224,7 +227,9 @@ describe("TuningHub opening a tool", () => {
     Element.prototype.scrollIntoView = vi.fn();
     const settled = vi.fn();
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} onSettled={settled} />);
-    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    // Open from the first render, but its panel waits for the hub's read, which seeds the visit.
+    expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
     await waitFor(() => expect(settled).toHaveBeenCalled());
     expect(read).toHaveBeenCalledTimes(1);
   });
@@ -261,8 +266,10 @@ describe("TuningHub opening a tool", () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: copy.title })));
   });
 
-  it("stays drawn for the visit when the last cut takes an unread deck to 100", () => {
+  it("stays drawn for the visit when the last cut takes an unread deck to 100", async () => {
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(false), cuts(1)]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    await act(async () => {});
     fireEvent.click(tile("cuts"));
     // No reading and no longer over: on arrival this deck would draw no hub at all.
     rerender(<TuningHub deckId="d" drawn={false} tools={[suggested(false), cuts(0, 100)]} />);
@@ -275,5 +282,56 @@ describe("TuningHub opening a tool", () => {
     unmount();
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     expect(tile("cuts")).not.toBeNull();
+  });
+});
+
+describe("TuningHub History", () => {
+  const history: HubToolSpec = { tool: "history" };
+  const row = {
+    id: "run:00000000-0000-4000-8000-000000000001", tool: "suggested" as const, tier: "credit" as const, outcome: "ok" as const,
+    at: "2026-10-03T21:12:00Z", summary: { kind: "suggestedOk" as const, in: 5, out: 5, added: 2, cut: 2, rejected: 1 },
+  };
+
+  it("draws History as the last tile, its status counting every run and the runs in flight", async () => {
+    read.mockResolvedValue({ ...empty, history: { runs: 12, running: 1 } });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6), history]} />);
+    const tiles = [...document.querySelectorAll("[data-tool-tile]")].map((t) => t.getAttribute("data-tool-tile"));
+    expect(tiles).toEqual(["suggested", "cuts", "history"]);
+    // Literal figures, so a swap of the two fields (or the wrong field) cannot pass.
+    await waitFor(() => expect(tile("history").textContent).toContain("12 runs · 1 running"));
+    expect(copy.tools.history.runs(1, 0)).toBe("1 run");
+    expect(tile("history").textContent).toContain(copy.tools.history.purpose);
+  });
+
+  it("opens History in place, a past run inside it, and the phone's switch slot goes back to the list", async () => {
+    readHistoryPage.mockResolvedValue({ rows: [row], nextCursor: null });
+    readPast.mockResolvedValue({ kind: "suggested", at: row.at, outcome: "ok", readVersion: 3, moved: 2, lines: [] });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6), history]} />);
+    fireEvent.click(tile("history"));
+    expect(screen.getByText(copy.toolOf(3, 3))).toBeTruthy();
+    await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
+    expect(readHistoryPage).toHaveBeenCalledWith("d", null, null);
+    // The chips name the hub's other tools only.
+    expect(within(screen.getByRole("radiogroup")).getAllByRole("radio")).toHaveLength(3);
+    fireEvent.click(document.querySelector("[data-history-row]")!);
+    await waitFor(() => expect(document.querySelector("[data-past-run]")).not.toBeNull());
+    // Phone: `‹ History` in place of `‹ Tuning`.
+    expect(screen.queryByRole("button", { name: copy.back })).toBeNull();
+    fireEvent.click(document.querySelector("[data-history-back]")!);
+    await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
+    expect(screen.getByRole("button", { name: copy.back })).toBeTruthy();
+  });
+});
+
+describe("TuningHub and the visit baseline", () => {
+  it("records each drawn tool's state as the visit's baseline from its own read, before any tool opens", async () => {
+    resetDeckVisitForTests();
+    noteDeckRoute("/decks/11111111-1111-4111-8111-111111111111");
+    read.mockResolvedValue({ ...empty, seen: { suggested: { okKey: "100", runId: "r1" }, cuts: { okKey: null, runId: null } } });
+    render(<TuningHub deckId="11111111-1111-4111-8111-111111111111" drawn tools={[suggested(), cuts(6)]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    await act(async () => {});
+    // A later first read by the tool itself (a run settled meanwhile) gets the hub's baseline back.
+    expect(visitBaseline("11111111-1111-4111-8111-111111111111", "suggested", { okKey: "200", runId: "r2" })).toEqual({ okKey: "100", runId: "r1" });
   });
 });

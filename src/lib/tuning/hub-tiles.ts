@@ -22,7 +22,16 @@ export type HubTileRun =
   | { kind: "failed"; at: string }
   | { kind: "stopped"; at: string };
 
-export type HubTiles = Record<HubTool, HubTileRun | null>;
+export type HubTiles = Record<HubTool, HubTileRun | null> & {
+  /** The History tile: every run and free count on the deck, and the runs in flight. Absent when
+   *  the read did not carry it. */
+  history?: { runs: number; running: number };
+  /** What each tool held when the hub read it: its last ok result and its newest settled run. The
+   *  hub records it as the visit's baseline (`lib/decks/visit.ts`) before any tool is opened, so a
+   *  run that was in flight on arrival and settles before the tool's own first read still counts
+   *  as this visit's. Absent when the read did not carry it. */
+  seen?: Record<"suggested" | "cuts", { okKey: string | null; runId: string | null }>;
+};
 
 /**
  * Newest first, one deck, one reader. A pending run past the reaper's cutoff was abandoned: the
@@ -49,4 +58,18 @@ export function shapeHubTiles(
     return last.status === "cancelled" ? { kind: "stopped", at } : { kind: "failed", at };
   };
   return { suggested_changes: tileOf("suggested_changes"), proposed_cuts: tileOf("proposed_cuts") };
+}
+
+/** The tools' state as the visit baseline reads it: the last ok run's time, as `okKeyOf` keys it,
+ *  and the newest settled run's id (a pending run is not a prior one). */
+export function hubSeen(rows: readonly HubRunRow[], lastOk: ReadonlyMap<HubTool, Date>, now: Date): NonNullable<HubTiles["seen"]> {
+  const cutoff = reapCutoff(now).getTime();
+  const of = (tool: HubTool) => {
+    const ok = lastOk.get(tool);
+    // A pending run past the reaper's cutoff was abandoned before this visit: the tool's own read
+    // reaps it to failed, and that failure is a prior one, so it counts as settled here.
+    const settled = rows.find((r) => r.tool === tool && (r.status !== "pending" || r.createdAt.getTime() < cutoff));
+    return { okKey: ok ? String(ok.getTime()) : null, runId: settled?.id ?? null };
+  };
+  return { suggested: of("suggested_changes"), cuts: of("proposed_cuts") };
 }

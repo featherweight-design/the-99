@@ -10,6 +10,7 @@ import type { EdhrecTag } from "../lib/edhrec/parse";
 import type { CommanderEngine } from "../lib/recs/engine";
 import type { DeckProfile } from "../lib/profile/types";
 import type { CheckedSynopsis } from "../lib/synopsis/types";
+import type { ToolCountSummary } from "../lib/tuning/history";
 import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 
@@ -2155,6 +2156,33 @@ export const deckCutItems = pgTable("deck_cut_items", {
     sql`${t.verdict} in ('pending', 'accepted', 'dismissed')`,
   ),
   index("deck_cut_items_run_position_idx").on(t.runId, t.position),
+]);
+
+/**
+ * One FREE Tuning tool pass (tuning hub PR 2, History): what a tool counted for one version of the
+ * list, recorded the first time that count is read for that list. Paid runs are already one row
+ * each in `deck_suggestion_runs`, whose `model_call_id` is not null and settles an allowance, so a
+ * free pass does not belong there. ONE ROW PER TOOL PER LIST VERSION (`list_fingerprint`): a
+ * re-read of the same list writes nothing (`on conflict do nothing`), so History draws one free
+ * row per list the reader counted, not one per visit. No `user_data_touch` trigger: neither Home
+ * nor `/decks` reads it (`check:list-cache`).
+ */
+export const deckToolCounts = pgTable("deck_tool_counts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  tool: text("tool").notNull(),
+  /** The tool's own input fingerprint for the list it counted. */
+  listFingerprint: text("list_fingerprint").notNull(),
+  /** The deck's newest version number when the count read the list; null for a deck with none. */
+  readVersion: integer("read_version"),
+  /** What the count found, in the tool's own shape (`ToolCountSummary`). */
+  summary: jsonb("summary").$type<ToolCountSummary>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("deck_tool_counts_tool_check", sql`${t.tool} in ('proposed_cuts', 'mana_balance')`),
+  unique("deck_tool_counts_deck_tool_fingerprint_key").on(t.deckId, t.tool, t.listFingerprint),
+  index("deck_tool_counts_deck_created_idx").on(t.deckId, t.createdAt),
 ]);
 
 /**

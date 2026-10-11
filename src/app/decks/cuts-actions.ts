@@ -22,6 +22,7 @@ import { deckNameIndex, normalizeName } from "../../lib/synopsis/facts";
 import { callModel } from "../../lib/model/client";
 import { FEATURE_CALLS } from "../../lib/model/prices";
 import { cutCounts } from "../../lib/tuning/cuts-count";
+import { cutsCountSummary, recordToolCount } from "../../lib/tuning/tool-counts";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
 import { buildCutsPrompt } from "../../lib/tuning/cuts-prompt";
 import { cancelCutsRun, finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
@@ -32,6 +33,7 @@ import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
 import { proposedCutsEnabled } from "../../lib/tuning/flag";
 import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import type { Billed } from "../../lib/tuning/run-store";
+import { listFingerprint } from "../../lib/profile/fingerprint";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -210,6 +212,13 @@ export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
   const liveKey = new Set(keyCards.flatMap((k) => { const hit = byName.get(normalizeName(k)); return hit ? [hit.oracleId] : []; }));
   const allLocked = lockedOut || (facts.cards.length > 0 && facts.cards.every((c) => liveKey.has(c.oracleId)));
   const counts = cutCounts(facts, declared, name);
+  // History's free row: once per version of the LIST, written the first time this list's count is
+  // read. Keyed on the list alone (`listFingerprint`), not on the tool's input fingerprint, which
+  // also moves with a lock, the intent or a declared bracket on an unchanged list.
+  const summary = cutsCountSummary(facts);
+  if (summary) {
+    await recordToolCount({ deckId, userId, tool: "proposed_cuts", listFingerprint: listFingerprint(head), readVersion: inputs.readVersion, summary });
+  }
   return {
     ...state,
     total: facts.total,
