@@ -139,19 +139,20 @@ export function TuningHub({
   }, [deckId]);
 
   // On mount, whether or not a shortcut opened a tool in the first render (the tab's opening
-  // loader waits on this read), and each time the reader comes back to the tiles: a tool's own run
-  // may have settled.
-  //
-  // Back on the tiles it reads once more a moment later: a run or an Apply pressed in the tool just
-  // left can still be in its preflight when the reader leaves, so the first read may not see its
-  // pending row yet; the second does, and a run it finds starts the watch below.
+  // loader waits on this read). And on leaving a tool, for the tiles or for another tool: at once,
+  // and once more a moment later, because a run or an Apply pressed in the tool just left can still
+  // be in its preflight, so the first read may not see its pending row yet; the second does, and a
+  // run it finds starts the watch below. Opening a tool from the tiles reads nothing.
   const readOnce = useRef(false);
+  const lastTool = useRef<TuningTool | null>(null);
   useEffect(() => {
-    if (openTool !== null && readOnce.current) return;
-    const returning = readOnce.current;
+    const left = lastTool.current;
+    lastTool.current = openTool;
+    const first = !readOnce.current;
     readOnce.current = true;
+    if (!first && left === null) return;
     read();
-    if (!returning) return;
+    if (first) return;
     const again = setTimeout(read, WATCH_MS);
     return () => clearTimeout(again);
   }, [openTool, read]);

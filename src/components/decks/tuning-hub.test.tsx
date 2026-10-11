@@ -149,6 +149,16 @@ describe("TuningHub opening a tool", () => {
     }
   });
 
+  it("reads again when switching straight from one tool to another", async () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(tile("suggested"));
+    const before = read.mock.calls.length;
+    fireEvent.click(screen.getByRole("tab", { name: "Proposed cuts" }));
+    await act(async () => { await Promise.resolve(); });
+    expect(read.mock.calls.length).toBeGreaterThan(before);
+  });
+
   it("gives the phone a way back and says which tool of how many", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
