@@ -76,7 +76,7 @@ describe("moreRows", () => {
 
   it("ignores the retired card answer (F1)", async () => {
     await moreRows("?t=dinosaurs&a=0000aaaa-0000-4000-8000-000000000001", 0);
-    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.objectContaining({ card: null }), 0);
+    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.objectContaining({ card: null }), 0, null);
   });
 
   it("refuses a forged offset or query before any read", async () => {
