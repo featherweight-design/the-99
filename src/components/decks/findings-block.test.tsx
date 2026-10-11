@@ -91,6 +91,9 @@ describe("a finding", () => {
       expect(cls, id).toContain("md:border-[color:var(--border-strong)]");
       expect(cls.filter((c) => /^md:(last:)?border-[br]$/.test(c)), id).toEqual([]);
     }
+    // The last tile has `last:border-b-0` for the phone's stacked rows; at md its bottom comes back
+    // by WIDTH alone, so deleting this class reopens Tutors' bottom edge.
+    expect(item("tutors").className.split(/\s+/)).toContain("md:last:border-b-[1px]");
   });
 
   it("names its cards before counting the rest, in the printed name", () => {

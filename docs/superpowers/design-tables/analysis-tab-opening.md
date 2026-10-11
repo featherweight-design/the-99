@@ -28,7 +28,7 @@ Sources are in `design/design_handoff_the99_analysis_tab/`. Abbreviations: **H**
 | Animation | `at-wave 1.6s ease-in-out ${i*0.16}s infinite`, stagger `0.16s` per mark (FX:375; C:479 "1.6s") | Same |
 | Keyframe | `@keyframes at-wave { 0%,100% {opacity:0.22} 35% {opacity:1} 60% {opacity:1} }` (F39:27) | Same (F13:28) |
 | Direction of the light | Left to right (C:479) | Same |
-| Reduced motion | Marks are static at `0.5` and only the word reads as the signal (H:120; C:481). **(RA corr. 2)** This needs 8a's own still state, e.g. a modifier class. It must not change the ring's shipped reduced-motion rule, which is `opacity:1` (RA:177-179) | Same |
+| Reduced motion | **Superseded 2026-10-11 (Hugh): the loader is the reading ring, so under reduced motion its marks are static at the ring's own `opacity:1`, and only the word reads as the signal.** Originally static at `0.5` (H:120; C:481) by a modifier class that left the ring's rule alone (RA corr. 2) | Same |
 
 ## "Loading…" word (for identification only)
 
