@@ -66,7 +66,8 @@ All paths are on `main`; line numbers were read on 2026-10-11 and move.
 - **Prices shown** come from `src/lib/decks/price-query.ts` (`loadPrices` returns `{ prices, newestAsOf }`) and
   `src/lib/decks/price.ts`: a printing is `priced`, `foilOnly`, `soldOut` (its `as_of` is older than the newest in
   the feed) or `absent`; neither of the last two adds to a total, and a missing price is never a price of zero.
-  Prices older than `PRICE_STALE_AFTER_DAYS = 10` (`price.ts:53`) read as stale. Strings: `priceCopy.strip.*`
+  There is no per-printing "stale" state: `PRICE_STALE_AFTER_DAYS = 10` (`price.ts:53`) marks the whole feed as
+  behind (provenance), not a line. Strings: `priceCopy.strip.*`
   (`src/lib/copy/price.ts:46-86`).
 
 **Card assignments and seniority: which deck holds an owned copy**
@@ -127,9 +128,14 @@ These are engineering's reading of the rulings. Hugh can override any of them.
 6. **Prices are the roll-up's.** The cart total is the sum of the ticked decks' `cents`, each deck priced through
    its own printing picks. A price missing is not a price of zero: the total says how many copies it priced
    (`pricedCopies`), as the strip does.
-7. **Bought comes back through the existing mutation, extended.** `markBought` stays per card; the cart's press
-   needs a variant that serves every deck that needed the card (Open question 4). The collection row is shared, so
-   one write of `n` copies satisfies `n` decks' slots; the held slot per deck is I got it's.
+7. **Bought comes back through the existing mutation, extended, and what a purchase clears is not promised.**
+   `markBought` stays per card; the cart's press needs a variant that serves every deck that needed the card (Open
+   question 4). The collection row is shared and the seniority model, not the cart, decides which deck a new copy
+   serves: `loadDeckBuyRows` deliberately leaves an unsatisfied senior deck's own shortfall out of a junior deck's
+   bill (`availability-query.ts:848-855`), so with a senior deck unticked, a copy bought for a junior can go to the
+   senior and leave the junior short; and decks that draw on the same unreserved surplus can all clear on one added
+   copy. So `n` bought copies do not necessarily clear `n` rows. The held slot per deck is I got it's; what the cart
+   shows after a purchase is read from the roll-up again, never assumed.
 8. **Unticking is a view, not a write.** It changes the cart and nothing in any deck.
 
 ## What Design owns
@@ -153,7 +159,7 @@ These are engineering's reading of the rulings. Hugh can override any of them.
 ## Open questions
 
 1. **Does the cart remember unticked decks?** Not at all (every visit starts all ticked), for this visit only, or
-   across visits. Engineering leans to this visit only (`AGENTS.md`: a list's state lives for one visit), but a
+   across visits. Engineering prefers this visit only (the least state to keep right), but a
    player who is not buying for a deck this month would untick it every time.
 2. **Cart by card or by deck?** Hugh's `2 · Gishath, Aang` is a by-card line. A by-deck view answers "what do I
    still need for Gishath" and a by-card view answers "what do I buy". Draw one, or both with a switch?
@@ -256,7 +262,7 @@ decks, 16 extra copies in all. Adding the two unowned commanders (Omnath's and G
 
 **The case to draw first: Sol Ring.** The player owns 17; 20 decks play it, 17 of them committed (they hold the
 17 copies) and 3 brews (Gishath, Kratos, Thorin), so each brew needs one: `3 · Gishath, Kratos, Thorin`. It is the owned-but-held line (Open question 3) and a multi-deck Bought press (Open question 4)
-in one card. No card assignments exist for these four on staging, so the seniority is the committed decks' own.
+in one card. No card assignments exist on staging for Sol Ring, Command Tower, Arcane Signet or Fabled Passage (the four in the table above), so the seniority is the decks' own, by when each first held the card.
 
 **Link size.** About 291 `"<qty> <name>"` lines at about 20 characters is roughly 6KB of text, about 8KB after
 base64 and encoding, against 4096 characters for the longest list the code is tested on.
