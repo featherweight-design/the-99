@@ -159,6 +159,13 @@ const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * override does nothing below `md` for a plain `border-r`. Each bare token needs an override
  * spelled with exactly its own variants, and its own `!`: `border-r!` is `!important`, which a
  * plain override loses to.
+ *
+ * DELIBERATELY CONSERVATIVE. A stronger override beside a plain bare token (`md:border-r
+ * md:border-r-[color:...]!`) is safe in the browser and is still reported, and so are the legacy
+ * prefix and the suffix spelling of `!` against each other. Telling those apart means modelling
+ * Tailwind's importance order, which the five-line fix (write the override with the bare token's
+ * own variants and `!`) does not need; `src` holds no such token (it holds no `!` form at all), so
+ * the strictness costs nothing today and a guard that errs toward a report is the safe side.
  */
 function hasSideOverride(text, side, variant, important) {
   const re = new RegExp(`(?<![^\\s"'\`{(])${escapeRe(variant)}border-${side}-(?=\\[|[a-zA-Z])(?:[^\\s"'\`\\[\\]]|${BRACKETED})*`, "g");
