@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
-import { SYNOPSIS_CONTRACT_VERSION_V2 } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "./limits";
 
 const old = { contractVersion: 7 };
 const none = { attempts: 0, succeeded: false };
@@ -24,6 +24,13 @@ describe("methodNoticeOf", () => {
 
   // 2026-10-11: plans first and Sonnet 5.5 are a new method (contract 11), so an overview written
   // under contract 8, or 10 with the benchmarks, is an old one and is offered the free rewrite.
+  it("treats a contract-12 row (the method with the benchmarks) as the current method", () => {
+    // A partial free run at 12 (Overview refused) leaves the second try; a passing one ends it.
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, overviewOk: false }, runs: { attempts: FREE_ATTEMPTS, succeeded: false } })).toEqual({ attemptsLeft: 0 });
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, overviewOk: true }, runs: none })).toBeNull();
+  });
+
   it("is owed to an overview from the previous v2 method, with or without the benchmarks", () => {
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8 }, runs: none })).toEqual({ attemptsLeft: 2 });
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: 10 }, runs: none })).toEqual({ attemptsLeft: 2 });
@@ -75,9 +82,11 @@ describe("freeRunsFor", () => {
     await freeRunsFor(q, "deck-1");
     const { sql, params } = new PgDialect().sqlToQuery(wheres[0] as never);
     expect(sql).toContain('"deck_synopses"."deck_id" = $');
-    expect(sql).toContain('"deck_synopses"."contract_version" = $');
+    // Both current-method contracts: a free rewrite with the benchmarks on is written at 12, and
+    // counting 11 alone let a failing one retry free without end.
+    expect(sql).toContain('"deck_synopses"."contract_version" in ($');
     expect(sql).toContain('"model_calls"."origin" = $');
-    expect(params).toEqual(["deck-1", SYNOPSIS_CONTRACT_VERSION_V2, "system"]);
+    expect(params).toEqual(["deck-1", SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, "system"]);
   });
 
   it("counts a failed, a refused and a pending run as attempts, and succeeds only on a shown overview", async () => {
