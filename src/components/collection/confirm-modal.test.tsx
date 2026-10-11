@@ -109,6 +109,22 @@ describe("ConfirmModal", () => {
     expect(screen.getByRole("button", { name: "Import 120 cards" })).toBeInTheDocument();
   });
 
+  // With collection editing on (`checking`), History keeps the replace and can revert it, so the
+  // way back is a revert; with it off there is no History, and replacing again is the only road.
+  it("points to History's Revert as the way back when collection editing is on", () => {
+    render(<ConfirmModal preview={preview} pending={false} error={null} onClose={vi.fn()} onConfirm={vi.fn()} checking />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent(/revert this from History/);
+    expect(dialog).not.toHaveTextContent(/previous list/);
+  });
+
+  it("keeps the replace-again way back when collection editing is off", () => {
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent(/replace it again with your previous list/);
+    expect(dialog).not.toHaveTextContent(/History/);
+  });
+
   it("confirms on one press", () => {
     const onConfirm = vi.fn();
     render(<ConfirmModal preview={preview} pending={false} error={null} onClose={vi.fn()} onConfirm={onConfirm} />);

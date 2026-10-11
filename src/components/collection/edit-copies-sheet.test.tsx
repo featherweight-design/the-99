@@ -217,7 +217,7 @@ describe("Edit copies, removal", () => {
     const b = save();
     expect(b.textContent).toBe(r.confirm(5));
     expect(b.className).toContain("elevated");
-    fireEvent.click(screen.getByRole("button", { name: r.keep }));
+    fireEvent.click(screen.getByRole("button", { name: r.keep(5) }));
     expect(save().textContent).toBe(c.save);
   });
 

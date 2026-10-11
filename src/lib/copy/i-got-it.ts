@@ -41,7 +41,7 @@ export const gotItCopy = {
     staleTitle: "This changed while it was open.",
     staleBody: (need: number) => `A copy was added somewhere else, so the deck needs ${n(need)} now. Nothing was added yet.`,
     staleBodyDone: "A copy was added somewhere else, so the deck needs no more. Add anyway if this is a spare.",
-    failedTitle: "That didn't go through.",
+    failedTitle: "That didn’t go through.",
     failedBody: "Nothing was added. Try again in a moment.",
   },
   slot: {
@@ -68,7 +68,7 @@ export const gotItCopy = {
      * only the copies this write added: a spoken-for row's card was already held, and still is.
      */
     undoneElsewhere: (card: string, q: number) => `Undone. ${card} ×${n(q)} removed from your collection.`,
-    undoFailed: "Couldn't undo that.",
+    undoFailed: "Couldn’t undo that.",
     undoFailedBody: "What you added is still in your collection. You can revert it from History.",
     openHistory: "Open History",
   },
@@ -78,8 +78,8 @@ export const gotItCopy = {
    * `collectionEditCopy.history.kinds.shopping`.
    */
   history: {
-    fromDeck: (deck: string) => ({ pre: "From", link: deck, post: "'s Shopping list" }),
-    fromDeleted: "From the Shopping list of a deck you've since deleted",
+    fromDeck: (deck: string) => ({ pre: "From", link: deck, post: "’s Shopping list" }),
+    fromDeleted: "From the Shopping list of a deck you’ve since deleted",
   },
   /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
   shortWarning: {

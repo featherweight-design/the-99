@@ -30,6 +30,9 @@ export const replaceCopy = {
     afterCaptionShort: (file: string) => `from ${file}`,
     body: "Your deck lists stay as they are; recommendations and availability update from the new collection. To go back, replace it again with your previous list.",
     bodyShort: "Deck lists stay as they are. To go back, replace it again with your previous list.",
+    /** With collection editing on, History keeps the change and can undo it, so the way back is a revert. */
+    bodyHistory: "Your deck lists stay as they are; recommendations and availability update from the new collection. To go back, revert this from History.",
+    bodyShortHistory: "Deck lists stay as they are. To go back, revert this from History.",
     keep: "Keep current",
     /** N is what the player GETS, the matched count; the old button counted what they lost. */
     replace: (matched: number) => `Replace with ${cards(matched)}`,

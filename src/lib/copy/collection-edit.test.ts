@@ -13,3 +13,13 @@ describe("a count of cards agrees in number", () => {
     expect(c.upload.barAdd(2, 0, 5)).toContain("Your 5 cards stay.");
   });
 });
+
+describe("the remove dialog's keep button agrees with its confirm", () => {
+  it("reads `Keep it` for one copy and `Keep them` for more", () => {
+    expect(c.remove.confirm(1)).toBe("Remove 1 copy");
+    expect(c.remove.keep(1)).toBe("Keep it");
+    expect(c.remove.confirm(5)).toBe("Remove 5 copies");
+    expect(c.remove.keep(5)).toBe("Keep them");
+  });
+});
+

@@ -54,8 +54,9 @@ export function ConfirmModal({
       }
     : {
         title: c.title,
-        body: c.body,
-        bodyShort: c.bodyShort,
+        // Collection editing on (`checking`): History can revert the replace, so say that.
+        body: checking ? c.bodyHistory : c.body,
+        bodyShort: checking ? c.bodyShortHistory : c.bodyShort,
         keep: c.keep,
         confirm: c.replace(preview.matchedCardCount),
         pending: c.replacing,

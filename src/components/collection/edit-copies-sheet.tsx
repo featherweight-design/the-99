@@ -383,7 +383,9 @@ export function EditCopiesSheet({
         </div>
 
         {loaded ? (
-          <div className={SHEET_FOOT_CLASS}>
+          // A note (the last-copy line, the choose-printing line) is a sentence, so it takes a row of its own at
+          // both widths: between the two buttons on a no-wrap desktop row it was squeezed to a narrow column.
+          <div className={`${SHEET_FOOT_CLASS}${footNote ? " md:flex-wrap!" : ""}`}>
             {removing ? (
               <button
                 type="button"
@@ -391,7 +393,7 @@ export function EditCopiesSheet({
                 onClick={() => setRemoving(false)}
                 className={`order-2 min-h-[44px] shrink-0 whitespace-nowrap px-[14px] text-[14px] md:order-1 md:min-h-[38px] ${GHOST}`}
               >
-                {r.keep}
+                {r.keep(sum.held)}
               </button>
             ) : (
               <button
@@ -405,7 +407,11 @@ export function EditCopiesSheet({
             )}
             <span
               aria-live="polite"
-              className="order-1 w-full text-right text-[12px] text-[color:var(--fg-muted)] md:order-2 md:ml-auto md:w-auto"
+              className={`text-[12px] text-[color:var(--fg-muted)] ${
+                footNote
+                  ? "order-first w-full text-left leading-[1.5]"
+                  : "order-1 w-full text-right md:order-2 md:ml-auto md:w-auto"
+              }`}
             >
               {footNote ?? diffText}
             </span>
@@ -413,7 +419,7 @@ export function EditCopiesSheet({
               type="button"
               disabled={!canSave}
               onClick={() => void save()}
-              className={`order-3 ml-auto h-[46px] shrink-0 cursor-pointer whitespace-nowrap rounded-[10px] px-[22px] text-[15px] font-semibold disabled:cursor-default disabled:opacity-40 md:ml-0 md:h-auto md:rounded-[8px] md:px-[20px] md:py-[11px] md:text-[14px] ${
+              className={`order-3 ml-auto h-[46px] shrink-0 cursor-pointer whitespace-nowrap rounded-[10px] px-[22px] text-[15px] font-semibold disabled:cursor-default disabled:opacity-40 ${footNote ? "md:ml-auto" : "md:ml-0"} md:h-auto md:rounded-[8px] md:px-[20px] md:py-[11px] md:text-[14px] ${
                 isRemoval
                   ? "border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-[color:var(--fg)]"
                   : PRIMARY

@@ -353,7 +353,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     const confirm = await reachReview();
     await act(async () => fireEvent.click(confirm));
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toMatch(/That didn't go through/);
+    expect(alert.textContent).toMatch(/That didn’t go through/);
     expect(alert.textContent).toMatch(/Nothing changed/);
     expect(screen.getByRole("button", { name: "Replace collection" })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
@@ -402,7 +402,7 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
     fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
-    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't read how this file compares/);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn’t read how this file compares/);
     expect(screen.queryByRole("dialog")).toBeNull();
     serve(data());
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
@@ -550,7 +550,7 @@ describe("ReplaceFlow · the choice, keyboard and concurrency", () => {
     fireEvent.click(screen.getByRole("button", { name: "Review the add →" }));
     await act(async () => fireEvent.click(await screen.findByRole("button", { name: /^Add \d/ })));
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toMatch(/couldn't confirm whether that went through/);
+    expect(alert.textContent).toMatch(/couldn’t confirm whether that went through/);
     expect(alert.textContent).not.toMatch(/Nothing changed/);
     expect(push).not.toHaveBeenCalled();
   });

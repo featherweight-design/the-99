@@ -41,12 +41,12 @@ export const collectionEditCopy = {
     replaceTitle: "Replace my collection",
     replaceBody: "Your collection becomes exactly this file. Anything not in it leaves.",
     addTitle: "Add these cards",
-    addBody: "The file's quantities are added to yours. Nothing is removed, and your art picks stay.",
+    addBody: "The file’s quantities are added to yours. Nothing is removed, and your art picks stay.",
     after: (from: number, to: number) => `${n(from)} → ${cards(to)}`,
     overwriteCount: (k: number, since: string) =>
       `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload will be overwritten.`,
     choiceOverwriteUnknown: (last: string) =>
-      `Changes you made in the app may be overwritten. Your last upload was ${last}, further back than the 90 days of history we keep, so we can't count them.`,
+      `Changes you made in the app may be overwritten. Your last upload was ${last}, further back than the 90 days of history we keep, so we can’t count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
     choiceOverwriteNoUpload: (k: number) => `${n(k)} ${k === 1 ? "change" : "changes"} you made in the app will be overwritten.`,
     overlapNote: (pct: number) => `You already own ${pct}% of these cards. Adding the file raises those counts.`,
@@ -58,8 +58,8 @@ export const collectionEditCopy = {
     cancel: "Cancel",
     /** (new) The comparison could not be read. */
     /** (new) A confirm failed and so did the read that would say whether it landed. */
-    unconfirmed: "We couldn't confirm whether that went through. Check your collection, then try again if it did not.",
-    prepareFailed: "We couldn't read how this file compares to your collection. Nothing was changed.",
+    unconfirmed: "We couldn’t confirm whether that went through. Check your collection, then try again if it did not.",
+    prepareFailed: "We couldn’t read how this file compares to your collection. Nothing was changed.",
     /** (new) The upload entry's note once the file can be added instead: the count sits between the two. */
     entryNote: { before: "Your file can replace your current ", after: " or be added to them. You’ll see every match before anything changes." },
     reviewAdd: "Review before you add",
@@ -81,7 +81,7 @@ export const collectionEditCopy = {
       `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app since your ${since} upload.`,
     /** (new) History does not reach the last upload, so no number is quoted. */
     overwriteUnknown: (last: string) =>
-      `This may overwrite changes you made in the app. Your last upload was ${last}, further back than the 90 days of history we keep, so we can't count them.`,
+      `This may overwrite changes you made in the app. Your last upload was ${last}, further back than the 90 days of history we keep, so we can’t count them.`,
     /** (new) Never uploaded, so every change made in the app is still on record. */
     overwriteNoUpload: (k: number) => `This overwrites ${n(k)} ${k === 1 ? "change" : "changes"} you made in the app.`,
     decksShortHeading: (k: number) => `Decks that will read short · ${n(k)}`,
@@ -99,7 +99,7 @@ export const collectionEditCopy = {
       `Replaces your ${cards(from)} with ${n(to)}.${short ? ` ${n(short)} ${short === 1 ? "deck" : "decks"} will read short.` : ""}`,
     confirmReplace: "Replace collection",
     pendingReplace: "Replacing…",
-    failedTitle: "That didn't go through",
+    failedTitle: "That didn’t go through",
     failedBody: "Nothing changed. Your collection is exactly as it was, and this review is still here.",
     retry: "Try again",
   },
@@ -118,7 +118,7 @@ export const collectionEditCopy = {
     /** (new) The body for one card, as the R2 D2 specimen draws it. */
     bodyCard: (card: string) =>
       `Nothing about these decks changes. Each will show ${card} as short and put it on its shopping list.`,
-    body: "Nothing about these decks changes. Each will show what it's short of and put it on its shopping list.",
+    body: "Nothing about these decks changes. Each will show what it’s short of and put it on its shopping list.",
     figureOne: (k: number) => `short ${n(k)}`,
     figureMany: (k: number) => (k === 1 ? "1 card short" : `${n(k)} cards short`),
     more: (k: number) => `and ${n(k)} more ${k === 1 ? "deck" : "decks"}`,
@@ -128,7 +128,7 @@ export const collectionEditCopy = {
     checking: "Checking decks…",
     saving: "Saving…",
     changed:
-      "This changed while you were deciding. Your collection was edited somewhere else, so here's the answer as of now. Nothing was saved.",
+      "This changed while you were deciding. Your collection was edited somewhere else, so here’s the answer as of now. Nothing was saved.",
     newTag: "new",
     catalogFailure: (names: string[]) =>
       `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since this file was read. Nothing was changed.`,
@@ -143,7 +143,7 @@ export const collectionEditCopy = {
     then: "Then",
     now: "Now",
     confirm: "Revert",
-    confirmPartial: "Revert what's left",
+    confirmPartial: "Revert what’s left",
     nothingLeft: "Nothing left to undo. Every card this changed is already back where it was.",
     /** (new) The reason beside a row whose copies stay the same but whose printing or condition is restored. */
     reasonDetails: "Printing or condition",
@@ -155,9 +155,9 @@ export const collectionEditCopy = {
     reasonBack: "Already back",
     /** (new) Reading what the revert would do. */
     reading: "Checking what this would change…",
-    catalogTitle: "We couldn't revert this",
+    catalogTitle: "We couldn’t revert this",
     catalogBody: (names: string[]) =>
-      `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since. A revert can't put back a card that no longer exists. Nothing was changed.`,
+      `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since. A revert can’t put back a card that no longer exists. Nothing was changed.`,
     /** (new) The change is already undone, or has aged out. */
     gone: "That change has already been undone or has aged out of history. Nothing was changed.",
     close: "Close",
@@ -166,7 +166,7 @@ export const collectionEditCopy = {
   // /copy-review. Dates and times are UTC, spelled by the caller.
   history: {
     heading: "Changes to your collection",
-    lede: "Every upload and edit from the last 90 days. Revert any of them. It's undone from today.",
+    lede: "Every upload and edit from the last 90 days is listed here. A revert undoes a change as of today.",
     kinds: {
       uploadReplace: "Replace upload",
       uploadAdd: "Add upload",
@@ -187,7 +187,7 @@ export const collectionEditCopy = {
       (up || down ? [up ? `+${n(up)}` : "", down ? `−${n(down)}` : ""].filter(Boolean).join(" · ") : "0") +
       ` ${up + down === 1 ? "copy of" : "copies across"} ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
     /** (new) An opened entry that recorded no rows: a Replace that matched the collection exactly. */
-    noRows: "This change didn't move anything. Your collection already matched.",
+    noRows: "This change didn’t move anything. Your collection already matched.",
     reverted: "Reverted",
     /** Reads after `reverted` and a separator: "Reverted · by the revert at 15:30". */
     revertedBy: (when: string) => `by the revert at ${when}`,
@@ -206,12 +206,12 @@ export const collectionEditCopy = {
     /** (new) The pager for entries past the first page. */
     olderEntries: "Show older changes",
     /** (new) Opening an entry, or paging, failed. */
-    loadFailed: "We couldn't load that. Nothing was changed.",
+    loadFailed: "We couldn’t load that. Nothing was changed.",
     loadRetry: "Try again",
     loading: "Loading…",
     foot: (date: string) =>
-      `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven't. They're all still in your collection.`,
-    emptyTitle: "Nothing's changed yet",
+      `History keeps 90 days. Changes from before ${date} have aged out, but your cards haven’t. They’re all still in your collection.`,
+    emptyTitle: "Nothing’s changed yet",
     emptyBody: (ship: string) =>
       `Uploads and edits since ${ship} show up here, ready to undo. Your collection from before that has no history to show.`,
     revert: "Revert",
@@ -234,14 +234,14 @@ export const collectionEditCopy = {
     uploadLead: "Have a file?",
     uploadInstead: "Upload it instead",
     noResultsTitle: (q: string) => `No card is named “${q}”`,
-    noResultsBody: "Check the spelling, or try part of the name. Tokens and emblems aren't in the catalog.",
-    searchFailed: "We couldn't search just now. Check your connection and try again.",
+    noResultsBody: "Check the spelling, or try part of the name. Tokens and emblems aren’t in the catalog.",
+    searchFailed: "We couldn’t search just now. Check your connection and try again.",
     resultAdd: "↵ add",
     listHeading: (k: number) => `On the list · ${n(k)}`,
     newestFirst: "newest first",
     choosePrinting: "Choose a printing",
-    needsPrinting: (card: string) => `Choose ${card}'s printing first`,
-    afterPrinting: "Foil and how many come next, once it's chosen.",
+    needsPrinting: (card: string) => `Choose ${card}’s printing first`,
+    afterPrinting: "Foil and how many come next, once it’s chosen.",
     printingChipAria: (card: string, printing: string) => `${card}, printing ${printing}. Change it.`,
     foil: "Foil",
     etched: "Etched",
@@ -259,7 +259,7 @@ export const collectionEditCopy = {
     saving: "Saving…",
     retry: "Try again",
     discardTitle: (k: number) => `Discard ${n(k)} ${k === 1 ? "card" : "cards"}?`,
-    discardBody: "They're not saved yet. Close now and the list is gone.",
+    discardBody: "They’re not saved yet. Close now and the list is gone.",
     discard: "Discard",
     keep: "Keep adding",
     savedTitle: (c: number) => `${copies(c)} added`,
@@ -270,7 +270,7 @@ export const collectionEditCopy = {
     /** (new) The saved state's link to the entry it just wrote (B8). */
     seeInHistory: "See it in History",
     failed: "Nothing was saved. Your list is still here. Try again in a moment.",
-    printingsFailed: "We couldn't load that card's printings. Try picking it again.",
+    printingsFailed: "We couldn’t load that card’s printings. Try picking it again.",
     announceChoose: (card: string, k: number) => `${card}: choose a printing. ${n(k)} printings.`,
     announceAdded: (card: string) => `${card} added to the list`,
     announceSaved: (c: number) => `${copies(c)} added to your collection`,
@@ -280,7 +280,7 @@ export const collectionEditCopy = {
       introPhone: (k: number) => `Which printing? ${n(k)} printings.`,
       regionLabel: "Printings",
       searchPlaceholder: "Set, code or number",
-      searchAria: "Search this card's printings by set, code or number",
+      searchAria: "Search this card’s printings by set, code or number",
       emptyBody: (q: string, card: string) => `No printing of ${card} comes from a set matching “${q}”.`,
       tileOwned: (q: number) => `you own ×${n(q)}`,
     },
@@ -303,7 +303,7 @@ export const collectionEditCopy = {
     was: (from: string) => `was ${from}`,
     goesWith: (k: number) => (k === 1 ? "your 1 copy goes with it" : `your ${n(k)} copies go with it`),
     printingChanged: (k: number) => (k === 1 ? "1 printing changed" : `${n(k)} printings changed`),
-    lastCopy: (card: string) => `That's your last copy. Saving takes ${card} out of your collection.`,
+    lastCopy: (card: string) => `That’s your last copy. Saving takes ${card} out of your collection.`,
     save: "Save",
     saving: "Saving…",
     retry: "Try again",
@@ -314,12 +314,12 @@ export const collectionEditCopy = {
     noPrinting: "No printing recorded",
     /** (new) Reading the card's holdings, and the read failing. */
     loading: "Reading your copies…",
-    loadFailed: "We couldn't read your copies just now. Check your connection and try again.",
+    loadFailed: "We couldn’t read your copies just now. Check your connection and try again.",
     /** (new) The collection moved while the sheet was open. */
-    stale: "This card's copies changed somewhere else, so the list is as it is now. Nothing was saved. Make your change again.",
+    stale: "This card’s copies changed somewhere else, so the list is as it is now. Nothing was saved. Make your change again.",
     /** (new) The sheet's own discard question (B6), worded for changes rather than a list. */
     discardTitle: "Discard these changes?",
-    discardBody: "They're not saved yet. Close now and your copies stay as they were.",
+    discardBody: "They’re not saved yet. Close now and your copies stay as they were.",
     discard: "Discard",
     keep: "Keep editing",
     /** (new) Two lines would fold into more copies than one holding can hold. */
@@ -333,7 +333,8 @@ export const collectionEditCopy = {
     action: "Remove from collection",
     leaves: (card: string) => `${card} leaves your collection.`,
     confirm: (q: number) => `Remove ${copies(q)}`,
-    keep: "Keep them",
+    /** Keeps what the confirm names: `Remove 1 copy` pairs with `Keep it`. */
+    keep: (q: number) => (q === 1 ? "Keep it" : "Keep them"),
     toast: (card: string, q: number) => `${card} removed · ${copies(q)}`,
     undo: "Undo",
   },
