@@ -114,6 +114,13 @@ describe("variants", () => {
   it("flags the important suffix form, border-b!", () => {
     expect(unresolvedCollisions('<div className="border-b!" />')).toHaveLength(1);
   });
+
+  it("an important bare token needs an important override: a plain one loses to !important", () => {
+    expect(unresolvedCollisions('<i className="border-r! border-r-[color:var(--b)]" />')).toHaveLength(1);
+    expect(unresolvedCollisions('<i className="border-r! border-r-[color:var(--b)]!" />')).toEqual([]);
+    expect(unresolvedCollisions('<i className="border-r border-r-[color:var(--b)]!" />')).toHaveLength(1);
+    expect(unresolvedCollisions('<i className="!border-r border-r-[color:var(--b)]" />')).toHaveLength(1);
+  });
 });
 
 describe("stylesheets", () => {

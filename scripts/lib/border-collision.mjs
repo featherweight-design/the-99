@@ -129,9 +129,9 @@ function bareCollisions(text) {
     //
     // A token starts at whitespace, a quote, a backtick, `{` or `(`; its variants are everything up
     // to the last `:` before the utility, so `[&>*]:` and `data-[x=y]:` are read whole.
-    const re = new RegExp(`(?<![^\\s"'\`{(])(!?(?:[^\\s"'\`]*:)?)border-${side}(?![\\w-])`, "g");
+    const re = new RegExp(`(?<![^\\s"'\`{(])(!?(?:[^\\s"'\`]*:)?)border-${side}(!?)(?![\\w-])`, "g");
     for (const m of text.matchAll(re)) {
-      found.push({ side, index: m.index + m[1].length, variant: m[1] });
+      found.push({ side, index: m.index + m[1].length, variant: m[1], important: m[2] === "!" });
     }
   }
   return found.sort((a, b) => a.index - b.index);
@@ -151,10 +151,12 @@ const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * AND THE SAME VARIANT CHAIN. Tailwind emits every variant rule after the unprefixed ones, so a
  * `md:border-r` repaints red from `md` up over a plain `border-r-[color:...]`, and a `md:`
  * override does nothing below `md` for a plain `border-r`. Each bare token needs an override
- * spelled with exactly its own variants.
+ * spelled with exactly its own variants, and its own `!`: `border-r!` is `!important`, which a
+ * plain override loses to.
  */
-function hasSideOverride(text, side, variant) {
-  return new RegExp(`(?<![^\\s"'\`{(])${escapeRe(variant)}border-${side}-(\\[|[a-zA-Z])`).test(text);
+function hasSideOverride(text, side, variant, important) {
+  const re = new RegExp(`(?<![^\\s"'\`{(])${escapeRe(variant)}border-${side}-(?:\\[|[a-zA-Z])[^\\s"'\`]*`, "g");
+  return [...text.matchAll(re)].some((m) => m[0].endsWith("!") === important);
 }
 
 /**
@@ -179,8 +181,8 @@ export function unresolvedCollisions(text, kind = "js") {
   const seen = new Set();
   const out = [];
   for (const span of kind === "css" ? cssSpans(text) : scan(text)) {
-    for (const { side, index, variant } of bareCollisions(span.text)) {
-      if (!hasSideOverride(span.text, side, variant)) {
+    for (const { side, index, variant, important } of bareCollisions(span.text)) {
+      if (!hasSideOverride(span.text, side, variant, important)) {
         const offsetInFile = span.start + index;
         const key = `${side}:${offsetInFile}`;
         if (seen.has(key)) continue;
