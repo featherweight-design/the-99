@@ -1,11 +1,11 @@
 "use server";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { db } from "../../db";
-import { cards, deckSuggestionItems, decks } from "../../db/schema";
+import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
