@@ -46,6 +46,7 @@ import { useSpentSlotUndo } from "./spent-slot-undo";
 import { ProxyTag } from "./proxy-tag";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 import { useSwapTools } from "../../lib/swaps/context";
 import { formatLimit, isOverLimit } from "../../lib/swaps/limit";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -88,6 +89,17 @@ interface DecklistRowProps {
    */
   spent?: boolean;
   /**
+   * I got it bought this card and it left the Shopping list: the row's slot holds as the
+   * spent-slot shape, `Name · in your collection`, until the list is next read (call 8). Decklist
+   * state, from the provider's `held`, so it survives the revalidation that drops the card.
+   */
+  held?: boolean;
+  /**
+   * An undo brought this row back where its held slot was: it fades in from its first frame. The
+   * decklist derives it at render (held, slot drawn, billed again), so there is no effect to wait on.
+   */
+  cameBack?: boolean;
+  /**
    * EDHREC inclusion % for the Shopping view's meta line (addendum A2).
    * `undefined` — All view; no figure is rendered. Since #350 the row may
    *               still carry a meta line, for the cost.
@@ -123,6 +135,8 @@ export function DecklistRow({
   card,
   siblings,
   spent = false,
+  held = false,
+  cameBack = false,
   shoppingFigure,
   inShopping = false,
   newestAsOf,
@@ -374,6 +388,7 @@ export function DecklistRow({
   // that would have shown a meta line, and several stacked compound the
   // drift) — the one thing a bare `<UndoRow>` cannot know on its own.
   if (spent) return <UndoRow deckId={deckId} card={card} rowShell={rowShell} />;
+  if (held) return <HeldSlot card={card} rowShell={rowShell} />;
 
   /**
    * The whole row opens the card, not only its name — which is how `/collection`'s rows have
@@ -430,7 +445,8 @@ export function DecklistRow({
       density={inShopping ? "full" : "collapsed"}
       press={pressable ? {
         onPress: (trigger) => gotIt.open(card, fullName, newestAsOf, trigger),
-        state: confirmOpen ? (gotIt.pending ? "pending" : "open") : "rest",
+        // Disabled while an undo for this card is in flight (A9): a second write would go stale.
+        state: confirmOpen ? (gotIt.pending ? "pending" : "open") : gotIt.undoing.has(card.oracleId) ? "disabled" : "rest",
         cardName: fullName,
         // Below lg the stack flips to `buy` over `over $X` with the feature on (finding 5).
         under: overText,
@@ -439,8 +455,9 @@ export function DecklistRow({
   );
 
   return (
-    // Wrapper keeps the row and any error message as a single grid item.
-    <div>
+    // Wrapper keeps the row and any error message as a single grid item. A row an undo brought
+    // back fades in where its held slot was (C3).
+    <div className={cameBack ? "anim-slot-in" : undefined}>
       {/* Row container */}
       {/* --row-bg exists so the over glyph's seam tracks the hover swap; a fixed
           seam string reads as a hairline through the glyph on hover.
@@ -836,6 +853,25 @@ export function DecklistRow({
  * shrinks the slot of any removed card that would have drawn a meta line,
  * and several stacked receipts compound that into a visible drift.
  */
+/**
+ * The slot a row bought through I got it leaves (call 8, C9): the spent slot's shape in the row's
+ * own shell, so 52px or 34px by construction and nothing above or below moves. Not a control: no
+ * Undo (the toast and History hold that), nothing in the tab order, no live region. It arrives as
+ * a 150ms opacity fade, which reduced motion turns into a swap (`anim-slot-in`).
+ */
+function HeldSlot({ card, rowShell }: { card: DeckDetailCard; rowShell: string }) {
+  return (
+    <div className="anim-slot-in">
+      <div data-decklist-row data-held-slot className={`${rowShell} bg-surface-sunken border border-dashed border-border-strong`}>
+        <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />
+        <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12px] text-fg-locked">
+          {gotItCopy.slot.held(printedFaceName(card))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function UndoRow({
   deckId,
   card,

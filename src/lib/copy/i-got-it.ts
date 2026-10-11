@@ -1,7 +1,7 @@
 // The copy of I got it (collection home sub-project 4), behind SHOPPING_MARK_BOUGHT_ENABLED and
-// COLLECTION_EDIT_ENABLED. From the handoff's `i-got-it · copy strings.ts`, adopted as drawn; this PR
-// carries the row, the key and the confirm, and later PRs add the receipt, History and the details
-// link. Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
+// COLLECTION_EDIT_ENABLED. From the handoff's `i-got-it · copy strings.ts`, adopted as drawn; these carry
+// the row, the key, the confirm, the held slot and the receipt; later PRs add History and the
+// details link. Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
 
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
@@ -41,5 +41,38 @@ export const gotItCopy = {
     staleBodyDone: "A copy was added somewhere else, so the deck needs no more. Add anyway if this is a spare.",
     failedTitle: "That didn't go through.",
     failedBody: "Nothing was added. Try again in a moment.",
+  },
+  slot: {
+    /** The spent-slot shape a row that left keeps until the list is next read (call 8). */
+    held: (card: string) => `${card} · in your collection`,
+  },
+  receipt: {
+    added: (card: string, q: number) => `${card} added · ×${n(q)}`,
+    detail: (printing: string, finish: string) => `${printing} · ${finish}`,
+    claimed: (deck: string, need: number) =>
+      `${deck} is older and was short too, so the copy went there. This deck still needs ${n(need)}.`,
+    claimedMany: (decks: number, need: number) =>
+      `${n(decks)} older decks were short too, so the copies went there first. This deck still needs ${n(need)}.`,
+    partial: (need: number) => `The deck still needs ${n(need)}.`,
+    history: "History",
+    undo: "Undo",
+    undoAria: (card: string) => `Undo adding ${card}`,
+    checking: "Checking decks…",
+    undoing: "Undoing…",
+    /**
+     * Every done undo: true whatever the list then shows (the row may come back, or the deck may
+     * still be covered by copies added since). The handoff's `undone` form ("back on the list") is
+     * not built: deciding it needed the refreshed list, which #1403 settled against. It names
+     * only the copies this write added: a spoken-for row's card was already held, and still is.
+     */
+    undoneElsewhere: (card: string, q: number) => `Undone. ${card} ×${n(q)} removed from your collection.`,
+    undoFailed: "Couldn't undo that.",
+    undoFailedBody: "The copy is still in your collection. You can revert it from History.",
+    openHistory: "Open History",
+  },
+  /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
+  shortWarning: {
+    titleUndo: (k: number) => `Undoing leaves ${k === 1 ? "a deck" : `${n(k)} decks`} short`,
+    confirmUndo: "Undo anyway",
   },
 } as const;

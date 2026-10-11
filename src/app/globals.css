@@ -750,6 +750,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 /* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
    instant under reduced motion. */
 .anim-overview-in { animation: backdrop-in 0.15s ease-out both; }
+/* I got it's held slot, and the row an undo brings back (handoff C9): one 150ms opacity crossfade
+   in the row's own shell, so no height moves; a swap under reduced motion. */
+.anim-slot-in { animation: backdrop-in 0.15s ease-out both; }
 /* `both`, so the first frame is the 0% state rather than a full-size card for one
    frame before the animation takes it. The blur underneath is set at its final value
    on the first frame and never animated: at 10px it is invisible in motion and
@@ -885,6 +888,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* The fan holds still in its fanned pose, the inline transform each card carries. */
   .anim-fan-shuffle,
   .anim-overview-in,
+  /* I got it's held slot swaps in one frame. */
+  .anim-slot-in,
   /* The rail's name tag appears at full opacity. */
   .anim-rail-tag,
   /* The carousel's art appears at its final position, no slide. */

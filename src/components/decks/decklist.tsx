@@ -60,7 +60,8 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { Fragment, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { useGotIt } from "./got-it";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -298,6 +299,7 @@ const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
 /** Module-scoped for the same reason: avoids allocating a fresh `[]` on every
  *  render when nothing was spent. */
 const EMPTY_SPENT_SLOTS: DeckDetailCard[] = [];
+const NO_SLOTS_LEFT: ReadonlySet<string> = new Set();
 
 // Stable empties for a caller that passes neither (the page always does, so a render there reuses
 // the slice until a game or version changes).
@@ -359,6 +361,12 @@ export function Decklist({
   // segment of the All / Shopping control, so choosing either list segment returns here.
   const [storedPanel, choosePanel] = useStoredView(DECK_PANEL_KEY, isDeckPanel);
   const statsOpen = statsEnabled && storedPanel === "stats";
+  // I got it's held slots (call 8) last until the list is read again: a switch of tab or panel, or
+  // leaving the deck, clears them; the action's revalidation does not.
+  const gotIt = useGotIt();
+  const clearHeld = gotIt?.clearHeld;
+  const [slotsLeft, setSlotsLeft] = useState<ReadonlySet<string>>(NO_SLOTS_LEFT);
+  useEffect(() => () => clearHeld?.(), [filter, statsOpen, clearHeld]);
   const onFilterChange = (f: "all" | "shopping") => {
     choosePanel("list");
     onFilterChangeProp(f);
@@ -630,14 +638,39 @@ export function Decklist({
   );
   const spentOracleIds = new Set(spentCards.map((c) => c.oracleId));
   const isSpentCard = (c: DeckDetailCard) => spentOracleIds.has(c.oracleId);
-  const listedCards = spentCards.length > 0 ? [...visibleCards, ...spentCards] : visibleCards;
+  // I got it's held slots, Shopping only: a bought row, as it was drawn, while the fresh list no
+  // longer bills the card. A row that stays (claimed, partial) is still on the list and redraws in
+  // place; an undo puts the card back on the list and the slot steps aside for the row. Like a
+  // spent slot it is listed only to be placed, and no figure counts it: the tab count, the group
+  // counts, the total and the Mana Pool link read the fresh list and move at once.
+  const heldCards = filter === "shopping" && gotIt && gotIt.held.size > 0
+    ? [...gotIt.held.values()].filter(
+        (h) => !shoppingCards.some((c) => c.oracleId === h.oracleId) && !spentOracleIds.has(h.oracleId),
+      )
+    : [];
+  const heldOracleIds = new Set(heldCards.map((c) => c.oracleId));
+  const isHeldCard = (c: DeckDetailCard) => heldOracleIds.has(c.oracleId);
+  // A held card whose slot has been drawn LEFT the list in this read. Recorded at render, as state
+  // adjusted during render rather than in an effect, and pruned to the held map, so it ends with
+  // the read. A held card billed again after leaving is a row an undo brought back: it fades in
+  // where its slot was from its first frame. A row that stayed was billed all along, so it never
+  // left and never fades.
+  const leftNow = new Set([...slotsLeft].filter((id) => gotIt?.held.has(id)));
+  heldOracleIds.forEach((id) => leftNow.add(id));
+  if (leftNow.size !== slotsLeft.size || [...leftNow].some((id) => !slotsLeft.has(id))) setSlotsLeft(leftNow);
+  const cameBack = (c: DeckDetailCard) => !isHeldCard(c) && leftNow.has(c.oracleId);
+  const heldCommanders = heldCards.filter((c) => c.commander === true);
+  const heldBody = heldCards.filter((c) => c.commander !== true);
+  const listedCards = spentCards.length > 0 || heldBody.length > 0
+    ? [...visibleCards, ...spentCards, ...heldBody]
+    : visibleCards;
 
   // A spent slot draws the undo receipt and returns before the brass rule
   // (`decklist-row.tsx:282`), so a pending change on that card is a mark the
   // reader cannot see. Every figure that counts marks reads these two rather
   // than `pendingChanges` directly — the caption, the group note and Shopping's
   // own caption all answer "how many marked rows are on this screen".
-  const isMarked = (c: DeckDetailCard) => pendingChanges.has(c.oracleId) && !isSpentCard(c);
+  const isMarked = (c: DeckDetailCard) => pendingChanges.has(c.oracleId) && !isSpentCard(c) && !isHeldCard(c);
   const spentMarkedCount = spentCards.filter((c) => pendingChanges.has(c.oracleId)).length;
   const markedPendingCount = pendingChanges.size - spentMarkedCount;
 
@@ -698,9 +731,18 @@ export function Decklist({
     // lets a removed row keep its place in its own group — where the undo receipt
     // has to appear — without the group promising a card that is no longer in the
     // deck. `notSpent` is the one place the difference is spelled.
-    const notSpent = (c: DeckDetailCard) => !isSpentCard(c);
-    const spokenForCards = listedCards.filter(isSpokenFor);
-    const missingCards = listedCards.filter((c) => !c.owned);
+    const notSpent = (c: DeckDetailCard) => !isSpentCard(c) && !isHeldCard(c);
+    // A row that STAYED after I got it (claimed or partial) redraws in place and joins Spoken for
+    // only at the next read (C2, C3): the card is owned now, so the filter alone would move it at
+    // once. It stays in the group the provider's held copy was drawn in, cleared on the same
+    // triggers as the held slot.
+    const pinnedMissing = (c: DeckDetailCard) =>
+      c.owned && !isHeldCard(c) && gotIt?.held.get(c.oracleId)?.owned === false;
+    const spokenForCards = listedCards.filter((c) => isSpokenFor(c) && !pinnedMissing(c));
+    const missingCards = listedCards.filter((c) => !c.owned || pinnedMissing(c));
+    // A pinned row is owned, so `from` already counts it: the clause's `n` leaves it out, or
+    // from + n would overshoot `to` by its copies.
+    const moveable = (c: DeckDetailCard) => notSpent(c) && !pinnedMissing(c);
 
     // The marked rows this branch actually draws — the three groups below hold
     // every row it has. The rows carry the brass rule here exactly as they do
@@ -720,7 +762,7 @@ export function Decklist({
       const roleCards = missingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
-      const listed = cardCopies(roleCards.filter(notSpent));
+      const listed = cardCopies(roleCards.filter(moveable));
       // Where the deck lands if the player buys this group, not the baseline.
       // For a group the fill built they are the same number — the fill buys a
       // role up to its target and no further, so from + n is the target. They
@@ -731,7 +773,7 @@ export function Decklist({
       // be fewer than the group's size (the group is the classifier's), so `to` stays the figure the
       // strip will read after the purchase.
       const moves = countRoles.byLabel
-        ? cardCopies(roleCards.filter(notSpent).filter((c) => {
+        ? cardCopies(roleCards.filter(moveable).filter((c) => {
             // An unlabeled card is the classifier's call, and the group is already its role.
             const rows = labelRows?.[c.oracleId];
             return rows ? labelRolesOf(rows).includes(role) : true;
@@ -795,11 +837,12 @@ export function Decklist({
       // The commanders head the list under either grouping (H28), in a group of their own and
       // never among the types or roles: neither is a list card, and a role's arithmetic is about
       // the 99. No clause, for the reason a type section carries none.
-      ...(commanderShopping.length > 0
+      ...(commanderShopping.length + heldCommanders.length > 0
         ? [{
             key: "commander",
-            label: recommendationsCopy.shopping.commanderGroupLabel(commanderShopping.length),
-            cards: commanderShopping,
+            label: recommendationsCopy.shopping.commanderGroupLabel(commanderShopping.length + heldCommanders.length),
+            // A bought commander holds its slot here, as a body row does in its group.
+            cards: [...commanderShopping, ...heldCommanders],
           }]
         : []),
       ...(grouping === "type"
@@ -870,7 +913,7 @@ export function Decklist({
     // undo from. A swap's open sheet and its receipts hold the empty state off
     // for the same reason: a take can empty the list, and Undo swap lives in
     // the receipt.
-    if (n === 0 && spentCards.length === 0 && !swapTools?.standIns && !swapTools?.receipts.length) {
+    if (n === 0 && spentCards.length === 0 && heldCards.length === 0 && !swapTools?.standIns && !swapTools?.receipts.length) {
       return (
         <div className="flex flex-col">
           <GroupToggle
@@ -955,7 +998,7 @@ export function Decklist({
     ].map(([key, label]) => ({ key, label, cards: [] as DeckDetailCard[], gapClause: undefined }));
     const shoppingOrderedIds = shoppingSections
       .flatMap((section) => section.cards)
-      .filter((c) => !spentOracleIds.has(c.oracleId))
+      .filter((c) => !spentOracleIds.has(c.oracleId) && !heldOracleIds.has(c.oracleId))
       .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
     return (
@@ -1054,6 +1097,8 @@ export function Decklist({
                       card={card}
                       siblings={shoppingOrderedIds}
                       spent={isSpentCard(card)}
+                      held={isHeldCard(card)}
+                      cameBack={cameBack(card)}
                       shoppingFigure={figureFor(card.oracleId)}
                       inShopping
                       newestAsOf={newestAsOf}
@@ -1061,13 +1106,16 @@ export function Decklist({
                   );
                   const under = receiptsUnder(card.oracleId);
                   // One copy fewer: the row stays, and its receipt sits under it in the same grid cell.
+                  // Keyed apart while held, so the slot and the row it gives back are each mounted
+                  // fresh and each fades in, rather than one element changing its contents.
+                  const k = isHeldCard(card) ? `held:${card.oracleId}` : card.oracleId;
                   return under.length ? (
-                    <div key={card.oracleId} className="flex flex-col gap-[4px]">
+                    <div key={k} className="flex flex-col gap-[4px]">
                       {row}
                       {under.map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
                     </div>
                   ) : (
-                    <Fragment key={card.oracleId}>{row}</Fragment>
+                    <Fragment key={k}>{row}</Fragment>
                   );
                 })}
               </div>

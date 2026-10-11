@@ -13,8 +13,13 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { GotItConfirm } from "./got-it-confirm";
+import { GotItReceipt, type GotItUndoHost, type GotItWritten } from "./got-it-receipt";
 
 type Target = { card: DeckDetailCard; name: string; newestAsOf: Date | null };
+type Receipt = { card: DeckDetailCard; name: string; written: GotItWritten; failed?: boolean };
+
+const NONE: ReadonlyMap<string, DeckDetailCard> = new Map();
+const NO_IDS: ReadonlySet<string> = new Set();
 
 export type GotIt = {
   deckId: string;
@@ -23,6 +28,16 @@ export type GotIt = {
   /** That confirm's write is in flight. */
   pending: boolean;
   open: (card: DeckDetailCard, name: string, newestAsOf: Date | null, trigger: HTMLElement) => void;
+  /**
+   * The rows bought in this read of the list, as they were drawn before the write (call 8). The
+   * decklist draws one as a held slot where its row was while the card is off the Shopping list,
+   * so the slot holds across the action's revalidation, which no longer lists the card.
+   */
+  held: ReadonlyMap<string, DeckDetailCard>;
+  /** The cards an undo is in flight for, whichever toast is showing: their tags are disabled (A9). */
+  undoing: ReadonlySet<string>;
+  /** The list is read again (a tab switch): every held slot goes. */
+  clearHeld: () => void;
 };
 
 const GotItContext = createContext<GotIt | null>(null);
@@ -34,10 +49,18 @@ export function useGotIt(): GotIt | null {
 export function GotItProvider({ deckId, children }: { deckId: string; children: ReactNode }) {
   const [target, setTarget] = useState<Target | null>(null);
   const [pending, setPending] = useState(false);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  // One baseline per card, the row as first drawn, until the list is read again: a second press
+  // keeps the first snapshot (it pins the row's group), and an undo releases nothing. The decklist
+  // draws the slot only while the list omits the card, so it steps aside once the card is billed.
+  const [held, setHeld] = useState<ReadonlyMap<string, DeckDetailCard>>(NONE);
+  const [undoing, setUndoing] = useState<ReadonlySet<string>>(NO_IDS);
   // Focus goes back to the tag that opened the confirm, held explicitly: a pointer press does not
   // focus a button in every browser. After a write the row usually leaves before the confirm
   // unmounts, so a tag no longer in the document hands focus to the Shopping filter instead.
   const trigger = useRef<HTMLElement | null>(null);
+  // The confirm's card, read when its write lands.
+  const current = useRef<Target | null>(null);
   const returnFocus = useMemo<RefObject<HTMLElement | null>>(
     () => ({
       get current() {
@@ -49,16 +72,40 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
   );
   const open = useCallback((card: DeckDetailCard, name: string, newestAsOf: Date | null, from: HTMLElement) => {
     trigger.current = from;
+    current.current = { card, name, newestAsOf };
     setPending(false);
-    setTarget({ card, name, newestAsOf });
+    setTarget(current.current);
   }, []);
   const close = useCallback(() => {
+    current.current = null;
     setPending(false);
     setTarget(null);
   }, []);
+  // The write landed: the confirm closes, the row's slot is held, and the receipt replaces any
+  // standing one (call 5: "or until the next write").
+  const done = useCallback((written: GotItWritten) => {
+    const t = current.current;
+    close();
+    if (!t) return;
+    const id = t.card.oracleId;
+    setHeld((h) => (h.has(id) ? h : new Map(h).set(id, t.card)));
+    setReceipt({ card: t.card, name: t.name, written });
+  }, [close]);
+  const undoHost = useMemo(() => ({
+    start: (id: string) => setUndoing((u) => (u.has(id) ? u : new Set(u).add(id))),
+    end: (id: string) => setUndoing((u) => (u.has(id) ? new Set([...u].filter((x) => x !== id)) : u)),
+  }), []);
+  const clearHeld = useCallback(() => setHeld(NONE), []);
+  const expire = useCallback(() => setReceipt(null), []);
+  // An undo that fails after a newer write replaced its toast brings that receipt back in its
+  // failed form (an alert pointing to History), so the failure is never silent.
+  const hostFor = (r: Receipt): GotItUndoHost => ({
+    ...undoHost,
+    failedAway: () => setReceipt((cur) => (cur?.written.entryId === r.written.entryId ? cur : { ...r, failed: true })),
+  });
   const value = useMemo<GotIt>(
-    () => ({ deckId, openFor: target?.card.oracleId ?? null, pending, open }),
-    [deckId, target, pending, open],
+    () => ({ deckId, openFor: target?.card.oracleId ?? null, pending, open, held, undoing, clearHeld }),
+    [deckId, target, pending, open, held, undoing, clearHeld],
   );
   return (
     <GotItContext.Provider value={value}>
@@ -75,8 +122,20 @@ export function GotItProvider({ deckId, children }: { deckId: string; children: 
           returnFocusRef={returnFocus}
           onClose={close}
           // The action invalidates the deck page before it answers, so the list re-reads with the
-          // write in it and the row leaves on its own. The receipt is PR 3's.
-          onDone={close}
+          // write in it: the row leaves into its held slot, or redraws in place if it stays.
+          onDone={done}
+        />
+      ) : null}
+      {receipt ? (
+        <GotItReceipt
+          key={`${receipt.written.entryId}${receipt.failed ? ":failed" : ""}`}
+          deckId={deckId}
+          oracleId={receipt.card.oracleId}
+          cardName={receipt.name}
+          written={receipt.written}
+          failed={receipt.failed}
+          host={hostFor(receipt)}
+          onExpire={expire}
         />
       ) : null}
     </GotItContext.Provider>
