@@ -40,6 +40,12 @@ jobs:
       - name: CSS tokens
         run: pnpm check:tokens
 
+      # `border-r` and `border-b` are also the mana tokens --r and --b, so a bare one paints a red or
+      # black edge where a neutral divider was meant. Nothing else sees it: no type, no lint rule,
+      # and jsdom computes no styles.
+      - name: Border color collisions
+        run: pnpm check:border-collision
+
       # A constraint name Postgres would truncate is invisible to every other step here:
       # drizzle-kit compares its own snapshots, and the failure only appears when the
       # migration RUNS — on a real deployment, the Vercel production build.
