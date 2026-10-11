@@ -157,7 +157,7 @@ describe("buildSynopsisPrompt under the v2 method", () => {
   it("states the assembled combo by name and by what it produces, free of cost", () => {
     const { user, system } = buildSynopsisPrompt(V2, undefined, { v2: true });
     expect(user).toContain("- Ghostly Flicker + Naru Meha, Master Wizard: Infinite mana, Infinite ETB (costs no mana to run)");
-    expect(system).toContain("primary win condition only when the deck is built to assemble it");
+    expect(system).toContain("name the primary win condition by those cards");
   });
 
   it("marks a near combo as not in the deck and gives the app's own turn and counts", () => {
@@ -175,9 +175,14 @@ describe("buildSynopsisPrompt under the v2 method", () => {
     expect(user).toContain("Deck figures");
   });
 
+  it("keeps contract 7's combo rule, so the v7 baseline is not taught contract 8's fix", () => {
+    expect(buildSynopsisPrompt(V2, undefined, { v2: true }).system).not.toContain("only when the deck is built to assemble it");
+    expect(buildSynopsisPrompt(V2, undefined, { v2: true }).system).not.toContain("describe the deck by those colors");
+  });
+
   it("carries the same rules in a repair, so the second call is not looser than the first", () => {
     const keep = { overview: "x", primer: {}, keyCards: [], weaknesses: [], verdicts: [] } as unknown as CheckedSynopsis;
-    expect(buildSynopsisPrompt(V2, { keep, refused: ["tips"] as never }, { v2: true }).system).toContain("primary win condition only when the deck is built to assemble it");
+    expect(buildSynopsisPrompt(V2, { keep, refused: ["tips"] as never }, { v2: true }).system).toContain("name the primary win condition by those cards");
   });
 });
 

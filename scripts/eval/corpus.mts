@@ -71,7 +71,8 @@ if (command === "score") {
   // A case with no pinned list fingerprint cannot be shown to describe the list the answer was written for.
   const scorable = (c: (typeof cases)[number]) => answers.has(c.id) && c.deck.listFingerprint !== null;
   const scores = cases.filter(scorable).map((c) => scoreCase(c, answers.get(c.id)!));
-  const skipped = cases.filter((c) => !scorable(c)).map((c) => (c.deck.listFingerprint === null ? `${c.id} (list not pinned)` : c.id));
+  const failedCall = new Map(rows.filter((a) => a.failed && !a.rendered && !a.reply).map((a) => [a.id, a.failed!]));
+  const skipped = cases.filter((c) => !scorable(c)).map((c) => (c.deck.listFingerprint === null ? `${c.id} (list not pinned)` : failedCall.has(c.id) ? `${c.id} (the call failed: ${failedCall.get(c.id)})` : c.id));
   const text = renderMetrics(args.label, scores, skipped);
   if (args.out) writeFileSync(args.out, text);
   console.log(text);

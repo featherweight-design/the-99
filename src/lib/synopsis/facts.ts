@@ -110,9 +110,10 @@ export function categoriesOf(profile: DeckProfile): Map<string, Set<Category>> {
  * An ability whose cost spends mana (`{1}, {T}: Add one mana of any color.`) only FILTERS mana: it
  * turns mana the deck already makes into another color, so it is not a source of that color. Avatar
  * Aang's deck reads as five-color through Rumble Arena alone, a colorless land with that filter,
- * where Hugh's ruling (2026-10-11) is that the deck plays as non-black four-color.
+ * where Hugh's ruling (2026-10-11) is that the deck plays as non-black four-color. `{T}`, `{Q}` and
+ * energy (`{E}`, Aether Hub) are not mana, so an ability paying only those is still a source.
  */
-const FILTER_ABILITY = /^[^:\n]*\{(?![TQ]\})[^}]+\}[^:\n]*:[^\n]*$/gim;
+const FILTER_ABILITY = /^[^:\n]*\{(?![TQE]\})[^}]+\}[^:\n]*:[^\n]*$/gim;
 
 function landColorsOf(profile: DeckProfile, oracleTexts: ReadonlyMap<string, string | null>): string[] {
   const made = producibleColors(profile.cards.map((c) => ({

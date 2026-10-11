@@ -171,14 +171,28 @@ function plusRules(facts: SynopsisFacts): string {
  * figure and every combo is the app's own. Corpus evidence: a deterministic combo went unnamed on
  * four of nine decks, a mandatory loop was read as value, and a commander turn was guessed.
  */
-export const V2_FACT_RULES = [
+const V2_COMBO_RULE_V7 = "The facts may list combos this deck assembles. When one is listed, the overview and the strategy name the primary win condition by those cards and by what the combo produces (for example: [[Card A]] and [[Card B]] together make infinite mana). Never describe a listed combo as value, a bonus or a side effect.";
+
+/**
+ * Contract 8's combo rule: a listed combo is the primary only when the deck is built to assemble it
+ * (plan-first, Hugh 2026-10-11), and the deck is described by the colors its lands make. Contract 7's
+ * v2 prompt keeps `V2_COMBO_RULE_V7` byte for byte, so the v7-against-v8 comparison is not taught
+ * the fix it measures.
+ */
+const V2_COMBO_RULES_V8 = [
   "The facts may list combos this deck assembles. Name each listed combo by its cards and by what it produces (for example: [[Card A]] and [[Card B]] together make infinite mana), and never describe it as value, a bonus or a side effect. A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.",
   "When the facts give the colors the lands make, describe the deck by those colors: a deck whose lands make fewer colors than its identity plays as the colors they make.",
+].join("\n");
+
+const V2_SHARED_RULES = [
   "Name only the combos listed. If none is listed, do not claim the deck has a combo.",
   "Combos listed as one card short are NOT in the deck. Never call one a win condition or a plan; at most, say the deck wants that piece.",
   "When you give the commander's cast turn, use the turn the facts give, as \"around turn N\". Do not work out another.",
   "Use the interaction counts exactly as given, and do not call the deck short of or full of interaction beyond them.",
 ].join("\n");
+
+export const V2_FACT_RULES = `${V2_COMBO_RULE_V7}\n${V2_SHARED_RULES}`;
+export const V2_FACT_RULES_V8 = `${V2_COMBO_RULES_V8}\n${V2_SHARED_RULES}`;
 
 const REPAIR_LEAD = "Those sections failed checking for these reasons; fix exactly these:";
 
@@ -306,7 +320,7 @@ export function buildSynopsisPrompt(
     return {
       // The Mulligan's budget rules are the measured ones (100% of sections rendered with them, 89%
       // without), and contract 8's engine pieces make its lines longer, so they stay.
-      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${V2_FACT_RULES}`,
+      system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${V2_FACT_RULES_V8}`,
       user: lines.join("\n"),
     };
   }

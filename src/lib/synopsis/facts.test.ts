@@ -70,6 +70,12 @@ describe("buildSynopsisFacts — the colors the lands make", () => {
     expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "R", "G"]);
   });
 
+  it("still counts a land whose any-color ability costs energy, which is not mana", () => {
+    const deck = withLands(["W", "U", "B", "R", "G"], [["Aether Hub", "Land", ""]]);
+    const texts = new Map([["id-Aether Hub", "When this land enters, you get {E}.\n{T}: Add {C}.\n{T}, Pay {E}: Add one mana of any color."]]);
+    expect(buildSynopsisFacts(deck, texts).landColors).toEqual(["W", "U", "B", "R", "G"]);
+  });
+
   it("counts an any-color land as every color the identity holds", () => {
     const deck = withLands(["W", "U", "B", "R", "G"], [["Command Tower", "Land", ""], ["Plains", "Basic Land — Plains", ""]]);
     const texts = new Map([["id-Command Tower", "{T}: Add one mana of any color in your commander's color identity."]]);

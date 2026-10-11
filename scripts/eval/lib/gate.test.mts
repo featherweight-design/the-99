@@ -67,3 +67,15 @@ describe("the gate verdict", () => {
     expect(checks.find((c) => c.name.startsWith("wrong claims"))!.pass).toBe(false);
   });
 });
+
+describe("armStats — a failed call", () => {
+  it("counts a failed call as an answer that rendered nothing, instead of throwing", () => {
+    const cases = loadCorpus(join(process.cwd(), "docs/superpowers/eval/corpus"));
+    const id = cases.find((c) => c.deck.listFingerprint !== null)!.id;
+    const s = armStats("x", [[{ id, failed: "malformed", usd: 0.1 }]], cases);
+    expect(s.answers).toBe(1);
+    expect(s.finalOk).toBe(0);
+    expect(s.sections).toBe(4);
+    expect(s.leftBy["call:malformed"]).toBe(1);
+  });
+});
