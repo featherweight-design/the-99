@@ -56,7 +56,7 @@ const FIXTURES: Fixture[] = [
   { id: "askA-black", words: "a horrors deck that's scary and a little nasty", filters: { ...none, colors: ["B"], match: "exactly" }, theme: "horrors", unfiltered: false },
   // The app has no colorless filter (an empty selection admits every identity), so nothing fits is
   // asked where the words want what the pool all but lacks: Dinosaurs in mono-blue, where staging's
-  // index holds one commander a Dinosaur theme or type backs out of 309. Expect one pick at most.
+  // index holds one commander a Dinosaur theme or type backs out of 308. Expect one pick at most.
   { id: "nothing", words: "a Dinosaurs stampede deck full of huge dinos", filters: { ...none, colors: ["U"], match: "exactly" }, unfiltered: false },
   { id: "noDecks", words: "a Landfall deck unlike other decks I own", filters: none, noDecks: true, theme: "landfall", unfiltered: true },
   { id: "card", words: "a deck built around Doubling Season", filters: none, unfiltered: true },
@@ -101,6 +101,8 @@ for (const arm of arms) {
     const user = read.shortlistRequest({ words: f.words, filters: f.filters, cards: inputs.cards });
     const base = { fixture: f.id, arm: arm.id, pool: inputs.pool.size, narrowed: inputs.narrowed, cards: inputs.cards.map((c) => c.name) };
     if (args["dry-run"]) { console.log(JSON.stringify({ ...base, systemChars: system.length })); continue; }
+    // As the runner does: an empty pool finds nothing with no call at all.
+    if (inputs.pool.size === 0) { out.push({ ...base, picks: [], steps: {} }); console.log(`${arm.id} ${f.id}: empty pool, no call`); continue; }
     const shortReq = {
       model: arm.model, system, user, cacheSystem: !inputs.narrowed, maxTokens: lim.READ_SHORTLIST_MAX_TOKENS, effort: arm.effort,
       schema: read.shortlistSchema, deadlineMs: lim.READ_SHORTLIST_DEADLINE_MS * 2,
@@ -126,7 +128,8 @@ for (const arm of arms) {
       }, 30_000, false);
       steps.judge = s2.step;
       if (s2.o.ok) {
-        result = read.validJudgement({ reply: s2.o.value, shortlist, idOf: inputs.list.idOf, decks: inputs.decks });
+        const nameOf = new Map(candidates.map((c) => [c.key, c.name]));
+        result = read.validJudgement({ reply: s2.o.value, shortlist, idOf: inputs.list.idOf, decks: inputs.decks, nameOf });
         refused = s2.o.value.picks.length - result.picks.length;
         steps.judgeRaw = s2.o.value as never;
       }

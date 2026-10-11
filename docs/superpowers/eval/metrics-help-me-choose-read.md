@@ -6,7 +6,9 @@ $5 cap, recorded in `ledger-help-me-choose.jsonl`. The answers are in `answers/i
 
 The figures below were measured with the engine from #1443. The step-2 prompt then moved from asking
 for 140 characters to asking for 120 (finding 4), so the refused-reason counts in the low and Sonnet
-runs predate that change.
+runs predate that change. The runs also validated without the pick's own name (`nameOf`), a
+stricter check than the app's; it refused nothing it would have kept, since no refused reason named
+its own commander.
 
 ## Cost per press
 
@@ -17,11 +19,12 @@ claude-sonnet-5-5 at medium effort, streamed.
 |---|---|---|---|
 | whole list, cold cache | $0.093 (148,282 tokens written to the cache) | $0.014 to $0.020 | **about $0.11** |
 | whole list, warm cache (within 5 minutes) | $0.008 to $0.013 (cache read) | $0.014 to $0.022 | **about $0.03** |
-| filter set (pool lines only, uncached) | $0.0015 to $0.002 | $0.006 to $0.014 | **about $0.007 to $0.016** |
+| filter set (pool lines only, uncached) | $0.0015 to $0.0018 | $0.006 to $0.014 | **about $0.007 to $0.016** |
 | step 1 on claude-sonnet-5-5, for comparison | $0.372 cold, $0.031 warm | as above | about $0.39 cold, $0.05 warm |
 
 - **Reservation.** The worst case per press is $0.599 (`FEATURE_CALLS.intake.steps`).
-- **Time.** Step 1 took 1.6s to 9.8s, and step 2 took 2.2s to 5.9s.
+- **Time, shipping configuration.** Step 1 took 1.6s to 9.8s, and step 2 took 2.2s to 4.9s. Across
+  every arm, step 1 ran 1.5s to 9.8s and step 2 1.4s to 5.9s.
 - **Output size.** The longest step-1 reply was 2,138 tokens, against a ceiling of 4,000. The longest
   step-2 reply was 682 tokens, against a ceiling of 12,000.
 
@@ -49,7 +52,7 @@ claude-sonnet-5-5 at medium effort, streamed.
 | Ask B names only Omnath or Teval, by commander | holds: every deck token was Omnath's, and the app drew the name from its id |
 | Exactly black: no non-black commander anywhere | holds: the pool is the free search's, and step 1 saw only black lines |
 | No reason holds a digit or `%` | holds: the validator refuses them. The one digit seen, `+1/+1`, was rules text, and that reason was refused |
-| A card named in the box reaches the read as a build-around ask | holds: every Doubling Season pick is a token or counter doubler |
+| A card named in the box reaches the read as a build-around ask | holds: every Doubling Season pick builds around token or counter doubling. Three modify the creation itself (Adrix and Nev, Vorinclex, Pir); the rest pay it off (Quina, Zaxara, Rhys, Ghave and others) |
 | Nothing fits | **partial**. The app has no colorless filter, so the fixture was mono-blue Dinosaurs. It picked Nezahal, Primal Tide, the one blue Dinosaur, which is right. It also picked Thryx, the Sudden Storm, which is not a Dinosaur |
 
 ## Findings taken into the build
