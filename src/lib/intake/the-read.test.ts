@@ -32,6 +32,7 @@ describe("the shortlist", () => {
 
   it("states no filters plainly, and every filter set", () => {
     expect(describeFilters(none)).toEqual(["No filters."]);
+    expect(describeFilters({ ...none, pool: "own" })).toEqual(["The 99 is built from cards the player owns only; the commander need not be owned."]);
     expect(describeFilters({ ...none, themes: ["a", "b"], themeJoin: "any", budgetDollars: 50, bracket: 3, sets: ["mh3"] }))
       .toEqual(["Themes (any of): a, b.", "Printed in any of these sets: mh3.", "Budget: about $50 for cards the player does not own.", "Bracket: 3."]);
   });
@@ -70,6 +71,10 @@ describe("a reason line", () => {
     // but never the deck's commander in full.
     expect(parseReason("Omnath makes an Elemental on each land.", decks, "Omnath, Locus of Rage")).not.toBeNull();
     expect(parseReason("Unlike Omnath, Locus of Creation.", decks, "Omnath, Locus of Rage")).toBeNull();
+    // A name with no comma is its own short name: the pick may still name itself.
+    const dragon = { commanderOracleId: "ud", commander: "The Ur-Dragon", partner: null, themes: [] };
+    expect(parseReason("The Ur-Dragon pays off every Dragon you cast.", [dragon], "The Ur-Dragon")).not.toBeNull();
+    expect(parseReason("Unlike The Ur-Dragon.", [dragon], "Omnath, Locus of Rage")).toBeNull();
   });
 
   it("refuses a digit, a percent sign, a score word, or a stray brace (F3)", () => {

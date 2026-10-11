@@ -100,6 +100,9 @@ export function describeFilters(f: ReadFilters): string[] {
   if (f.sets && f.sets.length > 0) lines.push(`Printed in any of these sets: ${f.sets.join(", ")}.`);
   if (f.budgetDollars !== null) lines.push(`Budget: about $${f.budgetDollars} for cards the player does not own.`);
   if (f.bracket !== null) lines.push(`Bracket: ${f.bracket}.`);
+  // Not a filter on the commanders (the commander need not be owned): it says where the 99 comes
+  // from, which the judgement weighs through the ownership figures it is shown.
+  if (f.pool === "own") lines.push("The 99 is built from cards the player owns only; the commander need not be owned.");
   return lines.length > 0 ? lines : ["No filters."];
 }
 
@@ -254,8 +257,11 @@ function namesADeck(text: string, decks: readonly ReadDeck[], ownCommander?: str
   const own = ownCommander ? wordForm(shortName(ownCommander)) : null;
   return decks.some((d) => [d.commander, d.partner].some((name) => {
     if (!name) return false;
+    // The pick's own name is allowed in either form; any other deck's, in neither.
+    const full = wordForm(name);
     const short = wordForm(shortName(name));
-    return said.includes(wordForm(name)) || (short !== own && said.includes(short));
+    const isOwn = ownCommander !== undefined && full === wordForm(ownCommander);
+    return (!isOwn && said.includes(full)) || (short !== own && said.includes(short));
   }));
 }
 
