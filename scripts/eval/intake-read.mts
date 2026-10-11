@@ -2,7 +2,7 @@
  * The Help me choose read's eval (rework plan PR 2). Runs the read's two steps, live, over the brief's
  * fixtures against STAGING, READ-ONLY, and reports what each press cost and what it chose.
  *
- *   pnpm eval:intake-read [--only askA,askB] [--arms haiku,haiku-medium,sonnet] [--dry-run]
+ *   pnpm eval:intake-read [--only askA,askB] [--arms haiku,haiku-medium,sonnet] [--budget 0.50] [--no-warm] [--dry-run]
  *
  * WHY IT DOES NOT CALL `runTheRead`. The runner reserves a credit and writes the read's row; staging
  * is measured, never written (AGENTS.md). So this calls the same pieces the runner calls, in its
@@ -40,7 +40,13 @@ const LEDGER = "docs/superpowers/eval/ledger-help-me-choose.jsonl";
 const CAP_USD = 5;
 const HUGH = "user_3GkZrrTwOJBdqUpq6GambP0BC8w";
 
-const { values: args } = parseArgs({ options: { only: { type: "string" }, arms: { type: "string" }, "dry-run": { type: "boolean", default: false } } });
+const { values: args } = parseArgs({ options: {
+  only: { type: "string" }, arms: { type: "string" }, "dry-run": { type: "boolean", default: false },
+  // A cap on this run alone, under the ledger's: the run stops before a call that could cross it.
+  budget: { type: "string" },
+  // Skip the immediate warm repeat of step 1, which measures cost and chooses nothing.
+  "no-warm": { type: "boolean", default: false },
+} });
 
 const { connectStaging } = await import("./lib/staging.mjs");
 await connectStaging();
@@ -73,6 +79,10 @@ const ARMS: { id: string; model: string; effort: "low" | "medium" | "high" }[] =
 const only = args.only?.split(",");
 const arms = ARMS.filter((a) => (args.arms ? args.arms.split(",").includes(a.id) : a.id !== "haiku-medium"));
 if (!args["dry-run"]) acquireRunLock(LEDGER);
+const budget = args.budget === undefined ? null : Number(args.budget);
+// A budget that is not a plain positive number would make every cap check compare against NaN.
+if (budget !== null && !(Number.isFinite(budget) && budget > 0)) throw new Error(`--budget must be a positive number of dollars, got ${args.budget}`);
+const runCap = budget === null ? CAP_USD : Math.min(CAP_USD, spent(readLedger(LEDGER)) + budget);
 
 type Step = { model: string; ms: number; usd: number; usage: unknown; ok: boolean; stop?: string | null };
 const out: Record<string, unknown>[] = [];
@@ -80,7 +90,7 @@ const out: Record<string, unknown>[] = [];
 /** One call, reserved on the ledger at its worst case first, settled to its measured cost after. */
 async function call<T>(label: string, model: string, req: Parameters<typeof callModel<T>>[0], inputCeiling: number, cacheWrite: boolean) {
   const worst = worstCaseMicroUsd(model, inputCeiling, req.maxTokens, { cacheWrite }) / 1e6;
-  if (spent(readLedger(LEDGER)) + worst > CAP_USD) throw new Error(`STOP before ${label}: worst case $${worst.toFixed(3)} would cross the $${CAP_USD} cap (spent $${spent(readLedger(LEDGER)).toFixed(3)})`);
+  if (spent(readLedger(LEDGER)) + worst > runCap) throw new Error(`STOP before ${label}: worst case $${worst.toFixed(3)} would cross the $${runCap.toFixed(2)} cap (spent $${spent(readLedger(LEDGER)).toFixed(3)})`);
   const id = `${Date.now()}-${label}`;
   record(LEDGER, { at: new Date().toISOString(), runId: id, source: "pending", usd: worst, requests: 1, pending: id, note: label });
   let stop: string | null = null;
@@ -113,7 +123,7 @@ for (const arm of arms) {
     const s1 = await call(`${arm.id}-${f.id}-shortlist`, arm.model, shortReq, 175_000, true);
     const steps: Record<string, Step> = { shortlist: s1.step };
     // Warm: the same step 1 again at once, which reads the cache the first wrote.
-    if (f.unfiltered && !warmDone) {
+    if (f.unfiltered && !warmDone && !args["no-warm"]) {
       steps.shortlistWarm = (await call(`${arm.id}-${f.id}-shortlist-warm`, arm.model, shortReq, 175_000, true)).step;
       warmDone = true;
     }

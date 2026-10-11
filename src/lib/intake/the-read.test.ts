@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PLAYER_TEXT_OPEN } from "../model/player-text";
 import { READ_REASON_MAX_CHARS, READ_SHORTLIST_SIZE, READ_TOP } from "./limits";
 import {
-  describeFilters, judgeRequest, judgeSchema, parseReason, shortlistSchema, readFingerprint, reorder, shortlistRequest, shortlistSystem,
+  describeFilters, JUDGE_SYSTEM, judgeRequest, judgeSchema, parseReason, shortlistSchema, readFingerprint, reorder, shortlistRequest, shortlistSystem,
   validJudgement, validShortlist, type ReadDeck, type ReadFilters,
 } from "./the-read";
 
@@ -103,6 +103,34 @@ describe("the judgement", () => {
       shortlist: [1, 2, 3], idOf, decks,
     });
     expect(result.picks.map((p) => p.oracleId)).toEqual(["b", "a"]);
+  });
+
+  it("names each deck at most once across the list; a reason naming one again is refused", () => {
+    const result = validJudgement({
+      reply: { picks: [
+        { key: 1, reason: "Unlike {D1}, it wins in the air." },
+        { key: 2, reason: "Unlike {D1}, it wins through combat." },
+        { key: 3, reason: "Unlike {D2} and {D2}, it attacks." },
+        { key: 4, reason: "Unlike {D2}, it attacks." },
+      ] },
+      shortlist: [1, 2, 3, 4], idOf, decks,
+    });
+    expect(result.picks.map((p) => p.oracleId)).toEqual(["a", "d"]);
+  });
+
+  it("refuses a deck whose commander shares a name with the pick", () => {
+    const edgar: ReadDeck = { commanderOracleId: "em", commander: "Edgar Markov", partner: null, themes: ["Vampires"] };
+    const result = validJudgement({
+      reply: { picks: [{ key: 1, reason: "Unlike {D1}, it marries into the board." }, { key: 2, reason: "Unlike {D1}, it drains." }] },
+      shortlist: [1, 2], idOf, decks: [edgar], nameOf: new Map([[1, "Edgar, Charmed Groom"], [2, "Sorin, Vengeful Bloodlord"]]),
+    });
+    expect(result.picks.map((p) => p.oracleId)).toEqual(["b"]);
+  });
+
+  it("states the requirement rule in both steps", () => {
+    expect(JUDGE_SYSTEM).toMatch(/requirement, not a mood/);
+    expect(JUDGE_SYSTEM).toMatch(/never fill with near misses/);
+    expect(shortlistSystem("")).toMatch(/requirement, not a mood/);
   });
 
   it("carries at most the top ten", () => {

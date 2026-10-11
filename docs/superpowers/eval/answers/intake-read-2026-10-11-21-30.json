@@ -1,0 +1,209 @@
+[
+  {
+    "fixture": "askB",
+    "arm": "haiku-medium",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Omnath, Locus of Rage",
+      "Omnath, Locus of the Roil",
+      "Bristly Bill, Spine Sower",
+      "Zimone, Quandrix Prodigy",
+      "Azusa, Lost but Seeking",
+      "Tatyova, Benthic Druid",
+      "Aesi, Tyrant of Gyre Strait",
+      "Ashaya, Soul of the Wild",
+      "Titania, Voice of Gaea",
+      "Baru, Fist of Krosa",
+      "Bonny Pall, Clearcutter",
+      "Hugs, Grisly Guardian",
+      "Ka-Zar of the Savage Land",
+      "Molten Man, Inferno Incarnate",
+      "Karametra, God of Harvests",
+      "Mina and Denn, Wildborn",
+      "Gladiolus Amicitia",
+      "Braulios of Pheres Band",
+      "Uro, Titan of Nature's Wrath",
+      "Sazh Katzroy",
+      "Strider, Ranger of the North",
+      "Zell Dincht",
+      "Tam, Observant Sequencer // Deep Sight",
+      "Radha, Heart of Keld",
+      "Rydia, Summoner of Mist",
+      "Lord Windgrace",
+      "Hearthhull, the Worldseed",
+      "Loot, Exuberant Explorer",
+      "Sutina, Speaker of the Tajuru",
+      "Obuun, Mul Daya Ancestor",
+      "Phylath, World Sculptor",
+      "Averna, the Chaos Bloom",
+      "Ambrosia Whiteheart",
+      "The Earth King",
+      "Toph, Earthbending Master",
+      "Thalia and The Gitrog Monster",
+      "Zimone, Mystery Unraveler",
+      "Zimone and Dina",
+      "Soul of Windgrace"
+    ],
+    "droppedOutsidePool": 1,
+    "refusedReasons": 1,
+    "picks": [
+      {
+        "name": "Phylath, World Sculptor",
+        "reason": [
+          {
+            "text": "Landfall puts counters on Plant tokens it makes, a wide-board plan that plays differently from "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Omnath, Locus of Rage",
+        "reason": [
+          {
+            "text": "Landfall makes a large Elemental token for every land drop, and its death trigger deals damage, so it plays aggressively."
+          }
+        ]
+      },
+      {
+        "name": "Molten Man, Inferno Incarnate",
+        "reason": [
+          {
+            "text": "A mono-red Landfall-themed Elemental that grows with Mountains, giving a Voltron-style plan."
+          }
+        ]
+      },
+      {
+        "name": "Gladiolus Amicitia",
+        "reason": [
+          {
+            "text": "Landfall gives another creature a power and toughness boost with trample, so land drops turn into combat pressure."
+          }
+        ]
+      },
+      {
+        "name": "Tatyova, Benthic Druid",
+        "reason": [
+          {
+            "text": "Landfall gains life and draws a card on every land drop, a steady card-advantage engine."
+          }
+        ]
+      },
+      {
+        "name": "Zimone, Mystery Unraveler",
+        "reason": [
+          {
+            "text": "Landfall manifests dread and turns permanents face up, a morph-flavored take on land drops."
+          }
+        ]
+      },
+      {
+        "name": "Strider, Ranger of the North",
+        "reason": [
+          {
+            "text": "Landfall pumps a target creature and can grant first strike, rewarding attacks after each land drop."
+          }
+        ]
+      },
+      {
+        "name": "Ka-Zar of the Savage Land",
+        "reason": [
+          {
+            "text": "Plays lands off the top of the library and makes a cat token with its own Landfall counter growth."
+          }
+        ]
+      },
+      {
+        "name": "Toph, Earthbending Master",
+        "reason": [
+          {
+            "text": "Landfall builds experience counters that scale its earthbend each attack, animating lands into growing creatures."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [
+      "Omnath, Locus of Creation"
+    ],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 13568,
+        "usd": 0.015313,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 3141,
+          "cacheReadTokens": 148395,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 8571,
+        "usd": 0.027704,
+        "usage": {
+          "inputTokens": 8917,
+          "outputTokens": 987,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2187,
+            "reason": "Landfall puts counters on Plant tokens it makes, a wide-board plan that plays differently from {D14}."
+          },
+          {
+            "key": 414,
+            "reason": "Landfall adds +1/+1 counters to any creature and it can double them, making a counters-driven Landfall deck."
+          },
+          {
+            "key": 2115,
+            "reason": "Landfall makes a large Elemental token for every land drop, and its death trigger deals damage, so it plays aggressively."
+          },
+          {
+            "key": 1914,
+            "reason": "A mono-red Landfall-themed Elemental that grows with Mountains, giving a Voltron-style plan."
+          },
+          {
+            "key": 969,
+            "reason": "Landfall gives another creature a power and toughness boost with trample, so land drops turn into combat pressure."
+          },
+          {
+            "key": 2816,
+            "reason": "Landfall gains life and draws a card on every land drop, a steady card-advantage engine."
+          },
+          {
+            "key": 3438,
+            "reason": "Landfall manifests dread and turns permanents face up, a morph-flavored take on land drops."
+          },
+          {
+            "key": 2733,
+            "reason": "Landfall pumps a target creature and can grant first strike, rewarding attacks after each land drop."
+          },
+          {
+            "key": 1377,
+            "reason": "Plays lands off the top of the library and makes a cat token with its own Landfall counter growth."
+          },
+          {
+            "key": 3089,
+            "reason": "Landfall builds experience counters that scale its earthbend each attack, animating lands into growing creatures."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.043017
+  }
+]
