@@ -100,9 +100,12 @@ are right; build from those. STATES' R1 base tables still say `JOTTINGS` and `ol
 `add.atCap` and `atCapRefused` hard-code 100; interpolate `NOTES_PER_DECK`. `It's still in the box` in RF can read
 as the select box. The About caption goes through `/prose-pass`, and the strings go through `/copy-review`.
 
-**F10 · eng-resolvable · lock 6.** `deck_suggestion_runs.inputFingerprint` already lists "notes" among the
-player's inputs; that is Suggested changes' `Additional notes`. Deck notes must stay out of it and out of every
-prompt, as lock 6 says and the About key line promises.
+**F10 · eng-resolvable · lock 6.** Two existing "notes" sit near the tuning path, and deck notes join neither.
+`tuningFingerprint` (`src/lib/tuning/fingerprint.ts`) hashes each logged game's `note` (`deck_games.note`), and
+the schema comment on `deck_suggestion_runs.inputFingerprint` names that as "notes". Suggested changes'
+`Additional notes` is a separate, per-run value (`pack.notes`) that only `renderPack` sends
+(`src/lib/tuning/prompt.ts`, through `playerText`), and it is not in the fingerprint. Deck notes stay out of
+the fingerprint, out of `pack`, and out of every prompt, as lock 6 says and the About key line promises.
 
 ## Checked and fine
 
