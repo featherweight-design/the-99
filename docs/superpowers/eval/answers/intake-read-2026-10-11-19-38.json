@@ -1,0 +1,1449 @@
+[
+  {
+    "fixture": "askA",
+    "arm": "haiku",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Hofri Ghostforge",
+      "Oona, Queen of the Fae",
+      "Orcus, Prince of Undeath",
+      "Radioactive Man",
+      "Rakdos the Defiler",
+      "Madame Hydra, Reanimated",
+      "Thraximundar",
+      "Hinata, Dawn-Crowned",
+      "Beatrix, Loyal General",
+      "ED-E, Lonesome Eyebot",
+      "Tourach, Dread Cantor",
+      "The Destined Warrior",
+      "Typhoid Mary, Fractured",
+      "The Master of Keys",
+      "The Immortal Weapons",
+      "Iron Lad, Diverging Destiny",
+      "Ink-Eyes, Servant of Oni",
+      "Rat King, Pale Piper",
+      "Lord Skitter, Sewer King",
+      "Patron of the Nezumi",
+      "Marchesa, the Black Rose",
+      "Sidar Kondo of Jamuraa"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 3,
+    "picks": [
+      {
+        "name": "Orcus, Prince of Undeath",
+        "reason": [
+          {
+            "text": "A flying, trampling Demon that can wipe the board with a negative-power sweep or reanimate a team, which is scary and nasty in play."
+          }
+        ]
+      },
+      {
+        "name": "Rakdos the Defiler",
+        "reason": [
+          {
+            "text": "A flying trampling Demon that forces everyone to sacrifice half their permanents, which is a ruthless and nasty way to scare the table."
+          }
+        ]
+      },
+      {
+        "name": "Radioactive Man",
+        "reason": [
+          {
+            "text": "A deathtouch Villain that halves an opponent's life on combat damage, which is a frightening and nasty threat."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 2393,
+        "usd": 0.092936,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 73,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 148340
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "shortlistWarm": {
+        "model": "claude-haiku-5-5",
+        "ms": 1724,
+        "usd": 0.007795,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 135,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4227,
+        "usd": 0.015116,
+        "usage": {
+          "inputTokens": 5678,
+          "outputTokens": 376,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2937,
+            "reason": "A Legendary Enchantment Creature — Horror with flying that mills and grows with counters, so it is a literal Horror with a creepy graveyard engine."
+          },
+          {
+            "key": 1754,
+            "reason": "A Horror Villain with menace that mills itself each attack and swells with creatures in the graveyard, giving a nasty, menacing reanimator feel."
+          },
+          {
+            "key": 2124,
+            "reason": "A flying, trampling Demon that can wipe the board with a negative-power sweep or reanimate a team, which is scary and nasty in play."
+          },
+          {
+            "key": 2275,
+            "reason": "A flying trampling Demon that forces everyone to sacrifice half their permanents, which is a ruthless and nasty way to scare the table."
+          },
+          {
+            "key": 3033,
+            "reason": "A hasty Zombie Assassin that makes defenders sacrifice creatures each attack and grows from sacrifices, giving a menacing, nasty edge-of-your-seat deck."
+          },
+          {
+            "key": 2265,
+            "reason": "A deathtouch Villain that halves an opponent's life on combat damage, which is a frightening and nasty threat."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.10805200000000001
+  },
+  {
+    "fixture": "askB",
+    "arm": "haiku",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Nita, Forum Conciliator",
+      "Niv-Mizzet Reborn",
+      "Niv-Mizzet, Dracogenius",
+      "Niv-Mizzet, Ghost Counsel",
+      "Niv-Mizzet, Guildpact",
+      "Niv-Mizzet, Parun",
+      "Niv-Mizzet, Supreme",
+      "Niv-Mizzet, the Firemind",
+      "Niv-Mizzet, Visionary",
+      "Noctis, Heir Apparent",
+      "Noctis, Prince of Lucis",
+      "Nogi, Draco-Zealot",
+      "Nori, Teller of Tales",
+      "Norika Yamazaki, the Poet",
+      "Norin the Wary",
+      "Norin, Swift Survivalist",
+      "Norman Osborn // Green Goblin",
+      "Noyan Dar, Roil Shaper",
+      "Numa, Joraga Chieftain",
+      "Numot, the Devastator",
+      "Nyla, Shirshu Sleuth",
+      "Nylea, God of the Hunt",
+      "Nylea, Keen-Eyed",
+      "Nymris, Oona's Trickster",
+      "Nyssa of Traken",
+      "O-Kagachi, Vengeful Kami",
+      "O'aka, Traveling Merchant",
+      "Ob Nixilis of the Black Oath",
+      "Ob Nixilis, Captive Kingpin",
+      "Ob Nixilis, the Ascended",
+      "Ob Nixilis, the Fallen",
+      "Ob Nixilis, Unshackled",
+      "Obeka, Brute Chronologist",
+      "Obeka, Splitter of Seconds",
+      "Obosh, the Preypiercer",
+      "Obuun, Mul Daya Ancestor",
+      "Obyra, Dreaming Duelist",
+      "Obzedat, Ghost Council",
+      "Octavia, Living Thesis"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Obuun, Mul Daya Ancestor",
+        "reason": [
+          {
+            "text": "Landfall puts a counter on a creature and it animates a land each combat, a landfall plan that differs from "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "'s ramp-focused build."
+          }
+        ]
+      },
+      {
+        "name": "Ob Nixilis, the Fallen",
+        "reason": [
+          {
+            "text": "Landfall drains an opponent and grows Ob Nixilis with counters, a black voltron take on land drops unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation"
+    ],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 1659,
+        "usd": 0.007772,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 126,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 2418,
+        "usd": 0.01849,
+        "usage": {
+          "inputTokens": 8600,
+          "outputTokens": 129,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2078,
+            "reason": "Landfall puts a counter on a creature and it animates a land each combat, a landfall plan that differs from {D14}'s ramp-focused build.\n"
+          },
+          {
+            "key": 2073,
+            "reason": "Landfall drains an opponent and grows Ob Nixilis with counters, a black voltron take on land drops unlike {D14}."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.026262
+  },
+  {
+    "fixture": "askA-black",
+    "arm": "haiku",
+    "pool": 329,
+    "narrowed": true,
+    "cards": [],
+    "shortlist": [],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 2851,
+        "usd": 0.002022,
+        "usage": {
+          "inputTokens": 87,
+          "outputTokens": 415,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 14439
+        },
+        "ok": true,
+        "stop": "end_turn"
+      }
+    },
+    "pressUsd": 0.002022
+  },
+  {
+    "fixture": "nothing",
+    "arm": "haiku",
+    "pool": 308,
+    "narrowed": true,
+    "cards": [],
+    "shortlist": [],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 1900,
+        "usd": 0.001745,
+        "usage": {
+          "inputTokens": 91,
+          "outputTokens": 157,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 13254
+        },
+        "ok": true,
+        "stop": "end_turn"
+      }
+    },
+    "pressUsd": 0.001745
+  },
+  {
+    "fixture": "noDecks",
+    "arm": "haiku",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Nita, Forum Conciliator",
+      "Winter, Misanthropic Guide",
+      "Niv-Mizzet, Dracogenius",
+      "King Macar, the Gold-Cursed",
+      "Pavel Maliki"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 1491,
+        "usd": 0.007517,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 24,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 1432,
+        "usd": 0.003612,
+        "usage": {
+          "inputTokens": 1756,
+          "outputTokens": 10,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": []
+      }
+    },
+    "pressUsd": 0.011129
+  },
+  {
+    "fixture": "card",
+    "arm": "haiku",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [
+      "Doubling Season"
+    ],
+    "shortlist": [
+      "Mutagen Man, Living Ooze",
+      "The Third Doctor",
+      "Carth the Lion",
+      "The Unbeatable Squirrel Girl",
+      "The Goose Mother",
+      "Pir, Imaginative Rascal",
+      "Ghave, Guru of Spores",
+      "Vorinclex, Monstrous Raider",
+      "Primo, the Unbounded",
+      "Quina, Qu Gourmet",
+      "Rhys the Redeemed",
+      "Vrestin, Menoptra Leader",
+      "Zaxara, the Exemplary",
+      "Tam, the Possibility",
+      "Bilbo, Fellow Conspirator",
+      "Spiders-Man, Heroic Horde",
+      "Koma, Cosmos Serpent",
+      "The Astonishing Ant-Man",
+      "The Thing",
+      "Slurrk, All-Ingesting",
+      "Adrix and Nev, Twincasters",
+      "Michelangelo, the Heart",
+      "Nemata, Grove Guardian",
+      "Finneas, Ace Archer",
+      "Lucky the Pizza Dog",
+      "Tippy-Toe, Terrific Partner",
+      "Sekki, Seasons' Guide",
+      "Jiang Yanggu, Never Alone",
+      "Black Panther, Wakandan King"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Adrix and Nev, Twincasters",
+        "reason": [
+          {
+            "text": "Doubles every token you create, the same replacement effect Doubling Season gives, so it slots straight into a token-doubling shell."
+          }
+        ]
+      },
+      {
+        "name": "Vorinclex, Monstrous Raider",
+        "reason": [
+          {
+            "text": "Doubles counters you put on permanents, echoing the counter half of Doubling Season and rewarding the same counter synergies."
+          }
+        ]
+      },
+      {
+        "name": "Pir, Imaginative Rascal",
+        "reason": [
+          {
+            "text": "Adds extra counters whenever any would be placed on your permanents, stacking naturally with a doubling replacement effect."
+          }
+        ]
+      },
+      {
+        "name": "Quina, Qu Gourmet",
+        "reason": [
+          {
+            "text": "Adds a Frog to every token creation, so a token doubler multiplies the extra bodies it makes."
+          }
+        ]
+      },
+      {
+        "name": "Tippy-Toe, Terrific Partner",
+        "reason": [
+          {
+            "text": "Adds a Food whenever you create tokens, so doubling effects multiply the extra Food and fuel the whole token plan."
+          }
+        ]
+      },
+      {
+        "name": "Vrestin, Menoptra Leader",
+        "reason": [
+          {
+            "text": "Enters with X counters and makes X flying tokens, so both halves of a doubling effect pay off at once."
+          }
+        ]
+      },
+      {
+        "name": "Zaxara, the Exemplary",
+        "reason": [
+          {
+            "text": "Casting X spells makes a Hydra token with X counters, so doubling both the token and the counters is a big payoff."
+          }
+        ]
+      },
+      {
+        "name": "Rhys the Redeemed",
+        "reason": [
+          {
+            "text": "Makes tokens and then copies every token you control, a token-doubling plan that fits a deck built on replacement effects."
+          }
+        ]
+      },
+      {
+        "name": "The Unbeatable Squirrel Girl",
+        "reason": [
+          {
+            "text": "Creates Squirrel tokens on entering and attacking and then scales with how many you control, so doubled tokens snowball quickly."
+          }
+        ]
+      },
+      {
+        "name": "Ghave, Guru of Spores",
+        "reason": [
+          {
+            "text": "Turns counters into tokens and tokens into counters, so counter and token doubling both feed its sacrifice engine."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-haiku-5-5",
+        "ms": 1566,
+        "usd": 0.00779,
+        "usage": {
+          "inputTokens": 295,
+          "outputTokens": 90,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4711,
+        "usd": 0.019884,
+        "usage": {
+          "inputTokens": 7357,
+          "outputTokens": 517,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 37,
+            "reason": "Doubles every token you create, the same replacement effect Doubling Season gives, so it slots straight into a token-doubling shell."
+          },
+          {
+            "key": 3270,
+            "reason": "Doubles counters you put on permanents, echoing the counter half of Doubling Season and rewarding the same counter synergies."
+          },
+          {
+            "key": 2199,
+            "reason": "Adds extra counters whenever any would be placed on your permanents, stacking naturally with a doubling replacement effect."
+          },
+          {
+            "key": 2252,
+            "reason": "Adds a Frog to every token creation, so a token doubler multiplies the extra bodies it makes."
+          },
+          {
+            "key": 3056,
+            "reason": "Adds a Food whenever you create tokens, so doubling effects multiply the extra Food and fuel the whole token plan."
+          },
+          {
+            "key": 3278,
+            "reason": "Enters with X counters and makes X flying tokens, so both halves of a doubling effect pay off at once."
+          },
+          {
+            "key": 3412,
+            "reason": "Casting X spells makes a Hydra token with X counters, so doubling both the token and the counters is a big payoff."
+          },
+          {
+            "key": 2357,
+            "reason": "Makes tokens and then copies every token you control, a token-doubling plan that fits a deck built on replacement effects."
+          },
+          {
+            "key": 2998,
+            "reason": "Creates Squirrel tokens on entering and attacking and then scales with how many you control, so doubled tokens snowball quickly."
+          },
+          {
+            "key": 939,
+            "reason": "Turns counters into tokens and tokens into counters, so counter and token doubling both feed its sacrifice engine."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.027673999999999997
+  },
+  {
+    "fixture": "askA",
+    "arm": "sonnet",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Captain N'ghathrod",
+      "Gyruda, Doom of Depths",
+      "The Mycotyrant",
+      "The Swarmweaver",
+      "Zellix, Sanity Flayer",
+      "Pang Tong, \"Young Phoenix\"",
+      "Mortarion, Daemon Primarch",
+      "Sheoldred // The True Scriptures",
+      "Sheoldred, the Apocalypse",
+      "Sheoldred, Whispering One",
+      "Jin-Gitaxias // The Great Synthesis",
+      "Jin-Gitaxias, Core Augur",
+      "Jin-Gitaxias, Progress Tyrant",
+      "Toxrill, the Corrosive",
+      "Umbris, Fear Manifest",
+      "Grond, the Gatebreaker",
+      "Brokkos, Apex of Forever",
+      "Indominus Rex, Alpha",
+      "Otrimi, the Ever-Playful",
+      "Gallowbraid",
+      "Morinfen",
+      "Ob Nixilis of the Black Oath",
+      "Thriss, Nantuko Primus",
+      "Living Lightning, Charged Up",
+      "Ascendant Evincar",
+      "Grakmaw, Skyclave Ravager",
+      "Indoraptor, the Perfect Hybrid",
+      "The Reaper, King No More",
+      "Rendmaw, Creaking Nest",
+      "Hythonia the Cruel",
+      "Volrath the Fallen",
+      "The Mindskinner",
+      "Horobi, Death's Wail",
+      "Tsabo Tavoc",
+      "K'rrik, Son of Yawgmoth",
+      "Vishgraz, the Doomhive",
+      "Strider, Ranger of the North"
+    ],
+    "droppedOutsidePool": 1,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Captain N'ghathrod",
+        "reason": [
+          {
+            "text": "Gives Horrors menace and mills opponents on combat damage, then steals what they lose, a nasty fit for a Horror deck."
+          }
+        ]
+      },
+      {
+        "name": "Umbris, Fear Manifest",
+        "reason": [
+          {
+            "text": "A Nightmare Horror that grows from opponents' exiled cards and exiles their library whenever Horrors enter, squarely nasty Horror play."
+          }
+        ]
+      },
+      {
+        "name": "Zellix, Sanity Flayer",
+        "reason": [
+          {
+            "text": "A Horror that makes Horror tokens whenever creature cards are milled and mills a player each turn, building a nasty army."
+          }
+        ]
+      },
+      {
+        "name": "Toxrill, the Corrosive",
+        "reason": [
+          {
+            "text": "A Slug Horror that shrinks every opposing creature each end step, a scary and oppressive presence."
+          }
+        ]
+      },
+      {
+        "name": "Grakmaw, Skyclave Ravager",
+        "reason": [
+          {
+            "text": "A Hydra Horror that grows as your creatures die and leaves a big token behind, durable and threatening."
+          }
+        ]
+      },
+      {
+        "name": "Tsabo Tavoc",
+        "reason": [
+          {
+            "text": "A Phyrexian Horror with first strike that destroys legendary creatures for black mana, scary and mean."
+          }
+        ]
+      },
+      {
+        "name": "Gallowbraid",
+        "reason": [
+          {
+            "text": "A trampling Phyrexian Horror that demands life each upkeep, aggressive and a little reckless."
+          }
+        ]
+      },
+      {
+        "name": "Morinfen",
+        "reason": [
+          {
+            "text": "A flying Phyrexian Horror that costs ever more life to keep, a creepy and risky Horror."
+          }
+        ]
+      },
+      {
+        "name": "K'rrik, Son of Yawgmoth",
+        "reason": [
+          {
+            "text": "A lifelinking Phyrexian Horror that pays life for black costs and keeps growing, nasty in the Phyrexian way."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-sonnet-5-5",
+        "ms": 2379,
+        "usd": 0.372202,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 119,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 148340
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "shortlistWarm": {
+        "model": "claude-sonnet-5-5",
+        "ms": 2347,
+        "usd": 0.03105,
+        "usage": {
+          "inputTokens": 81,
+          "outputTokens": 122,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4155,
+        "usd": 0.022184,
+        "usage": {
+          "inputTokens": 8747,
+          "outputTokens": 469,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 465,
+            "reason": "Gives Horrors menace and mills opponents on combat damage, then steals what they lose, a nasty fit for a Horror deck."
+          },
+          {
+            "key": 3168,
+            "reason": "A Nightmare Horror that grows from opponents' exiled cards and exiles their library whenever Horrors enter, squarely nasty Horror play."
+          },
+          {
+            "key": 3416,
+            "reason": "A Horror that makes Horror tokens whenever creature cards are milled and mills a player each turn, building a nasty army."
+          },
+          {
+            "key": 3110,
+            "reason": "A Slug Horror that shrinks every opposing creature each end step, a scary and oppressive presence."
+          },
+          {
+            "key": 1022,
+            "reason": "A Hydra Horror that grows as your creatures die and leaves a big token behind, durable and threatening."
+          },
+          {
+            "key": 3128,
+            "reason": "A Phyrexian Horror with first strike that destroys legendary creatures for black mana, scary and mean."
+          },
+          {
+            "key": 889,
+            "reason": "A trampling Phyrexian Horror that demands life each upkeep, aggressive and a little reckless."
+          },
+          {
+            "key": 1932,
+            "reason": "A flying Phyrexian Horror that costs ever more life to keep, a creepy and risky Horror."
+          },
+          {
+            "key": 1376,
+            "reason": "A lifelinking Phyrexian Horror that pays life for black costs and keeps growing, nasty in the Phyrexian way."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.39438599999999996
+  },
+  {
+    "fixture": "askB",
+    "arm": "sonnet",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Aesi, Tyrant of Gyre Strait",
+      "Ashaya, Soul of the Wild",
+      "Azusa, Lost but Seeking",
+      "Baru, Fist of Krosa",
+      "Bristly Bill, Spine Sower",
+      "Hugs, Grisly Guardian",
+      "Karametra, God of Harvests",
+      "Nissa, Resurgent Animist",
+      "Obuun, Mul Daya Ancestor",
+      "Omnath, Locus of Rage",
+      "Omnath, Locus of the Roil",
+      "Uro, Titan of Nature's Wrath",
+      "Radha, Heart of Keld",
+      "Koth, the Geomancer",
+      "Tatyova, Benthic Druid",
+      "Zimone, Quandrix Prodigy",
+      "Syr Vondam, Sunstar Exemplar",
+      "Titania, Voice of Gaea",
+      "Sutina, Speaker of the Tajuru",
+      "Greensleeves, Maro-Sorcerer",
+      "Loot, Exuberant Explorer",
+      "Gladiolus Amicitia",
+      "Sazh Katzroy",
+      "Tifa Lockhart",
+      "Zell Dincht",
+      "Szarel, Genesis Shepherd",
+      "Phylath, World Sculptor",
+      "Ka-Zar of the Savage Land",
+      "Strider, Ranger of the North",
+      "Averna, the Chaos Bloom",
+      "Kalitas, Traitor of Ghet",
+      "Old Man Willow",
+      "Yarok, the Desecrated",
+      "Zimone and Dina",
+      "Sméagol, Helpful Guide",
+      "Tam, Observant Sequencer // Deep Sight",
+      "Molten Man, Inferno Incarnate",
+      "Hearthhull, the Worldseed",
+      "Lord Windgrace"
+    ],
+    "droppedOutsidePool": 1,
+    "refusedReasons": 0,
+    "picks": [
+      {
+        "name": "Aesi, Tyrant of Gyre Strait",
+        "reason": [
+          {
+            "text": "Draws a card off each land entering and allows an extra land drop, a blue-green card-flow landfall plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Nissa, Resurgent Animist",
+        "reason": [
+          {
+            "text": "Landfall produces mana and digs for Elves or Elementals, a different payoff than the ramp-and-value route of "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Omnath, Locus of Rage",
+        "reason": [
+          {
+            "text": "Each land entering creates a large Elemental token, a go-wide red-green landfall plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Greensleeves, Maro-Sorcerer",
+        "reason": [
+          {
+            "text": "Landfall creates Badger tokens while its size scales with lands, a token-making landfall plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Yarok, the Desecrated",
+        "reason": [
+          {
+            "text": "Doubles triggers from permanents entering, so every land drop fires landfall twice, a unique black-green angle unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Phylath, World Sculptor",
+        "reason": [
+          {
+            "text": "Makes Plant tokens and puts counters on them whenever lands enter, a counters-and-tokens landfall plan unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Tam, Observant Sequencer // Deep Sight",
+        "reason": [
+          {
+            "text": "Landfall readies a copy of its spell for repeated card draw, a blue-green spell-flavored landfall angle unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Obuun, Mul Daya Ancestor",
+        "reason": [
+          {
+            "text": "Three-color landfall that animates a land and grows creatures with counters, differing from "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Hearthhull, the Worldseed",
+        "reason": [
+          {
+            "text": "A Spacecraft that sacrifices lands to draw and drain, a landfall-adjacent artifact build unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      },
+      {
+        "name": "Old Man Willow",
+        "reason": [
+          {
+            "text": "Power and toughness equal to lands, with sacrifice for removal on attack, a black-green landfall style unlike "
+          },
+          {
+            "deck": "cd133d30-51ff-4114-a7d7-029345f0f0d7"
+          },
+          {
+            "text": "."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation",
+      "Omnath, Locus of Creation"
+    ],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-sonnet-5-5",
+        "ms": 2292,
+        "usd": 0.031048,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 122,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4928,
+        "usd": 0.022728,
+        "usage": {
+          "inputTokens": 8639,
+          "outputTokens": 545,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 43,
+            "reason": "Draws a card off each land entering and allows an extra land drop, a blue-green card-flow landfall plan unlike {D14}."
+          },
+          {
+            "key": 2040,
+            "reason": "Landfall produces mana and digs for Elves or Elementals, a different payoff than the ramp-and-value route of {D14}."
+          },
+          {
+            "key": 2115,
+            "reason": "Each land entering creates a large Elemental token, a go-wide red-green landfall plan unlike {D14}."
+          },
+          {
+            "key": 1035,
+            "reason": "Landfall creates Badger tokens while its size scales with lands, a token-making landfall plan unlike {D14}."
+          },
+          {
+            "key": 3361,
+            "reason": "Doubles triggers from permanents entering, so every land drop fires landfall twice, a unique black-green angle unlike {D14}."
+          },
+          {
+            "key": 2187,
+            "reason": "Makes Plant tokens and puts counters on them whenever lands enter, a counters-and-tokens landfall plan unlike {D14}."
+          },
+          {
+            "key": 2797,
+            "reason": "Landfall readies a copy of its spell for repeated card draw, a blue-green spell-flavored landfall angle unlike {D14}."
+          },
+          {
+            "key": 2078,
+            "reason": "Three-color landfall that animates a land and grows creatures with counters, differing from {D14}."
+          },
+          {
+            "key": 1125,
+            "reason": "A Spacecraft that sacrifices lands to draw and drain, a landfall-adjacent artifact build unlike {D14}."
+          },
+          {
+            "key": 2101,
+            "reason": "Power and toughness equal to lands, with sacrifice for removal on attack, a black-green landfall style unlike {D14}."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.053776000000000004
+  },
+  {
+    "fixture": "noDecks",
+    "arm": "sonnet",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [],
+    "shortlist": [
+      "Aesi, Tyrant of Gyre Strait",
+      "Ashaya, Soul of the Wild",
+      "Azusa, Lost but Seeking",
+      "Baru, Fist of Krosa",
+      "Bristly Bill, Spine Sower",
+      "Hugs, Grisly Guardian",
+      "Karametra, God of Harvests",
+      "Nissa, Resurgent Animist",
+      "Omnath, Locus of the Roil",
+      "Radha, Heart of Keld",
+      "Omnath, Locus of Rage",
+      "Ob Nixilis, the Fallen",
+      "Uro, Titan of Nature's Wrath",
+      "Sutina, Speaker of the Tajuru",
+      "Tatyova, Benthic Druid",
+      "Zimone, Quandrix Prodigy",
+      "Zimone, Mystery Unraveler",
+      "Ka-Zar of the Savage Land",
+      "Zell Dincht",
+      "Sazh Katzroy",
+      "Gladiolus Amicitia",
+      "Hearthhull, the Worldseed",
+      "Lord Windgrace",
+      "Soul of Windgrace",
+      "Szarel, Genesis Shepherd",
+      "Maja, Bretagard Protector",
+      "Loot, Exuberant Explorer",
+      "Mina and Denn, Wildborn",
+      "Yarok, the Desecrated",
+      "Strider, Ranger of the North",
+      "Greensleeves, Maro-Sorcerer",
+      "Molten Man, Inferno Incarnate",
+      "Sandman, Shifting Scoundrel",
+      "The Fourteenth Doctor",
+      "Shark Shredder, Killer Clone",
+      "Gandalf, Shadow's Foe",
+      "Silvar, Devourer of the Free",
+      "Nissa, Worldsoul Speaker"
+    ],
+    "droppedOutsidePool": 2,
+    "refusedReasons": 1,
+    "picks": [
+      {
+        "name": "Omnath, Locus of Rage",
+        "reason": [
+          {
+            "text": "Landfall makes a large Elemental token each time a land enters, so lands directly become a stream of threats."
+          }
+        ]
+      },
+      {
+        "name": "Aesi, Tyrant of Gyre Strait",
+        "reason": [
+          {
+            "text": "Allows an extra land drop and draws a card whenever a land enters, a direct landfall engine."
+          }
+        ]
+      },
+      {
+        "name": "Tatyova, Benthic Druid",
+        "reason": [
+          {
+            "text": "Each land entering gains life and draws a card, a simple and focused landfall card advantage engine."
+          }
+        ]
+      },
+      {
+        "name": "Greensleeves, Maro-Sorcerer",
+        "reason": [
+          {
+            "text": "Creates a Badger token whenever a land enters, and grows with your land count, rewarding landfall."
+          }
+        ]
+      },
+      {
+        "name": "Maja, Bretagard Protector",
+        "reason": [
+          {
+            "text": "Landfall creates a Human Warrior token while all your other creatures get bigger, a go-wide landfall plan."
+          }
+        ]
+      },
+      {
+        "name": "Omnath, Locus of the Roil",
+        "reason": [
+          {
+            "text": "Landfall adds counters to Elementals and draws cards once lands pile up, a three-color landfall build."
+          }
+        ]
+      },
+      {
+        "name": "Yarok, the Desecrated",
+        "reason": [
+          {
+            "text": "Doubles triggered abilities from permanents entering, so every land drop fires landfall triggers twice."
+          }
+        ]
+      },
+      {
+        "name": "Gandalf, Shadow's Foe",
+        "reason": [
+          {
+            "text": "Draws a card and grows with each land entering, and its enter effect can reset lands for early landfall triggers."
+          }
+        ]
+      },
+      {
+        "name": "Ob Nixilis, the Fallen",
+        "reason": [
+          {
+            "text": "Each land entering drains an opponent and adds counters to itself, a black landfall approach."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-sonnet-5-5",
+        "ms": 2380,
+        "usd": 0.031048,
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 122,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 4176,
+        "usd": 0.020132,
+        "usage": {
+          "inputTokens": 7721,
+          "outputTokens": 469,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 2115,
+            "reason": "Landfall makes a large Elemental token each time a land enters, so lands directly become a stream of threats."
+          },
+          {
+            "key": 43,
+            "reason": "Allows an extra land drop and draws a card whenever a land enters, a direct landfall engine."
+          },
+          {
+            "key": 2816,
+            "reason": "Each land entering gains life and draws a card, a simple and focused landfall card advantage engine."
+          },
+          {
+            "key": 1035,
+            "reason": "Creates a Badger token whenever a land enters, and grows with your land count, rewarding landfall."
+          },
+          {
+            "key": 1775,
+            "reason": "Landfall creates a Human Warrior token while all your other creatures get bigger, a go-wide landfall plan."
+          },
+          {
+            "key": 2116,
+            "reason": "Landfall adds counters to Elementals and draws cards once lands pile up, a three-color landfall build."
+          },
+          {
+            "key": 3361,
+            "reason": "Doubles triggered abilities from permanents entering, so every land drop fires landfall triggers twice."
+          },
+          {
+            "key": 897,
+            "reason": "Draws a card and grows with each land entering, and its enter effect can reset lands for early landfall triggers."
+          },
+          {
+            "key": 2073,
+            "reason": "Each land entering drains an opponent and adds counters to itself, a black landfall approach."
+          },
+          {
+            "key": 414,
+            "reason": "Landfall puts +1/+1 counters on a creature and its activated ability doubles them, a counters-focused landfall build."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.05118
+  },
+  {
+    "fixture": "card",
+    "arm": "sonnet",
+    "pool": 3445,
+    "narrowed": false,
+    "cards": [
+      "Doubling Season"
+    ],
+    "shortlist": [
+      "Mutagen Man, Living Ooze",
+      "The Third Doctor",
+      "Carth the Lion",
+      "The Unbeatable Squirrel Girl",
+      "The Goose Mother",
+      "Pir, Imaginative Rascal",
+      "Ghave, Guru of Spores",
+      "Vorinclex, Monstrous Raider",
+      "Primo, the Unbounded",
+      "W'Kabi, Shield of the Nation",
+      "Quina, Qu Gourmet",
+      "Rhys the Redeemed",
+      "Vrestin, Menoptra Leader",
+      "Zaxara, the Exemplary",
+      "Tam, the Possibility",
+      "Bilbo, Fellow Conspirator",
+      "Spiders-Man, Heroic Horde",
+      "Koma, Cosmos Serpent",
+      "The Astonishing Ant-Man",
+      "The Thing",
+      "Slurrk, All-Ingesting",
+      "Adrix and Nev, Twincasters",
+      "Michelangelo, the Heart",
+      "Nemata, Grove Guardian",
+      "Finneas, Ace Archer",
+      "Lucky the Pizza Dog",
+      "Tippy-Toe, Terrific Partner",
+      "Sekki, Seasons' Guide",
+      "Jiang Yanggu, Never Alone",
+      "Black Panther, Wakandan King"
+    ],
+    "droppedOutsidePool": 0,
+    "refusedReasons": 3,
+    "picks": [
+      {
+        "name": "Adrix and Nev, Twincasters",
+        "reason": [
+          {
+            "text": "Doubles token creation just like the token half of the named enchantment, and its ward protects it while the tokens pile up."
+          }
+        ]
+      },
+      {
+        "name": "Pir, Imaginative Rascal",
+        "reason": [
+          {
+            "text": "Adds an extra counter of each kind whenever counters would be placed on your permanents, so it stacks well with counter doubling."
+          }
+        ]
+      },
+      {
+        "name": "Quina, Qu Gourmet",
+        "reason": [
+          {
+            "text": "Each time tokens would be created you also get a Frog, which adds to token doubling and gives a steady supply of counters to put on itself."
+          }
+        ]
+      },
+      {
+        "name": "Zaxara, the Exemplary",
+        "reason": [
+          {
+            "text": "Every X spell makes a Hydra token and puts X counters on it, so both token and counter doubling pay off, and it taps for extra mana."
+          }
+        ]
+      },
+      {
+        "name": "Primo, the Unbounded",
+        "reason": [
+          {
+            "text": "Enters with twice X counters and makes Fractal tokens loaded with counters, so token and counter doubling multiply together."
+          }
+        ]
+      },
+      {
+        "name": "The Goose Mother",
+        "reason": [
+          {
+            "text": "Enters with X counters and creates Food tokens, so the doubled counters and tokens come from the same X spell, and it also draws cards."
+          }
+        ]
+      },
+      {
+        "name": "Tippy-Toe, Terrific Partner",
+        "reason": [
+          {
+            "text": "Adds a Food whenever you create tokens, rewarding token doubling with extra artifacts, and it draws cards when you gain life."
+          }
+        ]
+      },
+      {
+        "name": "Rhys the Redeemed",
+        "reason": [
+          {
+            "text": "Makes Elf Warrior tokens and can copy every token you control, so doubled tokens quickly turn into an overwhelming board."
+          }
+        ]
+      },
+      {
+        "name": "Finneas, Ace Archer",
+        "reason": [
+          {
+            "text": "Attacking puts counters on each token and Rabbit, so doubled counters and doubled tokens both pay off in a wide board."
+          }
+        ]
+      }
+    ],
+    "decksNamed": [],
+    "decksNamedValid": true,
+    "steps": {
+      "shortlist": {
+        "model": "claude-sonnet-5-5",
+        "ms": 1936,
+        "usd": 0.031188,
+        "usage": {
+          "inputTokens": 295,
+          "outputTokens": 93,
+          "cacheReadTokens": 148340,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judge": {
+        "model": "claude-sonnet-5-5",
+        "ms": 5915,
+        "usd": 0.02179,
+        "usage": {
+          "inputTokens": 7485,
+          "outputTokens": 682,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "ok": true,
+        "stop": "end_turn"
+      },
+      "judgeRaw": {
+        "picks": [
+          {
+            "key": 3270,
+            "reason": "Doubles every counter placed on any permanent or player, the same counter-doubling half of what the named enchantment does, and it comes with trample and haste."
+          },
+          {
+            "key": 37,
+            "reason": "Doubles token creation just like the token half of the named enchantment, and its ward protects it while the tokens pile up."
+          },
+          {
+            "key": 2199,
+            "reason": "Adds an extra counter of each kind whenever counters would be placed on your permanents, so it stacks well with counter doubling."
+          },
+          {
+            "key": 2252,
+            "reason": "Each time tokens would be created you also get a Frog, which adds to token doubling and gives a steady supply of counters to put on itself."
+          },
+          {
+            "key": 3278,
+            "reason": "Enters with X counters and makes X flying Insect tokens, so both doubling effects apply at once, and attacking Insects keep gaining counters."
+          },
+          {
+            "key": 3412,
+            "reason": "Every X spell makes a Hydra token and puts X counters on it, so both token and counter doubling pay off, and it taps for extra mana."
+          },
+          {
+            "key": 2216,
+            "reason": "Enters with twice X counters and makes Fractal tokens loaded with counters, so token and counter doubling multiply together."
+          },
+          {
+            "key": 2918,
+            "reason": "Enters with X counters and creates Food tokens, so the doubled counters and tokens come from the same X spell, and it also draws cards."
+          },
+          {
+            "key": 2998,
+            "reason": "Creates Squirrel tokens on entering and attacking, and its activated ability scales with the number of Squirrels, so doubled tokens grow the board fast."
+          },
+          {
+            "key": 3056,
+            "reason": "Adds a Food whenever you create tokens, rewarding token doubling with extra artifacts, and it draws cards when you gain life."
+          },
+          {
+            "key": 2357,
+            "reason": "Makes Elf Warrior tokens and can copy every token you control, so doubled tokens quickly turn into an overwhelming board."
+          },
+          {
+            "key": 840,
+            "reason": "Attacking puts counters on each token and Rabbit, so doubled counters and doubled tokens both pay off in a wide board."
+          }
+        ]
+      }
+    },
+    "pressUsd": 0.052978
+  }
+]
