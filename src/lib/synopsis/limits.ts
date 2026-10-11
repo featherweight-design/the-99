@@ -22,13 +22,20 @@ import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 export const SYNOPSIS_CONTRACT_VERSION = 7;
 // 8: the v2 method (plan 2026-10-10-overview-accuracy.md): a weakness checklist with tiers and
 //    evidence refs on every claim. Written only while `OVERVIEW_V2_ENABLED` is on.
-export const SYNOPSIS_CONTRACT_VERSION_V2 = 8;
+// 11: the v2 method, plans first (Hugh's Avatar Aang and Wizards notes, 2026-10-11): the reply
+//    names its plans before anything else, a listed combo leads only when the deck is built for it,
+//    universal staples stay out of strategy and mulligan, the colors the lands make and each card's
+//    own win condition are facts, and it is written by Sonnet 5.5 at effort medium. A METHOD change,
+//    so every overview at 8 gets the "method changed" notice and its free rewrite.
+export const SYNOPSIS_CONTRACT_VERSION_V2 = 11;
 // 9 and 10: contracts 7 and 8 with the interaction figures read from the evidence benchmarks'
 //    shared reading (plan 2026-10-10-evidence-benchmarks.md, PR 1b). Written only while
 //    `DECK_BENCHMARKS_ENABLED` is on. A section retry across the switch rewrites the whole
 //    document, so one Overview never quotes both readings.
 export const SYNOPSIS_CONTRACT_VERSION_BENCHMARKS = 9;
-export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 10;
+// 12: contract 11 with the benchmarks' interaction figures, as 10 was to 8. Above 11, so a
+//    benchmarks row never reads as older than the method and shows the notice for ever.
+export const SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS = 12;
 
 /** The contract a write is made under: 8 while the v2 method is on, 7 otherwise; 10 and 9 when
  *  the interaction figures are the benchmarks' too. */
@@ -106,8 +113,13 @@ export const SYNOPSIS_MAX_TOKENS = 3_000;
  * and is unbounded by it. Paying for the headroom costs nothing on a call that finishes; it is
  * priced in full only by the spend guard's reservation (`FEATURE_CALLS.synopsis`, +$0.06 per
  * write) and by a reply that runs away.
+ *
+ * 16,000 from 2026-10-11, with the switch to Sonnet 5.5 at effort `medium` (`model.ts`): thinking
+ * at medium counts inside this ceiling, and the eval arm that was measured ran at 16,000, streamed,
+ * with no reply cut off (stop reason `end_turn` on all 18 answers across its three runs). The
+ * request streams (`generate.ts`), so a ceiling this high carries no HTTP-timeout risk.
  */
-export const SYNOPSIS_MAX_TOKENS_V8 = 6_000;
+export const SYNOPSIS_MAX_TOKENS_V8 = 16_000;
 
 /**
  * Counts per section (`SYNOPSIS-modal.md` §4.2). Checked by the validator, never by the schema:

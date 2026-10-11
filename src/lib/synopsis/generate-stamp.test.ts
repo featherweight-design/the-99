@@ -108,15 +108,15 @@ describe("the contract a write stamps on its run", () => {
 
   it.each([
     [false, false, 7],
-    [true, false, 8],
+    [true, false, 11],
     [false, true, 9],
-    [true, true, 10],
+    [true, true, 12],
   ])("v2=%s benchmarks=%s stamps %i", async (v2, benchmarks, contract) => {
     expect(await stampedContract({ v2, benchmarks })).toBe(contract);
   });
 
-  it("stamps 7 or 8, never 9 or 10, when the label read fails and the figures fall back", async () => {
+  it("stamps 7 or 11, never 9 or 12, when the label read fails and the figures fall back", async () => {
     expect(await stampedContract({ v2: false, benchmarks: true, labelsFail: true })).toBe(7);
-    expect(await stampedContract({ v2: true, benchmarks: true, labelsFail: true })).toBe(8);
+    expect(await stampedContract({ v2: true, benchmarks: true, labelsFail: true })).toBe(11);
   });
 });

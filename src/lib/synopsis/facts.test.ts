@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DeckProfile } from "../profile/types";
-import { buildSynopsisFacts, categoriesOf, deckNameIndex, keepableLands, normalizeName } from "./facts";
+import { buildSynopsisFacts, ownWinConditions, categoriesOf, deckNameIndex, keepableLands, normalizeName } from "./facts";
 import { figuresIn } from "./validate";
 
 describe("keepableLands", () => {
@@ -157,5 +157,30 @@ describe("deckNameIndex", () => {
 
   it("compares names without case, curly quotes or doubled spaces", () => {
     expect(normalizeName("Urza’s  Saga")).toBe("urza's saga");
+  });
+});
+
+describe("ownWinConditions", () => {
+  const card = (name: string, oracleText: string) => ({ name, oracleText });
+  it("carries the sentence that states the condition, not a bare claim that the card wins", () => {
+    expect(ownWinConditions([
+      card("Laboratory Maniac", "If you would draw a card while your library has no cards in it, you win the game instead."),
+      card("Thassa's Oracle", "When Thassa's Oracle enters, look at the top X cards of your library, where X is your devotion to blue. Put up to one of them on top of your library and the rest on the bottom of your library in a random order. If X is greater than or equal to the number of cards in your library, you win the game."),
+      card("Felidar Sovereign", "Vigilance, lifelink\nAt the beginning of your upkeep, if you have 40 or more life, you win the game."),
+    ])).toEqual([
+      { name: "Laboratory Maniac", condition: "If you would draw a card while your library has no cards in it, you win the game instead." },
+      { name: "Thassa's Oracle", condition: "If X is greater than or equal to the number of cards in your library, you win the game." },
+      { name: "Felidar Sovereign", condition: "At the beginning of your upkeep, if you have 40 or more life, you win the game." },
+    ]);
+  });
+
+  it("never fires on an opponent's loss, poison, or a card that stops a win", () => {
+    expect(ownWinConditions([
+      card("Door to Nothingness", "{W}{W}{U}{U}{B}{B}{R}{R}{G}{G}, {T}, Sacrifice Door to Nothingness: Target player loses the game."),
+      card("Phyrexian Vatmother", "Infect\nAt the beginning of your upkeep, you get a poison counter."),
+      card("Platinum Angel", "Flying\nYou can't lose the game and your opponents can't win the game."),
+      card("Grand Abolisher", "During your turn, your opponents can't cast spells or activate abilities of artifacts, creatures, enchantments, or planeswalkers."),
+      card("Sol Ring", ""),
+    ])).toEqual([]);
   });
 });

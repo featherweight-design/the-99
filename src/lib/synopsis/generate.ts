@@ -113,6 +113,9 @@ export function defaultDeps(): GenerateDeps {
           effort: SYNOPSIS_EFFORT,
           schema: synopsisResponseSchemaV8Wire,
           deadlineMs: req.deadlineMs,
+          // Streamed: thinking at medium counts inside a 16,000 ceiling, which a plain request
+          // risks running past the SDK's HTTP timeout for.
+          stream: true,
         })
         : callModel({
           model: SYNOPSIS_MODEL,

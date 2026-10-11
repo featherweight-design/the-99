@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
+import { SYNOPSIS_CONTRACT_VERSION_V2 } from "./limits";
 
 const old = { contractVersion: 7 };
 const none = { attempts: 0, succeeded: false };
@@ -15,10 +16,17 @@ describe("methodNoticeOf", () => {
     expect(methodNoticeOf({ v2: true, shown: old, runs: none })).toEqual({ attemptsLeft: 2 });
   });
 
-  it("is owed to nothing with the switch off, with no overview, or with one already at contract 8", () => {
+  it("is owed to nothing with the switch off, with no overview, or with one already at the current method", () => {
     expect(methodNoticeOf({ v2: false, shown: old, runs: none })).toBeNull();
     expect(methodNoticeOf({ v2: true, shown: null, runs: none })).toBeNull();
-    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8 }, runs: none })).toBeNull();
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2 }, runs: none })).toBeNull();
+  });
+
+  // 2026-10-11: plans first and Sonnet 5.5 are a new method (contract 11), so an overview written
+  // under contract 8, or 10 with the benchmarks, is an old one and is offered the free rewrite.
+  it("is owed to an overview from the previous v2 method, with or without the benchmarks", () => {
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8 }, runs: none })).toEqual({ attemptsLeft: 2 });
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 10 }, runs: none })).toEqual({ attemptsLeft: 2 });
   });
 
   it("counts every free call as an attempt, failed ones included, down to the paid fallback", () => {
@@ -36,12 +44,12 @@ describe("methodNoticeOf", () => {
 
   // Copilot r1: a partial contract-8 run (Overview refused, another section ok) wrote no overview.
   it("stays owed over a partial new-method row whose Overview was refused", () => {
-    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
-    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: true }, runs: none })).toBeNull();
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2, overviewOk: false }, runs: { attempts: 1, succeeded: false } })).toEqual({ attemptsLeft: 1 });
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2, overviewOk: true }, runs: none })).toBeNull();
     // An old-contract row whose Overview was refused is no old-method overview either.
     expect(methodNoticeOf({ v2: true, shown: { contractVersion: 7, overviewOk: false }, runs: none })).toBeNull();
     // A deck first analyzed after the switch: its partial row is its own, with no free run behind it.
-    expect(methodNoticeOf({ v2: true, shown: { contractVersion: 8, overviewOk: false }, runs: none })).toBeNull();
+    expect(methodNoticeOf({ v2: true, shown: { contractVersion: SYNOPSIS_CONTRACT_VERSION_V2, overviewOk: false }, runs: none })).toBeNull();
   });
 
   it("offers the free press only while an attempt is left", () => {
@@ -69,7 +77,7 @@ describe("freeRunsFor", () => {
     expect(sql).toContain('"deck_synopses"."deck_id" = $');
     expect(sql).toContain('"deck_synopses"."contract_version" = $');
     expect(sql).toContain('"model_calls"."origin" = $');
-    expect(params).toEqual(["deck-1", 8, "system"]);
+    expect(params).toEqual(["deck-1", SYNOPSIS_CONTRACT_VERSION_V2, "system"]);
   });
 
   it("counts a failed, a refused and a pending run as attempts, and succeeds only on a shown overview", async () => {

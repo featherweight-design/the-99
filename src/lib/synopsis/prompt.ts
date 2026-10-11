@@ -3,7 +3,7 @@ import { engineCandidates } from "./engine-candidates";
 import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding } from "../spellbook/combo-features";
-import { identityNameOf, type SynopsisFacts } from "./facts";
+import { identityNameOf, ownWinConditions, type SynopsisFacts } from "./facts";
 import { normalizeV8, weaknessLines } from "./validate-v8";
 import type { SynopsisReply } from "./response-schema";
 import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types";
@@ -67,7 +67,7 @@ const SYSTEM = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...SECTIONS_V7].join("\n");
 const REFS_RULE = `Each decklist line starts with its ref, such as "c12:". "evidence" lists the refs of the cards an item is about (at most ${EVIDENCE_MAX}), copied exactly from the decklist; a ref is never a card name and never a ref the decklist lacks.`;
 
 const SECTIONS_V8 = [
-  `- plans: fill this FIRST, before writing anything else, from what MOST of the deck does rather than from any one card. "primary" is one sentence naming the plan the deck is built around. "backups" lists, one sentence each, any alternate win or second plan, and may be empty. A combo listed under the facts is the primary only when the deck is built to assemble it; otherwise it is a backup. When the decklist shows no clear way to win, "primary" is "No clear win condition." and that is a weakness in the checklist, never an invented plan. Everything below follows these plans.`,
+  `- plans: fill this FIRST, before writing anything else. The primary is how the deck WINS, judged from what most of its cards do to get there rather than from any one card: counterspells, cantrips and removal that protect and dig for the win are that plan's support, never a plan called control. A card listed under "Cards with their own win condition" leads the plans only when the deck also holds a way to reach that condition (a draw or mill engine, a tutor chain, or a listed combo that feeds it); otherwise it is a backup. "primary" is one sentence naming the plan the deck is built around. "backups" lists, one sentence each, any alternate win or second plan, and may be empty. A combo listed under the facts is the primary only when the deck is built to assemble it; otherwise it is a backup. When the decklist shows no clear way to win, "primary" is "No clear win condition." and that is a weakness in the checklist, never an invented plan. Everything below follows these plans.`,
   `- primer.strategy: ${range(SECTION_COUNTS.strategy)} steps of the deck's plan, in order, each at most ${CHAR_BUDGETS.strategy} characters, as { text, evidence }. A step about particular cards cites their refs. The steps lead with the primary plan. A backup gets its own step after them, named as a backup or an alternate win. A card marked "universal staple" is never a step's subject or its evidence: it is in nearly every deck and says nothing about this one.`,
   `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. The app already shows the land range above these lines, so NEVER state a land count, "no lands" or "all spells". Tie the advice to THIS deck: at least one keep line names an engine piece, as [[Name]] (a card of a listed combo, or one of the Engine candidates), and the send-back lines name what the hand lacks for the deck's colors or plan. Never write advice true of every deck, such as "keep Sol Ring" or "send back a hand with no lands", and never name a card marked "universal staple" in a mulligan line. Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
   `- primer.tips: ${range(SECTION_COUNTS.tips)} tips, each an interaction between at least ${TIP_MIN_CARDS} cards in this deck, never general rules advice, as { text, evidence }. "evidence" lists the refs of exactly the cards the tip names (at least ${TIP_MIN_CARDS}), and its text names exactly those cards. Each text at most ${CHAR_BUDGETS.tip} characters. State only what the cards' rules text says: a keyword a card lacks (cascade, flying, haste) is never claimed for it, and a forced sacrifice or a "target player sacrifices" effect is never an enter-the-battlefield or a "dies" trigger for you. Spread the tips across the deck's plans and cards; do not give two tips about the same pair of cards.`,
@@ -182,6 +182,8 @@ const V2_COMBO_RULE_V7 = "The facts may list combos this deck assembles. When on
 const V2_COMBO_RULES_V8 = [
   "The facts may list combos this deck assembles. Name each listed combo by its cards and by what it produces (for example: [[Card A]] and [[Card B]] together make infinite mana), and never describe it as value, a bonus or a side effect. A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.",
   "When the facts give \"Colors the lands make\", that name REPLACES the identity name wherever you name the deck's colors (the rule to name them by the identity given applies to it instead): a deck whose lands make fewer colors than its identity plays as the colors they make.",
+  "Whenever the overview or a strategy step names a listed combo, that sentence names every card of the combo.",
+  "A combo listed as one card short is not a plan, but the card the deck holds may still win by its own rules text: a card under \"Cards with their own win condition\" is judged by that condition, never dismissed for the combo it lacks.",
 ].join("\n");
 
 const V2_SHARED_RULES = [
@@ -277,6 +279,11 @@ export function buildSynopsisPrompt(
 
   if (opts.v2) lines.push(...v2FactLines(facts));
   if (opts.contract8) {
+    const wins = ownWinConditions(facts.cards);
+    if (wins.length > 0) {
+      lines.push("", "Cards with their own win condition (the condition is the card's rules text; it is met only as written):");
+      for (const w of wins) lines.push(`- ${w.name}: ${oneLine(w.condition)}`);
+    }
     const engine = engineCandidates(facts.cards, facts.commanders);
     if (engine.length > 0) {
       lines.push("", "Engine candidates (deck cards that share words with the commander's ability; a starting list, not a verdict):");
