@@ -218,7 +218,7 @@ export function ReadPanel({
       data-phase={phase}
       className="flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[24px] p-[13px_14px] md:p-[14px_16px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_28%,var(--border))] bg-[color:color-mix(in_oklab,var(--accent)_6%,var(--surface-sunken))]"
     >
-      <div className="flex flex-col gap-[4px] flex-1 min-w-0">
+      <div className="flex flex-col gap-[6px] flex-1 min-w-0">
         <h3 className="m-0 flex flex-wrap items-center gap-[8px] font-display font-semibold text-[14.5px] md:text-[15.5px] text-[color:var(--fg)]">
           {title}
           {tag && (
@@ -235,10 +235,10 @@ export function ReadPanel({
         )}
         {phase === "reading" && <Steps step={step} pool={scope.pool} />}
         {phase === "nothing" && (
-          <p data-testid="read-widen" className="m-0 max-w-[520px] text-[12.5px] leading-[1.55] [text-wrap:pretty] text-[color:var(--fg-muted)]">
+          <p data-testid="read-widen" className="m-0 max-w-[520px] text-[12.5px] leading-[1.5] [text-wrap:pretty] text-[color:var(--fg-muted)]">
             <Link
               href={changeHref}
-              className="text-[color:var(--accent)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-[2px]"
+              className="text-[color:var(--accent)] no-underline border-0 border-b border-solid border-b-[color:color-mix(in_oklab,var(--accent)_50%,transparent)]"
             >
               {copy.readAs.change}
             </Link>{" "}
@@ -306,7 +306,7 @@ function Steps({ step, pool }: { step: "shortlist" | "judge"; pool: number | nul
       {steps.map((s, i) => {
         const state = i === at ? "now" : i > at ? "next" : "done";
         return (
-          <li key={s.key} data-step={state} className="flex items-center gap-[8px] text-[12.5px] leading-[1.45]">
+          <li key={s.key} data-step={state} className="flex items-center gap-[9px] text-[12.5px] leading-[1.45]">
             <span
               aria-hidden
               className={[
@@ -320,7 +320,7 @@ function Steps({ step, pool }: { step: "shortlist" | "judge"; pool: number | nul
               {s.text}
             </span>
             {state !== "done" && (
-              <span className="font-mono text-[9.5px] text-[color:var(--fg-locked)]">{state === "now" ? copy.read.stepNow : copy.read.stepNext}</span>
+              <span className="font-mono text-[9.5px] tracking-[.08em] text-[color:var(--fg-locked)]">{state === "now" ? copy.read.stepNow : copy.read.stepNext}</span>
             )}
           </li>
         );

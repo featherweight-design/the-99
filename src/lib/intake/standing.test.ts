@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { closedBy, formLine } from "./standing";
+import { bareStanding, closedBy, formLine } from "./standing";
 
 const base = { used: 1, limit: 5, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, paused: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
 
@@ -17,5 +17,11 @@ describe("the form's credit line", () => {
     expect(formLine(over)).toMatch(/^Won’t be read: 0 of 5 left · reset at /);
     expect(formLine(over)).toBe(formLine({ ...over, nextAt: over.reopensAt }));
     expect(formLine(over)).not.toBe(formLine({ ...over, reopensAt: null }));
+  });
+
+  it("never counts below zero, and names the oldest unit's leaving, on every bare line (7l)", () => {
+    const over = { ...base, used: 6, nextAt: "2026-10-12T01:00:00.000Z", reopensAt: "2026-10-12T03:00:00.000Z" };
+    expect(bareStanding(over)).toMatch(/^0 of 5 left · reset at /);
+    expect(bareStanding(over)).toBe(bareStanding({ ...over, used: 5, nextAt: over.reopensAt }));
   });
 });

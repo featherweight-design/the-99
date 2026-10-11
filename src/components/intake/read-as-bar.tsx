@@ -44,7 +44,7 @@ export function ReadAsBar({
       className="flex flex-col gap-[14px] p-[14px] md:p-[16px_18px] rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)]"
     >
       <div className="flex flex-col gap-[12px] md:flex-row md:items-start md:gap-[24px]">
-        <div className="flex flex-col gap-[9px] flex-1 min-w-0">
+        <div className="flex flex-col gap-[10px] flex-1 min-w-0">
           <h2 id="read-as-label" className="m-0 font-mono font-normal text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]">
             {copy.readAs.yourAnswers}
           </h2>
@@ -100,7 +100,7 @@ export function ReadAsBar({
             <div data-testid="you-wrote" className="flex flex-col gap-[4px] pt-[10px] border-0 border-t border-solid border-[color:var(--border)]">
               <span className="font-mono text-[9.5px] tracking-[.1em] uppercase text-[color:var(--fg-locked)]">{copy.readAs.wrote}</span>
               {/* The quotes are the text's own, not a `q` element's: those are the browser's to draw. */}
-              <p className="m-0 text-[14px] leading-[1.5] [overflow-wrap:anywhere] text-[color:var(--fg)]">{`“${wrote}”`}</p>
+              <p className="m-0 text-[14px] leading-[1.5] [text-wrap:pretty] [overflow-wrap:anywhere] text-[color:var(--fg)]">{`“${wrote}”`}</p>
             </div>
           )}
         </div>
