@@ -31,7 +31,7 @@ All paths are on `main`; line numbers were read on 2026-10-11 and move.
   `art_series`; `:35` `NON_GAME_LAYOUTS` adds `front_card`, `planar`, `scheme`, `vanguard`, `host`, `augment`.
 - Tokens do not live in `printings` either: `printings.oracle_id` is a foreign key to `cards`. A skipped printing is
   recorded in `skipped_printings` (`src/db/schema.ts:166`: `scryfall_id` primary key, `layout`, `name`) by
-  `src/lib/scryfall/transform-printings.ts:97-108` and upserted at `seed-printings.ts:65`. **That table keeps a
+  `src/lib/scryfall/transform-printings.ts:97-108` and upserted by `flushSkipped` (`seed-printings.ts:248-252`). **That table keeps a
   token printing's id, layout and name, and not its oracle id, colors, power, toughness or type line.**
 - The ingest reads two bulk files: `oracle_cards` (`seed.ts:71`, one object per oracle id) and `default_cards`
   (`seed-printings.ts:206`, one per printing); `BulkType` is those two (`bulk.ts:9`). `streamBulkEntries`
@@ -78,7 +78,7 @@ All paths are on `main`; line numbers were read on 2026-10-11 and move.
 These are engineering's reading of the rulings and of what the data allows. Hugh can override any of them.
 
 1. **Source: `all_parts` entries with `component: "token"`, and nothing else.** Scryfall also puts `meld_part`,
-   `meld_result` and `combo_piece` there, and every card lists itself as a `combo_piece`. Emblems, dungeons and
+   `meld_result` and `combo_piece` there, and a card that has related parts lists itself among them as a `combo_piece`. Emblems, dungeons and
    art-series cards are layouts of their own and stay out (ruling 4).
 2. **A token's identity is its own `oracle_id`, never its name.** Scryfall gives distinct tokens of one name their
    own oracle ids: the Goblin tokens in `oracle_cards` are six different cards, differing in color, power,
@@ -86,17 +86,20 @@ These are engineering's reading of the rulings and of what the data allows. Hugh
    token, so it resolves to an oracle id through `default_cards`, which the printings pass already streams.
 3. **No new fetch and no new cost.** `oracle_cards` carries token objects (926 `token`, 80 `double_faced_token`, 89
    `emblem`) and `all_parts` on 4,783 cards; `default_cards` carries the printing ids the parts point to.
-   Reading them is a parse change in the two seed passes, not a new download. `pnpm check:scryfall` should add
-   `all_parts` to the keys it requires, so an upstream rename is known before the ingest that depends on it.
+   Reading them is a parse change in the two seed passes, not a new download. `pnpm check:scryfall` cannot just
+   add `all_parts` to its required keys: it tests the first entry only (`scripts/check-scryfall-contract.ts:14`,
+   `:61-62`), and only 4,783 of 38,721 oracle cards carry the key. It needs a scan for any entry with token parts
+   (and a token part that resolves), so an upstream rename is known before the ingest that depends on it.
 4. **Two new catalog tables, built by the existing ingest in each database from the same bytes.** A token record
    (oracle id, name, type line, colors, power, toughness, layout, art) and a link from a card's oracle id to a
    token oracle id. Neither is a `cards` column, so **the catalog fingerprint does not move and the copy harness is
    not involved**: the fingerprint exists for products built once and copied, and these come from the fetched
    bytes on both sides like `cards` does.
-5. **Ownership needs a new record, and it starts empty.** Upload must stop discarding token rows and keep them,
-   keyed by the token's oracle id (any printing counts as holding it). Until the next upload after this ships, the
-   collection holds no token on record. Hugh's last upload skipped 155 rows by design (all non-card layouts; the
-   split between tokens and the rest was not kept), and the file is not stored, so **the app cannot say today how
+5. **Ownership needs a new record, and it starts empty.** Upload must stop discarding token rows and keep them
+   (only the `token` and `double_faced_token` layouts: `TOKEN_LAYOUTS` also holds `emblem` and `art_series`, which
+   ruling 4 and the catalog leave out), keyed by the token's oracle id (any printing counts as holding it). Until the next upload after this ships, the
+   collection holds no token on record. Hugh's last upload skipped 155 rows by design (rows whose id is a known
+   `token`, `double_faced_token`, `emblem` or `art_series` printing; the split among them was not kept), and the file is not stored, so **the app cannot say today how
    many tokens he owns, and the first screen must say it does not know, not that he owns none** (Open question 1).
 6. **A token's price is the cheapest priced printing**, from the Mana Pool feed rows the price ingest now drops.
    It needs token printings in `printings` or a table of its own; engineering's plan decides which.
@@ -178,7 +181,7 @@ nearest feature is a token list on the deck page.
 - **EDHREC** has a `Tokens` archetype tag and no tokens-needed feature (fetched, edhrec.com/commanders/six/tokens).
 - **Scryfall data facts** (fetched by curl, scryfall.com/docs/api/cards, /layouts): `all_parts` is an array of
   related-card objects with `id`, `component` (`token`, `meld_part`, `meld_result`, `combo_piece`), `name`,
-  `type_line`, `uri`; a card's own entry is a `combo_piece`; token layouts are `token`, `double_faced_token`
+  `type_line`, `uri`; a card with related parts lists itself as a `combo_piece`; token layouts are `token`, `double_faced_token`
   (both faces in the type line) and `emblem`. `oracle_id` is unique among cards with the same name, tokens included.
 - **Where tokens are sold:** a Mana Pool support article says tokens can be listed but not all of them, especially
   double-sided ones, and that they are listed by hand (snippet, support.manapool.com/hc/en-us/articles/
@@ -243,7 +246,7 @@ by 5; Thopter, white Human Soldier 1/1 and white Soldier 1/1 by 3 each. Kratos, 
 each both a token name and a real card's name.
 
 **Ownership:** unknown. Hugh's last upload (`The Vault (11).csv`, 2026-10-02, 3,550 rows) skipped 155 rows by
-design; no row was kept. Reproduce the rest with a read-only script that joins `deck_cards` and the commanders to
+design (tokens, double-faced tokens, emblems or art cards); no row was kept. Reproduce the rest with a read-only script that joins `deck_cards` and the commanders to
 the `oracle_cards` bulk and the `default_cards` printing ids (`pnpm catalog:fetch` makes the files;
 `connectStaging` in `scripts/eval/lib/staging.mts` refuses a writable connection).
 
