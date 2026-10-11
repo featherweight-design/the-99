@@ -224,7 +224,7 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | form | bottom sheet | centred modal dialog |
-| scrim | rgba(5,5,8,0.62) (shared scrim) | rgba(5,5,8,0.62) (shared scrim) |
+| scrim | color-mix(in oklab, var(--bg) 70%, transparent), the shared scrim of `collection/confirm-modal.tsx`, which tracks the theme (the canvas drew a fixed rgba(5,5,8,0.62)) | color-mix(in oklab, var(--bg) 74%, transparent), same |
 | position | left 0, right 0, bottom 0 | centred |
 | role | dialog | dialog |
 | aria-modal | true | true |
@@ -347,8 +347,8 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | art height | 140px (100 × 88/63) | 145px (104 × 88/63) |
 | art border-radius | 9px | 9px |
 | art box-shadow | inset 0 0 0 1px rgba(0,0,0,0.35) | inset 0 0 0 1px rgba(0,0,0,0.35) |
-| code line | mono 11px, var(--fg), nowrap, margin-top 8px | same |
-| set line | 11.5px, var(--fg-faint), nowrap, ellipsis, margin-top 2px | same |
+| first line (shipped) | the picker's own: set name 12px, var(--fg), margin-top 7px, with the set code in mono 10.5px var(--fg-faint) after it (the canvas drew a mono code line over the set name; the confirm reuses `PrintingRegion`'s tile text instead) | set name 13px, otherwise the same |
+| second line (shipped) | mono 10.5px, `#N · you own ×N`, var(--fg-faint), margin-top 2px | mono 11px, otherwise the same |
 | price on tile | none | none |
 | preset badge | none | none |
 
@@ -358,7 +358,7 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | aria-checked | true | true |
 | art outline | 2px solid var(--accent) | 2px solid var(--accent) |
 | art outline-offset | 3px | 3px |
-| code font-weight | 600 (400 unselected) | 600 (400 unselected) |
+| first line font-weight | 600 (400 unselected) | 600 (400 unselected) |
 
 ### Single printing line (one printing; replaces tile row)
 | Property | Mobile | Desktop |
