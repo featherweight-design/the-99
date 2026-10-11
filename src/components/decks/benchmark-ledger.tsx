@@ -9,7 +9,7 @@ import { deckBenchmarksCopy as copy } from "../../lib/copy/deck-benchmarks";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { SiblingCard } from "../cards/card-detail-provider";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { AvailabilityMarker } from "../ui/availability-marker";
+import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { CostPips, CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_SHELL } from "../ui/row-shell";
@@ -354,7 +354,11 @@ function LedgerRow({
   const describedId = useId();
   const why = row.why ? (row.card.commander ? L.why.commanderPrefix : "") + row.why : null;
   const points = graded && row.points !== undefined ? (row.points > 0 ? `+${trim(row.points)}` : "0") : null;
-  const said = [why, points].filter(Boolean).join(", ");
+  // The trigger is named by the card, so nothing drawn inside it is heard: the row's description
+  // says what the dot and the marker show, as the decklist row's does (the same words).
+  const owned = availability ? (availability.owned ? "Owned" : "Not owned") : null;
+  const marker = availability?.availability ? markerAria(availability.availability, { selfExcluded: true, nameless: true, bareOne: true }) : null;
+  const said = [owned, marker, why, points].filter(Boolean).join(", ");
   return (
     <li {...preview} data-card-row className="min-w-0">
       <CardDetailTrigger

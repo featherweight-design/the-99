@@ -225,7 +225,10 @@ describe("BenchmarkLedger, rows and focus", () => {
     mount("velocity", { benchmarks: velocity, availability });
     const rows = Array.from(dialog().querySelectorAll("[data-card-row]"));
     const withDot = rows.filter((r) => r.querySelector("[aria-hidden].rounded-full, span[aria-hidden='true'][class*='rounded-full']"));
-    expect(withDot.map((r) => r.querySelector("span.truncate")!.textContent)).toEqual(["Rampant Growth"]);    // Every other row keeps the dot's slot, so names line up; and the row's padding sits inside the
+    expect(withDot.map((r) => r.querySelector("span.truncate")!.textContent)).toEqual(["Rampant Growth"]);
+    // The trigger is named by the card, so the dot's state is said in its description.
+    const button = withDot[0].querySelector("button")!;
+    expect(document.getElementById(button.getAttribute("aria-describedby")!)!.textContent).toMatch(/^Not owned/);    // Every other row keeps the dot's slot, so names line up; and the row's padding sits inside the
     // trigger, whose inline `padding: 0` would otherwise beat it (the walk's two row defects).
     for (const r of rows) {
       expect(r.querySelector("[data-dot-slot]") !== null).toBe(!withDot.includes(r));
