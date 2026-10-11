@@ -76,13 +76,14 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number): TileVie
   const t = copy.tools.cuts;
   const run = runStatus(tiles?.proposed_cuts ?? null, copy.runningWords.deeper,
     (r) => (r.total === 0 ? copy.outcome.nothing : copy.outcome.cut(r.accepted, r.total)), now);
-  // A run in flight is the deck's live fact; otherwise the figure that explains the offer wins
-  // over the last run (A1). At 100 or under the tile is inert, and a run still in flight there
-  // is the tool's to show once it opens.
-  if (run.running) return { tool: "cuts", purpose: t.purpose, cost: t.cost, ...run, offer: false, inert: false };
+  // At 100 or under the tile is inert whatever else is true (design table, ToolTile inert): a run
+  // still in flight then (the list trimmed elsewhere mid-run) is shown by the panel if it is open,
+  // never by making the tile pressable. Over 100, a run in flight is the deck's live fact, and
+  // otherwise the figure that explains the offer wins over the last run (A1).
   if (spec.over <= 0) {
     return { tool: "cuts", purpose: t.notOffered(spec.total), cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };
   }
+  if (run.running) return { tool: "cuts", purpose: t.purpose, cost: t.cost, ...run, offer: false, inert: false };
   const over = t.over(spec.over);
   return { tool: "cuts", purpose: t.purpose, cost: t.cost, status: over, statusPhone: over, running: false, offer: true, inert: false };
 }

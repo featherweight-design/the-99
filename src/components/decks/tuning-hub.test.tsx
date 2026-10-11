@@ -41,6 +41,15 @@ describe("TuningHub landing", () => {
     expect(tile("cuts").textContent).not.toContain(copy.tools.cuts.cost);
   });
 
+  it("keeps Proposed cuts inert at 100 even with a run of it still in flight", async () => {
+    read.mockResolvedValue({ suggested_changes: null, proposed_cuts: { kind: "running", startedAt: new Date().toISOString() } });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    await act(async () => {});
+    expect(tile("cuts").tagName).toBe("DIV");
+    expect(tile("cuts").hasAttribute("data-inert")).toBe(true);
+  });
+
   it("draws Suggested changes inert, saying why, when the deck has no reading", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(false), cuts(4)]} />);
     expect(tile("suggested").tagName).toBe("DIV");
