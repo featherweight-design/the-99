@@ -155,6 +155,55 @@ describe("stylesheets", () => {
 });
 
 describe("collisionFindings", () => {
+  describe("a bare token also paints the OTHER drawn sides", () => {
+    // findings-block.tsx (bug 3): `md:border` draws all four sides and `md:last:border-b` painted
+    // them all in mana black, with only the bottom overridden. The override fixes one side.
+    it("flags md:last:border-b beside md:border even with a bottom override at its variants", () => {
+      const text = '<li className="md:border md:border-[color:var(--s)] md:last:border-b md:last:border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text).map((f) => f.side)).toEqual(["b"]);
+    });
+
+    it("flags a rotated caret: border-b + border-l, the left painted by the bare token's color", () => {
+      const text = '<span className="border-b border-b-[color:var(--s)] border-l border-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
+    it("accepts a bare token whose other sides are zero, the divider shape", () => {
+      const text = '<div className="border border-0 border-b border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toEqual([]);
+    });
+
+    it("accepts a width a zero at a variant between the two takes back", () => {
+      const text = '<div className="border-r-2 md:border-r-0 md:border-b md:border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toEqual([]);
+    });
+
+    it("accepts another drawn side that has a color of its own", () => {
+      const text = '<li className="border-t border-b border-t-[color:var(--s)] border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toEqual([]);
+    });
+
+    it("reads a quoted attribute selector inside a bracketed variant as one token", () => {
+      const text = `<i className="[&[data-x='a']]:border-b [&[data-x='a']]:border-b-[color:var(--s)] [&[data-x='a']]:border-l" />`;
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
+    it("does not let a color active only at md cover a side drawn below it", () => {
+      const text = '<i className="border-b border-b-[color:var(--s)] border-l md:border-l-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
+    it("does not let a plain zero cancel an important width", () => {
+      const text = '<i className="border-l! border-l-0 border-b border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+
+    it("flags a width under a variant the bare token lacks: both apply from md up", () => {
+      const text = '<div className="md:border border-b border-b-[color:var(--s)]" />';
+      expect(unresolvedCollisions(text)).toHaveLength(1);
+    });
+  });
+
   it("reads .tsx, .ts and .css, skips tests, and reports the line", async () => {
     const root = await mkdtemp(join(tmpdir(), "border-"));
     await mkdir(join(root, "lib"));

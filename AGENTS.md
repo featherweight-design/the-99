@@ -513,6 +513,13 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `pnpm test` as well as in its own CI step. It first shipped as #1272 (44 files fixed at once);
   the second pass added the variant rule and the `.ts` and `.css` files, and found none
   outstanding: 90 bare tokens in `src`, every one overridden at its own variant.
+
+  **A side override repairs one side only** (#1440, bug 3). The bare utility is `border-color` on
+  ALL FOUR sides, so a bare token whose class string also draws another side (`md:border` beside
+  `md:last:border-b`, or `border-b` beside `border-l`) is reported even with its own side
+  override, unless that other side has a color of its own or a zero width takes it back. The
+  repair is the width alone (`border-b-[1px]`). The first run of that rule found two carets in
+  `shell/nav.tsx` painting a side in mana black.
 - `pnpm check:collection-routes` fails when a route renders a figure read out of
   `collection_items` and the collection replace does not invalidate it. It walks every
   `page.tsx`, follows its imports through `src/`, and compares what it finds against
