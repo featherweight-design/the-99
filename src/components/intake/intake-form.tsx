@@ -116,7 +116,8 @@ export function IntakeForm({
       budgetDollars: parseBudget(budget),
       bracket,
     });
-    // The action redirects; it returns only when it refused, which the box's own cap prevents.
+    // The action redirects; it returns only when it refused a malformed or over-long ask, which
+    // this form cannot send (its box is capped, and the address bound is far past the cap).
     startSubmit(async () => { await submitChoose(query); });
   };
 

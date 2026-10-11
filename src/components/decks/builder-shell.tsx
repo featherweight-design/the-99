@@ -236,7 +236,7 @@ interface BuilderShellProps {
    *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
   neverCut?: boolean;
   /** `HELP_ME_CHOOSE_ENABLED` (`src/lib/intake/flag.ts`): whether the credit lines name Help me
-   *  choose's deeper looks among what shares the credits. Off, they read as before the looks. */
+   *  choose among what shares the credits. Off, they read as before it. */
   deeperLooks?: boolean;
   /** `tuningEnabled()` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
    *  changes". Off, the Analysis tab still draws the bracket and the Overview — the tab mounts

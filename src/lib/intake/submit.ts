@@ -16,8 +16,7 @@ export const CHOOSE_PATH = "/decks/new/choose";
  * The order matters: `n` keeps twelve entries, and the player's own phrases go before a figure.
  *
  * A card already in the params (an address that carries one) is an answer the player kept, and
- * stays: a card the words name besides it goes under *Not used*, as a second card does. The form
- * itself never carries one (`submitHref`): it has no card control, so its card is its words'.
+ * stays: a card the words name besides it goes under *Not used*, as a second card does.
  *
  * Pure over the index, so the redirect a page makes is tested without a request.
  */

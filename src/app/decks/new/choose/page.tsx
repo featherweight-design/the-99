@@ -23,11 +23,11 @@ import { answerChips, readForThisAsk, verifiedDeeperMarks } from "../../../../li
 import { isAnyOf } from "../../../../lib/intake/rank";
 import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
-import { loadIntakeCatalog, loadIntakeThemes } from "../../../../lib/intake/search";
+import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { CHOOSE_PATH, formTarget } from "../../../../lib/intake/submit";
 import { toStanding } from "../../../../lib/intake/standing";
-import { DeeperLook, DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
+import { DeeperLookScope, DimWhileLooking } from "../../../../components/intake/deeper-look";
 import { loadOwnRead, wordsHash } from "../../../../lib/intake/run-store";
 import { readAllowance } from "../../../../lib/model/allowance";
 
@@ -55,7 +55,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // Outside any try: `redirect` throws, and a catch would swallow it.
   if (sp.get("v") === "submit") redirect(formTarget(p));
 
-  // The labels only: the card-name index is built for a submit, never for a page that just draws.
+  // The labels only: nothing on this route builds the card-name index any more.
   // The form needs the vocabulary to draw its picker, and fails without it. The results only name
   // themes with it: a failed read there draws each theme by its slug rather than taking the page
   // down above the results' own recovery (*Search failed*, with Retry).
@@ -85,9 +85,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const themeLabels = Object.fromEntries(themes.map((t) => [t.slug, t.label]));
   // A decoration, read outside the results' own recovery: a failure here draws the page without the
   // card's chip rather than taking the whole route down before *Search failed* could offer a retry.
-  const now = new Date();
-  // Three decorations, none of which may take the page down: the card's chip, the credit standing
-  // the deeper look reads (only when there are words to look at), and the read `r` names.
+  // Two decorations, neither of which may take the page down: the card's chip, and the read `r` names.
   const [card, loaded] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
     p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
@@ -100,9 +98,6 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     card: card?.name ?? null,
     set: (code: string) => setNames.get(code) ?? code.toUpperCase(),
   };
-  // A carried `a` the search could not apply (stale, or hand-edited) is no answer: the look sees
-  // the answers the search ran on, so a card its read finds is not set aside for it.
-  const lookParams = card === null && p.card !== null ? { ...p, card: null } : p;
   // A change of answers is a new ask: it carries neither the read nor its marks.
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   const queryString = serializeChooseParams(p).slice(1);

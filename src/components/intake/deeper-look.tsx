@@ -17,7 +17,6 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { lookDeeper, lookStatus, type LookDeeperResult } from "../../app/decks/new/choose/actions";
-import { creditsCopy } from "../../lib/copy/credits";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { INTAKE_POLL_MS, INTAKE_WAIT_MS } from "../../lib/intake/limits";
 import type { ChooseParams } from "../../lib/intake/params";

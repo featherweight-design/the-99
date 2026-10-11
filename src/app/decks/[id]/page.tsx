@@ -580,7 +580,7 @@ export default async function DeckBuilderPage({
       openNoticesOnArrival={showNotices && readNoticesArrival(query[NOTICES_PARAM])}
       // Locked (PR 4a): off, no lock control, mark or key entry draws, and the page is main's.
       neverCut={neverCutEnabled()}
-      // Help me choose: the credit lines name its deeper looks only where the feature is drawn.
+      // Help me choose: the credit lines name it only where the feature is drawn.
       deeperLooks={helpMeChooseEnabled()}
       storedPermits={storedBracket}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a

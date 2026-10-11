@@ -109,7 +109,9 @@ export async function lookStatus(input: {
 export async function submitChoose(query: string): Promise<{ kind: "refused" }> {
   const userId = await requireUserId();
   if (!helpMeChooseEnabled()) throw new Error("not found");
-  if (typeof query !== "string" || query.length > 8_000) return { kind: "refused" };
+  // A bound on what a caller may send, far past any real form: 800 words percent-encoded as three
+  // bytes each run to 7,200 characters, and every theme and set comes on top.
+  if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };
   const raw = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
   // The parser bounds `w` to the cap, so the length is checked on what was sent, before it.
   if ([...(raw.get("w") ?? "").trim()].length > READ_WORDS_MAX_CHARS) return { kind: "refused" };

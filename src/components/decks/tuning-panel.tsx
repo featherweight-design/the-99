@@ -122,7 +122,7 @@ export function TuningPanel({
    *  (H35, PR 2), the same list help-me-choose's intake form reads. */
   printedInSets?: readonly PrintedInSet[];
   deps?: TuningDeps;
-  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name its deeper looks as sharing the credits. Off,
+  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name Help me choose as sharing the credits. Off,
       they read exactly as before the looks existed. */
   deeperLooks?: boolean;
   /** The first read has answered or failed: the tab's opening holds its loader until it has, so
