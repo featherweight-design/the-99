@@ -372,20 +372,23 @@
     },
     {
       "id": "details-collection",
-      "label": "/collection, an owned card's details: Edit copies alone, no Bought this card? (A11)",
+      "label": "/collection, an owned card's details: Edit copies alone, no Bought this card? (A11). Phone only: desktop opens on the reader's stored grid, whose tile is named by its marks first, and the link's absence does not depend on width (nothing on /collection registers it)",
       "view": "src/components/cards/card-modal.tsx",
       "steps": [
         {
-          "goto": "/collection?q=${IGI_OWNED_CARD}&view=list",
+          "goto": "/collection?q=${IGI_OWNED_CARD}",
           "wait": "input",
           "settle": 2000
         },
         {
           "clickRole": "button",
-          "name": "^${IGI_OWNED_CARD}",
+          "name": "^(View details for )?${IGI_OWNED_CARD}",
           "wait": "[role=dialog]",
           "settle": 1500
         }
+      ],
+      "widths": [
+        "phone"
       ]
     },
     {
