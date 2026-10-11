@@ -77,6 +77,7 @@ resolving through `default_cards`; PR 1 re-measured the catalog on the fetched b
 - **`classifyTokenEntry(raw)` / `isTokenEntry(raw)`** (same module): a printing whose layout is `token` or `double_faced_token`, plus the `reversible_card`
   whose faces say `Token` (the `sld/1969` Mechtitan case the ingest already records, `transform-printings.ts:161-189`).
   `emblem` and `art_series` are excluded. Upload decides "is a token" by resolving to `token_printings`, never by layout.
+- **Written in later PRs, not yet in the tree:** `tokenPrice` (PR 2), `tokenOwnership` (PR 3), `tokenKey` and `sameFace` (PR 4).
 - **`tokenPrice(printings, prices)`**: the deck price rule (`price-query.ts:52-78`) applied to a token's printings: live
   before stale, real non-foil stock before foil-only, then cheapest, then printing id. It also names the pictured
   and sent printing (R2: "pictured and sent: TLA T9").
