@@ -454,8 +454,8 @@ export async function createDeck(
     // one — so a mismatch here is a crafted request and is refused outright.
     if (
       !canPair(
-        { name: commander.name, ability: partnerAbility(commander.oracleText) },
-        { name: partner.name, ability: partnerAbility(partner.oracleText) },
+        { name: commander.name, ability: partnerAbility(commander.oracleText, commander.typeLine) },
+        { name: partner.name, ability: partnerAbility(partner.oracleText, partner.typeLine) },
       )
     ) {
       throw new Error("commanders cannot be paired");

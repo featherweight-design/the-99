@@ -70,6 +70,8 @@ export type DeckImport = {
     imageUri: string | null;
     /** Read for the Partner ability, which decides who may fill a second slot. */
     oracleText: string | null;
+    /** Read for the same: a Time Lord Doctor pairs by its type line, not its text. */
+    typeLine: string;
   }[];
   /**
    * Set when the source names its own commander — `*CMDR*`, a trailing
@@ -399,6 +401,7 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
         colorIdentity: card.colorIdentity,
         imageUri: card.imageUri,
         oracleText: card.oracleText,
+        typeLine: card.typeLine,
       });
     }
   }

@@ -35,7 +35,7 @@ export const LEGAL_PAIR_FLOOR = 1_500;
 export function legalPairs(cards: readonly PairSource[]): IndexPair[] {
   const sides = cards
     .filter((c) => isCommanderCandidate(c))
-    .map((c) => ({ card: c, side: { name: c.name, ability: partnerAbility(c.oracleText) } }))
+    .map((c) => ({ card: c, side: { name: c.name, ability: partnerAbility(c.oracleText, c.typeLine) } }))
     .filter((c) => c.side.ability !== null);
   const out: IndexPair[] = [];
   for (let i = 0; i < sides.length; i++) {

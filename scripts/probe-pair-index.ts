@@ -53,10 +53,10 @@ async function run(): Promise<void> {
   // catalog that rotates a card out does not rot the check.
   const ids = [...new Set(loaded.pairs.flatMap((p) => [p.a, p.b]))];
   const text = new Map(
-    (await db.select({ id: cards.oracleId, t: cards.oracleText }).from(cards).where(inArray(cards.oracleId, ids)))
-      .map((r) => [r.id, r.t]),
+    (await db.select({ id: cards.oracleId, t: cards.oracleText, typeLine: cards.typeLine }).from(cards).where(inArray(cards.oracleId, ids)))
+      .map((r) => [r.id, r]),
   );
-  const kinds = new Set<string>(loaded.pairs.map((p) => partnerAbility(text.get(p.a) ?? null)?.kind ?? "built-only"));
+  const kinds = new Set<string>(loaded.pairs.map((p) => partnerAbility(text.get(p.a)?.t ?? null, text.get(p.a)?.typeLine ?? null)?.kind ?? "built-only"));
   check(
     "the sweep holds a generic, a named and a restricted pair",
     ["generic", "with", "restricted"].every((k) => kinds.has(k)),

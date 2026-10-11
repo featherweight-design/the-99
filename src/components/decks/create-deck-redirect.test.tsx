@@ -31,6 +31,7 @@ const commanders = [
     colorIdentity: ["B", "G"],
     imageUri: null,
     oracleText: null,
+    typeLine: "Legendary Creature — Human",
     poolCount: 42,
   },
 ];

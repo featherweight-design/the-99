@@ -1803,6 +1803,7 @@ export const CREATE_COMMANDERS: OwnedLegalCommander[] = [
     // caption and not drawn, because it appears only for a commander with the
     // ability and would need a fourth row to explain itself.
     oracleText: null,
+    typeLine: "Legendary Creature — Human",
     poolCount: 1615,
   },
   {
@@ -1811,6 +1812,7 @@ export const CREATE_COMMANDERS: OwnedLegalCommander[] = [
     colorIdentity: ["U", "B", "G"],
     imageUri: null,
     oracleText: null,
+    typeLine: "Legendary Creature — Human",
     poolCount: 1747,
   },
   {
@@ -1819,6 +1821,7 @@ export const CREATE_COMMANDERS: OwnedLegalCommander[] = [
     colorIdentity: ["U", "G"],
     imageUri: null,
     oracleText: null,
+    typeLine: "Legendary Creature — Human",
     poolCount: 1402,
   },
 ];

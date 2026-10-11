@@ -25,6 +25,7 @@ const commanders = [
     colorIdentity: ["B", "G"],
     imageUri: null,
     oracleText: null,
+    typeLine: "Legendary Creature — Human",
     poolCount: 42,
   },
 ];
@@ -94,6 +95,7 @@ describe("CreatePicker — the partner list's empty state", () => {
       colorIdentity: ["W", "U"],
       imageUri: null,
       oracleText: "Partner (You can have two commanders if both have partner.)",
+      typeLine: "Legendary Creature — Human",
       poolCount: 3,
     },
     {
@@ -102,6 +104,7 @@ describe("CreatePicker — the partner list's empty state", () => {
       colorIdentity: ["R", "W"],
       imageUri: null,
       oracleText: "Partner (You can have two commanders if both have partner.)",
+      typeLine: "Legendary Creature — Human",
       poolCount: 2,
     },
   ];
@@ -149,6 +152,7 @@ describe("CreatePicker — a renamed copy", () => {
       colorIdentity: ["R", "W"],
       imageUri: null,
       oracleText: null,
+      typeLine: "Legendary Creature — Human",
       poolCount: 12,
     },
   ];

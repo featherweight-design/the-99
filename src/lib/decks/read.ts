@@ -1459,6 +1459,8 @@ export type OwnedLegalCommander = {
    * slot and which legends may fill it. Already fetched by the query below.
    */
   oracleText: string | null;
+  /** Read for the same: a Time Lord Doctor pairs by its type line, not its text. */
+  typeLine: string;
   /** Number of cards in the user's collection that fit within this commander's color identity. */
   poolCount: number;
 };
@@ -1525,6 +1527,7 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
         colorIdentity: c.colorIdentity,
         imageUri: own?.imageUri ?? c.imageUri,
         oracleText: c.oracleText,
+        typeLine: c.typeLine,
         poolCount,
       };
     })

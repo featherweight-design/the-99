@@ -194,15 +194,17 @@ export type LoadedPairs = { pairs: IndexPair[]; legal: number; refusal: string |
 export async function loadPairs(floor: number = LEGAL_PAIR_FLOOR): Promise<LoadedPairs> {
   const built = await loadBuiltPairs();
   // Narrowed in SQL to cards whose text carries a partner ability at the START of a line, the
-  // same anchoring `partnerAbility` uses; `legalPairs` then decides. A loose prefilter costs a
-  // row of JavaScript, and the rule itself has one home.
+  // same anchoring `partnerAbility` uses, or whose type line could make it the Doctor (which
+  // prints no ability); `legalPairs` then decides. A loose prefilter costs a row of JavaScript,
+  // and the rule itself has one home.
   const sources = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, layout: cards.layout, manaCost: cards.manaCost,
     })
     .from(cards)
-    .where(sql`${cards.commanderLegal} and (${cards.oracleText} ~* '(^|\n)partner' or ${cards.oracleText} ~* '(^|\n)friends forever')`);
+    .where(sql`${cards.commanderLegal} and (${cards.oracleText} ~* '(^|\n)partner' or ${cards.oracleText} ~* '(^|\n)friends forever'
+      or ${cards.oracleText} ~* '(^|\n)doctor.s companion' or ${cards.typeLine} ~ 'Time Lord Doctor')`);
   return choosePairs(legalPairs(sources), built, floor);
 }
 

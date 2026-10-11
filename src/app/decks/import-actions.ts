@@ -59,6 +59,8 @@ export type ImportCommanderCandidate = {
   imageUri: string | null;
   /** Read for the Partner ability, which decides who may fill the second slot. */
   oracleText: string | null;
+  /** Read for the same: a Time Lord Doctor pairs by its type line, not its text. */
+  typeLine: string;
   owned: boolean;
 };
 
@@ -271,8 +273,8 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     }
     if (
       !canPair(
-        { name: commander.name, ability: partnerAbility(commander.oracleText) },
-        { name: partner.name, ability: partnerAbility(partner.oracleText) },
+        { name: commander.name, ability: partnerAbility(commander.oracleText, commander.typeLine) },
+        { name: partner.name, ability: partnerAbility(partner.oracleText, partner.typeLine) },
       )
     ) {
       // A pair the *player* picked is refused, because the picker never offered

@@ -26,9 +26,20 @@ describe("legalPairs", () => {
   const blaring = card("Blaring Captain", "Partner with Blaring Recruiter (...)", { typeLine: "Creature — Azra Warrior" });
   const recruiter = card("Blaring Recruiter", "Partner with Blaring Captain (...)", { typeLine: "Creature — Elf Warrior" });
 
-  const pairs = legalPairs([thrasios, tymna, kraum, pir, toothy, kratos, atreus, leo, vanilla, blaring, recruiter]);
+  const tenth = card("The Tenth Doctor", "Allons-y! — Whenever The Tenth Doctor attacks, ...", { typeLine: "Legendary Creature — Time Lord Doctor" });
+  const fourth = card("The Fourth Doctor", "Would You Like a...? — ...", { typeLine: "Legendary Creature — Time Lord Doctor" });
+  const rose = card("Rose Tyler", "Bad Wolf — ...\nDoctor's companion (You can have two commanders if the other is the Doctor.)");
+
+  const pairs = legalPairs([thrasios, tymna, kraum, pir, toothy, kratos, atreus, leo, vanilla, blaring, recruiter, tenth, fourth, rose]);
   const has = (x: PairSource, y: PairSource) =>
     pairs.some((p) => (p.a === x.oracleId && p.b === y.oracleId) || (p.a === y.oracleId && p.b === x.oracleId));
+
+  it("pairs each Doctor with a companion, and never two Doctors or a Doctor with a partner", () => {
+    expect(has(tenth, rose)).toBe(true);
+    expect(has(fourth, rose)).toBe(true);
+    expect(has(tenth, fourth)).toBe(false);
+    expect(has(tenth, thrasios)).toBe(false);
+  });
 
   it("pairs every generic partner with every other one", () => {
     expect(has(thrasios, tymna)).toBe(true);
@@ -53,9 +64,9 @@ describe("legalPairs", () => {
   });
 
   it("emits each pair once, in canonical id order, with each name on its own id", () => {
-    expect(pairs).toHaveLength(5);
+    expect(pairs).toHaveLength(7);
     for (const p of pairs) expect(p.a < p.b).toBe(true);
-    const byId = new Map([thrasios, tymna, kraum, pir, toothy, kratos, atreus].map((c) => [c.oracleId, c.name]));
+    const byId = new Map([thrasios, tymna, kraum, pir, toothy, kratos, atreus, tenth, fourth, rose].map((c) => [c.oracleId, c.name]));
     for (const p of pairs) {
       expect(byId.get(p.a)).toBe(p.nameA);
       expect(byId.get(p.b)).toBe(p.nameB);
