@@ -25,7 +25,7 @@ import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
-import { CHOOSE_PATH, formTarget, REPEAT_PARAM } from "../../../../lib/intake/submit";
+import { BUSY_PARAM, CHOOSE_PATH, formTarget, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { toStanding } from "../../../../lib/intake/standing";
 import { DimWhileReading, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
 import { phaseOf } from "../../../../lib/intake/read-phase";
@@ -120,6 +120,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
       params={p}
       changeHref={changeHref}
       repeat={sp.get(REPEAT_PARAM) === "1"}
+      busy={sp.get(BUSY_PARAM) === "1"}
       hasDecks={decks === null ? null : decks.length > 0}
     />
   ) : null;

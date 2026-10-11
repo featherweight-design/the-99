@@ -77,6 +77,8 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
       expect(to).not.toContain("r=");
       expect(to).not.toContain("rr=");
       expect(to).toContain("w=scary");
+      // Only a read already running names its cause (rb=1); the standing line says the rest.
+      expect(to?.includes("rb=1")).toBe(kind === "in_flight");
     }
     expect(stub.after).not.toHaveBeenCalled();
   });

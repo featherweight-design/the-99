@@ -36,7 +36,7 @@ function Pool({ n }: { n: number }) {
 
 function draw(
   served: TheReadState | null,
-  { d = deps(), over = {} as object | null, p = params, repeat = false, hasDecks = true as boolean | null, pool = null as number | null } = {},
+  { d = deps(), over = {} as object | null, p = params, repeat = false, busy = false, hasDecks = true as boolean | null, pool = null as number | null } = {},
 ) {
   return render(
     <ReadScope initial={phaseOf(served)}>
@@ -47,6 +47,7 @@ function draw(
         params={served ? p : { ...p, readId: null }}
         changeHref="/decks/new/choose?w=something+scary"
         repeat={repeat}
+        busy={busy}
         hasDecks={hasDecks}
         deps={d as never}
       />
@@ -256,6 +257,12 @@ describe("7j: nothing fits", () => {
 });
 
 describe("7l, 7n: unread", () => {
+  it("names the cause when another read was still running", () => {
+    draw(null, { busy: true });
+    expect(text()).toContain("Another read of yours was still running, so this one didn’t start.");
+    expect(text()).not.toContain("Your words are kept for another try.");
+  });
+
   it("says the words were not read, with the bare standing and no press (F10)", () => {
     draw(null, { over: { used: 10 } });
     expect(panel().dataset.phase).toBe("unread");

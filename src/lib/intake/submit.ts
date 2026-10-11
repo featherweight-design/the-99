@@ -68,7 +68,10 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
  * it started one. NOTHING IS MATCHED (ruling 2): the words never become answers, so no card, no
  * *Not used* and no marks. A card a stale address carries is dropped (F1: the form has no card).
  */
-export function resultsTarget(p: ChooseParams, readId: string | null, repeat = false): string {
+/** How the player arrived, when the panel says so: a stored answer (7m), or another read running. */
+export type Arrival = "repeat" | "busy";
+
+export function resultsTarget(p: ChooseParams, readId: string | null, arrival: Arrival | null = null): string {
   const target = `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
     words: p.words.slice(0, READ_WORDS_MAX_CHARS).trim(),
@@ -78,7 +81,9 @@ export function resultsTarget(p: ChooseParams, readId: string | null, repeat = f
     readId,
     results: true,
   })}`;
-  return repeat && readId ? `${target}&${REPEAT_PARAM}=1` : target;
+  if (arrival === "repeat" && readId) return `${target}&${REPEAT_PARAM}=1`;
+  if (arrival === "busy" && !readId) return `${target}&${BUSY_PARAM}=1`;
+  return target;
 }
 
 /**
@@ -88,6 +93,13 @@ export function resultsTarget(p: ChooseParams, readId: string | null, repeat = f
  * player's own panel and nothing else.
  */
 export const REPEAT_PARAM = "rr";
+
+/**
+ * Marks an unread results address whose read did not start because another of the player's was
+ * still running (a second tab, a second press). Outside `ChooseParams` for the same reasons as
+ * `REPEAT_PARAM`, and hand-written it changes only the unread panel's lead.
+ */
+export const BUSY_PARAM = "rb";
 
 /** The form with these answers in it: where an old `v=submit` address goes, so a GET never charges. */
 export function formTarget(p: ChooseParams): string {

@@ -133,8 +133,8 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
     redirect(resultsTarget(p, begun.readId));
   }
   // A repeat lands on the stored read, marked so its line says no credit was used (7m).
-  if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(p, begun.readId, true));
-  redirect(resultsTarget(p, null));
+  if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(p, begun.readId, "repeat"));
+  redirect(resultsTarget(p, null, begun.kind === "in_flight" ? "busy" : null));
 }
 
 /** Whether every theme and set is one the form's pickers offer now. */

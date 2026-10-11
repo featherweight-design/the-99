@@ -148,6 +148,8 @@ export const helpMeChooseCopy = {
     unreadTitle: "What you wrote wasn’t read",
     // Claims no cause: the line under it gives one (no credit left, paused, the owner's share).
     unreadLead: "These results use your answers alone. Your words are kept for another try.",
+    // copy-reviewed: Recovery; names the cause, which the standing line under it cannot.
+    busyLead: "Another read of yours was still running, so this one didn’t start. These results use your answers alone.",
     stopped: "Stopped. No credit was used.", // announced
   },
   /**

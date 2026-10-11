@@ -84,6 +84,7 @@ export function ReadPanel({
   params,
   changeHref,
   repeat = false,
+  busy = false,
   hasDecks = null,
   deps = DEPS,
 }: {
@@ -97,6 +98,8 @@ export function ReadPanel({
   changeHref: string;
   /** The read was this ask's stored answer, charged nothing (7m). */
   repeat?: boolean;
+  /** Unread because another of the player's reads was still running. */
+  busy?: boolean;
   /** Whether the player has any deck (7k); `null` when that read failed, so nothing is claimed. */
   hasDecks?: boolean | null;
   deps?: ReadPanelDeps;
@@ -176,7 +179,7 @@ export function ReadPanel({
     phase === "reading" ? copy.read.pendingLead
     : phase === "stopped" ? copy.read.stoppedLead
     : phase === "failed" ? copy.read.failedLead
-    : phase === "unread" ? copy.read.unreadLead
+    : phase === "unread" ? (busy ? copy.read.busyLead : copy.read.unreadLead)
     : phase === "done" && result ? [
       copy.read.doneLead(fmt(result.pool), result.weighed),
       // 7i: an exact identity held, so nothing outside it was read.
