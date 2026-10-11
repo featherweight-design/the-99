@@ -14,6 +14,76 @@ candidate shortfall rules against his play history on ten decks and none matched
 lays out counted figures, each beside the published reference where one exists, and lets the player read
 them. Help is a separate act the player asks for.
 
+## Rulings 2026-10-11 (Hugh)
+
+These build on the evidence ruling above and do not loosen it: still no verdict word, no verdict color.
+
+1. **No always-on pointer. Colors are ranked only inside `Improve my mana`** (REVISED by Hugh,
+   2026-10-11; replaces the lead line below). Reason: Design showed the lead line names colors Hugh calls
+   fine on Scrappy Survivors (W), Brago (W), Counter Intelligence (U) and Gods (W), and no rule tested
+   names the short colors without naming fine ones (see Calibration). So nothing on a deck's screen points
+   at a color. `Improve my mana` is the one general door; inside it the deck's colors are listed tightest
+   first, by sources over Karsten's requirement on the patterns two or more cards share, with nothing
+   preselected, and the player picks. The ranking decides list order and nothing else. It is never worded
+   as a verdict and never drawn in a warning color.
+
+   The ordering rules from the superseded ruling carry over to that list, since it is the same ranking:
+   only a pattern with a published Karsten number counts (a ceiling, `at most N`, and `no published figure`
+   give no ratio and are skipped); a color's ratio is its worst over the patterns two or more cards share,
+   or its worst single-card pattern when it has none; a tie goes to the color with more pips (counted with
+   the commander), then to the W, U, B, R, G order. A `colorless` deck has no list to order. A deck where
+   no color has a published pattern lists its colors in W, U, B, R, G order. Under `noSources` every ratio
+   reads 0 and the tie-break orders them.
+
+   ~~A lead line on every deck: `Closest to its limit: <color>`~~ (superseded 2026-10-11, reason above). It
+   stated the lowest-ratio color on every deck's screen; the rules for which color, in every state, are the
+   ones carried over in the paragraph above.
+2. **Pattern rows read `You have N · Needs M`**, under a column headed `Needed`. Opening a row (a tap on
+   the phone) shows one line: "Frank Karsten's math: sources of this color a 99-card deck needs to cast
+   this on curve about 9 times in 10." Karsten is named only in that line and in the citation, nowhere
+   else on the screen.
+3. **One door: `Improve my mana`.** It opens a color step listing the deck's colors in ruling 1's order
+   (tightest first), with nothing preselected; the player picks the color. The engine never picks it,
+   including the tightest one.
+
+## Calibration (staging, read-only, 2026-10-11)
+
+Why no screen points at a color (ruling 1, revised 2026-10-11) and why the door's list is ordered rather than flagged: no absolute threshold separates the
+colors Hugh calls short from the ones he calls fine. Ratio is a color's sources over Karsten's
+requirement for its tightest pattern shared by two or more cards. Gishath's green at 1.00 is one of his
+short calls, while Counter Intelligence's blue at 0.69 and Brago's white at 0.93 are fine; catching
+Gishath needs a cut at 1.00, which also flags five of the six colors he calls fine (all but Tovolar's green). Ranking within each deck does name the right
+color on Gishath, Avatar Aang and Blood Rites. Gods is discounted: its "short" red was a call about a
+past version, and its list has changed since.
+
+| Deck | Color | Sources | Tightest shared pattern (cards) | Needs | Ratio | Hugh's call |
+|---|---|---|---|---|---|---|
+| HD - Gishath | W | 26 | `4C` (2) | 15 | 1.73 | none |
+| HD - Gishath | R | 27 | `4CC` (2) | 22 | 1.23 | none |
+| HD - Gishath | G | 28 | `1CC` (3) | 28 | 1.00 | short (hunch) |
+| HD Tune - Blood Rites | W | 24 | `2CC` (3) | 26 | 0.92 | short |
+| HD Tune - Blood Rites | B | 30 | `CC` (3) | 30 | 1.00 | fine |
+| HD Tune - Scrappy Survivors | W | 20 | `3CC` (4) | 23 | 0.87 | fine |
+| HD Tune - Scrappy Survivors | R | 19 | `1C` (3) | 19 | 1.00 | none |
+| HD Tune - Scrappy Survivors | G | 21 | `C` (3) | 19 | 1.11 | none |
+| HD - Gods (discounted) | W | 22 | `CC` (2) | 30 | 0.73 | none |
+| HD - Gods (discounted) | U | 20 | `2CC` (6) | 26 | 0.77 | fine |
+| HD - Gods (discounted) | R | 22 | `2CC` (2) | 26 | 0.85 | short (past) |
+| HD - Brago | W | 26 | `1CC` (2) | 28 | 0.93 | fine |
+| HD - Brago | U | 26 | `2CC` (4) | 26 | 1.00 | none |
+| HD Tune - Counter Intelligence | W | 28 | `C` (3) | 19 | 1.47 | none |
+| HD Tune - Counter Intelligence | U | 25 | `CCC` (2) | 36 | 0.69 | fine |
+| HD Tune - Counter Intelligence | R | 26 | `1C` (2) | 19 | 1.37 | none |
+| HD - Tovolar | R | 22 | `2CC` (2) | 26 | 0.85 | none |
+| HD - Tovolar | G | 34 | `1CC` (5) | 28 | 1.21 | fine |
+| HD - Avatar Aang | W | 22 | `1C` (2) | 19 | 1.16 | none |
+| HD - Avatar Aang | U | 21 | `CC` (4) | 30 | 0.70 | short (`UU`) |
+| HD - Avatar Aang | R | 21 | `1C` (4) | 19 | 1.11 | none |
+| HD - Avatar Aang | G | 22 | `1C` (6) | 19 | 1.16 | none |
+
+Cards are nonland copies behind the pattern, commander excluded; counting the commander's own pattern
+changes none of the ten colors Hugh made a call on; the rest were not checked. Omnath is left out (no data) and Yuriko was borderline with no per-color call.
+
 ## What is already drawn, and what it changes
 
 The hub handoff is `design/design_handoff_the99_tuning_hub/` (approved: R1, and R2 for Proposed cuts).
@@ -136,6 +206,7 @@ Reproduce with `pnpm eval:mana` (section 2 prints every deck's evidence; section
 | HD - Gods | `13a6dc28-958c-4591-a2bb-c0297bbe5d92` | A partner pair, so staple figures read `this pairing's decks`. Blue 29 pips, 20 sources, `2CC x6` (26). 37 lands: 2 tapped, 9 conditional, 1 fetch |
 | HD - Wizards | `7653dec3-bcf4-4045-8242-9000765c7601` | A one-color deck: blue 75 pips, 37 sources, `CCC` (36). 35 lands, none tapped. Asking for any other color returns the outside-the-deck's-colors result |
 | HD - Eldrazi | `0b49cb44-8ae2-4c19-b558-633344a2f4ed` | `colorless`: no colored pip. Lands, 4 tapped, average MV 4.76, Karsten's figure 43.8, and nothing per color |
+| HD Tune - Blood Rites | `783df427-d0c5-456a-805e-cdc94ecb0952` | Two colors, commander Clavileño, First of the Blessed `{1}{W}{B}`. White 28 pips (with the commander), 24 sources; black 55 pips, 30 sources. Tightest first in the door's list (patterns 2+ cards share): white, `{2}{W}{W}` Kindred Boon, Redemption Choir, Return to Dust, `You have 24 · Needs 26`; black's tightest is `{B}{B}` Bloodghast, Cordial Vampire, Damn, 30 · 30. A single-card white pattern sits tighter than the lead and does not decide it: `{W}{W}` March of the Canonized, 24 · 30. Figures as of 2026-10-11 |
 
 Card names, counts and prices are real and will drift with the decks and the collection; Design may
 treat them as illustrative if the arithmetic stays consistent across frames, as the hub handoff did.
