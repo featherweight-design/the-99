@@ -110,7 +110,7 @@ export function ManaBalancePanel({
     ) : null;
   }
 
-  const { balance, commander, cards, ids } = data;
+  const { balance, commander, commanders, cards, ids } = data;
   const { pipTotal, sourceTotal, rows } = colorRows(balance.supply);
   const colorless = balance.state === "colorless";
   const pipped = pippedColors(balance.colors);
@@ -162,7 +162,7 @@ export function ManaBalancePanel({
         open={sections.has("lands")}
         onToggle={() => sections.toggle("lands")}
       >
-        <LandFacts lands={balance.lands} cards={cards} commander={commander} />
+        <LandFacts lands={balance.lands} cards={cards} commander={commander} commanders={commanders} />
       </ManaSection>
 
       <KarstenCitation landOnly={colorless} />

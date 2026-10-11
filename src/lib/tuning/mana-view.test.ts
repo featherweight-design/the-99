@@ -73,3 +73,13 @@ describe("the Hardest costs chips", () => {
     expect(defaultPatternColor(read([spell("a", "{2}"), land("wastes", 5, ["C"])]).colors)).toBeNull();
   });
 });
+
+describe("Mana Balance's counted strings", () => {
+  it("say one in the singular", async () => {
+    const { manaBalanceCopy: c } = await import("../copy/mana-balance");
+    expect(c.table.split(1, 3)).toBe("1 land · 3 other");
+    expect(c.table.colorless(1, 1, 4)).toBe("1 {C} pip · 1 source · 4%");
+    expect(c.lands.averageNote("Tymna and Thrasios", 2)).toBe("counts Tymna and Thrasios as cards");
+    expect(c.lands.averageNote("Gishath", 1)).toBe("counts Gishath as a card");
+  });
+});

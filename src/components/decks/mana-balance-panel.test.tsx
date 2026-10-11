@@ -25,7 +25,7 @@ function panelData(rows: ManaSupplyCardRow[], identity = ["R", "G", "W"], t: Tap
   const balance = readManaBalance({ rows, nameOf: (id) => names[id] ?? id, tapped: t, identity });
   const ids: Record<string, string> = {};
   for (const c of balance.colors) for (const p of c.patterns) for (const card of p.cards) ids[card.name] = `id-${card.name}`;
-  return { balance: toClientBalance(balance), commander: "Gishath", cards: rows.reduce((a, r) => a + r.quantity, 0), ids };
+  return { balance: toClientBalance(balance), commander: "Gishath", commanders: 1, cards: rows.reduce((a, r) => a + r.quantity, 0), ids };
 }
 
 const gishath = () => panelData([

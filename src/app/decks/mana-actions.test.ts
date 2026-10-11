@@ -81,3 +81,13 @@ describe("readManaBalance (the action)", () => {
     ]);
   });
 });
+
+describe("readManaBalance with a partner", () => {
+  it("names every commander the without figure leaves out, by front face", async () => {
+    state.deck = { ...(state.deck as object), partner: { oracleId: "p", name: "Thrasios, Triton Hero", colorIdentity: ["G"], manaCost: null } };
+    const data = (await readManaBalance(DECK))!;
+    expect(data.commander).toBe("Avatar Aang and Thrasios");
+    expect(data.commanders).toBe(2);
+    expect(data.cards).toBe(36);
+  });
+});

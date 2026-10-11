@@ -44,8 +44,10 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
   }
   return {
     balance: toClientBalance(balance),
-    // The front face of a double-faced commander (`Avatar Aang // Aang` reads `Avatar Aang`).
-    commander: shortCommanderName(deck.commander.name.split(" // ")[0]),
+    // Every commander, by its front face (`Avatar Aang // Aang` reads `Avatar Aang`): the figure
+    // "without" them leaves out each commander row, a partner's included.
+    commander: commanders.map((c) => shortCommanderName(c.name.split(" // ")[0])).join(" and "),
+    commanders: commanders.length,
     cards: deck.cards.reduce((a, c) => a + c.quantity, 0) + commanders.length,
     ids,
   };

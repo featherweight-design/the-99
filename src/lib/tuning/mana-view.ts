@@ -12,8 +12,10 @@ export type ClientManaBalance = Omit<ManaBalance, "supply"> & { supply: Omit<Man
 
 export type ManaPanelData = {
   balance: ClientManaBalance;
-  /** The commander's short name (`Gishath`); the first one's, with a partner. */
+  /** The commanders' short names (`Gishath`; `Tymna and Thrasios` with a partner). */
   commander: string;
+  /** How many commanders that names: one, or two with a partner. */
+  commanders: number;
   /** Every card in the deck, commanders included: the Lands row's denominator. */
   cards: number;
   /** A card name to its oracle id, for every card a pattern row names, so a name opens card detail. */

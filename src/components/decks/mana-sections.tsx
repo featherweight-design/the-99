@@ -224,7 +224,7 @@ function FactRow({ label, figure, note, names }: { label: string; figure: string
 }
 
 /** Lands' body: six facts, the three tapped ones disclosing which lands, and the formula's caveat. */
-export function LandFacts({ lands, cards, commander }: { lands: LandEvidence; cards: number; commander: string }) {
+export function LandFacts({ lands, cards, commander, commanders }: { lands: LandEvidence; cards: number; commander: string; commanders: number }) {
   const t = lands.tapped;
   const tapped: { key: TappedKey; label: string; note: string }[] = [
     { key: "always", label: copy.lands.always, note: copy.lands.alwaysNote },
@@ -240,7 +240,7 @@ export function LandFacts({ lands, cards, commander }: { lands: LandEvidence; ca
           // A row reading 0 says nothing about which kind of land: no note and nothing to open.
           <FactRow key={r.key} label={r.label} figure={String(t[r.key])} note={t[r.key] > 0 ? r.note : ""} names={t[r.key] > 0 ? t.names[r.key] : undefined} />
         ))}
-        <FactRow label={copy.lands.average} figure={avg} note={copy.lands.averageNote(commander)} />
+        <FactRow label={copy.lands.average} figure={avg} note={copy.lands.averageNote(commander, commanders)} />
         <FactRow label={copy.lands.formulaLabel} figure={lands.karstenLands.toFixed(1)} note={copy.lands.formula(avg, lands.cheapRamp)} />
       </ul>
       <p className="max-w-[660px] text-[12px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.lands.caveat(lands.cheapRamp)}</p>
