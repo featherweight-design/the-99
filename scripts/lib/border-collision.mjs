@@ -114,7 +114,7 @@ function scan(text) {
 /**
  * A bare colliding utility, found anywhere in the stripped source — `border-b` and `border-r`,
  * never `border-b-2`/`border-b-0`/`border-b-[...]`/`border-bottom-*`, all of which are distinct
- * identifiers. Each match keeps its VARIANT chain (`md:`, `last:hover:`), because the override
+ * identifiers. Each match keeps its VARIANT chain (`md:`, `last:hover:`) and the legacy `!` that follows it (`md:!border-r`), because the override
  * that fixes it has to carry the same one: see `hasSideOverride`. Offsets are kept so a caller can
  * report a line without re-deriving positions.
  */
@@ -129,7 +129,7 @@ function bareCollisions(text) {
     //
     // A token starts at whitespace, a quote, a backtick, `{` or `(`; its variants are everything up
     // to the last `:` before the utility, so `[&>*]:` and `data-[x=y]:` are read whole.
-    const re = new RegExp(`(?<![^\\s"'\`{(])(!?(?:[^\\s"'\`]*:)?)border-${side}(!?)(?![\\w-])`, "g");
+    const re = new RegExp(`(?<![^\\s"'\`{(])((?:[^\\s"'\`]*:)?!?)border-${side}(!?)(?![\\w-])`, "g");
     for (const m of text.matchAll(re)) {
       found.push({ side, index: m.index + m[1].length, variant: m[1], important: m[2] === "!" });
     }

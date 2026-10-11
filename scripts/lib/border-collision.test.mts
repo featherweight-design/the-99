@@ -121,6 +121,14 @@ describe("variants", () => {
     expect(unresolvedCollisions('<i className="border-r border-r-[color:var(--b)]!" />')).toHaveLength(1);
     expect(unresolvedCollisions('<i className="!border-r border-r-[color:var(--b)]" />')).toHaveLength(1);
   });
+
+  it("reads the legacy prefix ! after the variants: md:!border-r and [&>*]:!border-b", () => {
+    expect(unresolvedCollisions('<i className="md:!border-r" />')).toHaveLength(1);
+    expect(unresolvedCollisions('<i className="[&>*]:!border-b" />')).toHaveLength(1);
+    expect(unresolvedCollisions('<i className="md:!border-r border-r-[color:var(--b)]" />')).toHaveLength(1);
+    expect(unresolvedCollisions('<i className="md:!border-r md:!border-r-[color:var(--b)]" />')).toEqual([]);
+    expect(unresolvedCollisions('<i className="md:!border-r !border-r-[color:var(--b)]" />')).toHaveLength(1);
+  });
 });
 
 describe("stylesheets", () => {
