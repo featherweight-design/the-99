@@ -60,6 +60,8 @@ interface BuilderSpineProps {
   /** The header's notice and its press. See `SpineBandProps`. */
   notice?: HeaderNotice | null;
   onOpenNotices?: () => void;
+  /** The trim line's `Proposed cuts →`. See `SpineBandProps`. */
+  onProposedCuts?: () => void;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -270,6 +272,7 @@ export function BuilderSpine({
   onOpenBracket,
   notice = null,
   onOpenNotices,
+  onProposedCuts,
 }: BuilderSpineProps) {
   return (
     <>
@@ -283,6 +286,7 @@ export function BuilderSpine({
       onOpenBracket={onOpenBracket}
       notice={notice}
       onOpenNotices={onOpenNotices}
+      onProposedCuts={onProposedCuts}
     />
     <SpineMobile
       deck={deck}
@@ -294,6 +298,7 @@ export function BuilderSpine({
       onOpenBracket={onOpenBracket}
       notice={notice}
       onOpenNotices={onOpenNotices}
+      onProposedCuts={onProposedCuts}
     />
 
     {/* Below the spine and above the decklist, per the canvas: it is a claim

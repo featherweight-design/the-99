@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled } from "./flag";
+import { hubTools, manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "./flag";
 
 describe("the Tuning flag", () => {
   it("is off for every value but the exact string 'true', with Analysis also on", () => {
@@ -89,5 +89,31 @@ describe("the Mana Balance flag", () => {
 
   it("is off with everything unset, the production default", () => {
     expect(manaBalanceEnabled(env({}))).toBe(false);
+  });
+});
+
+describe("the Tuning hub", () => {
+  const env = (vars: Record<string, string | undefined>) => vars as unknown as NodeJS.ProcessEnv;
+  const on = { ANALYSIS_TAB_ENABLED: "true" };
+
+  it("is off with no tool on: the tab as it was", () => {
+    expect(hubTools(env(on))).toEqual([]);
+    expect(tuningHubEnabled(env(on))).toBe(false);
+  });
+
+  it("is off with exactly one tool on, which then mounts directly", () => {
+    expect(hubTools(env({ ...on, TUNING_ENABLED: "true" }))).toEqual(["suggested"]);
+    expect(tuningHubEnabled(env({ ...on, TUNING_ENABLED: "true" }))).toBe(false);
+    expect(tuningHubEnabled(env({ ...on, PROPOSED_CUTS_ENABLED: "true" }))).toBe(false);
+  });
+
+  it("is on with two tools on, a tile for each", () => {
+    const both = env({ ...on, TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" });
+    expect(hubTools(both)).toEqual(["suggested", "cuts"]);
+    expect(tuningHubEnabled(both)).toBe(true);
+  });
+
+  it("is off whenever Analysis is off, whatever the tools say", () => {
+    expect(tuningHubEnabled(env({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toBe(false);
   });
 });

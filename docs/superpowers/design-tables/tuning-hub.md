@@ -33,7 +33,7 @@
 | padding-top | 16 | 16 |
 | heading | `Tuning`, display font, 17, `--fg` | 19 |
 | heading → body gap | 12 | 12 |
-| mount | with the reading; absent before one | same |
+| mount | with the reading, or for a deck over 100 with none (plan 2026-10-11: Proposed cuts needs no reading); absent otherwise | same |
 | view state | `openTool: null \| tool`, reset on tabpanel unmount | same |
 
 ## ToolTile
@@ -50,7 +50,7 @@
 | chevron | `›` mono 14 `--fg-faint` | same |
 | purpose | 12.5 / 1.5 `--fg-body` | same |
 | cost tag | mono 10.5 `--fg-faint`, `1px solid --border-strong`, radius 999, `1px 8px` | same |
-| status | mono 10.5 `--fg-faint`; offer figure `--warning` | same |
+| status | mono 10.5 `--fg-faint`; offer figure `--fg-muted`, never `--warning` (R2 audit decision 1); the phone drops the last run's outcome (A1b) | same |
 | element | `<button>` whose name is tool + status | same |
 
 ### ToolTile — running
@@ -62,7 +62,7 @@
 | status ink | `--accent` | same |
 | status text | tool's live-region words · elapsed `m:ss` | same |
 
-### ToolTile — inert (Proposed cuts, ≤ 100)
+### ToolTile — inert (Proposed cuts, ≤ 100; Suggested changes with no reading)
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -76,7 +76,7 @@
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| form | `‹ Tuning` back, 44 tall, 13 / 500 `--fg-muted` | underline tab row (`role=tablist`) |
+| form | `‹ Tuning` back, 44 tall, 13 / 500 `--fg-muted`; right: the tool's mark 14 + mono 10 `--fg-faint` `n of N tools`, N the tools this deployment draws | underline tab row (`role=tablist`), arrow keys, Home and End |
 | tabs | — | All tools · Suggested changes · Mana Balance · Proposed cuts · History |
 | tab font | — | 13; active 600 `--fg`, rest 500 `--fg-muted` |
 | tab gap | — | 22 |

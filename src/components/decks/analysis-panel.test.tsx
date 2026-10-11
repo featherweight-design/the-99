@@ -297,6 +297,35 @@ describe("AnalysisPanel", () => {
     });
   });
 
+  // The Tuning hub, when on, is drawn INSTEAD of the two tools it mounts inside its tiles, and is
+  // asked whether a reading is held: it draws for a deck with none when that deck is over 100.
+  describe("the hub slot", () => {
+    const withHub = (state: ProfileState) => {
+      const hub = vi.fn((permits: readonly number[] | null) => <div>hub {permits === null ? "without a reading" : `for ${permits.join(",")}`}</div>);
+      render(
+        <CardDetailProvider fetchCard={async () => null}>
+          <AnalysisPanel state={state} onRequest={onRequest} hub={hub} tuning={() => <p>direct tuning</p>} cuts={<p>direct cuts</p>}>
+          </AnalysisPanel>
+        </CardDetailProvider>,
+      );
+      return hub;
+    };
+
+    it("replaces the directly mounted tools over a reading, handed its permits", () => {
+      withHub(ready());
+      expect(screen.getByText(/^hub for/)).toBeInTheDocument();
+      expect(screen.queryByText("direct tuning")).toBeNull();
+      expect(screen.queryByText("direct cuts")).toBeNull();
+    });
+
+    it("is asked with no permits before a first reading", () => {
+      const hub = withHub({ kind: "idle" });
+      expect(hub).toHaveBeenCalledWith(null);
+      expect(screen.getByText("hub without a reading")).toBeInTheDocument();
+      expect(screen.queryByText("direct cuts")).toBeNull();
+    });
+  });
+
   // OPENING THE TAB (§8, 8a): the tab draws only its loader. It draws nothing it cannot
   // yet know, because the fetch may resolve to the empty state or to any analyzed shape.
   describe("opening the tab", () => {

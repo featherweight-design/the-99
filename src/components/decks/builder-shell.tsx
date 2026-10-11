@@ -20,6 +20,7 @@ import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
 import { TuningPanel } from "./tuning-panel";
+import { TuningHub, type HubRequest } from "./tuning-hub";
 import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
 import { OVERVIEW_HOLD_MS, useDeckSynopsis } from "./synopsis-state";
@@ -244,6 +245,10 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `proposedCutsEnabled()`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
+  /** `tuningHubEnabled()`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
+   *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
+   *  tools mount directly, exactly as before the hub. */
+  tuningHubEnabled?: boolean;
 }
 
 // The Games tab's default: a deck nobody has logged against. Hoisted so the
@@ -295,6 +300,7 @@ export function BuilderShell({
   deeperLooks = false,
   tuningEnabled = false,
   proposedCutsEnabled = false,
+  tuningHubEnabled = false,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -466,6 +472,18 @@ export function BuilderShell({
   const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
   const [cutsSettledKey, setCutsSettledKey] = useState<string | null>(null);
   const onCutsSettled = useCallback(() => setCutsSettledKey(visitKey), [visitKey]);
+  // With the hub on, the tools mount only when opened, so the tab's loader waits on the landing's
+  // own first read instead of on theirs.
+  const [hubSettledKey, setHubSettledKey] = useState<string | null>(null);
+  const onHubSettled = useCallback(() => setHubSettledKey(visitKey), [visitKey]);
+  // A shortcut's ask for the hub (the trim line's `Proposed cuts →`), answered once per nonce.
+  // Dropped once the hub has answered it, so a later visit to the tab opens on the landing.
+  const [hubRequest, setHubRequest] = useState<HubRequest | null>(null);
+  const hubNonce = useRef(0);
+  const onHubRequestAnswered = useCallback(
+    (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
+    [],
+  );
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.
@@ -481,8 +499,10 @@ export function BuilderShell({
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled }),
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
-    suggestionsSettled: tuningSettled === visitKey,
-    cutsSettled: !proposedCutsEnabled || cutsSettledKey === visitKey,
+    suggestionsSettled: tuningHubEnabled || tuningSettled === visitKey,
+    cutsSettled: tuningHubEnabled
+      ? hubSettledKey === visitKey
+      : !proposedCutsEnabled || cutsSettledKey === visitKey,
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1287,6 +1307,37 @@ export function BuilderShell({
 
   const openExport = () => setExportOpen(true);
 
+  // The two tools, built once and mounted either directly (hub off) or inside the hub's tiles.
+  const cutsPanel = (
+    <CutsPanelView
+      key={deck.id}
+      deckId={deck.id}
+      deeperLooks={deeperLooks}
+      onSettled={onCutsSettled}
+      revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
+    />
+  );
+  const suggestedPanel = (permits: readonly Bracket[]) => (
+    <TuningPanel
+      deckId={deck.id}
+      permits={permits}
+      deeperLooks={deeperLooks}
+      facts={{
+        gameCount: gameSummary.count,
+        noteCount: games.filter((g) => g.note !== null).length,
+        fix: gameSummary.fix[0] ? { key: gameSummary.fix[0].key, hurt: gameSummary.fix[0].hurt } : null,
+        marked: gameSummary.marked,
+        cards: built,
+        intent: deck.intent,
+        limits: deck.limits ?? { capCents: null, sets: [], ownedOnly: false },
+      }}
+      printedInSets={printedInSets}
+      onLogGame={() => setView("games")}
+      onSettled={onTuningSettled}
+      onSaveDescription={saveDescription}
+    />
+  );
+
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     // Every card opened from this page belongs to THIS deck, which is what
@@ -1353,6 +1404,9 @@ export function BuilderShell({
               onOpenBracket={() => setView("analysis")}
               notice={headerNoticeTag}
               onOpenNotices={openNoticesSheet}
+              onProposedCuts={tuningHubEnabled && proposedCutsEnabled
+                ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
+                : undefined}
               // State 2: a list that has never been committed and has reached a
               // full body.
               //
@@ -1647,35 +1701,26 @@ export function BuilderShell({
                       />
                     ) : null
                   }
-                  cuts={proposedCutsEnabled ? (
-                    <CutsPanelView
+                  cuts={proposedCutsEnabled ? cutsPanel : undefined}
+                  hub={!tuningHubEnabled ? undefined : (permits) => (
+                    <TuningHub
+                      // Per deck: the shell survives a move between decks, and the hub's open tool,
+                      // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      deeperLooks={deeperLooks}
-                      onSettled={onCutsSettled}
-                      revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
-                    />
-                  ) : undefined}
-                  tuning={!tuningEnabled ? undefined : (permits) => (
-                    <TuningPanel
-                      deckId={deck.id}
-                      permits={permits}
-                      deeperLooks={deeperLooks}
-                      facts={{
-                        gameCount: gameSummary.count,
-                        noteCount: games.filter((g) => g.note !== null).length,
-                        fix: gameSummary.fix[0] ? { key: gameSummary.fix[0].key, hurt: gameSummary.fix[0].hurt } : null,
-                        marked: gameSummary.marked,
-                        cards: built,
-                        intent: deck.intent,
-                        limits: deck.limits ?? { capCents: null, sets: [], ownedOnly: false },
-                      }}
-                      printedInSets={printedInSets}
-                      onLogGame={() => setView("games")}
-                      onSettled={onTuningSettled}
-                      onSaveDescription={saveDescription}
+                      drawn={permits !== null || built > bodySize}
+                      request={hubRequest}
+                      onRequestAnswered={onHubRequestAnswered}
+                      onSettled={onHubSettled}
+                      tools={[
+                        ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits) : null }] : []),
+                        ...(proposedCutsEnabled
+                          ? [{ tool: "cuts" as const, panel: cutsPanel, over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
+                          : []),
+                      ]}
                     />
                   )}
+                  tuning={!tuningEnabled ? undefined : suggestedPanel}
                 >
                 </AnalysisPanel>
                 </HoverPreviewProvider>

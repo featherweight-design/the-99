@@ -14,6 +14,7 @@ import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
@@ -100,6 +101,9 @@ export interface SpineBandProps {
    */
   notice?: HeaderNotice | null;
   onOpenNotices?: () => void;
+  /** The trim line's `Proposed cuts →` (Tuning hub A5): opens the tool on the Analysis tab.
+   *  Absent with the hub off, and then the line is exactly as before. */
+  onProposedCuts?: () => void;
 }
 
 // §B16's single-field box is retired: editing now draws name and description at one width,
@@ -130,6 +134,7 @@ export function SpineDesktop({
   onOpenBracket,
   notice = null,
   onOpenNotices,
+  onProposedCuts,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   const { commander, partner } = deck;
@@ -607,6 +612,16 @@ export function SpineDesktop({
                   problem rather than the fix. */}
               <b className="font-semibold">{overCopy.trim.lead(overWord(toCut))}</b>{" "}
               {overCopy.trim.body(overWord(toCut))}
+              {onProposedCuts ? (
+                <button
+                  type="button"
+                  data-shortcut="proposed-cuts"
+                  onClick={onProposedCuts}
+                  className="ml-[10px] border-b border-b-[var(--accent-dim)] font-mono text-[11.5px] text-[var(--accent)]"
+                >
+                  {tuningHubCopy.shortcuts.proposedCuts}
+                </button>
+              ) : null}
             </p>
           )}
         </div>

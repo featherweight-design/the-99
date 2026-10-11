@@ -37,3 +37,27 @@ export function proposedCutsEnabled(env: NodeJS.ProcessEnv = process.env): boole
 export function manaBalanceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.MANA_BALANCE_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
 }
+
+/** A Tuning tool the hub can draw a tile for. Mana Balance joins when its view ships. */
+export type HubTool = "suggested" | "cuts";
+
+/**
+ * The tools the Tuning hub would draw, read from each tool's own switch: no switch of its own
+ * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab.
+ */
+export function hubTools(env: NodeJS.ProcessEnv = process.env): HubTool[] {
+  return [
+    ...(tuningEnabled(env) ? ["suggested" as const] : []),
+    ...(proposedCutsEnabled(env) ? ["cuts" as const] : []),
+  ];
+}
+
+/**
+ * Whether the Analysis tab draws the Tuning hub: the `Tuning` section with a tile per tool, the
+ * tools opening in place (tuning hub handoff R1, canvas A), and the trim line's `Proposed cuts →`.
+ * Two or more tools on draws it. Exactly one mounts that tool directly, as before the hub, since a
+ * landing with one tile is a step with no choice in it; none leaves the tab as it was.
+ */
+export function tuningHubEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return hubTools(env).length >= 2;
+}
