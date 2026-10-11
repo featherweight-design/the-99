@@ -35,14 +35,31 @@ claude-sonnet-5-5 at medium effort, streamed.
 | Ask A, horrors | 3,445 | 22 / 3 | 17 / 7 | 37 / 9 |
 | Ask B, Landfall unlike my decks | 3,445 | 39 / 2 | 37 / 10 | 39 / 10 |
 | Ask A, exactly black | 329 | **0 / 0** | 16 / 10 | not run |
-| no decks, Landfall | 3,445 | **5 / 0** | 39 / 10 | 38 / 9 |
+| decks hidden, Landfall | 3,445 | **5 / 0** | 39 / 10 | 38 / 9 |
 | card: Doubling Season | 3,445 | 29 / 10 | 30 / 10 | 30 / 9 |
 | nothing fits: mono-blue Dinosaurs | 308 | 0 / 0 | 3 / 2 | not run |
 
 - **At low effort, Haiku failed twice.** It returned no keys inside the mono-black pool. For the
   no-decks ask it shortlisted 5 commanders, and the judgement found nothing among them.
-- **At medium, it matched Sonnet.** Its shortlists and picks were on a par with the Sonnet arm, for
-  about $0.004 more per warm press than at low.
+- **At medium, every fixture produced a shortlist the judgement could use** (16 to 39 commanders,
+  7 to 10 picks), for about $0.004 more per warm press than at low.
+- **It does not reach the same shortlist as Sonnet**, and this table is what the choice rests on.
+  How far Haiku at medium and Sonnet at low agree:
+
+  | fixture | shortlists (Haiku / Sonnet) | shared | Jaccard | picks shared |
+  |---|---|---|---|---|
+  | Ask A, horrors | 17 / 37 | 2 | 0.04 | 2 of 7 and 9 |
+  | Ask B, Landfall unlike my decks | 37 / 39 | 25 | 0.49 | 4 of 10 |
+  | decks hidden, Landfall | 39 / 38 | 24 | 0.45 | 5 of 10 and 9 |
+  | card: Doubling Season | 30 / 30 | 30 | 1.00 | 6 of 10 and 9 |
+
+  The card fixture agrees completely because both models shortlisted exactly the 30 commanders the
+  request names as running the card. On a theme (Landfall) they share about half. On a tone (scary
+  and a little nasty) they barely overlap: Sonnet leaned on the Horror creature type, and Haiku on
+  what the cards do (shrinking boards, forced sacrifice, discard). Both sets of picks read as fitting
+  the ask, but agreement is not a measure of which is better, and no gold list exists to score
+  either. **The choice of Haiku rests on cost and on its picks reading as fitting, not on matching
+  Sonnet**, and the overlap above is the evidence a reader should weigh against it.
 
 ## The READINESS assertions
 
@@ -64,6 +81,13 @@ claude-sonnet-5-5 at medium effort, streamed.
    would otherwise fail the whole reply.
 4. **The prompt asks for at most 120 characters, and the validator stays at 140.** When asked for 140,
    replies ran 141 to 160 characters and were refused.
+
+## The no-decks fixture
+
+It is Hugh's account with his decks hidden from the read (`inputs.decks = []`), not an account with
+no decks: his pool still excludes the commanders he has built, and the ownership figures are still
+his. It measures what the reason lines say when there are no decks to compare against, which is
+the state the panel's no-decks line describes; it does not measure a new player's pool.
 
 ## No gold list
 

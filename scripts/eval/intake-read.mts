@@ -23,9 +23,12 @@
  * measured cost after; the run stops before a call that could cross the $5 cap
  * (`ledger-help-me-choose.jsonl`).
  *
- * NO GOLD LIST EXISTS for what fits a tone, so recall is not scored against one. What is reported:
- * the assertions the READINESS asks for, how many of a fixture's top ten carry the theme the ask
- * names (the tag baseline), and how far the two arms' shortlists agree.
+ * NO GOLD LIST EXISTS for what fits a tone, so recall is not scored against one. What is recorded:
+ * each arm's shortlist and picks, with their reasons, for the READINESS assertions and for the arms'
+ * agreement, which the metrics write-up computes from these answers.
+ *
+ * `noDecks` hides Hugh's decks from the read; it is not an account with no decks (his pool and his
+ * ownership figures are unchanged).
  */
 import "../lib/env.mjs";
 import { writeFileSync } from "node:fs";
