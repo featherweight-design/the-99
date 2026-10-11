@@ -373,7 +373,7 @@ describe("AvailabilityMarker sparse claimants", () => {
     );
     expect(container.textContent).toBe("short 5");
     expect(markerAria(a(4, 9, 0))).toBe(
-      "you own 5 too few for the committed decks that include it",
+      "you own 5 too few for the decks that include it",
     );
   });
 
@@ -383,7 +383,7 @@ describe("AvailabilityMarker sparse claimants", () => {
     );
     expect(container.textContent).toBe("short 5, also in 1 deck");
     expect(markerAria(a(4, 9, 0, ["Rats"]))).toBe(
-      "1 of your committed decks includes this card and you own 5 too few",
+      "1 of your decks includes this card and you own 5 too few",
     );
   });
 });
@@ -431,7 +431,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     );
     expect(container.textContent).toBe("short 2, also in 2 decks");
     expect(markerAria(av, { selfExcluded: true })).toBe(
-      "2 of your committed decks include this card and you own 2 too few",
+      "2 of your decks include this card and you own 2 too few",
     );
   });
 
@@ -444,7 +444,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     // Off the deck page the figure is drawn at one too (Hugh, 2026-09-28).
     expect(container.textContent).toBe("short 1");
     expect(markerAria(av, { selfExcluded: true, nameless: true })).toBe(
-      "you own 1 too few for the committed decks that include it",
+      "you own 1 too few for the decks that include it",
     );
   });
 });
@@ -469,7 +469,7 @@ describe("markerAria", () => {
 
   it("drops the deck count from the over aria when nameless", () => {
     expect(markerAria(a(4, 9, 0, ["Rats", "Nazgûl"]), { nameless: true })).toBe(
-      "you own 5 too few for the committed decks that include it",
+      "you own 5 too few for the decks that include it",
     );
   });
 
@@ -490,7 +490,7 @@ describe("markerAria", () => {
       for (const n of names) expect(aria).not.toContain(n);
       // The label is the ceiling: any deck count in the aria has to be drawn.
       if (!/\d+ deck/.test(container.textContent ?? "")) {
-        expect(aria).not.toMatch(/\d+ of your committed decks/);
+        expect(aria).not.toMatch(/\d+ of your decks/);
       }
       unmount();
     }

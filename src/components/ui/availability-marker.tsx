@@ -70,10 +70,10 @@ export function markerAria(a: AvailabilitySummary, opts?: MarkerOpts): string | 
       // Two ways to lose the count, and the same answer to both — which is why
       // this guard is shaped exactly like the hard branch's. `nameless` is
       // /collection's contract and every chip's, where the label draws a bare
-      // `short N`; announcing "3 of your committed decks" there reads out a
+      // `short N`; announcing "3 of your decks" there reads out a
       // number the surface deliberately does not draw. And with no names at all
       // (a degraded read) the shortfall is still true where the count is not,
-      // since `overAria(n, 0)` would say "0 of your committed decks include this
+      // since `overAria(n, 0)` would say "0 of your decks include this
       // card". Both drop to the count-free shortfall the label already shows.
       if (opts?.nameless || hard.length === 0) {
         return c.overAriaCountOnly(-a.free);

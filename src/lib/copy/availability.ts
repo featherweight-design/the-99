@@ -73,8 +73,8 @@ export const availabilityCopy = {
       `no free copies; this one is in your ${deckName} deck`,
     hardMultiAria: (deckCount: number) =>
       deckCount === 1
-        ? "no free copies; they are on 1 of your committed decks"
-        : `no free copies; they are on ${deckCount} of your committed decks`,
+        ? "no free copies; they are on 1 of your decks"
+        : `no free copies; they are on ${deckCount} of your decks`,
     hardAriaCountOnly: "no free copies",
 
     // over: free < 0. Never names decks — it is a count problem, not a location.
@@ -93,10 +93,10 @@ export const availabilityCopy = {
         : `${shortWord(shortBy, bareOne)}, also in ${deckCount} decks`,
     overAria: (shortBy: number, deckCount: number) =>
       deckCount === 1
-        ? `1 of your committed decks includes this card and you own ${shortBy} too few`
-        : `${deckCount} of your committed decks include this card and you own ${shortBy} too few`,
+        ? `1 of your decks includes this card and you own ${shortBy} too few`
+        : `${deckCount} of your decks include this card and you own ${shortBy} too few`,
     overAriaCountOnly: (shortBy: number) =>
-      `you own ${shortBy} too few for the committed decks that include it`,
+      `you own ${shortBy} too few for the decks that include it`,
 
     // On a deck's OWN list the current deck is excluded from the marker, so
     // "also in N decks" would count the deck the player is standing in. Name the
