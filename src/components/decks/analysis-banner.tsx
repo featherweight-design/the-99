@@ -20,8 +20,8 @@ import { WorkPulse } from "./work-pulse";
  * - `blocked`: the deck is not whole (ruling 1). The sentence becomes the reason and the button is
  *   disabled, because pressing it would be refused.
  * - `note`: the credit note when the press also writes the overview (`CREDITS-overview.md` 7c, 7e).
- *   ONE node, reordered at `md:`: sentence, note, button at 1300 (the note right-aligned beside the
- *   press); sentence, button, note at 390. Tied to the button by `aria-describedby`, so the cost is
+ *   ONE node, placed by the 1300 grid: the sentence over the note, left-aligned, with the button
+ *   beside both (benchmarks audit rule 9); sentence, button, note at 390, in DOM order. Tied to the button by `aria-describedby`, so the cost is
  *   heard before the press. None over a blocked deck, whose press writes nothing (finding 10b).
  *
  * `variant="note"` (H35, PR 4a; deck-description handoff §3 state 9, engineering note 10): the

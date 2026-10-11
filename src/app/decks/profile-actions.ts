@@ -91,7 +91,7 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   });
 
   const { profile, analyzedAt, fresh, versionNumber } = result.reading;
-  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber, benchmarks: await readingBenchmarks(profile) };
+  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber, benchmarks: await readingBenchmarks(profile, userId) };
 }
 
 export type StoredProfileFetch =
@@ -122,7 +122,7 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
         analyzedAt: stored.analyzedAt.toISOString(),
         fresh: stored.fresh,
         versionNumber: stored.versionNumber,
-        benchmarks: await readingBenchmarks(stored.profile),
+        benchmarks: await readingBenchmarks(stored.profile, userId),
       }
     : { ok: false, reason: "none" };
 }

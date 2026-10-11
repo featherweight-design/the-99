@@ -261,7 +261,7 @@ Mobile = the `phone` layout (drawn at 358 content width inside the 390 frame). D
 | analyzed reading | full block |
 | stale reading / failed re-read over held reading | full block, caption `captionStale(date)`; no tag, no dimming |
 | Re-analyze in flight over held reading | full block; never busy on its own |
-| card count < floor | tiny panel (§10); no grades, no Dependencies box |
+| card count < floor | **not built**: unreachable, a reading needs a whole deck (§10) |
 | win speed with no combo | dashed no-combo panel (§7); no meter, no opener |
 | win speed with combos | graded tile, `openCombo(n)` |
 | dependency row with `n > 0` | opener `open(n)` |
