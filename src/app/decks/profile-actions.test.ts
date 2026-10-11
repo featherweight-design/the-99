@@ -22,6 +22,8 @@ const stub = vi.hoisted(() => ({
   /** What a stored lookup finds. */
   stored: null as unknown,
   revalidated: [] as string[],
+  /** What the reading's benchmarks read answers. */
+  benchmarks: null as unknown,
   deferred: 0,
 }));
 
@@ -40,6 +42,13 @@ vi.mock("next/server", () => ({
 
 vi.mock("../../lib/decks/analysis-flag", () => ({
   analysisTabEnabled: () => stub.enabled,
+}));
+
+vi.mock("../../lib/benchmarks/reading", () => ({
+  readingBenchmarks: async (profile: unknown) => {
+    stub.reads.push("benchmarks");
+    return profile ? stub.benchmarks : null;
+  },
 }));
 
 vi.mock("../../lib/auth", () => ({
@@ -82,6 +91,7 @@ beforeEach(() => {
   stub.stored = null;
   stub.revalidated = [];
   stub.deferred = 0;
+  stub.benchmarks = null;
 });
 
 describe("fetchDeckProfile", () => {
@@ -89,10 +99,10 @@ describe("fetchDeckProfile", () => {
     const result = await fetchDeckProfile(DECK);
     // A press is dated when it ran: the bracket box prints `analyzed a moment ago`.
     expect(result).toEqual({
-      ok: true, profile: { brackets: {} }, analyzedAt: expect.any(String), fresh: true, versionNumber: null,
+      ok: true, profile: { brackets: {} }, analyzedAt: expect.any(String), fresh: true, versionNumber: null, benchmarks: null,
     });
     expect(Date.now() - Date.parse((result as { analyzedAt: string }).analyzedAt)).toBeLessThan(5_000);
-    expect(stub.reads).toEqual(["auth", "profile"]);
+    expect(stub.reads).toEqual(["auth", "profile", "benchmarks"]);
   });
 
   // RULING 5: a press on an unchanged list answers from the store, and the reading keeps the
@@ -100,7 +110,7 @@ describe("fetchDeckProfile", () => {
   it("dates an answer from the store by its own row, not by the press", async () => {
     stub.pressedAt = STORED_AT;
     expect(await fetchDeckProfile(DECK)).toEqual({
-      ok: true, profile: { brackets: {} }, analyzedAt: STORED_AT.toISOString(), fresh: true, versionNumber: null,
+      ok: true, profile: { brackets: {} }, analyzedAt: STORED_AT.toISOString(), fresh: true, versionNumber: null, benchmarks: null,
     });
   });
 
@@ -188,8 +198,9 @@ describe("fetchStoredDeckProfile", () => {
       analyzedAt: STORED_AT.toISOString(),
       fresh: true,
       versionNumber: null,
+      benchmarks: null,
     });
-    expect(stub.reads).toEqual(["auth", "stored"]);
+    expect(stub.reads).toEqual(["auth", "stored", "benchmarks"]);
   });
 
   // A STALE reading is answered AS stale (2i): the tab holds it under the banner rather than
@@ -199,7 +210,7 @@ describe("fetchStoredDeckProfile", () => {
     stub.storedFresh = false;
     stub.versionNumber = 3;
     expect(await fetchStoredDeckProfile(DECK)).toEqual({
-      ok: true, profile: { brackets: { 3: {} } }, analyzedAt: STORED_AT.toISOString(), fresh: false, versionNumber: 3,
+      ok: true, profile: { brackets: { 3: {} } }, analyzedAt: STORED_AT.toISOString(), fresh: false, versionNumber: 3, benchmarks: null,
     });
   });
 
@@ -212,5 +223,20 @@ describe("fetchStoredDeckProfile", () => {
   it("refuses a malformed id before any read", async () => {
     expect(await fetchStoredDeckProfile("deck-1")).toEqual({ ok: false, reason: "not-found" });
     expect(stub.reads).toEqual([]);
+  });
+});
+
+describe("the reading's benchmarks", () => {
+  it("sends a reading's benchmarks beside it, from a press and from the store", async () => {
+    stub.benchmarks = { velocity: { step: 3 } };
+    expect(await fetchDeckProfile(DECK)).toMatchObject({ ok: true, benchmarks: { velocity: { step: 3 } } });
+    stub.stored = { brackets: {} };
+    expect(await fetchStoredDeckProfile(DECK)).toMatchObject({ ok: true, benchmarks: { velocity: { step: 3 } } });
+  });
+
+  it("reads none when there is no reading to grade", async () => {
+    stub.stored = null;
+    await fetchStoredDeckProfile(DECK);
+    expect(stub.reads).not.toContain("benchmarks");
   });
 });

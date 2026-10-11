@@ -38,7 +38,7 @@ vi.mock("../../app/decks/profile-actions", () => ({
   },
 }));
 
-const { useDeckProfile } = await import("./use-deck-profile");
+const { useDeckProfile, shownReading } = await import("./use-deck-profile");
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -62,6 +62,7 @@ function Harness({ deckId = A, listKey }: { deckId?: string; listKey?: string })
       <span data-testid="held">{String("held" in state && state.held !== null)}</span>
       <span data-testid="fresh">{state.kind === "ready" ? String(state.fresh) : "-"}</span>
       <span data-testid="at">{state.kind === "ready" ? state.analyzedAt : "-"}</span>
+      <span data-testid="bench">{JSON.stringify(shownReading(state)?.benchmarks ?? null)}</span>
       <button onClick={request}>ask</button>
       <button onClick={peek}>peek</button>
     </div>
@@ -109,6 +110,30 @@ describe("useDeckProfile", () => {
     await act(async () => {});
     expect(stub.calls).toEqual([]);
     expect(kind(c)).toBe("idle");
+  });
+
+  // The benchmarks belong to the reading (plan PR 3): they ride every reply into the held reading
+  // and stay with it through a stale edit and a failed re-read, as the reading does.
+  it("carries a reply's benchmarks on the reading, through a stale edit and a failed re-read", async () => {
+    const bench = (c: ReturnType<typeof render>) => c.getByTestId("bench").textContent;
+    stub.reply = { ...(stub.reply as object), benchmarks: { mark: "pressed" } };
+    const c = render(<Harness listKey="a:1" />);
+    await ask(c);
+    expect(bench(c)).toBe('{"mark":"pressed"}');
+    c.rerender(<Harness listKey="a:1,b:1" />);
+    await act(async () => {});
+    expect([fresh(c), bench(c)]).toEqual(["false", '{"mark":"pressed"}']);
+    stub.throws = true;
+    await ask(c);
+    expect([kind(c), bench(c)]).toEqual(["failed", '{"mark":"pressed"}']);
+    stub.throws = false;
+  });
+
+  it("carries a stored reading's benchmarks", async () => {
+    stub.stored = { ok: true, profile: { brackets: {} }, analyzedAt: "2026-09-23T00:00:00Z", fresh: true, versionNumber: null, benchmarks: { mark: "stored" } };
+    const c = render(<Harness />);
+    await peek(c);
+    expect(c.getByTestId("bench").textContent).toBe('{"mark":"stored"}');
   });
 
   it("fetches once when asked, and reports ready", async () => {

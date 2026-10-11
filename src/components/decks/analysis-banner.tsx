@@ -20,8 +20,8 @@ import { WorkPulse } from "./work-pulse";
  * - `blocked`: the deck is not whole (ruling 1). The sentence becomes the reason and the button is
  *   disabled, because pressing it would be refused.
  * - `note`: the credit note when the press also writes the overview (`CREDITS-overview.md` 7c, 7e).
- *   ONE node, reordered at `md:`: sentence, note, button at 1300 (the note right-aligned beside the
- *   press); sentence, button, note at 390. Tied to the button by `aria-describedby`, so the cost is
+ *   ONE node, placed by the 1300 grid: the sentence over the note, left-aligned, with the button
+ *   beside both (benchmarks audit rule 9); sentence, button, note at 390, in DOM order. Tied to the button by `aria-describedby`, so the cost is
  *   heard before the press. None over a blocked deck, whose press writes nothing (finding 10b).
  *
  * `variant="note"` (H35, PR 4a; deck-description handoff §3 state 9, engineering note 10): the
@@ -67,9 +67,11 @@ export function AnalysisBanner(props:
       role={mode === "failed" ? "alert" : "status"}
       data-testid="analysis-banner"
       data-mode={mode}
-      className="flex flex-col items-stretch gap-[12px] rounded-[11px] border border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[15px] py-[14px] md:flex-row md:items-center md:gap-[18px] md:py-[14px] md:pl-[20px] md:pr-[16px]"
+      // THE 1300 FORM IS A GRID (benchmarks audit rule 9): the line over its note on the left,
+      // left-aligned, the button on the right spanning both. The phone keeps its column, in DOM order.
+      className="flex flex-col items-stretch gap-[12px] rounded-[11px] border border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[15px] py-[14px] md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-[18px] md:gap-y-[4px] md:py-[14px] md:pl-[20px] md:pr-[16px]"
     >
-      <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:order-1 md:min-w-0 md:flex-1 md:text-[13.5px]">
+      <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:col-start-1 md:row-start-1 md:min-w-0 md:text-[13.5px] md:[text-wrap:pretty]">
         {sentence}
       </p>
       <button
@@ -78,7 +80,9 @@ export function AnalysisBanner(props:
         aria-disabled={disabled || undefined}
         aria-describedby={shownNote ? noteId : undefined}
         className={
-          "min-h-[44px] flex-none whitespace-nowrap rounded-[8px] text-[14px] font-semibold md:order-3 md:min-h-[36px] md:text-[13.5px] "
+          "min-h-[44px] flex-none whitespace-nowrap rounded-[8px] text-[14px] font-semibold md:col-start-2 md:row-start-1 md:min-h-[36px] md:text-[13.5px] "
+          // Spans the note's row only when there is a note: an empty second row would sit the line above the button's centre.
+          + (shownNote ? "md:row-span-2 " : "")
           + (busy ? "px-[16px] " : "px-[18px] ")
           + (disabled
             ? "cursor-default bg-[color:var(--elevated)] text-[color:var(--fg-faint)]"
@@ -95,7 +99,7 @@ export function AnalysisBanner(props:
       {shownNote ? (
         <p
           data-testid="press-note"
-          className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:order-2 md:max-w-[340px] md:text-right md:text-[11px]"
+          className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:col-start-1 md:row-start-2 md:text-left md:text-[11px] md:[text-wrap:pretty]"
         >
           {/* The button's description is the note's TEXT: a control inside it would be read as
               part of the description, so the id sits on the words alone. */}

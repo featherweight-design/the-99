@@ -44,6 +44,7 @@ const onStaging = Boolean(staging);
 
 const { neon } = await import("@neondatabase/serverless");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../src/lib/profile/load");
+const { computeReadingBenchmarks, newestLabel } = await import("../src/lib/benchmarks/reading");
 
 const sql = neon(url);
 
@@ -70,10 +71,15 @@ console.log(
   `Measuring all ${decks.length} decks on ` +
     `${onStaging ? "STAGING" : "a NON-STAGING database (MEASURE_ALLOW_LOCAL) — not a bar"}.\n`,
 );
-console.log("deck                                 cards   head    build    total");
-console.log("-".repeat(70));
+console.log("deck                                 cards   head    build    total    bench   b-key");
+console.log("-".repeat(87));
 
 const totals: number[] = [];
+// The evidence benchmarks' read (plan 2026-10-10-evidence-benchmarks, Cost). `bench` is its cold
+// cost, a cache miss; `b-key` is what every open pays to build the cache key (the newest label among
+// the list's cards), which is the warm cost apart from the cache lookup this script cannot reach.
+const benches: number[] = [];
+const keys: number[] = [];
 for (const d of decks) {
   const t0 = performance.now();
   const head = await loadProfileHead(d.id, d.user_id);
@@ -84,6 +90,13 @@ for (const d of decks) {
   }
   const profile = await loadDeckProfileFromHead(head);
   const t2 = performance.now();
+  await computeReadingBenchmarks(profile);
+  const t3 = performance.now();
+  await newestLabel(profile);
+  const bench_ms = t3 - t2;
+  const key_ms = performance.now() - t3;
+  benches.push(bench_ms);
+  keys.push(key_ms);
   const head_ms = t1 - t0;
   const build_ms = t2 - t1;
   totals.push(head_ms + build_ms);
@@ -91,7 +104,7 @@ for (const d of decks) {
   console.log(
     `${d.name.slice(0, 34).padEnd(34)} ${String(d.cards).padStart(5)}  ` +
       `${head_ms.toFixed(0).padStart(5)}ms ${build_ms.toFixed(0).padStart(6)}ms ` +
-      `${(head_ms + build_ms).toFixed(0).padStart(6)}ms   (${combos} combo${combos === 1 ? "" : "s"})`,
+      `${(head_ms + build_ms).toFixed(0).padStart(6)}ms ${bench_ms.toFixed(0).padStart(6)}ms ${key_ms.toFixed(0).padStart(6)}ms   (${combos} combo${combos === 1 ? "" : "s"})`,
   );
 }
 
@@ -103,6 +116,13 @@ if (totals.length) {
     `median ${median.toFixed(0)}ms · slowest ${Math.max(...totals).toFixed(0)}ms · ` +
       `fastest ${Math.min(...totals).toFixed(0)}ms · over all ${totals.length} decks`,
   );
+  const b = [...benches].sort((x, y) => x - y);
+  console.log(
+    `benchmarks: median ${b[Math.floor(b.length / 2)].toFixed(0)}ms · p90 ${b[Math.floor(b.length * 0.9)].toFixed(0)}ms · ` +
+      `slowest ${b[b.length - 1].toFixed(0)}ms cold (a cache miss)`,
+  );
+  const k = [...keys].sort((x, y) => x - y);
+  console.log(`benchmarks' cache key: median ${k[Math.floor(k.length / 2)].toFixed(0)}ms · slowest ${k[k.length - 1].toFixed(0)}ms (paid on every open)`);
   console.log(
     "\nThis is the COLD cost of one Analysis tab open. Every figure is a cache MISS; a warm\n" +
       "visit pays `cacheForUser`'s lookup instead, which this script cannot measure.",

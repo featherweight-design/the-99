@@ -8,6 +8,7 @@ import {
   type ProfileFetch,
   type StoredProfileFetch,
 } from "../../app/decks/profile-actions";
+import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import type { DeckProfile } from "../../lib/profile/types";
 
 /** A reading the tab can draw: current, or HELD while stale, re-reading or refused. */
@@ -19,6 +20,8 @@ export type Reading = {
   fresh: boolean;
   /** The version the reading is pinned to, for `analyzed with version n`. */
   versionNumber: number | null;
+  /** Its evidence benchmarks, or null (switch off, or the read failed). Held with the reading. */
+  benchmarks?: BenchmarksWire | null;
 };
 
 export type ProfileState =
@@ -44,8 +47,8 @@ export function shownReading(state: ProfileState): Reading | null {
   return null;
 }
 
-const readingOf = (r: { profile: DeckProfile; analyzedAt: string; fresh: boolean; versionNumber: number | null }): Reading =>
-  ({ profile: r.profile, analyzedAt: r.analyzedAt, fresh: r.fresh, versionNumber: r.versionNumber });
+const readingOf = (r: { profile: DeckProfile; analyzedAt: string; fresh: boolean; versionNumber: number | null; benchmarks?: BenchmarksWire | null }): Reading =>
+  ({ profile: r.profile, analyzedAt: r.analyzedAt, fresh: r.fresh, versionNumber: r.versionNumber, benchmarks: r.benchmarks ?? null });
 
 /**
  * The deck profile, fetched when the reader ASKS for it and held for the visit.

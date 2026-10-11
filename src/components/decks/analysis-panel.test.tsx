@@ -10,7 +10,9 @@ import { synopsisCopy } from "../../lib/copy/synopsis";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
+import { deckBenchmarksCopy } from "../../lib/copy/deck-benchmarks";
 import type { ProfileState } from "./use-deck-profile";
+import { benchmarksWire } from "./__fixtures__/benchmarks";
 
 const copy = deckAnalysisCopy.panel;
 const AT = new Date().toISOString();
@@ -391,6 +393,27 @@ describe("AnalysisPanel", () => {
     });
   });
   // The credit note beside a press that also writes the overview (CREDITS-overview.md 7a to 7e).
+  describe("the benchmarks block", () => {
+    it("draws last in the reading, under the findings, when the reading carries benchmarks", () => {
+      const { container } = draw({ kind: "ready", ...reading(), benchmarks: benchmarksWire() });
+      const block = container.querySelector("[data-benchmarks]")!;
+      expect(block).not.toBeNull();
+      expect(block.nextElementSibling).toBeNull();
+      expect(within(block as HTMLElement).getByText(deckBenchmarksCopy.caption)).toBeInTheDocument();
+    });
+
+    it("draws nothing with the switch off (no benchmarks on the reading)", () => {
+      const { container } = draw({ kind: "ready", ...reading(), benchmarks: null });
+      expect(container.querySelector("[data-benchmarks]")).toBeNull();
+    });
+
+    it("goes stale with the reading, saying so in its caption", () => {
+      draw({ kind: "ready", ...reading({ fresh: false }), benchmarks: benchmarksWire() });
+      expect(screen.queryByText(deckBenchmarksCopy.caption)).toBeNull();
+      expect(screen.getByText(/before your changes\.$/)).toBeInTheDocument();
+    });
+  });
+
   describe("the press note", () => {
     const NOTES = { analyze: "Also writes the overview, using a credit. 2 of 3 left.", reanalyze: "reanalyze note" };
     const withNotes = (state: ProfileState, legality?: { built: number; size: number }) =>
@@ -411,7 +434,7 @@ describe("AnalysisPanel", () => {
       expect(note.contains(document.getElementById(described!))).toBe(true);
     });
 
-    it("draws beside Re-analyze on the banner, after the button in the DOM and before it at md", () => {
+    it("draws on the banner after the button in the DOM, and under the line at md with the button spanning both", () => {
       withNotes(ready({ fresh: false }));
       const banner = screen.getByTestId("analysis-banner");
       const note = within(banner).getByTestId("press-note");
@@ -419,8 +442,17 @@ describe("AnalysisPanel", () => {
       expect(note.textContent).toBe(NOTES.reanalyze);
       expect(document.getElementById(button.getAttribute("aria-describedby")!)?.textContent).toBe(NOTES.reanalyze);
       expect(button.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(note.className).toMatch(/md:order-2/);
-      expect(button.className).toMatch(/md:order-3/);
+      // Benchmarks audit rule 9: the 1300 form is a grid, the note under the line, left-aligned.
+      expect(note.className).toMatch(/md:col-start-1 md:row-start-2/);
+      expect(note.className).toMatch(/md:text-left/);
+      expect(button.className).toMatch(/md:col-start-2/);
+      expect(button.className).toMatch(/md:row-span-2/);
+    });
+
+    it("keeps the button on one row when the banner has no note", () => {
+      draw(ready({ fresh: false }));
+      const button = within(screen.getByTestId("analysis-banner")).getByRole("button");
+      expect(button.className).not.toMatch(/md:row-span-2/);
     });
 
     // Finding 10b: a blocked press writes nothing, so it names no cost.

@@ -12,6 +12,8 @@ import { BracketMark } from "./bracket-mark";
 import { BracketClimb } from "./bracket-climb";
 import type { DeclarationControl } from "./declaration";
 import { FindingsBlock } from "./findings-block";
+import { BenchmarksBlock } from "./benchmarks-block";
+import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { LeanLine } from "./lean-line";
 import type { FindingArt } from "./receipt-modal";
 import type { Bracket } from "../../lib/profile/types";
@@ -184,6 +186,7 @@ export function AnalysisPanel({
             locked={locked}
             declaration={declaration}
             overview={overview}
+            benchmarks={held.benchmarks ?? null}
           />
         </div>
       ) : null}
@@ -234,6 +237,7 @@ function Verdict({
   locked,
   declaration,
   overview,
+  benchmarks,
 }: {
   profile: import("../../lib/profile/types").DeckProfile;
   analyzedAt: string;
@@ -243,6 +247,8 @@ function Verdict({
   locked: ReadonlySet<string>;
   declaration?: DeclarationControl;
   overview?: ReactNode;
+  /** The reading's evidence benchmarks (null with the switch off, or when their read failed). */
+  benchmarks: BenchmarksWire | null;
 }) {
   const verdict = slotDeck(profile);
   return (
@@ -279,6 +285,9 @@ function Verdict({
         </div>
       </div>
       <FindingsBlock profile={profile} art={art} />
+      {/* Last in the reading, under the findings: verdict, climb and findings stay together as the
+          bracket story, so no grade reads as a bracket input (design call 1). */}
+      {benchmarks ? <BenchmarksBlock benchmarks={benchmarks} stale={!fresh} analyzedAt={analyzedAt} /> : null}
     </>
   );
 }
