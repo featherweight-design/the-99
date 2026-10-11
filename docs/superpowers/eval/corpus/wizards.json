@@ -45,7 +45,6 @@
       "Naru Meha",
       "Sea Gate Oracle",
       "Laboratory Maniac",
-      "Jace, Wielder",
       "Baral",
       "Merchant Scroll",
       "Step Through",
@@ -110,7 +109,7 @@
         "sections": [
           "overview"
         ],
-        "why": "Hugh, 2026-10-11: not a control deck, his wizards are weak and cannot overwhelm; the plan is drawing out and winning with Laboratory Maniac"
+        "why": "Hugh, 2026-10-11: not a control deck, his wizards are weak and cannot overwhelm. Later that day he accepted the counterspell shell leading as the strategy, so the gold primary is the counter shell and Laboratory Maniac is the backup win"
       }
     ],
     "right": []
