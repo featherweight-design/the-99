@@ -36,13 +36,13 @@ acquireRunLock(log);
 const db = await connectStaging();
 const { sql } = await import("drizzle-orm");
 const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
-const { factsFor, catalogFor } = await import("../../src/lib/synopsis/generate");
+const { factsFor, catalogFor, synopsisCallSettings } = await import("../../src/lib/synopsis/generate");
 const { buildSynopsisPrompt } = await import("../../src/lib/synopsis/prompt");
 const { callModel } = await import("../../src/lib/model/client");
 const { synopsisResponseSchema } = await import("../../src/lib/synopsis/response-schema");
 const { validateSynopsis } = await import("../../src/lib/synopsis/validate");
-const { SYNOPSIS_MAX_TOKENS } = await import("../../src/lib/synopsis/limits");
-const { SYNOPSIS_MODEL, SYNOPSIS_EFFORT } = await import("../../src/lib/synopsis/model");
+// Contract 7 under --v1, the v2 contracts otherwise: each on its own model, effort and ceiling.
+const { model: SYNOPSIS_MODEL, effort: SYNOPSIS_EFFORT, maxTokens: SYNOPSIS_MAX_TOKENS, stream } = synopsisCallSettings(!v1);
 const { costUsd, worstCaseUsd } = await import("./lib/pricing.mjs");
 
 const rows = (await db.execute(sql`select id, user_id, name from decks order by name`)).rows as { id: string; user_id: string; name: string }[];
@@ -61,7 +61,7 @@ for (const needle of needles) {
   // Reserve the worst case BEFORE the call, as the eval ledger does: a crash after the API has
   // billed but before the settle still leaves a charge in the log. The settle line below replaces it.
   appendFileSync(log, JSON.stringify({ at: new Date().toISOString(), what: `smoke-v2 pending ${d.name}`, usd: worst, pending: true, id: runId }) + "\n");
-  const out = await callModel({ model: SYNOPSIS_MODEL, system: prompt.system, user: prompt.user, maxTokens: SYNOPSIS_MAX_TOKENS, effort: SYNOPSIS_EFFORT, schema: synopsisResponseSchema, deadlineMs: 110_000 });
+  const out = await callModel({ model: SYNOPSIS_MODEL, system: prompt.system, user: prompt.user, maxTokens: SYNOPSIS_MAX_TOKENS, effort: SYNOPSIS_EFFORT, stream, schema: synopsisResponseSchema, deadlineMs: 110_000 });
   const usage = out.usage;
   const usd = usage ? costUsd(SYNOPSIS_MODEL, { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens, cache_read_input_tokens: usage.cacheReadTokens, cache_creation_input_tokens: usage.cacheWriteTokens }, { batch: false }) : 0;
   runSpend += usd;

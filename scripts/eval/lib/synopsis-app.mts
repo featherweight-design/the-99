@@ -24,7 +24,7 @@ export async function openSynopsis() {
   const { synopsisResponseSchema } = await import("../../../src/lib/synopsis/response-schema");
   const { validateSynopsis } = await import("../../../src/lib/synopsis/validate");
   const { SYNOPSIS_MAX_TOKENS, SYNOPSIS_CONTRACT_VERSION } = await import("../../../src/lib/synopsis/limits");
-  const { SYNOPSIS_MODEL } = await import("../../../src/lib/synopsis/model");
+  const { SYNOPSIS_MODEL_V7 } = await import("../../../src/lib/synopsis/model");
   type SynopsisFacts = import("../../../src/lib/synopsis/facts").SynopsisFacts;
   type SynopsisResponse = import("../../../src/lib/synopsis/response-schema").SynopsisResponse;
 
@@ -93,7 +93,7 @@ export async function openSynopsis() {
     validate: validateSynopsis,
     schema: synopsisResponseSchema,
     maxTokens: SYNOPSIS_MAX_TOKENS,
-    model: SYNOPSIS_MODEL,
+    model: SYNOPSIS_MODEL_V7,
     contractVersion: SYNOPSIS_CONTRACT_VERSION,
   };
 }
