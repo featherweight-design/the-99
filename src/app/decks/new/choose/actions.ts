@@ -14,6 +14,8 @@ import { after } from "next/server";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { resultsTarget } from "../../../../lib/intake/submit";
 import { beginTheRead } from "../../../../lib/intake/the-read-run";
+import { loadIntakeThemes } from "../../../../lib/intake/search";
+import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 
 /**
  * *Look deeper* (plan, PR 4). It takes the id the panel chose for the press, so the Stop (a route
@@ -119,6 +121,10 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
   const p = parseLiveParams(raw);
   const words = p.words.trim();
   if (!words) redirect(resultsTarget(p, null));
+  // Themes and sets reach both prompts as filter lines, outside the player-text boundary. The parser
+  // checks their shape only, so a value either picker would not offer refuses the read: the free
+  // results, nothing reserved. A failed vocabulary read refuses it the same way.
+  if (!(await filtersKnown(p.themes, p.sets))) redirect(resultsTarget(p, null));
   // The card is null (above), so the answers are exactly the read's filters.
   const begun = await beginTheRead(userId, { readId: randomUUID(), words, filters: answersOf(p) });
   if (begun.kind === "started") {
@@ -126,4 +132,19 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
     redirect(resultsTarget(p, begun.readId));
   }
   redirect(resultsTarget(p, begun.kind === "read" || begun.kind === "nothing" ? begun.readId : null));
+}
+
+/** Whether every theme and set is one the form's pickers offer now. */
+async function filtersKnown(themes: readonly string[], sets: readonly string[]): Promise<boolean> {
+  try {
+    const [vocabulary, printings] = await Promise.all([
+      themes.length > 0 ? loadIntakeThemes() : [],
+      sets.length > 0 ? loadCommanderPrintings().then((x) => x.sets) : [],
+    ]);
+    const slugs = new Set(vocabulary.map((t) => t.slug));
+    const codes = new Set(printings.map((s) => s.code));
+    return themes.every((t) => slugs.has(t)) && sets.every((c) => codes.has(c));
+  } catch {
+    return false;
+  }
 }

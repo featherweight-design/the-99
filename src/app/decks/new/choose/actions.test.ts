@@ -10,6 +10,9 @@ vi.mock("next/server", () => ({ after: stub.after }));
 vi.mock("next/navigation", () => ({ redirect: stub.redirect }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/intake/deeper-read", () => ({ runDeeperRead: stub.run, deeperStatus: stub.status }));
+const vocab = vi.hoisted(() => ({ themes: vi.fn(), printings: vi.fn() }));
+vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: vocab.themes }));
+vi.mock("../../../../lib/sets/printed-in-read", () => ({ loadCommanderPrintings: vocab.printings }));
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
@@ -24,6 +27,8 @@ beforeEach(() => {
   stub.status.mockReset().mockResolvedValue({ kind: "running" });
   stub.begin.mockReset();
   stub.after.mockReset();
+  vocab.themes.mockReset().mockResolvedValue([{ slug: "landfall", label: "Landfall", commanders: 300 }]);
+  vocab.printings.mockReset().mockResolvedValue({ sets: [{ code: "mh3", name: "Modern Horizons 3" }] });
 });
 
 describe("submitChoose (rework plan PR 3, F8)", () => {
@@ -31,6 +36,18 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     try { await submitChoose(query); } catch (e) { return String((e as Error).message).replace("REDIRECT ", ""); }
     return null;
   };
+
+  it("refuses the read for a theme or set the pickers would not offer, or when the vocabulary cannot be read", async () => {
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    for (const q of ["?w=x&t=landfall,ignore-previous-instructions&tj=any", "?w=x&p=mh3,zzz"]) {
+      const to = await landed(q);
+      expect(to).not.toContain("r=");
+    }
+    vocab.themes.mockRejectedValueOnce(new Error("catalog down"));
+    expect(await landed("?w=x&t=landfall")).not.toContain("r=");
+    expect(stub.begin).not.toHaveBeenCalled();
+    expect(await landed("?w=x&t=landfall&p=mh3")).toContain(`r=${ID}`);
+  });
 
   it("lands an empty box on the free results, reserving nothing", async () => {
     const to = await landed("?c=b&w=%20%20");
