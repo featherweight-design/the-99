@@ -7,6 +7,29 @@
     "listFingerprint": "b662fff8071fd8e284ff636dcf9035a0a1210050f52866985eb67af322dcc3e3"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Baral"
+        ],
+        "words": [
+          "counterspell",
+          "counter "
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "Laboratory Maniac"
+          ]
+        },
+        {
+          "cards": [
+            "Jace, Wielder of Mysteries"
+          ]
+        }
+      ]
+    },
     "combos": [
       {
         "cards": [
@@ -22,7 +45,14 @@
       "Naru Meha",
       "Sea Gate Oracle",
       "Laboratory Maniac",
-      "Jace, Wielder"
+      "Baral",
+      "Merchant Scroll",
+      "Step Through",
+      "Jace, Wielder of Mysteries",
+      "Azami",
+      "Patron Wizard",
+      "Counterspell",
+      "Malevolent Hermit"
     ],
     "weaknesses": [
       {
@@ -72,6 +102,14 @@
         ],
         "pattern": "mill",
         "why": "Brainstorm draws and puts back; it does not mill"
+      },
+      {
+        "id": "control-primary",
+        "pattern": "\\bcontrol (deck|the game)\\b|\\bcontrol\\b.*\\bdeck\\b",
+        "sections": [
+          "overview"
+        ],
+        "why": "Hugh, 2026-10-11: not a control deck, his wizards are weak and cannot overwhelm. Later that day he accepted the counterspell shell leading as the strategy, so the gold primary is the counter shell and Laboratory Maniac is the backup win"
       }
     ],
     "right": []

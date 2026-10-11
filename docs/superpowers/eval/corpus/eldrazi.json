@@ -7,6 +7,24 @@
     "listFingerprint": "912188895c0df6c5835210327a1a8d45d634baeca1b248bef5286d72639068bd"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Zhulodok"
+        ],
+        "words": [
+          "cascade"
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "Basalt Monolith",
+            "Forsaken Monument"
+          ]
+        }
+      ]
+    },
     "combos": [
       {
         "cards": [

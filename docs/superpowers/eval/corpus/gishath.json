@@ -7,6 +7,24 @@
     "listFingerprint": "eb283ece8f988c71fe2f6dea4a36b7955720f05775aec728d02164d2aa8cb6ff"
   },
   "gold": {
+    "plans": {
+      "primary": {
+        "cards": [
+          "Gishath"
+        ],
+        "words": [
+          "Dinosaur"
+        ]
+      },
+      "backups": [
+        {
+          "cards": [
+            "Marauding Raptor",
+            "Polyraptor"
+          ]
+        }
+      ]
+    },
     "combos": [
       {
         "cards": [
