@@ -6,7 +6,7 @@ describe("deckSurfaces", () => {
   // Home lists the three most recent decks, so it goes stale on a rename or a
   // create just as surely as /decks does.
   it("names the home dashboard alongside the deck and the index", () => {
-    expect(deckSurfaces("deck-1")).toEqual(["/decks/deck-1", "/decks", "/"]);
+    expect(deckSurfaces("deck-1")).toEqual(["/decks/deck-1", "/decks", "/decks/shopping", "/"]);
   });
 
   // The rail carries the deck's name, a row per version and a games-held tally

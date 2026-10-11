@@ -1309,6 +1309,7 @@ describe("logGame", () => {
     expect(stub.state.revalidated).toEqual([
       "/decks/deck_1",
       "/decks",
+      "/decks/shopping",
       "/",
     ]);
   });
@@ -1329,6 +1330,7 @@ describe("deleteGame", () => {
     expect(stub.state.revalidated).toEqual([
       "/decks/deck_1",
       "/decks",
+      "/decks/shopping",
       "/",
     ]);
   });

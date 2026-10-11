@@ -16,7 +16,8 @@
  * lists the three most recent decks with a card count each, so a create or a
  * delete changes which decks it names and a rename or a membership change alters
  * what it says about one of them. (The order is by `createdAt` and does not move
- * — see `listRecentDecks`.)
+ * — see `listRecentDecks`.) The all-decks cart reads every unfinished deck's
+ * name and missing cards, so every deck write changes what it lists too.
  *
  * The version rail used to be listed here as its own path. It is a TAB on the
  * deck page now and `/decks/[id]/versions` is retired, so revalidating the deck
@@ -25,7 +26,7 @@
  * Naming the retired path as well would invalidate a cache entry no route fills.
  */
 export function deckSurfaces(deckId: string): string[] {
-  return [`/decks/${deckId}`, "/decks", "/"];
+  return [`/decks/${deckId}`, "/decks", "/decks/shopping", "/"];
 }
 
 /**
