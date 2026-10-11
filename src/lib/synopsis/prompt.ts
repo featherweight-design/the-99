@@ -258,8 +258,10 @@ export function buildSynopsisPrompt(
   // Contract 8: the colors the deck PLAYS, when its lands make fewer than its identity. An Avatar
   // Aang deck is five-color by identity and makes no black mana, and the Overview called it
   // five-color and judged its mana against black (Hugh, 2026-10-11).
-  const landColors = facts.landColors ?? [];
-  if (opts.contract8 && landColors.length > 0 && landColors.length < facts.identity.length) {
+  // Absent (facts built before the field) says nothing; an EMPTY list is a finding: lands that make
+  // no color, named "Colorless" rather than left out and judged against the identity.
+  const landColors = facts.landColors;
+  if (opts.contract8 && landColors !== undefined && landColors.length < facts.identity.length) {
     lines.push(`Colors the lands make: ${colorLabel(landColors)}`);
   }
 

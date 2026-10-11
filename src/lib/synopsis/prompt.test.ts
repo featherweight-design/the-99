@@ -275,7 +275,11 @@ describe("buildSynopsisPrompt under contract 8", () => {
     expect(buildSynopsisPrompt(fewer).user).not.toContain("Colors the lands make");
     const same = { ...fewer, landColors: ["W", "U", "B", "R", "G"] };
     expect(buildSynopsisPrompt(same, undefined, C8).user).not.toContain("Colors the lands make");
-    expect(buildSynopsisPrompt({ ...fewer, landColors: [] }, undefined, C8).user).not.toContain("Colors the lands make");
+    // Lands that make no color are a finding, not an absence; facts without the field say nothing.
+    expect(buildSynopsisPrompt({ ...fewer, landColors: [] }, undefined, C8).user).toContain("Colors the lands make: Colorless");
+    expect(buildSynopsisPrompt({ ...fewer, landColors: undefined }, undefined, C8).user).not.toContain("Colors the lands make");
+    // A colorless identity has nothing fewer to state.
+    expect(buildSynopsisPrompt({ ...fewer, identity: [], identityName: "Colorless", landColors: [] }, undefined, C8).user).not.toContain("Colors the lands make");
   });
 
   it("tells a repair to give kept sections empty evidence", () => {

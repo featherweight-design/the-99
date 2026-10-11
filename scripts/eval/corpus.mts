@@ -155,6 +155,12 @@ if (command === "run") {
   const existing = existsSync(args.out) ? readAnswers(args.out) : [];
   const mixed = existing.filter((a) => a.prompt !== args.prompt);
   if (mixed.length > 0) throw new Error(`eval:corpus run: ${args.out} holds rows from another prompt (${[...new Set(mixed.map((a) => a.prompt ?? "unlabelled"))].join(", ")}); refusing to resume into it`);
+  // The arm is part of a run's identity too: resuming a file written under another model, effort,
+  // ceiling, deadline or streaming setting would append a mixed arm and void the comparison. A row
+  // recorded before the arm was, says nothing about its arm, and is refused for the same reason.
+  const armKey = JSON.stringify(arm);
+  const otherArm = existing.filter((a) => JSON.stringify((a as { arm?: unknown }).arm) !== armKey);
+  if (otherArm.length > 0) throw new Error(`eval:corpus run: ${args.out} holds ${otherArm.length} row(s) from another arm, or recorded before arms were (this run is ${armKey}); refusing to resume into it`);
   const done = new Set(existing.map((a) => a.id));
   for (const c of loadCorpus(CORPUS)) {
     if (only && !only.has(c.id)) continue;
