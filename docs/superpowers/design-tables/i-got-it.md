@@ -9,7 +9,7 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 - Tag accessible name = `gotItCopy.row.tagAria` (the canvas's `Bought <card>? Add it to your collection`), NOT README's `I got it: <card>` (erratum 1). The tag's existing sentence becomes its description.
 - R2 truth is modal (desktop) / bottom sheet (phone); details link and title are the same key (`Bought this card?`) — not the README "Notes for engineering" popover / `I got it` link (erratum 3).
 - The phone-stack flip (`buy` over `over $X`) and the shortened ⇄ key text are gated on `SHOPPING_MARK_BOUGHT_ENABLED && COLLECTION_EDIT_ENABLED`; with either off the row and key are `main`'s (finding 5, erratum 4).
-- Finish preset/rules: options always derive from the selected printing's `finishes`; keep current finish if still offered, else nonfoil, else first offered. Sold-out row: nonfoil when offered, else first offered (finding 1, closed rulings).
+- Finish preset/rules: options always derive from the selected printing's `finishes`; keep current finish if still offered, else nonfoil, else first offered. A sold-out row presets no printing and no finish (plan, "How the preset is chosen"; B1/B7/A5), unless the card has exactly one printing, which is selected with nonfoil when offered, else its first offered finish (finding 1, closed rulings).
 
 ---
 
@@ -330,7 +330,7 @@ Copy wording is out of scope: rows name the copy *key/slot*, not the text (wordi
 | renders when | more than one printing | more than one printing |
 | display | flex | flex |
 | gap | 12px | 14px |
-| overflow | scrolls sideways (B4m; ~3 tiles visible) | hidden (canvas) |
+| overflow | scrolls sideways (B4m; ~3 tiles visible) | scrolls sideways, overriding the canvas's hidden: a card has up to 57 printings and the 520px modal fits about four 104px tiles |
 | padding | 4px 4px 2px | 4px 4px 2px |
 | margin | 0 -4px | 0 -4px |
 | component | `PrintingRegion role="choose" layout="row"` | same |

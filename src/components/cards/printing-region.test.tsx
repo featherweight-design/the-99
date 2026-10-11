@@ -506,6 +506,22 @@ describe("PrintingRegion role=choose source=catalog", () => {
       expect((sheetTile.firstElementChild as HTMLElement).className).toContain("rounded-[10px]");
     });
 
+    it("keys catalog tiles by id, so two variants sharing a set and number are two choices", () => {
+      const twins = [
+        choice({ scryfallId: "v-1", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512" }),
+        choice({ scryfallId: "v-2", setCode: "sld", setName: "Secret Lair", collectorNumber: "1512", finishes: ["foil"] }),
+      ];
+      const { onPick } = renderChoose({ printings: twins, layout: "row", selected: "v-2" });
+      const radios = screen.getAllByRole("radio");
+      expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "true"]);
+      fireEvent.click(radios[0]);
+      expect(onPick.mock.calls[0][0].scryfallId).toBe("v-1");
+      radios[1].focus();
+      fireEvent.keyDown(radios[1], { key: "ArrowLeft" });
+      expect(radios[0]).toHaveFocus();
+      expect(onPick.mock.calls[1][0].scryfallId).toBe("v-1");
+    });
+
     it("focuses the selected tile when asked", () => {
       renderChoose({ selected: "id-3", layout: "row", autoFocus: true });
       expect(screen.getAllByRole("radio")[2]).toHaveFocus();

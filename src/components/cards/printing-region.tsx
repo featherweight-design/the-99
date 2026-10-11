@@ -149,8 +149,17 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const sourcePrintings = props.printings;
   // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
   // the search and the keyboard are written once. `quantity` is what the player holds of it.
+  // A catalog tile is keyed by its catalog id: (set, collector number) is not unique in the
+  // catalog, since two variants can share it (price-query.ts), and a pair key would check both
+  // tiles and hand back either variant. An owned printing (art role) has no id to key on and keeps
+  // the pair, which is also what its stored preference names.
+  const tileKey = useCallback(
+    (p: { setCode: string; collectorNumber: string; scryfallId?: string | null }) =>
+      choose && p.scryfallId ? p.scryfallId : printingKey(p),
+    [choose],
+  );
   const catalogByKey = useMemo(
-    () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [printingKey(c), c])) : null),
+    () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [c.scryfallId, c])) : null),
     [choose, sourcePrintings],
   );
   const printings: BrowsePrinting[] = useMemo(
@@ -264,7 +273,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const selectedKey = useMemo(() => {
     if (!choose || selectedId === null) return null;
     const hit = (sourcePrintings as PrintingChoice[]).find((c) => c.scryfallId === selectedId);
-    return hit ? printingKey(hit) : null;
+    return hit ? hit.scryfallId : null;
   }, [choose, selectedId, sourcePrintings]);
 
   const matched = useMemo(
@@ -273,8 +282,8 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   );
   // A selected tile a search has narrowed out stays first (B2): the way back is never lost.
   const visible = useMemo(() => {
-    if (selectedKey === null || matched.some((p) => printingKey(p) === selectedKey)) return matched;
-    const sel = entries.find((p) => printingKey(p) === selectedKey);
+    if (selectedKey === null || matched.some((p) => p.scryfallId === selectedKey)) return matched;
+    const sel = entries.find((p) => p.scryfallId === selectedKey);
     return sel ? [sel, ...matched] : matched;
   }, [matched, entries, selectedKey]);
 
@@ -310,8 +319,8 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
 
   /** Built once per render so the grid does not scan `navigable` for every tile it draws. */
   const navigableIndex = useMemo(
-    () => new Map(navigable.map((p, i) => [printingKey(p), i])),
-    [navigable],
+    () => new Map(navigable.map((p, i) => [tileKey(p), i])),
+    [navigable, tileKey],
   );
 
   const preferredKey = preferred === null ? null : printingKey(preferred);
@@ -325,20 +334,20 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
       : navigable.find((p) => printingKey(p) === resolvedKey) !== undefined
         ? resolvedKey
         : navigable.length > 0
-          ? printingKey(navigable[0])
+          ? tileKey(navigable[0])
           : null;
 
   function focusAndSelect(index: number) {
     const next = navigable[index];
     if (next === undefined) return;
-    tileRefs.current.get(printingKey(next))?.focus();
+    tileRefs.current.get(tileKey(next))?.focus();
     // Choosing ends the required step, so an arrow key only moves; a controlled group selects.
     if (!choose || selectMode) pick(next);
   }
 
   function pick(p: Entry) {
     if (props.role === "choose") {
-      const chosen = catalogByKey?.get(printingKey(p));
+      const chosen = p.scryfallId ? catalogByKey?.get(p.scryfallId) : undefined;
       if (chosen) props.onPick(chosen);
       return;
     }
@@ -501,7 +510,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
                 }
               >
                 {g.items.map((p) => {
-                  const key = printingKey(p);
+                  const key = tileKey(p);
                   const picked = key === preferredKey && !p.dormant;
                   const shownNow = !picked && !p.dormant && key === resolvedKey;
                   const index = navigableIndex.get(key) ?? -1;
