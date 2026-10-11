@@ -151,6 +151,7 @@ Hugh's rulings. They are left as Design wrote them, and the build follows the ru
 | STATES Must-nots: `One link. No per-deck links, no chunked links, no clipboard fallback this round.` | Answer 3: split links over about 1,150 lines |
 | README G11 / STATES S1c: brew options inert | Answer 2: brews are choosable (build lock 9) |
 | Scene data `short:` deck names on the decks line | Answer 1: full deck names |
+| README call 8: `Then then \`adding…\``, a doubled word (Copilot, PR #1438 round 1) | Reads `Then`; Design's file is not edited |
 
 ## Questions for Hugh
 
