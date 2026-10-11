@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#454E50;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <sc-if value="{{ hasBody }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ isPage }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.tabs }}">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><span style="{{ tb.st }}">{{ tb.name }}<sc-if value="{{ tb.hasN }}" hint-placeholder-val="{{ false }}"><span style="{{ tb.nSt }}">{{ tb.n }}</span></sc-if></span></sc-for>
+      </div>
+      <div style="{{ s.toggleWrap }}">
+        <div style="display:flex;gap:2px;padding:3px;border-radius:10px;border:1px solid var(--border-strong);">
+          <sc-for list="{{ segs }}" as="sg" hint-placeholder-count="3"><span style="{{ sg.st }}">{{ sg.name }}<sc-if value="{{ sg.hasN }}" hint-placeholder-val="{{ true }}"><span style="{{ sg.nSt }}">{{ sg.n }}</span></sc-if></span></sc-for>
+        </div>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ deck.yoursNote }}</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:var(--elevated);font-size:12.5px;color:var(--fg);">By type</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border);font-size:12.5px;color:var(--fg-muted);">By role</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">{{ sortLabel }} ▾</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <div style="{{ s.body }}">
+      <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:6px;opacity:0.55;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">↑ {{ deck.above }}, as shipped</span>
+          <div style="{{ s.stubHead }}"><span style="{{ s.groupLabel }}">Lands</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ deck.lands }}</span></div>
+          <div style="{{ s.stubGrid }}">
+            <sc-for list="{{ stubRows }}" as="sr" hint-placeholder-count="2">
+              <div style="{{ s.stubRow }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);flex:none;"></span><span style="font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ sr }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isShop }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="{{ s.strip }}">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--fg);">{{ strip.fig }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ strip.split }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-locked);">prices from ManaPool · last checked Sunday</span>
+            <div style="margin-top:6px;min-height:{{ s.linkH }};display:flex;align-items:center;"><a href="#" style="font-size:14px;color:var(--accent);text-decoration:underline;text-underline-offset:4px;">Buy these at Mana Pool ↗</a></div>
+            <span style="font-size:11.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ strip.sends }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;opacity:0.55;">
+            <span style="font-size:13px;color:var(--fg-body);">Marking cards over <b style="color:var(--fg);">$10</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">· {{ deck.overNote }}</span></span>
+            <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="border-radius:3px;padding:0 4px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy</span>bought it? press to add it</span>
+          </div>
+          <span style="font-size:14px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ shopIntro }}</span>
+          <sc-for list="{{ shopGroups }}" as="sgp" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;">
+              <div style="{{ s.shopHead }}"><span style="{{ s.groupLabel }}">{{ sgp.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ sgp.count }}</span><sc-if value="{{ sgp.hasClause }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ sgp.clause }}</span></sc-if></div>
+              <div style="{{ s.shopGrid }}">
+                <sc-for list="{{ sgp.rows }}" as="cr" hint-placeholder-count="2">
+                  <div style="{{ s.cardRow }}">
+                    <span style="width:8px;height:8px;border-radius:50%;border:1px dashed var(--fg-faint);flex:none;"></span>
+                    <div style="{{ s.cardRowName }}">
+                      <span style="font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">{{ cr.name }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">{{ cr.sub }}</span>
+                    </div>
+                    <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ cr.pips }}" as="p" hint-placeholder-count="1"><span style="{{ p.st }}">{{ p.l }}</span></sc-for></span>
+                    <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);border-radius:4px;padding:1px 5px;background:color-mix(in oklab, var(--warning) 13%, transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="display:inline-block;min-width:46px;text-align:right;color:var(--fg-body);">{{ cr.price }}</span></span>
+                    <span style="{{ s.x }}">✕</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ sgp.hasMore }}" hint-placeholder-val="{{ false }}"><span style="padding:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sgp.more }}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showGroup }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-if value="{{ showHead }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ s.groupHead }}">
+              <div style="display:flex;align-items:baseline;gap:8px;">
+                <span style="{{ s.groupLabel }}">Tokens</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ tokenCount }}</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ groupNote }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ unknownBand }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.band }}">
+              <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Your collection hasn’t been read for tokens yet. Press <b style="color:var(--fg);font-weight:600;">I have one</b> on the ones you own, or upload your collection again and they’ll be read from it.</span>
+              <a href="#" style="display:inline-flex;align-items:center;min-height:{{ s.linkH }};font-size:13px;">Upload your collection</a>
+            </div>
+          </sc-if>
+          <sc-if value="{{ failed }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:10px 0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">Tokens couldn’t be read just now.</span></div>
+          </sc-if>
+
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-if value="{{ r.hasLabel }}" hint-placeholder-val="{{ false }}"><span style="padding-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ r.label }}</span></sc-if>
+              <div style="{{ s.shell }}">
+                <div style="{{ s.rowMain }}">
+                  <span style="{{ r.dot }}"></span>
+                  <span style="{{ s.thumb }}"></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;">
+                      <span style="font-size:13.5px;line-height:1.4;color:var(--fg);">{{ r.name }}</span>
+                      <span style="display:flex;gap:3px;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="1"><span style="{{ p.st }}">{{ p.l }}</span></sc-for></span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.typeLine }}</span>
+                    </div>
+                    <sc-if value="{{ r.hasText }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ r.text }}</span></sc-if>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ r.from }}</span>
+                  </div>
+                  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                    <div style="flex:none;display:flex;align-items:center;gap:6px;min-height:26px;">
+                      <sc-if value="{{ r.hasFact }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);padding-right:4px;">{{ r.fact }}</span></sc-if>
+                      <sc-if value="{{ r.hasHave }}" hint-placeholder-val="{{ true }}"><span style="{{ r.have }}">{{ r.haveText }}</span></sc-if>
+                      <sc-if value="{{ r.hasCtl }}" hint-placeholder-val="{{ true }}"><span style="{{ r.ctl }}">{{ r.ctlText }}</span></sc-if>
+                    </div>
+                  </sc-if>
+                  <span style="{{ s.chev }}">{{ r.chev }}</span>
+                </div>
+                <sc-if value="{{ r.phoneLine }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ s.phoneLine }}">
+                    <sc-if value="{{ r.hasFact }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ r.fact }}</span></sc-if>
+                    <sc-if value="{{ r.hasHave }}" hint-placeholder-val="{{ true }}"><span style="{{ r.have }}">{{ r.haveText }}</span></sc-if>
+                    <span style="flex:1;"></span>
+                    <sc-if value="{{ r.hasCtl }}" hint-placeholder-val="{{ true }}"><span style="{{ r.ctl }}">{{ r.ctlText }}</span></sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ s.expand }}">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ r.madeBy }}</span>
+                      <sc-if value="{{ r.scrolls }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">A–Z · scrolls</span></sc-if>
+                    </div>
+                    <div style="{{ r.makerBox }}">
+                      <div style="{{ r.makerGrid }}">
+                        <sc-for list="{{ r.makers }}" as="m" hint-placeholder-count="3">
+                          <span style="position:relative;display:flex;min-width:0;">
+                            <span style="{{ m.st }}">{{ m.name }}</span>
+                            <sc-if value="{{ m.hover }}" hint-placeholder-val="{{ false }}">
+                              <span style="position:absolute;left:0;top:calc(100% + 4px);z-index:6;width:180px;height:251px;border-radius:9px;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--elevated) 8px 16px);box-shadow:0 0 0 1px var(--border-strong), 0 24px 60px rgba(0,0,0,.6);display:flex;align-items:flex-end;padding:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-muted);">hover preview · {{ m.name }}</span></span>
+                            </sc-if>
+                          </span>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ r.scrolls }}" hint-placeholder-val="{{ false }}"><div style="position:sticky;bottom:0;height:28px;margin-top:-28px;pointer-events:none;background:linear-gradient(to bottom, transparent, var(--surface-sunken));"></div></sc-if>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ r.printLine }}</span>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDetails }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.modal }}">
+      <div style="{{ s.modalLeft }}">
+        <div style="{{ s.cardArt }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">card image</span></div>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Click to zoom</span></sc-if>
+        <span style="display:inline-flex;align-items:center;height:28px;padding:0 9px;border-radius:6px;border:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">$0.15</span>
+      </div>
+      <div style="{{ s.modalRight }}">
+        <div style="display:flex;flex-direction:column;gap:4px;padding-right:48px;">
+          <h2 style="{{ s.cardName }}">Momo, Playful Pet</h2>
+          <span style="font-size:13.5px;color:var(--fg-muted);">Legendary Creature — Lemur Bat Ally</span>
+        </div>
+        <div style="{{ s.oracle }}">
+          <span style="font-weight:600;color:var(--fg);">Flying, vigilance</span>
+          <span>When Momo leaves the battlefield, choose one —</span>
+          <span>• Create a <b style="color:var(--fg);">Food</b> token. <i>(It’s an artifact with “{2}, {T}, Sacrifice this token: You gain 3 life.”)</i></span>
+          <span>• Put a +1/+1 counter on target creature you control.</span>
+          <span>• <b style="color:var(--fg);">Scry</b> 2.</span>
+        </div>
+        <div style="{{ s.box }}">
+          <span style="{{ s.boxLabel }}">In your collection</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--accent);">×1 · ◆ none free</span>
+          <span style="{{ s.boxLabel }}">In your decks</span>
+          <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;"><span style="color:var(--fg);text-decoration:underline;text-underline-offset:3px;">HD - Avatar Aang</span><span style="font-family:'IBM Plex Mono',monospace;color:var(--fg-body);">holds 1</span></div>
+        </div>
+        <div style="{{ s.box }}">
+          <span style="{{ s.boxLabel }}">In this deck</span>
+          <div style="display:flex;align-items:center;gap:11px;min-height:36px;"><span style="flex:none;width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border-strong);"></span><span style="font-size:13.5px;color:var(--fg);">Run a proxy in HD - Avatar Aang</span></div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Takes effect at once. A proxy is not part of a version.</span>
+          <div style="{{ s.makesLine }}">
+            <span style="flex:none;width:20px;height:28px;border-radius:3px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;color:var(--fg-body);">Makes a <b style="color:var(--fg);font-weight:600;">Food</b> token<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);"> · {{ detailState }}</span></span>
+            <a href="#" style="flex:none;display:inline-flex;align-items:center;min-height:{{ s.linkH }};font-size:13px;">Tokens ›</a>
+          </div>
+        </div>
+        <div style="{{ s.modalFoot }}">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <a href="#" style="font-size:14px;text-decoration:underline;text-underline-offset:4px;">Buy any printing at Mana Pool ↗</a>
+            <a href="#" style="font-size:14px;text-decoration:underline;text-underline-offset:4px;">◇◇ Find a deck for it →</a>
+          </div>
+          <span style="font-size:13px;color:var(--fg-muted);">‹ Prev <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);padding:0 8px;">15 of 74</span> <span style="color:var(--accent);">Next ›</span></span>
+        </div>
+      </div>
+      <span style="position:absolute;right:16px;top:16px;width:40px;height:40px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--fg-muted);">✕</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1100},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;unknown&quot;,&quot;read&quot;,&quot;makersOne&quot;,&quot;makersMany&quot;,&quot;omnath&quot;,&quot;wizards&quot;,&quot;failed&quot;,&quot;shopping&quot;,&quot;shoppingOmnath&quot;,&quot;states&quot;,&quot;details&quot;],&quot;default&quot;:&quot;read&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const theme = this.props.theme ?? "kaldheim";
+    const scene = this.props.scene ?? "read";
+    const M = "'IBM Plex Mono',monospace";
+    const PIP = { W: "#F4E9C4", U: "#5C86C9", B: "#CFC6C2", R: "#D9663F", G: "#6FA368", C: "var(--fg-muted)" };
+    const T = (name, c, type, pt, makers, extra = {}) => ({ name, c, type, pt, makers, ...extra });
+    const COPY = (maker) => T("Copy", ["C"], "Token", "", [maker], { pr: "set T#", price: "$0.15", n: 12 });
+
+    const AANG = [
+      T("Ally", ["W"], "Creature", "1/1", ["Appa, Steadfast Guardian", "Katara, Water Tribe’s Hope", "The Cave of Two Lovers"], { pr: "TLA T2", price: "$0.15", n: 5 }),
+      T("Monk", ["R"], "Creature", "1/1", ["Crescent Island Temple"], { pr: "TLA T7", price: "$0.15", n: 2 }),
+      T("Soldier", ["R"], "Creature", "2/2", ["Firebender Ascension"], { pr: "TLA T9", price: "$0.15", n: 1 }),
+      T("Food", ["C"], "Artifact", "", ["Momo, Playful Pet"], { pr: "TLA T12", price: "$0.15", n: 63 }),
+    ];
+    const OMNATH = [
+      T("Treasure", ["C"], "Artifact", "", ["Prosperous Innkeeper", "Smothering Tithe", "Tireless Provisioner"]),
+      T("Clue", ["C"], "Artifact", "", ["Tireless Tracker"]),
+      T("Food", ["C"], "Artifact", "", ["Tireless Provisioner"]),
+      COPY("Spark Double"),
+      T("Elemental", ["R", "G"], "Creature", "5/5", ["Omnath, Locus of Rage"]),
+      T("Elemental", ["R"], "Creature", "1/1", ["Hellkite Courser"]),
+      T("Plant", ["G"], "Creature", "0/1", ["Avenger of Zendikar"]),
+      T("Beast", ["G"], "Creature", "4/4", ["Rampaging Baloths"]),
+      T("Bird", ["U"], "Creature", "2/2", ["Aerial Extortionist"]),
+      T("Angel", ["W"], "Creature", "4/4", ["Resplendent Angel"]),
+      T("Spirit", ["W"], "Creature", "1/1", ["Emeria Captain"]),
+      T("Insect", ["G"], "Creature", "1/1", ["Scute Swarm"]),
+      T("Elephant", ["G"], "Creature", "3/3", ["Tempt with Discovery"]),
+      T("Wurm", ["G"], "Creature", "6/6", ["Wurmcoil Engine"]),
+    ];
+    const OWN_OMNATH = { Treasure: "owned", Clue: "owned", Food: "marked" };
+    const THORIN_TREASURE = ["Big Score", "Brass’s Bounty", "Captain Lannery Storm", "Dockside Extortionist", "Glóin, Dwarf Emissary", "Goldspan Dragon", "Magda, Brazen Outlaw", "Old Gnawbone", "Pirate’s Pillage", "Professional Face-Breaker", "Prosperous Innkeeper", "Revel in Riches", "Smothering Tithe", "Storm-Kiln Artist", "Tireless Provisioner", "Unexpected Windfall", "Xorn", "Seize the Spoils", "Treasure Map"].sort((a, b) => a.localeCompare(b));
+    const THORIN = [
+      T("Treasure", ["C"], "Artifact", "", THORIN_TREASURE, { pr: "LTR T21", price: "$0.15", n: 99 }),
+      T("Clue", ["C"], "Artifact", "", ["Bilbo, Retired Burglar"]),
+      T("Food", ["C"], "Artifact", "", ["Bilbo, Birthday Celebrant"]),
+      T("Map", ["C"], "Artifact", "", ["Seasoned Dungeoneer"]),
+      COPY("Fable of the Mirror-Breaker"),
+      T("Dwarf Berserker", ["R"], "Creature", "2/1", ["Dwarven Reinforcements"]),
+      T("Goblin", ["R"], "Creature", "1/1", ["Goblin Rabblemaster"]),
+      T("Dragon", ["R"], "Creature", "4/4", ["Dragon Fodder"]),
+    ];
+    const WIZARDS = [COPY("Mirrorhall Mimic")];
+
+    const DECKS = {
+      aang: { all: 99, shop: 0, consider: 99, versions: 2, above: "Creatures, Instants, Sorceries, Artifacts, Enchantments", lands: 33, stub: ["Plaza of Harmony", "Sunbillow Verge"], makers: 6, yoursNote: "99 cards are yours now", overNote: "none over $10" },
+      omnath: { all: 99, shop: 67, consider: 99, versions: 3, above: "Creatures, Instants, Sorceries, Artifacts, Enchantments", lands: 38, stub: ["Fabled Passage", "Cinder Glade"], makers: 17, yoursNote: "32 cards are yours now", overNote: "4 over $10" },
+      wizards: { all: 99, shop: 0, consider: 99, versions: 1, above: "Creatures, Instants, Sorceries, Artifacts, Enchantments", lands: 36, stub: ["Watery Grave", "Sulfur Falls"], makers: 1, yoursNote: "99 cards are yours now", overNote: "none over $10" },
+      thorin: { all: 99, shop: 35, consider: 99, versions: 0, above: "Creatures, Instants, Sorceries, Artifacts, Enchantments", lands: 35, stub: ["Smoldering Marsh", "Dragonskull Summit"], makers: 19, yoursNote: "64 cards are yours now", overNote: "none over $10" },
+    };
+
+    const SC = {
+      unknown: { deck: "aang", list: AANG, own: () => "unknown", joined: [], band: true },
+      read: { deck: "aang", list: AANG, own: (t) => (t.name === "Ally" ? "owned" : t.name === "Monk" ? "marked" : "not"), joined: ["Soldier", "Food"], open: ["Ally"], hover: "Katara, Water Tribe’s Hope" },
+      makersOne: { deck: "aang", list: AANG, own: (t) => (t.name === "Ally" ? "owned" : t.name === "Monk" ? "marked" : "not"), joined: ["Soldier", "Food"], open: ["Food"] },
+      makersMany: { deck: "thorin", list: THORIN, own: (t) => (t.name === "Treasure" || t.name === "Food" ? "owned" : "not"), joined: [], open: ["Treasure"] },
+      omnath: { deck: "omnath", list: OMNATH, own: (t) => OWN_OMNATH[t.name] ?? "not", joined: ["Elemental 5/5", "Copy", "Plant 0/1", "Bird 2/2"] },
+      wizards: { deck: "wizards", list: WIZARDS, own: () => "not", joined: [] },
+      failed: { deck: "aang", list: [], failed: true },
+      shopping: { deck: "aang", shop: true },
+      shoppingOmnath: { deck: "omnath", shop: true },
+      states: { states: true },
+      details: { details: true },
+    };
+    const cfg = SC[scene] ?? SC.read;
+    const deck = DECKS[cfg.deck ?? "aang"];
+
+    const pipSt = (l) => ({ width: phone ? 13 : 12, height: phone ? 13 : 12, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 7, fontWeight: 600, background: PIP[l], color: "#121217", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)" });
+    const dotOwned = { flex: "none", width: 8, height: 8, marginTop: 6, borderRadius: "50%", background: "var(--success)" };
+    const dotNot = { flex: "none", width: 8, height: 8, marginTop: 6, borderRadius: "50%", border: "1px dashed var(--fg-faint)" };
+    const dotNone = { flex: "none", width: 8, height: 8, marginTop: 6 };
+    const ctlBase = { flex: "none", display: "inline-flex", alignItems: "center", gap: 5, height: phone ? 32 : 24, padding: "0 10px", borderRadius: 6, fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", ...(phone ? { margin: "6px 0" } : {}) };
+    const ctlRest = { ...ctlBase, border: "1px solid var(--border-strong)", color: "var(--fg-body)" };
+    const ctlOn = { ...ctlBase, border: "1px solid var(--accent)", background: "color-mix(in oklab, var(--accent) 14%, transparent)", color: "var(--fg)" };
+    const haveRest = { flex: "none", display: "inline-flex", alignItems: "center", height: phone ? 44 : 24, padding: phone ? "0 6px 0 0" : "0 8px", fontSize: 12, color: "var(--fg-muted)", whiteSpace: "nowrap", textDecoration: "underline", textDecorationColor: "var(--border-dashed)", textUnderlineOffset: 3 };
+    const haveOn = { ...haveRest, color: "var(--accent)", textDecoration: "none", fontWeight: 500 };
+
+    const row = (t, st) => {
+      const own = st.own, joined = !!st.joined, open = !!st.open;
+      const n = t.makers.length;
+      const scrolls = phone ? n > 5 : n > 9;
+      const fromUpload = own === "owned";
+      return {
+        name: t.name, pips: t.c.map((l) => ({ l, st: pipSt(l) })),
+        typeLine: t.dfc ? t.dfc : t.pt ? `${t.type} · ${t.pt}` : t.type,
+        hasText: !!t.text, text: t.text ?? "",
+        from: n === 1 ? `from ${t.makers[0]}` : `from ${t.makers[0]} and ${n - 1} more`,
+        dot: own === "owned" || own === "marked" ? dotOwned : own === "not" ? dotNot : dotNone,
+        hasFact: fromUpload, fact: "in your collection",
+        hasHave: !fromUpload, have: own === "marked" ? haveOn : haveRest, haveText: own === "marked" ? "✓ I have one" : "I have one",
+        hasCtl: own !== "owned" && own !== "marked", ctl: joined ? ctlOn : ctlRest, ctlText: joined ? "✓ In Shopping" : "Add to Shopping",
+        phoneLine: phone,
+        chev: open ? "▴" : "▾", open,
+        madeBy: `Generated by ${n} ${n === 1 ? "card" : "cards"}`,
+        scrolls,
+        makers: t.makers.map((name) => ({ name, hover: !phone && st.hover === name, st: { display: "flex", alignItems: "center", minWidth: 0, minHeight: phone ? 44 : 30, fontSize: 13, fontWeight: 600, color: "var(--fg)", textDecoration: "underline", textDecorationColor: st.hover === name ? "var(--accent)" : "color-mix(in oklab, var(--accent) 55%, transparent)", textUnderlineOffset: 3, cursor: "pointer" } })),
+        makerBox: scrolls ? { position: "relative", maxHeight: phone ? 240 : 158, overflowY: "auto", overscrollBehavior: "contain", border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface-sunken)", padding: "2px 12px" } : { position: "relative" },
+        makerGrid: { display: "grid", gridTemplateColumns: !phone && n > 6 ? "repeat(3,minmax(0,1fr))" : !phone && n > 1 ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: "0 18px" },
+        printLine: `pictured and sent: ${t.pr ?? "set T#"} · ${t.price ?? "$0.15"} · cheapest of ${t.n ?? 1} ${t.n === 1 ? "printing" : "printings"}`,
+        hasLabel: !!st.label, label: st.label ?? "",
+      };
+    };
+
+    let rows = [];
+    if (cfg.states) {
+      const soldierW = T("Soldier", ["W"], "Creature", "1/1", ["Mentor of the Meek"], {});
+      const soldierR = T("Soldier", ["R"], "Creature", "2/2", ["Firebender Ascension"], {});
+      const gob1 = T("Goblin", ["R"], "Creature", "1/1", ["Goblin Rabblemaster"], { text: "attacks each combat if able" });
+      const gob2 = T("Goblin", ["R"], "Creature", "1/1", ["Legion Warboss"], { text: "haste" });
+      const incub = T("Incubator // Phyrexian", ["C"], "Artifact", "", ["Invasion of Gobakhan"], { dfc: "Artifact // Artifact Creature · 0/0" });
+      rows = [
+        row(AANG[0], { own: "owned", label: "Owned, from an upload · the fact, no controls" }),
+        row(AANG[1], { own: "marked", label: "Owned, marked by hand · I have one held; press again to unmark" }),
+        row(AANG[1], { own: "not", label: "Not owned · dashed dot, two controls, no fact" }),
+        row(AANG[1], { own: "unknown", label: "Not known yet · no dot, same two controls" }),
+        row(AANG[2], { own: "not", joined: true, label: "Joined to Shopping · In Shopping held" }),
+        row(COPY("Spark Double"), { own: "not", label: "Copy · a token card like any other" }),
+        row(incub, { own: "not", label: "Double-faced token · both faces in one line" }),
+        row(soldierW, { own: "owned", label: "Two Soldiers · told apart by color and power/toughness" }),
+        row(soldierR, { own: "not" }),
+        row(gob1, { own: "not", label: "Same name, color and stats · the text line (gap G4)" }),
+        row(gob2, { own: "not" }),
+      ];
+    } else if (cfg.list) {
+      const joinKey = (t) => (cfg.joined ?? []).some((j) => j === t.name || j === `${t.name} ${t.pt}`);
+      rows = cfg.list.map((t) => row(t, { own: cfg.own(t), joined: joinKey(t), open: (cfg.open ?? []).includes(t.name), hover: cfg.hover }));
+    }
+
+    const nTokens = cfg.list ? cfg.list.length : 0;
+    const shop = !!cfg.shop;
+    const segBase = { display: "inline-flex", alignItems: "center", gap: 7, height: phone ? 40 : 34, padding: "0 14px", borderRadius: 7, fontSize: 14 };
+    const segs = [
+      { name: "All", n: deck.all, hasN: true, st: shop ? { ...segBase, color: "var(--fg-body)" } : { ...segBase, background: "var(--elevated)", color: "var(--fg)", fontWeight: 600 }, nSt: { fontFamily: M, fontSize: 12, color: "var(--fg-muted)" } },
+      { name: "Shopping", n: deck.shop, hasN: true, st: shop ? { ...segBase, background: "var(--elevated)", color: "var(--warning)", fontWeight: 600 } : { ...segBase, color: "var(--fg-body)" }, nSt: { fontFamily: M, fontSize: 12, color: shop ? "var(--warning)" : "var(--fg-muted)" } },
+      { name: "Stats", n: "", hasN: false, st: { ...segBase, color: "var(--fg-body)", borderLeft: "1px solid var(--border-strong)", borderRadius: 0, marginLeft: 2 }, nSt: {} },
+    ];
+    const tabDefs = [["Your deck", deck.all], ["Analysis", null], ["Consider", deck.consider], ["Games", null], ["Versions", deck.versions || null]];
+    const tabs = tabDefs.map(([name, n], i) => ({ name, n: n ?? "", hasN: n !== null, nSt: { fontFamily: M, fontSize: 12, color: i ? "var(--fg-faint)" : "var(--accent)", marginLeft: 6 }, st: { display: "inline-flex", alignItems: "center", height: phone ? 48 : 56, fontSize: phone ? 14 : 15.5, fontWeight: i ? 400 : 600, color: i ? "var(--fg-muted)" : "var(--fg)", borderBottom: i ? "2px solid transparent" : "2px solid var(--accent)", whiteSpace: "nowrap", flex: "none" } }));
+
+    const tokRow = (name, sub, pips, price) => ({ name, sub, pips: pips.map((l) => ({ l, st: pipSt(l) })), price });
+    let shopGroups = [], strip = {}, shopIntro = "";
+    if (shop && cfg.deck === "aang") {
+      shopIntro = "Nothing to buy. Every card this deck wants is in your collection.";
+      shopGroups = [{ label: "Tokens", count: "2", hasClause: true, clause: "not in the deck’s count", rows: [
+        tokRow("Soldier", phone ? "token · 2/2" : "token · 2/2 · TLA T9", ["R"], "$0.15"),
+        tokRow("Food", phone ? "token" : "token · TLA T12", ["C"], "$0.15"),
+      ], hasMore: false }];
+      strip = { fig: "$0.30", split: "2 tokens · nothing for the deck", sends: "Sends 2 token lines, each with its set and number, so neither reads as a card." };
+    } else if (shop) {
+      shopIntro = "67 cards this deck wants that your collection does not have.";
+      shopGroups = [
+        { label: "Creatures", count: "21", hasClause: false, clause: "", rows: [
+          tokRow("Omnath, Locus of Creation", "commander", ["R", "G", "W", "U"], "$1.89"),
+          tokRow("Tireless Provisioner", "31.2%", ["G"], "$0.60"),
+          tokRow("Scute Swarm", "12.4%", ["G"], "$1.10"),
+          tokRow("Resplendent Angel", "4.8%", ["W"], "$2.35"),
+        ], hasMore: true, more: "17 more · then Instants, Sorceries, Artifacts, Enchantments, Lands as shipped" },
+        { label: "Tokens", count: "4", hasClause: true, clause: "not in the deck’s count", rows: [
+          tokRow("Elemental", phone ? "token · 5/5" : "token · 5/5 · set T#", ["R", "G"], "$0.25"),
+          tokRow("Copy", phone ? "token" : "token · set T#", ["C"], "$0.15"),
+          tokRow("Plant", phone ? "token · 0/1" : "token · 0/1 · set T#", ["G"], "$0.15"),
+          tokRow("Bird", phone ? "token · 2/2" : "token · 2/2 · set T#", ["U"], "$0.15"),
+        ], hasMore: false },
+      ];
+      strip = { fig: "$271.18", split: "67 cards · $270.48  ·  4 tokens · $0.70", sends: "Sends 64 card lines by name and 4 token lines with set and number." };
+    }
+
+    const label = `Tokens R2 · ${scene} · ${phone ? 390 : 900}`;
+    const s = {
+      root: { width: phone ? 390 : 900, minHeight: cfg.details ? (phone ? 1180 : 860) : 0, position: "relative", background: cfg.details ? "var(--surface)" : "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", paddingBottom: cfg.details ? 0 : 28, ...(cfg.states ? { padding: phone ? "8px 16px 22px" : "10px 22px 24px" } : {}) },
+      tabs: { display: "flex", gap: phone ? 18 : 30, padding: phone ? "0 16px" : "0 22px", borderBottom: "1px solid var(--border)", overflow: "hidden" },
+      toggleWrap: { padding: phone ? "12px 16px 0" : "14px 22px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
+      body: { padding: cfg.states ? 0 : phone ? "14px 16px 0" : "14px 22px 0", display: "flex", flexDirection: "column", gap: 18 },
+      stubHead: { display: "flex", alignItems: "baseline", gap: 8, paddingBottom: phone ? 0 : 7, borderBottom: phone ? "none" : "1px solid var(--border)" },
+      stubGrid: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "minmax(0,1fr) minmax(0,1fr)", gap: phone ? 3 : "4px 20px" },
+      stubRow: { display: "flex", alignItems: "center", gap: 10, borderRadius: 7, padding: phone ? "0 8px" : "7px 9px", minHeight: phone ? 52 : 34, background: "var(--surface-rail)" },
+      groupHead: phone ? { display: "flex", flexDirection: "column", gap: 3, marginBottom: 2 } : { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 7, borderBottom: "1px solid var(--border)", marginBottom: 2 },
+      groupLabel: phone ? { fontSize: 12.5, fontWeight: 600, color: "var(--fg)" } : { fontFamily: "'Metamorphous',serif", fontSize: 17, color: "var(--fg)" },
+      band: { border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface-sunken)", padding: phone ? "10px 13px 4px" : "10px 13px 6px", display: "flex", flexDirection: "column", gap: 2 },
+      linkH: phone ? "44px" : "30px",
+      shell: { borderRadius: 7, background: "var(--surface-rail)", padding: phone ? "10px 6px 4px 8px" : "8px 9px", display: "flex", flexDirection: "column" },
+      rowMain: { display: "flex", alignItems: "flex-start", gap: phone ? 9 : 10 },
+      thumb: { flex: "none", width: phone ? 30 : 26, height: phone ? 42 : 36, borderRadius: 3, background: "repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px)", boxShadow: "inset 0 0 0 1px var(--border-strong)" },
+      chev: { flex: "none", width: phone ? 36 : 22, minHeight: phone ? 44 : 26, marginTop: phone ? -4 : 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--fg-muted)" },
+      phoneLine: { display: "flex", alignItems: "center", gap: 10, paddingLeft: 56, paddingRight: 4, minHeight: 44 },
+      expand: { marginTop: 8, marginLeft: phone ? 0 : 54, marginBottom: phone ? 6 : 0, paddingTop: 9, borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 6 },
+      shopHead: { display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, paddingBottom: phone ? 0 : 7, borderBottom: phone ? "none" : "1px solid var(--border)", flexWrap: "wrap" },
+      shopGrid: { display: phone ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: phone ? 3 : "4px 20px" },
+      cardRow: { display: "flex", alignItems: "center", gap: phone ? 8 : 9, borderRadius: 7, padding: phone ? "0 0 0 8px" : "7px 9px", minHeight: phone ? 52 : 36, background: "var(--surface-rail)" },
+      cardRowName: phone ? { flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 3 } : { flex: "1 1 auto", minWidth: 0, display: "flex", alignItems: "center", gap: 7 },
+      x: { flex: "none", display: "flex", alignItems: "center", justifyContent: "center", width: phone ? 40 : 22, height: phone ? 44 : "auto", fontSize: 13, color: "var(--border-dashed)" },
+      strip: { border: "1px solid var(--border)", borderRadius: 10, background: "var(--surface-sunken)", padding: phone ? "12px 14px 12px" : "14px 18px 14px", display: "flex", flexDirection: "column", gap: 4 },
+      modal: phone
+        ? { position: "relative", display: "flex", flexDirection: "column", gap: 16, padding: "18px 16px 24px" }
+        : { position: "relative", display: "flex", minHeight: 860 },
+      modalLeft: phone
+        ? { display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }
+        : { flex: "none", width: 300, background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 },
+      modalRight: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16, padding: phone ? 0 : "28px 26px 24px" },
+      cardArt: { width: phone ? 170 : 236, height: phone ? 237 : 329, borderRadius: 10, background: "repeating-linear-gradient(135deg,var(--surface-rail) 0 8px,var(--surface-sunken) 8px 16px)", boxShadow: "inset 0 0 0 1px var(--border-strong)", display: "flex", alignItems: "flex-start", padding: 10 },
+      cardName: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 24 : 30, lineHeight: 1.15, color: "var(--fg)" },
+      oracle: { border: "1px solid var(--border)", borderRadius: 12, background: "var(--bg)", padding: phone ? "14px 16px" : "16px 20px", display: "flex", flexDirection: "column", gap: 9, fontSize: phone ? 13.5 : 14, lineHeight: 1.5, color: "var(--fg-body)" },
+      box: { border: "1px solid var(--border)", borderRadius: 12, background: "var(--bg)", padding: phone ? "14px 16px" : "16px 20px", display: "flex", flexDirection: "column", gap: 9 },
+      boxLabel: { fontFamily: M, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--fg-faint)" },
+      makesLine: { display: "flex", alignItems: "center", gap: 11, marginTop: 4, paddingTop: 10, borderTop: "1px solid var(--border)", flexWrap: phone ? "wrap" : "nowrap" },
+      modalFoot: { marginTop: "auto", paddingTop: 14, borderTop: "1px solid var(--border)", display: "flex", alignItems: phone ? "flex-start" : "flex-end", justifyContent: "space-between", gap: 14, flexDirection: phone ? "column" : "row" },
+    };
+
+    const isPage = !cfg.states && !cfg.details;
+    const isList = isPage && !shop;
+    return {
+      theme, label, s, phone, desktop: !phone,
+      isPage, hasBody: isPage || !!cfg.states, isList, isShop: shop, isDetails: !!cfg.details,
+      deck, tabs, segs, sortLabel: shop ? "Price · Highest" : "Name",
+      stubRows: phone ? deck.stub.slice(0, 1) : deck.stub,
+      showGroup: isList || !!cfg.states,
+      showHead: isList,
+      tokenCount: cfg.failed ? "" : String(nTokens),
+      groupNote: cfg.failed ? "not in the 99" : `not in the 99 · from ${deck.makers} ${deck.makers === 1 ? "card" : "cards"}`,
+      unknownBand: !!cfg.band, failed: !!cfg.failed,
+      rows, shopGroups, strip, shopIntro,
+      detailState: "In Shopping",
+    };
+  }
+}
+</script>
+</body>
+</html>
