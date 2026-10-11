@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
@@ -116,6 +117,17 @@ describe("TuningHub opening a tool", () => {
     expect(tile("cuts")).not.toBeNull();
     // Focus comes back to the tile of the tool just left, not to nothing.
     await waitFor(() => expect(document.activeElement).toBe(tile("cuts")));
+  });
+
+  it("focuses a tool's heading that only draws once the tool's own read lands", async () => {
+    function LatePanel() {
+      const [ready, setReady] = useState(false);
+      useEffect(() => { const t = setTimeout(() => setReady(true), 30); return () => clearTimeout(t); }, []);
+      return ready ? <h2>Proposed cuts</h2> : null;
+    }
+    render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "cuts", panel: <LatePanel />, over: 6, total: 106 }]} />);
+    fireEvent.click(tile("cuts"));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" })));
   });
 
   it("gives the phone a way back and says which tool of how many", () => {

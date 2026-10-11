@@ -16,7 +16,7 @@ import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 
 /** While a run is in flight the landing re-reads at the tools' own cadence. */
 const WATCH_MS = 3000;
-/** How long a shortcut waits for the tab's opening loader to reveal the hub before giving up. */
+/** How long an opening waits for the hub to be shown and the tool's heading to draw before giving up. */
 const SHOWN_WAIT_MS = 10_000;
 
 export type HubToolSpec =
@@ -186,25 +186,27 @@ export function TuningHub({
 
   useEffect(() => {
     if (!opening) return;
-    const settle = () => {
-      if (opening.scroll) sectionRef.current?.scrollIntoView({ block: "start" });
-      if (!opening.focus) return;
+    // A shortcut lands on the tab while its opening loader still hides the body under a `hidden`
+    // ancestor (`analysis-panel`), and a hidden box can be neither scrolled to nor focused; and both
+    // tools draw nothing until their own first read lands, so their heading arrives later still.
+    // So scroll once the section is shown, and focus once the tool's heading exists.
+    const shown = () => !!sectionRef.current && !sectionRef.current.closest("[hidden]");
+    let scrolled = !opening.scroll;
+    const step = () => {
+      if (!shown()) return false;
+      if (!scrolled) { sectionRef.current?.scrollIntoView({ block: "start" }); scrolled = true; }
+      if (!opening.focus) return true;
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
       const heading = toolRef.current?.querySelector<HTMLElement>("h2, h3");
-      if (heading) {
-        if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
-        heading.focus({ preventScroll: true });
-      }
+      if (!heading) return false;
+      if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+      return true;
     };
-    // A shortcut lands on the tab while its opening loader still hides the body under a `hidden`
-    // ancestor (`analysis-panel`), and a hidden box can be neither scrolled to nor focused, so wait
-    // for it to be shown.
-    const shown = () => !!sectionRef.current && !sectionRef.current.closest("[hidden]");
-    if (shown()) { settle(); return; }
+    if (step()) return;
     const giveUp = Date.now() + SHOWN_WAIT_MS;
     let frame = requestAnimationFrame(function wait() {
-      if (shown()) settle();
-      else if (Date.now() < giveUp) frame = requestAnimationFrame(wait);
+      if (!step() && Date.now() < giveUp) frame = requestAnimationFrame(wait);
     });
     return () => cancelAnimationFrame(frame);
   }, [opening]);
