@@ -18,7 +18,7 @@ import { LabelRowsProvider } from "./label-rows-context";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { cardTileCopy, viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { DECK_PANEL_KEY, DECK_VIEW_KEY } from "./group-toggle";
+import { DECK_VIEW_KEY } from "./group-toggle";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { recommendedMix } from "../../lib/decks/mix";
 
@@ -1435,14 +1435,20 @@ describe("an unowned commander heads the Shopping list", () => {
 });
 
 describe("the Stats panel", () => {
-  afterEach(() => window.localStorage.removeItem(DECK_PANEL_KEY));
-
-  it("draws no Stats segment and no stats view with the switch off, even when Stats is stored", () => {
-    window.localStorage.setItem(DECK_PANEL_KEY, "stats");
+  it("draws no Stats segment and no stats view with the switch off", () => {
     renderDecklist([rampOwned], { filter: "all" });
 
     expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+
+  it("opens on the list even when an earlier deck was left on Stats: the choice is not stored", () => {
+    window.localStorage.setItem("the99:deck-panel", "stats");
+    onTestFinished(() => window.localStorage.removeItem("the99:deck-panel"));
+    renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] } });
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
   });
 
   it("opens at the card a ledger's Stats link asks for, and scrolls it into view once", () => {

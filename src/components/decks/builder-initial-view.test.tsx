@@ -3,9 +3,10 @@
 // answers a URL written by hand or held in a bookmark. Parsing it is covered in
 // `builder-view.test.ts`; what is only answerable through the shell is whether
 // the parsed value actually decides which tab is selected on the first render.
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { BuilderView } from "../../lib/decks/builder-view";
@@ -48,6 +49,7 @@ const DECK = {
       name: "Sol Ring",
       quantity: 1,
       typeLine: "Artifact",
+      cmc: 1,
       cardTypeGroup: "Artifacts" as const,
       role: "other" as const,
       owned: true,
@@ -60,9 +62,10 @@ const DECK = {
   unresolvedRows: [],
 } as unknown as DeckDetail;
 
-async function mount(initialView: BuilderView) {
+async function mount(initialView: BuilderView, stats = false) {
+  let view!: ReturnType<typeof render>;
   await act(async () => {
-    render(
+    view = render(
       <BuilderShell mix={TEST_MIX}
         deck={DECK}
         suggestions={[]}
@@ -71,9 +74,12 @@ async function mount(initialView: BuilderView) {
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
         initialView={initialView}
+        statsEnabled={stats}
+        statsData={stats ? { commanders: [] } : null}
        newestAsOf={null}/>,
     );
   });
+  return view;
 }
 
 describe("BuilderShell — the tab it opens on", () => {
@@ -99,5 +105,25 @@ describe("BuilderShell — the tab it opens on", () => {
     expect(screen.getByRole("tab", { selected: true })).toHaveTextContent(
       addPanelCopy.tabs.consider,
     );
+  });
+
+  // Stats is the deck list's second body. It survives the builder's own tab switches (the list
+  // remounts on each) and must not survive opening another deck.
+  it("keeps Stats across an in-deck tab switch, and opens a freshly opened deck on its list", async () => {
+    window.localStorage.setItem("the99:deck-panel", "stats");
+    const first = await mount("deck", true);
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.segment.aria }));
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("tab", { name: new RegExp(gameLogCopy.tab.label) }));
+    fireEvent.click(screen.getByRole("tab", { name: new RegExp(addPanelCopy.tabs.deck) }));
+    expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
+
+    first.unmount();
+    window.localStorage.removeItem("the99:deck-panel");
+    await mount("deck", true);
+    expect(document.querySelector("[data-deck-stats]")).toBeNull();
   });
 });

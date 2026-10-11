@@ -50,6 +50,8 @@ import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
+import { DeckPanelContext } from "./deck-panel";
+import type { DeckPanel } from "./group-toggle";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
 // Types only: `games.ts` reaches for the database, and a value import from a
@@ -297,6 +299,9 @@ export function BuilderShell({
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
+  // Which body the deck list shows (list or Stats). Held here, not in the list: the list remounts on
+  // a tab switch, and a deck opened afresh must open on its list.
+  const deckPanel = useState<DeckPanel>("list");
   const [view, setView] = useState<BuilderView>(
     initialBuilderView(initialView, versions.length, analysisEnabled),
   );
@@ -1856,6 +1861,7 @@ export function BuilderShell({
                  within it the provider would have to be repeated in each. */
               <PendingChangeProvider value={pendingChange}>
               <LockCardsProvider value={lockCards}>
+              <DeckPanelContext.Provider value={deckPanel}>
               <Decklist
               statsEnabled={statsEnabled}
               statsData={statsData}
@@ -1904,6 +1910,7 @@ export function BuilderShell({
                 lockedAutoCount={lockedAutoCount}
                 sweptLockedCount={sweptLockedCount}
               />
+              </DeckPanelContext.Provider>
               </LockCardsProvider>
               </PendingChangeProvider>
             )}
