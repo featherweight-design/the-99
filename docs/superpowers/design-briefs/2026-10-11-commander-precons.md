@@ -69,7 +69,8 @@ MTGJSON v5, `https://mtgjson.com/api/v5/`. Checked 2026-10-11.
 - **Filter.** `type === "Commander Deck"` gives **197 decks**. Three neighbouring types contain "Commander" or
   "Brawl" and are out by ruling 1: `MTGO Commander Deck`, `Brawl Deck`, `Historic Brawl Precon Deck`.
 - **Deck files.** `https://mtgjson.com/api/v5/decks/{fileName}.json`, one per deck. The 197 total 100 MB raw and
-  about 31 MB gzipped (a deck is 537 KB raw, 167 KB gzipped, because every card carries its full printed data).
+  about 31 MB gzipped (a deck averages about 510 KB raw and 157 KB gzipped, because every card carries its full printed data;
+  the newest, Multiverse Reforged, is 537 KB and 167 KB).
   The single archive `AllDeckFiles.tar.gz` is 261 MB and holds every deck type, so it is the wrong download.
 - **Cadence.** Rebuilt daily (`last-modified` 06:10 UTC on 2026-10-11, `cache-control: max-age=57600`). The
   Commander set itself changes only when a product is released: 24 in 2026 so far, the newest on 2026-10-02
