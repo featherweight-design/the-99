@@ -41,6 +41,35 @@ describe("dependencies", () => {
     ]);
   });
 
+  it("draws enchantments from the stronger figure, at each cut", () => {
+    const ench = (i: number) => card(`E${i}`, { typeLine: "Enchantment" });
+    const payoff = (i: number) => card(`P${i}`, { typeLine: "Creature", oracleText: "Whenever an enchantment enters, draw a card." });
+    const row = (deck: ReturnType<typeof card>[]) => rows(dependencies([route, route, ...deck], 0, cuts)).filter((r) => r.startsWith("enchantments"));
+    expect(row(many(2, ench))).toEqual([]);
+    expect(row(many(3, ench))).toEqual(["enchantments:light"]);
+    expect(row(many(5, ench))).toEqual(["enchantments:heavy"]);
+    expect(row(many(1, payoff))).toEqual([]);
+    expect(row(many(2, payoff))).toEqual(["enchantments:light"]);
+    expect(row([...many(3, payoff), ...many(3, ench)])).toEqual(["enchantments:heavy"]);
+  });
+
+  it("draws creatures from repeatable payoffs only, at each cut", () => {
+    const lord = (i: number) => card(`Lord${i}`, { typeLine: "Creature", oracleText: "Other creatures you control get +1/+1.", jobs: [job({ kind: "pump", recurrence: "repeatable" })] });
+    const once = card("Once", { typeLine: "Sorcery", oracleText: "Creatures you control get +2/+2 until end of turn.", jobs: [job({ kind: "pump" })] });
+    const row = (deck: ReturnType<typeof card>[]) => rows(dependencies([route, route, ...deck], 0, cuts)).filter((r) => r.startsWith("creatures"));
+    expect(row([lord(0), once])).toEqual([]);
+    expect(row(many(2, lord))).toEqual(["creatures:light"]);
+    expect(row(many(3, lord))).toEqual(["creatures:heavy"]);
+  });
+
+  it("draws activated abilities at each cut", () => {
+    const elf = (i: number) => card(`Elf${i}`, { typeLine: "Creature — Elf", oracleText: "{T}: Add {G}.", jobs: [job({ kind: "ramp", trigger: "activated" })] });
+    const row = (deck: ReturnType<typeof card>[]) => rows(dependencies([route, route, ...deck], 0, cuts)).filter((r) => r.startsWith("activated"));
+    expect(row(many(1, elf))).toEqual([]);
+    expect(row(many(2, elf))).toEqual(["activated:light"]);
+    expect(row(many(3, elf))).toEqual(["activated:heavy"]);
+  });
+
   it("reads combat reliance the other way: heavy with no route and no line, none with a line", () => {
     expect(rows(dependencies([card("Bear", { typeLine: "Creature" })], 0, cuts))).toEqual(["combat:heavy"]);
     expect(dependencies([card("Bear")], 0, cuts)[0]).toMatchObject({ groups: [] });
