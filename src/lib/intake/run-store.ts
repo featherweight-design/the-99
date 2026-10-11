@@ -118,6 +118,35 @@ export async function loadOwnRead(readId: string, userId: string): Promise<{ kin
 }
 
 /**
+ * A two-step read by its id, as the results page and its panel draw it (rework plan PR 4): where it
+ * stands, and its picks once settled. Scoped to the reader: another player's id reads as none.
+ */
+export type TheReadState =
+  | { kind: "pending"; phase: "shortlist" | "judge" | null }
+  | { kind: "done"; result: TheReadResult }
+  | { kind: "nothing"; result: TheReadResult | null }
+  | { kind: "failed" }
+  | { kind: "stopped" }
+  | { kind: "none" };
+
+export async function loadTheRead(readId: string, userId: string, now: Date = new Date()): Promise<TheReadState> {
+  const [row] = await db.select({
+    status: intakeReads.status, errorClass: intakeReads.errorClass, phase: intakeReads.phase,
+    result: intakeReads.result, createdAt: intakeReads.createdAt,
+  }).from(intakeReads).where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
+  if (!row) return { kind: "none" };
+  const result = (row.result ?? null) as TheReadResult | null;
+  if (row.status === "pending") {
+    // Past the reaper's cutoff nothing will settle it: it reads as failed, as the reaper will make it.
+    return row.createdAt < reapCutoff(now) ? { kind: "failed" } : { kind: "pending", phase: (row.phase ?? null) as "shortlist" | "judge" | null };
+  }
+  if (row.status === "ok" && result) return { kind: "done", result };
+  if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", result };
+  if (row.status === "cancelled") return { kind: "stopped" };
+  return { kind: "failed" };
+}
+
+/**
  * The player's settled read of this ask, with its own id, when there is one: a delivered read, or
  * one that found nothing to add. Both are the ask's answer, so neither is asked again; a repeat of
  * a nothing read would otherwise call the model again for the same words.
