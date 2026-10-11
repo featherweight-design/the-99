@@ -32,7 +32,8 @@ import type { Answers } from "./rank";
 
 /**
  * Folded into the fingerprint, so a prompt change is a new ask and never answers from a result the
- * old prompt wrote. 1 (2026-10-11): the two-step read.
+ * old prompt wrote. 1 (2026-10-11): the two-step read. 2 (2026-10-11): a named type, keyword or
+ * mechanic is a requirement in both steps, and each deck is named at most once.
  */
 export const THE_READ_PROMPT_VERSION = 2;
 
@@ -233,7 +234,8 @@ export function shortName(name: string): string {
 
 /**
  * One reason, split into text and deck parts, or null when it is refused: a deck token for no
- * deck shown, a figure or score word anywhere, or a drawn length over the limit. Measured with each
+ * deck shown or for a deck whose commander shares a name with `ownCommander`, a figure or score
+ * word anywhere, or a drawn length over the limit. Measured with each
  * deck token drawn as its commander's short name, which is what the reader sees.
  */
 export function parseReason(raw: string, decks: readonly ReadDeck[], ownCommander?: string): ReasonPart[] | null {

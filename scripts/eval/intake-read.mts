@@ -79,7 +79,10 @@ const ARMS: { id: string; model: string; effort: "low" | "medium" | "high" }[] =
 const only = args.only?.split(",");
 const arms = ARMS.filter((a) => (args.arms ? args.arms.split(",").includes(a.id) : a.id !== "haiku-medium"));
 if (!args["dry-run"]) acquireRunLock(LEDGER);
-const runCap = args.budget ? Math.min(CAP_USD, spent(readLedger(LEDGER)) + Number(args.budget)) : CAP_USD;
+const budget = args.budget === undefined ? null : Number(args.budget);
+// A budget that is not a plain positive number would make every cap check compare against NaN.
+if (budget !== null && !(Number.isFinite(budget) && budget > 0)) throw new Error(`--budget must be a positive number of dollars, got ${args.budget}`);
+const runCap = budget === null ? CAP_USD : Math.min(CAP_USD, spent(readLedger(LEDGER)) + budget);
 
 type Step = { model: string; ms: number; usd: number; usage: unknown; ok: boolean; stop?: string | null };
 const out: Record<string, unknown>[] = [];
