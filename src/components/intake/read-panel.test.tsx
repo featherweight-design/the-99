@@ -186,6 +186,11 @@ describe("7e, 7f: stopped and failed", () => {
     noReadIt();
   });
 
+  it("draws Try again plain when the standing could not be read: the pill only for a credit known to be free", () => {
+    draw({ kind: "failed" }, { over: null });
+    expect(screen.getByRole("button", { name: /Try again/ }).textContent).toBe("Try again");
+  });
+
   it("tries again with the same answers and words, and no read id", async () => {
     const submit = vi.fn<(query: string) => Promise<undefined>>(async () => undefined);
     draw({ kind: "failed" }, { d: deps({ submit }), p: { ...params, themes: ["horrors"], colors: ["b"] } });

@@ -1,7 +1,7 @@
 {
   "feature": "Help me choose rework (the read addendum R1): the form's paid field and press (PR 3), the results' read panel (PR 4)",
   "out": "/tmp/contact-sheet/help-me-choose-read",
-  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true on a database carrying migration 0090. The model is the stub a dev server uses by default, so a press spends a credit of the fixture account's allowance and calls nothing. 7c (no credit) and 7n (paused, owner's share) are pinned by intake-form.test.tsx: reaching them here would mean spending the account's credits. PR 4's rows open the results on a read row seeded on the scratch branch (ids c0ffee00-…; reading is the judge phase, since a player holds one pending read at a time). A pending row reads as failed after the 5-minute reaper cutoff, so seed right before a run.",
+  "note": "Needs a server with HELP_ME_CHOOSE_ENABLED=true on a database carrying migration 0090. The model is the stub a dev server uses by default, so a press spends a credit of the fixture account's allowance and calls nothing. 7c (no credit) and 7n (paused, owner's share) are pinned by intake-form.test.tsx: reaching them here would mean spending the account's credits. PR 4's rows open the results on a read row seeded on the scratch branch (ids c0ffee00-…; reading is the judge phase, since a player holds one pending read at a time). A pending row reads as failed after the 5-minute reaper cutoff, so seed right before a run. 7k (no decks) is not photographed: the fixture account has decks, and hiding them would mean deleting them; read-panel.test.tsx pins its line.",
   "rows": [
     {
       "id": "form-empty",
@@ -56,8 +56,8 @@
       ]
     },
     {
-      "id": "read-reading",
-      "label": "results: 7d/7e, reading (the judgement running), results dimmed",
+      "id": "read-7d-reading",
+      "label": "results: 7d, reading (the judgement running), results dimmed",
       "view": "src/components/intake/read-panel.tsx",
       "steps": [
         {
@@ -68,44 +68,8 @@
       ]
     },
     {
-      "id": "read-done",
-      "label": "results: 7f, done: picks first with their lines, the divider, the rest",
-      "view": "src/components/intake/read-panel.tsx",
-      "steps": [
-        {
-          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000003",
-          "wait": "[data-testid=read-panel]",
-          "settle": 2500
-        }
-      ]
-    },
-    {
-      "id": "read-repeat",
-      "label": "results: 7m, a repeat landing on the stored read",
-      "view": "src/components/intake/read-panel.tsx",
-      "steps": [
-        {
-          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000003&rr=1",
-          "wait": "[data-testid=read-panel]",
-          "settle": 2500
-        }
-      ]
-    },
-    {
-      "id": "read-nothing",
-      "label": "results: 7h, nothing fits",
-      "view": "src/components/intake/read-panel.tsx",
-      "steps": [
-        {
-          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000004",
-          "wait": "[data-testid=read-panel]",
-          "settle": 2500
-        }
-      ]
-    },
-    {
-      "id": "read-stopped",
-      "label": "results: 7i, stopped, with Try again",
+      "id": "read-7e-stopped",
+      "label": "results: 7e, stopped, with Try again",
       "view": "src/components/intake/read-panel.tsx",
       "steps": [
         {
@@ -116,8 +80,8 @@
       ]
     },
     {
-      "id": "read-failed",
-      "label": "results: 7j, failed, with Try again",
+      "id": "read-7f-failed",
+      "label": "results: 7f, failed, with Try again",
       "view": "src/components/intake/read-panel.tsx",
       "steps": [
         {
@@ -128,7 +92,55 @@
       ]
     },
     {
-      "id": "read-unread",
+      "id": "read-7g-ask-a",
+      "label": "results: 7g, Ask A done: picks first with their lines, the divider, the rest",
+      "view": "src/components/intake/read-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000003",
+          "wait": "[data-testid=read-panel]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "read-7h-ask-b",
+      "label": "results: 7h, Ask B done: two picks, one naming a deck; two best fits, then the divider",
+      "view": "src/components/intake/read-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=results&w=a+Landfall+deck+unlike+other+decks+I+own&r=c0ffee00-0000-4000-8000-000000000007",
+          "wait": "[data-testid=read-panel]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "read-7i-black",
+      "label": "results: 7i, exact black held: the lead says nothing outside it was read",
+      "view": "src/components/intake/read-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=results&c=b&m=exact&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000003",
+          "wait": "[data-testid=read-panel]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "read-7j-nothing",
+      "label": "results: 7j, nothing fits",
+      "view": "src/components/intake/read-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000004",
+          "wait": "[data-testid=read-panel]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "read-7l-unread",
       "label": "results: 7l, the words kept and unread (no read began)",
       "view": "src/components/intake/read-panel.tsx",
       "steps": [
@@ -140,12 +152,24 @@
       ]
     },
     {
-      "id": "read-busy",
+      "id": "read-7l-busy",
       "label": "results: 7l, unread because another read was still running",
       "view": "src/components/intake/read-panel.tsx",
       "steps": [
         {
           "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&rb=1",
+          "wait": "[data-testid=read-panel]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "read-7m-repeat",
+      "label": "results: 7m, a repeat landing on the stored read",
+      "view": "src/components/intake/read-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?v=results&w=a+horrors+deck+that%27s+scary+and+a+little+nasty&r=c0ffee00-0000-4000-8000-000000000003&rr=1",
           "wait": "[data-testid=read-panel]",
           "settle": 2500
         }

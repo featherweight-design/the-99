@@ -203,8 +203,9 @@ export function ReadPanel({
     // Stopped, failed: what *Try again* would do with a credit.
     : standingLine(standing);
   const retried = phase === "stopped" || phase === "failed";
-  // The pill names what the press costs; with nothing left the press lands on the unread results.
-  const pill = closed === null;
+  // The pill names what the press costs, only when a credit is known to be free: with nothing left,
+  // or a standing that could not be read, the press is drawn plain, as the form's is.
+  const pill = standing !== null && closed === null;
 
   const buttonBase =
     "inline-flex items-center justify-center md:justify-start gap-[9px] h-[44px] md:h-[38px] pl-[6px] pr-[14px] rounded-full text-[13.5px] font-semibold whitespace-nowrap";
