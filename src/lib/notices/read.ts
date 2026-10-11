@@ -115,7 +115,7 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
     // `dirty` is clear), read from the same snapshot as the marks.
     const head = reading && !reading.dirty ? await readProfileHead(tx, deckId, userId) : null;
     return { deck, reading, cardRows, head };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
   const { deck, reading, cardRows, head } = snapshot;
   const commanderIds = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
@@ -183,7 +183,7 @@ export async function holdsIllegalCard(deckId: string, userId: string): Promise<
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
     if (!deck) return null;
     return (await liveOffendingIds(tx, deckId, [deck.commander, ...(deck.partner ? [deck.partner] : [])])).length > 0;
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
 }
 
 /**

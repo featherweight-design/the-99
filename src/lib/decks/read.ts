@@ -791,7 +791,7 @@ export async function loadSourceDeckFigures(
   if (pairs.length === 0) return new Map();
   const deckIds = [...new Set(pairs.map((p) => p.deckId))];
   const oracleIds = [...new Set(pairs.map((p) => p.oracleId))];
-  // ONE repeatable-read, read-only transaction — found by Copilot's round-2 review: two
+  // ONE repeatable-read transaction — found by Copilot's round-2 review: two
   // separate statements can straddle a write to the source's draft between them (a cut, or
   // another pull), returning an impossible pair such as the OLD size with the NEW absence.
   // Same rule `readSnapshot` (`draft-state.ts:178`) and `tuning-read.ts` already follow for a
@@ -804,7 +804,7 @@ export async function loadSourceDeckFigures(
       built: new Map(sizeRows.map((r) => [r.id, r.built])),
       present: new Set(presentRows.map((r) => `${r.deckId}:${r.oracleId}`)),
     };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   return assembleSourceFigures(pairs, built, present);
 }
 

@@ -71,7 +71,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
       .where(eq(deckVersions.deckId, deckId));
     const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
     return { head, readVersion: v?.n ?? null, locked };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
   const { head, readVersion, locked } = snapshot;
   const [games, [deck], [upload]] = await Promise.all([
