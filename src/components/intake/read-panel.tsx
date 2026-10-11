@@ -23,23 +23,10 @@ import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { colorNames } from "../../lib/copy/color-labels";
 import { INTAKE_POLL_MS } from "../../lib/intake/limits";
 import { serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
+import { phaseOf, type ReadPhase } from "../../lib/intake/read-phase";
 import type { TheReadState } from "../../lib/intake/run-store";
 import { bareStanding, closedBy, standingLine, type Standing } from "../../lib/intake/standing";
 
-/** What the results need to know of the read: how to title their order, and whether to dim. */
-export type ReadPhase = "reading" | "stopped" | "failed" | "done" | "nothing" | "unread";
-
-/** The panel's phase for a server state; `null` (no `r`) and `none` are the unread words (7l, 7n). */
-export function phaseOf(state: TheReadState | null): ReadPhase {
-  switch (state?.kind) {
-    case "pending": return "reading";
-    case "done": return "done";
-    case "nothing": return "nothing";
-    case "failed": return "failed";
-    case "stopped": return "stopped";
-    default: return "unread";
-  }
-}
 
 type Scope = {
   /** `null` with no words: there is no read, and the results say nothing of one. */

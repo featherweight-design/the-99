@@ -8,7 +8,7 @@ vi.mock("../../app/decks/new/choose/results-actions", () => ({ trialFillRows, mo
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
 const { ChooseResults } = await import("./choose-results");
 const { ReadScope } = await import("./read-panel");
-import type { ReadPhase } from "./read-panel";
+import type { ReadPhase } from "../../lib/intake/read-phase";
 const { emptyParams } = await import("../../lib/intake/params");
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
 

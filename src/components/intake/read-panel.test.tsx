@@ -10,7 +10,8 @@ const router = { push: vi.fn(), refresh: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn(), theReadState: vi.fn() }));
 
-const { ReadPanel, ReadScope, DimWhileReading, phaseOf, useReportPool } = await import("./read-panel");
+const { ReadPanel, ReadScope, DimWhileReading, useReportPool } = await import("./read-panel");
+const { phaseOf } = await import("../../lib/intake/read-phase");
 const { emptyParams } = await import("../../lib/intake/params");
 import type { TheReadState } from "../../lib/intake/run-store";
 import type { ChooseParams } from "../../lib/intake/params";
