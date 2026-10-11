@@ -217,8 +217,36 @@ describe("Edit copies, removal", () => {
     const b = save();
     expect(b.textContent).toBe(r.confirm(5));
     expect(b.className).toContain("elevated");
-    fireEvent.click(screen.getByRole("button", { name: r.keep }));
+    fireEvent.click(screen.getByRole("button", { name: r.keep(5) }));
     expect(save().textContent).toBe(c.save);
+  });
+
+  it("pairs the keep button with the confirm: one copy reads Remove 1 copy and Keep it", async () => {
+    await mount([held("c21", "263", 1)]);
+    fireEvent.click(screen.getByRole("button", { name: r.action }));
+    expect(save().textContent).toBe(r.confirm(1));
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    expect(save().textContent).toBe(c.save);
+  });
+
+  // jsdom has no layout, so this pins the classes that make the note its own row; the browser check
+  // (390 and 1300, a long two-faced name) is what proves the row. Without them the note sits between
+  // the buttons of a no-wrap desktop row, which wrapped it to six lines.
+  it("gives the removal note a row of its own and keeps Save at the right", async () => {
+    await mount([held("c21", "263", 1)]);
+    const normalNote = document.querySelector("[aria-live=polite]") as HTMLElement;
+    const normalFoot = normalNote.parentElement as HTMLElement;
+    expect(normalFoot.className).not.toContain("md:flex-wrap!");
+    expect(normalNote.className).toContain("md:ml-auto");
+    expect(save().className).toContain("md:ml-0");
+
+    fireEvent.click(screen.getByRole("button", { name: r.action }));
+    const note = screen.getByText(r.leaves("Sol Ring"));
+    expect(note.parentElement?.className).toContain("md:flex-wrap!");
+    expect(note.className).toContain("order-first");
+    expect(note.className).toContain("w-full");
+    expect(note.className).not.toContain("md:ml-auto");
+    expect(save().className).toContain("md:ml-auto");
   });
 
   it("says it is the last copy when the lines are taken off one by one, and saves it as a removal", async () => {

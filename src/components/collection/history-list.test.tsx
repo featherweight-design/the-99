@@ -62,7 +62,7 @@ describe("HistoryList", () => {
 
   it("draws the empty state dated from the ship date, with the foot under it", () => {
     draw([], { shipLabel: "9 Oct" });
-    expect(screen.getByText("Nothing's changed yet")).toBeTruthy();
+    expect(screen.getByText("Nothing’s changed yet")).toBeTruthy();
     expect(screen.getByText(/Uploads and edits since 9 Oct show up here/)).toBeTruthy();
     expect(screen.getByText(/History keeps 90 days/)).toBeTruthy();
   });
@@ -120,7 +120,7 @@ describe("HistoryList", () => {
     draw([e]);
     expect(screen.getByText("0 copies across 0 cards")).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
-    expect(await screen.findByText(/This change didn't move anything/)).toBeTruthy();
+    expect(await screen.findByText(/This change didn’t move anything/)).toBeTruthy();
   });
 
   it("says a failed read changed nothing and reads again on Try again", async () => {
@@ -129,7 +129,7 @@ describe("HistoryList", () => {
     draw([e]);
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toMatch(/couldn't load that/);
+    expect(alert.textContent).toMatch(/couldn’t load that/);
     await act(async () => fireEvent.click(within(alert).getByRole("button", { name: "Try again" })));
     expect(await screen.findByText("+2")).toBeTruthy();
   });
@@ -153,7 +153,7 @@ describe("HistoryList", () => {
     expect(screen.getByText("From Shopping")).toBeTruthy();
     const link = screen.getByRole("link", { name: "HD Gishath" });
     expect(link.getAttribute("href")).toBe(`/decks/${deck}`);
-    expect(link.closest("p")?.textContent).toBe("From HD Gishath's Shopping list");
+    expect(link.closest("p")?.textContent).toBe("From HD Gishath’s Shopping list");
     // The link sits beside the disclosure, never inside it: a link in a button is invalid.
     expect(link.closest("button")).toBeNull();
     expect(screen.getByRole("button", { name: "Revert Swords to Plowshares" })).toBeTruthy();
@@ -161,7 +161,7 @@ describe("HistoryList", () => {
 
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {
     draw([entry({ kind: "edit", source: "shopping:x", firstName: "Swords to Plowshares", shoppingDeck: { id: "x", name: null } })]);
-    expect(screen.getByText("From the Shopping list of a deck you've since deleted")).toBeTruthy();
+    expect(screen.getByText("From the Shopping list of a deck you’ve since deleted")).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.getByRole("button", { name: "Revert Swords to Plowshares" })).toBeTruthy();
   });
@@ -199,7 +199,7 @@ describe("HistoryList", () => {
     draw([entry({})], { nextBefore: 5 });
     loadPage.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce({ entries: [entry({ id: "e0", seq: 4, firstName: "Mana Crypt", createdAt: new Date("2026-10-02T10:00:00Z") })], nextBefore: null });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show older changes" })));
-    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't load that/);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn’t load that/);
     expect(screen.getByText("Sol Ring", { exact: false })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show older changes" })));
     expect(await screen.findByText("Mana Crypt", { exact: false })).toBeTruthy();

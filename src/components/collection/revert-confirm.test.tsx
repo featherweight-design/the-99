@@ -91,7 +91,7 @@ describe("RevertConfirm", () => {
     expect(await screen.findByText(/This does less than the original/)).toBeTruthy();
     expect(screen.getByText("Already back")).toBeTruthy();
     expect(screen.getByText("Changed since")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Revert what's left" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Revert what’s left" })).toBeTruthy();
   });
 
   it("offers only Close when there is nothing left to undo", async () => {
@@ -192,7 +192,7 @@ describe("RevertConfirm", () => {
     await pressRevert();
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(/Sol Ring has been removed from the card catalog/)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "We couldn't revert this" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "We couldn’t revert this" })).toBeTruthy();
     expect(onReverted).not.toHaveBeenCalled();
   });
 
