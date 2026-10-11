@@ -189,12 +189,18 @@ export async function runTheRead(
   async function calls(): Promise<TheReadOutcome> {
     // Step 1, the shortlist.
     if (!(await setReadPhase(handle, "shortlist"))) return { kind: "stopped" };
-    if (facts.pool.size === 0) return nothing(0);
+    if (facts.pool.size === 0) {
+      // No call was made, so the ledger records a zero bill rather than none: a row with no cost
+      // counts at its worst case until the reservation's TTL, as though a call were still billing.
+      billed.push({ model: deps.shortlistModel, usage: NO_USAGE });
+      return nothing(0);
+    }
     const first = await deps.shortlist({
       system: shortlistPrefix(facts),
       cache: !facts.narrowed,
       user: shortlistRequest({ words: input.words, filters: input.filters, cards: facts.cards }),
-      deadlineMs: READ_SHORTLIST_DEADLINE_MS,
+      // Its own share, but never past what is left of the whole: loading the inputs counts too.
+      deadlineMs: Math.max(1, Math.min(READ_SHORTLIST_DEADLINE_MS, READ_TOTAL_DEADLINE_MS - (deps.now() - started0))),
     });
     bill(deps.shortlistModel, first);
     if (!first.ok) return failed(first);

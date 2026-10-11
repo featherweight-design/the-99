@@ -208,8 +208,9 @@ export type TheReadResult = ReadPicks & { pool: number; weighed: number };
  * Digits, a percent sign, and the words that make a line read as a score (handoff, F3). Not `top` or
  * `first`, which rules language needs (the top of a library, first strike).
  */
-const SCORE_WORDS = /\b(best|better|great(?:est)?|strong(?:er|est)?|perfect(?:ly)?|ideal(?:ly)?|excellent|score[sd]?|rank(?:ed|s)?|rating|rated|number one)\b/i;
-const FIGURES = /[\p{Nd}%]/u;
+const SCORE_WORDS = /\b(best|better|good|great(?:est)?|strong(?:er|est)?|solid|perfect(?:ly)?|ideal(?:ly)?|excellent|superb|amazing|awesome|fantastic|score[sd]?|rank(?:ed|s)?|rating|rated|number one)\b/i;
+/** Digits, a percent sign, and stars of any kind, which read as a rating. */
+const FIGURES = /[\p{Nd}%★☆⭐✩✪✫✬✭✮✯]/u;
 const DECK_TOKEN = /\{D(\d+)\}/g;
 
 /** A deck's short name for measuring a reason: its commander's name before any comma. */

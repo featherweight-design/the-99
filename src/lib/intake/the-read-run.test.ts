@@ -64,6 +64,21 @@ describe("runTheRead", () => {
     expect(store.settleTheRead.mock.calls[0][1]).toEqual({ kind: "read", result: empty });
   });
 
+  it("records a zero bill for an empty pool, where no call was made, so the ledger never counts its worst case", async () => {
+    const d = deps(ok({ keys: [] }), ok({ picks: [] }));
+    expect(await runTheRead("u", input, d, inputs({ pool: new Set() }))).toMatchObject({ kind: "nothing" });
+    expect(d.shortlist).not.toHaveBeenCalled();
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }]);
+  });
+
+  it("gives the shortlist no more than what is left of the whole deadline", async () => {
+    // The first reading starts the clock; by the shortlist, 100s of the 110s are gone.
+    const times = [0];
+    const d = { ...deps(ok({ keys: [] }), ok({ picks: [] })), now: () => times.shift() ?? 100_000 };
+    await runTheRead("u", input, d, inputs());
+    expect(vi.mocked(d.shortlist).mock.calls[0][0].deadlineMs).toBe(10_000);
+  });
+
   it("finds nothing when every judged reason is refused, and says how many it weighed", async () => {
     const d = deps(ok({ keys: [1, 2] }), ok({ picks: [{ key: 1, reason: "Makes 3 tokens." }] }));
     expect(await runTheRead("u", input, d, inputs())).toMatchObject({ kind: "nothing", result: { picks: [], pool: 2, weighed: 2 } });

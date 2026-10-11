@@ -78,7 +78,7 @@ describe("a reason line", () => {
   });
 
   it("refuses a digit, a percent sign, a score word, or a stray brace (F3)", () => {
-    for (const bad of ["Makes 5/3 Elementals on each land.", "Wins most games.%", "The best landfall commander.", "A strong fit for horrors.", "Unlike your {deck} deck."]) {
+    for (const bad of ["Makes 5/3 Elementals on each land.", "Wins most games.%", "The best landfall commander.", "A strong fit for horrors.", "A good fit.", "★★★★★", "Unlike your {deck} deck."]) {
       expect(parseReason(bad, decks)).toBeNull();
     }
   });
