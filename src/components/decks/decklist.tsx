@@ -60,7 +60,7 @@ import { CardFactMark } from "../cards/card-fact-mark";
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
-import { Fragment, useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useGotIt } from "./got-it";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
@@ -299,6 +299,7 @@ const EMPTY_PENDING_CHANGES: ReadonlyMap<string, PendingChangeMove> = new Map();
 /** Module-scoped for the same reason: avoids allocating a fresh `[]` on every
  *  render when nothing was spent. */
 const EMPTY_SPENT_SLOTS: DeckDetailCard[] = [];
+const NO_SLOTS_LEFT: ReadonlySet<string> = new Set();
 
 // Stable empties for a caller that passes neither (the page always does, so a render there reuses
 // the slice until a game or version changes).
@@ -364,6 +365,7 @@ export function Decklist({
   // leaving the deck, clears them; the action's revalidation does not.
   const gotIt = useGotIt();
   const clearHeld = gotIt?.clearHeld;
+  const [slotsLeft, setSlotsLeft] = useState<ReadonlySet<string>>(NO_SLOTS_LEFT);
   useEffect(() => () => clearHeld?.(), [filter, statsOpen, clearHeld]);
   const onFilterChange = (f: "all" | "shopping") => {
     choosePanel("list");
@@ -562,16 +564,6 @@ export function Decklist({
   // are what the type and role groups section, since a commander draws in a group of its own.
   const listShoppingCards = cards.filter(isShoppingCard);
   const shoppingCards = [...commanderShopping, ...listShoppingCards];
-  // I got it asks the list whether it bills a card when Undo is pressed: off the list, the row left.
-  const registerList = gotIt?.registerList;
-  const billedKey = shoppingCards.map((c) => c.oracleId).join(",");
-  useEffect(() => {
-    const billed = new Set(billedKey.split(","));
-    registerList?.((id) => billed.has(id));
-    return () => registerList?.(null);
-    // `cards` too: every fresh list from the server registers anew, even one billing the same
-    // cards, because an undo waits for the list its revert refreshed.
-  }, [registerList, billedKey, cards]);
   const visibleCards = filter === "shopping" ? listShoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
@@ -658,6 +650,15 @@ export function Decklist({
     : [];
   const heldOracleIds = new Set(heldCards.map((c) => c.oracleId));
   const isHeldCard = (c: DeckDetailCard) => heldOracleIds.has(c.oracleId);
+  // A held card whose slot has been drawn LEFT the list in this read. Recorded at render, as state
+  // adjusted during render rather than in an effect, and pruned to the held map, so it ends with
+  // the read. A held card billed again after leaving is a row an undo brought back: it fades in
+  // where its slot was from its first frame. A row that stayed was billed all along, so it never
+  // left and never fades.
+  const leftNow = new Set([...slotsLeft].filter((id) => gotIt?.held.has(id)));
+  heldOracleIds.forEach((id) => leftNow.add(id));
+  if (leftNow.size !== slotsLeft.size || [...leftNow].some((id) => !slotsLeft.has(id))) setSlotsLeft(leftNow);
+  const cameBack = (c: DeckDetailCard) => !isHeldCard(c) && leftNow.has(c.oracleId);
   const heldCommanders = heldCards.filter((c) => c.commander === true);
   const heldBody = heldCards.filter((c) => c.commander !== true);
   const listedCards = spentCards.length > 0 || heldBody.length > 0
@@ -1097,6 +1098,7 @@ export function Decklist({
                       siblings={shoppingOrderedIds}
                       spent={isSpentCard(card)}
                       held={isHeldCard(card)}
+                      cameBack={cameBack(card)}
                       shoppingFigure={figureFor(card.oracleId)}
                       inShopping
                       newestAsOf={newestAsOf}
@@ -1104,13 +1106,16 @@ export function Decklist({
                   );
                   const under = receiptsUnder(card.oracleId);
                   // One copy fewer: the row stays, and its receipt sits under it in the same grid cell.
+                  // Keyed apart while held, so the slot and the row it gives back are each mounted
+                  // fresh and each fades in, rather than one element changing its contents.
+                  const k = isHeldCard(card) ? `held:${card.oracleId}` : card.oracleId;
                   return under.length ? (
-                    <div key={card.oracleId} className="flex flex-col gap-[4px]">
+                    <div key={k} className="flex flex-col gap-[4px]">
                       {row}
                       {under.map((r) => <SwapReceiptRow key={r.swapId} receipt={r} />)}
                     </div>
                   ) : (
-                    <Fragment key={card.oracleId}>{row}</Fragment>
+                    <Fragment key={k}>{row}</Fragment>
                   );
                 })}
               </div>

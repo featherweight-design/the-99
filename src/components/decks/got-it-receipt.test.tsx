@@ -29,22 +29,12 @@ const written = (over: Partial<GotItWritten> = {}): GotItWritten => ({
 const preview = (decks: ShortDeck[] = []) => ({ rows: [], entryRows: [], differs: false, decks, expected: { k: 1 } });
 const atraxa: ShortDeck = { deckId: "d2", deckName: "HD Atraxa", oracleId: ORACLE, cardName: NAME, short: 1 };
 
-/**
- * `before`: whether the list bills the card when Undo is pressed (on it, the row stayed). `after`:
- * whether the refreshed list bills it once the revert's refresh has landed.
- */
-function hostMock(before: boolean | null = false, after: boolean | null = true) {
-  const list = { billed: before };
-  return {
-    start: vi.fn(), end: vi.fn(), undone: vi.fn(), failedAway: vi.fn(),
-    onList: vi.fn(() => list.billed),
-    generation: vi.fn(() => 0),
-    afterRefresh: vi.fn(async () => { list.billed = after; return true; }),
-  };
+function hostMock() {
+  return { start: vi.fn(), end: vi.fn(), failedAway: vi.fn() };
 }
 
-function draw(w: GotItWritten = written(), name = NAME, opts: { onList?: boolean | null; after?: boolean | null; failed?: boolean } = {}) {
-  const host = hostMock(opts.onList ?? false, opts.after === undefined ? true : opts.after);
+function draw(w: GotItWritten = written(), name = NAME, opts: { failed?: boolean } = {}) {
+  const host = hostMock();
   const onExpire = vi.fn();
   const ui = (h = host, ww = w) => (
     <>
@@ -158,10 +148,25 @@ describe("the receipt's window", () => {
     fireEvent.pointerEnter(toast());
     act(() => undo().focus());
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undone(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
     await tick(TOAST_MS * 3);
     expect(onExpire).not.toHaveBeenCalled();
     fireEvent.pointerLeave(toast());
+    await tick(TOAST_MS + 300);
+    expect(onExpire).toHaveBeenCalled();
+  });
+
+  it("entering the warning drops the hover hold: the frame unmounts with no pointerleave", async () => {
+    previewRevert.mockResolvedValue(preview([atraxa]));
+    const { onExpire } = draw();
+    fireEvent.pointerEnter(toast());
+    await act(async () => fireEvent.click(undo()));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Cancel" })));
+    // Cancel hands focus back to Undo; take it away, so only a hover could hold the toast now.
+    await tick(50);
+    act(() => screen.getByRole("button", { name: "Shopping" }).focus());
+    // Back, with no pointer over it: the window counts again.
     await tick(TOAST_MS + 300);
     expect(onExpire).toHaveBeenCalled();
   });
@@ -191,89 +196,38 @@ describe("Undo", () => {
     expect(undoingNow()).toBe(true);
   });
 
-  it("goes straight through when no other deck would be short: in flight, then done, the row back on the list", async () => {
+  it("goes straight through when no other deck would be short: in flight, then done", async () => {
     previewRevert.mockResolvedValue(preview());
     let resolve!: (v: unknown) => void;
     revertCollectionEntry.mockReturnValue(new Promise((r) => { resolve = r; }));
-    const { host, undoingNow } = draw();
+    const { undoingNow } = draw();
     await act(async () => fireEvent.click(undo()));
     expect(screen.getByRole("button", { name: c.undoing })).toBeInTheDocument();
     const [entryId, actionId, expected, confirmShort, ignore] = revertCollectionEntry.mock.calls[0];
     expect([entryId, expected, confirmShort, ignore]).toEqual([ENTRY, { k: 1 }, undefined, DECK]);
     expect(actionId).toMatch(/^[0-9a-f-]{36}$/);
     await act(async () => resolve({ reverted: { id: "r1" } }));
-    expect(toast().textContent).toBe(c.undone(NAME));
-    // The row had left the list and the refreshed list bills it again, so it comes back.
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, true);
-    expect(host.afterRefresh).toHaveBeenCalledWith(0);
+    // What the revert did, true whatever the list then shows.
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
     expect(undoingNow()).toBe(false);
     // The revert action invalidated the page itself.
     expect(refresh).not.toHaveBeenCalled();
     expect(screen.queryByRole("button")).toHaveAccessibleName("Shopping");
   });
 
-  it("done elsewhere: a row that stayed says the copy is out of the collection again", async () => {
+  it("a row that stayed gets the same done message", async () => {
     previewRevert.mockResolvedValue(preview());
     revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
-    const { host } = draw(written({ facts: { tookCopy: [], stillNeeds: 1 } }), NAME, { onList: true });
-    await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
-    // It never left, so nothing fades back in.
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, false);
-  });
-
-  it("decides from the list AFTER the refresh: still covered by copies added since, nothing comes back", async () => {
-    previewRevert.mockResolvedValue(preview());
-    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
-    // Off the list when pressed (the slot held), and still off it once the refresh lands.
-    const { host } = draw(written(), NAME, { onList: false, after: false });
-    await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
-    // The held entry is released (and with the last purchase, dropped): no row to fade back in.
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, false);
-  });
-
-  it("reads Undoing… and keeps the held entry until the refreshed list has landed", async () => {
-    previewRevert.mockResolvedValue(preview());
-    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
-    const { host } = draw();
-    let land!: () => void;
-    host.afterRefresh.mockReturnValueOnce(new Promise<boolean>((r) => { land = () => r(true); }));
-    await act(async () => fireEvent.click(undo()));
-    expect(screen.getByRole("button", { name: c.undoing })).toBeInTheDocument();
-    expect(host.undone).not.toHaveBeenCalled();
-    expect(host.end).not.toHaveBeenCalled();
-    await act(async () => land());
-    expect(host.undone).toHaveBeenCalled();
-  });
-
-  // A refresh slower than the bounded wait: nothing is decided from the list read before the revert.
-  it("says only what the revert did and keeps the held entry when no fresh list lands in time", async () => {
-    previewRevert.mockResolvedValue(preview());
-    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
-    const { host } = draw();
-    host.afterRefresh.mockResolvedValueOnce(false);
-    await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
-    expect(host.undone).not.toHaveBeenCalled();
-    expect(host.end).toHaveBeenCalled();
-  });
-
-  it("decides stayed from the list, not the facts: an idempotent retry's stayed row is undone elsewhere", async () => {
-    previewRevert.mockResolvedValue(preview());
-    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
-    draw(written({ facts: null }), NAME, { onList: true });
+    draw(written({ facts: { tookCopy: [], stillNeeds: 1 } }));
     await act(async () => fireEvent.click(undo()));
     expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
   });
 
   it("an entry already reverted reads as undone (audit finding 2)", async () => {
     previewRevert.mockResolvedValue({ alreadyReverted: true });
-    const { host } = draw();
+    draw();
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undone(NAME));
-    // Re-read, not invalidated: the held slot is kept until the fresh list bills the card (finding 3).
-    expect(host.undone).toHaveBeenCalledWith(ORACLE, true);
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
     expect(revertCollectionEntry).not.toHaveBeenCalled();
     // Nothing was written, so nothing invalidated: the list is re-read here (C7).
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -284,7 +238,7 @@ describe("Undo", () => {
     revertCollectionEntry.mockResolvedValue({ alreadyReverted: true });
     draw();
     await act(async () => fireEvent.click(undo()));
-    expect(toast().textContent).toBe(c.undone(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
@@ -301,7 +255,7 @@ describe("Undo", () => {
     expect(undoingNow()).toBe(true);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: gotItCopy.shortWarning.confirmUndo })));
     expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, [atraxa], DECK);
-    expect(toast().textContent).toBe(c.undone(NAME));
+    expect(toast().textContent).toBe(c.undoneElsewhere(NAME));
   });
 
   it("cancelling the warning writes nothing and gives the toast back with Undo", async () => {

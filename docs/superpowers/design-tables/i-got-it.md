@@ -605,7 +605,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | slot | the app's toast slot, not on the row | the app's toast slot, not on the row |
-| position | absolute; left 16px; right 16px; bottom 84px (10px above the 74px tab bar) | absolute; left 16px; bottom 16px, inside the deck pane |
+| position | fixed (`ToastFrame`); left 16px; right 16px; bottom = tab bar + 10px (84px with the 74px bar) | fixed (`ToastFrame`); left = rail + 16px; bottom 16px: the deck pane's bottom left |
 | width | 100% of the slot (390 − 32) | 440px |
 | clearance | above the tab bar (tab bar: 74px, border-top 1px var(--border), bg var(--surface-rail)) | clear of the 2-column grid's right column |
 | survives the row leaving | yes (not a child of the row) | yes |
@@ -638,8 +638,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | key (clean, claimed, claimedMany, partial, checking, undoing) | `receipt.added(card, q)` | same |
-| key (undone, row had left) | `receipt.undone(card)` | same |
-| key (undone, row had stayed) | `receipt.undoneElsewhere(card)` | same |
+| key (undone) | `receipt.undoneElsewhere(card)`, every done undo (the canvas's `receipt.undone`, "back on the list", is not built; see the PR's Settled) | same |
 | key (failed) | `receipt.undoFailed` | same |
 | font-size | 13.5px | 13.5px |
 | line-height | 1.35 | 1.35 |
@@ -947,7 +946,7 @@ Copy wording is out of scope: rows name the `gotItCopy.*` key (proposed `src/lib
 | C4 Undo checking | Undo pressed | Toast: Undo → `receipt.checking`, aria-busy, muted .8; History hidden; row tag disabled; timer held | check excludes source deck; Undo not pressable |
 | C5 Undo raises §E | a committed deck other than the source would go short | ShortDeckWarning `titleUndo` / `confirmUndo`: sheet (phone, scrim .62) or 480px dialog (desktop); Cancel focused | deck list excludes the source deck; Undo anyway not destructive-styled; Cancel → copy stays, toast leaves its pending state |
 | C6 Undo in flight | no deck would go short, or Undo anyway pressed | Toast: Undo → `receipt.undoing`, aria-busy, History hidden; slot still held | timer held |
-| C7 Undo done | revert applied, or answered `alreadyReverted` | Toast: L1 `receipt.undone` (row had left) or `receipt.undoneElsewhere` (row had stayed), no L2/L3, no actions; held slot fades back to the live row in place (150ms); counts/total return | no held slot left behind; toast goes after 8s |
+| C7 Undo done | revert applied, or answered `alreadyReverted` | Toast: L1 `receipt.undoneElsewhere`, every case, no L2/L3, no actions; the held slot steps aside once a list billing the card arrives, and the row fades back in place (150ms), derived at render; counts/total return | no held slot left behind; toast goes after 8s |
 | C8 Undo failed | revert errors, or answered `notFound` | Toast role=alert: L1 `receipt.undoFailed`, L3 `receipt.undoFailedBody`, `receipt.openHistory` link (a `Link` to the entry in History); Undo withdrawn | nothing changes: copy still owned, slot still held; no retry offered |
 | C9 Leave transition | write answers for a row that leaves | live row → held slot, 150ms ease-out opacity fade; reduced motion: one-frame swap | no height animation; neighbours do not move; slot holds until the next read and survives revalidation |
 | — Commander receipt | (requested in scope) | **not designed**: no distinct form in the handoff; a commander row's receipt follows C1/C2/C3 by outcome | — |

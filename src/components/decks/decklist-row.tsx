@@ -95,6 +95,11 @@ interface DecklistRowProps {
    */
   held?: boolean;
   /**
+   * An undo brought this row back where its held slot was: it fades in from its first frame. The
+   * decklist derives it at render (held, slot drawn, billed again), so there is no effect to wait on.
+   */
+  cameBack?: boolean;
+  /**
    * EDHREC inclusion % for the Shopping view's meta line (addendum A2).
    * `undefined` — All view; no figure is rendered. Since #350 the row may
    *               still carry a meta line, for the cost.
@@ -131,6 +136,7 @@ export function DecklistRow({
   siblings,
   spent = false,
   held = false,
+  cameBack = false,
   shoppingFigure,
   inShopping = false,
   newestAsOf,
@@ -451,7 +457,7 @@ export function DecklistRow({
   return (
     // Wrapper keeps the row and any error message as a single grid item. A row an undo brought
     // back fades in where its held slot was (C3).
-    <div className={gotIt?.returning.has(card.oracleId) ? "anim-slot-in" : undefined}>
+    <div className={cameBack ? "anim-slot-in" : undefined}>
       {/* Row container */}
       {/* --row-bg exists so the over glyph's seam tracks the hover swap; a fixed
           seam string reads as a hairline through the glyph on hover.

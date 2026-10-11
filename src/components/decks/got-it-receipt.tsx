@@ -62,20 +62,8 @@ export type GotItUndoHost = {
   start: (oracleId: string) => void;
   /** It settled, or was cancelled: the tag is live again. */
   end: (oracleId: string) => void;
-  /**
-   * The revert committed and the refreshed list has landed: one purchase of this card is released
-   * (its held slot goes when none is left). `back`: the row had left and the refreshed list bills
-   * the card again, so it fades back in where its slot was.
-   */
-  undone: (oracleId: string, back: boolean) => void;
-  /** How many fresh lists have registered so far: taken before a request whose refresh we await. */
-  generation: () => number;
-  /** True once a list newer than `since` has registered; false when the bounded wait ran out. */
-  afterRefresh: (since: number) => Promise<boolean>;
   /** It failed after this toast was replaced: the provider brings this receipt back, failed. */
   failedAway: () => void;
-  /** Whether the fresh Shopping list bills the card now; null with no list to ask. */
-  onList: (oracleId: string) => boolean | null;
 };
 
 export function GotItReceipt({
@@ -98,11 +86,6 @@ export function GotItReceipt({
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const actionId = useRef<string | null>(null);
-  // Whether the row had stayed, read off the list when Undo is pressed, before the revert moves it.
-  const stayedNow = useRef(false);
-  // Whether the undo gave the row back, read off the list AFTER the revert's refresh has landed:
-  // copies added elsewhere since can keep the deck covered, and then nothing comes back.
-  const [back, setBack] = useState(false);
   // Where the undo is: a warning open (this toast owns it) or a request out (the host waits on it).
   const stage = useRef<"idle" | "warning" | "network">("idle");
   const mounted = useRef(true);
@@ -141,18 +124,15 @@ export function GotItReceipt({
     stage.current = "network";
     setPhase({ k: "undoing" });
     actionId.current ??= crypto.randomUUID();
-    // Taken before the request: the action's revalidation may land before it answers.
-    const since = host.generation();
     try {
       const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId);
-      if ("reverted" in out) return await done(since);
-      if ("alreadyReverted" in out) return await done(null);
+      if ("reverted" in out) return done(false);
+      if ("alreadyReverted" in out) return done(true);
       if ("wouldShort" in out) {
         const before = new Set((was ?? []).map((d) => d.deckId));
         // Asked again, but the toast that would ask has gone: nothing was written, so it ends.
         if (!mounted.current) return abandon();
-        stage.current = "warning";
-        setPhase({
+        warn({
           k: "warning", decks: out.wouldShort, expected, changed: true,
           fresh: new Set(out.wouldShort.map((d) => d.deckId).filter((id) => !before.has(id))),
         });
@@ -175,12 +155,11 @@ export function GotItReceipt({
     setPhase({ k: "checking" });
     try {
       const p = await previewRevert(written.entryId, deckId);
-      if ("alreadyReverted" in p) return await done(null);
+      if ("alreadyReverted" in p) return done(true);
       if (!("rows" in p)) return fail();
       if (p.decks.length > 0) {
         if (!mounted.current) return abandon();
-        stage.current = "warning";
-        setPhase({ k: "warning", decks: p.decks, expected: p.expected, fresh: new Set(), changed: false });
+        warn({ k: "warning", decks: p.decks, expected: p.expected, fresh: new Set(), changed: false });
         return;
       }
       await revert(p.expected);
@@ -190,36 +169,25 @@ export function GotItReceipt({
   }
 
   /**
-   * The revert committed. `since` is the list generation before a `reverted` request, whose action
-   * invalidated the page; null for `alreadyReverted`, which wrote nothing, so the list is re-read
-   * here (C7). Either way the toast reads Undoing… and the held slot stands until the refreshed
-   * list has landed, and that list decides: billed again, the row is back on it; not billed (the
-   * deck is still covered), the copy is only out of the collection again.
+   * The revert committed. `reverted` invalidated the deck page in the action; `alreadyReverted`
+   * wrote nothing, so nothing did, and the list is re-read here (C7). The toast says only what the
+   * revert did, which is true whatever the list then shows (the deck may still be covered by
+   * copies added since). The held entry stays until the next read: the decklist draws the slot
+   * only while the list omits the card, so it steps aside once a list billing the card arrives.
    */
-  async function done(since: number | null) {
-    setPhase({ k: "undoing" });
-    if (since === null) {
-      since = host.generation();
-      router.refresh();
-    }
-    const landed = await host.afterRefresh(since);
-    // With no fresh list seen, nothing is decided from the old one: the toast says only what the
-    // revert did (the copies left the collection), and the held entry stays, so the slot steps
-    // aside on its own once a list billing the card arrives, or at the next read.
-    const cameBack = landed && !stayedNow.current && (host.onList(oracleId) ?? true);
+  function done(refresh: boolean) {
+    if (refresh) router.refresh();
     stage.current = "idle";
     host.end(oracleId);
-    if (landed) host.undone(oracleId, cameBack);
     restart();
-    setBack(cameBack);
     setPhase({ k: "undone" });
   }
 
-  function press() {
-    // Off the list now means the row left (its held slot is drawn); on it, the row stayed. With no
-    // list to ask, the write's own facts say whether it stayed.
-    stayedNow.current = host.onList(oracleId) ?? body !== null;
-    void check();
+  // Entering the warning unmounts the toast's frame with no pointerleave: its hover hold goes too.
+  function warn(next: Extract<Phase, { k: "warning" }>) {
+    stage.current = "warning";
+    setHover(false);
+    setPhase(next);
   }
 
   // The button that had focus goes when the undo settles: focus moves to the Shopping filter
@@ -280,7 +248,7 @@ export function GotItReceipt({
         frameRef={ref}
         placement="deck"
         onHold={hold}
-        title={back ? c.undone(cardName) : c.undoneElsewhere(cardName)}
+        title={c.undoneElsewhere(cardName)}
       />
     );
   }
@@ -308,7 +276,7 @@ export function GotItReceipt({
             // Not the native attribute: the button keeps focus while it reads Checking or Undoing.
             aria-disabled={busy || undefined}
             aria-busy={busy || undefined}
-            onClick={() => { if (!busy) press(); }}
+            onClick={() => { if (!busy) void check(); }}
             className={`${btn} font-semibold ${busy ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
           >
             {phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}
