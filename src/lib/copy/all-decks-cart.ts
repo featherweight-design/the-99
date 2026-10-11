@@ -54,7 +54,12 @@ export const allDecksCartCopy = {
 
   empty: {
     title: "No deck is missing a card",
-    body: (total: number) => `All ${n(total)} of your decks have their cards, proxies included.`,
+    body: (total: number) =>
+      total === 0
+        ? "You have no decks yet."
+        : total === 1
+          ? "Your one deck has its cards, proxies included."
+          : `All ${n(total)} of your decks have their cards, proxies included.`,
     back: "Back to Decks",
   },
 

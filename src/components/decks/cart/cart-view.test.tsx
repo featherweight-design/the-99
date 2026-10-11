@@ -106,6 +106,14 @@ describe("CartView", () => {
     expect(screen.getByText(priceCopy.strip.pricedClause(3, 4))).toBeTruthy();
   });
 
+  it("tags a line whose every priced copy is foil-only as a foil figure, as the deck's own row does", () => {
+    const foil = cart();
+    foil.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: 90, state: "foilOnly", commander: false, held: 0 }];
+    render(<CartView cart={foil} provenance={provenance} />);
+    const tower = list().getAllByRole("listitem").find((li) => li.textContent?.includes("Command Tower"))!;
+    expect(tower.textContent).toMatch(/\$0\.90.*foil/);
+  });
+
   it("has nothing to select between with one deck (E1)", () => {
     const one = cart({ decks: [cart().decks[1]], lines: [cart().lines[0]] });
     render(<CartView cart={one} provenance={provenance} />);
@@ -117,6 +125,7 @@ describe("CartView", () => {
     render(<CartView cart={cart({ decks: [], lines: [] })} provenance={provenance} />);
     expect(screen.getByText(copy.empty.title)).toBeTruthy();
     expect(screen.getByText(copy.page.subNone(21))).toBeTruthy();
+    expect(screen.getByText(copy.empty.body(21))).toBeTruthy();
     expect(screen.getByRole("link", { name: copy.empty.back }).getAttribute("href")).toBe("/decks");
   });
 

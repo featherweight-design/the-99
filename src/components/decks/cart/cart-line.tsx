@@ -15,7 +15,12 @@ import { BuyTag } from "../buy-tag";
 export function lineFact(line: SelectedLine, newestAsOf: Date | null): PriceFact | null {
   if (!newestAsOf) return null;
   if (line.pricedCopies > 0) {
-    return { cents: line.cents, foilCents: null, etchedCents: null, asOf: newestAsOf };
+    // Every priced copy foil-only: the sum is a foil figure, and the tag says `foil` as each deck's
+    // own Shopping row does. Any normal-priced copy makes it an ordinary figure.
+    const foil = line.selectedRows.every((r) => r.cents === null || r.state === "foilOnly");
+    return foil
+      ? { cents: null, foilCents: line.cents, etchedCents: null, asOf: newestAsOf }
+      : { cents: line.cents, foilCents: null, etchedCents: null, asOf: newestAsOf };
   }
   if (line.selectedRows.some((r) => r.state === "soldOut")) {
     return { cents: null, foilCents: null, etchedCents: null, asOf: new Date(0) };
