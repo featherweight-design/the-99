@@ -15,6 +15,10 @@ export type ComboPieceRow = {
   produces: string[];
   card_count: number;
   mana_value_needed: number | null;
+  /** Read for the benchmarks' win-speed ledger, which draws each line's plates; the facts ignore them. */
+  mana_needed?: string | null;
+  steps?: string | null;
+  notable_prerequisites?: string | null;
   oracle_id: string;
   name: string;
   must_be_commander: boolean;
@@ -59,6 +63,7 @@ export function anySizeComboQuery(present: readonly string[], commanders: readon
       having count(*) = v2.card_count and count(*) filter (where not p.held) <= 1
     )
     select v.variant_id, v.produces, v.card_count, v.mana_value_needed,
+           v.mana_needed, v.steps, v.notable_prerequisites,
            p.oracle_id, c.name, p.must_be_commander, p.held, c.commander_legal, c.color_identity
     from keep k
     join ${spellbookVariants} v on v.variant_id = k.variant_id
