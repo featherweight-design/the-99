@@ -37,6 +37,7 @@ export function EmptyDeckNotes({
         shoppingCount={0}
         filter="all"
         grouping="type"
+        // All and Shopping both mean "the list" here: nothing is shopped for at zero, so the filter stays at All.
         onFilterChange={() => choose("list")}
         onGroupingChange={() => {}}
         view="list"
