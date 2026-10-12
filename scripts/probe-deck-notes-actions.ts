@@ -1,0 +1,124 @@
+// Deck notes' queries, proved against a real Postgres by calling the real store and read functions.
+// What no unit test reaches: the 100-per-deck cap holding under two concurrent adds (a row lock on the
+// deck), the check constraint's backstop, ownership failing to match another player's note, the cascade
+// on deck delete, and a banned card being findable by the picker lookup.
+//
+// It writes a fixture under per-run user ids and deletes it in a finally. Point it at local-dev or a
+// scratch branch, NEVER production. Run: `pnpm probe:deck-notes-actions`
+import { requireEnv } from "./lib/env.mjs";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { sql } from "drizzle-orm";
+import ws from "ws";
+import { insertNote, removeNote, searchNoteCards, setNoteDone, updateNoteBody } from "../src/lib/decks/notes-store";
+import { readDeckNotes } from "../src/lib/decks/notes-read";
+import { formatTag } from "../src/lib/decks/notes-body";
+import { NOTES_PER_DECK } from "../src/lib/copy/deck-notes";
+import { sqlstate } from "../src/lib/db-error";
+
+neonConfig.webSocketConstructor = ws;
+
+const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
+const pool = new Pool({ connectionString: DATABASE_URL });
+const fixture = drizzle(pool);
+const USER = `probe-notes-${Date.now()}`;
+const OTHER = `${USER}-other`;
+
+let failures = 0;
+const check = (label: string, actual: unknown, expected: unknown) => {
+  const ok = JSON.stringify(actual) === JSON.stringify(expected);
+  if (!ok) failures += 1;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${label} — got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
+};
+
+const one = async <T>(q: ReturnType<typeof sql>): Promise<T> => (await fixture.execute(q)).rows[0] as T;
+const count = async (deckId: string) => (await one<{ n: number }>(sql`select count(*)::int as n from deck_notes where deck_id = ${deckId}::uuid`)).n;
+
+async function main() {
+  const commander = (await one<{ oracle_id: string }>(sql`select oracle_id from cards where type_line ~ 'Legendary Creature' order by oracle_id limit 1`)).oracle_id;
+  const deck = (await one<{ id: string }>(sql`insert into decks (user_id, name, commander_oracle_id) values (${USER}, ${USER}, ${commander}::uuid) returning id`)).id;
+  const other = (await one<{ id: string }>(sql`insert into decks (user_id, name, commander_oracle_id) values (${OTHER}, ${OTHER}, ${commander}::uuid) returning id`)).id;
+  const d = { commanderOracleId: commander, partnerOracleId: null };
+
+  // ---- add, read, edit, done, delete ----
+  check("an add answers ok", await insertNote(deck, USER, "try a second sweeper"), "ok");
+  let view = await readDeckNotes(deck, USER, d);
+  check("it reads back as one open note", [view.open.length, view.done.length], [1, 0]);
+  const note = view.open[0];
+  check("the date is the creation date, and no edit is recorded", note.doneAt, null);
+
+  check("an edit answers true", await updateNoteBody(deck, USER, note.id, "try two sweepers"), true);
+  view = await readDeckNotes(deck, USER, d);
+  check("an edit changes the body and not the creation date", [view.open[0].body, view.open[0].createdAt], ["try two sweepers", note.createdAt]);
+  const edited = await one<{ u: string | null }>(sql`select updated_at::text as u from deck_notes where id = ${note.id}::uuid`);
+  check("an edit stamps updated_at", edited.u !== null, true);
+
+  // ---- ownership: another player's id, and a deck that is not the note's, match nothing ----
+  check("another player cannot edit it", await updateNoteBody(deck, OTHER, note.id, "hijack"), false);
+  check("another player cannot select it", await setNoteDone(deck, OTHER, note.id, true), false);
+  check("another player cannot delete it", await removeNote(deck, OTHER, note.id), false);
+  check("the note's id on another deck matches nothing", await removeNote(other, USER, note.id), false);
+  check("the note is untouched", (await readDeckNotes(deck, USER, d)).open[0].body, "try two sweepers");
+
+  // ---- select and unselect ----
+  check("select answers true", await setNoteDone(deck, USER, note.id, true), true);
+  view = await readDeckNotes(deck, USER, d);
+  check("a selected note moves to done with its own date", [view.open.length, view.done.length, view.done[0].doneAt !== null], [0, 1, true]);
+  check("unselect answers true", await setNoteDone(deck, USER, note.id, false), true);
+  view = await readDeckNotes(deck, USER, d);
+  check("an unselected note is open again with no done date", [view.open.length, view.open[0].doneAt], [1, null]);
+
+  check("delete answers true", await removeNote(deck, USER, note.id), true);
+  check("and the note is gone", await count(deck), 0);
+
+  // ---- tags: held, not held, unresolved ----
+  const held = (await one<{ oracle_id: string }>(sql`select oracle_id from cards where oracle_id <> ${commander}::uuid and commander_legal order by oracle_id limit 1`)).oracle_id;
+  const notHeld = (await one<{ oracle_id: string }>(sql`select oracle_id from cards where oracle_id not in (${commander}::uuid, ${held}::uuid) and commander_legal order by oracle_id limit 1`)).oracle_id;
+  await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck}::uuid, ${held}::uuid, 1)`);
+  const ghost = "00000000-0000-4000-8000-000000000000";
+  await insertNote(deck, USER, `${formatTag(held, "stale")} ${formatTag(notHeld, "x")} ${formatTag(ghost, "Gone Card")} ${formatTag(commander, "c")}`);
+  const tags = (await readDeckNotes(deck, USER, d)).open[0].drawn.filter((s) => s.kind === "tag") as { held: boolean; resolved: boolean; name: string }[];
+  check("a held card draws solid, a not-held one dashed, a commander solid", tags.map((t) => t.held), [true, false, false, true]);
+  check("an unresolvable id keeps its stored name and says so", [tags[2].resolved, tags[2].name], [false, "Gone Card"]);
+  check("a resolved tag draws the catalog's current name, not the stored one", tags[0].name !== "stale", true);
+  await fixture.execute(sql`delete from deck_notes where deck_id = ${deck}::uuid`);
+
+  // ---- the cap, and the race at 99 ----
+  await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body) select ${deck}::uuid, ${USER}, 'n' || g from generate_series(1, ${NOTES_PER_DECK - 1}) g`);
+  const race = await Promise.all([insertNote(deck, USER, "racer one"), insertNote(deck, USER, "racer two")]);
+  check("two adds at 99: exactly one lands, one hits the cap", race.slice().sort(), ["cap", "ok"]);
+  check("the deck holds exactly 100", await count(deck), NOTES_PER_DECK);
+  check("a done note still counts toward the cap", (await insertNote(deck, USER, "one more")), "cap");
+
+  // ---- the check constraint is the backstop ----
+  let emptyCode: string | null = null;
+  try { await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body) values (${other}::uuid, ${OTHER}, '')`); } catch (e) { emptyCode = sqlstate(e); }
+  check("an empty body is refused by the check", emptyCode, "23514");
+  let longCode: string | null = null;
+  try { await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body) values (${other}::uuid, ${OTHER}, ${"x".repeat(1001)})`); } catch (e) { longCode = sqlstate(e); }
+  check("a 1,001-character body is refused by the check", longCode, "23514");
+  check("1,000 characters is allowed", (await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body) values (${other}::uuid, ${OTHER}, ${"x".repeat(1000)}) returning id`)).rows.length, 1);
+
+  // ---- the picker finds a card Commander does not allow ----
+  const banned = await one<{ name: string } | undefined>(sql`select name from cards where not commander_legal and name ~ '^[A-Za-z ]{6,}$' and layout = 'normal' and type_line !~ 'Token|Sticker|Basic' order by name limit 1`);
+  if (!banned) throw new Error("no non-legal game card in this catalog");
+  const hits = await searchNoteCards(banned.name);
+  const hit = hits.find((h) => h.name === banned.name);
+  check("the picker lookup returns a not-legal card and says so", hit?.commanderLegal, false);
+
+  // ---- the cascade ----
+  await fixture.execute(sql`delete from decks where id = ${deck}::uuid`);
+  check("deleting the deck deletes its notes", await count(deck), 0);
+}
+
+main()
+  .catch((error) => {
+    failures += 1;
+    console.error(error);
+  })
+  .finally(async () => {
+    await fixture.execute(sql`delete from decks where user_id in (${USER}, ${OTHER})`);
+    await pool.end();
+    console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
+    process.exit(failures === 0 ? 0 : 1);
+  });
