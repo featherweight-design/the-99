@@ -20,7 +20,7 @@ describe("Chevron", () => {
 
 // The motion rule (bug batch 2026-10-12): a beat of delay, then ease-in-out, from shared tokens.
 describe("the shared motion tokens", () => {
-  const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
+  const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
   it("declares the delay, the duration and an ease-in-out curve", () => {
     expect(css).toMatch(/--motion-delay:\s*100ms/);
     expect(css).toMatch(/--motion-duration:\s*320ms/);

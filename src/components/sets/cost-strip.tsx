@@ -229,9 +229,9 @@ export function CostStrip({
           // The glyph sits at the ▾'s own x, not centred in the 44px target: the ▾ ends at the
           // collapsed row's 12px padding, so the ▴ ends there too.
           className="absolute right-0 top-0 flex h-[44px] w-[44px] items-center justify-end pr-[12px]
-                     font-mono text-[13px] leading-none text-[color:var(--fg-muted)] md:hidden"
+                     font-mono text-[color:var(--fg-muted)] md:hidden"
         >
-          <span aria-hidden="true">▴</span>
+          <span aria-hidden="true" className={CHEVRON_CLASS}>▴</span>
         </button>
       ) : null}
       </div>
