@@ -110,6 +110,12 @@ describe("ImproveDoor: the result", () => {
     expect(copy.help.how("red")).not.toContain("tightest");
   });
 
+  it("names basics in the plural, Plains included", () => {
+    expect(copy.help.swap(3, "Plains", "Mountain")).toBe("Up to 3 Plains → Mountains");
+    expect(copy.help.swap(2, "Forest", "Plains")).toBe("Up to 2 Forests → Plains");
+    expect(copy.help.swap(1, "Plains", "Island")).toBe("1 Plains → Island");
+  });
+
   it("draws the failed state and reads again on Try again", async () => {
     const read = vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(helpFor("R"));
     render(door(read));

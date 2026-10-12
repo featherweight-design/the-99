@@ -176,7 +176,7 @@ Panel context (R3b): Mana Balance panel `--surface-sunken`, `1px --border`, radi
 
 | Property | Phone (390) | Desktop (900) |
 |---|---|---|
-| caption | mono 9 `--accent`, margin-top 3, under the figure and rec, centered; key `strip.balanceShort` | mono 10 `--accent`, right end of the bottom row (flex baseline space-between gap 8, `rec` mono 9 `--fg-faint` left), margin-top 6; key `strip.balance` |
+| caption | mono 9 `--accent`, margin-top 3, under the figure and rec, centered; key `tuningHubCopy.shortcuts.balanceManaShort` | mono 10 `--accent`, right end of the bottom row (flex baseline space-between gap 8, `rec` mono 9 `--fg-faint` left), margin-top 6; key `tuningHubCopy.shortcuts.balanceMana` |
 | cell box (R1A, shipped strip) | min-height 62, radius 7, padding `7px 2px 6px`, `text-align: center`, `--surface-sunken` | min-height 72, radius 9, padding `11px 14px`, `--surface-sunken` |
 | border | `1px solid --border-strong` (interactive cell) | same |
 | condition | deck has a colored pip AND the land count is not under its target with a shelf | same |

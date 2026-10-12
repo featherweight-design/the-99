@@ -8,6 +8,9 @@
 export const KARSTEN_ARTICLE_URL =
   "https://www.tcgplayer.com/content/article/How-Many-Sources-Do-You-Need-to-Consistently-Cast-Your-Spells-A-2022-Update/dc23a7d2-0a16-4c0b-ad36-586fcca03ad8/";
 
+/** A basic's plural: `Forests`, and `Plains` as it is. */
+const basics = (name: string) => (name.endsWith("s") ? name : `${name}s`);
+
 export const manaBalanceCopy = {
   title: "Mana Balance",
   sub: (pips: number, sources: number) =>
@@ -116,7 +119,7 @@ export const manaBalanceCopy = {
     head: (color: string) => `Help adding ${color}`,
     change: "Change color",
     swaps: "Swap basics",
-    swap: (n: number, out: string, into: string) => (n === 1 ? `1 ${out} → ${into}` : `Up to ${n} ${out}s → ${into}s`),
+    swap: (n: number, out: string, into: string) => (n === 1 ? `1 ${out} → ${into}` : `Up to ${n} ${basics(out)} → ${basics(into)}`),
     change_: (color: string, before: number, after: number) => `${color} ${before} → ${after}`,
     noSwap: (color: string) => `No basic swap for ${color}.`,
     howLabel: "How moves are picked",
