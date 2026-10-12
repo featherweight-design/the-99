@@ -88,9 +88,10 @@ export type DeckImport = {
   declaredPartner: DeclaredCommander | null;
   /**
    * Real card lines, after sections and annotations are stripped. The caller cannot
-   * recover this by parsing the raw text: `parsePasteList` turns any non-blank line
-   * into a row, so a `SIDEBOARD:` header counts as a card there. This is the count
-   * that decides state 10 (nothing parsed) and the one state 9's copy renders.
+   * recover this by parsing the raw text: `parsePasteList` skips a header line but
+   * keeps the lines under a `Sideboard` or `Maybeboard` header, which the import
+   * excludes. This is the count that decides state 10 (nothing parsed) and the one
+   * state 9's copy renders.
    */
   lineCount: number;
   notes: ImportNote[];
