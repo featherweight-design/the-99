@@ -212,6 +212,7 @@
     "check:tuning": "tsx scripts/check-tuning.ts",
     "eval:tuning": "tsx scripts/eval/tuning.mts",
     "eval:intake-read": "tsx scripts/eval/intake-read.mts",
+    "eval:fits-read": "tsx scripts/eval/fits-read.mts",
     "eval:report": "tsx scripts/eval/report.mts",
     "eval:rescore": "tsx scripts/eval/rescore.mts",
     "eval:synopsis": "tsx scripts/eval/synopsis.mts",

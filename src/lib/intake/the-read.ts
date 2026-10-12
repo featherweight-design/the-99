@@ -222,15 +222,15 @@ export type TheReadResult = ReadPicks & { pool: number; weighed: number };
  * Digits, a percent sign, and the words that make a line read as a score (handoff, F3). Not `top` or
  * `first`, which rules language needs (the top of a library, first strike).
  */
-const SCORE_WORDS = /\b(best|better|good|great(?:est)?|strong(?:er|est)?|solid|perfect(?:ly)?|ideal(?:ly)?|excellent|superb|amazing|awesome|fantastic|score[sd]?|rank(?:ed|s)?|rating|rated|number one)\b/i;
+export const SCORE_WORDS = /\b(best|better|good|great(?:est)?|strong(?:er|est)?|solid|perfect(?:ly)?|ideal(?:ly)?|excellent|superb|amazing|awesome|fantastic|score[sd]?|rank(?:ed|s)?|rating|rated|number one)\b/i;
 /**
  * Ranking phrases: a choice, pick or place by its ordinal, a runner-up, a number spelled out, joined by
  * whitespace or any hyphen or dash (`second-choice`, `runner\u2011up`). Not a bare `first`, which rules
  * language needs (first strike).
  */
-const RANKS = /\b(?:(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|top)[\s\u2010-\u2015-]+(?:choice|pick|option|place|spot)|runner[\s\u2010-\u2015-]+up|number[\s\u2010-\u2015-]+(?:one|two|three|four|five|six|seven|eight|nine|ten))\b/i;
+export const RANKS = /\b(?:(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|top)[\s\u2010-\u2015-]+(?:choice|pick|option|place|spot)|runner[\s\u2010-\u2015-]+up|number[\s\u2010-\u2015-]+(?:one|two|three|four|five|six|seven|eight|nine|ten))\b/i;
 /** Digits, a percent sign, and stars of any kind, which read as a rating. */
-const FIGURES = /[\p{Nd}%★☆⭐✩✪✫✬✭✮✯]/u;
+export const FIGURES = /[\p{Nd}%★☆⭐✩✪✫✬✭✮✯]/u;
 const DECK_TOKEN = /\{D(\d+)\}/g;
 
 /** A deck's short name for measuring a reason: its commander's name before any comma. */
