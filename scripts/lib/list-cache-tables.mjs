@@ -207,7 +207,7 @@ export function codeOnly(text) {
 }
 
 /**
- * The third argument (the key) of every `cachePageForUser(...)` call in a source, read from `codeOnly`, so
+ * The reader (first argument) and key (third) of every `cachePageForUser(...)` call in a source, read from `codeOnly`, so
  * a `friendGeneration(` in a comment or a string keys nothing, and neither does one elsewhere in the page
  * (an unused call, or inside the loader).
  */
@@ -230,7 +230,7 @@ export function cacheKeysOf(text) {
       }
     }
     args.push(src.slice(start, i));
-    if (args.length >= 3) keys.push(args[2]);
+    if (args.length >= 3) keys.push({ reader: args[0].trim(), key: args[2] });
   }
   return keys;
 }
@@ -256,7 +256,10 @@ export function socialKeyProblems(
     if (social.length === 0) continue;
     // EVERY key on the page: reachability is page-level, so it cannot say which call's loader reads a friend.
     const keys = cacheKeysOf(source(page));
-    if (keys.length === 0 || !keys.every((key) => /\bfriendGeneration\s*\(/.test(key))) {
+    // ...and for the SAME reader: a generation of another account's friends keys the wrong stamps.
+    const keyed = ({ reader, key }) =>
+      [...key.matchAll(/\bfriendGeneration\s*\(\s*([^,)]*?)\s*[,)]/g)].some((m) => m[1] === reader);
+    if (keys.length === 0 || !keys.every(keyed)) {
       out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
     }
   }
