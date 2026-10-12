@@ -277,7 +277,8 @@ export async function readTuningState(
 
   const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;
   const lastOk = reviewed ?? newestOk;
-  // The items are the newest OK run's. A failed or stopped re-run leaves the set it would have
+  // The items are the newest OK run's, or in review the named run's (and then `stale`, `retired`
+  // and `modelVersionMoved` describe that run). A failed or stopped re-run leaves the set it would have
   // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
   // run, and nothing the player had was changed by it.
   const { items, newestPriceAsOf } = lastOk

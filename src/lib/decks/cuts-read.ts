@@ -193,14 +193,15 @@ export async function reapCutsRuns(deckId: string, userId: string, now: Date = n
 
 /**
  * The panel's state for this tool. Reaps on the way past, then reads the newest run, the newest ok
- * run with its cuts, and the allowance measured against this feature's own call.
+ * run with its cuts, and the allowance measured against this feature's own call. With `runId`
+ * (History's re-review) the cuts are that ok run's instead, when the reader owns it on this deck.
  */
 export async function readCutsState(deckId: string, userId: string, now: Date = new Date(), runId: string | null = null): Promise<CutsState> {
   await reapCutsRuns(deckId, userId, now);
 
   const runOf = cutsRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
-  // The newest run, the newest ok run and its cuts are ONE instant: read apart, a run settling
+  // The newest run, the ok run shown (the newest, or the one named) and its cuts are ONE instant: read apart, a run settling
   // between the statements would show a status that never sat beside those cuts.
   const [{ newest, lastOk, rows, reviewed }, allowance] = await Promise.all([
     db.transaction(async (tx) => {
