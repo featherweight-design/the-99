@@ -252,6 +252,30 @@ commander, or a card the prose names as a threat. Corrected and recounted from t
 Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key card it no longer runs.
 `fits-read-load.ts` now applies the corrected rule.
 
+## Blind scores (lock 9)
+
+Every line a reader would see (the kept lines, 39 across three arms) was put on one sheet with its arm hidden and
+the lines shuffled per card, with the rules text of every card named, and scored by a separate agent that never saw
+which model wrote which line. Five questions per line (the brief's lock 9): does it name a real interaction with the
+deck's own cards or plan, are its citations right, does the card fit the deck, is the cut defensible, and does it say
+something the free row does not. The sheet, the scores and the key are in `blind/`.
+
+| Arm | Lines | Interaction real / partial / wrong | Citations ok | Fits | Cut defensible / poor | Adds over the free row |
+| --- | --- | --- | --- | --- | --- | --- |
+| Sonnet | 12 | 7 / 2 / 3 | 10 | 12 | 9 / 3 | 11 |
+| Haiku | 13 | 5 / 7 / 1 | 12 | 13 | 10 / 3 | 12 |
+| Haiku rerun (version 2) | 14 | 8 / 6 / 0 | 12 | 14 | 13 / 1 | 14 |
+
+- **Wrong lines.** Sonnet's three: Cacophony for a self-mill win (it mills opponents), Mind's Eye on its own
+  cantrips (it triggers on opponents' draws), and the garbled Tangle Wire and Kratos line. Haiku's one is the Kratos
+  and Ajani line. The rerun has none.
+- **Poor cuts.** Every basic land cut scored poor, which the validator now refuses. The rerun's one poor cut is Ashaya
+  on Omnath, a land-engine piece. Two of Sonnet's are Yuriko reveal payoffs (Blinkmoth Infusion, Shadow of Mortality).
+- **Partial** is mostly a true but thin link (the scorer's notes are in the scores file). It is the rerun's largest
+  bucket, and the place a later prompt round would aim.
+- Sonnet's ten dropped lines are not scored: no reader sees them. Its kept share (12 of 22) is the other half of its
+  cost.
+
 ## Accuracy notes (read by hand, against the cards' rules text)
 
 - **Haiku**
@@ -276,8 +300,8 @@ Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key
 ## Recommendation
 
 **Haiku 5.5, per-press layout, at effort medium.** It costs $0.004 a press against Sonnet's $0.07 (up to $0.13 for
-a colorless card with 21 candidates). Its accuracy here matched Sonnet's (about two rules errors each), it kept more
-of its lines (13 of 16 against 12 of 22), and its 3 to 18 s (p50 7.8 s) fits behind a "Reading…" state. Sonnet's speed is the
+a colorless card with 21 candidates). Scored blind, its rerun wrote no wrong line (Sonnet wrote three) and
+the more defensible cuts. It kept more of its lines (13 of 16 against 12 of 22), and its 3 to 18 s (p50 7.8 s) fits behind a "Reading…" state. Sonnet's speed is the
 only edge it has, and the cached layout that would make it cheap brings its own failure (cards from other decks).
 
 **The single rerun** (approved, run on Haiku for $0.045):
