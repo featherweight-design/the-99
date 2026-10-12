@@ -13,6 +13,8 @@ export const preconsEntry = {
   caption:
     "Any Commander precon, from the first in 2011 to this month’s, is listed on Decks under Commander precons. Each shows how many of its cards you own.\n\nOpen one to read its list, group by group. Start a deck from it, and you get a draft with all 100 cards that you can change before you commit.",
   keyLines: [
+    // R4 (tiles), placeholder: added because the list's default changed. No new entry, no bump.
+    "Precons show as tiles, each with its commander’s card. Switch to rows to read more at once, or open one and see its cards.",
     "Any printing counts, as everywhere else. Basic lands are left out of the count.",
     "If a deck of yours has the same commander and most of the same cards, the precon says so.",
     "A Collector’s Edition with the same cards is listed once, under the plain edition.",
@@ -24,7 +26,8 @@ export const preconsEntry = {
     component: "PreconRow",
     fixture: { name: "Eldrazi Unbound", commanders: ["Ulalek, Fused Atrocity"], colors: [], set: "CMM", released: "2023-08", owned: 74, of: 85 },
   },
-  phone: "Rows stack the name and figure, then the commander, then the set. On an open precon, Start a deck from this docks above the tab bar.",
+  // R4: specimen swap to PreconTile is open (G-R4-3).
+  phone: "Tiles sit two across. Rows stack the name and figure, then the commander, then the set. On an open precon, Start a deck from this docks above the tab bar.",
 } as const;
 
 // Data credits (the About page's credits block), lock 8. The licence notice is kept verbatim.

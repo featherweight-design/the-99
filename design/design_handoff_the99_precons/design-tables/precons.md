@@ -138,3 +138,36 @@
 | v0 panel note | `--surface-sunken`, 1px dashed `--border-dashed`, radius 9, full width | replaces InitialPanel's accent rule |
 | Picker rows | radio 22px, 2px `--accent` on / `--border-dashed` off; selected row 1px `--accent` on `--surface-rail` | 52px (56 at 390) |
 | Unlink / Link confirm | R2 start dialog chrome; primary `--btn` | never `--danger` |
+
+
+## T · Tiles (R4 addendum)
+| Property | Mobile (390) | Desktop (900) |
+|---|---|---|
+| view well | `ViewToggle` `compact`, on the search row, right; 44px segments | in the wide chassis after sort, `ml-[2px]`; 32px segments |
+| options | `≣` `precons.list.view.rows` · `▦` `precons.list.view.tiles` | same |
+| state | `?view=rows` (tiles not written); `useStoredView("the99:precons:view")` | same |
+| grid | 2 cols `minmax(0,1fr)`, gap 10, pad 16 16 24, `items-stretch` | 4 cols, gap 12, pad 18 22 8 |
+| shell | `TILE_SHELL` (r 9), 1px `--border`, `--surface`; whole tile is the link (stretched name, as `PreconRow`) | r 10; hover `--border-strong` |
+| art | `TILE_ART_RATIO` 63/88, `TILE_ART_CLIP`, `--surface-sunken` plate, lazy img, 1px inner edge | same |
+| caption | `CardTileCaption` + `nameSub` (`CARD_TILE_CAPTION_SUB_H` 70) | 65 |
+| meta | mono 9: `you own` `--fg-faint` + `N of M` 600 `--fg` | 9.5 |
+| name | precon name 12/600, truncate | 13 |
+| sub | pips 8 (WUBRG_COLOR, C `--fg-faint`) + `SET · Mon YYYY` mono 9 `--fg-faint` | pips 9, mono 9.5 |
+| foot | border-top 1px `--border`; line min-h 44, pad 5 9 | min-h 34, pad 5 10 |
+| foot deck | 11.5 `--fg`, underline 55% `--accent` offset 3, truncate; `relative z-[1]` link to the deck | 12 |
+| foot meta | mono 9.5 `--fg-muted` (shared / built); twin + unmapped `--fg-faint` | same |
+| partners | two boxes 66% w, 63/88, r 5, at 5%/4% top-left and 5%/4% bottom-right; second outlined 1px `--surface-sunken` | same |
+| no art | centred: commander 12.5 `--fg-muted` + mono 9 `--fg-locked` `precons.tile.noArt` | same |
+
+## G · Open precon, Card view (R4 addendum)
+| Property | Mobile (390) | Desktop (900) |
+|---|---|---|
+| well | `ViewToggle` (`viewToggleCopy.deck`), right of the list-note line | same, 32px |
+| default | List; `useStoredView("the99:precons:openView")` | same |
+| groups | `DecklistGroup` header / count / note unchanged | same |
+| grid | 2 cols, gap 10 | 4 cols, gap 12 |
+| tile | `DeckCardTile` `readOnly`: no trailing ✕ column, no slot occupant, no lock, no draft edge | same |
+| meta | `OwnershipDot` 8; not owned + `precons.open.tileNotOwned` mono `--fg-faint` | same |
+| nameSub | printing `SET number` mono `--fg-faint` | same |
+| basics | after Lands' tiles; shell 1px dashed `--border-dashed`, no fill, no dot; meta `×N` `--fg-body` + `basic · not counted`; sub `precons.open.basicArts` | same |
+| press | card details on the precon's printing (O6) | + hover preview |

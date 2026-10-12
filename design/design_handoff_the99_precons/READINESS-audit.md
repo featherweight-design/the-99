@@ -1,5 +1,7 @@
 # READINESS audit: Commander precons (R1/R2 audit, 2026-10-11)
 
+**R4 addendum (tiles and Card view): re-audited 2026-10-12, GREEN. See "R4 re-audit" at the end of this file.**
+
 **R3 addendum (built-from link and v0): re-audited 2026-10-11, GREEN. See "R3 re-audit" at the end of this file.** The R1/R2 audit below is unchanged.
 
 Audited against `docs/superpowers/design-briefs/2026-10-11-commander-precons.md` (Hugh's five rulings,
@@ -321,3 +323,175 @@ build follows, not edits to the drawing.
 ## Questions for Hugh
 
 None blocking. Findings 3 and 4 are decided on precedent and can be overruled.
+
+# R4 re-audit: tiles and Card view (2026-10-12)
+
+Audited against the prompt Design got (`boards/design-prompt-precons-tiles.md`: Hugh's rulings of
+2026-10-12, questions 1 to 6, the deliverables and constraints), the R4 files
+(`HANDOFF-R4 · tiles and card view.md`, canvas `The 99 - Precons R4 · Tiles and Grid.dc.html`, frame
+`Precons Tiles.dc.html`, STATES §T and §G, design table §T and §G, `precons-tiles · copy strings.ts`), and
+the tree at `origin/main` 124e78d4c, which holds PR 3 (#1484), PR 4 (#1498), PR 5 (#1506), 6a-1 (#1509),
+6a-2 (#1512) and the printing fix (#1501). 6b (v0 in Versions) was read from its local branch, not yet
+open. Counts are measured on **staging**.
+
+**Landing note.** Design's drop was a full copy of the folder made on an older base, and it deleted this
+file and the R3 errata in it. Only R4 landed: the four new files, and the R4 hunks of `README.md`,
+`STATES-precons.md`, `about · precons.ts` and `design-tables/precons.md` (each of which differed from `main`
+by R4 additions alone). This file is kept.
+
+## Verdict: GREEN
+
+All six questions are answered and every deliverable is drawn at 900 and 390. Nothing drawn needs data the
+list or the open precon does not already ship. The findings are engineering's to resolve in the plan, plus
+copy for `/copy-review` and the About line for `/prose-pass`. One confirmation for Hugh (G-R4-4) does not
+block: Design recommends what Hugh leaned toward.
+
+## Coverage
+
+| Prompt item | Where | Holds |
+|---|---|---|
+| Q1 · rows or tiles as default, with reasoning | HANDOFF §1: tiles; rows one press away and remembered | yes (G-R4-4 is the confirmation) |
+| Q2 · the switch | HANDOFF §2: the shipped `ViewToggle` well (`≣` Rows · `▦` Tiles), not /decks' `Tiles · Stats`, with the reason; 900 in the chassis after sort, 390 on the search row | yes |
+| Q3 · what a tile carries | HANDOFF §3, STATES T3a–T3g: commander card art, `you own N of M`, name, pips + `SET · Mon YYYY`, a foot for shared / linked decks, twin and unmapped | yes |
+| Q4 · twins and partners | HANDOFF §4, T3d, T3e | yes |
+| Q5 · density at 390 and 900, filters and sort above | HANDOFF §5: 2-up / 4-up, chassis, result line and L2 band as R2, year heads as rows | yes |
+| Q6 · the open precon's grid | HANDOFF §6, G0–G3: List stays default, the deck's well on the list-note line, owned dot + `not owned`, basics one dashed tile per name, R3 link and v0 controls above the switch | yes |
+| Frame: tile view, default | canvas `tiles` (T1) | 900 and 390 |
+| Frame: the switch | canvas `rows` (T2), well in both | 900 and 390 |
+| Frame: tile states (high, low, linked, twin, partners, missing art) | canvas `board` (T3a–T3f) | 900 and 390 |
+| Frame: empty-collection band over tiles | canvas `tilesEmpty` (T4) | 900 and 390 |
+| Frame: open precon in Grid (owned and missing, basics, commander first) with its switch | canvas `openCard` (G1), `openList` (G0) | 900 and 390 |
+| STATES delta and design-table rows | STATES §T (T1–T6), §G (G0–G3), must-nots; table §T (16 rows), §G (10 rows) | yes |
+| Reuse `deck-card-tile.tsx`'s anatomy | `TILE_SHELL`, `TILE_ART_RATIO`, `TILE_ART_CLIP`, `CardTileCaption` + `CARD_TILE_CAPTION_SUB_H` | yes; every name exists on `main` (finding 4 for the read-only tile) |
+| Scryfall corner matte (radius ≥ 3.1% of width) | shell 9/10px: art 174px at 390 (5.4px needed), 205px at 900 (6.4px); partner cards 5px on ~114/135px (3.5/4.2px) | yes, every image box clears |
+| No verdict word on a share | T3a/T3b drawn identically; must-nots; `aria` says `You own N of M of its cards` | yes |
+| Select / unselect | no selection is added; the strings file says select / unselect if any is | yes |
+| US English | strings: clean. Canvas note `recognise`, HANDOFF prose `status colour` | errata below; neither is drawn copy |
+| About key line, switch-gated, `since: 14`, no bump | `about · precons.ts` adds one key line and a `phone` sentence | yes (finding 7 on the count of lines) |
+
+**Spot-checked against `Precons Tiles.dc.html`:** tile radius `R = phone ? 9 : 10`; grid
+`repeat(${cols},minmax(0,1fr))`, `cols = phone ? 2 : 4`, gap `phone ? 10 : 12`, `alignItems: stretch`;
+shell 1px `--border` on `--surface`; art `aspectRatio 63 / 88`, bottom radius `R`, `--surface-sunken` plate;
+caption meta mono `phone ? 9 : 9.5`, `you own` `--fg-faint` + figure 600 `--fg`; name `phone ? 12 : 13`;
+caption `minHeight: phone ? 70 : 65`; foot line `minHeight: phone ? 44 : 34`, padding `5px 9px` / `5px 10px`;
+foot deck `phone ? 11.5 : 12`, underline offset 3 at 55% accent; foot meta mono 9.5 `--fg-muted`; partners
+`width 66%`, `left 5% top 4%` and `right 5% bottom 4%`, radius 5, the second ringed `0 0 0 1px
+--surface-sunken`; no-art mono 9 `--fg-locked` `no card image yet`; well `marginLeft: phone ? 0 : 2`;
+basic tile `×15` `--fg-body` + `basic · not counted` `--fg-faint`, sub `CMM · first of 3 arts`. All match
+the table.
+
+## Engineering facts verified
+
+- **Staging, 2026-10-12:** `precons` holds 197 rows, 16 with `twin_of`, so the list draws **181** tiles,
+  not 197 (G-R4-1). 5 listed precons have two commanders (Design's 5). 0 listed commanders lack art through
+  `preconArt`, so T3f is a guarded state with no case today. 398 (precon, basic) pairs list the same
+  basic more than once, so `first of N arts` has real data behind it (G-R4-2).
+- **No new wire field.** `PreconCommander` already carries `imageUri` (`src/lib/precons/list.ts:40`), set
+  through `preconArt` (`list-read.ts:29`, the precon's own printing since #1501), for every commander
+  including a partner's second. Tiles cost image loads, not payload.
+- **Image weight.** `preconArt` resolves to Scryfall `normal` (`transform-printings.ts:215`); three
+  measured at 83, 89 and 97KB. All 186 (181 + 5 second partners) would be ~16MB.
+- **The rows already pay it.** `CommanderThumb` draws its art as a CSS background
+  (`src/components/ui/commander-thumb.tsx`, `cssUrl(imageUri)`), which a browser fetches for every rendered
+  row whether on screen or not: the shipped rows view asks for all ~186 `normal` images today. That is the
+  exact cost the deck tile's own comment records (`deck-card-tile.tsx:262-265`).
+- **The lazy rule.** `/collection`'s grid draws `HydratedImg` (`ui/hydrated-art.tsx:73`) with
+  `eager={i < GRID_EAGER_TILES}` (`collection/grid-view.tsx:48`, 4); everything else waits for hydration
+  and 600px of the viewport. A plain `loading="lazy"` img in server HTML starts on parse, which is what
+  held `/collection` at ~20s on the slow profile (AGENTS.md).
+- `ViewToggle` takes `compact` (`ui/view-toggle.tsx:46`). `viewToggleCopy` has `deck` (List / Card) and
+  `collection` (Rows / Grid) (`lib/copy/card-surfaces.ts:61`); a `precons` pair is new. The deck page's
+  stored key is `the99:deck-view` (`decks/group-toggle.tsx:36`), so `the99:precons:openView` is separate as
+  HANDOFF §6 asks.
+- `useStoredView` takes an opt-in cookie `mirror` so the server draws the stored choice
+  (`ui/use-stored-view.ts:30-41`); the precon order uses it without one (`precon-list-view.tsx:50`).
+- `DeckCardTile` has no read-only form: it takes `deckId` and calls `useDeckMutation`,
+  `useRemoveOptimisticCard`, `useLockCards` and `usePendingChange` (`decks/deck-card-tile.tsx:64-90`).
+  `DecklistGroup`'s card branch passes `deckId` straight to it (`decks/decklist-group.tsx:110-118`). The open
+  precon already renders `DecklistGroup` in its read-only list form (`precons/open-precon-view.tsx:185,200`).
+- The deck's card grid is `grid-cols-2 gap-[12px] md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))]
+  md:gap-[20px]` (`decklist-group.tsx:110`); at the 900 frame's content width that gives 4 columns, the
+  frame's count, with gaps 12/20 against the table's 10/12.
+- `byCard` merges a card's printings and keeps the first (`open-precon-view.tsx:51-58`), so the arts count
+  is dropped there today, as G-R4-2 says.
+- The shipped row's foot strings are `copy.row.built` / `builtShared` / `twin` / `unmapped`
+  (`lib/copy/precons.ts:51-60`); the twin line reads `also sold as a Collector’s Edition · same list`.
+- The About entry on `main` has four keys (`lib/copy/about.ts:1046-1050`), `since: 14`, switch
+  `PRECONS_ENABLED`. 6b, in flight, moves the Collector's Edition key into the caption and adds the v0
+  link line, so it stays at four.
+
+## Findings
+
+1. **eng-resolvable · Tile art loads through `HydratedImg`, first 4 eager.** Each `PreconTile` draws its art
+   as an `<img>` through `HydratedImg`, with `eager={i < GRID_EAGER_TILES}` imported from
+   `collection/grid-view.tsx` rather than a second constant. Never a CSS background (it fetches all ~186) and
+   never a bare `loading="lazy"` in server HTML (it starts on parse). 4 is the first screen at both widths:
+   one 4-up row at 900, two 2-up rows at 390. `probe:payload`/`measure:load` should read the tile view's
+   cold load before and after, at both widths.
+2. **eng-resolvable · The stored view mirrors to a cookie.** The list draws tiles or rows on the server, and
+   the two differ in height and in what art they request. Without a mirror a reader who stored rows gets
+   tiles (and 4 eager images) on the server pass, then a flip. `useStoredView(PRECON_VIEW_KEY, …, { cookie,
+   serverValue })`, read in the page, as `/collection` does. The open precon's view needs none: List is the
+   default and is what the server draws.
+3. **eng-resolvable · Rows already fetch every image (a shipped cost, not R4's).** `CommanderThumb`'s CSS
+   background means `/decks/precons` in rows asks for ~16MB of art today. Tiles as the default (finding 1)
+   avoid it for most readers; the rows view keeps it. The plan names a follow-up for `CommanderThumb` on
+   this list, so it isn't quietly dropped. Not built here.
+4. **eng-resolvable · The read-only tile is a new form of `DeckCardTile`, not a prop flip.** It must not call
+   the mutation, optimistic, lock or draft hooks, which assume a deck. Two clean shapes: a `readOnly` branch
+   that skips them, or a `ReadOnlyCardTile` built from the shared shell, art box and `CardTileCaption`.
+   Either way the art is `card.imageUri` (`preconArt`, the precon's printing) and the press opens card
+   details on that printing (O6, #1501), as the list's rows do now.
+5. **decided · The open precon's grid is the deck's grid as shipped.** `DecklistGroup`'s card branch, one
+   grid declaration, with its gaps (12 at 390, 20 at 900) rather than the table's 10 / 12. The prompt asks to
+   reuse the deck's grid, and a second declaration would drift. Column counts agree (2 / 4 at the frame's
+   widths). The list's tile grid (§T) is new and follows the table.
+6. **decided · G-R4-2: basics carry their arts count.** `byCard` counts the rows it merges for a basic and
+   passes it as `arts`; the sub reads `CMM · first of 3 arts`, or the plain printing at one art. The data is
+   there (398 pairs on staging) and the change is local to the open precon.
+7. **prose-pass · The R4 key line is a fifth against a contract of four.** With 6b the entry holds four
+   keys. The R4 line (`Precons show as tiles…`) merges with an existing line or moves into the caption's
+   first paragraph, which already says where the list lives. `since` stays 14, no bump, no new entry. The
+   `phone` sentence's `Tiles sit two across` is fine as drawn.
+8. **decided · G-R4-3: the About specimen becomes `PreconTile`.** The specimen shows the surface as a reader
+   first meets it, and with tiles the default that is a tile. The fixture keeps Eldrazi Unbound, 74 of 85.
+   Hugh can overrule.
+9. **copy-review · The tile's foot strings differ from the row's.** The tile's `footTwin` drops the row's
+   `· same list`, and `footShared` drops `your deck`. Both are placeholders; `/copy-review` decides
+   whether the tile reuses `preconsCopy.row` or carries its own short forms at 174px. Also new: the
+   `precons` pair for `viewToggleCopy`, `noArt` (the deck tile's own is `no art on file`), `tileNotOwned`,
+   the two list notes, and `aria`.
+10. **eng-resolvable · Unlinked decks in a tile take one line each.** The shipped row draws R6's single
+    `your decks A and B` line when nothing is linked (`precon-row.tsx:74-84`). HANDOFF §3 gives the tile one
+    line per deck in every case, which suits 174px. The tile does that; the row is unchanged.
+11. **note · No conflict with shipped link and printing behavior.** Tile and Card view art is `preconArt`,
+    the precon's printing (#1501). The link, `Link a deck`, `Unlink`, Start and the own box sit above the
+    open precon's switch and do not move (STATES must-not); the tile's foot reads the same `built` list the
+    row reads after 6a-1/6a-2. 6b touches Versions and the About caption only; R4's About edit lands after it
+    and rebases on its four keys.
+
+## R4 errata (Design's files, for the next round; not edited here)
+
+| File | Says | Build follows |
+|---|---|---|
+| `HANDOFF-R4` header and §2, README R4 line, G-R4-1 | 197 tiles, 16 twins | 181 tiles, 16 twins, measured on staging. The page draws `rows.length`, so nothing is built from the figure. |
+| `HANDOFF-R4` G-R4-1 | "the brief's measurement was 197 listed, 12 twins and 185 rows" | Staging today: 197 entries, 16 twins, 181 listed. |
+| canvas `The 99 - Precons R4 · Tiles and Grid.dc.html`, intro | `recognise` | `recognize`. Canvas note, never drawn copy. |
+| `HANDOFF-R4` §3 | `no status colour` | `color`. Prose, never drawn copy. |
+| `design-tables/precons.md` §G grid | gap 10 / 12 | The deck grid as shipped, 12 / 20 (finding 5). Here the shipped component wins over the table. |
+| `about · precons.ts` | `since: 17`, five key lines plus R4's | `since: 14`; four keys, per 6b and finding 7. |
+| `README.md` R4 line | G-R4-1 to G-R4-4 "open for Hugh" | G-R4-1 measured, G-R4-2 and G-R4-3 decided here (findings 6, 8); G-R4-4 is Hugh's confirmation below. |
+
+## Decisions made here (only one answer defensible)
+
+- Tile art through `HydratedImg`, `GRID_EAGER_TILES` eager (finding 1).
+- The list's stored view mirrors to a cookie (finding 2).
+- The open precon reuses the deck's grid as shipped (finding 5).
+- Basics count their arts in `byCard` (finding 6, G-R4-2).
+- The About specimen follows the default, `PreconTile` (finding 8, G-R4-3); Hugh can overrule.
+
+## Questions for Hugh
+
+1. **G-R4-4 · Tiles as the list's default?** You leaned tiles; Design recommends tiles, with rows one press
+   away and remembered per browser. A yes is the build as drawn. A no flips the default, the URL value
+   (`?view=tiles`) and the About line, and nothing else.
