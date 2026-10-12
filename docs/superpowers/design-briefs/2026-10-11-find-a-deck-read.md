@@ -93,7 +93,8 @@ Hugh's.
      `commander_pair_support_cards` for a pair), when the index holds a row;
    - the deck's need in the card's role (`shapeFits`'s `need`, from the recommended mix);
    - the deck's list (`deck_cards`, `schema.ts:619`, with each card's name and type line), which the sentence and the
-     cut cite.
+     cut cite, and each listed card's label kinds (`card_labels.labels`): the facts a claim about a deck card is
+     checked against (lock 2). The token counts below were taken without the labels; the eval counts them.
 
    **No player-typed text reaches this prompt**, so `playerText` is not needed: every input above is catalog data,
    index data or model output the app already validated. A deck's NAME is player-typed, so the prompt never carries
@@ -105,8 +106,8 @@ Hugh's.
    does not fit is not listed. When none fits, the read says so plainly.
 5. **Cost.** One model call per press (a second step only if the eval shows a need). It spends one credit, like
    Suggested changes, and refunds on a failure or on a valid but empty result, the refund-floor precedent
-   (`src/lib/tuning/refund.ts`, #1474). The result is cached on the card plus each candidate deck's current list,
-   so reopening is free until a deck changes.
+   (`src/lib/tuning/refund.ts`, #1474), adapted in lock 4. The result is cached on the card plus every candidate
+   deck's current inputs, so reopening is free until one of them changes (lock 6).
 6. **Model by eval** (Sonnet 5.5 at effort medium against Haiku 5.5), on a corpus with Hugh's niche cards. Below.
 7. **The free list stays as it is.** Clarifying the need line is out of scope unless Design needs it (Open
    question 6).
@@ -137,10 +138,12 @@ with none. **Override if Hugh disagrees.** This is a widening of default 3, whic
 index rarely records. The input stays (it is free and true when present), but the read cannot lean on it: the
 sentence has to come from the card's text against the deck's plan and list.
 
-**Finding 3: "current version" means the current LIST.** A deck is edited as a draft, and the draft moves without
-a new version (21 decks, 23 versions). The cache key is each candidate's `listFingerprint`
-(`src/lib/profile/fingerprint.ts:53`), the key the Overview already reuses on, plus the card's oracle id and the
-id of the Overview the plan was read from.
+**Finding 3: "current version" means the current INPUT, not a version id.** A deck is edited as a draft, and the
+draft moves without a new version (21 decks, 23 versions). And the list is not the only thing that moves:
+`listFingerprint` (`src/lib/profile/fingerprint.ts:53`) hashes commander and card ids and quantities, while a
+card's oracle text, its labels, the inclusion figure, the need and a new Overview all change the prompt under the
+same list. So the key is a hash over the complete rendered input, per candidate, the way
+`commander_support.prose_input_hash` keys a commander's sentence (lock 6).
 
 **Token counts.** Each candidate deck rendered as a prompt block (commander and its text, the plan or a themes line,
 the inclusion and need lines, and the list as `C1 Name (Type line)`), counted with the Messages API's token count
@@ -163,10 +166,14 @@ out; Haiku 5.5 $0.10 / $0.50 up to 100K prompt tokens):
 | A colorless card: all 21 decks (Tangle Wire and Mind's Eye, both Hugh's eval cards) | 162 + 44,238 + 1,500 = 45,900 | $0.092 + up to $0.040: **$0.096 to $0.132** | $0.0046 + up to $0.002: **$0.005 to $0.007** |
 | Ceiling: all 21 decks, every block at the measured maximum 2,691 (room for the 9 decks without an Overview to gain one) | 162 + 56,511 + 1,500 = 58,173 | $0.116 + $0.040 = **$0.156** | $0.0058 + $0.002 = **$0.008** |
 
-The ceiling is under Haiku's 100K boundary. A credit is a unit, not a dollar figure: the new feature's
-`FEATURE_CALLS` entry is priced at its own worst case (lock 4), and on Sonnet that ceiling, $0.156, is above
-Suggested changes' own reservation (`FEATURE_CALLS.tuning`, `prices.ts:111`: 12,000 input and 8,000 output tokens
-on `claude-sonnet-5`, about $0.104). On Haiku it is a fraction of it.
+These are one attempt. The ceiling is under Haiku's 100K boundary.
+
+**The reservation is twice that.** The model client may retry once, so the spend cap prices every reservation at
+two attempts (`worstCaseMicroUsd`, `prices.ts:79`, the `2 *`). At the ceiling: Sonnet 5.5 2 × (58,173 × $2/M +
+4,000 × $10/M) = **$0.313**; Haiku 5.5 2 × (58,173 × $0.10/M + 4,000 × $0.50/M) = **$0.016**. A credit is a unit,
+not a dollar figure, but for scale: Suggested changes' reservation (`FEATURE_CALLS.tuning`, `prices.ts:111`:
+12,000 input and 8,000 output tokens on `claude-sonnet-5`) is 2 × (12,000 × $2/M + 8,000 × $10/M) = $0.208. On
+Sonnet this read's ceiling is half again that; on Haiku it is under a tenth of it.
 
 ## Prior art in the app
 
@@ -192,20 +199,31 @@ on `claude-sonnet-5`, about $0.104). On Haiku it is a fraction of it.
 
 1. **Nothing the model returns is trusted.** A deck counts only as a key the call was shown, and only if it is a
    candidate. Every card the sentence names, and the cut, must resolve to a card IN that deck's list (by its `C`
-   key, the app drawing the name), or to the commander. A named card outside the deck, a cut that is a commander,
+   key, the app drawing the name), to the commander, or to the card itself (the read's subject, which no candidate
+   holds by definition). A named card outside the deck, a cut that is a commander or the card itself,
    a Key card of the deck's Overview or a never-cut card, or a sentence over its length or carrying a digit, a
    percentage or a score word, drops that deck. Dropped decks are counted; the rest move up.
-2. **A claim about the card is checked against its text.** A sentence crediting the card with a keyword its text
-   and keywords lack drops the deck (the Overview's `keyword_not_on_card` rule, `src/lib/synopsis/types.ts`).
+2. **A claim about any named card is checked against that card's facts.** The prompt carries the card's text and
+   every deck card's labels (default 3). A sentence crediting the card, or a deck card it names, with a keyword or
+   a job its text, keywords and labels lack drops the deck (the Overview's `keyword_not_on_card` rule,
+   `src/lib/synopsis/types.ts`, extended to label kinds). This anchors a claim to real facts; it does not prove
+   the interaction, which is why the eval scores truth per deck (lock 9).
 3. **Quotes are true quotes.** A phrase quoted from the deck's plan must occur in the stored Overview the call was
    shown (`quotesPlayerText`'s whole-word rule, `src/lib/tuning/quote-match.ts`).
-4. **One credit, refunded on failure or an empty valid result.** A new `ModelFeature`
+4. **One credit, refunded on failure, on no fit, and on a thin read.** Thin is the refund-floor rule adapted to
+   this read's size: every deck the model returned dropped, or fewer than a third of them held up
+   (`REFUND_BELOW_SHARE`, `src/lib/tuning/refund.ts`). Its `REFUND_BELOW_KEPT` floor of three does NOT apply: a
+   card with one or two true fits (Molten Collapse has one candidate) is a complete answer, not a thin one. A
+   refunded read still shows what held up, and says the credit came back (Design item 8). A new `ModelFeature`
    (`src/lib/model/allowance-rule.ts:52`), its `FEATURE_CALLS` entry priced from the measured ceilings above, and
    the `model_calls_feature_check` constraint (`schema.ts:2112`) widened by migration.
 5. **One run in flight per reader and card.** A double press gets the run in flight, never a second charge.
-6. **Cached per card and per deck list** (Finding 3). A result is shown again for free while every listed deck's
-   `listFingerprint` matches. When one deck has moved, the stored result is NOT shown as current; whether it is
-   shown marked out of date or not at all is Design's (Open question 4).
+6. **Cached per card and per candidate set** (Finding 3). A result is stored with the set of candidate deck ids it
+   was run over and each candidate's input hash, and it is shown again for free only while the CURRENT candidate
+   set is the same set with the same hashes. Every candidate counts, not only the decks the read listed: an
+   omitted deck whose list changed may now fit, and a new or deleted eligible deck changes the set. Otherwise the
+   stored result is NOT shown as current; whether it is shown marked out of date or not at all is Design's (Open
+   question 4).
 7. **The free list is unchanged.** Opening the picker reads `loadFits` as today and spends nothing. The read is
    additive, behind `FIND_A_DECK_READ_ENABLED`; off, the picker is exactly today's.
 8. **Fewer than five candidates still runs**; a single candidate still runs. No candidates (every deck holds it,
@@ -264,8 +282,8 @@ the read's short end, and Maddening Cacophony is the one card where today's list
 5. **How the read sits against the free list**: replacing it, above it, or a second view of it.
 6. **No fit.** The plain statement that none of the candidate decks is a real fit, with the credit refunded.
 7. **Failure.** The read did not come back; the credit is refunded; the free list is still there.
-8. **Fewer than asked**: two or one decks that held up, and the refund floor's "the credit came back" note when it
-   applies.
+8. **Fewer than asked**: two or one decks that held up. A short read that is complete (a card with one or two
+   real fits) spends the credit; a thin one (lock 4) shows what held up with the "the credit came back" note.
 9. **A stored read reopened**, and a stored read where a deck has changed since (lock 6).
 10. **Phone at 390 and desktop at 900**, in the same round.
 11. **The About entry**, on the per-entry artboard (`design/design_handoff_the99_about/`), gated on the switch.
