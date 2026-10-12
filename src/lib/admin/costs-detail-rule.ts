@@ -1,3 +1,4 @@
+import { ledgerLimits, type LedgerLimits } from "../eval/ledger-limits";
 import type { ModelFeature } from "../model/allowance-rule";
 import { batchCostMicroUsd, FEATURE_CALLS, featureWorstCaseMicroUsd } from "../model/prices";
 import { usdToMicro } from "../model/spend-rule";
@@ -27,7 +28,10 @@ export type CallRow = {
   createdAt: Date;
 };
 export type PartRow = { callId: string; step: string; model: string; effort: string | null; micro: number };
-/** One `card_label_batches` run's chunks in the month, by model. Tokens are null until a chunk collects. */
+/**
+ * One `card_label_batches` run's chunks in the month, by model. The token sums are 0, never null,
+ * until a chunk collects (the query coalesces them); an uncollected run is told apart by `collected === 0`.
+ */
 export type LabelRunRow = {
   runId: string;
   model: string;
@@ -118,7 +122,11 @@ export type LedgerRow = {
   settledMicro: number;
   pendingMicro: number;
   allTimeMicro: number;
+  /** The first and last entry the ledger still counts, all time: the canvas's Window. */
+  firstAt: string | null;
   lastAt: string | null;
+  /** The ledger's hard cap and ask line, from the table the eval scripts enforce; null for a file none guards. */
+  limits: LedgerLimits | null;
 };
 
 export type CostDetail = {
@@ -143,12 +151,14 @@ export function ledgerRow(ledger: LedgerFile, month: MonthKey): LedgerRow {
   const closed = new Set(ledger.entries.flatMap((e) => (e.settles ? [e.settles] : [])));
   const open = (e: LedgerEntry) => !!e.pending && !closed.has(e.pending);
   let requests = 0, settled = 0, pending = 0, all = 0;
+  let firstAt: string | null = null;
   let lastAt: string | null = null;
   for (const e of ledger.entries) {
     // A pending entry the ledger has settled is the worst case it no longer counts; `spent()` drops it.
     if (e.pending && !open(e)) continue;
     const usd = usdToMicro(e.usd);
     all += usd;
+    if (!firstAt || e.at < firstAt) firstAt = e.at;
     if (!lastAt || e.at > lastAt) lastAt = e.at;
     if (!e.at.startsWith(prefix)) continue;
     if (e.pending) pending += usd;
@@ -157,7 +167,7 @@ export function ledgerRow(ledger: LedgerFile, month: MonthKey): LedgerRow {
       requests += e.requests;
     }
   }
-  return { file: ledger.file, requests, settledMicro: settled, pendingMicro: pending, allTimeMicro: all, lastAt };
+  return { file: ledger.file, requests, settledMicro: settled, pendingMicro: pending, allTimeMicro: all, firstAt, lastAt, limits: ledgerLimits(ledger.file) };
 }
 
 const mean = (xs: readonly number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
@@ -206,8 +216,9 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
       labelRuns.push(fresh);
     }
   }
-  // The manual collector writes one `model_calls` labels row per batch and never a batch row: the
-  // two writers are disjoint, so both are listed and summed (admin audit findings 3 and 8).
+  // The manual collector (`scripts/label-cards-collect.mts`) writes one `model_calls` labels row per
+  // model per run, keyed `labels:<runId>:<model>`, once every batch of the run has ended, and never a
+  // batch row: the two writers are disjoint, so both are listed and summed (admin audit findings 3 and 8).
   for (const c of rows.calls) {
     if (c.feature === "labels" && c.micro !== null) labelRuns.push({ runId: null, firstAt: c.createdAt, source: "collector", batches: null, tokens: null, micro: c.micro });
   }

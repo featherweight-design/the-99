@@ -30,6 +30,15 @@ const ROW = "flex flex-col gap-[4px] border-0 border-t border-solid border-[colo
 const BODY = "m-0 text-pretty text-[13px] leading-[1.5] text-[color:var(--fg-muted)]";
 
 const fmtDay = (d: Date) => new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "UTC" }).format(d);
+/** A ledger's span, first entry to last, as the canvas's Window: `Oct 10–11`, `Sep 30–Oct 11`, or one day. */
+export function fmtWindow(first: string | null, last: string | null): string {
+  if (!first || !last) return "—";
+  const a = new Date(first), b = new Date(last);
+  if (a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10)) return fmtDay(a);
+  // Written out rather than `formatRange`, whose spaced dash outgrows the 92px column.
+  return a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear() ? `${fmtDay(a)}–${b.getUTCDate()}` : `${fmtDay(a)}–${fmtDay(b)}`;
+}
+const usdLimit = (v: number) => (Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`);
 const monthLabel = (m: MonthKey, month: "long" | "short") =>
   new Intl.DateTimeFormat("en-US", { month, ...(month === "long" ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(m.year, m.month, 1)));
 const share = (part: number, whole: number) => (whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : "0%");
@@ -85,7 +94,7 @@ function Table({ head, right, grid, rows, label }: { head: string[]; right: numb
       </div>
       <div className="md:hidden">
         {rows.map((r, ri) => (
-          <div key={ri} className={`flex flex-col gap-[4px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] py-[11px] first:border-t-0 ${r.foot ? "bg-[color:var(--surface-rail)]" : ""}`}>
+          <div key={ri} className={`flex flex-col gap-[4px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] py-[11px] ${r.foot ? "bg-[color:var(--surface-rail)]" : ""}`}>
             <div className="flex items-baseline gap-[10px]">
               <span className={`min-w-0 flex-1 text-[14px] text-[color:var(--fg)] ${r.foot ? "font-semibold" : "font-medium"}`}>{r.title}</span>
               <span className="font-mono text-[13px] text-[color:var(--fg)]">{r.fig}</span>
@@ -149,7 +158,7 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
       <div aria-hidden className="flex h-[14px] gap-[2px] overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]">
         <Segs parts={parts} scale={total || 1} min={0.8} />
       </div>
-      <div className="grid grid-cols-1 gap-x-[24px] gap-y-[8px] md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-x-[28px] gap-y-[8px] md:grid-cols-2">
         {parts.map((p) => (
           <div key={p.key} className="flex min-w-0 items-baseline gap-[8px]" data-series={p.key}>
             <span aria-hidden className="h-[9px] w-[9px] flex-none self-center rounded-[2px]" style={{ background: p.ink }} />
@@ -249,15 +258,16 @@ function EvalLedgers({ d, month }: { d: CostDetail; month: MonthKey }) {
   const h = copy.ledgerHead;
   const rows: Row[] = d.ledgers.map((l) => {
     const title = ledgerName(l.file, copy.originalLedger);
-    const last = l.lastAt ? fmtDay(new Date(l.lastAt)) : "—";
+    const limit = l.limits ? copy.limit(usdLimit(l.limits.hardCapUsd), l.limits.askAtUsd === null ? null : usdLimit(l.limits.askAtUsd)) : copy.noLimit;
+    const window = fmtWindow(l.firstAt, l.lastAt);
     const settled = <>{usd(l.settledMicro)}{l.pendingMicro > 0 && <Pending micro={l.pendingMicro} />}</>;
-    return { cells: [title, l.requests, settled, usd(l.allTimeMicro), last], title, fig: settled, meta: copy.ledgerMeta(l.requests, usd(l.allTimeMicro), last) };
+    return { cells: [title, l.requests, settled, limit, window], title, fig: settled, meta: copy.ledgerMeta(l.requests, limit, window) };
   });
-  const t = d.ledgers.reduce((n, l) => ({ requests: n.requests + l.requests, settled: n.settled + l.settledMicro, pending: n.pending + l.pendingMicro, all: n.all + l.allTimeMicro }), { requests: 0, settled: 0, pending: 0, all: 0 });
+  const t = d.ledgers.reduce((n, l) => ({ requests: n.requests + l.requests, settled: n.settled + l.settledMicro, pending: n.pending + l.pendingMicro }), { requests: 0, settled: 0, pending: 0 });
   const name = monthLabel(month, "long").split(" ")[0];
   const pendingNote = t.pending > 0 ? <span className="text-[color:var(--warning)]">{copy.pending(usd(t.pending))}</span> : copy.nothingPending;
-  rows.push({ cells: [name, t.requests, usd(t.settled), usd(t.all), pendingNote], foot: true, title: name, fig: usd(t.settled), meta: pendingNote });
-  return <Table label={copy.evals} head={[h.ledger, h.requests, h.settled, h.allTime, h.last]} right={[1, 2, 3]} grid="minmax(0,1.4fr) 76px 120px 76px minmax(0,1fr)" rows={rows} />;
+  rows.push({ cells: [name, t.requests, usd(t.settled), pendingNote, ""], foot: true, title: name, fig: usd(t.settled), meta: pendingNote });
+  return <Table label={copy.evals} head={[h.ledger, h.requests, h.settled, h.limit, h.window]} right={[1, 2]} grid="minmax(0,1.4fr) 76px 76px minmax(0,1fr) 92px" rows={rows} />;
 }
 
 export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetail; month: MonthKey; env: AdminEnv | null }) {

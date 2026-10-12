@@ -152,8 +152,13 @@ describe("the eval ledgers", () => {
   };
 
   it("nets as spent() does: a settled pending drops, an open one counts", () => {
-    expect(ledgerRow(ledger, OCT)).toEqual({ file: "ledger-cuts.jsonl", requests: 1, settledMicro: usdToMicro(0.1), pendingMicro: usdToMicro(2), allTimeMicro: usdToMicro(3.1), lastAt: "2026-10-11T08:00:00Z" });
+    expect(ledgerRow(ledger, OCT)).toEqual({ file: "ledger-cuts.jsonl", requests: 1, settledMicro: usdToMicro(0.1), pendingMicro: usdToMicro(2), allTimeMicro: usdToMicro(3.1), firstAt: "2026-09-30T23:00:00Z", lastAt: "2026-10-11T08:00:00Z", limits: { hardCapUsd: 15, askAtUsd: 10 } });
     expect(ledgerRow(ledger, { year: 2026, month: 8 })).toMatchObject({ requests: 2, settledMicro: usdToMicro(1), pendingMicro: 0 });
+  });
+
+  it("carries the limits the eval scripts enforce, and none for a file no script guards", () => {
+    expect(ledgerRow({ ...ledger, file: "ledger-help-me-choose.jsonl" }, OCT).limits).toEqual({ hardCapUsd: 5, askAtUsd: null });
+    expect(ledgerRow({ ...ledger, file: "ledger-unknown.jsonl" }, OCT).limits).toBeNull();
   });
 
   it("brings the month's evals into the series, pending included", () => {

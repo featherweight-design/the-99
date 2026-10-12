@@ -88,8 +88,36 @@ describe("CostsDetail, a month with runs", () => {
   });
 
   it("names staging for label runs on production, and says none ran on staging", () => {
-    draw({ calls }, { env: "production" });
-    expect(screen.getByText("Card labels run on staging; production receives copies and calls no model for them.")).toBeInTheDocument();
+    const onProduction = "Card labels run on staging; production receives copies and calls no model for them.";
+    const { unmount } = draw({ calls }, { env: "production" });
+    expect(screen.getByText(onProduction)).toBeInTheDocument();
+    expect(screen.queryByText("No label runs in October.")).toBeNull();
+    unmount();
+    draw({ calls }, { env: "staging" });
+    expect(screen.getByText("No label runs in October.")).toBeInTheDocument();
+    expect(screen.queryByText(onProduction)).toBeNull();
+  });
+
+  it("counts credits in the singular and the plural", () => {
+    const { container } = draw({ calls: [call({ userId: "user_one" }), call({ userId: "user_two" }), call({ userId: "user_two" })] });
+    const metas = [...container.querySelectorAll(".md\\:hidden span.font-mono")].map((el) => el.textContent);
+    expect(metas).toContain("1 press · 1 credit used");
+    expect(metas).toContain("2 presses · 2 credits used");
+  });
+
+  it("draws a top border on every phone card, the first included", () => {
+    const { container } = draw({ calls });
+    const cards = [...container.querySelectorAll(".md\\:hidden > div")];
+    expect(cards.length).toBeGreaterThan(0);
+    for (const c of cards) {
+      expect(c.className).toContain("border-t");
+      expect(c.className).not.toContain("first:border-t-0");
+    }
+  });
+
+  it("spaces the split legend 28px between its columns", () => {
+    const { container } = draw({ calls });
+    expect(container.querySelector('[data-series="player"]')?.parentElement?.className).toContain("gap-x-[28px]");
   });
 });
 
@@ -104,6 +132,27 @@ describe("CostsDetail, the eval ledgers", () => {
     expect(row).toHaveTextContent("$0.100$2.00 pending");
     const pending = within(row).getByText("$2.00 pending");
     expect(pending.className).toContain("text-[color:var(--warning)]");
+  });
+
+  it("draws the canvas's columns: the limit the scripts enforce, and the ledger's window", () => {
+    draw({
+      calls: [call({})],
+      ledgers: [
+        settledLedger,
+        { file: "ledger-help-me-choose.jsonl", entries: [{ at: "2026-10-10T19:00:00Z", usd: 0.5, requests: 3 }, { at: "2026-10-11T21:00:00Z", usd: 0.5, requests: 3 }] },
+        { file: "ledger-tuning-lists.jsonl", entries: [{ at: "2026-09-30T19:00:00Z", usd: 0.2, requests: 1 }, { at: "2026-10-11T21:00:00Z", usd: 0.2, requests: 1 }] },
+        { file: "ledger-new.jsonl", entries: [{ at: "2026-10-02T19:00:00Z", usd: 0.1, requests: 1 }] },
+      ],
+    });
+    const table = screen.getByRole("table", { name: "Eval ledgers" });
+    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Ledger", "Requests", "Settled", "Limit", "Window"]);
+    const row = (name: string) => within(table).getByText(name).closest("[role=row]") as HTMLElement;
+    const cells = (name: string) => within(row(name)).getAllByRole("cell").map((c) => c.textContent);
+    expect(cells("Original campaign").slice(3)).toEqual(["$25 hard · ask at $15", "Sep 24"]);
+    expect(cells("Help me choose").slice(3)).toEqual(["$5 hard", "Oct 10–11"]);
+    expect(cells("Tuning lists").slice(3)).toEqual(["$3 hard · ask at $2.50", "Sep 30–Oct 11"]);
+    expect(cells("New").slice(3)).toEqual(["no limit in code", "Oct 2"]);
+    expect(cells("October").slice(3)).toEqual(["nothing pending", ""]);
   });
 
   it("says nothing pending when every worst case has settled", () => {
