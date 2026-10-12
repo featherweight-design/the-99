@@ -1270,7 +1270,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Makes no writes. Point it at `local-dev`, **never production**.
 
 - `pnpm probe:hover-preview` walks EVERY surface that draws a card preview — the decklist,
-  the top-off list and the review page (`/decks/[id]/changes`) — at 1300x900, and proves the box
+  the top-off list, the deck's card view, the Consider tab and the review page (`/decks/[id]/changes`) — at 1300x900, and proves the box
   follows the pointer. The review page needs a deck with a draft: `PROBE_CHANGES_DECK` names one,
   or the probe tries the first twelve decks' review pages and FAILS when none lists a row.
 

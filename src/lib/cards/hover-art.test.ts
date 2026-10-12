@@ -23,6 +23,11 @@ export const RESOLVERS = new Set([
 /** Components that draw a hover preview, mapped to the module whose read supplies the art they hand it. */
 const FEEDERS: Record<string, string> = {
   "components/decks/decklist-row.tsx": "lib/decks/read.ts",
+  "components/decks/deck-card-tile.tsx": "lib/decks/read.ts",
+  "components/decks/suggestion-tile.tsx": "lib/decks/suggestions-read.ts",
+  "components/decks/cuts-panel.tsx": "lib/decks/cuts-read.ts",
+  // The shared name trigger: a caller passes `preview` with the art its own loader resolved (lean-line, receipt).
+  "components/cards/card-detail-provider.tsx": "",
   "components/decks/suggestion-card.tsx": "lib/decks/tuning-read.ts",
   "components/decks/suggestion-line.tsx": "lib/decks/tuning-read.ts",
   "components/decks/mana-improve-door.tsx": "app/decks/mana-actions.ts",
@@ -113,4 +118,121 @@ describe("every hover preview shows the printing card details opens", () => {
       expect(usesResolver(files[feeder])).toBe(true);
     });
   }
+});
+
+// ---- Every card ROW has BOTH a hover preview and a press that opens card details (Hugh, 2026-10-12) ----
+
+const PRESS_BINDINGS = ["CardDetailTrigger", "useCardDetail", "FullCardTrigger"];
+
+const importsBinding = (src: string, name: string) =>
+  new RegExp(`import\\s*(?:type\\s*)?\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`).test(src);
+
+/** Opens card details: imports the trigger or the hook as a binding (a comment naming one is not a press). */
+export function hasPress(src: string): boolean {
+  return PRESS_BINDINGS.some((name) => importsBinding(src, name));
+}
+
+/** Draws a preview: calls `usePreviewRow`, or hands `preview` to a `CardDetailTrigger`. */
+export function hasHover(src: string): boolean {
+  if (importsBinding(src, "usePreviewRow")) return true;
+  const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxAttribute(node) && node.name.getText(file) === "preview") {
+      const element = node.parent.parent;
+      const tag = ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element) ? element.tagName.getText(file) : "";
+      if (tag === "CardDetailTrigger") found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
+/** Rows with one half and not the other, excluding the named exceptions. */
+export function rowGaps(files: Record<string, string>, exceptions: ReadonlySet<string>) {
+  const gaps: { path: string; missing: "hover" | "press" }[] = [];
+  for (const [path, src] of Object.entries(files)) {
+    if (/\.test\.tsx?$/.test(path) || !path.endsWith(".tsx") || DEFINES_PRESS.has(path) || exceptions.has(path)) continue;
+    const press = hasPress(src);
+    const hover = hasHover(src);
+    if (press && !hover) gaps.push({ path, missing: "hover" });
+    if (hover && !press) gaps.push({ path, missing: "press" });
+  }
+  return gaps.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/** The modules that DEFINE the press and the preview. */
+const DEFINES_PRESS = new Set([
+  "components/cards/card-detail-provider.tsx",
+  "components/commanders/full-card-trigger.tsx",
+  "components/decks/hover-preview.tsx",
+]);
+
+/**
+ * Rows still owed a half, each named so the list can only shrink: a surface shipping its half leaves it here
+ * (the test below fails while a row sits here with both halves). Anything NOT here that has one half and not
+ * the other fails the build. Tokens are their own bug batch's and precons their own lane's: neither reaches
+ * this guard.
+ */
+const OWED = new Set<string>([
+  "components/cards/fits-picker.tsx",
+  "components/collection/browser.tsx",
+  "components/commanders/coverage-chip.tsx",
+  "components/commanders/synergy-row.tsx",
+  "components/decks/change-commander-sheet.tsx",
+  "components/decks/mana-sections.tsx",
+  "components/decks/notices-body.tsx",
+  "components/decks/proxy-list-view.tsx",
+  "components/decks/upgrade-path.tsx",
+  "components/intake/choose-row.tsx",
+  "components/intake/read-as-bar.tsx",
+  "components/sets/set-grid-view.tsx",
+]);
+
+/**
+ * Triggers that are a card's HEADER or a door, not a row in a list: the commander's own title, the doors that
+ * open a swap or a printing sheet, the pull sheet's head. A press and no preview is what they are.
+ */
+const NOT_A_ROW = new Set<string>([
+  "components/commanders/detail.tsx",
+  "components/decks/change-commander-door.tsx",
+  "components/decks/got-it-door.tsx",
+  "components/decks/pull-control.tsx",
+  "components/decks/spine-desktop.tsx",
+  "components/decks/spine-mobile.tsx",
+  "components/decks/stand-in-door.tsx",
+]);
+
+describe("the row guard's own failure paths", () => {
+  it("calls a component with a press and no preview a gap, and one with both clean", () => {
+    const press = `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const A = () => <CardDetailTrigger oracleId="x" name="X">X</CardDetailTrigger>;`;
+    const both = `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const A = () => <CardDetailTrigger oracleId="x" name="X" preview>X</CardDetailTrigger>;`;
+    const hoverOnly = `import { usePreviewRow } from "./hover-preview";\nexport const A = () => null;`;
+    expect(rowGaps({ "components/a.tsx": press }, new Set())).toEqual([{ path: "components/a.tsx", missing: "hover" }]);
+    expect(rowGaps({ "components/a.tsx": both }, new Set())).toEqual([]);
+    expect(rowGaps({ "components/a.tsx": hoverOnly }, new Set())).toEqual([{ path: "components/a.tsx", missing: "press" }]);
+  });
+
+  it("does not take a comment, a string or a different element's `preview` for a half", () => {
+    const comment = `// uses CardDetailTrigger and usePreviewRow\nexport const A = () => <Other preview />;`;
+    expect(hasPress(comment)).toBe(false);
+    expect(hasHover(comment)).toBe(false);
+  });
+});
+
+describe("every card row has a hover preview and a press that opens card details", () => {
+  const files: Record<string, string> = {};
+  for (const path of walk(SRC)) {
+    if (/\.tsx$/.test(path)) files[relative(SRC, path)] = readFileSync(path, "utf8");
+  }
+
+  it("has no row with one half and not the other, beyond the ones named as owed", () => {
+    expect(rowGaps(files, new Set([...OWED, ...NOT_A_ROW]))).toEqual([]);
+  });
+
+  it("names only rows that still owe a half", () => {
+    const stale = [...OWED, ...NOT_A_ROW].filter((path) => !(path in files && rowGaps({ [path]: files[path] }, new Set()).length > 0));
+    expect(stale).toEqual([]);
+  });
 });
