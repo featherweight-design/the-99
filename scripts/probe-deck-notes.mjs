@@ -15,7 +15,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { markEveryEntrySeen } from "./lib/about-clear.mjs";
+import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -62,6 +62,7 @@ async function signIn(page) {
 
 let deckId = null;
 let verified = false;
+let aboutCapture = null;
 
 async function walk(browser, label, viewport, card) {
   const context = await browser.newContext({ viewport });
@@ -187,6 +188,7 @@ async function main() {
     const page = await probe.newPage();
     const userId = await signIn(page);
     // An unseen About entry redirects the deck to /about; the branch was verified above as not staging or production.
+    aboutCapture = await captureAboutSeen(userId);
     await markEveryEntrySeen(userId);
     await probe.close();
     // Its own deck: a shared fixture deck is rewritten by other lanes' probes on the same database, and a
@@ -217,6 +219,8 @@ main()
     try {
       // The deck is the probe's own, and its notes and cards cascade with it.
       if (verified && deckId) await sql`delete from decks where id = ${deckId}::uuid`;
+      // Both About columns back, so the account's later runs see the announcements it had not yet seen.
+      if (aboutCapture) await restoreAboutSeen(aboutCapture);
     } catch (error) {
       failures += 1;
       console.error("cleanup failed", error);
