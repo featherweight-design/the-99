@@ -3,9 +3,12 @@ import { getTableName } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
-vi.mock("../../db", () => ({ db: {} }));
+const dbStub = vi.hoisted(() => ({ wheres: [] as unknown[] }));
+vi.mock("../../db", () => ({
+  db: { delete: () => ({ where: (w: unknown) => { dbStub.wheres.push(w); return { returning: async () => [{ id: "x" }] }; } }) },
+}));
 
-import { aggregateTokenRows, recordUploadTokens, tokenOwnershipState, writeUploadTokens } from "./ownership";
+import { aggregateTokenRows, recordUploadTokens, tokenOwnershipState, unmarkTokenOwned, writeUploadTokens } from "./ownership";
 
 const T1 = "11111111-1111-4111-8111-111111111111";
 const T2 = "22222222-2222-4222-8222-222222222222";
@@ -145,5 +148,17 @@ describe("recordUploadTokens", () => {
     const b = withTables(false);
     await recordUploadTokens(b.tx, "u1", "up1", "replace", []);
     expect([...a.log, ...b.log]).toEqual([]);
+  });
+});
+
+describe("unmarkTokenOwned", () => {
+  it("deletes only a HAND mark: the predicate pins the user, the token and source = manual", async () => {
+    dbStub.wheres.length = 0;
+    expect(await unmarkTokenOwned("u1", T1)).toBe(1);
+    const q = dialect.sqlToQuery(dbStub.wheres[0] as SQL);
+    expect(q.sql).toContain('"token_ownership"."user_id" = $');
+    expect(q.sql).toContain('"token_ownership"."token_oracle_id" = $');
+    expect(q.sql).toContain('"token_ownership"."source" = $');
+    expect(q.params).toEqual(["u1", T1, "manual"]);
   });
 });

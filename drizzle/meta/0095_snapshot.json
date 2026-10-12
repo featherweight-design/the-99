@@ -1,5 +1,5 @@
 {
-  "id": "3247817e-d1d6-44f9-abeb-0d97b00ba4f9",
+  "id": "2f372ab3-e71e-422f-b9fb-f77193e19ca6",
   "prevId": "de03f8c1-8a1d-41ef-9814-e1ea4fc3da86",
   "version": "7",
   "dialect": "postgresql",
@@ -6371,6 +6371,10 @@
         "token_ownership_quantity_positive": {
           "name": "token_ownership_quantity_positive",
           "value": "\"token_ownership\".\"quantity\" > 0"
+        },
+        "token_ownership_source_check": {
+          "name": "token_ownership_source_check",
+          "value": "\"token_ownership\".\"source\" in ('upload', 'manual')"
         }
       },
       "isRLSEnabled": false

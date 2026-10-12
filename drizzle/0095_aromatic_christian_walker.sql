@@ -5,7 +5,8 @@ CREATE TABLE "token_ownership" (
 	"source" text NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "token_ownership_user_id_token_oracle_id_pk" PRIMARY KEY("user_id","token_oracle_id"),
-	CONSTRAINT "token_ownership_quantity_positive" CHECK ("token_ownership"."quantity" > 0)
+	CONSTRAINT "token_ownership_quantity_positive" CHECK ("token_ownership"."quantity" > 0),
+	CONSTRAINT "token_ownership_source_check" CHECK ("token_ownership"."source" in ('upload', 'manual'))
 );
 --> statement-breakpoint
 CREATE TABLE "token_reads" (

@@ -269,6 +269,7 @@ export const tokenOwnership = pgTable("token_ownership", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.tokenOracleId] }),
   check("token_ownership_quantity_positive", sql`${t.quantity} > 0`),
+  check("token_ownership_source_check", sql`${t.source} in ('upload', 'manual')`),
 ]);
 
 /**
