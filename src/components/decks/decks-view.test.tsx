@@ -1141,3 +1141,27 @@ describe("the Deck state facet", () => {
     expect(status.compareDocumentPosition(state) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
+
+// The head row (cart A1; precons R2 P1, P4): with the precons line on, the cart shares a grid as a
+// paired cell; with it off, the cart's own row as it shipped, full width.
+describe("DecksView head row", () => {
+  const cart: ShoppingRollup = {
+    byDeck: new Map([["d1", { copies: 3, cents: 900, pricedCopies: 3 }]]) as ShoppingRollup["byDeck"],
+    total: { copies: 3, cents: 900, pricedCopies: 3 },
+  };
+  const headRow = () => screen.getByRole("link", { name: /Shopping for all decks/ }).parentElement!;
+
+  it("pairs the cart with the precons line in one grid (P1)", () => {
+    render(
+      <DecksView decks={[deckOf()]} folders={[]} shopping={cart} cartEnabled precons={{ summary: { count: 181, newest: "2026-10-02" } }} buildable={9} cards={1284} now={NOW} />,
+    );
+    expect(headRow().className).toContain("sm:grid-cols-2");
+    expect(screen.getByRole("link", { name: /Commander precons/ })).toBeInTheDocument();
+  });
+
+  it("keeps the cart's own full-width row with the precons switch off (P4)", () => {
+    render(<DecksView decks={[deckOf()]} folders={[]} shopping={cart} cartEnabled buildable={9} cards={1284} now={NOW} />);
+    expect(headRow().className).not.toContain("grid");
+    expect(screen.queryByRole("link", { name: /Commander precons/ })).toBeNull();
+  });
+});

@@ -208,6 +208,21 @@ describe("CreatePicker — Help me choose's door", () => {
     expect(screen.getByTestId("create-picker-dock").querySelector("[data-testid='help-me-choose-door']")).toBeNull();
   });
 
+  it("draws the precon door directly under Help me choose, and the sub offers both", () => {
+    render(<CreatePicker legalCommanders={commanders} helpDoor preconDoor />);
+    const help = screen.getByTestId("help-me-choose-door");
+    expect(help.nextElementSibling).toBe(screen.getByTestId("precon-door"));
+    expect(screen.getByRole("link", { name: "Browse precons →" }).getAttribute("href")).toBe("/decks/precons?from=new");
+    expect(screen.getByText(addPanelCopy.createPicker.subDoors)).toBeTruthy();
+  });
+
+  it("draws the precon door first when Help me choose is off", () => {
+    render(<CreatePicker legalCommanders={commanders} preconDoor />);
+    const door = screen.getByTestId("precon-door");
+    expect(door.parentElement!.firstElementChild).toBe(door);
+    expect(screen.getByText(addPanelCopy.createPicker.subPrecon)).toBeTruthy();
+  });
+
   it("is drawn only when the page passes the flag, and the sub then makes no offer", () => {
     render(<CreatePicker legalCommanders={commanders} />);
     expect(screen.queryByTestId("help-me-choose-door")).toBeNull();

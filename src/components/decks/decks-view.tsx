@@ -37,6 +37,8 @@ import type { StatusPill } from "../../lib/decks/status";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { CartEntry } from "./cart/cart-entry";
+import { PreconsEntry } from "./precons/precons-entry";
+import type { PreconSummary } from "../../lib/precons/summary";
 import {
   DECK_SORT_KEY,
   DEFAULT_DECK_SORT,
@@ -100,6 +102,8 @@ export type DecksViewProps = {
    * shelves whenever a deck is missing cards, and each To buy tile's figure links into the cart.
    */
   cartEnabled?: boolean;
+  /** The precons line (`PRECONS_ENABLED`), with its summary, or null when the switch is off. */
+  precons?: { summary: PreconSummary | null } | null;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;
   /** Copies owned, not distinct names — the second half of `buildableFrom`. */
@@ -179,6 +183,7 @@ export function DecksView({
   folders: serverFolders,
   shopping,
   cartEnabled = false,
+  precons = null,
   buildable,
   cards,
   now: nowIso,
@@ -535,6 +540,8 @@ export function DecksView({
   );
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
+  // The cart line draws only with its switch on and some deck missing a card (A1-0).
+  const showCart = cartEnabled && shopping.byDeck.size > 0;
   const chips = chipLabels(state.filters);
   // The chassis switches form on its own breakpoint, not Tailwind's — 1000px,
   // because `/collection`'s seven controls need 987 and the row must never wrap.
@@ -809,9 +816,17 @@ export function DecksView({
         <ImportDeckButton />
       </div>
 
-      {/* The entry row (A1): a row of cells so a second line can share it. Absent when no deck is
-          missing a card (A1-0) or the switch is off, and the page is then exactly as it was. */}
-      {cartEnabled && shopping.byDeck.size > 0 ? (
+      {/* The head row (cart A1; precons R2 P1, P2). With the precons line on, one grid of up to two
+          cells: at 390 two cells share it half and half and one alone fills it; from 640 it is
+          always two columns, so a line alone keeps its half-width cell rather than reading as a
+          banner. With it off (P4), the cart's own row as it shipped, absent when no deck is missing a
+          card (A1-0) or the cart's switch is off. */}
+      {precons ? (
+        <div className={`grid gap-[8px] px-[16px] pt-[12px] pb-[4px] sm:grid-cols-2 sm:gap-[12px] sm:px-[22px] sm:pt-0 sm:pb-[16px] ${showCart ? "grid-cols-2" : "grid-cols-1"}`}>
+          {showCart && <CartEntry total={shopping.total} deckCount={shopping.byDeck.size} paired />}
+          <PreconsEntry summary={precons.summary} />
+        </div>
+      ) : showCart ? (
         <div className="flex gap-[10px] px-[16px] pt-[14px] pb-[10px] sm:px-[22px] sm:pt-[16px] sm:pb-[16px]">
           <CartEntry total={shopping.total} deckCount={shopping.byDeck.size} />
         </div>

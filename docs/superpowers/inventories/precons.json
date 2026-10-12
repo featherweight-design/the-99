@@ -211,6 +211,42 @@
           "settle": 6000
         }
       ]
+    },
+    {
+      "id": "p1",
+      "label": "/decks: the head row, the cart cell beside the Commander precons cell (P1, P2). The account must have seen the current About version, or /decks sends it to /about first",
+      "view": "src/components/decks/precons/precons-entry.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "label": "/decks/new: the precon door, under Help me choose when that door is on and first when it is off (N1, N2)",
+      "view": "src/components/decks/precons/precon-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new",
+          "wait": "[data-testid=precon-door]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "ab",
+      "label": "/about: the precons entry and its figure (AB)",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about#precons",
+          "wait": "#precons",
+          "settle": 2500
+        }
+      ]
     }
   ]
 }

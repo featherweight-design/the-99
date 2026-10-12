@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
+import { preconsEnabled } from "../../lib/precons/flag";
+import { readPreconSummary } from "../../lib/precons/summary";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { listFolders } from "../../lib/decks/folders";
 import { loadShoppingRollup } from "../../lib/decks/shopping-rollup";
@@ -44,6 +46,9 @@ export default async function DecksPage({
   const perf = perfRoute("/decks");
   // The whole payload is cached for this reader, keyed on their data stamp: see page-cache.ts
   // for why that is correct after any write, from anywhere.
+  // The precons line's meta is catalog data, the same for every reader, so it is read beside the
+  // cached payload rather than inside it; a failed read keeps the line and drops the meta.
+  const preconSummary = preconsEnabled() ? readPreconSummary() : null;
   const data = await cachePageForUser(userId, "decks", [], async () => {
     const [decks, shopping, folders] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move
@@ -106,6 +111,7 @@ export default async function DecksPage({
       folders={data.folders}
       shopping={data.shopping}
       cartEnabled={allDecksCartEnabled()}
+      precons={preconSummary ? { summary: await preconSummary } : null}
       buildable={data.buildable}
       cards={data.cards}
       // One clock for the whole page, read on the server. Every relative date

@@ -20,6 +20,7 @@ import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
+import { preconsEnabled } from "../precons/flag";
 import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
@@ -48,6 +49,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
+  PRECONS_ENABLED: preconsEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

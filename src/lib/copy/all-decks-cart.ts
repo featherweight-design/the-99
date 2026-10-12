@@ -22,6 +22,11 @@ export const allDecksCartCopy = {
     label: "Shopping for all decks",
     figure: (copiesN: number, cost: string, deckN: number) => `${n(copiesN)} to buy · ${cost} · ${decks(deckN)}`,
     figureNoPrice: (copiesN: number, deckN: number) => `${n(copiesN)} to buy · ${decks(deckN)}`,
+    // The phone's half cell beside the precons line (handoff design_handoff_the99_precons R2, P1;
+    // Hugh approved 2026-10-11).
+    titlePhone: "Shop all decks",
+    figurePhone: (copiesN: number, cost: string) => `${n(copiesN)} · ${cost}`,
+    figurePhoneNoPrice: (copiesN: number) => `${n(copiesN)} to buy`,
   },
 
   view: {

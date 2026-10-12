@@ -381,6 +381,9 @@ export const addPanelCopy = {
     /** The desktop sub beside Help me choose's door (READINESS-audit F9); `subAlone` where no door is drawn. */
     sub: "Pick a commander from your collection, or let us help.",
     subAlone: "Choose a commander from your collection.",
+    // With the precon door (handoff design_handoff_the99_precons, N1/N2).
+    subDoors: "Pick a commander from your collection, start from a precon, or let us help.",
+    subPrecon: "Pick a commander from your collection, or start from a precon.",
     searchPlaceholder: "Search commanders…",
     namePlaceholder: "Deck name…",
     selectedLabel: "Selected",

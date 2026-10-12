@@ -7,6 +7,7 @@ import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { helpMeChooseEnabled } from "../../../lib/intake/flag";
+import { preconsEnabled } from "../../../lib/precons/flag";
 import { MAX_SETS, MAX_THEMES } from "../../../lib/intake/answers";
 import { handOffFrom, resultsHref } from "../../../lib/intake/hand-off";
 import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-load";
@@ -73,7 +74,7 @@ export default async function NewDeckPage({
   // Picker door: load all owned legal commanders.
   const legalCommanders = await listOwnedLegalCommanders(userId);
 
-  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} />;
+  return <CreatePicker legalCommanders={legalCommanders} helpDoor={helpMeChoose} preconDoor={preconsEnabled()} />;
 }
 
 /** The page's params as the URL carried them; a repeated key keeps its first value, as `URLSearchParams.get` does. */

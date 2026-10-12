@@ -31,6 +31,7 @@ import { SearchField, TextField } from "@/components/ui/text-field";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { HelpMeChooseDoor } from "../intake/help-me-choose-door";
+import { PreconDoor } from "./precons/precon-door";
 
 const copy = deckImportCopy.commander;
 
@@ -54,6 +55,9 @@ type CreateModeProps = {
   /** Draw Help me choose's door first in the list column (HANDOFF §1). The page passes the
       feature's flag; every other create-mode caller, `/about`'s figure included, leaves it off. */
   helpDoor?: boolean;
+  /** Draw the precon door after Help me choose's (or first without it). The page passes
+      `PRECONS_ENABLED`; every other caller leaves it off. */
+  preconDoor?: boolean;
 };
 
 type ImportModeProps = {
@@ -125,6 +129,7 @@ export function CreatePicker(props: CreatePickerProps) {
   const isImport = props.mode === "import";
   // Create mode only, and only where the page passed the flag (HANDOFF §7.2): never in import.
   const helpDoor = props.mode !== "import" && props.helpDoor === true;
+  const preconDoor = props.mode !== "import" && props.preconDoor === true;
   // Pulled out of `props` so the memo below can depend on the array itself. A
   // dependency on `props` would be a fresh object on every parent render — which
   // in import mode is every keystroke in the owner — and memoise nothing.
@@ -371,7 +376,10 @@ export function CreatePicker(props: CreatePickerProps) {
                   carries only the scope the title cannot. */}
               <span className="md:hidden">From your collection.</span>
               <span className="hidden md:inline" style={{ color: "var(--fg-muted)" }}>
-                {helpDoor ? addPanelCopy.createPicker.sub : addPanelCopy.createPicker.subAlone}
+                {helpDoor && preconDoor ? addPanelCopy.createPicker.subDoors
+                  : helpDoor ? addPanelCopy.createPicker.sub
+                  : preconDoor ? addPanelCopy.createPicker.subPrecon
+                  : addPanelCopy.createPicker.subAlone}
               </span>
             </>
           )}
@@ -394,6 +402,7 @@ export function CreatePicker(props: CreatePickerProps) {
           style={{ "--picker-reserve": `${footerHeight + 12}px` } as CSSProperties}
         >
           {helpDoor && <HelpMeChooseDoor />}
+          {preconDoor && <PreconDoor />}
           {isImport ? (
             /* §Commander picker — intro (mobile) / count (desktop) */
             <>

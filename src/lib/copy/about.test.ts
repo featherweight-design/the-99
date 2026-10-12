@@ -326,6 +326,7 @@ const WORDS: Record<number, string> = {
   56: "Fifty-six",
   57: "Fifty-seven",
   58: "Fifty-eight",
+  59: "Fifty-nine",
 };
 
 describe("the credits entry", () => {

@@ -11,6 +11,7 @@ import type { VersionSummary } from "../decks/versions";
 import type { DeckListItem } from "../decks/read";
 import type { DeckFolderWithCount } from "../decks/folders";
 import type { ShelfCounts } from "../decks/folder-view";
+import type { PreconRow } from "../precons/list";
 import type { GameSummary } from "../decks/games";
 import type { DraftRow } from "../decks/draft-state";
 import type { DeckClaim } from "../decks/availability";
@@ -2353,3 +2354,18 @@ export const ALL_DECKS_CART_LINE: { line: import("../decks/cart").SelectedLine; 
     deckNames: new Map([["about-gishath", "HD - Gishath"], ["about-kratos", "HD - Kratos"], ["about-thorin", "HD -Thorin"]]),
   };
 })();
+/** The precons entry's row (handoff `about · precons.ts`): a Commander Masters precon, mostly
+ *  owned, that one of the reader's decks shares. Ulalek's hybrid costs give it all five colors. */
+export const PRECON_ROW: PreconRow = {
+  fileName: "about-eldrazi-unbound",
+  name: "Eldrazi Unbound",
+  setCode: "CMM",
+  releaseDate: "2023-08-04",
+  twinName: null,
+  commanders: [{ oracleId: "about-ulalek", name: "Ulalek, Fused Atrocity", imageUri: null, colorIdentity: ["W", "U", "B", "R", "G"] }],
+  identity: ["W", "U", "B", "R", "G"],
+  owned: 74,
+  of: 85,
+  unmapped: 0,
+  built: [{ deckId: "about-eldrazi", deckName: "Ulalek’s Eldrazi", shared: 73, sameCommanders: true }],
+};
