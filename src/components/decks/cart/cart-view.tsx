@@ -65,7 +65,9 @@ export function CartView({
   const total = cartTotal(cart.decks, selected);
   const links = useMemo(() => checkoutLinks(cart.lines, selected), [cart.lines, selected]);
   const deckCount = cart.decks.filter((d) => selected.has(d.id)).length;
-  const byDeck = view === "deck" && cart.decks.length >= 2;
+  // An explicit `?view=deck` or `?deck=` arrival is honoured with one deck too; only the switch
+  // hides there (E1), since both views list the same cards.
+  const byDeck = view === "deck";
   // Each deck's lines for its group: its own commander first, then A to Z.
   const groupLines = useMemo(() => {
     const out = new Map<string, typeof cart.lines>();

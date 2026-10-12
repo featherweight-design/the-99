@@ -238,6 +238,14 @@ describe("CartView by deck (A5)", () => {
     window.history.replaceState(null, "", "/");
   });
 
+  it("opens the ?deck= group on a one-deck cart too, with no switch", () => {
+    const one = cart({ decks: cart().decks.slice(0, 1) });
+    render(<CartView cart={one} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.queryByRole("button", { name: copy.view.byDeck })).toBeNull();
+    expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(1);
+    expect(screen.getByText("Command Tower")).toBeTruthy();
+  });
+
   it("folds everything, without an error, when ?deck= names a deck not on the cart (A5-t)", () => {
     render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="00000000-0000-0000-0000-000000000000" />);
     expect(screen.queryByText("Sol Ring")).toBeNull();
