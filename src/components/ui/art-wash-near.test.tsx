@@ -44,12 +44,12 @@ describe("NearViewportArt", () => {
     const { container } = render(<NearViewportArt src={SRC} className="art" style={{ opacity: 0.8 }} />);
     const layer = container.firstElementChild as HTMLElement;
     expect(layer.style.backgroundImage).toBe("");
-    expect(layer.dataset.art).toBeUndefined();
+    expect(layer.dataset.arrival).toBeUndefined();
     bringIntoView();
     expect(layer.style.backgroundImage).toContain(SRC);
     expect(probes.map((p) => p.src)).toEqual([SRC]);
-    expect(layer.dataset.art).toBe("pending");
+    expect(layer.dataset.arrival).toBe("pending");
     act(() => void probes[0].dispatchEvent(new Event("load")));
-    expect(layer.dataset.art).toBe("in");
+    expect(layer.dataset.arrival).toBe("in");
   });
 });

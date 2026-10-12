@@ -33,6 +33,7 @@ import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 import { usePreviewRow } from "./hover-preview";
+import { FadingImg } from "../ui/hydrated-art";
 
 // The bar is decoration for a figure that is always present as text, so a card
 // with no EDHREC percentage gets a sentence instead — never a 0%-wide bar,
@@ -269,8 +270,7 @@ export function SuggestionTile({
             plan): a CSS background is fetched for every tile whether or not it is on screen,
             so an expanded shelf asked for every candidate's art at once. */}
         {noArt ? null : (
-          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
-          <img
+          <FadingImg
             src={suggestion.imageUri!}
             alt=""
             loading="lazy"
