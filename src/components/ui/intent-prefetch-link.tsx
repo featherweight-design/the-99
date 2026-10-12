@@ -33,6 +33,15 @@ import { useContext, useEffect, useRef, type ComponentProps } from "react";
 type Props = ComponentProps<typeof Link> & { href: string; eager?: boolean };
 type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>;
 
+/** Whether focus arrived from the keyboard rather than with a press. */
+function keyboardFocus(el: Element): boolean {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+}
+
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
@@ -59,7 +68,10 @@ export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocu
         onPointerEnter?.(e);
       }}
       onFocus={(e) => {
-        prefetch();
+        // KEYBOARD focus only: a press focuses the link too (Chrome on mousedown, a tap as well),
+        // and that focus is the press itself. `:focus-visible` tells them apart, the rule
+        // `card-detail-provider.tsx` (`keyboardFocus`) settled on for the same reason.
+        if (keyboardFocus(e.currentTarget)) prefetch();
         onFocus?.(e);
       }}
     />

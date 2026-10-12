@@ -22,7 +22,17 @@ function IntentPrefetchLink(props: React.ComponentProps<typeof Bare>) {
   );
 }
 
-beforeEach(() => prefetch.mockClear());
+// Whether the focus a test fires came from the keyboard. jsdom computes no `:focus-visible`.
+let keyboard = true;
+beforeEach(() => {
+  prefetch.mockClear();
+  keyboard = true;
+  vi.restoreAllMocks();
+  const matches = Element.prototype.matches;
+  vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, sel: string) {
+    return sel === ":focus-visible" ? keyboard : matches.call(this, sel);
+  });
+});
 
 describe("IntentPrefetchLink", () => {
   it("prefetches nothing extra until a reader shows intent, and leaves Link's own prefetch alone", () => {
@@ -52,11 +62,13 @@ describe("IntentPrefetchLink", () => {
 
   // A tap's navigation does not reuse a prefetch it overtakes, so a touchstart prefetch fetched the
   // page twice and made the tap slower (#1557, measured on staging).
-  it("does not prefetch on a tap: neither its pointerenter nor its touchstart", () => {
+  it("does not prefetch on a tap: not its pointerenter, its touchstart or the focus it brings", () => {
+    keyboard = false;
     render(<IntentPrefetchLink href="/decks/d1">Deck</IntentPrefetchLink>);
     const link = screen.getByRole("link");
     fireEvent.pointerEnter(link, { pointerType: "touch" });
     fireEvent.touchStart(link);
+    fireEvent.focus(link);
     expect(prefetch).not.toHaveBeenCalled();
   });
 
