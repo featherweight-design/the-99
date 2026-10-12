@@ -20,7 +20,7 @@ if (allTests.length < 100) throw new Error(`found only ${allTests.length} test f
 // The pathspec above restates vitest's `include`. Vitest's own listing is the authority, so a drift
 // (it once skipped files directly under src/ and scripts/) fails here instead of silently shrinking a selection.
 {
-  const all = spawnSync("npx", ["vitest", "list", "--filesOnly"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  const all = spawnSync("pnpm", ["exec", "vitest", "list", "--filesOnly"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (all.status !== 0) throw new Error(`vitest list failed (${all.status}): ${all.stderr || all.stdout}`);
   const listed = lines(all.stdout).sort();
   if (JSON.stringify(listed) !== JSON.stringify([...allTests].sort())) {
@@ -41,7 +41,7 @@ if (event === "pull_request") {
     const before = JSON.parse(sh("git", ["show", `${mergeBase}:package.json`]));
     packageChanged = packageDepsChanged(before, JSON.parse(readFileSync("package.json", "utf8")));
   }
-  const list = spawnSync("npx", ["vitest", "list", "--filesOnly", "--changed", mergeBase], {
+  const list = spawnSync("pnpm", ["exec", "vitest", "list", "--filesOnly", "--changed", mergeBase], {
     encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
   });
   if (list.status !== 0) throw new Error(`vitest list failed (${list.status}): ${list.stderr || list.stdout}`);
