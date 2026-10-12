@@ -1,6 +1,6 @@
 // The read's panel on the results (the read addendum R1, STATES 7d to 7n, with F10): every state, the
-// poll that moves the step and refreshes on a settled read, Stop (believed only when it took), and
-// Try again (the same answers and words, submitted again). Never a *Read it* press, never a `0 left`.
+// poll that moves the step and refreshes on a settled read, no Stop (removed 2026-10-12: a read always
+// runs to its end), and Try again (the same answers and words, submitted again). Never a *Read it* press, never a `0 left`.
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useState } from "react";
@@ -25,9 +25,9 @@ const standing = (over = {}) => ({
 });
 const done = (pool = 3445, weighed = 36): TheReadState => ({ kind: "done", result: { picks: [], pool, weighed } });
 
-type Deps = { state: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn>; submit: ReturnType<typeof vi.fn> };
+type Deps = { state: ReturnType<typeof vi.fn>; submit: ReturnType<typeof vi.fn> };
 const deps = (over: Partial<Deps> = {}): Deps => ({
-  state: vi.fn(() => new Promise(() => {})), stop: vi.fn(), submit: vi.fn(async () => undefined), ...over,
+  state: vi.fn(() => new Promise(() => {})), submit: vi.fn(async () => undefined), ...over,
 });
 
 function Pool({ n }: { n: number }) {
@@ -80,7 +80,7 @@ afterEach(() => {
 });
 
 describe("7d: reading", () => {
-  it("draws the steps, the hairlined press with its cost, Stop and the refund line, and dims the results", () => {
+  it("draws the steps and the hairlined press with its cost, offers no Stop and no line, and dims the results", () => {
     draw({ kind: "pending", phase: "shortlist" }, { pool: 3445 });
     expect(panel().dataset.phase).toBe("reading");
     expect(text()).toContain("Reading what you wrote…");
@@ -93,8 +93,10 @@ describe("7d: reading", () => {
     const press = screen.getByRole("button", { name: "1 credit. Reading…" }) as HTMLButtonElement;
     expect(press.disabled).toBe(true);
     expect(press.className).toContain("border-[color:var(--border-strong)]");
-    expect(screen.getByRole("button", { name: "Stop" })).toBeTruthy();
-    expect(screen.getByTestId("read-line").textContent).toBe("Stopping gives the credit back.");
+    // A read always runs to its end: nothing to press while it reads, and nothing under the press.
+    expect(screen.queryByRole("button", { name: "Stop" })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByTestId("read-line")).toBeNull();
     expect(screen.getByTestId("results-dim").dataset.reading).toBe("true");
     noReadIt();
   });
@@ -149,40 +151,8 @@ describe("7d: reading", () => {
   });
 });
 
-describe("Stop", () => {
-  it("stops the read by its id, says so, and refreshes, when the stop took", async () => {
-    const stop = vi.fn().mockResolvedValue(true);
-    draw({ kind: "pending", phase: "shortlist" }, { d: deps({ stop }) });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Stop" })); });
-    expect(stop).toHaveBeenCalledWith(READ);
-    // The press holds at Stopping until the refresh draws the stopped panel with its refund.
-    expect(panel().dataset.phase).toBe("reading");
-    expect(screen.getByRole("status").textContent).toBe("Stopped. No credit was used.");
-    expect(router.refresh).toHaveBeenCalled();
-  });
-
-  it("says nothing and refreshes nothing when the visit ended while the stop was out", async () => {
-    let resolve: (v: boolean) => void = () => {};
-    const stop = vi.fn(() => new Promise<boolean>((r) => { resolve = r; }));
-    const { unmount } = draw({ kind: "pending", phase: "shortlist" }, { d: deps({ stop }) });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Stop" })); });
-    router.refresh.mockClear();
-    unmount();
-    await act(async () => { resolve(true); });
-    expect(router.refresh).not.toHaveBeenCalled();
-  });
-
-  it("keeps reading when the stop did not take: the read settled first, and the poll will say so", async () => {
-    const stop = vi.fn().mockResolvedValue(false);
-    draw({ kind: "pending", phase: "shortlist" }, { d: deps({ stop }) });
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Stop" })); });
-    expect(panel().dataset.phase).toBe("reading");
-    expect((screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement).disabled).toBe(false);
-  });
-});
-
 describe("7e, 7f: stopped and failed", () => {
-  it("tags a stopped read muted, says no credit was used, and offers Try again with its cost", () => {
+  it("still draws a read a Stop settled before Stop was removed: tagged muted, no credit used, Try again with its cost", () => {
     draw({ kind: "stopped" });
     expect(text()).toContain("Read what you wrote");
     const tag = screen.getByTestId("read-tag");

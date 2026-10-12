@@ -1,7 +1,8 @@
 "use client";
 // The read's panel on the results (the read addendum R1, STATES 7d to 7n). It replaces the retired
 // Look deeper panel and NEVER OFFERS: the read starts at the form's submit (F8), and this reports on
-// it. The one press it draws is *Try again*, after a read that was stopped or did not finish, which
+// it. The one press it draws is *Try again*, after a read that did not finish (or, before Stop was
+// removed on 2026-10-12, one that was stopped), which
 // submits the same answers and words again (a new read, under a new id). F10: no *Read it* and no
 // `0 left` pill anywhere on the results.
 //
@@ -10,9 +11,7 @@
 // judgement, and refreshes the page once the read settles, so the server draws the re-ordered
 // results. No motion anywhere (STATES invariant).
 //
-// STOP IS A ROUTE HANDLER, NOT A SERVER ACTION: the client runs a page's Server Actions one at a
-// time, so a Stop sent as one would wait behind the poll in flight. It is believed only when it
-// took: a read that settled first is left to the next poll to report.
+// There is no Stop: a read always runs to its end, and leaving the page never cancels it.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,7 +34,6 @@ const ANNOUNCED: Partial<Record<ReadPhase, string>> = {
   done: copy.read.doneAnnounce,
   nothing: copy.read.emptyTitle,
   failed: copy.read.failed,
-  stopped: copy.read.stopped,
 };
 
 // The announcement lives outside the read's scope, which remounts when the server's state changes:
@@ -109,12 +107,11 @@ const fmt = (n: number) => n.toLocaleString("en-US");
 
 type ReadPanelDeps = {
   state: (readId: string) => Promise<TheReadState>;
-  stop: (readId: string) => Promise<boolean>;
   submit: (query: string) => Promise<unknown>;
 };
 
 /** One object for the life of the module, so the poll's effect is not restarted by every render. */
-const DEPS: ReadPanelDeps = { state: (id) => theReadState(id), stop: (id) => postStop(id), submit: (q) => submitChoose(q, "results") };
+const DEPS: ReadPanelDeps = { state: (id) => theReadState(id), submit: (q) => submitChoose(q, "results") };
 
 export function ReadPanel({
   readId,
@@ -148,7 +145,6 @@ export function ReadPanel({
   const phase = scope.phase ?? phaseOf(served);
   const setPhase = scope.setPhase;
   const [step, setStep] = useState<"shortlist" | "judge">(served?.kind === "pending" && served.phase === "judge" ? "judge" : "shortlist");
-  const [stopping, setStopping] = useState(false);
   const hydrated = useHydrated();
   const [retrying, startRetry] = useTransition();
   const live = useRef(true);
@@ -180,21 +176,6 @@ export function ReadPanel({
       clearTimeout(timer);
     };
   }, [phase, readId, deps, router, setPhase]);
-
-  async function stop() {
-    if (!readId || stopping) return;
-    setStopping(true);
-    const took = await deps.stop(readId).catch(() => false);
-    // Left while the request was out: this visit is gone, and the next one is not its to tell.
-    if (!live.current) return;
-    // Not taken: the read settled first, or the request failed. The poll reports the first; the
-    // player can press Stop again for the second.
-    if (!took) { setStopping(false); return; }
-    // Taken: the press stays *Stopping* until the refresh draws the stopped panel with its refund.
-    live.current = false;
-    announce(copy.read.stopped);
-    router.refresh();
-  }
 
   // The same answers and words, submitted again as the form would: a new read, under a new id.
   const retry = () =>
@@ -231,7 +212,8 @@ export function ReadPanel({
     : phase === "nothing" && result ? copy.read.emptyLead(fmt(result.pool))
     : null;
   const line =
-    phase === "reading" ? copy.read.pendingLine
+    // Nothing under the press while it reads: the read runs to its end, whatever the player does.
+    phase === "reading" ? null
     // A repeat lands on the stored answer, whichever it was, so neither spent a credit.
     : (phase === "done" || phase === "nothing") && repeat ? copy.read.repeatLine
     // A standing line can name a time in the reader's own zone, which the server cannot know: it
@@ -304,16 +286,6 @@ export function ReadPanel({
               <span className={`${pillBase} font-medium bg-[color:var(--surface)] text-[color:var(--fg-muted)]`}>{copy.read.cost}</span>
               {copy.read.actionPending}
             </button>
-            {readId && (
-              <button
-                type="button"
-                onClick={stop}
-                disabled={stopping}
-                className="inline-flex items-center h-[44px] md:h-[36px] px-[12px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent text-[13px] text-[color:var(--fg-muted)] cursor-pointer disabled:cursor-default"
-              >
-                {copy.read.stop}
-              </button>
-            )}
           </div>
         ) : retried ? (
           <button
@@ -371,15 +343,4 @@ function Steps({ step, pool }: { step: "shortlist" | "judge"; pool: number | nul
       })}
     </ol>
   );
-}
-
-async function postStop(readId: string): Promise<boolean> {
-  const res = await fetch("/decks/new/choose/stop", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ readId }),
-  });
-  if (!res.ok) return false;
-  const body = (await res.json().catch(() => null)) as { stopped?: unknown } | null;
-  return body?.stopped === true;
 }

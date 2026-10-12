@@ -192,6 +192,8 @@ answers / Start over). The bar is a flex column, gap 14; padding 14 (mobile) / 1
 
 ### Stop
 
+**Removed 2026-10-12 (Hugh):** a read always runs to its end, so Help me choose draws no Stop. Kept below as the record of what shipped.
+
 | Property | Mobile | Desktop |
 |---|---|---|
 | Renders when | 3b only | same |
