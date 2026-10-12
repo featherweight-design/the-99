@@ -36,7 +36,7 @@ export function CopyChooserDialog({
   const named = useMemo(() => ({ ...card, cardName }), [card, cardName]);
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={onClose}
     >

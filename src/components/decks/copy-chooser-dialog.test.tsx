@@ -29,6 +29,9 @@ describe("CopyChooserDialog", () => {
     // 520 wide from md, a sheet below it.
     expect(dialog.className).toContain("md:w-[520px]");
     expect(dialog.className).toContain("rounded-[22px_22px_0_0]");
+    // Above the toast it opens from (ToastFrame is z-[60]), so the toast's Undo is not pressable
+    // through the modal.
+    expect(dialog.parentElement!.className.split(" ")).toContain("z-[70]");
   });
 
   it("closes on Done, on Escape and on the scrim", () => {
