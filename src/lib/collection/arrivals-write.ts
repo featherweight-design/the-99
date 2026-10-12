@@ -126,9 +126,31 @@ export async function writeArrivalsReceipt(args: {
   const arrivedIds = Object.keys(ownedAfter).filter(
     (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
   );
-  const availability: Awaited<ReturnType<typeof loadAvailability>> = arrivedIds.length
-    ? await loadAvailability(userId, { oracleIds: arrivedIds })
-    : new Map();
+  // ONE SNAPSHOT for the availability and the reservation rows: two READ COMMITTED statements
+  // would let a pick moved between them credit the arrived copy to a deck the availability never
+  // saw holding it. Repeatable read fixes both reads at the first statement.
+  const addedCopyOn = args.addedCopy ?? addedCopyEnabled();
+  type Reservations = Map<string, { deckId: string; copies: number }[]>;
+  const read: { availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations } =
+    arrivedIds.length
+      ? await db.transaction(async (tx) => {
+        const availability = await loadAvailability(userId, { oracleIds: arrivedIds }, tx);
+        // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
+        // the one `regrant` needs to say which reservation the smaller supply covered.
+        const reservations: Reservations = new Map();
+        if (addedCopyOn && availability.size > 0) {
+          for (const r of await tx
+            .select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+            .from(cardAssignments)
+            .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, [...availability.keys()])))
+            .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
+            reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
+          }
+        }
+        return { availability, reservations };
+      }, { isolationLevel: "repeatable read" })
+      : { availability: new Map(), reservations: new Map() };
+  const { availability, reservations } = read;
   const claims: Record<string, ArrivedClaimState> = {};
   for (const [oracleId, a] of availability) {
     claims[oracleId] = {
@@ -144,20 +166,8 @@ export async function writeArrivalsReceipt(args: {
 
   // WHERE THE COPIES WENT, from the same read (`arrivalPlacement`). Only while the switch is on.
   let placements: Record<string, Placement> | undefined;
-  if (args.addedCopy ?? addedCopyEnabled()) {
+  if (addedCopyOn) {
     placements = {};
-    // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`), the
-    // one `regrant` needs to say which reservation the smaller supply covered.
-    const reservations = new Map<string, { deckId: string; copies: number }[]>();
-    if (availability.size > 0) {
-      for (const r of await db
-        .select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
-        .from(cardAssignments)
-        .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, [...availability.keys()])))
-        .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
-        reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
-      }
-    }
     for (const [oracleId, a] of availability) {
       placements[oracleId] = arrivalPlacement(
         a,
