@@ -166,6 +166,8 @@ describe("CopyLine", () => {
     const li = screen.getByRole("listitem");
     expect(document.activeElement).not.toBe(document.body);
     expect(li.contains(document.activeElement)).toBe(true);
+    // And it still names its card for a screen reader.
+    expect(document.activeElement?.textContent).toBe("Sol Ring");
   });
 
   it("draws no Change when there is no chooser to open", () => {

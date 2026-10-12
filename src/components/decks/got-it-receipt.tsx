@@ -179,17 +179,22 @@ export function GotItReceipt({
   // write that leaves a pick, cleared by one that clears it: there is one authored pick per card,
   // so a clear leaves none. Never inferred from the purchase-time card, which cannot tell a pick
   // the Change made from one it cleared and made again.
+  // A Change write that threw may have left a pick nobody recorded: Undo holds until a later write
+  // lands and says where the pick stands. History still reverts the purchase meanwhile.
+  const [unknown, setUnknown] = useState(false);
+  const onUnknown = useCallback(() => setUnknown(true), []);
   // `createdAt` names the reservation exactly, so Undo drops that row and never a newer pick of the deck.
   const [changePick, setChangePick] = useState<{ deckId: string; createdAt?: string } | null>(null);
   const onWrite = useCallback((deck: string, picked: boolean, createdAt?: string) => {
     setChangePick((was) => picked ? { deckId: deck, createdAt: createdAt ?? (was?.deckId === deck ? was.createdAt : undefined) } : null);
+    setUnknown(false);
   }, []);
   // A Change write still out, chooser open or closed: Undo holds until it settles, or it would go
   // without the pick that write is about to leave standing.
   const [changing, setChanging] = useState(false);
   const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
-  const held = busy || changing;
+  const held = busy || changing || unknown;
   // The toast's clock holds while the chooser is open, as it does for an undo (design table: open).
   const inFlight = held || phase.k === "warning" || choosing;
   const { restart } = useToastClock(ref, !hover && !focus && !inFlight, onExpire);
@@ -451,6 +456,7 @@ export function GotItReceipt({
         onCard={onCard}
         onWrite={onWrite}
         onPending={setChanging}
+        onUnknown={onUnknown}
         onClose={closeChooser}
       />
     ) : null}

@@ -148,6 +148,7 @@ export function ContestedCardRow({
   onCard,
   onWrite,
   onPending,
+  onUnknown,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -189,6 +190,11 @@ export function ContestedCardRow({
    * pick ends up (the receipt's Undo) holds until this reads false.
    */
   onPending?: (pending: boolean) => void;
+  /**
+   * A write that threw: it may have committed, and nothing says which pick it left. A caller whose
+   * own action depends on the pick (the receipt's Undo) holds until a later write lands.
+   */
+  onUnknown?: () => void;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -365,6 +371,7 @@ export function ContestedCardRow({
         // it owns each name a reason the server gave, and inventing a fourth for "we do not know"
         // would tell the player something the server never said. What matters is that the
         // optimistic state does not outlive the attempt, which the `finally` guarantees.
+        onUnknown?.();
       } finally {
         // THE OPTIMISTIC SET ALWAYS STANDS DOWN — but only for the LATEST tap. Authorship is read
         // from data; this state exists only for the window before there is any, and a throw

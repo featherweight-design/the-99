@@ -89,6 +89,8 @@ export function CopyLine({
         <div className="flex min-h-[44px] items-center gap-[10px] py-[8px]">
           {/* The terminal chooser's Done takes its button with it: focus comes here, as on the row's card. */}
           <span ref={name} tabIndex={-1} className="min-w-0 flex-1 text-[13.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
+            {/* The terminal state says no sentence, and focus lands here: it still names its card. */}
+            {runs.length === 0 ? <span className="sr-only">{cardName}</span> : null}
             {runs.map((p, i) => (p.em
               ? <span key={i} data-em={p.em} className={p.em === "card" ? "font-semibold" : undefined} style={{ color: "var(--fg)" }}>{p.text}</span>
               : p.text))}

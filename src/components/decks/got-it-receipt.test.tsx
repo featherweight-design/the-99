@@ -448,6 +448,21 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, undefined, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
   });
 
+  it("holds Undo after a Change write that threw, until a later write lands", async () => {
+    assignCopy.mockRejectedValueOnce(new Error("lost")).mockResolvedValueOnce({ ok: true, card: chooser(OTHER), createdAt: AT });
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ facts: facts() }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    expect(undo()).toHaveAttribute("aria-disabled", "true");
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(undo()).not.toHaveAttribute("aria-disabled");
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
+  });
+
   it("holds Undo while a Change write is still out, even once the chooser is closed", async () => {
     let land!: (r: unknown) => void;
     assignCopy.mockReturnValue(new Promise((r) => { land = r; }));
