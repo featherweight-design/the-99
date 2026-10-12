@@ -915,6 +915,36 @@ export const deckGames = pgTable("deck_games", {
 ]);
 
 /**
+ * A deck's notes: short one-line reminders ("try a second sweeper") the player keeps WITH the deck.
+ *
+ * Keyed on the deck, not a version, because a note spans commits and a draft has no version at all.
+ * `on delete cascade` from `decks`, as `deck_games` is.
+ *
+ * `body` holds the player's text with each card tag stored as `[[<oracle uuid>|<name then>]]` (see
+ * `lib/decks/notes-body.ts`), so the stored text is LONGER than what draws: the action caps the RENDERED
+ * length at 140 code points and this check is only the loose backstop. The 100-notes-per-deck cap is not
+ * a check (a row count cannot be one); `insertNote` (called by `addNote`) enforces it under a lock on the deck row.
+ *
+ * `done_at` is null while the note is open. `created_at` is the date drawn; an edit never moves it and
+ * `updated_at` is null until the first edit. No ordering column, no reminder, no due date, no sharing.
+ *
+ * No `user_data_touch` trigger: only the deck page reads this table (Home and `/decks` do not), so
+ * `check:list-cache` stays green.
+ */
+export const deckNotes = pgTable("deck_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  body: text("body").notNull(),
+  doneAt: timestamp("done_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+}, (t) => [
+  check("deck_notes_body_length_check", sql`char_length(${t.body}) between 1 and 1000`),
+  index("deck_notes_deck_created_idx").on(t.deckId, t.createdAt),
+]);
+
+/**
  * What worked and what hurt in one game.
  *
  * The composite primary key on (game_id, axis) is the whole point of the
