@@ -286,6 +286,23 @@ describe("the standing line and the server's HTML", () => {
   });
 });
 
+describe("a repeat, and a visit's announcements", () => {
+  it("says no credit was used for a repeat landing on a stored nothing-fits answer too", () => {
+    draw({ kind: "nothing", result: { picks: [], pool: 308, weighed: 12 } }, { repeat: true });
+    expect(screen.getByTestId("read-line").textContent).toBe("No credit used · you asked this already");
+  });
+
+  it("starts each visit silent, whatever an earlier visit announced", async () => {
+    vi.useFakeTimers();
+    draw({ kind: "pending", phase: null }, { d: deps({ state: vi.fn().mockResolvedValue({ kind: "failed" }) }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
+    expect(screen.getByRole("status").textContent).not.toBe("");
+    cleanup();
+    draw(done());
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+});
+
 describe("7l, 7n: unread", () => {
   it("names the cause when another read was still running", () => {
     draw(null, { busy: true });

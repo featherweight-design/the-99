@@ -50,6 +50,9 @@ const subscribe = (l: () => void) => { listeners.add(l); return () => { listener
 /** The read's live region, drawn once by the page outside `ReadScope`, so it survives the refresh. */
 export function ReadAnnouncer() {
   const text = useSyncExternalStore(subscribe, () => announcement, () => "");
+  // A visit starts silent: what an earlier visit announced is not this one's to say. Outside the
+  // keyed scope, so the refresh that draws a settled read never clears what it just announced.
+  useEffect(() => { announce(""); }, []);
   return <p role="status" aria-live="polite" className="sr-only">{text}</p>;
 }
 
@@ -215,7 +218,8 @@ export function ReadPanel({
     : null;
   const line =
     phase === "reading" ? copy.read.pendingLine
-    : phase === "done" && repeat ? copy.read.repeatLine
+    // A repeat lands on the stored answer, whichever it was, so neither spent a credit.
+    : (phase === "done" || phase === "nothing") && repeat ? copy.read.repeatLine
     // A standing line can name a time in the reader's own zone, which the server cannot know: it
     // is drawn after hydration, as the form's is, so the server's HTML and the first render agree.
     : !standing || !hydrated ? null
