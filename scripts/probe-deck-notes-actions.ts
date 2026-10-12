@@ -45,7 +45,8 @@ async function main() {
   let view = await readDeckNotes(deck, USER, d);
   check("it reads back as one open note", [view.open.length, view.done.length], [1, 0]);
   const note = view.open[0];
-  check("the date is the creation date, and no edit is recorded", note.doneAt, null);
+  const fresh = await one<{ u: string | null }>(sql`select updated_at::text as u from deck_notes where id = ${note.id}::uuid`);
+  check("a new note is open and has recorded no edit", [note.doneAt, fresh.u], [null, null]);
 
   check("an edit answers true", await updateNoteBody(deck, USER, note.id, "try two sweepers"), true);
   view = await readDeckNotes(deck, USER, d);
@@ -63,6 +64,10 @@ async function main() {
   // ---- select and unselect ----
   check("select answers true", await setNoteDone(deck, USER, note.id, true), true);
   view = await readDeckNotes(deck, USER, d);
+  const firstDone = view.done[0]?.doneAt;
+  await new Promise((r) => setTimeout(r, 20));
+  check("selecting a note already done answers true", await setNoteDone(deck, USER, note.id, true), true);
+  check("and does not move its done date", (await readDeckNotes(deck, USER, d)).done[0]?.doneAt, firstDone);
   check("a selected note moves to done with its own date", [view.open.length, view.done.length, view.done[0].doneAt !== null], [0, 1, true]);
   check("unselect answers true", await setNoteDone(deck, USER, note.id, false), true);
   view = await readDeckNotes(deck, USER, d);
@@ -84,11 +89,12 @@ async function main() {
   await fixture.execute(sql`delete from deck_notes where deck_id = ${deck}::uuid`);
 
   // ---- the cap, and the race at 99 ----
-  await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body) select ${deck}::uuid, ${USER}, 'n' || g from generate_series(1, ${NOTES_PER_DECK - 1}) g`);
+  // Half of the 99 are done, so the count has to include done notes for the cap to hold at all.
+  await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body, done_at) select ${deck}::uuid, ${USER}, 'n' || g, case when g % 2 = 0 then now() end from generate_series(1, ${NOTES_PER_DECK - 1}) g`);
   const race = await Promise.all([insertNote(deck, USER, "racer one"), insertNote(deck, USER, "racer two")]);
   check("two adds at 99: exactly one lands, one hits the cap", race.slice().sort(), ["cap", "ok"]);
   check("the deck holds exactly 100", await count(deck), NOTES_PER_DECK);
-  check("a done note still counts toward the cap", (await insertNote(deck, USER, "one more")), "cap");
+  check("done notes count toward the cap (49 of the 100 are done)", [await insertNote(deck, USER, "one more"), (await one<{ n: number }>(sql`select count(*)::int as n from deck_notes where deck_id = ${deck}::uuid and done_at is not null`)).n], ["cap", 49]);
 
   // ---- the check constraint is the backstop ----
   let emptyCode: string | null = null;

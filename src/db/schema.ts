@@ -923,7 +923,7 @@ export const deckGames = pgTable("deck_games", {
  * `body` holds the player's text with each card tag stored as `[[<oracle uuid>|<name then>]]` (see
  * `lib/decks/notes-body.ts`), so the stored text is LONGER than what draws: the action caps the RENDERED
  * length at 140 code points and this check is only the loose backstop. The 100-notes-per-deck cap is not
- * a check (a row count cannot be one); `addNote` enforces it under a lock on the deck row.
+ * a check (a row count cannot be one); `insertNote` (called by `addNote`) enforces it under a lock on the deck row.
  *
  * `done_at` is null while the note is open. `created_at` is the date drawn; an edit never moves it and
  * `updated_at` is null until the first edit. No ordering column, no reminder, no due date, no sharing.

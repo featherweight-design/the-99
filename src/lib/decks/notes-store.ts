@@ -45,9 +45,9 @@ export async function updateNoteBody(deckId: string, userId: string, noteId: str
   return rows.length > 0;
 }
 
-/** Select (done) or unselect (open). Done keeps its own date; reopening clears it. */
+/** Select (done) or unselect (open). Done keeps its own date, and selecting a note already done leaves that date alone (a double-tap or a retry must not move it); reopening clears it. */
 export async function setNoteDone(deckId: string, userId: string, noteId: string, done: boolean): Promise<boolean> {
-  const rows = await db.update(deckNotes).set({ doneAt: done ? sql`now()` : null }).where(mine(deckId, userId, noteId)).returning({ id: deckNotes.id });
+  const rows = await db.update(deckNotes).set({ doneAt: done ? sql`coalesce(${deckNotes.doneAt}, now())` : null }).where(mine(deckId, userId, noteId)).returning({ id: deckNotes.id });
   return rows.length > 0;
 }
 
