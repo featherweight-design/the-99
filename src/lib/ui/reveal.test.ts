@@ -141,6 +141,28 @@ describe("reveal", () => {
     expect(box.scrollTop).toBe(1000);
   });
 
+  it("still stops on a key that moves focus, even from inside the target", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(0);
+  });
+
+  it("still stops on a keypress on a button inside the target", () => {
+    media(false);
+    const { box, el } = scene();
+    const button = document.createElement("button");
+    el.appendChild(button);
+    reveal(el);
+    button.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(0);
+  });
+
   it("stops before it starts when the reader moves during the beat", () => {
     media(false);
     const { box, el } = scene();

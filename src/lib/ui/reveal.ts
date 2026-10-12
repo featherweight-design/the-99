@@ -124,6 +124,15 @@ function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
 
 let active: (() => void) | null = null;
 
+/** A keypress that edits text in a field: a character, or a deletion, in an input, a textarea or
+ *  editable content. */
+function isTyping(e: KeyboardEvent): boolean {
+  const t = e.target;
+  const editable = t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable)
+    || (t instanceof HTMLInputElement && !["checkbox", "radio", "button", "submit", "reset", "range", "color", "file"].includes(t.type));
+  return editable && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete");
+}
+
 export function reveal(
   el: Element | null | undefined,
   block: RevealBlock = "start",
@@ -152,10 +161,11 @@ export function reveal(
     for (const type of CANCEL_EVENTS) window.removeEventListener(type, onInput, true);
     if (active === stop) active = null;
   };
-  // A keypress inside the target is the reader using what was brought to them (typing in the note
+  // Typing into a field inside the target is the reader using what was brought to them (the note
   // field whose picker opened the reveal), not the reader going elsewhere, so it lets the scroll run.
+  // Any other key (Tab, Enter, an arrow) moves focus or acts, and stops it as before.
   const onInput = (e: Event) => {
-    if (e.type === "keydown" && e.target instanceof Node && el.contains(e.target)) return;
+    if (e instanceof KeyboardEvent && isTyping(e) && e.target instanceof Node && el.contains(e.target)) return;
     stop();
   };
   for (const type of CANCEL_EVENTS) window.addEventListener(type, onInput, { capture: true, passive: true });

@@ -43,9 +43,11 @@ export function landOnReceipt(swapId: string): () => void {
   const until = performance.now() + 3000;
   // The reader's own input ends the hold at once: nothing here may fight a scroll or a keypress.
   const inputs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+  // Stopping the hold stops the scroll it started too, whichever way it stops.
   const stop = () => {
     stopped = true;
     cancelAnimationFrame(frame);
+    cancelReveal();
     for (const e of inputs) window.removeEventListener(e, stop, true);
   };
   for (const e of inputs) window.addEventListener(e, stop, true);
@@ -65,10 +67,7 @@ export function landOnReceipt(swapId: string): () => void {
     const button = receipt?.querySelector<HTMLButtonElement>("button");
     const active = document.activeElement;
     // The reader has gone somewhere of their own: leave them there.
-    if (landed && active && active !== document.body && !receipt?.contains(active)) {
-      cancelReveal();
-      return stop();
-    }
+    if (landed && active && active !== document.body && !receipt?.contains(active)) return stop();
     // The sheet that is closing is still in the document the frame after its unmount began; a list
     // still re-rendering has no receipt yet. Both are waited out.
     if (receipt && button && !document.querySelector('[role="dialog"]')) {
