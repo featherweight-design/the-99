@@ -99,7 +99,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
     cards: new Set(lines.filter((l) => !basic(l.typeLine)).map((l) => l.oracleId)),
     commanders: row.commanders.map((c) => c.oracleId),
   };
-  const decks = await deckChoices(db, readerDecks.filter((d) => d.builtFrom !== fileName), precon);
+  const decks = await deckChoices(db, readerDecks, fileName, precon);
 
   return {
     kind: "precon",
@@ -129,9 +129,11 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
 /** The picker's rows: each deck's overlap, its commanders' names and the precon it is linked to. */
 async function deckChoices(
   db: Reader,
-  decks: readonly ReaderDeck[],
+  readerDecks: readonly ReaderDeck[],
+  fileName: string,
   precon: { cards: ReadonlySet<string>; commanders: readonly string[] },
 ): Promise<PreconDeckChoice[]> {
+  const decks = readerDecks.filter((d) => d.builtFrom !== fileName);
   if (decks.length === 0) return [];
   const commanderIds = [...new Set(decks.flatMap((d) => d.commanders))];
   const linkedIds = [...new Set(decks.flatMap((d) => (d.builtFrom ? [d.builtFrom] : [])))];
@@ -139,15 +141,29 @@ async function deckChoices(
     .where(inArray(cards.oracleId, commanderIds))).map((r) => [r.id, r.name]));
   const linkedNames = new Map(linkedIds.length === 0 ? [] : (await db.select({ id: precons.fileName, name: precons.name })
     .from(precons).where(inArray(precons.fileName, linkedIds))).map((r) => [r.id, r.name]));
+  return assembleDeckChoices(readerDecks, fileName, precon, names, linkedNames);
+}
+
+/** The picker's decks for one precon: every deck not already linked to it, each with its overlap
+ *  and the precon it is linked to elsewhere, the larger overlap first. Pure, so a test can start
+ *  from the reader's decks rather than from the finished choices. */
+export function assembleDeckChoices(
+  readerDecks: readonly ReaderDeck[],
+  fileName: string,
+  precon: { cards: ReadonlySet<string>; commanders: readonly string[] },
+  commanderNames: ReadonlyMap<string, string>,
+  preconNames: ReadonlyMap<string, string>,
+): PreconDeckChoice[] {
   const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-  return decks
+  return readerDecks
+    .filter((d) => d.builtFrom !== fileName)
     .map((d) => ({
       deckId: d.id,
       deckName: d.name,
-      commanders: d.commanders.map((id) => names.get(id) ?? ""),
+      commanders: d.commanders.map((id) => commanderNames.get(id) ?? ""),
       ...sharedCount(precon, d),
       // A link whose precon a later feed dropped names nothing, and the picker moves it silently.
-      linkedElsewhere: d.builtFrom ? linkedNames.get(d.builtFrom) ?? null : null,
+      linkedElsewhere: d.builtFrom ? preconNames.get(d.builtFrom) ?? null : null,
     }))
     .sort((a, b) => b.shared - a.shared || byCodePoint(a.deckName.toLowerCase(), b.deckName.toLowerCase()));
 }
