@@ -76,6 +76,7 @@ cut, no figure drop, 0 of 14 stale. Its cost per press is unchanged ($0.0006 to 
   - `falseQuote`;
   - `noCitation`;
   - `figureOrScore`, `tooLong`, `malformed`;
+  - `keywordClaim` (a keyword credited to a card whose text and keywords lack it) and `noCut` (no cut while the deck holds a card that may be one), both added after the runs below;
   - `jobMismatch`;
   - `tooMany`.
 - **Scoring** (blind, per deck, lock 9). Each kept pick is scored on five questions:
@@ -256,7 +257,8 @@ Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key
 
 Every line a reader would see (the kept lines, 39 across three arms) was put on one sheet with its arm hidden and
 the lines shuffled per card, with the rules text of every card named, and scored by a separate agent that never saw
-which model wrote which line. Five questions per line (the brief's lock 9): does it name a real interaction with the
+which model wrote which line. The key (`blind/fits-read-key.json`, L01 to L39 to arm) is committed with the scores: the
+three-card section above already shows each arm's lines verbatim, so it spoils nothing Hugh would score. Five questions per line (the brief's lock 9): does it name a real interaction with the
 deck's own cards or plan, are its citations right, does the card fit the deck, is the cut defensible, and does it say
 something the free row does not. The sheet, the scores and the key are in `blind/`.
 

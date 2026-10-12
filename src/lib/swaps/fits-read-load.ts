@@ -67,8 +67,8 @@ export function stillOpen<C extends { id: string }>(
 }
 
 type DeckRow = { id: string; commander_oracle_id: string; partner_oracle_id: string | null };
-type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null };
-type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: string };
+type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null };
+type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null };
 
 export async function loadFitsReadInputs(userId: string, oracleId: string, opts: { allDecks?: boolean } = {}): Promise<FitsReadLoad | null> {
   const fits = await loadFits(userId, oracleId);
@@ -84,10 +84,10 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
 
   const [cardRows, listRows, synopses, locks, inclusion] = await Promise.all([
     db.execute<CardRow>(sql`
-      select oracle_id, name, type_line, oracle_text from cards
+      select oracle_id, name, type_line, oracle_text, keywords from cards
       where oracle_id = any(${sql.param([oracleId, ...commanderIds])}::uuid[])`).then((r) => r.rows),
     deckIds.length === 0 ? [] as ListRow[] : db.execute<ListRow>(sql`
-      select dc.deck_id, dc.oracle_id, c.name, c.type_line
+      select dc.deck_id, dc.oracle_id, c.name, c.type_line, c.oracle_text, c.keywords
       from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
       where dc.deck_id = any(${sql.param(deckIds)}::uuid[])
       order by dc.deck_id, c.name`).then((r) => r.rows),
@@ -111,10 +111,10 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
     // lists once.
     const seen = new Set<string>();
     const list: ReadCardFacts[] = listRows.filter((r) => r.deck_id === d.id && !seen.has(r.oracle_id) && seen.add(r.oracle_id))
-      .map((r) => ({ oracleId: r.oracle_id, name: r.name, typeLine: r.type_line, kinds: kinds(labels.get(r.oracle_id)) }));
+      .map((r) => ({ oracleId: r.oracle_id, name: r.name, typeLine: r.type_line, kinds: kinds(labels.get(r.oracle_id)), oracleText: r.oracle_text, keywords: r.keywords ?? undefined }));
     const commanders = (d.partner_oracle_id ? [d.commander_oracle_id, d.partner_oracle_id] : [d.commander_oracle_id]).flatMap((id) => {
       const c = cardOf.get(id);
-      return c ? [{ oracleId: id, name: c.name, typeLine: c.type_line, oracleText: c.oracle_text ?? "", kinds: kinds(labels.get(id)) }] : [];
+      return c ? [{ oracleId: id, name: c.name, typeLine: c.type_line, oracleText: c.oracle_text ?? "", keywords: c.keywords ?? undefined, kinds: kinds(labels.get(id)) }] : [];
     });
     const shown = synopses.get(d.id) ?? null;
     const text = shown ? planText(shown.content) : null;
@@ -145,7 +145,7 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
   return {
     fits,
     inputs: {
-      card: { oracleId, name: subjectRow.name, typeLine: subjectRow.type_line, oracleText: subjectRow.oracle_text ?? "", kinds: kinds(labels.get(oracleId)) },
+      card: { oracleId, name: subjectRow.name, typeLine: subjectRow.type_line, oracleText: subjectRow.oracle_text ?? "", keywords: subjectRow.keywords ?? undefined, kinds: kinds(labels.get(oracleId)) },
       decks,
       candidates: candidateFacts,
     },

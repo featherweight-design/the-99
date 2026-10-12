@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { FIGURES, RANKS, SCORE_WORDS } from "../intake/the-read";
 import { ROLES, THEMES } from "../labels/types";
+import { keywordClaims } from "../synopsis/claims";
+import { normalizeName, type FactCard } from "../synopsis/facts";
 import { quotesPlayerText } from "../tuning/quote-match";
 import { validateCuts } from "../tuning/cuts-validate";
 import type { CutsPack, CutsPackCard } from "../tuning/cuts-evidence";
@@ -55,7 +57,13 @@ export function fitsReadCandidates(read: Pick<FitsRead, "card" | "fits">): FitDe
 // ---- inputs ------------------------------------------------------------------------------------
 
 /** A card as the prompt shows it. `kinds` are its fresh label kinds (`card_labels`), maybe none. */
-export type ReadCardFacts = { oracleId: string; name: string; typeLine: string; kinds: readonly string[] };
+export type ReadCardFacts = {
+  oracleId: string; name: string; typeLine: string; kinds: readonly string[];
+  /** The validator's facts for a keyword claim (lock 2), never printed in the prompt. Absent, the
+   *  keyword rule decides nothing for the card (`claims.ts` `cardHas`). */
+  oracleText?: string | null;
+  keywords?: readonly string[];
+};
 export type ReadTextCard = ReadCardFacts & { oracleText: string };
 
 /** Where a deck's plan text came from: a v2 Overview (contracts 11, 12), an older one, or none. */
@@ -217,8 +225,11 @@ export type FitsDropReason =
   | "noCitation"
   /** 6. Over length, a figure or score word, or a stray brace. */
   | "tooLong" | "figureOrScore" | "malformed"
-  /** 7. A cite's job the card's labels do not carry. */
-  | "jobMismatch"
+  /** 7. A cite's job the card's labels do not carry, or a keyword credited to a card whose text and
+   *  keywords lack it (lock 2, the Overview's `keyword_not_on_card` rule). */
+  | "jobMismatch" | "keywordClaim"
+  /** 8. No cut, though the deck holds a card that may be cut (brief default 4: every row carries one). */
+  | "noCut"
   | "tooMany";
 
 export type FitsSentencePart = { text: string } | { card: string } | { quote: string };
@@ -323,6 +334,11 @@ export function validFitsRead(args: {
   for (const d of inputs.decks) for (const c of [...d.commanders, ...d.list]) facts.set(c.oracleId, c);
   facts.set(subject.oracleId, subject);
   const nameOf = new Map([...facts].map(([id, c]) => [id, c.name]));
+  // The keyword rule's facts, by name: a card loaded without its text decides nothing (`cardHas`).
+  const factsOf = new Map([...facts.values()].map((c): [string, FactCard] => [normalizeName(c.name), {
+    oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, quantity: 1, categories: [],
+    oracleText: c.oracleText ?? null, ...(c.keywords ? { keywords: [...c.keywords] } : {}),
+  }]));
   const shownNames = [...prompt.cardOf.values()].flatMap((id) => {
     const n = nameOf.get(id);
     return n && n.length >= 4 && !BASICS.has(n) ? [{ id, name: n }] : [];
@@ -404,6 +420,11 @@ export function validFitsRead(args: {
     if (FIGURES.test(own) || SCORE_WORDS.test(own) || RANKS.test(own)) return "figureOrScore";
     const drawn = parts.map((x) => ("card" in x ? nameOf.get(x.card) ?? "" : "quote" in x ? `"${x.quote}"` : x.text)).join("");
     if (drawn.trim().length === 0 || drawn.length > FITS_READ_SENTENCE_MAX_CHARS) return "tooLong";
+    // 7. A keyword the line credits to a card is on that card (`keywordClaims`, the Overview's rule).
+    const marked = parts.map((x) => ("card" in x ? `[[${nameOf.get(x.card) ?? ""}]]` : "quote" in x ? `"${x.quote}"` : x.text)).join("");
+    if (keywordClaims(marked, factsOf).length > 0) return "keywordClaim";
+    // 8. A cut, whenever the deck holds a card that may be one.
+    if (!cutId && deck.list.some((c) => c.oracleId !== subject.oracleId && cutFailure(c.oracleId, deck, subject.oracleId, nameOf) === null)) return "noCut";
     // 7. Each cite's job is a label kind that card carries.
     for (const c of cites) if (!(facts.get(c.oracleId)?.kinds ?? []).includes(c.job)) return "jobMismatch";
     return { deckId, parts, cut: cutId ?? null, cites };

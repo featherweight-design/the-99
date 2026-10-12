@@ -141,7 +141,27 @@ describe("validFitsRead", () => {
     expect(run([pick({ cut: "C9" })]).drops).toEqual({ cutSelf: 1 });
     expect(run([pick({ cut: "C4" })]).drops).toEqual({ cutKeyCard: 1 });
     expect(run([pick({ cut: "C5" })]).drops).toEqual({ cutLocked: 1 });
-    expect(run([pick({ cut: null })]).drops).toEqual({});
+  });
+
+  it("8: drops a missing cut when the deck holds a card that may be cut, and keeps one when none may", () => {
+    expect(run([pick({ cut: null })]).drops).toEqual({ noCut: 1 });
+    expect(run([pick({ cut: " " })]).drops).toEqual({ noCut: 1 });
+    // Goblins' list without Goblin Instigator and Skirk Prospector: a Key card and a locked Mountain.
+    const base = inputs();
+    const only = { ...base, decks: [{ ...base.decks[0], list: base.decks[0].list.filter((c) => c.oracleId !== id(11) && c.oracleId !== id(12)) }, ...base.decks.slice(1)] };
+    expect(run([pick({ sentence: "Every loyalty turn adds a body for {C1} to double.", cut: null, cites: [] })], "per-press", only).drops).toEqual({});
+  });
+
+  it("7: drops a keyword credited to a card whose text and keywords lack it, and keeps a true one", () => {
+    const base = inputs();
+    const flyer = { ...base.decks[0].list[0], oracleText: "Flying. When this enters, create a Goblin.", keywords: ["Flying"] };
+    const ground = { ...base.decks[0].list[0], oracleText: "When this enters, create a Goblin.", keywords: [] };
+    const withFirst = (c: typeof flyer) => ({ ...base, decks: [{ ...base.decks[0], list: [c, ...base.decks[0].list.slice(1)] }, ...base.decks.slice(1)] });
+    const line = pick({ sentence: "{C2} has flying, so {C1} swings over blockers." });
+    expect(run([line], "per-press", withFirst(ground)).drops).toEqual({ keywordClaim: 1 });
+    expect(run([line], "per-press", withFirst(flyer)).drops).toEqual({});
+    // A card loaded without its text decides nothing.
+    expect(run([line]).drops).toEqual({});
   });
 
   it("3: drops a basic land as the cut, which changes the mana rather than the plan", () => {
@@ -195,7 +215,7 @@ describe("validFitsRead", () => {
     const decks = Array.from({ length: FITS_READ_TOP + 1 }, (_, i) => deck(`d${i}`, `Cmd ${i}`, id(100 + i), [card(200 + i, `Card ${i}`)]));
     const inp: FitsReadInputs = { card: subject, decks, candidates: decks.map((d) => ({ deckId: d.deckId, need: null, inclusion: null })) };
     const prompt = buildFitsReadPrompt(inp, "per-press");
-    const picks = decks.map((_, i) => pick({ deck: `D${i + 1}`, sentence: `Feeds {C${2 * i + 1}}.`, cut: null, cites: [] }));
+    const picks = decks.map((_, i) => pick({ deck: `D${i + 1}`, sentence: `Feeds {C${2 * i + 1}}.`, cut: `C${2 * i + 2}`, cites: [] }));
     const r = validFitsRead({ reply: { picks }, prompt, inputs: inp });
     expect(r.picks).toHaveLength(FITS_READ_TOP);
     expect(r.drops).toEqual({ tooMany: 1 });
