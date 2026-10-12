@@ -3,7 +3,8 @@
 // A link to a DYNAMIC route that prefetches the whole page once a reader shows intent: a pointer
 // resting on it, or keyboard focus (speed plan (b), 2026-10-12).
 //
-// NOT on touchstart, though that was the first version. Measured on deployed staging (#1557), a
+// NOT on a touch, though that was the first version (touchstart, and a touch's own pointerenter,
+// which fires just before its pointerdown). Measured on deployed staging (#1557), a
 // bare tap at 390 got SLOWER with it: 889 to 1,434ms and 866 to 1,384ms to the deck's content. The
 // tap's own navigation follows the touchstart within milliseconds and does not reuse the prefetch
 // still in flight, so the page is fetched twice at once. A phone gets its head start from `eager`
@@ -18,7 +19,7 @@
 // THROUGH `router.prefetch`, not by flipping Link's `prefetch` prop, which is Next's documented
 // hover pattern. The prop is a dependency of Link's ref callback, so flipping it unmounts the
 // anchor (cancelling its prefetch) and schedules the full one only when the IntersectionObserver
-// next reports, which a tap's back-to-back touchstart and click can beat. `router.prefetch`
+// next reports, which a click that follows soon after can beat. `router.prefetch`
 // schedules at once and leaves Link's own default prefetch and intent handling alone. Its `kind`
 // option is typed (`PrefetchOptions`) but not in the public docs, so it is set in this one place.
 //
@@ -53,7 +54,8 @@ export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocu
       {...props}
       href={href}
       onPointerEnter={(e) => {
-        prefetch();
+        // A pointer that can rest: a mouse or a pen. A touch's pointerenter is the tap itself.
+        if (e.pointerType !== "touch") prefetch();
         onPointerEnter?.(e);
       }}
       onFocus={(e) => {

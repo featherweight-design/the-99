@@ -32,7 +32,8 @@ describe("IntentPrefetchLink", () => {
   });
 
   it.each([
-    ["a pointer resting on it", (el: HTMLElement) => fireEvent.pointerEnter(el)],
+    ["a mouse resting on it", (el: HTMLElement) => fireEvent.pointerEnter(el, { pointerType: "mouse" })],
+    ["a pen resting on it", (el: HTMLElement) => fireEvent.pointerEnter(el, { pointerType: "pen" })],
     ["keyboard focus", (el: HTMLElement) => fireEvent.focus(el)],
   ])("prefetches the whole page at once on %s", (_label, intent) => {
     render(<IntentPrefetchLink href="/decks/d1">Deck</IntentPrefetchLink>);
@@ -45,15 +46,17 @@ describe("IntentPrefetchLink", () => {
     const link = screen.getByRole("link");
     fireEvent.pointerEnter(link);
     fireEvent.focus(link);
-    fireEvent.pointerEnter(link);
+    fireEvent.pointerEnter(link, { pointerType: "mouse" });
     expect(prefetch).toHaveBeenCalledTimes(1);
   });
 
   // A tap's navigation does not reuse a prefetch it overtakes, so a touchstart prefetch fetched the
   // page twice and made the tap slower (#1557, measured on staging).
-  it("does not prefetch on the touchstart before a tap", () => {
+  it("does not prefetch on a tap: neither its pointerenter nor its touchstart", () => {
     render(<IntentPrefetchLink href="/decks/d1">Deck</IntentPrefetchLink>);
-    fireEvent.touchStart(screen.getByRole("link"));
+    const link = screen.getByRole("link");
+    fireEvent.pointerEnter(link, { pointerType: "touch" });
+    fireEvent.touchStart(link);
     expect(prefetch).not.toHaveBeenCalled();
   });
 
