@@ -180,6 +180,9 @@ export async function persistRun(
   droppedCount: number,
   billed?: Billed,
   validationReport?: ValidationReport,
+  /** `refunded` for an answer too thin to charge for (`refundsCredit`): it is stored, shown and
+   *  billed as an ok run, and the credit comes back. */
+  settleAs: "spent" | "refunded" = "spent",
 ): Promise<boolean> {
   try {
     await db.transaction(async (tx) => {
@@ -200,7 +203,7 @@ export async function persistRun(
           bracketAfter: s.bracketAfter,
         })));
       }
-      await settleModelCall(tx, written[0].callId, "spent", billed);
+      await settleModelCall(tx, written[0].callId, settleAs, billed);
     });
   } catch (err) {
     if (err instanceof RunSupersededError) {

@@ -37,6 +37,7 @@ import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } f
 import type { TuningState } from "../../lib/tuning/state";
 import { chooseRefusal, sizeLists, type ValidationReport } from "../../lib/tuning/validate";
 import { resolveAnswer } from "../../lib/tuning/answer";
+import { refundsCredit } from "../../lib/tuning/refund";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
 
@@ -280,7 +281,14 @@ export async function runTuning(
     // whatever order the validator already gives — no new ranking pass, no retry, no second model
     // call. Fewer than 5 is shown as-is.
     const sized = sizeLists(kept, MAX_SUGGESTIONS);
-    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops, ...(ownedNone ? { ownedNone: true as const } : {}) };
+    // An answer too thin to charge for still shows what held up, and gives the credit back. Never an
+    // empty one: that is a failure below, refunded the same way, with no suggestions to show.
+    const refunded = sized.length > 0 && refundsCredit(sized.length, askedCount);
+    const report: ValidationReport = {
+      askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops,
+      ...(ownedNone ? { ownedNone: true as const } : {}),
+      ...(refunded ? { refunded: true as const } : {}),
+    };
     // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
     // that rather than `ungrounded`'s three causes. Refunded like every failure.
     if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {
@@ -292,7 +300,7 @@ export async function runTuning(
 
     // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
     const flagged = await withBracketAfter(head, profile, declared, sized);
-    if (await persistRun(run, flagged, droppedCount, billed, report)) revalidateDeck(deckId);
+    if (await persistRun(run, flagged, droppedCount, billed, report, refunded ? "refunded" : "spent")) revalidateDeck(deckId);
     return { ok: true };
   } catch (err) {
     await fail("upstream_busy");

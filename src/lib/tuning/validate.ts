@@ -98,6 +98,9 @@ export type ValidationReport = {
   /** "Owned only" was set and nothing the player owns fit this deck, so the adds are cards to buy.
    *  The panel says so before the lists. Absent for every other run. */
   ownedNone?: true;
+  /** The credit came back although suggestions are shown: too few held up (`refundsCredit`). The
+   *  panel says so before the lists. Absent for every other run. */
+  refunded?: true;
   /** "Additional notes" (H35, PR 4b): whether THIS run carried any, for `ReadFrom`'s "your
    *  notes" line — the field itself is never saved, so only the run record remembers it.
    *  Absent for a run persisted before this column's meaning existed, same as every other

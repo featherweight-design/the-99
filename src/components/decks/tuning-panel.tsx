@@ -894,11 +894,14 @@ export function TuningPanel({
     // "Owned only" with nothing owned that fits: the additions are cards to buy. Named before the
     // lists for the same reason `tooMany` is, and `fresh` only.
     const ownedNone = !failure && !answered && report?.ownedNone ? deckDescriptionCopy.refusal.ownedNone : null;
+    // Too few held up for the answer to cost a credit: said before the lists, `fresh` only, in the same frame.
+    const refunded = !failure && !answered && report?.refunded ? deckDescriptionCopy.refusal.refunded(numberWord(report.keptCount)) : null;
     body = (
       <>
         {failure ? (refusal ? <AnalysisBanner variant="note" sentence={refusal} /> : <Failure failure={failure} />) : null}
         {answered ? null : <ReadFrom state={state} facts={facts} />}
         {ownedNone ? <AnalysisBanner variant="note" sentence={ownedNone} /> : null}
+        {refunded ? <AnalysisBanner variant="note" sentence={refunded} /> : null}
         {tooMany ? <AnalysisBanner variant="note" sentence={tooMany} /> : null}
         {unchangedShown ? (
           <Unchanged state={state} intent={intent} fix={facts.fix} />
