@@ -55,8 +55,8 @@ export function submitQuery(p: ChooseParams): string {
 /** The tag picker's lookup, module-level so its identity is stable across renders. */
 const searchIntakeCards = (query: string) => searchTagCards("intake", query);
 
-/** The tag list's tallest box (220px) and its gap, the room it needs under the box. */
-const TAG_LIST_ROOM = 232;
+/** The least height the tag list keeps, so a cramped phone still shows a row or two and scrolls the rest. */
+const TAG_LIST_MIN = 96;
 
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
 
@@ -135,24 +135,29 @@ export function IntakeForm({
     value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef,
     onChange: (text, next) => setField({ text, tags: next }),
   });
-  const [listAbove, setListAbove] = useState(false);
+  // The list is held to the room between the box and whatever ends the screen below it (the phone's fixed
+  // dock, else the window), and scrolls inside that, so it never runs under the dock or off the screen
+  // however short the window or the keyboard leaves it. null: not measured yet.
+  const [listMax, setListMax] = useState<number | null>(null);
   useEffect(() => {
-    if (!picker.open) { setListAbove(false); return; }
+    if (!picker.open) { setListMax(null); return; }
     const place = () => {
       const el = wordsRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const viewport = window.visualViewport?.height ?? window.innerHeight;
-      const below = viewport - (window.matchMedia("(min-width: 768px)").matches ? 0 : dockHeight) - rect.bottom;
-      setListAbove(below < TAG_LIST_ROOM && rect.top > below);
+      const dock = dockRef.current;
+      const dockShown = dock !== null && getComputedStyle(dock).display !== "none";
+      const floor = dockShown ? dock.getBoundingClientRect().top : (window.visualViewport?.height ?? window.innerHeight);
+      setListMax(Math.max(TAG_LIST_MIN, Math.floor(floor - rect.bottom - 12)));
     };
     place();
     // The picker eases the box to the top of the screen a beat after it opens; measure again once that has settled.
-    const settled = setTimeout(place, 700);
+    const settled = setTimeout(place, 1200);
     // The phone's keyboard finishing its opening moves the visual viewport; measure again then.
     window.visualViewport?.addEventListener("resize", place);
-    return () => { clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); };
-  }, [picker.open, dockHeight]);
+    window.addEventListener("scroll", place, { passive: true });
+    return () => { clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); window.removeEventListener("scroll", place); };
+  }, [picker.open]);
 
   const names = copy.intake.colorsJoin(colorNames(colors.map((c) => c.toUpperCase())));
   const colorsCaption =
@@ -345,7 +350,7 @@ export function IntakeForm({
                 written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
               ].join(" ")}
             />
-            {picker.open && <CardTagList {...picker.list} placement={listAbove ? "above" : "below"} />}
+            {picker.open && <CardTagList {...picker.list} maxHeightPx={listMax ?? undefined} />}
           </div>
         </Field>
 

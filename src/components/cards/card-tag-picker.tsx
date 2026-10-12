@@ -189,9 +189,9 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   };
 }
 
-/** The dropdown. Positioned by its container: `placement` puts it under the field or, when there is no room below, above. */
+/** The dropdown, under its container's field. `maxHeightPx` holds it to the room the caller measured (it scrolls inside). */
 export function CardTagList({
-  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, placement = "below",
+  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx,
 }: {
   id: string;
   listId: string;
@@ -203,7 +203,7 @@ export function CardTagList({
   remoteStatus: "idle" | "pending" | "ok" | "refused";
   scoped: boolean;
   pick: (o: Option) => void;
-  placement?: "below" | "above";
+  maxHeightPx?: number;
 }): ReactNode {
   const p = deckNotesCopy.picker;
   return (
@@ -211,7 +211,8 @@ export function CardTagList({
       id={listId}
       role="listbox"
       aria-label={p.listAria}
-      className={`absolute left-0 z-20 w-full overflow-y-auto rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] shadow-lg max-h-[220px] md:w-[440px] md:max-h-none ${placement === "above" ? "bottom-full mb-[4px]" : "top-full mt-[4px]"}`}
+      className={`absolute left-0 z-20 w-full overflow-y-auto rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] shadow-lg max-h-[220px] md:w-[440px] md:max-h-none top-full mt-[4px]`}
+      style={maxHeightPx === undefined ? undefined : { maxHeight: maxHeightPx }}
     >
       {query.length === 0 ? (
         <p className="m-0 px-[12px] py-[8px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{scoped ? p.empty : p.emptyAny}</p>
@@ -236,6 +237,7 @@ export function CardTagList({
             </div>
           ))}
           {remoteStatus === "pending" && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.searching}</p>}
+          {!scoped && remoteStatus === "ok" && options.length === 0 && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.noCard}</p>}
           {remoteStatus === "refused" && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--warning)]">{p.refused}</p>}
         </>
       )}

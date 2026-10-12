@@ -91,6 +91,13 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     expect(stub.begin).toHaveBeenCalled();
   });
 
+  it("refuses words that grow past the cap once the catalog's name replaces the tag's", async () => {
+    // 799 drawn characters pass the pre-check; the catalog's own name then makes it 812.
+    tags.resolve.mockResolvedValueOnce({ text: `${"x".repeat(799)} Rhystic Study`, body: "x", tagged: [] });
+    expect(await submitChoose(`?w=${encodeURIComponent(`${"x".repeat(796)} [[c0ffee00-0000-4000-8000-000000000001|A]]`)}`)).toEqual({ kind: "refused" });
+    expect(stub.begin).not.toHaveBeenCalled();
+  });
+
   it("refuses a fourth tag, and drawn text over the cap even when the body is short", async () => {
     const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|A]]`;
     expect(await submitChoose(`?w=${encodeURIComponent(`${tag(1)} ${tag(2)} ${tag(3)} ${tag(4)}`)}`)).toEqual({ kind: "refused" });

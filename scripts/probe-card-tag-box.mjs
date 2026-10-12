@@ -104,6 +104,7 @@ try {
       const first = ul.querySelector('[role="option"]').getBoundingClientRect();
       const hit = document.elementFromPoint(first.left + first.width / 2, first.top + first.height / 2);
       return {
+        style: ul.getAttribute('style'), boxBottom: Math.round(document.querySelector('main textarea').getBoundingClientRect().bottom), scrollY: Math.round(window.scrollY),
         overlapsDock: dock ? l.bottom > dock.top && l.top < dock.bottom : false,
         dockTop: dock ? Math.round(dock.top) : null,
         listTop: Math.round(l.top), listBottom: Math.round(l.bottom),
@@ -137,6 +138,29 @@ try {
     report(`${vp.label} Find commanders sends the picked card as a stored tag`, posted !== null && TAG.test(decodeURIComponent(posted.replace(/\+/g, " "))), posted ? posted.slice(0, 200) : "no POST seen");
     await page.unroute("**/decks/new/choose*");
     await context.close();
+
+    // A cramped window: on a phone the list is held to the room above the dock and scrolls inside it.
+    if (vp.width < 768) {
+      const short = await browser.newContext({ viewport: { width: vp.width, height: 480 } });
+      const p2 = await short.newPage();
+      const uid = await signIn(p2);
+      await clearAboutSheet(p2, uid);
+      await p2.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
+      const box2 = onPage(p2, "textarea");
+      await box2.waitFor({ timeout: 60_000 });
+      await box2.click();
+      await p2.keyboard.type(`a deck around [[${QUERY}`);
+      await onPageRole(p2, "option", /Rhystic Study/).first().waitFor({ timeout: 10_000 });
+      await p2.waitForTimeout(1500);
+      const room = await onPageRole(p2, "listbox").evaluate((ul) => {
+        const l = ul.getBoundingClientRect();
+        const dockEl = document.querySelector('[data-testid="choose-dock"]');
+        const dock = dockEl ? dockEl.getBoundingClientRect() : null;
+        return { listBottom: Math.round(l.bottom), dockTop: dock ? Math.round(dock.top) : null, scrolls: ul.scrollHeight > ul.clientHeight, windowH: window.innerHeight };
+      });
+      report(`${vp.label} in a ${room.windowH}px window the list ends above the dock`, room.dockTop !== null && room.listBottom <= room.dockTop, JSON.stringify(room));
+      await short.close();
+    }
   }
 } finally {
   await browser.close();

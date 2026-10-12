@@ -1992,7 +1992,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and pressing Find commanders sends the picked card as `[[<oracle id>|Name]]` in the server action's
   request, which the probe ABORTS in the browser, so no read runs and no credit is spent. It writes the
   account's About row through `clearAboutSheet` and nothing else; run it against a dev server with
-  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. Measured 2026-10-12 on local-dev: all ten checks pass.
-  It does not exercise the list FLIPPING above the box: the picker eases the box to the top of the
-  screen, which leaves room below on both viewports, so the flip (`listAbove` in `intake-form.tsx`) is
-  unreached here and is covered only by reading its geometry.
+  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. Measured 2026-10-12 on local-dev: all eleven checks pass.
+  At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
+  short, and requires the list to end above the dock's top (the list is held to that room and scrolls
+  inside it; `listMax` in `intake-form.tsx`). Without that hold the list is its 220px height and runs
+  under the dock there.

@@ -240,6 +240,13 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       expect(sent.get("w")).toBe("a deck with [[3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60|Rhystic Study]]");
     });
 
+    it("says so when the lookup finds no card, instead of drawing an empty list", async () => {
+      searchTag.mockResolvedValueOnce([]);
+      render(<IntakeForm themes={[]} initial={emptyParams()} />);
+      type("a deck with [[Zzqx");
+      expect(await screen.findByText("No card by that name.")).toBeTruthy();
+    });
+
     it("keeps a name typed without picking it as plain text", () => {
       push.mockClear();
       render(<IntakeForm themes={[]} initial={emptyParams()} />);

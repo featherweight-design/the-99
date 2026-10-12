@@ -49,6 +49,8 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const resolved = await resolveTaggedText(parsed.words);
   const p = { ...parsed, words: resolved.body };
   const words = resolved.text.trim();
+  // The catalog's name can be longer than the one the address carried: measure again, on the text the prompt gets.
+  if (wordsLength(resolved.text) > READ_WORDS_MAX_CHARS) return { kind: "refused" };
   if (!words) redirect(resultsTarget(p, null));
   // Themes and sets reach both prompts as filter lines, outside the player-text boundary. The parser
   // checks their shape only, so a value either picker would not offer refuses the read: the free
