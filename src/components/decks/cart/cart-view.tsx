@@ -201,6 +201,8 @@ export function CartView({
       </div>
   ) : null;
 
+  // `flex-none`: the shell's column is `min-h-screen` (100vh), taller than 100dvh while the
+  // browser's bars show, and a growing page would take that slack and scroll the document.
   // Until the top is measured the phone reserves the shell header's usual height, so the first
   // paint is not a header taller than the screen. The phone also clears an open About sheet, as
   // the shell's own padding does. The list never shrinks under 120px: with the phone's deck
@@ -211,7 +213,7 @@ export function CartView({
   const page = empty ?? (
     <div
       ref={pageRef}
-      className={`flex min-h-[420px] min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans ${pageHeight}`}
+      className={`flex min-h-[420px] min-w-0 flex-none flex-col bg-[color:var(--bg)] font-sans ${pageHeight}`}
       style={top === null ? undefined : ({ "--cart-top": `${top}px` } as CSSProperties)}
     >
       {header}
