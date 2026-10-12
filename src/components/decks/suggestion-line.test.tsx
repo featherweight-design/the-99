@@ -129,6 +129,20 @@ describe("SuggestionLine", () => {
     expect(screen.getByText(lockedCardsCopy.tuning.cutLocked("Rampant Growth"))).toBeInTheDocument();
   });
 
+  // Bug batch 2026-10-12: an owned add with no free copy is a copy to buy, tagged as a Shopping row is.
+  it("tags an owned add with no free copy `buy`, beside its marker, and never a cut", () => {
+    const claim = { id: "d2", name: "Other", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const contested = { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] };
+    const { unmount } = render(
+      <SuggestionLine item={{ ...add, availability: contested }} permits={[3] as never} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />,
+    );
+    expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("buy").length).toBeGreaterThan(0);
+    unmount();
+    draw({ ...cut, owned: true, ownedQuantity: 1, availability: contested });
+    expect(screen.queryAllByText("buy")).toHaveLength(0);
+  });
+
   it("flags a bracket move", () => {
     draw({ ...add, bracketAfter: [4] }, {}, [3]);
     expect(screen.getByTestId("bracket-flag")).toBeInTheDocument();

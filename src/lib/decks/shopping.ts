@@ -10,7 +10,7 @@
 
 import type { DeckDetailCard } from "./grouping";
 import { cardTypeGroup, isBasicLand } from "./grouping";
-import { availabilityState } from "./availability";
+import { availabilityState, type Availability } from "./availability";
 import type { DeckCommander } from "./read";
 
 /**
@@ -42,6 +42,25 @@ export function isShoppingCard(c: DeckDetailCard): boolean {
   // A missing read degrades to the free rendering, as the builder always has:
   // the contested rows are simply absent and the list is today's list.
   return a ? availabilityState(a, { selfExcluded: true }) === "over" : false;
+}
+
+/**
+ * A suggested add the player owns but would still have to buy (bug batch 2026-10-12, Hugh): no copy
+ * free for this deck (`none free`) or already overcommitted (`short N`). It is Shopping's own rule
+ * (`isShoppingCard` on an owned card) read as if the add had landed: an add the deck does not hold
+ * yet is read with `selfExcluded` false, where `hard` (none free) is exactly what becomes `over` once
+ * it is applied, and an add the deck already holds is read self-excluded, where only `over` occurs.
+ * A copy held by a draft (`soft`) is not a purchase, as on the deck page. Basics never buy.
+ */
+export function suggestionNeedsBuy(args: {
+  owned: boolean;
+  availability: Availability | null;
+  selfExcluded: boolean;
+  typeLine: string;
+}): boolean {
+  if (!args.owned || !args.availability || isBasicLand(args.typeLine)) return false;
+  const state = availabilityState(args.availability, { selfExcluded: args.selfExcluded });
+  return state === "hard" || state === "over";
 }
 
 /** A card on the Shopping list that is there because it is spoken for. */
