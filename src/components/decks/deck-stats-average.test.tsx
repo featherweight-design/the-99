@@ -58,6 +58,17 @@ describe("DeckStatsView average card", () => {
     expect(container.querySelector('[data-average-row="battle"] [data-cut]')).toBeNull();
   });
 
+  // Each bar grows from the axis it meets (motion plan E3): fewer toward the left from the centre
+  // line, more toward the right, the mini columns up and down from their baseline.
+  it("grows each bar out from the axis it meets", () => {
+    const { container } = draw(avg());
+    const grows = (sel: string) => (container.querySelector(sel) as HTMLElement).className.split(/\s+/);
+    expect(grows('[data-bar="fewer"]')).toEqual(expect.arrayContaining(["anim-grow-x", "origin-right"]));
+    expect(grows('[data-bar="more"]')).toEqual(expect.arrayContaining(["anim-grow-x", "origin-left"]));
+    expect(grows('[data-mini="more"]')).toEqual(expect.arrayContaining(["anim-grow-y", "origin-bottom"]));
+    expect(grows('[data-mini="fewer"]')).toEqual(expect.arrayContaining(["anim-grow-y", "origin-top"]));
+  });
+
   it("draws eight mini curve columns, more above the line and fewer below", () => {
     const { container } = draw(avg());
     const cols = container.querySelectorAll("[data-average-curve] li");

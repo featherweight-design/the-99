@@ -176,7 +176,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
               {copy.open.ownTail}
             </p>
             <div aria-hidden className="h-[3px] rounded-[2px] bg-[color:var(--border-strong)]">
-              <div className="h-full rounded-[2px] bg-[color:var(--fg-muted)]" style={{ width: `${Math.round(share * 100)}%` }} />
+              <div className="anim-grow-x origin-left h-full rounded-[2px] bg-[color:var(--fg-muted)]" style={{ width: `${Math.round(share * 100)}%` }} />
             </div>
             {/* R3 K8, K16: a linked deck first, with Unlink beside it, whatever the collection; then
                 the decks that only share, in R2's words, which need a collection to be read (L2). */}

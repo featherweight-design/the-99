@@ -217,6 +217,7 @@ export function SynergyPanel({
           >
             <div
               data-testid="synergy-owned-bar"
+              className="anim-grow-x origin-left"
               style={{
                 height: "100%",
                 width: `${pct}%`,
