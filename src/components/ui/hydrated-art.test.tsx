@@ -127,4 +127,18 @@ describe("deferred art's arrival", () => {
     expect(deferred.dataset.art).toBe("pending");
     expect(eager.dataset.art).toBeUndefined();
   });
+
+  it("fades a new source in afresh, and drops the mark when the img stops fading", () => {
+    settled(false);
+    const { container, rerender } = render(<HydratedImg src={SRC} alt="" />);
+    const img = container.querySelector("img")!;
+    bringIntoView();
+    act(() => void img.dispatchEvent(new Event("load")));
+    expect(img.dataset.art).toBe("in");
+    rerender(<HydratedImg src={`${SRC}?v=2`} alt="" />);
+    expect(img.dataset.art).toBe("pending");
+    // Moved into the eager range while still pending: it must not stay held at opacity 0.
+    rerender(<HydratedImg src={`${SRC}?v=2`} alt="" eager />);
+    expect(img.dataset.art).toBeUndefined();
+  });
 });

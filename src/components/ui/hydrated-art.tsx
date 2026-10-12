@@ -78,9 +78,14 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
 export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => void {
   // Complete when its source is set means settled already: drawn from the cache, or already broken,
   // and a broken one would fire nothing more to release it.
+  // Disarming clears the mark too: an element that stops fading (its source moved, or it became
+  // eager) must not keep a `pending` it will never leave.
+  const clear = () => {
+    delete el.dataset.art;
+  };
   if (image.complete) {
     el.dataset.art = "done";
-    return () => {};
+    return clear;
   }
   el.dataset.art = "pending";
   const land = () => {
@@ -91,6 +96,7 @@ export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => v
   return () => {
     image.removeEventListener("load", land);
     image.removeEventListener("error", land);
+    clear();
   };
 }
 
@@ -110,7 +116,8 @@ export function HydratedImg({ eager = false, src, srcSet, alt = "", ...rest }: I
     const img = ref.current;
     if (!fades || !img) return;
     return armArtArrival(img, img);
-  }, [fades]);
+    // Re-armed for each new source: a printing pick swaps a tile's art in place.
+  }, [fades, src, srcSet]);
   // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
   return <img ref={ref} alt={alt} src={show ? src : undefined} srcSet={show ? srcSet : undefined} {...rest} />;
 }
