@@ -33,7 +33,8 @@ import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
 import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
-import { ArrivalStrip } from "./arrival-strip";
+import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
+import type { PreconArrival } from "../../lib/precons/arrival-read";
 import { UpdateStrip } from "./update-strip";
 import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
 import { UnresolvedBanner } from "./unresolved-banner";
@@ -148,6 +149,8 @@ interface BuilderShellProps {
   commanderIdentity: string[];
   /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
   arrivedFromImport: boolean;
+  /** The precon a deck was started from, on the one navigation the start made; else null. */
+  preconArrival?: PreconArrival | null;
   /** The import's printing counts for the strip's clauses (deck printings), or null. */
   arrivalPrintings?: ArrivalPrintings | null;
   /** Counts from the navigation an applied update made, or null on every other
@@ -281,6 +284,7 @@ export function BuilderShell({
   firstRun,
   commanderIdentity,
   arrivedFromImport,
+  preconArrival = null,
   arrivalPrintings = null,
   updateArrival = null,
   shoppingFigures = {},
@@ -1586,6 +1590,9 @@ export function BuilderShell({
                 import gets the strip, an import that came up short gets the
                 banner instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
+            {preconArrival && (
+              <PreconArrivalBand deckId={deck.id} arrival={preconArrival} />
+            )}
             {arrivedFromImport && unresolvedRows.length === 0 && (
               /* A length, not `counts.total`: the strip's sentence says
                  "lines", and a Moxfield export writes basics as one line

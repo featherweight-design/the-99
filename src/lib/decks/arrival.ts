@@ -98,3 +98,11 @@ export function readArrivalPrintings(
   if (arrivalPrintingsParam(kept, notOwned) !== value) return null;
   return { kept, notOwned };
 }
+
+/** A deck started from a precon lands with `?from=precon`, read once, as `imported` is. */
+export const PRECON_ARRIVAL_PARAM = "from";
+export const PRECON_ARRIVAL_VALUE = "precon";
+
+export function arrivedFromPrecon(value: string | string[] | undefined): boolean {
+  return value === PRECON_ARRIVAL_VALUE;
+}

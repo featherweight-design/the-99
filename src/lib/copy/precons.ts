@@ -13,6 +13,13 @@ export const preconMonth = (isoDate: string) =>
 export const preconDate = (isoDate: string) =>
   new Date(`${isoDate}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
+/** What the arrival strip says went in: the whole list, or what the catalog holds of it. */
+function cardsIn(cards: number, unmapped: number): string {
+  return unmapped === 0
+    ? `All ${n(cards)} cards are in, as the precon lists them.`
+    : `${n(cards)} cards are in. ${unmapped === 1 ? "1 more from the precon isn’t" : `${n(unmapped)} more from the precon aren’t`} in our catalog yet.`;
+}
+
 export const preconsCopy = {
   list: {
     title: "Commander precons",
@@ -74,6 +81,45 @@ export const preconsCopy = {
     ownNeither: "you own neither",
     basics: (count: number) => `${plural(count, "basic", "basics")} not counted`,
     basicTag: "basic · not counted",
+  },
+  start: {
+    button: "Start a deck from this",
+    dock: (name: string, cards: number, owned: number, of: number) =>
+      `${name} · ${n(cards)} cards · you own ${n(owned)} of ${n(of)}`,
+    title: (name: string) => `Start a deck from ${name}`,
+    lead: (cards: number, unmapped: number) =>
+      unmapped === 0
+        ? `It starts as a draft with the precon’s ${n(cards)} cards. Change anything before you commit.`
+        : `It starts as a draft with the ${n(cards)} cards we have of the precon’s list. Change anything before you commit.`,
+    beside: (ident: string, body: number, pair: boolean) => `${ident} · ${n(body)} cards beside ${pair ? "them" : "it"}`,
+    nameLabel: "Deck name",
+    facts: {
+      cards: "Cards",
+      cardsValue: (cards: number, unmapped: number) =>
+        unmapped === 0
+          ? `all ${n(cards)}, as the precon lists them`
+          : `${n(cards)}; ${unmapped === 1 ? "1 isn’t" : `${n(unmapped)} aren’t`} in our catalog yet`,
+      own: "You own",
+      ownValue: (owned: number, of: number) => `${n(owned)} of ${n(of)} · basic lands not counted`,
+      printings: "Printings",
+      printingsValue: "picked from the copies you hold",
+    },
+    illegal: (names: string[]) =>
+      `${names.length === 1 ? "1 card isn’t" : `${n(names.length)} cards aren’t`} legal in Commander: ${names.join(", ")}. It stays in, so the deck matches the box.`,
+    already: (deck: string) => `You already have ${deck} with this commander. This makes a second deck.`,
+    cancel: "Cancel",
+    submit: "Start the deck",
+    pending: "Starting…",
+    failed: "Couldn’t start the deck. Nothing was saved.",
+    nameInvalid: (max: number) => `Name must be 1–${max} characters.`,
+  },
+  arrival: {
+    head: (name: string) => `Started from the ${name} precon`,
+    body: (cards: number, unmapped: number, owned: number, of: number, toBuy: number) =>
+      `${cardsIn(cards, unmapped)} You own ${n(owned)} of its ${n(of)}, and the ${n(toBuy)} you don’t are in Shopping. It’s a draft until you commit it.`,
+    bodyAll: (cards: number, unmapped: number) =>
+      `${cardsIn(cards, unmapped)} You own every one. It’s a draft until you commit it.`,
+    meta: (set: string) => `${set} · printings picked from the copies you hold`,
   },
   empty: {
     body: "Every count reads 0 until your collection is in.",

@@ -16,6 +16,7 @@ import { EmptyCollectionBand } from "./empty-collection-band";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { DecklistGroup } from "../decklist-group";
 import { HoverPreviewProvider } from "../hover-preview";
+import { StartPrecon } from "./start-precon";
 
 const copy = preconsCopy;
 type Loaded = Extract<OpenPrecon, { kind: "precon" }>;
@@ -113,7 +114,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
                 </span>
               ))}
             </div>
-            <div className="flex min-w-0 flex-col gap-[4px]">
+            <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
               <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{copy.open.eyebrow}</span>
               <h1 className="m-0 font-display text-[22px] font-normal leading-[1.15] text-[color:var(--fg)] md:text-[26px]">{row.name}</h1>
               <span className="text-[13.5px] text-[color:var(--fg-body)]">{row.commanders.map((c) => c.name).join(" + ")}</span>
@@ -126,6 +127,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
                 {copy.open.meta(ident, row.setCode, precon.setName, preconDate(row.releaseDate))}
               </span>
             </div>
+            <StartPrecon row={row} cards={total} body={bodyCount} illegal={[...new Set(cards.filter((c) => !c.legal).map((c) => c.name))]} />
           </div>
 
           {!precon.hasCollection && <EmptyCollectionBand />}

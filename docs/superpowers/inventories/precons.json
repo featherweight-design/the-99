@@ -165,6 +165,52 @@
           "wait": "[role=dialog]"
         }
       ]
+    },
+    {
+      "id": "s1",
+      "label": "Start a deck from this: the confirm, with an illegal card named (S1, the illegal line)",
+      "view": "src/components/decks/precons/start-precon.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/MysticIntellect_C19",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Start a deck from this",
+          "settle": 800
+        },
+        {
+          "wait": "[role=dialog]"
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "label": "Start the deck: the new draft with the precon arrival strip (S2)",
+      "view": "src/components/decks/arrival-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/EldraziUnbound_CMM",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Start a deck from this",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "Start the deck",
+          "settle": 4000
+        },
+        {
+          "wait": "text=Started from the",
+          "settle": 6000
+        }
+      ]
     }
   ]
 }

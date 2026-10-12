@@ -7,6 +7,7 @@ import { preload } from "react-dom";
 import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
+import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
@@ -21,6 +22,8 @@ import { readStoredPermits } from "../../../lib/profile/stored";
 import {
   arrivedFromImport,
   IMPORTED_PARAM,
+  PRECON_ARRIVAL_PARAM,
+  arrivedFromPrecon,
   PRINTINGS_PARAM,
   readArrivalPrintings,
   readUpdateArrival,
@@ -562,6 +565,9 @@ export default async function DeckBuilderPage({
       // and a bookmarked URL can only be reopened by the deck's owner, who sees
       // one dismissible line.
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
+      // `?from=precon`: the one navigation "Start a deck from this" made. Left in the URL for the
+      // same reason as `imported`; the strip's dismissal is the same per-deck flag.
+      preconArrival={arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) ? await readPreconArrival(userId, id) : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
       // Left in the URL for the same reason. Its strip is dismissible too, but

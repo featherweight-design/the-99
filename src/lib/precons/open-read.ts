@@ -22,6 +22,8 @@ export type OpenPreconCard = {
   isCommander: boolean;
   basic: boolean;
   owned: boolean;
+  /** Legal in Commander today. A precon can hold a card banned since it shipped; the start keeps it and says so. */
+  legal: boolean;
   /** The precon's printing, `SET number`, or null when the catalog lacks it. */
   printing: { scryfallId: string; setCode: string; collectorNumber: string; label: string; imageUri: string | null; backImageUri: string | null } | null;
 };
@@ -87,6 +89,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
       isCommander: l.isCommander,
       basic: basic(l.typeLine),
       owned: owned.has(l.oracleId),
+      legal: l.legal,
       printing: l.scryfallId && l.setCode && l.collectorNumber
         ? { scryfallId: l.scryfallId, setCode: l.setCode, collectorNumber: l.collectorNumber, label: `${l.setCode.toUpperCase()} ${l.collectorNumber}`, imageUri: l.printingImage, backImageUri: l.printingBack }
         : null,
@@ -108,6 +111,7 @@ export function openPreconLines(db: Reader, fileName: string) {
       layout: cards.layout,
       colorIdentity: cards.colorIdentity,
       imageUri: preconArt,
+      legal: cards.commanderLegal,
       scryfallId: printings.scryfallId,
       setCode: printings.setCode,
       collectorNumber: printings.collectorNumber,
