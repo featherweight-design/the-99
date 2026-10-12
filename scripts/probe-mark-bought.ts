@@ -31,6 +31,7 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
 import { cartReceiptFacts, cartSource, receiptFacts } from "../src/lib/decks/mark-bought";
+import { loadDeckBuyRows } from "../src/lib/decks/availability-query";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -178,10 +179,14 @@ async function main() {
         },
       ));
     const lineDecks = [cartSenior, cartJunior, cartBrew];
+    // What each line deck is still billed after a write: the roll-up the action reads.
+    const owesOf = async (deckIds: string[], card: string) => new Map(
+      (await loadDeckBuyRows(USER, deckIds)).filter((r) => r.oracleId === card).map((r) => [r.deckId, r.quantity]),
+    );
 
     const picked1 = await buyCart(lineDecks, 1, cartBrew);
     const facts = picked1.status === "applied" && picked1.receipt
-      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, lineDecks) : null;
+      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, lineDecks, await owesOf(lineDecks, D)) : null;
     check("one copy for three decks, picked for the brew, lands as the brew's reservation",
       picked1.status === "applied" && JSON.stringify(await reservedFor()) === JSON.stringify([cartBrew]),
       `${JSON.stringify(picked1).slice(0, 120)}; reserved ${JSON.stringify(await reservedFor())}`);
@@ -211,7 +216,7 @@ async function main() {
       },
     );
     const pFacts = pickedP.status === "applied" && pickedP.receipt
-      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pq) : null;
+      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pq, await owesOf(pq, E)) : null;
     check("a pick's receipt never names a deck off the line that held its copy all along",
       pFacts !== null && !pFacts.covered.some((d) => d.deckId === offSenior) && pFacts.covered.some((d) => d.deckId === lineP),
       JSON.stringify(pFacts));

@@ -83,27 +83,31 @@ export type CartReceiptFacts = {
 };
 
 /**
- * The cart's receipt (S3, S4, S6), read after the write and never assumed (lock 7), and read off
- * ONE snapshot: who holds each copy after the write (`allocateClaims`), and before it.
+ * The cart's receipt (S3, S4, S6), read after the write and never assumed (lock 7).
  *
- * A deck on the line is short of what it asks less what the allocation gives it, which for a brew
- * includes the spare it reads (each brew against the committed claims alone, as its own Shopping
- * row reads it). A deck off the line is named covered when the copies went to it instead (a senior
- * deck the player unselected, say): short before, not after, counting only what it HOLDS, so a
- * brew's spare is never a copy taken. A line deck the read lists no claim for (a proxy printed
- * since, or a draft holding the card its newest version does not) buys nothing now: covered.
+ * A deck on the line is short of what the roll-up still bills it (`owes`, its Shopping rows read
+ * after the write from its live list, the read the cart itself is built from): billed nothing, it
+ * is covered. A deck off the line is named covered when the copies went to it instead (a senior
+ * deck the player unselected, say), read from who holds each copy either side of the write in one
+ * snapshot (`allocateClaims`): short before, not after, counting only what it HOLDS, so a brew's
+ * spare is never a copy taken.
  *
  * Names come from the read's claims, so a deck renamed since the cart loaded prints its new name.
- * A deck with no claim has no name here and reads `""`: the caller names it by id from its list.
+ * A deck with no claim (a draft holding the card its newest version does not, or a proxy) has no
+ * name here and reads `""`: the caller names it by id from its own list.
  */
-export function cartReceiptFacts(before: Snap, after: Snap, deckIds: string[]): CartReceiptFacts {
+export function cartReceiptFacts(
+  before: Snap,
+  after: Snap,
+  deckIds: string[],
+  owes: ReadonlyMap<string, number>,
+): CartReceiptFacts {
   const claimants = after ? allocateClaims(after) : [];
   const names = new Map(claimants.map((c) => [c.deckId, c.deckName]));
   const facts: CartReceiptFacts = { covered: [], still: [] };
-  const needs = new Map(claimants.map((c) => [c.deckId, Math.max(c.quantity - c.allocated, 0)]));
   for (const deckId of deckIds) {
     const deckName = names.get(deckId) ?? "";
-    const need = needs.get(deckId) ?? 0;
+    const need = owes.get(deckId) ?? 0;
     if (need > 0) facts.still.push({ deckId, deckName, need });
     else facts.covered.push({ deckId, deckName });
   }

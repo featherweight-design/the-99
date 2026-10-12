@@ -537,16 +537,16 @@ export async function applyCollectionChange(
       if (opts.requireMember) {
         const ids = [...new Set(opts.requireMember.deckIds)].sort();
         const { oracleId } = opts.requireMember;
-        // ONE statement locks them all, in id order, so two writes naming overlapping decks lock
-        // them in one order. Scoped to this player: a deck id that is not theirs holds nothing of
-        // theirs, and comes back as a missing row.
-        const { rows: owned } = await tx.execute<{ id: string }>(sql`
-          select ${decks.id} as id from ${decks}
-          where ${decks.id} in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)}) and ${decks.userId} = ${userId}
-          order by ${decks.id}
-          for update
-        `);
-        if (owned.length !== ids.length) throw new Refused({ status: "notInDeck" });
+        // A statement per deck, in sorted order, so two writes naming overlapping decks lock them in
+        // one order: Postgres does not promise `for update` takes its locks in `order by` order, so
+        // the order has to be the statement sequence (as `pullCardFromDeck` does). Scoped to this
+        // player: a deck id that is not theirs holds nothing of theirs.
+        for (const id of ids) {
+          const { rows: [own] } = await tx.execute(
+            sql`select 1 from ${decks} where ${decks.id} = ${id} and ${decks.userId} = ${userId} for update`,
+          );
+          if (!own) throw new Refused({ status: "notInDeck" });
+        }
         // And every one still holds the card, in one read.
         const { rows: [member] } = await tx.execute<{ held: boolean[] }>(sql`
           select array[${sql.join(ids.map((id) => proxiedMembership(id, oracleId)), sql`, `)}]::boolean[] as held

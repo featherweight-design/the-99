@@ -51,30 +51,32 @@ describe("receiptFacts", () => {
 });
 
 describe("cartReceiptFacts", () => {
-  it("splits the line's decks into covered and still short, in the line's order, off one snapshot", () => {
-    // Two copies, three committed decks: g and k (senior) take them, t still needs one.
+  const owes = (entries: [string, number][]) => new Map(entries);
+
+  it("splits the line's decks by what the roll-up still bills them, in the line's order", () => {
     const after = snap(2, [claim("g", 1), claim("k", 2), claim("t", 3)]);
-    expect(cartReceiptFacts(null, after, ["t", "g", "k"])).toEqual({
+    expect(cartReceiptFacts(null, after, ["t", "g", "k"], owes([["t", 1]]))).toEqual({
       covered: [{ deckId: "g", deckName: "deck g" }, { deckId: "k", deckName: "deck k" }],
       still: [{ deckId: "t", deckName: "deck t", need: 1 }],
     });
   });
 
-  it("reads a line deck the read lists no claim for as covered, with no name", () => {
-    expect(cartReceiptFacts(null, snap(0, []), ["g"])).toEqual({ covered: [{ deckId: "g", deckName: "" }], still: [] });
+  it("reads a draft's own ask, never the committed claim: a deck its version calls covered still owes", () => {
+    // Its newest version asks for one, which it holds; its live list asks for two.
+    const after = snap(1, [claim("drafted", 1)]);
+    expect(cartReceiptFacts(null, after, ["drafted"], owes([["drafted", 1]])).still)
+      .toEqual([{ deckId: "drafted", deckName: "deck drafted", need: 1 }]);
   });
 
-  it("reads a brew on the line covered by the spare it reads, as its own Shopping row does", () => {
-    const brew = { ...claim("brew", 0, 1, false), since: null };
-    expect(cartReceiptFacts(null, snap(2, [claim("held", 1), brew]), ["brew"]).covered)
-      .toEqual([{ deckId: "brew", deckName: "deck brew" }]);
+  it("reads a line deck the read lists no claim for, billed nothing, as covered with no name", () => {
+    expect(cartReceiptFacts(null, snap(0, []), ["g"], owes([]))).toEqual({ covered: [{ deckId: "g", deckName: "" }], still: [] });
   });
 
   it("names a senior deck off the line that the copy went to instead (S6)", () => {
     // The senior deck was unselected; one copy bought for the junior goes to it by seniority.
     const was = snap(0, [claim("senior", 1), claim("junior", 2)]);
     const now = snap(1, [claim("senior", 1), claim("junior", 2)]);
-    expect(cartReceiptFacts(was, now, ["junior"])).toEqual({
+    expect(cartReceiptFacts(was, now, ["junior"], owes([["junior", 1]]))).toEqual({
       covered: [{ deckId: "senior", deckName: "deck senior" }],
       still: [{ deckId: "junior", deckName: "deck junior", need: 1 }],
     });
@@ -85,7 +87,7 @@ describe("cartReceiptFacts", () => {
     // Two copies covered both committed decks before; the third is a spare the brew only reads.
     const was = snap(2, [claim("held", 1), brew, claim("line", 2)]);
     const now = snap(3, [claim("held", 1), brew, claim("line", 2)]);
-    expect(cartReceiptFacts(was, now, ["line"]).covered).toEqual([{ deckId: "line", deckName: "deck line" }]);
+    expect(cartReceiptFacts(was, now, ["line"], owes([])).covered).toEqual([{ deckId: "line", deckName: "deck line" }]);
   });
 });
 

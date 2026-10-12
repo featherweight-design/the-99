@@ -11,6 +11,7 @@ import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
+import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
@@ -218,10 +219,15 @@ export async function markBoughtForDecks(
       invalidateCollectionReaders(userId);
       after(() => warmCommanderScores(userId));
       const snaps = result.status === "applied" ? result.receipt : undefined;
+      // What each line deck is still billed, read from the roll-up after the commit: the same live
+      // lists the cart's line was built from, in one read for every deck.
+      const owes = snaps
+        ? new Map((await loadDeckBuyRows(userId, deckIds)).filter((r) => r.oracleId === oracleId).map((r) => [r.deckId, r.quantity]))
+        : null;
       return {
         applied: {
           id: result.entry.id,
-          receipt: snaps ? cartReceiptFacts(snaps.before, snaps.after, deckIds) : null,
+          receipt: snaps && owes ? cartReceiptFacts(snaps.before, snaps.after, deckIds, owes) : null,
         },
       };
     }

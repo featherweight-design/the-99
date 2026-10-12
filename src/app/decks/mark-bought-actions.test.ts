@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   invalidated: 0,
   after: 0,
   where: null as unknown,
+  buyRows: [] as { deckId: string; oracleId: string; quantity: number }[],
 }));
 
 vi.mock("../../db", () => ({
@@ -29,6 +30,9 @@ vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK }) }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: () => { state.invalidated += 1; } }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async () => {} }));
+vi.mock("../../lib/decks/availability-query", () => ({
+  loadDeckBuyRows: async () => state.buyRows,
+}));
 vi.mock("../../lib/collection/write", () => ({
   applyCollectionChange: async (...args: unknown[]) => {
     state.calls.push(args);
@@ -184,6 +188,8 @@ describe("markBoughtForDecks", () => {
 
   it("writes once for every deck, sourced shopping:cart, with each deck required and read", async () => {
     state.result = cartApplied();
+    // The roll-up after the write still bills Kratos one, and bills Gishath nothing.
+    state.buyRows = [{ deckId: OTHER, oracleId: CARD, quantity: 1 }, { deckId: DECK, oracleId: "other-card", quantity: 3 }];
     const out = await cartPress({ deckIds: [DECK.toUpperCase(), OTHER, DECK] });
     const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
     expect(opts).toEqual({
