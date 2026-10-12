@@ -37,12 +37,12 @@ import { MutationError } from "./mutation-error";
 
 export type HelpRead = (deckId: string, color: string) => Promise<ManaHelp | null>;
 export type TradeActions = {
-  apply: (deckId: string, color: string, stapleOracleId: string, basicOutId: string) => Promise<ManaTradeResult>;
+  apply: (deckId: string, color: string, stapleOracleId: string, outId: string) => Promise<ManaTradeResult>;
   undo: (applyId: string) => Promise<DeckMutationResult>;
 };
 
 /** A trade applied this visit, kept for its Undo: the deck it changed outlives the help that offered it. */
-type Applied = { applyId: string; color: BalanceColor; basic: string; staple: string };
+type Applied = { applyId: string; color: BalanceColor; out: string; staple: string };
 const TRADES: TradeActions = { apply: applyManaTrade, undo: undoManaTrade };
 const NONE_APPLIED: Applied[] = [];
 
@@ -163,7 +163,7 @@ export function ImproveDoor({
     const at = visitToken(deckId);
     setBusy(key);
     setRefused(null);
-    const result = await trades.apply(deckId, color, key, trade.basicOutId).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
+    const result = await trades.apply(deckId, color, key, trade.out.id).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
     setBusy(null);
     if (!isVisit(at)) return;
     if (!result.ok) {
@@ -171,7 +171,7 @@ export function ImproveDoor({
       return;
     }
     setVisitValue(deckId, "mana-follow", color);
-    changeApplied((list) => [...list, { applyId: result.applyId, color, basic: trade.basicOut, staple: trade.staple.name }]);
+    changeApplied((list) => [...list, { applyId: result.applyId, color, out: trade.out.name, staple: trade.staple.name }]);
   };
 
   const undoTrade = async (a: Applied) => {
@@ -248,7 +248,7 @@ export function ImproveDoor({
             <li key={a.applyId}>
               <AnsweredRow
                 tone="applied"
-                pair={<><span>{a.basic}</span> <Arrow ink="var(--success)" /> <b className="font-semibold" style={{ color: "var(--fg)" }}>{a.staple}</b></>}
+                pair={<><span>{a.out}</span> <Arrow ink="var(--success)" /> <b className="font-semibold" style={{ color: "var(--fg)" }}>{a.staple}</b></>}
                 action={{ label: deckTuningCopy.card.undo, onPress: () => void undoTrade(a), busy: busy !== null }}
                 refused={refused?.key === a.applyId ? refused.message : null}
               />
@@ -548,7 +548,7 @@ function StapleRow({ staple, siblings, trade, picked, commander, onApply, busy, 
       {trade ? (
         <p className="flex flex-wrap items-start gap-[8px] rounded-[7px] border border-[color:var(--border)] bg-[var(--bg)] px-[9px] py-[7px]">
           <span className="rounded-full border border-[color:var(--border-strong)] px-[7px] py-[1px] font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--fg-body)]">{copy.help.tradeTag}</span>
-          <span className="font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.help.trade(trade.basicOut, changesText(trade.changes, picked))}</span>
+          <span className="font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.help.trade(trade.out.name, changesText(trade.changes, picked))}</span>
         </p>
       ) : null}
       {trade ? (
@@ -561,7 +561,7 @@ function StapleRow({ staple, siblings, trade, picked, commander, onApply, busy, 
             disabled={busy !== null}
             className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"
           >
-            {busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.basicOut)}
+            {busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.out.name)}
           </button>
           {refused ? <MutationError message={refused} /> : null}
         </div>

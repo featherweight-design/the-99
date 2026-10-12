@@ -122,10 +122,10 @@ export const manaBalanceCopy = {
     change_: (color: string, before: number, after: number) => `${color} ${before} → ${after}`,
     noSwap: (color: string) => `No basic swap for ${color}.`,
     howLabel: "How moves are picked",
-    /** Reworded by /copy-review (audit finding 4): the guard is each color's HARDEST published cost,
-     *  which can sit above the table's Needed, so it never says "tightest". */
+    /** The guard reads the table's Needed (Hugh, 2026-10-12), and a trade cuts a land only as `basicCutFair`
+     *  allows: the deck over its recommended land count unless a land takes its place, no color of it left short. */
     how: (color: string) =>
-      `A swap or a trade is offered only if ${color} gains a source and no other color drops below what its hardest published cost needs, or loses a source while already below it. A locked basic never moves.`,
+      `A swap or a trade is offered only if ${color} gains a source and no other color drops below its Needed, or loses a source while already below it. A trade cuts a land only when the deck has more lands than recommended or a land takes its place, and no color that land makes ends below its Needed. A locked card never moves.`,
     staples: (commander: string) => `Staples ${commander} decks run · owned first`,
     owned: (free: number) => `owned · ${free} free`,
     toBuy: "to buy",
@@ -139,11 +139,12 @@ export const manaBalanceCopy = {
       countBucket: (n: number) => `${n}-color`,
     },
     adds: "adds",
-    trade: (basic: string, changes: string) => `1 ${basic} for it: ${changes}`,
+    /** The card the trade cuts: a basic, a land making none of the deck's colors, or a cut the deck's tuning named. */
+    trade: (card: string, changes: string) => `1 ${card} for it: ${changes}`,
     tradeTag: "trade",
-    /** The trade apply: one copy of the basic out, the staple in. */
-    tradeApply: (basic: string) => `Trade 1 ${basic} for it`,
-    noTrade: "no basic trade for it",
+    /** The trade apply: one copy of that card out, the staple in. */
+    tradeApply: (card: string) => `Trade 1 ${card} for it`,
+    noTrade: "no trade for it",
     noStaples: (color: string) => `No staples to show for ${color}.`,
     failed: (color: string) => `We couldn’t read help for ${color}. The count above is unchanged, and nothing was spent.`,
     failedMark: "Couldn’t read",
