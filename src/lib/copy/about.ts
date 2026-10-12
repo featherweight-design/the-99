@@ -58,7 +58,7 @@
 import { HISTORY_RETENTION_DAYS } from '../collection/retention';
 import { benchmarksAboutEntry } from './deck-benchmarks';
 
-export const ABOUT_VERSION = 15;
+export const ABOUT_VERSION = 14;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';

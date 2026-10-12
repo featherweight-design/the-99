@@ -307,22 +307,22 @@ describe("the collection home epic's two entries (one bump, 14)", () => {
     expect(on[on.indexOf("export") + 1]).toBe("deck-printings");
   });
 
-  it("is one bump: both at version 14, so the sheet counted its own two", () => {
+  it("is one bump: both at the current version, so the sheet counts its own two", () => {
     for (const id of ["shopping-got-it", "deck-printings"]) {
       const entry = aboutEntries.find((e) => e.id === id)!;
-      expect(entry.since, id).toBe(14);
+      expect(entry.since, id).toBe(ABOUT_VERSION);
       expect(entry.chapter, id).toBe("03");
       expect(entry.width, id).toBe("plate");
     }
+    expect(ABOUT_VERSION).toBe(14);
   });
 });
 
-describe("Help me choose's read (rework plan PR 5: the entry rewritten, version 15)", () => {
+describe("Help me choose's read (rework plan PR 5: the entry rewritten, no bump)", () => {
   // A reader one version behind who never met the entry: production, where the switch is off.
   const behind = seen(ABOUT_VERSION - 1);
 
   it("shows a reader one version behind no sheet while the switch is off", () => {
-    expect(ABOUT_VERSION).toBe(15);
     expect(unseenEntries(visibleEntries({} as NodeJS.ProcessEnv), behind)).toEqual([]);
   });
 
@@ -332,7 +332,7 @@ describe("Help me choose's read (rework plan PR 5: the entry rewritten, version 
   });
 
   it("is seen by id, so a reader who met the entry before the rewrite is not shown it again", () => {
-    // The bump moves no switched entry: an entry with a switch is announced by its switch.
+    // No bump: an entry with a switch is announced by its switch flipping, and its id stays stable.
     const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION - 1, ["help-me-choose"]))).toEqual([]);
   });
