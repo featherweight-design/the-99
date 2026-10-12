@@ -37,6 +37,7 @@ export const decksStatsCopy = {
     spreadNone: (na: number) => `${n(na)} not analyzed`,
     shared: (card: string, decks: number, owned: number, wanted: number) => `${card} in ${n(decks)} decks, you own ${n(owned)} · ${n(wanted)} wanted more than you own`,
     sharedOne: "needs two decks",
+    sharedNone: "no card in two decks",
     among: (deck: string, valueRank: string, rampRank: string) => `${deck} · ${valueRank} by value, ${rampRank} by ramp`,
     worth: (sum: number, top: number, med: number) => `${money(sum)} · most ${money(top)} · median ${money(med)}`,
     jobs: (ramp: readonly [number, number], draw: readonly [number, number], removal: readonly [number, number]) =>
@@ -121,7 +122,7 @@ export const decksStatsCopy = {
   },
   shared: {
     title: "Cards your decks share",
-    denom: (decks: number, cards: number) => `${n(decks)} decks · ${n(cards)} cards`,
+    denom: (decks: number, cards: number) => `${n(decks)} decks · ${n(cards)} ${cards === 1 ? "card" : "cards"}`,
     chipsAria: "Which cards",
     chipMost: "In the most decks",
     chipWanted: (k: number) => `Wanted more than you own · ${n(k)}`,
@@ -131,7 +132,7 @@ export const decksStatsCopy = {
     toCart: (k: number) => `${n(k)} on Shopping for all decks`,
     legendHeld: "has a copy",
     legendWanted: "no copy left",
-    caption: (two: number, five: number) => `${n(two)} cards in 2+ decks · ${n(five)} in 5+ · basics not counted`,
+    caption: (two: number, five: number) => `${n(two)} ${two === 1 ? "card" : "cards"} in 2+ decks · ${n(five)} in 5+ · basics not counted`,
     one: "Needs two decks.",
     open: (card: string) => `Which decks have ${card}`,
   },

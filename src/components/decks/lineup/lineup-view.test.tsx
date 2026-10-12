@@ -239,6 +239,12 @@ describe("LineupView: cards your decks share", () => {
     expect([...card("shared").querySelectorAll("[data-stats-shared]")].map((r) => r.getAttribute("data-stats-shared"))).toEqual(["sol"]);
   });
 
+  it("says no card is in two decks when the decks share none, and counts one card in the singular", () => {
+    render(<LineupView data={{ ...SH, shared: [] }} now={NOW} foldServer="-" viewSwitch={null} />);
+    expect(within(card("shared")).getByText("no card in two decks")).toBeTruthy();
+    expect(within(card("shared")).getByText("4 decks · 0 cards")).toBeTruthy();
+  });
+
   it("says a card is shared once two decks play it, with one deck (T1)", () => {
     render(<LineupView data={{ ...SH, decks: [DATA.decks[0]] }} now={NOW} foldServer="shared" viewSwitch={null} />);
     expect(within(card("shared")).getByText("Needs two decks.")).toBeTruthy();

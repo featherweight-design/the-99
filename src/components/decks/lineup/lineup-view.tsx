@@ -144,7 +144,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
             id="shared"
             title={copy.shared.title}
             denom={decks.length < 2 ? copy.filter.one : copy.shared.denom(decks.length, sharedTop.cards)}
-            summary={decks.length < 2 || !sharedTop.rows[0] ? copy.summary.sharedOne : copy.summary.shared(sharedTop.rows[0].name, sharedTop.rows[0].decks.length, sharedTop.rows[0].owned, sharedTop.wantedMore)}
+            summary={decks.length < 2 ? copy.summary.sharedOne : !sharedTop.rows[0] ? copy.summary.sharedNone : copy.summary.shared(sharedTop.rows[0].name, sharedTop.rows[0].decks.length, sharedTop.rows[0].owned, sharedTop.wantedMore)}
             open={fold.open.has("shared")}
             onToggle={() => fold.toggle("shared")}
           >
