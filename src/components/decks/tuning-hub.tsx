@@ -7,7 +7,7 @@
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
-import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
@@ -143,6 +143,9 @@ export function TuningHub({
   const [now, setNow] = useState(() => Date.now());
   const sectionRef = useRef<HTMLElement>(null);
   const toolRef = useRef<HTMLDivElement>(null);
+  // The tool's arrival plays when its content lands, on a tab press as on a tile press (Hugh,
+  // 2026-10-12): most tools draw nothing until their first read answers.
+  useArrival(toolRef, openTool);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   // A tool opened before the hub's first read lands (a shortcut opens one in the first render, and
@@ -513,4 +516,45 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
       {body}
     </button>
   );
+}
+
+/** A box at least this tall has its content: a tool that is still reading draws its heading alone (~91px). */
+const ARRIVED_PX = 120;
+/** How long a box holds for content before it arrives anyway: a small tool must not stay unseen. */
+const ARRIVAL_CAP_MS = 900;
+
+/**
+ * Plays `.anim-gentle-in` when the panel's content lands rather than when the panel mounts. Keyed on
+ * the tool, so every switch replays it. Measured before the fix: switching History to Mana Balance
+ * ran the fade on an empty box (0px) that had finished by the time the tool's body arrived (450ms
+ * for its heading, 900ms for the rest), so the content snapped in. The panel holds transparent
+ * (`.gentle-hold`, never under reduced motion) until it is `ARRIVED_PX` tall or `ARRIVAL_CAP_MS`
+ * has passed, then takes the arrival class afresh. A panel whose content is there at mount (a
+ * tool opened with its read already in hand) keeps the mount's own arrival. Classes, not state:
+ * the hold has to land before the first paint, and nothing else reads it.
+ */
+function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || key === null || typeof ResizeObserver === "undefined") return;
+    if (el.getBoundingClientRect().height >= ARRIVED_PX) return;
+    el.classList.remove("anim-gentle-in");
+    el.classList.add("gentle-hold");
+    let settled = false;
+    const arrive = () => {
+      if (settled) return;
+      settled = true;
+      el.classList.remove("gentle-hold");
+      el.classList.add("anim-gentle-in");
+    };
+    const ro = new ResizeObserver(() => {
+      if (el.getBoundingClientRect().height >= ARRIVED_PX) arrive();
+    });
+    ro.observe(el);
+    const cap = setTimeout(arrive, ARRIVAL_CAP_MS);
+    return () => {
+      ro.disconnect();
+      clearTimeout(cap);
+    };
+  }, [ref, key]);
 }

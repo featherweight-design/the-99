@@ -889,6 +889,13 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   to { opacity: 1; transform: none; }
 }
 .anim-gentle-in { animation: gentle-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+/* A surface that has mounted but whose content has not landed yet holds transparent, so its
+   arrival plays when the content does rather than on an empty box (the Tuning hub's tools, which
+   draw nothing until their first read lands; `useArrival`). Only where motion is welcome: with
+   reduced motion the box is simply there, as everything `.anim-gentle-in` draws is. */
+@media (prefers-reduced-motion: no-preference) {
+  .gentle-hold { opacity: 0; }
+}
 
 /* The phone card sheet's snap between the teaser and full (H23 PR 3, README R2 "Motion"), and the
    card band dimming to .35 under it, on the same 240ms. A drag marks the sheet `data-dragging`,

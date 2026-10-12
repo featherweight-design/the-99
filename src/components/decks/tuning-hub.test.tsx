@@ -149,7 +149,9 @@ describe("TuningHub opening a tool", () => {
     fireEvent.click(tile("cuts"));
     await screen.findByRole("heading", { name: "Proposed cuts" });
     const panel = () => document.getElementById("tuning-tool-panel")!;
-    expect(panel().className.split(/\s+/)).toContain("anim-gentle-in");
+    // On the gentle motion, or holding for it until its content lands (jsdom lays out nothing, so a
+    // ResizeObserver there reads the box as empty; the arrival itself is the test below).
+    expect(panel().className.split(/\s+/).some((c) => c === "anim-gentle-in" || c === "gentle-hold")).toBe(true);
     // The opened tool's chrome arrives with it: the desktop tab row and the phone header.
     expect(screen.getByRole("tablist").className.split(/\s+/)).toContain("anim-gentle-in");
     const phoneHead = screen.getByRole("button", { name: copy.back }).parentElement!;
@@ -158,6 +160,40 @@ describe("TuningHub opening a tool", () => {
     fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
     await screen.findByRole("heading", { name: "Suggested changes" });
     expect(panel()).not.toBe(first);
+  });
+
+  // Hugh, 2026-10-12: a tab press from one tool to another snapped in, because the arrival ran on an
+  // empty box before the tool's first read landed. The panel now holds until its content is there.
+  it("holds a tool that arrives empty, and plays its arrival when its content lands, on every switch", async () => {
+    const observers: (() => void)[] = [];
+    const RealRO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      cb: () => void;
+      constructor(cb: () => void) { this.cb = cb; observers.push(() => this.cb()); }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    } as unknown as typeof ResizeObserver;
+    try {
+      render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+      fireEvent.click(tile("cuts"));
+      await screen.findByRole("heading", { name: "Proposed cuts" });
+      const panel = () => document.getElementById("tuning-tool-panel")!;
+      // jsdom lays nothing out, so the box reads 0px: still reading.
+      expect(panel().classList.contains("gentle-hold")).toBe(true);
+      expect(panel().classList.contains("anim-gentle-in")).toBe(false);
+      const tall = vi.spyOn(panel(), "getBoundingClientRect").mockReturnValue({ height: 500 } as DOMRect);
+      act(() => observers.at(-1)!());
+      expect(panel().classList.contains("gentle-hold")).toBe(false);
+      expect(panel().classList.contains("anim-gentle-in")).toBe(true);
+      tall.mockRestore();
+      // A tab press is a new arrival: the new tool's panel holds again until its own content lands.
+      fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
+      await screen.findByRole("heading", { name: "Suggested changes" });
+      expect(panel().classList.contains("gentle-hold")).toBe(true);
+    } finally {
+      globalThis.ResizeObserver = RealRO;
+    }
   });
 
   it("opens a tool in place of the tiles, focuses its heading, and All tools returns to the landing", async () => {
