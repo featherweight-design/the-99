@@ -31,7 +31,7 @@ const read = (over: Partial<FitsRead> = {}): FitsRead => ({
       reason: { kind: "combo", with: { oracleId: "o-sanity", name: "Fraying Sanity" } } },
     { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], need: null, reason: { kind: "theme", theme: "mill", n: 9 } },
   ],
-  holds: [{ id: "d-a", name: "Atraxa", quantity: 1 }],
+  holds: [{ id: "d-a", name: "Atraxa", quantity: 1, commanders: [] }],
   excluded: [],
   ...over,
 });

@@ -26,12 +26,15 @@ export function FitsDoor({
   onPress,
   pickerOpen,
   layout,
+  reading = false,
 }: {
   cardName: string;
   onPress: () => void;
   /** Whether the picker this door opened is up: when it closes, focus comes back here. */
   pickerOpen: boolean;
   layout: "row" | "column";
+  /** A Find a deck read for this card is running (handoff R2, P2b): the door says so under it. */
+  reading?: boolean;
 }) {
   const button = useRef<HTMLButtonElement>(null);
 
@@ -55,7 +58,7 @@ export function FitsDoor({
     return () => cancelAnimationFrame(frame);
   }, [pickerOpen]);
 
-  return (
+  const door = (
     <button
       ref={button}
       type="button"
@@ -71,5 +74,12 @@ export function FitsDoor({
       <Glyph />
       <span className="[border-bottom:1px_solid_var(--accent-shadow)]">{copy.callout} →</span>
     </button>
+  );
+  if (!reading) return door;
+  return (
+    <span className="inline-flex flex-col items-start gap-[2px]">
+      {door}
+      <span data-testid="fits-door-reading" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{swapToolsCopy.fits.read.doorReading}</span>
+    </span>
   );
 }

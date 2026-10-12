@@ -705,6 +705,8 @@ export function CardModal({
   onEditCopies = null,
   receiptLink = null,
   fitsOpen = false,
+  fitsReading = false,
+  view = null,
   door = null,
   covered = false,
   dropped = false,
@@ -783,6 +785,15 @@ export function CardModal({
   receiptLink?: ReactNode;
   /** The picker the door opened is up, so its close hands focus back to the door. */
   fitsOpen?: boolean;
+  /**
+   * Find a deck's view (handoff R2, `FIND_A_DECK_READ_ENABLED`): drawn inside this dialog in place of
+   * the details pane, over everything right of the desktop art column and over the whole phone
+   * sheet. Under it the details stay mounted and inert, with their scroll kept; Prev/Next, the
+   * neighbors and the swipe stand down, and Escape goes back to the details.
+   */
+  view?: { node: ReactNode; onBack: () => void } | null;
+  /** A Find a deck read for this card is running: the door carries `reading your decks…`. */
+  fitsReading?: boolean;
   /** The deck this card was opened from, which scopes the proxy control. Null
    *  everywhere but the deck page — see `CardDetailProvider.deckId`. */
   deckId?: string | null;
@@ -895,6 +906,7 @@ export function CardModal({
   // A card dropping off a sheet is leaving (#1268): nothing in it answers a key, a swipe or a press,
   // or Escape-then-ArrowRight could page a new card in while the timer closes it.
   const locked = covered || dropping;
+  const viewOpen = view !== null;
   // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
   // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -1372,6 +1384,11 @@ export function CardModal({
       closeZoom();
       return;
     }
+    // Find a deck's view goes back to the details, one layer (handoff R2, D2).
+    if (view) {
+      view.onBack();
+      return;
+    }
     // The phone's sheet (README R2 "Escape": full, then teaser, then close).
     if (sheetOpen) {
       setSheetFull(false);
@@ -1394,7 +1411,7 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, zoomed]);
+  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, zoomed, view]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
@@ -1405,8 +1422,8 @@ export function CardModal({
     sheetRef,
     full,
     teaserHeight,
-    canPrev: onPrev !== null,
-    canNext: onNext !== null,
+    canPrev: onPrev !== null && !viewOpen,
+    canNext: onNext !== null && !viewOpen,
     onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
     onSnap: (to) => setSheetFull(to === "full"),
     bodyRef: sheetBodyRef,
@@ -1590,7 +1607,7 @@ export function CardModal({
   // modal is open; a card held under a sheet (`covered`) attaches no listener at all.
   useEffect(() => {
     const backdrop = backdropRef.current;
-    if (!backdrop || total <= 1 || locked) return;
+    if (!backdrop || total <= 1 || locked || viewOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.defaultPrevented) return;
@@ -1618,7 +1635,7 @@ export function CardModal({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked]);
+  }, [total, onPrev, onNext, onAtStart, onAtEnd, narrow, full, locked, viewOpen]);
 
   // A back face to turn to, or none (#363). The image is the second condition and
   // not an afterthought: a `transform` row seeded before the back-face column
@@ -1984,7 +2001,7 @@ export function CardModal({
           threshold is built from — so the dialog never moves, with a neighbor on one side,
           both, or neither. Hidden while the zoom is open (decision 1: "a look, not a
           browser" — a visible, clickable plate behind the zoom could still page past it). */}
-      {wideEnoughForNeighbors && prevSibling && !zoomed ? (
+      {wideEnoughForNeighbors && prevSibling && !zoomed && !viewOpen ? (
         <NeighborPlate ref={prevPeekRef} sibling={prevSibling} direction="previous" onPress={() => onPrevPeek?.()} />
       ) : null}
       <div
@@ -2039,7 +2056,7 @@ export function CardModal({
             shorter, stacked dialog gives the card less room rather than covering it. */}
         <div
           ref={bandRef}
-          inert={zoomed}
+          inert={zoomed || viewOpen}
           data-testid="card-band"
           onPointerDown={narrow ? gestures.onBandPointerDown : undefined}
           className="md:hidden band-dim absolute inset-x-0 top-0 z-[1] touch-none [container-type:size]"
@@ -2117,7 +2134,7 @@ export function CardModal({
           <button
             type="button"
             ref={(el) => { closeRefs.current[0] = el; }}
-            inert={zoomed}
+            inert={zoomed || viewOpen}
             onClick={onClose}
             aria-label={cardSheetCopy.back.a11y(phoneBack)}
             data-testid="card-modal-back-mobile"
@@ -2143,7 +2160,7 @@ export function CardModal({
             // Inert under the zoom with everything else it would otherwise sit beside in the focus
             // trap. The zoom opens only from the desktop's art, where this is not drawn, but a
             // window narrowed with the zoom up would otherwise leave it reachable.
-            inert={zoomed}
+            inert={zoomed || viewOpen}
             onClick={onClose}
             aria-label="Close card details"
             // §Mobile: Art Close Button
@@ -2156,7 +2173,7 @@ export function CardModal({
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
         <div
-          inert={zoomed}
+          inert={zoomed || viewOpen}
           className="hidden md:flex items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
@@ -2255,7 +2272,7 @@ export function CardModal({
             over the snap until the release, and the top transitions to whichever snap it chose. */}
         <div
           ref={sheetRef}
-          inert={zoomed}
+          inert={zoomed || viewOpen}
           data-testid="card-sheet"
           data-sheet={full ? "full" : "teaser"}
           // The phone's alone: on the desktop this column is a column, and a drag-select in its
@@ -2607,7 +2624,7 @@ export function CardModal({
                     </div>
                   ) : null}
                   {onFindDeck ? (
-                    <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" />
+                    <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" reading={fitsReading} />
                   ) : null}
                 </div>
               )}
@@ -2628,7 +2645,7 @@ export function CardModal({
             {footer ? footer("row") : onFindDeck ? (
               <span className="flex flex-col gap-[8px] min-w-0">
                 {buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
-                <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" />
+                <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" reading={fitsReading} />
               </span>
             ) : buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
             {/* One / two (handoff decision 6): a list of one drops the whole counter and
@@ -2680,6 +2697,12 @@ export function CardModal({
             accessibility tree, so every announcement the layer makes would have been
             written where nothing could read it. */}
         <div aria-live="polite" className="sr-only">{announcement}</div>
+
+        {view ? (
+          <div data-testid="card-modal-view" className="absolute inset-0 z-10 flex flex-col md:left-[320px]">
+            {view.node}
+          </div>
+        ) : null}
 
         {/* THE ZOOM LAYER — a region inside this dialog, never a dialog of its own and
             never the viewport (table §3.1). `absolute inset-0` against the dialog
@@ -2840,7 +2863,7 @@ export function CardModal({
           </div>
         )}
       </div>
-      {wideEnoughForNeighbors && nextSibling && !zoomed ? (
+      {wideEnoughForNeighbors && nextSibling && !zoomed && !viewOpen ? (
         <NeighborPlate ref={nextPeekRef} sibling={nextSibling} direction="next" onPress={() => onNextPeek?.()} />
       ) : null}
     </div>

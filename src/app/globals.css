@@ -944,6 +944,14 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   [data-arrival="in"] { animation: art-in var(--motion-duration) var(--motion-ease); }
 }
 
+/* Find a deck's view arriving inside card details, in place of the details pane (handoff R2 §1): a
+   16px slide from the right and a fade, on the shared motion tokens. Reduced motion: a plain swap. */
+@keyframes view-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+.anim-view-in { animation: view-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+
 /* The phone card sheet's snap between the teaser and full (H23 PR 3, README R2 "Motion"), and the
    card band dimming to .35 under it, on the same 240ms. A drag marks the sheet `data-dragging`,
    and it follows the finger with no transition at all. Here rather than as utilities because the
@@ -983,6 +991,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* A chart's bars are drawn at their size. */
   .anim-grow-x,
   .anim-grow-y,
+  /* Find a deck's view swaps in place of the details pane. */
+  .anim-view-in,
   /* A card over a sheet swaps in and out in place (stacked sheets R1). */
   .anim-stack-rise,
   .anim-sheet-up {

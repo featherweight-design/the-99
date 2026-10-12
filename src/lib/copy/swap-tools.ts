@@ -289,6 +289,85 @@ export const swapToolsCopy = {
       heading: "Your decks didn’t come back",
       body: "We couldn’t read your decks just now. It isn’t something you did, and it usually clears in a moment.",
     },
+    /**
+     * FIND A DECK, WITH A READ (handoff `design_handoff_the99_find_a_deck_read`, R2): the view inside
+     * card details, its press, the read's rows and the fold over the free list. Transcribed from the
+     * handoff's `find-a-deck-read · copy strings.ts`, through /copy-review. The model's sentence is not
+     * copy (it is validated, locks 1 to 3); every figure here is the app's own count.
+     */
+    read: {
+      backAria: (card: string) => `Back to ${card}`,
+      press: "Which deck needs it most?",
+      pressAria: (card: string) => `Which deck needs ${card} most? Uses 1 credit.`,
+      pressAriaSpent: "Which deck needs it most? No credits left.",
+      /** The press's segment, after the drawn ◆. */
+      credit: "1 credit",
+      offerLead: (n: number, card: string) =>
+        `A closer read of the ${n} decks that can take ${card}: the few it really helps, how it helps each one in that deck’s own cards, and what it would replace.`,
+      offerLeadOne: (deck: string, card: string) =>
+        `A closer read of ${deck}, the one deck that can take ${card}: how it would help, in that deck’s own cards, and what it would replace.`,
+      running: (n: number, card: string) => (n === 1 ? `Reading one deck for ${card}` : `Reading ${n} decks for ${card}`),
+      /** Followed by ` · {elapsed}`. */
+      runningSub: "each deck’s plan and list, against the card’s text",
+      runningKeep: "The list below stays as it is. You can leave this view; the read keeps going and waits here.",
+      announceStarted: "Reading your decks.",
+      /** Under the door in card details while a read for this card runs. */
+      doorReading: "reading your decks…",
+      resultHead: "Where it helps most",
+      resultSubNow: (shown: number, n: number) => `read just now · ${shown} of ${n} decks`,
+      resultSubNowOne: "read just now · the one deck",
+      /** `when` is `Oct 11, 9:42 PM` in the reader's clock. */
+      resultSubStored: (when: string, shown: number, n: number) => `read ${when} · ${shown} of ${n} decks`,
+      /** Followed by ` · ` and the standing line. */
+      resultFootSpent: "Used a credit",
+      resultFootStored: "Free to reopen while your decks stay as they are.",
+      onlyOne: (deck: string, card: string) => `${deck} is the only deck that can take ${card}`,
+      /** The plan source, last in the commander line. */
+      planFrom: { v2: "from its overview", older: "from an older overview", none: "from commander and themes" },
+      swapIn: "Swap in",
+      swapInToBuy: "Swap in to buy",
+      swapped: "Swapped in",
+      swapInAria: (card: string, deck: string, cut: string) => `Swap ${card} into ${deck}, cutting ${cut}`,
+      swappedAria: (card: string, deck: string, cut: string) => `${card} is in ${deck} and ${cut} is out. Press to put ${cut} back.`,
+      addOnly: "Add only",
+      addOnlyToBuy: "Add only, to buy",
+      added: "Added",
+      addedToBuy: "Added, to buy",
+      addOnlyAria: (card: string, deck: string) => `Add ${card} to ${deck} without cutting anything`,
+      addedAria: (card: string, deck: string) => `${card} is in the ${deck} draft, with nothing cut. Press to take it out.`,
+      addedNote: (deck: string) => `In the draft, which is now at 100. Cut a card of your choice from ${deck}.`,
+      cutLabel: "cut",
+      cutNote: "goes out when you swap it in",
+      cutNoteSwapped: "out of the draft · press Swapped in to put it back",
+      cutNoteAdded: "still in · cut it or anything else",
+      swapRefused: "We couldn’t make that swap. The deck is unchanged.",
+      undoRefused: "We couldn’t undo that. The deck is unchanged.",
+      announceReady: (n: number) => (n === 1 ? "The read found one deck." : `The read found ${n} decks.`),
+      announceSwapped: (card: string, cut: string) => `Swapped. ${card} is in the draft and ${cut} is out.`,
+      announceUndone: (card: string, cut: string) => `Swap undone. ${cut} is back and ${card} is out.`,
+      announceAdded: (card: string, deck: string) => `Added. ${card} is in the ${deck} draft.`,
+      announceAddUndone: (card: string, deck: string) => `Taken out. ${card} is out of the ${deck} draft.`,
+      thin: (kept: number) =>
+        kept === 1 ? "Only one deck held up, so the credit came back." : `Only ${kept} decks held up, so the credit came back.`,
+      /** Followed by ` · ` and the standing line (READINESS-audit F10: says they didn’t check out, not against what). */
+      thinSub: "The other decks it named didn’t check out",
+      noFitHead: "None of these decks is a real fit",
+      noFitBody: (n: number, card: string) =>
+        `The read went through the ${n} decks that can take ${card} and found none whose plan it really helps. The credit came back.`,
+      noFitBodyOne: (deck: string, card: string) =>
+        `The read went through ${deck}, the one deck that can take ${card}, and found it isn’t a real fit. The credit came back.`,
+      noFitBodyStored: (n: number, card: string) => `The read went through the ${n} decks that can take ${card} and found none whose plan it really helps.`,
+      noFitFootNow: "read just now · kept until your decks change",
+      noFitFootStored: (when: string) => `read ${when} · kept until your decks change`,
+      announceNoFit: "No real fit. The credit came back.",
+      failedTag: "Didn’t finish",
+      failedHead: "The read didn’t come back",
+      failedBody: "The credit came back, and the list below is as it was. It isn’t something you did.",
+      retry: "Try again",
+      announceFailed: "The read didn’t come back. The credit came back.",
+      fold: "Every deck that could take it",
+      foldAria: (n: number, open: boolean) => `${open ? "Hide" : "Show"} every deck that could take it, ${n}`,
+    },
   },
 
   announce: {

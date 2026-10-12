@@ -2029,7 +2029,7 @@ export const FITS = {
       reason: { kind: "theme", theme: "sacOutlet", n: 11 },
     },
   ] satisfies FitDeck[],
-  holds: [{ id: "about-fits-tymna", name: "HD - Tymna + Thrasios", quantity: 1 }],
+  holds: [{ id: "about-fits-tymna", name: "HD - Tymna + Thrasios", quantity: 1, commanders: ["Tymna the Weaver", "Thrasios, Triton Hero"] }],
 };
 
 /**

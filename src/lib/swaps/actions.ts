@@ -5,11 +5,13 @@ import { after } from "next/server";
 
 import { requireUserId } from "../auth";
 import { addCardToDeckFor, revalidateAdd } from "../decks/add-card";
+import { requireDeck } from "../decks/read";
+import { removeOneCopy } from "../decks/remove-card";
 import { DECK_ADD_FALLBACK_MESSAGE, type DeckMutationResult } from "../decks/mutation-result";
 import { deckSurfaces } from "../decks/revalidate";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
-import { swapToolsEnabled } from "./flag";
+import { findADeckReadEnabled, swapToolsEnabled } from "./flag";
 import { loadFits, type FitsRead } from "./fits";
 import { loadStandIns, type StandInsRead } from "./gather";
 import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take";
@@ -93,4 +95,40 @@ export async function addFromFits(
   // `held`: the deck already had it (another tab got there first), so nothing was written and no copy
   // was used. The picker must not stamp it as an add.
   return outcome.wrote === "held" ? { ...outcome.result, held: true } : outcome.result;
+}
+
+/**
+ * FIND A DECK READ's row actions (handoff R2, P3 to P3i): Swap in, its undo, and Add only's undo
+ * (Add only itself is `addFromFits`). The same take and undo as the stand-ins sheet's, called from a
+ * card opened ANYWHERE, so their revalidation is deferred with `after()`, as `addFromFits`' is: the
+ * caller's route does not need redrawing, and the deck is refreshed for its next visit either way.
+ */
+export async function swapFromReadAction(deckId: string, cutOracleId: string, addOracleId: string): Promise<TakeResult> {
+  if (!findADeckReadEnabled() || ![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
+  const userId = await requireUserId();
+  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
+  if (result.ok) after(() => revalidateClaims(deckId, userId));
+  return result;
+}
+
+export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean }> {
+  if (!findADeckReadEnabled() || !isUuid(swapId)) return { ok: false };
+  const userId = await requireUserId();
+  const deckId = await undoSwap(swapId, userId);
+  if (deckId) after(() => revalidateClaims(deckId, userId));
+  return { ok: deckId !== null };
+}
+
+/** Takes back an `Add only`: one copy of the card out of the deck's draft (G10). */
+export async function undoReadAddAction(deckId: string, oracleId: string): Promise<{ ok: boolean }> {
+  if (!findADeckReadEnabled() || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false };
+  const userId = await requireUserId();
+  try {
+    await requireDeck(deckId, userId);
+  } catch {
+    return { ok: false };
+  }
+  const removed = await removeOneCopy(deckId, oracleId);
+  if (removed) after(() => revalidateClaims(deckId, userId));
+  return { ok: removed };
 }

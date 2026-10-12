@@ -33,7 +33,7 @@ const colorsOf = (ids: string[]) => (ids.length === 0 ? "colorless" : colorWords
  * and opening that card; else the theme it joins, in --fg-body; a staple's own form; then ` · this deck
  * {need}`. With no reason and no need the row draws no line (R2: never the shares).
  */
-function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
+function ReasonLine({ deck, staple, onOpenCard }: { deck: FitDeck; staple: boolean; onOpenCard?: (oracleId: string) => void }) {
   const r = deck.reason;
   const lead = staple
     ? <span className="italic whitespace-nowrap text-[color:var(--fg-body)]">{copy.cmdrStaple}</span>
@@ -41,13 +41,23 @@ function ReasonLine({ deck, staple }: { deck: FitDeck; staple: boolean }) {
       ? (
         <span className="whitespace-nowrap text-[color:var(--fg)]">
           {copy.reasonCombo}{" "}
-          <CardDetailTrigger
-            oracleId={r.with.oracleId}
-            name={r.with.name}
-            className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
-          >
-            {r.with.name}
-          </CardDetailTrigger>
+          {onOpenCard ? (
+            <button
+              type="button"
+              onClick={() => onOpenCard(r.with.oracleId)}
+              className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
+            >
+              {r.with.name}
+            </button>
+          ) : (
+            <CardDetailTrigger
+              oracleId={r.with.oracleId}
+              name={r.with.name}
+              className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
+            >
+              {r.with.name}
+            </CardDetailTrigger>
+          )}
         </span>
       )
       : r?.kind === "theme"
@@ -122,7 +132,7 @@ export function FitsPlate({
 
 /** The decks that could take the card, in the order the read gave them, each with its Add. */
 export function FitsRows({
-  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd,
+  rows, staple, cardName, freeNow, busy, refused, noteFor, onAdd, onOpenCard,
 }: {
   rows: FitDeck[];
   staple: boolean;
@@ -134,6 +144,9 @@ export function FitsRows({
   refused: string | null;
   noteFor: (deckId: string) => string | null;
   onAdd: (deck: FitDeck) => void;
+  /** Inside card details (Find a deck's view), a combo partner opens over the dialog through this,
+   *  so the way back returns to the view; elsewhere the provider's own trigger. */
+  onOpenCard?: (oracleId: string) => void;
 }) {
   return (
     <section className="flex flex-col" aria-label={copy.groupJoin}>
@@ -181,7 +194,7 @@ export function FitsRows({
                 </button>
               )}
             </div>
-            <ReasonLine deck={deck} staple={staple} />
+            <ReasonLine deck={deck} staple={staple} onOpenCard={onOpenCard} />
             {note ? (
               <p className="m-0 text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
                 {note}{" "}
@@ -217,7 +230,27 @@ export function FitsHolds({ holds }: { holds: FitsRead["holds"] }) {
   );
 }
 
-export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {
+/** The staple note, above the list of a universal staple. */
+export function FitsStapleNote({ name, role }: { name: string; role: string }) {
+  return (
+    <section data-testid="fits-staple-note" className="flex flex-col gap-[6px] px-[13px] py-[11px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)]">
+        <span className="flex items-center gap-[7px] font-mono text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-body)" }}>
+          <span aria-hidden="true" className="w-[7px] h-[7px] rounded-full border-[1.5px] border-[color:var(--fg-muted)]" />
+          {copy.stapleLabel}
+        </span>
+        <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>
+          {role === "other" ? copy.stapleNoteNoRole(name) : copy.stapleNote(name)}
+        </p>
+      </section>
+  );
+}
+
+/**
+ * The free list's state, shared by the stacked picker and Find a deck's in-dialog view: the read
+ * when it opens, the rows in the order they opened in, and the Add with its re-read. `refresh` takes
+ * the read again (after a swap from the read, say), so the copies come from the server's count.
+ */
+export function useFitsList(card: BrowseCard) {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [added, setAdded] = useState<Added[]>([]);
   const [refused, setRefused] = useState<string | null>(null);
@@ -294,6 +327,18 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   const holds = read?.holds.filter((h) => !added.some((a) => a.deckId === h.id)) ?? [];
   const role = read?.card.role ?? "other";
 
+  const refresh = useCallback(async () => {
+    const after = await loadFitsAction(card.oracleId).catch(() => null);
+    setLoad(after ? { state: "ready", read: after } : { state: "failed" });
+    return after;
+  }, [card.oracleId]);
+
+  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh };
+}
+
+export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {
+  const { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry } = useFitsList(card);
+
   return (
     <ModalChrome
       title={copy.pickerTitle}
@@ -314,17 +359,7 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
           countsKnown={countsKnown}
         />
 
-        {read?.staple ? (
-          <section data-testid="fits-staple-note" className="flex flex-col gap-[6px] px-[13px] py-[11px] rounded-[10px] border border-dashed border-[color:var(--border-dashed)]">
-            <span className="flex items-center gap-[7px] font-mono text-[9.5px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-body)" }}>
-              <span aria-hidden="true" className="w-[7px] h-[7px] rounded-full border-[1.5px] border-[color:var(--fg-muted)]" />
-              {copy.stapleLabel}
-            </span>
-            <p className="m-0 text-[12.5px] leading-[1.55] [text-wrap:pretty]" style={{ color: "var(--fg-body)" }}>
-              {role === "other" ? copy.stapleNoteNoRole(name) : copy.stapleNote(name)}
-            </p>
-          </section>
-        ) : null}
+        {read?.staple ? <FitsStapleNote name={name} role={role} /> : null}
 
         {load.state === "loading" ? (
           <div
