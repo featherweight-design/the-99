@@ -1065,7 +1065,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'PRECONS_ENABLED',
     caption:
-      'Every Commander precon, from the first boxes in 2011 to the newest, is listed on Decks under Commander precons. Each shows how many of its cards are already in your Collection. A Collector’s Edition with the same cards is listed once, under the plain edition.\n\nOpen one to read its list, group by group. Say you own 74 of Eldrazi Unbound’s 85: start a deck from it and you get a draft with the whole list, in your printings for the cards you own. Change anything before you commit.\n\nUpgrading a precon is how a lot of Commander decks begin.',
+      'Every Commander precon, from the first boxes in 2011 to the newest, is listed on Decks under Commander precons. Each shows its commander’s card and how many of its cards are already in your Collection. A Collector’s Edition with the same cards is listed once, under the plain edition.\n\nOpen one to read its list, group by group, as rows or as cards. Say you own 74 of Eldrazi Unbound’s 85: start a deck from it and you get a draft with the whole list, in your printings for the cards you own. Change anything before you commit.\n\nUpgrading a precon is how a lot of Commander decks begin.',
     keys: [
       'Any printing counts, as everywhere else. Basic lands are left out of the count.',
       'If one of your decks shares much of a precon’s list, the precon names it and counts what you share.',

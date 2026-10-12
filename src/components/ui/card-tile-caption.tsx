@@ -103,6 +103,15 @@ export const CARD_TILE_SLOT_BOX =
  */
 export const TILE_ART_CLIP = "rounded-b-[9px] md:rounded-b-[10px]";
 
+/** Radius, plate and art shape: everything the deck's undo tile shares with the live one, so a
+ *  removed card leaves a hole exactly its own size, and what the precon and read-only tiles reuse.
+ *  Here rather than in `decks/deck-card-tile.tsx`, which is `"use client"`: a SERVER component
+ *  importing a value from a client module receives a client reference, not the string (the About
+ *  page's precon specimen is one; `lib/copy/filter-chassis.ts` records the same failure). */
+export const TILE_SHELL =
+  "group flex flex-col overflow-hidden rounded-[9px] md:rounded-[10px]";
+export const TILE_ART_RATIO = "63 / 88";
+
 /** Draws an occupant's edge inside its box instead of around it. */
 export function slotOutline(colour: string, dashed = false) {
   return {

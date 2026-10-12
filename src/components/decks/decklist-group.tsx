@@ -5,6 +5,7 @@
 import type { ReactNode } from "react";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DeckCardTile } from "./deck-card-tile";
+import { ReadOnlyCardTile } from "./read-only-card-tile";
 import type { DeckView } from "./group-toggle";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
@@ -44,12 +45,16 @@ interface DecklistGroupProps {
    * point is that the caller states it.
    */
   newestAsOf: Date | null;
-  /** Every row read-only (a precon's list): see `DecklistRow`'s `readOnly`. */
+  /** Every row read-only (a precon's list): see `DecklistRow`'s `readOnly`. In card view, every
+   *  tile is `ReadOnlyCardTile`, which calls no deck hook. */
   readOnly?: boolean;
   /** Drawn under the rows, inside the group's own spacing (a precon's basic lands line). */
   footer?: ReactNode;
   /** Copies the footer lists and the count includes (that line's basics). */
   footerCount?: number;
+  /** Card view only: tiles drawn at the end of the group's own grid, after its cards (a precon's
+   *  basic lands, one tile per name, at the foot of Lands). */
+  cardTail?: ReactNode;
 }
 
 export function DecklistGroup({
@@ -65,6 +70,7 @@ export function DecklistGroup({
   readOnly = false,
   footer = null,
   footerCount = 0,
+  cardTail = null,
 }: DecklistGroupProps) {
   // The count does not wait for the undo: a spent slot is a receipt, not a
   // pending state, and a group that held its figure would be lying about its
@@ -108,7 +114,9 @@ export function DecklistGroup({
            one floor plus a gap, so auto-fill there collapses to a single column,
            and a third column puts the card name below legibility anyway. */
         <ul className="grid grid-cols-2 gap-[12px] md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
-          {cards.map((card) => (
+          {cards.map((card) => readOnly ? (
+            <ReadOnlyCardTile key={card.oracleId} card={card} siblings={siblings} />
+          ) : (
             <DeckCardTile
               key={card.oracleId}
               deckId={deckId}
@@ -117,6 +125,7 @@ export function DecklistGroup({
               siblings={siblings}
             />
           ))}
+          {cardTail}
         </ul>
       ) : (
         /* Card rows grid: mobile flex column gap-3px | desktop 2-col grid gap-4px-20px */

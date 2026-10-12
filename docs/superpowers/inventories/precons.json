@@ -171,6 +171,66 @@
       ]
     },
     {
+      "id": "g1",
+      "label": "/decks/precons/EldraziUnbound_CMM in Card view: read-only tiles, owned dot and `not owned` (G1)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/EldraziUnbound_CMM",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Card view$"
+        },
+        {
+          "scrollTo": "[data-testid=read-only-card-tile]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "g1b",
+      "label": "/decks/precons/EldraziUnbound_CMM in Card view, the foot of Lands: basics as dashed tiles (G1)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/EldraziUnbound_CMM",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Card view$"
+        },
+        {
+          "scrollTo": "[data-testid=read-only-basic-tile]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "g1p",
+      "label": "/decks/precons/FoodAndFellowship_LTC in Card view: two commanders (G1p)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/FoodAndFellowship_LTC",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Card view$"
+        },
+        {
+          "scrollTo": "[data-testid=read-only-card-tile]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
       "id": "o6",
       "label": "/decks/precons/EldraziUnbound_CMM, a row pressed: card details, no deck actions (O6)",
       "view": "src/components/decks/decklist-row.tsx",
@@ -262,7 +322,7 @@
     },
     {
       "id": "ab",
-      "label": "/about: the precons entry and its figure (AB)",
+      "label": "/about: the precons entry and its figure, a PreconTile (AB)",
       "view": "src/components/about/figures.tsx",
       "steps": [
         {

@@ -30,7 +30,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardFactMark } from "../cards/card-fact-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
@@ -56,11 +56,9 @@ import { LockMark } from "./lock-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { usePreviewRow } from "./hover-preview";
 
-/** Radius, plate and art shape — everything the undo tile shares with the live
- *  one, so a removed card leaves a hole exactly its own size. */
-export const TILE_SHELL =
-  "group flex flex-col overflow-hidden rounded-[9px] md:rounded-[10px]";
-export const TILE_ART_RATIO = "63 / 88";
+// The shell and the art ratio live in `ui/card-tile-caption`, a server-safe module: this one is
+// `"use client"`, so a server component reading them from here got client references, not strings.
+export { TILE_ART_RATIO, TILE_SHELL };
 
 export function DeckCardTile({
   deckId,

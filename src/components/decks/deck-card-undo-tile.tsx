@@ -17,8 +17,7 @@ import { printedFaceName } from "../../lib/collection/browse";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { MutationError } from "./mutation-error";
-import { CARD_TILE_CAPTION_H } from "../ui/card-tile-caption";
-import { TILE_ART_RATIO, TILE_SHELL } from "./deck-card-tile";
+import { CARD_TILE_CAPTION_H, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { useSpentSlotUndo } from "./spent-slot-undo";
 
 export function UndoTile({ deckId, card }: { deckId: string; card: DeckDetailCard }) {

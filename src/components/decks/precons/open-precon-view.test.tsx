@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { OpenPrecon, OpenPreconCard } from "../../../lib/precons/open-read";
 
@@ -10,6 +10,10 @@ vi.mock("../../cards/card-detail-provider", () => ({
     return children;
   },
   useCardDetail: () => ({ open: vi.fn() }),
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
+  CardDetailTrigger: ({ children, name, siblings }: { children: React.ReactNode; name: string; siblings?: readonly string[] }) => (
+    <button type="button" aria-label={name} data-siblings={(siblings ?? []).join(",")}>{children}</button>
+  ),
 }));
 const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown }, dock: undefined as string | undefined }));
 vi.mock("./start-precon", () => ({
@@ -20,9 +24,10 @@ vi.mock("./start-precon", () => ({
 const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn() }));
 vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
 vi.mock("../decklist-group", () => ({
-  DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; cards: { name: string; layout?: string | null }[]; footer?: React.ReactNode; footerCount?: number }) => (
-    <section data-testid="group" data-readonly={String(p.readOnly)} data-footer-count={p.footerCount ?? 0}>
+  DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; view?: string; cards: { name: string; layout?: string | null }[]; footer?: React.ReactNode; footerCount?: number; cardTail?: React.ReactNode }) => (
+    <section data-testid="group" data-readonly={String(p.readOnly)} data-view={p.view ?? "list"} data-footer-count={p.footerCount ?? 0}>
       <h2>{p.label}</h2><span>{p.note}</span>{p.cards.map((c) => <span key={c.name} data-layout={c.layout ?? ""}>{c.name}</span>)}{p.footer}
+      {p.cardTail && <ul data-testid="card-tail">{p.cardTail}</ul>}
     </section>
   ),
 }));
@@ -230,5 +235,47 @@ describe("OpenPreconView", () => {
   it("names the linked deck in the phone dock", () => {
     render(<OpenPreconView precon={precon({ built: [{ deckId: "a", deckName: "HD - Eldrazi", shared: 1, sameCommanders: true, linked: true }] })} fromNew={false} />);
     expect(startProps.dock).toBe("Eldrazi Unbound · your deck HD - Eldrazi was built from this");
+  });
+
+  describe("Card view (R4 §6)", () => {
+    beforeEach(() => window.localStorage.clear());
+
+    it("opens on List, the deck page's well at the list-note line", () => {
+      render(<OpenPreconView precon={precon()} fromNew={false} />);
+      expect(screen.getByRole("button", { name: "List view" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getAllByTestId("group").every((g) => g.dataset.view === "list")).toBe(true);
+      expect(screen.getByText("Wastes ×15")).toBeInTheDocument();
+      expect(screen.queryByTestId("card-tail")).toBeNull();
+    });
+
+    it("draws every group as cards, stores the choice apart from the deck page's, and tiles the basics", () => {
+      window.localStorage.setItem("the99:deck-view", "list");
+      render(<OpenPreconView precon={precon()} fromNew={false} />);
+      fireEvent.click(screen.getByRole("button", { name: "Card view" }));
+      expect(screen.getAllByTestId("group").every((g) => g.dataset.view === "card")).toBe(true);
+      expect(window.localStorage.getItem("the99:precons:openView")).toBe("card");
+      expect(window.localStorage.getItem("the99:deck-view")).toBe("list");
+      // The basics leave the dashed line for one tile per name, still in Lands' count.
+      expect(screen.queryByText("Wastes ×15")).toBeNull();
+      const tail = screen.getByTestId("card-tail");
+      expect(within(tail).getByText("×15")).toBeInTheDocument();
+      expect(within(tail).getByText("basic · not counted")).toBeInTheDocument();
+      expect(screen.getByText(/each card shows the precon’s printing/)).toBeInTheDocument();
+    });
+
+    it("counts a basic's arts from the printings it merges (G-R4-2)", () => {
+      window.localStorage.setItem("the99:precons:openView", "card");
+      const wastes = (n: string) => card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 5,
+        printing: { scryfallId: `w${n}`, setCode: "cmm", collectorNumber: n, label: `CMM ${n}`, imageUri: null, backImageUri: null } });
+      render(<OpenPreconView precon={precon({}, [
+        card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+        card("Ruins", { typeLine: "Land" }), wastes("287"), wastes("288"), wastes("289"),
+      ])} fromNew={false} />);
+      const tail = screen.getByTestId("card-tail");
+      expect(within(tail).getByText("CMM · first of 3 arts")).toBeInTheDocument();
+      expect(within(tail).getByText("×15")).toBeInTheDocument();
+      // The basic joins card details' run after Lands' cards, so its Prev/Next work like any tile's.
+      expect(within(tail).getByRole("button", { name: "Wastes" }).dataset.siblings).toBe("Zhulodok,Ruins,Wastes");
+    });
   });
 });

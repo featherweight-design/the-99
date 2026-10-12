@@ -3,7 +3,8 @@
 // `/decks/precons/[fileName]` (design table: Route /decks/precons/[fileName]). The precon's list,
 // drawn with the deck view's own `DecklistGroup` in its read-only form: the owned dot, card details
 // on press and the hover preview stay; nothing edits. Ownership is a count, never a verdict, and the
-// bar is neutral at every share.
+// bar is neutral at every share. R4 §6: List (the default) or Card view, through the deck page's own
+// well, stored per browser apart from the deck page's choice.
 
 import Link from "next/link";
 import { preconsCopy, preconDate } from "../../../lib/copy/precons";
@@ -18,9 +19,20 @@ import { DecklistGroup } from "../decklist-group";
 import { HoverPreviewProvider } from "../hover-preview";
 import { StartPrecon } from "./start-precon";
 import { LinkDeckButton, UnlinkPrecon } from "./precon-link-dialogs";
+import { DECK_VIEWS, isDeckView } from "../group-toggle";
+import { ReadOnlyCardTile } from "../read-only-card-tile";
+import { useStoredView } from "../../ui/use-stored-view";
+import { ViewToggle } from "../../ui/view-toggle";
+
+/** The open precon's view, kept apart from the deck page's (`the99:deck-view`): one is a reading
+ *  choice, the other a building one. List is the default and what the server draws, so no cookie. */
+export const PRECON_OPEN_VIEW_KEY = "the99:precons:openView";
 
 const copy = preconsCopy;
 type Loaded = Extract<OpenPrecon, { kind: "precon" }>;
+/** A card as the page draws it: its copies summed across the printings the feed lists, and how many
+ *  of those printings there are (a basic's arts, G-R4-2). */
+type ByCard = OpenPreconCard & { arts: number };
 
 function toDetail(c: OpenPreconCard): DeckDetailCard {
   return {
@@ -48,11 +60,11 @@ function toDetail(c: OpenPreconCard): DeckDetailCard {
  * several arts), so two rows share an oracle id: they are one card here, with their copies summed
  * and the first printing named, and so one row, one React key and one card-details pick.
  */
-function byCard(cards: OpenPreconCard[]): OpenPreconCard[] {
-  const merged = new Map<string, OpenPreconCard>();
+export function byCard(cards: OpenPreconCard[]): ByCard[] {
+  const merged = new Map<string, ByCard>();
   for (const c of cards) {
     const seen = merged.get(c.oracleId);
-    merged.set(c.oracleId, seen ? { ...seen, quantity: seen.quantity + c.quantity } : c);
+    merged.set(c.oracleId, seen ? { ...seen, quantity: seen.quantity + c.quantity, arts: seen.arts + 1 } : { ...c, arts: 1 });
   }
   return [...merged.values()];
 }
@@ -74,6 +86,9 @@ function commanderNote(cards: OpenPreconCard[]) {
 
 export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: boolean }) {
   const { row } = precon;
+  const [storedView, storeView] = useStoredView(PRECON_OPEN_VIEW_KEY, isDeckView);
+  const view = storedView ?? "list";
+  const card = view === "card";
   const cards = byCard(precon.cards);
   const commanders = cards.filter((c) => c.isCommander);
   const body = cards.filter((c) => !c.isCommander);
@@ -84,7 +99,16 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
   const basicCopies = basics.reduce((n, c) => n + c.quantity, 0);
   const share = row.of === 0 ? 0 : row.owned / row.of;
   const groups = groupByCardType(listed.map((c) => ({ ...c, cardTypeGroup: cardTypeGroup(c.typeLine) })));
-  const siblings = [...commanders, ...groups.flatMap(([, g]) => g)].map((c) => c.oracleId);
+  // Card details page through the cards in display order. In Card view the basics are tiles too, at
+  // the foot of Lands (or last, with no Lands), so they join the run there; a tile missing from it
+  // would open with no Prev/Next.
+  const hasLands = groups.some(([label]) => label === "Lands");
+  const basicIds = card ? basics.map((b) => b.oracleId) : [];
+  const siblings = [
+    ...commanders.map((c) => c.oracleId),
+    ...groups.flatMap(([label, g]) => [...g.map((c) => c.oracleId), ...(label === "Lands" ? basicIds : [])]),
+    ...(hasLands ? [] : basicIds),
+  ];
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
   const linked = row.built.filter((b) => b.linked);
   const linkDeck = (className: string) => (
@@ -175,8 +199,15 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
               <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.pair(bodyCount, total)}</p>
             )}
           </section>
-          <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:hidden">{copy.open.listNotePhone}</p>
-          <p className="m-0 hidden font-mono text-[10.5px] text-[color:var(--fg-faint)] md:block">{copy.open.listNote}</p>
+          {/* The switch sits at the right end of the list-note line, under everything that must not
+              move between views (STATES must-not). */}
+          <div className="flex items-center justify-between gap-[12px]">
+            <p className="m-0 min-w-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:hidden">{copy.open.listNotePhone}</p>
+            <p className="m-0 hidden min-w-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:block">
+              {card ? copy.open.listNoteCard : copy.open.listNote}
+            </p>
+            <ViewToggle options={DECK_VIEWS} value={view} onChange={storeView} />
+          </div>
         </header>
 
         {/* No gap: each group carries its own bottom margin. */}
@@ -185,6 +216,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
           <DecklistGroup
             readOnly
             deckId=""
+            view={view}
             label={commanders.length === 1 ? copy.group.commander : copy.group.commanders}
             cards={commanders.map(toDetail)}
             siblings={siblings}
@@ -201,6 +233,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
                 key={label}
                 readOnly
                 deckId=""
+                view={view}
                 label={label}
                 cards={group.map(toDetail)}
                 siblings={siblings}
@@ -208,15 +241,29 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
                 noteColor="var(--fg-muted)"
                 newestAsOf={null}
                 // The basics are listed under Lands and counted in its figure (O2), never as rows.
-                footer={lands && basics.length > 0 ? <BasicsLine basics={basics} /> : null}
+                footer={lands && basics.length > 0 && !card ? <BasicsLine basics={basics} /> : null}
                 footerCount={lands ? basicCopies : 0}
+                cardTail={lands && card ? <BasicTiles basics={basics} siblings={siblings} /> : null}
               />
             );
           })}
-          {!groups.some(([label]) => label === "Lands") && basics.length > 0 && <BasicsLine basics={basics} />}
+          {!hasLands && basics.length > 0 && (card ? (
+            <ul className="m-0 grid list-none grid-cols-2 gap-[12px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
+              <BasicTiles basics={basics} siblings={siblings} />
+            </ul>
+          ) : <BasicsLine basics={basics} />)}
         </HoverPreviewProvider>
       </div>
     </CardDetailProvider>
+  );
+}
+
+/** Card view's basics: one dashed tile per name, after the other lands (R4 §6). */
+function BasicTiles({ basics, siblings }: { basics: ByCard[]; siblings: string[] }) {
+  return (
+    <>
+      {basics.map((b) => <ReadOnlyCardTile key={b.oracleId} card={toDetail(b)} siblings={siblings} basic={{ arts: b.arts }} />)}
+    </>
   );
 }
 
