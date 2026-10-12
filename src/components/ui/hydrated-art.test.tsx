@@ -1,4 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -140,5 +142,26 @@ describe("deferred art's arrival", () => {
     // Moved into the eager range while still pending: it must not stay held at opacity 0.
     rerender(<HydratedImg src={`${SRC}?v=2`} alt="" eager />);
     expect(img.dataset.art).toBeUndefined();
+  });
+});
+
+// The marks above do nothing on their own: the fade is the stylesheet's, so its contract is pinned too.
+describe("the arrival's CSS", () => {
+  const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+  const motionBlock = (selector: string) => {
+    const at = css.indexOf(selector);
+    const open = css.lastIndexOf("@media", at);
+    const span = at > 0 ? css.slice(open, at) : "";
+    // The selector must sit inside that block, not after one that closed before it.
+    return /\n\}/.test(span) ? "" : span;
+  };
+  it("fades from transparent to the element's own opacity", () => {
+    expect(css).toMatch(/@keyframes art-in \{\s*from \{ opacity: 0; \}\s*\}/);
+  });
+  it("holds pending art transparent and fades `in` on the shared length and curve, with no beat, only where motion is welcome", () => {
+    expect(css).toMatch(/\[data-art="pending"\]\[data-art\] \{ opacity: 0 !important; \}/);
+    expect(css).toMatch(/\[data-art="in"\] \{ animation: art-in var\(--motion-duration\) var\(--motion-ease\); \}/);
+    expect(motionBlock('[data-art="pending"]')).toMatch(/^@media \(prefers-reduced-motion: no-preference\) \{/);
+    expect(motionBlock('[data-art="in"]')).toMatch(/^@media \(prefers-reduced-motion: no-preference\) \{/);
   });
 });
