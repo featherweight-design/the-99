@@ -988,9 +988,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   its spans. So `perfRoute` returns an explicit tracker instead.
 
 - **`public/sw.js` is the app's service worker** (speed plan, 2026-10-12), registered in production
-  only, after the `load` event, by `ServiceWorker` in the root layout. It answers TWO kinds of request
+  only, after the `load` event, by `ServiceWorker` in the root layout. It answers ONE kind of request
   and lets every other one through untouched: `/_next/static/` (content-hashed, cache first, trimmed to
-  its newest 600 files) and `/mana/sprite.svg` (served from the cache, refreshed behind). Never a
+  its newest 600 files). Not the mana sprite: its URL has no hash and the build computes each pip's
+  cell from its symbol order, so a cached sprite behind a new build draws the wrong symbols. Never a
   document, an RSC payload, `/api`, an action or anything cross-origin, because those carry a reader's
   own data. `src/app/sw.test.ts` runs the file against a fake worker scope. **To retire it**, ship a
   `sw.js` that unregisters itself (`self.registration.unregister()` in `activate`) rather than deleting

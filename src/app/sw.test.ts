@@ -87,13 +87,8 @@ describe("the service worker", () => {
     expect(network).toHaveBeenCalledTimes(2);
   });
 
-  it("serves the sprite from the cache at once and refreshes it behind", async () => {
-    await fetchVia("/mana/sprite.svg");
-    network.mockResolvedValueOnce(new Response("new sprite"));
-    const served = await fetchVia("/mana/sprite.svg");
-    expect(await served!.text()).toBe("body of /mana/sprite.svg");
-    const next = await fetchVia("/mana/sprite.svg");
-    expect(await next!.text()).toBe("new sprite");
+  it("leaves the mana sprite to the network, since its URL carries no hash", async () => {
+    expect(await fetchVia("/mana/sprite.svg")).toBeNull();
   });
 
   it("trims the static cache to its newest 600 files", async () => {
