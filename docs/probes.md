@@ -1593,9 +1593,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   The index used to fetch only pairs someone had built — one pair row on staging against 3,380
   single commanders — so Change commander's "Change pair" offered nothing. It now sweeps every
   legal pair: `canPair` over `partnerAbility`, among cards that pass `isCommanderCandidate`,
-  which is 1,717 pairs as of 2026-09-25 (1,653 of them generic `Partner` × `Partner`), plus
-  every pair a deck holds. Backgrounds and Doctor's companions are out, because `canPair` does
-  not form them.
+  which was 1,717 pairs as of 2026-09-25 (1,653 of them generic `Partner` × `Partner`) and 2,159
+  on staging once Doctor's companion joined (2026-10-11), plus every pair a deck holds. Backgrounds
+  are out, because `canPair` does not form them. The probe checks that the sweep holds a Doctor
+  and companion pair, because only the loader's SQL prefilter (the companion's text, the Doctor's
+  type line) can drop them.
 
   The unit suites prove the rules over hand-built cards and the pass over an injected list.
   What only a database answers is the join between them: whether the loader's SQL prefilter

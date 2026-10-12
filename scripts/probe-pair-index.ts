@@ -4,7 +4,7 @@
 // `seed-index.test.ts` proves the pass over an injected pair list. What neither can reach is
 // the join between them: whether the DEFAULT loader's SQL prefilter hands `legalPairs` every
 // partner card the catalog holds, whether that clears the 1,500 floor on the real catalog, and
-// whether the real pass over ~1,700 real pairs skips, counts and refuses the way the unit cases
+// whether the real pass over ~2,160 real pairs skips, counts and refuses the way the unit cases
 // say. This drives the real `loadPairs` and the real `buildCommanderIndex`.
 //
 // IT SENDS NO EDHREC TRAFFIC AND MAKES NO WRITES. The pair fetch, the pair write, the role pass
@@ -56,12 +56,19 @@ async function run(): Promise<void> {
     (await db.select({ id: cards.oracleId, t: cards.oracleText, typeLine: cards.typeLine }).from(cards).where(inArray(cards.oracleId, ids)))
       .map((r) => [r.id, r]),
   );
-  const kinds = new Set<string>(loaded.pairs.map((p) => partnerAbility(text.get(p.a)?.t ?? null, text.get(p.a)?.typeLine ?? null)?.kind ?? "built-only"));
+  const kindOf = (id: string) => partnerAbility(text.get(id)?.t ?? null, text.get(id)?.typeLine ?? null)?.kind ?? "built-only";
+  const kinds = new Set<string>(loaded.pairs.flatMap((p) => [kindOf(p.a), kindOf(p.b)]));
   check(
     "the sweep holds a generic, a named and a restricted pair",
     ["generic", "with", "restricted"].every((k) => kinds.has(k)),
     [...kinds].sort().join(", "),
   );
+  // A Doctor and a companion reach `legalPairs` only through the loader's SQL prefilter, which
+  // reads the companion's text and the Doctor's TYPE LINE; dropping either predicate leaves no such
+  // pair in the sweep, and nothing else here would notice.
+  const doctorPairs = loaded.pairs.filter((p) => new Set([kindOf(p.a), kindOf(p.b)]).size === 2
+    && [kindOf(p.a), kindOf(p.b)].every((k) => k === "doctor" || k === "doctorsCompanion"));
+  check("the sweep pairs Time Lord Doctors with Doctor's companions", doctorPairs.length > 0, `${doctorPairs.length} pairs`);
 
   // 2 · a short enumeration is refused, and still returns the built pairs. "Built" is read
   // here by a query of its own rather than trusted from the loader, so a refusal that dropped

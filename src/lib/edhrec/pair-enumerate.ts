@@ -8,7 +8,9 @@
 // never be a candidate to change to, and fetching its page would buy nothing.
 //
 // Measured 2026-09-25: 119 candidates with a partner ability form 1,717 legal pairs — 1,653 of
-// them generic `Partner` × `Partner`, 21 named `Partner with`, 43 restricted.
+// them generic `Partner` × `Partner`, 21 named `Partner with`, 43 restricted. Doctor's companion
+// joined 2026-10-11: on staging the prefilter then passed 172 cards and the sweep formed 2,159
+// pairs, the ~442 more being a Time Lord Doctor beside a companion.
 import { canPair, partnerAbility } from "../decks/partner";
 import { isCommanderCandidate } from "../recs/score";
 import { canonicalPair } from "./pair";
@@ -25,7 +27,8 @@ export type PairSource = {
 export type IndexPair = { a: string; b: string; nameA: string; nameB: string };
 
 /**
- * Below this many legal pairs the sweep is refused rather than run short. 1,717 were measured;
+ * Below this many legal pairs the sweep is refused rather than run short. 1,717 were measured
+ * (2,159 once Doctor's companion joined, 2026-10-11, which leaves the floor where it was);
  * a broken partner parse or a truncated catalog read would otherwise shrink the sweep and look
  * like a set rotating partners out. The room under 1,717 is for exactly that rotation.
  */
