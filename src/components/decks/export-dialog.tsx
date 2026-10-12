@@ -9,6 +9,7 @@ import { downloadTextFile } from "../../lib/decks/download";
 import {
   bodyLine,
   buildDecklistText,
+  decklistGroups,
   commanderLines,
   buildShoppingText,
   decklistFilename,
@@ -100,7 +101,8 @@ export function ExportDialog({
   const commanderPreviewLines = commanderLines({ commanderName, partnerName, commanderPrinting, partnerPrinting });
   // Composed through the same helper the exported text uses, so the preview
   // cannot show a line shape the copied file does not have.
-  const bodyLines = decklistCards.map(bodyLine);
+  // In the copied text's order, its type groups' (the headers themselves are the text's, not drawn).
+  const bodyLines = decklistGroups(decklistCards).flatMap(([, cards]) => cards.map(bodyLine));
   // The body count, which is what `built` means everywhere else — derived here
   // rather than passed in, so it cannot disagree with the preview's own header.
   const built = decklistCards.reduce((sum, c) => sum + c.quantity, 0);

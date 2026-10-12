@@ -1,12 +1,19 @@
 // Pure helpers for export dialog — filename assembly + text assembly.
 // Tested in export-helpers.test.ts.
 
+import { CARD_TYPE_GROUP_ORDER, type CardTypeGroup } from "./grouping";
+
 /** One exported deck row: the printed name, and the printing it was printed on. */
 export type DecklistCard = {
   name: string;
   quantity: number;
   setCode?: string;
   collectorNumber?: string;
+  /**
+   * The deck view's type group (`cardTypeGroup`, front face first, so a Sorcery // Land modal DFC is
+   * a Sorcery), which the export files the line under. A card without one is filed under `Other`.
+   */
+  typeGroup?: CardTypeGroup;
 };
 
 /**
@@ -58,15 +65,33 @@ export function commanderLines(args: {
 }
 
 /**
- * Assemble the decklist text copied / downloaded — spec format (#8): a
- * `Commander` section holding one or both commanders, then a `Deck` section of
- * `N Card Name (SET) CN` lines, Moxfield/Archidekt-ready. The dialog's preview
- * header/separator are presentational only and never part of this text.
+ * The body cards in the order the export writes them: the deck view's type groups in its order
+ * (Creatures, Instants, Sorceries, Artifacts, Enchantments, Planeswalkers, Lands, Other), each
+ * group in the order the caller passed. The dialog's preview reads this as well, so its lines run
+ * in the order the copied text does.
+ */
+export function decklistGroups(cards: DecklistCard[]): [CardTypeGroup, DecklistCard[]][] {
+  return CARD_TYPE_GROUP_ORDER.map((g): [CardTypeGroup, DecklistCard[]] => [g, cards.filter((c) => (c.typeGroup ?? "Other") === g)])
+    .filter(([, group]) => group.length > 0);
+}
+
+/** A type section's header, `Creatures (30)`: the group's name and its copies. */
+export function typeSectionHeader(group: CardTypeGroup, cards: DecklistCard[]): string {
+  return `${group} (${cards.reduce((n, c) => n + c.quantity, 0)})`;
+}
+
+/**
+ * Assemble the decklist text copied / downloaded: a `Commander` section holding one or both
+ * commanders, then the body grouped by type (bug batch 2026-10-12, Hugh), each group under a
+ * `Creatures (30)` header, as the deck view groups it. Lines are `N Card Name (SET) CN`. The
+ * dialog's preview header/separator are presentational only and never part of this text.
+ *
+ * The import reads every header this writes (`SECTION_MARKERS`), so the export round-trips
+ * through `buildDeckImport` to the same list, which the tests prove.
  *
  * The sections are written for a single commander too. The older bare-first-line
  * form said which card led the deck only by the convention that line one does,
- * which a pair cannot express; one shape reads back the same either way, and the
- * round-trip through `buildDeckImport` is what proves it.
+ * which a pair cannot express; one shape reads back the same either way.
  */
 export function buildDecklistText(args: {
   commanderName: string;
@@ -87,9 +112,7 @@ export function buildDecklistText(args: {
   return [
     "Commander",
     ...commanderLines(args),
-    "",
-    "Deck",
-    ...args.cards.map(bodyLine),
+    ...decklistGroups(args.cards).flatMap(([group, cards]) => ["", typeSectionHeader(group, cards), ...cards.map(bodyLine)]),
   ].join("\n");
 }
 

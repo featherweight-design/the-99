@@ -1340,9 +1340,11 @@ export const ADD_RESULTS: SearchResult[] = [
  * short and the count it is measured against is the real 99.
  */
 export const EXPORT_DECKLIST: DecklistCard[] = [
-  { name: CARDS.owned, quantity: 1 },
-  { name: "Cultivate", quantity: 1 },
-  { name: CARDS.removed, quantity: 1 },
+  // Each card's own type group, as the deck page passes them, so the specimen files them where
+  // the real export does.
+  { name: CARDS.owned, quantity: 1, typeGroup: "Artifacts" },
+  { name: "Cultivate", quantity: 1, typeGroup: "Sorceries" },
+  { name: CARDS.removed, quantity: 1, typeGroup: "Enchantments" },
 ];
 
 /**

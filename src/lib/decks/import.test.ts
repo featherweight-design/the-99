@@ -574,16 +574,33 @@ describe("buildDeckImport — the motivating deck", () => {
 });
 
 // A pasted list's section header ("Lands") resolved by exact name to Scryfall's Jumpstart
-// theme front of that name, and the deck gained a card called Lands. It is not a card, so the
-// line is left for the player to resolve like any other name the catalog does not hold.
+// theme front of that name, and the deck gained a card called Lands. It is not a card: the header
+// is skipped, and any other such name is left for the player to resolve like one the catalog lacks.
+// A sideboard grouped by type (`Sideboard`, then `Lands (1)`) is still the sideboard: a type header
+// groups cards inside whichever board is open and moves none (round 2 of #1538).
+describe("buildDeckImport — type groups inside a sideboard", () => {
+  it("skips the sideboard's grouped cards, and a board header opens the main list again", () => {
+    const result = build("Deck\nCreatures (1)\n1 Sol Ring\n\nSideboard\nLands (1)\n1 Forest\n\nDeck\nLands (1)\n2 Forest");
+    expect(shape(result.cards).map((c) => [c.oracleId, c.quantity])).toEqual([
+      [SOL_RING.oracleId, 1],
+      [FOREST.oracleId, 2],
+    ]);
+    expect(result.notes).toEqual([{ kind: "sectionSkipped", section: "sideboard", lineCount: 1 }]);
+  });
+});
+
 describe("buildDeckImport — a line naming cardboard that is not a card", () => {
   const LANDS_FRONT = card({ name: "Lands", layout: "front_card", typeLine: "Card", commanderLegal: false });
   const EXPERIENCE = card({ name: "Experience", typeLine: "Card", commanderLegal: false });
 
-  it("reads a 'Lands' header line as unresolved, not as a card", () => {
-    const result = build("1 Sol Ring\nLands\n1 Forest", [...CATALOG, LANDS_FRONT, EXPERIENCE]);
-    expect(shape(result.cards).map((c) => c.oracleId)).not.toContain(LANDS_FRONT.oracleId);
-    expect(result.unresolved.map((u) => u.rawName)).toEqual(["Lands"]);
+  // Since bug batch 2026-10-12 a type header is a section header (`SECTION_MARKERS`): skipped
+  // outright, neither a card nor a name left to resolve, with or without its count.
+  it("skips a 'Lands' header line: not a card, and not a name left to resolve", () => {
+    for (const header of ["Lands", "Lands (37)", "Lands:"]) {
+      const result = build(`1 Sol Ring\n${header}\n1 Forest`, [...CATALOG, LANDS_FRONT, EXPERIENCE]);
+      expect(shape(result.cards).map((c) => c.oracleId)).not.toContain(LANDS_FRONT.oracleId);
+      expect(result.unresolved).toEqual([]);
+    }
   });
 
   it("reads a type-line-only 'Card' object as unresolved too", () => {

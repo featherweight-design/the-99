@@ -4,7 +4,9 @@
 // Scryfall's catalog holds Jumpstart theme fronts, planes, schemes, avatars and a few `normal`
 // objects whose type line is only `Card`. One of the fronts is named "Lands", so a pasted list's
 // section header resolved to it by exact name and the deck gained a card called Lands (Hugh's
-// staging walk, 2026-09-25). `isGameCard` is the rule and `matchRows` applies it; the unit tests
+// staging walk, 2026-09-25). A deck paste now skips that header outright (section-headers.ts,
+// 2026-10-12); a collection CSV row named "Lands" still reaches the resolver, and is still refused.
+// `isGameCard` is the rule and `matchRows` applies it; the unit tests
 // prove both over hand-built catalogs. What only a database answers is whether the catalog
 // `loadMatchInputs` reads carries the columns the rule needs, whether the real "Lands" front is
 // refused, and whether the skipped-printings ledger reports only the TOKEN layouts as skipped.
@@ -79,7 +81,9 @@ async function main() {
   const names = deck.cards.map((c) => c.oracleId);
   check("the 'Lands' header is not imported as a card", !names.includes(lands.oracle_id),
     `${deck.cards.length} card(s) imported`);
-  check("the 'Lands' header reads as unresolved", deck.unresolved.some((u) => u.rawName === "Lands"),
+  // Since 2026-10-12 a type header is a section header (`SECTION_MARKERS`), skipped before matching:
+  // neither a card nor a name left to resolve.
+  check("the 'Lands' header is skipped, not left to resolve", !deck.unresolved.some((u) => u.rawName === "Lands"),
     `unresolved: ${JSON.stringify(deck.unresolved.map((u) => u.rawName))}`);
   check("the real cards beside it still import", deck.cards.length === 2,
     `${deck.cards.length} of 2`);

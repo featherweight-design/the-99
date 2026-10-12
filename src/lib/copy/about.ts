@@ -1110,7 +1110,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // (export-dialog.tsx:561). `Buy these at Mana Pool` was already right
     // (decks-builder.ts:472).
     caption:
-      'Take your list anywhere as plain text. Moxfield and Archidekt both read it.\n\nOr send just the cards you need to buy straight to Mana Pool, and check out there.',
+      'Take your list anywhere as plain text.\n\nOr send just the cards you need to buy straight to Mana Pool, and check out there.',
     keys: [
       '“Copy to clipboard” or “Download .txt” for the full list.',
       'The “Shopping list” tab holds only what this deck needs to buy.',

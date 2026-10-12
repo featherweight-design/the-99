@@ -11,6 +11,7 @@ import {
   looksLikeCsv, parseCollectionCsv, type CollectionRow, type ParseError,
 } from "../manabox/parse";
 import { parsePasteList } from "../manabox/paste";
+import { SECTION_MARKERS, normalizeHeader } from "../manabox/section-headers";
 import { isCommanderCandidate } from "../recs/score";
 import { isBasicLand } from "./grouping";
 
@@ -87,9 +88,10 @@ export type DeckImport = {
   declaredPartner: DeclaredCommander | null;
   /**
    * Real card lines, after sections and annotations are stripped. The caller cannot
-   * recover this by parsing the raw text: `parsePasteList` turns any non-blank line
-   * into a row, so a `SIDEBOARD:` header counts as a card there. This is the count
-   * that decides state 10 (nothing parsed) and the one state 9's copy renders.
+   * recover this by parsing the raw text: `parsePasteList` skips a header line but
+   * keeps the lines under a `Sideboard` or `Maybeboard` header, which the import
+   * excludes. This is the count that decides state 10 (nothing parsed) and the one
+   * state 9's copy renders.
    */
   lineCount: number;
   notes: ImportNote[];
@@ -168,15 +170,6 @@ export function resolveDeckListInput(text: string): ResolvedDeckListInput {
   return { kind: "rows", rows };
 }
 
-// Section markers the exporters emit, on a line of their own. Moxfield writes
-// "SIDEBOARD:", Archidekt "Sideboard:", and both bare-word forms occur.
-const SECTION_MARKERS: { re: RegExp; section: "sideboard" | "maybeboard" | null }[] = [
-  { re: /^side ?board$/i, section: "sideboard" },
-  { re: /^maybe ?board$/i, section: "maybeboard" },
-  { re: /^considering$/i, section: "maybeboard" },
-  { re: /^(deck|main ?board|main deck|commander|companion)$/i, section: null },
-];
-
 /**
  * Moxfield's annotation flags, e.g. `1 Sol Ring (LTC) 284 *F*` or
  * `1 Atraxa, Praetors' Voice (2X2) 145 *CMDR*`. Stripped right-to-left so a name
@@ -217,20 +210,6 @@ const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
  */
 const COMMANDER_TAG_RE = /\s+\((?:commander|partner)\)$/i;
 
-/**
- * Reduces a candidate header to the bare word the markers match.
- *
- * Exporters decorate headers with a trailing colon, a count, or both — `Commander (1)`,
- * `Sideboard (14):`, `Deck (99)`. An undetected `Sideboard (14)` is the expensive one: its
- * fourteen lines stop being a skipped section and become fourteen cards in the deck.
- *
- * Safe against real card lines because every marker regex is anchored end to end — a card
- * named "Sideboard Shenanigans" still fails to match once the count is gone.
- */
-function normalizeHeader(trimmed: string): string {
-  return trimmed.replace(/:$/, "").replace(/\s*\(\d+\)$/, "").trim();
-}
-
 type PreparedLine = {
   /** The line with markers and annotations removed, its printing kept; "" if excluded. */
   text: string;
@@ -260,7 +239,8 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
     // A marker only counts on a line of its own — "1 Sideboard Shenanigans" is a card.
     const marker = SECTION_MARKERS.find((m) => m.re.test(normalizeHeader(trimmed)));
     if (marker) {
-      excludedSection = marker.section;
+      // A type header groups cards inside the board already open; only a board header moves it.
+      if (!marker.keep) excludedSection = marker.section;
       lines.push({ text: "", isCommander: false });
       continue;
     }

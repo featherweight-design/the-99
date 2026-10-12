@@ -7,6 +7,7 @@ import {
   shoppingFilename,
 } from "./export-helpers";
 import { buildDeckImport, type ImportCatalogCard } from "./import";
+import { cardTypeGroup } from "./grouping";
 
 // The pair the export has to round-trip, and the catalog that reads it back.
 const card = (name: string, over: Partial<ImportCatalogCard> = {}): ImportCatalogCard => ({
@@ -28,6 +29,56 @@ const catalog = [
   card("Lightning Bolt", { typeLine: "Instant" }),
 ];
 
+describe("buildDecklistText, grouped by type (bug batch 2026-10-12)", () => {
+  // The deck view's groups, as `cardTypeGroup` files them: a land creature is a land, and a modal
+  // DFC is filed by its front face, so `Sorcery // Land` is a sorcery.
+  const typed = [
+    card("Sol Ring", { typeLine: "Artifact" }),
+    card("Cultivate", { typeLine: "Sorcery" }),
+    card("Shatterskull Smashing // Shatterskull, the Hammer Pass", { typeLine: "Sorcery // Land" }),
+    card("Llanowar Elves", { typeLine: "Creature — Elf Druid" }),
+    card("Dryad Arbor", { typeLine: "Land Creature — Forest Dryad" }),
+    card("Forest", { typeLine: "Basic Land — Forest" }),
+    card("Swords to Plowshares", { typeLine: "Instant" }),
+    card("Rhystic Study", { typeLine: "Enchantment" }),
+    card("Karn, the Great Creator", { typeLine: "Legendary Planeswalker — Karn" }),
+    card("Atreus, God of War", { typeLine: "Legendary Creature — God" }),
+  ];
+  const body = typed.filter((c) => c.name !== "Atreus, God of War").map((c) => ({
+    name: c.name,
+    quantity: c.name === "Forest" ? 5 : 1,
+    typeGroup: cardTypeGroup(c.typeLine),
+  }));
+
+  it("writes the commander first, then each type under its header, in the deck view's order", () => {
+    const text = buildDecklistText({ commanderName: "Atreus, God of War", partnerName: null, cards: body });
+    expect(text).toBe(
+      [
+        "Commander", "1 Atreus, God of War",
+        "", "Creatures (1)", "1 Llanowar Elves",
+        "", "Instants (1)", "1 Swords to Plowshares",
+        "", "Sorceries (2)", "1 Cultivate", "1 Shatterskull Smashing // Shatterskull, the Hammer Pass",
+        "", "Artifacts (1)", "1 Sol Ring",
+        "", "Enchantments (1)", "1 Rhystic Study",
+        "", "Planeswalkers (1)", "1 Karn, the Great Creator",
+        "", "Lands (6)", "1 Dryad Arbor", "5 Forest",
+      ].join("\n"),
+    );
+  });
+
+  it("imports back to the same list: same commander, same cards, same quantities, no header read as a card", () => {
+    const text = buildDecklistText({ commanderName: "Atreus, God of War", partnerName: null, cards: body });
+    const back = buildDeckImport({ text, catalog: typed });
+    expect(back.declaredCommander?.name).toBe("Atreus, God of War");
+    expect(back.unresolved).toEqual([]);
+    const got = back.cards.map((c) => [c.oracleId, c.quantity]).sort();
+    const want = body.map((c) => [`oracle-${c.name.toLowerCase().replace(/[^a-z]+/g, "-")}`, c.quantity]).sort();
+    expect(got).toEqual(want);
+    // Every card line and the commander's, and not one of the eight headers.
+    expect(back.lineCount).toBe(body.length + 1);
+  });
+});
+
 describe("buildDecklistText", () => {
   it("emits a Commander section holding both, and round-trips through the parser", () => {
     const text = buildDecklistText({
@@ -36,7 +87,7 @@ describe("buildDecklistText", () => {
       cards: [{ quantity: 1, name: "Lightning Bolt" }],
     });
     expect(text).toBe(
-      "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nDeck\n1 Lightning Bolt",
+      "Commander\n1 Atreus, God of War\n1 Kratos, God of War\n\nOther (1)\n1 Lightning Bolt",
     );
 
     const back = buildDeckImport({ text, catalog });
@@ -54,7 +105,7 @@ describe("buildDecklistText", () => {
       cards: [{ quantity: 1, name: "Lightning Bolt", setCode: "M11", collectorNumber: "149" }],
     });
     expect(text).toBe(
-      "Commander\n1 Atreus, God of War (SLD) 2212\n1 Kratos, God of War (SLD) 2213\n\nDeck\n1 Lightning Bolt (M11) 149",
+      "Commander\n1 Atreus, God of War (SLD) 2212\n1 Kratos, God of War (SLD) 2213\n\nOther (1)\n1 Lightning Bolt (M11) 149",
     );
     // Deck printings E4: importing the export names the same printings, commanders included.
     const back = buildDeckImport({ text, catalog });
@@ -96,7 +147,7 @@ describe("buildDecklistText", () => {
       commanderPrinting: { setCode: undefined, collectorNumber: undefined },
       cards: [],
     });
-    expect(text).toBe("Commander\n1 Atreus, God of War\n\nDeck");
+    expect(text).toBe("Commander\n1 Atreus, God of War");
   });
 
   // One shape for both: the old bare-first-line form parsed correctly only by
@@ -107,7 +158,7 @@ describe("buildDecklistText", () => {
       partnerName: null,
       cards: [{ quantity: 1, name: "Lightning Bolt" }],
     });
-    expect(text).toBe("Commander\n1 Atreus, God of War\n\nDeck\n1 Lightning Bolt");
+    expect(text).toBe("Commander\n1 Atreus, God of War\n\nOther (1)\n1 Lightning Bolt");
   });
 
   it("includes body cards with quantities, in order", () => {
@@ -132,13 +183,13 @@ describe("buildDecklistText", () => {
     expect(out).not.toMatch(/^#|^\/\//m);
   });
 
-  it("ends at the Deck header when cards is empty (no trailing newline)", () => {
+  it("ends at the commanders when cards is empty (no trailing newline)", () => {
     const out = buildDecklistText({
       commanderName: "Muldrotha, the Gravetide",
       partnerName: null,
       cards: [],
     });
-    expect(out).toBe("Commander\n1 Muldrotha, the Gravetide\n\nDeck");
+    expect(out).toBe("Commander\n1 Muldrotha, the Gravetide");
   });
 
   it("names the printing on each body line", () => {
@@ -148,7 +199,7 @@ describe("buildDecklistText", () => {
       cards: [{ name: "Battle of Olympus", quantity: 1, setCode: "SLD", collectorNumber: "2208" }],
     });
     expect(text).toBe(
-      "Commander\n1 Atreus, God of War\n\nDeck\n1 Battle of Olympus (SLD) 2208",
+      "Commander\n1 Atreus, God of War\n\nOther (1)\n1 Battle of Olympus (SLD) 2208",
     );
   });
 
@@ -184,7 +235,8 @@ describe("buildDecklistText", () => {
       cards: [{ name: "Cultivate", quantity: 2 }],
     });
     expect(text).toContain("2 Cultivate");
-    expect(text).not.toContain("(");
+    // The card lines name no printing; the section header's `(1)` count is not one.
+    expect(text.split("\n").filter((l) => /^\d/.test(l)).join("\n")).not.toContain("(");
   });
 
   it("omits the printing when only half of it is known", () => {

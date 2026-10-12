@@ -192,10 +192,9 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
       ? buildDeckImport({ rows: resolved.rows, catalog, indexes })
       : buildDeckImport({ text: resolved.text, catalog, indexes });
 
-  // Both counts come from the import's own cleaned line count, never from `rows`.
-  // parsePasteList turns any non-blank line into a row, so a `SIDEBOARD:` header
-  // counts as a card there — a list of nothing but section headers would read as
-  // state 9, and state 9's copy would render a total that includes the headers.
+  // Both counts come from the import's own cleaned line count, never from `rows`:
+  // `rows` still holds the sideboard and maybeboard lines the import excludes, so a
+  // count read from it would render a total that includes cards the deck never takes.
   if (result.lineCount === 0) return { ok: false, reason: "noRows", notes: result.notes };
 
   // Order matters, and the guard is on `cards` alone. Every line that fails to match
