@@ -255,3 +255,98 @@ list on `/decks` (default, filtered or searched if drawn, empty, feed unavailabl
 on a fully owned, a partial and a mostly unowned precon; the start-a-deck action and its arrival; the
 Collector's Edition and multi-commander cases; the `STATES` rows and design-table sections they add; and the
 About entry on the per-entry artboard.
+
+## Addendum: built-from link and v0 (2026-10-11)
+
+Hugh added a sixth PR to the line on 2026-10-11: a deck can say which precon it was built from, and its history
+can start from the box.
+
+### Rulings (Hugh, 2026-10-11, closed)
+
+1. **A player can link a deck to a precon** ("built from a precon"), from the deck page or from the precon page.
+   The shared rule (same commanders and at least 40% of the precon's distinct non-basic oracle ids in the deck's
+   list, or any commanders and at least 60%) powers a suggestion, for example "Looks like this started as
+   Eldrazi Unbound · Link it". It never links on its own.
+2. **A linked deck's history starts from the precon's list as v0**, so every later version diffs against the box.
+   This is automatic for a deck started from a precon (PR 4 records which precon it came from, so PR 6 can backfill
+   v0). For an existing deck, linking puts the precon in front of its current versions. Linking never rewrites or
+   renumbers an existing version's content.
+3. **Unlink is allowed.**
+
+### What exists today
+
+- **Versions are numbered, not dated.** `deck_versions` (`src/db/schema.ts:666`) carries `number`, an integer
+  (`:669`), unique per deck (`:715`), beside `committed_at` (`:670`). A commit numbers from the newest row plus one,
+  starting at 1 (`src/lib/decks/versions.ts:176`). There is no check on `number`, so 0 is free on every deck.
+  A version stores the full list, not a diff, and needs a commander (`src/db/schema.ts:674`).
+- **"A deck with no row here is a brew"** (`src/db/schema.ts:664`). Brew, draft and committed are read off the
+  rows: "newest" is the highest `number` (`newestVersion`, `src/lib/decks/versions.ts:58`; the claim model,
+  `src/lib/decks/availability-query.ts:70`; `newestVersionNumberSql`, `src/lib/decks/read.ts:1066`), and "brew" is
+  "no row at all" (`src/lib/decks/cart-read.ts:80`). The claim model treats the newest version as what is
+  physically sleeved (`src/lib/decks/availability-query.ts:23`).
+- **Two readers go by date.** `versionLiveAt` (`src/lib/decks/versions.ts:78`) stamps a logged game with the
+  version live at `played_at`, by `committed_at`. Home's resume block reads `max(committed_at)` per deck
+  (`src/db/schema.ts:723`).
+- **A commit inherits each card's `since` from the version before it** (`src/lib/decks/versions.ts:164`), which is
+  what seniority orders on.
+- **The Versions tab** is `VersionRail` (`src/components/decks/version-history.tsx:239`), rendered by the builder
+  (`src/components/decks/builder-shell.tsx:1746`). It lists newest first, marks the first row current (`:272`) and
+  draws the last row as `initial` with no diff (`:273`). A brew draws no Versions tab at all
+  (`src/components/decks/builder-shell.tsx:210`).
+- **A version's diff is against the next lower number.** `getVersionDiff` finds the predecessor by
+  `number <` (`src/app/decks/actions.ts:1961`), `loadVersionDiff` (`src/lib/decks/versions.ts:545`) answers a v1 with
+  two empty lists, and the arithmetic is `draftDiff` (`src/lib/decks/draft-diff.ts:23`). The diff is drawn by
+  `VersionDiff` (`src/components/decks/version-diff.tsx:280`).
+- **Analyses pin to the newest version at commit.** `deck_profiles.version_id` (`src/db/schema.ts:1945`), written by
+  `pinAnalysisToVersion` (`src/lib/profile/stored.ts:577`) under the guard `isNewestVersion`
+  (`src/lib/profile/stored.ts:529`); the synopsis pins the same way (`src/lib/synopsis/pin.ts:22`). A game's
+  `version_id` is `src/db/schema.ts:821`.
+- **The deck page header** is `BuilderSpine` (`src/components/decks/builder-spine.tsx:261`), drawn as
+  `SpineDesktop` (`src/components/decks/spine-desktop.tsx:127`) and `SpineMobile`
+  (`src/components/decks/spine-mobile.tsx:49`), placed by the builder (`src/components/decks/builder-shell.tsx:1396`).
+- **The precon handoff already draws the shared comparison**, as a computed line: `your deck <Deck> · N shared` on a
+  list row and the built sentence on the open precon (`STATES-precons.md` R2, R6, O1, S1b). It is not a link.
+
+### What engineering locks
+
+1. **The link is one nullable column on `decks`**, the precon's `file_name`, set by "Start a deck from this" and by
+   Link, cleared by Unlink. A Collector's Edition twin links to its plain edition.
+2. **The suggestion is computed when the page is read, never stored**, from the shared rule above. A deck already
+   linked shows no suggestion.
+3. **v0 sorts first without renumbering anything.** Commits start at 1, so `number = 0` is free on every deck and
+   sorts ahead of every existing version under the ordering every reader already uses. No existing row's number,
+   cards, `since`, note or `committed_at` changes, at link or at unlink.
+4. **v0 is history, never state.** It is never the newest version, the sleeved list, the version a game is
+   stamped with, the predecessor a commit inherits `since` from, a version an analysis or synopsis pins to, or a
+   reason to call a deck committed. A deck started from a precon is still a brew until its first commit, and that
+   commit is v1. Whatever form v0 takes, every reader listed above under "What exists today" keeps its answer.
+5. **Unlink removes the link and v0, and nothing else.**
+6. **The deck is never rewritten.** Linking adds history; it does not change the draft, the committed list or any
+   printing.
+
+### Open questions
+
+1. **How v0 is stored (engineering, for the plan).** A `deck_versions` row at number 0 gets the ordering and
+   the diff for free, but every "newest", "brew" and "live at" reader above would have to skip it, and its
+   `committed_at` would have to sit before v1 (Home and `versionLiveAt` read the date). Drawing v0 from the precon
+   tables at read touches none of them, but those tables are replaced on every ingest, so a corrected feed would
+   move a deck's v0. The plan picks one and lists every reader it checks.
+2. **Does a linked brew get a Versions tab?** Today a brew draws none. With v0 it has one row of history.
+
+### What Design owns
+
+- **The link control** on the deck page (where in the header, or elsewhere) and on the open precon (beside
+  "Start a deck from this"; how it picks which of the player's decks).
+- **The suggestion line**: where it sits on the deck page, its wording, and how it is dismissed, and whether a
+  dismissal is remembered.
+- **The linked state**: what a linked deck says (a "built from" line, and where), and how the open precon and its
+  list row read once a deck is linked rather than only sharing cards.
+- **Unlink** and its confirm, which says that v0 leaves the history.
+- **The v0 row in Versions**: how it reads (the precon's name, the box's date or none), and what v1's diff
+  against it shows (Hugh's precon builds keep 48 to 86% of the precon's non-basic cards).
+- **A deck that shares with two precons**, and a precon that two of the player's decks share with.
+- **Copy** goes through `/copy-review`.
+
+Fixtures, from the measurement above: Eldrazi Unbound (86%), Sultai Arisen (84%), Counter Intelligence (70%,
+swapped commander), Mutant Menace (48%, same commander), and HD - Zombies against Wretched Ranks (19%, same
+commander, no suggestion).
