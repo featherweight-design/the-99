@@ -1,7 +1,13 @@
 "use client";
 
 // A link to a DYNAMIC route that prefetches the whole page once a reader shows intent: a pointer
-// resting on it, keyboard focus, or the touchstart that precedes a tap (speed plan (b), 2026-10-12).
+// resting on it, or keyboard focus (speed plan (b), 2026-10-12).
+//
+// NOT on touchstart, though that was the first version. Measured on deployed staging (#1557), a
+// bare tap at 390 got SLOWER with it: 889 to 1,434ms and 866 to 1,384ms to the deck's content. The
+// tap's own navigation follows the touchstart within milliseconds and does not reuse the prefetch
+// still in flight, so the page is fetched twice at once. A phone gets its head start from `eager`
+// instead (Home's latest deck: 865 to 139ms at 390), not from the tap.
 //
 // A dynamic route's default prefetch stops at its loading boundary, so the first visit to a deck
 // waited on the full server render after the press. A full prefetch on intent starts that render
@@ -29,7 +35,7 @@ type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
-export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, onTouchStart, ...props }: Props) {
+export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, ...props }: Props) {
   const router = useContext(AppRouterContext);
   const done = useRef(false);
   const prefetch = () => {
@@ -53,10 +59,6 @@ export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocu
       onFocus={(e) => {
         prefetch();
         onFocus?.(e);
-      }}
-      onTouchStart={(e) => {
-        prefetch();
-        onTouchStart?.(e);
       }}
     />
   );
