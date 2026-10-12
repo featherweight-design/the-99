@@ -24,7 +24,7 @@ import { sql } from "drizzle-orm";
 import { requireEnv } from "../lib/env.mjs";
 import { bestPairing } from "../lib/card-labels-pairing.mjs";
 import { connectStaging } from "./lib/staging.mjs";
-import { sendBatch } from "./lib/batch.mjs";
+import { countTokens, sendBatch } from "./lib/batch.mjs";
 import { costUsd, worstCaseUsd } from "./lib/pricing.mjs";
 import { buildRequest, LABEL_PROMPT_VERSION, labelIsFresh, renderBody, SYSTEM, SYSTEM_TOKENS_BOUND } from "../../src/lib/labels/prompt";
 import { readReply } from "../../src/lib/labels/parse";
@@ -119,7 +119,9 @@ for (const model of MODELS) {
     for (let i = 0; i < todo.length; i += BATCH) groups.push(todo.slice(i, i + BATCH));
     if (groups.length === 0) continue;
     const sent = groups.map((g, i) => ({ customId: `c-${i}`, params: buildRequest(`c-${i}`, model, g.map((x) => x.card)).params as never }));
-    const worst = groups.reduce((n, g, i) => n + worstCaseUsd(model, SYSTEM_TOKENS_BOUND + renderBody(g.map((x) => x.card)).length, (sent[i].params as { max_tokens: number }).max_tokens, { batch: true }), 0);
+    // Input tokens from the free counting endpoint, per request: a character count is not a token ceiling for non-ASCII text.
+    let worst = 0;
+    for (let i = 0; i < groups.length; i++) worst += worstCaseUsd(model, await countTokens(sent[i].params), (sent[i].params as { max_tokens: number }).max_tokens, { batch: true });
     if (spent() + worst > CAP) { console.log(`STOP ${model}: worst case $${worst.toFixed(3)} would cross the $${CAP} cap (spent $${spent().toFixed(3)})`); save(); process.exit(0); }
     const { results } = await sendBatch(sent, (line) => console.log(line));
     for (const r of results) {

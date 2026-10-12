@@ -75,7 +75,7 @@ Input was identical for both, 180,347 tokens; output was 47,020 (Haiku) and 44,1
 
 ## Control: Sonnet 4.5 asked again (2026-10-11)
 
-The same 299 cards, the same prompt (version 8, batch size 12), sent to Sonnet 4.5 by Batch exactly as the labeler sends it (`labels-tiering.mts --control`), scored against the stored Sonnet 4.5 labels with the same pairing. This is the ceiling any candidate can reach: the stored label's own run-to-run noise.
+The same 299 cards, the same prompt (version 8, batch size 12), sent to Sonnet 4.5 by Batch exactly as the labeler sends it (`labels-tiering.mts --control`), scored against the stored Sonnet 4.5 labels with the same pairing. This is one observation of the stored label's own run-to-run agreement, a reference point for the candidates rather than a proven ceiling.
 
 | | Sonnet 4.5 again | Sonnet 5.5 | Haiku 5.5 |
 |---|---|---|---|
@@ -90,8 +90,8 @@ Measured spend: $0.58 (135,988 input and 50,139 output tokens, batch rates), aga
 
 What it says:
 
-- **Most of the job-set miss is noise.** Sonnet 4.5 disagrees with its own stored label on 24% of cards (40% on full jobs and limits), so Sonnet 5.5's 30% (49%) is 6 points (9) beyond the floor, not 30 beyond zero.
-- **The gap is real on roles.** 4.5 reproduces 94.6% of cards' role jobs against 5.5's 88.0%, and recall drops 94.7% to 86.3%. Roles are what mana-base and ramp counts read; themes differ by about 4 points of recall, which is within what a self-repeat moves.
+- **In this run, most of the job-set miss is also present in 4.5 itself.** Sonnet 4.5 disagrees with its own stored label on 24% of cards (40% on full jobs and limits), so Sonnet 5.5's 30% (49%) is 6 points (9) beyond that one observation. One repeat gives no spread, so these are observed differences, not a significance test.
+- **The role gap is the largest observed difference.** 4.5 reproduces 94.6% of cards' role jobs against 5.5's 88.0%, and recall drops 94.7% to 86.3%. Roles are what mana-base and ramp counts read; themes differ by about 4 points of recall, which is within what a self-repeat moves.
 - **Per-label noise sits on the same labels.** The control's weak rows (`role:tutor` 77.1%, `theme:spellslinger` 40.0%, `theme:tribal` 65.4%) are borderline themes, where any model would score low.
 
 Recommendation: stay on Sonnet 4.5. Sonnet 5.5 is closer than the single run read, but its 6.6-point role gap is a measured loss on the labels that feed counts, for a saving of about a third ($1.34 against $1.94 per 1,000 cards at batch rates).
@@ -101,7 +101,7 @@ Recommendation: stay on Sonnet 4.5. Sonnet 5.5 is closer than the single run rea
 Nothing is changed. The evidence:
 
 - **Haiku 5.5 is not safe as a drop-in.** It costs about 3.5% of Sonnet 4.5 but drops the `land` role on three lands in four, invents jobs on thin cards and returns invalid kinds. A mana-base or ramp count built on its labels would be wrong.
-- **Sonnet 5.5 comes close on roles** (88% of cards identical on every role, 94% precision, land 100%) at about two thirds of the 4.5 cost, but it matches the stored label in full on only 51% of cards. The 4.5 self-repeat above answers the rest: 4.5 reproduces itself on 60% of cards in full, so 51% is nine points under that ceiling, and the role gap (88.0% against 94.6%) is the part that is not noise.
+- **Sonnet 5.5 comes close on roles** (88% of cards identical on every role, 94% precision, land 100%) at about two thirds of the 4.5 cost, but it matches the stored label in full on only 51% of cards. The 4.5 self-repeat above answers the rest: 4.5 reproduces itself on 60% of cards in full, so 51% is nine points under that ceiling, and the role gap (88.0% against 94.6%) is the largest difference observed.
 - **Either model needs two code changes first** (`acceptsTemperature` and `needsThinkingDisabled`, above), and `LABEL_PROMPT_VERSION`'s freshness rules mean relabeling under a new model is a deliberate `list:` build, not a silent restale.
 
 Options: (a) stay on Sonnet 4.5 (the control above supports it); (b) ~~the 4.5 self-repeat control~~, now run (above) to decide whether Sonnet 5.5 is a safe switch for roughly a third off the label bill; (c) try Haiku 5.5 only on a narrow step where the land role does not matter, after a prompt trial on lands. My lean, now that (b) is done, is (a).
