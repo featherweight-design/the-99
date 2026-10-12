@@ -297,6 +297,13 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(band).toHaveTextContent(r.tooBigBody);
     expect(within(band).queryByRole("button")).toBeNull();
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+    // An add changes the decks the read would take, so the offer comes back for them.
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    fireEvent.click(within(screen.getAllByTestId("fits-row")[0]).getAllByRole("button").find((b) => b.textContent)!);
+    await settle();
+    expect(screen.queryByTestId("read-band-refused")).toBeNull();
+    expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
   });
 
   it("the offer counts the decks left after a free-list add, and a run keeps the count it started with", async () => {

@@ -58,8 +58,9 @@ export function FitsView({
   // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
   const [runCount, setRunCount] = useState<number | null>(null);
   const [pressFailed, setPressFailed] = useState(false);
-  // The press was refused before any credit because the decks are too many for one read (`tooBig`).
-  const [tooBig, setTooBig] = useState(false);
+  // The decks a press was refused for, before any credit, as too many for one read (`tooBig`). The
+  // refusal holds only while those are still the decks: an add that changes them brings the offer back.
+  const [tooBigFor, setTooBigFor] = useState<string | null>(null);
   // The read this visit's press produced: its sub reads `just now` rather than a date.
   const [fresh, setFresh] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -154,7 +155,7 @@ export function FitsView({
       const again = await readFitsReadAction(card.oracleId).catch(() => null);
       if (again) adopt(again);
       if (res.reason === "tooBig") {
-        setTooBig(true);
+        setTooBigFor(candidateKey);
         setAnnounced(read.announceTooBig);
       } else if (res.reason === "notFound" || res.reason === "noCandidates") setPressFailed(true);
     } catch {
@@ -252,6 +253,8 @@ export function FitsView({
   // The list as last read, never the rows it opened with: an add to the last deck that could take the
   // card leaves nothing to read for, and the offer goes (P1b).
   const noList = list.read !== null && list.read.fits.length === 0;
+  const candidateKey = ((list.read ?? panel?.fits)?.fits ?? []).map((d) => d.id).join(",");
+  const tooBig = tooBigFor !== null && tooBigFor === candidateKey;
   const oneDeck = candidates === 1 ? (list.read ?? panel?.fits)?.fits[0]?.name ?? null : null;
   const showsBand = panel !== null && candidates > 0 && !noList;
   // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
