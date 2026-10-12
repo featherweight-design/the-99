@@ -24,6 +24,7 @@ describe("socialReadsIn", () => {
   it("does not read the word pods in copy, or a type-only import", () => {
     expect(socialReadsIn(`const line = "Your pods are where game nights start.";`)).toEqual([]);
     expect(socialReadsIn(`import type { pods } from "../db/schema";`)).toEqual([]);
+    expect(socialReadsIn(`import { decks, type friendLinks } from "../db/schema";`)).toEqual([]);
   });
 });
 

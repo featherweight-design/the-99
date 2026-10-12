@@ -27,7 +27,8 @@ export function socialReadsIn(source) {
   const imports = /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']([^"']*db\/schema)["']/g;
   for (const m of source.matchAll(imports)) {
     if (/^import\s*type/.test(m[0])) continue;
-    const names = m[1].split(",").map((s) => s.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]).filter(Boolean);
+    // An inline `type` specifier is as erased as a whole `import type`: it brings in no query.
+    const names = m[1].split(",").map((s) => s.trim()).filter((s) => s && !/^type\s/.test(s)).map((s) => s.split(/\s+as\s+/)[0]);
     for (const name of names) if (SOCIAL_BINDINGS.includes(name)) findings.push({ line: lineAt(m.index), why: `imports ${name}` });
   }
   const namespace = new RegExp(`\\.(${SOCIAL_BINDINGS.join("|")})\\b`, "g");
