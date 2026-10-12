@@ -113,6 +113,8 @@ export function ChooseRow({
       <CardDetailTrigger
         oracleId={row.oracleId}
         name={row.name}
+        imageUri={row.imageUri}
+        preview
         testId="row-name"
         className={`relative z-[1] min-w-0 truncate text-left font-display font-semibold ${size} text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer`}
       >

@@ -13,6 +13,7 @@ import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability, type Availability } from "../../../lib/decks/availability";
 import { loadPrices } from "../../../lib/decks/price-query";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
+import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 
 export default async function CommanderDetailPage({
   params,
@@ -98,10 +99,16 @@ export default async function CommanderDetailPage({
   // One explicit primary-key lookup. Nothing this page already reads touches the
   // commander_support header row — scoreOneCommander and readSynergyCards both go to
   // commander_support_cards — so the paragraph does not ride along on an existing read.
-  const [synergyCards, prose] = await Promise.all([
-    readSynergyCards(userId, [commander.oracleId], coveredOracleIds),
+  const [synergyRead, prose] = await Promise.all([
+    // With images: each synergy row previews its card, and card details is the other half of that row.
+    readSynergyCards(userId, [commander.oracleId], coveredOracleIds, true),
     readCommanderProse(commander.oracleId),
   ]);
+  // The printing the player owns for the cards they own, which is the one card details opens.
+  const synergyCards = withChainArt(
+    synergyRead,
+    await chainArt(userId, null, synergyRead.filter((c) => c.owned).map((c) => c.oracleId)),
+  );
 
   // ONE claim read for the whole page, off-decklist vantage — there is no
   // current deck here to exclude, so every figure is the unexcluded one — and

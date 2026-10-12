@@ -49,6 +49,8 @@ const FEEDERS: Record<string, string> = {
   "components/sets/set-cell.tsx": "",
   "components/decks/proxy-list-view.tsx": "lib/decks/proxy-list.ts",
   "components/decks/cart/cart-line.tsx": "lib/decks/cart-read.ts",
+  "components/intake/choose-row.tsx": "lib/intake/rows.ts",
+  "components/commanders/synergy-row.tsx": "app/commanders/[slug]/page.tsx",
   "components/decks/cart/cart-deck-group.tsx": "lib/decks/cart-read.ts",
   // Tokens are their own bug batch's, and precons their own lane's: named so the list stays complete, not checked.
   "components/decks/token-makers.tsx": "",
@@ -233,12 +235,10 @@ const COMPOSED_ROWS: Record<string, string[]> = {
 const OWED = new Set<string>([
   "components/cards/fits-picker.tsx",
   "components/commanders/coverage-chip.tsx",
-  "components/commanders/synergy-row.tsx",
   "components/decks/change-commander-sheet.tsx",
   "components/decks/mana-sections.tsx",
   "components/decks/notices-body.tsx",
   "components/decks/upgrade-path.tsx",
-  "components/intake/choose-row.tsx",
   "components/intake/read-as-bar.tsx",
 ]);
 

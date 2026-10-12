@@ -58,11 +58,9 @@ export async function readSynergyCards(
   /**
    * Whether to carry each card's picture.
    *
-   * OFF by default, because this reader serves two routes and only one of them
-   * draws a preview. `/commanders/[slug]` passes the whole array across the RSC
-   * boundary to its synergy panel, which calls no `usePreviewRow` — so at about
-   * 94 characters a row it would ship 25KB on an average commander and 40KB at
-   * the widest to draw nothing with.
+   * OFF by default: a caller that draws no preview ships about 94 characters a row for nothing (25KB on an average
+   * commander, 40KB at the widest). The deck's top-off list and `/commanders/[slug]` pass it ON (the latter since
+   * 2026-10-12: every card row has a preview as well as a press, so the synergy rows draw one).
    *
    * A row read WITHOUT images carries `imageUri: null`, which the preview reads
    * as "no preview" — the same answer it gives for a card the catalog has no

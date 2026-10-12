@@ -229,6 +229,8 @@ export function SynergyRow({
           oracleId={card.oracleId}
           name={card.name}
           siblings={siblings}
+          imageUri={card.imageUri}
+          preview
           style={{
             display: "block",
             overflow: "hidden",

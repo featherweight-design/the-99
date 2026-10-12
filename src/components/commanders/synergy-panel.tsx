@@ -22,6 +22,7 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { useDiscardedScroll } from "../ui/scroll-reset";
 import { FacetStrip } from "./facet-strip";
 import { SynergyRow } from "./synergy-row";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 
 // Resting cap: how many rows are visible before the disclosure is opened.
 const RESTING_CAP_DESKTOP = 10;
@@ -365,6 +366,7 @@ export function SynergyPanel({
 
       {/* Card list */}
       {facetCount > 0 && (
+        <HoverPreviewProvider>
         <ul
           ref={listRef}
           id={listId}
@@ -397,6 +399,7 @@ export function SynergyPanel({
             />
           ))}
         </ul>
+        </HoverPreviewProvider>
       )}
 
       {/* Disclosure button — only when the list overflows the resting cap */}
