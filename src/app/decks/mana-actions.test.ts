@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
   undone: null as string | null,
   writes: [] as unknown[][],
   revalidated: [] as unknown[][],
+  order: [] as string[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -25,9 +26,16 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => { state.order.push("read"); return { color: c, staples: state.staples, trades: state.trades }; } }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
-  applyTrade: async (...args: unknown[]) => { state.writes.push(["apply", ...args]); return state.applied; },
+  // The real write runs `offered` under the deck lock; the mock runs it too, and writes only when it offers.
+  applyTrade: async (deckId: string, userId: string, offered: () => Promise<{ cutOracleId: string; addOracleId: string } | null>) => {
+    state.order.push("lock");
+    const trade = await offered();
+    if (!trade) return null;
+    state.writes.push(["apply", deckId, userId, trade.cutOracleId, trade.addOracleId]);
+    return state.applied;
+  },
   undoTrade: async (...args: unknown[]) => { state.writes.push(["undo", ...args]); return state.undone; },
 }));
 vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (...args: unknown[]) => { state.revalidated.push(args); } }));
@@ -169,6 +177,15 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
     state.trades = offered(STAPLE);
     expect(await applyManaTrade(DECK, "R", STAPLE)).toEqual(refusal);
     expect(state.writes).toEqual([]);
+  });
+
+  it("reads the offer only once the write holds the deck's lock, so an edit landing between cannot slip through", async () => {
+    reset();
+    state.order = [];
+    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId: STAPLE } }];
+    state.applied = APPLY;
+    await applyManaTrade(DECK, "G", STAPLE);
+    expect(state.order).toEqual(["lock", "read"]);
   });
 
   it("refuses when the write refuses, and revalidates nothing", async () => {

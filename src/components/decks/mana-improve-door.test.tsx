@@ -351,6 +351,24 @@ describe("ImproveDoor: applying a trade", () => {
     expect(document.querySelector("[data-mana-applied]")).toBeNull();
   });
 
+  it("holds every Undo while any trade or Undo is in flight", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = {
+      apply: vi.fn().mockResolvedValueOnce({ ok: true, applyId: "apply-1" }).mockReturnValueOnce(new Promise((r) => { land = r; })),
+      undo: vi.fn(),
+    };
+    await openRed(read, trades);
+    await act(async () => { fireEvent.click(tradeButton()); });
+    const undo = () => within(document.querySelector("[data-mana-applied]") as HTMLElement).getAllByRole("button", { name: deckTuningCopy.card.undo })[0] as HTMLButtonElement;
+    expect(undo().disabled).toBe(false);
+    act(() => { fireEvent.click(tradeButton()); });
+    expect(undo().disabled).toBe(true);
+    await act(async () => { land({ ok: true, applyId: "apply-2" }); });
+    expect(undo().disabled).toBe(false);
+    expect(document.querySelectorAll("[data-mana-applied] li")).toHaveLength(2);
+  });
+
   it("keeps an applied trade's Undo across a remount in the visit, and drops it when the player leaves the deck", async () => {
     const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
     const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };

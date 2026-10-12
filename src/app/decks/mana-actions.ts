@@ -104,20 +104,22 @@ export type ManaTradeResult = { ok: true; applyId: string } | { ok: false; messa
 /**
  * Apply one of Improve my mana's trades: one copy of the basic out, one copy of the staple in, into the
  * deck's list, with Undo. A PUBLIC ENDPOINT, so the client names only the color and the staple, and the
- * trade is found in a fresh read of the help for that color: the basic it cuts is the server's, never the
- * caller's, and a trade the current deck no longer offers (another color would now drop below what it
- * needs, or the staple went in another way) is refused.
+ * trade is found in a fresh read of the help for that color, made while the write holds the deck's lock
+ * (`applyTrade`): the basic it cuts is the server's, never the caller's, and a trade the deck being
+ * written no longer offers (another color would now drop below what it needs, or the staple went in
+ * another way) is refused.
  */
 export async function applyManaTrade(deckId: string, color: string, stapleOracleId: string): Promise<ManaTradeResult> {
   const refused = { ok: false as const, message: deckTuningCopy.card.applyRefused };
   const userId = await requireUserId();
-  if (!isUuid(stapleOracleId)) return refused;
-  const help = await helpFor(deckId, color, userId);
-  const trade = help?.trades.find((t) => t.staple.oracleId === stapleOracleId);
-  if (!help || !trade) return refused;
-  const applyId = await applyTrade(help.deckId, userId, trade.basicOutId, trade.staple.oracleId);
+  if (!manaBalanceEnabled() || !isUuid(deckId) || !isUuid(stapleOracleId)) return refused;
+  const applyId = await applyTrade(deckId, userId, async () => {
+    const help = await helpFor(deckId, color, userId);
+    const trade = help?.trades.find((t) => t.staple.oracleId === stapleOracleId);
+    return trade ? { cutOracleId: trade.basicOutId, addOracleId: trade.staple.oracleId } : null;
+  });
   if (!applyId) return refused;
-  revalidateClaims(help.deckId, userId);
+  revalidateClaims(deckId, userId);
   return { ok: true, applyId };
 }
 

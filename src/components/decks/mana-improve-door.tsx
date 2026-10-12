@@ -93,7 +93,13 @@ export function ImproveDoor({
   const setFocus = (target: "step" | "result" | "button") => { wantFocus.current = target; };
   const asked = useRef(0);
   const [applied, setAppliedState] = useState<Applied[]>(() => visitValue<Applied[]>(deckId, "mana-trades") ?? []);
-  const setApplied = (next: Applied[]) => { setVisitValue(deckId, "mana-trades", next); setAppliedState(next); };
+  // Each change is made to the store's current list, never to a render's copy, so two settling presses
+  // cannot drop or revive each other's receipt.
+  const changeApplied = (change: (list: Applied[]) => Applied[]) => {
+    const next = change(visitValue<Applied[]>(deckId, "mana-trades") ?? []);
+    setVisitValue(deckId, "mana-trades", next);
+    setAppliedState(next);
+  };
   // A trade or its Undo changes the list, and the list moving retires the result drawn; after our own change
   // the result is read again for its color instead, so the reader sees what the trade did.
   const follow = useRef<BalanceColor | null>(null);
@@ -156,7 +162,7 @@ export function ImproveDoor({
       return;
     }
     follow.current = color;
-    setApplied([...applied, { applyId: result.applyId, color, basic: trade.basicOut, staple: trade.staple.name }]);
+    changeApplied((list) => [...list, { applyId: result.applyId, color, basic: trade.basicOut, staple: trade.staple.name }]);
   };
 
   const undoTrade = async (a: Applied) => {
@@ -169,7 +175,7 @@ export function ImproveDoor({
       return;
     }
     follow.current = door.at === "result" ? door.color : null;
-    setApplied(applied.filter((x) => x.applyId !== a.applyId));
+    changeApplied((list) => list.filter((x) => x.applyId !== a.applyId));
   };
 
   // The read after our own trade or Undo, with this render's `run`: an effect event, so the list moving is the
@@ -229,7 +235,7 @@ export function ImproveDoor({
               <AnsweredRow
                 tone="applied"
                 pair={<><span>{a.basic}</span> <Arrow ink="var(--success)" /> <b className="font-semibold" style={{ color: "var(--fg)" }}>{a.staple}</b></>}
-                action={{ label: deckTuningCopy.card.undo, onPress: () => void undoTrade(a), busy: busy === a.applyId }}
+                action={{ label: deckTuningCopy.card.undo, onPress: () => void undoTrade(a), busy: busy !== null }}
                 refused={refused?.key === a.applyId ? refused.message : null}
               />
             </li>

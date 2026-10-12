@@ -11,8 +11,10 @@ import { applySwap, planSwap, restoreSwap } from "../swaps/draft-swap";
  * one copy of the basic cut and one copy of the staple added at `auto: false`, and `touchDeck`. The
  * snapshot Undo reads is written before the deck changes, into `mana_trade_applies`.
  *
- * The caller has already found the trade in a fresh read of Improve my mana for this deck, so these
- * take the two oracle ids as given and check only what a write must: who owns the deck, and what
+ * The apply takes the trade as a callback, `offered`, run only once the deck row is locked: every deck
+ * write takes that lock first, so the read it makes sees the deck the write will change, and a trade
+ * an edit landing meanwhile no longer offers (another color would now fall below what it needs) is
+ * refused rather than written. Beyond that it checks what a write must: who owns the deck, and what
  * `planSwap` refuses (the basic gone or locked, the staple already held or no longer legal).
  */
 
@@ -25,10 +27,15 @@ async function lockOwnedDeck(tx: Tx, deckId: string, userId: string): Promise<bo
   return !!row;
 }
 
+export type OfferedTrade = { cutOracleId: string; addOracleId: string };
+
 /** The apply's id, for its Undo, or null when it refused. */
-export async function applyTrade(deckId: string, userId: string, cutOracleId: string, addOracleId: string): Promise<string | null> {
+export async function applyTrade(deckId: string, userId: string, offered: () => Promise<OfferedTrade | null>): Promise<string | null> {
   return db.transaction(async (tx) => {
     if (!(await lockOwnedDeck(tx, deckId, userId))) return null;
+    const trade = await offered();
+    if (!trade) return null;
+    const { cutOracleId, addOracleId } = trade;
     const plan = await planSwap(tx, deckId, cutOracleId, addOracleId);
     if (!plan.ok) return null;
     const [row] = await tx.insert(manaTradeApplies)
