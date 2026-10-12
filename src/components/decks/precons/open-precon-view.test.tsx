@@ -83,6 +83,11 @@ describe("OpenPreconView", () => {
     expect(screen.getByRole("link", { name: "‹ New deck" }).getAttribute("href")).toBe("/decks/precons?from=new");
   });
 
+  it("names every deck that shares the list, not the first two", () => {
+    render(<OpenPreconView precon={precon({ built: ["A", "B", "C"].map((d, i) => ({ deckId: d, deckName: d, shared: 70 - i, sameCommanders: false })) })} fromNew={false} />);
+    expect(screen.getByText("Your deck C shares 68 of its cards.")).toBeInTheDocument();
+  });
+
   it("words a shared deck by whether it kept the commander", () => {
     render(<OpenPreconView precon={precon({ built: [
       { deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true },
@@ -99,8 +104,14 @@ describe("OpenPreconView", () => {
         { oracleId: "b", name: "Sam", imageUri: null, colorIdentity: ["W"] },
       ],
       built: [{ deckId: "a", deckName: "Shire", shared: 80, sameCommanders: true }],
-    })} fromNew={false} />);
+    }, [
+      card("Frodo", { isCommander: true, typeLine: "Legendary Creature — Halfling" }),
+      card("Sam", { isCommander: true, typeLine: "Legendary Creature — Halfling" }),
+      card("Sol Ring", { typeLine: "Artifact" }),
+      card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15 }),
+    ])} fromNew={false} />);
     expect(screen.getByText("Your deck Shire has the same commanders and 80 of its cards.")).toBeInTheDocument();
+    expect(screen.getByText("2 commanders and 16 cards · 18 in all")).toBeInTheDocument();
   });
 
   it("names the twin and an unmapped card, with the count the ingest kept", () => {

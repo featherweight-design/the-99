@@ -116,7 +116,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
             <div aria-hidden className="h-[3px] rounded-[2px] bg-[color:var(--border-strong)]">
               <div className="h-full rounded-[2px] bg-[color:var(--fg-muted)]" style={{ width: `${Math.round(share * 100)}%` }} />
             </div>
-            {row.built.slice(0, 2).map((b) => (
+            {row.built.map((b) => (
               <p key={b.deckId} className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
                 {b.sameCommanders ? copy.open.builtSame(b.deckName, b.shared, row.commanders.length === 2) : copy.open.builtAny(b.deckName, b.shared)}
               </p>
@@ -174,7 +174,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
   );
 }
 
-/** The precon's basic lands, at the foot of Lands: listed, never counted (Q4). */
+/** The precon's basic lands, at the foot of Lands: in Lands' figure, never in what you own (Q4). */
 function BasicsLine({ basics }: { basics: OpenPreconCard[] }) {
   return (
     <p className="m-0 mt-[4px] flex flex-wrap items-baseline gap-x-[8px] rounded-[7px] border border-dashed border-[color:var(--border-dashed)] p-[8px_9px]">

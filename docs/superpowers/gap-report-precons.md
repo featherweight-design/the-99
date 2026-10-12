@@ -36,4 +36,6 @@ Verify pass against "Route: /decks/precons/[fileName]", "Change: DecklistRow `re
 Also from the pre-open pass: the back link named the list when the list had been opened from New
 deck (`open.backNew` was never drawn). Fixed.
 
-Confirm pass: 1 to 6 checked on the contact sheet (rows o2, v2, o6) at both widths.
+Confirm pass: 1 to 4 and 6 checked on the contact sheet (rows o2, v2, o6) at both widths. 5 (O5) is
+confirmed by `open-precon-view.test.tsx` only: the sheet's account holds a collection. O4 (an unmapped
+card) has no row because no precon on any branch has one today; its sentence is tested.
