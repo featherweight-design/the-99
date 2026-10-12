@@ -80,12 +80,14 @@ import {
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { allDecksCartCopy } from "../../lib/copy/all-decks-cart";
 import { FitBar } from "../commanders/fit-bar";
 import {
   Specimen,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
+  ALL_DECKS_CART_LINE,
   AVAILABILITY,
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
@@ -1053,10 +1055,19 @@ function FitsYourDecksFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+const CART_LINE = ALL_DECKS_CART_LINE.line;
+
 /** `all-decks-cart`: the cart's Sol Ring line, three decks short of one copy each. */
 function AllDecksCartFigure({ width }: { width: AboutWidth }) {
   return (
-    <Specimen label="all-decks-cart" width={width}>
+    <Specimen
+      label="all-decks-cart"
+      width={width}
+      // The owned fact is the figure's alone: the keys dropped it because the line shows it, and the
+      // figure is hidden from assistive technology, so it is spoken here.
+      spokenAs={`${CART_LINE.name}. ${CART_LINE.copies} · ${CART_LINE.selectedRows
+        .map((r) => ALL_DECKS_CART_LINE.deckNames.get(r.deckId) ?? "").join(", ")}. ${allDecksCartCopy.list.owned(CART_LINE.owned)}`}
+    >
       <AllDecksCartFigureBody />
     </Specimen>
   );

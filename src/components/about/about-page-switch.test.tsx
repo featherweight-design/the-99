@@ -86,3 +86,19 @@ describe("deck-benchmarks, on the page", () => {
     expect(links.map((a) => a.getAttribute("href"))).toContain("#deck-benchmarks");
   });
 });
+
+describe("all-decks-cart, on the page", () => {
+  afterEach(() => {
+    delete process.env.ALL_DECKS_CART_ENABLED;
+  });
+
+  it("speaks the owned fact its hidden figure draws, which no key line repeats", async () => {
+    process.env.ALL_DECKS_CART_ENABLED = "true";
+    const { allDecksCartCopy } = await import("../../lib/copy/all-decks-cart");
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    const entry = document.getElementById("all-decks-cart")!;
+    expect(entry).not.toBeNull();
+    const spoken = [...entry.querySelectorAll(".sr-only")].map((e) => e.textContent ?? "");
+    expect(spoken.some((t) => t.includes(allDecksCartCopy.list.owned(17)))).toBe(true);
+  });
+});
