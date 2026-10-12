@@ -343,8 +343,10 @@ export function validFitsRead(args: {
     if (tail) parts.push(...splitQuotes(tail));
 
     const own = parts.flatMap((x) => ("text" in x ? [x.text] : [])).join(" ");
-    // 6. A stray brace is a token the parse did not take; a figure or score word reads as a rank.
-    if (/[{}]/.test(own)) return "malformed";
+    // 6. A stray brace is a token the parse did not take; a figure or score word reads as a rank. A
+    // stray quote mark is a quote the parse did not take (unclosed, or spanning a card token), which
+    // would otherwise reach the reader unchecked against the plan (4).
+    if (/[{}"“”]/.test(own)) return "malformed";
     // 2, by name: a card shown in the prompt written outright must still be this deck's.
     for (const s of shownNames) if (!allowed.has(s.id) && namesOutright(own, s.name)) return "cardOutsideDeck";
     // The cut and the cites resolve inside the deck too (2).

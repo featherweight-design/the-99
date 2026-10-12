@@ -57,6 +57,15 @@ export function leadingThemes(list: readonly { oracleId: string }[], labels: Rea
   return [...n].map(([kind, count]) => ({ kind, n: count })).sort((a, b) => b.n - a.n || a.kind.localeCompare(b.kind)).slice(0, top);
 }
 
+/** The candidates still open on the rows the prompt carries: the deck exists and its list does not hold the card. */
+export function stillOpen<C extends { id: string }>(
+  listed: readonly C[], decks: readonly { id: string }[], lists: readonly { deck_id: string; oracle_id: string }[], oracleId: string,
+): C[] {
+  const holding = new Set(lists.filter((r) => r.oracle_id === oracleId).map((r) => r.deck_id));
+  const present = new Set(decks.map((d) => d.id));
+  return listed.filter((c) => present.has(c.id) && !holding.has(c.id));
+}
+
 type DeckRow = { id: string; commander_oracle_id: string; partner_oracle_id: string | null };
 type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null };
 type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: string };
@@ -64,12 +73,12 @@ type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: st
 export async function loadFitsReadInputs(userId: string, oracleId: string, opts: { allDecks?: boolean } = {}): Promise<FitsReadLoad | null> {
   const fits = await loadFits(userId, oracleId);
   if (!fits) return null;
-  const candidates = fitsReadCandidates(fits);
+  const listed = fitsReadCandidates(fits);
 
   const deckRows = (await db.execute<DeckRow>(sql`
     select id, commander_oracle_id, partner_oracle_id from decks where user_id = ${userId} order by id`)).rows;
-  const candidateIds = new Set(candidates.map((c) => c.id));
-  const loaded = opts.allDecks ? deckRows : deckRows.filter((d) => candidateIds.has(d.id));
+  const listedIds = new Set(listed.map((c) => c.id));
+  const loaded = opts.allDecks ? deckRows : deckRows.filter((d) => listedIds.has(d.id));
   const deckIds = loaded.map((d) => d.id);
   const commanderIds = [...new Set(loaded.flatMap((d) => (d.partner_oracle_id ? [d.commander_oracle_id, d.partner_oracle_id] : [d.commander_oracle_id])))];
 
@@ -84,15 +93,21 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
       order by dc.deck_id, c.name`).then((r) => r.rows),
     Promise.all(deckIds.map((id) => readShownSynopsis(id, userId))),
     Promise.all(deckIds.map((id) => liveLockedIds(db, id))),
-    readInclusion(oracleId, loaded.filter((d) => candidateIds.has(d.id))),
+    readInclusion(oracleId, loaded.filter((d) => listedIds.has(d.id))),
   ]);
+  // `loadFits` and the reads above are separate instants. The candidates are re-checked against the
+  // lists the prompt carries, so the open set holds for what the model reads: a deck that came to
+  // hold the card, or was deleted, in between is not a candidate.
+  const candidates = stillOpen(listed, deckRows, listRows, oracleId);
+  const candidateIds = new Set(candidates.map((c) => c.id));
   const cardOf = new Map(cardRows.map((c) => [c.oracle_id, c]));
   const subjectRow = cardOf.get(oracleId);
   if (!subjectRow) return null;
   const labels = await readLabels([oracleId, ...commanderIds, ...listRows.map((r) => r.oracle_id)]);
 
   const planOf = new Map<string, { source: PlanSource; staleNames: string[] }>();
-  const decks: FitsDeckBlock[] = loaded.map((d, i) => {
+  const decks: FitsDeckBlock[] = loaded.filter((d) => opts.allDecks || candidateIds.has(d.id)).map((d) => {
+    const i = loaded.indexOf(d);
     // One row per card: a deck may hold a card on two rows (a printing each), which the prompt
     // lists once.
     const seen = new Set<string>();
@@ -113,7 +128,6 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
     // `content.cards`, which resolves every card the prose names, threats and weaknesses included.
     // The commanders count as run: a Key card is very often the commander, who is not in the 99.
     const commanderNames = deckNameIndex(commanders.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, kinds: c.kinds })));
-    void runs;
     const staleNames = (shown?.content.keyCards ?? []).map((k) => k.card)
       .filter((n) => !byName.has(normalizeName(n)) && !commanderNames.has(normalizeName(n)));
     planOf.set(d.id, { source, staleNames: [...new Set(staleNames)] });

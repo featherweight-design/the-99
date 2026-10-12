@@ -167,6 +167,9 @@ describe("validFitsRead", () => {
     expect(run([pick({ sentence: "A great partner for {C1}." })]).drops).toEqual({ figureOrScore: 1 });
     expect(run([pick({ sentence: "The top pick for {C1}." })]).drops).toEqual({ figureOrScore: 1 });
     expect(run([pick({ sentence: "Feeds {C1} and {D2}." })]).drops).toEqual({ malformed: 1 });
+    // A quote the parse did not take is never drawn unchecked: unclosed, or spanning a card token.
+    expect(run([pick({ sentence: 'With {C1}, the plan says "invented text.' })]).drops).toEqual({ malformed: 1 });
+    expect(run([pick({ sentence: 'The plan says "goes wide with {C1} and more".' })]).drops).toEqual({ malformed: 1 });
     const long = `Feeds {C1} ${"and keeps feeding ".repeat(20)}`.slice(0, FITS_READ_SENTENCE_MAX_CHARS + 10);
     expect(run([pick({ sentence: long })]).drops).toEqual({ tooLong: 1 });
   });
