@@ -6,6 +6,7 @@ import Link from "next/link";
 import { preconsCopy, preconMonth } from "../../../lib/copy/precons";
 import type { PreconRow as Row } from "../../../lib/precons/list";
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
+import { colorNames } from "../../../lib/copy/color-labels";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CommanderThumb } from "../../ui/commander-thumb";
 
@@ -36,6 +37,8 @@ export function PreconRow({ row, href }: { row: Row; href: string }) {
           {row.commanders.map((c) => c.name).join(" + ")}
         </span>
         <span className="flex items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+          {/* The dots are color alone; the names say it in words. */}
+          <span className="sr-only">{row.identity.length > 0 ? colorNames(row.identity).join(", ") : copy.colorless}</span>
           <span aria-hidden className="flex gap-[3px]">
             {(row.identity.length > 0 ? row.identity : ["C"]).map((c) => (
               <span

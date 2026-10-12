@@ -34,6 +34,7 @@ export const preconsCopy = {
   },
   row: {
     ownLead: "you own",
+    colorless: "Colorless",
     own: (owned: number, of: number) => `${n(owned)} of ${n(of)}`,
     built: "your deck",
     builtTwo: "your decks",

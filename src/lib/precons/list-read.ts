@@ -17,9 +17,12 @@ export type PreconList = {
   newest: string | null;
 };
 
-export async function readPreconSources(): Promise<PreconSource[]> {
-  const heads = await db.select().from(precons);
-  const facts = await db
+/** `db`, or a transaction on it: the list's reads run in one snapshot. */
+type Reader = Pick<typeof db, "select" | "selectDistinct">;
+
+export async function readPreconSources(q: Reader = db): Promise<PreconSource[]> {
+  const heads = await q.select().from(precons);
+  const facts = await q
     .select({
       fileName: preconCards.fileName,
       oracleId: preconCards.oracleId,
@@ -57,13 +60,13 @@ export async function readPreconSources(): Promise<PreconSource[]> {
 }
 
 /** Every deck the reader holds, as the shared rule reads it: commanders and every card in the list. */
-export async function readReaderDecks(userId: string): Promise<ReaderDeck[]> {
-  const heads = await db
+export async function readReaderDecks(userId: string, q: Reader = db): Promise<ReaderDeck[]> {
+  const heads = await q
     .select({ id: decks.id, name: decks.name, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
     .from(decks)
     .where(eq(decks.userId, userId));
   if (heads.length === 0) return [];
-  const lines = await db
+  const lines = await q
     .select({ deckId: deckCards.deckId, oracleId: deckCards.oracleId })
     .from(deckCards)
     .where(inArray(deckCards.deckId, heads.map((h) => h.id)));
@@ -82,8 +85,8 @@ export async function readReaderDecks(userId: string): Promise<ReaderDeck[]> {
 }
 
 /** The precon cards the reader owns, any printing (brief lock 6). One query, never a list of ids. */
-export function ownedPreconCards(userId: string) {
-  return db
+export function ownedPreconCards(userId: string, q: Reader = db) {
+  return q
     .selectDistinct({ oracleId: collectionItems.oracleId })
     .from(collectionItems)
     .where(and(
@@ -93,13 +96,15 @@ export function ownedPreconCards(userId: string) {
 }
 
 export async function loadPreconList(userId: string): Promise<PreconList> {
-  const [sources, ownedRows, any, readerDecks] = await Promise.all([
-    readPreconSources(),
-    ownedPreconCards(userId),
-    db.select({ one: sql<number>`1` }).from(collectionItems).where(eq(collectionItems.userId, userId)).limit(1),
-    readReaderDecks(userId),
-  ]);
-  const rows = summarisePrecons(sources, new Set(ownedRows.map((r) => r.oracleId)), readerDecks);
-  const newest = rows.reduce<string | null>((m, r) => (m === null || r.releaseDate > m ? r.releaseDate : m), null);
-  return { rows, listed: sources.length, hasCollection: any.length > 0, newest };
+  // One snapshot: an ingest or a deck edit committing between two of these reads would otherwise
+  // summarise a state that never existed, and the page caches what this returns.
+  return db.transaction(async (tx) => {
+    const sources = await readPreconSources(tx);
+    const ownedRows = await ownedPreconCards(userId, tx);
+    const any = await tx.select({ one: sql<number>`1` }).from(collectionItems).where(eq(collectionItems.userId, userId)).limit(1);
+    const readerDecks = await readReaderDecks(userId, tx);
+    const rows = summarisePrecons(sources, new Set(ownedRows.map((r) => r.oracleId)), readerDecks);
+    const newest = rows.reduce<string | null>((m, r) => (m === null || r.releaseDate > m ? r.releaseDate : m), null);
+    return { rows, listed: sources.length, hasCollection: any.length > 0, newest };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }

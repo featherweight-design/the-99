@@ -53,6 +53,10 @@ export type PreconRow = {
 
 const WUBRG = ["W", "U", "B", "R", "G"];
 
+/** By code point, never `localeCompare`: the server and the browser order a tie the same way, so a
+ *  list hydrates in the order it was rendered (as `lib/decks/sort.ts` does). */
+const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
 /** One row per distinct list: a twin folds into the plain edition it names. */
 export function summarisePrecons(
   sources: readonly PreconSource[],
@@ -82,7 +86,7 @@ export function summarisePrecons(
       const match = sharedWith(precon, d);
       if (match) built.push({ deckId: d.id, deckName: d.name, ...match });
     }
-    built.sort((a, b) => b.shared - a.shared || a.deckName.localeCompare(b.deckName));
+    built.sort((a, b) => b.shared - a.shared || byCodePoint(a.deckName.toLowerCase(), b.deckName.toLowerCase()));
 
     rows.push({
       fileName: s.fileName,
@@ -126,8 +130,9 @@ export function orderPrecons(rows: readonly PreconRow[], order: PreconOrder): Pr
   const share = (r: PreconRow) => (r.of === 0 ? 0 : r.owned / r.of);
   return [...rows].sort((a, b) =>
     (order === "owned" ? share(b) - share(a) : 0)
-    || b.releaseDate.localeCompare(a.releaseDate)
-    || a.name.localeCompare(b.name));
+    || byCodePoint(b.releaseDate, a.releaseDate)
+    || byCodePoint(a.name.toLowerCase(), b.name.toLowerCase())
+    || byCodePoint(a.fileName, b.fileName));
 }
 
 /** Year heads for the newest order; one group per release year, in the rows' order. */

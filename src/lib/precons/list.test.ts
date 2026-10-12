@@ -75,6 +75,11 @@ describe("filter, order, group", () => {
     expect(orderPrecons(rows, "owned").map((r) => r.name)).toEqual(["Old", "New", "Mid"]);
   });
 
+  it("breaks a tie by name, then file name, by code point", () => {
+    const tied = summarisePrecons([source("b"), source("A"), source("a")], new Set(), []);
+    expect(orderPrecons(tied, "newest").map((r) => r.fileName)).toEqual(["A", "a", "b"]);
+  });
+
   it("groups by release year in the rows' order", () => {
     expect(groupByYear(orderPrecons(rows, "newest")).map((g) => [g.year, g.rows.length])).toEqual([["2026", 2], ["2016", 1]]);
   });
