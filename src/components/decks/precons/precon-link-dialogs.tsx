@@ -192,6 +192,19 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
   const { pending, failed, run } = useLinkWrite(onDismiss);
   const needle = fold(q.trim());
   const shown = needle === "" ? items : items.filter((i) => fold(i.search).includes(needle));
+  // A radio group's keyboard: one stop in the tab order (the selected row, else the first), and
+  // the arrows move the selection and the focus together, wrapping at the ends.
+  const rows = useRef(new Map<string, HTMLButtonElement>());
+  const tabStop = shown.some((i) => i.id === selected) ? selected : shown[0]?.id ?? null;
+  const onRadioKey = (e: React.KeyboardEvent, index: number) => {
+    const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+    const to = e.key === "Home" ? 0 : e.key === "End" ? shown.length - 1 : step === 0 ? -1 : (index + step + shown.length) % shown.length;
+    if (to < 0) return;
+    e.preventDefault();
+    const next = shown[to];
+    setSelected(next.id);
+    rows.current.get(next.id)?.focus();
+  };
   const chosen = items.find((i) => i.id === selected) ?? null;
 
   return (
@@ -212,7 +225,7 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
           ? <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{none}</p>
           : shown.length === 0 && <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{noMatch(q.trim())}</p>}
         <div role="radiogroup" aria-label={label} className="flex flex-col gap-[6px]">
-          {shown.map((item) => {
+          {shown.map((item, index) => {
             const on = item.id === selected;
             return (
               <button
@@ -220,6 +233,9 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
                 type="button"
                 role="radio"
                 aria-checked={on}
+                tabIndex={item.id === tabStop ? 0 : -1}
+                ref={(el) => { if (el) rows.current.set(item.id, el); else rows.current.delete(item.id); }}
+                onKeyDown={(e) => onRadioKey(e, index)}
                 aria-label={on ? c.unselectAria(item.name) : c.selectAria(item.name)}
                 disabled={pending}
                 onClick={() => setSelected(on ? null : item.id)}

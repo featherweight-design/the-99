@@ -100,6 +100,18 @@ describe("LinkPreconRow", () => {
     expect(within(dialog).getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Select Undead Unleashed"]);
   });
 
+  it("is one tab stop, and the arrows move the selection and the focus, wrapping", () => {
+    const dialog = open();
+    const radios = () => within(dialog).getAllByRole("radio");
+    expect(radios().map((r) => r.tabIndex)).toEqual([0, -1]);
+    fireEvent.keyDown(radios()[0], { key: "ArrowDown" });
+    expect(radios()[1]).toHaveAttribute("aria-checked", "true");
+    expect(document.activeElement).toBe(radios()[1]);
+    expect(radios().map((r) => r.tabIndex)).toEqual([-1, 0]);
+    fireEvent.keyDown(radios()[1], { key: "ArrowDown" });
+    expect(radios()[0]).toHaveAttribute("aria-checked", "true");
+  });
+
   it("says a search matched nothing, rather than drawing an empty list", () => {
     const dialog = open();
     fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "zzz" } });
