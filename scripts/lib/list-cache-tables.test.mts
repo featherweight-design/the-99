@@ -75,6 +75,13 @@ describe("switchReaders", () => {
     try {
       expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
       expect(switchReaders(["src/lib/cache/page-cache.ts"])).toEqual([]);
+      // Naming a table directly reads it as surely as the snapshot does.
+      writeFileSync(file, 'import { flagOverrides } from "../../db/schema";\nexport const x = flagOverrides;\n');
+      expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
+      writeFileSync(file, 'export const q = "select value from flag_group_members";\n');
+      expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
+      writeFileSync(file, "// flag_overrides is read by page-cache alone\nexport const y = 1;\n");
+      expect(switchReaders([rel])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true });
     }

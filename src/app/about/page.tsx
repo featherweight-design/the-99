@@ -5,6 +5,7 @@ import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
 import { AboutPage } from "../../components/about/about-page";
 import { aboutSheetEnabled } from "../../lib/about/flag";
+import { resolveSwitchEnv } from "../../lib/switches/snapshot";
 
 /**
  * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
@@ -25,13 +26,14 @@ export default async function AboutRoute({
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
-  const seen = await aboutSeen(userId);
+  const [seen, env] = await Promise.all([aboutSeen(userId), resolveSwitchEnv(userId)]);
   return (
     <AboutPage
       seen={seen.version}
       seenIds={seen.ids}
       next={soleNext(params.next)}
-      sheetMode={aboutSheetEnabled()}
+      sheetMode={aboutSheetEnabled(env)}
+      env={env}
     />
   );
 }

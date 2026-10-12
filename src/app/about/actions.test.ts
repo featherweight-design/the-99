@@ -10,6 +10,10 @@ const redirect = vi.fn((to: string) => {
 vi.mock("../../lib/auth", () => ({ requireUserId }));
 vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited }));
 vi.mock("next/navigation", () => ({ redirect }));
+// The reader's resolved switches, as the proxy's gate decides from them.
+const resolved = vi.hoisted(() => ({ env: {} as Record<string, string> }));
+const resolveSwitchEnv = vi.fn(async () => ({ ...process.env, ...resolved.env }));
+vi.mock("../../lib/switches/snapshot", () => ({ resolveSwitchEnv }));
 // What this deployment draws. The real rule, handed a catalog with a switched entry in it when a
 // test sets one: no shipped entry has a switch yet, and the write must still name them.
 const extraEntries: { id: string; switch?: string }[] = [];
@@ -17,7 +21,7 @@ vi.mock("../../lib/about/visible", async (importOriginal) => {
   const real = await importOriginal<typeof import("../../lib/about/visible")>();
   return {
     ...real,
-    visibleEntries: () => [...real.visibleEntries(), ...extraEntries] as ReturnType<typeof real.visibleEntries>,
+    visibleEntries: (env?: NodeJS.ProcessEnv) => [...real.visibleEntries(env), ...extraEntries] as ReturnType<typeof real.visibleEntries>,
   };
 });
 
@@ -57,6 +61,18 @@ describe("dismissAbout", () => {
       expect(ids).toContain("switched-a");
     } finally {
       extraEntries.length = 0;
+    }
+  });
+
+  it("records an entry the reader's own override shows them, which the gate counts as unseen", async () => {
+    resolved.env = { DECK_NOTES_ENABLED: "true" };
+    try {
+      await dismiss("/decks");
+      expect(resolveSwitchEnv).toHaveBeenCalledWith("user_1");
+      const ids = (markAboutVisited.mock.calls.at(-1) as unknown as [string, number, string[]])[2];
+      expect(ids).toContain("notes");
+    } finally {
+      resolved.env = {};
     }
   });
 

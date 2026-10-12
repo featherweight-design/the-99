@@ -252,6 +252,7 @@ export function AboutPage({
   seenIds = [],
   next,
   sheetMode = false,
+  env = process.env,
 }: {
   seen: number;
   /** The switched entries this reader has already met, by id (`user_prefs.about_seen_ids`). */
@@ -263,12 +264,14 @@ export function AboutPage({
    * dismiss. Off, the page renders exactly as it did.
    */
   sheetMode?: boolean;
+  /** The reader's resolved switches (`resolveSwitchEnv`), the same the proxy's gate and sheet decide from. */
+  env?: NodeJS.ProcessEnv;
 }) {
-  // Only the entries this deployment draws: one tied to a switch that is off is not on the page.
-  const visible = visibleEntries();
+  // Only the entries this reader is drawn: one tied to a switch that is off for them is not on the page.
+  const visible = visibleEntries(env);
   // "How the app reaches its answers" (plan 2026-09-28): its section, its clause in the intro,
   // and the jump mark its rows share with the entries. Off, the page is exactly as it was.
-  const howItWorks = howItWorksEnabled();
+  const howItWorks = howItWorksEnabled(env);
   // "New" is the one rule the sheet and both gates read (`unseenEntries`): an unswitched entry by
   // the version floor, a switched one by its id. The legacy gate redirects on it too, so the page
   // it lands on must mark and acknowledge the same things or the reader is sent with nothing new.

@@ -6,6 +6,7 @@ import { safeNext } from "../../lib/about/gate";
 import { markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
+import { resolveSwitchEnv } from "../../lib/switches/snapshot";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
@@ -24,10 +25,12 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
  */
 export async function dismissAbout(formData: FormData): Promise<string> {
   const userId = await requireUserId();
-  // The version AND the switched entries this deployment draws, as a visit does: the legacy gate
+  // The version AND the switched entries this reader is drawn, as a visit does: the legacy gate
   // redirects on an unseen switched entry, so acknowledging only the version would send the same
-  // reader back from another browser.
-  await markAboutVisited(userId, ABOUT_VERSION, switchedIds(visibleEntries()));
+  // reader back from another browser. Their RESOLVED switches, as the gate's: an entry an override
+  // shows them must be recordable, or the gate sends them back for it forever.
+  const env = await resolveSwitchEnv(userId);
+  await markAboutVisited(userId, ABOUT_VERSION, switchedIds(visibleEntries(env)));
   return safeNext(formData.get("next")?.toString());
 }
 
@@ -44,9 +47,10 @@ export async function dismissAbout(formData: FormData): Promise<string> {
  */
 export async function recordAboutVisit() {
   const userId = await requireUserId();
-  // The switched entries THIS deployment draws, decided here and never taken from the client:
-  // a visit records what the page could have shown, not what a caller claims it showed.
-  // The appendix is seen the same way, by its id, while its switch is on (plan 2026-09-28, PR C).
-  const appendix = howItWorksEnabled() ? [HOW_IT_WORKS_ID] : [];
-  await markAboutVisited(userId, ABOUT_VERSION, [...switchedIds(visibleEntries()), ...appendix]);
+  // The switched entries THIS reader is drawn, decided here from their resolved switches and never
+  // taken from the client: a visit records what the page could have shown, not what a caller claims
+  // it showed. The appendix is seen the same way, by its id, while its switch is on (plan 2026-09-28, PR C).
+  const env = await resolveSwitchEnv(userId);
+  const appendix = howItWorksEnabled(env) ? [HOW_IT_WORKS_ID] : [];
+  await markAboutVisited(userId, ABOUT_VERSION, [...switchedIds(visibleEntries(env)), ...appendix]);
 }

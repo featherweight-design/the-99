@@ -9,6 +9,7 @@ import { AboutSheet } from "./about-sheet";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
+import { resolveSwitchEnv } from "../../lib/switches/snapshot";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -42,7 +43,10 @@ export default async function Shell({
   // even when it says nothing, because the sheet latches the state it MOUNTED
   // with: a later re-render of this layout (router.refresh, a revalidating
   // action) arrives without the header and must not unmount an unread sheet.
-  const sheet = aboutSheetEnabled() ? readSheetState(await headers()) : null;
+  // Decided from the reader's RESOLVED switches, as the proxy decides: the proxy strips the header
+  // only when the sheet is on for this reader, so reading it on anyone else's would trust a header
+  // the client sent.
+  const sheet = aboutSheetEnabled(await resolveSwitchEnv(userId)) ? readSheetState(await headers()) : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   const door = isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {};
 

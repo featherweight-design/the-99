@@ -126,11 +126,19 @@ export const KEYED_BY_SWITCHES = new Set(["flag_overrides", "flag_group_members"
 export const SWITCH_READER = "src/lib/cache/page-cache.ts";
 const SWITCH_MODULE = "src/lib/switches/snapshot.ts";
 
-/** Every file on the pages' path that imports the override snapshot, other than the one allowed to. */
-export function switchReaders(files = loaderFiles()) {
+/**
+ * Every file on the pages' path that reads the overrides other than the one allowed to: by importing
+ * the snapshot, or by naming either table itself, by its Drizzle binding or in raw SQL. Either would
+ * read them where the key does not see it.
+ */
+export function switchReaders(files = loaderFiles(), tables = schemaTables()) {
+  const bindings = [...tables].filter(([, t]) => KEYED_BY_SWITCHES.has(t.name)).map(([binding]) => binding);
+  const named = new RegExp(`\\b(${[...bindings, ...KEYED_BY_SWITCHES].join("|")})\\b`);
   return files.filter((file) => {
     if (file === SWITCH_READER || file.startsWith("src/lib/switches/")) return false;
-    return importsOf(readFileSync(file, "utf8")).some((spec) => resolveImport(resolve(file), spec) === resolve(SWITCH_MODULE));
+    const source = readFileSync(file, "utf8");
+    if (named.test(source.replace(/^\s*(\/\/|\*).*$/gm, ""))) return true;
+    return importsOf(source).some((spec) => resolveImport(resolve(file), spec) === resolve(SWITCH_MODULE));
   }).map((file) => `KEYED   ${file} reads the switch overrides inside a cached page's path; only ${SWITCH_READER} may, and only to build the key`);
 }
 

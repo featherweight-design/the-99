@@ -52,8 +52,8 @@ describe("switchSnapshot", () => {
       { switchName: "RETIRED_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
       { switchName: "DECK_NOTES_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" },
     ];
-    const env = await resolveSwitchEnv("u1", {});
+    expect((await switchSnapshot(1_000))?.overrides.map((o) => o.switchName)).toEqual(["DECK_NOTES_ENABLED"]);
+    const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
     expect(env.DECK_NOTES_ENABLED).toBe("true");
-    expect(env.RETIRED_ENABLED).toBeUndefined();
   });
 });
