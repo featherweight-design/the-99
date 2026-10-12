@@ -237,6 +237,37 @@ describe("ImproveDoor: review round 1", () => {
   });
 });
 
+describe("ImproveDoor: review round 2", () => {
+  it("keeps the newer of two reads from two mounts, whichever lands last", async () => {
+    const answers: ((h: ManaHelp) => void)[] = [];
+    const read = () => new Promise<ManaHelp>((r) => { answers.push(r); });
+    const first = render(door(read));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    first.unmount();
+    const second = render(door(read));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    const newer = three.colorOrder[1].color;
+    await act(async () => { answers[1](helpFor(newer)); });
+    await act(async () => { answers[0](helpFor(three.colorOrder[0].color)); });
+    second.unmount();
+    render(door(vi.fn()));
+    expect(document.querySelector(`[data-mana-help='${newer}']`)).not.toBeNull();
+  });
+
+  it("draws no result for a color the new count no longer holds", async () => {
+    const read = vi.fn(async (_d: string, c: string) => helpFor(c as BalanceColor));
+    const { rerender } = render(door(read));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    await screen.findByText(copy.help.swap(3, "Forest", "Mountain"));
+    // The same list, recounted with a commander that has none of red: the kept color is gone.
+    rerender(<ImproveDoor deckId={A} balance={mono} commander="Gishath" revision="r1" read={read} />);
+    expect(document.querySelector("[data-mana-help]")).toBeNull();
+  });
+});
+
 describe("ImproveDoor: absent", () => {
   it("draws nothing for a colorless deck", () => {
     const colorless = balanceOf([spell("Ring", "{C}{C}"), land("wastes", 10, ["C"])], []);

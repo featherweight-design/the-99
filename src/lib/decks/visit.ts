@@ -26,9 +26,16 @@ export type ToolBaseline = { okKey: string | null; runId: string | null };
  *  `mana-help`). Opaque here; its owner checks it still describes the deck before drawing it. */
 export type VisitSlot = "mana-help";
 
-type Visit = { deckId: string; baselines: Partial<Record<DeckTool, ToolBaseline>>; values: Partial<Record<VisitSlot, unknown>> };
+type Visit = {
+  deckId: string;
+  baselines: Partial<Record<DeckTool, ToolBaseline>>;
+  values: Partial<Record<VisitSlot, unknown>>;
+  /** Per slot, the newest request asked in this visit, across every mount of its tool. */
+  asks: Partial<Record<VisitSlot, number>>;
+};
 
 let visit: Visit | null = null;
+let askSeq = 0;
 
 const DECK_ROUTE = /^\/decks\/([^/]+)(?:\/|$)/;
 
@@ -42,7 +49,7 @@ export function noteDeckRoute(path: string | null): void {
   }
   // Lowercase, as Postgres returns a uuid: an uppercase URL and the deck's own id name one deck.
   const deckId = id.toLowerCase();
-  if (visit?.deckId !== deckId) visit = { deckId, baselines: {}, values: {} };
+  if (visit?.deckId !== deckId) visit = { deckId, baselines: {}, values: {}, asks: {} };
 }
 
 /** A stored ok result's identity: its `lastOkAt` as epoch-ms, or null with none. */
@@ -88,10 +95,19 @@ export function setVisitValue(anyCaseId: string, slot: VisitSlot, value: unknown
   else visit.values[slot] = value;
 }
 
-/** The open visit to the deck, as an identity a reply can be checked against: a later visit to
- *  the same deck is a different token. Null with no visit open to it. */
-export function visitToken(anyCaseId: string): object | null {
-  return visit?.deckId === anyCaseId.toLowerCase() ? visit : null;
+/** Numbers a request for `slot` in this visit: the newest asked, across every mount of the tool
+ *  (a panel remounts on each tab or tool switch), so a slower reply from an earlier mount cannot
+ *  overwrite a newer one. Null with no visit open to the deck. */
+export function askInVisit(anyCaseId: string, slot: VisitSlot): number | null {
+  if (visit?.deckId !== anyCaseId.toLowerCase()) return null;
+  // Numbered across visits, never restarting, so an earlier visit's number is never a later one's.
+  visit.asks[slot] = ++askSeq;
+  return visit.asks[slot];
+}
+
+/** Whether `ask` is still the newest request for `slot` in the open visit to the deck. */
+export function isNewestAsk(anyCaseId: string, slot: VisitSlot, ask: number | null): boolean {
+  return ask !== null && visit?.deckId === anyCaseId.toLowerCase() && visit.asks[slot] === ask;
 }
 
 export function resetDeckVisitForTests(): void {

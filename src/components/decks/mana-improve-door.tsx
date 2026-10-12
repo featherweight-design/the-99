@@ -15,7 +15,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { readManaHelpFor } from "../../app/decks/mana-actions";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { PriceFact } from "../../lib/decks/price";
-import { setVisitValue, visitToken, visitValue } from "../../lib/decks/visit";
+import { askInVisit, isNewestAsk, setVisitValue, visitValue } from "../../lib/decks/visit";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tuning/mana-balance";
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
@@ -94,8 +94,9 @@ export function ImproveDoor({
 
   const run = async (color: BalanceColor) => {
     const mine = ++asked.current;
-    // The visit this press belongs to: a reply landing in a later visit to the deck keeps nothing.
-    const token = visitToken(deckId);
+    // This press's place among every request in the visit, across mounts: a reply landing in a later
+    // visit to the deck, or after a newer press from another mount, keeps nothing.
+    const ask = askInVisit(deckId, "mana-help");
     setVisitValue(deckId, "mana-help", undefined);
     setDoor({ at: "result", color, help: { kind: "reading" } });
     setFocus("result");
@@ -112,7 +113,7 @@ export function ImproveDoor({
       setFocus("step");
       return;
     }
-    if (help && visitToken(deckId) === token) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
+    if (help && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
     setDoor({ at: "result", color, help: help ? { kind: "ok", help } : { kind: "failed" } });
   };
 
@@ -153,7 +154,8 @@ export function ImproveDoor({
           onClose={() => { setDoor({ at: "closed" }); setFocus("button"); }}
         />
       ) : null}
-      {door.at === "result" ? (
+      {/* A color the newest count no longer offers (a commander changed under a kept result) is not drawn. */}
+      {door.at === "result" && order.some((e) => e.color === door.color) ? (
         <HelpResult
           color={door.color}
           state={door.help}
