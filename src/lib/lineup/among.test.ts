@@ -3,7 +3,7 @@ import { defaultChosen, jobsGrid, median, strip, worth } from "./among";
 import type { LineupBuild, LineupDeck } from "./types";
 
 const build = (over: Partial<LineupBuild> = {}): LineupBuild => ({ manaValue: 3, lands: 36, ramp: 10, draw: 10, removal: 8, valueCents: 10000, ...over });
-const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name, name, identity: [], brew: false, bracket: null, games: [], build: build(), ...over });
+const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name, name, identity: [], brew: false, bracket: null, games: [], build: build(), basis: name, ...over });
 
 describe("median", () => {
   it("takes the middle value, or the mean of the two middle ones", () => {

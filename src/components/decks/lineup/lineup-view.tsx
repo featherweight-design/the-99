@@ -14,6 +14,8 @@ import { sharedView } from "../../../lib/lineup/shared";
 import { CardDetailProvider } from "../../cards/card-detail-provider";
 import { AmongBody } from "./among-card";
 import { SharedBody } from "./shared-card";
+import { CollectionBody } from "./collection-card";
+import { collectionScope, wantedRows } from "../../../lib/lineup/collection";
 import { FoldCard, useDecksStatsFold } from "./fold";
 import { JobsBody } from "./jobs-card";
 import { WorthBody } from "./worth-card";
@@ -151,6 +153,24 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
             <SharedBody shared={data.shared!} decks={decks} cartEnabled={cartEnabled} />
           </FoldCard>
         ) : null}
+        {data.collection ? (() => {
+          const c = data.collection;
+          const sc = collectionScope(c, filter);
+          const wanted = wantedRows(c, new Set(decks.map((d) => d.id)), null).filter((r) => r.pct >= 40).length;
+          const age = data.pricesAsOf ? copy.worth.age((Date.parse(now) - Date.parse(data.pricesAsOf)) / 60_000) : null;
+          return (
+            <FoldCard
+              id="collection"
+              title={copy.collection.title}
+              denom={copy.collection.denom(c.copies, c.cards)}
+              summary={copy.summary.collection(sc.inDeckCopies, c.copies, sc.pctValue, wanted)}
+              open={fold.open.has("collection")}
+              onToggle={() => fold.toggle("collection")}
+            >
+              <CollectionBody c={c} decks={decks} filter={filter} age={age} />
+            </FoldCard>
+          );
+        })() : null}
         {comparing ? (
           <>
             <FoldCard
