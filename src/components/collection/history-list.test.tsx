@@ -19,7 +19,7 @@ const NOW = Date.parse("2026-10-09T20:00:00Z");
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e1", seq: 5, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 2, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, ...over,
 });
 const row = (name: string, before: number | null, after: number | null): HistoryRow => ({
   oracleId: name, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name,
@@ -157,6 +157,15 @@ describe("HistoryList", () => {
     // The link sits beside the disclosure, never inside it: a link in a button is invalid.
     expect(link.closest("button")).toBeNull();
     expect(screen.getByRole("button", { name: "Revert Swords to Plowshares" })).toBeTruthy();
+  });
+
+  it("tags a cart purchase From Shopping and links the cart, never one deck", () => {
+    draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true })]);
+    expect(screen.getByText("From Shopping")).toBeTruthy();
+    const link = screen.getByRole("link", { name: "Shopping for all decks" });
+    expect(link.getAttribute("href")).toBe("/decks/shopping");
+    expect(link.closest("p")?.textContent).toBe("From Shopping for all decks");
+    expect(link.closest("button")).toBeNull();
   });
 
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {

@@ -36,7 +36,7 @@ vi.mock("../../lib/collection/write", () => ({
   },
 }));
 
-import { markBought } from "./mark-bought-actions";
+import { markBought, markBoughtForDecks } from "./mark-bought-actions";
 
 const press = (over: Record<string, unknown> = {}) =>
   markBought(DECK, CARD, { scryfallId: SCRY, finish: "foil", quantity: 2, expected: 1, id: ID, ...over });
@@ -49,12 +49,13 @@ const applied = (receipt: unknown) => ({
 
 beforeEach(() => {
   state.printing = { setCode: "khm", collectorNumber: "31", finishes: ["nonfoil", "foil"] };
-  state.result = applied({ before: null, after: { owned: 3, claims: [] }, afterFromDeck: { owned: 3, free: 0, soft: 0 } });
+  state.result = applied({ before: null, after: { owned: 3, claims: [] }, afterFromDecks: { [DECK]: { owned: 3, free: 0, soft: 0 } } });
   state.calls = [];
   state.invalidated = 0;
   state.after = 0;
   process.env.SHOPPING_MARK_BOUGHT_ENABLED = "true";
   process.env.COLLECTION_EDIT_ENABLED = "true";
+  process.env.ALL_DECKS_CART_ENABLED = "true";
 });
 
 describe("markBought", () => {
@@ -109,8 +110,8 @@ describe("markBought", () => {
       quantity: 3, expected: 1, scryfallId: SCRY, condition: null,
     }]);
     expect(opts).toEqual({
-      id: ID, source: `shopping:${DECK}`, receipt: { oracleId: CARD, deckId: DECK },
-      requireMember: { deckId: DECK, oracleId: CARD },
+      id: ID, source: `shopping:${DECK}`, receipt: { oracleId: CARD, deckIds: [DECK] },
+      requireMember: { deckIds: [DECK], oracleId: CARD },
     });
     expect(out).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
   });
@@ -139,10 +140,78 @@ describe("markBought", () => {
 
   it("lowercases the ids it keys on", async () => {
     await markBought(DECK.toUpperCase(), CARD.toUpperCase(), { scryfallId: SCRY, finish: "foil", quantity: 1, expected: 0, id: ID });
-    const [, change, opts] = state.calls[0] as [string, { rows: { oracleId: string }[] }, { source: string; receipt: { oracleId: string; deckId: string } }];
+    const [, change, opts] = state.calls[0] as [string, { rows: { oracleId: string }[] }, { source: string; receipt: { oracleId: string; deckIds: string[] } }];
     expect(opts.source).toBe(`shopping:${DECK}`);
     // `loadAvailability` keys its map on lowercase ids: an uppercase one would read no receipt.
-    expect(opts.receipt).toEqual({ oracleId: CARD, deckId: DECK });
+    expect(opts.receipt).toEqual({ oracleId: CARD, deckIds: [DECK] });
     expect(change.rows[0].oracleId).toBe(CARD);
+  });
+});
+
+describe("markBoughtForDecks", () => {
+  const OTHER = "55555555-5555-4555-8555-555555555555";
+  const cartPress = (over: Record<string, unknown> = {}) =>
+    markBoughtForDecks(CARD, { deckIds: [DECK, OTHER], scryfallId: SCRY, finish: "foil", quantity: 2, expected: 1, id: ID, ...over });
+  const cartApplied = () => applied({
+    before: null,
+    // One copy: seniority gives it to Gishath, and Kratos still needs one.
+    after: { owned: 1, claims: [
+      { id: DECK, name: "Gishath", quantity: 1, mature: true, since: 1 },
+      { id: OTHER, name: "Kratos", quantity: 1, mature: true, since: 2 },
+    ] },
+    afterFromDecks: {},
+    // The roll-up, read inside the write: it still bills Kratos one, and bills Gishath nothing.
+    owes: { [OTHER]: 1 },
+  });
+
+  it("refuses with the cart's switch off, writing nothing", async () => {
+    process.env.ALL_DECKS_CART_ENABLED = "";
+    expect(await cartPress()).toEqual({ refused: "off" });
+    process.env.ALL_DECKS_CART_ENABLED = "true";
+    process.env.SHOPPING_MARK_BOUGHT_ENABLED = "";
+    expect(await cartPress()).toEqual({ refused: "off" });
+    expect(state.calls).toEqual([]);
+  });
+
+  it("refuses malformed decks and a pick off the line", async () => {
+    for (const over of [
+      { deckIds: [] }, { deckIds: "x" }, { deckIds: [DECK, "nope"] },
+      { deckIds: Array.from({ length: 501 }, () => DECK) },
+      { pickDeckId: "nope" }, { pickDeckId: SCRY }, { quantity: 21 },
+    ]) {
+      await expect(cartPress(over)).rejects.toThrow("bad mark-bought input");
+    }
+    expect(state.calls).toEqual([]);
+  });
+
+  it("writes once for every deck, sourced shopping:cart, with each deck required and read", async () => {
+    state.result = cartApplied();
+    const out = await cartPress({ deckIds: [DECK.toUpperCase(), OTHER, DECK] });
+    const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
+    expect(opts).toEqual({
+      id: ID, source: `shopping:cart:${DECK},${OTHER}`,
+      receipt: { oracleId: CARD, deckIds: [], owesFor: [DECK, OTHER] },
+      requireMember: { deckIds: [DECK, OTHER], oracleId: CARD },
+    });
+    expect(out).toEqual({ applied: { id: ID, receipt: {
+      covered: [{ deckId: DECK, deckName: "Gishath" }],
+      still: [{ deckId: OTHER, deckName: "Kratos", need: 1 }],
+    } } });
+    expect(state.invalidated).toBe(1);
+  });
+
+  it("sends the chooser's pick as the reservation to write with the purchase", async () => {
+    state.result = cartApplied();
+    await cartPress({ pickDeckId: OTHER.toUpperCase() });
+    const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
+    expect(opts.assign).toEqual({ oracleId: CARD, deckId: OTHER });
+  });
+
+  it("names a refused pick and a deck that dropped the card", async () => {
+    state.result = { status: "assignRefused", reason: "no-supply-left" };
+    expect(await cartPress({ pickDeckId: DECK })).toEqual({ pickRefused: "no-supply-left" });
+    state.result = { status: "notInDeck" };
+    expect(await cartPress()).toEqual({ refused: "notInDeck" });
+    expect(state.invalidated).toBe(0);
   });
 });

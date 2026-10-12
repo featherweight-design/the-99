@@ -286,7 +286,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and the junior still needs one; bought for the senior, it names nobody. A brew reads its own need.
   Two purchases of two printings at once each count exactly their own copies. A revert from History
   warns the source deck, the toast's undo (`ignoreDeckId`) leaves it out, and naming another deck
-  excludes nothing. Per-run user, cleaned up in a `finally`; refused on production and staging.
+  excludes nothing. The all-decks cart (cart PR 5): one write for several decks, sourced
+  `shopping:cart`, lands the chooser's pick as the card's reservation in the same transaction (a
+  brew included), and its receipt reads every deck from its own vantage. A refused pick, a deck that
+  dropped the card and a deck that is not the player's each refuse the whole press with nothing
+  written, and the cart's undo (`ignoreDeckIds`) leaves out the line's decks only, only for a
+  `shopping:cart` entry. Per-run user, cleaned up in a `finally`; refused on production and staging.
 - `pnpm probe:collection-write` proves the collection ledger's concurrency claims
   (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
   a double-submitted add applies once, two tabs editing one row with `expected` produce one

@@ -10,8 +10,12 @@ import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key"
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
+import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
+import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
-import { MARK_BOUGHT_MAX, receiptFacts, type ReceiptFacts } from "../../lib/decks/mark-bought";
+import {
+  CART_DECKS_MAX, MARK_BOUGHT_MAX, cartReceiptFacts, cartSource, receiptFacts, type CartReceiptFacts, type ReceiptFacts,
+} from "../../lib/decks/mark-bought";
 import { warmCommanderScores } from "../../lib/recs/warm";
 
 /** `collection_items.quantity` is a Postgres integer: the collection editor's bound. */
@@ -91,10 +95,10 @@ export async function markBought(
     {
       id: id as string,
       source: `shopping:${deckId}`,
-      receipt: { oracleId, deckId },
+      receipt: { oracleId, deckIds: [deckId] },
       // Body or commander, checked inside the write under the deck row's lock, so no deck edit can
       // remove the card between the check and the commit.
-      requireMember: { deckId, oracleId },
+      requireMember: { deckIds: [deckId], oracleId },
     },
   );
   switch (result.status) {
@@ -106,7 +110,7 @@ export async function markBought(
       return {
         applied: {
           id: result.entry.id,
-          receipt: snaps ? receiptFacts(snaps.before, snaps.after, snaps.afterFromDeck, deckId) : null,
+          receipt: snaps ? receiptFacts(snaps.before, snaps.after, snaps.afterFromDecks[deckId] ?? null, deckId) : null,
         },
       };
     }
@@ -119,3 +123,113 @@ export async function markBought(
   }
 }
 
+
+export type MarkBoughtForDecksOutcome =
+  | { applied: { id: string; receipt: CartReceiptFacts | null } }
+  | { stale: (CollectionItemIdentity & { quantity: number })[] }
+  | { missingCard: string[] }
+  /**
+   * Either switch off; a deck that no longer holds the card (the line is read again, audit G2); a
+   * printing or finish that does not exist; or the chooser's pick refused, by its reason, with
+   * nothing written.
+   */
+  | { refused: "off" | "notInDeck" | "notAPrinting" }
+  | { pickRefused: AssignRefusal };
+
+/**
+ * I got it from the all-decks cart (cart PR 5, audit G2): `quantity` copies of one printing, bought
+ * for the line's selected decks, as ONE absolute write under one press id, sourced `cartSource`
+ * (the line's deck ids, which the cart's undo is checked against).
+ * Every deck in `deckIds` must still hold the card, checked per deck inside the write under its
+ * row lock; one that dropped it refuses the whole press, and the cart reads the line again.
+ *
+ * `pickDeckId` is the S1b chooser: when fewer copies are bought than the decks want, the player
+ * names the deck that gets one, brews included (lock 9). It is written as the card's reservation
+ * in the same transaction, after the copies land, so the purchase and the pick commit together or
+ * not at all. Absent, seniority decides, as everywhere else.
+ */
+export async function markBoughtForDecks(
+  rawOracleId: string,
+  input: {
+    deckIds: unknown; pickDeckId?: unknown;
+    scryfallId: unknown; finish: unknown; quantity: unknown; expected: unknown; id: unknown;
+  },
+): Promise<MarkBoughtForDecksOutcome> {
+  if (!shoppingMarkBoughtEnabled() || !allDecksCartEnabled()) return { refused: "off" };
+  const userId = await requireUserId();
+  const { scryfallId, finish, quantity, expected, id, pickDeckId } = input;
+  if (!isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
+  if (!Array.isArray(input.deckIds) || input.deckIds.length === 0 || input.deckIds.length > CART_DECKS_MAX
+    || !input.deckIds.every(isUuid)) {
+    throw new Error("bad mark-bought input");
+  }
+  // Lowercased, as in `markBought`: every map the receipt reads is keyed on what Postgres returns.
+  const deckIds = [...new Set((input.deckIds as string[]).map((d) => d.toLowerCase()))];
+  const oracleId = rawOracleId.toLowerCase();
+  let pick: string | null = null;
+  if (pickDeckId !== undefined && pickDeckId !== null) {
+    if (typeof pickDeckId !== "string" || !isUuid(pickDeckId) || !deckIds.includes(pickDeckId.toLowerCase())) {
+      throw new Error("bad mark-bought input");
+    }
+    pick = pickDeckId.toLowerCase();
+  }
+  if (typeof finish !== "string" || !isFinish(finish)) throw new Error("bad mark-bought input");
+  if (!Number.isInteger(quantity) || (quantity as number) < 1 || (quantity as number) > MARK_BOUGHT_MAX) {
+    throw new Error("bad mark-bought input");
+  }
+  if (!Number.isInteger(expected) || (expected as number) < 0 || (expected as number) + (quantity as number) > MAX_HELD) {
+    throw new Error("bad mark-bought input");
+  }
+
+  const [printing] = await db
+    .select({ setCode: printings.setCode, collectorNumber: printings.collectorNumber, finishes: printings.finishes })
+    .from(printings)
+    .where(and(eq(printings.scryfallId, scryfallId as string), eq(printings.oracleId, oracleId)));
+  if (!printing || !printing.finishes.includes(finish)) return { refused: "notAPrinting" };
+
+  const result = await applyCollectionChange(
+    userId,
+    {
+      kind: "edit",
+      rows: [{
+        oracleId,
+        setCode: printing.setCode,
+        collectorNumber: printing.collectorNumber,
+        finish,
+        quantity: (expected as number) + (quantity as number),
+        expected: expected as number,
+        scryfallId: scryfallId as string,
+        condition: null,
+      }],
+    },
+    {
+      id: id as string,
+      source: cartSource(deckIds),
+      // No per-deck vantage: the cart's receipt reads what each line deck is still billed, from
+      // its live list, inside the write (`owesFor`), and the rest off the one snapshot.
+      receipt: { oracleId, deckIds: [], owesFor: deckIds },
+      // Ownership and membership per deck, under each deck's row lock (see `markBought`).
+      requireMember: { deckIds, oracleId },
+      ...(pick ? { assign: { oracleId, deckId: pick } } : {}),
+    },
+  );
+  switch (result.status) {
+    case "applied":
+    case "alreadyApplied": {
+      invalidateCollectionReaders(userId);
+      after(() => warmCommanderScores(userId));
+      const snaps = result.status === "applied" ? result.receipt : undefined;
+      return {
+        applied: {
+          id: result.entry.id,
+          receipt: snaps ? cartReceiptFacts(snaps.before, snaps.after, deckIds, new Map(Object.entries(snaps.owes ?? {}))) : null,
+        },
+      };
+    }
+    case "stale": return { stale: result.current };
+    case "missingCard": return { missingCard: result.names };
+    case "notInDeck": return { refused: "notInDeck" };
+    case "assignRefused": return { pickRefused: result.reason };
+    default: throw new Error(`mark bought refused: ${result.status}`);
+  }
+}

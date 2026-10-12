@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { receiptFacts } from "./mark-bought";
+import { cartReceiptFacts, cartSource, cartSourceDecks, receiptFacts, regrant } from "./mark-bought";
 import type { Availability } from "./availability";
 
 const claim = (id: string, since: number, quantity = 1, mature = true) =>
@@ -47,5 +47,73 @@ describe("receiptFacts", () => {
     expect(receiptFacts(null, null, { owned: 3, free: -2, soft: 0 }, "s").stillNeeds).toBe(2);
     expect(receiptFacts(null, null, { owned: 3, free: 0, soft: 1 }, "s").stillNeeds).toBe(0);
     expect(receiptFacts(null, null, null, "s").stillNeeds).toBe(0);
+  });
+});
+
+describe("cartReceiptFacts", () => {
+  const owes = (entries: [string, number][]) => new Map(entries);
+
+  it("splits the line's decks by what the roll-up still bills them, in the line's order", () => {
+    const after = snap(2, [claim("g", 1), claim("k", 2), claim("t", 3)]);
+    expect(cartReceiptFacts(null, after, ["t", "g", "k"], owes([["t", 1]]))).toEqual({
+      covered: [{ deckId: "g", deckName: "deck g" }, { deckId: "k", deckName: "deck k" }],
+      still: [{ deckId: "t", deckName: "deck t", need: 1 }],
+    });
+  });
+
+  it("reads a draft's own ask, never the committed claim: a deck its version calls covered still owes", () => {
+    // Its newest version asks for one, which it holds; its live list asks for two.
+    const after = snap(1, [claim("drafted", 1)]);
+    expect(cartReceiptFacts(null, after, ["drafted"], owes([["drafted", 1]])).still)
+      .toEqual([{ deckId: "drafted", deckName: "deck drafted", need: 1 }]);
+  });
+
+  it("reads a line deck the read lists no claim for, billed nothing, as covered with no name", () => {
+    expect(cartReceiptFacts(null, snap(0, []), ["g"], owes([]))).toEqual({ covered: [{ deckId: "g", deckName: "" }], still: [] });
+  });
+
+  it("names a senior deck off the line that the copy went to instead (S6)", () => {
+    // The senior deck was unselected; one copy bought for the junior goes to it by seniority.
+    const was = snap(0, [claim("senior", 1), claim("junior", 2)]);
+    const now = snap(1, [claim("senior", 1), claim("junior", 2)]);
+    expect(cartReceiptFacts(was, now, ["junior"], owes([["junior", 1]]))).toEqual({
+      covered: [{ deckId: "senior", deckName: "deck senior" }],
+      still: [{ deckId: "junior", deckName: "deck junior", need: 1 }],
+    });
+  });
+
+  it("never names an off-line deck that was already covered, or a brew for its soft share", () => {
+    const brew = { ...claim("brew", 0, 1, false), since: null };
+    // Two copies covered both committed decks before; the third is a spare the brew only reads.
+    const was = snap(2, [claim("held", 1), brew, claim("line", 2)]);
+    const now = snap(3, [claim("held", 1), brew, claim("line", 2)]);
+    expect(cartReceiptFacts(was, now, ["line"], owes([])).covered).toEqual([{ deckId: "line", deckName: "deck line" }]);
+  });
+});
+
+describe("cartSource", () => {
+  it("records the line's decks, and reads them back only off a cart entry", () => {
+    expect(cartSourceDecks(cartSource(["a", "b"]))).toEqual(["a", "b"]);
+    expect(cartSourceDecks("shopping:a")).toBeNull();
+    expect(cartSourceDecks("shopping:cart")).toBeNull();
+    expect(cartSourceDecks(null)).toBeNull();
+  });
+});
+
+describe("regrant", () => {
+  const withGrant = (c: Availability["claims"][number], granted: number) => ({ ...c, granted });
+
+  it("grants the prior reservation out of the copies no commander holds, and nothing else", () => {
+    const after = snap(2, [withGrant(claim("picked", 2), 1), claim("prior", 1), claim("other", 3)]);
+    const before = regrant({ ...after, owned: 1 }, [{ deckId: "prior", copies: 1 }]);
+    expect(before.claims.map((c) => [c.id, c.granted])).toEqual([["picked", 0], ["prior", 1], ["other", 0]]);
+  });
+
+  it("caps a want at the list ask and the supply left after earlier wants", () => {
+    const cmd = { ...claim("cmd", 0, 1), commander: true, commanderCopies: 1 };
+    const after = snap(2, [cmd, claim("a", 1, 2), claim("b", 2, 1)]);
+    // Two owned, one held as a commander: one copy reservable. a wants 2 and gets 1; b gets none.
+    const before = regrant(after, [{ deckId: "a", copies: 2 }, { deckId: "b", copies: 1 }]);
+    expect(before.claims.map((c) => [c.id, c.granted])).toEqual([["cmd", 0], ["a", 1], ["b", 0]]);
   });
 });

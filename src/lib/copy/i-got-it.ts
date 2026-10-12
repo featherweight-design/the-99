@@ -3,6 +3,8 @@
 // the key, the confirm, the held slot, the receipt, History's deck line and the details link.
 // Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
 
+import { allDecksCartCopy } from "./all-decks-cart";
+
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 
@@ -80,6 +82,8 @@ export const gotItCopy = {
   history: {
     fromDeck: (deck: string) => ({ pre: "From", link: deck, post: "’s Shopping list" }),
     fromDeleted: "From the Shopping list of a deck you’ve since deleted",
+    /** A purchase from the all-decks cart names the cart by its page title, never one deck. */
+    fromCart: { pre: "From", link: allDecksCartCopy.title, post: "" },
   },
   /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
   shortWarning: {

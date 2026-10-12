@@ -112,6 +112,20 @@ describe("revertCollectionEntry", () => {
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], "deck")).rejects.toThrow("bad deck id");
   });
 
+  it("passes every deck a cart line listed for the cart's undo, lowercased, and refuses a malformed one", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    const A = "55555555-5555-4555-8555-555555555555";
+    const B = "66666666-6666-4666-8666-666666666666";
+    await revertCollectionEntry(ENTRY, ACTION, {}, [], [A.toUpperCase(), B]);
+    expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY, expected: {}, ignoreDeckIds: [A, B] });
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], [A, "deck"])).rejects.toThrow("bad deck id");
+    // As many decks as a cart purchase may name: its undo is never refused for the line's size.
+    stub.apply.mockClear();
+    await revertCollectionEntry(ENTRY, ACTION, {}, [], Array.from({ length: 500 }, () => A));
+    expect(stub.apply).toHaveBeenCalledTimes(1);
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], Array.from({ length: 501 }, () => A))).rejects.toThrow("bad deck id");
+  });
+
   it("refuses a malformed action id or preview before writing", async () => {
     await expect(revertCollectionEntry(ENTRY, "nope", {})).rejects.toThrow("bad action id");
     await expect(revertCollectionEntry(ENTRY, ACTION, { [KEY]: -1 })).rejects.toThrow("bad revert preview");
