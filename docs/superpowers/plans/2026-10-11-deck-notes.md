@@ -50,13 +50,21 @@ delete, `[[Name]]` card links that open card details. No reminders, due dates or
 
 PR 1 ships dark (no UI reads it); PR 2 ships behind the switch, off in production until Hugh walks it (lock 8).
 
-## Decision needed: ABOUT_VERSION
+## About: no bump (ruled, orchestrator, 2026-10-11)
 
-Your message says re-pin the hash, no bump. READINESS G7 and AGENTS.md say a new entry always bumps and the
-entry's `since` is the PR's bumped version (no entry that is "new" at a version nobody has crossed). I will
-follow your instruction: PR 3 adds the entry with `since: 14` (the current `ABOUT_VERSION`) and re-pins the
-hash. Tell me if Hugh wants the bump instead (then the sheet shows every account the new entry once the
-switch is on).
+The entry is added with `since: 14` (the current `ABOUT_VERSION`), gated on `DECK_NOTES_ENABLED` through an
+`AboutSwitch`, and the content hash is re-pinned; no version bump. Readers see switched entries by id, so
+flipping the switch is what announces it. READINESS G7 (and the audit's "bump in the build PR") is superseded
+for switched entries.
+
+## Caches (the deck page, #600)
+
+The deck page caches exactly two reads through `cacheForUser` (`page.tsx:168`): `loadDeckSuggestions` and
+`readSynergyCards`, under the `user-lists:<userId>` tag. The notes read is a separate, uncached read in the
+page's own loader, outside both, so a notes write has nothing cached to retire there. The rendered route is
+retired by `deckSurfaces(deckId)` (`/decks/{id}`, `/decks`, `/decks/shopping`, `/`), which every notes action
+calls. Notes are in neither cached payload and in no list-stamp table. PR 1 pins this with a test that the read
+is not routed through `cacheForUser` and that each action revalidates `deckSurfaces`.
 
 ## Risks and what I will measure
 
