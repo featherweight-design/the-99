@@ -28,6 +28,7 @@ import { ThemePicker } from "./theme-picker";
 
 import { closedBy, formLine, type Standing } from "../../lib/intake/standing";
 import { submitChoose } from "../../app/decks/new/choose/actions";
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
 /** What the budget box holds, as a whole-dollar answer: `$` and commas stripped, 1 to 100,000. */
 export function parseBudget(raw: string): number | null {
@@ -204,7 +205,7 @@ export function IntakeForm({
           htmlFor={budgetId}
           caption={pool === "own" ? copy.intake.budgetCaptionOwn : copy.intake.budgetCaption}
         >
-          <div className="flex items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]">
+          <div className={`flex items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS}`}>
             <span aria-hidden className="font-mono text-[14px] text-[color:var(--fg-faint)]">$</span>
             <input
               id={budgetId}
@@ -214,7 +215,7 @@ export function IntakeForm({
               placeholder={copy.intake.budgetPlaceholder}
               // Whole dollars: a pasted `$1,500` reads as 1500, anything else is not a figure.
               onChange={(e) => setBudget(e.target.value.replace(/[^\d]/g, "").slice(0, 6))}
-              className="flex-1 min-w-0 h-[28px] bg-transparent border-0 outline-none font-mono text-[16px] md:text-[14px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]"
+              className={`flex-1 min-w-0 h-[28px] ${AFFIX_INPUT} font-mono text-[16px] md:text-[14px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]`}
             />
           </div>
         </Field>

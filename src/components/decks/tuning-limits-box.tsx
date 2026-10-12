@@ -10,6 +10,7 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { SetsField } from "../intake/sets-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
 const copy = deckDescriptionCopy.limits;
 
@@ -97,7 +98,7 @@ export function TuningLimitsBox({
         <label htmlFor={capId} className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
           {copy.capLabel}
         </label>
-        <div className="flex h-[40px] items-center gap-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[10px]">
+        <div className={`flex h-[40px] items-center gap-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[10px] ${AFFIX_FOCUS}`}>
           <span aria-hidden className="font-mono text-[14px] text-[color:var(--fg-faint)]">$</span>
           <input
             id={capId}
@@ -128,7 +129,7 @@ export function TuningLimitsBox({
               // now-stale pending save is cancelled rather than left to land silently (round 2).
               onCapDraftInvalid();
             }}
-            className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px]"
+            className={`min-w-0 flex-1 ${AFFIX_INPUT} font-mono text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px]`}
           />
         </div>
       </div>

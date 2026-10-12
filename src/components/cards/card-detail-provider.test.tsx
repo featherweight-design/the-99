@@ -1850,7 +1850,7 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     expect(within(nextPlate).getByText("Card C")).toBeInTheDocument();
   });
 
-  it("draws each plate at D1's resting .55 with a hidden chevron toward its side", async () => {
+  it("draws each plate opaque (Hugh 2026-10-12) with a hidden chevron toward its side", async () => {
     // jsdom computes no styles, so the specimen's values are read off the classes the plate wears.
     stubMinWidth(true);
     mount("o-b");
@@ -1859,7 +1859,9 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
     for (const [name, glyph] of [["Previous card: Card A", "‹"], ["Next card: Card C", "›"]] as const) {
       const plate = screen.getByRole("button", { name });
       const art = plate.firstElementChild as HTMLElement;
-      expect(art).toHaveClass("opacity-[.55]", "group-hover:opacity-[.92]", "rounded-[9px]");
+      expect(art).toHaveClass("rounded-[9px]");
+      // No opacity class at rest or on hover: a faded plate let the grid behind the dialog show through.
+      expect([...art.classList].filter((c) => c.includes("opacity"))).toEqual([]);
       const chevron = within(plate).getByText(glyph);
       expect(chevron).toHaveAttribute("aria-hidden", "true");
     }

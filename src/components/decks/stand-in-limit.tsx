@@ -16,6 +16,7 @@ import { setShoppingLimitAction } from "../../lib/swaps/actions";
 import { useSwapTools } from "../../lib/swaps/context";
 import { DEFAULT_LIMIT_CENTS, formatLimit, parseLimitDollars } from "../../lib/swaps/limit";
 import { useGotIt } from "./got-it";
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
 export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: number; overCount: number }) {
   const tools = useSwapTools();
@@ -61,7 +62,7 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
         {editing ? (
           <>
             <label
-              className="inline-flex items-center gap-[4px] h-[40px] md:h-[30px] px-[9px] rounded-[7px] font-mono text-[13px]"
+              className={`inline-flex items-center gap-[4px] h-[40px] md:h-[30px] px-[9px] rounded-[7px] font-mono text-[13px] ${AFFIX_FOCUS}`}
               style={{ border: "1px solid var(--accent)", background: "var(--bg)" }}
             >
               <span aria-hidden style={{ color: "var(--fg-faint)" }}>$</span>
@@ -77,7 +78,7 @@ export function StandInLimit({ shoppingCount, overCount }: { shoppingCount: numb
                   setInvalid(false);
                 }}
                 // 16px keeps iOS Safari from zooming the page on focus; the drawn text is 13px.
-                className="w-[7ch] bg-transparent border-none outline-none p-0 text-[16px] md:text-[13px] caret-[color:var(--accent)]"
+                className={`w-[7ch] ${AFFIX_INPUT} p-0 text-[16px] md:text-[13px] caret-[color:var(--accent)]`}
                 style={{ color: "var(--fg)" }}
               />
             </label>

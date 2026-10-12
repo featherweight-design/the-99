@@ -11,6 +11,8 @@ import { isSynthetic, printingLabel as labelOf } from "../../lib/collection/edit
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PrintingRegion } from "../cards/printing-region";
+import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
+import { twMerge } from "tailwind-merge";
 
 const copy = collectionEditCopy.add;
 
@@ -146,7 +148,8 @@ export function AddLine(props: AddLineProps) {
                 </button>
               );
             })}
-            <span className="inline-flex h-[44px] items-center overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] md:h-[28px] md:rounded-[7px]">
+            {/* The stepper: its buttons ring themselves, so only the count's focus lights the field. */}
+            <span className={`inline-flex h-[44px] items-center overflow-hidden rounded-[9px] border border-solid border-[color:var(--border-strong)] md:h-[28px] md:rounded-[7px] ${AFFIX_FOCUS_INPUT}`}>
               <button
                 type="button"
                 aria-label={copy.fewer}
@@ -231,7 +234,8 @@ function CountInput({ name, quantity, disabled, onQuantity }: { name: string; qu
         if (Number.isFinite(n) && n > 0) onQuantity(n);
       }}
       onBlur={() => setDraft(null)}
-      className="h-full w-[36px] border-x border-solid border-[color:var(--border-strong)] bg-transparent text-center text-[16px] outline-none md:w-[30px] md:text-[13px]"
+      // The shared input half, with the stepper's own dividers put back over its `border-none`.
+      className={twMerge(AFFIX_INPUT, "h-full w-[36px] border-x border-solid border-[color:var(--border-strong)] text-center text-[16px] md:w-[30px] md:text-[13px]")}
     />
   );
 }
