@@ -27,12 +27,13 @@ import { readLabels } from "../labels/read";
 import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { analysisTabEnabled } from "../decks/analysis-flag";
+import { chainArt, withChainArt } from "../cards/chain-art";
 import { deckIdentity } from "../decks/format";
 import { listDecksWithStats } from "../decks/read";
 import { DEFAULT_DECK_SORT } from "../decks/sort";
 import type { LineupBuild, LineupData, LineupGame, LineupShared } from "./types";
 
-type BuildCard = { deckId: string; oracleId: string; name: string; typeLine: string; cmc: number; quantity: number; oracleText: string | null; keywords: string[] };
+type BuildCard = { deckId: string; oracleId: string; name: string; typeLine: string; cmc: number; quantity: number; oracleText: string | null; keywords: string[]; imageUri: string | null };
 
 /** The decks' 99s and their commanders, each one statement over every deck. */
 async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders: Omit<BuildCard, "oracleText" | "keywords">[] }> {
@@ -40,20 +41,20 @@ async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders
   const [list, heads] = await Promise.all([
     db.select({
       deckId: deckCards.deckId, oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-      name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc, oracleText: cards.oracleText, keywords: cards.keywords,
+      name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc, oracleText: cards.oracleText, keywords: cards.keywords, imageUri: cards.imageUri,
     }).from(deckCards).innerJoin(cards, eq(cards.oracleId, deckCards.oracleId)).where(inArray(deckCards.deckId, ids)),
     db.select({
       deckId: decksTable.id,
-      oracleId: decksTable.commanderOracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
-      partnerId: decksTable.partnerOracleId, partnerName: partner.name, partnerTypeLine: partner.typeLine, partnerCmc: partner.cmc,
+      oracleId: decksTable.commanderOracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc, imageUri: cards.imageUri,
+      partnerId: decksTable.partnerOracleId, partnerName: partner.name, partnerTypeLine: partner.typeLine, partnerCmc: partner.cmc, partnerImageUri: partner.imageUri,
     }).from(decksTable).innerJoin(cards, eq(cards.oracleId, decksTable.commanderOracleId))
       .leftJoin(partner, eq(partner.oracleId, decksTable.partnerOracleId))
       .where(inArray(decksTable.id, ids)),
   ]);
   const commanders = heads.flatMap((h) => [
-    { deckId: h.deckId, oracleId: h.oracleId!, name: h.name, typeLine: h.typeLine, cmc: h.cmc, quantity: 1 },
+    { deckId: h.deckId, oracleId: h.oracleId!, name: h.name, typeLine: h.typeLine, cmc: h.cmc, quantity: 1, imageUri: h.imageUri },
     ...(h.partnerId && h.partnerName !== null
-      ? [{ deckId: h.deckId, oracleId: h.partnerId, name: h.partnerName, typeLine: h.partnerTypeLine!, cmc: h.partnerCmc ?? 0, quantity: 1 }]
+      ? [{ deckId: h.deckId, oracleId: h.partnerId, name: h.partnerName, typeLine: h.partnerTypeLine!, cmc: h.partnerCmc ?? 0, quantity: 1, imageUri: h.partnerImageUri }]
       : []),
   ]);
   return { list, commanders };
@@ -65,16 +66,20 @@ async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders
  * deck's copies it already has. What a deck still lacks is Shopping's own buy row (lock 3: the claim model's,
  * never re-derived here), so the count a row links to is the count `/decks/shopping` lists: it reads each
  * deck's draft against the copies left to it, bills nothing a deck proxies, and lets a brew take a free copy.
+ * A deck with no card in its list plays nothing here, its commanders included: Shopping bills it nothing until it
+ * holds a card again, so counting its commander would draw a copy it neither has nor is told to buy.
  */
 export function sharedCards(
-  lists: { deckId: string; oracleId: string; name: string; typeLine: string; quantity: number }[],
+  lists: { deckId: string; oracleId: string; name: string; typeLine: string; quantity: number; imageUri: string | null }[],
   availability: ReadonlyMap<string, Pick<Availability, "owned">>,
   buys: readonly DeckBuyRow[],
+  /** The decks whose list holds a card. */
+  bodied: ReadonlySet<string>,
 ): LineupShared[] {
-  const byCard = new Map<string, { name: string; decks: Map<string, number> }>();
+  const byCard = new Map<string, { name: string; imageUri: string | null; decks: Map<string, number> }>();
   for (const c of lists) {
-    if (isBasicLand(c.typeLine)) continue;
-    const row = byCard.get(c.oracleId) ?? { name: c.name, decks: new Map<string, number>() };
+    if (isBasicLand(c.typeLine) || !bodied.has(c.deckId)) continue;
+    const row = byCard.get(c.oracleId) ?? { name: c.name, imageUri: c.imageUri, decks: new Map<string, number>() };
     row.decks.set(c.deckId, (row.decks.get(c.deckId) ?? 0) + c.quantity);
     byCard.set(c.oracleId, row);
   }
@@ -82,6 +87,7 @@ export function sharedCards(
   return [...byCard].filter(([, r]) => r.decks.size >= 2).map(([oracleId, r]) => ({
     oracleId,
     name: r.name,
+    imageUri: r.imageUri,
     owned: availability.get(oracleId)?.owned ?? 0,
     decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: Math.max(0, wants - (buy.get(`${id}|${oracleId}`) ?? 0)) })),
   }));
@@ -139,7 +145,10 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
     });
   }
   const every = [...lists.list, ...lists.commanders];
-  return { builds, asOf: prices.newestAsOf, shared: sharedCards(every, availability, buys), lists: every };
+  const shared = sharedCards(every, availability, buys, new Set(lists.list.map((c) => c.deckId)));
+  // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
+  const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
+  return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {

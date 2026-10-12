@@ -15,8 +15,11 @@ export type SharedRow = {
   decks: { id: string; held: boolean; short: number }[];
   /** Copies the decks in scope ask for. */
   wants: number;
-  /** Copies those decks still lack (the cart's to-buy count for the card). */
+  /** Copies those decks still lack: the row's own figure, narrowed with the filter. */
   short: number;
+  /** Copies every deck still lacks, the count `/decks/shopping` lists for all decks, whatever the filter. */
+  cart: number;
+  imageUri: string | null;
 };
 
 export type SharedView = { rows: SharedRow[]; twoPlus: number; fivePlus: number; wantedMore: number };
@@ -37,6 +40,8 @@ export function sharedView(shared: readonly LineupShared[], inScope: ReadonlySet
       decks: rows,
       wants: decks.reduce((n, d) => n + d.wants, 0),
       short: rows.reduce((n, d) => n + d.short, 0),
+      cart: card.decks.reduce((n, d) => n + Math.max(0, d.wants - d.held), 0),
+      imageUri: card.imageUri,
     }];
   });
   const wanted = all.filter((r) => r.wants > r.owned);

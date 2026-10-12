@@ -213,8 +213,8 @@ describe("LineupView: cards your decks share", () => {
   const SH: LineupData = {
     ...DATA,
     shared: [
-      { oracleId: "sol", name: "Sol Ring", owned: 2, decks: [{ id: "tovolar", wants: 1, held: 1 }, { id: "scrappy", wants: 1, held: 0 }, { id: "gishath", wants: 1, held: 1 }] },
-      { oracleId: "signet", name: "Arcane Signet", owned: 4, decks: [{ id: "tovolar", wants: 1, held: 1 }, { id: "eldrazi", wants: 1, held: 1 }] },
+      { oracleId: "sol", name: "Sol Ring", imageUri: null, owned: 2, decks: [{ id: "tovolar", wants: 1, held: 1 }, { id: "scrappy", wants: 1, held: 0 }, { id: "gishath", wants: 1, held: 1 }] },
+      { oracleId: "signet", name: "Arcane Signet", imageUri: null, owned: 4, decks: [{ id: "tovolar", wants: 1, held: 1 }, { id: "eldrazi", wants: 1, held: 1 }] },
     ],
   };
 
@@ -236,7 +236,7 @@ describe("LineupView: cards your decks share", () => {
   });
 
   it("opens a row whose only short deck holds some of its copies, naming no deck and still linking the buy", () => {
-    const rats = { oracleId: "rats", name: "Relentless Rats", owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
+    const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
     render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
     expect(card("shared").querySelectorAll('[data-stats-shared="rats"] [data-held]').length).toBe(2);
     fireEvent.click(within(card("shared")).getByRole("button", { name: /^Which decks have Relentless Rats/ }));
@@ -245,7 +245,7 @@ describe("LineupView: cards your decks share", () => {
   });
 
   it("draws that row closed, with nothing to open, when the cart is off", () => {
-    const rats = { oracleId: "rats", name: "Relentless Rats", owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
+    const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
     render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} />);
     expect(within(card("shared")).queryByRole("button", { name: /^Which decks have Relentless Rats/ })).toBeNull();
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sharedView } from "./shared";
 import type { LineupShared } from "./types";
 
-const card = (name: string, owned: number, decks: [string, number, number][]): LineupShared => ({ oracleId: name, name, owned, decks: decks.map(([id, wants, held]) => ({ id, wants, held })) });
+const card = (name: string, owned: number, decks: [string, number, number][]): LineupShared => ({ oracleId: name, name, imageUri: null, owned, decks: decks.map(([id, wants, held]) => ({ id, wants, held })) });
 const SOL = card("Sol Ring", 2, [["a", 1, 1], ["b", 1, 0], ["c", 1, 1]]);
 const SIGNET = card("Arcane Signet", 5, [["a", 1, 1], ["b", 1, 1]]);
 const ORCHARD = card("Exotic Orchard", 0, [["a", 1, 0], ["c", 1, 0]]);
@@ -19,6 +19,11 @@ describe("sharedView", () => {
   it("fills a deck holding some of several copies, and still counts the copies it lacks", () => {
     const rats = card("Relentless Rats", 3, [["a", 4, 1], ["b", 2, 2]]);
     expect(sharedView([rats], ALL, "most").rows[0]).toMatchObject({ short: 3, decks: [{ id: "a", held: true, short: 3 }, { id: "b", held: true, short: 0 }] });
+  });
+
+  it("links the buy every deck owes, whatever the filter narrows the row to", () => {
+    const v = sharedView([SOL], new Set(["a", "c"]), "most");
+    expect(v.rows[0]).toMatchObject({ short: 0, cart: 1 });
   });
 
   it("lists only the cards wanted more than owned under that chip, the widest gap first", () => {

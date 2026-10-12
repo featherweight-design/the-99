@@ -42,7 +42,9 @@ export type LineupShared = {
   name: string;
   /** Copies owned, from the collection: never narrowed by a filter (ruling 3). */
   owned: number;
-  /** Each deck playing it: the copies it asks for, and how many of those the claim model gives it. */
+  /** The art its hover preview shows: the printing the player owns, else the catalog's (the chain card details opens). */
+  imageUri: string | null;
+  /** Each deck playing it: the copies it asks for, and how many of those it has (all of them less Shopping's buy). */
   decks: { id: string; wants: number; held: number }[];
 };
 
