@@ -134,6 +134,6 @@ export const decksStatsCopy = {
     legendWanted: "no copy left",
     caption: (two: number, five: number) => `${n(two)} ${two === 1 ? "card" : "cards"} in 2+ decks · ${n(five)} in 5+ · basics not counted`,
     one: "Needs two decks.",
-    open: (card: string) => `Which decks have ${card}`,
+    open: (card: string) => `Copies left of ${card}`,
   },
 } as const;

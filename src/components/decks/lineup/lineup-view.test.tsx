@@ -230,7 +230,7 @@ describe("LineupView: cards your decks share", () => {
 
   it("opens a short row to name the decks with no copy, and links to Shopping for all decks", () => {
     render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
-    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Which decks have Sol Ring/ }));
+    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Copies left of Sol Ring/ }));
     expect(within(card("shared")).getByText("No copy left for Scrappy.")).toBeTruthy();
     expect(within(card("shared")).getByRole("link", { name: "1 on Shopping for all decks" }).getAttribute("href")).toBe("/decks/shopping");
   });
@@ -239,7 +239,7 @@ describe("LineupView: cards your decks share", () => {
     const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
     render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
     expect(card("shared").querySelectorAll('[data-stats-shared="rats"] [data-held]').length).toBe(2);
-    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Which decks have Relentless Rats/ }));
+    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Copies left of Relentless Rats/ }));
     expect(within(card("shared")).queryByText(/^No copy left/)).toBeNull();
     expect(within(card("shared")).getByRole("link", { name: "3 on Shopping for all decks" })).toBeTruthy();
   });
@@ -247,7 +247,7 @@ describe("LineupView: cards your decks share", () => {
   it("draws that row closed, with nothing to open, when the cart is off", () => {
     const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
     render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} />);
-    expect(within(card("shared")).queryByRole("button", { name: /^Which decks have Relentless Rats/ })).toBeNull();
+    expect(within(card("shared")).queryByRole("button", { name: /^Copies left of Relentless Rats/ })).toBeNull();
   });
 
   it("lists only the cards wanted more than owned under that chip", () => {
