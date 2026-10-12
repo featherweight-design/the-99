@@ -149,7 +149,18 @@ describe("requests the gate keeps its hands off", () => {
   });
 
   it("never redirects /about itself", async () => {
-    expectPassed(await proxy(auth, request("/about")));
+    const res = await proxy(auth, request("/about"));
+    expect(res?.status).toBe(200);
+    expect(res?.headers.get("location")).toBeNull();
+    expect(aboutVersionSeen).not.toHaveBeenCalled();
+  });
+
+  it("re-keys the cookie on /about to the entries that page is drawn, so a stale redirect cannot pin it", async () => {
+    // The redirecting instance saw `notes` on; this one does not, so the page neither draws nor
+    // acknowledges it. The cookie must stop vouching for it, or the gate never asks again.
+    const { cookieValue } = await import("./lib/about/gate");
+    const res = await proxy(auth, request("/about", {}, `${cookieValue("user_1")}+notes`));
+    expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
   });
 
   it("never redirects a prefetch", async () => {

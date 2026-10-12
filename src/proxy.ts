@@ -63,6 +63,19 @@ export default clerkMiddleware(async (auth, req) => {
   if (!userId) return pass();
 
   const path = req.nextUrl.pathname;
+  // `/about` itself, as a document load: the page draws and acknowledges the entries THIS request's
+  // switches show, which another instance's memo may not have agreed with when it redirected here and
+  // set the cookie. So the cookie is re-keyed to what this page is drawn: an entry it did not draw
+  // stops matching, and the gate asks again once the instances agree, rather than the cookie
+  // suppressing that entry for good.
+  if (path === "/about" && isDocumentLoad(req.method, req.headers)) {
+    const response = pass();
+    response.cookies.set(ABOUT_COOKIE, sheetCookieValue(userId, visibleEntries(env)), {
+      ...COOKIE_OPTIONS,
+      secure: req.nextUrl.protocol === "https:",
+    });
+    return response;
+  }
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return pass();
 
   // The cookie is the fast path and the reason this costs nothing on a normal
