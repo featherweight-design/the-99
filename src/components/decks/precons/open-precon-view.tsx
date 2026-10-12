@@ -35,6 +35,7 @@ function toDetail(c: OpenPreconCard): DeckDetailCard {
     printedSetCode: c.printing ? c.printing.label.split(" ")[0] : null,
     printedCollectorNumber: c.printing ? c.printing.label.split(" ").slice(1).join(" ") : null,
     manaCost: c.manaCost ?? undefined,
+    layout: c.layout,
     imageUri: c.printing?.imageUri ?? c.imageUri,
   };
 }

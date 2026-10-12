@@ -15,6 +15,8 @@ export type OpenPreconCard = {
   name: string;
   typeLine: string;
   manaCost: string | null;
+  /** Scryfall's layout word, for the row's two-faced mark. */
+  layout: string | null;
   imageUri: string | null;
   quantity: number;
   isCommander: boolean;
@@ -48,6 +50,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
+      layout: cards.layout,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,
       scryfallId: printings.scryfallId,
@@ -98,6 +101,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
       name: l.name,
       typeLine: l.typeLine,
       manaCost: l.manaCost,
+      layout: l.layout,
       imageUri: l.imageUri,
       quantity: l.quantity,
       isCommander: l.isCommander,

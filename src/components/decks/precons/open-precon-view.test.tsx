@@ -11,16 +11,16 @@ vi.mock("../../cards/card-detail-provider", () => ({
   useCardDetail: () => ({ open: vi.fn() }),
 }));
 vi.mock("../decklist-group", () => ({
-  DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; cards: { name: string }[]; footer?: React.ReactNode; footerCount?: number }) => (
+  DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; cards: { name: string; layout?: string | null }[]; footer?: React.ReactNode; footerCount?: number }) => (
     <section data-testid="group" data-readonly={String(p.readOnly)} data-footer-count={p.footerCount ?? 0}>
-      <h2>{p.label}</h2><span>{p.note}</span>{p.cards.map((c) => <span key={c.name}>{c.name}</span>)}{p.footer}
+      <h2>{p.label}</h2><span>{p.note}</span>{p.cards.map((c) => <span key={c.name} data-layout={c.layout ?? ""}>{c.name}</span>)}{p.footer}
     </section>
   ),
 }));
 import { OpenPreconView } from "./open-precon-view";
 
 const card = (name: string, over: Partial<OpenPreconCard> = {}): OpenPreconCard => ({
-  oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, imageUri: null, quantity: 1,
+  oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1,
   isCommander: false, basic: false, owned: true, printing: { scryfallId: `p-${name}`, setCode: "cmm", collectorNumber: "1", label: "CMM 1", imageUri: null }, ...over,
 });
 
@@ -68,6 +68,14 @@ describe("OpenPreconView", () => {
     ])} fromNew={false} />);
     expect(screen.getByText("Plains ×9")).toBeInTheDocument();
     expect(screen.queryByText("Plains ×5")).toBeNull();
+  });
+
+  it("hands each row its layout, so a two-faced card keeps its mark", () => {
+    render(<OpenPreconView precon={precon({}, [
+      card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+      card("Delver of Secrets", { layout: "transform" }),
+    ])} fromNew={false} />);
+    expect(screen.getByText("Delver of Secrets").dataset.layout).toBe("transform");
   });
 
   it("lists the basics under Lands and counts them in its figure (O2)", () => {
