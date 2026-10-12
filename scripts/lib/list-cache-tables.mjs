@@ -256,9 +256,10 @@ export function socialKeyProblems(
     if (social.length === 0) continue;
     // EVERY key on the page: reachability is page-level, so it cannot say which call's loader reads a friend.
     const keys = cacheKeysOf(source(page));
-    // ...and for the SAME reader: a generation of another account's friends keys the wrong stamps.
+    // ...AWAITED (an unawaited call keys the string of a Promise) and for the SAME reader (a generation of
+    // another account's friends keys the wrong stamps).
     const keyed = ({ reader, key }) =>
-      [...key.matchAll(/\bfriendGeneration\s*\(\s*([^,)]*?)\s*[,)]/g)].some((m) => m[1] === reader);
+      [...key.matchAll(/\bawait\s+friendGeneration\s*\(\s*([^,)]*?)\s*[,)]/g)].some((m) => m[1] === reader);
     if (keys.length === 0 || !keys.every(keyed)) {
       out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
     }

@@ -13,7 +13,7 @@ async function main() {
   const { db } = await import("../src/db");
   const { sql } = await import("drizzle-orm");
   const { loadAvailability } = await import("../src/lib/decks/availability-query");
-  const { CLAIM_MODELS_AT_ONCE, claimModelsFor, spareGrantorsQuery } = await import("../src/lib/social/spares");
+  const { CLAIM_MODELS_AT_ONCE, spareGrantorsQuery } = await import("../src/lib/social/spares");
   const { rows } = await db.execute<{ o: string }>(sql`
     select distinct oracle_id as o from collection_items where user_id = ${friend} order by oracle_id limit ${askedCount}`);
   const asked = rows.map((r) => r.o);
@@ -32,15 +32,23 @@ async function main() {
   console.log(`asked cards: ${asked.length}`);
   console.log(`claim model per friend: median ${model.median}ms (min ${model.min}, max ${model.max})`);
   console.log(`grant read: median ${grants.median}ms`);
-  // The shipped flow: a grant read, the models at most CLAIM_MODELS_AT_ONCE at a time (claimModelsFor
-  // itself), and the grant read again.
+  // The shipped flow: a grant read, then per friend one read-only repeatable-read transaction holding the
+  // grant check and the claim model, at most CLAIM_MODELS_AT_ONCE at a time.
   for (const n of [1, 3, 6, 10]) {
     const flow = await time(async () => {
       await spareGrantorsQuery(friend);
-      await claimModelsFor(Array.from({ length: n }, () => friend), asked);
-      await spareGrantorsQuery(friend);
+      // A viewer with no grants: each transaction re-reads the grants and stops, so time the grant check
+      // and the model inside one snapshot directly, as claimModelsFor runs them for a granting friend.
+      await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, n) }, async (_, w) => {
+        for (let i = w; i < n; i += CLAIM_MODELS_AT_ONCE) {
+          await db.transaction(async (tx) => {
+            await spareGrantorsQuery(friend, tx);
+            await loadAvailability(friend, { oracleIds: asked }, tx);
+          }, { isolationLevel: "repeatable read", accessMode: "read only" });
+        }
+      }));
     }, 5);
-    console.log(`${n} granting friend(s), ${CLAIM_MODELS_AT_ONCE} models at a time, both grant reads: median ${flow.median}ms`);
+    console.log(`${n} granting friend(s), ${CLAIM_MODELS_AT_ONCE} models at a time, each with its grant check in one snapshot: median ${flow.median}ms`);
   }
   process.exit(0);
 }

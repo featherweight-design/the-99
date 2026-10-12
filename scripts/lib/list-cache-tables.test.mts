@@ -152,6 +152,11 @@ describe("socialKeyProblems", () => {
     }
   });
 
+  it("fails an unawaited generation, which keys the string of a Promise", () => {
+    const src = "cachePageForUser(userId, 'cart', [`f:${friendGeneration(userId)}`], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+  });
+
   it("fails a generation taken for another reader than the cache call's", () => {
     const src = "cachePageForUser(userId, 'cart', [await friendGeneration(otherId)], load)";
     expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);

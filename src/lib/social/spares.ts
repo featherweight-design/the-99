@@ -56,15 +56,23 @@ export const CLAIM_MODELS_AT_ONCE = 4;
 export type FriendSpare = { oracleId: string; friend: { publicId: string; displayName: string }; spare: number };
 
 /**
- * Each owner's claim model narrowed to `asked`, in owner order, at most CLAIM_MODELS_AT_ONCE at a time.
- * Exported so `measure:friend-spares` times the shipped bound rather than restating it.
+ * Each granting friend's claim model narrowed to `asked`, in input order, at most CLAIM_MODELS_AT_ONCE at a
+ * time. Each one runs in its own read-only repeatable-read transaction that FIRST re-reads the viewer's
+ * grants inside it, so the authorization and the friend's rows are one snapshot: a friend whose grant is
+ * absent at that instant reads as `null` and nothing of theirs is read. Exported so
+ * `measure:friend-spares` times the shipped path rather than restating it.
  */
-export async function claimModelsFor(owners: readonly string[], asked: readonly string[]) {
-  const models: Awaited<ReturnType<typeof loadAvailability>>[] = new Array(owners.length);
+export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
+  const models: (Awaited<ReturnType<typeof loadAvailability>> | null)[] = new Array(friends.length);
   let next = 0;
-  await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, owners.length) }, async () => {
-    for (let i = next++; i < owners.length; i = next++) {
-      models[i] = await loadAvailability(owners[i], { oracleIds: [...asked] });
+  await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, friends.length) }, async () => {
+    for (let i = next++; i < friends.length; i = next++) {
+      const friend = friends[i];
+      models[i] = await db.transaction(async (tx) => {
+        const granting = await spareGrantorsQuery(viewerId, tx);
+        if (!granting.some((g) => g.userId === friend)) return null;
+        return loadAvailability(friend, { oracleIds: [...asked] }, tx);
+      }, { isolationLevel: "repeatable read", accessMode: "read only" });
     }
   }));
   return models;
@@ -73,7 +81,7 @@ export async function claimModelsFor(owners: readonly string[], asked: readonly 
 /**
  * The spare copies the viewer's friends hold of the named cards (the viewer's demand: their decks' buy
  * rows, and their wishlist once it exists). One grant read, then the friend's own claim model per
- * granting friend, narrowed to the asked cards, then the grant read again. Ordered by card, then by friend name.
+ * granting friend, narrowed to the asked cards, each in one snapshot with its own grant check. Ordered by card, then by friend name.
  */
 export async function loadFriendSpares(viewerId: string, oracleIds: readonly string[]): Promise<FriendSpare[]> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
@@ -82,15 +90,12 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   // One claim model per friend, at most CLAIM_MODELS_AT_ONCE side by side: measured at ~100ms each on a
   // staging copy (`measure:friend-spares`), so a handful of friends costs about one model, not their sum,
   // and a large pod queues behind the bound rather than taking the whole connection pool.
-  const models = await claimModelsFor(grantors.map((g) => g.userId), asked);
-  // The models are separate statements, so a grant revoked while they ran would otherwise still return
-  // spares. Re-read the grants after: a friend counts only when the grant held both before and after the
-  // reads, so nothing read once access ended is returned.
-  const still = new Set((await spareGrantorsQuery(viewerId)).map((g) => g.userId));
+  const models = await claimModelsFor(viewerId, grantors.map((g) => g.userId), asked);
   const out: FriendSpare[] = [];
   grantors.forEach((g, i) => {
-    if (!still.has(g.userId)) return;
-    for (const [oracleId, a] of models[i]) {
+    const model = models[i];
+    if (model === null) return;
+    for (const [oracleId, a] of model) {
       const spare = spareCount(a);
       if (spare > 0) out.push({ oracleId, friend: { publicId: g.publicId, displayName: g.displayName }, spare });
     }
