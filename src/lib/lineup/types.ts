@@ -18,8 +18,28 @@ export type LineupDeck = {
   bracket: TileBracket | null;
   /** Newest first, as `listDeckGames` returns them. */
   games: LineupGame[];
+  /** The deck's own build figures, from the functions its Stats tab uses (lock 2). Null when that read failed. */
+  build: LineupBuild | null;
 };
 
-export type LineupData = { decks: LineupDeck[] };
+/** What This deck among yours, Jobs and What each deck is worth draw for a deck. */
+export type LineupBuild = {
+  /** Average mana value of the 99's nonland cards (`averageManaValue`), unrounded; null for an all-land list. */
+  manaValue: number | null;
+  /** Land copies in the 99. */
+  lands: number;
+  /** Copies in each job, from `jobTally` over the 99's nonland cards: the deck's own Jobs card. */
+  ramp: number;
+  draw: number;
+  removal: number;
+  /** Money's own value (`moneyStats`): every priced copy, commanders included, in cents. */
+  valueCents: number;
+};
+
+export type LineupData = {
+  decks: LineupDeck[];
+  /** The newest price the values were read at, ISO, or null with none. */
+  pricesAsOf: string | null;
+};
 
 export type LineupFilter = "all" | "finished";

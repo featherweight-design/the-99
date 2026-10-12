@@ -26,7 +26,7 @@ const DECK = {
   lastPlayedAt: null, lastEditedAt: new Date(NOW), lastCommittedAt: null, inUseElsewhere: 0, proxiedCount: 0, createdAt: new Date(NOW),
 } as unknown as DeckListItem;
 const SHOPPING = { total: { copies: 0, cents: 0, pricedCopies: 0 }, byDeck: new Map() } as never;
-const STATS: LineupData = { decks: [{ id: "d1", name: "HD - Gishath", identity: ["W", "R", "G"], brew: true, bracket: null, games: [] }] };
+const STATS: LineupData = { decks: [{ id: "d1", name: "HD - Gishath", identity: ["W", "R", "G"], brew: true, bracket: null, games: [], build: null }], pricesAsOf: null };
 
 const draw = (lineup: Parameters<typeof DecksView>[0]["lineup"]) =>
   render(<DecksView decks={[DECK]} folders={[]} shopping={SHOPPING} buildable={0} cards={0} now={NOW} lineup={lineup} />);

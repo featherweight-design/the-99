@@ -10,7 +10,7 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import { useStoredView } from "../../ui/use-stored-view";
 import { DECKS_STATS_OPEN_COOKIE } from "../../ui/view-cookie";
 
-export const STATS_CARDS = ["recency", "spread"] as const;
+export const STATS_CARDS = ["recency", "spread", "among", "jobs", "worth"] as const;
 export type StatsCardId = (typeof STATS_CARDS)[number];
 
 const KEY = "the99:decks:stats:open";

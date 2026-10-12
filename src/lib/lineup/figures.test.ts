@@ -3,7 +3,7 @@ import { byName, daysAgo, fullestSlot, podSizes, recency, scoped, slotOf, spread
 import type { LineupDeck, LineupGame } from "./types";
 
 const game = (playedAt: string, result: LineupGame["result"] = "loss", podSize = 4): LineupGame => ({ result, playedAt: `${playedAt}T20:00:00.000Z`, podSize });
-const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name, name, identity: [], brew: false, bracket: null, games: [], ...over });
+const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name, name, identity: [], brew: false, bracket: null, games: [], build: null, ...over });
 const NOW = "2026-10-11T12:00:00.000Z";
 
 describe("scoped", () => {

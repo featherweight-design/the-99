@@ -19,20 +19,20 @@ const ROW = "grid grid-cols-[56px_minmax(0,1fr)_18px] items-start gap-[10px] md:
 /** Every cell of a row takes the first chip's height, so a wrapped row reads as one row. */
 const CELL = "flex h-[34px] items-center md:h-[30px]";
 
-function Chip({ deck, dashed }: { deck: LineupDeck; dashed: boolean }) {
+function Chip({ deck, dashed, chosen }: { deck: LineupDeck; dashed: boolean; chosen: boolean }) {
   const note = deck.bracket?.answered ? copy.declared(deck.bracket.answered) : deck.identity.length === 0 ? copy.colorless : null;
   return (
     <span
       data-stats-chip={deck.id}
-      className={`inline-flex min-h-[34px] max-w-full items-center gap-[7px] rounded-[8px] pr-[10px] pl-[6px] md:min-h-[30px] ${dashed ? "border border-dashed border-[color:var(--border-dashed)]" : "border border-[color:var(--border-strong)] bg-[var(--surface)]"}`}
+      className={`inline-flex min-h-[34px] max-w-full items-center gap-[7px] rounded-[8px] pr-[10px] pl-[6px] md:min-h-[30px] ${chosen ? "border border-[color:var(--accent)]" : dashed ? "border border-dashed border-[color:var(--border-dashed)]" : "border border-[color:var(--border-strong)]"} ${dashed ? "" : "bg-[var(--surface)]"}`}
     >
-      <DeckName id={deck.id} name={deck.name} identity={deck.identity} small />
+      <DeckName id={deck.id} name={deck.name} identity={deck.identity} small accent={chosen} bold={false} />
       {note ? <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{note}</span> : null}
     </span>
   );
 }
 
-export function SpreadBody({ s, decks }: { s: Spread; decks: readonly LineupDeck[] }) {
+export function SpreadBody({ s, decks, chosenId }: { s: Spread; decks: readonly LineupDeck[]; chosenId: string | null }) {
   return (
     <>
       <span className="font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">{copy.axis}</span>
@@ -55,7 +55,7 @@ export function SpreadBody({ s, decks }: { s: Spread; decks: readonly LineupDeck
                 {range ? <span className="-ml-[5px] inline-flex"><BracketMark bracket={slot.brackets[1]!} px={26} dim /></span> : null}
               </span>
               <div className="flex min-w-0 flex-wrap items-center gap-[6px]">
-                {has ? slot.decks.map((d) => <Chip key={d.id} deck={d} dashed={false} />) : <span className="font-mono text-[10.5px] text-[color:var(--fg-locked)]">{copy.none}</span>}
+                {has ? slot.decks.map((d) => <Chip key={d.id} deck={d} dashed={false} chosen={d.id === chosenId} />) : <span className="font-mono text-[10.5px] text-[color:var(--fg-locked)]">{copy.none}</span>}
               </div>
               <span className={`${has ? CELL : "flex h-[28px] items-center"} justify-end font-mono text-[11px] text-[color:var(--fg-muted)]`}>{has ? slot.decks.length : ""}</span>
             </div>
@@ -64,7 +64,7 @@ export function SpreadBody({ s, decks }: { s: Spread; decks: readonly LineupDeck
         <div data-stats-slot="not-analyzed" className={`${ROW} mt-[6px] min-h-[44px] pt-[9px] pb-[4px]`}>
           <span className={`${CELL} font-mono text-[10px] leading-[1.3] text-[color:var(--fg-muted)]`}>{copy.notAnalyzed}</span>
           <div className="flex min-w-0 flex-wrap items-center gap-[6px]">
-            {s.notAnalyzed.length > 0 ? s.notAnalyzed.map((d) => <Chip key={d.id} deck={d} dashed />) : <span className="font-mono text-[10.5px] text-[color:var(--fg-locked)]">{copy.none}</span>}
+            {s.notAnalyzed.length > 0 ? s.notAnalyzed.map((d) => <Chip key={d.id} deck={d} dashed chosen={d.id === chosenId} />) : <span className="font-mono text-[10.5px] text-[color:var(--fg-locked)]">{copy.none}</span>}
           </div>
           <span className={`${CELL} justify-end font-mono text-[11px] text-[color:var(--fg-muted)]`}>{s.notAnalyzed.length || ""}</span>
         </div>
@@ -84,7 +84,11 @@ export function SpreadBody({ s, decks }: { s: Spread; decks: readonly LineupDeck
                     key={d.id}
                     data-lit={lit.has(d.id) || undefined}
                     className={`h-full min-w-0 flex-1 ${j === 0 ? "rounded-l-[3px]" : ""} ${j === decks.length - 1 ? "rounded-r-[3px]" : ""}`}
-                    style={{ background: lit.has(d.id) ? PIP_STYLE[color].bg : "var(--elevated)" }}
+                    style={{
+                      background: lit.has(d.id) ? PIP_STYLE[color].bg : "var(--elevated)",
+                      // The chosen deck's segment, ringed in accent on every row it sits on.
+                      boxShadow: d.id === chosenId ? "inset 0 0 0 2px var(--accent)" : undefined,
+                    }}
                   />
                 ))}
               </div>
