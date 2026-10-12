@@ -4,6 +4,7 @@ import { adminSettings, modelCalls } from "../../db/schema";
 import { modelOwnerUserId, ownerShareMicro, readAllowance } from "../model/allowance";
 import {
   costSummary,
+  settingsForMonth,
   monthStart,
   sameMonth,
   monthOf,
@@ -88,8 +89,9 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
     // The share the allowance enforces, env var included, never the bare constant.
     ownerShareMicro: ownerShareMicro(),
     previous: { runs: Number(figures?.previousRuns ?? 0), micro: Number(figures?.previousMicro ?? 0) },
-    settings: Object.fromEntries(
-      settingRows.map((r) => [r.key as SettingKey, { micro: r.valueMicroUsd, asOf: r.asOf, note: r.note }]),
+    settings: settingsForMonth(
+      settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note })),
+      month,
     ),
     paused: !!allowance?.paused,
   };

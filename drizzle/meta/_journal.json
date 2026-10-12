@@ -715,6 +715,13 @@
       "when": 1791817046300,
       "tag": "0101_admin_costs",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1791834440605,
+      "tag": "0102_admin_settings_by_month",
+      "breakpoints": true
     }
   ]
 }

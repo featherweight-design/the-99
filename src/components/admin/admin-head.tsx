@@ -37,10 +37,14 @@ function usePublishedHeight(ref: RefObject<HTMLElement | null>) {
     const root = document.documentElement;
     const publish = () => root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${el.getBoundingClientRect().height}px`);
     publish();
+    // Guarded, as `about-sheet.tsx` guards it: without the API the head re-measures on a window
+    // resize instead, since a narrower window can wrap the sub to another line.
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
     observer?.observe(el);
+    if (!observer) window.addEventListener("resize", publish);
     return () => {
       observer?.disconnect();
+      window.removeEventListener("resize", publish);
       root.style.removeProperty(ADMIN_HEAD_HEIGHT_VAR);
     };
   }, [ref]);

@@ -10,8 +10,7 @@ import {
   startsAfter,
   usd,
   type CostRows,
-  type DayRow,
-} from "./costs-rule";
+  type DayRow, settingsForMonth, type SettingRow } from "./costs-rule";
 import { BUDGET_USD, usdToMicro } from "../model/spend-rule";
 
 const OCT = { year: 2026, month: 9 };
@@ -143,5 +142,46 @@ describe("startsAfter", () => {
     expect(startsAfter(at("2026-10-12"), OCT)).toBeNull();
     expect(startsAfter(at("2026-03-01"), OCT)).toBeNull();
     expect(startsAfter(undefined, OCT)).toBeNull();
+  });
+});
+
+describe("settingsForMonth: a setting belongs to its month", () => {
+  const row = (key: SettingRow["key"], month: string, dollars: number): SettingRow => ({
+    key, month, micro: dollars * 1_000_000, asOf: `${month}-01`, note: null,
+  });
+  const oct = { year: 2026, month: 9 };
+  const nov = { year: 2026, month: 10 };
+  const rows = [
+    row("account_cap_usd", "2026-10", 250),
+    row("account_cap_usd", "2026-11", 100),
+    row("system_ceiling_usd", "2026-11", 15),
+    row("elsewhere_usd", "2026-10", 18.4),
+  ];
+
+  it("keeps an earlier month's cap when a later month's is set (October $250, November $100)", () => {
+    expect(settingsForMonth(rows, oct).account_cap_usd?.micro).toBe(250_000_000);
+    expect(settingsForMonth(rows, nov).account_cap_usd?.micro).toBe(100_000_000);
+  });
+
+  it("carries a cap forward to the months after its own until a later row", () => {
+    expect(settingsForMonth(rows, { year: 2027, month: 2 }).account_cap_usd?.micro).toBe(100_000_000);
+    expect(settingsForMonth(rows, { year: 2026, month: 8 }).account_cap_usd).toBeUndefined();
+  });
+
+  it("gives a month with no ceiling yet the one set to start later, and the later month its own", () => {
+    expect(settingsForMonth(rows, oct).system_ceiling_usd?.asOf).toBe("2026-11-01");
+    expect(settingsForMonth(rows, nov).system_ceiling_usd?.micro).toBe(15_000_000);
+  });
+
+  it("keeps the ceiling in force when one is scheduled for a later month", () => {
+    const both = [row("system_ceiling_usd", "2026-10", 20), row("system_ceiling_usd", "2026-12", 15)];
+    expect(settingsForMonth(both, oct).system_ceiling_usd?.micro).toBe(20_000_000);
+    expect(settingsForMonth(both, nov).system_ceiling_usd?.micro).toBe(20_000_000);
+    expect(settingsForMonth(both, { year: 2026, month: 11 }).system_ceiling_usd?.micro).toBe(15_000_000);
+  });
+
+  it("reads elsewhere in its own month only", () => {
+    expect(settingsForMonth(rows, oct).elsewhere_usd?.micro).toBe(18_400_000);
+    expect(settingsForMonth(rows, nov).elsewhere_usd).toBeUndefined();
   });
 });

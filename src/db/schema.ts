@@ -2186,7 +2186,11 @@ export const modelCallParts = pgTable("model_call_parts", {
  * `admin_events` `setting_set` row.
  */
 export const adminSettings = pgTable("admin_settings", {
-  key: text("key").primaryKey(),
+  key: text("key").notNull(),
+  // The UTC month (`YYYY-MM`) the value belongs to. A cap or a ceiling holds from its month until a
+  // later month's row; `elsewhere` is that month's figure alone. Keyed by month so a change never
+  // rewrites what an earlier month shows, and a ceiling set for a later month leaves this one's.
+  month: text("month").notNull(),
   valueMicroUsd: bigint("value_micro_usd", { mode: "number" }).notNull(),
   // The day the figure was read, for `elsewhere` (STATES C7); the write's own day otherwise.
   asOf: date("as_of", { mode: "string" }).notNull(),
@@ -2196,6 +2200,8 @@ export const adminSettings = pgTable("admin_settings", {
 }, (t) => [
   check("admin_settings_key_check", sql`${t.key} in ('account_cap_usd', 'system_ceiling_usd', 'elsewhere_usd')`),
   check("admin_settings_value_check", sql`${t.valueMicroUsd} >= 0`),
+  check("admin_settings_month_check", sql`${t.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  primaryKey({ columns: [t.key, t.month] }),
 ]);
 
 /**

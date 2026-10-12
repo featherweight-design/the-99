@@ -275,6 +275,23 @@ describe("the pinned head and month bar", () => {
     rect.mockRestore();
     vi.unstubAllGlobals();
   });
+
+  it("re-measures the head on a window resize where ResizeObserver does not exist", () => {
+    vi.stubGlobal("ResizeObserver", undefined);
+    let height = 173;
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => ({ height }) as DOMRect);
+    const head = render(<AdminHead env="staging" />);
+    expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("173px");
+    height = 201;
+    window.dispatchEvent(new Event("resize"));
+    expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("201px");
+    head.unmount();
+    height = 99;
+    window.dispatchEvent(new Event("resize"));
+    expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("");
+    rect.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("AdminHead", () => {

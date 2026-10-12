@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { adminEvents, adminSettings } from "../../db/schema";
 import { requireAdmin } from "../../lib/admin/access";
@@ -42,12 +42,24 @@ function startOf(value: unknown, now: Date): string | null {
 
 const dollars = (micro: number) => (micro / 1_000_000).toFixed(2);
 
+/**
+ * Writes the setting for the month its `asOf` falls in, so a change never rewrites another month's
+ * value (a cap holds from its month on; `settingsForMonth` reads it back).
+ */
 async function writeSetting(actorId: string, key: SettingKey, micro: number, asOf: string, note: string | null): Promise<SettingResult> {
+  const month = asOf.slice(0, 7);
   try {
     await db.transaction(async (tx) => {
-      const [before] = await tx.select().from(adminSettings).where(eq(adminSettings.key, key)).for("update");
+      const [before] = await tx
+        .select()
+        .from(adminSettings)
+        .where(and(eq(adminSettings.key, key), eq(adminSettings.month, month)))
+        .for("update");
       const row = { valueMicroUsd: micro, asOf, note, updatedBy: actorId, updatedAt: new Date() };
-      await tx.insert(adminSettings).values({ key, ...row }).onConflictDoUpdate({ target: adminSettings.key, set: row });
+      await tx
+        .insert(adminSettings)
+        .values({ key, month, ...row })
+        .onConflictDoUpdate({ target: [adminSettings.key, adminSettings.month], set: row });
       await tx.insert(adminEvents).values({
         actorId,
         kind: "setting_set",

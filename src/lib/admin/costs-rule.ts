@@ -168,6 +168,30 @@ export function usd(micro: number): string {
   return `$${v.toFixed(v < 2 ? 3 : 2)}`;
 }
 
+/** One `admin_settings` row: a key's value for one UTC month (`YYYY-MM`). */
+export type SettingRow = Setting & { key: SettingKey; month: string };
+
+/**
+ * The settings that apply to `month`. A cap or a ceiling holds from its own month until a later
+ * month's row, so the latest row at or before `month` applies. A ceiling with none yet but one set
+ * for a later month is given that one, so the page can say when it starts (`startsAfter`).
+ * Elsewhere is one month's figure, read only in its own month.
+ */
+export function settingsForMonth(rows: readonly SettingRow[], month: MonthKey): Partial<Record<SettingKey, Setting>> {
+  const m = monthParam(month);
+  const of = (key: SettingKey) => rows.filter((r) => r.key === key).sort((a, b) => a.month.localeCompare(b.month));
+  const strip = (r: SettingRow | undefined): Setting | undefined => (r ? { micro: r.micro, asOf: r.asOf, note: r.note } : undefined);
+  const heldAt = (key: SettingKey) => of(key).filter((r) => r.month <= m).at(-1);
+  const out: Partial<Record<SettingKey, Setting>> = {};
+  const cap = strip(heldAt("account_cap_usd"));
+  if (cap) out.account_cap_usd = cap;
+  const ceiling = strip(heldAt("system_ceiling_usd") ?? of("system_ceiling_usd").find((r) => r.month > m));
+  if (ceiling) out.system_ceiling_usd = ceiling;
+  const elsewhere = strip(of("elsewhere_usd").find((r) => r.month === m));
+  if (elsewhere) out.elsewhere_usd = elsewhere;
+  return out;
+}
+
 /**
  * The month a setting starts in when that is after `month`, else null. A setting's `asOf` is a
  * `YYYY-MM-DD` day; a ceiling set to start later is stored on its month's first day.

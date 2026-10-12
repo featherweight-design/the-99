@@ -166,7 +166,7 @@ describe("the settings writes", () => {
 
   it("stores a ceiling under the first day of the month it starts", async () => {
     await expect(actions.setSystemCeiling({ amount: "15", start: monthFrom(1), note: "from next month" })).resolves.toEqual({ ok: true });
-    expect(writes[0].values).toMatchObject({ key: "system_ceiling_usd", valueMicroUsd: 15_000_000, asOf: `${monthFrom(1)}-01`, note: "from next month" });
+    expect(writes[0].values).toMatchObject({ key: "system_ceiling_usd", month: monthFrom(1), valueMicroUsd: 15_000_000, asOf: `${monthFrom(1)}-01`, note: "from next month" });
     expect(writes[1].values).toMatchObject({ settingKey: "system_ceiling_usd", newValue: "15.00" });
     writes.length = 0;
     await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth() })).resolves.toEqual({ ok: true });
