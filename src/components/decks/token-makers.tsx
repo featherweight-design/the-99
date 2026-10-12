@@ -27,7 +27,7 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
           maker.oracleId,
           siblings.map((m) => ({ oracleId: m.oracleId, name: m.name, imageUri: m.imageUri })),
           undefined,
-          { opener: e.currentTarget },
+          { art: maker.imageUri, opener: e.currentTarget },
         )}
         className="min-h-[44px] md:min-h-[30px] max-w-full text-left text-[13px] font-semibold text-[color:var(--fg)] underline decoration-[color-mix(in_oklab,var(--accent)_55%,transparent)] underline-offset-[3px]"
       >

@@ -223,7 +223,16 @@ export default async function DeckBuilderPage({
   const swapTools = swapToolsEnabled();
   // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
   // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
-  const tokensRead = deckTokensEnabled() ? early(perf.timed("deckTokens", () => loadDeckTokens(id, userId))) : null;
+  // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
+  // detail that resolved it; a deck that is not the reader's has no detail and reads absent.
+  const tokensRead = deckTokensEnabled()
+    ? early(detailRead.then((d) => (d
+      ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
+        ...d.cards.map((c) => [c.oracleId, c.imageUri ?? null] as const),
+        ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, c!.imageUri ?? null] as const),
+      ])))
+      : ({ status: "absent" } as const))))
+    : null;
   const shoppingLimitRead = swapTools
     ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
     : Promise.resolve(null);

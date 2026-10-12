@@ -44,8 +44,13 @@ export function TokenRow({
   const press = (write: () => Promise<{ ok: boolean }>) => {
     setRefused(false);
     start(async () => {
-      const r = await write();
-      if (!r.ok) setRefused(true);
+      // A refusal is a value; a rejection (the session lapsed, the database threw) says the same thing to the reader.
+      try {
+        const r = await write();
+        if (!r.ok) setRefused(true);
+      } catch {
+        setRefused(true);
+      }
     });
   };
 

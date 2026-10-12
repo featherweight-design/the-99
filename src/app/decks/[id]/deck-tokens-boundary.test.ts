@@ -43,7 +43,7 @@ describe("the deck page hands the decklist its tokens", () => {
   });
 
   it("starts the read only when the switch is on, never unconditionally", () => {
-    expect(text).toMatch(/const tokensRead = deckTokensEnabled\(\) \?/);
+    expect(text).toMatch(/const tokensRead = deckTokensEnabled\(\)\s*\?/);
     expect(text.match(/loadDeckTokens\(/g)).toHaveLength(1);
   });
 });

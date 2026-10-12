@@ -76,6 +76,12 @@ export type DeckTokenInputs = {
   printings: TokenPrintingFacts[];
   prices: Map<string, TokenPriceFact>;
   newestPriceAsOf: Date | null;
+  /**
+   * The art the DECK draws for its own cards (the printing the player owns or picked), by oracle id. A maker's
+   * hover preview and card-details opener use it, so a maker shows the same art here as on its decklist row; a
+   * card missing from it keeps the catalog's own.
+   */
+  art?: ReadonlyMap<string, string | null>;
 };
 
 /**
@@ -89,7 +95,9 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
   const makersOf = new Map<string, Map<string, TokenMaker>>();
   for (const l of i.links) {
     const m = makersOf.get(l.tokenOracleId) ?? new Map<string, TokenMaker>();
-    m.set(l.makerOracleId, { oracleId: l.makerOracleId, name: l.makerName, imageUri: l.makerImageUri });
+    m.set(l.makerOracleId, {
+      oracleId: l.makerOracleId, name: l.makerName, imageUri: i.art?.get(l.makerOracleId) ?? l.makerImageUri,
+    });
     makersOf.set(l.tokenOracleId, m);
   }
   const printingsOf = new Map<string, TokenPrintingFacts[]>();
@@ -203,7 +211,11 @@ async function linksFor(makerIds: string[]): Promise<DeckTokenInputs["links"]> {
  * `failed` so the deck page draws its failed line and the rest of the page stands. A deck that is not
  * the player's reads as `absent`, the same as one with no tokens.
  */
-export async function loadDeckTokens(deckId: string, userId: string): Promise<DeckTokensRead> {
+export async function loadDeckTokens(
+  deckId: string,
+  userId: string,
+  art?: ReadonlyMap<string, string | null>,
+): Promise<DeckTokensRead> {
   try {
     if (!(await tokenTablesExist())) return { status: "absent" };
     const makerIds = await deckMakerIds(deckId, userId);
@@ -236,6 +248,7 @@ export async function loadDeckTokens(deckId: string, userId: string): Promise<De
       printings: printingRows,
       prices: priced.prices,
       newestPriceAsOf: priced.newestAsOf,
+      art,
     });
   } catch (err) {
     console.error("[tokens] loadDeckTokens failed", err instanceof Error ? err.message : err);

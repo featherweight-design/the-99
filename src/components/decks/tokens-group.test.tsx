@@ -138,6 +138,13 @@ describe("pressing", () => {
     expect(stub.joined).toHaveBeenLastCalledWith(DECK, "t1", false);
   });
 
+  it("says so when a press threw, not only when it was refused", async () => {
+    stub.joined.mockRejectedValue(new Error("session lapsed"));
+    draw(ok([token()]));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Add the Food token/ })); });
+    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.");
+  });
+
   it("says so when a press was refused, and the row is unchanged", async () => {
     stub.joined.mockResolvedValue({ ok: false, reason: "notThisDeck" });
     draw(ok([token()]));
@@ -166,6 +173,8 @@ describe("the makers fold", () => {
     fireEvent.click(screen.getByRole("button", { name: "Maker 02" }));
     const [id, siblings] = stub.open.mock.calls[0];
     expect(id).toBe("m002");
+    // The art the row already holds rides with the press, so a phone tap can start its image at once.
+    expect(stub.open.mock.calls[0][3]).toMatchObject({ art: null });
     expect((siblings as { oracleId: string }[]).map((s) => s.oracleId)).toEqual(["m001", "m002"]);
   });
 

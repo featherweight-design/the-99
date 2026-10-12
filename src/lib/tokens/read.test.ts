@@ -104,6 +104,19 @@ describe("assembleDeckTokens", () => {
     expect(r.tokens.map((t) => t.oracleId)).toEqual([B, A, C]);
   });
 
+  it("shows a maker with the art the deck draws for it, else the catalog's", () => {
+    const r = ok(assembleDeckTokens(base({
+      links: [
+        { tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: "catalog-1" },
+        { tokenOracleId: A, makerOracleId: M2, makerName: "Alpha", makerImageUri: "catalog-2" },
+      ],
+      art: new Map([[M1, "owned-1"]]),
+    })));
+    const byId = new Map(r.tokens[0].makers.map((m) => [m.oracleId, m.imageUri]));
+    expect(byId.get(M1)).toBe("owned-1");
+    expect(byId.get(M2)).toBe("catalog-2");
+  });
+
   it("skips a token row no link reaches", () => {
     const r = ok(assembleDeckTokens(base({ tokens: [tok(A, "Goblin"), tok(B, "Stray")] })));
     expect(r.tokens.map((t) => t.oracleId)).toEqual([A]);
