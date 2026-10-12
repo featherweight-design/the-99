@@ -1,19 +1,23 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { setAccountCap, setElsewhere, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { adminCopy } from "../../lib/copy/admin";
 
 // The settings dialog (admin STATES C7): Enter elsewhere takes an amount, the day it was read and a
-// note; Change the cap and Change the ceiling take an amount and a note. A small dialog at 900, a
-// sheet at 390, as the app's confirm modal draws them. Nothing is written until Save.
+// note; Change the cap takes an amount and a note; Change the ceiling takes an amount, the month it
+// starts (this UTC month or a later one) and a note. A small dialog at 900, a sheet at 390, as the
+// app's confirm modal draws them. Nothing is written until Save.
+//
+// The form submits through `onSubmit`, never `<form action>`: React 19 resets a form when its action
+// returns, so a refused save would show its alert over emptied fields.
 
 export type SettingKind = "elsewhere" | "cap" | "ceiling";
 
 const copy = adminCopy.setting;
 const FIELD =
-  "h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[14px] text-[color:var(--fg)] md:h-[38px]";
+  "h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[14px]";
 
 function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: string; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -23,7 +27,9 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
   const [pending, start] = useTransition();
   useDialogA11y(ref, onClose, { initialFocusRef: amountRef, closeOnEscape: !pending });
 
-  function save(form: FormData) {
+  function save(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
     const amount = String(form.get("amount") ?? "");
     const note = String(form.get("note") ?? "");
     start(async () => {
@@ -32,13 +38,15 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
           ? await setElsewhere({ amount, asOf: String(form.get("asOf") ?? ""), note })
           : kind === "cap"
             ? await setAccountCap({ amount, note })
-            : await setSystemCeiling({ amount, note });
+            : await setSystemCeiling({ amount, start: String(form.get("start") ?? ""), note });
       if (result.ok) onClose();
       else setError(result.error);
     });
   }
 
-  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "failed" ? copy.saveFailed : null;
+  // The current UTC month, as the action reads it: a ceiling starts no earlier.
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "month" ? copy.badMonth : error === "failed" ? copy.saveFailed : null;
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center">
       <div
@@ -50,7 +58,7 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
         className="w-full rounded-[22px_22px_0_0] bg-[color:var(--surface-raised)] p-[18px_18px_28px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[420px] md:rounded-[14px] md:p-[24px] md:[border:1px_solid_var(--border-strong)]"
       >
         <h2 id={`${id}-title`} className="m-0 text-[17px] font-semibold text-[color:var(--fg)]">{title}</h2>
-        <form action={save} className="mt-[16px] flex flex-col gap-[12px]">
+        <form onSubmit={save} className="mt-[16px] flex flex-col gap-[12px]">
           <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
             {copy.amount}
             <input ref={amountRef} name="amount" inputMode="decimal" autoComplete="off" required className={`${FIELD} font-mono`} />
@@ -59,6 +67,12 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
             <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
               {copy.asOf}
               <input name="asOf" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} className={`${FIELD} font-mono`} />
+            </label>
+          )}
+          {kind === "ceiling" && (
+            <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
+              {copy.starts}
+              <input name="start" type="month" required min={thisMonth} defaultValue={thisMonth} className={`${FIELD} font-mono`} />
             </label>
           )}
           <label className="flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">

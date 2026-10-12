@@ -6,18 +6,21 @@ import {
   daysIn,
   monthParam,
   shiftMonth,
+  startsAfter,
   usd,
   type CostSummary,
   type MonthKey,
 } from "../../lib/admin/costs-rule";
 import { adminCopy } from "../../lib/copy/admin";
-import { ALARM_PCTS, BUDGET_USD, HARD_STOP_USD, OWNER_SHARE_USD, usdToMicro } from "../../lib/model/spend-rule";
+import { ALARM_PCTS, BUDGET_USD, HARD_STOP_USD, usdToMicro } from "../../lib/model/spend-rule";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SettingAction } from "./setting-dialog";
 
 // The Costs core (admin STATES C1 to C7; design table, Costs and the R2 deltas): the pinned month
 // bar, the four tiles, the caps and the player trend. Pure render over `costSummary`; the caps in
-// code are read from `spend-rule.ts` here and never spelled.
+// code are read from `spend-rule.ts` here and never spelled, and the owner's share is the one the
+// allowance enforces, read by `loadCosts`. A cap row with no cap (or a ceiling that starts after the
+// viewed month) draws the bare track: a bar filled with spend against no cap reads as at the cap.
 
 const copy = adminCopy.costs;
 
@@ -204,7 +207,16 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
   const nextHref = hrefFor(shiftMonth(month, 1), current);
   const plan = capUsd(BUDGET_USD);
   const planMicro = usdToMicro(BUDGET_USD);
-  const ceiling = s.settings.system_ceiling_usd;
+  const storedCeiling = s.settings.system_ceiling_usd;
+  // A ceiling set to start in a later month does not apply to this one.
+  const ceilingStart = startsAfter(storedCeiling, month);
+  const ceiling = ceilingStart ? undefined : storedCeiling;
+  const ceilingSub = ceilingStart
+    ? copy.capSub.startsIn(ceilingStart.year === month.year ? monthName(ceilingStart) : monthLong(ceilingStart))
+    : ceiling
+      ? copy.capSub.ceiling
+      : copy.capSub.noCeiling;
+  const share = s.ownerShareMicro;
   const cap = s.settings.account_cap_usd;
   const elsewhere = s.elsewhere;
   const accountTotal = s.calls.micro + (elsewhere?.micro ?? 0);
@@ -231,7 +243,7 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
 
   return (
     <>
-      <div className="sticky top-0 z-[1] flex flex-none flex-col items-start justify-between gap-[10px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:flex-row md:items-center md:px-[28px] md:pb-[14px] md:pt-[18px]">
+      <div className="sticky top-[var(--admin-head-h,0px)] z-[1] flex flex-none flex-col items-start justify-between gap-[10px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:flex-row md:items-center md:px-[28px] md:pb-[14px] md:pt-[18px]">
         <div className="flex items-center gap-[10px]">
           <Link href={prevHref} aria-label={copy.period.previous} className="px-[6px] text-[18px] text-[color:var(--fg-muted)]">
             ‹<PendingReporter href={prevHref} />
@@ -280,21 +292,21 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
           </CapRow>
           <CapRow
             label={copy.capRows.owner}
-            figure={s.ownerMicro === null ? copy.notSet(usd(0)) : copy.of(usd(s.ownerMicro), capUsd(OWNER_SHARE_USD))}
+            figure={s.ownerMicro === null ? copy.notSet(usd(0)) : copy.of(usd(s.ownerMicro), capMicro(share))}
             sub={s.ownerMicro === null ? copy.capSub.noOwner : copy.capSub.owner}
           >
-            <CapBar scale={usdToMicro(OWNER_SHARE_USD)} segs={[{ micro: s.ownerMicro ?? 0, ink: INK.player }]} ticks={[{ micro: usdToMicro(OWNER_SHARE_USD), label: capUsd(OWNER_SHARE_USD), ink: "var(--fg-muted)" }]} />
+            <CapBar scale={share} segs={[{ micro: s.ownerMicro ?? 0, ink: INK.player }]} ticks={[{ micro: share, label: capMicro(share), ink: "var(--fg-muted)" }]} />
           </CapRow>
           <CapRow
             label={copy.capRows.ceiling}
             here
             figure={ceiling ? copy.of(usd(s.system.micro), capMicro(ceiling.micro)) : copy.notSet(usd(s.system.micro))}
-            sub={(ceiling ? copy.capSub.ceiling : copy.capSub.noCeiling) + note(ceiling?.note)}
+            sub={ceilingSub + note(storedCeiling?.note)}
             actions={<SettingAction kind="ceiling" label={copy.changeCeiling} />}
           >
             <CapBar
               scale={Math.max(ceiling?.micro ?? 0, s.system.micro, 1)}
-              segs={[{ micro: s.system.micro, ink: INK.system }]}
+              segs={ceiling ? [{ micro: s.system.micro, ink: INK.system }] : []}
               ticks={ceiling ? [{ micro: ceiling.micro, label: capMicro(ceiling.micro), ink: "var(--danger)" }] : []}
             />
           </CapRow>
@@ -310,11 +322,11 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
           >
             <CapBar
               scale={Math.max(cap?.micro ?? 0, accountTotal, 1)}
-              segs={[
+              segs={cap ? [
                 { micro: s.player.micro, ink: INK.player },
                 { micro: s.system.micro, ink: INK.system },
                 { micro: elsewhere?.micro ?? 0, ink: INK.elsewhere, hatch: true },
-              ]}
+              ] : []}
               ticks={cap ? [{ micro: cap.micro, label: capMicro(cap.micro), ink: "var(--danger)" }] : []}
             />
           </CapRow>

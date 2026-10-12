@@ -1,5 +1,6 @@
 // The questions the Costs core asks `model_calls`, rendered without a database. Both selects name
 // one table, so every column must come out qualified and every month bound must be a parameter.
+// `EXPORTED_QUERIES` lists every query this file exports, and each is held to the no-bare-column rule.
 import { describe, expect, it } from "vitest";
 import { dayRowsQuery, monthFiguresQuery } from "./costs";
 
@@ -16,6 +17,28 @@ describe("dayRowsQuery", () => {
     expect(q.sql).toMatch(/group by extract\(day from "model_calls"\."created_at"\)::int, "model_calls"\."origin"$/);
     // No origin filter: system rows are drawn too, on their own.
     expect(q.sql).not.toContain(`"origin" =`);
+  });
+});
+
+// A column name standing alone, not after `"model_calls".`: what Drizzle emits for a bare column
+// object in a single-table select's projection.
+const BARE = /(^|[^.])"(user_id|created_at|cost_micro_usd|origin)"/;
+
+const EXPORTED_QUERIES = {
+  dayRowsQuery: () => dayRowsQuery(START, END).toSQL(),
+  monthFiguresQuery: () => monthFiguresQuery(PREV, START, END, "user_owner").toSQL(),
+};
+
+describe("every exported query", () => {
+  it("names the queries this file exports", async () => {
+    const mod = await import("./costs");
+    const queries = Object.keys(mod).filter((k) => k.endsWith("Query")).sort();
+    expect(queries).toEqual(Object.keys(EXPORTED_QUERIES).sort());
+  });
+
+  it.each(Object.entries(EXPORTED_QUERIES))("%s: no bare column anywhere, every name is the table's", (_name, render) => {
+    const { sql } = render();
+    expect(sql).not.toMatch(BARE);
   });
 });
 

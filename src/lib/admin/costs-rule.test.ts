@@ -7,6 +7,7 @@ import {
   parseDollars,
   parseMonth,
   shiftMonth,
+  startsAfter,
   usd,
   type CostRows,
   type DayRow,
@@ -17,7 +18,7 @@ const OCT = { year: 2026, month: 9 };
 const NOW = new Date("2026-10-11T15:00:00Z"); // day 11 of 31
 
 function rows(days: DayRow[], over: Partial<CostRows> = {}): CostRows {
-  return { days, playerAccounts: 1, ownerMicro: 0, previous: { runs: 0, micro: 0 }, settings: {}, paused: false, ...over };
+  return { days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: 5_000_000, previous: { runs: 0, micro: 0 }, settings: {}, paused: false, ...over };
 }
 const p = (day: number, usdValue: number, runs = 1): DayRow => ({ day, origin: "player", runs, micro: usdToMicro(usdValue) });
 const sys = (day: number, usdValue: number, runs = 1): DayRow => ({ day, origin: "system", runs, micro: usdToMicro(usdValue) });
@@ -115,6 +116,10 @@ describe("formatting and input", () => {
     expect(usd(0)).toBe("$0");
     expect(usd(usdToMicro(0.884))).toBe("$0.884");
     expect(usd(usdToMicro(135.96))).toBe("$135.96");
+    // The places are chosen after rounding: just under $2 rounds to $2 and prints as dollars.
+    expect(usd(1_999_700)).toBe("$2.00");
+    expect(usd(1_234_000)).toBe("$1.234");
+    expect(usd(1_999_400)).toBe("$1.999");
     expect(capUsd(10)).toBe("$10");
     expect(capUsd(8.5)).toBe("$8.50");
   });
@@ -124,5 +129,19 @@ describe("formatting and input", () => {
     expect(parseDollars("$100")).toBe(100_000_000);
     expect(parseDollars(" 0.5 ")).toBe(500_000);
     for (const bad of ["", "-5", "1.234", "abc", "1e3", "1,000"]) expect(parseDollars(bad)).toBeNull();
+  });
+});
+
+describe("startsAfter", () => {
+  const at = (asOf: string) => ({ micro: 15_000_000, asOf, note: null });
+  it("names the month a setting starts in when that is after the viewed month", () => {
+    expect(startsAfter(at("2026-11-01"), OCT)).toEqual({ year: 2026, month: 10 });
+    expect(startsAfter(at("2027-01-01"), OCT)).toEqual({ year: 2027, month: 0 });
+  });
+  it("is null for a setting that applies in the viewed month, or none at all", () => {
+    expect(startsAfter(at("2026-10-01"), OCT)).toBeNull();
+    expect(startsAfter(at("2026-10-12"), OCT)).toBeNull();
+    expect(startsAfter(at("2026-03-01"), OCT)).toBeNull();
+    expect(startsAfter(undefined, OCT)).toBeNull();
   });
 });

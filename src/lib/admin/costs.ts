@@ -1,7 +1,7 @@
 import { and, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminSettings, modelCalls } from "../../db/schema";
-import { modelOwnerUserId, readAllowance } from "../model/allowance";
+import { modelOwnerUserId, ownerShareMicro, readAllowance } from "../model/allowance";
 import {
   costSummary,
   monthStart,
@@ -30,16 +30,17 @@ const col = (name: string) => sql`${modelCalls}.${sql.identifier(name)}`;
 /** Runs and dollars per UTC day and origin. Every status counts as a run; dollars are what was recorded. */
 export function dayRowsQuery(start: Date, end: Date) {
   const day = sql<number>`extract(day from ${col("created_at")})::int`;
+  const origin = sql<string>`${col("origin")}`;
   return db
     .select({
       day,
-      origin: modelCalls.origin,
+      origin,
       runs: sql<number>`count(*)::int`,
       micro: sql<string>`coalesce(sum(${col("cost_micro_usd")}), 0)`,
     })
     .from(modelCalls)
     .where(and(gte(modelCalls.createdAt, start), lt(modelCalls.createdAt, end)))
-    .groupBy(day, modelCalls.origin);
+    .groupBy(day, origin);
 }
 
 /**
@@ -84,6 +85,8 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
     })),
     playerAccounts: Number(figures?.playerAccounts ?? 0),
     ownerMicro: ownerId ? Number(figures?.ownerMicro ?? 0) : null,
+    // The share the allowance enforces, env var included, never the bare constant.
+    ownerShareMicro: ownerShareMicro(),
     previous: { runs: Number(figures?.previousRuns ?? 0), micro: Number(figures?.previousMicro ?? 0) },
     settings: Object.fromEntries(
       settingRows.map((r) => [r.key as SettingKey, { micro: r.valueMicroUsd, asOf: r.asOf, note: r.note }]),

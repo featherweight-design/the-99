@@ -56,6 +56,8 @@ export type CostRows = {
   playerAccounts: number;
   /** The owner's own player spend in the month, null when no owner is configured. */
   ownerMicro: number | null;
+  /** The owner's monthly share as the allowance enforces it (`ownerShareMicro()`). */
+  ownerShareMicro: number;
   previous: { runs: number; micro: number };
   settings: Partial<Record<SettingKey, Setting>>;
   /** The spend cap refuses every press now (`readAllowance`'s `paused`). Current month only. */
@@ -85,6 +87,7 @@ export type CostSummary = {
   alarm: number;
   banner: Banner;
   ownerMicro: number | null;
+  ownerShareMicro: number;
   previous: { runs: number; micro: number };
   settings: Partial<Record<SettingKey, Setting>>;
   /** Counted against the account cap: entered with an as-of date inside this month. */
@@ -147,6 +150,7 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
     alarm,
     banner,
     ownerMicro: rows.ownerMicro,
+    ownerShareMicro: rows.ownerShareMicro,
     previous: rows.previous,
     settings: rows.settings,
     elsewhere: elsewhere && elsewhere.asOf.startsWith(prefix) ? elsewhere : null,
@@ -154,11 +158,26 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
   };
 }
 
-/** Dollars as the admin prints them: `$0`, three places under $2, two from there. */
+/**
+ * Dollars as the admin prints them: `$0`, three places under $2, two from there. The places are
+ * chosen AFTER rounding to three, so $1.9997 is `$2.00` rather than `$2.000`.
+ */
 export function usd(micro: number): string {
   if (micro === 0) return "$0";
-  const v = micro / 1_000_000;
+  const v = Math.round(micro / 1_000) / 1_000;
   return `$${v.toFixed(v < 2 ? 3 : 2)}`;
+}
+
+/**
+ * The month a setting starts in when that is after `month`, else null. A setting's `asOf` is a
+ * `YYYY-MM-DD` day; a ceiling set to start later is stored on its month's first day.
+ */
+export function startsAfter(setting: Setting | undefined, month: MonthKey): MonthKey | null {
+  if (!setting) return null;
+  const match = /^(\d{4})-(\d{2})/.exec(setting.asOf);
+  if (!match) return null;
+  const start = { year: Number(match[1]), month: Number(match[2]) - 1 };
+  return start.year * 12 + start.month > month.year * 12 + month.month ? start : null;
 }
 
 /** A cap or a line: whole dollars bare (`$10`), anything else to the cent. */

@@ -36,6 +36,13 @@ beforeEach(() => {
   transaction.mockClear();
 });
 
+/** The UTC month `delta` months from now, as `YYYY-MM`. */
+function monthFrom(delta: number): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + delta, 1)).toISOString().slice(0, 7);
+}
+const thisMonth = () => monthFrom(0);
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 function serverModules(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -46,9 +53,9 @@ function serverModules(dir: string): string[] {
   });
 }
 
-/** Every exported function in a module, and whether its first statement awaits `requireAdmin()`. */
-function exportsOf(path: string): { name: string; gated: boolean }[] {
-  const source = ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true);
+/** Every exported function in a module's source, and whether its first statement awaits `requireAdmin()`. */
+function exportsOfSource(path: string, text: string): { name: string; gated: boolean }[] {
+  const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
   const out: { name: string; gated: boolean }[] = [];
   const isGate = (node: ts.Node | undefined): boolean => {
     if (!node) return false;
@@ -70,6 +77,8 @@ function exportsOf(path: string): { name: string; gated: boolean }[] {
   return out;
 }
 
+const exportsOf = (path: string) => exportsOfSource(path, readFileSync(path, "utf8"));
+
 describe("every admin action is gated first", () => {
   const modules = serverModules(HERE);
 
@@ -84,13 +93,24 @@ describe("every admin action is gated first", () => {
   });
 
   it("reads a module whose export skips the gate as a failure", () => {
-    const path = join(HERE, "actions.ts");
-    const original = exportsOf(path);
-    expect(original.every((e) => e.gated)).toBe(true);
-    // The same parser over a hand-written ungated export.
-    const src = ts.createSourceFile("x.ts", `"use server";\nexport async function leak() { const x = 1; await requireAdmin(); }`, ts.ScriptTarget.Latest, true);
-    const fn = src.statements[1] as ts.FunctionDeclaration;
-    expect(fn.body?.statements[0].getText(src)).not.toMatch(/requireAdmin/);
+    // The guard the real modules go through, over hand-written sources: each ungated shape is
+    // reported by name, and a gated one beside it passes.
+    const found = exportsOfSource(
+      "x.ts",
+      [
+        `"use server";`,
+        `export async function late() { const x = 1; await requireAdmin(); }`,
+        `export async function never() { return 1; }`,
+        `export const arrow = async () => { await somethingElse(); };`,
+        `export async function gated() { const { userId } = await requireAdmin(); return userId; }`,
+      ].join("\n"),
+    );
+    expect(found).toEqual([
+      { name: "late", gated: false },
+      { name: "never", gated: false },
+      { name: "arrow", gated: false },
+      { name: "gated", gated: true },
+    ]);
   });
 });
 
@@ -102,7 +122,7 @@ describe("the settings writes", () => {
   });
 
   it("refuses an amount that is not dollars, writing nothing", async () => {
-    await expect(actions.setSystemCeiling({ amount: "-3" })).resolves.toEqual({ ok: false, error: "amount" });
+    await expect(actions.setSystemCeiling({ amount: "-3", start: thisMonth() })).resolves.toEqual({ ok: false, error: "amount" });
     await expect(actions.setAccountCap({ amount: 100 })).resolves.toEqual({ ok: false, error: "amount" });
     expect(transaction).not.toHaveBeenCalled();
   });
@@ -136,10 +156,27 @@ describe("the settings writes", () => {
     expect(writes[1].values).toMatchObject({ settingKey: "elsewhere_usd", oldValue: null, newValue: "18.40" });
   });
 
+  it("refuses a ceiling start that is not this month or a later one, writing nothing", async () => {
+    for (const start of ["2026-13", "2026-1", "2020-01", "", undefined, `${thisMonth()}-01`, monthFrom(-1)]) {
+      await expect(actions.setSystemCeiling({ amount: "15", start })).resolves.toEqual({ ok: false, error: "month" });
+    }
+    expect(gate).toHaveBeenCalledTimes(7);
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("stores a ceiling under the first day of the month it starts", async () => {
+    await expect(actions.setSystemCeiling({ amount: "15", start: monthFrom(1), note: "from next month" })).resolves.toEqual({ ok: true });
+    expect(writes[0].values).toMatchObject({ key: "system_ceiling_usd", valueMicroUsd: 15_000_000, asOf: `${monthFrom(1)}-01`, note: "from next month" });
+    expect(writes[1].values).toMatchObject({ settingKey: "system_ceiling_usd", newValue: "15.00" });
+    writes.length = 0;
+    await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth() })).resolves.toEqual({ ok: true });
+    expect(writes[0].values).toMatchObject({ asOf: `${thisMonth()}-01` });
+  });
+
   it("says nothing changed when the transaction fails", async () => {
     transaction.mockRejectedValueOnce(new Error("boom"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    await expect(actions.setSystemCeiling({ amount: "15" })).resolves.toEqual({ ok: false, error: "failed" });
+    await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth() })).resolves.toEqual({ ok: false, error: "failed" });
     spy.mockRestore();
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, type RefObject } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -23,10 +24,36 @@ function tabFor(pathname: string) {
     .find((t) => pathname === t.href || pathname.startsWith(`${t.href}/`)) ?? ADMIN_TABS[0];
 }
 
+/**
+ * The head's height, published for a page's own pinned bar to sit beneath (`top-[var(--admin-head-h,0px)]`).
+ * The head wraps its sub at narrow widths, so the height is measured rather than assumed.
+ */
+export const ADMIN_HEAD_HEIGHT_VAR = "--admin-head-h";
+
+function usePublishedHeight(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${el.getBoundingClientRect().height}px`);
+    publish();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
+    observer?.observe(el);
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty(ADMIN_HEAD_HEIGHT_VAR);
+    };
+  }, [ref]);
+}
+
 export function AdminHead({ env }: { env: AdminEnv }) {
   const current = tabFor(usePathname() ?? "/admin");
+  const ref = useRef<HTMLElement>(null);
+  usePublishedHeight(ref);
   return (
-    <header className="flex flex-none flex-col gap-[9px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] px-[16px] pt-[14px] md:px-[28px] md:pt-[26px]">
+    // Pinned (design table R2 delta `page`): the shell scrolls the document, so the head is sticky
+    // at the top over the page's content, and a page's own pinned bar sits beneath it.
+    <header ref={ref} className="sticky top-0 z-[2] flex flex-none flex-col bg-[color:var(--bg)] gap-[9px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] px-[16px] pt-[14px] md:px-[28px] md:pt-[26px]">
       <div className="flex flex-wrap items-center gap-[10px]">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">{adminCopy.eyebrow}</span>
         <span className="inline-flex h-[22px] items-center gap-[6px] rounded-full border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[10.5px] text-[color:var(--fg)]">

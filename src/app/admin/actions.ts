@@ -12,7 +12,7 @@ import { parseDollars, type SettingKey } from "../../lib/admin/costs-rule";
 // the app's 404 (STATES D4); `actions.test.ts` reads this file and fails on an export that does
 // not. Each write is ONE transaction: the setting, then its `setting_set` row in `admin_events`.
 
-export type SettingResult = { ok: true } | { ok: false; error: "amount" | "date" | "failed" };
+export type SettingResult = { ok: true } | { ok: false; error: "amount" | "date" | "month" | "failed" };
 
 const NOTE_MAX = 500;
 
@@ -29,6 +29,15 @@ function dayOf(value: unknown, now: Date): string | null {
   const d = new Date(`${value}T00:00:00Z`);
   if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== value) return null;
   return value > todayUtc(now) ? null : value;
+}
+
+/**
+ * A month written `YYYY-MM`, this UTC month or a later one, as the first day it applies from
+ * (`YYYY-MM-01`): the day a setting that starts later is stored under.
+ */
+function startOf(value: unknown, now: Date): string | null {
+  if (typeof value !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return null;
+  return value < todayUtc(now).slice(0, 7) ? null : `${value}-01`;
 }
 
 const dollars = (micro: number) => (micro / 1_000_000).toFixed(2);
@@ -75,10 +84,15 @@ export async function setAccountCap(input: { amount: unknown; note?: unknown }):
   return writeSetting(userId, "account_cap_usd", micro, todayUtc(new Date()), noteOf(input.note));
 }
 
-/** The monthly ceiling on system spend (evals, labels, prose, free rewrites). */
-export async function setSystemCeiling(input: { amount: unknown; note?: unknown }): Promise<SettingResult> {
+/**
+ * The monthly ceiling on system spend (evals, labels, prose, free rewrites), from the month it
+ * starts: this UTC month or a later one, stored as that month's first day.
+ */
+export async function setSystemCeiling(input: { amount: unknown; start: unknown; note?: unknown }): Promise<SettingResult> {
   const { userId } = await requireAdmin();
   const micro = typeof input?.amount === "string" ? parseDollars(input.amount) : null;
   if (micro === null) return { ok: false, error: "amount" };
-  return writeSetting(userId, "system_ceiling_usd", micro, todayUtc(new Date()), noteOf(input.note));
+  const asOf = startOf(input.start, new Date());
+  if (!asOf) return { ok: false, error: "month" };
+  return writeSetting(userId, "system_ceiling_usd", micro, asOf, noteOf(input.note));
 }
