@@ -99,7 +99,16 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
   const basicCopies = basics.reduce((n, c) => n + c.quantity, 0);
   const share = row.of === 0 ? 0 : row.owned / row.of;
   const groups = groupByCardType(listed.map((c) => ({ ...c, cardTypeGroup: cardTypeGroup(c.typeLine) })));
-  const siblings = [...commanders, ...groups.flatMap(([, g]) => g)].map((c) => c.oracleId);
+  // Card details page through the cards in display order. In Card view the basics are tiles too, at
+  // the foot of Lands (or last, with no Lands), so they join the run there; a tile missing from it
+  // would open with no Prev/Next.
+  const hasLands = groups.some(([label]) => label === "Lands");
+  const basicIds = card ? basics.map((b) => b.oracleId) : [];
+  const siblings = [
+    ...commanders.map((c) => c.oracleId),
+    ...groups.flatMap(([label, g]) => [...g.map((c) => c.oracleId), ...(label === "Lands" ? basicIds : [])]),
+    ...(hasLands ? [] : basicIds),
+  ];
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
   const linked = row.built.filter((b) => b.linked);
   const linkDeck = (className: string) => (
@@ -238,7 +247,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
               />
             );
           })}
-          {!groups.some(([label]) => label === "Lands") && basics.length > 0 && (card ? (
+          {!hasLands && basics.length > 0 && (card ? (
             <ul className="m-0 grid list-none grid-cols-2 gap-[12px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[20px]">
               <BasicTiles basics={basics} siblings={siblings} />
             </ul>

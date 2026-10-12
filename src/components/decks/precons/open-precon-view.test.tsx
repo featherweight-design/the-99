@@ -10,7 +10,10 @@ vi.mock("../../cards/card-detail-provider", () => ({
     return children;
   },
   useCardDetail: () => ({ open: vi.fn() }),
-  CardDetailTrigger: ({ children, name }: { children: React.ReactNode; name: string }) => <button type="button" aria-label={name}>{children}</button>,
+  cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
+  CardDetailTrigger: ({ children, name, siblings }: { children: React.ReactNode; name: string; siblings?: readonly string[] }) => (
+    <button type="button" aria-label={name} data-siblings={(siblings ?? []).join(",")}>{children}</button>
+  ),
 }));
 const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown }, dock: undefined as string | undefined }));
 vi.mock("./start-precon", () => ({
@@ -271,6 +274,8 @@ describe("OpenPreconView", () => {
       const tail = screen.getByTestId("card-tail");
       expect(within(tail).getByText("CMM · first of 3 arts")).toBeInTheDocument();
       expect(within(tail).getByText("×15")).toBeInTheDocument();
+      // The basic joins card details' run after Lands' cards, so its Prev/Next work like any tile's.
+      expect(within(tail).getByRole("button", { name: "Wastes" }).dataset.siblings).toBe("Zhulodok,Ruins,Wastes");
     });
   });
 });
