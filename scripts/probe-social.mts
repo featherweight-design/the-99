@@ -184,11 +184,13 @@ async function main() {
     const genShared = await spares.friendGeneration(A);
     check("friendGeneration moves when a friend starts sharing", genShared !== genBefore);
     await db.execute(sql`update collection_items set quantity = 4 where user_id = ${B} and oracle_id = ${X}`);
-    check("and when that friend's collection moves", (await spares.friendGeneration(A)) !== genShared);
+    const genMoved = await spares.friendGeneration(A);
+    check("and when that friend's collection moves", genMoved !== genShared);
     check("a malformed card id asks for nothing", (await spares.loadFriendSpares(A, ["nope"])).length === 0);
+    check("and it holds still when nothing moved", (await spares.friendGeneration(A)) === genMoved);
 
     await friends.setDisplayName(B, "Bobby");
-    check("and when that friend renames", (await spares.friendGeneration(A)) !== genShared);
+    check("and when that friend renames", (await spares.friendGeneration(A)) !== genMoved);
 
     // Every way out of a pod drops the grant ROW, counted in the table (the read alone would hide a missed
     // cleanup, because it joins membership too).
@@ -202,6 +204,27 @@ async function main() {
     check("B shares again", (await spares.loadFriendSpares(A, [X])).length === 1);
     check("A removes B", await pods.removeMember(A, night.id, b.publicId));
     check("removal dropped the grant row", (await grantRows()) === 0);
+    // A share racing a removal, in the order that could strand a grant: the removal deletes the membership
+    // and its grants, then holds its transaction open while B shares. The share must wait on the membership
+    // row and find nothing once the removal commits.
+    await pods.addMember(A, night.id, b.publicId);
+    let release = () => {};
+    const held = new Promise<void>((r) => { release = r; });
+    let removed = () => {};
+    const removing = new Promise<void>((r) => { removed = r; });
+    const removal = db.transaction(async (tx) => {
+      await tx.execute(sql`delete from pod_members where pod_id = ${night.id} and user_id = ${B}`);
+      await tx.execute(sql`delete from pod_spare_shares where pod_id = ${night.id} and user_id = ${B}`);
+      removed();
+      await held;
+    });
+    await removing;
+    const sharing = spares.shareSparesWith(B, night.id, true);
+    await new Promise((r) => setTimeout(r, 1500));
+    release();
+    await removal;
+    check("a share racing a removal is refused", (await sharing) === false);
+    check("and leaves no grant row behind", (await grantRows()) === 0);
     // A stale grant row, as a missed cleanup would leave it, still shows nothing: the read joins membership.
     await db.execute(sql`insert into pod_spare_shares (user_id, pod_id) values (${B}, ${night.id})`);
     check("a grant to a pod its owner left shows nothing", (await spares.loadFriendSpares(A, [X])).length === 0);

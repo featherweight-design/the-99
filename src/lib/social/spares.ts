@@ -55,7 +55,7 @@ export type FriendSpare = { oracleId: string; friend: { publicId: string; displa
 /**
  * The spare copies the viewer's friends hold of the named cards (the viewer's demand: their decks' buy
  * rows, and their wishlist once it exists). One grant read, then the friend's own claim model per
- * granting friend, narrowed to the asked cards. Ordered by card, then by friend name.
+ * granting friend, narrowed to the asked cards, then the grant read again. Ordered by card, then by friend name.
  */
 export async function loadFriendSpares(viewerId: string, oracleIds: readonly string[]): Promise<FriendSpare[]> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
@@ -64,8 +64,13 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   // One claim model per friend, run side by side: measured at ~100ms each on a staging copy
   // (`measure:friend-spares`), so a handful of friends costs about one model, not their sum.
   const models = await Promise.all(grantors.map((g) => loadAvailability(g.userId, { oracleIds: asked })));
+  // The models are separate statements, so a grant revoked while they ran would otherwise still return
+  // spares. Re-read the grants after: a friend counts only when the grant held both before and after the
+  // reads, so nothing read once access ended is returned.
+  const still = new Set((await spareGrantorsQuery(viewerId)).map((g) => g.userId));
   const out: FriendSpare[] = [];
   grantors.forEach((g, i) => {
+    if (!still.has(g.userId)) return;
     for (const [oracleId, a] of models[i]) {
       const spare = spareCount(a);
       if (spare > 0) out.push({ oracleId, friend: { publicId: g.publicId, displayName: g.displayName }, spare });
@@ -131,9 +136,9 @@ export async function friendGeneration(viewerId: string): Promise<string> {
   const grantors = spareGrantorsQuery(viewerId).as("grantors");
   const [row] = await db
     .select({
-      g: sql<string>`coalesce(md5(string_agg(
-        ${grantors.userId} || ':' || coalesce(${userDataStamps.stamp}, 0)::text || ':' || ${grantors.displayName},
-        ',' order by ${grantors.userId})), '')`,
+      // A structured aggregate, so a name holding `:` or `,` cannot forge a field or row boundary.
+      g: sql<string>`coalesce(md5(json_agg(json_build_array(
+        ${grantors.userId}, coalesce(${userDataStamps.stamp}, 0), ${grantors.displayName}) order by ${grantors.userId})::text), '')`,
     })
     .from(grantors)
     .leftJoin(userDataStamps, eq(userDataStamps.userId, grantors.userId));

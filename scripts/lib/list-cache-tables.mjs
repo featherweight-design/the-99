@@ -160,10 +160,41 @@ export function unrecordedCatches(files = loaderFiles()) {
 }
 
 /**
+ * The third argument (the key) of every `cachePageForUser(...)` call in a source, comments stripped. A
+ * `friendGeneration(` anywhere else in the page (a comment, an unused call, inside the loader) keys nothing.
+ * Strings are skipped while balancing, so a `)` or `,` inside one does not end an argument.
+ */
+export function cacheKeysOf(text) {
+  const src = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+  const keys = [];
+  const call = /\bcachePageForUser\s*(?:<[^>]*>)?\s*\(/g;
+  for (let m; (m = call.exec(src)); ) {
+    const args = [];
+    let depth = 0, start = call.lastIndex, i = start;
+    for (; i < src.length; i++) {
+      const c = src[i];
+      if (c === '"' || c === "'" || c === "`") {
+        for (i++; i < src.length && src[i] !== c; i++) if (src[i] === "\\") i++;
+      } else if ("([{".includes(c)) depth++;
+      else if (")]}".includes(c)) {
+        if (depth === 0) break;
+        depth--;
+      } else if (c === "," && depth === 0) {
+        args.push(src.slice(start, i));
+        start = i + 1;
+      }
+    }
+    args.push(src.slice(start, i));
+    if (args.length >= 3) keys.push(args[2]);
+  }
+  return keys;
+}
+
+/**
  * A FRIEND's rows ride a cached page only with the friends' stamps in its key (social plan, scope §5).
  * The reader's own stamp moves when the reader writes, never when a friend does, so a page whose loaders
- * reach `src/lib/social/` (where every cross-user read lives) must pass `friendGeneration` in its
- * `cachePageForUser` key, or a friend's write leaves it stale. A page that reaches the module is held to
+ * reach `src/lib/social/` (where every cross-user read lives) must call `friendGeneration` inside the KEY
+ * argument of its `cachePageForUser` call (`cacheKeysOf`), or a friend's write leaves it stale. A page that reaches the module is held to
  * the rule whether or not it reads a friend's data today: the import is the cheap, honest proxy.
  */
 export function socialKeyProblems(
@@ -178,7 +209,7 @@ export function socialKeyProblems(
       .map((f) => f.split("\\").join("/"))
       .filter((f) => f.includes("src/lib/social/") && !f.endsWith("src/lib/social/flag.ts"));
     if (social.length === 0) continue;
-    if (!/\bfriendGeneration\s*\(/.test(source(page))) {
+    if (!cacheKeysOf(source(page)).some((key) => /\bfriendGeneration\s*\(/.test(key))) {
       out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
     }
   }

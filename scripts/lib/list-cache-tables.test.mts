@@ -140,6 +140,21 @@ describe("socialKeyProblems", () => {
     expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
   });
 
+  it("fails a friendGeneration that is not in the key: a comment, an unused call, or inside the loader", () => {
+    for (const src of [
+      "// friendGeneration(userId)\ncachePageForUser(userId, 'cart', [], load)",
+      "const g = await friendGeneration(userId);\ncachePageForUser(userId, 'cart', [], load)",
+      "cachePageForUser(userId, 'cart', [], async () => ({ value: await friendGeneration(userId) }))",
+    ]) {
+      expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+    }
+  });
+
+  it("reads the key past a string holding a comma or a paren", () => {
+    const src = "cachePageForUser(userId, 'a,(b', [await friendGeneration(userId)], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
+  });
+
   it("holds no page that reaches no social module", () => {
     expect(socialKeyProblems([page], reach(["src/lib/decks/cart.ts"]), () => "")).toEqual([]);
   });
