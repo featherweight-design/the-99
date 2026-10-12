@@ -8,7 +8,7 @@ import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import { recordLate, RunSupersededError } from "../tuning/run-store";
 import { FITS_READ_PROMPT_VERSION, FITS_READ_REAP_MS, type FitsDropReason, type FitsPick, type FitsReadInputs, type ReadCardFacts } from "./fits-read";
-import type { FitsReadRow } from "./fits-read-state";
+import type { FitsReadRow, StoredFitsPick } from "./fits-read-state";
 
 /**
  * Find a deck read's writes and reads. SERVER-ONLY: it imports the database. The shape is the Tuning
@@ -40,12 +40,14 @@ export function candidateHashes(inputs: FitsReadInputs, model: string): Record<s
   const out: Record<string, string> = {};
   for (const c of inputs.candidates) {
     const d = blocks.get(c.deckId);
-    const plan = sha([d?.plan ?? null, sorted(d?.keyCardIds ?? [])]);
+    // The plan's half holds everything the deck's PLAN is read from: the Overview and its Key cards,
+    // or, with none, the leading themes that stand in for it. So a deck's first Overview moves this
+    // half alone, and reads as a new Overview (P3g), never as a deck change.
+    const plan = sha([d?.plan ?? null, sorted(d?.keyCardIds ?? []), d?.themes ?? []]);
     const rest = sha([
       FITS_READ_PROMPT_VERSION, model, card, c.need, c.inclusion,
       d && {
         commanders: d.commanders.map(facts),
-        themes: d.themes,
         list: d.list.map(facts).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
         lockedIds: sorted(d.lockedIds),
       },
@@ -101,7 +103,7 @@ export async function startFitsRead(
 }
 
 export type FitsReadOutcomeWrite =
-  | { status: "done"; outcome: "picks" | "noFit"; picks: FitsPick[]; refunded: boolean; returned: number; drops: Partial<Record<FitsDropReason, number>> }
+  | { status: "done"; outcome: "picks" | "noFit"; picks: StoredFitsPick[]; refunded: boolean; returned: number; drops: Partial<Record<FitsDropReason, number>> }
   | { status: "failed"; errorClass: string; returned?: number; drops?: Partial<Record<FitsDropReason, number>> };
 
 /**

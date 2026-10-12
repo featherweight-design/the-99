@@ -1,5 +1,9 @@
 import { REFUND_BELOW_SHARE } from "../tuning/refund";
-import type { FitsPick } from "./fits-read";
+import type { FitsPick, PlanSource } from "./fits-read";
+
+/** A pick as stored: with the plan source its sentence was written from, which a reopened read
+ *  shows until Read again, whatever the deck's source is now (handoff P3g-v2). */
+export type StoredFitsPick = FitsPick & { planSource: PlanSource };
 
 /**
  * Find a deck read's stored state, pure and client-safe: what the view draws from the reader's
@@ -10,7 +14,7 @@ import type { FitsPick } from "./fits-read";
 export type StoredFitsRead = {
   readId: string;
   outcome: "picks" | "noFit";
-  picks: FitsPick[];
+  picks: StoredFitsPick[];
   refunded: boolean;
   at: string;
   /** Every candidate deck it was run over. */
@@ -75,7 +79,7 @@ export type FitsReadRow = {
   createdAt: Date;
   finishedAt: Date | null;
   candidateHashes: Record<string, string>;
-  picks: FitsPick[];
+  picks: StoredFitsPick[];
 };
 
 /** The view from a reader's rows for one card, newest first, against the current candidate hashes. */

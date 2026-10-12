@@ -25,6 +25,7 @@ vi.mock("../model/allowance", () => ({
 
 const { pressFitsRead, readFitsRead } = await import("./fits-read-run");
 const { candidateHashes } = await import("./fits-read-store");
+const { staleness } = await import("./fits-read-state");
 const { startFitsRead } = await import("./fits-read-store");
 
 const NOW = new Date(Date.UTC(2026, 9, 12, 7));
@@ -124,10 +125,13 @@ describe("pressFitsRead: refusals that cost nothing", () => {
 });
 
 describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
-  it("spends a read that held up, stored with its picks", async () => {
+  it("spends a read that held up, stored with its picks and the plan source each was read from", async () => {
     const { d } = deps({ picks: [good("D1"), good("D2", "C7")] });
+    d.load = async () => ({ fits: { holds: [] } as unknown as FitsReadLoad["fits"], inputs: inputs(), planOf: new Map([["deck-goblins", { source: "older" as const, staleNames: [] }]]) }) as FitsReadLoad;
     expect((await pressFitsRead("u", "card", d)).ok).toBe(true);
     expect(store.finished).toEqual([expect.objectContaining({ status: "done", outcome: "picks", refunded: false, returned: 2 })]);
+    const picks = (store.finished[0] as { picks: { deckId: string; planSource: string }[] }).picks;
+    expect(picks.map((p) => [p.deckId, p.planSource])).toEqual([["deck-goblins", "older"]]);
   });
 
   it("refunds a thin read: under a third of the decks named held up", async () => {
@@ -210,6 +214,15 @@ describe("candidateHashes", () => {
     const b = candidateHashes({ ...inp, decks: inp.decks.map((x) => (x.deckId === "deck-kratos" ? { ...x, plan: { source: "v2" as const, text: "A new plan." } } : x)) }, MODEL);
     expect(b["deck-kratos"].split(".")[0]).not.toBe(a["deck-kratos"].split(".")[0]);
     expect(b["deck-kratos"].split(".")[1]).toBe(a["deck-kratos"].split(".")[1]);
+  });
+
+  it("reads a deck's FIRST Overview as a new Overview, not a deck change (P3g)", () => {
+    const inp = inputs(["deck-goblins", "deck-kratos"]);
+    // Kratos with no Overview: the read goes on its leading themes instead.
+    const before = { ...inp, decks: inp.decks.map((x) => (x.deckId === "deck-kratos" ? { ...x, plan: null, themes: [{ kind: "burn", n: 7 }] } : x)) };
+    const after = { ...inp, decks: inp.decks.map((x) => (x.deckId === "deck-kratos" ? { ...x, plan: { source: "v2" as const, text: "Burn them out." }, themes: [] } : x)) };
+    const was = candidateHashes(before, MODEL);
+    expect(staleness(was, candidateHashes(after, MODEL)).changed).toEqual([{ deckId: "deck-kratos", reason: "overview" }]);
   });
 
   it("moves for every deck when the model does", () => {

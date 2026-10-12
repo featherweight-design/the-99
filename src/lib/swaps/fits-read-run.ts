@@ -113,7 +113,8 @@ export async function pressFitsRead(userId: string, oracleId: string, deps: Deps
         await finishFitsRead(started, { status: "failed", errorClass: "ungrounded", returned, drops: v.drops }, billed, deps.now());
       } else {
         await finishFitsRead(started, {
-          status: "done", outcome: v.outcome, picks: v.picks, returned, drops: v.drops,
+          status: "done", outcome: v.outcome, returned, drops: v.drops,
+          picks: v.picks.map((p) => ({ ...p, planSource: load.planOf.get(p.deckId)?.source ?? "none" })),
           refunded: readRefunds(v.outcome, v.picks.length, returned),
         }, billed, deps.now());
       }

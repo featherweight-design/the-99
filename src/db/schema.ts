@@ -13,7 +13,8 @@ import type { CheckedSynopsis } from "../lib/synopsis/types";
 import type { ToolCountSummary } from "../lib/tuning/history";
 import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
-import type { FitsDropReason, FitsPick } from "../lib/swaps/fits-read";
+import type { FitsDropReason } from "../lib/swaps/fits-read";
+import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -2759,8 +2760,9 @@ export const fitsReads = pgTable("fits_reads", {
   promptVersion: integer("prompt_version").notNull(),
   /** Every candidate deck the read was run over, to its input hash. Its keys are the candidate set. */
   candidateHashes: jsonb("candidate_hashes").$type<Record<string, string>>().notNull(),
-  /** The decks that held up, in the read's order. Empty on a no fit. */
-  picks: jsonb("picks").$type<FitsPick[]>().notNull().default(sql`'[]'::jsonb`),
+  /** The decks that held up, in the read's order, each with the plan source it was read from.
+   *  Empty on a no fit. */
+  picks: jsonb("picks").$type<StoredFitsPick[]>().notNull().default(sql`'[]'::jsonb`),
   /** How many decks the model named, and each drop by reason. */
   returned: integer("returned"),
   drops: jsonb("drops").$type<Partial<Record<FitsDropReason, number>>>(),
