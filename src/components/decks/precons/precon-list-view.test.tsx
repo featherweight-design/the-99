@@ -47,6 +47,13 @@ describe("PreconListView", () => {
     expect(screen.getByRole("button", { name: "Clear the colors" })).toBeInTheDocument();
   });
 
+  it("shows a search as a chip that clears it", () => {
+    view({ q: "eldrazi", colours: [], order: null });
+    expect(screen.queryByText("No filters on")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /eldrazi/i }));
+    expect(screen.getByText("Calling All Angels")).toBeInTheDocument();
+  });
+
   it("names every shared deck, however many", () => {
     const three = [row("Eldrazi Unbound", "2023-08-04", { built: ["A", "B", "C"].map((n, i) =>
       ({ deckId: n, deckName: `Deck ${n}`, shared: 70 - i, sameCommanders: true })) })];

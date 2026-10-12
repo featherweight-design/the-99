@@ -80,11 +80,16 @@ export function PreconListView({ rows, hasCollection, fromNew, initial }: Precon
   const last = dates[dates.length - 1]?.slice(0, 4) ?? "";
   const href = (r: Row) => `/decks/precons/${encodeURIComponent(r.fileName)}${fromNew ? "?from=new" : ""}`;
 
-  const chips: FilterChip[] = colours.map((c) => ({
+  // The search is a chip too, labelled with the term itself, as `/decks` labels it: a searched list
+  // is a filtered list, and the chassis's "No filters on" would otherwise say otherwise.
+  const chips: FilterChip[] = [
+    ...(q.trim() ? [{ key: "q", label: q.trim(), onRemove: clearSearch }] : []),
+    ...colours.map((c) => ({
     key: `colour:${c}`,
     label: colorNames([c])[0],
     onRemove: () => onColour(c as PipCode),
-  }));
+    })),
+  ];
 
   const pips = <ColourPips form="wide" value={colours} onToggle={onColour} />;
   const sort = (

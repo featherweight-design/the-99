@@ -1,4 +1,4 @@
-# Design table: Commander precons (R1)
+# Design table: Commander precons (R2)
 
 Committed from `design/design_handoff_the99_precons/design-tables/precons.md` (R2). Build errata from `READINESS-audit.md` apply: the URL mirrors through `mirrorUrl`, not `replaceState`; the arrival is the shipped `ArrivalStrip`; every total is the kept count, never a literal 100. Mobile = 390, desktop = 900, from `md` up (the /decks lines follow `decks-view.tsx`'s `sm`). Values not listed are as shipped (`decks-view.tsx`, `create-picker.tsx`, `help-me-choose-door.tsx`, `decklist-group.tsx`, `decklist-group-header.tsx`, `decklist-row.tsx`).
 
@@ -9,7 +9,7 @@ Committed from `design/design_handoff_the99_precons/design-tables/precons.md` (R
 | container | grid `minmax(0,1fr) minmax(0,1fr)` (one column when the cart line is absent), gap 8, pad 12 16 4, between the button row and the shelf trigger |
 | cell | min-h 52, radius 10, 1px `--border-strong`, `--surface`, pad 7 8 7 12, gap 6; the whole cell is the link |
 | cart cell | ring as the approved line; title `cart.entry.titlePhone` = `Shop all decks` 13.5 / 500; meta mono 10.5 `--fg-muted` `307 · $843.99`, nowrap |
-| precon cell | title `precons.door.linePhone` = `Precons` 13.5 / 500; meta mono 10.5 `precons.door.lineMetaPhone(185)` = `185 decklists`, nowrap |
+| precon cell | title `precons.door.linePhone` = `Precons` 13.5 / 500; meta mono 10.5 `precons.door.lineMetaPhone(n)` = `181 decklists` (n, the rows shown: twins folded), nowrap |
 | chevron | `›` 16 `--fg-muted` |
 | cost | +68px over today (two cells), +60px (one) |
 
@@ -42,7 +42,7 @@ Committed from `design/design_handoff_the99_precons/design-tables/precons.md` (R
 | header | pad 12 16 12, border-bottom; back mono 11 `--fg-faint` (`‹ Decks`, or `‹ New deck` with `from=new`); h1 display 24; sub mono 11 `--fg-faint` `precons.list.subPhone` | pad 16 22 16; sub `precons.list.sub` |
 | chassis | `FilterChassis` compact: search 44, then pips 30 + sort 44 | wide: search (flex) · `ColourPips` 26 · sort 36 |
 | search | name, any commander, set code; placeholder `precons.list.search` | same |
-| result line | `precons.list.result(shown, 185, order)` | same |
+| result line | `precons.list.result(shown, total, order)` (total, the rows shown: 181 with twins folded) | same |
 | URL | `q`, `colour`, `sort=owned`; `mirrorUrl` as `decks-view` | same |
 | years | gap 22, pad 16 16 24 | pad 18 22 8 |
 | year head | display 17 + mono 11 `--fg-faint` count; border-bottom 1px `--border`, pb 7 | same |
