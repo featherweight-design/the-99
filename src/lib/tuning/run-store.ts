@@ -168,8 +168,9 @@ export async function finishRun(
 }
 
 /**
- * A successful run: the items and the outcome in one transaction, and the unit spent. False
- * when the run was superseded, in which case no item is written.
+ * A successful run: the items and the outcome in one transaction, and the unit spent, or given back
+ * when the caller settles it `refunded` (an answer too thin to charge for, `refundsCredit`: the items are
+ * stored and shown all the same). False when the run was superseded, in which case no item is written.
  *
  * The status update comes FIRST inside the transaction. A guard that fails throws before the
  * insert runs and rolls everything back, so "items persisted, status did not" cannot happen.
