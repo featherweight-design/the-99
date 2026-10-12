@@ -116,7 +116,9 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
     mirror({ q, colours, order: next });
   };
   const onView = (next: PreconView) => {
-    setUrlView(next);
+    // Picking tiles stores it and leaves the address naming no view (the default), so no later
+    // filter's mirror writes an explicit `view=tiles` the reader never asked for.
+    setUrlView(next === "rows" ? "rows" : null);
     storeView(next);
     mirror({ q, colours, order, view: next });
   };

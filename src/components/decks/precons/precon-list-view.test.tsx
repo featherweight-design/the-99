@@ -137,4 +137,14 @@ describe("PreconListView", () => {
     fireEvent.change(search, { target: { value: "eldrazi" } });
     expect(window.location.search).toBe("?q=eldrazi&view=tiles");
   });
+
+  it("writes no view after a switch back to tiles, through a later filter's mirror", () => {
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Rows view" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tiles view" }));
+    const search = screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
+    fireEvent.change(search, { target: { value: "eldrazi" } });
+    expect(window.location.search).toBe("?q=eldrazi");
+    expect(screen.getByRole("button", { name: "Tiles view" })).toHaveAttribute("aria-pressed", "true");
+  });
 });
