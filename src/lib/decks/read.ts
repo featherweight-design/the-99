@@ -376,7 +376,17 @@ export function deckDetailReads(deckId: string, userId: string) {
   };
 }
 
-export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
+export async function getDeckDetail(
+  deckId: string,
+  userId: string,
+  /**
+   * The deck page's own availability read, from this deck's vantage over the WHOLE collection,
+   * started with the request. Passed, it stands in for the read below, so the claim model runs
+   * once per page rather than twice (it is ~150ms on staging however few ids it is asked for).
+   * Only `.get` is used on it, so the cards it holds beyond this deck's change nothing.
+   */
+  sharedAvailability?: Promise<Map<string, Availability> | null>,
+): Promise<DeckDetail | null> {
   // TWO WAVES, not seven reads in a row. Each read below used to wait for the one before it, and
   // on a `pull:staging` copy that chain was ~410-440ms for a 96-card deck, most of it round trips.
   // Wave 1 needs nothing but the deck id and the reader, so it runs at once; wave 2 needs the ids
@@ -471,12 +481,14 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .map((r) => r.oracleId);
   const availabilityIds = [...new Set([...ownedIds, ...ownedCommanderIds])];
   const [availability, resolved, bracketFlags] = await Promise.all([
-    availabilityIds.length > 0
-      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: availabilityIds }).catch(() => {
-          recordSoftFailure();
-          return null;
-        })
-      : null,
+    availabilityIds.length === 0
+      ? null
+      : sharedAvailability
+        ? sharedAvailability
+        : loadAvailability(userId, { excludeDeckId: deckId, oracleIds: availabilityIds }).catch(() => {
+            recordSoftFailure();
+            return null;
+          }),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
     resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),
