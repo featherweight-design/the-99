@@ -85,7 +85,8 @@ export type AboutSwitch =
   | 'DECK_TOKENS_ENABLED'
   | 'MANA_BALANCE_ENABLED'
   | 'ALL_DECKS_CART_ENABLED'
-  | 'PRECONS_ENABLED';
+  | 'PRECONS_ENABLED'
+  | 'DECK_NOTES_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -1241,6 +1242,29 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 11,
+  },
+  {
+    id: 'notes',
+    chapter: '04',
+    title: 'Notes on a deck',
+    route: '/decks',
+    opens: 'opens a deck’s Your deck tab, on Notes',
+    width: 'plate',
+    // 2026-10-12 (Deck notes PR 3, `design_handoff_the99_deck_notes/about-notes.ts`): follows
+    // DECK_NOTES_ENABLED, so turning Notes on is what announces it. NO BUMP, as `deck-stats`: a
+    // switched entry is seen by its id, and `since` is the current version. It sits after Stats,
+    // because Notes sits beside Stats in Your deck. Copy through /prose-pass.
+    switch: 'DECK_NOTES_ENABLED',
+    caption:
+      'Every deck keeps a short list of notes, under Notes in Your deck, next to Stats. One line each, newest first, dated when you add it.\n\nType [[ or press [[ ]] and start a card’s name to tag it. The deck’s own cards come first, then any card, and a tagged name opens that card. Say you want to try Laboratory Maniac beside Thassa’s Oracle: write it down with both tagged, and it waits for you.\n\nSelect a note when it’s done and it folds under Done. Edit or delete any of them. Notes belong to the deck, not a version, so they carry over when you commit.',
+    keys: [
+      'A solid underline means the deck holds the card. Dashed means it doesn’t, including a card you’ve since taken out.',
+      'One line is 140 characters, and a tag counts as its name.',
+      'A deck keeps up to 100 notes, done ones included.',
+      'Notes are yours only. Suggested changes and the analysis don’t read them.',
+    ],
+    marksPending: true,
+    since: 14,
   },
   {
     id: 'credits',

@@ -13,6 +13,7 @@ import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, tuningEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
+import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled } from "../collection/edit-flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
@@ -50,6 +51,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   PRECONS_ENABLED: preconsEnabled,
+  DECK_NOTES_ENABLED: deckNotesEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

@@ -2388,3 +2388,15 @@ export const TOKEN_SOLDIER: DeckToken = {
   picture: null,
   price: null,
 };
+
+/** The notes entry's row (handoff `about-notes.ts`): one note tagging two cards, the deck holding the first
+ *  and not the second, so the figure shows both underlines. Dated the way the panel dates a note. */
+export const NOTE_ROW = {
+  drawn: [
+    { kind: "text", text: "Try " },
+    { kind: "tag", oracleId: "about-laboratory-maniac", name: "Laboratory Maniac", held: true, resolved: true, imageUri: null },
+    { kind: "text", text: " with " },
+    { kind: "tag", oracleId: "about-thassas-oracle", name: "Thassa’s Oracle", held: false, resolved: true, imageUri: null },
+  ],
+  date: "2 Oct",
+} as const;

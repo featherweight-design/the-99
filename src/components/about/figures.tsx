@@ -23,6 +23,8 @@ import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { PreconRow } from "../decks/precons/precon-row";
 import { TokenRow } from "../decks/token-row";
+import { NoteTags } from "../decks/notes/note-tags";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BrowseFigureBody } from "./browse-figure";
 import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
@@ -111,6 +113,7 @@ import {
   BENCHMARKS_ANALYZED_AT,
   PRECON_ROW,
   TOKEN_SOLDIER,
+  NOTE_ROW,
 } from "../../lib/about/fixtures";
 
 /** The four availability states, including the one that draws nothing. */
@@ -808,6 +811,23 @@ function DeckStatsFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** One note as the Notes view draws it: the select box, the text with two tags (solid for the card the deck
+ *  holds, dashed for the one it does not), and the date. `NoteTags` itself, so the underlines are the
+ *  panel's own; the row's buttons are left off, since a figure writes nothing. */
+function NotesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="notes" width={width}>
+      <CardDetailProvider fetchCard={async () => null}>
+        <div className="m-[12px] flex items-start gap-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[12px] py-[9px]">
+          <span aria-hidden className="mt-[1px] h-[18px] w-[18px] flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)]" />
+          <p className="m-0 min-w-0 flex-1 break-words text-[13.5px] leading-[1.5] text-[color:var(--fg)]"><NoteTags drawn={NOTE_ROW.drawn} /></p>
+          <span className="flex-none pt-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)]">{NOTE_ROW.date}</span>
+        </div>
+      </CardDetailProvider>
+    </Specimen>
+  );
+}
+
 /** One precon row as the list draws it: the name and owned figure, the commander, the set, and
  *  the reader's deck that shares it. */
 function PreconsFigure({ width }: { width: AboutWidth }) {
@@ -1185,6 +1205,7 @@ export const FIGURES: Partial<
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
   "deck-stats": DeckStatsFigure,
+  notes: NotesFigure,
   "mana-balance": ManaBalanceFigure,
   credits: CreditsFigure,
   "collection-add": CollectionAddFigure,
