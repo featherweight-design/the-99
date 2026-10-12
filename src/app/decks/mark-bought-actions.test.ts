@@ -29,6 +29,13 @@ vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK }) }));
 vi.mock("../../lib/collection/invalidate", () => ({ invalidateCollectionReaders: () => { state.invalidated += 1; } }));
 vi.mock("../../lib/recs/warm", () => ({ warmCommanderScores: async () => {} }));
+vi.mock("../../lib/decks/availability-query", () => ({
+  loadDeckBuyRows: async () => [
+    { deckId: "11111111-1111-4111-8111-111111111111", oracleId: "22222222-2222-4222-8222-222222222222", quantity: 1 },
+    { deckId: "55555555-5555-4555-8555-555555555555", oracleId: "22222222-2222-4222-8222-222222222222", quantity: 1 },
+    { deckId: "55555555-5555-4555-8555-555555555555", oracleId: "another-card", quantity: 4 },
+  ],
+}));
 vi.mock("../../lib/collection/write", () => ({
   applyCollectionChange: async (...args: unknown[]) => {
     state.calls.push(args);
@@ -205,6 +212,12 @@ describe("markBoughtForDecks", () => {
     await cartPress({ pickDeckId: OTHER.toUpperCase() });
     const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
     expect(opts.assign).toEqual({ oracleId: CARD, deckId: OTHER });
+  });
+
+  it("answers a stale press with what the line's decks are billed now, from the roll-up", async () => {
+    const current = [{ oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil" as const, quantity: 2 }];
+    state.result = { status: "stale", current };
+    expect(await cartPress()).toEqual({ stale: current, need: 2 });
   });
 
   it("names a refused pick and a deck that dropped the card", async () => {

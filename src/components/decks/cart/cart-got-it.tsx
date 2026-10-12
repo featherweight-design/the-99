@@ -4,7 +4,7 @@
 // receipt says which decks the copies covered, read after the write (lock 7), and a line the cart
 // no longer lists keeps a held slot where it was until the cart is next read.
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { markBoughtForDecks } from "../../../app/decks/mark-bought-actions";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import type { SelectedLine } from "../../../lib/decks/cart";
@@ -15,9 +15,12 @@ import { lineFact } from "./cart-line";
 
 const MONO_LABEL = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
 
-type Target = { line: SelectedLine };
+/** `names` is the cart's deck names when the confirm opened: see `Receipt`. */
+type Target = { line: SelectedLine; names: ReadonlyMap<string, string> };
 type Written = GotItWritten<CartReceiptFacts>;
-type Receipt = { line: SelectedLine; written: Written; failed?: boolean };
+/** `names` is the cart's deck names as the press saw them: a deck the purchase finished leaves the
+ *  next read, and a receipt naming it from the live list would print an empty name. */
+type Receipt = { line: SelectedLine; written: Written; names: ReadonlyMap<string, string>; failed?: boolean };
 
 /** A line bought this visit: the line as drawn before the first press, and every copy added since. */
 export type CartHeld = { line: SelectedLine; added: number };
@@ -86,21 +89,28 @@ export function CartGotItProvider({
   // Focus goes back to the tag that opened the confirm; a tag gone from the document after a write
   // hands it to the checkout instead.
   const trigger = useRef<HTMLElement | null>(null);
+  // The names as of the latest render, taken when a confirm opens: the write's revalidation can
+  // commit before its answer reaches `done`, and that read no longer lists a deck it finished.
+  const namesRef = useRef(deckNames);
+  useEffect(() => { namesRef.current = deckNames; }, [deckNames]);
   const current = useRef<Target | null>(null);
   const returnFocus = useMemo<RefObject<HTMLElement | null>>(
     () => ({
       get current() {
         const el = trigger.current;
-        return el?.isConnected ? el : document.querySelector<HTMLElement>("[data-cart-checkout]");
+        // Buying the last line takes the dock away too: the empty page's way back is the last resort.
+        return el?.isConnected
+          ? el
+          : document.querySelector<HTMLElement>("[data-cart-checkout]") ?? document.querySelector<HTMLElement>("[data-cart-empty-back]");
       },
     }),
     [],
   );
   const open = useCallback((line: SelectedLine, from: HTMLElement) => {
     trigger.current = from;
-    current.current = { line };
+    current.current = { line, names: namesRef.current };
     setPending(false);
-    setTarget({ line });
+    setTarget(current.current);
   }, []);
   const close = useCallback(() => {
     current.current = null;
@@ -114,7 +124,7 @@ export function CartGotItProvider({
     const id = t.line.oracleId;
     // The first press's line pins the slot; every press adds its copies.
     setHeld((h) => new Map(h).set(id, { line: h.get(id)?.line ?? t.line, added: (h.get(id)?.added ?? 0) + written.quantity }));
-    setReceipt({ line: t.line, written });
+    setReceipt({ line: t.line, written, names: t.names });
   }, [close]);
   const undoHost = useMemo(() => ({
     start: (id: string) => setUndoing((u) => (u.has(id) ? u : new Set(u).add(id))),
@@ -151,7 +161,7 @@ export function CartGotItProvider({
           oracleId={receipt.line.oracleId}
           cardName={receipt.line.name}
           written={receipt.written}
-          body={cartReceiptBody(receipt.written.facts, deckNames)}
+          body={cartReceiptBody(receipt.written.facts, receipt.names)}
           placement="cart"
           failed={receipt.failed}
           host={hostFor(receipt)}

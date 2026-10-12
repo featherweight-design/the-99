@@ -138,11 +138,13 @@ describe("CartGotItProvider", () => {
   });
 
   it("says the cart, never the deck, when a copy landed elsewhere while it was open", async () => {
-    markBoughtForDecks.mockResolvedValue({ stale: [{ oracleId: ORACLE, setCode: "cmm", collectorNumber: "400", finish: "nonfoil", quantity: 18 }] });
+    // One copy landed elsewhere, and the roll-up says the cart still needs 2: a copy can clear a brew's
+    // row or none, so the server's figure stands over the holding's re-base (which would say 1).
+    markBoughtForDecks.mockResolvedValue({ stale: [{ oracleId: ORACLE, setCode: "cmm", collectorNumber: "400", finish: "nonfoil", quantity: 18 }], need: 2 });
     render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><Opener /></CartGotItProvider>);
     fireEvent.click(screen.getByRole("button", { name: "open" }));
     const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
     await act(async () => { fireEvent.click(add); });
-    expect(await screen.findByText(copy.confirm.staleBody(1), { exact: false })).toBeTruthy();
+    expect(await screen.findByText(copy.confirm.staleBody(2), { exact: false })).toBeTruthy();
   });
 });

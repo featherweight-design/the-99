@@ -42,7 +42,8 @@ export type GotItWriteInput = { scryfallId: string; finish: Finish; quantity: nu
  */
 export type GotItWriteResult<F> =
   | { applied: { id: string; receipt: F | null } }
-  | { stale: (CollectionItemIdentity & { quantity: number })[] }
+  /** `need`, when the write knows it better than the holding does (the cart's roll-up). */
+  | { stale: (CollectionItemIdentity & { quantity: number })[]; need?: number }
   | { failed: true };
 
 type DeckConfirmProps = {
@@ -200,7 +201,8 @@ export function GotItConfirmForm<F>({
       }
       if ("stale" in out) {
         // Nothing was written. Re-base on the count the server holds now, and confirm again.
-        const next = rebaseStale(out.stale, choice, finish, expected, need, listQuantity);
+        const rebased = rebaseStale(out.stale, choice, finish, expected, need, listQuantity);
+        const next = out.need === undefined ? rebased : { ...rebased, need: out.need };
         setChoices((cs) => cs?.map((p) => (p.scryfallId === choice.scryfallId
           ? { ...p, owned: { ...p.owned, [finish]: next.expected } }
           : p)) ?? cs);

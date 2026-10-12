@@ -125,7 +125,8 @@ export function CartView({
   // and never again once dismissed. Held here, so nothing that remounts the list resets it.
   const [band, setBand] = useState<"off" | "armed" | "shown" | "dismissed">("off");
   const arm = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("a[href]")) setBand((b) => (b === "off" ? "armed" : b));
+    // Only with buying on: the band tells the player to press buy, which is inert without it.
+    if (buyEnabled && (e.target as HTMLElement).closest("a[href]")) setBand((b) => (b === "off" ? "armed" : b));
   };
   useEffect(() => {
     if (band !== "armed") return;
@@ -193,7 +194,7 @@ export function CartView({
           <div className="flex max-w-[420px] flex-col items-center gap-[8px] text-center">
             <h2 className="m-0 font-display text-[20px] text-[color:var(--fg)]">{copy.empty.title}</h2>
             <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)]">{copy.empty.body(cart.totalDecks)}</p>
-            <Link href="/decks" className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent)]">
+            <Link href="/decks" data-cart-empty-back className="flex min-h-[44px] items-center text-[13.5px] text-[color:var(--accent)]">
               {copy.empty.back}
               <PendingReporter href="/decks" />
             </Link>

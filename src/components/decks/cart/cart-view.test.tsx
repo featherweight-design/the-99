@@ -331,6 +331,31 @@ describe("CartView by deck (A5)", () => {
       expect(list().queryAllByRole("listitem").some((li) => li.hasAttribute("data-held-slot"))).toBe(false);
     });
 
+    it("names a deck the purchase finished from the cart as it was when the confirm opened", async () => {
+      loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 17 },
+      }]);
+      // The read gives Gishath no name (no claim left), and the next cart no longer lists it.
+      markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [{ deckId: "gishath", deckName: "" }], still: [] } } });
+      const view = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
+      const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
+      await act(async () => { fireEvent.click(add); });
+      const after = cart();
+      after.decks = after.decks.filter((d) => d.id !== "gishath");
+      view.rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      expect(screen.getByText(copy.receipt.covered(["HD - Gishath"]))).toBeTruthy();
+    });
+
+    it("never arms the back band with buying off: it would tell the player to press an inert tag", () => {
+      render(<CartView cart={cart()} provenance={provenance} />);
+      fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
+      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+      expect(screen.queryByText(copy.back.title)).toBeNull();
+    });
+
     it("says how to record a purchase when the tab comes back from Mana Pool, once (K1)", () => {
       render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
       expect(screen.queryByText(copy.back.title)).toBeNull();
