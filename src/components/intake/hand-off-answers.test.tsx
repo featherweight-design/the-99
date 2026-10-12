@@ -5,7 +5,7 @@ import { budgetLine, HandOffAnswersBlock } from "./hand-off-answers";
 
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const card = (over: Partial<NonNullable<HandOffAnswers["card"]>> = {}) => ({
-  oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 } as const, pct: 64, ...over,
+  oracleId: CARD, name: "Regisaur Alpha", imageUri: "https://img.test/regisaur.jpg", owned: false, held: null, price: { kind: "priced", cents: 110 } as const, pct: 64, ...over,
 });
 const all: HandOffAnswers = {
   themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }],

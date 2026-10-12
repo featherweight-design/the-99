@@ -114,7 +114,7 @@ export function ManaBalancePanel({
     ) : null;
   }
 
-  const { balance, commander, commanders, cards, ids } = data;
+  const { balance, commander, commanders, cards, ids, art } = data;
   const { pipTotal, sourceTotal, rows } = colorRows(balance.supply);
   const colorless = balance.state === "colorless";
   const pipped = pippedColors(balance.colors);
@@ -156,7 +156,7 @@ export function ManaBalancePanel({
 
       {!colorless && initial ? (
         <ManaSection id="hardest" label={copy.sections.hardest.label} clause={hardestClause(pipped)} open={sections.has("hardest")} onToggle={() => sections.toggle("hardest")}>
-          <PatternRows colors={balance.colors} initial={initial} ids={ids} />
+          <PatternRows colors={balance.colors} initial={initial} ids={ids} art={art} />
         </ManaSection>
       ) : null}
       <ManaSection

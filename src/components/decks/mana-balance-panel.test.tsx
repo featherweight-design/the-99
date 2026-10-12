@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
@@ -10,7 +10,18 @@ import { toClientBalance, type ManaPanelData } from "../../lib/tuning/mana-view"
 import { ManaBalancePanel, manaOpenKey } from "./mana-balance-panel";
 
 const openCard = vi.fn();
-vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: openCard }), useCardIntent: () => ({}) }));
+// The trigger is a stand-in that presses through `openCard` and hovers through the REAL preview hook, as the shipped one does.
+vi.mock("../cards/card-detail-provider", async () => {
+  const { usePreviewRow } = await import("./hover-preview");
+  return {
+    useCardDetail: () => ({ open: openCard }),
+    useCardIntent: () => ({}),
+    CardDetailTrigger: ({ oracleId, siblings, imageUri, preview, children }: { oracleId: string; siblings?: string[]; imageUri?: string | null; preview?: boolean; children: React.ReactNode }) => {
+      const hover = usePreviewRow(preview ? imageUri : null);
+      return <button type="button" {...(preview ? hover : {})} onClick={(e) => openCard(oracleId, siblings, undefined, { opener: e.currentTarget })}>{children}</button>;
+    },
+  };
+});
 vi.mock("../../app/decks/mana-actions", () => ({ readManaBalance: vi.fn(), readManaHelpFor: vi.fn(), readManaHelpReview: vi.fn(), applyManaTrade: vi.fn(), undoManaTrade: vi.fn() }));
 
 const land = (id: string, quantity: number, produces: ManaColor[]): ManaSupplyCardRow => ({ id, typeLine: "Land", manaCost: null, quantity, produces });
@@ -25,7 +36,7 @@ function panelData(rows: ManaSupplyCardRow[], identity = ["R", "G", "W"], t: Tap
   const balance = readManaBalance({ rows, nameOf: (id) => names[id] ?? id, tapped: t, identity });
   const ids: Record<string, string> = {};
   for (const c of balance.colors) for (const p of c.patterns) for (const card of p.cards) ids[card.name] = `id-${card.name}`;
-  return { balance: toClientBalance(balance), commander: "Gishath", commanders: 1, cards: rows.reduce((a, r) => a + r.quantity, 0), ids };
+  return { balance: toClientBalance(balance), commander: "Gishath", commanders: 1, cards: rows.reduce((a, r) => a + r.quantity, 0), ids, art: {} };
 }
 
 const gishath = () => panelData([
@@ -238,5 +249,26 @@ describe("ManaBalancePanel: thin decks", () => {
     expect((document.querySelector("[data-mana-row='G']") as HTMLElement).textContent).toContain(copy.table.neededFor("Archdruid", 0, "1CC"));
     fireEvent.click(screen.getByRole("button", { name: /Lands/ }));
     expect(screen.getByText(copy.lands.caveat(0))).toBeTruthy();
+  });
+});
+
+describe("ManaBalancePanel: a pattern's card names preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("shows the deck's art for the name the pointer rests on", async () => {
+    render(<ManaBalancePanel deckId="d" read={async () => ({ ...gishath(), art: { "id-Bear": "https://img.test/bear.jpg" } })} />);
+    await waitFor(() => expect(heading()).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: /Hardest costs/ }));
+    const oneG = document.querySelector("[data-mana-pattern='1C']") as HTMLElement;
+    fireEvent.mouseEnter(within(oneG).getByRole("button", { name: "Bear" }), { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/bear.jpg");
   });
 });

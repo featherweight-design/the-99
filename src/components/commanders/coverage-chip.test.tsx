@@ -1,11 +1,12 @@
 // CoverageChip, CoverageRow, CoverageDisclosure — tests (#131).
 // Mock pattern follows card-detail-surfaces.test.tsx.
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { CoverageChip, CoverageDisclosure, CoverageRow } from "./coverage-chip";
 import type { RoleCard } from "../../lib/recs/score";
 import { avail, heldBy } from "./availability-fixture";
@@ -434,5 +435,27 @@ describe("CoverageDisclosure", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /Show all 17 ramp cards/i }));
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it.each([["chip", CoverageChip], ["row", CoverageRow]] as const)("a %s previews the printing its card carries", (_, Part) => {
+    renderInProvider(
+      <HoverPreviewProvider>
+        <Part card={card({ imageUri: "https://img.test/sol.jpg" })} siblings={siblings} showFigures />
+      </HoverPreviewProvider>,
+    );
+    fireEvent.mouseEnter(screen.getByRole("button"), { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/sol.jpg");
   });
 });

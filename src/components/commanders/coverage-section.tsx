@@ -18,6 +18,7 @@ import {
 } from "./coverage-sort";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { ProfileRoleTargets } from "../../lib/profile/types";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { roleAnchorId, ROLE_ANCHOR_SCROLL_MARGIN } from "./role-anchor";
 import { wholeTarget, type RoleCard, type RoleName } from "../../lib/recs/score";
 
@@ -535,6 +536,7 @@ export function CoverageSection({
   const isDesktop = width === "desktop";
 
   return (
+    <HoverPreviewProvider>
     <div>
       {/* Heading. Desktop hangs the sort off the right of this row; at phone
           width it takes a full-width row of its own under the sub-caption. */}
@@ -715,5 +717,6 @@ export function CoverageSection({
         })}
       </div>
     </div>
+    </HoverPreviewProvider>
   );
 }

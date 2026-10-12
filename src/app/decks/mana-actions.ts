@@ -50,11 +50,16 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   // Only the names a pattern row draws: they are what a press opens card detail on.
   const byName = new Map([...deck.cards, ...commanders].map((c) => [c.name, c.oracleId] as const));
+  const artOf = new Map([...deck.cards, ...commanders].flatMap((c) => (c.imageUri ? [[c.oracleId, c.imageUri] as const] : [])));
   const ids: Record<string, string> = {};
+  const art: Record<string, string> = {};
   for (const color of balance.colors) {
     for (const p of color.patterns) for (const c of p.cards) {
       const id = byName.get(c.name);
-      if (id) ids[c.name] = id;
+      if (!id) continue;
+      ids[c.name] = id;
+      const uri = artOf.get(id);
+      if (uri) art[id] = uri;
     }
   }
   return {
@@ -65,6 +70,7 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
     commanders: commanders.length,
     cards: deck.cards.reduce((a, c) => a + c.quantity, 0) + commanders.length,
     ids,
+    art,
   };
 }
 

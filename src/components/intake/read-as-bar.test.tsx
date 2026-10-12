@@ -1,5 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { emptyParams } from "../../lib/intake/params";
@@ -10,7 +10,7 @@ import { ReadAsBar } from "./read-as-bar";
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const labels = { theme: (s: string) => ({ dinosaurs: "Dinosaurs" })[s] ?? s, card: "Regisaur Alpha" };
 const chip = (over: Partial<CardChip> = {}): CardChip => ({
-  oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 }, ...over,
+  oracleId: CARD, name: "Regisaur Alpha", imageUri: "https://img.test/regisaur.jpg", owned: false, held: null, price: { kind: "priced", cents: 110 }, ...over,
 });
 
 function bar(props: { card?: CardChip | null; words?: string; empty?: boolean } = {}) {
@@ -140,5 +140,23 @@ describe("a printed-in chip", () => {
     const codes = within(only).getByTestId("printed-in-codes");
     expect(codes.querySelector("[aria-hidden]")?.textContent).toBe("HOB or HOC");
     expect(within(codes).getByText("The Hobbit or The Hobbit Commander").className).toContain("sr-only");
+  });
+});
+
+describe("the card chip's hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("previews the card's own art when the pointer rests on its name", () => {
+    bar();
+    fireEvent.mouseEnter(screen.getByTestId("card-chip-name"), { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/regisaur.jpg");
   });
 });

@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { slotDeck } from "../../lib/bracket/slot";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -10,6 +10,7 @@ import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { BracketClimb } from "./bracket-climb";
+import { HoverPreviewProvider } from "./hover-preview";
 import { UpgradePathSheet } from "./upgrade-path";
 
 /**
@@ -221,7 +222,7 @@ describe("the satisfied path", () => {
     const verdict = slotDeck(profile);
     render(
       <CardDetailProvider fetchCard={async () => null}>
-        <UpgradePathSheet profile={profile} verdict={verdict} target={2} locked={NONE} onClose={() => {}} />
+        <UpgradePathSheet profile={profile} verdict={verdict} target={2} locked={NONE} art={new Map()} onClose={() => {}} />
       </CardDetailProvider>,
     );
     expect(screen.getByTestId("upgrade-path").textContent).toContain(
@@ -382,5 +383,39 @@ describe("the card opened from here", () => {
     });
     expect(screen.getByTestId("card-modal-back").textContent).toContain(deckAnalysisCopy.sheets.upgradePath);
     expect(screen.getByTestId("card-modal-back-mobile").textContent).toContain(deckAnalysisCopy.sheets.upgradePath);
+  });
+});
+
+describe("a candidate's hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { cleanup(); vi.useRealTimers(); });
+
+  it("previews the deck's art for the name, and nothing for a card the art map lacks", () => {
+    const profile = deckProfile({ cards: [COMMANDER, ...gcs(["A", "B", "C", "D", "E"])], gameChangerIds: new Set(["A", "B", "C", "D", "E"]) });
+    const verdict = slotDeck(profile);
+    const art = new Map([["A", { name: "A", imageUri: "https://img.test/a.jpg" }]]);
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <HoverPreviewProvider>
+          <BracketClimb verdict={verdict} profile={profile} locked={NONE} art={art} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
+    fireEvent.click(trigger());
+    const names = within(panel());
+    fireEvent.mouseEnter(names.getByText("A").closest("button")!, { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/a.jpg");
+    fireEvent.mouseLeave(names.getByText("A").closest("button")!);
+    act(() => { vi.advanceTimersByTime(1000); });
+    fireEvent.mouseEnter(names.getByText("B").closest("button")!, { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.queryByTestId("hover-preview")).toBeNull();
   });
 });

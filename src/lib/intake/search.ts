@@ -229,6 +229,8 @@ export type CardRow = {
    *  such a card exactly as it buys one the player does not own (`loadFillGate`, `trialFill`). */
   held: { deck: string | null } | null;
   gameChanger: boolean;
+  /** The catalog's art for the card (`cards.image_uri`), the fallback under the printing the player owns. */
+  imageUri: string | null;
 };
 
 /**
@@ -238,16 +240,16 @@ export type CardRow = {
  */
 export const loadCardRow = cache(async (userId: string, oracleId: string, claims = true): Promise<CardRow | null> => {
   const [row] = (await db.execute(sql`
-    select c.name, c.game_changer, c.type_line,
+    select c.name, c.game_changer, c.type_line, c.image_uri,
       exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
     from cards c where c.oracle_id = ${oracleId}::uuid and c.commander_legal
-  `)).rows as { name: string; game_changer: boolean; type_line: string; owned: boolean }[];
+  `)).rows as { name: string; game_changer: boolean; type_line: string; image_uri: string | null; owned: boolean }[];
   if (!row || isBasicLand(row.type_line)) return null;
   // The same claim read the commander's held mark and the fill's charge use, and the same rule:
   // a copy is free when the row says one is.
   const a = claims && row.owned ? (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) : undefined;
   const held = row.owned && a !== undefined && buysCopy(true, a) ? { deck: hardDecks(a)[0]?.name ?? null } : null;
-  return { name: row.name, owned: row.owned, held, gameChanger: row.game_changer };
+  return { name: row.name, owned: row.owned, held, gameChanger: row.game_changer, imageUri: row.image_uri };
 });
 
 /**

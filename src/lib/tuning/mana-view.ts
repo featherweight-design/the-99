@@ -22,6 +22,8 @@ export type ManaPanelData = {
   cards: number;
   /** A card name to its oracle id, for every card a pattern row names, so a name opens card detail. */
   ids: Record<string, string>;
+  /** An oracle id in `ids` to the deck's art for it (the printing card details open), so a name previews it. */
+  art: Record<string, string>;
 };
 
 export function toClientBalance(b: ManaBalance): ClientManaBalance {

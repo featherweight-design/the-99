@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { CardValue } from "./read-as-bar";
 import { helpMeChooseCopy, orList } from "../../lib/copy/help-me-choose";
 import { formatCents } from "../../lib/decks/price";
@@ -38,6 +39,7 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
   const best = themes.find((t) => t.best) ?? null;
   return (
     <CardDetailProvider>
+      <HoverPreviewProvider>
       <section
         data-testid="hand-off-answers"
         aria-labelledby="hand-off-answers-head"
@@ -97,6 +99,7 @@ export function HandOffAnswersBlock({ answers, changeHref }: { answers: HandOffA
           </Row>
         )}
       </section>
+      </HoverPreviewProvider>
     </CardDetailProvider>
   );
 }

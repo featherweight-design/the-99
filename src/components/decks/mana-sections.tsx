@@ -9,7 +9,8 @@ import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "rea
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { BalanceColor, ColorEvidence, LandEvidence, PatternEvidence } from "../../lib/tuning/mana-balance";
 import { colorName, colorWord } from "../../lib/tuning/mana-view";
-import { useCardDetail } from "../cards/card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { HoverPreviewProvider } from "./hover-preview";
 import { PIP_STYLE } from "./mana-color-parts";
 import { CHEVRON_CLASS } from "../ui/chevron";
 
@@ -94,9 +95,8 @@ function ColorChips({ colors, picked, onPick }: { colors: BalanceColor[]; picked
   );
 }
 
-function CardNames({ pattern, ids }: { pattern: PatternEvidence; ids: Readonly<Record<string, string>> }) {
+function CardNames({ pattern, ids, art }: { pattern: PatternEvidence; ids: Readonly<Record<string, string>>; art: Readonly<Record<string, string>> }) {
   const [all, setAll] = useState(false);
-  const { open } = useCardDetail();
   const siblings = pattern.cards.flatMap((c) => (ids[c.name] ? [ids[c.name]] : []));
   const shown = all ? pattern.cards : pattern.cards.slice(0, NAMES_SHOWN);
   const hidden = pattern.cards.length - NAMES_SHOWN;
@@ -107,13 +107,16 @@ function CardNames({ pattern, ids }: { pattern: PatternEvidence; ids: Readonly<R
         return (
           <span key={c.name}>
             {id ? (
-              <button
-                type="button"
-                onClick={(e) => open(id, siblings, undefined, { opener: e.currentTarget })}
+              <CardDetailTrigger
+                oracleId={id}
+                name={c.name}
+                siblings={siblings}
+                imageUri={art[id] ?? null}
+                preview
                 className="cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left"
               >
                 {c.name}
-              </button>
+              </CardDetailTrigger>
             ) : c.name}
             {c.copies > 1 ? <span className="font-mono text-[10px] text-[color:var(--fg-faint)]"> {copy.patterns.copies(c.copies)}</span> : null}
             {c.commander ? " " : null}
@@ -163,13 +166,13 @@ function haveNeeds(p: PatternEvidence, have: number): { text: string; known: boo
 
 /** Hardest costs' body: a chip per pipped color (none for a one-color deck), then that color's
  *  costs, hardest first, each beside Karsten's figure for it. */
-export function PatternRows({ colors, initial, ids }: { colors: readonly ColorEvidence[]; initial: BalanceColor; ids: Readonly<Record<string, string>> }) {
+export function PatternRows({ colors, initial, ids, art }: { colors: readonly ColorEvidence[]; initial: BalanceColor; ids: Readonly<Record<string, string>>; art: Readonly<Record<string, string>> }) {
   const pipped = colors.filter((c) => c.pips.withCommander > 0 && c.patterns.length > 0);
   const [picked, setPicked] = useState<BalanceColor>(initial);
   const current = pipped.find((c) => c.color === picked) ?? pipped[0];
   if (!current) return null;
   return (
-    <div className="flex flex-col gap-[10px]">
+    <HoverPreviewProvider className="flex flex-col gap-[10px]">
       {pipped.length > 1 ? <ColorChips colors={pipped.map((c) => c.color)} picked={current.color} onPick={setPicked} /> : null}
       <div className="border-t border-t-[color:var(--border)]">
         <div aria-hidden="true" className="hidden grid-cols-[72px_minmax(0,1fr)_200px] gap-[14px] border-b border-b-[color:var(--border)] px-[2px] py-[8px] font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--fg-locked)] md:grid">
@@ -190,7 +193,7 @@ export function PatternRows({ colors, initial, ids }: { colors: readonly ColorEv
                   <span className="font-mono text-[13px] font-semibold text-[color:var(--fg)]">{p.pattern}</span>
                   <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.patterns.copies(p.copies)}</span>
                 </span>
-                <span className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"><CardNames pattern={p} ids={ids} /></span>
+                <span className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"><CardNames pattern={p} ids={ids} art={art} /></span>
                 <span className={`col-start-3 row-start-1 min-w-0 text-right font-mono text-[12px] md:col-start-auto md:row-start-auto ${figure.known ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}>
                   <SeparatedFigure text={figure.text} />
                 </span>
@@ -200,7 +203,7 @@ export function PatternRows({ colors, initial, ids }: { colors: readonly ColorEv
         </ul>
       </div>
       <p className="font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-faint)]">{copy.patterns.foot(colorName(current.color))}</p>
-    </div>
+    </HoverPreviewProvider>
   );
 }
 
