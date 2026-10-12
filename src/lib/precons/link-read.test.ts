@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { preconMatchQuery, toMatch } from "./link-read";
+import { linkHeadQuery, preconMatchQuery, toMatch } from "./link-read";
 
 // The deck's cards are a correlated subquery inside a filter on the projection (AGENTS.md): its outer
 // reference must name `precon_cards`, never fall through to `deck_cards`' own oracle id.
@@ -33,5 +33,15 @@ describe("toMatch", () => {
     expect(m.commanders).toEqual(["A", "B"]);
     expect(m.sameCommanders).toBe(true);
     expect(toMatch(row, ["a"]).sameCommanders).toBe(false);
+  });
+});
+
+// A link to a precon a later feed dropped reads as no link: the head reads the precon's own row.
+describe("linkHeadQuery", () => {
+  it("reads the link through the precon's row, so a dropped precon reads as unlinked", async () => {
+    const { db } = await import("../../db");
+    const { sql } = linkHeadQuery(db, "user_1", "deck-1").toSQL();
+    expect(sql).toContain(`select "precons"."file_name"`);
+    expect(sql).toContain(`left join "precons" on "precons"."file_name" = "decks"."built_from_precon"`);
   });
 });

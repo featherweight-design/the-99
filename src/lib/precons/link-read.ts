@@ -18,10 +18,7 @@ export async function readDeckPreconLink(userId: string, deckId: string): Promis
 }
 
 async function readLink(q: Reader, userId: string, deckId: string): Promise<DeckPreconLink | null> {
-  const [head] = await q
-    .select({ builtFrom: decks.builtFromPrecon, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
-    .from(decks)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+  const [head] = await linkHeadQuery(q, userId, deckId);
   if (!head) return null;
   // A linked deck is offered nothing (lock 2), so it pays for no count.
   if (head.builtFrom !== null) return { linked: head.builtFrom, suggestions: [], picker: [] };
@@ -33,6 +30,18 @@ async function readLink(q: Reader, userId: string, deckId: string): Promise<Deck
     // The picker draws no art: dropped so ~200 rows ship as names and figures alone.
     picker: pickerOrder(matches).map((m) => ({ ...m, leadImage: null })),
   };
+}
+
+/** The deck's link and commanders; apart so a test can render its SQL. */
+export function linkHeadQuery(q: Reader, userId: string, deckId: string) {
+  return q
+    // The precon's own row, not the stored name: a link to a precon a later feed dropped draws no v0
+    // and no precon page, so it reads as no link, and the deck is offered the doors again. Linking
+    // then replaces it.
+    .select({ builtFrom: precons.fileName, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+    .from(decks)
+    .leftJoin(precons, eq(precons.fileName, decks.builtFromPrecon))
+    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
 }
 
 type MatchRow = Awaited<ReturnType<typeof preconMatchQuery>>[number];

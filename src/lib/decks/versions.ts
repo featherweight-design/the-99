@@ -510,9 +510,7 @@ export async function listVersions(
     // A v1 has no predecessor, so it has no diff — never a diff against the
     // empty list, which would report ninety-nine decisions nobody took. A linked
     // deck's v1 has v0, the precon's list, before it.
-    const diff = i === 0
-      ? before === null ? null : draftDiff(mine, before)
-      : draftDiff(mine, byVersion.get(ascending[i - 1]!.id)!);
+    const diff = railDiff(mine, i === 0 ? null : byVersion.get(ascending[i - 1]!.id)!, before);
     return {
       ...version,
       cardCount: mine.reduce((n, r) => n + r.quantity, 0),
@@ -596,7 +594,7 @@ export async function loadVersionDiff(
     ? origin.cards.map((c) => ({ ...c, versionId: null, setCode: null, collectorNumber: null }))
     : rows.filter((r) => r.versionId === previousVersionId);
   const describe = new Map([...before, ...mine].map((r) => [r.oracleId, r]));
-  const { adds, removes } = draftDiff(mine, before);
+  const { adds, removes, origin: kept } = diffAgainstPredecessor(mine, before, origin);
   const card = (change: { oracleId: string; from: number; to: number }): VersionDiffBase | null => {
     const described = describe.get(change.oracleId);
     // A card the catalog no longer describes. Dropping it is the only honest
@@ -675,9 +673,26 @@ export async function loadVersionDiff(
     // An Out row draws no tag, and its claims were not read: its buy is 0 by construction.
     out: assembleVersionRows(outs, owned, priced, claims).map(asRecorded(recordedOut)).map((c) => ({ ...c, buy: 0 })),
     newestAsOf: priced.newestAsOf,
-    ...(origin
-      ? { origin: keptFromOrigin(origin.nonBasic, [...mine.map((r) => r.oracleId), ...origin.commanders]) }
-      : {}),
+    ...(kept ? { origin: kept } : {}),
+  };
+}
+
+/** A rail row's adds and removes: against the version before it, or, for a v1 (`previous` null),
+ *  against v0 when the deck is linked, and nothing at all when it is not. */
+export function railDiff(mine: CardQty[], previous: CardQty[] | null, origin: CardQty[] | null) {
+  if (previous !== null) return draftDiff(mine, previous);
+  return origin === null ? null : draftDiff(mine, origin);
+}
+
+/** A version's diff against its predecessor (`before`: the previous version's rows, or v0's cards
+ *  when `origin` is given), and against v0 the kept line: v0's distinct non-basic cards still held,
+ *  counting v1's commanders as held. */
+export function diffAgainstPredecessor(mine: CardQty[], before: CardQty[], origin: OriginPredecessor | null) {
+  const { adds, removes } = draftDiff(mine, before);
+  return {
+    adds,
+    removes,
+    origin: origin ? keptFromOrigin(origin.nonBasic, [...mine.map((r) => r.oracleId), ...origin.commanders]) : null,
   };
 }
 
