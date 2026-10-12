@@ -45,7 +45,8 @@ export function SuggestionLine({
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
-  onSettled: (announce: string) => void | Promise<void>;
+  /** Resolves false when the panel's re-read failed: the row then keeps its answer drawn. */
+  onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
 }) {
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
@@ -67,14 +68,14 @@ export function SuggestionLine({
     const announce = deckTuningCopy.announce;
     // The row stays busy through the panel's re-read: until it lands the item still reads as it did,
     // and a second press would submit the same verdict again.
-    await onSettled(
+    const read = await onSettled(
       kind === "apply" ? (isAdd ? announce.addedCard(item.cardName) : announce.cutCard(item.cardName))
         : kind === "undo" ? (isAdd ? announce.undoneAdd(item.cardName) : announce.undoneCut(item.cardName))
           : kind === "reject" ? announce.rejected
             : announce.restored,
     );
-    // The re-read has landed: the line is now the server's.
-    optimistic.release();
+    // The re-read has landed: the line is now the server's. A failed re-read leaves the answer drawn.
+    if (read !== false) optimistic.release();
     setBusy(null);
   }
 

@@ -790,9 +790,11 @@ export function TuningPanel({
     if (cancelled) setAnnounced(deckTuningCopy.announce.stopped);
   }
 
-  async function settled(announce: string) {
+  /** After a row's answer: announce it and read again. False when the re-read failed, so the row
+   *  keeps drawing its answer rather than falling back to the verdict the failed read never moved. */
+  async function settled(announce: string): Promise<boolean> {
     setAnnounced(announce);
-    await reread();
+    return (await reread()) !== null;
   }
 
   // The absent description row's own "Describing in place" editor (STATES §3 state 2, review

@@ -25,7 +25,7 @@ export function SuggestionLists({
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
-  onSettled: (announce: string) => void | Promise<void>;
+  onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
 }) {
   const [applying, setApplying] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
@@ -107,7 +107,7 @@ function List({
   permits: readonly Bracket[];
   newestPriceAsOf: Date | null;
   actions: CardActions;
-  onSettled: (announce: string) => void | Promise<void>;
+  onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-[10px] md:gap-[6px]">

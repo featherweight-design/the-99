@@ -7,7 +7,7 @@
 // moves, never `useOptimistic`, whose value is dropped the moment the action's transition ends and
 // would snap the row back before the panel's re-read lands.
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
 
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
@@ -69,12 +69,13 @@ export function useOptimisticVerdict(server: RowVerdict, id?: string) {
 
   const flipped = shown && server === shown.from ? shown.verdict : null;
   // Tell the panel, so its counts read this row as it is drawn; and forget it when the row goes.
+  // Before paint, so the row and the panel's counts never show two answers in one frame.
   const report = useContext(OverridesContext);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!id || !report) return;
     report(id, flipped);
   }, [id, report, flipped]);
-  useEffect(() => (id && report ? () => report(id, null) : undefined), [id, report]);
+  useLayoutEffect(() => (id && report ? () => report(id, null) : undefined), [id, report]);
 
   return { verdict: flipped ?? server, inFlight, press, release };
 }

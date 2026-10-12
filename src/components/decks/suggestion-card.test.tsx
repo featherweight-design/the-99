@@ -177,6 +177,17 @@ describe("SuggestionCard", () => {
     expect(screen.getByRole("button", { name: copy.undo })).toBeDisabled();
   });
 
+  it("keeps an applied card drawn applied when the panel's re-read fails, and releases it when one lands", async () => {
+    const onSettled = vi.fn(async () => false);
+    const view = render(<SuggestionCard item={item} permits={[3] as never} newestPriceAsOf={null} actions={actions({})} onSettled={onSettled} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.apply })); });
+    expect(onSettled).toHaveBeenCalled();
+    expect(screen.getByTestId("answered-applied")).toBeInTheDocument();
+    // A landed re-read hands the server's verdict down; the card is the server's again.
+    view.rerender(<SuggestionCard item={{ ...item, verdict: "accepted" }} permits={[3] as never} newestPriceAsOf={null} actions={actions({})} onSettled={onSettled} />);
+    expect(screen.getByTestId("answered-applied")).toBeInTheDocument();
+  });
+
   it("rolls a refused apply back to the card, with its refusal", async () => {
     let answer!: (r: { ok: false; message: string }) => void;
     draw(item, { apply: () => new Promise((r) => { answer = r; }) });

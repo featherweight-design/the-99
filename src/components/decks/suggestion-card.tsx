@@ -53,7 +53,8 @@ export function SuggestionCard({
   newestPriceAsOf: Date | null;
   actions: CardActions;
   /** Told after a verdict lands, with what to announce, so the panel can re-read. */
-  onSettled: (announce: string) => void | Promise<void>;
+  /** Resolves false when the panel's re-read failed: the row then keeps its answer drawn. */
+  onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
 }) {
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
@@ -72,14 +73,14 @@ export function SuggestionCard({
       setRefused(result.message);
       return;
     }
-    await onSettled(
+    const read = await onSettled(
       kind === "apply" ? deckTuningCopy.announce.applied(item.cutName, item.addName)
         : kind === "undo" ? deckTuningCopy.announce.undone(item.cutName)
           : kind === "reject" ? deckTuningCopy.announce.rejected
             : deckTuningCopy.announce.restored,
     );
-    // The re-read has landed: the card is now the server's.
-    optimistic.release();
+    // The re-read has landed: the card is now the server's. A failed re-read leaves the answer drawn.
+    if (read !== false) optimistic.release();
     setBusy(null);
   }
 
