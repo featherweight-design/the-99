@@ -102,7 +102,7 @@ export async function pressFitsRead(userId: string, oracleId: string, deps: Deps
   let billed: Billed | undefined;
   try {
     const outcome = await deps.call({ inputs, prompt, model });
-    if (outcome.usage) billed = { model, usage: outcome.usage };
+    if (outcome.usage) billed = { model, usage: outcome.usage, step: "read", effort: model === STUB_MODEL ? null : FITS_READ_EFFORT };
     if (!outcome.ok) {
       const errorClass = outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass;
       await finishFitsRead(started, { status: "failed", errorClass }, billed, deps.now());

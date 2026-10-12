@@ -4,7 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { callMicroFor, dailyLimitFor, joinBilled, reserveModelCall } from "./allowance";
+import { callMicroFor, dailyLimitFor, joinBilled, recordModelUsage, reserveModelCall } from "./allowance";
+import { modelCallParts } from "../../db/schema";
+import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "./allowance-rule";
@@ -95,5 +97,53 @@ describe("joinBilled", () => {
       // Haiku on its >100K card: (2,000 + 150,000 x 1.25) x 0.5 + 100 x 2.5; Sonnet: 20,000 + 20,000.
       costMicroUsd: Math.ceil((2_000 + 187_500) * 0.5 + 250) + 40_000,
     });
+  });
+});
+
+describe("recordModelUsage writes one part per provider call (admin brief, rule 13)", () => {
+  const usage = (n: number) => ({ inputTokens: n, outputTokens: n, cacheReadTokens: 0, cacheWriteTokens: 0 });
+  // A transaction whose parent UPDATE matches (`first`) or finds the meters already recorded.
+  const fakeTx = (first: boolean) => {
+    const inserted: { table: unknown; rows: unknown[] }[] = [];
+    const tx = {
+      update: () => ({ set: () => ({ where: () => ({
+        // Dated before this month, so the alarm read is never reached.
+        returning: async () => (first ? [{ createdAt: new Date("2000-01-01T00:00:00Z"), cost: 1 }] : []),
+      }) }) }),
+      insert: (table: unknown) => ({ values: async (rows: unknown[]) => { inserted.push({ table, rows }); } }),
+    };
+    return { tx: tx as never, inserted };
+  };
+
+  it("records each call with its own step, model, effort and cost", async () => {
+    const { tx, inserted } = fakeTx(true);
+    await recordModelUsage(tx, "call_1", [
+      { model: "claude-haiku-5-5", usage: usage(100), step: "shortlist", effort: "medium" },
+      { model: "claude-sonnet-5-5", usage: usage(200), step: "judgement", effort: "medium" },
+    ]);
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0].table).toBe(modelCallParts);
+    expect(inserted[0].rows).toEqual([
+      expect.objectContaining({ callId: "call_1", step: "shortlist", model: "claude-haiku-5-5", effort: "medium", inputTokens: 100, costMicroUsd: costMicroUsd("claude-haiku-5-5", usage(100)) }),
+      expect.objectContaining({ callId: "call_1", step: "judgement", model: "claude-sonnet-5-5", effort: "medium", inputTokens: 200, costMicroUsd: costMicroUsd("claude-sonnet-5-5", usage(200)) }),
+    ]);
+  });
+
+  it("names a lone call `call` with effort not recorded when its writer set neither", async () => {
+    const { tx, inserted } = fakeTx(true);
+    await recordModelUsage(tx, "call_2", { model: "claude-sonnet-5", usage: usage(10) });
+    expect(inserted[0].rows).toEqual([expect.objectContaining({ step: "call", effort: null })]);
+  });
+
+  it("writes no part for a bill marked noCall, while the parent's cost still settles", async () => {
+    const { tx, inserted } = fakeTx(true);
+    await recordModelUsage(tx, "call_4", [{ model: "claude-haiku-5-5", usage: usage(0), step: "shortlist", effort: null, noCall: true }]);
+    expect(inserted).toHaveLength(0);
+  });
+
+  it("writes no parts when the parent's meters were already recorded, so a late or retried write counts once", async () => {
+    const { tx, inserted } = fakeTx(false);
+    await recordModelUsage(tx, "call_3", { model: "claude-sonnet-5", usage: usage(10), step: "write", effort: "low" });
+    expect(inserted).toHaveLength(0);
   });
 });

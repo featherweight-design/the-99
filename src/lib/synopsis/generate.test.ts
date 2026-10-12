@@ -5,7 +5,7 @@ vi.mock("../../db", () => ({ db: {} }));
 
 import type { SynopsisFacts } from "./facts";
 import { validateSynopsisV8 } from "./validate-v8";
-import { applyRepair, chargeFor, failedRunSet, mergeRetry, outcomeOf, refusedSections, shown, sumUsage } from "./generate";
+import { applyRepair, chargeFor, failedRunSet, mergeRetry, outcomeOf, refusedSections, shown, sumUsage, synopsisBills } from "./generate";
 import { isRepair } from "./prompt";
 import { stubDelayMs, stubMode, stubReply, synopsisLive } from "./stub";
 import type { CheckedSynopsis, SectionVerdict } from "./types";
@@ -215,5 +215,25 @@ describe("a repair that did not come back", () => {
     const after = await applyRepair(first, { ok: false, errorClass: "upstream_busy" }, ["primer"], {} as SynopsisFacts, false);
     expect(after).toBe(first);
     expect(refusedSections(after)).toEqual(["primer"]);
+  });
+});
+
+describe("synopsisBills: one part per provider call", () => {
+  const u = (n: number) => ({ inputTokens: n, outputTokens: n, cacheReadTokens: 0, cacheWriteTokens: 0 });
+
+  it("bills a repaired run as a write and a repair, each with its own usage and the request's effort", () => {
+    expect(synopsisBills("m", "medium", u(10), u(3))).toEqual([
+      { model: "m", usage: u(10), step: "write", effort: "medium" },
+      { model: "m", usage: u(3), step: "repair", effort: "medium" },
+    ]);
+  });
+
+  it("bills a run with no repair as its write alone, and a run nothing reported as no bill", () => {
+    expect(synopsisBills("m", null, u(10))).toEqual([{ model: "m", usage: u(10), step: "write", effort: null }]);
+    expect(synopsisBills("m", null, undefined)).toBeUndefined();
+  });
+
+  it("still bills a repair whose write reported no usage", () => {
+    expect(synopsisBills("m", "low", undefined, u(3))).toEqual([{ model: "m", usage: u(3), step: "repair", effort: "low" }]);
   });
 });

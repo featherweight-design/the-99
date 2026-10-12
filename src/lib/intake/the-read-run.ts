@@ -205,7 +205,10 @@ async function finishTheRead(
   const handle = { ...started, userId };
   const readId = started.readId;
   const billed: Billed[] = [];
-  const bill = (model: string, o: ModelOutcome<unknown>) => { if (o.usage) billed.push({ model, usage: o.usage }); };
+  // Each call is its own part, with the effort it asked for (a stub's names none).
+  const bill = (model: string, o: ModelOutcome<unknown>, step: "shortlist" | "judgement", effort: "low" | "medium" | "high") => {
+    if (o.usage) billed.push({ model, usage: o.usage, step, effort: o.usage === NO_USAGE ? null : effort });
+  };
   const failed = async (o: { errorClass: string }): Promise<TheReadOutcome> => {
     const errorClass = (o.errorClass === "upstream_rejected" ? "upstream_busy" : o.errorClass) as Exclude<ReadErrorClass, "nothing_valid" | "interrupted">;
     return (await settleTheRead(handle, { kind: "failed", errorClass }, billed)) ? { kind: "failed", errorClass } : { kind: "stopped" };
@@ -236,7 +239,8 @@ async function finishTheRead(
     if (facts.pool.size === 0) {
       // No call was made, so the ledger records a zero bill rather than none: a row with no cost
       // counts at its worst case until the reservation's TTL, as though a call were still billing.
-      billed.push({ model: deps.shortlistModel, usage: NO_USAGE });
+      // `noCall`: it settles the cost and writes no part, since no provider call was made.
+      billed.push({ model: deps.shortlistModel, usage: NO_USAGE, step: "shortlist", effort: null, noCall: true });
       return nothing(0);
     }
     const first = await deps.shortlist({
@@ -246,7 +250,7 @@ async function finishTheRead(
       // Its own share, but never past what is left of the whole: loading the inputs counts too.
       deadlineMs: Math.max(1, Math.min(READ_SHORTLIST_DEADLINE_MS, READ_TOTAL_DEADLINE_MS - (deps.now() - started0))),
     });
-    bill(deps.shortlistModel, first);
+    bill(deps.shortlistModel, first, "shortlist", READ_SHORTLIST_EFFORT);
     if (!first.ok) return failed(first);
     const shortlist = validShortlist(first.value, facts.pool);
     if (shortlist.length === 0) return nothing(0);
@@ -264,7 +268,7 @@ async function finishTheRead(
       user: judgeRequest({ words: input.words, filters: input.filters, decks: facts.decks, cards: facts.cards, candidates }),
       deadlineMs: Math.max(1, READ_TOTAL_DEADLINE_MS - (deps.now() - started0)),
     });
-    bill(deps.judgeModel, second);
+    bill(deps.judgeModel, second, "judgement", READ_JUDGE_EFFORT);
     if (!second.ok) return failed(second);
     const nameOf = new Map(candidates.map((c) => [c.key, c.name]));
     const result = { ...validJudgement({ reply: second.value, shortlist, idOf: facts.list.idOf, decks: facts.decks, nameOf }), pool: facts.pool.size, weighed: candidates.length };

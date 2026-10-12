@@ -158,7 +158,7 @@ export async function runProposedCuts(
       schema: cutsResponseSchema(pack.ask), deadlineMs: MODEL_TIMEOUT_MS,
       effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
     });
-    if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage };
+    if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "cuts", effort: TUNING_EFFORT };
     // A rejection is stored as busy: the distinction is kept for the overview only, for now.
     if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 

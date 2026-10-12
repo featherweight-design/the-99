@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FitsReadReply } from "./fits-read";
 import { inputs } from "./fits-read.fixture";
+import { FITS_READ_EFFORT } from "./fits-read-limits";
+import { STUB_MODEL } from "./fits-read-stub";
 import type { FitsReadLoad } from "./fits-read-load";
 import type { FitsReadRow } from "./fits-read-state";
 
@@ -10,6 +12,7 @@ const store = vi.hoisted(() => ({
   rows: [] as FitsReadRow[],
   started: { kind: "started", readId: "read-1", callId: "call-1" } as { kind: string; readId?: string; callId?: string },
   finished: [] as unknown[],
+  bills: [] as unknown[],
   reaped: 0,
 }));
 vi.mock("./fits-read-store", async (orig) => ({
@@ -17,7 +20,7 @@ vi.mock("./fits-read-store", async (orig) => ({
   reapFitsReads: vi.fn(async () => { store.reaped += 1; return 0; }),
   readFitsReadRows: vi.fn(async () => store.rows),
   startFitsRead: vi.fn(async () => store.started),
-  finishFitsRead: vi.fn(async (_h: unknown, write: unknown) => { store.finished.push(write); return true; }),
+  finishFitsRead: vi.fn(async (_h: unknown, write: unknown, billed: unknown) => { store.finished.push(write); store.bills.push(billed); return true; }),
 }));
 vi.mock("../model/allowance", () => ({
   readAllowance: vi.fn(async () => ({ used: 0, limit: 3, reopensAt: null, nextAt: null })),
@@ -54,6 +57,7 @@ beforeEach(() => {
   store.rows = [];
   store.started = { kind: "started", readId: "read-1", callId: "call-1" };
   store.finished = [];
+  store.bills = [];
   vi.mocked(startFitsRead).mockClear();
 });
 
@@ -138,6 +142,17 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
     expect(store.finished).toEqual([expect.objectContaining({ status: "done", outcome: "picks", refunded: false, returned: 2 })]);
     const picks = (store.finished[0] as { picks: { deckId: string; planSource: string }[] }).picks;
     expect(picks.map((p) => [p.deckId, p.planSource])).toEqual([["deck-goblins", "older"]]);
+  });
+
+  it("bills the live call as one `read` part at the read's effort, and a stub's at none", async () => {
+    const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    const live = deps({ picks: [good("D1")] });
+    await pressFitsRead("u", "card", live.d);
+    expect(store.bills).toEqual([{ model: MODEL, usage, step: "read", effort: FITS_READ_EFFORT }]);
+    store.bills = [];
+    const stub = deps({ picks: [good("D1")] });
+    await pressFitsRead("u", "card", { ...stub.d, model: () => STUB_MODEL });
+    expect(store.bills).toEqual([{ model: STUB_MODEL, usage, step: "read", effort: null }]);
   });
 
   it("refunds a thin read: under a third of the decks named held up", async () => {
