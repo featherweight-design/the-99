@@ -5,7 +5,6 @@
 // words AI, model or LLM: tier 2 is "a deeper look". Engineering additions are marked.
 
 import { deckStatsCopy } from "./deck-stats";
-import { manaBalanceCopy as mana } from "./mana-balance";
 
 export const tuningHubCopy = {
   title: "Tuning",
@@ -126,7 +125,7 @@ export const tuningHubCopy = {
        *  verdicts, which R3 retired. */
       manaFree: (pips: number, sources: number) => deckStatsCopy.colors.denom(pips, sources),
       /** Engineering (re-review PR 3): an Improve my mana help read, named by its color. */
-      manaHelp: (color: string, trades: number) => `${mana.door.title.toLowerCase()} for ${color} · ${trades === 0 ? "no trades" : trades === 1 ? "1 trade" : `${trades} trades`}`,
+      manaHelp: (color: string, trades: number) => `help for ${color} · ${trades === 0 ? "no trades" : trades === 1 ? "1 trade" : `${trades} trades`}`,
       counted: "counted",
     },
   },
