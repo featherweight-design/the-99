@@ -141,6 +141,30 @@ describe("reveal", () => {
     expect(box.scrollTop).toBe(1000);
   });
 
+  for (const init of [{ key: "Shift" }, { key: "Dead" }, { key: "Process", isComposing: true }] as KeyboardEventInit[]) {
+    it(`keeps going on ${init.key}, a key on the way to a typed character`, () => {
+      media(false);
+      const { box, el } = scene();
+      const input = document.createElement("input");
+      el.appendChild(input);
+      reveal(el);
+      input.dispatchEvent(new KeyboardEvent("keydown", { ...init, bubbles: true }));
+      vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+      expect(box.scrollTop).toBe(1000);
+    });
+  }
+
+  it("still stops on a Ctrl shortcut typed in a field inside the target", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", ctrlKey: true, bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(0);
+  });
+
   it("still stops on a key that moves focus, even from inside the target", () => {
     media(false);
     const { box, el } = scene();

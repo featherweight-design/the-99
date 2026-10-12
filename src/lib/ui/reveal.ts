@@ -124,13 +124,22 @@ function track(el: Element, axis: Axis, mode: RevealBlock): Track | null {
 
 let active: (() => void) | null = null;
 
-/** A keypress that edits text in a field: a character, or a deletion, in an input, a textarea or
- *  editable content. */
+/** Keys that come on the way to a character rather than instead of one: a capital's Shift, a
+ *  layout's AltGraph, a dead accent key, an IME's composition. */
+const ON_THE_WAY = new Set(["Shift", "AltGraph", "CapsLock", "Dead", "Process", "Compose"]);
+
+/** A keypress that edits text in a field: a character, a deletion, or a key on the way to a
+ *  character, in an input, a textarea or editable content. A Ctrl, Meta or Alt shortcut is not
+ *  (AltGraph, which some layouts report as Ctrl plus Alt, is). */
 function isTyping(e: KeyboardEvent): boolean {
   const t = e.target;
   const editable = t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable)
     || (t instanceof HTMLInputElement && !["checkbox", "radio", "button", "submit", "reset", "range", "color", "file"].includes(t.type));
-  return editable && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete");
+  if (!editable) return false;
+  if (e.isComposing || ON_THE_WAY.has(e.key)) return true;
+  const altGraph = e.getModifierState?.("AltGraph") === true;
+  if (e.metaKey || (!altGraph && (e.ctrlKey || e.altKey))) return false;
+  return e.key.length === 1 || e.key === "Backspace" || e.key === "Delete";
 }
 
 export function reveal(
