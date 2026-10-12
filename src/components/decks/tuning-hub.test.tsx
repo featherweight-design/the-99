@@ -183,6 +183,13 @@ describe("TuningHub opening a tool", () => {
       expect(panel().classList.contains("gentle-hold")).toBe(true);
       expect(panel().classList.contains("anim-gentle-in")).toBe(false);
       const tall = vi.spyOn(panel(), "getBoundingClientRect").mockReturnValue({ height: 500 } as DOMRect);
+      // Tall but still drawing a loading state (History's empty placeholder): still holding.
+      const placeholder = document.createElement("div");
+      placeholder.setAttribute("aria-busy", "true");
+      panel().append(placeholder);
+      act(() => observers.at(-1)!());
+      expect(panel().classList.contains("gentle-hold")).toBe(true);
+      placeholder.remove();
       act(() => observers.at(-1)!());
       expect(panel().classList.contains("gentle-hold")).toBe(false);
       expect(panel().classList.contains("anim-gentle-in")).toBe(true);

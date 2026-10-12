@@ -518,26 +518,32 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
   );
 }
 
-/** A box at least this tall has its content: a tool that is still reading draws its heading alone (~91px). */
-const ARRIVED_PX = 120;
-/** How long a box holds for content before it arrives anyway: a small tool must not stay unseen. */
-const ARRIVAL_CAP_MS = 900;
+/**
+ * What a tool draws while its first read is out: History's empty `aria-busy` placeholder (marked
+ * `data-hub-pending` too), Mana Balance's counting status, and nothing at all for the tools whose
+ * body waits on the hub's own read. A box drawing none of these, at some height, has its content.
+ */
+const PENDING = '[data-hub-pending], [role="status"][aria-busy="true"], [aria-busy="true"]:empty';
+/** How long a box holds for content before it shows anyway: a slow read must not leave it unseen. */
+const ARRIVAL_CAP_MS = 2500;
 
 /**
  * Plays `.anim-gentle-in` when the panel's content lands rather than when the panel mounts. Keyed on
  * the tool, so every switch replays it. Measured before the fix: switching History to Mana Balance
  * ran the fade on an empty box (0px) that had finished by the time the tool's body arrived (450ms
- * for its heading, 900ms for the rest), so the content snapped in. The panel holds transparent
- * (`.gentle-hold`, never under reduced motion) until it is `ARRIVED_PX` tall or `ARRIVAL_CAP_MS`
- * has passed, then takes the arrival class afresh. A panel whose content is there at mount (a
- * tool opened with its read already in hand) keeps the mount's own arrival. Classes, not state:
- * the hold has to land before the first paint, and nothing else reads it.
+ * for its counting line, 900ms for the rest), so the content snapped in. The panel holds
+ * transparent (`.gentle-hold`, never under reduced motion) while it is empty or still draws a
+ * loading state (`PENDING`), then takes the arrival class afresh. A read slower than
+ * `ARRIVAL_CAP_MS` shows its loading state and then its content without a second fade. A panel
+ * whose content is there at mount keeps the mount's own arrival. Classes, not state: the hold has
+ * to land before the first paint, and nothing else reads it.
  */
 function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || key === null || typeof ResizeObserver === "undefined") return;
-    if (el.getBoundingClientRect().height >= ARRIVED_PX) return;
+    const landed = () => el.getBoundingClientRect().height > 0 && el.querySelector(PENDING) === null;
+    if (landed()) return;
     el.classList.remove("anim-gentle-in");
     el.classList.add("gentle-hold");
     let settled = false;
@@ -547,13 +553,17 @@ function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
       el.classList.remove("gentle-hold");
       el.classList.add("anim-gentle-in");
     };
-    const ro = new ResizeObserver(() => {
-      if (el.getBoundingClientRect().height >= ARRIVED_PX) arrive();
-    });
+    // A loading state giving way to content almost always changes the box's size; a change that does
+    // not (a placeholder swapped for rows of the same height) is caught by the mutation.
+    const check = () => { if (landed()) arrive(); };
+    const ro = new ResizeObserver(check);
     ro.observe(el);
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-busy", "data-hub-pending"] });
     const cap = setTimeout(arrive, ARRIVAL_CAP_MS);
     return () => {
       ro.disconnect();
+      mo.disconnect();
       clearTimeout(cap);
     };
   }, [ref, key]);
