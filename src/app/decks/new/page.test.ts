@@ -5,9 +5,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
-const stub = vi.hoisted(() => ({ on: true, answers: vi.fn() }));
+const stub = vi.hoisted(() => ({ on: true, precons: false, answers: vi.fn() }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
+vi.mock("../../../lib/precons/flag", () => ({ preconsEnabled: () => stub.precons }));
 vi.mock("../../../lib/decks/pre-filled-commander", () => ({
   loadPreFilledCommander: async (_u: string, id: string) => ({ oracleId: id, name: "Gishath", typeLine: "Legendary Creature", colorIdentity: ["R", "G", "W"], imageUri: null }),
 }));
@@ -19,11 +20,12 @@ vi.mock("../../../lib/intake/hand-off-load", () => ({
 
 const { default: NewDeckPage } = await import("./page");
 
-type Props = { handOff?: { resultsHref: string; drawBlock: boolean; create: unknown }; helpDoor?: boolean };
+type Props = { handOff?: { resultsHref: string; drawBlock: boolean; create: unknown }; helpDoor?: boolean; preconDoor?: boolean };
 const props = async (sp: Record<string, string>) => ((await NewDeckPage({ searchParams: Promise.resolve(sp) })) as { props: Props }).props;
 
 beforeEach(() => {
   stub.on = true;
+  stub.precons = false;
   stub.answers.mockReset().mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: null });
 });
 
@@ -59,5 +61,11 @@ describe("/decks/new", () => {
     expect((await props({ commander: COMMANDER, t: "dinosaurs", b: "150", v: "results" })).handOff).toBeUndefined();
     expect(stub.answers).not.toHaveBeenCalled();
     expect((await props({})).helpDoor).toBe(false);
+  });
+
+  it("offers the precon door to the picker only while PRECONS_ENABLED is on", async () => {
+    expect((await props({})).preconDoor).toBe(false);
+    stub.precons = true;
+    expect((await props({})).preconDoor).toBe(true);
   });
 });
