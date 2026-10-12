@@ -88,6 +88,13 @@ describe("pressFitsRead: refusals that cost nothing", () => {
     expect(call).not.toHaveBeenCalled();
   });
 
+  it("a press that lost the race to a read now done over the same inputs is current, and never asks", async () => {
+    store.started = { kind: "current" };
+    const { d, call } = deps({ picks: [] });
+    expect(await pressFitsRead("u", "card", d)).toEqual({ ok: false, reason: "current" });
+    expect(call).not.toHaveBeenCalled();
+  });
+
   it("passes the allowance refusal through", async () => {
     store.started = { kind: "allowance" };
     const { d } = deps({ picks: [] });

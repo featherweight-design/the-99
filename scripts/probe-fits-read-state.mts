@@ -71,6 +71,10 @@ try {
   check("a read that held up settles", await store.finishFitsRead(s1, { status: "done", outcome: "picks", picks: [], refunded: false, returned: 1, drops: {} }), true);
   check("and spends its unit", await unitStatus(s1.callId), "spent");
   check("a second write to a settled read changes nothing", await store.finishFitsRead(s1, { status: "failed", errorClass: "timeout" }), false);
+  // A press that passed its checks before the first one finished, starting after it: current, no unit.
+  check("a start over hashes a done read already holds is current", (await store.startFitsRead(PROBE, card, { d: "h" }, STUB_MODEL, now)).kind, "current");
+  const { rows: [{ n: unitsAfter }] } = await db.execute<{ n: number }>(sql`select count(*)::int as n from model_calls where user_id = ${PROBE}`);
+  check("and reserves nothing", unitsAfter, 1);
 
   // 3. A failure refunds.
   const s2 = await store.startFitsRead(PROBE, card, { d: "h2" }, STUB_MODEL, new Date(now.getTime() + 1000));

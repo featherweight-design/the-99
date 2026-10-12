@@ -95,6 +95,7 @@ export async function pressFitsRead(userId: string, oracleId: string, deps: Deps
 
   const started = await startFitsRead(userId, oracleId, hashes, model, now);
   if (started.kind === "in_flight") return { ok: true, panel: await panelFor(userId, oracleId, load, model, now) };
+  if (started.kind === "current") return { ok: false, reason: "current" };
   if (started.kind !== "started") return { ok: false, reason: started.kind };
 
   let billed: Billed | undefined;

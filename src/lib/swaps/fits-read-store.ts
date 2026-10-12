@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, lt, type SQL } from "drizzle-orm";
+import { and, desc, eq, lt, sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
 import { fitsReads } from "../../db/schema";
@@ -57,18 +57,32 @@ export function candidateHashes(inputs: FitsReadInputs, model: string): Record<s
 
 export type StartedFitsRead =
   | ({ kind: "started" } & FitsReadHandle)
-  | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" };
+  | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "current" };
+
+class AlreadyCurrentError extends Error {}
+class InFlightError extends Error {}
 
 /**
- * ONE transaction: reserve one `fits_read` unit and insert the pending row. The partial unique index
- * makes a second pending read for the same reader and card impossible (lock 5): the loser of a double
- * press reserves nothing, because its transaction rolls back with the insert.
+ * ONE transaction: reserve one `fits_read` unit and insert the pending row (lock 5). Starts for one
+ * reader and card are SERIALIZED by an advisory lock, and inside it the press is re-checked: a read
+ * already done over these very candidate hashes is `current` (a second press that lost the race to
+ * a first one that has since finished), and a pending one is `in_flight`. Neither reserves anything.
+ * The partial unique index stays as the floor under the lock.
  */
 export async function startFitsRead(
   userId: string, oracleId: string, hashes: Record<string, string>, model: string, now = new Date(),
 ): Promise<StartedFitsRead> {
   try {
     const handle = await db.transaction(async (tx): Promise<FitsReadHandle> => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`fits_read:${userId}:${oracleId}`}))`);
+      const { rows: [newest] } = await tx.execute<{ status: string; current: boolean }>(sql`
+        select status, (status = 'done' and candidate_hashes = ${JSON.stringify(hashes)}::jsonb) as current
+        from fits_reads
+        where user_id = ${userId} and oracle_id = ${oracleId}::uuid and status in ('pending', 'done')
+        order by (status = 'pending') desc, created_at desc
+        limit 1`);
+      if (newest?.status === "pending") throw new InFlightError();
+      if (newest?.current) throw new AlreadyCurrentError();
       const unit = await reserveModelCall(tx, userId, "fits_read", model, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(fitsReads).values({
@@ -80,7 +94,8 @@ export async function startFitsRead(
     return { kind: "started", ...handle };
   } catch (err) {
     if (err instanceof AllowanceSpentError) return { kind: err.refused };
-    if (isUniqueViolation(err)) return { kind: "in_flight" };
+    if (err instanceof AlreadyCurrentError) return { kind: "current" };
+    if (err instanceof InFlightError || isUniqueViolation(err)) return { kind: "in_flight" };
     throw err;
   }
 }
