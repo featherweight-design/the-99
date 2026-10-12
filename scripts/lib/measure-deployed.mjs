@@ -38,6 +38,20 @@ export async function mintSignInToken(secretKey, userId, fetchImpl = fetch) {
   return token;
 }
 
+/** The Clerk user id of the one account with `email`, from the Backend API. Read-only. */
+export async function lookupUserId(secretKey, email, fetchImpl = fetch) {
+  const response = await fetchImpl(
+    `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}`,
+    { headers: { Authorization: `Bearer ${secretKey}` } },
+  );
+  if (!response.ok) throw new Error(`Clerk refused the user lookup: ${response.status}.`);
+  const users = await response.json();
+  if (!Array.isArray(users) || users.length !== 1) {
+    throw new Error(`Expected one Clerk user for the measurement email, found ${Array.isArray(users) ? users.length : "none"}.`);
+  }
+  return users[0].id;
+}
+
 /**
  * Every `[perf]` line in `vercel logs --json` output, with the request's timestamp. A line can sit
  * in the entry's `message` or in its `logs` array, as a string or as `{ message }`, depending on how

@@ -49,8 +49,9 @@
 //
 // DEPLOYED MODE (MEASURE_DEPLOYED=1, Hugh 2026-10-12: a local server skews the figures). Staging
 // only (`lib/measure-deployed.mjs` refuses every other host), and it writes nothing to any database:
-//   - sign-in is a Clerk sign-in token minted with STAGING_CLERK_SECRET_KEY for MEASURE_USER_ID and
-//     redeemed on the app's origin; testing tokens exist only on a development instance;
+//   - sign-in is a Clerk sign-in token minted with THE_99_CLERK_SECRET_KEY_STAGING for the account
+//     THE_99_E2E_AUDIT_USER_EMAIL names, redeemed on the app's origin; testing tokens exist only on a
+//     development instance;
 //   - the deck is MEASURE_DECK_ID (no database lookup), and About is cleared by the sheet cookie only;
 //   - the `[perf]` spans come from Vercel's runtime logs of MEASURE_VERCEL_PROJECT (default
 //     the-99-staging, which needs PERF_TIMING=1 set), read after each run, by route pattern and window;
@@ -59,7 +60,7 @@
 //     statements in that window count too, so it is an upper bound.
 // MEASURE_SERVER_LOG and MEASURE_DB_URL are refused in this mode.
 //
-//   MEASURE_DEPLOYED=1 MEASURE_BASE=https://staging.the-99.dev MEASURE_USER_ID=user_… \
+//   MEASURE_DEPLOYED=1 MEASURE_BASE=https://staging.the-99.dev \
 //     MEASURE_DECK_ID=<uuid> MEASURE_PGSTAT_URL=<staging, read-only> pnpm measure:load
 //
 // Where to point it locally: a `next start` (never `next dev`, whose compile times swamp everything) on a
@@ -87,6 +88,7 @@ import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 import {
   assertDeployedBase,
+  lookupUserId,
   mintSignInToken,
   perfLinesFromVercel,
   spansInWindow,
@@ -103,7 +105,7 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = DEPLOYED
   ? {}
   : requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const DEPLOYED_ENV = DEPLOYED
-  ? requireEnv(["STAGING_CLERK_SECRET_KEY", "MEASURE_USER_ID", "MEASURE_DECK_ID"])
+  ? requireEnv(["THE_99_CLERK_SECRET_KEY_STAGING", "THE_99_E2E_AUDIT_USER_EMAIL", "MEASURE_DECK_ID"])
   : null;
 // Where the deployed function's `[perf]` lines are read back from (PERF_TIMING=1 on that project).
 const VERCEL_PROJECT = process.env.MEASURE_VERCEL_PROJECT ?? "the-99-staging";
@@ -178,7 +180,9 @@ const CONTENT_PROBE = () => {
 async function signInDeployed(browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  const ticket = await mintSignInToken(DEPLOYED_ENV.STAGING_CLERK_SECRET_KEY, DEPLOYED_ENV.MEASURE_USER_ID);
+  const secret = DEPLOYED_ENV.THE_99_CLERK_SECRET_KEY_STAGING;
+  const expected = await lookupUserId(secret, DEPLOYED_ENV.THE_99_E2E_AUDIT_USER_EMAIL);
+  const ticket = await mintSignInToken(secret, expected);
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 60_000 });
   const userId = await page.evaluate(async (t) => {
@@ -187,7 +191,7 @@ async function signInDeployed(browser) {
     await window.Clerk.setActive({ session: a.createdSessionId });
     return window.Clerk.user.id;
   }, ticket);
-  if (userId !== DEPLOYED_ENV.MEASURE_USER_ID) throw new Error(`Signed in as ${userId}, not MEASURE_USER_ID.`);
+  if (userId !== expected) throw new Error(`Signed in as ${userId}, not the measurement account.`);
   // The cookie alone, never `markEveryEntrySeen`: that is a database write.
   await context.addCookies([sheetCookie(userId, page.url())]);
   const state = await context.storageState();

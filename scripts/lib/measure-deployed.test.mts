@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertDeployedBase,
+  lookupUserId,
   mintSignInToken,
   perfLinesFromVercel,
   spansInWindow,
@@ -66,5 +67,22 @@ describe("perfLinesFromVercel", () => {
 describe("statDelta", () => {
   it("is the difference between two snapshots, with no reset", () => {
     expect(statDelta({ ms: "100.4", calls: "7" }, { ms: "250.9", calls: "19" })).toEqual({ ms: 151, calls: 12 });
+  });
+});
+
+describe("lookupUserId", () => {
+  it("returns the one user's id for the email", async () => {
+    const id = await lookupUserId("k", "a+b@x.dev", async (url: string) => {
+      expect(url).toContain("email_address=a%2Bb%40x.dev");
+      return new Response(JSON.stringify([{ id: "user_9" }]), { status: 200 });
+    });
+    expect(id).toBe("user_9");
+  });
+
+  it("refuses none or several rather than guessing", async () => {
+    await expect(lookupUserId("k", "e", async () => new Response("[]", { status: 200 }))).rejects.toThrow(/found 0/);
+    await expect(
+      lookupUserId("k", "e", async () => new Response(JSON.stringify([{ id: "a" }, { id: "b" }]), { status: 200 })),
+    ).rejects.toThrow(/found 2/);
   });
 });
