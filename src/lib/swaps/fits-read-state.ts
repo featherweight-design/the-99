@@ -15,8 +15,9 @@ export type StoredFitsRead = {
   at: string;
   /** Every candidate deck it was run over. */
   candidates: number;
-  /** Candidate decks whose inputs changed since the read: their rows are out of date (handoff P10). */
-  changed: string[];
+  /** Candidate decks whose inputs changed since the read, and why: a new Overview (handoff P3g) or
+   *  anything else about the deck (P10). Their rows are out of date. */
+  changed: { deckId: string; reason: "overview" | "deck" }[];
   /** A deck joined or left the candidates since the read (handoff P10a, P10b). */
   setChanged: boolean;
   /** Shown again free, with no press, only when nothing above moved (lock 6). */
@@ -34,7 +35,13 @@ export type FitsReadView = {
 
 /** Which stored decks changed, and whether the candidate set moved, against the current hashes. */
 export function staleness(stored: Readonly<Record<string, string>>, current: Readonly<Record<string, string>>) {
-  const changed = Object.keys(stored).filter((id) => id in current && current[id] !== stored[id]).sort();
+  const half = (h: string) => h.split(".");
+  const changed = Object.keys(stored).filter((id) => id in current && current[id] !== stored[id]).sort()
+    .map((deckId) => {
+      const [planWas, restWas] = half(stored[deckId]);
+      const [planNow, restNow] = half(current[deckId]);
+      return { deckId, reason: planWas !== planNow && restWas === restNow ? "overview" as const : "deck" as const };
+    });
   const a = Object.keys(stored);
   const b = Object.keys(current);
   const setChanged = a.length !== b.length || a.some((id) => !(id in current));

@@ -27,6 +27,9 @@ const sorted = (xs: readonly string[]) => [...xs].sort();
  * card, plus the prompt version and the model, so a stored read is current only while the read
  * would be asked the same question. A list edit, a new Overview, a lock, a change in the deck's need
  * or the index's inclusion, the card's own text: each moves it.
+ *
+ * Two halves, `plan.rest`, so a stale row can say WHY (handoff P3g against P10, gap G5): the plan's
+ * half moves for a new Overview, the rest for everything else.
  */
 export function candidateHashes(inputs: FitsReadInputs, model: string): Record<string, string> {
   const card = { ...inputs.card, kinds: sorted(inputs.card.kinds) };
@@ -34,15 +37,17 @@ export function candidateHashes(inputs: FitsReadInputs, model: string): Record<s
   const out: Record<string, string> = {};
   for (const c of inputs.candidates) {
     const d = blocks.get(c.deckId);
-    out[c.deckId] = sha([
+    const plan = sha([d?.plan ?? null, sorted(d?.keyCardIds ?? [])]);
+    const rest = sha([
       FITS_READ_PROMPT_VERSION, model, card, c.need, c.inclusion,
       d && {
         commanders: d.commanders.map((x) => [x.oracleId, x.oracleText, sorted(x.kinds)]),
-        plan: d.plan, themes: d.themes,
+        themes: d.themes,
         list: d.list.map((x) => [x.oracleId, sorted(x.kinds)]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
-        keyCardIds: sorted(d.keyCardIds), lockedIds: sorted(d.lockedIds),
+        lockedIds: sorted(d.lockedIds),
       },
     ]);
+    out[c.deckId] = `${plan}.${rest}`;
   }
   return out;
 }

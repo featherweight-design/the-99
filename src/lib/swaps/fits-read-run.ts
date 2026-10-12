@@ -1,7 +1,8 @@
 import { readAllowance, type Billed } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { callModel, type ModelOutcome } from "../model/client";
-import { buildFitsReadPrompt, fitsReadSchema, validFitsRead, type FitsReadReply } from "./fits-read";
+import type { FitsRead } from "./fits";
+import { buildFitsReadPrompt, fitsReadSchema, validFitsRead, type FitsReadReply, type PlanSource } from "./fits-read";
 import { FITS_READ_DEADLINE_MS, FITS_READ_EFFORT, FITS_READ_INPUT_CEILING, FITS_READ_MAX_TOKENS, FITS_READ_MODEL } from "./fits-read-limits";
 import { loadFitsReadInputs, type FitsReadLoad } from "./fits-read-load";
 import { fitsReadView, readRefunds, type FitsReadView } from "./fits-read-state";
@@ -14,9 +15,13 @@ import { fitsReadLive, fitsStubDelayMs, fitsStubMode, STUB_MODEL, stubFitsReply 
  */
 
 export type FitsReadPanel = {
+  /** The free list, as `loadFits` reads it: the view draws the read and the list from one call. */
+  fits: FitsRead;
   view: FitsReadView;
   /** How many candidate decks the card has now. Zero draws no press (lock 8). */
   candidates: number;
+  /** Where each candidate's plan came from, for the row's source line (handoff addendum, G12). */
+  planSources: Record<string, PlanSource>;
   allowance: Allowance;
 };
 
@@ -61,7 +66,8 @@ export async function readFitsRead(userId: string, oracleId: string, deps: Deps 
 
 async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date): Promise<FitsReadPanel> {
   const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read")]);
-  return { view: fitsReadView(rows, candidateHashes(load.inputs, model)), candidates: load.inputs.candidates.length, allowance };
+  const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
+  return { fits: load.fits, view: fitsReadView(rows, candidateHashes(load.inputs, model)), candidates: load.inputs.candidates.length, planSources, allowance };
 }
 
 /**

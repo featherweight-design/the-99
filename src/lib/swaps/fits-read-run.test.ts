@@ -151,6 +151,14 @@ describe("candidateHashes", () => {
     expect(b["deck-goblins"]).toBe(a["deck-goblins"]);
     expect(b["deck-kratos"]).not.toBe(a["deck-kratos"]);
   });
+  it("moves only the plan's half for a new Overview", () => {
+    const a = candidateHashes(inputs(), MODEL);
+    const inp = inputs();
+    const b = candidateHashes({ ...inp, decks: inp.decks.map((x) => (x.deckId === "deck-kratos" ? { ...x, plan: { source: "v2" as const, text: "A new plan." } } : x)) }, MODEL);
+    expect(b["deck-kratos"].split(".")[0]).not.toBe(a["deck-kratos"].split(".")[0]);
+    expect(b["deck-kratos"].split(".")[1]).toBe(a["deck-kratos"].split(".")[1]);
+  });
+
   it("moves for every deck when the model does", () => {
     const a = candidateHashes(inputs(), MODEL);
     const b = candidateHashes(inputs(), "claude-sonnet-5-5");

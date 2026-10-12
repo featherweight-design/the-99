@@ -5,12 +5,15 @@ import { fitsReadView, readRefunds, staleness, type FitsReadRow } from "./fits-r
 const at = (min: number) => new Date(Date.UTC(2026, 9, 12, 6, min));
 const row = (over: Partial<FitsReadRow>): FitsReadRow => ({
   id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: at(0), finishedAt: at(1),
-  candidateHashes: { a: "1", b: "2" }, picks: [], ...over,
+  candidateHashes: { a: "p.1", b: "p.2" }, picks: [], ...over,
 });
 
 describe("staleness", () => {
-  it("names the decks whose inputs moved, and nothing else", () => {
-    expect(staleness({ a: "1", b: "2" }, { a: "1", b: "9" })).toEqual({ changed: ["b"], setChanged: false });
+  it("names the decks whose inputs moved, and why: a new Overview alone, or anything else (G5)", () => {
+    const was = { a: "p.1", b: "p.2" };
+    expect(staleness(was, { a: "p.1", b: "p.9" })).toEqual({ changed: [{ deckId: "b", reason: "deck" }], setChanged: false });
+    expect(staleness(was, { a: "p.1", b: "q.2" })).toEqual({ changed: [{ deckId: "b", reason: "overview" }], setChanged: false });
+    expect(staleness(was, { a: "p.1", b: "q.9" }).changed).toEqual([{ deckId: "b", reason: "deck" }]);
   });
   it("calls a deck joining or leaving the candidates a set change, and tags no row for it", () => {
     expect(staleness({ a: "1", b: "2" }, { a: "1", b: "2", c: "3" })).toEqual({ changed: [], setChanged: true });
@@ -38,18 +41,18 @@ describe("fitsReadView", () => {
   });
 
   it("shows a stored read as current only while every hash and the set still match (lock 6)", () => {
-    const current = fitsReadView([row({})], { a: "1", b: "2" }).stored!;
+    const current = fitsReadView([row({})], { a: "p.1", b: "p.2" }).stored!;
     expect([current.current, current.changed, current.setChanged, current.candidates]).toEqual([true, [], false, 2]);
-    const moved = fitsReadView([row({})], { a: "1", b: "3" }).stored!;
-    expect([moved.current, moved.changed]).toEqual([false, ["b"]]);
+    const moved = fitsReadView([row({})], { a: "p.1", b: "p.3" }).stored!;
+    expect([moved.current, moved.changed]).toEqual([false, [{ deckId: "b", reason: "deck" }]]);
   });
 
   it("keeps a no fit like any read (handoff R2 3)", () => {
-    expect(fitsReadView([row({ outcome: "noFit", refunded: true })], { a: "1", b: "2" }).stored).toMatchObject({ outcome: "noFit", refunded: true, current: true });
+    expect(fitsReadView([row({ outcome: "noFit", refunded: true })], { a: "p.1", b: "p.2" }).stored).toMatchObject({ outcome: "noFit", refunded: true, current: true });
   });
 
   it("reports a run in flight beside the stored read (lock 5)", () => {
-    const v = fitsReadView([row({ id: "p", status: "pending", outcome: null, createdAt: at(5), finishedAt: null }), row({})], { a: "1", b: "2" });
+    const v = fitsReadView([row({ id: "p", status: "pending", outcome: null, createdAt: at(5), finishedAt: null }), row({})], { a: "p.1", b: "p.2" });
     expect(v.pending).toEqual({ readId: "p", startedAt: at(5).toISOString() });
     expect(v.stored?.readId).toBe("r");
   });
