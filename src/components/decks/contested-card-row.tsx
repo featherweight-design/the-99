@@ -186,8 +186,9 @@ export function ContestedCardRow({
    */
   onWrite?: (deckId: string, picked: boolean, createdAt?: string) => void;
   /**
-   * Whether any write is still out, on every change: a caller whose own action depends on where the
-   * pick ends up (the receipt's Undo) holds until this reads false.
+   * Each write as it starts (true) and as it settles (false), one call each, so a caller counting
+   * them across row instances (a chooser closed and reopened) knows when none is out. A caller whose
+   * own action depends on where the pick ends up (the receipt's Undo) holds until then.
    */
   onPending?: (pending: boolean) => void;
   /**
@@ -234,8 +235,6 @@ export function ContestedCardRow({
   // arriving from the server does it too. Both advance this, and a write whose number is stale
   // neither draws its answer nor stands anything down.
   const tap = useRef(0);
-  // Writes still out, for `onPending`: taps can overlap, so a count rather than a flag.
-  const out = useRef(0);
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
   // rather than in an effect, or the previous allocation paints once before being corrected.
@@ -297,7 +296,6 @@ export function ContestedCardRow({
     // one option is ever checked. Seniority allocates every other copy.
     setPicked(wasChosen ? new Set() : new Set([deckId]));
     const mine = ++tap.current;
-    out.current += 1;
     onPending?.(true);
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
@@ -383,8 +381,7 @@ export function ContestedCardRow({
         // the assertions are written — three spellings of it hung on the harness rather than on
         // the assertion. The sibling guard above IS covered, by the superseded-answer case.
         if (mine === tap.current) setPicked(null);
-        out.current -= 1;
-        onPending?.(out.current > 0);
+        onPending?.(false);
       }
     });
   };

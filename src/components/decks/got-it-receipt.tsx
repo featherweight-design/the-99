@@ -191,7 +191,14 @@ export function GotItReceipt({
   }, []);
   // A Change write still out, chooser open or closed: Undo holds until it settles, or it would go
   // without the pick that write is about to leave standing.
+  // Counted here, not by the row: closing the chooser and opening it again mounts a fresh row, and
+  // the first one's writes can still be out.
   const [changing, setChanging] = useState(false);
+  const writesOut = useRef(0);
+  const onPending = useCallback((pending: boolean) => {
+    writesOut.current += pending ? 1 : -1;
+    setChanging(writesOut.current > 0);
+  }, []);
   const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
   const held = busy || changing || unknown;
@@ -455,7 +462,7 @@ export function GotItReceipt({
         thisDeckId={sourceDeckId}
         onCard={onCard}
         onWrite={onWrite}
-        onPending={setChanging}
+        onPending={onPending}
         onUnknown={onUnknown}
         onClose={closeChooser}
       />

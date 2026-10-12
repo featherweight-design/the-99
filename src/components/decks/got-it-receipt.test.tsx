@@ -448,6 +448,28 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, undefined, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
   });
 
+  it("holds Undo while a write from a closed chooser is out, though Change was opened again", async () => {
+    let first!: (r: unknown) => void;
+    let second!: (r: unknown) => void;
+    assignCopy
+      .mockReturnValueOnce(new Promise((r) => { first = r; }))
+      .mockReturnValueOnce(new Promise((r) => { second = r; }));
+    previewRevert.mockResolvedValue(preview());
+    draw(written({ facts: facts() }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    // Reopened, a second press, and closed: two writes out from two choosers.
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Eldrazi")); });
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    // The first chooser's write lands: the second is still out, so Undo still holds.
+    await act(async () => { first({ ok: true, card: chooser(OTHER), createdAt: AT }); });
+    expect(undo()).toHaveAttribute("aria-disabled", "true");
+    await act(async () => { second({ ok: true, card: chooser(), createdAt: AT }); });
+    expect(undo()).not.toHaveAttribute("aria-disabled");
+  });
+
   it("holds Undo after a Change write that threw, until a later write lands", async () => {
     assignCopy.mockRejectedValueOnce(new Error("lost")).mockResolvedValueOnce({ ok: true, card: chooser(OTHER), createdAt: AT });
     previewRevert.mockResolvedValue(preview());

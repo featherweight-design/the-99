@@ -28,7 +28,7 @@ export function CopyChooserDialog({
   onCard: (card: ContestedCard | null) => void;
   /** A write that landed: whether it left a pick on `deckId` (the row's `onWrite`). */
   onWrite?: (deckId: string, picked: boolean, createdAt?: string) => void;
-  /** Whether a write is still out (the row's `onPending`). */
+  /** Each write as it starts and settles (the row's `onPending`). */
   onPending?: (pending: boolean) => void;
   /** A write whose outcome is unknown (the row's `onUnknown`). */
   onUnknown?: () => void;
