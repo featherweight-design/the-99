@@ -277,7 +277,7 @@ export function GridView({
             nameSub={
               showPrice ? (
                 <span className="flex min-w-0">
-                  <PriceFigure code={c.price} className="font-semibold" />
+                  <PriceFigure code={c.price} className="font-semibold" noStockClassName="font-medium" />
                   <span className="min-w-0 truncate">
                     {readCardPrice(c.price) === null ? "" : "\u00a0· "}
                     {c.primarySetCode}

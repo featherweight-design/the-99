@@ -13,12 +13,22 @@ import { setPageCopy } from "../../lib/copy/set-collections";
 import { formatCents } from "../../lib/decks/price";
 
 /** Null for silence: the caller draws its line exactly as it would on any other sort. */
-export function PriceFigure({ code, className }: { code: number | undefined; className: string }) {
+// `noStockClassName` is the tile's: its figure is 600 while `no stock` draws at the row's 500
+// (design table: "as the row"). The row passes one class for both.
+export function PriceFigure({
+  code,
+  className,
+  noStockClassName = className,
+}: {
+  code: number | undefined;
+  className: string;
+  noStockClassName?: string;
+}) {
   const price = readCardPrice(code);
   if (price === null) return null;
   if ("none" in price) {
     return (
-      <span aria-hidden className={`flex-none tabular-nums ${className}`} style={{ color: "var(--fg-muted)" }}>
+      <span aria-hidden className={`flex-none tabular-nums ${noStockClassName}`} style={{ color: "var(--fg-muted)" }}>
         {setPageCopy.cell.noStock}
       </span>
     );
