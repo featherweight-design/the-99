@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { decks, manaTradeApplies } from "../../db/schema";
@@ -20,6 +20,14 @@ import { applySwap, planSwap, restoreSwap } from "../swaps/draft-swap";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+/**
+ * How long an applied trade's snapshot is kept. Its Undo lives in the deck VISIT (the client drops every
+ * receipt when the player leaves the deck), and a kept trade is otherwise never deleted, so each apply
+ * clears the player's snapshots older than this, on any deck: no visit lasts a day, and an Undo pressed in a tab left
+ * open that long refuses, as any Undo over a moved deck does.
+ */
+export const TRADE_SNAPSHOT_RETENTION = "1 day";
+
 async function lockOwnedDeck(tx: Tx, deckId: string, userId: string): Promise<boolean> {
   const [row] = await tx.select({ id: decks.id }).from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
@@ -38,6 +46,10 @@ export async function applyTrade(deckId: string, userId: string, offered: () => 
     const { cutOracleId, addOracleId } = trade;
     const plan = await planSwap(tx, deckId, cutOracleId, addOracleId);
     if (!plan.ok) return null;
+    await tx.delete(manaTradeApplies).where(and(
+      eq(manaTradeApplies.userId, userId),
+      lt(manaTradeApplies.createdAt, sql`now() - ${TRADE_SNAPSHOT_RETENTION}::interval`),
+    ));
     const [row] = await tx.insert(manaTradeApplies)
       .values({ deckId, userId, cutOracleId, addOracleId, undoSnapshot: plan.snapshot })
       .returning({ id: manaTradeApplies.id });

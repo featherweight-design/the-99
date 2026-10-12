@@ -2332,7 +2332,8 @@ export const deckCutItems = pgTable("deck_cut_items", {
 
 /**
  * One applied Improve my mana trade: a basic cut for a staple, written by the apply and deleted by its
- * Undo. It exists only to hold the undo snapshot, as `deck_cut_items` and `deck_suggestion_items` hold
+ * Undo, or by the player's next apply once a day old (`TRADE_SNAPSHOT_RETENTION`): its Undo lives only in
+ * the deck visit. It exists only to hold the undo snapshot, as `deck_cut_items` and `deck_suggestion_items` hold
  * theirs; a trade is free and has no run, and both of those tables need one (a run carries a paid
  * `model_call_id`), so neither can hold it. No `user_data_touch` trigger: neither Home nor `/decks`
  * reads it (`check:list-cache`); the deck's own change is stamped by `touchDeck`.
