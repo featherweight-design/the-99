@@ -91,8 +91,16 @@ async function lockedCut(tx: Tx, itemId: string, userId: string) {
   return row ? { ...row, ...owner } : null;
 }
 
+/**
+ * How a verdict is pressed. `review` is History's re-review of a past run: the list has moved since
+ * the run read it by definition, so the run's fingerprint is not compared. Every check on the card
+ * itself still is (in the list, not a commander, not locked, still pending; for Undo, its row exactly
+ * as the cut left it), which is the same bar Suggested changes' Apply and Undo hold.
+ */
+export type VerdictMode = { review?: boolean };
+
 /** Cut one copy of the card, and remember the row exactly as it was. */
-export async function cutItem(itemId: string, userId: string): Promise<CutOutcome> {
+export async function cutItem(itemId: string, userId: string, mode: VerdictMode = {}): Promise<CutOutcome> {
   return db.transaction(async (tx): Promise<CutOutcome> => {
     const item = await lockedCut(tx, itemId, userId);
     if (!item || item.verdict !== "pending") return { ok: false, reason: "gone" };
@@ -109,7 +117,7 @@ export async function cutItem(itemId: string, userId: string): Promise<CutOutcom
     if (neverCutEnabled() && (await isLiveLocked(tx, deckId, oracleId))) return { ok: false, reason: "cutLocked" };
     // A result is actionable only for the list it was made against. Another tab may still show one
     // after the deck moved, and a cut from it would remove a card the model never saw in this list.
-    if (item.runStatus !== "ok" || before === null || item.fingerprint !== before) return { ok: false, reason: "stale" };
+    if (item.runStatus !== "ok" || before === null || (!mode.review && item.fingerprint !== before)) return { ok: false, reason: "stale" };
     const [proxy] = await tx.select({ oracleId: deckProxies.oracleId }).from(deckProxies)
       .where(and(eq(deckProxies.deckId, deckId), eq(deckProxies.oracleId, oracleId)));
     const snapshot: ApplySnapshot = {
@@ -135,7 +143,7 @@ export async function cutItem(itemId: string, userId: string): Promise<CutOutcom
 }
 
 /** Put the card back as the cut found it, and only over the deck the cut left. */
-export async function undoCutItem(itemId: string, userId: string): Promise<CutOutcome> {
+export async function undoCutItem(itemId: string, userId: string, mode: VerdictMode = {}): Promise<CutOutcome> {
   return db.transaction(async (tx): Promise<CutOutcome> => {
     const item = await lockedCut(tx, itemId, userId);
     const snap = item?.undoSnapshot?.cut;
@@ -145,8 +153,15 @@ export async function undoCutItem(itemId: string, userId: string): Promise<CutOu
     const before = await deckFingerprint(tx, deckId, userId, keys);
     // Only over the deck the cut left: the card's own row is checked below, and the rest of the
     // inputs (the list, the locks, the intent, the bracket) by the run's fingerprint.
-    if (item.runStatus !== "ok" || before === null || item.fingerprint !== before) return { ok: false, reason: "moved" };
+    // In review only the card's own row is held to that (below): the list moved before the press.
+    if (item.runStatus !== "ok" || before === null || (!mode.review && item.fingerprint !== before)) return { ok: false, reason: "moved" };
 
+    // A card that has since become a commander is never put back in the list: its row is absent
+    // either way, so the snapshot check below cannot tell. Review skips the fingerprint above, which
+    // is otherwise what would refuse it.
+    const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+      .from(decks).where(eq(decks.id, deckId));
+    if (!deck || oracleId === deck.commander || oracleId === deck.partner) return { ok: false, reason: "moved" };
     const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto })
       .from(deckCards).where(rowOf(deckId, oracleId)).for("update");
     const left = snap.quantity - 1;

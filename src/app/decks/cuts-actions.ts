@@ -193,7 +193,7 @@ export async function cancelProposedCuts(deckId: string, runId: string): Promise
  * pressed FROM them moves that fingerprint in its own transaction (`cuts-verdicts.ts`), so only an edit that is not
  * one of their own cuts retires them and brings the offer back.
  */
-export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
+export async function readCutsPanel(deckId: string, runId: string | null = null): Promise<CutsPanel | null> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(deckId)) return null;
   const inputs = await readProposedCuts(deckId, userId);
@@ -201,7 +201,8 @@ export async function readCutsPanel(deckId: string): Promise<CutsPanel | null> {
   const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
   const keyCards = inputs.keyCards;
   const [state, name] = await Promise.all([
-    readCutsState(deckId, userId),
+    // `runId` is History's re-review: that past run's cuts. Anything not a uuid reads as ordinary.
+    readCutsState(deckId, userId, new Date(), runId && isUuid(runId) ? runId : null),
     commanderName(head),
   ]);
   const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
@@ -255,16 +256,17 @@ async function settleVerdict(outcome: CutOutcome, userId: string, membership: bo
 }
 
 /** Cut: writes to the list straight away, refused when the card is locked or gone. */
-export async function cutProposed(itemId: string): Promise<DeckMutationResult> {
+/** `review`: pressed on a past run History opened, re-checked card by card (`VerdictMode`). */
+export async function cutProposed(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await cutItem(itemId, userId), userId, true);
+  return settleVerdict(await cutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
-export async function undoProposedCut(itemId: string): Promise<DeckMutationResult> {
+export async function undoProposedCut(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await undoCutItem(itemId, userId), userId, true);
+  return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
 /** Keep and Show it again change no card, so they move no fingerprint. */

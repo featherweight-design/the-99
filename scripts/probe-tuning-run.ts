@@ -629,6 +629,24 @@ async function run() {
     await saveIntent(deck, u, "");
     check("10 · an empty save clears the line", await intentOf(), { intent: null, seeded: false });
   }
+
+  // 11 · History’s re-review: a run named by id is read in place of the newest ok run, only when
+  // it is the reader's own on this deck.
+  {
+    const u = newUser();
+    const deck = await makeDeck(u, c);
+    const older = await answered(u, deck, c, "fp", c.body[0]);
+    const newer = await answered(u, deck, c, "fp", c.body[1]);
+    const ordinary = await readTuningState(deck, u, "fp");
+    check("11 · the ordinary read shows the newest ok run", [ordinary.items.map((i) => i.id), ordinary.review ?? null], [[newer.itemId], null]);
+    const reviewed = await readTuningState(deck, u, "fp", new Date(), { runId: older.runId });
+    check("11 · a run named by id is read instead", [reviewed.items.map((i) => i.id), reviewed.review?.runId], [[older.itemId], older.runId]);
+    const stranger = await readTuningState(deck, newUser(), "fp", new Date(), { runId: older.runId });
+    check("11 · another reader’s id reads nothing of it", [stranger.items.length, stranger.review ?? null], [0, null]);
+    const otherDeck = await makeDeck(u, c);
+    const misplaced = await readTuningState(otherDeck, u, "fp", new Date(), { runId: older.runId });
+    check("11 · a run of another deck reads as the ordinary panel", misplaced.review ?? null, null);
+  }
 }
 
 async function main() {

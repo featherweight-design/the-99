@@ -135,6 +135,37 @@ try {
   const staleCut = await cutItem(itemIds[2], USER);
   check("a cut from a result the deck has moved past is refused as stale", staleCut.ok ? "ok" : staleCut.reason, "stale");
 
+  // History's re-review: the same run named by id. The list has moved, so the run's fingerprint is
+  // not compared, and every check on the card itself still is.
+  const runId = s3.runId;
+  const rv = await readCutsState(deckId, USER, new Date(), runId);
+  check("review: the named run is read, with its own cuts", [rv.review?.runId, rv.items.length], [runId, 3]);
+  check("review: a cut locked since reads locked, the others not", rv.items.map((i) => i.locked), [false, true, false]);
+  check("review: another reader's id reads as the ordinary panel", (await readCutsState(deckId, `${USER}-other`, new Date(), runId)).review ?? null, null);
+  const qty2 = async () => (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]))[0]?.quantity ?? 0;
+  const before2 = await qty2();
+  const reviewCut = await cutItem(itemIds[2], USER, { review: true });
+  check("review: a cut the moved list still holds is taken", reviewCut.ok ? "ok" : reviewCut.reason, "ok");
+  check("review: it removed one copy", await qty2(), before2 - 1);
+  const reviewUndo = await undoCutItem(itemIds[2], USER, { review: true });
+  check("review: its undo puts the row back over the list the cut left", [reviewUndo.ok, await qty2()], [true, before2]);
+  // A cut card that has since become the commander is never put back in the body by a review Undo.
+  await cutItem(itemIds[2], USER, { review: true });
+  const commanderWas = (await q(`select commander_oracle_id c from decks where id = $1`, [deckId]))[0].c;
+  await q(`update decks set commander_oracle_id = $2 where id = $1`, [deckId, picks[2].oracleId]);
+  const undoCommander = await undoCutItem(itemIds[2], USER, { review: true });
+  check("review: an undo whose card is now the commander refuses", undoCommander.ok ? "ok" : undoCommander.reason, "moved");
+  check("review: and the commander is not put in the list", await qty2(), before2 - 1);
+  await q(`update decks set commander_oracle_id = $2 where id = $1`, [deckId, commanderWas]);
+  check("review: with the commander back, that undo goes through", (await undoCutItem(itemIds[2], USER, { review: true })).ok, true);
+  const lockedReview = await cutItem(itemIds[1], USER, { review: true });
+  check("review: a locked card is still refused", lockedReview.ok ? "ok" : lockedReview.reason, "cutLocked");
+  await q(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]);
+  check("review: a cut whose card has left reads as not in the deck", (await readCutsState(deckId, USER, new Date(), runId)).items[2]?.inDeck, false);
+  const goneReview = await cutItem(itemIds[2], USER, { review: true });
+  check("review: and is refused, writing nothing", goneReview.ok ? "ok" : goneReview.reason, "cutGone");
+  await q(`insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, $3, false)`, [deckId, picks[2].oracleId, before2]);
+
   // Keep and Show it again move no card.
   const k = await setCutKept(itemIds[2], USER, true);
   check("keep dismisses", k.ok, true);
@@ -148,6 +179,9 @@ try {
     const id = (await q(`select i.id from deck_cut_items i where i.run_id = $1`, [run2.runId]))[0].id;
     const c = await cutItem(id, USER);
     check("the commander is refused", c.ok ? "ok" : c.reason, "cutGone");
+    const older = await readCutsState(deckId, USER, new Date(), runId);
+    check("review: an older run is read by id while a newer ok run stands", [older.review?.runId, older.items.length, (await readCutsState(deckId, USER)).items.length], [runId, 3, 1]);
+    check("review: the commander row of a run reads as not in the deck", (await readCutsState(deckId, USER)).items[0]?.inDeck, false);
   }
 } finally {
   if (deckId) {

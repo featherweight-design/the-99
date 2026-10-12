@@ -231,7 +231,7 @@ export async function readTuningState(
   userId: string,
   fingerprint: string,
   now: Date = new Date(),
-  opts: { allLocked?: string | null } = {},
+  opts: { allLocked?: string | null; runId?: string | null } = {},
 ): Promise<TuningState> {
   await db.transaction(async (tx) => {
     const reaped = await tx.update(deckSuggestionRuns)
@@ -247,7 +247,16 @@ export async function readTuningState(
 
   const runOf = suggestedRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
-  const [[newest], [lastOk], [games], allowance] = await Promise.all([
+  const okRun = (runId: string | null) => db.select({
+    id: deckSuggestionRuns.id,
+    fingerprint: deckSuggestionRuns.inputFingerprint,
+    createdAt: deckSuggestionRuns.createdAt,
+    promptVersion: deckSuggestionRuns.promptVersion,
+    profileVersion: deckSuggestionRuns.profileVersion,
+    validationReport: deckSuggestionRuns.validationReport,
+  }).from(deckSuggestionRuns).where(okRunWhere(deckId, userId, runId))
+    .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
+  const [[newest], [newestOk], [reviewed], [games], allowance] = await Promise.all([
     db.select({
       id: deckSuggestionRuns.id,
       status: deckSuggestionRuns.status,
@@ -257,22 +266,19 @@ export async function readTuningState(
       validationReport: deckSuggestionRuns.validationReport,
     }).from(deckSuggestionRuns).where(and(runOf, mine))
       .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
-    db.select({
-      id: deckSuggestionRuns.id,
-      fingerprint: deckSuggestionRuns.inputFingerprint,
-      createdAt: deckSuggestionRuns.createdAt,
-      promptVersion: deckSuggestionRuns.promptVersion,
-      profileVersion: deckSuggestionRuns.profileVersion,
-      validationReport: deckSuggestionRuns.validationReport,
-    }).from(deckSuggestionRuns).where(and(runOf, mine, eq(deckSuggestionRuns.status, "ok")))
-      .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1),
+    okRun(null),
+    // A run the reader asked for by id: theirs, this tool's, on this deck, and ok, or nothing, in
+    // which case the panel reads as it always does.
+    opts.runId ? okRun(opts.runId) : Promise.resolve([]),
     db.select({ count: sql<number>`count(*)::int` }).from(deckGames)
       .where(and(eq(deckGames.deckId, deckId), eq(deckGames.userId, userId))),
     readAllowance(userId, now, "tuning"),
   ]);
 
   const run: TuningRun | null = newest ? { ...newest, status: newest.status as TuningRun["status"] } : null;
-  // The items are the newest OK run's. A failed or stopped re-run leaves the set it would have
+  const lastOk = reviewed ?? newestOk;
+  // The items are the newest OK run's, or in review the named run's (and then `stale`, `retired`
+  // and `modelVersionMoved` describe that run). A failed or stopped re-run leaves the set it would have
   // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
   // run, and nothing the player had was changed by it.
   const { items, newestPriceAsOf } = lastOk
@@ -294,7 +300,19 @@ export async function readTuningState(
     gameCount: games?.count ?? 0,
     newestPriceAsOf,
     allLocked: opts.allLocked ?? null,
+    review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt } : null,
   };
+}
+
+/** The ok-run predicate: the newest ok run, or the one ok run the reader named. Exported so its
+ *  emitted SQL is pinned: a named run is still the reader's own, on this deck, of this tool. */
+export function okRunWhere(deckId: string, userId: string, runId: string | null) {
+  return and(
+    suggestedRunsOfDeck(deckId),
+    eq(deckSuggestionRuns.userId, userId),
+    eq(deckSuggestionRuns.status, "ok"),
+    runId ? eq(deckSuggestionRuns.id, runId) : undefined,
+  );
 }
 
 /**

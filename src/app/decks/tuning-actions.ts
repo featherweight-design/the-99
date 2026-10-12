@@ -321,12 +321,17 @@ export async function cancelTuningRun(deckId: string, runId: string): Promise<De
  * can load this only when the panel shows; the panel asks for it. Never builds the profile.
  * Null for a deck that is not the reader's.
  */
-export async function readTuningPanel(deckId: string): Promise<TuningState | null> {
+export async function readTuningPanel(deckId: string, runId: string | null = null): Promise<TuningState | null> {
   const userId = await requireUserId();
   if (!tuningEnabled() || !isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return null;
-  return readTuningState(deckId, userId, inputs.fingerprint, new Date(), { allLocked: inputs.allLocked });
+  // `runId` is History's re-review: that past run's lines, each re-checked live. Anything that is
+  // not a uuid reads as the ordinary panel.
+  return readTuningState(deckId, userId, inputs.fingerprint, new Date(), {
+    allLocked: inputs.allLocked,
+    runId: runId && isUuid(runId) ? runId : null,
+  });
 }
 
 /** A line of the two lists (one card), as against a pair stored before them: the refusal names a
