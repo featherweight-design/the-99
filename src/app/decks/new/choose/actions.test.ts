@@ -77,6 +77,8 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     });
     const to = await landed(`?w=${encodeURIComponent("a deck with [[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]")}`);
     expect(stub.begin.mock.calls[0][1]).toMatchObject({ words: "a deck with Rhystic Study", tagged: [{ name: "Rhystic Study" }] });
+    // A tag here is a requirement, so a card banned in Commander must not resolve to one.
+    expect(tags.resolve).toHaveBeenCalledWith(expect.any(String), { commanderLegalOnly: true });
     expect(decodeURIComponent(String(to).replace(/\+/g, " "))).toContain("[[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]");
   });
 

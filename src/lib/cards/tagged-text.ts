@@ -4,10 +4,10 @@
  * A box that can name a card sends its body as `[[<oracle id>|<name>]]` (`notes-body.ts`). Nothing in
  * that form is trusted: the id is looked up, and the tag becomes the CATALOG's name for it, never the
  * name the client sent. An id the catalog does not hold degrades to its stored name as plain words,
- * so a forged tag can name no card. What comes back is plain text with the names in it, which a
+ * so a forged tag can name no card. `commanderLegalOnly` also degrades a card banned in Commander, for a box where a tag becomes a requirement (a banned card can have no deck). What comes back is plain text with the names in it, which a
  * caller sends through `playerText` like any other words, and the ids that resolved.
  */
-import { currentNames } from "../decks/notes-store";
+import { currentLegalNames, currentNames } from "../decks/notes-store";
 import { formatTag, parseBody } from "../decks/notes-body";
 
 export type TaggedText = {
@@ -19,10 +19,10 @@ export type TaggedText = {
   tagged: { oracleId: string; name: string }[];
 };
 
-export async function resolveTaggedText(raw: string): Promise<TaggedText> {
+export async function resolveTaggedText(raw: string, opts: { commanderLegalOnly?: boolean } = {}): Promise<TaggedText> {
   const segments = parseBody(raw);
   const ids = [...new Set(segments.flatMap((s) => (s.kind === "tag" ? [s.oracleId] : [])))];
-  const names = await currentNames(ids);
+  const names = await (opts.commanderLegalOnly ? currentLegalNames(ids) : currentNames(ids));
   const tagged: TaggedText["tagged"] = [];
   const seen = new Set<string>();
   let text = "";

@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const names = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][] }));
-vi.mock("../decks/notes-store", () => ({ currentNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id))); } }));
+const legal = vi.hoisted(() => ({ ids: new Set<string>() }));
+vi.mock("../decks/notes-store", () => ({
+  currentLegalNames: async (ids: string[]) => new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))),
+  currentNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id))); } }));
 
 const { resolveTaggedText } = await import("./tagged-text");
 
 const SOL = "0000aaaa-0000-4000-8000-000000000001";
 const DS = "0000aaaa-0000-4000-8000-000000000002";
-beforeEach(() => { names.map = new Map([[SOL, "Sol Ring"], [DS, "Doubling Season"]]); names.asked = []; });
+beforeEach(() => { names.map = new Map([[SOL, "Sol Ring"], [DS, "Doubling Season"]]); names.asked = []; legal.ids = new Set([SOL]); });
 
 describe("resolveTaggedText", () => {
   it("replaces each tag with the catalog's name, not the one the client sent, and lists the cards once", async () => {
@@ -30,5 +33,12 @@ describe("resolveTaggedText", () => {
     const out = await resolveTaggedText("[[Sol Ring]] by hand");
     expect(out).toEqual({ text: "[[Sol Ring]] by hand", body: "[[Sol Ring]] by hand", tagged: [] });
     expect(names.asked).toEqual([[]]);
+  });
+
+  it("with commanderLegalOnly, a card banned in Commander degrades to plain words and is not tagged", async () => {
+    const out = await resolveTaggedText(`[[${SOL}|Sol Ring]] and [[${DS}|Doubling Season]]`, { commanderLegalOnly: true });
+    expect(out.tagged).toEqual([{ oracleId: SOL, name: "Sol Ring" }]);
+    expect(out.text).toBe("Sol Ring and Doubling Season");
+    expect(out.body).toBe(`[[${SOL}|Sol Ring]] and Doubling Season`);
   });
 });

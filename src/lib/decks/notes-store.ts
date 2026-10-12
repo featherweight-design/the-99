@@ -19,6 +19,14 @@ import { NOTES_PER_DECK } from "../copy/deck-notes";
  * game cards, and an action is directly callable, so a write must enforce the same domain: a forged tag for
  * a token or sticker row refuses the note instead of being stored.
  */
+/** The same, for the cards a commander deck may hold: a card banned in Commander is not in the map. */
+export async function currentLegalNames(oracleIds: readonly string[]): Promise<Map<string, string>> {
+  if (oracleIds.length === 0) return new Map();
+  const rows = await db.select({ id: cards.oracleId, name: cards.name }).from(cards)
+    .where(and(inArray(cards.oracleId, [...oracleIds]), isGameCardWhere(), eq(cards.commanderLegal, true)));
+  return new Map(rows.map((r) => [r.id, r.name]));
+}
+
 export async function currentNames(oracleIds: readonly string[]): Promise<Map<string, string>> {
   if (oracleIds.length === 0) return new Map();
   const rows = await db.select({ id: cards.oracleId, name: cards.name }).from(cards).where(and(inArray(cards.oracleId, [...oracleIds]), isGameCardWhere()));

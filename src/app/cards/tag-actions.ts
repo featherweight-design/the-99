@@ -18,7 +18,8 @@ export async function searchTagCards(surface: TagSurface, query: string): Promis
   if (surface !== "intake" || !helpMeChooseEnabled()) return null;
   if (typeof query !== "string") return null;
   try {
-    return await searchNoteCards(query);
+    // A tag here is a requirement, and a card banned in Commander can have no deck: only legal cards are offered.
+    return (await searchNoteCards(query)).filter((h) => h.commanderLegal);
   } catch (err) {
     console.error("searchTagCards failed", err);
     return null;

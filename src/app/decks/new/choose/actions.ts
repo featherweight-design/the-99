@@ -46,7 +46,7 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const parsed = parseLiveParams(raw);
   // The cards tagged in the words, looked up: a tag is the catalog's name for its id, and an id the
   // catalog does not hold is plain words. The address keeps the canonical body.
-  const resolved = await resolveTaggedText(parsed.words);
+  const resolved = await resolveTaggedText(parsed.words, { commanderLegalOnly: true });
   const p = { ...parsed, words: resolved.body };
   const words = resolved.text.trim();
   // The catalog's name can be longer than the one the address carried: measure again, on the text the prompt gets.

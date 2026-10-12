@@ -7,12 +7,17 @@ vi.mock("../../lib/decks/notes-store", () => ({ searchNoteCards: stub.search }))
 
 const { searchTagCards } = await import("./tag-actions");
 
-beforeEach(() => { stub.on = true; stub.search.mockReset().mockResolvedValue([{ oracleId: "a", name: "Sol Ring" }]); stub.signedIn.mockClear(); });
+beforeEach(() => { stub.on = true; stub.search.mockReset().mockResolvedValue([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]); stub.signedIn.mockClear(); });
 
 describe("searchTagCards", () => {
   it("searches for a signed-in reader of a surface whose switch is on", async () => {
-    expect(await searchTagCards("intake", "sol")).toEqual([{ oracleId: "a", name: "Sol Ring" }]);
+    expect(await searchTagCards("intake", "sol")).toEqual([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]);
     expect(stub.signedIn).toHaveBeenCalled();
+  });
+
+  it("offers only cards a commander deck may hold, since a tag here is a requirement", async () => {
+    stub.search.mockResolvedValue([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }, { oracleId: "b", name: "Black Lotus", commanderLegal: false }]);
+    expect((await searchTagCards("intake", "o"))?.map((h) => h.name)).toEqual(["Sol Ring"]);
   });
 
   it("answers null, searching nothing, with the surface off, an unknown surface or a non-string query", async () => {
