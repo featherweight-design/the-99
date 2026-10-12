@@ -24,7 +24,9 @@ describe("eval ledger limits, one source", () => {
     ["cuts-blind.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.hardCapUsd;\nconst ASK_AT_USD = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.askAtUsd;/],
     ["intake-read.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-help-me-choose\.jsonl"\]\.hardCapUsd;/],
     ["fits-read.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-find-a-deck\.jsonl"\]\.hardCapUsd;/],
-    ["cuts-plan.mts", /const LEDGER_CUTS_CAP = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.hardCapUsd;/],
+    ["cuts-plan.mts", /const LEDGER_CUTS_CAP = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.hardCapUsd;\nconst LEDGER_CUTS_ASK = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.askAtUsd;/],
+    ["lib/ledger.mts", /export const HARD_CAP_USD = LEDGER_LIMITS\["ledger\.jsonl"\]\.hardCapUsd;\nexport const ASK_AT_USD = LEDGER_LIMITS\["ledger\.jsonl"\]\.askAtUsd;/],
+    ["lib/ledger.mts", /export const OVERVIEW_ACCURACY_LIMITS: Limits = LEDGER_LIMITS\["ledger-overview-accuracy\.jsonl"\];/],
     ["../probe-tuning-owned.mts", /const TUNING_CAP = LEDGER_LIMITS\["ledger-tuning-lists\.jsonl"\]\.hardCapUsd;/],
   ])("%s reads its limits from the table", (file, wiring) => {
     const s = source(file);

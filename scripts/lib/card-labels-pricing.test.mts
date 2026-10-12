@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { BATCH_DISCOUNT, CACHE_READ, CACHE_WRITE_5M, RATES } from "../eval/lib/pricing.mjs";
 import { batchCostMicroUsd } from "../../src/lib/model/prices";
@@ -75,5 +75,17 @@ describe("the label pricing after the move to prices.ts", () => {
     expect(costOf("sonnet", usage)).toBeCloseTo(59.47, 2);
     expect(batchCostMicroUsd("claude-sonnet-4-5", { inTokens: usage.i, outTokens: usage.o, cacheWriteTokens: 0, cacheReadTokens: 0 }) / 1e6)
       .toBeCloseTo(costOf("sonnet", usage), 6);
+  });
+});
+
+describe("PRICING reads its rates from prices.ts", () => {
+  it("builds every row from batchRates, so a change there reaches the scripts", async () => {
+    vi.resetModules();
+    const sentinel = { in: 7, out: 8, cacheWrite: 9, cacheRead: 10 };
+    vi.doMock("../../src/lib/model/prices.ts", () => ({ batchRates: () => sentinel }));
+    const { PRICING: fresh } = await import("./card-labels-pricing.mjs");
+    for (const row of Object.values(fresh)) expect(row).toMatchObject(sentinel);
+    vi.doUnmock("../../src/lib/model/prices.ts");
+    vi.resetModules();
   });
 });
