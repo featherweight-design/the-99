@@ -136,11 +136,14 @@ describe("revertCollectionEntry", () => {
     });
     stub.entry.mockResolvedValue({ rows: [] });
     stub.apply.mockResolvedValue({ status: "preview", rows: [], decks: [] });
-    await previewRevert(ENTRY, DECK, { oracleId: CARD });
+    await previewRevert(ENTRY, DECK, { oracleId: CARD, deckId: DECK });
     expect(stub.apply.mock.calls[1][1]).toEqual({
-      kind: "revert", entryId: ENTRY, ignoreDeckId: DECK, undoPlacement: { oracleId: CARD },
+      kind: "revert", entryId: ENTRY, ignoreDeckId: DECK, undoPlacement: { oracleId: CARD, deckId: DECK },
     });
-    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: "card" })).rejects.toThrow("bad undo placement");
+    // No deck, no undo: one that named only the card would clear every reservation of it.
+    await expect(previewRevert(ENTRY, DECK, { oracleId: CARD } as never)).rejects.toThrow("bad undo placement");
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD } as never)).rejects.toThrow("bad undo placement");
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: "card", deckId: DECK })).rejects.toThrow("bad undo placement");
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: 7 } as never))
       .rejects.toThrow("bad undo placement");
     // The displaced reservation travels with the pick it undoes, lowercased, and never alone.
@@ -149,7 +152,7 @@ describe("revertCollectionEntry", () => {
     stub.apply.mockClear();
     await revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: DECK, restore: { deckId: OLD.toUpperCase(), copies: 1 } });
     expect(stub.apply.mock.calls[0][1]).toMatchObject({ undoPlacement: { oracleId: CARD, deckId: DECK, restore: { deckId: OLD, copies: 1 } } });
-    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, restore: { deckId: OLD, copies: 1 } }))
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, restore: { deckId: OLD, copies: 1 } } as never))
       .rejects.toThrow("bad undo placement");
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: DECK, restore: { deckId: OLD, copies: 0 } }))
       .rejects.toThrow("bad undo placement");

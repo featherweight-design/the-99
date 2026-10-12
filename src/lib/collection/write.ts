@@ -98,7 +98,8 @@ export type CollectionChange =
        * Where an added copy goes (`undoPlacement`): the pick the purchase made, or that Change made
        * on its receipt, dropped in the same transaction, so Undo takes the copy back AND the
        * reservation it was given to. Honoured only for a card the entry itself wrote
-       * (`placementToUndo`); without `deckId`, every reservation of that card goes. `restore` is the
+       * (`placementToUndo`), and only the reservation on `deckId`: an undo names the pick it drops,
+       * and never clears a card's other reservations. `restore` is the
        * other deck's reservation that pick MOVED (A to B): put back as it stood, so Undo leaves the
        * card's reservations as they were before the press. Honoured only when the entry itself
        * recorded that displacement (`restoreToUndo`).
@@ -106,18 +107,19 @@ export type CollectionChange =
       undoPlacement?: UndoPlacement;
     };
 
-export type UndoPlacement = { oracleId: string; deckId?: string; restore?: { deckId: string; copies: number } };
+export type UndoPlacement = { oracleId: string; deckId: string; restore?: { deckId: string; copies: number } };
 
 /**
- * The pick an undo may drop: only one on a card the reverted entry wrote. An undo naming any
- * other card drops nothing, so a revert can never be used to clear an unrelated reservation.
+ * The pick an undo may drop: only one on a card the reverted entry wrote, and only the named deck's.
+ * An undo naming any other card, or no deck, drops nothing, so a revert can never be used to clear
+ * an unrelated reservation.
  */
 export function placementToUndo(
   undo: UndoPlacement | undefined,
   entryRows: readonly { oracleId: string }[],
-): { oracleId: string; deckId?: string } | null {
-  if (!undo || !entryRows.some((r) => r.oracleId === undo.oracleId)) return null;
-  return { oracleId: undo.oracleId, ...(undo.deckId ? { deckId: undo.deckId } : {}) };
+): { oracleId: string; deckId: string } | null {
+  if (!undo?.deckId || !entryRows.some((r) => r.oracleId === undo.oracleId)) return null;
+  return { oracleId: undo.oracleId, deckId: undo.deckId };
 }
 
 /**
@@ -702,7 +704,7 @@ export async function applyCollectionChange(
           await tx.delete(cardAssignments).where(and(
             eq(cardAssignments.userId, userId),
             eq(cardAssignments.oracleId, drop.oracleId),
-            ...(drop.deckId ? [eq(cardAssignments.deckId, drop.deckId)] : []),
+            eq(cardAssignments.deckId, drop.deckId),
           ));
           const restore = restoreToUndo(change.undoPlacement, row.rows);
           // Only onto a card left with no reservation (one authored reservation per card: a pick

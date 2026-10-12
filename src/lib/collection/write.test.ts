@@ -262,6 +262,8 @@ describe("placementToUndo", () => {
     expect(placementToUndo({ oracleId: A, deckId: "d" }, rows)).toEqual({ oracleId: A, deckId: "d" });
     expect(placementToUndo({ oracleId: B, deckId: "d" }, rows)).toBeNull();
     expect(placementToUndo(undefined, rows)).toBeNull();
+    // Never every reservation of the card: an undo naming no deck drops nothing.
+    expect(placementToUndo({ oracleId: A } as never, rows)).toBeNull();
   });
 });
 
@@ -277,7 +279,7 @@ describe("restoreToUndo", () => {
     expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 2 } }, rows)).toBeNull();
     expect(restoreToUndo({ oracleId: B, deckId: "b", restore: { deckId: "a", copies: 1 } }, rows)).toBeNull();
     expect(restoreToUndo({ oracleId: A, deckId: "c", restore: { deckId: "a", copies: 1 } }, rows)).toBeNull();
-    expect(restoreToUndo({ oracleId: A, restore: { deckId: "a", copies: 1 } }, rows)).toBeNull();
+    expect(restoreToUndo({ oracleId: A, restore: { deckId: "a", copies: 1 } } as never, rows)).toBeNull();
     expect(restoreToUndo({ oracleId: A, deckId: "b" }, rows)).toBeNull();
     // A pick the press wrote without a move, and an entry with no pick at all.
     expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, [{ oracleId: A, placed: { deckId: "b" } }])).toBeNull();

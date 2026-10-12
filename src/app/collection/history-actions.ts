@@ -86,11 +86,12 @@ function placementOf(value: unknown): { undoPlacement?: UndoPlacement } {
   if (typeof value !== "object" || Array.isArray(value)) throw new Error("bad undo placement");
   const { oracleId, deckId, restore } = value as { oracleId?: unknown; deckId?: unknown; restore?: unknown };
   if (typeof oracleId !== "string" || !isUuid(oracleId)) throw new Error("bad undo placement");
-  if (deckId !== undefined && (typeof deckId !== "string" || !isUuid(deckId))) throw new Error("bad undo placement");
+  // The deck is required: an undo drops the one pick it names, never every reservation of the card.
+  if (typeof deckId !== "string" || !isUuid(deckId)) throw new Error("bad undo placement");
   let back: { deckId: string; copies: number } | undefined;
   if (restore !== undefined && restore !== null) {
     // A restore only beside the pick it undoes: the write checks both against the entry's record.
-    if (typeof deckId !== "string" || typeof restore !== "object" || Array.isArray(restore)) throw new Error("bad undo placement");
+    if (typeof restore !== "object" || Array.isArray(restore)) throw new Error("bad undo placement");
     const r = restore as { deckId?: unknown; copies?: unknown };
     if (typeof r.deckId !== "string" || !isUuid(r.deckId) || !Number.isInteger(r.copies) || (r.copies as number) < 1) {
       throw new Error("bad undo placement");
@@ -100,7 +101,7 @@ function placementOf(value: unknown): { undoPlacement?: UndoPlacement } {
   return {
     undoPlacement: {
       oracleId: oracleId.toLowerCase(),
-      ...(typeof deckId === "string" ? { deckId: deckId.toLowerCase() } : {}),
+      deckId: deckId.toLowerCase(),
       ...(back ? { restore: back } : {}),
     },
   };
