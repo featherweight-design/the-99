@@ -27,6 +27,8 @@ Brief: `docs/superpowers/design-briefs/2026-10-11-all-decks-shopping-cart.md`. H
 | Receipt, held slot, Undo (S3 to S5) | ✓ | ✓ |
 | About: `all-decks-cart`, behind its switch | ✓ | ✓ |
 
+Each tick is the interactive walk at that width. The contact sheet photographs the deck select's fold at the phone width only, and A4 at desktop only.
+
 ## What was checked, and how
 
 | Check | Result |
@@ -39,7 +41,7 @@ Brief: `docs/superpowers/design-briefs/2026-10-11-all-decks-shopping-cart.md`. H
 | Undo (S5) | Undo reverted the purchase, and the line was back on the next read. |
 | About entry | `#all-decks-cart` draws its specimen with the switch on. |
 
-Screenshots of every surface at both widths are in the contact sheet. The chooser and the receipt were also captured during the walk.
+Every inventory row is in the contact sheet at each width it exists at: 18 cells, since the phone's deck select and A4 at desktop are drawn at one width only. The chooser and the receipt were also captured during the walk.
 
 ## Follow-ups
 
