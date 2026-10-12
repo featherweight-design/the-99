@@ -90,7 +90,7 @@ Measured spend: $0.58 (135,988 input and 50,139 output tokens, batch rates), aga
 
 What it says:
 
-- **About a quarter of the job-set misses are noise.** Sonnet 4.5 disagrees with its own stored label on 24% of cards (40% on full jobs and limits), so Sonnet 5.5's 30% (49%) is 6 points (9) beyond the floor, not 30 beyond zero.
+- **Most of the job-set miss is noise.** Sonnet 4.5 disagrees with its own stored label on 24% of cards (40% on full jobs and limits), so Sonnet 5.5's 30% (49%) is 6 points (9) beyond the floor, not 30 beyond zero.
 - **The gap is real on roles.** 4.5 reproduces 94.6% of cards' role jobs against 5.5's 88.0%, and recall drops 94.7% to 86.3%. Roles are what mana-base and ramp counts read; themes differ by about 4 points of recall, which is within what a self-repeat moves.
 - **Per-label noise sits on the same labels.** The control's weak rows (`role:tutor` 77.1%, `theme:spellslinger` 40.0%, `theme:tribal` 65.4%) are borderline themes, where any model would score low.
 
