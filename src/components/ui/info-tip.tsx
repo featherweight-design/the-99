@@ -11,7 +11,7 @@ import { twMerge } from "tailwind-merge";
  *  phone width its `::after` band makes the hit area 44px. The tooltip positions against the nearest
  *  positioned ancestor, which each caller supplies. */
 export function InfoTip({
-  id, lines, label, className = "self-center", buttonClassName = "",
+  id, lines, label, className = "self-center", buttonClassName = "", phoneAbove = false,
 }: {
   id: string; lines: readonly string[]; label: string;
   /** The root's own classes. A caller that has to place the ⓘ itself passes `contents` here and puts the
@@ -19,6 +19,9 @@ export function InfoTip({
    *  size of the ⓘ (Deck notes: it was squeezed against the screen edge on a phone). */
   className?: string;
   buttonClassName?: string;
+  /** Open ABOVE the anchor at phone width. A caller whose anchor sits at the foot of the page (the Notes field, above
+   *  the tab bar and the keyboard) passes it, or the tip draws under the bar and is cut off. */
+  phoneAbove?: boolean;
 }) {
   // Three reasons to be open, kept apart: one flag would let the press that follows a hover close it again.
   const [hover, setHover] = useState(false);
@@ -26,6 +29,12 @@ export function InfoTip({
   const [focused, setFocused] = useState(false);
   const open = hover || pinned || focused;
   const box = useRef<HTMLSpanElement>(null);
+  // A touch or pen press opens on the press itself, not on the click that follows the lift: a popover opens with
+  // no delay. The click that ends a touch or pen press is that press already handled; a keyboard or assistive
+  // click carries no press (`detail` 0) and a mouse click toggles as it always did. `before` is the pin the
+  // press found, put back if the browser takes the gesture for a scroll (`pointercancel`).
+  const touched = useRef(false);
+  const before = useRef(false);
   // A press anywhere else closes a pinned tip. The button's own blur is not enough: Safari does not focus a
   // button on a mouse press, so a pin made there would never blur.
   useEffect(() => {
@@ -34,6 +43,14 @@ export function InfoTip({
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
   }, [pinned]);
+  // Esc closes an open tip wherever focus is: a press no longer moves focus to the button, so the button's own keydown
+  // would never see it.
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setPinned(false); setHover(false); setFocused(false); } };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [open]);
   return (
     <span
       ref={box}
@@ -46,12 +63,24 @@ export function InfoTip({
         aria-label={label}
         aria-expanded={open}
         aria-describedby={id}
-        onClick={() => setPinned((v) => !v)}
+        // The press must not move focus: a focused field the press blurs hands the page back its hidden bars
+        // (Notes), and the layout shifts under the tip it is about to open.
+        onMouseDown={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          touched.current = e.pointerType !== "mouse";
+          if (!touched.current) return;
+          before.current = pinned;
+          setPinned(!pinned);
+        }}
+        onPointerCancel={() => { if (touched.current) setPinned(before.current); }}
+        onClick={(e) => {
+          if (e.detail > 0 && touched.current) return;
+          setPinned((v) => !v);
+        }}
         onFocus={(e) => {
           // Keyboard focus only: a tap focuses a button too, and would then hold it open against the next tap.
           try { if (e.currentTarget.matches(":focus-visible")) setFocused(true); } catch { /* no :focus-visible */ }
         }}
-        onKeyDown={(e) => { if (e.key === "Escape") { setPinned(false); setHover(false); setFocused(false); } }}
         onBlur={() => { setPinned(false); setFocused(false); }}
         className={twMerge(
           "relative flex size-[18px] items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] after:absolute after:-inset-[13px] after:content-[''] md:after:-inset-[5px]",
@@ -65,7 +94,7 @@ export function InfoTip({
         id={id}
         role="tooltip"
         hidden={!open}
-        className="absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden"
+        className={twMerge("absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden", phoneAbove && "max-md:bottom-[calc(100%+6px)] max-md:top-auto")}
       >
         {lines.map((l) => <span key={l}>{l}</span>)}
       </span>
