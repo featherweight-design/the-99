@@ -36,8 +36,24 @@ export type LineupBuild = {
   valueCents: number;
 };
 
+/** A nonbasic card two or more decks play (Cards your decks share). */
+export type LineupShared = {
+  oracleId: string;
+  name: string;
+  /** Copies owned, from the collection: never narrowed by a filter (ruling 3). */
+  owned: number;
+  /** The art its hover preview shows: the printing the player owns, else the catalog's (the chain card details opens). */
+  imageUri: string | null;
+  /** Each deck playing it: the copies it asks for, and how many of those it has (all of them less Shopping's buy). */
+  decks: { id: string; wants: number; held: number }[];
+};
+
 export type LineupData = {
   decks: LineupDeck[];
+  /** Null when the claim read failed, with the build figures. */
+  shared: LineupShared[] | null;
+  /** Distinct nonbasic cards across every deck, and across the finished ones: the Shared card's denominator. */
+  cardCounts: { all: number; finished: number };
   /** The newest price the values were read at, ISO, or null with none. */
   pricesAsOf: string | null;
 };

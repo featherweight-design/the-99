@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { LineupData, LineupDeck } from "../../../lib/lineup/types";
+import { cardDetailCopy } from "../../cards/card-detail-provider";
 import { IdentityMark } from "./identity-mark";
 import { LineupView } from "./lineup-view";
 
@@ -15,6 +16,8 @@ const DATA: LineupData = {
     deck("Eldrazi", { bracket: { permits: [3], answered: null } }),
   ],
   pricesAsOf: null,
+  shared: null,
+  cardCounts: { all: 0, finished: 0 },
 };
 
 const draw = (data = DATA, foldServer: string | null = null) =>
@@ -84,7 +87,7 @@ describe("LineupView: the filter", () => {
 
 describe("LineupView: one deck", () => {
   it("says 1 deck under All decks, and counts what Finished only kept when the only deck is a brew", () => {
-    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null });
+    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 } });
     expect(screen.getAllByText("1 deck").length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
     expect(screen.getAllByText("0 finished decks · 1 brew left out").length).toBeGreaterThan(0);
@@ -161,6 +164,8 @@ describe("LineupView: among, jobs and worth", () => {
       deck("Brago", { build: b(7, 17631) }),
     ],
     pricesAsOf: "2026-10-11T10:00:00.000Z",
+    shared: null,
+    cardCounts: { all: 0, finished: 0 },
   };
 
   it("compares the deck played most recently by default, with its rank, most first", () => {
@@ -199,7 +204,79 @@ describe("LineupView: among, jobs and worth", () => {
   });
 
   it("draws none of the three with one deck (T1)", () => {
-    draw({ decks: [BUILT.decks[0]], pricesAsOf: null });
+    draw({ decks: [BUILT.decks[0]], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 } });
     expect(["among", "jobs", "worth"].map((id) => card(id))).toEqual([null, null, null]);
+  });
+});
+
+describe("LineupView: cards your decks share", () => {
+  const SH: LineupData = {
+    ...DATA,
+    shared: [
+      { oracleId: "sol", name: "Sol Ring", imageUri: null, owned: 2, decks: [{ id: "tovolar", wants: 1, held: 1 }, { id: "scrappy", wants: 1, held: 0 }, { id: "gishath", wants: 1, held: 1 }] },
+      { oracleId: "signet", name: "Arcane Signet", imageUri: null, owned: 4, decks: [{ id: "tovolar", wants: 1, held: 1 }, { id: "eldrazi", wants: 1, held: 1 }] },
+    ],
+  };
+
+  it("draws a square per deck, held filled and short dashed, with the count against what you own", () => {
+    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    const sol = card("shared").querySelector('[data-stats-shared="sol"]') as HTMLElement;
+    expect(sol.querySelectorAll("[data-held]").length).toBe(2);
+    expect(within(sol).getByText("3 decks")).toBeTruthy();
+    expect(within(sol).getByText("you own 2")).toBeTruthy();
+    expect(within(sol).getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") })).toBeTruthy();
+    expect(within(card("shared")).getByText("2 cards in 2+ decks · 0 in 5+ · basics not counted")).toBeTruthy();
+  });
+
+  it("opens a short row to name the decks with no copy, and links to Shopping for all decks", () => {
+    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Copies left of Sol Ring/ }));
+    expect(within(card("shared")).getByText("No copy left for Scrappy.")).toBeTruthy();
+    expect(within(card("shared")).getByRole("link", { name: "1 on Shopping for all decks" }).getAttribute("href")).toBe("/decks/shopping");
+  });
+
+  it("opens a row whose only short deck holds some of its copies, naming no deck and still linking the buy", () => {
+    const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
+    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    expect(card("shared").querySelectorAll('[data-stats-shared="rats"] [data-held]').length).toBe(2);
+    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Copies left of Relentless Rats/ }));
+    expect(within(card("shared")).queryByText(/^No copy left/)).toBeNull();
+    expect(within(card("shared")).getByRole("link", { name: "3 on Shopping for all decks" })).toBeTruthy();
+  });
+
+  it("draws that row closed, with nothing to open, when the cart is off", () => {
+    const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
+    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    expect(within(card("shared")).queryByRole("button", { name: /^Copies left of Relentless Rats/ })).toBeNull();
+  });
+
+  it("lists only the cards wanted more than owned under that chip", () => {
+    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
+    fireEvent.click(within(card("shared")).getByRole("button", { name: "Wanted more than you own · 1" }));
+    expect([...card("shared").querySelectorAll("[data-stats-shared]")].map((r) => r.getAttribute("data-stats-shared"))).toEqual(["sol"]);
+  });
+
+  it("says no card is in two decks when the decks share none, and counts one card in the singular", () => {
+    render(<LineupView data={{ ...SH, shared: [] }} now={NOW} foldServer="-" viewSwitch={null} />);
+    expect(within(card("shared")).getByText("no card in two decks")).toBeTruthy();
+    expect(within(card("shared")).getByText("4 decks · 0 cards")).toBeTruthy();
+  });
+
+  it("counts every distinct card in scope in the denominator, and says nothing is in scope with zero decks", () => {
+    render(<LineupView data={{ ...SH, cardCounts: { all: 120, finished: 100 } }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    expect(within(card("shared")).getByText("4 decks · 120 cards")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(within(card("shared")).getByText("3 decks · 100 cards")).toBeTruthy();
+  });
+
+  it("uses the plural denominator, not the one-deck shorthand, when Finished only keeps no deck", () => {
+    render(<LineupView data={{ ...SH, decks: [deck("Gishath", { brew: true }), deck("Kratos", { brew: true })] }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(within(card("shared")).getByText("0 decks · 0 cards")).toBeTruthy();
+  });
+
+  it("says a card is shared once two decks play it, with one deck (T1)", () => {
+    render(<LineupView data={{ ...SH, decks: [DATA.decks[0]] }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    expect(within(card("shared")).getByText("Needs two decks.")).toBeTruthy();
   });
 });

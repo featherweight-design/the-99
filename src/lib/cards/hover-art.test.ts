@@ -57,6 +57,7 @@ const FEEDERS: Record<string, string> = {
   // The open precon's Card view: its art and card details both show the precon's own printing (O6, `preconArt` in
   // `lib/precons/open-read.ts` and the page's `viewPrintings`), not the owned-printing chain, by design.
   "components/decks/read-only-card-tile.tsx": "",
+  "components/decks/lineup/shared-card.tsx": "lib/lineup/load.ts",
 };
 
 function walk(dir: string): string[] {

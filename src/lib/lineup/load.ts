@@ -24,13 +24,16 @@ import { readHeldPricePicks } from "../decks/printings";
 import { primaryRole } from "../decks/read";
 import { moneyStats } from "../decks/stats-money";
 import { readLabels } from "../labels/read";
+import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
+import type { Availability } from "../decks/availability";
 import { analysisTabEnabled } from "../decks/analysis-flag";
+import { chainArt, withChainArt } from "../cards/chain-art";
 import { deckIdentity } from "../decks/format";
 import { listDecksWithStats } from "../decks/read";
 import { DEFAULT_DECK_SORT } from "../decks/sort";
-import type { LineupBuild, LineupData, LineupGame } from "./types";
+import type { LineupBuild, LineupData, LineupGame, LineupShared } from "./types";
 
-type BuildCard = { deckId: string; oracleId: string; name: string; typeLine: string; cmc: number; quantity: number; oracleText: string | null; keywords: string[] };
+type BuildCard = { deckId: string; oracleId: string; name: string; typeLine: string; cmc: number; quantity: number; oracleText: string | null; keywords: string[]; imageUri: string | null };
 
 /** The decks' 99s and their commanders, each one statement over every deck. */
 async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders: Omit<BuildCard, "oracleText" | "keywords">[] }> {
@@ -38,45 +41,87 @@ async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders
   const [list, heads] = await Promise.all([
     db.select({
       deckId: deckCards.deckId, oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-      name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc, oracleText: cards.oracleText, keywords: cards.keywords,
+      name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc, oracleText: cards.oracleText, keywords: cards.keywords, imageUri: cards.imageUri,
     }).from(deckCards).innerJoin(cards, eq(cards.oracleId, deckCards.oracleId)).where(inArray(deckCards.deckId, ids)),
     db.select({
       deckId: decksTable.id,
-      oracleId: decksTable.commanderOracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc,
-      partnerId: decksTable.partnerOracleId, partnerName: partner.name, partnerTypeLine: partner.typeLine, partnerCmc: partner.cmc,
+      oracleId: decksTable.commanderOracleId, name: cards.name, typeLine: cards.typeLine, cmc: cards.cmc, imageUri: cards.imageUri,
+      partnerId: decksTable.partnerOracleId, partnerName: partner.name, partnerTypeLine: partner.typeLine, partnerCmc: partner.cmc, partnerImageUri: partner.imageUri,
     }).from(decksTable).innerJoin(cards, eq(cards.oracleId, decksTable.commanderOracleId))
       .leftJoin(partner, eq(partner.oracleId, decksTable.partnerOracleId))
       .where(inArray(decksTable.id, ids)),
   ]);
   const commanders = heads.flatMap((h) => [
-    { deckId: h.deckId, oracleId: h.oracleId!, name: h.name, typeLine: h.typeLine, cmc: h.cmc, quantity: 1 },
+    { deckId: h.deckId, oracleId: h.oracleId!, name: h.name, typeLine: h.typeLine, cmc: h.cmc, quantity: 1, imageUri: h.imageUri },
     ...(h.partnerId && h.partnerName !== null
-      ? [{ deckId: h.deckId, oracleId: h.partnerId, name: h.partnerName, typeLine: h.partnerTypeLine!, cmc: h.partnerCmc ?? 0, quantity: 1 }]
+      ? [{ deckId: h.deckId, oracleId: h.partnerId, name: h.partnerName, typeLine: h.partnerTypeLine!, cmc: h.partnerCmc ?? 0, quantity: 1, imageUri: h.partnerImageUri }]
       : []),
   ]);
   return { list, commanders };
 }
 
 /** Each deck's build figures, or null for every deck when the labels or the prices could not be read. */
-async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null }> {
-  if (ids.length === 0) return { builds: new Map(), asOf: null };
+/**
+ * The cards two or more decks play, basics left out, each with what the collection holds and how many of each
+ * deck's copies it already has. What a deck still lacks is Shopping's own buy row (lock 3: the claim model's,
+ * never re-derived here), so the count a row links to is the count `/decks/shopping` lists: it reads each
+ * deck's draft against the copies left to it, bills nothing a deck proxies, and lets a brew take a free copy.
+ * A deck with no card in its list plays nothing here, its commanders included: Shopping bills it nothing until it
+ * holds a card again, so counting its commander would draw a copy it neither has nor is told to buy.
+ */
+export function sharedCards(
+  lists: { deckId: string; oracleId: string; name: string; typeLine: string; quantity: number; imageUri: string | null }[],
+  availability: ReadonlyMap<string, Pick<Availability, "owned">>,
+  buys: readonly DeckBuyRow[],
+  /** The decks whose list holds a card. */
+  bodied: ReadonlySet<string>,
+): LineupShared[] {
+  const byCard = new Map<string, { name: string; imageUri: string | null; decks: Map<string, number> }>();
+  for (const c of lists) {
+    if (isBasicLand(c.typeLine) || !bodied.has(c.deckId)) continue;
+    const row = byCard.get(c.oracleId) ?? { name: c.name, imageUri: c.imageUri, decks: new Map<string, number>() };
+    row.decks.set(c.deckId, (row.decks.get(c.deckId) ?? 0) + c.quantity);
+    byCard.set(c.oracleId, row);
+  }
+  const buy = new Map(buys.map((r) => [`${r.deckId}|${r.oracleId}`, r.quantity]));
+  return [...byCard].filter(([, r]) => r.decks.size >= 2).map(([oracleId, r]) => ({
+    oracleId,
+    name: r.name,
+    imageUri: r.imageUri,
+    owned: availability.get(oracleId)?.owned ?? 0,
+    decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: Math.max(0, wants - (buy.get(`${id}|${oracleId}`) ?? 0)) })),
+  }));
+}
+
+type ListRow = { deckId: string; oracleId: string; typeLine: string };
+
+async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null }> {
+  if (ids.length === 0) return { builds: new Map(), asOf: null, shared: [], lists: [] };
   let lists: Awaited<ReturnType<typeof readLists>>;
   let jobs: JobRowsByCard;
   let prices: PriceRead;
+  let availability: Map<string, Availability>;
+  let buys: DeckBuyRow[];
   try {
     lists = await readLists(ids);
     const all = [...lists.list, ...lists.commanders];
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
-    const [labels, read] = await Promise.all([
+    const [labels, read, avail, buyRows] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
       readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
+      // The whole collection's claim model, once (lock 3, lock 4).
+      loadAvailability(userId),
+      // Shopping's own buy rows, so a row's to-buy count is the cart's.
+      loadDeckBuyRows(userId, ids),
     ]);
+    buys = buyRows;
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));
     prices = read;
+    availability = avail;
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
-    return { builds: null, asOf: null };
+    return { builds: null, asOf: null, shared: null, lists: null };
   }
   const byDeck = new Map<string, BuildCard[]>();
   for (const c of lists.list) byDeck.set(c.deckId, [...(byDeck.get(c.deckId) ?? []), c]);
@@ -99,7 +144,13 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
       valueCents: money?.value.cents ?? 0,
     });
   }
-  return { builds, asOf: prices.newestAsOf };
+  // A deck with no card in its list plays nothing on Shared, its commanders included, so its denominator drops them too.
+  const bodied = new Set(lists.list.map((c) => c.deckId));
+  const every = [...lists.list, ...lists.commanders].filter((c) => bodied.has(c.deckId));
+  const shared = sharedCards(every, availability, buys, bodied);
+  // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
+  const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
+  return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {
@@ -122,7 +173,11 @@ export async function loadLineup(userId: string): Promise<LineupData> {
     list.push({ result: r.result as LineupGame["result"], playedAt: r.playedAt.toISOString(), podSize: r.podSize });
     games.set(r.deckId, list);
   }
+  const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
+  const distinct = (keep: (deckId: string) => boolean) =>
+    new Set((built.lists ?? []).filter((c) => keep(c.deckId) && !isBasicLand(c.typeLine)).map((c) => c.oracleId)).size;
   return {
+    cardCounts: { all: distinct(() => true), finished: distinct((id) => !brews.has(id)) },
     decks: decks.map((d) => ({
       id: d.id,
       name: d.name,
@@ -133,5 +188,6 @@ export async function loadLineup(userId: string): Promise<LineupData> {
       build: built.builds?.get(d.id) ?? null,
     })),
     pricesAsOf: built.asOf ? built.asOf.toISOString() : null,
+    shared: built.shared,
   };
 }

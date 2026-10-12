@@ -10,7 +10,10 @@ import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { defaultChosen, jobsGrid, strip, worth } from "../../../lib/lineup/among";
 import { fullestSlot, recency, scoped, spread } from "../../../lib/lineup/figures";
 import type { LineupData, LineupFilter } from "../../../lib/lineup/types";
+import { sharedView } from "../../../lib/lineup/shared";
+import { CardDetailProvider } from "../../cards/card-detail-provider";
 import { AmongBody } from "./among-card";
+import { SharedBody } from "./shared-card";
 import { FoldCard, useDecksStatsFold } from "./fold";
 import { JobsBody } from "./jobs-card";
 import { WorthBody } from "./worth-card";
@@ -53,13 +56,15 @@ function Filter({ filter, onFilter, phone }: { filter: LineupFilter; onFilter: (
   );
 }
 
-export function LineupView({ data, now, foldServer, viewSwitch }: {
+export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = false }: {
   data: LineupData;
   /** The server's clock, ISO: every "N days ago" is measured against it. */
   now: string;
   /** The fold memory the page read from its cookie, so the server draws the cards this browser keeps open. */
   foldServer: string | null;
   viewSwitch: ReactNode;
+  /** `ALL_DECKS_CART_ENABLED`: a shared row's to-buy line links to Shopping for all decks only while it is on. */
+  cartEnabled?: boolean;
 }) {
   const [filter, setFilter] = useState<LineupFilter>("all");
   const fold = useDecksStatsFold(foldServer);
@@ -83,6 +88,7 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
     return s ? copy.among.rank(s.chosen.rank, s.total, s.chosen.tied) : "";
   };
   const w = useMemo(() => worth(decks, "most"), [decks]);
+  const sharedTop = useMemo(() => (data.shared ? sharedView(data.shared, new Set(decks.map((d) => d.id)), "most") : null), [data.shared, decks]);
   const grid = useMemo(() => jobsGrid(decks, "ramp"), [decks]);
   const expand = (
     <button type="button" data-stats-expand onClick={() => fold.setAll(!fold.allOpen)} className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent)] md:min-h-[34px]">
@@ -92,6 +98,8 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
   const scopeLine = <span data-stats-scope className="font-mono text-[11px] text-[color:var(--fg-muted)]">{scope}</span>;
 
   return (
+    // Every card name in Stats opens its card (handoff R1 call 11).
+    <CardDetailProvider>
     <div data-decks-stats className="flex min-h-0 w-full flex-auto flex-col md:max-w-[900px]">
       {/* The view row: the switch, then (from md) the filter and its scope line in the same row. */}
       <div className="flex items-center gap-[8px] px-[16px] pt-[8px] pb-[10px] md:flex-wrap md:gap-[6px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:py-[10px]">
@@ -131,6 +139,18 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
         >
           <SpreadBody s={spr} decks={decks} chosenId={comparing?.id ?? null} />
         </FoldCard>
+        {sharedTop ? (
+          <FoldCard
+            id="shared"
+            title={copy.shared.title}
+            denom={decks.length === 1 ? copy.filter.one : copy.shared.denom(decks.length, filter === "finished" ? data.cardCounts.finished : data.cardCounts.all)}
+            summary={decks.length < 2 ? copy.summary.sharedOne : !sharedTop.rows[0] ? copy.summary.sharedNone : copy.summary.shared(sharedTop.rows[0].name, sharedTop.rows[0].decks.length, sharedTop.rows[0].owned, sharedTop.wantedMore)}
+            open={fold.open.has("shared")}
+            onToggle={() => fold.toggle("shared")}
+          >
+            <SharedBody shared={data.shared!} decks={decks} cartEnabled={cartEnabled} />
+          </FoldCard>
+        ) : null}
         {comparing ? (
           <>
             <FoldCard
@@ -167,5 +187,6 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
         ) : null}
       </div>
     </div>
+    </CardDetailProvider>
   );
 }
