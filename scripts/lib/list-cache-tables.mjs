@@ -113,10 +113,32 @@ export function triggeredTables(sources = migrationSources()) {
   return out;
 }
 
+/**
+ * Per-user tables whose content reaches a cached page through its KEY, not its payload (admin
+ * brief, locked rule 8). The switch overrides change what a reader is drawn, and an app-wide or
+ * group row changes many readers at once, which a per-row stamp trigger cannot express. So
+ * `cachePageForUser` resolves the reader's switches before it opens an entry and puts every one in
+ * the key: a flip asks for a different entry, and no stored payload outlives it. Only
+ * `page-cache.ts` may read them on the pages' path (`switchReaders`), or the key would not be the
+ * whole story.
+ */
+export const KEYED_BY_SWITCHES = new Set(["flag_overrides", "flag_group_members"]);
+export const SWITCH_READER = "src/lib/cache/page-cache.ts";
+const SWITCH_MODULE = "src/lib/switches/snapshot.ts";
+
+/** Every file on the pages' path that imports the override snapshot, other than the one allowed to. */
+export function switchReaders(files = loaderFiles()) {
+  return files.filter((file) => {
+    if (file === SWITCH_READER || file.startsWith("src/lib/switches/")) return false;
+    return importsOf(readFileSync(file, "utf8")).some((spec) => resolveImport(resolve(file), spec) === resolve(SWITCH_MODULE));
+  }).map((file) => `KEYED   ${file} reads the switch overrides inside a cached page's path; only ${SWITCH_READER} may, and only to build the key`);
+}
+
 /** Every table the pages read that the stamp does not cover, with the reason. */
 export function listCacheProblems(perUser = tablesRead().perUser, triggers = triggeredTables()) {
   const problems = [];
   for (const table of perUser) {
+    if (KEYED_BY_SWITCHES.has(table.name)) continue;
     const keyed = triggers.get(table.name);
     if (!keyed) problems.push(`MISSING ${table.name} is read by Home or /decks and carries no deferred user_data_touch trigger`);
     else if (keyed !== table.owner) problems.push(`WRONG   ${table.name}'s trigger is keyed on ${keyed}, but the table's owner column is ${table.owner}`);

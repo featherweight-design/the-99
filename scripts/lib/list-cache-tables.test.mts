@@ -1,11 +1,11 @@
 // `check:list-cache`'s failure paths, each written as the shape that would let a stale page pass.
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  listCacheProblems, loaderFiles, schemaTables, socialKeyProblems, tablesRead, triggeredTables, unrecordedCatches,
+  KEYED_BY_SWITCHES, listCacheProblems, loaderFiles, schemaTables, socialKeyProblems, switchReaders, tablesRead, triggeredTables, unrecordedCatches,
 } from "./list-cache-tables.mjs";
 
 const create = (table: string, column: string, deferred = true) =>
@@ -58,6 +58,26 @@ describe("listCacheProblems", () => {
     expect(listCacheProblems(read, new Map([["decks", "user_id"], ["deck_cards", "user_id"]]))).toEqual([
       expect.stringMatching(/^WRONG {3}deck_cards/),
     ]);
+  });
+
+  it("does not ask the stamp to cover the switch overrides, which reach a page through its key", () => {
+    const keyed = [...KEYED_BY_SWITCHES].map((name) => ({ name, owner: "user_id" }));
+    expect(listCacheProblems([...read, ...keyed], new Map([["decks", "user_id"], ["deck_cards", "deck_id"]]))).toEqual([]);
+  });
+});
+
+describe("switchReaders", () => {
+  it("reports a loader on the pages' path that reads the overrides itself", () => {
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-reader-"));
+    const file = join(dir, "loader.ts");
+    writeFileSync(file, 'import { resolveSwitchEnv } from "../switches/snapshot";\nexport const x = resolveSwitchEnv;\n');
+    const rel = file.slice(process.cwd().length + 1);
+    try {
+      expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
+      expect(switchReaders(["src/lib/cache/page-cache.ts"])).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
   });
 });
 
@@ -123,6 +143,12 @@ describe("the shipped tree", () => {
 
   it("has no fallback on the pages' path that the cache would store", () => {
     expect(unrecordedCatches()).toEqual([]);
+  });
+
+  it("reads the switch overrides only in page-cache.ts, to build the key", () => {
+    expect(loaderFiles()).toContain("src/lib/switches/snapshot.ts");
+    expect(tablesRead().perUser.map((t) => t.name)).toEqual(expect.arrayContaining([...KEYED_BY_SWITCHES]));
+    expect(switchReaders()).toEqual([]);
   });
 });
 

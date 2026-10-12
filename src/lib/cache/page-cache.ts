@@ -17,13 +17,8 @@
  * would freeze it until the reader next writes something. A load during which any read fell
  * back (`soft-failure.ts`) is not stored either, for the same reason.
  */
-import { changeCommanderEnabled } from "../commander-change/flag";
-import { analysisTabEnabled } from "../decks/analysis-flag";
-import { neverCutEnabled } from "../decks/never-cut-flag";
-import { noticesEnabled } from "../notices/flag";
-import { tuningEnabled } from "../tuning/flag";
-import { lineupEnabled } from "../decks/lineup-flag";
-import { socialFriendsEnabled } from "../social/flag";
+import { switchBits } from "../switches/resolve";
+import { resolveSwitchEnv } from "../switches/snapshot";
 import { listCacheEnabled } from "./list-cache-flag";
 import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
@@ -31,17 +26,12 @@ import { watchSoftFailures } from "./soft-failure";
 import { userDataStamp } from "./user-data-stamp";
 
 /**
- * The switches that change what these loaders read or draw. A switch is read when the server
- * starts, so a deployment usually covers it; a local server restarted with a switch flipped is
- * the same "deployment" and needs them spelled out.
+ * The reader's RESOLVED switches, every one of them, as bits (brief, locked rule 6). An override
+ * changes no stamp, so it is the key that retires a cached page when an admin flips a switch for
+ * this reader, their group or the whole app; a redeploy that flips a variable moves it too. Every
+ * switch rather than a hand-picked few, so a loader that starts reading another one is covered.
  */
-function switches(): string {
-  return [
-    analysisTabEnabled(), noticesEnabled(), changeCommanderEnabled(), neverCutEnabled(), tuningEnabled(), lineupEnabled(),
-    socialFriendsEnabled(),
-  ]
-    .map((on) => (on ? "1" : "0")).join("");
-}
+const switches = (env: NodeJS.ProcessEnv): string => switchBits(env);
 
 /** Carries a result out of the cached function without it being stored. */
 class NotStored {
@@ -56,13 +46,14 @@ export async function cachePageForUser<T>(
   key: string[],
   load: () => Promise<PageLoad<T>>,
 ): Promise<T> {
+  const env = await resolveSwitchEnv(userId);
   // Switched off, the page runs exactly as it did before this cache: no stamp read, nothing stored.
-  if (!listCacheEnabled()) return (await load()).value;
+  if (!listCacheEnabled(env)) return (await load()).value;
   const stamp = await userDataStamp(userId);
   // Without a stamp there is nothing to say an entry is still true, so nothing is cached.
   if (stamp === null) return (await load()).value;
   try {
-    const text = await cacheForUser(userId, ["page", page, switches(), String(stamp), ...key], async () => {
+    const text = await cacheForUser(userId, ["page", page, switches(env), String(stamp), ...key], async () => {
       const { value: result, fellBack } = await watchSoftFailures(load);
       // Thrown rather than returned: the data cache stores whatever the function returns.
       if (!result.store || fellBack) throw new NotStored(result.value);

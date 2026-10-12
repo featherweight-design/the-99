@@ -15,6 +15,7 @@ import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
+import { SWITCH_NAMES } from "../lib/switches/registry";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -2249,6 +2250,61 @@ export const adminEvents = pgTable("admin_events", {
     or (${t.scope} = 'group' and ${t.groupId} is not null and ${t.userId} is null)
     or (${t.scope} = 'user' and ${t.userId} is not null and ${t.groupId} is null)`),
   index("admin_events_at_idx").on(t.at),
+]);
+
+/**
+ * The admin's named groups of accounts (`friends`, `testers`; brief, locked rule 4). A group
+ * override in `flag_overrides` applies to every member. Deleting a group takes its members and its
+ * overrides with it; its history stays in `admin_events`, which carries no foreign key to it.
+ */
+export const flagGroups = pgTable("flag_groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * Which group an account is in: at most ONE, by the primary key on `user_id` (admin plan), so a
+ * reader's resolution never has two groups to weigh. A move between groups is a remove then an add.
+ */
+export const flagGroupMembers = pgTable("flag_group_members", {
+  userId: text("user_id").primaryKey(),
+  groupId: uuid("group_id").notNull().references(() => flagGroups.id, { onDelete: "cascade" }),
+  addedBy: text("added_by").notNull(),
+  addedAt: timestamp("added_at").notNull().defaultNow(),
+}, (t) => [index("flag_group_members_group_idx").on(t.groupId)]);
+
+/**
+ * An override of one switch on top of its environment variable (brief, rulings 1 and 2, locked
+ * rule 4): app-wide, for a group, or for one account. A row is `on` or `off`; there is no inherit
+ * value, because absence is inheritance, and clearing an override deletes its row. Each target holds
+ * at most one override per switch (unique with nulls not distinct), so resolution is deterministic.
+ * The switch names are the closed set in `src/lib/switches/registry.ts`.
+ *
+ * Not a `user_data_touch` table, though it carries `user_id`: an app-wide or group row changes many
+ * readers, and a per-row trigger moves one stamp. The cached pages put the reader's RESOLVED switches
+ * in their key instead (locked rules 6 and 8), and `check:list-cache` knows the category.
+ */
+export const flagOverrides = pgTable("flag_overrides", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  switchName: text("switch").notNull(),
+  scope: text("scope").notNull(),
+  groupId: uuid("group_id").references(() => flagGroups.id, { onDelete: "cascade" }),
+  userId: text("user_id"),
+  value: text("value").notNull(),
+  note: text("note"),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw(SWITCH_NAMES.map((n) => `'${n}'`).join(", "))})`),
+  check("flag_overrides_scope_check", sql`${t.scope} in ('app', 'group', 'user')`),
+  check("flag_overrides_value_check", sql`${t.value} in ('on', 'off')`),
+  check("flag_overrides_target_check", sql`(${t.scope} = 'app' and ${t.groupId} is null and ${t.userId} is null)
+    or (${t.scope} = 'group' and ${t.groupId} is not null and ${t.userId} is null)
+    or (${t.scope} = 'user' and ${t.userId} is not null and ${t.groupId} is null)`),
+  unique("flag_overrides_target_key").on(t.switchName, t.scope, t.groupId, t.userId).nullsNotDistinct(),
 ]);
 
 /**

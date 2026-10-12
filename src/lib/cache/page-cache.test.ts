@@ -15,6 +15,9 @@ vi.mock("./user-lists", () => ({
 vi.mock("./user-data-stamp", () => ({ userDataStamp: vi.fn(async () => stamp.value) }));
 const enabled = vi.hoisted(() => ({ value: true }));
 vi.mock("./list-cache-flag", () => ({ listCacheEnabled: () => enabled.value }));
+// The reader's resolved switches, as `resolveSwitchEnv` hands them over.
+const switchEnv = vi.hoisted(() => ({ value: {} as NodeJS.ProcessEnv }));
+vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => switchEnv.value) }));
 
 import { cacheForUser } from "./user-lists";
 import { userDataStamp } from "./user-data-stamp";
@@ -31,6 +34,7 @@ describe("cachePageForUser", () => {
     store.clear();
     stamp.value = 0;
     enabled.value = true;
+    switchEnv.value = {};
     vi.mocked(cacheForUser).mockClear();
     vi.mocked(userDataStamp).mockClear();
   });
@@ -47,6 +51,18 @@ describe("cachePageForUser", () => {
     const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
     await cachePageForUser("u1", "decks", [], load);
     stamp.value = 1;
+    await cachePageForUser("u1", "decks", [], load);
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("loads again when an override flips one of the reader's switches, with no write and no redeploy", async () => {
+    const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
+    await cachePageForUser("u1", "decks", [], load);
+    switchEnv.value = { DECK_NOTES_ENABLED: "true" };
+    await cachePageForUser("u1", "decks", [], load);
+    expect(load).toHaveBeenCalledTimes(2);
+    // And back again: the first entry is still true for the switches it was drawn under.
+    switchEnv.value = {};
     await cachePageForUser("u1", "decks", [], load);
     expect(load).toHaveBeenCalledTimes(2);
   });

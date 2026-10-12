@@ -9,12 +9,12 @@
 // Static: no server, no database. `pnpm probe:list-stamp` proves the triggers against a real one.
 //
 // Run: `pnpm check:list-cache`
-import { listCacheProblems, socialKeyProblems, tablesRead, triggeredTables, unrecordedCatches } from "./lib/list-cache-tables.mjs";
+import { KEYED_BY_SWITCHES, listCacheProblems, socialKeyProblems, switchReaders, tablesRead, triggeredTables, unrecordedCatches } from "./lib/list-cache-tables.mjs";
 
 const { perUser, catalog } = tablesRead();
 // Both halves of what keeps a cached page true: every write moves the stamp, and no payload
 // built over a read that fell back is stored.
-const problems = [...listCacheProblems(perUser, triggeredTables()), ...unrecordedCatches(), ...socialKeyProblems()];
+const problems = [...listCacheProblems(perUser, triggeredTables()), ...unrecordedCatches(), ...socialKeyProblems(), ...switchReaders()];
 for (const p of problems) console.error(p);
 if (problems.length) {
   console.error(
@@ -24,8 +24,9 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `Every one of the ${perUser.length} per-user tables Home, /decks, /decks/shopping and /decks/precons read moves the reader's stamp, ` +
+  `Every one of the ${perUser.filter((t) => !KEYED_BY_SWITCHES.has(t.name)).length} other per-user tables Home, /decks, /decks/shopping and /decks/precons read moves the reader's stamp, ` +
   "and every fallback on their path keeps its payload out of the cache. " +
   `The ${catalog.length} catalog tables they read are retired by the catalog generation instead: ` +
-  `${catalog.map((t) => t.name).join(", ")}.`,
+  `${catalog.map((t) => t.name).join(", ")}. ` +
+  `${[...KEYED_BY_SWITCHES].join(" and ")} reach a cached page through its key alone: page-cache.ts resolves the reader's switches into it.`,
 );

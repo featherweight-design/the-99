@@ -18,6 +18,8 @@ vi.mock("@clerk/nextjs/server", () => ({
   createRouteMatcher: (routes: string[]) => (req: NextRequest) =>
     routes.some((r) => r === req.nextUrl.pathname || (r.includes("(") && false)),
 }));
+// No overrides: the reader's switches are the environment's, as they were before the resolver.
+vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => process.env) }));
 // The sheet reads the whole seen state; its version half is the same mock, so every test that
 // sets a version sets both. No switched entry exists yet, so the ids are always empty here.
 vi.mock("./lib/about/read", () => ({
