@@ -68,6 +68,12 @@ describe("a token's card details", () => {
     expect(assembleTokenDetail(TOKEN, PRINTINGS, null, NEWEST).printings[0].hasOwnBack).toBe(false);
   });
 
+  it("draws no Set block at either width when the token has no printing to name", () => {
+    render(<CardModal card={assembleTokenDetail(TOKEN, [], null, NEWEST)} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} />);
+    expect(screen.getAllByText("Haste").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Set")).toBeNull();
+  });
+
   it("draws no price and no buy link when Mana Pool lists none, and pictures the first printing by set", () => {
     const card = assembleTokenDetail(TOKEN, PRINTINGS, null, NEWEST);
     expect(card.imageUri).toBe("https://img/a.jpg");

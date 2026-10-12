@@ -1542,6 +1542,8 @@ export function CardModal({
   // The base resolves off `preview`, so it names the printing actually on screen; the count
   // is of what the reader OWNS, so an injected row is art and not a holding.
   const caption = printingCaption(preview, ownedPrintings);
+  // A token whose printing read failed has no set to name, and so no meta block at all.
+  const tokenNoSet = card.kind === "token" && caption === "";
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.
@@ -2520,6 +2522,7 @@ export function CardModal({
                   promoted out of the grid into a full-width row below Rarity and Identity, so
                   the disclosure and its region are last in the column and the grid is not
                   pushed off-screen the moment you expand. */}
+              {tokenNoSet ? null : (
               <div
                 className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
                 style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
@@ -2543,6 +2546,7 @@ export function CardModal({
                   </>
                 )}
               </div>
+              )}
 
               {hasPicker && (
                 <div className="md:hidden mt-[12px]">
@@ -2573,7 +2577,7 @@ export function CardModal({
                     expanded={expanded}
                     onClick={toggleExpanded}
                   />
-                ) : (
+                ) : tokenNoSet ? null : (
                   <MetaField label="Set" value={caption} />
                 )}
                 {isToken ? null : (
