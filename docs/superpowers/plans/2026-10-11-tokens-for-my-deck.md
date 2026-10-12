@@ -219,6 +219,16 @@ inventory below with the switch on, against a `pull:staging` copy.
   `tokens.json` (read, unknown via `tokens-unknown.json`, Aang/Omnath/Wizards, card view, the three no-Tokens routes),
   `tokens-shopping.json` (Shopping, tokens only and with cards, the Tokens group last, the press) and `tokens-closeout.json`
   (card details with and without the line, the About figure) all reached every cell at both widths.
+- **Copy review** (2026-10-12, `/copy-review`): the About title `The tokens your deck makes`, its `opens` line and
+  `tokensCopy.details.*` all KEEP, no edits. The details line's state clause is `In Shopping` but `in your collection`
+  (capital then lowercase): both are the ratified handoff's, so it is left as drawn.
+- **Follow-up, open**: a Replace upload (`writeUploadTokens`, mode `replace`) deletes EVERY upload-owned ownership row, but
+  deletes the player's joins only for the tokens the new upload reads. A token held by the old upload and omitted from the
+  new one therefore stops being held at once, and a hidden join left from before the account-wide rule (made while it was
+  held) is then drawn as joined immediately. A hand mark is not affected: it survives Replace, and `unmarkOwned` clears its
+  join before removing the mark. Staging data only (production's switch is off, and no join has been created for a held
+  token since PR 5). Remedy if it matters: on Replace, delete the player's joins for every token whose upload row is
+  deleted, before deleting the rows (joins first, the lock order). Not scheduled.
 
 ## The switch
 
