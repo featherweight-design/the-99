@@ -1329,7 +1329,14 @@ export function BuilderShell({
     />
   );
   // Read fresh on every open, and again whenever the list moves: the count is of the list alone.
-  const manaPanel = <ManaBalancePanel key={deck.id} deckId={deck.id} revision={listKey} />;
+  const manaPanel = (
+    <ManaBalancePanel
+      key={deck.id}
+      deckId={deck.id}
+      // The commanders count too: their pips, their identity and the cards figure.
+      revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}`}
+    />
+  );
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
       freshEachVisit={freshEachVisit}

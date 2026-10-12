@@ -7,16 +7,15 @@ import { readManaBalance as engine, type ManaBalance } from "../../lib/tuning/ma
 const state = vi.hoisted(() => ({
   enabled: true,
   deck: null as unknown,
-  head: null as unknown,
   balance: null as unknown,
   recorded: [] as unknown[],
+  fingerprinted: null as unknown,
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enabled }));
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
-vi.mock("../../lib/profile/load", () => ({ loadProfileHead: async () => state.head }));
-vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: () => "list-fp" }));
+vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
 vi.mock("../../lib/tuning/tool-counts", () => ({ recordToolCount: async (row: unknown) => { state.recorded.push(row); } }));
 
@@ -35,7 +34,6 @@ beforeEach(() => {
   state.enabled = true;
   state.recorded = [];
   state.balance = balance;
-  state.head = { deckId: DECK, userId: "user_1", commanderOracleId: "c", partnerOracleId: null, declaredBracket: null, cards: [] };
   state.deck = {
     commander: { oracleId: "cmd", name: "Avatar Aang // Aang", colorIdentity: ["G"], manaCost: null },
     partner: null,
@@ -72,6 +70,15 @@ describe("readManaBalance (the action)", () => {
     expect(data.commander).toBe("Avatar Aang");
     expect(data.cards).toBe(35);
     expect(data.ids).toEqual({ Archdruid: "o-arch", Elf: "o-elf" });
+  });
+
+  it("keys the record on the very deck it counted, copies summed per card", async () => {
+    state.deck = { ...(state.deck as { cards: unknown[] }), cards: [...(state.deck as { cards: unknown[] }).cards, { oracleId: "o-elf", name: "Elf", quantity: 2 }] };
+    await readManaBalance(DECK);
+    const list = state.fingerprinted as { commanderOracleId: string; partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] };
+    expect(list.commanderOracleId).toBe("cmd");
+    expect(list.partnerOracleId).toBeNull();
+    expect(list.cards.find((c) => c.oracleId === "o-elf")?.quantity).toBe(3);
   });
 
   it("records the free count once per list, keyed on the list fingerprint, with the Colors card's totals", async () => {
