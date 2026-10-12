@@ -193,6 +193,7 @@
     "measure:benchmarks": "tsx scripts/measure-benchmarks.mts",
     "probe:card-mark": "node scripts/probe-card-mark.mjs",
     "probe:card-modal-live-printing": "node scripts/probe-card-modal-live-printing.mjs",
+    "probe:hover-printing": "node scripts/probe-hover-printing.mjs",
     "probe:role-targets": "tsx scripts/probe-role-targets.ts",
     "probe:fill": "tsx scripts/probe-fill.ts",
     "probe:edhrec-snapshot": "tsx scripts/probe-edhrec-snapshot.ts",

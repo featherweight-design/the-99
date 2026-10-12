@@ -1833,3 +1833,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   46 chosen printings name a Mana Pool number that is not Scryfall's; with Mana Pool's own, 48 of 48. It
   also prints the length of an Omnath-sized cart (67 card lines and 14 token lines): 3,083 characters
   against the 32,000 a link may be.
+
+- `pnpm probe:hover-printing` proves a card's hover preview and its card details draw ONE printing, in a
+  real browser at 1300 (hover, then the dialog) and 390 (the dialog; a phone has no hover). Set
+  `PROBE_DECK` and `PROBE_CARDS` (comma-separated names) to a deck and cards the signed-in account owns in
+  a printing other than the catalog's default; a run over default printings proves nothing. READ-ONLY, so
+  it may read any database the server names. It measures the decklist row and Review changes, which already agreed, so it guards
+  those and does not fail with the `chainArt` overlays removed; it fails when a surface measured no card. The Suggested changes lines, Proposed cuts and stand-ins draw through
+  `chainArt` and are covered by its unit tests; Suggested changes needs a paid run to appear in a
+  browser, since its panel is fresh each visit. Measured 2026-10-11 on a scratch branch holding Hugh's
+  staging deck (Soldiers): the probe passed on the decklist (Elite Scaleguard, Get Lost, Intangible Virtue,
+  Cosmogrand Zenith) and on Review changes; the Overview's card mentions and a live Suggested changes run
+  were walked by hand the same way and agreed (Austere Command, Skullclamp, Marble Diamond, Topple, Coordinated Maneuver),
+  and the 390 dialogs drew the same printings.

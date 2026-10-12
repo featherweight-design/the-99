@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq, lt, max } from "drizzle-orm";
 
 import { db } from "../../db";
+import { chainArt } from "../cards/chain-art";
 import {
   cards,
   commanderPairSupport,
@@ -242,9 +243,12 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
   ]);
 
   const run: CutsRun | null = newest ? { ...newest, status: newest.status as CutsRun["status"] } : null;
+  // A cut is a card in this deck: the hover preview draws the deck's pick, else the owned printing, as
+  // card details does (`chainArt`), not the catalog's arbitrary one.
+  const art = await chainArt(userId, deckId, rows.map((r) => r.cutOracleId));
   return {
     run,
-    items: rows.map((r): CutItem => ({ ...r, verdict: r.verdict as CutItem["verdict"] })),
+    items: rows.map((r): CutItem => ({ ...r, cutImageUri: art.get(r.cutOracleId) ?? r.cutImageUri, verdict: r.verdict as CutItem["verdict"] })),
     // Stored by `persistCutsRun` as a cuts report; the column's static type is the other tool's.
     itemsReport: (lastOk?.validationReport ?? null) as unknown as CutsReport | null,
     lastOkFingerprint: lastOk?.fingerprint ?? null,
