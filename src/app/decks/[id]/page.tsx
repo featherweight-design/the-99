@@ -230,6 +230,11 @@ export default async function DeckBuilderPage({
   // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
   // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
   // detail that resolved it; a deck that is not the reader's has no detail and reads absent.
+  // The precon arrival strip's read, on the one navigation "Start a deck from this" made. Owner-
+  // scoped in its own SQL, so it starts here with the rest and is awaited only where it is drawn.
+  const preconArrivalRead = preconsEnabled() && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
+    ? early(perf.timed("preconArrival", () => readPreconArrival(userId, id)))
+    : null;
   const tokensRead = deckTokensEnabled()
     ? early(detailRead.then((d) => (d
       ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
@@ -568,7 +573,7 @@ export default async function DeckBuilderPage({
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
       // `?from=precon`: the one navigation "Start a deck from this" made. Left in the URL for the
       // same reason as `imported`; the strip's dismissal is the same per-deck flag.
-      preconArrival={preconsEnabled() && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) ? await readPreconArrival(userId, id) : null}
+      preconArrival={preconArrivalRead ? await preconArrivalRead : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
       // Left in the URL for the same reason. Its strip is dismissible too, but

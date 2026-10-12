@@ -127,7 +127,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
                 {copy.open.meta(ident, row.setCode, precon.setName, preconDate(row.releaseDate))}
               </span>
             </div>
-            <StartPrecon row={row} cards={total} body={bodyCount} illegal={[...new Set(cards.filter((c) => !c.legal).map((c) => c.name))]} />
+            <StartPrecon row={row} cards={total} body={bodyCount} illegal={[...new Set(cards.filter((c) => !c.legal && !c.isCommander).map((c) => c.name))]} />
           </div>
 
           {!precon.hasCollection && <EmptyCollectionBand />}
@@ -141,7 +141,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
             <div aria-hidden className="h-[3px] rounded-[2px] bg-[color:var(--border-strong)]">
               <div className="h-full rounded-[2px] bg-[color:var(--fg-muted)]" style={{ width: `${Math.round(share * 100)}%` }} />
             </div>
-            {row.built.map((b) => (
+            {precon.hasCollection && row.built.map((b) => (
               <p key={b.deckId} className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
                 {b.sameCommanders ? copy.open.builtSame(b.deckName, b.shared, row.commanders.length === 2) : copy.open.builtAny(b.deckName, b.shared)}
               </p>

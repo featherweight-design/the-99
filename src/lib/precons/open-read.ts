@@ -51,8 +51,9 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   const ownedRows = ids.length === 0 ? [] : await db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
     .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, ids)));
   const any = await db.select({ oracleId: collectionItems.oracleId }).from(collectionItems).where(eq(collectionItems.userId, userId)).limit(1);
-  // No built lines without a collection, as the list draws none in L2.
-  const readerDecks = any.length > 0 ? await readReaderDecks(userId, db) : [];
+  // Read whether or not there is a collection: the page draws no built lines without one (L2), but
+  // the start dialog still owes its "already have" note to a reader whose decks share the list.
+  const readerDecks = await readReaderDecks(userId, db);
   const setRow = await db.select({ name: sets.name }).from(sets).where(eq(sets.code, head.setCode.toLowerCase()));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const basic = (typeLine: string) => /^Basic\b/.test(typeLine);
