@@ -27,8 +27,8 @@ export function printingLine(token: DeckToken, newestAsOf: Date | null): string 
   return tokensCopy.makers.printing(`${setCode.toUpperCase()} ${collectorNumber}`, figure, printings);
 }
 
-const CONTROL =
-  "h-[32px] md:h-[24px] rounded-[6px] px-[10px] text-[12px] font-medium disabled:opacity-60";
+// Shared by both controls: the rest is each control's own (padding, height and weight differ).
+const CONTROL = "rounded-[6px] text-[12px] disabled:opacity-60";
 
 /**
  * One token of the deck: ownership as the dot and one fact, the two controls, and the cards that
@@ -56,7 +56,7 @@ export function TokenRow({
 
   return (
     <li
-      className="list-none rounded-[7px] bg-[color:var(--surface-rail)] py-[10px] pl-[8px] pr-[6px] md:px-[9px] md:py-[8px]"
+      className="list-none rounded-[7px] bg-[color:var(--surface-rail)] pb-[8px] pl-[8px] pr-[6px] pt-[10px] md:px-[9px] md:py-[8px]"
       data-token-state={token.state}
     >
       <div className="flex flex-wrap items-start md:flex-nowrap md:gap-[10px]">
@@ -123,10 +123,11 @@ export function TokenRow({
               aria-pressed={byHand}
               aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
               onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand))}
-              className={`${CONTROL} bg-transparent px-[8px] ${
+              // 44 on a phone, 24 from md up; regular weight until it is held.
+              className={`${CONTROL} h-[44px] bg-transparent px-[8px] md:h-[24px] ${
                 byHand
                   ? "font-medium text-[color:var(--accent)]"
-                  : "text-[color:var(--fg-muted)] underline decoration-dashed decoration-[color:var(--border-dashed)] underline-offset-[3px]"
+                  : "font-normal text-[color:var(--fg-muted)] underline decoration-dashed decoration-[color:var(--border-dashed)] underline-offset-[3px]"
               }`}
             >
               {byHand ? tokensCopy.row.haveOn : tokensCopy.row.have}
@@ -140,7 +141,8 @@ export function TokenRow({
               aria-pressed={token.joined}
               aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
               onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined))}
-              className={`${CONTROL} border ${
+              // 32 tall with a 44 hit area on a phone (the pseudo-element), 24 from md up.
+              className={`${CONTROL} relative h-[32px] border px-[10px] font-medium max-md:after:absolute max-md:after:inset-x-0 max-md:after:-inset-y-[6px] max-md:after:content-[''] md:h-[24px] ${
                 token.joined
                   ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_14%,transparent)] text-[color:var(--fg)]"
                   : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"

@@ -54,7 +54,7 @@ export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; pr
   const columns = cols === 1 ? "" : cols === 2 ? "md:grid-cols-2" : "md:grid-cols-3";
   return (
     <div className="mt-[8px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[9px] md:ml-[54px]">
-      <p className="m-0 flex items-baseline gap-[8px] font-mono text-[9.5px] uppercase tracking-[.14em] text-[color:var(--fg-muted)]">
+      <p className="m-0 flex items-baseline gap-[8px] font-mono text-[9.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
         <span>{tokensCopy.makers.label(n)}</span>
         {boxPhone ? (
           <span className={`text-[10px] normal-case tracking-normal text-[color:var(--fg-locked)] ${boxDesktop ? "" : "md:hidden"}`}>
@@ -64,6 +64,15 @@ export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; pr
       </p>
       <ul className={`m-0 grid list-none grid-cols-1 gap-x-[18px] p-0 ${columns} ${box}`}>
         {makers.map((m) => <Maker key={m.oracleId} maker={m} siblings={makers} />)}
+        {/* The sticky 28px fade at the box's foot, drawn only where the box scrolls at that width. */}
+        {boxPhone || boxDesktop ? (
+          <li
+            aria-hidden
+            className={`pointer-events-none sticky bottom-0 -mt-[28px] h-[28px] list-none [background:linear-gradient(to_top,var(--surface-sunken),transparent)] [grid-column:1/-1] ${
+              boxPhone && boxDesktop ? "" : boxPhone ? "md:hidden" : "max-md:hidden"
+            }`}
+          />
+        ) : null}
       </ul>
       {printingLine ? (
         <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{printingLine}</p>

@@ -44,7 +44,8 @@ describe("TokensGroup presence", () => {
     expect(container.innerHTML).toBe("");
     rerender(<DeckTokensProvider deckId={DECK} read={{ status: "failed" }}><TokensGroup /></DeckTokensProvider>);
     expect(screen.getByText("Tokens couldn’t be read just now.")).toBeTruthy();
-    expect(screen.getByText("not in the 99")).toBeTruthy();
+    // The header's note (desktop) and the phone's sub-line are both drawn.
+    expect(screen.getAllByText("not in the 99").length).toBe(2);
     // A failed group has no honest count to give, so none is drawn.
     expect(screen.getByRole("heading", { name: "Tokens" })).toBeTruthy();
   });
@@ -180,6 +181,20 @@ describe("the makers fold", () => {
     draw(ok([token({ makers: makers(4) })]));
     open();
     expect(screen.queryByText("A–Z · scrolls")).toBeNull();
+  });
+
+  it("draws the box's fade only where the box scrolls", () => {
+    draw(ok([token({ makers: makers(7) })]));
+    open();
+    expect(document.querySelector("li[aria-hidden]")?.className).toContain("md:hidden");
+    cleanup();
+    draw(ok([token({ makers: makers(12) })]));
+    open();
+    expect(document.querySelector("li[aria-hidden]")?.className).not.toMatch(/md:hidden|max-md:hidden/);
+    cleanup();
+    draw(ok([token({ makers: makers(4) })]));
+    open();
+    expect(document.querySelector("li[aria-hidden]")).toBeNull();
   });
 
   it("uses one column for one maker, two for 2 to 6, three from 7", () => {

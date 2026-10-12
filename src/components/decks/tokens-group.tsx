@@ -23,6 +23,7 @@ export function TokensGroup() {
     return (
       <section aria-labelledby={HEADING} className="mt-[16px] md:mt-[20px]">
         <DecklistGroupHeader label={tokensCopy.group.label} count={null} note={tokensCopy.group.noteFailed} headingId={HEADING} />
+        <p className="m-0 mb-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{tokensCopy.group.noteFailed}</p>
         <p className="m-0 py-[10px] font-mono text-[11px] text-[color:var(--fg-locked)]">{tokensCopy.group.failed}</p>
       </section>
     );
