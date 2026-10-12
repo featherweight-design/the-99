@@ -83,7 +83,13 @@ export function useOptimisticVerdict(server: RowVerdict, id?: string) {
     busy.current = true;
     setInFlight(true);
     setShown({ verdict: target, from: server });
-    const result = await action().catch((): DeckMutationResult => ({ ok: false, message: refusal }));
+    // A throw, synchronous or not, is a refusal: the row must never be left flipped and locked.
+    let result: DeckMutationResult;
+    try {
+      result = await action();
+    } catch {
+      result = { ok: false, message: refusal };
+    }
     busy.current = false;
     setInFlight(false);
     if (!result.ok) setShown(null);

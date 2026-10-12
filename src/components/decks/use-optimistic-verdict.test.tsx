@@ -49,6 +49,18 @@ describe("useOptimisticVerdict", () => {
     expect(out).toEqual({ ok: false, message: "Refused." });
   });
 
+  it("rolls back when the action throws synchronously, and takes the next press", async () => {
+    const { result } = renderHook(() => useOptimisticVerdict("pending"));
+    let out: unknown;
+    await act(async () => { out = await result.current.press("accepted", () => { throw new Error("sync"); }, "Refused."); });
+    expect(result.current.verdict).toBe("pending");
+    expect(result.current.inFlight).toBe(false);
+    expect(out).toEqual({ ok: false, message: "Refused." });
+    let calls = 0;
+    await act(async () => { await result.current.press("dismissed", async () => { calls += 1; return { ok: true as const }; }); });
+    expect(calls).toBe(1);
+  });
+
   it("ignores a second press while one is in flight", async () => {
     const answer = deferred<{ ok: true }>();
     const { result } = renderHook(() => useOptimisticVerdict("pending"));
