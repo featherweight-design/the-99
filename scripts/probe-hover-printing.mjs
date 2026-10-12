@@ -6,6 +6,11 @@
 // bug it guards: a loader that took the catalog's representative art for the hover while card
 // details resolved the owned or deck-picked printing, so the two disagreed on the same card.
 //
+// SCOPE: it walks the surfaces that already agreed (the decklist and Review changes), so it guards
+// against those drifting and against a resolver change breaking the dialog; it does NOT fail with the
+// `chainArt` overlays removed. The changed loaders (Suggested changes, Proposed cuts, stand-ins) need a
+// paid run or a deck over 100 to appear, and were walked by hand; see docs/probes.md.
+//
 // READ-ONLY. It writes nothing, so it may point at any database the server it names reads; it
 // signs in as `E2E_AUDIT_USER_EMAIL`. It cannot choose a fixture for you: name a deck and cards
 // that the account owns in a printing other than the catalog's default, or the run proves nothing.

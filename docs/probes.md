@@ -1838,8 +1838,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   real browser at 1300 (hover, then the dialog) and 390 (the dialog; a phone has no hover). Set
   `PROBE_DECK` and `PROBE_CARDS` (comma-separated names) to a deck and cards the signed-in account owns in
   a printing other than the catalog's default; a run over default printings proves nothing. READ-ONLY, so
-  it may read any database the server names. It measures the decklist row and Review changes, and fails
-  when a surface measured no card. The Suggested changes lines, Proposed cuts and stand-ins draw through
+  it may read any database the server names. It measures the decklist row and Review changes, which already agreed, so it guards
+  those and does not fail with the `chainArt` overlays removed; it fails when a surface measured no card. The Suggested changes lines, Proposed cuts and stand-ins draw through
   `chainArt` and are covered by its unit tests; Suggested changes needs a paid run to appear in a
   browser, since its panel is fresh each visit. Measured 2026-10-11 on a scratch branch holding Hugh's
   staging deck (Soldiers): the probe passed on the decklist (Elite Scaleguard, Get Lost, Intangible Virtue,
