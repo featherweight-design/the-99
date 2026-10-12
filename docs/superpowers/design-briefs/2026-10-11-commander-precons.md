@@ -313,8 +313,10 @@ can start from the box.
    Link, cleared by Unlink. A Collector's Edition twin links to its plain edition.
 2. **The suggestion is computed when the page is read, never stored**, from the shared rule above. A deck already
    linked shows no suggestion.
-3. **v0 sorts first without renumbering anything.** Commits start at 1, so `number = 0` is free on every deck and
-   sorts ahead of every existing version under the ordering every reader already uses. No existing row's number,
+3. **v0 comes first in time without renumbering anything.** Commits start at 1, so `number = 0` is free on every
+   deck and is the lowest number, which makes it v1's predecessor for the diff. Readers that order newest first
+   (`newestVersion`, `VersionRail`) therefore list it LAST, which is the right place for the oldest entry; the plan
+   must not reorder them to put v0 on top. No existing row's number,
    cards, `since`, note or `committed_at` changes, at link or at unlink.
 4. **v0 is history, never state.** It is never the newest version, the sleeved list, the version a game is
    stamped with, the predecessor a commit inherits `since` from, a version an analysis or synopsis pins to, or a
@@ -326,8 +328,8 @@ can start from the box.
 
 ### Open questions
 
-1. **How v0 is stored (engineering, for the plan).** A `deck_versions` row at number 0 gets the ordering and
-   the diff for free, but every "newest", "brew" and "live at" reader above would have to skip it, and its
+1. **How v0 is stored (engineering, for the plan).** A `deck_versions` row at number 0 gets v1's predecessor
+   and the oldest-last place in a newest-first rail for free, but every "newest", "brew" and "live at" reader above would have to skip it, and its
    `committed_at` would have to sit before v1 (Home and `versionLiveAt` read the date). Drawing v0 from the precon
    tables at read touches none of them, but those tables are replaced on every ingest, so a corrected feed would
    move a deck's v0. The plan picks one and lists every reader it checks.
@@ -342,7 +344,8 @@ can start from the box.
 - **The linked state**: what a linked deck says (a "built from" line, and where), and how the open precon and its
   list row read once a deck is linked rather than only sharing cards.
 - **Unlink** and its confirm, which says that v0 leaves the history.
-- **The v0 row in Versions**: how it reads (the precon's name, the box's date or none), and what v1's diff
+- **The v0 row in Versions**: the rail lists newest first, so v0 is its last row. How it reads (the precon's
+  name, the box's date or none), and what v1's diff
   against it shows (Hugh's precon builds keep 48 to 86% of the precon's non-basic cards).
 - **A deck that shares with two precons**, and a precon that two of the player's decks share with.
 - **Copy** goes through `/copy-review`.
