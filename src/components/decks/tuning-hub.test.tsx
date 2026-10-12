@@ -6,6 +6,9 @@ import { readTuningHistory, readTuningHub, readTuningPastRun } from "../../app/d
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
 import type { HubTiles } from "../../lib/tuning/hub-tiles";
 import { TuningHub, type HubToolSpec } from "./tuning-hub";
+import type { HistoryRow } from "../../lib/tuning/history";
+import { useReviewRun } from "./review-run";
+import { historyDate, summaryText } from "./tuning-history";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 
 vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn(), readTuningHistory: vi.fn(), readTuningPastRun: vi.fn() }));
@@ -413,8 +416,9 @@ describe("TuningHub History", () => {
   });
 
   it("opens History in place, a past run inside it, and the phone's switch slot goes back to the list", async () => {
-    readHistoryPage.mockResolvedValue({ rows: [row], nextCursor: null });
-    readPast.mockResolvedValue({ kind: "suggested", at: row.at, outcome: "ok", readVersion: 3, moved: 2, lines: [] });
+    // A run with nothing to load opens read-only in History; one with lines reopens in its tool.
+    readHistoryPage.mockResolvedValue({ rows: [{ ...row, outcome: "failed", summary: { kind: "none" } }], nextCursor: null });
+    readPast.mockResolvedValue({ kind: "suggested", at: row.at, outcome: "failed", readVersion: 3, moved: 2, lines: [] });
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6), history]} />);
     fireEvent.click(tile("history"));
     expect(screen.getByText(copy.toolOf(3, 3))).toBeTruthy();
@@ -442,5 +446,72 @@ describe("TuningHub and the visit baseline", () => {
     await act(async () => {});
     // A later first read by the tool itself (a run settled meanwhile) gets the hub's baseline back.
     expect(visitBaseline("11111111-1111-4111-8111-111111111111", "suggested", { okKey: "200", runId: "r2" })).toEqual({ okKey: "100", runId: "r1" });
+  });
+});
+
+describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
+  const RUN = "22222222-2222-4222-8222-222222222222";
+  const COUNT = "33333333-3333-4333-8333-333333333333";
+  const FAILED = "44444444-4444-4444-8444-444444444444";
+  const at = "2026-10-12T16:31:55.438Z";
+  const rows: HistoryRow[] = [
+    { id: `run:${RUN}`, tool: "cuts", tier: "deeper", outcome: "ok", at, summary: { kind: "cutsDeeperOk", named: 11, asked: 11, cut: 1, kept: 0 } },
+    { id: `count:${COUNT}`, tool: "cuts", tier: "free", outcome: "ok", at, summary: { kind: "cutsFree", over: 10, roles: [{ label: "draw", over: 1 }] } },
+    { id: `run:${FAILED}`, tool: "suggested", tier: "credit", outcome: "failed", at, summary: { kind: "none" } },
+  ];
+  // Stands in for a tool panel: says what the hub handed it.
+  function Probe({ tool }: { tool: "cuts" | "suggested" }) {
+    const review = useReviewRun(tool);
+    return <h2 id={tool === "cuts" ? "cuts-heading" : "tuning-heading"} data-probe={review ? review.runId ?? "today" : "ordinary"}>{tool}</h2>;
+  }
+  const tools: HubToolSpec[] = [
+    { tool: "suggested", panel: <Probe tool="suggested" /> },
+    { tool: "cuts", panel: <Probe tool="cuts" />, over: 10, total: 110 },
+    { tool: "history" },
+  ];
+  const probe = () => document.querySelector("[data-probe]")?.getAttribute("data-probe");
+  const openHistory = async () => {
+    readPast.mockClear();
+    readHistoryPage.mockResolvedValue({ rows, nextCursor: null });
+    render(<TuningHub deckId="d" drawn tools={tools} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(document.querySelectorAll("[data-history-row]")).toHaveLength(3));
+  };
+  const row = (id: string) => document.querySelector(`[data-history-row="${id}"]`) as HTMLElement;
+
+  it("opens a deeper look in Proposed cuts with that run loaded, under its note, and goes back to its row", async () => {
+    await openHistory();
+    fireEvent.click(row(`run:${RUN}`));
+    await waitFor(() => expect(probe()).toBe(RUN));
+    expect(screen.getByText(copy.history.review.note.cuts(historyDate(at)))).toBeTruthy();
+    expect(readPast).not.toHaveBeenCalled();
+    fireEvent.click(within(document.querySelector("[data-review-note]") as HTMLElement).getByRole("button", { name: copy.history.back }));
+    await waitFor(() => expect(document.activeElement?.getAttribute("data-history-row")).toBe(`run:${RUN}`));
+  });
+
+  it("opens a free count's tool on the deck as it is now, with what the count found", async () => {
+    await openHistory();
+    fireEvent.click(row(`count:${COUNT}`));
+    await waitFor(() => expect(probe()).toBe("today"));
+    expect(screen.getByText(copy.history.review.counted(historyDate(at), summaryText(rows[1])))).toBeTruthy();
+  });
+
+  it("keeps the read-only view for a run with nothing to load", async () => {
+    readPast.mockResolvedValue({ kind: "suggested", at, outcome: "failed", readVersion: null, moved: null, lines: [] });
+    await openHistory();
+    fireEvent.click(row(`run:${FAILED}`));
+    await waitFor(() => expect(readPast).toHaveBeenCalledWith("d", `run:${FAILED}`));
+    expect(probe()).toBeUndefined();
+  });
+
+  it("drops the run when the tool is opened any other way", async () => {
+    await openHistory();
+    fireEvent.click(row(`run:${RUN}`));
+    await waitFor(() => expect(probe()).toBe(RUN));
+    fireEvent.click(screen.getByRole("tab", { name: copy.tools.suggested.name }));
+    fireEvent.click(screen.getByRole("tab", { name: copy.tools.cuts.name }));
+    await waitFor(() => expect(probe()).toBe("ordinary"));
+    expect(document.querySelector("[data-review-note]")).toBeNull();
   });
 });

@@ -29,6 +29,7 @@ import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
+import { useReviewRun } from "./review-run";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
@@ -56,7 +57,8 @@ import { TuningNotesField } from "./tuning-notes-field";
  * The server actions are injectable, so every state is testable without a request.
  */
 export type TuningDeps = {
-  read: (deckId: string) => Promise<TuningState | null>;
+  /** `runId`: a past run History reopened (re-review), read in place of the newest. */
+  read: (deckId: string, runId?: string | null) => Promise<TuningState | null>;
   run: (deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }) => Promise<DeckMutationResult>;
   cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
   card: CardActions;
@@ -138,6 +140,11 @@ export function TuningPanel({
   freshEachVisit?: boolean;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
+  // A past run History reopened here: its lines are read in place of the newest run's, each still
+  // re-checked by Apply. This panel's own Suggest changes leaves it, at once (`leftReview`).
+  const review = useReviewRun("suggested");
+  const reviewRunId = review?.runId ?? null;
+  const leftReview = useRef(false);
   // What was already stored when this visit to the deck began (`lib/decks/visit`, Hugh
   // 2026-10-11): a set from a prior visit is not drawn, and lives only in History. Recorded by the
   // first read, so a run that finishes during the visit, or a remount within it, still shows.
@@ -242,14 +249,14 @@ export function TuningPanel({
   // run or read leaves the reading state with the run's own refusal.
   const reread = useCallback(async () => {
     try {
-      const next = await deps.read(deckId);
+      const next = await deps.read(deckId, leftReview.current ? null : reviewRunId);
       setState(next);
       stateRef.current = next;
       return next;
     } catch {
       return null;
     }
-  }, [deps, deckId]);
+  }, [deps, deckId, reviewRunId]);
 
   // Debounced trailing-edge, PARTIAL and MERGED: typing the cap fires `saveLimits` on every
   // keystroke, so only the latest value within one pause reaches the server — and only the
@@ -405,7 +412,7 @@ export function TuningPanel({
 
   useEffect(() => {
     let live = true;
-    deps.read(deckId).then(
+    deps.read(deckId, leftReview.current ? null : reviewRunId).then(
       (next) => {
         if (!live) return;
         if (next && freshEachVisit) {
@@ -428,7 +435,7 @@ export function TuningPanel({
     return () => {
       live = false;
     };
-  }, [deps, deckId, freshEachVisit]);
+  }, [deps, deckId, freshEachVisit, reviewRunId]);
 
   // Computed here, ahead of the `state === null` early return below, since the following effect
   // (every hook must run unconditionally) needs them as a dependency.
@@ -521,7 +528,9 @@ export function TuningPanel({
   // A prior visit's set, and a prior visit's failed run, are hidden: the panel opens on its offer.
   // A press made over a hidden set runs anew (Hugh, 2026-10-11: "I don't want to see prior
   // suggestions, I just want a new one"), so it passes the `unchanged` gate as `anyway` does.
-  const priorResult = isPriorResult(baseline, okKeyOf(state.lastOkAt));
+  // A reopened past run is never hidden as a prior visit's, nor retired by a commit since.
+  const reviewing = !!state.review;
+  const priorResult = !reviewing && isPriorResult(baseline, okKeyOf(state.lastOkAt));
   const priorRun = isPriorRun(baseline, state.run?.id);
 
   const reading = ticked !== null || state.run?.status === "pending";
@@ -548,6 +557,7 @@ export function TuningPanel({
     if (preparingRun.current !== null) return;
     const mine = ++token.current;
     preparingRun.current = mine;
+    if (review) { leftReview.current = true; review.leave?.(); }
     try {
       setRefused(null);
       // A limit edited moments ago still has a pending or in-flight save — flush and wait for it
@@ -674,7 +684,7 @@ export function TuningPanel({
     ownRun.current = null;
     // Token-checked AFTER the read too: a Stop pressed while this read is in flight owns the panel
     // from then on, and this press must not draw or announce over it.
-    const next = await deps.read(deckId).catch(() => null);
+    const next = await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
     if (token.current !== mine) return;
     if (next) {
       setState(next);
@@ -745,7 +755,7 @@ export function TuningPanel({
       // `cancelTuningRun` answers ok whether or not its guarded update matched: a run that
       // settled before the cancel reached it was not stopped, and its credit may be spent. So the
       // answer is read back, and only a run that now reads cancelled was stopped.
-      const after = await deps.read(deckId).catch(() => null);
+      const after = await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
       const seen = after?.run?.id === target ? after.run : null;
       cancelled = seen?.status === "cancelled";
       // A run that settled is past stopping. One not seen at all can still be on its way in only
@@ -816,7 +826,7 @@ export function TuningPanel({
     ? refusalBody(state.run.validationReport?.refusal ?? { reason: "nothingLeft" })
     : null;
   // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
-  const hasSet = !reading && !state.retired && !priorResult && state.items.length > 0;
+  const hasSet = !reading && (reviewing || !state.retired) && !priorResult && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
   // "Describing in place" (STATES §3 state 2) replaces the checklist with its own editor; Cancel
   // and a successful Save both return to the ordinary checklist.
@@ -855,7 +865,7 @@ export function TuningPanel({
         <ManifestRows rows={runRows} writingLong={longWait ? descriptionManifest.writingLong : null} />
       </>
     );
-  } else if (state.retired && !priorResult) {
+  } else if (state.retired && !priorResult && !reviewing) {
     // A failed run after a commit still says it failed, over the retired lead.
     if (failure) primary = { label: deckTuningCopy.failure.retry, again: false };
     body = (
@@ -873,7 +883,8 @@ export function TuningPanel({
     const lines = state.items.filter(isLine);
     const pairs = state.items.filter((i) => !isLine(i));
     const lists = lines.length > 0;
-    const dropped = state.run?.status === "ok" ? state.run.droppedCount : 0;
+    // A reopened run's own report, never the newest run's (the `fresh` captions below read it).
+    const dropped = reviewing ? 0 : state.run?.status === "ok" ? state.run.droppedCount : 0;
     primary = { label: failure ? deckTuningCopy.failure.retry : copy.again, again: true };
     // The results lead is a desktop line, and the no-games set (D2) draws none at either width.
     const lead = failure || (state.gameCount === 0 && !answered) ? null : lists ? (answered
@@ -887,7 +898,7 @@ export function TuningPanel({
     // "tooMany" (H35, PR 4a): the model handed back more survivors than the five shown, named
     // before the player wonders where the rest went. `fresh` only — an already-answered run has
     // moved past the question this caption answers.
-    const report = state.run?.validationReport;
+    const report = reviewing ? null : state.run?.validationReport;
     const tooMany = !failure && !answered && report && report.survivedCount > report.keptCount
       ? deckDescriptionCopy.refusal.tooMany
       : null;

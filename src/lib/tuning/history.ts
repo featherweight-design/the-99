@@ -248,3 +248,27 @@ export function pastCutChips(evidence: readonly CutCite[] | null, reason: string
   const context: ChipContext = ctx ?? { medianPct: null, flagCounts: {}, declared: null };
   return cutChips(evidence ?? [], reason, context).map((c) => `${c.kind} ${c.text}`);
 }
+
+/**
+ * Where a History row's press goes (Hugh, 2026-10-12: a past run re-opens in its own tool).
+ *
+ * - `review`: a paid run that named something reopens in its tool with that run's lines, each
+ *   re-checked against the list as it stands.
+ * - `live`: the tool on today's list. A free count named no card (its rows are counts), so today's
+ *   tool IS what it showed; `counted` asks for the note that keeps the past figure. A run still in
+ *   flight is the tool's own newest run, which the tool draws running.
+ * - `past`: the read-only past-run view, for a run with nothing to load (failed, refused, stopped,
+ *   or ok with no lines).
+ */
+export type HistoryPress = { kind: "review"; runId: string } | { kind: "live"; counted: boolean } | { kind: "past" };
+
+export function historyPress(row: Pick<HistoryRow, "id" | "outcome" | "summary">): HistoryPress {
+  const ref = parseHistoryId(row.id);
+  if (!ref) return { kind: "past" };
+  if (ref.kind === "count") return { kind: "live", counted: true };
+  if (row.outcome === "running") return { kind: "live", counted: false };
+  if (row.outcome !== "ok") return { kind: "past" };
+  const s = row.summary;
+  const named = s.kind === "cutsDeeperOk" ? s.named : s.kind === "suggestedOk" ? s.in + s.out : 0;
+  return named > 0 ? { kind: "review", runId: ref.uuid } : { kind: "past" };
+}

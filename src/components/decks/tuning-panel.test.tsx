@@ -9,6 +9,7 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
 import type { LineItem, TuningItem, TuningState } from "../../lib/tuning/state";
 import { manifestRows, readSteps, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
+import { ReviewRunProvider } from "./review-run";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(),
@@ -1695,5 +1696,48 @@ describe("TuningPanel: a visit to the deck", () => {
     await drawOn(deps([newSet]));
     expect(screen.queryByText("Rhystic Study")).toBeNull();
     expect(screen.getByRole("button", { name: copy.suggest })).toBeInTheDocument();
+  });
+});
+
+describe("TuningPanel: a past run History reopened (re-review)", () => {
+  const D1 = "11111111-1111-4111-8111-111111111111";
+  const RUN = "33333333-3333-4333-8333-333333333333";
+  // Stored by a previous visit, and retired by a commit since: the ordinary panel hides both.
+  const reviewed: TuningState = { ...results, retired: { from: 3, to: 4 }, review: { runId: RUN, at } };
+  const drawReview = async (d: TuningDeps, leave = vi.fn()) => {
+    await act(async () => {
+      render(
+        <ReviewRunProvider value={{ tool: "suggested", runId: RUN, leave }}>
+          <TuningPanel deckId={D1} permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} freshEachVisit />
+        </ReviewRunProvider>,
+      );
+    });
+    return leave;
+  };
+  beforeEach(() => {
+    resetDeckVisitForTests();
+    noteDeckRoute(`/decks/${D1}`);
+  });
+
+  it("reads the named run and draws its set, over a prior visit and a commit since", async () => {
+    const d = deps([reviewed]);
+    await drawReview(d);
+    expect(d.read).toHaveBeenCalledWith(D1, RUN);
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    expect(screen.queryByText(copy.retiredLead(3, 4))).toBeNull();
+  });
+
+  it("draws a swap the deck has moved past as no longer applying", async () => {
+    await drawReview(deps([{ ...reviewed, items: [{ ...item, applies: false, cutInDeck: false }] }]));
+    expect(screen.getByText(deckTuningCopy.card.noLongerApplies)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: deckTuningCopy.card.apply })).toBeNull();
+  });
+
+  it("a new run pressed from it leaves the review: the hub is told, and the panel reads its newest run", async () => {
+    const d = deps([reviewed, { ...results, review: null }]);
+    const leave = await drawReview(d);
+    await press(copy.again);
+    expect(leave).toHaveBeenCalledTimes(1);
+    expect(d.read).toHaveBeenLastCalledWith(D1, null);
   });
 });
