@@ -987,6 +987,18 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   timing module keyed its spans on it, and the card-details action logged its total with none of
   its spans. So `perfRoute` returns an explicit tracker instead.
 
+- **`public/sw.js` is the app's service worker** (speed plan, 2026-10-12), registered in production
+  only, after the `load` event, by `ServiceWorker` in the root layout. It answers TWO kinds of request
+  and lets every other one through untouched: `/_next/static/` (content-hashed, cache first, trimmed to
+  its newest 600 files) and `/mana/sprite.svg` (served from the cache, refreshed behind). Never a
+  document, an RSC payload, `/api`, an action or anything cross-origin, because those carry a reader's
+  own data. `src/app/sw.test.ts` runs the file against a fake worker scope. **To retire it**, ship a
+  `sw.js` that unregisters itself (`self.registration.unregister()` in `activate`) rather than deleting
+  the file: an update check that finds the script gone keeps the installed worker running on every
+  device that has it, while a self-unregistering one leaves on the next visit. Bump `VERSION` in it to drop
+  every cache it holds. `measure:load`'s EVICTED figure is the load it exists for: a returning reader
+  whose HTTP cache was cleared.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.

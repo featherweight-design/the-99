@@ -6,6 +6,7 @@ import { clerkAppearance } from "../lib/shell/clerk-appearance";
 import { resolveTheme } from "../lib/theme/server";
 import { preload } from "react-dom";
 import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
+import { ServiceWorker } from "../components/shell/service-worker";
 import "./globals.css";
 
 // SELF-HOSTED, not `next/font/google`.
@@ -152,6 +153,7 @@ export default async function RootLayout({
             to start here or a full-height child has nothing to grow into. */}
         <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
           <Shell theme={theme}>{children}</Shell>
+          <ServiceWorker />
         </body>
       </html>
     </ClerkProvider>

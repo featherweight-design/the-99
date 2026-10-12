@@ -8,6 +8,8 @@
 //   - ttfb (the document's headers), content (the first frame <main> holds content rather than the
 //     route's LoadingScreen), streamEnd (the server finished streaming), and the first card image
 //     loaded.
+//   - EVICTED: the route once more after only the HTTP cache is cleared, as a returning reader whose
+//     browser evicted it finds it. A service worker's cache survives that; nothing else does.
 //   - the card-details press on the deck page: a cold card, the same card again, and another cold
 //     card, each to the dialog and to its art.
 // Times come from CDP, never Resource Timing: Scryfall's CDN sends no `Timing-Allow-Origin`.
@@ -647,7 +649,12 @@ async function one(browser, state, width, routes, sql) {
     const db = sql
       ? await (DEPLOYED ? dbDelta : dbExec)(sql, () => load(page, cap, `${BASE}${route.path}`))
       : null;
-    result.routes[route.label] = { cold, warm, coldSpans, spans, db };
+    // A RETURNING reader whose browser has evicted its HTTP cache since: the context keeps what a
+    // service worker stored, and only the HTTP cache is cleared. Without a worker this is a cold
+    // load with the session and the page's own state already in place.
+    await cap.cdp.send("Network.clearBrowserCache");
+    const evicted = await load(page, cap, `${BASE}${route.path}`);
+    result.routes[route.label] = { cold, warm, evicted, coldSpans, spans, db };
     if (route.label === "deck") result.card = await cardPress(page, cap, width);
     await context.close();
   }
@@ -749,6 +756,7 @@ function table(runs, routes) {
       lines.push(`| ${route.label} | ${m((p) => r("cold")(p)?.ttfb)} / ${m((p) => r("warm")(p)?.ttfb)} | ${m((p) => r("cold")(p)?.content)} / ${m((p) => r("warm")(p)?.content)} | ${m((p) => r("warm")(p)?.streamEnd)} | ${m((p) => r("cold")(p)?.firstImage)} / ${m((p) => r("warm")(p)?.firstImage)} | ${m((p) => p.soft[route.label]?.first)} / ${m((p) => p.soft[route.label]?.revisit)} | ${db == null ? "—" : `${db}ms`} |`);
     }
     lines.push(`\nImages a cold load asked for, and what landed: ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.imagesAsked)} / ${m((p) => p.routes[route.label]?.cold?.imageKb)}KB`).join(" · ")}.`);
+    lines.push(`\nEvicted return, HTTP cache cleared and anything a service worker kept still there, content / load event: ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.evicted?.content)} / ${m((p) => p.routes[route.label]?.evicted?.loadEvent)}`).join(" · ")}.`);
     lines.push(`\nLoad event cold / warm (null: not within ${LOAD_CAP_MS / 1000}s): ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.loadEvent)} / ${m((p) => p.routes[route.label]?.warm?.loadEvent)}`).join(" · ")}.`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nDeck from its tile, click or tap to content (a 300ms hover first at 1300, a bare tap at 390): from /decks ${m((p) => p.tile?.["/decks"])}ms, from Home ${m((p) => p.tile?.["/"])}ms (null: not a resume row there).`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
