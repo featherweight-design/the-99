@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
@@ -95,9 +95,12 @@ describe("SuggestionCard", () => {
     });
   });
 
-  it("draws the buy tag for an add the player does not own", () => {
+  it("draws the buy tag for an add the player does not own, and never for a basic", () => {
     draw({ ...item, owned: false, ownedQuantity: 0, availability: null });
     expect(screen.getAllByText("buy").length).toBeGreaterThan(0);
+    cleanup();
+    draw({ ...item, owned: false, ownedQuantity: 0, availability: null, addTypeLine: "Basic Land — Forest" });
+    expect(screen.queryAllByText("buy")).toHaveLength(0);
   });
 
   it("draws no mark for an owned add with a free copy, and the hard mark for a contested one", () => {
@@ -110,6 +113,45 @@ describe("SuggestionCard", () => {
     const contested: TuningItem = { ...item, availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] } };
     render(<SuggestionCard item={contested} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />);
     expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
+  });
+
+  // Bug batch 2026-10-12: an owned add with no copy free, or one already overcommitted, is still a
+  // copy to buy, so it carries the buy tag and its price beside the marker, as a Shopping row does.
+  describe("an owned add the player would still buy", () => {
+    const claim = { id: "d2", name: "Other", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const NEWEST = new Date("2026-10-12T09:00:00Z");
+    const priced = { cents: 1250, foilCents: null, etchedCents: null, asOf: NEWEST };
+    const buyTags = () => screen.queryAllByText("buy");
+
+    it("draws `buy` and the price beside `none free`", () => {
+      render(<SuggestionCard item={{ ...item, price: priced, availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] } }}
+        permits={[3]} newestPriceAsOf={NEWEST} actions={actions()} onSettled={vi.fn()} />);
+      expect(screen.getAllByText(/none free/).length).toBeGreaterThan(0);
+      expect(buyTags().length).toBeGreaterThan(0);
+      expect(screen.getAllByText("$12.50").length).toBeGreaterThan(0);
+    });
+
+    it("draws `buy` beside `short` for an overcommitted add", () => {
+      render(<SuggestionCard item={{ ...item, availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [claim, { ...claim, id: "d3" }] } }}
+        permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />);
+      // `bareOne`: one copy short reads `short`, as on the deck page.
+      expect(screen.getAllByText(/^short$/).length).toBeGreaterThan(0);
+      expect(buyTags().length).toBeGreaterThan(0);
+    });
+
+    it("draws no `buy` for a free copy, a draft's hold, the deck's own copy, or a basic", () => {
+      const cases: TuningItem[] = [
+        item,
+        { ...item, availability: { owned: 2, hard: 0, soft: 1, free: 1, claims: [{ ...claim, mature: false, pending: true }] } },
+        { ...item, addInDeck: true, availability: { owned: 1, hard: 0, soft: 0, free: 0, claims: [] } },
+        { ...item, addTypeLine: "Basic Land — Island", availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [claim] } },
+      ];
+      for (const c of cases) {
+        const { unmount } = render(<SuggestionCard item={c} permits={[3]} newestPriceAsOf={null} actions={actions()} onSettled={vi.fn()} />);
+        expect(buyTags()).toHaveLength(0);
+        unmount();
+      }
+    });
   });
 
   it("flags a swap that raises the bracket, worded against the reading on screen", () => {

@@ -7,7 +7,7 @@
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
-import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
@@ -143,6 +143,9 @@ export function TuningHub({
   const [now, setNow] = useState(() => Date.now());
   const sectionRef = useRef<HTMLElement>(null);
   const toolRef = useRef<HTMLDivElement>(null);
+  // The tool's arrival plays when its content lands, on a tab press as on a tile press (Hugh,
+  // 2026-10-12): most tools draw nothing until their first read answers.
+  useArrival(toolRef, openTool);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   // A tool opened before the hub's first read lands (a shortcut opens one in the first render, and
@@ -513,4 +516,62 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
       {body}
     </button>
   );
+}
+
+/**
+ * What a tool draws while its first read is out: History's empty placeholder (marked
+ * `data-hub-pending` too), Mana Balance's counting status, Proposed cuts' counting shell, all of them
+ * `aria-busy`, and nothing at all for the tools whose body waits on the hub's own read. A box
+ * drawing none of these, at some height, has its content; so has one holding a control, which a
+ * tool busy for another reason at mount (a run in flight, with its Stop) always does.
+ */
+const PENDING = '[data-hub-pending], [aria-busy="true"]';
+/** A control a reader can reach: a box holding one is shown, whatever else it is still reading. */
+const CONTROL = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+/** How long a box holds for content before it shows anyway: a slow read must not leave it unseen. */
+const ARRIVAL_CAP_MS = 2500;
+
+/**
+ * Plays `.anim-gentle-in` when the panel's content lands rather than when the panel mounts. Keyed on
+ * the tool, so every switch replays it. Measured before the fix: switching History to Mana Balance
+ * ran the fade on an empty box (0px) that had finished by the time the tool's body arrived (450ms
+ * for its counting line, 900ms for the rest), so the content snapped in. The panel holds
+ * transparent (`.gentle-hold`, never under reduced motion) while it is empty or still draws a
+ * loading state (`PENDING`), then takes the arrival class afresh. A read slower than
+ * `ARRIVAL_CAP_MS` shows its loading state and then its content without a second fade. A panel
+ * whose content is there at mount keeps the mount's own arrival. Classes, not state: the hold has
+ * to land before the first paint, and nothing else reads it.
+ */
+function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || key === null || typeof ResizeObserver === "undefined") return;
+    // A box holding a control has content worth showing, busy or not: a held panel must never hide
+    // something a reader can focus or press (a running Proposed cuts panel's Stop, say).
+    const landed = () => el.getBoundingClientRect().height > 0
+      && (el.querySelector(PENDING) === null || el.querySelector(CONTROL) !== null);
+    if (landed()) return;
+    el.classList.remove("anim-gentle-in");
+    el.classList.add("gentle-hold");
+    let settled = false;
+    const arrive = () => {
+      if (settled) return;
+      settled = true;
+      el.classList.remove("gentle-hold");
+      el.classList.add("anim-gentle-in");
+    };
+    // A loading state giving way to content almost always changes the box's size; a change that does
+    // not (a placeholder swapped for rows of the same height) is caught by the mutation.
+    const check = () => { if (landed()) arrive(); };
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-busy", "data-hub-pending"] });
+    const cap = setTimeout(arrive, ARRIVAL_CAP_MS);
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      clearTimeout(cap);
+    };
+  }, [ref, key]);
 }

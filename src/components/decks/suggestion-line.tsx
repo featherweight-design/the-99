@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
+import { suggestionNeedsBuy } from "../../lib/decks/shopping";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -100,9 +102,10 @@ export function SuggestionLine({
   const selfExcluded = item.inDeck;
   const marked = isAdd && item.owned && item.availability !== null
     && availabilityState(item.availability, { selfExcluded }) !== "free";
-  const addMark = !isAdd ? null : !item.owned ? (
-    <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
-  ) : marked ? (
+  // Owned but with no copy free for it, or already overcommitted: the marker says why, and the buy
+  // tag beside it says what the copy costs, the pair a Shopping row draws for a spoken-for card.
+  const needsBuy = suggestionNeedsBuy({ owned: item.owned, availability: item.availability, selfExcluded, typeLine: item.cardTypeLine });
+  const marker = marked ? (
     <AvailabilityMarker bareOne
       availability={item.availability!}
       nameless
@@ -112,6 +115,14 @@ export function SuggestionLine({
       className="flex-none font-mono text-[10.5px]"
     />
   ) : null;
+  const addMark = !isAdd ? null : !needsBuy ? marker : !item.owned ? (
+    <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
+  ) : (
+    <span className="inline-flex flex-none items-center gap-[8px]">
+      {marker}
+      <BuyTag variant="row" label={recommendationsCopy.shopping.rowSecondCopyTagAria} price={item.price} newestAsOf={newestPriceAsOf} />
+    </span>
+  );
 
   const yes = (
     <button

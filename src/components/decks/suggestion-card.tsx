@@ -6,6 +6,8 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
+import { suggestionNeedsBuy } from "../../lib/decks/shopping";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { bracketShift } from "../../lib/tuning/bracket-shift";
 import type { PairItem as TuningItem } from "../../lib/tuning/state";
@@ -106,9 +108,10 @@ export function SuggestionCard({
   const selfExcluded = item.addInDeck;
   const marked = item.owned && item.availability !== null
     && availabilityState(item.availability, { selfExcluded }) !== "free";
-  const addMark = !item.owned ? (
-    <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
-  ) : marked ? (
+  // Owned but with no copy free for it, or already overcommitted: the marker says why, and the buy
+  // tag beside it says what the copy costs, the pair a Shopping row draws for a spoken-for card.
+  const needsBuy = suggestionNeedsBuy({ owned: item.owned, availability: item.availability, selfExcluded, typeLine: item.addTypeLine });
+  const marker = marked ? (
     <AvailabilityMarker bareOne
       availability={item.availability!}
       nameless
@@ -118,6 +121,14 @@ export function SuggestionCard({
       className="flex-none font-mono text-[10.5px]"
     />
   ) : null;
+  const addMark = !needsBuy ? marker : !item.owned ? (
+    <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
+  ) : (
+    <span className="inline-flex flex-none items-center gap-[8px]">
+      {marker}
+      <BuyTag variant="row" label={recommendationsCopy.shopping.rowSecondCopyTagAria} price={item.price} newestAsOf={newestPriceAsOf} />
+    </span>
+  );
 
   return (
     <article
