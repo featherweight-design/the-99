@@ -126,8 +126,9 @@ export type ChangeOptions = {
   /**
    * I got it's receipt: one card's availability after the write, and before it as the same claims
    * snapshot less this write's copies. `before` and `after` are unexcluded (who holds each copy, by
-   * seniority, the source deck in the queue); `afterFromDecks` is each deck's own vantage, the one
-   * its Shopping list draws.
+   * seniority, the source deck in the queue); `afterFromDecks` is each of `deckIds`' own vantage,
+   * the one its Shopping list draws, at one claim-model read per deck. The cart names none and reads
+   * every deck off `after`'s allocation instead (`cartReceiptFacts`).
    */
   receipt?: { oracleId: string; deckIds: string[] };
   /**

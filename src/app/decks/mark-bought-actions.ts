@@ -124,8 +124,12 @@ export async function markBought(
 }
 
 
-/** The most decks one cart line can name: above any real line, and a bound on what the write locks and reads per deck. */
-const CART_DECKS_MAX = 30;
+/**
+ * The most decks one cart line can name: a bound on the request, far above any account's decks.
+ * The write locks and checks them in one statement each and reads no deck on its own, so nothing
+ * here grows a query per deck.
+ */
+const CART_DECKS_MAX = 500;
 
 export type MarkBoughtForDecksOutcome =
   | { applied: { id: string; receipt: CartReceiptFacts | null } }
@@ -208,7 +212,8 @@ export async function markBoughtForDecks(
     {
       id: id as string,
       source: cartSource(deckIds),
-      receipt: { oracleId, deckIds },
+      // No per-deck vantage: the cart's receipt reads every deck off the one snapshot.
+      receipt: { oracleId, deckIds: [] },
       // Ownership and membership per deck, under each deck's row lock (see `markBought`).
       requireMember: { deckIds, oracleId },
       ...(pick ? { assign: { oracleId, deckId: pick } } : {}),
@@ -223,7 +228,7 @@ export async function markBoughtForDecks(
       return {
         applied: {
           id: result.entry.id,
-          receipt: snaps ? cartReceiptFacts(snaps.before, snaps.after, snaps.afterFromDecks, deckIds) : null,
+          receipt: snaps ? cartReceiptFacts(snaps.before, snaps.after, deckIds) : null,
         },
       };
     }

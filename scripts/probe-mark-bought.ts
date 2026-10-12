@@ -173,7 +173,7 @@ async function main() {
         USER,
         { kind: "edit", rows: [{ oracleId: D, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + quantity, expected, condition: null }] },
         {
-          id, source: cartSource(deckIds), receipt: { oracleId: D, deckIds }, requireMember: { deckIds, oracleId: D },
+          id, source: cartSource(deckIds), receipt: { oracleId: D, deckIds: [] }, requireMember: { deckIds, oracleId: D },
           ...(pick ? { assign: { oracleId: D, deckId: pick } } : {}),
         },
       ));
@@ -181,7 +181,7 @@ async function main() {
 
     const picked1 = await buyCart(lineDecks, 1, cartBrew);
     const facts = picked1.status === "applied" && picked1.receipt
-      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, picked1.receipt.afterFromDecks, lineDecks) : null;
+      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, lineDecks) : null;
     check("one copy for three decks, picked for the brew, lands as the brew's reservation",
       picked1.status === "applied" && JSON.stringify(await reservedFor()) === JSON.stringify([cartBrew]),
       `${JSON.stringify(picked1).slice(0, 120)}; reserved ${JSON.stringify(await reservedFor())}`);
@@ -206,12 +206,12 @@ async function main() {
       USER,
       { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 2, expected: 1, condition: null }] },
       {
-        id: randomUUID(), source: cartSource(pq), receipt: { oracleId: E, deckIds: pq },
+        id: randomUUID(), source: cartSource(pq), receipt: { oracleId: E, deckIds: [] },
         requireMember: { deckIds: pq, oracleId: E }, assign: { oracleId: E, deckId: lineP },
       },
     );
     const pFacts = pickedP.status === "applied" && pickedP.receipt
-      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pickedP.receipt.afterFromDecks, pq) : null;
+      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pq) : null;
     check("a pick's receipt never names a deck off the line that held its copy all along",
       pFacts !== null && !pFacts.covered.some((d) => d.deckId === offSenior) && pFacts.covered.some((d) => d.deckId === lineP),
       JSON.stringify(pFacts));

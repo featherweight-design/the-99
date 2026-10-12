@@ -154,8 +154,12 @@ describe("markBoughtForDecks", () => {
     markBoughtForDecks(CARD, { deckIds: [DECK, OTHER], scryfallId: SCRY, finish: "foil", quantity: 2, expected: 1, id: ID, ...over });
   const cartApplied = () => applied({
     before: null,
-    after: { owned: 3, claims: [{ id: DECK, name: "Gishath" }, { id: OTHER, name: "Kratos" }] },
-    afterFromDecks: { [DECK]: { owned: 3, free: 0, soft: 0 }, [OTHER]: { owned: 3, free: -1, soft: 0 } },
+    // One copy: seniority gives it to Gishath, and Kratos still needs one.
+    after: { owned: 1, claims: [
+      { id: DECK, name: "Gishath", quantity: 1, mature: true, since: 1 },
+      { id: OTHER, name: "Kratos", quantity: 1, mature: true, since: 2 },
+    ] },
+    afterFromDecks: {},
   });
 
   it("refuses with the cart's switch off, writing nothing", async () => {
@@ -170,7 +174,7 @@ describe("markBoughtForDecks", () => {
   it("refuses malformed decks and a pick off the line", async () => {
     for (const over of [
       { deckIds: [] }, { deckIds: "x" }, { deckIds: [DECK, "nope"] },
-      { deckIds: Array.from({ length: 31 }, () => DECK) },
+      { deckIds: Array.from({ length: 501 }, () => DECK) },
       { pickDeckId: "nope" }, { pickDeckId: SCRY }, { quantity: 21 },
     ]) {
       await expect(cartPress(over)).rejects.toThrow("bad mark-bought input");
@@ -184,7 +188,7 @@ describe("markBoughtForDecks", () => {
     const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
     expect(opts).toEqual({
       id: ID, source: `shopping:cart:${DECK},${OTHER}`,
-      receipt: { oracleId: CARD, deckIds: [DECK, OTHER] },
+      receipt: { oracleId: CARD, deckIds: [] },
       requireMember: { deckIds: [DECK, OTHER], oracleId: CARD },
     });
     expect(out).toEqual({ applied: { id: ID, receipt: {
