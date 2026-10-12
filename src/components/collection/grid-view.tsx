@@ -103,6 +103,7 @@ export function GridView({
       <CollectionMarkKey className="col-span-full" />
       {cards.map((c, i) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
+        const spokenPrice = showPrice ? priceSpoken(c.price) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
         const border =
@@ -334,7 +335,7 @@ export function GridView({
                   ? `, ${comboClauseSpoken(c.comboPartner.name, "ownBoth")}`
                   : ""}
                 {/* The price, last and only while sorted by it; the drawn figure is aria-hidden. */}
-                {showPrice && priceSpoken(c.price) ? `, ${priceSpoken(c.price)}` : ""}
+                {spokenPrice ? `, ${spokenPrice}` : ""}
               </span>
             }
           />

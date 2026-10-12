@@ -88,7 +88,7 @@ describe("pageWindowIds", () => {
 });
 
 describe("the Price sort's first window", () => {
-  it("ships whole the cards the browser draws first, and the price rides every card on the wire", () => {
+  it("ships the cards the browser draws first whole, and the price rides every card on the wire", () => {
     // Priced from the bottom of the name order up, so the price window differs from the name one.
     const cards = Array.from({ length: PAGE_SIZE + 40 }, (_, i) => card(i, i % 5 === 0 ? {} : { price: i * 8 }));
     const p = params("sort=price");

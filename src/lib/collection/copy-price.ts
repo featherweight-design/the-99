@@ -38,6 +38,7 @@ export type CardPrice =
 const SOLD_OUT = -1;
 const NEVER_STOCKED = -2;
 const FINISH_CODE: Record<Finish, number> = { nonfoil: 0, foil: 1, etched: 2 };
+const FINISHES = Object.keys(FINISH_CODE) as Finish[];
 
 /** The figure one finish of a live printing carries, or null when the store does not stock it. */
 function finishCents(fact: PriceFact, finish: Finish): number | null {
@@ -57,7 +58,7 @@ export function cardPriceCode(
   let soldOut = false;
   let answered = false;
   for (const p of printings) {
-    const finishes = (Object.keys(p.finishes) as Finish[]).filter((f) => (p.finishes[f] ?? 0) > 0);
+    const finishes = FINISHES.filter((f) => (p.finishes[f] ?? 0) > 0);
     const read = priceFor(prices, p);
     if (read === null) continue;
     answered = true;
