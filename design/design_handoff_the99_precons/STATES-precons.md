@@ -123,3 +123,52 @@ Canvas `The 99 - Precons R3 · Built-from Link.dc.html`; frame `Precons Link.dc.
 - No verdict word or status colour on a share; shares are counts (`73 of 85`, `73 shared`).
 - Selection copy says select / unselect, never tick.
 - No suggestion on a linked deck. No link control or built-from line in the header.
+
+
+---
+
+## R4 addendum · tiles and Card view (T, G)
+Canvas `The 99 - Precons R4 · Tiles and Grid.dc.html`; frame `Precons Tiles.dc.html` (`scene`). Adds a view to L and O; R2 and R3 otherwise stand. Full calls in `HANDOFF-R4 · tiles and card view.md`.
+
+### The list in tiles (T)
+| Id | Scene | What draws |
+|---|---|---|
+| T1 | `tiles` | **default.** Chassis + `ViewToggle` (▦ pressed); year heads; 4-up (900) / 2-up (390) `PreconTile`s; `N more from YYYY` (canvas only) |
+| T1o | (no frame) | Most owned in tiles: no year heads; one grid by share, then newest, then A–Z |
+| T1f | (no frame) | filtered / searched: as L1f; the grid holds the matches |
+| T2 | `rows` | ≣ pressed: R2's rows, unchanged; `?view=rows`; stored `the99:precons:view` |
+| T2u | (no frame) | `?view=` absent: stored view, else tiles. `?view=` unknown: ignored |
+| T4 | `tilesEmpty` | L2's band above the first year head; every figure `0 of M`; no shared feet |
+| T5 | (no frame) | loading: skeleton tiles (`TILE_SHELL`, `--surface-sunken`), 4 per year at 900, 2 at 390 |
+| T6 | (no frame) | no match / feed down: L3 / L4 bodies, unchanged; the well still draws in the chassis (L3) |
+
+### The tile (T3)
+| Id | Case | What draws |
+|---|---|---|
+| T3a | high share | `you own 88 of 88` · name · pips `PIP · Mar 2024`; foot: shared deck. No bar, no word, no colour |
+| T3b | low share | `18 of 67`, drawn exactly as T3a |
+| T3c | linked (R3 K9) | foot line: deck name (link) / `built from this · 73 shared`; linked deck first, one line per deck |
+| T3d | twin | one tile; foot `also sold as a Collector's Edition` |
+| T3e | partners | two cards staggered in one art box, 66% wide each, 5px radius; caption unchanged |
+| T3f | missing art | plate: commander name 12.5 `--fg-muted` + `no card image yet` mono 9 `--fg-locked` |
+| T3g | (no frame) unmapped | foot `1 card not in our catalog yet` mono 9.5 `--fg-faint` |
+
+### The open precon (G)
+| Id | Scene | What draws |
+|---|---|---|
+| G0 | `openList` | **default.** R2 list + `ViewToggle` (≣ List view pressed) at the right of the list-note line |
+| G1 | `openCard` | ▦ Card view: groups as G0; read-only `DeckCardTile`s, 4-up / 2-up; commander first; dot + `not owned`; nameSub printing; basics one dashed tile per name at the foot of Lands (`×15` · `basic · not counted`) |
+| G1p | (no frame) | partners: Commanders group, two tiles, V2 notes |
+| G1u | (no frame) | unmapped: as O4; the card has no tile |
+| G1e | (no frame) | empty collection: as O5; every tile `not owned` |
+| G2 | (no frame) | a tile pressed: card details on the precon's printing (O6); desktop hover preview as the list |
+| G3 | (no frame) | stored `the99:precons:openView`; independent of the deck page's view |
+
+### T / G must-nots
+- Nothing drawn over a tile's art: no figure, pip, mark or wash.
+- No verdict word, bar, dimming or status colour on a tile's figure or a card's state; `not owned` is the only word, and it's the dot's.
+- No editing affordance on a Card view tile: no ✕, buy tag, chip, lock, proxy mark, claim or draft edge.
+- No caption line added for a state; only the foot grows, and only with the row's own lines.
+- A card image box's radius never below 3.1% of its rendered width.
+- The view switch never moves Start, Link a deck, the own box or Unlink.
+- No motion.
