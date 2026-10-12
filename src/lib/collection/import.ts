@@ -3,7 +3,7 @@ import { db } from "../../db";
 import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings, tokenPrintings,
 } from "../../db/schema";
-import { tokenTablesExist } from "../tokens/publish";
+import { countTokenPrintings, tokenTablesExist } from "../tokens/publish";
 import { recordUploadTokens, type TokenHolding } from "../tokens/ownership";
 import { TOKEN_LAYOUTS } from "../cards/game-card";
 import type { CollectionRow } from "../manabox/parse";
@@ -108,8 +108,9 @@ export async function loadMatchInputs(
 
   // Which of the uploaded ids are TOKEN printings, and of which token. Skipped when the token catalog
   // is not in this database (a refresh can precede its migration), so an upload never fails for a
-  // feature that is dark: it simply reads no tokens.
-  const tokenRows = (await tokenTablesExist())
+  // feature that is dark: it simply reads no tokens. `tokensRead` says whether the lookup ran at all.
+  const tokensRead = (await tokenTablesExist()) && (await countTokenPrintings()) > 0;
+  const tokenRows = tokensRead
     ? await chunkedLookup(ids, (chunk) =>
       db.select({ scryfallId: tokenPrintings.scryfallId, tokenOracleId: tokenPrintings.tokenOracleId })
         .from(tokenPrintings)
@@ -122,6 +123,7 @@ export async function loadMatchInputs(
       printings: printingRows,
       skippedScryfallIds: skippedRows.map((r) => r.scryfallId),
       tokenPrintings: tokenRows,
+      tokensRead,
       flavorNames,
     },
   };

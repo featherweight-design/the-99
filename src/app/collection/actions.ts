@@ -76,7 +76,11 @@ async function buildPreview(args: {
   const matchedCardCount = totalQuantity(pendingItems);
   // The tokens this file holds, summed per token over its printings. Kept in the payload beside the
   // cards so the confirm records them in its own transaction; nothing reads them back to the player yet.
-  const tokens = aggregateTokenRows(tokenRows.map((t) => ({ tokenOracleId: t.tokenOracleId, quantity: t.row.quantity })));
+  // Absent when no lookup ran (a paste, or a token catalog not published yet): `[]` is reserved for a
+  // lookup that found none, because it is what writes the "read" marker at confirm.
+  const tokens = indexes.tokensRead
+    ? aggregateTokenRows(tokenRows.map((t) => ({ tokenOracleId: t.tokenOracleId, quantity: t.row.quantity })))
+    : undefined;
 
   const [{ count: currentCollectionCount }] = await db
     .select({ count: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })

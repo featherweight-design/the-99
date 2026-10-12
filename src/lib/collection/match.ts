@@ -44,6 +44,12 @@ export type MatchIndexes = {
    */
   tokenPrintings?: { scryfallId: string; tokenOracleId: string }[];
   /**
+   * True only when the token lookup really ran: the rows carried printing ids and this database holds a
+   * published token catalog. A paste carries no ids, and a catalog migrated but not yet filled has nothing
+   * to look up, and in both an empty `tokenRows` means "not looked", never "looked and found none".
+   */
+  tokensRead?: boolean;
+  /**
    * `printings.flavor_name`, one entry per printing carrying one (#467). Every printing of a
    * renamed card repeats the same flavor name, so repeats are expected; only two entries
    * disagreeing about the oracle id are an ambiguity.
