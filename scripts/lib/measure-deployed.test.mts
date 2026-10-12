@@ -82,6 +82,20 @@ describe("window floors", () => {
   });
 });
 
+describe("a cold load then a warm one, same pattern", () => {
+  it("gives each its own line", () => {
+    const lines = [
+      { at: 1200, line: "/ total=900" },
+      { at: 2300, line: "/ total=150" },
+    ];
+    const cold = { from: 1000, to: 2000 };
+    const warm = { from: 2050, to: 2600 };
+    const floors = windowFloors([warm, cold]);
+    expect(spansInWindow(lines, cold.from, cold.to, "/", floors.get(cold))).toBe("/ total=900");
+    expect(spansInWindow(lines, warm.from, warm.to, "/", floors.get(warm))).toBe("/ total=150");
+  });
+});
+
 describe("statDelta", () => {
   it("is the difference between two snapshots, with no reset", () => {
     expect(statDelta({ ms: "100.4", calls: "7" }, { ms: "250.9", calls: "19" })).toEqual({ ms: 151, calls: 12 });

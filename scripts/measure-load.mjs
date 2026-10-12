@@ -48,7 +48,8 @@
 // landed, because an image is not in any RSC figure and can still be most of what a page costs.
 //
 // DEPLOYED MODE (MEASURE_DEPLOYED=1, Hugh 2026-10-12: a local server skews the figures). Staging
-// only (`lib/measure-deployed.mjs` refuses every other host), and it writes nothing to any database:
+// only (`lib/measure-deployed.mjs` refuses every other host), and the harness itself writes nothing to
+// any database (the pages it loads write what any reader's visit writes, on the measurement account):
 //   - sign-in is a Clerk sign-in token minted with THE_99_CLERK_SECRET_KEY_STAGING for the account
 //     THE_99_E2E_AUDIT_USER_EMAIL names, redeemed on the app's origin; testing tokens exist only on a
 //     development instance;
@@ -97,7 +98,7 @@ import {
   windowFloors,
 } from "./lib/measure-deployed.mjs";
 
-// MEASURE_DEPLOYED=1 measures a deployed app (staging only) and writes nothing to any database:
+// MEASURE_DEPLOYED=1 measures a deployed app (staging only); the harness itself writes to no database:
 // see `lib/measure-deployed.mjs`. Local mode keeps every rule below exactly as it was.
 const DEPLOYED = process.env.MEASURE_DEPLOYED === "1";
 const BASE = process.env.MEASURE_BASE;
@@ -616,14 +617,18 @@ async function one(browser, state, width, routes, sql) {
     const page = await context.newPage();
     const cap = await capture(page);
     await cap.cdp.send("Network.clearBrowserCache");
+    // The cold load gets its own window too: it reads the same route pattern, so without one the
+    // warm window could take the cold request's line, and its spans are worth having anyway.
+    const coldFrom = mark();
     const cold = await load(page, cap, `${BASE}${route.path}`);
+    const coldSpans = route.pattern ? spansFor(coldFrom, route.pattern) : null;
     const from = mark();
     const warm = await load(page, cap, `${BASE}${route.path}`);
     const spans = route.pattern ? spansFor(from, route.pattern) : null;
     const db = sql
       ? await (DEPLOYED ? dbDelta : dbExec)(sql, () => load(page, cap, `${BASE}${route.path}`))
       : null;
-    result.routes[route.label] = { cold, warm, spans, db };
+    result.routes[route.label] = { cold, warm, coldSpans, spans, db };
     if (route.label === "deck") result.card = await cardPress(page, cap, width);
     await context.close();
   }
@@ -718,7 +723,7 @@ async function main() {
   }
 }
 
-/** Deployed: staging only, no database write, the deck named by id, spans from Vercel's logs. */
+/** Deployed: staging only, no write from the harness, the deck named by id, spans from Vercel's logs. */
 async function mainDeployed() {
   const sql = PGSTAT_URL ? neon(PGSTAT_URL) : null;
   if (sql) {

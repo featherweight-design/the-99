@@ -3,7 +3,10 @@
 // unit tested: which host it may sign in to, how a sign-in token is minted, and how the `[perf]`
 // lines the deployed function wrote are read back out of Vercel's runtime logs.
 //
-// Deployed mode WRITES NOTHING to any database. It never marks About entries seen: one document
+// The HARNESS writes nothing to any database in deployed mode; the pages it loads do what any
+// reader's visit does (Home persists its commander scores on a miss, every write moves the
+// reader's data stamp), which is why it is staging only and signs in as the measurement account.
+// It never marks About entries seen: one document
 // load after sign-in lets the proxy decide the sheet and set its own cookie, which every measured
 // context then carries (the proxy's value names the switched entries, so a hand-built one never
 // matches on staging). It never resets

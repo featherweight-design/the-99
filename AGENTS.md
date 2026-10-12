@@ -958,8 +958,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   event on the slow profile.
 
   **`MEASURE_DEPLOYED=1` measures deployed staging instead** (Hugh, 2026-10-12: a local server skews
-  the figures; option C, production, is off). It refuses any host but `staging.the-99.dev` and writes
-  nothing to any database: it signs in with a Clerk sign-in token minted from
+  the figures; option C, production, is off). It refuses any host but `staging.the-99.dev`, and the harness itself writes to no
+  database (the pages it loads write what any reader's visit writes, on the measurement account): it signs in with a Clerk sign-in token minted from
   `THE_99_CLERK_SECRET_KEY_STAGING` for the account `THE_99_E2E_AUDIT_USER_EMAIL` names (a testing
   token works only on a development instance; that account holds a copy of Hugh's staging decks and
   collection, made 2026-10-12), takes the deck as `MEASURE_DECK_ID`, lets the proxy set its own About sheet cookie on one document load after sign-in, reads the
