@@ -342,6 +342,13 @@ describe("LineupView: your collection, put to work", () => {
     expect(card("collection").textContent).not.toContain("of the value");
   });
 
+  it("draws a bounded field for a huge collection, each square standing for more", () => {
+    const c = CO.collection!;
+    draw({ ...CO, collection: { ...c, copies: 2_000_000, pricedCopies: 2_000_000 } }, "collection");
+    expect(within(card("collection")).getByText("1 square = 10,000 copies")).toBeTruthy();
+    expect(card("collection").querySelectorAll("[aria-hidden] > span").length).toBeLessThanOrEqual(1100);
+  });
+
   it("cuts on the share as read, so 39.6% is not 40% or more, and shows it as 39%", () => {
     const c = CO.collection!;
     draw({ ...CO, collection: { ...c, wanted: c.wanted.map((w) => (w.oracleId === "boots" ? { ...w, hits: [{ deckId: "gishath", pct: 39.6 }] } : w)) } }, "collection");

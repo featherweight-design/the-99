@@ -7,6 +7,19 @@ import type { LineupCollection, LineupFilter } from "./types";
 export type WantedRow = { oracleId: string; name: string; imageUri: string | null; pct: number; deckId: string; idle: number };
 
 export const WANTED_ROWS = 5;
+
+/** The most squares a field draws: past it, each square stands for ten times as much. */
+export const MAX_SQUARES = 500;
+
+/**
+ * What one square stands for: `base` (10 copies, or $10 as 1,000 cents), times ten until the whole field fits in
+ * `MAX_SQUARES`, so a collection of any size draws a bounded number of elements.
+ */
+export function squareUnit(total: number, base: number): number {
+  let unit = base;
+  while (total / unit > MAX_SQUARES) unit *= 10;
+  return unit;
+}
 export const CUTS = [40, 20] as const;
 
 /**

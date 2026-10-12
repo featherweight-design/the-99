@@ -6,7 +6,7 @@
 // select (All decks by default) and two cuts that recount with it and the filter.
 
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
-import { collectionScope, CUTS, wantedRows, WANTED_ROWS } from "../../../lib/lineup/collection";
+import { collectionScope, CUTS, squareUnit, wantedRows, WANTED_ROWS } from "../../../lib/lineup/collection";
 import type { LineupCollection, LineupDeck, LineupFilter } from "../../../lib/lineup/types";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
 import { HoverPreviewProvider } from "../hover-preview";
@@ -48,6 +48,8 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
 }) {
   const { deckId, cut } = pick;
   const s = collectionScope(c, filter);
+  const perCopies = squareUnit(c.copies, 10);
+  const perCents = squareUnit(c.valueCents, 1000);
   const inScope = new Set(decks.map((d) => d.id));
   const chosen = deckId && inScope.has(deckId) ? deckId : null;
   const rows = wantedRows(c, inScope, chosen);
@@ -57,8 +59,8 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
   return (
     <>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-[18px] md:grid-cols-2 md:gap-[28px]">
-        <Field k1={copy.inDeck} v1={s.inDeckCopies.toLocaleString("en-US")} k2={copy.notInDeck} v2={(c.copies - s.inDeckCopies).toLocaleString("en-US")} on={Math.round(s.inDeckCopies / 10)} all={Math.round(c.copies / 10)} unit={copy.unitCopies} />
-        {c.pricedCopies > 0 ? <Field k1={copy.valueIn} v1={copy.dollars(s.inDeckCents)} k2={copy.notInDeck} v2={copy.dollars(c.valueCents - s.inDeckCents)} on={Math.round(s.inDeckCents / 1000)} all={Math.round(c.valueCents / 1000)} unit={copy.unitValue} /> : null}
+        <Field k1={copy.inDeck} v1={s.inDeckCopies.toLocaleString("en-US")} k2={copy.notInDeck} v2={(c.copies - s.inDeckCopies).toLocaleString("en-US")} on={Math.round(s.inDeckCopies / perCopies)} all={Math.round(c.copies / perCopies)} unit={copy.unitCopies(perCopies)} />
+        {c.pricedCopies > 0 ? <Field k1={copy.valueIn} v1={copy.dollars(s.inDeckCents)} k2={copy.notInDeck} v2={copy.dollars(c.valueCents - s.inDeckCents)} on={Math.round(s.inDeckCents / perCents)} all={Math.round(c.valueCents / perCents)} unit={copy.unitValue(perCents)} /> : null}
       </div>
       {c.pricedCopies > 0 ? <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.fact(s.pctCopies, s.pctValue)}</span> : null}
       <div className="flex flex-col gap-[8px] border-t border-t-[color:var(--border)] pt-[12px]">

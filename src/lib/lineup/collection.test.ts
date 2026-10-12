@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectionScope, wantedRows } from "./collection";
+import { collectionScope, MAX_SQUARES, squareUnit, wantedRows } from "./collection";
 import type { LineupCollection } from "./types";
 
 const C: LineupCollection = {
@@ -36,5 +36,14 @@ describe("collectionScope", () => {
   it("reads the scope's in-deck figures against totals that never narrow", () => {
     expect(collectionScope(C, "all")).toMatchObject({ inDeckCopies: 34, pctCopies: 34, pctValue: 70 });
     expect(collectionScope(C, "finished")).toMatchObject({ inDeckCopies: 30, pctCopies: 30, pctValue: 60 });
+  });
+});
+
+describe("squareUnit", () => {
+  it("keeps the base until the field would pass the cap, then steps by ten, however large", () => {
+    expect(squareUnit(3924, 10)).toBe(10);
+    expect(squareUnit(5000, 10)).toBe(10);
+    expect(squareUnit(5001, 10)).toBe(100);
+    expect(squareUnit(2_147_483_647, 10) >= 2_147_483_647 / MAX_SQUARES).toBe(true);
   });
 });
