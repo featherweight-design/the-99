@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-scripts";
 
 // Deliberately empty. `experimental.staleTimes.dynamic` used to live here, to
 // stop /collection and /commanders refetching their whole payload on every
@@ -17,6 +18,12 @@ const nextConfig: NextConfig = {
   // statements and its commit on different pooled connections (a connection could go back to the pool
   // inside an open snapshot). `pnpm check:db-pool` fails the build if a bundled copy comes back.
   serverExternalPackages: ["@neondatabase/serverless"],
+  // Exact Clerk script versions, so the browser skips two uncacheable redirects per page load. See
+  // `clerk-scripts.ts`.
+  env: {
+    NEXT_PUBLIC_CLERK_JS_VERSION: CLERK_JS_VERSION,
+    NEXT_PUBLIC_CLERK_UI_VERSION: CLERK_UI_VERSION,
+  },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
   },
