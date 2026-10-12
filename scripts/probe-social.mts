@@ -187,19 +187,31 @@ async function main() {
     check("and when that friend's collection moves", (await spares.friendGeneration(A)) !== genShared);
     check("a malformed card id asks for nothing", (await spares.loadFriendSpares(A, ["nope"])).length === 0);
 
-    // Leaving the pod drops the grant; unfriending drops it with the membership.
+    await friends.setDisplayName(B, "Bobby");
+    check("and when that friend renames", (await spares.friendGeneration(A)) !== genShared);
+
+    // Every way out of a pod drops the grant ROW, counted in the table (the read alone would hide a missed
+    // cleanup, because it joins membership too).
+    const grantRows = async () => Number((await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from pod_spare_shares where user_id = ${B} and pod_id = ${night.id}`)).rows[0].n);
     check("B leaves the game-night pod", (await pods.leavePod(B, night.id)) === "left");
-    check("the grant went with the membership", (await spares.loadFriendSpares(A, [X])).length === 0);
+    check("leaving dropped the grant row", (await grantRows()) === 0);
+    await pods.addMember(A, night.id, b.publicId);
+    check("rejoining does not bring the grant back", (await spares.loadFriendSpares(A, [X])).length === 0);
+    await spares.shareSparesWith(B, night.id, true);
+    check("B shares again", (await spares.loadFriendSpares(A, [X])).length === 1);
+    check("A removes B", await pods.removeMember(A, night.id, b.publicId));
+    check("removal dropped the grant row", (await grantRows()) === 0);
     // A stale grant row, as a missed cleanup would leave it, still shows nothing: the read joins membership.
     await db.execute(sql`insert into pod_spare_shares (user_id, pod_id) values (${B}, ${night.id})`);
     check("a grant to a pod its owner left shows nothing", (await spares.loadFriendSpares(A, [X])).length === 0);
     await db.execute(sql`delete from pod_spare_shares where user_id = ${B} and pod_id = ${night.id}`);
     await pods.addMember(A, night.id, b.publicId);
-    check("rejoining does not bring the grant back", (await spares.loadFriendSpares(A, [X])).length === 0);
     await spares.shareSparesWith(B, night.id, true);
-    check("B shares again", (await spares.loadFriendSpares(A, [X])).length === 1);
+    check("B shares a third time", (await grantRows()) === 1);
     await friends.unfriend(A, b.publicId);
     check("unfriending ends it", (await spares.loadFriendSpares(A, [X])).length === 0);
+    check("unfriending dropped the grant row", (await grantRows()) === 0);
     await db.execute(sql`delete from decks where user_id = ${B}`);
     await db.execute(sql`delete from collection_items where user_id = ${B}`);
   } finally {

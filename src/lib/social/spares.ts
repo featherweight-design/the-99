@@ -90,9 +90,12 @@ export async function shareSparesWith(viewerId: string, podId: unknown, on: bool
       .returning({ podId: podSpareShares.podId });
     return gone.length > 0;
   }
+  // The membership row is locked while the grant is written, so a removal (leave, remove, unfriend) racing
+  // this either waits and then deletes the committed grant, or wins and leaves nothing to insert from.
   const written = await db.execute<{ pod_id: string }>(sql`
     insert into ${podSpareShares} (user_id, pod_id)
     select ${viewerId}, m.pod_id from ${podMembers} m where m.pod_id = ${podId} and m.user_id = ${viewerId}
+    for share of m
     on conflict do nothing
     returning pod_id
   `);
@@ -118,8 +121,9 @@ export function sharedPodsQuery(viewerId: string, q: Reader = db) {
 
 /**
  * A cache key part for any cached page that draws friends' spares (scope §5, option 3): each granting
- * friend's id and data stamp, hashed. A friend's collection or deck write moves their stamp, so this
- * reader's key moves too; a friendship, membership or grant changing moves the set. One indexed read,
+ * friend's id, data stamp and display name, hashed. A friend's collection or deck write moves their stamp,
+ * so this reader's key moves too; a rename moves the name (`social_profiles` carries no stamp trigger); a
+ * friendship, membership or grant changing moves the set. One indexed read,
  * fresh per request like the reader's own stamp. `check:list-cache` fails a cached page that reaches this
  * module without putting it in its key.
  */
@@ -127,7 +131,9 @@ export async function friendGeneration(viewerId: string): Promise<string> {
   const grantors = spareGrantorsQuery(viewerId).as("grantors");
   const [row] = await db
     .select({
-      g: sql<string>`coalesce(md5(string_agg(${grantors.userId} || ':' || coalesce(${userDataStamps.stamp}, 0)::text, ',' order by ${grantors.userId})), '')`,
+      g: sql<string>`coalesce(md5(string_agg(
+        ${grantors.userId} || ':' || coalesce(${userDataStamps.stamp}, 0)::text || ':' || ${grantors.displayName},
+        ',' order by ${grantors.userId})), '')`,
     })
     .from(grantors)
     .leftJoin(userDataStamps, eq(userDataStamps.userId, grantors.userId));

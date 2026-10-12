@@ -1881,8 +1881,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and local-dev are refused by id. Run it on a scratch branch after `pnpm db:migrate`, then delete the branch.
   Since PR 2 it also proves spares: shared per pod and seen only by a friend in that pod, `owned − hard − soft`
   (a copy only a draft wants is not spare), no owned count or deck in the row, a grant to a pod its owner left (even
-  a stale row) shows nothing, leaving or unfriending drops the grant, and `friendGeneration` moves when a friend
-  starts sharing and when their collection moves.
+  a stale row) shows nothing, leaving, removal and unfriending each delete the grant ROW (counted in the table, since
+  the read alone would hide a missed cleanup), rejoining does not restore it, and `friendGeneration` moves when a
+  friend starts sharing, when their collection moves and when they rename.
 - `pnpm probe:deck-tokens` proves the deck-tokens seams (`loadDeckTokens`, the join and hand-mark writes) against a real
   database that holds a published token catalog. It WRITES (joins, hand marks, a read marker for the account) and
   cleans up after itself, so it fails closed: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL` reports, and
