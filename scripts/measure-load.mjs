@@ -643,6 +643,13 @@ async function one(browser, state, width, routes, sql) {
     const coldFrom = mark();
     const cold = await load(page, cap, `${BASE}${route.path}`);
     const coldSpans = route.pattern ? spansFor(DEPLOYED ? cold.docId : coldFrom, route.pattern) : null;
+    // A service worker registers after the cold load's `load` event and claims the page when it
+    // activates. The warm load is what fills its cache, so it waits (up to 5s) for the worker to
+    // control the page; a build with no worker waits the 5s and measures exactly as before.
+    await page.evaluate(async () => {
+      if (!("serviceWorker" in navigator)) return;
+      for (let i = 0; i < 50 && !navigator.serviceWorker.controller; i += 1) await new Promise((r) => setTimeout(r, 100));
+    });
     const from = mark();
     const warm = await load(page, cap, `${BASE}${route.path}`);
     const spans = route.pattern ? spansFor(DEPLOYED ? warm.docId : from, route.pattern) : null;
