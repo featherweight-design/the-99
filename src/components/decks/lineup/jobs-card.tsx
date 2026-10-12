@@ -21,7 +21,8 @@ export function JobsBody({ decks, chosenId }: { decks: readonly LineupDeck[]; ch
     <>
       <div role="table" aria-label={copy.title} className="flex flex-col">
         <div role="row" className={`${COLS} mb-[2px] items-end border-b border-b-[color:var(--border)] pb-[6px]`}>
-          <span role="columnheader" className="sr-only">{copy.deck}</span>
+          {/* A grid cell of its own, so the four heads sit over their columns; its name is for a screen reader. */}
+          <span role="columnheader"><span className="sr-only">{copy.deck}</span></span>
           {JOB_COLUMNS.map((k) => (
             <span key={k} role="columnheader" aria-sort={by === k ? "descending" : undefined} className="flex justify-center">
               <button

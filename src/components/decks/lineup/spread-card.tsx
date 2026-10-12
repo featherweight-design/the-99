@@ -26,7 +26,7 @@ function Chip({ deck, dashed, chosen }: { deck: LineupDeck; dashed: boolean; cho
       data-stats-chip={deck.id}
       className={`inline-flex min-h-[34px] max-w-full items-center gap-[7px] rounded-[8px] pr-[10px] pl-[6px] md:min-h-[30px] ${chosen ? "border border-[color:var(--accent)]" : dashed ? "border border-dashed border-[color:var(--border-dashed)]" : "border border-[color:var(--border-strong)]"} ${dashed ? "" : "bg-[var(--surface)]"}`}
     >
-      <DeckName id={deck.id} name={deck.name} identity={deck.identity} small accent={chosen} />
+      <DeckName id={deck.id} name={deck.name} identity={deck.identity} small accent={chosen} bold={false} />
       {note ? <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{note}</span> : null}
     </span>
   );
