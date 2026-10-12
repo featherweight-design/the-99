@@ -63,7 +63,9 @@ export const adminCopy = {
       noCeiling: "No ceiling is set.",
       startsIn: (month: string) => `Starts ${month}.`,
       account: "Mirrors Anthropic’s console.",
-      elsewhere: (v: string, date: string) => ` Hatched: elsewhere ${v}, as of ${date}.`,
+      elsewhere: (v: string, date: string, by: string | null) =>
+        ` Hatched: elsewhere ${v}, as of ${date}${by === null ? "" : `, entered by ${by}`}.`,
+      you: "you",
       noElsewhere: " Elsewhere is not entered.",
     },
     note: (text: string) => `Note: ${text}`,

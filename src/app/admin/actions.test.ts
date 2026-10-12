@@ -49,12 +49,18 @@ function monthFrom(delta: number): string {
 const thisMonth = () => monthFrom(0);
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** A file-level `"use server"` directive, read from the parsed source so a leading comment cannot hide it. */
+function isServerModule(path: string, text: string): boolean {
+  const first = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true).statements[0];
+  return !!first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === "use server";
+}
 function serverModules(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) return serverModules(path);
     if (!/\.tsx?$/.test(entry) || /\.test\./.test(entry)) return [];
-    return /^\s*["']use server["']/.test(readFileSync(path, "utf8")) ? [path] : [];
+    return isServerModule(path, readFileSync(path, "utf8")) ? [path] : [];
   });
 }
 
@@ -107,6 +113,12 @@ describe("every admin action is gated first", () => {
     const found = exportsOf(path);
     expect(found.length).toBeGreaterThan(0);
     expect(found.filter((e) => !e.gated).map((e) => e.name)).toEqual([]);
+  });
+
+  it("finds a server module whose directive follows a header comment", () => {
+    expect(isServerModule("a.ts", `// The admin's other actions.\n/* more */\n"use server";\nexport async function x() {}`)).toBe(true);
+    expect(isServerModule("b.ts", `import x from "y";\n"use server";`)).toBe(false);
+    expect(isServerModule("c.ts", `export const a = "use server";`)).toBe(false);
   });
 
   it("reads a module whose export skips the gate as a failure", () => {

@@ -11,7 +11,8 @@ export type MonthKey = { year: number; month: number };
 
 export const SETTING_KEYS = ["account_cap_usd", "system_ceiling_usd", "elsewhere_usd"] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
-export type Setting = { micro: number; asOf: string; note: string | null };
+/** A stored setting: its value, the day it holds from, its note, and the Clerk id that entered it. */
+export type Setting = { micro: number; asOf: string; note: string | null; by?: string };
 
 export function monthOf(now: Date): MonthKey {
   return { year: now.getUTCFullYear(), month: now.getUTCMonth() };
@@ -181,7 +182,7 @@ export type SettingRow = Setting & { key: SettingKey; month: string };
 export function settingsForMonth(rows: readonly SettingRow[], month: MonthKey): Partial<Record<SettingKey, Setting>> {
   const m = monthParam(month);
   const of = (key: SettingKey) => rows.filter((r) => r.key === key).sort((a, b) => a.month.localeCompare(b.month));
-  const strip = (r: SettingRow | undefined): Setting | undefined => (r ? { micro: r.micro, asOf: r.asOf, note: r.note } : undefined);
+  const strip = (r: SettingRow | undefined): Setting | undefined => (r ? { micro: r.micro, asOf: r.asOf, note: r.note, by: r.by } : undefined);
   const heldAt = (key: SettingKey) => of(key).filter((r) => r.month <= m).at(-1);
   const out: Partial<Record<SettingKey, Setting>> = {};
   const cap = strip(heldAt("account_cap_usd"));

@@ -201,7 +201,7 @@ function Banner({ tone, children }: { tone: "warning" | "danger"; children: Reac
   );
 }
 
-export function CostsView({ s, month, current }: { s: CostSummary; month: MonthKey; current: MonthKey }) {
+export function CostsView({ s, month, current, viewerId }: { s: CostSummary; month: MonthKey; current: MonthKey; viewerId?: string }) {
   const prev = shiftMonth(month, -1);
   const prevHref = hrefFor(prev, current);
   const nextHref = hrefFor(shiftMonth(month, 1), current);
@@ -314,7 +314,7 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
             label={copy.capRows.account}
             here
             figure={cap ? copy.of(usd(accountTotal), capMicro(cap.micro)) : copy.notSet(usd(accountTotal))}
-            sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf)) + note(elsewhere.note) : copy.capSub.noElsewhere)}
+            sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf), elsewhere.by === undefined ? null : elsewhere.by === viewerId ? copy.capSub.you : elsewhere.by) + note(elsewhere.note) : copy.capSub.noElsewhere)}
             actions={s.current && <>
               <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />
               <SettingAction kind="cap" label={copy.changeCap} />

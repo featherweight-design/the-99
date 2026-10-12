@@ -16,5 +16,5 @@ export default async function AdminCostsPage({ searchParams }: { searchParams: P
   const raw = (await searchParams).month;
   const month = parseMonth(Array.isArray(raw) ? raw[0] : raw, now);
   const summary = await loadCosts(month, userId, now);
-  return <CostsView s={summary} month={month} current={monthOf(now)} />;
+  return <CostsView s={summary} month={month} current={monthOf(now)} viewerId={userId} />;
 }

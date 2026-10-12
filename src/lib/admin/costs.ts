@@ -90,7 +90,7 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
     ownerShareMicro: ownerShareMicro(),
     previous: { runs: Number(figures?.previousRuns ?? 0), micro: Number(figures?.previousMicro ?? 0) },
     settings: settingsForMonth(
-      settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note })),
+      settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note, by: r.updatedBy })),
       month,
     ),
     paused: !!allowance?.paused,

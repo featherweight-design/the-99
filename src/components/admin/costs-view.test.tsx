@@ -233,6 +233,15 @@ describe("the account cap row", () => {
     expect(sub).toHaveTextContent("raised for the eval run");
     expect(sub).toHaveTextContent("console");
   });
+
+  it("says who entered the elsewhere figure: you, or the account id", () => {
+    const settings = { elsewhere_usd: { micro: usdToMicro(18.4), asOf: "2026-10-09", note: null, by: "user_admin" } };
+    const mine = render(<CostsView s={costSummary(rows([p(2, 1)], { settings }), OCT, NOW)} month={OCT} current={OCT} viewerId="user_admin" />);
+    expect(screen.getByText(/^Mirrors Anthropic/)).toHaveTextContent("as of Oct 9, entered by you.");
+    mine.unmount();
+    render(<CostsView s={costSummary(rows([p(2, 1)], { settings }), OCT, NOW)} month={OCT} current={OCT} viewerId="user_other" />);
+    expect(screen.getByText(/^Mirrors Anthropic/)).toHaveTextContent("entered by user_admin.");
+  });
 });
 
 describe("the settings dialog", () => {
