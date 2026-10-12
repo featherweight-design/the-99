@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_CLERK_JS_VERSION: CLERK_JS_VERSION,
     NEXT_PUBLIC_CLERK_UI_VERSION: CLERK_UI_VERSION,
   },
+  // The admin's Eval ledgers read the committed ledgers at request time (`readEvalLedgers`), so the
+  // deploy carries them into the `/admin` function: they move only with a merge.
+  outputFileTracingIncludes: { "/admin": ["./docs/superpowers/eval/ledger*.jsonl"] },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
   },

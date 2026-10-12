@@ -1,5 +1,7 @@
 // `loadCosts` wiring, against a database that answers every read with no rows: the owner's share it
 // hands the view is the one the allowance enforces (`ownerShareMicro()`), env var included.
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const empty = (): unknown =>
@@ -28,14 +30,24 @@ afterEach(() => {
 describe("loadCosts", () => {
   it("reads the owner's share from MODEL_OWNER_MONTHLY_USD", async () => {
     process.env.MODEL_OWNER_MONTHLY_USD = "25";
-    const s = await loadCosts(OCT, "user_admin", NOW);
+    const { summary: s } = await loadCosts(OCT, "user_admin", NOW);
     expect(s.ownerShareMicro).toBe(25_000_000);
     expect(s.ownerMicro).toBe(0);
   });
 
   it("falls back to spend-rule's share when the env var is unset", async () => {
     delete process.env.MODEL_OWNER_MONTHLY_USD;
-    const s = await loadCosts(OCT, "user_admin", NOW);
+    const { summary: s } = await loadCosts(OCT, "user_admin", NOW);
     expect(s.ownerShareMicro).toBe(5_000_000);
+  });
+
+  it("hands the view the committed eval ledgers, and their month in the system figure", async () => {
+    const { summary, detail } = await loadCosts(OCT, "user_admin", NOW);
+    const files = readdirSync(join(process.cwd(), "docs/superpowers/eval")).filter((f) => /^ledger.*\.jsonl$/.test(f));
+    expect(files.length).toBeGreaterThan(0);
+    expect(detail.ledgers.map((l) => l.file).sort()).toEqual(files.sort());
+    // October 2026 has eval spend on the committed ledgers, and nothing else in this empty database.
+    expect(summary.systemSplit.evals).toBeGreaterThan(0);
+    expect(summary.systemSplit.total).toBe(summary.systemSplit.evals);
   });
 });

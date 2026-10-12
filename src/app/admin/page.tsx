@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CostsView } from "../../components/admin/costs-view";
 import { adminMetadata, requireAdmin } from "../../lib/admin/access";
 import { loadCosts } from "../../lib/admin/costs";
+import { adminEnvironment } from "../../lib/admin/environment";
 import { monthOf, parseMonth } from "../../lib/admin/costs-rule";
 
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Costs" });
@@ -15,6 +16,6 @@ export default async function AdminCostsPage({ searchParams }: { searchParams: P
   const now = new Date();
   const raw = (await searchParams).month;
   const month = parseMonth(Array.isArray(raw) ? raw[0] : raw, now);
-  const summary = await loadCosts(month, userId, now);
-  return <CostsView s={summary} month={month} current={monthOf(now)} viewerId={userId} />;
+  const { summary, detail } = await loadCosts(month, userId, now);
+  return <CostsView s={summary} detail={detail} env={adminEnvironment() ?? undefined} month={month} current={monthOf(now)} viewerId={userId} />;
 }
