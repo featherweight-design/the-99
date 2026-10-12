@@ -1797,6 +1797,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   run on a deck is refused and Stop refunds. It preloads `scripts/lib/no-next-cache.cjs`, because
   `readProposedCuts` reads through `unstable_cache`, which raises outside a request.
 
+- `pnpm probe:mana-trade` proves Improve my mana's trade write and its Undo (`src/lib/tuning/mana-trade.ts`)
+  against a real Postgres migrated to 0098, with no browser: a white-green fixture deck under a per-run user,
+  deleted in a `finally`; `local-dev` or a scratch branch only (it writes, and refuses production, staging and
+  an unknown branch by `neon.branch_id`). It asserts that a list keyed before the lock and moved since is
+  refused with nothing written, that another player's deck is refused, that an apply takes one Plains out and
+  one Forest in with one snapshot, that another player cannot undo it, that Undo restores exactly and a
+  second Undo refuses, that Undo refuses over a deck that moved since the apply and succeeds once it is back,
+  and that an apply prunes the player's day-old snapshots. Its failure path was run: dropping the under-lock
+  list check fails the first three checks.
+
 - `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
   running server (`PROBE_BASE`, `next start` preferred; `PROBE_WIDTH=390` runs one width,
   `PROBE_SHOTS=<dir>` saves the panel). It clones an over-100 deck under the audit account (a

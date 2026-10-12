@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import { noteDeckRoute, resetDeckVisitForTests } from "../../lib/decks/visit";
 import { NO_TAPPED_LANDS } from "../../lib/mana/lands-tapped";
@@ -9,11 +10,11 @@ import { readManaBalance, type BalanceColor } from "../../lib/tuning/mana-balanc
 import type { ManaHelp } from "../../lib/tuning/mana-help";
 import type { StapleCandidate } from "../../lib/tuning/mana-staples";
 import { toClientBalance } from "../../lib/tuning/mana-view";
-import { ImproveDoor } from "./mana-improve-door";
+import { ImproveDoor, type HelpRead, type TradeActions } from "./mana-improve-door";
 
 const openCard = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: openCard }), useCardIntent: () => ({}) }));
-vi.mock("../../app/decks/mana-actions", () => ({ readManaHelpFor: vi.fn() }));
+vi.mock("../../app/decks/mana-actions", () => ({ readManaHelpFor: vi.fn(), applyManaTrade: vi.fn(), undoManaTrade: vi.fn() }));
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -290,5 +291,137 @@ describe("ImproveDoor: absent", () => {
     const colorless = balanceOf([spell("Ring", "{C}{C}"), land("wastes", 10, ["C"])], []);
     const { container } = render(door(vi.fn(), A, colorless));
     expect(container.innerHTML).toBe("");
+  });
+});
+
+describe("ImproveDoor: applying a trade", () => {
+  const trade = { kind: "trade" as const, basicOut: "Forest", basicOutId: "forest-id", basicOutColor: "G" as BalanceColor, staple: staple({}), changes: [{ color: "R" as BalanceColor, before: 6, after: 7 }] };
+  const withTrade = (color: BalanceColor) => helpFor(color, { trades: [trade] });
+  const tradeButton = () => screen.getByRole("button", { name: copy.help.tradeApply("Forest") });
+
+  async function openRed(read: HelpRead, trades: TradeActions, revision = "r1") {
+    const view = render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision={revision} read={read} trades={trades} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    await screen.findByRole("button", { name: copy.help.tradeApply("Forest") });
+    return view;
+  }
+
+  it("applies by naming only the color and the staple, then draws the receipt with Undo", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };
+    await openRed(read, trades);
+    await act(async () => { fireEvent.click(tradeButton()); });
+    expect(trades.apply).toHaveBeenCalledWith(A, "R", "s1", "forest-id");
+    const receipt = document.querySelector("[data-mana-applied]") as HTMLElement;
+    expect(receipt.textContent).toContain("Forest");
+    expect(receipt.textContent).toContain("Rockfall Vale");
+    expect(within(receipt).getByRole("button", { name: deckTuningCopy.card.undo })).toBeTruthy();
+  });
+
+  it("reads the same color again when the list moves after its own trade, rather than closing", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };
+    const view = await openRed(read, trades);
+    await act(async () => { fireEvent.click(tradeButton()); });
+    expect(read).toHaveBeenCalledTimes(1);
+    view.rerender(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r2" read={read} trades={trades} />);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    expect(read).toHaveBeenLastCalledWith(A, "R");
+    expect(document.querySelector("[data-mana-help='R']")).not.toBeNull();
+    // A list moving for any other reason still closes the result.
+    view.rerender(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r3" read={read} trades={trades} />);
+    await waitFor(() => expect(document.querySelector("[data-mana-help]")).toBeNull());
+  });
+
+  it("undoes, dropping the receipt, and draws a refusal under the trade it was for", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    const trades = {
+      apply: vi.fn().mockResolvedValueOnce({ ok: false, message: deckTuningCopy.card.applyRefused }).mockResolvedValueOnce({ ok: true, applyId: "apply-1" }),
+      undo: vi.fn(async () => ({ ok: true as const })),
+    };
+    await openRed(read, trades);
+    await act(async () => { fireEvent.click(tradeButton()); });
+    expect(screen.getByText(deckTuningCopy.card.applyRefused)).toBeTruthy();
+    expect(document.querySelector("[data-mana-applied]")).toBeNull();
+    await act(async () => { fireEvent.click(tradeButton()); });
+    const receipt = document.querySelector("[data-mana-applied]") as HTMLElement;
+    await act(async () => { fireEvent.click(within(receipt).getByRole("button", { name: deckTuningCopy.card.undo })); });
+    expect(trades.undo).toHaveBeenCalledWith("apply-1");
+    expect(document.querySelector("[data-mana-applied]")).toBeNull();
+  });
+
+  it("holds every Undo while any trade or Undo is in flight", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = {
+      apply: vi.fn().mockResolvedValueOnce({ ok: true, applyId: "apply-1" }).mockReturnValueOnce(new Promise((r) => { land = r; })),
+      undo: vi.fn(),
+    };
+    await openRed(read, trades);
+    await act(async () => { fireEvent.click(tradeButton()); });
+    const undo = () => within(document.querySelector("[data-mana-applied]") as HTMLElement).getAllByRole("button", { name: deckTuningCopy.card.undo })[0] as HTMLButtonElement;
+    expect(undo().disabled).toBe(false);
+    act(() => { fireEvent.click(tradeButton()); });
+    expect(undo().disabled).toBe(true);
+    await act(async () => { land({ ok: true, applyId: "apply-2" }); });
+    expect(undo().disabled).toBe(false);
+    expect(document.querySelectorAll("[data-mana-applied] li")).toHaveLength(2);
+  });
+
+  it("draws the receipt in a remounted door when an apply from the replaced mount settles", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = { apply: vi.fn(() => new Promise((r) => { land = r; })), undo: vi.fn() };
+    const { unmount } = await openRed(read, trades as unknown as TradeActions);
+    act(() => { fireEvent.click(tradeButton()); });
+    unmount();
+    render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades as unknown as TradeActions} />);
+    expect(document.querySelector("[data-mana-applied]")).toBeNull();
+    await act(async () => { land({ ok: true, applyId: "apply-1" }); });
+    expect(document.querySelector("[data-mana-applied]")?.textContent).toContain("Rockfall Vale");
+  });
+
+  it("re-reads the color in the mount on screen when the list moves after a replaced mount's trade", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = { apply: vi.fn(() => new Promise((r) => { land = r; })), undo: vi.fn() } as unknown as TradeActions;
+    const { unmount } = await openRed(read, trades);
+    act(() => { fireEvent.click(tradeButton()); });
+    unmount();
+    const view = render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades} />);
+    await act(async () => { land({ ok: true, applyId: "apply-1" }); });
+    const reads = read.mock.calls.length;
+    view.rerender(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r2" read={read} trades={trades} />);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(reads + 1));
+    expect(read).toHaveBeenLastCalledWith(A, "R");
+    expect(document.querySelector("[data-mana-help='R']")).not.toBeNull();
+  });
+
+  it("keeps nothing from an apply that settles after the player left the deck and came back", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = { apply: vi.fn(() => new Promise((r) => { land = r; })), undo: vi.fn() };
+    await openRed(read, trades as unknown as TradeActions);
+    act(() => { fireEvent.click(tradeButton()); });
+    noteDeckRoute("/decks");
+    noteDeckRoute(`/decks/${A}`);
+    await act(async () => { land({ ok: true, applyId: "apply-1" }); });
+    expect(document.querySelector("[data-mana-applied]")).toBeNull();
+  });
+
+  it("keeps an applied trade's Undo across a remount in the visit, and drops it when the player leaves the deck", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };
+    const { unmount } = await openRed(read, trades);
+    await act(async () => { fireEvent.click(tradeButton()); });
+    unmount();
+    const again = render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades} />);
+    expect(document.querySelector("[data-mana-applied]")).not.toBeNull();
+    again.unmount();
+    noteDeckRoute("/decks");
+    noteDeckRoute(`/decks/${A}`);
+    render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades} />);
+    expect(document.querySelector("[data-mana-applied]")).toBeNull();
   });
 });

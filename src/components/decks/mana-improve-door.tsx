@@ -3,19 +3,24 @@
 // Mana Balance's one door to help (Tuning hub handoff R3b, design table `ImproveDoor`, `ColorStep`,
 // `HelpResult`; rulings 2026-10-11): `Improve my mana` opens a step listing the deck's colors
 // tightest first (the engine's `colorOrder`, never re-sorted here), nothing preselected, and the
-// player picks. A one-color deck skips the step. Help is read only on that press, and never
-// judges a color: each move says what it does to every color's count.
+// player picks. A one-color deck skips the step. Help is read on that press, and again after the
+// player's own trade or its Undo, and never judges a color: each move says what it does to every
+// color's count.
 //
 // The result lasts the whole visit to the deck (Hugh, 2026-10-11): across tab switches, other
 // tools and the deck's sub-pages, and gone once the player leaves the deck. It is kept in the
-// visit store (`lib/decks/visit.ts`), keyed on the list it was read for, so an edit retires it.
+// visit store (`lib/decks/visit.ts`), keyed on the list it was read for, so an edit retires it; an
+// edit that is the player's own trade or Undo re-reads that color instead. A trade applied from here
+// is kept there too, for its Undo, until the player leaves the deck.
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
-import { readManaHelpFor } from "../../app/decks/mana-actions";
+import { applyManaTrade, readManaHelpFor, undoManaTrade, type ManaTradeResult } from "../../app/decks/mana-actions";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { PriceFact } from "../../lib/decks/price";
-import { askInVisit, isNewestAsk, setVisitValue, visitValue } from "../../lib/decks/visit";
+import { askInVisit, isNewestAsk, isVisit, setVisitValue, subscribeVisit, visitToken, visitValue } from "../../lib/decks/visit";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tuning/mana-balance";
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
@@ -27,8 +32,19 @@ import { usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { ColorDisc, NeedsExplainer } from "./mana-evidence";
 import { FailureMark } from "./tuning-history";
+import { AnsweredRow, Arrow } from "./suggestion-card";
+import { MutationError } from "./mutation-error";
 
 export type HelpRead = (deckId: string, color: string) => Promise<ManaHelp | null>;
+export type TradeActions = {
+  apply: (deckId: string, color: string, stapleOracleId: string, basicOutId: string) => Promise<ManaTradeResult>;
+  undo: (applyId: string) => Promise<DeckMutationResult>;
+};
+
+/** A trade applied this visit, kept for its Undo: the deck it changed outlives the help that offered it. */
+type Applied = { applyId: string; color: BalanceColor; basic: string; staple: string };
+const TRADES: TradeActions = { apply: applyManaTrade, undo: undoManaTrade };
+const NONE_APPLIED: Applied[] = [];
 
 /** What the visit keeps: the help drawn, and the list it was read for. */
 type Kept = { revision: string | undefined; help: ManaHelp };
@@ -50,6 +66,7 @@ export function ImproveDoor({
   commander,
   revision,
   read = readManaHelpFor,
+  trades = TRADES,
 }: {
   deckId: string;
   balance: ClientManaBalance;
@@ -57,6 +74,7 @@ export function ImproveDoor({
   /** The list (and locks) the count was read for: a kept result for any other is retired. */
   revision?: string;
   read?: HelpRead;
+  trades?: TradeActions;
 }) {
   const order = balance.colorOrder;
   const evidence = new Map(balance.colors.map((c) => [c.color, c]));
@@ -75,16 +93,24 @@ export function ImproveDoor({
   const wantReveal = useRef(false);
   const setFocus = (target: "step" | "result" | "button") => { wantFocus.current = target; };
   const asked = useRef(0);
+  // Read from the visit store as it stands, and redrawn whenever it changes: a trade settling in a mount the
+  // hub has since replaced still reaches the door now on screen.
+  const applied = useSyncExternalStore(
+    subscribeVisit,
+    () => visitValue<Applied[]>(deckId, "mana-trades") ?? NONE_APPLIED,
+    () => NONE_APPLIED,
+  );
+  // Each change is made to the store's current list, never to a render's copy, so two settling presses
+  // cannot drop or revive each other's receipt.
+  const changeApplied = (change: (list: Applied[]) => Applied[]) => {
+    setVisitValue(deckId, "mana-trades", change(visitValue<Applied[]>(deckId, "mana-trades") ?? []));
+  };
+  // A trade or its Undo changes the list, and the list moving retires the result drawn; after the player's own
+  // change the result is read again for its color instead, so they see what the trade did. Kept in the visit
+  // (`mana-follow`), so the mount on screen reads it even when a mount since replaced made the change.
+  const [busy, setBusy] = useState<string | null>(null);
+  const [refused, setRefused] = useState<{ key: string; message: string } | null>(null);
 
-  // The list moved under a kept result: it described a deck that is gone.
-  const seenRevision = useRef(revision);
-  useEffect(() => {
-    if (seenRevision.current === revision) return;
-    seenRevision.current = revision;
-    asked.current += 1;
-    setVisitValue(deckId, "mana-help", undefined);
-    setDoor({ at: "closed" });
-  }, [revision, deckId]);
 
   useEffect(() => {
     if (wantReveal.current) {
@@ -99,16 +125,18 @@ export function ImproveDoor({
     else buttonRef.current?.focus();
   }, [door]);
 
-  if (order.length === 0) return null;
 
-  const run = async (color: BalanceColor) => {
+  const run = async (color: BalanceColor, { quiet = false }: { quiet?: boolean } = {}) => {
     const mine = ++asked.current;
     // This press's place among every request in the visit, across mounts: a reply landing in a later
     // visit to the deck, or after a newer press from another mount, keeps nothing.
     const ask = askInVisit(deckId, "mana-help");
     setVisitValue(deckId, "mana-help", undefined);
-    setDoor({ at: "result", color, help: { kind: "reading" } });
-    setFocus("result");
+    // A quiet re-read (after a trade) keeps the result drawn while it reads, and moves neither focus nor the page.
+    if (!quiet) {
+      setDoor({ at: "result", color, help: { kind: "reading" } });
+      setFocus("result");
+    }
     let help: ManaHelp | null = null;
     try {
       help = await read(deckId, color);
@@ -123,9 +151,65 @@ export function ImproveDoor({
       return;
     }
     if (help && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
-    wantReveal.current = true;
+    if (!quiet) wantReveal.current = true;
     setDoor({ at: "result", color, help: help ? { kind: "ok", help } : { kind: "failed" } });
   };
+
+  /** Apply a trade offered for `color`: the server finds it again in a fresh read, so only the staple is named. */
+  const applyTrade = async (color: BalanceColor, trade: TradeMove) => {
+    const key = trade.staple.oracleId;
+    // The visit this press belongs to: a reply settling after the player left the deck (even if they came
+    // back) changes nothing here, since leaving discards every receipt.
+    const at = visitToken(deckId);
+    setBusy(key);
+    setRefused(null);
+    const result = await trades.apply(deckId, color, key, trade.basicOutId).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
+    setBusy(null);
+    if (!isVisit(at)) return;
+    if (!result.ok) {
+      setRefused({ key, message: result.message });
+      return;
+    }
+    setVisitValue(deckId, "mana-follow", color);
+    changeApplied((list) => [...list, { applyId: result.applyId, color, basic: trade.basicOut, staple: trade.staple.name }]);
+  };
+
+  const undoTrade = async (a: Applied) => {
+    const at = visitToken(deckId);
+    setBusy(a.applyId);
+    setRefused(null);
+    const result = await trades.undo(a.applyId).catch((): DeckMutationResult => ({ ok: false, message: deckTuningCopy.card.undoRefused }));
+    setBusy(null);
+    if (!isVisit(at)) return;
+    if (!result.ok) {
+      setRefused({ key: a.applyId, message: result.message });
+      return;
+    }
+    // Read the open result again, if the visit holds one (the store, not this mount's `door`, which a remount
+    // since may have replaced); with none open, the door stays as it is.
+    setVisitValue(deckId, "mana-follow", visitValue<Kept>(deckId, "mana-help")?.help.color);
+    changeApplied((list) => list.filter((x) => x.applyId !== a.applyId));
+  };
+
+  // The read after our own trade or Undo, with this render's `run`: an effect event, so the list moving is the
+  // only thing that fires the effect below.
+  const reread = useEffectEvent((color: BalanceColor) => void run(color, { quiet: true }));
+  // The list moved under a kept result: it described a deck that is gone.
+  const seenRevision = useRef(revision);
+  useEffect(() => {
+    if (seenRevision.current === revision) return;
+    seenRevision.current = revision;
+    const again = visitValue<BalanceColor>(deckId, "mana-follow");
+    setVisitValue(deckId, "mana-follow", undefined);
+    if (again) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the list moved (an external change): the re-read it asks for starts here
+      reread(again);
+      return;
+    }
+    asked.current += 1;
+    setVisitValue(deckId, "mana-help", undefined);
+    setDoor({ at: "closed" });
+  }, [revision, deckId]);
 
   const one = order.length === 1 ? order[0].color : null;
   const open = () => {
@@ -135,6 +219,8 @@ export function ImproveDoor({
     setFocus("step");
   };
 
+
+  if (order.length === 0) return null;
   return (
     <div data-mana-door className={PANEL}>
       <div className="flex flex-wrap items-center gap-x-[16px] gap-y-[10px]">
@@ -155,6 +241,21 @@ export function ImproveDoor({
           {copy.door.button}
         </button> : null}
       </div>
+      {/* Every trade applied this visit, with its Undo, whichever color is open (Suggested changes' receipt). */}
+      {applied.length > 0 ? (
+        <ul data-mana-applied className="flex flex-col gap-[8px]">
+          {applied.map((a) => (
+            <li key={a.applyId}>
+              <AnsweredRow
+                tone="applied"
+                pair={<><span>{a.basic}</span> <Arrow ink="var(--success)" /> <b className="font-semibold" style={{ color: "var(--fg)" }}>{a.staple}</b></>}
+                action={{ label: deckTuningCopy.card.undo, onPress: () => void undoTrade(a), busy: busy !== null }}
+                refused={refused?.key === a.applyId ? refused.message : null}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {door.at === "step" ? (
         <ColorStep
           order={order}
@@ -174,6 +275,9 @@ export function ImproveDoor({
           headRef={resultRef}
           onChange={one ? null : () => { asked.current += 1; setDoor({ at: "step" }); setFocus("step"); }}
           onRetry={() => void run(door.color)}
+          onApply={(t) => void applyTrade(door.color, t)}
+          busy={busy}
+          refused={refused}
         />
       ) : null}
     </div>
@@ -266,7 +370,7 @@ function rateText(fact: StapleFact, commander: string): string | null {
   return fact.kind === "commander" ? copy.help.rate.commander(Math.round(fact.inclusion), commander) : copy.help.rate.pair(Math.round(fact.inclusion));
 }
 
-function HelpResult({ color, state, evidence, commander, headRef, onChange, onRetry }: {
+function HelpResult({ color, state, evidence, commander, headRef, onChange, onRetry, onApply, busy, refused }: {
   color: BalanceColor;
   state: Extract<Door, { at: "result" }>["help"];
   evidence: ColorEvidence;
@@ -274,6 +378,10 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
   headRef: React.RefObject<HTMLHeadingElement | null>;
   onChange: (() => void) | null;
   onRetry: () => void;
+  onApply: (trade: TradeMove) => void;
+  /** The staple whose trade is being applied, or an applied trade being undone. */
+  busy: string | null;
+  refused: { key: string; message: string } | null;
 }) {
   const [how, setHow] = useState(false);
   const howId = useId();
@@ -350,7 +458,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
             ) : (
               <ul className="flex flex-col gap-[6px]">
                 {state.help.staples.map((s) => (
-                  <StapleRow key={s.oracleId} staple={s} siblings={state.help.staples.map((x) => x.oracleId)} trade={state.help.trades.find((t) => t.staple.oracleId === s.oracleId) ?? null} picked={color} commander={commander} />
+                  <StapleRow key={s.oracleId} staple={s} siblings={state.help.staples.map((x) => x.oracleId)} trade={state.help.trades.find((t) => t.staple.oracleId === s.oracleId) ?? null} picked={color} commander={commander} onApply={onApply} busy={busy} refused={refused?.key === s.oracleId ? refused.message : null} />
                 ))}
               </ul>
             )}
@@ -370,7 +478,16 @@ function None({ text }: { text: string }) {
   );
 }
 
-function StapleRow({ staple, siblings, trade, picked, commander }: { staple: StapleCandidate; siblings: string[]; trade: TradeMove | null; picked: BalanceColor; commander: string }) {
+function StapleRow({ staple, siblings, trade, picked, commander, onApply, busy, refused }: {
+  staple: StapleCandidate;
+  siblings: string[];
+  trade: TradeMove | null;
+  picked: BalanceColor;
+  commander: string;
+  onApply: (trade: TradeMove) => void;
+  busy: string | null;
+  refused: string | null;
+}) {
   const { open } = useCardDetail();
   // The decklist's preview and intent prefetch, so a hover or a tap-and-hold acts as it does on a list row.
   const preview = usePreviewRow(staple.imageUri);
@@ -433,6 +550,21 @@ function StapleRow({ staple, siblings, trade, picked, commander }: { staple: Sta
           <span className="rounded-full border border-[color:var(--border-strong)] px-[7px] py-[1px] font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--fg-body)]">{copy.help.tradeTag}</span>
           <span className="font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.help.trade(trade.basicOut, changesText(trade.changes, picked))}</span>
         </p>
+      ) : null}
+      {trade ? (
+        <div className="flex flex-col gap-[6px]">
+          {/* Suggested changes' Apply, as drawn there: the full-width 44px press on a phone, a compact one on desktop. */}
+          <button
+            type="button"
+            onClick={() => onApply(trade)}
+            aria-disabled={busy !== null || undefined}
+            disabled={busy !== null}
+            className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+          >
+            {busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.basicOut)}
+          </button>
+          {refused ? <MutationError message={refused} /> : null}
+        </div>
       ) : (
         <p className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.help.noTrade}</p>
       )}

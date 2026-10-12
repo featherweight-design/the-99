@@ -2331,6 +2331,29 @@ export const deckCutItems = pgTable("deck_cut_items", {
 ]);
 
 /**
+ * One applied Improve my mana trade: a basic cut for a staple, written by the apply and deleted by its
+ * Undo, or by the player's next apply once a day old (`TRADE_SNAPSHOT_RETENTION`): its Undo lives only in
+ * the deck visit. It exists only to hold the undo snapshot, as `deck_cut_items` and `deck_suggestion_items` hold
+ * theirs; a trade is free and has no run, and both of those tables need one (a run carries a paid
+ * `model_call_id`), so neither can hold it. No `user_data_touch` trigger: neither Home nor `/decks`
+ * reads it (`check:list-cache`); the deck's own change is stamped by `touchDeck`.
+ */
+export const manaTradeApplies = pgTable("mana_trade_applies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  cutOracleId: uuid("cut_oracle_id").notNull().references(() => cards.oracleId),
+  addOracleId: uuid("add_oracle_id").notNull().references(() => cards.oracleId),
+  /** The two rows as the apply found them, so Undo puts back exactly that. */
+  undoSnapshot: jsonb("undo_snapshot").$type<ApplySnapshot>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  index("mana_trade_applies_deck_idx").on(t.deckId),
+  // The retention delete each apply makes (`mana-trade.ts`): the player's rows older than a day.
+  index("mana_trade_applies_user_created_idx").on(t.userId, t.createdAt),
+]);
+
+/**
  * One FREE Tuning tool pass (tuning hub PR 2, History): what a tool counted for one version of the
  * list, recorded the first time that count is read for that list. Paid runs are already one row
  * each in `deck_suggestion_runs`, whose `model_call_id` is not null and settles an allowance, so a

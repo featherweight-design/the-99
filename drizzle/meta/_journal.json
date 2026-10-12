@@ -687,6 +687,13 @@
       "when": 1791773704767,
       "tag": "0097_massive_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1791783513856,
+      "tag": "0098_smart_weapon_omega",
+      "breakpoints": true
     }
   ]
 }

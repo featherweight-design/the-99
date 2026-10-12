@@ -141,6 +141,8 @@ export const manaBalanceCopy = {
     adds: "adds",
     trade: (basic: string, changes: string) => `1 ${basic} for it: ${changes}`,
     tradeTag: "trade",
+    /** The trade apply: one copy of the basic out, the staple in. */
+    tradeApply: (basic: string) => `Trade 1 ${basic} for it`,
     noTrade: "no basic trade for it",
     noStaples: (color: string) => `No staples to show for ${color}.`,
     failed: (color: string) => `We couldn’t read help for ${color}. The count above is unchanged, and nothing was spent.`,

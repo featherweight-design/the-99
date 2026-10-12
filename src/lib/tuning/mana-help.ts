@@ -37,6 +37,8 @@ export type TradeMove = {
   kind: "trade";
   /** The basic the staple replaces, one copy. */
   basicOut: string;
+  /** Its oracle id, the card an applied trade cuts. */
+  basicOutId: string;
   basicOutColor: BalanceColor;
   staple: StapleCandidate;
   changes: SourceChange[];
@@ -126,7 +128,7 @@ export function helpAddColor(
     for (const { row, color: basicColor } of bySlack) {
       const after = read([...withQuantity(rows, row.id, -1), add]);
       if (!safe(after)) continue;
-      out.trades.push({ kind: "trade", basicOut: nameOf(row.id), basicOutColor: basicColor, staple, changes: changes(before, after) });
+      out.trades.push({ kind: "trade", basicOut: nameOf(row.id), basicOutId: row.id, basicOutColor: basicColor, staple, changes: changes(before, after) });
       break;
     }
   }

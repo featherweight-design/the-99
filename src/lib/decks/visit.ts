@@ -22,9 +22,13 @@ export type DeckTool = "suggested" | "cuts";
  *  running, and whatever it settles to happened during this visit. */
 export type ToolBaseline = { okKey: string | null; runId: string | null };
 
-/** A tool result that is never stored server-side and must still last the visit (Mana Balance's help:
- *  `mana-help`). Opaque here; its owner checks it still describes the deck before drawing it. */
-export type VisitSlot = "mana-help";
+/** A tool result that is never stored server-side and must still last the visit. Opaque here; each owner
+ *  decides what still holds. `mana-help` (Mana Balance's help) is checked against the list it was read for
+ *  before it draws. `mana-trades` (the trades applied this visit) is drawn as it stands: each is a change
+ *  already made, and its Undo is the check, refused over a deck that has moved since. `mana-follow` is the
+ *  color whose help to read again when the list next moves, set by a trade or its Undo, whichever mount
+ *  of the door settled it, and consumed by the mount on screen. */
+export type VisitSlot = "mana-help" | "mana-trades" | "mana-follow";
 
 type Visit = {
   deckId: string;
@@ -36,6 +40,15 @@ type Visit = {
 
 let visit: Visit | null = null;
 let askSeq = 0;
+const listeners = new Set<() => void>();
+const notify = () => { for (const l of listeners) l(); };
+
+/** Told whenever a value is kept or cleared, or the visit itself changes: for `useSyncExternalStore`, so
+ *  every mounted reader of a slot redraws when ANY mount's request settles into it. */
+export function subscribeVisit(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
 
 const DECK_ROUTE = /^\/decks\/([^/]+)(?:\/|$)/;
 
@@ -44,12 +57,18 @@ const DECK_ROUTE = /^\/decks\/([^/]+)(?:\/|$)/;
 export function noteDeckRoute(path: string | null): void {
   const id = path ? DECK_ROUTE.exec(path)?.[1] : undefined;
   if (!id || !isUuid(id)) {
-    visit = null;
+    if (visit) {
+      visit = null;
+      notify();
+    }
     return;
   }
   // Lowercase, as Postgres returns a uuid: an uppercase URL and the deck's own id name one deck.
   const deckId = id.toLowerCase();
-  if (visit?.deckId !== deckId) visit = { deckId, baselines: {}, values: {}, asks: {} };
+  if (visit?.deckId !== deckId) {
+    visit = { deckId, baselines: {}, values: {}, asks: {} };
+    notify();
+  }
 }
 
 /** A stored ok result's identity: its `lastOkAt` as epoch-ms, or null with none. */
@@ -93,6 +112,7 @@ export function setVisitValue(anyCaseId: string, slot: VisitSlot, value: unknown
   if (visit?.deckId !== anyCaseId.toLowerCase()) return;
   if (value === undefined) delete visit.values[slot];
   else visit.values[slot] = value;
+  notify();
 }
 
 /** Numbers a request for `slot` in this visit: the newest asked, across every mount of the tool
@@ -110,6 +130,19 @@ export function isNewestAsk(anyCaseId: string, slot: VisitSlot, ask: number | nu
   return ask !== null && visit?.deckId === anyCaseId.toLowerCase() && visit.asks[slot] === ask;
 }
 
+/** The open visit to the deck, as an opaque token, or null with none: a press takes one, and its reply
+ *  settles only while `isVisit` still holds. Unlike `askInVisit`, it does not number requests, so two
+ *  concurrent presses in one visit both settle. */
+export function visitToken(anyCaseId: string): object | null {
+  return visit?.deckId === anyCaseId.toLowerCase() ? visit : null;
+}
+
+/** Whether `token` is still the open visit: false once the player left the deck, even if they came back. */
+export function isVisit(token: object | null): boolean {
+  return token !== null && token === visit;
+}
+
 export function resetDeckVisitForTests(): void {
   visit = null;
+  notify();
 }
