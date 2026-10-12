@@ -26,6 +26,11 @@ describe("the shared motion tokens", () => {
     expect(css).toMatch(/--motion-duration:\s*320ms/);
     expect(css).toMatch(/--motion-ease:\s*cubic-bezier\(0\.45, 0, 0\.55, 1\)/);
   });
+  it("makes the quick length every transition utility's default, on the shared curve", () => {
+    expect(css).toMatch(/--motion-quick:\s*200ms/);
+    expect(css).toMatch(/--default-transition-duration:\s*var\(--motion-quick\)/);
+    expect(css).toMatch(/--default-transition-timing-function:\s*var\(--motion-ease\)/);
+  });
   it("animates .anim-gentle-in on those tokens, in that order, holding through the delay", () => {
     expect(css).toMatch(/\.anim-gentle-in \{ animation: gentle-in var\(--motion-duration\) var\(--motion-ease\) var\(--motion-delay\) both; \}/);
   });
