@@ -254,6 +254,18 @@ describe("the S1b chooser", () => {
     expect((screen.getByRole("button", { name: copy.confirm.backToDefault }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("drops back to the plain list when a press comes back stale", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ stale: [], need: 2 });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    fireEvent.click(within(await screen.findByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ pickDeckId: T }));
+    await waitFor(() => expect(screen.queryByRole("radiogroup", { name: CHOOSER })).toBeNull());
+    expect(screen.getByText("HD -Thorin")).toBeTruthy();
+  });
+
   it("keeps the plain list when the claimants cannot be read", async () => {
     readCartChooser.mockRejectedValue(new Error("down"));
     await open();

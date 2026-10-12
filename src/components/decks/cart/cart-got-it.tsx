@@ -234,6 +234,13 @@ function CartConfirm({
         const pickDeckId = choosing(input.quantity) ? picked : null;
         sent.current = pickDeckId;
         const out = await markBoughtForDecks(line.oracleId, { deckIds, pickDeckId, ...input });
+        // A stale answer means ownership moved: the chooser's claimants and shortfalls were read
+        // before it, so the confirm falls back to the plain list, and the default order, rather
+        // than preview a split that no longer holds.
+        if ("stale" in out) {
+          setChooserCard(null);
+          setPicked(null);
+        }
         return "applied" in out ? out : "stale" in out ? out : { failed: true };
       }}
       needLine={(need) => copy.confirm.need(need, deckIds.length)}
