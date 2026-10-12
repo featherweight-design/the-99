@@ -105,6 +105,10 @@ describe("useVerdictOverrideView", () => {
     expect(result.current.view.anyBusy).toBe(true);
     expect(result.current.view.verdictOf({ id: "a", verdict: "pending" })).toBe("accepted");
     await act(async () => { answer.resolve({ ok: true }); await settled; });
+    // Answered, re-read not landed (or failed): the row still reads its answer, and the bulk
+    // control is free again, since the flipped row is already out of the open set.
+    expect(result.current.view.verdictOf({ id: "a", verdict: "pending" })).toBe("accepted");
+    expect(result.current.view.anyBusy).toBe(false);
     act(() => result.current.row.release());
     expect(result.current.view.anyBusy).toBe(false);
   });

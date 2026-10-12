@@ -251,16 +251,16 @@ export function TuningPanel({
   // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
   // run or read leaves the reading state with the run's own refusal.
   // Only the newest read is drawn: two rows answered together each ask for one, and the older read
-  // can land last holding a snapshot from before the newer answer committed.
+  // can land last holding a snapshot from before the newer answer committed. A superseded read
+  // answers null, as a failed one does: every caller reads non-null as "this read landed".
   const asked = useRef(0);
   const reread = useCallback(async () => {
     const mine = ++asked.current;
     try {
       const next = await deps.read(deckId, leftReview.current ? null : reviewRunId);
-      if (mine === asked.current) {
-        setState(next);
-        stateRef.current = next;
-      }
+      if (mine !== asked.current) return null;
+      setState(next);
+      stateRef.current = next;
       return next;
     } catch {
       return null;
@@ -801,10 +801,7 @@ export function TuningPanel({
    *  the drawn state never moved; a newer read that lands moves the row's server verdict itself. */
   async function settled(announce: string): Promise<boolean> {
     setAnnounced(announce);
-    // `reread` takes its ticket synchronously, so this is the one it will compare against.
-    const ticket = asked.current + 1;
-    const next = await reread();
-    return next !== null && ticket === asked.current;
+    return (await reread()) !== null;
   }
 
   // The absent description row's own "Describing in place" editor (STATES §3 state 2, review

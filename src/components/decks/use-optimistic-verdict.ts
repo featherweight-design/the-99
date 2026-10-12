@@ -33,7 +33,10 @@ export function useVerdictOverrideView() {
   const map = ctx?.map;
   return {
     verdictOf: (item: { id: string; verdict: RowVerdict }) => map?.get(item.id) ?? item.verdict,
-    anyBusy: !!ctx && (ctx.busy.size > 0 || ctx.map.size > 0),
+    // In flight only: a flipped row whose action has answered is already out of the open set (it is
+    // read through `verdictOf`), and holding on it would hold the bulk control for as long as a
+    // failed re-read leaves the flip standing.
+    anyBusy: !!ctx && ctx.busy.size > 0,
   };
 }
 
