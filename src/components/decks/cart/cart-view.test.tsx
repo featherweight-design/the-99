@@ -7,7 +7,8 @@ const { loadPrintingChoices, markBoughtForDecks } = vi.hoisted(() => ({
   markBoughtForDecks: vi.fn(),
 }));
 vi.mock("../../../app/collection/edit-actions", () => ({ loadPrintingChoices }));
-vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, markBought: vi.fn() }));
+vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, readCartChooser: vi.fn(async () => null), markBought: vi.fn() }));
+vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 

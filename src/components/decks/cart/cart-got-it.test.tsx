@@ -1,17 +1,20 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
+import { cardAssignmentsCopy } from "../../../lib/copy/card-assignments";
 import type { SelectedLine } from "../../../lib/decks/cart";
 
-const { loadPrintingChoices, markBoughtForDecks, previewRevert } = vi.hoisted(() => ({
+const { loadPrintingChoices, markBoughtForDecks, readCartChooser, previewRevert } = vi.hoisted(() => ({
   loadPrintingChoices: vi.fn(),
   markBoughtForDecks: vi.fn(),
+  readCartChooser: vi.fn(),
   previewRevert: vi.fn(),
 }));
 vi.mock("../../../app/collection/edit-actions", () => ({ loadPrintingChoices }));
-vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, markBought: vi.fn() }));
+vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, readCartChooser, markBought: vi.fn() }));
+vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../../../app/collection/history-actions", () => ({ previewRevert, revertCollectionEntry: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
@@ -44,6 +47,7 @@ function Opener() {
 }
 
 beforeEach(() => {
+  readCartChooser.mockResolvedValue(null);
   loadPrintingChoices.mockResolvedValue([choice]);
   previewRevert.mockResolvedValue({ rows: [], entryRows: [], differs: false, decks: [], expected: {} });
 });
@@ -67,6 +71,14 @@ describe("cartReceiptBody", () => {
     }, names)).toBe(copy.receipt.stillMany(2, 3));
     expect(cartReceiptBody({ covered: [{ deckId: G, deckName: "" }], still: [] }, names))
       .toBe(copy.receipt.covered(["HD - Gishath"]));
+  });
+
+  it("says `as you picked` only when the read covers the picked deck (S4, lock 7)", () => {
+    const facts = { covered: [{ deckId: G, deckName: "HD - Gishath" }], still: [{ deckId: K, deckName: "HD - Kratos", need: 1 }] };
+    expect(cartReceiptBody(facts, names, G)).toBe(`${copy.receipt.covered(["HD - Gishath"], true)} ${copy.receipt.still("HD - Kratos", 1)}`);
+    expect(copy.receipt.covered(["HD - Gishath"], true)).toContain("as you picked");
+    // The pick went somewhere the read does not confirm: the receipt names what the read says.
+    expect(cartReceiptBody(facts, names, K)).toBe(`${copy.receipt.covered(["HD - Gishath"])} ${copy.receipt.still("HD - Kratos", 1)}`);
   });
 });
 
@@ -146,5 +158,124 @@ describe("CartGotItProvider", () => {
     const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
     await act(async () => { fireEvent.click(add); });
     expect(await screen.findByText(copy.confirm.staleBody(2), { exact: false })).toBeTruthy();
+  });
+});
+
+describe("the S1b chooser", () => {
+  const T = "44444444-4444-4444-8444-444444444444";
+  const three: SelectedLine = {
+    ...line,
+    selectedRows: [...line.selectedRows, { ...line.selectedRows[0], deckId: T }],
+    copies: 3, cents: 450, pricedCopies: 3,
+  };
+  const names3 = new Map([...names, [T, "HD -Thorin"]]);
+  const claimant = (deckId: string, deckName: string) => ({
+    deckId, deckName, quantity: 1, commanderCopies: 0, granted: 0, since: null, versionNumber: null, brew: true, allocated: 0,
+  });
+  const contested = {
+    oracleId: ORACLE, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17,
+    claimants: [claimant(G, "HD - Gishath"), claimant(K, "HD - Kratos"), claimant(T, "HD -Thorin")],
+  };
+  function Opener3() {
+    const gotIt = useCartGotIt()!;
+    return <button type="button" onClick={(e) => gotIt.open(three, e.currentTarget)}>open</button>;
+  }
+  const CHOOSER = /^Which decks get Sol Ring/;
+  const open = async () => {
+    render(<CartGotItProvider deckNames={names3} newestAsOf={NEWEST}><Opener3 /></CartGotItProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "open" }));
+    await screen.findByRole("button", { name: gotItCopy.confirm.add(3) });
+    await waitFor(() => expect(readCartChooser).toHaveBeenCalledWith(ORACLE, [G, K, T]));
+  };
+
+  it("lists the decks at full count, and turns them into the chooser below it", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    await open();
+    expect(screen.queryByRole("radiogroup", { name: CHOOSER })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    const group = await screen.findByRole("radiogroup", { name: CHOOSER });
+    // Two copies, three decks, every one a brew: the first two listed get one, the third buys.
+    const options = within(group).getAllByRole("radio");
+    expect(options.map((o) => o.getAttribute("aria-checked"))).toEqual(["false", "false", "false"]);
+    const c = cardAssignmentsCopy.contested;
+    expect(options.map((o) => o.getAttribute("aria-label"))).toEqual([
+      c.a11yOption("HD - Gishath", c.gets), c.a11yOption("HD - Kratos", c.gets), c.a11yOption("HD -Thorin", c.buys),
+    ]);
+    // A pick moves a copy: Thorin gets it, the last of the default order buys.
+    fireEvent.click(options[2]);
+    expect(within(group).getAllByRole("radio").map((o) => o.getAttribute("aria-label"))).toEqual([
+      c.a11yOption("HD - Gishath", c.gets), c.a11yOption("HD - Kratos", c.buys), c.a11ySelected("HD -Thorin"),
+    ]);
+  });
+
+  it("sends the pick with the purchase, and drops it at full count", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [{ deckId: G, deckName: "HD - Gishath" }, { deckId: T, deckName: "HD -Thorin" }], still: [{ deckId: K, deckName: "HD - Kratos", need: 1 }] } } });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    const group = await screen.findByRole("radiogroup", { name: CHOOSER });
+    fireEvent.click(within(group).getAllByRole("radio")[2]);
+    expect(within(group).getAllByRole("radio")[2].getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByText(copy.confirm.undo("HD -Thorin"), { exact: false })).toBeTruthy();
+    // Back to first listed clears it; picking again restores it.
+    fireEvent.click(screen.getByRole("button", { name: copy.confirm.backToDefault }));
+    expect(screen.getByText(copy.confirm.cleared("HD - Gishath", "Sol Ring"))).toBeTruthy();
+    // A pick clears it, so a second way back is a fresh announcement.
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    expect(screen.queryByText(copy.confirm.cleared("HD - Gishath", "Sol Ring"))).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: copy.confirm.backToDefault }));
+    expect(screen.getByText(copy.confirm.cleared("HD - Gishath", "Sol Ring"))).toBeTruthy();
+    expect(within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2].getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ deckIds: [G, K, T], quantity: 2, pickDeckId: T }));
+    await waitFor(() => expect(screen.getByText(copy.receipt.covered(["HD - Gishath", "HD -Thorin"], true), { exact: false })).toBeTruthy());
+  });
+
+  it("sends no pick when the count comes back up to the decks", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: null } });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    fireEvent.click(within(await screen.findByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.more }));
+    expect(screen.queryByRole("radiogroup", { name: CHOOSER })).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(3) })); });
+    expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ quantity: 3, pickDeckId: null }));
+  });
+
+  it("holds the pick while the press is in flight", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockReturnValue(new Promise(() => {}));
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    const radios = () => within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio");
+    fireEvent.click(radios()[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    fireEvent.click(radios()[0]);
+    expect(radios().map((o) => o.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
+    // Held, and said so: no option is operable or a tab stop while the press is in flight.
+    expect(radios().every((o) => o.getAttribute("aria-disabled") === "true" && o.tabIndex === -1)).toBe(true);
+    expect((screen.getByRole("button", { name: copy.confirm.backToDefault }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("drops back to the plain list when a press comes back stale", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ stale: [], need: 2 });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    fireEvent.click(within(await screen.findByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ pickDeckId: T }));
+    await waitFor(() => expect(screen.queryByRole("radiogroup", { name: CHOOSER })).toBeNull());
+    expect(screen.getByText("HD -Thorin")).toBeTruthy();
+  });
+
+  it("keeps the plain list when the claimants cannot be read", async () => {
+    readCartChooser.mockRejectedValue(new Error("down"));
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    expect(screen.queryByRole("radiogroup", { name: CHOOSER })).toBeNull();
+    expect(screen.getByText("HD -Thorin")).toBeTruthy();
   });
 });

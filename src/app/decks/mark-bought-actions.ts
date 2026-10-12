@@ -12,6 +12,7 @@ import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
+import { loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
@@ -241,4 +242,29 @@ export async function markBoughtForDecks(
     case "assignRefused": return { pickRefused: result.reason };
     default: throw new Error(`mark bought refused: ${result.status}`);
   }
+}
+
+/**
+ * The S1b chooser's read (cart PR 6b): the card's claimants, narrowed to the cart line's decks in
+ * the claim model's own queue order, for the confirm to preview who gets the copies being bought.
+ * Read-only: the pick it previews is written by `markBoughtForDecks`, with the purchase. Null when
+ * either switch is off, or the claim model does not list every one of the line's decks, and the confirm then lists the decks as
+ * it does at full count.
+ */
+export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown): Promise<ContestedCard | null> {
+  if (!shoppingMarkBoughtEnabled() || !allDecksCartEnabled()) return null;
+  const userId = await requireUserId();
+  if (!isUuid(rawOracleId) || !Array.isArray(rawDeckIds) || rawDeckIds.length === 0
+    || rawDeckIds.length > CART_DECKS_MAX || !rawDeckIds.every(isUuid)) {
+    throw new Error("bad chooser input");
+  }
+  const deckIds = new Set((rawDeckIds as string[]).map((d) => d.toLowerCase()));
+  // Unowned as zero: the commonest cart line is a card no copy of which is on the shelf yet.
+  const card = await loadContestedCard(rawOracleId.toLowerCase(), userId, { unownedAsZero: true });
+  if (!card) return null;
+  const claimants = card.claimants.filter((c) => deckIds.has(c.deckId.toLowerCase()));
+  // Every deck on the line or none: a deck billed for the card that the claim model does not list
+  // (a card only in a committed deck's draft) would otherwise vanish from the confirm, and the plain
+  // list is the honest fallback.
+  return claimants.length === deckIds.size ? { ...card, claimants } : null;
 }

@@ -146,8 +146,10 @@ export async function countContestedCards(oracleIds: string[], userId: string): 
 export async function loadContestedCard(
   oracleId: string,
   userId: string,
+  /** Read a card the collection holds no copy of as owning 0 (the cart's chooser). */
+  opts?: { unownedAsZero?: boolean },
 ): Promise<ContestedCard | null> {
-  const availability = await loadAvailability(userId, { oracleIds: [oracleId] });
+  const availability = await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: opts?.unownedAsZero });
   const a = availability.get(oracleId);
   if (!a) return null;
   const [name] = await db.select({ name: cards.name }).from(cards)

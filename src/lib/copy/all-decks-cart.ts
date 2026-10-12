@@ -12,6 +12,8 @@ const decks = (x: number) => (x === 1 ? "1 deck" : `${n(x)} decks`);
 const and = (names: string[]) =>
   names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
+const ASPICKED = "as you picked";
+
 export const allDecksCartCopy = {
   title: "Shopping for all decks",
 
@@ -119,11 +121,22 @@ export const allDecksCartCopy = {
     /** The stale banner on a cart line: `gotItCopy.confirm.staleBody`, said of the cart. */
     staleBody: (need: number) => `A copy was added somewhere else, so the cart needs ${n(need)} now. Nothing was added yet.`,
     staleBodyDone: "A copy was added somewhere else, so the cart needs no more. Add anyway if this is a spare.",
+    /**
+     * S1b: fewer copies than decks turns the deck list into ContestedCardRow, with its own strings
+     * (cardAssignmentsCopy.contested.headingOwned, cap, gets / buys, a11y*). Only the footer is the
+     * cart's, because brews order by when they first listed the card.
+     */
+    undo: (deck: string) => `Tap ${deck} again to undo this.`,
+    backToDefault: "Back to first listed",
+    /** Announced when the pick is cleared, by either way back (the row's `announcedCleared`, said of the cart). */
+    cleared: (holder: string, card: string) => `Back to first listed. ${holder} has ${card}.`,
   },
 
   /** I got it's receipt body on a cart press, from the read after the write (lock 7). */
   receipt: {
-    covered: (names: string[]) => `${and(names)} ${names.length === 1 ? "is" : "are"} covered.`,
+    /** `picked`: the S1b chooser named one of these decks (S4). */
+    covered: (names: string[], picked = false) =>
+      `${and(names)} ${names.length === 1 ? "is" : "are"} covered${picked ? `, ${ASPICKED}` : ""}.`,
     still: (deck: string, need: number) => `${deck} still needs ${n(need)}.`,
     stillMany: (deckN: number, need: number) => `${decks(deckN)} still need ${n(need)} between them.`,
   },

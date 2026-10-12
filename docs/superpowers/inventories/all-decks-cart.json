@@ -134,6 +134,36 @@
           "settle": 1500
         }
       ]
+    },
+    {
+      "id": "cart-chooser",
+      "label": "/decks/shopping, Sol Ring bought one short: the chooser (S1b)",
+      "view": "src/components/decks/cart/cart-got-it.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Bought Sol Ring\\? Add it to your collection$",
+          "settle": 1500
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^One fewer$",
+          "settle": 1500
+        },
+        {
+          "wait": "[role=radiogroup][aria-label^='Which decks get']",
+          "settle": 1000
+        }
+      ]
     }
   ]
 }

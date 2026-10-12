@@ -140,10 +140,25 @@ export function ContestedCardRow({
    * beside it, and a reader who tabs straight into the group never meets that paragraph.
    */
   describedBy,
+  chooser,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
   describedBy?: string;
+  /**
+   * The all-decks cart's S1b chooser: the row previews a purchase rather than moving a reservation.
+   * The pick is the caller's, written with the purchase (`markBoughtForDecks`), so a tap here writes
+   * nothing; `card.owned` is the copies being bought, and the marks draw the model's own allocation
+   * with the pick moved, exactly as the optimistic preview does.
+   */
+  chooser?: {
+    picked: string | null;
+    onPick: (deckId: string | null) => void;
+    /** The announcement for a cleared pick: the caller's default order, which may not be commit order. */
+    cleared: (holder: string) => string;
+    /** The caller's write is in flight: a tap does nothing until it settles. */
+    disabled?: boolean;
+  };
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -197,10 +212,26 @@ export function ContestedCardRow({
   // queue — so reading it off the row survives the revalidation that follows every pick. Held in
   // state instead, the accent vanished the moment the server answered, which
   // is exactly when the player looks for confirmation that their tap landed.
-  const chosenIds = picked ?? new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId));
+  const chosenIds = chooser
+    ? new Set(chooser.picked ? [chooser.picked] : [])
+    : picked ?? new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId));
 
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosenIds.has(deckId);
+    if (chooser) {
+      if (chooser.disabled) return;
+      // Nothing to write: the caller holds the pick and sends it with the purchase. Announced from
+      // the same preview the marks draw, since there is no server answer to wait for.
+      const next = wasChosen ? null : deckId;
+      chooser.onPick(next);
+      const preview = previewAllocation(card.claimants, card.owned, next);
+      setAnnounce(next === null
+        ? chooser.cleared(preview.find((c) => c.allocated > 0)?.deckName ?? "")
+        : copy.contested.announcedPick(
+            deckName, card.cardName, preview.find((c) => c.deckId !== deckId && c.allocated < c.quantity)?.deckName ?? "",
+          ));
+      return;
+    }
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
     // THE OPTIMISTIC SET SAYS WHERE THE GRANT WENT, and nothing else. The allocation that
@@ -327,9 +358,11 @@ export function ContestedCardRow({
   // reader sees two full marks for a card with one copy. Replaced by the server's own reading
   // the moment it lands, and stood down with `picked` on a refusal or a throw, so a wrong guess
   // could only ever survive one round trip.
-  const claimants = picked
-    ? previewAllocation(card.claimants, card.owned, [...picked][0] ?? null)
-    : card.claimants;
+  const claimants = chooser
+    ? previewAllocation(card.claimants, card.owned, chooser.picked)
+    : picked
+      ? previewAllocation(card.claimants, card.owned, [...picked][0] ?? null)
+      : card.claimants;
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
@@ -417,6 +450,9 @@ export function ContestedCardRow({
           // An option nobody can choose: a commander-only claimant, or any option on a card with
           // no spare copy at all. A folded claim is NOT inert — its spare is live.
           const inert = nothingToChoose || c.commanderCopies >= c.quantity;
+          // The chooser's caller has a write in flight: every option is held, and says so, without
+          // the dashed border that means nobody can ever choose it.
+          const held = inert || chooser?.disabled === true;
           const first = card.claimants.find((x) => !(nothingToChoose || x.commanderCopies >= x.quantity))?.deckId === c.deckId;
           const outcome = c.commanderCopies > 0 && c.allocated > 0 && predates
             ? (spareToThisDeck > 0
@@ -431,8 +467,8 @@ export function ContestedCardRow({
               // which is a different fact and must not read as a selection.
               role="radio"
               aria-checked={chosenIds.has(c.deckId)}
-              aria-disabled={inert || undefined}
-              tabIndex={inert ? -1 : chosenIds.has(c.deckId) || (chosenIds.size === 0 && first) ? 0 : -1}
+              aria-disabled={held || undefined}
+              tabIndex={held ? -1 : chosenIds.has(c.deckId) || (chosenIds.size === 0 && first) ? 0 : -1}
               aria-label={
                 c.commanderCopies >= c.quantity
                   ? copy.contested.a11yCommander(c.deckName, card.cardName)
@@ -440,12 +476,12 @@ export function ContestedCardRow({
                     ? copy.contested.a11ySelected(c.deckName)
                     : copy.contested.a11yOption(c.deckName, outcome)
               }
-              onClick={inert ? undefined : () => pick(c.deckId, c.deckName)}
+              onClick={held ? undefined : () => pick(c.deckId, c.deckName)}
               // A radiogroup is reached by Tab and traversed by ARROWS — every option but one
               // carries `tabIndex={-1}`, so without this a keyboard reader can see the group and
               // never reach the second deck in it. Roving focus, wrapping at both ends, skipping
               // the options nobody can choose.
-              onKeyDown={inert ? undefined : (e) => {
+              onKeyDown={held ? undefined : (e) => {
                 if (e.key === " " || e.key === "Enter") {
                   e.preventDefault();
                   pick(c.deckId, c.deckName);
@@ -484,7 +520,7 @@ export function ContestedCardRow({
                   : chosenIds.has(c.deckId)
                     ? "1px solid var(--accent)"
                     : "1px solid transparent",
-                cursor: inert ? "default" : "pointer",
+                cursor: held ? "default" : "pointer",
               }}
             >
               <span className="flex items-center gap-[11px] md:gap-[11px] md:flex-1 min-w-0">

@@ -14,6 +14,8 @@ const state = vi.hoisted(() => ({
   invalidated: 0,
   after: 0,
   where: null as unknown,
+  contested: null as unknown,
+  contestedArgs: [] as unknown[],
 }));
 
 vi.mock("../../db", () => ({
@@ -43,7 +45,14 @@ vi.mock("../../lib/collection/write", () => ({
   },
 }));
 
-import { markBought, markBoughtForDecks } from "./mark-bought-actions";
+vi.mock("../../lib/collection/summary-read", () => ({
+  loadContestedCard: async (...args: unknown[]) => {
+    state.contestedArgs = args;
+    return state.contested;
+  },
+}));
+
+import { markBought, markBoughtForDecks, readCartChooser } from "./mark-bought-actions";
 
 const press = (over: Record<string, unknown> = {}) =>
   markBought(DECK, CARD, { scryfallId: SCRY, finish: "foil", quantity: 2, expected: 1, id: ID, ...over });
@@ -226,5 +235,39 @@ describe("markBoughtForDecks", () => {
     state.result = { status: "notInDeck" };
     expect(await cartPress()).toEqual({ refused: "notInDeck" });
     expect(state.invalidated).toBe(0);
+  });
+});
+
+describe("readCartChooser", () => {
+  const A = "11111111-1111-4111-8111-111111111111";
+  const B = "55555555-5555-4555-8555-555555555555";
+  const C = "66666666-6666-4666-8666-666666666666";
+  const claimant = (deckId: string) => ({ deckId, deckName: deckId, quantity: 1, commanderCopies: 0, granted: 0, since: null, versionNumber: null, allocated: 0 });
+
+  it("narrows the claimants to the line's decks, in the model's queue order", async () => {
+    state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(C), claimant(B), claimant(A)] };
+    const card = await readCartChooser(CARD.toUpperCase(), [A.toUpperCase(), B]);
+    expect(state.contestedArgs).toEqual([CARD, "user_1", { unownedAsZero: true }]);
+    expect(card?.claimants.map((c) => c.deckId)).toEqual([B, A]);
+  });
+
+  it("answers null with a switch off, or when none of the line's decks claims the card", async () => {
+    state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(C)] };
+    expect(await readCartChooser(CARD, [A])).toBeNull();
+    process.env.ALL_DECKS_CART_ENABLED = "";
+    state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(A)] };
+    expect(await readCartChooser(CARD, [A])).toBeNull();
+  });
+
+  it("answers null when the claim model misses one of the line's decks, so the list stays whole", async () => {
+    state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(A)] };
+    expect(await readCartChooser(CARD, [A, B])).toBeNull();
+  });
+
+  it("refuses malformed input", async () => {
+    for (const bad of [[], ["nope"], "x", [A, 3]]) {
+      await expect(readCartChooser(CARD, bad)).rejects.toThrow();
+    }
+    await expect(readCartChooser("nope", [A])).rejects.toThrow();
   });
 });
