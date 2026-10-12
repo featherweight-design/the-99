@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
@@ -95,9 +95,12 @@ describe("SuggestionCard", () => {
     });
   });
 
-  it("draws the buy tag for an add the player does not own", () => {
+  it("draws the buy tag for an add the player does not own, and never for a basic", () => {
     draw({ ...item, owned: false, ownedQuantity: 0, availability: null });
     expect(screen.getAllByText("buy").length).toBeGreaterThan(0);
+    cleanup();
+    draw({ ...item, owned: false, ownedQuantity: 0, availability: null, addTypeLine: "Basic Land — Forest" });
+    expect(screen.queryAllByText("buy")).toHaveLength(0);
   });
 
   it("draws no mark for an owned add with a free copy, and the hard mark for a contested one", () => {

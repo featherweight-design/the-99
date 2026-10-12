@@ -121,14 +121,14 @@ export function SuggestionCard({
       className="flex-none font-mono text-[10.5px]"
     />
   ) : null;
-  const addMark = !item.owned ? (
+  const addMark = !needsBuy ? marker : !item.owned ? (
     <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
-  ) : needsBuy ? (
+  ) : (
     <span className="inline-flex flex-none items-center gap-[8px]">
       {marker}
       <BuyTag variant="row" label={recommendationsCopy.shopping.rowSecondCopyTagAria} price={item.price} newestAsOf={newestPriceAsOf} />
     </span>
-  ) : marker;
+  );
 
   return (
     <article

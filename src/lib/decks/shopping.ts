@@ -45,7 +45,7 @@ export function isShoppingCard(c: DeckDetailCard): boolean {
 }
 
 /**
- * A suggested add the player owns but would still have to buy (bug batch 2026-10-12, Hugh): no copy
+ * A suggested add the player would have to buy: one they do not own, or (bug batch 2026-10-12, Hugh) one they own with no copy
  * free for this deck (`none free`) or already overcommitted (`short N`). It is Shopping's own rule
  * (`isShoppingCard` on an owned card) read as if the add had landed: an add the deck does not hold
  * yet is read with `selfExcluded` false, where `hard` (none free) is exactly what becomes `over` once
@@ -58,7 +58,10 @@ export function suggestionNeedsBuy(args: {
   selfExcluded: boolean;
   typeLine: string;
 }): boolean {
-  if (!args.owned || !args.availability || isBasicLand(args.typeLine)) return false;
+  if (isBasicLand(args.typeLine)) return false;
+  // Unowned: every copy is a purchase.
+  if (!args.owned) return true;
+  if (!args.availability) return false;
   const state = availabilityState(args.availability, { selfExcluded: args.selfExcluded });
   return state === "hard" || state === "over";
 }

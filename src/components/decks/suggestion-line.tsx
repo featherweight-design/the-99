@@ -115,14 +115,14 @@ export function SuggestionLine({
       className="flex-none font-mono text-[10.5px]"
     />
   ) : null;
-  const addMark = !isAdd ? null : !item.owned ? (
+  const addMark = !isAdd ? null : !needsBuy ? marker : !item.owned ? (
     <BuyTag variant="row" price={item.price} newestAsOf={newestPriceAsOf} />
-  ) : needsBuy ? (
+  ) : (
     <span className="inline-flex flex-none items-center gap-[8px]">
       {marker}
       <BuyTag variant="row" label={recommendationsCopy.shopping.rowSecondCopyTagAria} price={item.price} newestAsOf={newestPriceAsOf} />
     </span>
-  ) : marker;
+  );
 
   const yes = (
     <button
