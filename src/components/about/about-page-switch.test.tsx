@@ -101,4 +101,16 @@ describe("all-decks-cart, on the page", () => {
     const spoken = [...entry.querySelectorAll(".sr-only")].map((e) => e.textContent ?? "");
     expect(spoken.some((t) => t.includes(allDecksCartCopy.list.owned(17)) && t.includes("$3.87"))).toBe(true);
   });
+
+  it("draws the Sol Ring cart line in its figure: three decks, the owned fact and the line's tag", () => {
+    process.env.ALL_DECKS_CART_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    // The body, not the frame: `Specimen` makes the `[data-specimen]` node whatever it holds.
+    const el = document.querySelector<HTMLElement>('[data-specimen="all-decks-cart"]')!;
+    expect(el).not.toBeNull();
+    const text = el.textContent ?? "";
+    for (const part of ["Sol Ring", "HD - Gishath", "HD - Kratos", "HD -Thorin", "you own 17 · all 17 in other decks", "$3.87"]) {
+      expect(text, part).toContain(part);
+    }
+  });
 });
