@@ -29,6 +29,6 @@ export async function GET(req: NextRequest) {
   if (ids.length === 0 || ids.length > MAX_COLLECTION_FIELDS_BATCH || !ids.every((id) => ORACLE_ID.test(id))) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });
   }
-  const cards = await loadCollectionList(userId);
+  const { cards } = await loadCollectionList(userId);
   return NextResponse.json({ fields: collectionDrawFieldsFor(cards, new Set(ids)) }, { headers: HEADERS });
 }

@@ -13,6 +13,8 @@
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
+import { readCardPrice } from "../../lib/collection/copy-price";
+import { PriceFigure, priceSpoken } from "./price-figure";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
@@ -55,8 +57,14 @@ export function GridView({
   pendingOracleId = null,
   busy = false,
   mayBeHidden = false,
+  showPrice = false,
 }: {
   cards: BrowseListCard[];
+  /**
+   * Sorted by price: the figure leads the sub-line and is spoken last, and the phone tile drops
+   * the rarity to make room (Hugh, 2026-10-12). Decided by the sort, never by measurement.
+   */
+  showPrice?: boolean;
   totalCards: number;
   onShowMore: () => void;
   /**
@@ -267,9 +275,20 @@ export function GridView({
                also shows the rarity on a phone, where the meta line had only had room for
                the set code. */
             nameSub={
-              <>
-                {c.primarySetCode} · {c.rarity}
-              </>
+              showPrice ? (
+                <span className="flex min-w-0">
+                  <PriceFigure code={c.price} className="font-semibold" />
+                  <span className="min-w-0 truncate">
+                    {readCardPrice(c.price) === null ? "" : "\u00a0· "}
+                    {c.primarySetCode}
+                    <span className="hidden md:inline"> · {c.rarity}</span>
+                  </span>
+                </span>
+              ) : (
+                <>
+                  {c.primarySetCode} · {c.rarity}
+                </>
+              )
             }
             /* The name printed on the copy the player owns, front face only,
                single line and never clamped. This surface carries no `//` mark
@@ -314,6 +333,8 @@ export function GridView({
                 {c.comboPartner
                   ? `, ${comboClauseSpoken(c.comboPartner.name, "ownBoth")}`
                   : ""}
+                {/* The price, last and only while sorted by it; the drawn figure is aria-hidden. */}
+                {showPrice && priceSpoken(c.price) ? `, ${priceSpoken(c.price)}` : ""}
               </span>
             }
           />

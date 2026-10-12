@@ -21,6 +21,7 @@ import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
+import { PriceFigure, priceSpoken } from "./price-figure";
 
 const RARITY_DOT: Record<BrowseListCard["rarity"], string> = {
   common: "var(--fg-muted)", uncommon: "var(--fg-body)", rare: "var(--accent)", mythic: "var(--warning)",
@@ -33,8 +34,11 @@ export function RowsView({
   onOpen,
   pendingOracleId = null,
   busy = false,
+  showPrice = false,
 }: {
   cards: BrowseListCard[];
+  /** Sorted by price: the figure leads the type line and is spoken last. Off, the row is as shipped. */
+  showPrice?: boolean;
   totalCards: number;
   onShowMore: () => void;
   /**
@@ -64,6 +68,7 @@ export function RowsView({
         const overRing =
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
         const pending = pendingOracleId === c.oracleId;
+        const spokenPrice = showPrice ? priceSpoken(c.price) : null;
         return (
         <button
           key={c.oracleId}
@@ -98,7 +103,9 @@ export function RowsView({
             // otherwise simply lose. Spoken in FULL — `you own both` rather than the phone's
             // `both yours` — because the shortening is about pixels and nothing here has any.
             c.comboPartner ? comboClauseSpoken(c.comboPartner.name, "ownBoth") : null,
-          )}
+          // The price, last and only while sorted by it: it explains the order, and the figure
+          // drawn beside the type line is aria-hidden.
+          ) + (spokenPrice ? `, ${spokenPrice}` : "")}
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
@@ -178,9 +185,19 @@ export function RowsView({
             {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate.
                 UNTOUCHED by combo awareness: `/collection` draws a 16px marker in the cluster
                 rather than a sentence, so nothing yields and this line stays as it was. */}
-            <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
-              {c.typeLine}
-            </span>
+            {showPrice ? (
+              // Sorted by price, the figure leads the line and never truncates; the type gives way.
+              <span className="flex md:hidden min-w-0 items-baseline gap-[6px]">
+                <PriceFigure code={c.price} className="font-mono text-[11px] font-medium" />
+                <span className="min-w-0 truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+                  {c.typeLine}
+                </span>
+              </span>
+            ) : (
+              <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+                {c.typeLine}
+              </span>
+            )}
           </span>
 
           {/* §1b's cost track, now drawn by the app's ONE cost component.
@@ -203,7 +220,7 @@ export function RowsView({
           </span>
 
           {/* SetRarityColumn: mobile set code + desktop type/set/rarity/chevron columns */}
-          <SetRarityColumn card={c} />
+          <SetRarityColumn card={c} showPrice={showPrice} />
         </button>
         );
       })}
@@ -222,7 +239,7 @@ export function RowsView({
   );
 }
 
-function SetRarityColumn({ card }: { card: BrowseListCard }) {
+function SetRarityColumn({ card, showPrice }: { card: BrowseListCard; showPrice: boolean }) {
   return (
     <>
       {/* Mobile: single trailing set code — §Row: Set Code (mobile): mono 10.5px, --fg-faint, letter-spacing 0.04em */}
@@ -234,12 +251,21 @@ function SetRarityColumn({ card }: { card: BrowseListCard }) {
       </span>
 
       {/* Desktop-only trailing spans — displayed only ≥md */}
-      <span
-        className="hidden md:block truncate font-sans text-[12.5px]"
-        style={{ color: "var(--fg-muted)" }}
-      >
-        {card.typeLine}
-      </span>
+      {showPrice ? (
+        <span className="hidden md:flex min-w-0 items-baseline gap-[8px]">
+          <PriceFigure code={card.price} className="font-mono text-[11.5px] font-medium" />
+          <span className="min-w-0 truncate font-sans text-[12.5px]" style={{ color: "var(--fg-muted)" }}>
+            {card.typeLine}
+          </span>
+        </span>
+      ) : (
+        <span
+          className="hidden md:block truncate font-sans text-[12.5px]"
+          style={{ color: "var(--fg-muted)" }}
+        >
+          {card.typeLine}
+        </span>
+      )}
       <span className="hidden md:flex items-center gap-[8px]">
         <span
           aria-hidden
