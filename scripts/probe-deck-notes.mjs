@@ -1,7 +1,9 @@
 // Deck notes in a real browser at 1300x900 and 390x844: open the Notes segment, add a note with a `[[` tag
 // picked from the picker, press the tag (card details open), select the note (it moves under Done (1)),
 // unselect it, edit it in place, and delete it behind the confirm. At 390 it also proves the sticky add bar
-// and the tab bar step aside while the field has focus.
+// and the tab bar step aside while the field has focus. It then empties the deck (commander only) and proves
+// Notes is still reachable there: a note adds, All brings the empty state back, and the note is still kept
+// after a reload.
 //
 // It WRITES: it creates a deck of its own under the signed-in account (three catalog cards), walks the notes
 // on it, and deletes the deck (notes and cards cascade) in a `finally`. It refuses staging, production and an unknown branch before the first write by
@@ -13,6 +15,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -59,6 +62,7 @@ async function signIn(page) {
 
 let deckId = null;
 let verified = false;
+let aboutCapture = null;
 
 async function walk(browser, label, viewport, card) {
   const context = await browser.newContext({ viewport });
@@ -137,6 +141,39 @@ async function walkIn(page, label, card) {
   check(`${label}: delete asks first, then removes the note`, (await sql`select count(*)::int as n from deck_notes where deck_id = ${deckId}::uuid`)[0].n === 0);
 }
 
+// The same deck with its cards removed: a commander-only list draws the empty state, which used to carry no
+// All / Shopping / Notes control, so Notes was unreachable and kept notes hid.
+async function walkEmpty(browser, label, viewport) {
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  try {
+    await signIn(page);
+    await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
+    const segment = onPage(page, "button").filter({ hasText: /^Notes/ }).first();
+    await segment.waitFor({ timeout: 30_000 });
+    check(`${label}: an empty deck draws the Notes control`, true);
+    await segment.click();
+    const panel = onPage(page, 'section[aria-label="Notes"]');
+    const field = panel.getByRole("combobox", { name: "Add a note" });
+    await field.waitFor();
+    await field.fill(`kept on an empty deck ${label}`);
+    await panel.getByRole("button", { name: "Add", exact: true }).click();
+    await panel.getByText(`kept on an empty deck ${label}`).waitFor({ timeout: 30_000 });
+    check(`${label}: a note adds on an empty deck`, true);
+    await onPage(page, "button").filter({ hasText: /^All/ }).first().click();
+    check(`${label}: All swaps the empty state back`, (await panel.count()) === 0);
+    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/deck-notes-empty-${label}.png` });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    const again = onPage(page, "button").filter({ hasText: /^Notes/ }).first();
+    await again.waitFor({ timeout: 30_000 });
+    await again.click();
+    await onPage(page, 'section[aria-label="Notes"]').getByText(`kept on an empty deck ${label}`).waitFor({ timeout: 30_000 });
+    check(`${label}: the kept note shows after a reload, on a deck with no cards`, true);
+  } finally {
+    await context.close();
+  }
+}
+
 async function main() {
   const branch = (await sql`select current_setting('neon.branch_id', true) as id`)[0].id;
   if (!branch || branch === PRODUCTION || branch === STAGING || process.env.VERCEL_ENV === "production") {
@@ -150,6 +187,9 @@ async function main() {
     const probe = await browser.newContext();
     const page = await probe.newPage();
     const userId = await signIn(page);
+    // An unseen About entry redirects the deck to /about; the branch was verified above as not staging or production.
+    aboutCapture = await captureAboutSeen(userId);
+    await markEveryEntrySeen(userId);
     await probe.close();
     // Its own deck: a shared fixture deck is rewritten by other lanes' probes on the same database, and a
     // cascade from one of theirs would delete the notes this one is walking.
@@ -162,6 +202,9 @@ async function main() {
     const card = pool.map((c) => c.name).sort()[0];
     await walk(browser, "1300", { width: 1300, height: 900 }, card);
     await walk(browser, "390", { width: 390, height: 844 }, card);
+    await sql`delete from deck_cards where deck_id = ${deckId}::uuid`;
+    await walkEmpty(browser, "1300", { width: 1300, height: 900 });
+    await walkEmpty(browser, "390", { width: 390, height: 844 });
   } finally {
     await browser.close();
   }
@@ -176,6 +219,8 @@ main()
     try {
       // The deck is the probe's own, and its notes and cards cascade with it.
       if (verified && deckId) await sql`delete from decks where id = ${deckId}::uuid`;
+      // Both About columns back, so the account's later runs see the announcements it had not yet seen.
+      if (aboutCapture) await restoreAboutSeen(aboutCapture);
     } catch (error) {
       failures += 1;
       console.error("cleanup failed", error);

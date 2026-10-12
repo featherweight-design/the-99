@@ -61,6 +61,7 @@ import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
 import { DeckPanelContext } from "./deck-panel";
+import { EmptyDeckNotes } from "./notes/empty-deck-notes";
 import type { DeckPanel } from "./group-toggle";
 import type { DeckNotesView } from "../../lib/decks/notes-types";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
@@ -1852,6 +1853,13 @@ export function BuilderShell({
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
+              <DeckPanelContext.Provider value={deckPanel}>
+              <EmptyDeckNotes
+                enabled={notesEnabled}
+                deckId={deck.id}
+                notes={notesData}
+                deckCards={[deck.commander, ...(deck.partner ? [deck.partner] : [])].map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null }))}
+              >
               <>
               {/* §Empty Builder Mark + empty state (§Empty Builder Mark section).
                  Branches on deck.filled: a deck reached by deletion congratulates
@@ -1997,6 +2005,8 @@ export function BuilderShell({
                 <TokensGroup />
               </HoverPreviewProvider>
               </>
+              </EmptyDeckNotes>
+              </DeckPanelContext.Provider>
             ) : (
               /* Task 8: Decklist body */
               /* The provider wraps the list from out here rather than from

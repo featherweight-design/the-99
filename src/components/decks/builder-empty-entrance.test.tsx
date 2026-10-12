@@ -9,7 +9,7 @@
 //
 // The shell rewiring has since landed, so the two entrances the empty deck must
 // keep are the Consider tab and the quick-add bar.
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -27,6 +27,10 @@ vi.mock("../../app/decks/actions", () => ({
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
   fillDeck: vi.fn(),
+}));
+
+vi.mock("../../app/decks/notes-actions", () => ({
+  addNote: vi.fn(), editNote: vi.fn(), setNoteDone: vi.fn(), deleteNote: vi.fn(), searchNoteCards: vi.fn(),
 }));
 
 const { BuilderShell } = await import("./builder-shell");
@@ -71,6 +75,31 @@ describe("empty builder", () => {
         arrivedFromImport={false}
        newestAsOf={null}/>,
     );
+
+  it("opens Notes on a deck with no cards, keeping the notes it already had, and All brings the empty state back", () => {
+    render(
+      <BuilderShell mix={TEST_MIX}
+        deck={emptyDeck}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+        newestAsOf={null}
+        notesEnabled
+        notesData={{
+          open: [{ id: "n1", body: "swap the mana rock", drawn: [{ kind: "text", text: "swap the mana rock" }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null }],
+          done: [], readAt: 1,
+        }} />,
+    );
+    const hint = /ramp, draw, removal, and wipe slots first/i;
+    expect(screen.getByText(hint)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Notes, 1 open" }));
+    expect(screen.queryByText(hint)).toBeNull();
+    expect(screen.getByText("swap the mana rock")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+    expect(screen.getByText(hint)).toBeInTheDocument();
+  });
 
   it("keeps both entrances: the Consider tab and the quick-add bar", () => {
     renderEmpty();
