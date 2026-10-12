@@ -5,6 +5,11 @@ import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-region";
+import { reveal } from "../../lib/ui/reveal";
+
+// jsdom lays nothing out, so the scroll itself is `reveal`'s own test; here, what is revealed and when.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn(() => () => {}) }));
+const revealed = vi.mocked(reveal);
 
 const copy = printingPickerCopy.printing;
 
@@ -374,6 +379,55 @@ describe("PrintingRegion", () => {
   });
 });
 
+describe("PrintingRegion reveals the tile the reader is looking for (motion U1)", () => {
+  const printings = [
+    printing(),
+    printing({ setCode: "LEA", setName: "Limited Edition Alpha", collectorNumber: "270", releasedAt: "1993-08-05" }),
+    printing({ setCode: "ZNR", setName: "Zendikar Rising", collectorNumber: "12", releasedAt: "2020-09-25" }),
+  ];
+  const region = (preferred: { setCode: string; collectorNumber: string } | null) => (
+    <PrintingRegion
+      id="printings"
+      printings={printings}
+      preferred={preferred}
+      resolvedKey={printingKey(printings[0])}
+      cardName="Arcane Signet"
+      colorIdentity={[]}
+      onPick={() => {}}
+      onReset={() => {}}
+      onForget={() => {}}
+      onAnnounce={() => {}}
+    />
+  );
+  const tileFor = (name: RegExp) => screen.getAllByRole("radio").find((r) => name.test(r.getAttribute("aria-label") ?? ""));
+
+  // The About page's specimen draws this region on a page the reader is scrolling: it must not
+  // move them to its tile (pre-open pass).
+  it("reveals nothing for a still specimen, pick or no pick", () => {
+    revealed.mockClear();
+    const still = (preferred: { setCode: string; collectorNumber: string } | null) => {
+      const el = region(preferred);
+      return { ...el, props: { ...el.props, still: true } };
+    };
+    const { rerender } = render(still(null));
+    rerender(still({ setCode: "LEA", collectorNumber: "270" }));
+    expect(revealed).not.toHaveBeenCalled();
+  });
+
+  it("on open, after a pick and after a Reset, nearest in the column and centered in a row", () => {
+    revealed.mockClear();
+    const { rerender } = render(region(null));
+    expect(revealed).toHaveBeenCalledTimes(1);
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "nearest", "center");
+    rerender(region({ setCode: "LEA", collectorNumber: "270" }));
+    expect(revealed).toHaveBeenCalledTimes(2);
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Limited Edition Alpha/), "nearest", "center");
+    rerender(region(null));
+    expect(revealed).toHaveBeenCalledTimes(3);
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "nearest", "center");
+  });
+});
+
 describe("PrintingRegion role=choose source=catalog", () => {
   const choice = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
     scryfallId: "id-1",
@@ -530,6 +584,50 @@ describe("PrintingRegion role=choose source=catalog", () => {
     it("focuses the selected tile when asked", () => {
       renderChoose({ selected: "id-3", layout: "row", autoFocus: true });
       expect(screen.getAllByRole("radio")[2]).toHaveFocus();
+    });
+
+    it("focuses without the browser's own scroll, which would fight the reveal", () => {
+      const focus = vi.spyOn(HTMLElement.prototype, "focus");
+      renderChoose({ selected: "id-3", layout: "row", autoFocus: true });
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+      focus.mockRestore();
+    });
+
+    it("keeps the browser's own focus scroll when nothing is selected, since nothing is revealed", () => {
+      const focus = vi.spyOn(HTMLElement.prototype, "focus");
+      renderChoose({ layout: "row", autoFocus: true });
+      expect(focus).toHaveBeenCalled();
+      expect(focus).not.toHaveBeenCalledWith({ preventScroll: true });
+      focus.mockRestore();
+    });
+
+    it("centers the selected tile on open and after a press, but not after an arrow key moved focus", () => {
+      revealed.mockClear();
+      const props = {
+        role: "choose" as const, source: "catalog" as const, id: "choose", printings: choices, cardName: "Sol Ring",
+        colorIdentity: [] as string[], onPick: () => {}, layout: "row" as const, tiles: "confirm" as const,
+      };
+      const { rerender } = render(<PrintingRegion {...props} selected="id-2" />);
+      expect(revealed).toHaveBeenCalledTimes(1);
+      expect(revealed).toHaveBeenLastCalledWith(screen.getAllByRole("radio")[1], "nearest", "center");
+      // A press: the parent moves the selection.
+      rerender(<PrintingRegion {...props} selected="id-3" />);
+      expect(revealed).toHaveBeenCalledTimes(2);
+      expect(revealed).toHaveBeenLastCalledWith(screen.getAllByRole("radio")[2], "nearest", "center");
+      // An arrow key: focus already moved (and the browser scrolled with it), so no second scroll.
+      fireEvent.keyDown(screen.getAllByRole("radio")[2], { key: "ArrowLeft" });
+      rerender(<PrintingRegion {...props} selected="id-2" />);
+      expect(revealed).toHaveBeenCalledTimes(2);
+      // The next press reveals again.
+      rerender(<PrintingRegion {...props} selected="id-1" />);
+      expect(revealed).toHaveBeenCalledTimes(3);
+    });
+
+    it("reveals nothing while nothing is selected", () => {
+      revealed.mockClear();
+      renderChoose({ selected: null, layout: "row" });
+      renderChoose({ layout: "row" });
+      expect(revealed).not.toHaveBeenCalled();
     });
   });
 });

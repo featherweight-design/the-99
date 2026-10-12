@@ -10,11 +10,14 @@ import type { HistoryRow } from "../../lib/tuning/history";
 import { useReviewRun } from "./review-run";
 import { historyDate, summaryText } from "./tuning-history";
 import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/decks/visit";
+import { reveal } from "../../lib/ui/reveal";
 
 vi.mock("../../app/decks/tuning-hub-actions", () => ({ readTuningHub: vi.fn(), readTuningHistory: vi.fn(), readTuningPastRun: vi.fn() }));
 const read = vi.mocked(readTuningHub);
 const readHistoryPage = vi.mocked(readTuningHistory);
 const readPast = vi.mocked(readTuningPastRun);
+// The hub brings the opened tool into view through `reveal`; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 
 const empty: HubTiles = { suggested_changes: null, proposed_cuts: null };
 const suggested = (panel: boolean = true): HubToolSpec => ({ tool: "suggested", panel: panel ? <h2 id="tuning-heading">Suggested changes</h2> : null });
@@ -246,15 +249,15 @@ describe("TuningHub opening a tool", () => {
       return ready ? <section><h2 id="cuts-heading">Proposed cuts</h2></section> : <div><h2>Counting</h2></div>;
     }
     render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "cuts", panel: <LatePanel />, over: 6, total: 106 }]} />);
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     fireEvent.click(tile("cuts"));
     // No scroll while only the temporary heading is drawn: the page is not yet tall enough to
     // bring the hub to the top, and the tool would then grow below the fold.
     await waitFor(() => expect(screen.getByRole("heading", { name: "Counting" })).toBeTruthy());
     expect(scroll).not.toHaveBeenCalled();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" })));
-    expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+    expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]"));
   });
 
   it("reads again a moment after returning to the tiles, catching a run the tool just started", async () => {
@@ -305,16 +308,16 @@ describe("TuningHub opening a tool", () => {
   });
 
   it("answers a shortcut's request once, and a second press again", async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     const answered = vi.fn();
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} onRequestAnswered={answered} />);
     // Its owner is told, so it can drop the request before the next visit remounts the hub.
     await waitFor(() => expect(answered).toHaveBeenCalledWith(1));
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
     // The Tuning heading is brought to the top, once the tool's heading has drawn.
-    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" }));
-    expect(scroll.mock.contexts[0]).toBe(document.querySelector("[data-tuning-hub]"));
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+    expect(scroll.mock.calls[0][0]).toBe(document.querySelector("[data-tuning-hub]"));
     fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
     // A re-render with the same request leaves the landing alone.
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
@@ -324,16 +327,16 @@ describe("TuningHub opening a tool", () => {
   });
 
   it("brings the opened tool into view from a tile, for every tool, and focuses its heading", async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     const mana: HubToolSpec = { tool: "mana", panel: <h2 id="mana-heading">Mana Balance</h2> };
     readHistoryPage.mockResolvedValue({ rows: [], nextCursor: null });
     for (const tool of ["suggested", "mana", "cuts", "history"] as const) {
       scroll.mockClear();
       const { unmount } = render(<TuningHub deckId="d" drawn tools={[suggested(), mana, cuts(6), { tool: "history" }]} />);
       fireEvent.click(tile(tool));
-      await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" }));
-      expect(scroll.mock.contexts[0]).toBe(document.querySelector("[data-tuning-hub]"));
+      await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+      expect(scroll.mock.calls[0][0]).toBe(document.querySelector("[data-tuning-hub]"));
       const heading = { suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading" }[tool];
       await waitFor(() => expect(document.activeElement?.id).toBe(heading));
       unmount();
@@ -341,8 +344,8 @@ describe("TuningHub opening a tool", () => {
   });
 
   it("waits for History's first rows before it scrolls, so the page is tall enough to bring the hub up", async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     let land!: (page: { rows: never[]; nextCursor: null }) => void;
     readHistoryPage.mockReturnValue(new Promise((r) => { land = r; }));
     render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "history" }]} />);
@@ -352,15 +355,15 @@ describe("TuningHub opening a tool", () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(scroll).not.toHaveBeenCalled();
     await act(async () => { land({ rows: [], nextCursor: null }); });
-    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" }));
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
     await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
   });
 
   it("scrolls and focuses anyway once History's first read outlasts the wait", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
-      const scroll = vi.fn();
-      Element.prototype.scrollIntoView = scroll;
+      const scroll = vi.mocked(reveal);
+      scroll.mockClear();
       readHistoryPage.mockReturnValue(new Promise(() => {}));
       render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "history" }]} />);
       fireEvent.click(tile("history"));
@@ -368,7 +371,7 @@ describe("TuningHub opening a tool", () => {
       await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
       expect(scroll).not.toHaveBeenCalled();
       vi.setSystemTime(Date.now() + 11_000);
-      await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" }));
+      await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
       await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
     } finally {
       vi.useRealTimers();
@@ -376,8 +379,8 @@ describe("TuningHub opening a tool", () => {
   });
 
   it("waits for a hidden tab body to be shown before it scrolls and focuses", async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     const { container, rerender } = render(
       <div hidden><TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} /></div>,
     );
@@ -385,7 +388,7 @@ describe("TuningHub opening a tool", () => {
     expect(scroll).not.toHaveBeenCalled();
     (container.firstChild as HTMLElement).hidden = false;
     rerender(<div><TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} /></div>);
-    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" }));
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
     expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" }));
   });
 

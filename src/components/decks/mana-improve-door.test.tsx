@@ -11,6 +11,7 @@ import type { ManaHelp } from "../../lib/tuning/mana-help";
 import type { StapleCandidate } from "../../lib/tuning/mana-staples";
 import { toClientBalance } from "../../lib/tuning/mana-view";
 import { ImproveDoor, type HelpRead, type TradeActions } from "./mana-improve-door";
+import { reveal } from "../../lib/ui/reveal";
 
 const openCard = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: openCard }), useCardIntent: () => ({}) }));
@@ -46,10 +47,10 @@ function door(read: (d: string, c: string) => Promise<ManaHelp | null>, deckId =
   return <ImproveDoor deckId={deckId} balance={balance} commander="Gishath" revision={revision} read={read} />;
 }
 
-// jsdom has no scrollIntoView, and a landed result is brought into view (`reveal`).
-const scroll = vi.fn();
+// A landed result is brought into view through `reveal`; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
+const scroll = vi.mocked(reveal);
 beforeEach(() => {
-  Element.prototype.scrollIntoView = scroll;
   scroll.mockReset();
   resetDeckVisitForTests();
   noteDeckRoute(`/decks/${A}`);
@@ -225,8 +226,7 @@ describe("ImproveDoor: review round 1", () => {
     expect(scroll).not.toHaveBeenCalled();
     await act(async () => { answer(helpFor("R")); });
     expect(scroll).toHaveBeenCalledTimes(1);
-    expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
-    expect(scroll.mock.contexts[0]).toBe(document.activeElement);
+    expect(scroll).toHaveBeenCalledWith(document.activeElement);
   });
 
   it("keeps nothing from a read that lands after the player left the deck and came back", async () => {
