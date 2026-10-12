@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-dim:#2C405F; --accent-shadow:#34507A;
+    --danger:#C6533F; --success:#6FA368; --warning:#E0913C; --display:'Metamorphous',serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="kaldheim" data-screen-label="{{ screenLabel }}" style="{{ rootStyle }}">
+
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:none;width:322px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 28px;background:var(--bg);">
+      <div style="width:264px;height:368px;border-radius:13px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;padding:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ card.name }}</span></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Click to zoom</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;">{{ card.price }}</span>
+    </div>
+  </sc-if>
+
+  <div style="{{ paneStyle }}">
+
+    <sc-if value="{{ isDetails }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative;flex:none;height:180px;background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;justify-content:space-between;padding:12px 16px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ card.name }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;background:var(--bg);">{{ card.price }}</span>
+          <span aria-label="Close" style="position:absolute;top:6px;right:6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg);">×</span>
+        </div>
+      </sc-if>
+      <div style="{{ detailsScroll }}">
+        <div style="display:flex;flex-direction:column;gap:6px;padding-right:44px;">
+          <h2 style="{{ detailsTitle }}">{{ card.name }}</h2>
+          <span style="font-size:14px;line-height:1.5;color:var(--fg-muted);">{{ card.type }}</span>
+        </div>
+        <div style="{{ box }}">
+          <div style="height:96px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--surface-sunken) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;padding:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">oracle text · as shipped</span></div>
+        </div>
+        <div style="{{ box }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">×1</span><span style="color:var(--fg-faint);">·</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg-muted);">1 free · in no deck</span></div>
+        </div>
+      </div>
+      <div style="{{ detailsFoot }}">
+        <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;">
+          <span style="{{ footLink }}"><span style="border-bottom:1px solid var(--accent-shadow);">Buy any printing at Mana Pool ↗</span></span>
+          <span role="button" style="{{ doorStyle }}"><span aria-hidden="true" style="display:flex;gap:3px;"><span style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--accent);"></span><span style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--accent);"></span></span><span style="border-bottom:1px solid var(--accent-shadow);">Find a deck for it →</span></span>
+        </div>
+        <span style="{{ navStyle }}"><span style="color:var(--fg-locked);">‹ Prev</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">3 of 41</span><span style="color:var(--accent);">Next ›</span></span>
+      </div>
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span aria-label="Close" style="position:absolute;top:22px;right:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:15px;color:var(--fg-body);">✕</span></sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isView }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ viewHead }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span role="button" aria-label="{{ backAria }}" style="{{ backPill }}"><span aria-hidden="true">←</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ card.name }}</span></span>
+          <span aria-label="Close" style="{{ closeStyle }}">✕</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <h2 style="{{ viewTitle }}">Find a deck for it</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);">{{ card.identity }} · legal in Commander<span style="color:var(--border-strong);"> · </span><span style="{{ copiesStyle }}">{{ card.copies }}</span></span>
+        </div>
+      </div>
+
+      <div style="{{ viewBody }}">
+
+        <sc-if value="{{ stale }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:12px;border:1px dashed var(--border-dashed);border-radius:10px;padding:13px 14px;">
+            <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ staleText }}</p>
+            <div style="{{ pressRow }}">
+              <span role="button" aria-label="Read again. Uses 1 credit." style="{{ btnOutline }}"><span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 16px;">Read again</span><span aria-hidden="true" style="display:flex;align-items:center;gap:5px;padding:0 11px;border-left:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;">◆ 1 credit</span></span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Replaces this read and uses a credit. 2 of 3 left · reset at 2:20 AM.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bandOffer }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:11px;border-radius:10px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);">
+            <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ offerLead }}</p>
+            <div style="{{ pressRow }}">
+              <span role="button" aria-label="{{ pressAria }}" style="{{ pressBtn }}"><span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 16px;white-space:nowrap;">Which deck needs it most?</span><sc-if value="{{ hasCredit }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="display:flex;align-items:center;gap:5px;padding:0 11px;border-left:1px solid color-mix(in srgb,var(--bg) 35%,transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;white-space:nowrap;">◆ 1 credit</span></sc-if></span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ standing }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bandRunning }}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display:flex;flex-direction:column;gap:12px;border-radius:10px;padding:14px 16px;background:var(--surface);border:1px solid var(--accent);">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <span style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--fg);"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></span>{{ runningHead }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">each deck’s plan and list, against the card’s text · 0:12</span>
+            </div>
+            <sc-for list="{{ skeleton }}" as="sk" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:8px;border-radius:9px;padding:12px;background:var(--surface-sunken);border:1px solid var(--border);">
+                <span style="display:block;height:10px;border-radius:5px;background:var(--elevated);width:{{ sk.a }};"></span>
+                <span style="display:block;height:8px;border-radius:4px;background:var(--surface-raised);width:{{ sk.b }};"></span>
+                <span style="display:block;height:8px;border-radius:4px;background:var(--surface-raised);width:{{ sk.c }};"></span>
+              </div>
+            </sc-for>
+            <span style="font-size:12.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">The list below stays as it is. You can leave this view; the read keeps going and waits here.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bandFailed }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex;flex-direction:column;gap:10px;border-radius:10px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);">
+            <h3 style="margin:0;display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:400;font-size:17px;color:var(--fg);"><svg role="img" aria-label="Didn’t finish" width="18" height="18" viewBox="0 0 16 16" style="flex:none;"><path fill="var(--danger)" fill-rule="evenodd" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z"></path></svg>The read didn’t come back</h3>
+            <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">The credit came back, and the list below is as it was. It isn’t something you did.</p>
+            <div style="{{ pressRow }}">
+              <span role="button" aria-label="Try again. Uses 1 credit." style="{{ btnOutline }}"><span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 16px;">Try again</span><span aria-hidden="true" style="display:flex;align-items:center;gap:5px;padding:0 11px;border-left:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;">◆ 1 credit</span></span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">3 of 3 left</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ noFit }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px;border-radius:10px;padding:16px;background:var(--surface);border:1px solid var(--border);">
+            <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--fg);">None of these decks is a real fit</h3>
+            <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ noFitText }}</p>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">read just now · 3 of 3 left</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Where it helps most" style="{{ resultWrap }}">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-bottom:2px;">
+              <h3 style="margin:0;font-size:14px;font-weight:600;color:var(--fg);">Where it helps most</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ resultSub }}</span>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+              <article aria-label="{{ r.name }}" style="{{ r.card }}">
+                <div style="display:flex;align-items:flex-start;gap:10px;min-width:0;">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                    <span style="display:flex;align-items:center;gap:8px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:600;color:var(--fg);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-strong);">{{ r.name }}</span><sc-if value="{{ r.changed }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-muted);border:1px dashed var(--border-dashed);border-radius:999px;padding:1px 7px;">changed since</span></sc-if></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;color:var(--fg-faint);">{{ r.cmdr }}<span style="color:var(--border-strong);"> · </span>{{ r.planFrom }}</span>
+                  </div>
+                  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span role="button" aria-pressed="{{ r.pressed }}" aria-label="{{ r.aria }}" style="{{ r.btn }}">{{ r.label }}</span></sc-if>
+                </div>
+                <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;"><sc-for list="{{ r.parts }}" as="p"><span style="{{ p.st }}">{{ p.t }}</span></sc-for></p>
+                <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border);">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">cut</span>
+                  <span style="{{ r.cutSt }}">{{ r.cut }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.cutNote }}</span>
+                </div>
+                <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span role="button" aria-pressed="{{ r.pressed }}" aria-label="{{ r.aria }}" style="{{ r.btn }}">{{ r.label }}</span></sc-if>
+              </article>
+            </sc-for>
+            <sc-if value="{{ thin }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:4px;border:1px dashed var(--border-dashed);border-radius:9px;padding:11px 12px;">
+                <span style="font-size:13px;line-height:1.5;color:var(--fg-body);">Only one deck held up, so the credit came back.</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">The other decks it named didn’t check out against their lists · 3 of 3 left</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasFoot }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ resultFoot }}</span></sc-if>
+          </section>
+        </sc-if>
+
+        <section aria-label="could take it" style="display:flex;flex-direction:column;">
+          <sc-if value="{{ hasFold }}" hint-placeholder-val="{{ false }}">
+            <div role="button" aria-expanded="{{ listOpen }}" style="{{ foldRow }}">
+              <span style="flex:1;font-size:13px;color:var(--fg-body);">Every deck that could take it</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ card.n }}</span>
+              <span aria-hidden="true" style="font-size:10px;color:var(--fg-muted);">{{ foldGlyph }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ listOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 0 6px;border-bottom:1px solid var(--border);">
+              <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">could take it</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;white-space:nowrap;color:var(--fg-locked);">combos first, then themes</span>
+            </div>
+            <sc-for list="{{ freeRows }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:5px;padding:10px 0;border-bottom:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">{{ f.name }}</span>
+                  <span style="{{ f.btn }}">{{ f.label }}</span>
+                </div>
+                <sc-if value="{{ f.hasLine }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;color:var(--fg-muted);"><span style="color:{{ f.leadInk }};">{{ f.lead }}</span><span style="color:var(--border-strong);">{{ f.dot }}</span><span style="color:var(--fg-locked);">{{ f.needLabel }}</span>{{ f.need }}</p>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ moreRows }}" hint-placeholder-val="{{ false }}"><span style="padding:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ moreText }}</span></sc-if>
+          </sc-if>
+        </section>
+      </div>
+      <sc-if value="{{ fade }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(to bottom,transparent,var(--surface-rail));pointer-events:none;"></div></sc-if>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:822,&quot;height&quot;:622},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;details&quot;,&quot;open&quot;,&quot;loading&quot;,&quot;result&quot;,&quot;thin&quot;,&quot;short&quot;,&quot;nofit&quot;,&quot;failed&quot;,&quot;spent&quot;,&quot;stored&quot;,&quot;stale&quot;],&quot;default&quot;:&quot;open&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const wide = !phone;
+    const state = this.props.state ?? "open";
+    const C = {
+      ajani: { name: "Ajani Unrelenting", type: "Legendary Planeswalker — Ajani", identity: "red", price: "$1.40", n: 11 },
+      kwia: { name: "Kwia Vigorbloom", type: "Legendary Creature", identity: "green and white", price: "$0.60", n: 4 },
+      molten: { name: "Molten Collapse", type: "Sorcery", identity: "black and red", price: "$0.35", n: 1 },
+      tangle: { name: "Tangle Wire", type: "Artifact", identity: "colorless", price: "$12.80", n: 21 },
+      hex: { name: "Maddening Hex", type: "Enchantment — Aura Curse", identity: "red", price: "$0.45", n: 11 },
+      eye: { name: "Mind’s Eye", type: "Artifact", identity: "colorless", price: "$3.10", n: 21 },
+    };
+    const cardKey = { details: "ajani", open: "ajani", loading: "ajani", result: "ajani", thin: "kwia", short: "molten", nofit: "tangle", failed: "hex", spent: "eye", stored: "ajani", stale: "ajani" }[state];
+    const card = { ...C[cardKey] };
+    const spentCopy = state === "result";
+    card.copies = spentCopy ? "×1 · none free" : "×1 · 1 free";
+    const copiesStyle = { color: spentCopy ? "var(--fg-muted)" : "var(--fg-body)" };
+
+    const theme = (n, w) => ({ lead: `Joins ${n} other ${w} ${n === 1 ? "card" : "cards"}`, leadInk: "var(--fg-body)" });
+    const fr = (name, lead, need) => ({ name, ...(lead ? (typeof lead === "string" ? { lead, leadInk: "var(--fg-body)" } : lead) : { lead: "", leadInk: "var(--fg-body)" }), need: need || "", needLabel: need ? "this deck " : "", dot: lead && need ? " · " : "", hasLine: !!(lead || need) });
+    const FREE = {
+      ajani: [
+        fr("HD Tune - Prismari Artistry", theme(19, "token"), "draw 10 of 11"),
+        fr("HD - Avatar Aang", theme(15, "card-draw"), "draw 13 of 10"),
+        fr("HD - Omnath", theme(15, "card-draw"), "draw 9 of 7"),
+        fr("HD -Thorin", theme(15, "token"), "draw 10 of 8"),
+        fr("HD - Tovolar", theme(14, "pump"), "draw 4 of 5"),
+        fr("HD - Gods", theme(13, "card-draw"), "draw 12 of 8"),
+      ],
+      kwia: [fr("HD - Omnath", theme(15, "token"), "ramp 20 of 9"), fr("HD Tune - Scrappy Survivors", theme(10, "protection"), "ramp 5 of 6"), fr("HD - Gishath", theme(7, "token"), "ramp 11 of 9")],
+      molten: [fr("HD - Avatar Aang", null, "removal 2 of 3")],
+      tangle: [fr("HD - Avatar Aang"), fr("HD - Brago"), fr("HD - Eldrazi"), fr("HD - Gishath"), fr("HD - Goblins"), fr("HD - Gods")],
+      hex: [fr("HD - Avatar Aang"), fr("HD - Gishath"), fr("HD - Goblins"), fr("HD - Gods"), fr("HD - Kratos"), fr("HD - Omnath")],
+      eye: [fr("HD - Wizards", theme(24, "card-draw"), "draw 19 of 12"), fr("HD - Eldrazi", theme(16, "card-draw"), "draw 3 of 10"), fr("HD - Avatar Aang", theme(15, "card-draw"), "draw 13 of 10"), fr("HD - Omnath", theme(15, "card-draw"), "draw 9 of 7"), fr("HD -Thorin", theme(15, "card-draw"), "draw 10 of 8")],
+    };
+    const btnAdd = { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 44 : 32, minWidth: phone ? 64 : 0, padding: phone ? "0 14px" : "0 12px", borderRadius: phone ? 8 : 7, fontSize: phone ? 13 : 12, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" };
+    const freeRows = FREE[cardKey].map((f) => ({ ...f, label: "Add", btn: btnAdd }));
+    const cap = phone ? 6 : 6;
+    const shownFree = freeRows.slice(0, cap);
+    const moreN = card.n - shownFree.length;
+
+    // the read's rows
+    const mk = (t) => ({ t, st: { color: "var(--fg)", borderBottom: "1px dotted var(--accent)", cursor: "pointer" } });
+    const tx = (t) => ({ t, st: {} });
+    const R = {
+      goblins: { name: "HD - Goblins", cmdr: "Krenko, Mob Boss", planFrom: "plan from its overview", parts: [tx("Every activation adds a creature for "), mk("Krenko, Mob Boss"), tx(" to count, and its card draw turns the wide board "), mk("Goblin Chieftain"), tx(" already pumps into a full hand.")], cut: "Skirk Prospector" },
+      kratos: { name: "HD - Kratos", cmdr: "Kratos, God of War", planFrom: "plan from its commander and themes", parts: [tx("This deck runs light on card draw, and Ajani refills it from the creatures "), mk("Kratos, God of War"), tx(" keeps on the board, the way "), mk("Rally the Ranks"), tx(" widens it.")], cut: "Shock" },
+      gishath: { name: "HD - Gishath", cmdr: "Gishath, Sun’s Avatar", planFrom: "plan from its overview", parts: [tx("Its tokens give "), mk("Gishath, Sun’s Avatar"), tx(" more attackers before it lands, as the plan’s “go wide, then hit with the Avatar” asks, beside "), mk("Forerunner of the Empire"), tx(".")], cut: "Rampaging Brontodon" },
+      survivors: { name: "HD Tune - Scrappy Survivors", cmdr: "Dogmeat, Ever Loyal", planFrom: "plan from its overview", parts: [tx("It keeps the creatures "), mk("Dogmeat, Ever Loyal"), tx(" builds around safe through a sweeper, the job "), mk("Heroic Intervention"), tx(" does alone today.")], cut: "Wild Growth" },
+      aang: { name: "HD - Avatar Aang", cmdr: "Avatar Aang", planFrom: "plan from its overview", parts: [tx("It answers a creature or planeswalker the way "), mk("Lightning Helix"), tx(" does, and its second mode clears the cheap artifacts the plan names as “what slips past "), mk("Avatar Aang"), tx("”.")], cut: "Fiery Confluence" },
+    };
+    const outline = { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 44 : 32, padding: phone ? "0 14px" : "0 13px", borderRadius: phone ? 8 : 7, fontSize: phone ? 13 : 12.5, fontWeight: 600, whiteSpace: "nowrap", color: "var(--accent)", border: "1px solid var(--accent)", background: "transparent" };
+    const toBuy = { ...outline, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)" };
+    const selected = { ...outline, color: "var(--bg)", background: "var(--accent)" };
+    const disabled = { ...outline, color: "var(--fg-locked)", border: "1px solid var(--border-strong)", opacity: 0.6 };
+    const cutPlain = { fontSize: 12.5, fontWeight: 600, color: "var(--fg)", borderBottom: "1px dotted var(--accent)" };
+    const cutStruck = { ...cutPlain, color: "var(--fg-faint)", textDecoration: "line-through", textDecorationColor: "var(--fg-locked)", borderBottom: "none" };
+    const row = (r, mode = "in", changed = false) => {
+      const sel = mode === "sel";
+      const lbl = { in: "Swap in", buy: "Swap in to buy", sel: "Swapped in", off: "Swap in" }[mode];
+      return {
+        ...r, changed, pressed: sel ? "true" : "false",
+        label: lbl,
+        aria: sel ? `${card.name} is in ${r.name} and ${r.cut} is out. Press to put ${r.cut} back.` : `Swap ${card.name} into ${r.name}, cutting ${r.cut}`,
+        btn: { ...(sel ? selected : mode === "buy" ? toBuy : mode === "off" ? disabled : outline), ...(phone ? { width: "100%" } : {}) },
+        cutSt: sel ? cutStruck : cutPlain,
+        cutNote: sel ? "out of the draft · press Swapped in to put it back" : changed ? "this deck has changed, so the cut may not hold" : "goes out when you swap it in",
+        card: { display: "flex", flexDirection: "column", gap: 9, borderRadius: 9, padding: phone ? "12px 12px" : "12px 14px", background: "var(--surface-sunken)", border: sel ? "1px solid var(--accent)" : "1px solid var(--border)", opacity: changed ? 0.72 : 1 },
+      };
+    };
+
+    let rows = [], resultSub = "", resultFoot = "", thin = false;
+    if (state === "result") { rows = [row(R.goblins, "sel"), row(R.kratos, "buy"), row(R.gishath, "buy")]; resultSub = "read just now · 3 of 11 decks"; resultFoot = "Used a credit · 2 of 3 left · reset at 2:20 AM"; }
+    if (state === "stored") { rows = [row(R.goblins), row(R.kratos), row(R.gishath)]; resultSub = "read Oct 11, 9:42 PM · 3 of 11 decks"; resultFoot = "Free to reopen while your decks stay as they are."; }
+    if (state === "stale") { rows = [row(R.goblins, "off", true), row(R.kratos), row(R.gishath)]; resultSub = "read Oct 11, 9:42 PM · out of date"; }
+    if (state === "thin") { rows = [row(R.survivors)]; resultSub = "read just now · 1 of 4 decks"; thin = true; }
+    if (state === "short") { rows = [row(R.aang)]; resultSub = "read just now · the one deck"; resultFoot = "HD - Avatar Aang is the only deck that can take Molten Collapse · used a credit · 2 of 3 left"; }
+    const hasResult = rows.length > 0;
+
+    const isDetails = state === "details";
+    const bandOffer = state === "open" || state === "spent";
+    const listOpen = ["open", "loading", "failed", "nofit", "spent"].includes(state);
+    const hasFold = hasResult || state === "nofit" || state === "failed";
+    const offerLead = card.n === 1
+      ? `A closer read of HD - Avatar Aang, the one deck that can take ${card.name}: how it would help, in that deck’s own cards, and what it would replace.`
+      : `A closer read of the ${card.n} decks that can take ${card.name}: the few it really helps, how it helps each one in that deck’s own cards, and what it would replace.`;
+
+    const H = 620;
+    const display = "var(--display)";
+    return {
+      phone, wide, card, copiesStyle, isDetails, isView: !isDetails,
+      screenLabel: `${state} · ${phone ? 390 : 900}`,
+      rootStyle: phone
+        ? { width: 390, minHeight: 760, background: "var(--surface-rail)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", border: "1px solid var(--border-strong)", borderRadius: 18, overflow: "hidden" }
+        : { width: 820, height: H, background: "var(--surface-rail)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", border: "1px solid var(--border-strong)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.45)" },
+      paneStyle: phone ? { position: "relative", display: "flex", flexDirection: "column" } : { position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" },
+      detailsScroll: { display: "flex", flexDirection: "column", gap: phone ? 16 : 22, padding: phone ? "18px 16px 20px" : "30px 30px 26px", flex: phone ? "none" : 1, minHeight: 0, overflow: "hidden" },
+      detailsTitle: { margin: 0, fontFamily: display, fontWeight: 400, fontSize: phone ? 23 : 29, lineHeight: 1.18, color: "var(--fg)" },
+      box: { borderRadius: 12, padding: phone ? 16 : 20, background: "var(--bg)", border: "1px solid var(--border)" },
+      detailsFoot: phone
+        ? { display: "flex", flexDirection: "column", gap: 4, padding: "6px 16px 24px", borderTop: "1px solid var(--border)" }
+        : { flex: "none", height: 92, display: "flex", alignItems: "center", gap: 16, margin: "0 30px", borderTop: "1px solid var(--border)" },
+      footLink: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 0, fontSize: phone ? 14 : 13.5, fontWeight: 500, color: "var(--accent)", whiteSpace: "nowrap" },
+      doorStyle: { display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 8, minHeight: phone ? 44 : 0, fontSize: phone ? 14 : 13.5, fontWeight: 500, color: "var(--accent)", whiteSpace: "nowrap", outline: "2px solid var(--accent)", outlineOffset: 4, borderRadius: 3 },
+      navStyle: { display: "flex", alignItems: "center", gap: 14, minHeight: phone ? 44 : 0, fontSize: 14, whiteSpace: "nowrap", ...(phone ? { justifyContent: "space-between" } : {}) },
+      viewHead: { flex: "none", display: "flex", flexDirection: "column", gap: phone ? 12 : 14, padding: phone ? "12px 16px 14px" : "22px 22px 16px 30px", borderBottom: "1px solid var(--border)" },
+      backPill: { display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, maxWidth: phone ? 290 : 360, height: phone ? 44 : 36, padding: "0 14px", borderRadius: 999, border: "1px solid var(--border-strong)", background: "var(--elevated)", fontSize: 12.5, fontWeight: 600, color: "var(--fg)" },
+      backAria: `Back to ${card.name}`,
+      closeStyle: phone
+        ? { flex: "none", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--fg)" }
+        : { flex: "none", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", border: "1px solid var(--border-strong)", background: "var(--surface-raised)", fontSize: 15, color: "var(--fg-body)" },
+      viewTitle: { margin: 0, fontFamily: display, fontWeight: 400, fontSize: phone ? 19 : 22, lineHeight: 1.2, color: "var(--fg)" },
+      viewBody: { display: "flex", flexDirection: "column", gap: 16, padding: phone ? "16px 16px 28px" : "18px 30px 30px", flex: phone ? "none" : 1, minHeight: 0, overflow: "hidden" },
+      fade: wide,
+      pressRow: { display: "flex", alignItems: "center", gap: 10 },
+      pressBtn: { display: "flex", alignItems: "stretch", height: phone ? 44 : 38, width: phone ? "100%" : "auto", borderRadius: 8, overflow: "hidden", fontSize: 13, fontWeight: 600, border: "1px solid var(--accent)", background: "var(--accent)", color: "var(--bg)", opacity: state === "spent" ? 0.5 : 1 },
+      btnOutline: { display: "flex", alignItems: "stretch", height: phone ? 44 : 38, width: phone ? "100%" : "auto", borderRadius: 8, overflow: "hidden", fontSize: 13, fontWeight: 600, border: "1px solid var(--accent)", color: "var(--accent)" },
+      hasCredit: state !== "spent",
+      pressAria: state === "spent" ? "Which deck needs it most? No credits left." : `Which deck needs ${card.name} most? Uses 1 credit.`,
+      standing: state === "spent" ? "0 of 3 left · reset at 2:20 AM. Suggestions, overviews, Help me choose and Find a deck share these credits." : "3 of 3 left",
+      offerLead,
+      bandOffer, bandRunning: state === "loading", bandFailed: state === "failed",
+      runningHead: `Reading ${card.n} decks for ${card.name}`,
+      skeleton: [{ a: "46%", b: "92%", c: "70%" }, { a: "40%", b: "88%", c: "62%" }, { a: "52%", b: "90%", c: "55%" }],
+      noFit: state === "nofit",
+      noFitText: `The read went through the ${card.n} decks that can take ${card.name} and found none whose plan it really helps. The credit came back.`,
+      stale: state === "stale",
+      staleText: "HD - Goblins has changed since this read on Oct 11, so the read may not hold any more.",
+      hasResult, rows, resultSub, resultFoot, hasFoot: !!resultFoot, thin,
+      resultWrap: { display: "flex", flexDirection: "column", gap: 10 },
+      hasFold, listOpen, foldGlyph: listOpen ? "▾" : "▸",
+      foldRow: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 44 : 38, padding: "0 2px", borderTop: "1px solid var(--border)", borderBottom: listOpen ? "none" : "1px solid var(--border)" },
+      freeRows: shownFree, moreRows: moreN > 0, moreText: `${moreN} more below, in the same order`,
+    };
+  }
+}
+</script>
+</body>
+</html>
