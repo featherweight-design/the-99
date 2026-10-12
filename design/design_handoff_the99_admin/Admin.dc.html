@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=Cinzel:wght@500;700&family=Chakra+Petch:wght@500;600&family=Trirong:wght@600&family=Syncopate:wght@400;700&family=Cormorant+Garamond:wght@600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] { --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D; --elevated:#2D2E35; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755; --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647; --accent:#5C86C9; --accent-hover:#6C95D8; --accent-dim:#2C405F; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE; --display:'Metamorphous',serif; }
+  [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611; --surface-sunken:#18140F; --elevated:#29241F; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033; --accent:#CF8745; --accent-hover:#DE9757; --accent-dim:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --fact:#8FA6BE; --display:'Cinzel',serif; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --elevated:#20222A; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-dim:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE; --display:'Chakra Petch',sans-serif; }
+  [data-theme="ixalan"] { --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814; --surface-sunken:#101512; --elevated:#212A23; --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F; --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E; --fg-disabled:#3E473A; --accent:#A3C445; --accent-hover:#B2D257; --accent-dim:#3E5220; --success:#5EA990; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE; --display:'Trirong',serif; }
+  [data-theme="phyrexia"] { --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13; --surface-sunken:#100E12; --elevated:#1E1C20; --border:#19161C; --border-strong:#262329; --border-dashed:#332F36; --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A; --fg-disabled:#403E45; --accent:#52827A; --accent-hover:#629189; --accent-dim:#213834; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE; --display:'Syncopate',sans-serif; }
+  [data-theme="eldraine"] { --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B; --surface-sunken:#131018; --elevated:#26232C; --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52; --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475; --fg-disabled:#443F4D; --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-dim:#4A3568; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE; --display:'Cormorant Garamond',serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.frame }}">
+
+  <sc-if value="{{ isNF }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.nf }}">
+      <span aria-hidden="true" style="{{ s.nfNum }}">404</span>
+      <h1 style="{{ s.nfH }}">There's no page here.</h1>
+      <p style="{{ s.nfP }}">I checked. Twice. Probably a typo in the URL.</p>
+      <div style="{{ s.nfBtns }}">
+        <span style="{{ s.primary }}">Back home</span>
+        <span style="{{ s.ghost }}">View decks</span>
+      </div>
+      <span style="margin-top:28px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">/admin, /admin/switches/… and every admin action, for anyone not in ADMIN_USER_IDS, signed out included</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDoor }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.doorWrap }}">
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:14px;position:relative;">
+          <span style="position:absolute;bottom:58px;left:31px;width:4px;height:4px;background:var(--accent);transform:translateX(-50%) rotate(45deg);"></span>
+          <span style="width:30px;height:30px;border-radius:50%;background:var(--elevated);border:1px solid var(--accent-hover);color:var(--accent-hover);font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">HH</span>
+        </div>
+      </sc-if>
+      <div style="flex:1;position:relative;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--surface-rail) 8px 16px);">
+        <span style="position:absolute;top:14px;left:16px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">the page underneath · unchanged</span>
+      </div>
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);"></div>
+      </sc-if>
+      <div style="{{ s.menu }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><div style="width:40px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 20px;"></div></sc-if>
+        <div style="{{ s.menuId }}">
+          <span style="{{ s.avatar }}">HH</span>
+          <div style="min-width:0;">
+            <div style="{{ s.menuName }}">Hugh Hartigan</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:2px;">‹hugh@…›</div>
+          </div>
+        </div>
+        <div style="{{ s.picker }}">theme picker · unchanged</div>
+        <div style="{{ s.menuList }}">
+          <sc-for list="{{ menuRows }}" as="m" hint-placeholder-count="4">
+            <div style="{{ m.row }}">
+              <span style="{{ m.dia }}"></span>
+              <span style="flex:1;">{{ m.t }}</span>
+              <sc-if value="{{ m.hasEnv }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ m.env }}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="height:58px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 13px 0 16px;border-bottom:1px solid var(--border);background:var(--bg);">
+        <span style="font-family:var(--display);font-size:18px;color:var(--fg);">The 99</span>
+        <span style="width:38px;height:38px;border-radius:12px;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">HH</span>
+      </div>
+    </sc-if>
+    <div style="{{ s.head }}">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Admin</span>
+        <span style="{{ s.envChip }}"><span style="{{ s.envDot }}"></span>{{ envName }}</span>
+        <sc-if value="{{ hasBack }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--accent);margin-left:auto;">{{ back }}</span></sc-if>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <h1 style="{{ s.title }}">{{ title }}</h1>
+        <sc-if value="{{ hasVar }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">{{ varName }}</span></sc-if>
+      </div>
+      <sc-if value="{{ hasTags }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ tags }}" as="t" hint-placeholder-count="2"><span style="{{ t.style }}">{{ t.t }}</span></sc-for></div>
+      </sc-if>
+      <p style="{{ s.sub }}">{{ sub }}</p>
+      <div style="{{ s.tabs }}">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><span style="{{ tb.style }}">{{ tb.t }}</span></sc-for>
+      </div>
+    </div>
+
+    <div style="{{ s.body }}">
+      <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:10px;min-width:0;">
+
+          <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.hRow }}">
+              <h2 style="{{ s.h2 }}">{{ b.t }}</h2>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);flex:1;min-width:0;">{{ b.meta }}</span>
+              <sc-if value="{{ b.hasAct }}" hint-placeholder-val="{{ false }}"><span style="{{ s.ghostSm }}">{{ b.act }}</span></sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ false }}"><p style="{{ b.style }}">{{ b.t }}</p></sc-if>
+
+          <sc-if value="{{ b.isBanner }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ b.box }}">
+              <span style="{{ b.dia }}"></span>
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+                <span style="font-size:14px;font-weight:600;color:var(--fg);line-height:1.4;">{{ b.title }}</span>
+                <span style="font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ b.body }}</span>
+                <sc-if value="{{ b.hasLink }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--accent);margin-top:2px;">{{ b.link }}</span></sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isSearch }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.searchWrap }}">
+              <div style="{{ s.field }}"><span style="color:var(--fg-faint);font-size:14px;">⌕</span><span style="{{ b.qStyle }}">{{ b.q }}</span></div>
+              <sc-if value="{{ b.hasChips }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <sc-for list="{{ b.chips }}" as="c" hint-placeholder-count="4"><span style="{{ c.style }}">{{ c.t }}<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ c.n }}</span></span></sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isFlags }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ s.fHead }}"><span>Switch</span><span>Environment</span><span>App-wide</span><span>Overrides</span><span>Resolved</span></div>
+              </sc-if>
+              <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="8">
+                <div style="display:flex;flex-direction:column;">
+                  <sc-if value="{{ r.isHead }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ s.fGroup }}"><span>{{ r.t }}</span><span style="text-transform:none;letter-spacing:0;color:var(--fg-faint);">{{ r.note }}</span></div>
+                  </sc-if>
+                  <sc-if value="{{ r.isRow }}" hint-placeholder-val="{{ true }}">
+                    <div style="{{ s.fRow }}">
+                      <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                          <span style="font-size:14px;font-weight:500;color:var(--fg);">{{ r.n }}</span>
+                          <sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="1"><span style="{{ t.style }}">{{ t.t }}</span></sc-for>
+                          <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="flex:1;"></span><span style="{{ r.pill }}"><span style="{{ r.dot }}"></span>{{ r.res }}</span></sc-if>
+                        </div>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.v }}</span>
+                        <span style="font-size:12.5px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;">{{ r.d }}</span>
+                        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);margin-top:2px;">{{ r.meta }}</span></sc-if>
+                      </div>
+                      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                        <span style="{{ r.envStyle }}">{{ r.env }}</span>
+                        <span style="{{ r.appStyle }}">{{ r.app }}</span>
+                        <span style="{{ r.ovStyle }}">{{ r.ov }}</span>
+                        <div style="display:flex;flex-direction:column;gap:3px;">
+                          <span style="{{ r.pill }}"><span style="{{ r.dot }}"></span>{{ r.res }}</span>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.resSub }}</span>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isLadder }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-for list="{{ b.rungs }}" as="r" hint-placeholder-count="4">
+                <div style="{{ r.row }}">
+                  <span style="{{ r.labStyle }}">{{ r.label }}</span>
+                  <span style="{{ r.setStyle }}">{{ r.set }}</span>
+                  <span style="{{ r.decStyle }}">{{ r.decides }}</span>
+                </div>
+              </sc-for>
+              <div style="{{ s.ladderFoot }}"><span style="{{ b.dot }}"></span><span>{{ b.result }}</span></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isSeg }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="{{ s.segWrap }}"><sc-for list="{{ b.opts }}" as="o" hint-placeholder-count="3"><span style="{{ o.style }}">{{ o.t }}</span></sc-for></div>
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ b.note }}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isOvs }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="1">
+                <div style="{{ s.ovRow }}">
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                    <span style="font-size:14px;font-weight:500;color:var(--fg);">{{ r.t }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.sub }}</span>
+                  </div>
+                  <div style="{{ r.segStyle }}"><sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="2"><span style="{{ o.style }}">{{ o.t }}</span></sc-for></div>
+                  <div style="{{ s.ovNote }}">
+                    <span style="{{ r.noteStyle }}">{{ r.note }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.meta }}</span>
+                  </div>
+                  <span style="{{ s.clear }}">Clear</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ b.hasEmpty }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:13px;color:var(--fg-muted);line-height:1.5;">{{ b.empty }}</p></sc-if>
+              <div><span style="{{ b.addStyle }}">{{ b.add }}</span></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isSample }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.sample }}">
+              <div style="{{ s.select }}"><span>{{ b.who }}</span><span style="color:var(--fg-faint);">▾</span></div>
+              <span style="display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--fg);"><span style="{{ b.dot }}"></span>{{ b.result }}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isHist }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+              <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="3">
+                <div style="{{ s.hRowItem }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);line-height:1.6;">{{ r.when }}</span>
+                  <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+                    <span style="font-size:13.5px;color:var(--fg);line-height:1.45;">{{ r.what }}</span>
+                    <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;font-style:italic;color:var(--fg-muted);line-height:1.45;">{{ r.note }}</span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-size:12px;color:var(--fg-faint);line-height:1.5;">{{ b.foot }}</span>
+          </sc-if>
+
+          <sc-if value="{{ b.isGroups }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.gGrid }}">
+              <sc-for list="{{ b.cards }}" as="g" hint-placeholder-count="2">
+                <div style="{{ g.box }}">
+                  <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;color:var(--fg);">{{ g.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ g.count }}</span><span style="flex:1;"></span><span style="font-size:13px;color:var(--accent);">Edit</span></div>
+                  <span style="font-size:13px;color:var(--fg-body);">{{ g.desc }}</span>
+                  <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.5;">{{ g.members }}</span>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;"><sc-for list="{{ g.ovs }}" as="o" hint-placeholder-count="1"><span style="{{ o.style }}"><span style="{{ o.dot }}"></span>{{ o.t }}</span></sc-for></div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isFields }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.fieldsGrid }}">
+              <sc-for list="{{ b.fields }}" as="f" hint-placeholder-count="2">
+                <label style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <span style="font-size:12.5px;color:var(--fg-muted);">{{ f.label }}</span>
+                  <span style="{{ f.style }}">{{ f.value }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.hint }}</span>
+                </label>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isMembers }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-for list="{{ b.rows }}" as="m" hint-placeholder-count="7">
+                <div style="{{ m.row }}">
+                  <span style="{{ m.mark }}"><span style="{{ m.inner }}"></span></span>
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;"><span style="font-size:14px;color:var(--fg);font-weight:500;">{{ m.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ m.e }}</span></div>
+                    <span style="font-size:12px;color:var(--fg-muted);">{{ m.sub }}</span>
+                  </div>
+                  <span style="{{ m.stateStyle }}">{{ m.state }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ b.hasPending }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ s.pending }}">
+                <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;">
+                  <span style="font-size:14px;font-weight:600;color:var(--fg);">{{ b.pTitle }}</span>
+                  <span style="font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ b.pBody }}</span>
+                </div>
+                <div style="{{ s.dialogFoot }}"><span style="{{ s.ghost }}">Undo</span><span style="{{ s.primary }}">{{ b.pBtn }}</span></div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ b.isAccts }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><div style="{{ s.aHead }}"><span>Account</span><span>Groups</span><span>Credits now</span><span style="text-align:right;">{{ b.monthLabel }}</span></div></sc-if>
+              <sc-for list="{{ b.rows }}" as="a" hint-placeholder-count="7">
+                <div style="{{ s.aRow }}">
+                  <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+                    <span style="{{ s.avSm }}">{{ a.i }}</span>
+                    <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+                      <span style="font-size:14px;font-weight:500;color:var(--fg);">{{ a.n }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ a.e }}</span>
+                    </div>
+                    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="flex:1;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);">{{ a.spend }}</span></sc-if>
+                  </div>
+                  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ a.groups }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ a.credits }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);text-align:right;">{{ a.spend }}</span>
+                  </sc-if>
+                  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);padding-left:45px;">{{ a.phoneMeta }}</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isIdhead }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <span style="{{ s.avatar }}">{{ b.i }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">{{ b.e }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);word-break:break-all;">{{ b.uid }}</span>
+                <span style="font-size:12.5px;color:var(--fg-body);">{{ b.role }}</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isTiles }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.tiles }}">
+              <sc-for list="{{ b.tiles }}" as="t" hint-placeholder-count="4">
+                <div style="{{ s.tile }}">
+                  <span style="font-size:12px;color:var(--fg-muted);">{{ t.label }}</span>
+                  <span style="{{ s.tileFig }}">{{ t.fig }}</span>
+                  <span style="{{ t.subStyle }}">{{ t.sub }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isPeriod }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.period }}">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="{{ s.arrow }}">‹</span>
+                <div style="display:flex;flex-direction:column;gap:2px;"><span style="font-family:var(--display);font-size:19px;color:var(--fg);">{{ b.month }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ b.range }}</span></div>
+                <span style="{{ b.nextStyle }}">›</span>
+              </div>
+              <span style="font-size:12.5px;color:var(--fg-muted);line-height:1.5;">{{ b.compare }}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isCaps }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-for list="{{ b.rows }}" as="c" hint-placeholder-count="4">
+                <div style="{{ s.capRow }}">
+                  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                    <span style="font-size:13.5px;font-weight:500;color:var(--fg);flex:1;min-width:0;">{{ c.label }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);">{{ c.fig }}</span>
+                  </div>
+                  <div style="position:relative;height:10px;border-radius:3px;background:var(--surface-sunken);margin-top:6px;">
+                    <sc-for list="{{ c.segs }}" as="g" hint-placeholder-count="1"><span style="{{ g }}"></span></sc-for>
+                    <sc-for list="{{ c.ticks }}" as="k" hint-placeholder-count="2"><span style="{{ k.line }}"></span></sc-for>
+                  </div>
+                  <div style="position:relative;height:15px;">
+                    <sc-for list="{{ c.ticks }}" as="k" hint-placeholder-count="2"><span style="{{ k.lab }}">{{ k.t }}</span></sc-for>
+                  </div>
+                  <span style="font-size:12px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ c.sub }}</span>
+                  <sc-if value="{{ c.hasAct }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:14px;flex-wrap:wrap;"><sc-for list="{{ c.acts }}" as="x" hint-placeholder-count="1"><span style="font-size:12.5px;color:var(--accent);">{{ x }}</span></sc-for></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isTrend }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">
+                <span>{{ b.yTop }}</span>
+                <span style="display:inline-flex;gap:14px;flex-wrap:wrap;"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;height:2px;background:var(--accent);"></span>so far</span><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;border-top:2px dashed var(--fg-muted);"></span>on this pace</span></span>
+              </div>
+              <div style="{{ s.trendBox }}">
+                <svg viewBox="0 0 1000 200" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;">
+                  <line x1="0" y1="200" x2="1000" y2="200" stroke="var(--border-strong)" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                  <line x1="0" y1="0" x2="1000" y2="0" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+                  <polygon points="{{ b.area }}" fill="var(--accent)" fill-opacity="0.12"></polygon>
+                  <polyline points="{{ b.proj }}" fill="none" stroke="var(--fg-muted)" stroke-width="2" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"></polyline>
+                  <polyline points="{{ b.pts }}" fill="none" stroke="var(--accent)" stroke-width="2.5" vector-effect="non-scaling-stroke"></polyline>
+                </svg>
+                <span style="{{ b.todayLine }}"></span>
+                <span style="{{ b.nowLab }}">{{ b.nowT }}</span>
+                <span style="{{ b.endLab }}">{{ b.endT }}</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:6px;">By day · {{ b.dayMax }}</span>
+              <div style="display:flex;align-items:flex-end;gap:2px;height:46px;border-bottom:1px solid var(--border-strong);">
+                <sc-for list="{{ b.bars }}" as="d" hint-placeholder-count="30"><span style="{{ d }}"></span></sc-for>
+              </div>
+              <div style="position:relative;height:14px;">
+                <sc-for list="{{ b.xl }}" as="x" hint-placeholder-count="5"><span style="{{ x.style }}">{{ x.t }}</span></sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isSplit }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:12px;">
+              <span style="font-size:14px;color:var(--fg);">{{ b.line }}</span>
+              <div style="display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px;background:var(--surface-sunken);">
+                <sc-for list="{{ b.segs }}" as="g" hint-placeholder-count="4"><span style="{{ g }}"></span></sc-for>
+              </div>
+              <div style="{{ s.legend }}">
+                <sc-for list="{{ b.legend }}" as="l" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:baseline;gap:8px;min-width:0;">
+                    <span style="{{ l.dot }}"></span>
+                    <span style="font-size:13px;color:var(--fg-body);flex:1;min-width:0;">{{ l.t }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);">{{ l.fig }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);width:46px;text-align:right;">{{ l.pct }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isTable }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ b.headStyle }}"><sc-for list="{{ b.cols }}" as="c" hint-placeholder-count="5"><span style="{{ c.style }}">{{ c.t }}</span></sc-for></div>
+                <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="5">
+                  <div style="{{ r.dStyle }}"><sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="5"><span style="{{ c.style }}">{{ c.t }}</span></sc-for></div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="5">
+                  <div style="{{ r.pStyle }}">
+                    <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg);flex:1;min-width:0;">{{ r.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);">{{ r.fig }}</span></div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-muted);">{{ r.meta }}</span>
+                  </div>
+                </sc-for>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isRbars }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="4">
+                <div style="{{ s.capRow }}">
+                  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="font-size:13.5px;font-weight:500;color:var(--fg);flex:1;min-width:0;">{{ r.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">{{ r.fig }}</span></div>
+                  <div style="position:relative;height:12px;border-radius:3px;border:1px dashed var(--border-dashed);margin-top:4px;"><span style="{{ r.fill }}"></span></div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.sub }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isResolved }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden;">
+              <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="6">
+                <div style="display:flex;flex-direction:column;">
+                  <sc-if value="{{ r.isHead }}" hint-placeholder-val="{{ false }}"><div style="{{ s.fGroup }}"><span>{{ r.t }}</span><span style="text-transform:none;letter-spacing:0;color:var(--fg-faint);">{{ r.note }}</span></div></sc-if>
+                  <sc-if value="{{ r.isRow }}" hint-placeholder-val="{{ true }}">
+                    <div style="{{ s.rRow }}">
+                      <span style="font-size:14px;color:var(--fg);">{{ r.n }}</span>
+                      <span style="{{ r.pill }}"><span style="{{ r.dot }}"></span>{{ r.val }}</span>
+                      <span style="{{ r.srcStyle }}">{{ r.src }}</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ r.isList }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:11px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px;">
+                      <span style="{{ r.pill }}"><span style="{{ r.dot }}"></span>{{ r.val }}</span>
+                      <span style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ r.names }}</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isChipRow }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <sc-for list="{{ b.chips }}" as="c" hint-placeholder-count="2"><span style="{{ s.gChip }}">{{ c }}</span></sc-for>
+              <span style="font-size:13px;color:var(--accent);">{{ b.act }}</span>
+            </div>
+          </sc-if>
+
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showTabbar }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.tabbar }}">
+      <sc-for list="{{ appTabs }}" as="t" hint-placeholder-count="5"><span style="display:flex;align-items:flex-end;justify-content:center;height:64px;padding-bottom:12px;font-size:10.5px;color:var(--fg-muted);">{{ t }}</span></sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasDialog }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.overlay }}">
+      <div style="{{ s.dialog }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><div style="width:40px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 4px;"></div></sc-if>
+        <h3 style="margin:0;font-family:var(--display);font-weight:400;font-size:20px;line-height:1.3;color:var(--fg);">{{ dlg.title }}</h3>
+        <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ dlg.lead }}</p>
+        <div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+          <sc-for list="{{ dlg.facts }}" as="f" hint-placeholder-count="4">
+            <div style="{{ s.fact }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);padding-top:2px;">{{ f.k }}</span><span style="font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ f.v }}</span></div>
+          </sc-for>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12.5px;color:var(--fg-muted);">Note (optional)</span>
+          <span style="{{ s.noteField }}">{{ dlg.note }}</span>
+        </label>
+        <div style="{{ s.dialogFoot }}"><span style="{{ s.ghost }}">Cancel</span><span style="{{ s.primary }}">{{ dlg.btn }}</span></div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1400},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;flags&quot;,&quot;options&quot;:[&quot;door&quot;,&quot;notFound&quot;,&quot;flags&quot;,&quot;flagCuts&quot;,&quot;flagSwap&quot;,&quot;flagConfirm&quot;,&quot;flagCompound&quot;,&quot;flagKill&quot;,&quot;groups&quot;,&quot;groupEdit&quot;,&quot;accounts&quot;,&quot;accountHugh&quot;,&quot;accountMara&quot;,&quot;costsSparse&quot;,&quot;costsBusy&quot;,&quot;models&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;kaldheim&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone, desktop = !phone;
+    const theme = this.props.theme || "kaldheim";
+    const scene = this.props.scene || "flags";
+    const M = "'IBM Plex Mono',monospace";
+    const P = (a, b) => (phone ? a : b);
+
+    // ---------- fixtures ----------
+    const ACC = [
+      { id: "hugh", n: "Hugh", i: "HH", e: "‹hugh@…›", uid: "user_3GkZrrTwOJBdqUpq6GambP0BC8w", g: ["testers"], owner: true },
+      { id: "mara", n: "Mara", i: "MA", e: "‹mara@…›", uid: "user_‹mara›", g: ["friends", "testers"] },
+      { id: "theo", n: "Theo", i: "TH", e: "‹theo@…›", uid: "user_‹theo›", g: ["friends"] },
+      { id: "jun", n: "Jun", i: "JU", e: "‹jun@…›", uid: "user_‹jun›", g: ["friends"] },
+      { id: "priya", n: "Priya", i: "PR", e: "‹priya@…›", uid: "user_‹priya›", g: ["friends"] },
+      { id: "sam", n: "Sam", i: "SA", e: "‹sam@…›", uid: "user_‹sam›", g: ["friends"] },
+      { id: "odile", n: "Odile", i: "OD", e: "‹odile@…›", uid: "user_‹odile›", g: ["friends"] },
+    ];
+    const AN = Object.fromEntries(ACC.map((a) => [a.id, a]));
+    const F = [
+      { k: "ABOUT_SHEET", n: "About sheet", d: "The What’s new sheet. While off, a redirect to About instead.", env: "true", plumb: 1 },
+      { k: "ANALYSIS_TAB", n: "Analysis tab", d: "The Analysis tab on a deck. Four switches need it.", env: "true" },
+      { k: "CHANGE_COMMANDER", n: "Change commander", d: "Change a deck’s commander and keep the 99.", env: "true" },
+      { k: "COLLECTION_EDIT", n: "Collection edit", d: "Change card counts in the collection. Mark bought needs it.", env: "false" },
+      { k: "DECK_BENCHMARKS", n: "Deck benchmarks", d: "A deck measured against similar decks.", env: "off", acc: [{ a: "mara", v: "on", note: "Wants to see it on her Atraxa deck", when: "9 Oct" }] },
+      { k: "DECK_PRINTINGS", n: "Deck printings", d: "Choose the printing of each card in a deck.", env: "true" },
+      { k: "DECK_STATS", n: "Deck stats", d: "Stats across every deck on /decks.", env: "true" },
+      { k: "HELP_ME_CHOOSE", n: "Help me choose", d: "Find a commander from a few words, and Look deeper.", env: "true", model: 1 },
+      { k: "HOW_IT_WORKS", n: "How it works", d: "The How it works page in About.", env: "true", plumb: 1 },
+      { k: "LABEL_ROLE_COUNTS", n: "Label role counts", d: "Role counts on a deck, from card labels.", env: "true" },
+      { k: "LABEL_SURFACES", n: "Label surfaces", d: "Card labels drawn on cards and lists.", env: "true" },
+      { k: "LIST_CACHE", n: "List cache", d: "Home and /decks cached per reader.", env: "true", plumb: 1 },
+      { k: "MANA_BALANCE", n: "Mana Balance", d: "Mana Balance in the Tuning hub. Makes no model call.", env: "true", parent: "ANALYSIS_TAB" },
+      { k: "NEVER_CUT", n: "Never cut", d: "Mark cards a suggestion may not cut.", env: "true" },
+      { k: "NOTICES", n: "Notices", d: "Notices on a deck.", env: "true" },
+      { k: "OVERVIEW_V2", n: "Overview v2", d: "The Overview on contract 8, Sonnet 5.5.", env: "false", model: 1, grp: [{ g: "testers", v: "on", note: "Testers read contract 8 first", when: "8 Oct" }] },
+      { k: "PROPOSED_CUTS", n: "Proposed cuts", d: "Cuts proposed for a deck over 99.", env: "true", model: 1, parent: "ANALYSIS_TAB", app: "off", acc: [{ a: "hugh", v: "on", note: "Trying it on my own decks first", when: "11 Oct" }] },
+      { k: "SHOPPING_MARK_BOUGHT", n: "Mark bought", d: "Mark a shopping line bought and add it to the collection.", env: "true", parent: "COLLECTION_EDIT" },
+      { k: "STAND_IN_LABELS", n: "Stand-in labels", d: "Stand-in labels where a card has none yet.", env: "true" },
+      { k: "SWAP_TOOLS", n: "Swap tools", d: "Swap tools on a deck.", env: "true", grp: [{ g: "friends", v: "off", note: "Held back from friends for now", when: "6 Oct" }, { g: "testers", v: "on", note: "Testers keep it", when: "6 Oct" }] },
+      { k: "TUNING", n: "Suggested changes", d: "Suggested changes for a deck.", env: "true", model: 1, parent: "ANALYSIS_TAB" },
+    ];
+    const FL = Object.fromEntries(F.map((f) => [f.k, f]));
+    const resolve = (k, a) => {
+      const f = FL[k];
+      const ao = (f.acc || []).find((x) => x.a === a.id);
+      if (f.env === "off") return { on: false, kind: "kill", src: ao ? "environment off; the account override is refused" : "environment off" };
+      let r;
+      const gs = (f.grp || []).filter((x) => a.g.includes(x.g));
+      if (ao) r = { on: ao.v === "on", kind: "acct", src: "account override" };
+      else if (gs.length) {
+        const off = gs.some((x) => x.v === "off"), on = gs.some((x) => x.v === "on");
+        r = off && on
+          ? { on: false, kind: "conflict", src: gs.map((x) => `${x.g} says ${x.v}`).join(", ") + "; off wins" }
+          : { on: !off, kind: "group", src: `group ${gs[0].g}` };
+      } else if (f.app) r = { on: f.app === "on", kind: "app", src: "app-wide override" };
+      else r = { on: f.env === "true", kind: "env", src: "environment" };
+      if (r.on && f.parent && !resolve(f.parent, a).on) return { on: false, kind: "parent", src: `needs ${FL[f.parent].n}, which is off` };
+      return r;
+    };
+    const onCount = (k) => ACC.filter((a) => resolve(k, a).on).length;
+
+    // ---------- shared styles ----------
+    const dot = (state) => ({
+      width: 8, height: 8, borderRadius: "50%", flex: "none",
+      background: state === "on" ? "var(--success)" : state === "mixed" ? "linear-gradient(90deg,var(--success) 50%,transparent 50%)" : "transparent",
+      border: state === "off" ? "1.5px solid var(--fg-faint)" : "1.5px solid var(--success)",
+    });
+    const pill = (state) => ({ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500, color: state === "off" ? "var(--fg-muted)" : "var(--fg)", whiteSpace: "nowrap" });
+    const tag = (kind) => ({ fontFamily: M, fontSize: 9.5, letterSpacing: "0.08em", textTransform: "uppercase", padding: "2px 6px", borderRadius: 4, border: `1px solid ${kind === "model" ? "var(--accent)" : "var(--border-strong)"}`, color: kind === "model" ? "var(--accent)" : "var(--fg-muted)", whiteSpace: "nowrap" });
+    const tagsFor = (f) => [
+      ...(f.model ? [{ t: "model", style: tag("model") }] : []),
+      ...(f.parent ? [{ t: `needs ${FL[f.parent].n}`, style: tag("parent") }] : []),
+    ];
+    const segOpt = (on, disabled) => ({
+      display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 40 : 32, padding: "0 14px", borderRadius: 6,
+      fontSize: 13, fontWeight: on ? 500 : 400, flex: phone ? 1 : "none",
+      background: on ? "var(--elevated)" : "transparent", border: on ? "1px solid var(--border-dashed)" : "1px solid transparent",
+      color: disabled ? "var(--fg-disabled)" : on ? "var(--fg)" : "var(--fg-muted)",
+    });
+    const segWrapBase = { display: phone ? "flex" : "inline-flex", gap: 3, padding: 3, borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)" };
+    const ghostBtn = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 44 : 34, padding: "0 14px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13.5, color: "var(--fg)", whiteSpace: "nowrap" };
+    const B = (t, o) => {
+      const x = {};
+      ["H", "P", "Banner", "Search", "Flags", "Ladder", "Seg", "Ovs", "Sample", "Hist", "Groups", "Fields", "Members", "Accts", "Idhead", "Tiles", "Period", "Caps", "Trend", "Split", "Table", "Rbars", "Resolved", "ChipRow"].forEach((k) => (x["is" + k] = false));
+      x["is" + t] = true;
+      return { ...x, hasAct: false, ...o };
+    };
+    const H = (t, meta = "", act) => B("H", { t, meta, act: act || "", hasAct: !!act });
+    const Pp = (t, tone) => B("P", { t, style: { margin: 0, fontSize: 13, lineHeight: 1.6, color: tone === "faint" ? "var(--fg-faint)" : "var(--fg-muted)", textWrap: "pretty" } });
+    const Banner = (tone, title, body, link) => B("Banner", {
+      title, body, link: link || "", hasLink: !!link,
+      box: { display: "flex", gap: 12, alignItems: "flex-start", padding: P("12px 14px", "14px 16px"), borderRadius: 12, background: "var(--surface-rail)", border: `1px solid ${tone === "danger" ? "var(--danger)" : tone === "warning" ? "var(--warning)" : "var(--border-strong)"}` },
+      dia: { flex: "none", width: 8, height: 8, marginTop: 6, transform: "rotate(45deg)", background: tone === "danger" ? "var(--danger)" : tone === "warning" ? "var(--warning)" : "var(--accent)" },
+    });
+
+    // ---------- table helper ----------
+    const Table = (cols, grid, rows, phoneRow) => {
+      const cell = (i, t, foot) => ({ t, style: { fontFamily: i === 0 ? "inherit" : M, fontSize: i === 0 ? 13.5 : 12.5, color: foot || i === 0 || i === cols.length - 1 ? "var(--fg)" : "var(--fg-body)", fontWeight: foot ? 600 : i === 0 ? 500 : 400, textAlign: cols[i].r ? "right" : "left", minWidth: 0 } });
+      return B("Table", {
+        cols: cols.map((c) => ({ t: c.t, style: { textAlign: c.r ? "right" : "left" } })),
+        headStyle: { display: "grid", gridTemplateColumns: grid, gap: 12, padding: "9px 14px", background: "var(--surface-rail)", fontFamily: M, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--fg-faint)" },
+        rows: rows.map((r) => {
+          const foot = !!r.foot, pr = phoneRow(r);
+          return {
+            cells: r.c.map((t, i) => cell(i, t, foot)),
+            dStyle: { display: "grid", gridTemplateColumns: grid, gap: 12, alignItems: "baseline", padding: "11px 14px", borderTop: "1px solid var(--border)", background: foot ? "var(--surface-rail)" : "transparent" },
+            title: pr.title, fig: pr.fig, meta: pr.meta,
+            pStyle: { display: "flex", flexDirection: "column", gap: 4, padding: "11px 14px", borderTop: "1px solid var(--border)", background: foot ? "var(--surface-rail)" : "transparent" },
+          };
+        }),
+      });
+    };
+
+    // ---------- scene config ----------
+    const SC = {
+      door: { kind: "door" }, notFound: { kind: "nf" },
+      flags: { tab: 0, env: "production" },
+      flagCuts: { tab: 0, env: "production", flag: "PROPOSED_CUTS" },
+      flagSwap: { tab: 0, env: "production", flag: "SWAP_TOOLS" },
+      flagConfirm: { tab: 0, env: "production", flag: "PROPOSED_CUTS", dialog: "model" },
+      flagCompound: { tab: 0, env: "production", flag: "SHOPPING_MARK_BOUGHT" },
+      flagKill: { tab: 0, env: "production", flag: "DECK_BENCHMARKS" },
+      groups: { tab: 1, env: "production" },
+      groupEdit: { tab: 1, env: "production" },
+      accounts: { tab: 2, env: "production" },
+      accountHugh: { tab: 2, env: "production", acct: "hugh" },
+      accountMara: { tab: 2, env: "production", acct: "mara" },
+      costsSparse: { tab: 3, env: "staging" },
+      costsBusy: { tab: 3, env: "production" },
+      models: { tab: 4, env: "staging" },
+    };
+    const cfg = SC[scene] || SC.flags;
+    let title = "", sub = "", back = "", varName = "", tags = [], blocks = [], dlg = null;
+
+    // ---------- switches list ----------
+    const flagRow = (f) => {
+      const n = onCount(f.k), st = n === 7 ? "on" : n === 0 ? "off" : "mixed";
+      const g = (f.grp || []).length, a = (f.acc || []).length;
+      const ov = [g ? `${g} group${g > 1 ? "s" : ""}` : "", a ? `${a} account${a > 1 ? "s" : ""}` : ""].filter(Boolean).join(", ") + (f.env === "off" && a ? ", refused" : "");
+      const app = f.app ? (f.app === "on" ? "On" : "Off") : "Not set";
+      const why = f.env === "off" ? "killed by the environment" : f.parent && !resolve(f.parent, ACC[0]).on ? `${FL[f.parent].n} is off` : "";
+      return {
+        isRow: true, isHead: false, n: f.n, v: `${f.k}_ENABLED`, d: f.d, tags: tagsFor(f),
+        env: f.env, envStyle: { fontFamily: M, fontSize: 12.5, fontWeight: f.env === "off" ? 600 : 400, color: f.env === "off" ? "var(--danger)" : f.env === "true" ? "var(--fg-body)" : "var(--fg-muted)" },
+        app, appStyle: { fontSize: 13, color: f.app ? "var(--fg)" : "var(--fg-faint)" },
+        ov: ov || "None", ovStyle: { fontSize: 12.5, color: ov ? "var(--fg-body)" : "var(--fg-faint)" },
+        res: st === "on" ? "On" : st === "off" ? "Off" : "Mixed", resSub: why || `${n} of 7 on`,
+        pill: pill(st), dot: dot(st),
+        meta: [`env ${f.env}`, `app-wide ${app.toLowerCase()}`, ov ? ov : "", why || `${n} of 7 on`].filter(Boolean).join(" · "),
+      };
+    };
+    const feats = F.filter((f) => !f.plumb).sort((a, b) => a.n.localeCompare(b.n));
+    const plumb = F.filter((f) => f.plumb);
+
+    if (scene === "flags") {
+      title = "Switches";
+      sub = "Each switch starts from its environment variable. An override on top wins in this order: account, group, app-wide. A change takes effect within 30 seconds.";
+      blocks = [
+        B("Search", { q: "Search by name or variable", qStyle: { color: "var(--fg-faint)", fontSize: 14 }, hasChips: true, chips: [["All", "21", 1], ["Overridden", "4"], ["Off for anyone", "6"], ["Model features", "4"]].map(([t, n, on]) => ({ t, n, style: { display: "inline-flex", alignItems: "center", gap: 7, height: P(36, 30), padding: "0 12px", borderRadius: 999, fontSize: 12.5, background: on ? "var(--elevated)" : "transparent", border: `1px solid ${on ? "var(--border-dashed)" : "var(--border)"}`, color: on ? "var(--fg)" : "var(--fg-muted)" } })) }),
+        B("Flags", { rows: [{ isHead: true, isRow: false, t: "Features", note: "18" }, ...feats.map(flagRow), { isHead: true, isRow: false, t: "Plumbing", note: "app-wide only, not features a friend tries" }, ...plumb.map(flagRow)] }),
+        Pp("Resolved counts the 7 accounts on production. Signed-out readers get the app-wide result.", "faint"),
+      ];
+    }
+
+    // ---------- flag detail ----------
+    if (cfg.flag) {
+      const f = FL[cfg.flag];
+      title = f.n; varName = `${f.k}_ENABLED`; back = "‹ Switches"; tags = tagsFor(f); sub = f.d;
+      const kill = f.env === "off";
+      const kinds = ACC.map((a) => resolve(f.k, a));
+      const dec = (ks) => kinds.filter((r) => ks.includes(r.kind)).length;
+      const accSet = (f.acc || []).map((x) => `${AN[x.a].n}: ${x.v}${kill ? " (refused)" : ""}`).join(" · ") || "None";
+      const grpSet = (f.grp || []).map((x) => `${x.g}: ${x.v}`).join(" · ") || "None";
+      const rung = (label, set, n, opts = {}) => ({
+        label, set, decides: n ? `decides for ${n}` : opts.zero || "decides for none",
+        row: { display: "grid", gridTemplateColumns: P("84px minmax(0,1fr)", "120px minmax(0,1fr) 150px"), gap: P("4px 10px", 14), alignItems: "baseline", padding: P("11px 14px", "12px 16px"), borderTop: label === "Account" ? "none" : "1px solid var(--border)", background: n ? "var(--surface-raised)" : "transparent" },
+        labStyle: { fontFamily: M, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: n ? "var(--accent)" : "var(--fg-faint)" },
+        setStyle: { fontSize: 13.5, color: opts.danger ? "var(--danger)" : set === "None" || set === "Not set" ? "var(--fg-faint)" : "var(--fg)", fontWeight: opts.danger ? 600 : 400, fontFamily: opts.mono ? M : "inherit" },
+        decStyle: { fontFamily: M, fontSize: 11, color: n ? "var(--fg-body)" : "var(--fg-faint)", textAlign: P("left", "right"), gridColumn: P("2", "auto") },
+      });
+      const rungs = [
+        rung("Account", accSet, dec(["acct"]), kill && f.acc ? { zero: "refused" } : {}),
+        rung("Group", grpSet, dec(["group", "conflict"])),
+        rung("App-wide", f.app ? (f.app === "on" ? "On" : "Off") : "Not set", dec(["app"])),
+        rung("Environment", kill ? "off · refuses every override" : f.env, dec(["env", "kill"]), { mono: true, danger: kill }),
+        ...(f.parent ? [rung("Needs", `${FL[f.parent].n}: ${resolve(f.parent, ACC[0]).on ? "on for all 7" : "off"}`, dec(["parent"]), { zero: "allows all 7" })] : []),
+      ];
+      const n = onCount(f.k), st = n === 7 ? "on" : n === 0 ? "off" : "mixed";
+      const onNames = ACC.filter((a) => resolve(f.k, a).on).map((a) => a.n);
+      const ladder = B("Ladder", { rungs, dot: dot(st), result: n === 0 ? "Off for all 7 accounts" : n === 7 ? "On for all 7 accounts" : `On for ${n} of 7: ${onNames.join(", ")}` });
+      const appSeg = (sel) => B("Seg", { opts: ["Not set", "On", "Off"].map((t) => ({ t, style: segOpt(t === sel, kill) })) , note: "" });
+      const ovRow = (t, subT, v, note, meta, refused) => ({
+        t, sub: subT, note: note ? `“${note}”` : "No note", meta, noteStyle: { fontSize: 12.5, fontStyle: note ? "italic" : "normal", color: refused ? "var(--danger)" : "var(--fg-muted)", lineHeight: 1.45 },
+        opts: ["On", "Off"].map((o) => ({ t: o, style: { ...segOpt(o.toLowerCase() === v, refused), height: P(36, 28), padding: "0 12px" } })),
+        segStyle: { ...segWrapBase, display: "inline-flex", flex: "none", alignSelf: P("flex-start", "center") },
+      });
+      const addStyle = { ...ghostBtn, color: kill ? "var(--fg-disabled)" : "var(--fg)", borderStyle: "dashed", borderColor: "var(--border-dashed)" };
+      const histFoot = "Times are UTC. A change to the environment comes with a deploy and is not in this history.";
+
+      blocks.push(H("Who gets it", "the most specific override wins"));
+      if (kill) blocks.push(Banner("danger", "Off everywhere: the environment says off.", "DECK_BENCHMARKS_ENABLED is set to off, which refuses every override for this switch, Mara’s included. Nothing here can turn it on until a redeploy changes the variable. Clearing an override still works.", ""));
+      if (scene === "flagCompound") blocks.push(Banner("warning", "Off for everyone: it needs Collection edit, which is off.", "Mark bought is on in the environment, but it only draws where Collection edit is on too. An override here can’t turn Collection edit on.", "Open Collection edit ›"));
+      blocks.push(ladder);
+
+      blocks.push(H("App-wide", f.app ? `set by Hugh, ${f.k === "PROPOSED_CUTS" ? "10 Oct" : ""}` : "not set: the environment decides"));
+      const appB = appSeg(f.app ? (f.app === "on" ? "On" : "Off") : "Not set");
+      appB.note = f.k === "PROPOSED_CUTS" ? "“Held back until the cut evals settle.” Not set hands this back to the environment (true)." : kill ? "Refused while the environment says off." : f.plumb ? "" : "Not set means the environment decides.";
+      blocks.push(appB);
+
+      if (!f.plumb) {
+        blocks.push(H("Groups", (f.grp || []).length ? `${f.grp.length}` : "none"));
+        blocks.push(B("Ovs", {
+          rows: (f.grp || []).map((x) => ovRow(x.g, x.g === "friends" ? "6 members" : "2 members: Hugh, Mara", x.v, x.note, `Hugh · ${x.when}`)),
+          hasEmpty: !(f.grp || []).length, empty: "No group override.", add: "Add a group override", addStyle,
+        }));
+        if (scene === "flagSwap") blocks.push(Banner("warning", "Mara is in both groups, and they disagree.", "friends says off and testers says on. When groups disagree, off wins, so Mara has Swap tools off. An account override for her would decide it.", "Add an account override for Mara ›"));
+        blocks.push(H("Accounts", (f.acc || []).length ? `${f.acc.length}` : "none"));
+        blocks.push(B("Ovs", {
+          rows: (f.acc || []).map((x) => ovRow(AN[x.a].n, AN[x.a].e, x.v, x.note, kill ? `Hugh · ${x.when} · refused while the environment says off` : `Hugh · ${x.when}`, kill)),
+          hasEmpty: !(f.acc || []).length, empty: "No account override.", add: "Add an account override", addStyle,
+        }));
+      }
+
+      blocks.push(H("Check an account"));
+      const sample = f.k === "PROPOSED_CUTS" ? AN.mara : f.k === "SWAP_TOOLS" ? AN.mara : AN.hugh;
+      const sr = resolve(f.k, sample);
+      blocks.push(B("Sample", { who: sample.n, dot: dot(sr.on ? "on" : "off"), result: `${sr.on ? "On" : "Off"} · ${sr.src}` }));
+
+      const HIST = {
+        PROPOSED_CUTS: [
+          { when: "11 Oct · 14:02", what: "Hugh set an account override for Hugh: not set → on", note: "Trying it on my own decks first" },
+          { when: "10 Oct · 18:40", what: "Hugh set the app-wide override: not set → off", note: "Held back until the cut evals settle" },
+        ],
+        SWAP_TOOLS: [
+          { when: "6 Oct · 09:15", what: "Hugh set a group override for testers: not set → on", note: "Testers keep it" },
+          { when: "6 Oct · 09:14", what: "Hugh set a group override for friends: not set → off", note: "Held back from friends for now" },
+        ],
+        SHOPPING_MARK_BOUGHT: [],
+        DECK_BENCHMARKS: [
+          { when: "9 Oct · 21:30", what: "Hugh set an account override for Mara: not set → on", note: "Wants to see it on her Atraxa deck" },
+        ],
+      }[f.k] || [];
+      blocks.push(H("History", `${HIST.length} change${HIST.length === 1 ? "" : "s"}`));
+      if (HIST.length) blocks.push(B("Hist", { rows: HIST.map((h) => ({ ...h, hasNote: !!h.note, note: `“${h.note}”` })), foot: histFoot }));
+      else blocks.push(Pp("No override has been set or cleared for this switch. " + histFoot, "faint"));
+
+      if (cfg.dialog === "model") {
+        appB.opts = ["Not set", "On", "Off"].map((t) => ({ t, style: { ...segOpt(t === "Off"), ...(t === "Not set" ? { border: "1px dashed var(--accent)", color: "var(--fg)" } : {}) } }));
+        dlg = {
+          title: "Turn Proposed cuts on for 6 more accounts?",
+          lead: "Clearing the app-wide off hands Proposed cuts back to the environment, which says true. Proposed cuts is a model feature, so this spends money.",
+          facts: [
+            { k: "Who", v: "Mara, Theo, Jun, Priya, Sam and Odile. Hugh already has it from his account override." },
+            { k: "Cost", v: "Each press reserves up to $0.240 and uses one of the account’s 5 credits a day. No Proposed cuts press has been priced yet, so there is no mean to go on." },
+            { k: "What’s new", v: "The 6 accounts see Proposed cuts in the What’s new sheet on their next visit." },
+            { k: "When", v: "Within 30 seconds, on every server." },
+          ],
+          note: "Cut evals settled at $2.71", btn: "Turn on for 6",
+        };
+      }
+    }
+
+    // ---------- groups ----------
+    const gCard = (name, desc, members, ovs) => ({
+      name, desc, count: `${members.length} member${members.length > 1 ? "s" : ""}`, members: members.join(", "),
+      box: { display: "flex", flexDirection: "column", gap: 6, padding: P("13px 14px", "14px 16px"), borderRadius: 12, border: "1px solid var(--border-strong)", background: "var(--surface)" },
+      ovs: ovs.map(([t, v]) => ({ t: `${t}: ${v}`, dot: dot(v), style: { display: "inline-flex", alignItems: "center", gap: 6, height: 26, padding: "0 9px", borderRadius: 6, background: "var(--surface-rail)", border: "1px solid var(--border)", fontSize: 12, color: "var(--fg-body)" } })),
+    });
+    if (scene === "groups") {
+      title = "Groups"; sub = "A group is a named set of accounts that a switch can be turned on or off for. Two groups so far.";
+      blocks = [
+        H("2 groups", "", "New group"),
+        B("Groups", { cards: [
+          gCard("friends", "Every account but Hugh’s.", ["Mara", "Theo", "Jun", "Priya", "Sam", "Odile"], [["Swap tools", "off"]]),
+          gCard("testers", "Hugh plus one friend.", ["Hugh", "Mara"], [["Overview v2", "on"], ["Swap tools", "on"]]),
+        ] }),
+        Banner("warning", "Mara is in both, and they disagree on Swap tools.", "friends says off and testers says on, so off wins and Mara has it off. Her account page says the same.", "Open Mara ›"),
+      ];
+    }
+    if (scene === "groupEdit") {
+      title = "testers"; back = "‹ Groups"; sub = "Hugh plus one friend. Overrides Overview v2 (on) and Swap tools (on).";
+      const sel = { hugh: "selected", mara: "selected", theo: "adding" };
+      blocks = [
+        B("Fields", { fields: [
+          { label: "Name", value: "testers", hint: "lowercase, no spaces", style: { display: "flex", alignItems: "center", height: P(44, 38), padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontFamily: M, fontSize: 13.5, color: "var(--fg)" } },
+          { label: "Description", value: "Hugh plus one friend", hint: "only you read this", style: { display: "flex", alignItems: "center", height: P(44, 38), padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontSize: 13.5, color: "var(--fg)" } },
+        ] }),
+        H("Members", "3 selected, 1 not saved"),
+        B("Search", { q: "Find an account by name, email or id", qStyle: { color: "var(--fg-faint)", fontSize: 14 }, hasChips: false, chips: [] }),
+        B("Members", {
+          rows: ACC.map((a) => {
+            const st = sel[a.id], on = !!st;
+            return {
+              n: a.n, e: a.e, sub: a.owner ? "owner" : a.g.filter((g) => g !== "testers").join(", ") || "no other group",
+              state: st === "adding" ? "selected, not saved" : on ? "selected" : "unselected",
+              stateStyle: { fontFamily: M, fontSize: 10.5, color: st === "adding" ? "var(--accent)" : on ? "var(--fg-body)" : "var(--fg-faint)", whiteSpace: "nowrap", display: phone ? "none" : "inline" },
+              row: { display: "flex", alignItems: "center", gap: 12, minHeight: P(60, 52), padding: P("8px 14px", "8px 16px"), borderTop: a.id === "hugh" ? "none" : "1px solid var(--border)", background: on ? "var(--surface-raised)" : "transparent" },
+              mark: { flex: "none", width: 22, height: 22, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", border: on ? "2px solid var(--accent)" : "2px solid var(--border-dashed)", background: on ? "var(--accent)" : "transparent" },
+              inner: { width: 7, height: 7, transform: "rotate(45deg)", background: on ? "var(--bg)" : "transparent" },
+            };
+          }),
+          hasPending: true, pTitle: "Theo selected, not saved",
+          pBody: "Saving adds Theo to testers. He gets Overview v2, a model feature, and sees it in What’s new. Swap tools stays off for him, because friends says off.",
+          pBtn: "Save",
+        }),
+        H("Overrides this group carries", "2"),
+        B("Resolved", { rows: [["Overview v2", "on"], ["Swap tools", "on"]].map(([n, v]) => ({ isRow: true, isHead: false, isList: false, n, val: v === "on" ? "On" : "Off", pill: pill(v), dot: dot(v), src: "Open the switch ›", srcStyle: { fontSize: 13, color: "var(--accent)" } })) }),
+        H("History", "3 changes"),
+        B("Hist", { rows: [
+          { when: "6 Oct · 09:15", what: "Hugh set Swap tools on for testers", note: "", hasNote: false },
+          { when: "3 Oct · 11:02", what: "Hugh selected Mara", note: "", hasNote: false },
+          { when: "3 Oct · 11:01", what: "Hugh created testers, with Hugh selected", note: "“Hugh plus one friend”", hasNote: true },
+        ], foot: "Times are UTC." }),
+      ];
+    }
+
+    // ---------- accounts ----------
+    const SPEND = { hugh: ["$2.10", 52, 45], mara: ["$1.42", 34, 30], theo: ["$1.31", 31, 28], jun: ["$1.12", 27, 24], priya: ["$0.86", 20, 17], sam: ["$0.61", 11, 10], odile: ["$0.42", 7, 6] };
+    const CRED = { hugh: "7 of 10 left", mara: "3 of 5 left", theo: "5 of 5 left", jun: "4 of 5 left", priya: "5 of 5 left", sam: "2 of 5 left", odile: "5 of 5 left" };
+    if (scene === "accounts") {
+      title = "Accounts"; sub = "7 accounts on production. Names and emails are read from Clerk when the page loads; the app stores only the id.";
+      blocks = [
+        B("Search", { q: "Name, email or Clerk id", qStyle: { color: "var(--fg-faint)", fontSize: 14 }, hasChips: false, chips: [] }),
+        B("Accts", { monthLabel: "November", rows: ACC.map((a) => ({ ...a, groups: a.g.join(", "), credits: CRED[a.id], spend: SPEND[a.id][0], phoneMeta: `${a.g.join(", ")} · ${CRED[a.id]}` })) }),
+        Pp("Spend is presses billed in November so far. Hugh’s free Overview rewrites are under Costs, with the system.", "faint"),
+      ];
+    }
+    if (cfg.acct) {
+      const a = AN[cfg.acct];
+      title = a.id === "hugh" ? "Hugh Hartigan" : a.n; back = "‹ Accounts"; sub = "";
+      const [sp, pr, cr] = SPEND[a.id];
+      const rows = F.map((f) => ({ f, r: resolve(f.k, a) }));
+      const ovr = rows.filter((x) => ["acct", "group", "conflict", "app"].includes(x.r.kind));
+      const rule = rows.filter((x) => ["kill", "parent"].includes(x.r.kind));
+      const envOn = rows.filter((x) => x.r.kind === "env" && x.r.on).map((x) => x.f.n).sort();
+      const envOff = rows.filter((x) => x.r.kind === "env" && !x.r.on).map((x) => x.f.n).sort();
+      const rRow = (x) => ({ isRow: true, isHead: false, isList: false, n: x.f.n, val: x.r.on ? "On" : "Off", pill: pill(x.r.on ? "on" : "off"), dot: dot(x.r.on ? "on" : "off"), src: x.r.src, srcStyle: { fontSize: 13, lineHeight: 1.45, color: x.r.kind === "conflict" ? "var(--warning)" : x.r.kind === "kill" ? "var(--danger)" : "var(--fg-muted)", textWrap: "pretty" } });
+      const head = (t, note) => ({ isHead: true, isRow: false, isList: false, t, note });
+      const hubTools = ["TUNING", "MANA_BALANCE", "PROPOSED_CUTS"].filter((k) => resolve(k, a).on).length;
+      sub = a.owner ? "Owner. 10 credits a day, and a $5 testing share each month." : "Friend. 5 credits a day.";
+      blocks = [
+        B("Idhead", { i: a.i, e: a.e, uid: a.uid, role: a.owner ? "MODEL_OWNER_USER_ID" : "" }),
+        B("Tiles", { tiles: [
+          { label: "Credits now", fig: CRED[a.id], sub: a.id === "hugh" ? "reset at 2:20 PM" : "reset at 9:05 PM", subStyle: { fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" } },
+          { label: "Spent in November", fig: sp, sub: a.owner ? "42% of the $5 testing share" : "presses billed, refunds included", subStyle: { fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" } },
+          { label: "Presses", fig: `${pr}`, sub: `${cr} used a credit, ${pr - cr} refunded`, subStyle: { fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" } },
+          { label: "Tuning hub", fig: hubTools >= 2 ? "Drawn" : "Not drawn", sub: `${hubTools} of its tools on`, subStyle: { fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" } },
+        ] }),
+        H("Groups"),
+        B("ChipRow", { chips: a.g, act: "Change groups" }),
+        H("Switches", "21 · each with where it comes from"),
+        B("Resolved", { rows: [
+          head("Set by an override", `${ovr.length}`), ...ovr.map(rRow),
+          head("Off by a rule", `${rule.length}`), ...rule.map(rRow),
+          head("From the environment", `${envOn.length + envOff.length}`),
+          { isList: true, isRow: false, isHead: false, val: `On · ${envOn.length}`, pill: pill("on"), dot: dot("on"), names: envOn.join(", ") },
+          { isList: true, isRow: false, isHead: false, val: `Off · ${envOff.length}`, pill: pill("off"), dot: dot("off"), names: envOff.join(", ") },
+        ] }),
+      ];
+      if (a.id === "mara") blocks.splice(4, 0, Banner("warning", "Her groups disagree on Swap tools.", "friends says off and testers says on. Off wins, so she has it off. An account override for her would decide it either way.", "Open Swap tools ›"));
+      blocks.push(H("Spend by feature", "November so far"));
+      const fs = a.id === "hugh" ? [["Overview", 18, "$0.94"], ["Suggested changes", 16, "$0.61"], ["Proposed cuts", 8, "$0.38"], ["Help me choose", 10, "$0.17"]] : [["Overview", 12, "$0.64"], ["Suggested changes", 13, "$0.51"], ["Help me choose", 9, "$0.27"]];
+      blocks.push(Table([{ t: "Feature" }, { t: "Presses", r: 1 }, { t: "Spent", r: 1 }], "minmax(0,1fr) 90px 90px", [...fs.map(([n, p, s]) => ({ c: [n, `${p}`, s] })), { c: ["Total", `${pr}`, sp], foot: 1 }], (r) => ({ title: r.c[0], fig: r.c[2], meta: `${r.c[1]} presses` })));
+    }
+
+    // ---------- costs ----------
+    const capBar = (scale, segs, ticks) => {
+      let left = 0;
+      const sg = segs.map(([v, bg, hatch]) => {
+        const w = Math.max((v / scale) * 100, v > 0 ? 0.6 : 0);
+        const st = { position: "absolute", top: 0, bottom: 0, left: `${left}%`, width: `${w}%`, background: hatch ? `repeating-linear-gradient(135deg,${bg} 0 3px,transparent 3px 6px)` : bg, borderRadius: 2 };
+        left += w; return st;
+      });
+      const tk = ticks.map(([v, t0, c]) => {
+        const x = (v / scale) * 100;
+        const t = phone ? t0.split(" ")[0] : t0;
+        return { t, line: { position: "absolute", left: `${x}%`, top: -4, height: 18, width: 2, marginLeft: x >= 100 ? -2 : -1, background: c }, lab: { position: "absolute", left: `${x}%`, top: 2, transform: x >= 98 ? "translateX(-100%)" : x <= 2 ? "none" : "translateX(-50%)", fontFamily: M, fontSize: 10, color: "var(--fg-faint)", whiteSpace: "nowrap" } };
+      });
+      return { segs: sg, ticks: tk };
+    };
+    const trend = (days, nDays, max, endT) => {
+      const cum = []; let c = 0;
+      for (let i = 0; i < days.length; i++) { c += days[i]; cum.push(c); }
+      const x = (i) => ((i + 1) / nDays) * 1000, y = (v) => 200 - (v / max) * 200;
+      const pts = ["0,200", ...cum.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`)].join(" ");
+      const last = days.length - 1, end = (c / days.length) * nDays;
+      const proj = `${x(last).toFixed(1)},${y(c).toFixed(1)} 1000,${y(end).toFixed(1)}`;
+      const area = `${pts} ${x(last).toFixed(1)},200`;
+      const dmax = Math.max(...days);
+      const tx = (x(last) / 10);
+      return B("Trend", {
+        pts, proj, area, yTop: `$${max.toFixed(2)}`,
+        todayLine: { position: "absolute", left: `${tx}%`, top: 0, bottom: 0, width: 1, background: "var(--border-dashed)" },
+        nowT: `$${c.toFixed(c < 2 ? 3 : 2)} today`, nowLab: { position: "absolute", left: `${tx}%`, top: `${(y(c) / 2) - 20}%`, transform: "translateX(-104%)", fontFamily: M, fontSize: 11, color: "var(--accent)", whiteSpace: "nowrap", background: "var(--surface)", padding: "0 4px" },
+        endT, endLab: { position: "absolute", right: 0, top: `${Math.max((y(end) / 2) - 16, -8)}%`, fontFamily: M, fontSize: 11, color: "var(--fg-body)", whiteSpace: "nowrap", background: "var(--surface)", padding: "0 2px" },
+        dayMax: `tallest $${dmax.toFixed(3)}`,
+        bars: Array.from({ length: nDays }, (_, i) => {
+          const v = days[i];
+          return { flex: 1, minWidth: 0, height: v === undefined ? 2 : v === 0 ? 2 : `${(v / dmax) * 100}%`, background: v === undefined ? "var(--surface-sunken)" : v === 0 ? "var(--border-strong)" : "var(--accent)", borderRadius: "2px 2px 0 0", opacity: v === undefined ? 0.8 : 1 };
+        }),
+        xl: [1, 8, 15, 22, nDays].map((d) => ({ t: `${d}`, style: { position: "absolute", left: `${((d - 0.5) / nDays) * 100}%`, transform: "translateX(-50%)", fontFamily: M, fontSize: 10, color: "var(--fg-faint)" } })),
+      });
+    };
+    const capRows = (rows) => B("Caps", { rows: rows.map((r) => ({ ...r, hasAct: !!(r.acts && r.acts.length), acts: r.acts || [] })) });
+    const C_PLAYER = "var(--accent)", C_LABEL = "var(--fact)", C_EVAL = "var(--warning)", C_RW = "var(--success)", C_ELSE = "var(--fg-faint)";
+    const lg = (c, t, fig, pct) => ({ t, fig, pct, dot: { width: 9, height: 9, borderRadius: 2, flex: "none", background: c, alignSelf: "center" } });
+    const split = (line, parts) => {
+      const tot = parts.reduce((s, p) => s + p[2], 0);
+      return B("Split", {
+        line,
+        segs: parts.map(([c, , v]) => ({ flex: "none", width: `${Math.max((v / tot) * 100, 0.8)}%`, background: c })),
+        legend: parts.map(([c, t, v]) => lg(c, t, `$${v < 1 ? v.toFixed(3) : v.toFixed(2)}`, `${((v / tot) * 100).toFixed(1)}%`)),
+      });
+    };
+    const rbar = (label, res, act, subT) => ({ label, fig: act ? `$${act.toFixed(3)} of $${res.toFixed(3)}` : `$${res.toFixed(3)} reserved`, sub: subT, fill: { position: "absolute", left: 0, top: 0, bottom: 0, width: act ? `${(act / res) * 100}%` : 0, background: "var(--accent)", borderRadius: 2 } });
+    const featCols = [{ t: "Feature" }, { t: "Model" }, { t: "Effort" }, { t: "Runs", r: 1 }, { t: "Per run", r: 1 }, { t: "p90", r: 1 }, { t: "Month", r: 1 }];
+    const featGrid = "minmax(0,1.5fr) minmax(0,1fr) 92px 74px 64px 56px 64px";
+    const featPhone = (r) => ({ title: r.c[0], fig: r.c[6], meta: r.foot ? `${r.c[3]} runs` : `${r.c[1]} · ${r.c[2]} · ${r.c[3]} runs · ${r.c[4]} a run${r.c[5] !== "—" ? `, p90 ${r.c[5]}` : ""}` });
+    const ledCols = [{ t: "Ledger" }, { t: "Requests", r: 1 }, { t: "Settled", r: 1 }, { t: "Limit" }, { t: "Window" }];
+    const ledGrid = "minmax(0,1.4fr) 76px 76px minmax(0,1fr) 92px";
+    const ledPhone = (r) => ({ title: r.c[0], fig: r.c[2], meta: r.foot ? r.c[3] : `${r.c[1]} requests · ${r.c[3]} · ${r.c[4]}` });
+
+    if (scene === "costsSparse") {
+      title = "Costs"; sub = "What the model features cost, read from model_calls, card_label_batches and the committed eval ledgers. Read only.";
+      blocks = [
+        B("Period", { month: "October 2026", range: "1 to 11 Oct · UTC · day 11 of 31", compare: "September: $0.813 in 19 runs, model calls only.", nextStyle: { fontSize: 18, color: "var(--fg-disabled)", padding: "0 6px" } }),
+        B("Tiles", { tiles: [
+          { label: "Model calls", fig: "$1.135", sub: "26 runs · on pace for $3.20" },
+          { label: "Player presses", fig: "$0.884", sub: "9% of the $10 plan" },
+          { label: "System", fig: "$135.96", sub: "labels, evals, rewrites" },
+          { label: "Per active account", fig: "$0.884", sub: "1 account pressed" },
+        ].map((t) => ({ ...t, subStyle: { fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)" } })) }),
+        H("Against the caps", "set in code, read only, except the account cap"),
+        capRows([
+          { label: "Player presses, planned budget", fig: "$0.884 of $10", ...capBar(20, [[0.884, C_PLAYER]], [[5, "$5 · 50%", "var(--warning)"], [8, "$8 · 80%", "var(--warning)"], [10, "$10 plan", "var(--fg-muted)"], [20, "$20 hard stop", "var(--danger)"]]), sub: (phone ? "Alarms at $5 (50%) and $8 (80%); $10 plan; $20 hard stop. " : "") + "BUDGET_USD, the alarms and HARD_STOP_USD are code constants (spend-rule.ts:24-31). Refunded runs count, and so does a reservation still in flight." },
+          { label: "Owner testing share", fig: "$0.884 of $5", ...capBar(5, [[0.884, C_PLAYER]], [[5, "$5", "var(--fg-muted)"]]), sub: "OWNER_SHARE_USD. Every press on staging is Hugh’s." },
+          { label: "System ceiling", fig: "$135.96 · starts November", ...capBar(150, [[120.95, C_LABEL], [14.76, C_EVAL], [0.251, C_RW]], [[15, "$15 from Nov", "var(--fg-muted)"]]), sub: "No ceiling in October. The two label backfills were $120.94 of it." },
+          { label: "Anthropic account cap", fig: "$136.85 of $250", ...capBar(250, [[0.884, C_PLAYER], [135.956, C_LABEL]], [[250, "$250", "var(--danger)"]]), sub: "Set in Anthropic’s console and shared: Concert Crawl and production spend on the same key, and this ledger can’t see them. Elsewhere is not entered.", acts: ["Enter elsewhere", "Change the cap"] },
+        ]),
+        H("Month to date", "model calls only; labels and evals are below, by run"),
+        trend([0, 0, 0.188, 0, 0, 0.452, 0.112, 0.074, 0, 0.013, 0.296], 31, 3.6, "$3.20 by 31 Oct"),
+        Pp("Six days of eleven had a run. The pace is a straight line from the month so far, so at this density one busy day moves it a lot.", "faint"),
+        H("Player against system"),
+        split("System is 99.4% of October. Players pressed $0.884 of it.", [[C_PLAYER, "Player presses", 0.884], [C_LABEL, "Card labels", 120.95], [C_EVAL, "Evals", 14.76], [C_RW, "Free Overview rewrites", 0.251]]),
+        H("By feature and model", "per run is the mean of every priced run so far"),
+        Table(featCols, featGrid, [
+          { c: ["Overview, contract 7", "sonnet-5", "not recorded", "7 · 1 free", "$0.055", "$0.074", "$0.410"] },
+          { c: ["Overview, contract 8", "sonnet-5-5", "not recorded", "3 · 2 free", "$0.054", "—", "$0.163"] },
+          { c: ["Suggested changes", "sonnet-5", "not recorded", "14", "$0.039", "$0.050", "$0.549"] },
+          { c: ["Help me choose, words", "sonnet-5", "not recorded", "2", "$0.007", "—", "$0.013"] },
+          { c: ["Proposed cuts", "sonnet-5", "—", "0", "—", "—", "$0"] },
+          { c: ["Model calls", "", "", "26", "", "", "$1.135"], foot: 1 },
+        ], featPhone),
+        Pp("Effort is recorded per call from the parts table on. Every run here is from before it, so effort reads not recorded rather than a guess.", "faint"),
+        H("Refunds", "$0.194 · 17% of model calls"),
+        Pp("Six runs were refunded: the player got the credit back, and the dollars stay billed. Suggested changes 4 runs, $0.181. Help me choose 2 runs, $0.013."),
+        H("Reserved against spent", "the worst case a press is held at, against its mean"),
+        B("Rbars", { rows: [
+          rbar("Overview", 0.832, 0.055, "6.6% of the reservation"),
+          rbar("Suggested changes", 0.208, 0.039, "19% of the reservation"),
+          rbar("Proposed cuts", 0.240, 0, "no press yet"),
+          rbar("Help me choose, with Look deeper", 0.599, 0, "no Look deeper press yet; words read alone is $0.007"),
+        ] }),
+        H("Per account", "1 account on staging"),
+        Table([{ t: "Account" }, { t: "Presses", r: 1 }, { t: "Credits used", r: 1 }, { t: "Free rewrites", r: 1 }, { t: "Spent", r: 1 }], "minmax(0,1fr) 80px 104px 104px 80px", [{ c: ["Hugh", "23", "17", "3 · $0.251", "$0.884"] }], (r) => ({ title: r.c[0], fig: r.c[4], meta: `${r.c[1]} presses · ${r.c[2]} credits used · free rewrites ${r.c[3]}` })),
+        H("Card label runs", "card_label_batches · claude-sonnet-4-5, Batch API"),
+        Table([{ t: "Run" }, { t: "Batches", r: 1 }, { t: "Tokens in / out", r: 1 }, { t: "Cost", r: 1 }], "minmax(0,1fr) 90px 150px 80px", [
+          { c: ["3 Oct · backfill", "2,677", "13.86M / 5.16M", "$59.47"] },
+          { c: ["4 Oct · backfill", "2,678", "—", "$61.47"] },
+          { c: ["7 Oct", "1", "—", "$0.01"] },
+          { c: ["October", "5,356", "", "$120.95"], foot: 1 },
+        ], (r) => ({ title: r.c[0], fig: r.c[3], meta: r.foot ? `${r.c[1]} batches` : `${r.c[1]} batches${r.c[2] !== "—" ? ` · ${r.c[2]} tokens` : ""}` })),
+        H("Eval ledgers", "committed in the repo; they move only with a merge"),
+        Table(ledCols, ledGrid, [
+          { c: ["Overview accuracy", "214", "$10.20", "$15 hard · ask at $11", "10–11 Oct"] },
+          { c: ["Cuts", "87", "$2.71", "$25 hard · ask at $15", "10 Oct"] },
+          { c: ["Help me choose", "34", "$1.01", "$25 hard · ask at $15", "11 Oct"] },
+          { c: ["Tuning lists", "48", "$0.84", "$25 hard · ask at $15", "10 Oct"] },
+          { c: ["Original campaign", "1,462", "$23.72", "$25 hard · ask at $15", "24 Sep"] },
+          { c: ["October", "383", "$14.76", "nothing pending", ""], foot: 1 },
+        ], ledPhone),
+      ];
+    }
+
+    if (scene === "costsBusy") {
+      title = "Costs"; sub = "What the model features cost, read from model_calls, card_label_batches and the committed eval ledgers. Read only.";
+      blocks = [
+        B("Period", { month: "November 2026", range: "1 to 20 Nov · UTC · day 20 of 30", compare: "October: $1.135 in model calls, $135.96 system.", nextStyle: { fontSize: 18, color: "var(--fg-disabled)", padding: "0 6px" } }),
+        Banner("warning", "On this pace, player presses pass the $10 plan around 26 November.", "They end the month near $11.76. The 50% alarm went on 9 November and the 80% alarm is $0.16 away. The hard stop is $20.", ""),
+        B("Tiles", { tiles: [
+          { label: "Model calls", fig: "$8.46", sub: "193 runs · on pace for $12.69" },
+          { label: "Player presses", fig: "$7.84", sub: "78% of the $10 plan" },
+          { label: "System", fig: "$10.54", sub: "70% of the $15 ceiling" },
+          { label: "Per active account", fig: "$1.12", sub: "7 accounts pressed" },
+        ].map((t) => ({ ...t, subStyle: { fontFamily: M, fontSize: 10.5, color: t.label === "Player presses" ? "var(--warning)" : "var(--fg-faint)" } })) }),
+        H("Against the caps", "set in code, read only, except the account cap, the ceiling and elsewhere"),
+        capRows([
+          { label: "Player presses, planned budget", fig: "$7.84 of $10", ...capBar(20, [[7.84, C_PLAYER], [3.92, C_PLAYER, 1]], [[5, "$5 · 50%", "var(--warning)"], [8, "$8 · 80%", "var(--warning)"], [10, "$10 plan", "var(--fg-muted)"], [20, "$20 hard stop", "var(--danger)"]]), sub: (phone ? "Alarms at $5 (50%) and $8 (80%); $10 plan; $20 hard stop. " : "") + "Hatched: the rest of the month on this pace, to $11.76." },
+          { label: "Owner testing share", fig: "$2.10 of $5", ...capBar(5, [[2.10, C_PLAYER]], [[5, "$5", "var(--fg-muted)"]]), sub: "OWNER_SHARE_USD. Friends aren’t affected when it runs out." },
+          { label: "System ceiling", fig: "$10.54 of $15", ...capBar(15, [[3.12, C_LABEL], [6.80, C_EVAL], [0.62, C_RW]], [[15, "$15", "var(--danger)"]]), sub: "Labels $3.12 (three weekly runs), evals $6.80, free Overview rewrites $0.62. Commander prose is paused.", acts: ["Change the ceiling"] },
+          { label: "Anthropic account cap", fig: "$36.78 of $100", ...capBar(100, [[7.84, C_PLAYER], [10.54, C_LABEL], [18.40, C_ELSE, 1]], [[100, "$100", "var(--danger)"]]), sub: "Hatched: elsewhere, $18.40, entered by Hugh on 18 Nov from Anthropic’s console. It covers Concert Crawl and staging.", acts: ["Update elsewhere", "Change the cap"] },
+        ]),
+        H("Month to date", "model calls only; labels and evals are below, by run"),
+        trend([0.21, 0.38, 0.44, 0.29, 0.18, 0.52, 0.61, 0.33, 0.47, 0.40, 0.26, 0.35, 0.58, 0.49, 0.37, 0.44, 0.62, 0.51, 0.39, 0.62], 30, 14, "$12.69 by 30 Nov"),
+        H("Player against system"),
+        split("System is 57% of November. Evals are the largest share of it.", [[C_PLAYER, "Player presses", 7.84], [C_LABEL, "Card labels", 3.12], [C_EVAL, "Evals", 6.80], [C_RW, "Free Overview rewrites", 0.62]]),
+        H("By feature and model", "one row per provider call step, from the parts table"),
+        Table(featCols, featGrid, [
+          { c: ["Overview, contract 8", "sonnet-5-5", "medium", "64", "$0.054", "$0.071", "$3.46"] },
+          { c: ["Suggested changes", "sonnet-5", "medium", "58", "$0.039", "$0.050", "$2.26"] },
+          { c: ["Proposed cuts", "sonnet-5", "medium", "21", "$0.046", "$0.061", "$0.97"] },
+          { c: ["Help me choose, words", "sonnet-5", "low", "26", "$0.007", "$0.009", "$0.18"] },
+          { c: ["Look deeper, shortlist", "haiku-5-5", "medium", "13", "$0.012", "$0.015", "$0.16"] },
+          { c: ["Look deeper, judgement", "sonnet-5-5", "medium", "13", "$0.062", "$0.078", "$0.81"] },
+          { c: ["Overview rewrite, free", "sonnet-5-5", "medium", "11", "$0.056", "$0.070", "$0.62"] },
+          { c: ["Model calls", "", "", "193 runs", "", "", "$8.46"], foot: 1 },
+        ], featPhone),
+        Pp("Look deeper is one run billed as two calls, so its 13 runs show as two rows of 13. 193 runs, 206 calls.", "faint"),
+        H("Refunds", "$0.96 · 11% of model calls"),
+        Pp("22 runs were refunded: the player got the credit back, and the dollars stay billed. Suggested changes 11 runs, $0.47. Overview 6 runs, $0.33. Proposed cuts 5 runs, $0.16."),
+        H("Reserved against spent", "the worst case a press is held at, against its mean"),
+        B("Rbars", { rows: [
+          rbar("Overview", 0.832, 0.054, "6.5% of the reservation"),
+          rbar("Suggested changes", 0.208, 0.039, "19% of the reservation"),
+          rbar("Proposed cuts", 0.240, 0.046, "19% of the reservation"),
+          rbar("Help me choose, Look deeper", 0.599, 0.074, "12% of the reservation, both calls together"),
+        ] }),
+        H("Per account", "7 accounts pressed"),
+        Table([{ t: "Account" }, { t: "Presses", r: 1 }, { t: "Credits used", r: 1 }, { t: "Spent", r: 1 }], "minmax(0,1fr) 90px 110px 90px", [
+          ...ACC.map((a) => ({ c: [a.n, `${SPEND[a.id][1]}`, `${SPEND[a.id][2]}`, SPEND[a.id][0]] })),
+          { c: ["Players", "182", "160", "$7.84"], foot: 1 },
+        ], (r) => ({ title: r.c[0], fig: r.c[3], meta: `${r.c[1]} presses · ${r.c[2]} credits used` })),
+        H("Card label runs", "card_label_batches · claude-sonnet-4-5, Batch API"),
+        Table([{ t: "Run" }, { t: "Batches", r: 1 }, { t: "Cost", r: 1 }], "minmax(0,1fr) 90px 80px", [
+          { c: ["2 Nov · weekly relabel", "46", "$1.04"] }, { c: ["9 Nov · weekly relabel", "46", "$1.04"] }, { c: ["16 Nov · weekly relabel", "46", "$1.04"] },
+          { c: ["November", "138", "$3.12"], foot: 1 },
+        ], (r) => ({ title: r.c[0], fig: r.c[2], meta: `${r.c[1]} batches` })),
+        H("Eval ledgers", "committed in the repo; they move only with a merge"),
+        Table([{ t: "Ledger" }, { t: "November", r: 1 }, { t: "All time", r: 1 }, { t: "Limit" }, { t: "Last entry" }], ledGrid, [
+          { c: ["Help me choose", "$3.30", "$4.31", "$25 hard · ask at $15", "17 Nov"] },
+          { c: ["Tuning lists", "$2.10", "$2.94", "$25 hard · ask at $15", "12 Nov"] },
+          { c: ["Cuts", "$1.40", "$4.11", "$25 hard · ask at $15", "5 Nov"] },
+          { c: ["Overview accuracy", "$0", "$10.20", "$15 hard · ask at $11", "11 Oct"] },
+          { c: ["November", "$6.80", "", "nothing pending", ""], foot: 1 },
+        ], (r) => ({ title: r.c[0], fig: r.c[1], meta: r.foot ? r.c[3] : `all time ${r.c[2]} · ${r.c[3]} · last ${r.c[4]}` })),
+      ];
+    }
+
+    // ---------- models ----------
+    if (scene === "models") {
+      title = "Models"; sub = "Which feature or job calls which model, at which effort, and where the constant lives. A model change shows here first.";
+      const mCols = [{ t: "Feature or job" }, { t: "Origin" }, { t: "Model" }, { t: "Effort" }, { t: "October", r: 1 }];
+      const mGrid = "minmax(0,1.5fr) 74px minmax(0,1fr) 74px 74px";
+      const mrow = (n, o, m, e, cost, at) => ({ c: [n, o, m, e, cost], at });
+      const rows = [
+        mrow("Overview, contract 8", "player", "claude-sonnet-5-5", "medium", "$0.163", "synopsis/model.ts:15, :32 · generate.ts:108-112 · OVERVIEW_V2"),
+        mrow("Overview, contract 7", "player", "claude-sonnet-5", "low", "$0.410", "synopsis/model.ts:7-8"),
+        mrow("Suggested changes", "player", "claude-sonnet-5", "medium", "$0.549", "tuning/limits.ts:58, :87 · TUNING"),
+        mrow("Proposed cuts", "player", "claude-sonnet-5", "medium", "$0", "prices.ts:132 · cuts-actions.ts · PROPOSED_CUTS"),
+        mrow("Help me choose, words read", "player", "claude-sonnet-5", "low", "$0.013", "intake/limits.ts:9-10 · HELP_ME_CHOOSE"),
+        mrow("Look deeper, shortlist", "player", "claude-haiku-5-5", "medium", "$0", "intake/limits.ts:54, :61"),
+        mrow("Look deeper, judgement", "player", "claude-sonnet-5-5", "medium", "$0", "intake/limits.ts:64-65"),
+        mrow("Card labels", "system", "claude-sonnet-4-5, Batch", "none set", "$120.95", "card-labels-pricing.mjs:48-50 · build-card-labels.ts:40"),
+        mrow("Commander prose", "system", "claude-sonnet-4-6", "none set", "paused", "generate-commander-prose.ts:6, :20 · PROSE_MAX_USD=0"),
+      ];
+      const t = Table(mCols, mGrid, rows, (r) => ({ title: r.c[0], fig: r.c[4], meta: `${r.c[2]} · ${r.c[3]} · ${r.c[1]} · ${r.at}` }));
+      // second line under each desktop row: where it lives
+      t.rows = t.rows.map((r, i) => ({ ...r, cells: [...r.cells, { t: rows[i].at, style: { gridColumn: "1 / -1", fontFamily: M, fontSize: 10.5, color: "var(--fg-faint)", marginTop: -6 } }] }));
+      blocks = [
+        H("Features and jobs", "October so far, staging"),
+        t,
+        Pp("Overview’s free rewrite runs on the contract-8 model as system. Mana Balance makes no model call. Evals call whatever model they test and are under Costs, by ledger.", "faint"),
+        H("Job switches", "GitHub repository variables · read only"),
+        Table([{ t: "Variable" }, { t: "Value" }, { t: "Read at" }], "minmax(0,1.3fr) 70px minmax(0,1fr)", [
+          { c: ["CATALOG_REFRESH_ENABLED", "true", ".github/workflows/"] },
+          { c: ["COMBO_REFRESH_ENABLED", "true", ".github/workflows/"] },
+          { c: ["COMMANDER_INDEX_ENABLED", "true", ".github/workflows/"] },
+          { c: ["CARD_LABELS_ENABLED", "true", "card-labels.yml:295, as CRON_ENABLED"] },
+          { c: ["TUNING_CHECK_ENABLED", "true", ".github/workflows/"] },
+          { c: ["PROSE_MAX_USD", "0", "commander-index.yml:182"] },
+        ].map((r) => ({ c: r.c })), (r) => ({ title: r.c[0], fig: r.c[1], meta: r.c[2] })),
+        Pp("Change these in the repository’s variables on GitHub. The admin only reads them.", "faint"),
+      ];
+      blocks[1].rows.forEach((r) => r.cells[0].style.fontFamily = "inherit");
+      blocks[4].rows.forEach((r) => r.cells[0].style = { ...r.cells[0].style, fontFamily: M, fontSize: 12 });
+    }
+
+    // ---------- styles ----------
+    const isNF = cfg.kind === "nf", isDoor = cfg.kind === "door", isAdmin = !isNF && !isDoor;
+    const tabNames = ["Switches", "Groups", "Accounts", "Costs", "Models"];
+    const s = {
+      frame: { width: P(390, 900), minHeight: P(844, isAdmin ? 0 : 620), background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" },
+      head: { padding: P("14px 16px 0", "26px 28px 0"), display: "flex", flexDirection: "column", gap: 9, borderBottom: "1px solid var(--border)" },
+      title: { margin: 0, fontFamily: "var(--display)", fontWeight: 400, fontSize: P(23, 28), lineHeight: 1.2, color: "var(--fg)" },
+      sub: { margin: 0, fontSize: P(13, 13.5), lineHeight: 1.6, color: "var(--fg-body)", maxWidth: 720, textWrap: "pretty", display: sub ? "block" : "none" },
+      envChip: { display: "inline-flex", alignItems: "center", gap: 6, height: 22, padding: "0 8px", borderRadius: 999, border: "1px solid var(--border-strong)", fontFamily: M, fontSize: 10.5, color: "var(--fg)" },
+      envDot: { width: 6, height: 6, borderRadius: "50%", background: cfg.env === "staging" ? "var(--warning)" : "var(--danger)" },
+      tabs: { display: "flex", gap: P(15, 24), marginTop: 4, overflow: "hidden" },
+      body: { padding: P("16px 16px 28px", "22px 28px 40px"), display: "flex", flexDirection: "column", gap: 12 },
+      hRow: { display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", paddingTop: 10 },
+      h2: { margin: 0, fontSize: 15, fontWeight: 600, color: "var(--fg)" },
+      ghostSm: { ...ghostBtn, height: P(40, 32), fontSize: 13 },
+      ghost: { ...ghostBtn, height: P(46, 40), flex: P(1, "none"), padding: "0 18px", fontSize: 14 },
+      primary: { display: "inline-flex", alignItems: "center", justifyContent: "center", height: P(46, 40), padding: "0 20px", borderRadius: P(10, 8), background: "var(--fg)", fontSize: 14, fontWeight: 600, color: "var(--bg)", whiteSpace: "nowrap", flex: P(1, "none") },
+      searchWrap: { display: "flex", flexDirection: "column", gap: 10 },
+      field: { display: "flex", alignItems: "center", gap: 10, height: P(44, 38), padding: "0 12px", borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", maxWidth: P("none", 420) },
+      fHead: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 92px 76px 112px 116px", gap: 14, padding: "9px 14px", background: "var(--surface-rail)", fontFamily: M, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--fg-faint)" },
+      fGroup: { display: "flex", alignItems: "baseline", gap: 10, padding: "8px 14px", background: "var(--surface-sunken)", borderTop: "1px solid var(--border)", fontFamily: M, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--fg-muted)" },
+      fRow: phone ? { display: "flex", flexDirection: "column", padding: "12px 14px", borderTop: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "minmax(0,1fr) 92px 76px 112px 116px", gap: 14, alignItems: "start", padding: "12px 14px", borderTop: "1px solid var(--border)" },
+      ladderFoot: { display: "flex", alignItems: "center", gap: 9, padding: P("12px 14px", "12px 16px"), borderTop: "1px solid var(--border-strong)", background: "var(--surface-rail)", fontSize: 14, fontWeight: 500, color: "var(--fg)" },
+      segWrap: { ...segWrapBase, alignSelf: P("stretch", "flex-start") },
+      ovRow: phone ? { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--border-strong)", background: "var(--surface)", position: "relative" } : { display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border-strong)", background: "var(--surface)" },
+      ovNote: { display: "flex", flexDirection: "column", gap: 2, flex: P("none", 1.3), minWidth: 0 },
+      clear: phone ? { position: "absolute", top: 12, right: 14, fontSize: 13, color: "var(--accent)", minHeight: 24 } : { fontSize: 13, color: "var(--accent)", flex: "none" },
+      sample: { display: "flex", flexDirection: P("column", "row"), alignItems: P("flex-start", "center"), gap: 14, padding: P("12px 14px", "12px 16px"), borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface-rail)" },
+      select: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, width: P("100%", 200), height: P(44, 36), padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontSize: 13.5, color: "var(--fg)" },
+      hRowItem: phone ? { display: "flex", flexDirection: "column", gap: 4, padding: "11px 14px", borderTop: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "130px minmax(0,1fr)", gap: 14, padding: "11px 16px", borderTop: "1px solid var(--border)" },
+      gGrid: { display: "grid", gridTemplateColumns: P("minmax(0,1fr)", "minmax(0,1fr) minmax(0,1fr)"), gap: 12 },
+      fieldsGrid: { display: "grid", gridTemplateColumns: P("minmax(0,1fr)", "minmax(0,1fr) minmax(0,1.4fr)"), gap: 14 },
+      pending: { display: "flex", flexDirection: P("column", "row"), alignItems: P("stretch", "center"), gap: 14, padding: P("14px", "14px 16px"), borderRadius: 12, border: "1px solid var(--accent)", background: "var(--surface-raised)" },
+      aHead: { display: "grid", gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr) 110px 90px", gap: 14, padding: "9px 16px", background: "var(--surface-rail)", fontFamily: M, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--fg-faint)" },
+      aRow: phone ? { display: "flex", flexDirection: "column", gap: 4, padding: "11px 14px", minHeight: 64, borderTop: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr) 110px 90px", gap: 14, alignItems: "center", padding: "10px 16px", borderTop: "1px solid var(--border)" },
+      avSm: { flex: "none", width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", border: "1px solid var(--accent)", color: "var(--accent)", fontFamily: M, fontSize: 11.5 },
+      avatar: { flex: "none", width: P(48, 44), height: P(48, 44), borderRadius: P(14, 12), display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", border: "1px solid var(--accent)", color: "var(--accent)", fontFamily: M, fontSize: P(15, 14) },
+      tiles: { display: "grid", gridTemplateColumns: P("minmax(0,1fr) minmax(0,1fr)", "repeat(4,minmax(0,1fr))"), gap: P(8, 12) },
+      tile: { display: "flex", flexDirection: "column", gap: 4, padding: P("11px 12px", "13px 14px"), borderRadius: 12, border: "1px solid var(--border-strong)", background: "var(--surface)", minWidth: 0 },
+      tileFig: { fontFamily: M, fontSize: P(19, 22), fontWeight: 500, color: "var(--fg)", whiteSpace: "nowrap" },
+      period: { display: "flex", flexDirection: P("column", "row"), alignItems: P("flex-start", "center"), justifyContent: "space-between", gap: 10 },
+      arrow: { fontSize: 18, color: "var(--fg-muted)", padding: "0 6px" },
+      capRow: { display: "flex", flexDirection: "column", gap: 4, padding: P("12px 14px 13px", "13px 16px 14px"), borderTop: "1px solid var(--border)" },
+      trendBox: { position: "relative", height: P(130, 160), margin: "6px 0 0" },
+      legend: { display: "grid", gridTemplateColumns: P("minmax(0,1fr)", "minmax(0,1fr) minmax(0,1fr)"), gap: "8px 28px" },
+      rRow: phone ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "3px 10px", padding: "11px 14px", borderTop: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "minmax(0,1fr) 70px minmax(0,1.5fr)", gap: 14, alignItems: "baseline", padding: "11px 16px", borderTop: "1px solid var(--border)" },
+      gChip: { display: "inline-flex", alignItems: "center", height: P(36, 30), padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: M, fontSize: 12.5, color: "var(--fg)" },
+      tabbar: { position: "relative", marginTop: "auto", zIndex: 4, display: "grid", gridTemplateColumns: "repeat(5,1fr)", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" },
+      overlay: phone ? { position: "absolute", inset: 0, zIndex: 10, background: "color-mix(in oklab, var(--bg) 72%, transparent)", display: "flex", alignItems: "flex-end" } : { position: "absolute", inset: 0, zIndex: 10, background: "color-mix(in oklab, var(--bg) 72%, transparent)", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 110 },
+      dialog: phone ? { width: "100%", borderRadius: "20px 20px 0 0", borderTop: "1px solid var(--border-strong)", background: "var(--surface)", padding: "12px 18px 22px", display: "flex", flexDirection: "column", gap: 14 } : { width: 540, borderRadius: 14, border: "1px solid var(--border-strong)", background: "var(--surface)", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 40px 100px rgba(0,0,0,.7)" },
+      fact: { display: "grid", gridTemplateColumns: P("74px minmax(0,1fr)", "92px minmax(0,1fr)"), gap: 10, padding: "10px 12px", borderTop: "1px solid var(--border)" },
+      noteField: { display: "flex", alignItems: "center", height: P(44, 38), padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontSize: 13.5, color: "var(--fg)" },
+      dialogFoot: { display: "flex", gap: 10, justifyContent: "flex-end", flex: "none" },
+      nf: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 40, minHeight: P(400, 480), background: "radial-gradient(520px 300px at 50% 70%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%), var(--bg)" },
+      nfNum: { fontFamily: "var(--display)", fontWeight: 900, fontSize: P(48, 64), lineHeight: 1, marginBottom: 2, color: "var(--elevated)", letterSpacing: "0.04em" },
+      nfH: { margin: 0, fontFamily: "var(--display)", fontWeight: 700, fontSize: P(21, 24), color: "var(--fg)" },
+      nfP: { margin: "10px 0 0", maxWidth: 380, fontSize: P(13.5, 15), lineHeight: 1.6, color: "var(--fg-body)" },
+      nfBtns: { display: "flex", flexDirection: P("column", "row"), gap: 12, marginTop: 24 },
+      doorWrap: { flex: 1, display: "flex", position: "relative", minHeight: P(844, 620) },
+      menu: phone ? { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 3, background: "var(--surface)", borderTop: "1px solid var(--border-strong)", borderRadius: "20px 20px 0 0", padding: "20px 20px 26px" } : { position: "absolute", left: 8, bottom: 62, zIndex: 3, width: 300, padding: 8, background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 20px 50px rgba(0,0,0,0.6)" },
+      menuId: { display: "flex", alignItems: "center", gap: P(14, 12), padding: P("0 0 18px", "12px 12px 14px"), borderBottom: "1px solid var(--border)" },
+      menuName: { fontSize: P(16, 14), fontWeight: 600, color: "var(--fg)" },
+      picker: { margin: P("14px 0 0", "12px 4px 0"), height: P(92, 84), borderRadius: 10, border: "1px dashed var(--border-dashed)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 10.5, color: "var(--fg-locked)" },
+      menuList: { marginTop: P(14, 12), paddingTop: 10, borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: P(0, 2) },
+    };
+    const menuRows = ["About", "Admin", "Manage account", "Sign out"].map((t, i) => ({
+      t, hasEnv: t === "Admin", env: "production",
+      row: phone ? { display: "flex", alignItems: "center", gap: 12, padding: "15px 6px", fontSize: 15, color: "var(--fg)", borderTop: i ? "1px solid var(--border)" : "none", background: t === "Admin" ? "var(--elevated)" : "transparent", borderRadius: t === "Admin" ? 8 : 0 } : { display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", borderRadius: 8, fontSize: 14, color: "var(--fg)", background: t === "Admin" ? "var(--elevated)" : "transparent" },
+      dia: { width: 6, height: 6, flex: "none", transform: "rotate(45deg)", background: t === "Sign out" ? "var(--danger)" : "var(--accent)" },
+    }));
+
+    return {
+      theme, phone, desktop, s, label: `Admin · ${scene} · ${phone ? 390 : 900}`,
+      isNF, isDoor, isAdmin, envName: cfg.env || "production",
+      title, sub, back, hasBack: !!back, varName, hasVar: !!varName, tags, hasTags: tags.length > 0,
+      tabs: tabNames.map((t, i) => ({ t, style: { display: "inline-flex", alignItems: "center", height: P(42, 40), flex: "none", borderBottom: i === cfg.tab ? "2px solid var(--fg)" : "2px solid transparent", fontSize: P(13.5, 14), fontWeight: i === cfg.tab ? 500 : 400, color: i === cfg.tab ? "var(--fg)" : "var(--fg-muted)", marginBottom: -1 } })),
+      blocks, menuRows,
+      showTabbar: phone && !isDoor, appTabs: ["Home", "Collection", "Commanders", "Discover", "Decks"],
+      hasDialog: !!dlg, dlg: dlg || { title: "", lead: "", facts: [], note: "", btn: "" },
+    };
+  }
+}
+</script>
+</body>
+</html>
