@@ -242,14 +242,38 @@ describe("markBoughtForDecks", () => {
     expect(opts.assign).toEqual({ oracleId: CARD, deckId: OTHER });
   });
 
+  // The entry's own record of the pick (`HistoryRow.placed`), stamped only when the press wrote it.
+  const withPlaced = (status: "applied" | "alreadyApplied", placed?: object) => {
+    const base = cartApplied();
+    const row = { oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil", name: "c", before: null, after: null };
+    return { ...base, status, entry: { ...base.entry, rows: [placed ? { ...row, placed } : row] } };
+  };
+
   it("says whether the press created the pick's reservation, so only a created one is undone", async () => {
-    state.result = { ...cartApplied(), assigned: { created: true } };
+    state.result = withPlaced("applied", { deckId: OTHER });
     expect(await cartPress({ pickDeckId: OTHER })).toMatchObject({ applied: { pickCreated: true } });
-    state.result = { ...cartApplied(), assigned: { created: false } };
+    state.result = withPlaced("applied");
     expect(await cartPress({ pickDeckId: OTHER })).toMatchObject({ applied: { pickCreated: false } });
     // No pick, no field: the shipped answer is unchanged.
     state.result = cartApplied();
     expect("pickCreated" in ((await cartPress()) as { applied: object }).applied).toBe(false);
+  });
+
+  it("reports the reservation a move displaced, for the undo to put back", async () => {
+    state.result = withPlaced("applied", { deckId: OTHER, displaced: { deckId: DECK, copies: 1, createdAt: "2026-10-01 10:00:00.123456" } });
+    const out = await cartPress({ pickDeckId: OTHER }) as { applied: Record<string, unknown> };
+    expect(out.applied.pickCreated).toBe(true);
+    // The instant stays on the server: the undo restores from the entry, not from the client.
+    expect(out.applied.pickDisplaced).toEqual({ deckId: DECK, copies: 1 });
+  });
+
+  it("a retry after a lost answer reports the pick as the first request did", async () => {
+    state.result = withPlaced("alreadyApplied", { deckId: OTHER, displaced: { deckId: DECK, copies: 1, createdAt: "x" } });
+    expect(await cartPress({ pickDeckId: OTHER })).toMatchObject({
+      applied: { pickCreated: true, pickDisplaced: { deckId: DECK, copies: 1 } },
+    });
+    state.result = withPlaced("alreadyApplied");
+    expect(await cartPress({ pickDeckId: OTHER })).toMatchObject({ applied: { pickCreated: false } });
   });
 
   it("answers a stale press with what the line's decks are billed now, from the roll-up", async () => {

@@ -403,6 +403,13 @@ export type HistoryRow = {
   name: string;
   before: HistoryRowState | null;
   after: HistoryRowState | null;
+  /**
+   * Where an added copy went, on the card a purchase's pick reserved, and only when the press WROTE
+   * that reservation: `deckId` is the deck it went to, `displaced` the other deck's reservation the
+   * move deleted, as it stood. A retry reads it to answer as the first request did, and the undo
+   * reads it to know what it may put back. Absent on every other row and entry.
+   */
+  placed?: { deckId: string; displaced?: { deckId: string; copies: number; createdAt: string } };
 };
 
 /**

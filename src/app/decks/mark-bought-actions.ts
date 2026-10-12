@@ -147,9 +147,14 @@ export async function markBought(
 export type MarkBoughtForDecksOutcome =
   /**
    * `pickCreated` (with a pick only): the press wrote the pick's reservation, rather than finding
-   * one already made, so its undo may drop it. False on a retry, whose first request's answer is gone.
+   * one already made, so its undo may drop it. `pickDisplaced`: the other deck's reservation that
+   * pick moved, which its undo puts back. Both read off the entry, so a retry answers as the first
+   * request did.
    */
-  | { applied: { id: string; receipt: CartReceiptFacts | null; pickCreated?: boolean } }
+  | { applied: {
+      id: string; receipt: CartReceiptFacts | null;
+      pickCreated?: boolean; pickDisplaced?: { deckId: string; copies: number };
+    } }
   /**
    * The holding moved since the confirm read it. `need` is what the line's decks are billed now, from
    * the roll-up: one copy landing elsewhere can clear several brews' rows, or none, so the cart's
@@ -248,11 +253,15 @@ export async function markBoughtForDecks(
       invalidateCollectionReaders(userId);
       after(() => warmCommanderScores(userId));
       const snaps = result.status === "applied" ? result.receipt : undefined;
+      // What the press did with the pick, as the entry recorded it: the same answer on a retry.
+      const placed = pick ? result.entry.rows.find((r) => r.oracleId === oracleId && r.placed)?.placed : undefined;
+      const made = placed?.deckId === pick ? placed : undefined;
       return {
         applied: {
           id: result.entry.id,
           receipt: snaps ? cartReceiptFacts(snaps.before, snaps.after, deckIds, new Map(Object.entries(snaps.owes ?? {}))) : null,
-          ...(pick ? { pickCreated: result.status === "applied" && result.assigned?.created === true } : {}),
+          ...(pick ? { pickCreated: made !== undefined } : {}),
+          ...(made?.displaced ? { pickDisplaced: { deckId: made.displaced.deckId, copies: made.displaced.copies } } : {}),
         },
       };
     }

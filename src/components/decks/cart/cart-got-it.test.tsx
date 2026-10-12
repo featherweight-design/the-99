@@ -287,6 +287,20 @@ describe("the S1b chooser", () => {
     expect(previewRevert).toHaveBeenCalledWith("e1", [G, K, T], { oracleId: ORACLE, deckId: T });
   });
 
+  it("puts back the reservation a moved pick displaced, in the same Undo", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ applied: {
+      id: "e1", pickCreated: true, pickDisplaced: { deckId: G, copies: 1 },
+      receipt: { covered: [{ deckId: T, deckName: "HD -Thorin" }], still: [] },
+    } });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    fireEvent.click(within(await screen.findByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    await act(async () => { fireEvent.click(await screen.findByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    expect(previewRevert).toHaveBeenCalledWith("e1", [G, K, T], { oracleId: ORACLE, deckId: T, restore: { deckId: G, copies: 1 } });
+  });
+
   it("drops no pick on Undo when the press found the reservation already made", async () => {
     readCartChooser.mockResolvedValue(contested);
     markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", pickCreated: false, receipt: { covered: [{ deckId: T, deckName: "HD -Thorin" }], still: [] } } });

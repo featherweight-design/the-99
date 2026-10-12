@@ -296,6 +296,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   with no reservation reports `assigned.created` and a revert carrying `undoPlacement` removes it in
   the same transaction, while a pick on a deck that already held the reservation reports it did not
   create one and the cart's undo, sending no placement, leaves that older reservation standing.
+  A pick that MOVES another deck's reservation reports and records the one it displaced on the
+  entry (`placed`), a retry of that press reads the same record back, a restore the entry did not
+  record puts nothing back, and Undo with the recorded restore drops the moved pick and puts the
+  displaced reservation back at its own `created_at`.
 - `pnpm probe:collection-write` proves the collection ledger's concurrency claims
   (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
   a double-submitted add applies once, two tabs editing one row with `expected` produce one

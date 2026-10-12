@@ -86,6 +86,14 @@ export async function lockCardClaims(tx: Tx, userId: string, oracleId: string): 
   `);
 }
 
+/** What `assignCopyIn` did, for a caller that may have to undo it. */
+export type AssignReport = {
+  created: boolean;
+  /** The reservation a move deleted (another deck's), as it stood: its copies and its exact `created_at`. */
+  displaced?: DisplacedReservation;
+};
+export type DisplacedReservation = { deckId: string; copies: number; createdAt: string };
+
 /**
  * The reservation write itself, inside a transaction that already holds `lockCardClaims`.
  * `toggle` is a pick's press (the same deck again takes the copy back); `set` is a purchase's pick
@@ -100,8 +108,9 @@ export async function assignCopyIn(
   /**
    * Filled in with whether THIS call wrote the deck's row. A `set` on a deck already reserved keeps
    * the row it found, and an undo of the purchase must not delete a reservation it never made.
+   * `displaced` is the reservation a MOVE deleted to make room, so an undo can put it back.
    */
-  report?: { created: boolean },
+  report?: AssignReport,
 ): Promise<AssignRefusal | null> {
   const ask = await reservableAsk(tx, userId, deckId, oracleId);
   if (typeof ask === "string") return ask;
@@ -177,7 +186,12 @@ export async function assignCopyIn(
   if (taken >= 1) {
     // The existing reservation gives way to the deck the player has just named. Oldest first,
     // because `(created_at, deck_id)` is the order the model resolves reservations in.
-    const [oldest] = await tx.select({ deckId: cardAssignments.deckId })
+    const [oldest] = await tx.select({
+      deckId: cardAssignments.deckId,
+      copies: cardAssignments.copies,
+      // As text, so a restore puts back the exact instant: seniority orders on it, to the microsecond.
+      createdAt: sql<string>`${cardAssignments.createdAt}::text`,
+    })
       .from(cardAssignments)
       .where(and(
         eq(cardAssignments.userId, userId),
@@ -193,6 +207,7 @@ export async function assignCopyIn(
       eq(cardAssignments.oracleId, oracleId),
       inArray(cardAssignments.deckId, [oldest.deckId]),
     ));
+    if (report) report.displaced = { deckId: oldest.deckId, copies: oldest.copies, createdAt: oldest.createdAt };
   }
 
   await tx.insert(cardAssignments).values({ userId, oracleId, deckId });

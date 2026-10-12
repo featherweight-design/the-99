@@ -325,6 +325,46 @@ async function main() {
     const undone2 = await applyCollectionChange(USER, { kind: "revert", entryId: e2 }, { id: randomUUID() });
     check("and Undo without a placement leaves the reservation that predates the purchase",
       undone2.status === "applied" && await reservedF(brewY) === 1, `${undone2.status}; reserved ${await reservedF(brewY)}`);
+
+    // ---- A pick that MOVES a reservation: Undo puts the displaced one back, as it stood --------
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query(
+      "insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, '2026-01-02 03:04:05.123456')",
+      [USER, F, brewX],
+    );
+    const stampX = async () => (await one<{ at: string | null }>(
+      "select max(created_at)::text as at from card_assignments where user_id = $1 and oracle_id = $2 and deck_id = $3", [USER, F, brewX],
+    )).at;
+    const heldNow = async () => Number((await one<{ n: number }>(
+      "select coalesce(sum(quantity), 0)::int as n from collection_items where user_id = $1 and oracle_id = $2", [USER, F],
+    )).n);
+    const e3 = randomUUID();
+    const moved = await buyF(await heldNow(), e3);
+    const movedPlaced = moved.status === "applied" ? moved.entry.rows.find((r) => r.oracleId === F)?.placed : undefined;
+    check("a pick that moves another deck's reservation reports and records the one it displaced",
+      moved.status === "applied" && moved.assigned?.created === true && moved.assigned.displaced?.deckId === brewX
+        && movedPlaced?.deckId === brewY && movedPlaced.displaced?.deckId === brewX
+        && await reservedF(brewX) === 0 && await reservedF(brewY) === 1,
+      `${moved.status}; ${moved.status === "applied" ? JSON.stringify(moved.assigned) : "-"}; placed ${JSON.stringify(movedPlaced)}`);
+    const retried = await buyF(0, e3);
+    const retriedPlaced = retried.status === "alreadyApplied" ? retried.entry.rows.find((r) => r.oracleId === F)?.placed : undefined;
+    check("a retry of that press reads the same record off the entry",
+      retried.status === "alreadyApplied" && JSON.stringify(retriedPlaced) === JSON.stringify(movedPlaced),
+      `${retried.status}; placed ${JSON.stringify(retriedPlaced)}`);
+    const forgedRestore = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewY, copies: 1 } } },
+      { id: randomUUID(), dryRun: true },
+    );
+    check("a restore the entry did not record puts nothing back (dry run)",
+      forgedRestore.status === "preview" && await reservedF(brewX) === 0, `${forgedRestore.status}; X reserved ${await reservedF(brewX)}`);
+    const undone3 = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
+      { id: randomUUID() },
+    );
+    check("Undo drops the moved pick and puts the displaced reservation back, at its own instant",
+      undone3.status === "applied" && await reservedF(brewY) === 0 && await reservedF(brewX) === 1
+        && await stampX() === "2026-01-02 03:04:05.123456",
+      `${undone3.status}; Y ${await reservedF(brewY)}; X ${await reservedF(brewX)} at ${await stampX()}`);
   } finally {
     await pool.query("delete from collection_history where user_id = $1", [USER]);
     await pool.query("delete from collection_items where user_id = $1", [USER]);

@@ -143,6 +143,16 @@ describe("revertCollectionEntry", () => {
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: "card" })).rejects.toThrow("bad undo placement");
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: 7 } as never))
       .rejects.toThrow("bad undo placement");
+    // The displaced reservation travels with the pick it undoes, lowercased, and never alone.
+    const OLD = "66666666-6666-4666-8666-666666666666";
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    stub.apply.mockClear();
+    await revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: DECK, restore: { deckId: OLD.toUpperCase(), copies: 1 } });
+    expect(stub.apply.mock.calls[0][1]).toMatchObject({ undoPlacement: { oracleId: CARD, deckId: DECK, restore: { deckId: OLD, copies: 1 } } });
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, restore: { deckId: OLD, copies: 1 } }))
+      .rejects.toThrow("bad undo placement");
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: DECK, restore: { deckId: OLD, copies: 0 } }))
+      .rejects.toThrow("bad undo placement");
   });
 
   it("refuses a malformed action id or preview before writing", async () => {

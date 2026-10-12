@@ -3,7 +3,7 @@ import type { DeckClaim } from "../decks/availability";
 import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, planAdd, planEdit, planReplace,
+  committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
   planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 import { collectionEditEnabled } from "./edit-flag";
@@ -262,5 +262,28 @@ describe("placementToUndo", () => {
     expect(placementToUndo({ oracleId: A, deckId: "d" }, rows)).toEqual({ oracleId: A, deckId: "d" });
     expect(placementToUndo({ oracleId: B, deckId: "d" }, rows)).toBeNull();
     expect(placementToUndo(undefined, rows)).toBeNull();
+  });
+});
+
+describe("restoreToUndo", () => {
+  const was = { deckId: "a", copies: 1, createdAt: "2026-10-01 10:00:00.123456" };
+  const rows = [{ oracleId: A, placed: { deckId: "b", displaced: was } }];
+  it("puts back only the reservation the entry recorded its own press displacing", () => {
+    expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, rows)).toEqual(was);
+  });
+  it("puts back nothing the entry did not record", () => {
+    // Another deck, another count, another card, another pick, no pick, or no restore asked for.
+    expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "z", copies: 1 } }, rows)).toBeNull();
+    expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 2 } }, rows)).toBeNull();
+    expect(restoreToUndo({ oracleId: B, deckId: "b", restore: { deckId: "a", copies: 1 } }, rows)).toBeNull();
+    expect(restoreToUndo({ oracleId: A, deckId: "c", restore: { deckId: "a", copies: 1 } }, rows)).toBeNull();
+    expect(restoreToUndo({ oracleId: A, restore: { deckId: "a", copies: 1 } }, rows)).toBeNull();
+    expect(restoreToUndo({ oracleId: A, deckId: "b" }, rows)).toBeNull();
+    // A pick the press wrote without a move, and an entry with no pick at all.
+    expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, [{ oracleId: A, placed: { deckId: "b" } }])).toBeNull();
+    expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, [{ oracleId: A }])).toBeNull();
+  });
+  it("drops the pick on its own: placementToUndo never carries the restore", () => {
+    expect(placementToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, rows)).toEqual({ oracleId: A, deckId: "b" });
   });
 });

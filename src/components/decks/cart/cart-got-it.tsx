@@ -28,6 +28,8 @@ type Receipt = {
   picked: string | null;
   /** The press wrote that pick's reservation (it did not find one already made): Undo may drop it. */
   pickCreated?: boolean;
+  /** The reservation that pick moved off another deck: Undo puts it back. */
+  pickDisplaced?: { deckId: string; copies: number };
 };
 
 /**
@@ -150,7 +152,7 @@ export function CartGotItProvider({
     setPending(false);
     setTarget(null);
   }, []);
-  const done = useCallback((written: Written, picked: string | null, pickCreated = false) => {
+  const done = useCallback((written: Written, picked: string | null, pickCreated = false, pickDisplaced?: { deckId: string; copies: number }) => {
     const t = current.current;
     close();
     if (!t) return;
@@ -164,7 +166,7 @@ export function CartGotItProvider({
       });
       return new Map(h).set(id, summed(prev?.line ?? t.line, purchases));
     });
-    setReceipt({ line: t.line, written, names: t.names, picked, pickCreated });
+    setReceipt({ line: t.line, written, names: t.names, picked, pickCreated, ...(pickDisplaced ? { pickDisplaced } : {}) });
   }, [close]);
   const undoHost = useMemo(() => ({
     start: (id: string) => setUndoing((u) => (u.has(id) ? u : new Set(u).add(id))),
@@ -217,7 +219,11 @@ export function CartGotItProvider({
           // The pick this press made goes with the copy on Undo (decision 5): left standing, it would
           // hand the next copy to the deck this purchase chose, after the purchase was taken back.
           // Only one the press CREATED: a reservation the deck already had is not this press's to drop.
-          undoPlacement={receipt.picked && receipt.pickCreated ? { oracleId: receipt.line.oracleId, deckId: receipt.picked } : undefined}
+          // A pick that MOVED another deck's reservation puts it back, so Undo leaves the card as it was.
+          undoPlacement={receipt.picked && receipt.pickCreated ? {
+            oracleId: receipt.line.oracleId, deckId: receipt.picked,
+            ...(receipt.pickDisplaced ? { restore: receipt.pickDisplaced } : {}),
+          } : undefined}
           placement="cart"
           failed={receipt.failed}
           host={hostFor(receipt)}
@@ -237,7 +243,7 @@ function CartConfirm({
   onPendingChange: (pending: boolean) => void;
   returnFocusRef: RefObject<HTMLElement | null>;
   onClose: () => void;
-  onDone: (written: Written, picked: string | null, pickCreated?: boolean) => void;
+  onDone: (written: Written, picked: string | null, pickCreated?: boolean, pickDisplaced?: { deckId: string; copies: number }) => void;
 }) {
   const deckIds = line.selectedRows.map((r) => r.deckId);
   // S1b: the line's claimants, read once per confirm, for the chooser drawn when fewer copies are
@@ -259,8 +265,10 @@ function CartConfirm({
   const firstListed = chooserCard?.claimants.find((c) => line.selectedRows.some((r) => r.deckId === c.deckId && r.quantity > 0))?.deckName ?? "";
   // The pick the press sent, held for the receipt: the form reports only what was written.
   const sent = useRef<string | null>(null);
-  // Whether that pick's reservation was written by the press (and so is the press's to undo).
+  // Whether that pick's reservation was written by the press (and so is the press's to undo), and
+  // the reservation it moved off another deck (the undo's to put back).
   const created = useRef(false);
+  const displaced = useRef<{ deckId: string; copies: number } | undefined>(undefined);
   // The figure the line drew, carrying the printing to preset: the confirm presets only a live one.
   // Memoized on the opened line: the form re-reads its choices whenever `price` changes, and a
   // fresh object every render would reset the player's printing on a stale or refused press.
@@ -282,6 +290,7 @@ function CartConfirm({
         sent.current = pickDeckId;
         const out = await markBoughtForDecks(line.oracleId, { deckIds, pickDeckId, ...input });
         created.current = "applied" in out && out.applied.pickCreated === true;
+        displaced.current = "applied" in out ? out.applied.pickDisplaced : undefined;
         // A stale answer means ownership moved: the chooser's claimants and shortfalls were read
         // before it, so the confirm falls back to the plain list, and the default order, rather
         // than preview a split that no longer holds.
@@ -321,7 +330,7 @@ function CartConfirm({
       returnFocusRef={returnFocusRef}
       onClose={onClose}
       decision={picked}
-      onDone={(written) => onDone(written, sent.current, created.current)}
+      onDone={(written) => onDone(written, sent.current, created.current, displaced.current)}
     >
       {({ quantity, pending }: GotItFormState) => (
       <div className="flex flex-col gap-[8px]">

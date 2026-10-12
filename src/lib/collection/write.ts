@@ -7,7 +7,7 @@ import {
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
-import { assignCopyIn, lockCardClaims, type AssignRefusal } from "../decks/assign";
+import { assignCopyIn, lockCardClaims, type AssignRefusal, type AssignReport } from "../decks/assign";
 import { cartSourceDecks, regrant } from "../decks/mark-bought";
 import { proxiedMembership } from "../decks/proxies";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
@@ -98,21 +98,44 @@ export type CollectionChange =
        * Where an added copy goes (`undoPlacement`): the pick the purchase made, or that Change made
        * on its receipt, dropped in the same transaction, so Undo takes the copy back AND the
        * reservation it was given to. Honoured only for a card the entry itself wrote
-       * (`placementToUndo`); without `deckId`, every reservation of that card goes.
+       * (`placementToUndo`); without `deckId`, every reservation of that card goes. `restore` is the
+       * other deck's reservation that pick MOVED (A to B): put back as it stood, so Undo leaves the
+       * card's reservations as they were before the press. Honoured only when the entry itself
+       * recorded that displacement (`restoreToUndo`).
        */
-      undoPlacement?: { oracleId: string; deckId?: string };
+      undoPlacement?: UndoPlacement;
     };
+
+export type UndoPlacement = { oracleId: string; deckId?: string; restore?: { deckId: string; copies: number } };
 
 /**
  * The pick an undo may drop: only one on a card the reverted entry wrote. An undo naming any
  * other card drops nothing, so a revert can never be used to clear an unrelated reservation.
  */
 export function placementToUndo(
-  undo: { oracleId: string; deckId?: string } | undefined,
+  undo: UndoPlacement | undefined,
   entryRows: readonly { oracleId: string }[],
 ): { oracleId: string; deckId?: string } | null {
   if (!undo || !entryRows.some((r) => r.oracleId === undo.oracleId)) return null;
-  return undo;
+  return { oracleId: undo.oracleId, ...(undo.deckId ? { deckId: undo.deckId } : {}) };
+}
+
+/**
+ * The reservation an undo may put back: only the one the reverted entry's OWN press displaced, as
+ * the entry recorded it (`HistoryRow.placed`), and only when the undo also drops the pick that
+ * displaced it. A restore naming any other deck or count, or an entry that recorded no move, puts
+ * back nothing, so a revert can never be used to write a reservation the press did not take away.
+ */
+export function restoreToUndo(
+  undo: UndoPlacement | undefined,
+  entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[],
+): { deckId: string; copies: number; createdAt: string } | null {
+  if (!undo?.restore || !undo.deckId) return null;
+  const placed = entryRows.find((r) => r.oracleId === undo.oracleId && r.placed)?.placed;
+  const was = placed?.displaced;
+  if (!placed || placed.deckId !== undo.deckId || !was) return null;
+  if (was.deckId !== undo.restore.deckId || was.copies !== undo.restore.copies) return null;
+  return was;
 }
 
 export type ChangeOptions = {
@@ -233,8 +256,11 @@ export type ChangeResult =
       receipt?: ReceiptSnapshots;
       /** With `opts.placements`: each raised card a deck claims, by oracle id. */
       raised?: Record<string, RaisedCard>;
-      /** With `opts.assign`: whether this write created the reservation, or found it already made. */
-      assigned?: { created: boolean };
+      /**
+       * With `opts.assign`: whether this write created the reservation, or found it already made,
+       * and the other deck's reservation a move displaced.
+       */
+      assigned?: AssignReport;
     }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
@@ -666,8 +692,9 @@ export async function applyCollectionChange(
         }
         // THE PICK GOES WITH THE COPY, before the deck check reads its "before": it drops the pick
         // this press made (a cart pick it created, or a Change on the receipt), so a reservation
-        // left standing cannot hand the next copy to the deck this press chose. It restores nothing:
-        // a Change that MOVED an older reservation (A to B) drops B and A stays gone. Under the
+        // left standing cannot hand the next copy to the deck this press chose. A cart pick that
+        // MOVED an older reservation (A to B) puts A back as it stood, from the entry's own record;
+        // a Change on the receipt records nothing, so its move drops B and A stays gone. Under the
         // card's claim lock, which every reservation write takes.
         const drop = placementToUndo(change.undoPlacement, row.rows);
         if (drop) {
@@ -677,6 +704,20 @@ export async function applyCollectionChange(
             eq(cardAssignments.oracleId, drop.oracleId),
             ...(drop.deckId ? [eq(cardAssignments.deckId, drop.deckId)] : []),
           ));
+          const restore = restoreToUndo(change.undoPlacement, row.rows);
+          // Only onto a card left with no reservation (one authored reservation per card: a pick
+          // made since owns it), and only for a deck the player still has.
+          if (restore) {
+            await tx.execute(sql`
+              insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
+              select ${userId}, ${drop.oracleId}, d.id, ${restore.copies}, ${restore.createdAt}::timestamp
+              from decks d
+              where d.id = ${restore.deckId} and d.user_id = ${userId}
+                and not exists (
+                  select 1 from card_assignments a where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId}
+                )
+            `);
+          }
         }
       }
 
@@ -785,10 +826,19 @@ export async function applyCollectionChange(
       } else {
         await writeRows(tx, userId, plan);
       }
-      const assigned = { created: false };
+      const assigned: AssignReport = { created: false };
       if (opts.assign && !opts.dryRun) {
         const refused = await assignCopyIn(tx, userId, opts.assign.oracleId, opts.assign.deckId, "set", assigned);
         if (refused) throw new Refused({ status: "assignRefused", reason: refused });
+        // On the entry itself, so a retry answers as this request does and the undo knows what the
+        // press moved (`restoreToUndo`). Only a reservation this press wrote.
+        const card = assigned.created ? rows.find((r) => r.oracleId === opts.assign!.oracleId) : undefined;
+        if (card) {
+          card.placed = {
+            deckId: opts.assign.deckId,
+            ...(assigned.displaced ? { displaced: assigned.displaced } : {}),
+          };
+        }
       }
       // The tokens this UPLOAD read, and the marker that they were read, in the same transaction as the
       // rows: a failure rolls the whole confirm back. Only an upload (it carries an id) records tokens;

@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { previewRevert, revertCollectionEntry } from "../../app/collection/history-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { Finish } from "../../lib/collection/key";
-import type { ShortDeck } from "../../lib/collection/write";
+import type { ShortDeck, UndoPlacement } from "../../lib/collection/write";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { addedCopyCopy } from "../../lib/copy/added-copy";
 import type { ContestedCard } from "../../lib/collection/summary-read";
@@ -147,8 +147,11 @@ export function GotItReceipt({
   /** Drawn straight in the failed form: an undo that failed after its toast was replaced. */
   failed?: boolean;
   onExpire: () => void;
-  /** The pick the press itself made (the cart's chooser): Undo drops it with the copy. */
-  undoPlacement?: { oracleId: string; deckId?: string };
+  /**
+   * The pick the press itself made (the cart's chooser): Undo drops it with the copy, and puts
+   * back `restore`, the reservation that pick moved off another deck.
+   */
+  undoPlacement?: UndoPlacement;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
