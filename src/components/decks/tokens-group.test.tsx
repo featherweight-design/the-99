@@ -156,8 +156,17 @@ describe("pressing", () => {
 
 describe("the makers fold", () => {
   const open = () => {
-    fireEvent.click(screen.getByRole("button", { name: /Food token, made by/ }));
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
   };
+
+  it("is named by what it shows, and described by the disclosure sentence", () => {
+    draw(ok([token({ name: "Goblin", typeLine: "Token Creature — Goblin", power: "1", toughness: "1", makers: makers(3) })]));
+    const toggle = screen.getByRole("button", { expanded: false });
+    expect(toggle.getAttribute("aria-label")).toBeNull();
+    expect(toggle.textContent).toContain("Token Creature — Goblin · 1/1");
+    const described = document.getElementById(toggle.getAttribute("aria-describedby")!);
+    expect(described?.textContent).toBe("Goblin token, made by 3 cards");
+  });
 
   it("is closed until the row is pressed, then names its cards A to Z with the count", () => {
     draw(ok([token({ makers: makers(3) })]));

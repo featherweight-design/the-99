@@ -57,7 +57,8 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
 /**
  * The cards of this deck that make the token, A to Z (the loader's order), each opening its card
  * details. A long list scrolls inside a sunken box so one row can never push the rest of the group
- * down the page: past 5 names on a phone, past 9 from md up.
+ * down the page: where the list can outgrow its cap, which is 6 names on a phone and 16 from md up
+ * (`boxedOnPhone`, `boxedOnDesktop`).
  */
 export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; printingLine: string | null }) {
   const n = makers.length;

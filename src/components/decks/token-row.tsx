@@ -72,11 +72,16 @@ export function TokenRow({
       className="list-none rounded-[7px] bg-[color:var(--surface-rail)] pb-[8px] pl-[8px] pr-[6px] pt-[10px] md:px-[9px] md:py-[8px]"
       data-token-state={token.state}
     >
+      <span id={`token-${token.oracleId}-toggle`} className="sr-only">
+        {tokensCopy.row.toggleAria(token.name, token.makers.length)}
+      </span>
       <div className="flex flex-wrap items-start md:flex-nowrap md:gap-[10px]">
         <button
           type="button"
           aria-expanded={open}
-          aria-label={tokensCopy.row.toggleAria(token.name, token.makers.length)}
+          // Named by what it shows (the name, pips, type and makers), as any button is. The disclosure's own
+          // sentence is its description, so the visible content is not replaced by it.
+          aria-describedby={`token-${token.oracleId}-toggle`}
           onClick={() => setOpen((v) => !v)}
           className="flex min-w-0 items-start gap-[10px] text-left max-md:basis-full md:flex-1"
         >
