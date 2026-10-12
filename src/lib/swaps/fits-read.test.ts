@@ -162,6 +162,10 @@ describe("validFitsRead", () => {
     expect(run([line], "per-press", withFirst(flyer)).drops).toEqual({});
     // A card loaded without its text decides nothing.
     expect(run([line]).drops).toEqual({});
+    // Checked against the card the key named, not another card that shares its name.
+    const twin = { ...flyer, oracleId: id(99) };
+    const shared = { ...withFirst(ground), decks: [...withFirst(ground).decks.slice(0, 1), { ...kratos, list: [twin, ...kratos.list] }, omnath] };
+    expect(run([line], "per-press", shared).drops).toEqual({ keywordClaim: 1 });
   });
 
   it("3: drops a basic land as the cut, which changes the mana rather than the plan", () => {

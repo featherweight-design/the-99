@@ -334,8 +334,10 @@ export function validFitsRead(args: {
   for (const d of inputs.decks) for (const c of [...d.commanders, ...d.list]) facts.set(c.oracleId, c);
   facts.set(subject.oracleId, subject);
   const nameOf = new Map([...facts].map(([id, c]) => [id, c.name]));
-  // The keyword rule's facts, by name: a card loaded without its text decides nothing (`cardHas`).
-  const factsOf = new Map([...facts.values()].map((c): [string, FactCard] => [normalizeName(c.name), {
+  // The keyword rule's facts, keyed by ORACLE ID (two cards may share a name): the line is marked
+  // by id below, so a claim is checked against the very card the key named. A card loaded without
+  // its text decides nothing (`cardHas`).
+  const factsOf = new Map([...facts.values()].map((c): [string, FactCard] => [normalizeName(c.oracleId), {
     oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, quantity: 1, categories: [],
     oracleText: c.oracleText ?? null, ...(c.keywords ? { keywords: [...c.keywords] } : {}),
   }]));
@@ -421,7 +423,7 @@ export function validFitsRead(args: {
     const drawn = parts.map((x) => ("card" in x ? nameOf.get(x.card) ?? "" : "quote" in x ? `"${x.quote}"` : x.text)).join("");
     if (drawn.trim().length === 0 || drawn.length > FITS_READ_SENTENCE_MAX_CHARS) return "tooLong";
     // 7. A keyword the line credits to a card is on that card (`keywordClaims`, the Overview's rule).
-    const marked = parts.map((x) => ("card" in x ? `[[${nameOf.get(x.card) ?? ""}]]` : "quote" in x ? `"${x.quote}"` : x.text)).join("");
+    const marked = parts.map((x) => ("card" in x ? `[[${x.card}]]` : "quote" in x ? `"${x.quote}"` : x.text)).join("");
     if (keywordClaims(marked, factsOf).length > 0) return "keywordClaim";
     // 8. A cut, whenever the deck holds a card that may be one.
     if (!cutId && deck.list.some((c) => c.oracleId !== subject.oracleId && cutFailure(c.oracleId, deck, subject.oracleId, nameOf) === null)) return "noCut";

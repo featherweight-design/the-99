@@ -154,7 +154,7 @@ the model.
 | Sonnet 5.5 | HD - Wizards | Mind's Eye turns every cantrip and opposing draw into extra cards while Counterspell keeps spells countered, feeding the looting engine on Baral, Chief of Compliance and helping dig toward Laboratory Maniac. | Collective Restraint |
 | Sonnet 5.5 | HD - Yuriko | Mind's Eye gives extra cards whenever opponents draw, adding to the card flow from Ninja of the Deep Hours and Satoru Umezawa while Counterspell protects the unblocked ninja attacks. | Blinkmoth Infusion |
 
-### Molten Collapse (1 candidate decks)
+### Molten Collapse (1 candidate deck)
 
 | Model | Deck | Sentence | Cut |
 |---|---|---|---|
