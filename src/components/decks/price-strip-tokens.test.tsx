@@ -36,6 +36,15 @@ describe("PriceStrip with tokens joined", () => {
     expect(container.textContent).toMatch(/behind/i);
   });
 
+  it("dates a token-only figure by the tokens' own prices, even when they are the newer feed", () => {
+    const own: ProvenanceForm = { behind: false, when: "Tuesday" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={fresh} shoppingCards={[]} tokens={tokens()} tokenOwnProvenance={own} />,
+    );
+    expect(container.textContent).toContain("Tuesday");
+    expect(container.textContent).not.toContain("Monday");
+  });
+
   it("keeps the cards' date when no token in the figure is priced", () => {
     const behind: ProvenanceForm = { behind: true, when: "3 September" };
     const { container } = render(

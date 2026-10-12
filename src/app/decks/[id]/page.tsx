@@ -656,7 +656,12 @@ export default async function DeckBuilderPage({
   const tokenNewest = deckTokens?.status === "ok" ? deckTokens.newestPriceAsOf : null;
   const combinedAsOf = tokenNewest && priced?.newestAsOf && tokenNewest < priced.newestAsOf ? tokenNewest : null;
   return deckTokens ? (
-    <DeckTokensProvider deckId={id} read={deckTokens} provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}>
+    <DeckTokensProvider
+      deckId={id}
+      read={deckTokens}
+      provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}
+      ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
+    >
       {page}
     </DeckTokensProvider>
   ) : page;

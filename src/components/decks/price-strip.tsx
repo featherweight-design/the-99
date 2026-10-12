@@ -25,6 +25,7 @@ export function PriceStrip({
   shoppingCards,
   tokens = null,
   tokenProvenance = null,
+  tokenOwnProvenance = null,
 }: {
   summary: PriceSummary;
   /** Null when the table is empty or the read failed — the strip renders nothing. */
@@ -43,10 +44,14 @@ export function PriceStrip({
   tokens?: TokenShopping | null;
   /** The older of the cards' and the tokens' price dates, when the tokens' are the older. Dates the combined figure. */
   tokenProvenance?: ProvenanceForm | null;
+  /** The tokens' own price date: what dates a figure the cards contribute no priced copy to. */
+  tokenOwnProvenance?: ProvenanceForm | null;
 }) {
   if (!provenance) return null;
   // The figure includes priced tokens, so it is as old as the oldest price in it.
-  const dated = tokens && tokens.priced > 0 && tokenProvenance ? tokenProvenance : provenance;
+  const dated = tokens && tokens.priced > 0
+    ? (summary.pricedCopies === 0 ? tokenOwnProvenance : tokenProvenance) ?? provenance
+    : provenance;
 
   const tokenN = tokens?.rows.length ?? 0;
 

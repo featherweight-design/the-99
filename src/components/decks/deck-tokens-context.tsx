@@ -9,12 +9,12 @@ import type { DeckTokensRead } from "../../lib/tokens/read";
  * a prop would thread it through the builder shell. Absent (null) wherever the switch is off, which is
  * exactly what a component rendered outside the provider sees: the Tokens group then draws nothing.
  */
-type DeckTokensValue = { deckId: string; read: DeckTokensRead; provenance: ProvenanceForm | null } | null;
+type DeckTokensValue = { deckId: string; read: DeckTokensRead; provenance: ProvenanceForm | null; ownProvenance: ProvenanceForm | null } | null;
 
 const DeckTokensContext = createContext<DeckTokensValue>(null);
 
 export function DeckTokensProvider({
-  deckId, read, provenance = null, children,
+  deckId, read, provenance = null, ownProvenance = null, children,
 }: {
   deckId: string;
   read: DeckTokensRead;
@@ -24,9 +24,11 @@ export function DeckTokensProvider({
    * prices behind the cards'. Null when the deck has no priced token.
    */
   provenance?: ProvenanceForm | null;
+  /** The token prices' own date, for a figure the cards contribute nothing to. Null when no token is priced. */
+  ownProvenance?: ProvenanceForm | null;
   children: React.ReactNode;
 }) {
-  return <DeckTokensContext.Provider value={{ deckId, read, provenance }}>{children}</DeckTokensContext.Provider>;
+  return <DeckTokensContext.Provider value={{ deckId, read, provenance, ownProvenance }}>{children}</DeckTokensContext.Provider>;
 }
 
 export function useDeckTokens(): DeckTokensValue {
