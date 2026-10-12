@@ -679,6 +679,16 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   migrated to 0073: a wrong branch refused, `disable` took all sixteen and `probe:list-stamp`
   then failed 66 checks, `enable` put them back and it passed. The runbook above says WHEN.
 
+- **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), behind
+  `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until the first UI PR). Friends are added
+  by a single-use invite link or its QR code and never by search; a friendship is two directed `friend_links` rows,
+  written in user id order so two readers' stamps lock the same way round; pods are friends-only and pass to the
+  longest-standing member when the owner leaves. **Every cross-user read lives in `src/lib/social/`** and joins the
+  grant on the session's viewer in the same statement; client payloads carry `social_profiles.public_id`, never a
+  Clerk id. `pnpm check:social-reads` fails when a module outside that directory touches a social table, by schema
+  import or by name in raw SQL, and runs against the shipped tree inside `pnpm test`; `pnpm probe:social` proves the
+  answers on a scratch branch.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its
