@@ -262,7 +262,7 @@ function LedgerLine({
           onClick={() => onMarkChange(marked ? null : pass.id)}
           className={`flex-none flex items-center bg-transparent border-0 p-0 cursor-pointer
             font-mono text-[10.5px] whitespace-nowrap min-h-[44px] md:min-h-0
-            hover:text-[color:var(--accent)] ${
+            hover:text-[color:var(--accent)] transition-colors ${
               lit ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
             }`}
         >

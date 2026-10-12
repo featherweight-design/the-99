@@ -1018,8 +1018,8 @@ export function FilterPanel({
               // See `selectionOrnament`. The `open` branch above keeps its
               // accent either way: that one is transient and it means something.
               : selectionOrnament && selected.length > 0
-                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)]"
-                : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)]",
+                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)] transition-colors"
+                : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)] transition-colors",
         ].join(" ")}
       >
         {copy.triggerCount ? (

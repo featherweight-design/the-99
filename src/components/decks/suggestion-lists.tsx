@@ -80,7 +80,7 @@ export function SuggestionLists({
               type="button"
               onClick={applyAll}
               disabled={applying}
-              className="flex min-h-[44px] items-center rounded-[7px] px-[13px] text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:min-h-[32px]"
+              className="flex min-h-[44px] items-center rounded-[7px] px-[13px] text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:min-h-[32px] transition-colors"
             >
               {applying ? copy.applying : anyAnswered ? copy.applyRest : copy.applyAll}
             </button>

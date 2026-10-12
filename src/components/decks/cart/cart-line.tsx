@@ -70,7 +70,7 @@ export function CartLine({
             name={line.name}
             imageUri={line.imageUri ?? null}
             preview
-            className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
+            className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] transition-colors"
           >
             {line.name}
           </CardDetailTrigger>

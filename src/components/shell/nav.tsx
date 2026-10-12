@@ -523,7 +523,7 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
       // Below the tab bar, the menu backdrop and the modals, which all sit at
       // 40 or above. The lock's note is fixed inside it, so it inherits the
       // same rank over page content.
-      // Touch (`hover: none transition-colors`): the 88px labelled rail, `h-dvh` so the account
+      // Touch (`hover: none`): the 88px labelled rail, `h-dvh` so the account
       // control is measured against the visible viewport (audit V-E4), and the
       // short rule's 10px padding (V1).
       className="hidden md:flex md:flex-col items-center w-[var(--rail-w)] shrink-0 h-screen touch:h-dvh sticky top-0 z-30 py-[14px] touch-short:py-[10px]"
@@ -582,7 +582,7 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
                 active
                   ? "bg-elevated text-[color:var(--fg)]"
-                  : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)]"
+                  : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)] transition-colors"
               }`}
             >
               <NavIcon href={href} />

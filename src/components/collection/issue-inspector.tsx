@@ -398,7 +398,7 @@ export function IssueInspector({
       // §Close: --surface-raised circle, 1px --border-strong, hover accent.
       // Color is a utility, not inline style: an inline color outranks the
       // hover: variant and the accent hover never lands.
-      className="absolute top-[28px] right-[16px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)]"
+      className="absolute top-[28px] right-[16px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] transition-colors"
       style={{ width: 32, height: 32, fontSize: 15 }}
     >
       ✕

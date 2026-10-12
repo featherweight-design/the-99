@@ -62,7 +62,7 @@ export function ViewToggle<T extends string>({
         // `aria-pressed` stays false either way — this is paint only, and the
         // real value still resolves to one segment within the same render.
         const activeClasses =
-          "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)]";
+          "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)] transition-colors";
         const inactiveClasses = "bg-transparent text-[color:var(--fg-faint)] md:hover:text-[color:var(--fg-body)] transition-colors";
         // Tailwind's scanner reads the raw source text for class-like tokens — it cannot see a
         // `variant:` prefix assembled at runtime (`prefixEach`), so the unresolved paint below is
@@ -75,9 +75,9 @@ export function ViewToggle<T extends string>({
               : inactiveClasses
             : i === 0
               ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)] " +
-                "md:font-normal md:text-[color:var(--fg-faint)] md:bg-transparent md:[box-shadow:none] md:hover:text-[color:var(--fg-body)]"
+                "md:font-normal md:text-[color:var(--fg-faint)] md:bg-transparent md:[box-shadow:none] md:hover:text-[color:var(--fg-body)] transition-colors"
               : "font-normal bg-transparent text-[color:var(--fg-faint)] " +
-                "md:font-semibold md:text-[color:var(--fg)] md:bg-[color:var(--elevated)] md:[box-shadow:inset_0_0_0_1px_var(--border-strong)]";
+                "md:font-semibold md:text-[color:var(--fg)] md:bg-[color:var(--elevated)] md:[box-shadow:inset_0_0_0_1px_var(--border-strong)] transition-colors";
         return (
           <button
             key={option.value}

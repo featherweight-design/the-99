@@ -109,8 +109,8 @@ export function GridView({
         // and nothing else.
         const border =
           state === "over"
-            ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
-            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--accent)]";
+            ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)] transition-colors"
+            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--accent)] transition-colors";
         const pending = pendingOracleId === c.oracleId;
         // Facts plus the combo lemniscate, in Round 1's fixed order, collapsed to `+N` past
         // `MAX_TILE_MARKS` — see the constant above.

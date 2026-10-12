@@ -1612,7 +1612,7 @@ export function SetGridView(props: SetGridViewProps) {
                   sr-only to keep ANNOUNCING; it was never there to keep offering. */}
               <a
                 href="#extras"
-                className="text-[color:var(--accent)] hover:underline"
+                className="text-[color:var(--accent)] hover:underline transition-colors"
               >
                 {setPageCopy.sections.jump}
               </a>

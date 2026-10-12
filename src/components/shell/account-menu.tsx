@@ -493,8 +493,8 @@ export function AccountMenu({
             open
               ? "bg-[color:var(--elevated)] border-[color:var(--accent-hover)] text-[color:var(--accent-hover)]"
               : isPopover
-                ? "bg-[color:var(--surface)] border-[color:var(--border-strong)] text-[color:var(--fg-muted)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
-                : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
+                ? "bg-[color:var(--surface)] border-[color:var(--border-strong)] text-[color:var(--fg-muted)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)] transition-colors"
+                : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)] transition-colors"
           }`}
         >
           {identity.initials}

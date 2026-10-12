@@ -372,7 +372,7 @@ export function CutsPanelView({
                   </p>
                 </div>
                 <button type="button" onClick={() => void stop()} disabled={stopping}
-                  className="h-[44px] rounded-[8px] px-[14px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:py-[10px]">
+                  className="h-[44px] rounded-[8px] px-[14px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:py-[10px] transition-colors">
                   {copy.deeper.stop}
                 </button>
               </div>
@@ -617,11 +617,11 @@ function CutRow({ item, panel, deps, items, onSettled }: {
             {done ? copy.cutDone : copy.kept}
           </span>
           <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
-            className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${done ? "line-through [text-decoration-color:var(--fg-locked)] text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
+            className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] transition-colors ${done ? "line-through [text-decoration-color:var(--fg-locked)] text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
             {item.cutName}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer(done ? "undo" : "restore")}
-            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]">
+            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors">
             {done ? copy.undo : copy.showAgain}
           </button>
         </div>

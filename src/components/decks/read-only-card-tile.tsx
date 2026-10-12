@@ -50,7 +50,7 @@ export function ReadOnlyCardTile({
         className={`${TILE_SHELL} relative ${
           basic
             ? "[border:1px_dashed_var(--border-dashed)] bg-transparent"
-            : "bg-[color:var(--surface)] [border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)]"
+            : "bg-[color:var(--surface)] [border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
         }`}
         {...preview}
       >

@@ -63,7 +63,7 @@ export function UnresolvedRow({
         aria-controls={expanded ? panelId : undefined}
         aria-label={copy.rowAria(row.rawName, row.quantity)}
         onClick={expanded ? collapse : onToggle}
-        className={`${ROW_SHELL} w-full text-left px-[8px] py-[6px] md:px-[9px] md:py-[7px] min-h-[44px] cursor-pointer bg-[color:var(--surface-rail)] border-l-2 border-[color:var(--warning)] active:bg-[color:var(--surface-raised)] md:hover:bg-[color:var(--surface-raised)]`}
+        className={`${ROW_SHELL} w-full text-left px-[8px] py-[6px] md:px-[9px] md:py-[7px] min-h-[44px] cursor-pointer bg-[color:var(--surface-rail)] border-l-2 border-[color:var(--warning)] active:bg-[color:var(--surface-raised)] md:hover:bg-[color:var(--surface-raised)] transition-colors`}
       >
         <span
           className="flex-none text-center w-[7px] md:w-[8px] text-[11px] md:text-[12px]"

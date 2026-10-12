@@ -150,7 +150,7 @@ export function CoverageChip({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card)} bg-surface-raised hover:border-accent`}
+      className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card)} bg-surface-raised hover:border-accent transition-colors`}
       style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
     >
       {/* Dot — 6px. TWO states now: the marker carries severity, so the dot is
@@ -167,7 +167,7 @@ export function CoverageChip({
             wrapping. No `max-w` floor: the worst case measures ~350px, which fits
             the narrowest desktop this chip renders at, and the phone draws
             `CoverageRow` instead, which truncates. */}
-        <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg whitespace-nowrap">
+        <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg whitespace-nowrap transition-colors">
           {card.name}
         </span>
         {card.availability && markerState(card) && (

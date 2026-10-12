@@ -1372,7 +1372,7 @@ function CandidateRow({
             // fill that lights under the pointer would promise it can.
             + (inert
               ? ""
-              : " md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)] transition-colors"),
+              : " md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]"),
       ].join(" ")}
       {...previewHandlers}
       style={{
@@ -1626,7 +1626,7 @@ function CandidateRow({
             onClick={onDecline}
             disabled={inflight}
             aria-label={topOffCopy.list.declineAria(c.name)}
-            className="ml-auto md:ml-0 md:order-8 flex-none flex items-center justify-end min-h-[44px] md:min-h-0 md:w-[60px] font-mono text-[10.5px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-faint)] hover:[color:var(--fg-body)]"
+            className="ml-auto md:ml-0 md:order-8 flex-none flex items-center justify-end min-h-[44px] md:min-h-0 md:w-[60px] font-mono text-[10.5px] bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-default [color:var(--fg-faint)] hover:[color:var(--fg-body)] transition-colors"
           >
             <span className="[border-bottom:1px_dashed_var(--border-dashed)]">
               {topOffCopy.list.decline}

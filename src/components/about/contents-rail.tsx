@@ -141,7 +141,7 @@ export function ContentsRail({
                 className={`flex items-center justify-between gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[13px] ${
                   isCurrent
                     ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                    : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                    : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors"
                 }`}
               >
                 <span className="min-w-0 truncate">

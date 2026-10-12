@@ -135,7 +135,7 @@ export function ComboPartnersDetail({
             onClick={() => setBoundOpen((v) => !v)}
             aria-expanded={boundOpen}
             aria-label={comboAwarenessCopy.modal.boundMarkerAria}
-            className="flex flex-none items-center justify-center min-w-[44px] min-h-[52px] p-0 bg-transparent border-none cursor-pointer font-mono text-[11px] text-accent hover:text-accent-hover"
+            className="flex flex-none items-center justify-center min-w-[44px] min-h-[52px] p-0 bg-transparent border-none cursor-pointer font-mono text-[11px] text-accent hover:text-accent-hover transition-colors"
           >
             *
           </button>

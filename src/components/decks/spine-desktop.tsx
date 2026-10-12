@@ -669,7 +669,7 @@ export function SpineDesktop({
                   className={`flex items-center rounded-[8px] border-0 font-sans font-semibold ${
                     inert
                       ? "bg-[color:var(--elevated)] text-[color:var(--fg-disabled)]"
-                      : "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)]"
+                      : "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] transition-colors"
                   }`}
                   style={{
                     height: 29,

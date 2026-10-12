@@ -84,7 +84,7 @@ export function RoleCounterCell({
     "pt-[7px] px-[2px] pb-[6px] md:px-[14px] md:py-[11px] text-center md:text-left " +
     `bg-surface-sunken border ${borderClass}`;
   const interactive =
-    " cursor-pointer hover:bg-elevated-hover hover:border-border-strong transition-colors " +
+    " cursor-pointer hover:bg-elevated-hover hover:border-border-strong " +
     "active:bg-bg active:border-accent-shadow transition-colors";
 
   const face = (
@@ -164,11 +164,11 @@ export function RoleCounterCell({
               : `rec ${target}`}
         </span>
         {onSeeShelf ? (
-          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid">
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
             {addPanelCopy.strip.cellLink}
           </span>
         ) : balance ? (
-          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid">
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
             <span className="hidden md:inline">{tuningHubCopy.shortcuts.balanceMana}</span>
             <span className="md:hidden">{tuningHubCopy.shortcuts.balanceManaShort}</span>
           </span>

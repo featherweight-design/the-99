@@ -277,7 +277,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
               "text-[12.5px] md:text-[13px] px-[14px] md:px-[16px] py-[8px] md:py-[9px]",
               mode === m.id
                 ? "font-semibold bg-[color:var(--accent)] text-[color:var(--bg)] border border-solid border-[color:var(--accent)]"
-                : "bg-[color:var(--elevated)] text-[color:var(--fg-body)] border border-solid border-[color:var(--border-strong)] md:hover:border-[color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
+                : "bg-[color:var(--elevated)] text-[color:var(--fg-body)] border border-solid border-[color:var(--border-strong)] md:hover:border-[color:var(--accent)] md:hover:text-[color:var(--accent-hover)] transition-colors",
             ].join(" ")}
           >
             <span className="md:hidden">{m.shortLabel}</span>
@@ -328,7 +328,7 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
               "text-center rounded-[12px] p-[30px_18px] md:p-[40px] bg-[color:var(--surface-sunken)]",
               dragOver
                 ? "[border:1.5px_dashed_var(--accent)]"
-                : "[border:1.5px_dashed_var(--border-dashed)] md:hover:[border:1.5px_dashed_var(--accent)]",
+                : "[border:1.5px_dashed_var(--border-dashed)] md:hover:[border:1.5px_dashed_var(--accent)] transition-colors",
             ].join(" ")}
           >
             <input

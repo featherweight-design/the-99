@@ -142,7 +142,7 @@ function Entry({
         </h3>
         <Link
           href={entry.route}
-          className="font-mono text-[11px] text-[color:var(--accent)] hover:underline min-[1000px]:text-[11.5px]"
+          className="font-mono text-[11px] text-[color:var(--accent)] hover:underline min-[1000px]:text-[11.5px] transition-colors"
         >
           {entry.route}
           <PendingReporter href={entry.route} />
@@ -235,7 +235,7 @@ function WhatsNewIndex({ entries }: { entries: AboutEntry[] }) {
                 second link nested inside it. */}
             <a
               href={`#${e.id}`}
-              className="flex min-h-[48px] flex-col justify-center gap-[2px] py-[6px] hover:underline min-[1000px]:min-h-[40px] min-[1000px]:flex-row min-[1000px]:items-baseline min-[1000px]:justify-start min-[1000px]:gap-[12px]"
+              className="flex min-h-[48px] flex-col justify-center gap-[2px] py-[6px] hover:underline min-[1000px]:min-h-[40px] min-[1000px]:flex-row min-[1000px]:items-baseline min-[1000px]:justify-start min-[1000px]:gap-[12px] transition-colors"
             >
               <span className="text-[14.5px] font-medium text-[color:var(--fg)]">{e.title}</span>
               <span className="font-mono text-[11.5px] text-[color:var(--accent)]">{e.route}</span>

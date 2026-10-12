@@ -12,7 +12,7 @@ const LINK =
   "inline rounded-[6px] text-[14px] font-medium leading-[1.45] text-[color:var(--accent-hover)] " +
   "underline decoration-1 underline-offset-[3px] " +
   "decoration-[color-mix(in_srgb,var(--accent-hover)_45%,transparent)] " +
-  "hover:text-[color:var(--fg)] hover:decoration-[color:var(--fg)] transition-colors " +
+  "hover:text-[color:var(--fg)] hover:decoration-[color:var(--fg)] " +
   "active:text-[color:var(--fg)] active:decoration-[color:var(--fg)] active:decoration-2 transition-colors " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 

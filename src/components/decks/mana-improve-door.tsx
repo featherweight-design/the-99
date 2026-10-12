@@ -260,7 +260,7 @@ export function ImproveDoor({
           type="button"
           aria-expanded={one ? undefined : false}
           onClick={open}
-          className="inline-flex h-[44px] flex-[1_1_100%] cursor-pointer items-center justify-center rounded-[8px] border border-[color:var(--accent)] px-[16px] text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-[32px] md:flex-none"
+          className="inline-flex h-[44px] flex-[1_1_100%] cursor-pointer items-center justify-center rounded-[8px] border border-[color:var(--accent)] px-[16px] text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-[32px] md:flex-none transition-colors"
         >
           {copy.door.button}
         </button> : null}
@@ -448,7 +448,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
                 aria-expanded={how}
                 aria-describedby={how ? howId : undefined}
                 onClick={() => setHow((v) => !v)}
-                className={`inline-flex size-[18px] cursor-pointer items-center justify-center rounded-full border font-sans text-[10.5px] font-semibold ${how ? "border-[color:var(--accent)] text-[color:var(--accent)]" : "border-[color:var(--fg-faint)] text-[color:var(--fg-faint)] hover:text-[color:var(--fg)]"}`}
+                className={`inline-flex size-[18px] cursor-pointer items-center justify-center rounded-full border font-sans text-[10.5px] font-semibold ${how ? "border-[color:var(--accent)] text-[color:var(--accent)]" : "border-[color:var(--fg-faint)] text-[color:var(--fg-faint)] hover:text-[color:var(--fg)] transition-colors"}`}
               >
                 i
               </button>

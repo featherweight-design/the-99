@@ -755,8 +755,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   animation: breathe 5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
   will-change: transform;
 }
-/* These six were never timed by a handoff (their comments say so), so they take the shared curve
-   at their own short lengths and no beat: each answers a press or lands content in place. */
+/* These four were never timed by a handoff, so they take the shared curve at their own short
+   lengths and no beat: each answers a press. (`.anim-overview-in` and `.anim-slot-in` below keep
+   the timing their handoffs set.) */
 .anim-sheet-in { animation: filter-sheet-in 0.18s var(--motion-ease) both; }
 /* A line the Add cards sheet folded a duplicate into: its edge pulses once (240ms). */
 .anim-line-pulse { animation: line-pulse 240ms var(--motion-ease) both; }
@@ -779,10 +780,10 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-quickadd-in { animation: quickadd-in 0.14s var(--motion-ease) both; }
 /* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
    instant under reduced motion. */
-.anim-overview-in { animation: backdrop-in 0.15s var(--motion-ease) both; }
+.anim-overview-in { animation: backdrop-in 0.15s ease-out both; }
 /* I got it's held slot, and the row an undo brings back (handoff C9): one 150ms opacity crossfade
    in the row's own shell, so no height moves; a swap under reduced motion. */
-.anim-slot-in { animation: backdrop-in 0.15s var(--motion-ease) both; }
+.anim-slot-in { animation: backdrop-in 0.15s ease-out both; }
 /* `both`, so the first frame is the 0% state rather than a full-size card for one
    frame before the animation takes it. The blur underneath is set at its final value
    on the first frame and never animated: at 10px it is invisible in motion and

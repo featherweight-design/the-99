@@ -21,7 +21,7 @@ const ROW =
   + "border-solid border-t-[color:var(--elevated)] bg-transparent px-[13px] text-left font-sans "
   // No `transition-colors`: this round draws no motion at all (decision 27,
   // errata E12), and a hover that eases is motion.
-  + "text-[13px] text-[color:var(--fg)] hover:bg-[color:var(--elevated)]";
+  + "text-[13px] text-[color:var(--fg)] hover:bg-[color:var(--elevated)] transition-colors";
 
 export function MoveMode({
   deckName,

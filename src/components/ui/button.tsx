@@ -36,12 +36,12 @@ const BASE =
 // selection. Sharing the string keeps one definition of the bone fill rather
 // than a second one that drifts.
 export const PRIMARY =
-  "bg-[color:var(--fg)] text-[color:var(--bg)] hover:bg-[color:var(--fg-body)] transition-colors " +
+  "bg-[color:var(--fg)] text-[color:var(--bg)] hover:bg-[color:var(--fg-body)] " +
   "disabled:hover:bg-[color:var(--fg)] transition-colors";
 
 const GHOST =
   "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] " +
-  "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] transition-colors " +
+  "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] " +
   "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)] transition-colors";
 
 // The refresh's conformance geometry: "a 32px hairline pill (--border-strong,
@@ -88,10 +88,10 @@ type ButtonProps = SharedProps &
 // accent is status; a primary link keeps its own fill under the track (audit correction 1).
 const PENDING: Record<string, string> = {
   // Stated twice so pending also beats the accent hover when the pointer is still on the link:
-  // `has-` and `hover: transition-colors` are equally specific, and stylesheet order would otherwise decide.
+  // `has-` and `hover:` are equally specific, and stylesheet order would otherwise decide.
   [GHOST]:
     "has-[[data-pending]]:bg-[color:var(--elevated-hover)] has-[[data-pending]]:[border-color:var(--border-strong)] " +
-    "has-[[data-pending]]:[color:var(--fg)] hover:has-[[data-pending]]:[border-color:var(--border-strong)] transition-colors " +
+    "has-[[data-pending]]:[color:var(--fg)] hover:has-[[data-pending]]:[border-color:var(--border-strong)] " +
     "hover:has-[[data-pending]]:[color:var(--fg)] transition-colors",
 };
 

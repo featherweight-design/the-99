@@ -1958,7 +1958,7 @@ export function BuilderShell({
                     <button
                       type="button"
                       onClick={() => setView("consider")}
-                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent hover:text-accent-hover active:text-accent-mid"
+                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent hover:text-accent-hover active:text-accent-mid transition-colors"
                     >
                       {recommendationsCopy.sweptEmpty.cta}
                     </button>

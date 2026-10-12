@@ -262,7 +262,7 @@ export function BenchmarkLedger({
                     onClose();
                     onStats?.(link.card);
                   }}
-                  className="inline-flex min-h-[44px] cursor-pointer items-center gap-[7px] whitespace-nowrap border-0 bg-transparent p-0 font-mono text-[10.5px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] md:min-h-[24px]"
+                  className="inline-flex min-h-[44px] cursor-pointer items-center gap-[7px] whitespace-nowrap border-0 bg-transparent p-0 font-mono text-[10.5px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] md:min-h-[24px] transition-colors"
                 >
                   <span className="border-b border-dotted border-b-[color:var(--accent)]">{link.label}</span>
                   <span aria-hidden="true">→</span>

@@ -536,7 +536,7 @@ export function DiffRowKeep({
         "flex items-center justify-center cursor-pointer bg-transparent transition-colors",
         kept
           ? "text-[color:var(--accent)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
-          : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
+          : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)] transition-colors",
       ].join(" ")}
     >
       <span className="md:hidden">{kept ? copy.keptMobile : copy.keep}</span>
