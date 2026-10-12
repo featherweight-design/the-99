@@ -39,7 +39,7 @@ function draw(profile: ReturnType<typeof deckProfile>, locked: ReadonlySet<strin
   const verdict = slotDeck(profile);
   render(
     <CardDetailProvider fetchCard={async () => null}>
-      <BracketClimb verdict={verdict} profile={profile} locked={locked} />
+      <BracketClimb verdict={verdict} profile={profile} locked={locked} art={new Map()} />
     </CardDetailProvider>,
   );
   return verdict;
@@ -374,7 +374,7 @@ describe("the card opened from here", () => {
     const verdict = slotDeck(profile);
     render(
       <CardDetailProvider fetchCard={async () => CARD}>
-        <BracketClimb verdict={verdict} profile={profile} locked={NONE} />
+        <BracketClimb verdict={verdict} profile={profile} locked={NONE} art={new Map()} />
       </CardDetailProvider>,
     );
     fireEvent.click(trigger());

@@ -63,7 +63,7 @@ const SHAPES = {
 const draw = (key: keyof typeof SHAPES, declared: Bracket | null = null) => {
   const profile = SHAPES[key]();
   const verdict = slotDeck(profile);
-  render(<BracketClimb verdict={verdict} profile={profile} locked={new Set()} declared={declared} />);
+  render(<BracketClimb verdict={verdict} profile={profile} locked={new Set()} declared={declared} art={new Map()} />);
   return verdict;
 };
 
@@ -157,7 +157,7 @@ describe("the rung below", () => {
     });
     const verdict = slotDeck(profile);
     expect(verdict.permits).toEqual([4, 5]);
-    render(<BracketClimb verdict={verdict} profile={profile} locked={new Set()} />);
+    render(<BracketClimb verdict={verdict} profile={profile} locked={new Set()} art={new Map()} />);
     const below = rungs().find((r) => r.dataset.role === "below")!;
     expect(below.textContent).toContain("only three allowed at Upgraded");
   });
@@ -409,7 +409,7 @@ describe("see all brackets", () => {
     const profile = SHAPES["3"]();
     render(
       <CardDetailProvider fetchCard={async () => null}>
-        <BracketClimb verdict={slotDeck(profile)} profile={profile} locked={new Set()} />
+        <BracketClimb verdict={slotDeck(profile)} profile={profile} locked={new Set()} art={new Map()} />
       </CardDetailProvider>,
     );
     const link = screen.getByTestId("see-all-brackets");

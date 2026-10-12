@@ -2,9 +2,9 @@
 // Covers: sub-caption branching, absent vs degraded notes, retry flow,
 // and every edge count at both widths.
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 
@@ -926,5 +926,24 @@ describe("the list it hands the card", () => {
     );
     fireEvent.click(screen.getAllByRole("button", { name: /View details for Card 1/ })[0]);
     expect(await screen.findAllByRole("button", { name: /Next card: Renamed Two/ })).not.toHaveLength(0);
+  });
+});
+
+describe("CoverageSection hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  // The section mounts its own provider: no test harness supplies one here.
+  it("previews the printing a role card carries, with no provider above it", () => {
+    renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: [{ ...makeCard(1, 75), imageUri: "https://img.test/one.jpg" }] } });
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /Card 1/ }), { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/one.jpg");
   });
 });
