@@ -49,10 +49,7 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
   if (dismissed) return null;
 
   return (
-    <div
-      className="flex items-center gap-[9px] px-[16px] py-[10px] md:gap-[11px] md:px-[30px] md:py-[12px]"
-      style={{ background: "var(--surface-rail)", borderBottom: "1px solid var(--border)" }}
-    >
+    <ArrivalBandShell>
       <span
         aria-hidden
         className="text-[12px] md:text-[14px] leading-none"
@@ -81,6 +78,19 @@ export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
         <span className="md:hidden">✕</span>
         <span className="hidden md:inline">{copy.dismiss} ✕</span>
       </button>
+    </ArrivalBandShell>
+  );
+}
+
+/** The band itself: full width under the header, on the rail's ground. Shared with the precon
+ *  suggestion (R3 audit finding 5), so two strips under one header never differ. */
+export function ArrivalBandShell({ children, align = "center" }: { children: React.ReactNode; align?: "center" | "start" }) {
+  return (
+    <div
+      className={`flex ${align === "center" ? "items-center" : "items-start"} gap-[9px] px-[16px] py-[10px] md:gap-[11px] md:px-[30px] md:py-[12px]`}
+      style={{ background: "var(--surface-rail)", borderBottom: "1px solid var(--border)" }}
+    >
+      {children}
     </div>
   );
 }

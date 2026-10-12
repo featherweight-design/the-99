@@ -8,6 +8,7 @@ import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
+import { readDeckPreconLink } from "../../../lib/precons/link-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -234,6 +235,16 @@ export default async function DeckBuilderPage({
   // scoped in its own SQL, so it starts here with the rest and is awaited only where it is drawn.
   const preconArrivalRead = preconsEnabled() && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
     ? early(perf.timed("preconArrival", () => readPreconArrival(userId, id)))
+    : null;
+  // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
+  // counted at read and never stored (lock 2). Owner-scoped in its own SQL. A failed read draws
+  // neither door, as a linked deck does, rather than failing the deck.
+  const preconLinkRead = preconsEnabled()
+    ? early(perf.timed("preconLink", () => readDeckPreconLink(userId, id)).catch((error) => {
+      // not a fallback: an ornament drawn beside the page, never cached in it.
+      console.error("precons: the deck's link could not be read", error);
+      return null;
+    }))
     : null;
   const tokensRead = deckTokensEnabled()
     ? early(detailRead.then((d) => (d
@@ -574,6 +585,11 @@ export default async function DeckBuilderPage({
       // `?from=precon`: the one navigation "Start a deck from this" made. Left in the URL for the
       // same reason as `imported`; the strip's dismissal is the same per-deck flag.
       preconArrival={preconArrivalRead ? await preconArrivalRead : null}
+      // A linked deck gets neither door: no suggestion (lock 2). Its link is drawn in Versions as v0
+      // (precons PR 6b), and on the open precon with Unlink (PR 6a-2).
+      preconLink={preconLinkRead
+        ? await preconLinkRead.then((l) => (l && l.linked === null ? { suggestions: l.suggestions, picker: l.picker } : null))
+        : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
       // Left in the URL for the same reason. Its strip is dismissible too, but

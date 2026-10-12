@@ -18,7 +18,7 @@
 // The pending draft has no row either. It is not a version, and a rail that drew
 // it would be a rail whose top entry is not a record of anything.
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { formatDeckDate } from "../../lib/decks/format";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
@@ -239,11 +239,15 @@ function RailRow({
 export function VersionRail({
   deckId,
   versions,
+  foot = null,
 }: {
   deckId: string;
   /** Newest first, as `listVersions` returns them. The builder draws no
    *  `Versions` tab for a deck with none, so this is never empty. */
   versions: VersionSummary[];
+  /** Drawn after the last row: an unlinked deck's `Built from a precon?` row (precons R3 K5), where
+   *  v0 will land once linked. */
+  foot?: ReactNode;
 }) {
   const panelPrefix = useId();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -287,6 +291,7 @@ export function VersionRail({
             </div>
           );
         })}
+        {foot}
       </div>
     </div>
   );

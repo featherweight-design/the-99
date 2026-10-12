@@ -35,6 +35,9 @@ import { useDeclaration } from "./use-declaration";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
+import type { PreconMatch } from "../../lib/precons/link";
+import { PreconSuggestion } from "./precons/precon-suggestion";
+import { LinkPreconRow } from "./precons/precon-link-dialogs";
 import { UpdateStrip } from "./update-strip";
 import type { ArrivalPrintings, UpdateArrivalState } from "../../lib/decks/arrival";
 import { UnresolvedBanner } from "./unresolved-banner";
@@ -153,6 +156,9 @@ interface BuilderShellProps {
   preconArrival?: PreconArrival | null;
   /** The import's printing counts for the strip's clauses (deck printings), or null. */
   arrivalPrintings?: ArrivalPrintings | null;
+  /** An UNLINKED deck's precon link doors (precons R3): the shared rule's suggestions (K1, K15) and
+   *  the Versions foot row's picker (K5, K6). Null for a linked deck, or with precons off. */
+  preconLink?: { suggestions: PreconMatch[]; picker: PreconMatch[] } | null;
   /** Counts from the navigation an applied update made, or null on every other
    *  arrival. Like `arrivedFromImport`, true of one trip rather than of the deck. */
   updateArrival?: UpdateArrivalState | null;
@@ -286,6 +292,7 @@ export function BuilderShell({
   arrivedFromImport,
   preconArrival = null,
   arrivalPrintings = null,
+  preconLink = null,
   updateArrival = null,
   shoppingFigures = {},
   newestAsOf,
@@ -1593,6 +1600,9 @@ export function BuilderShell({
             {preconArrival && (
               <PreconArrivalBand deckId={deck.id} arrival={preconArrival} />
             )}
+            {preconLink && preconLink.suggestions.length > 0 && (
+              <PreconSuggestion deckId={deck.id} deckName={deck.name} suggestions={preconLink.suggestions} />
+            )}
             {arrivedFromImport && unresolvedRows.length === 0 && (
               /* A length, not `counts.total`: the strip's sentence says
                  "lines", and a Moxfield export writes basics as one line
@@ -1786,7 +1796,11 @@ export function BuilderShell({
               </div>
             ) : view === "versions" ? (
               <div id="panel-versions" role="tabpanel" aria-labelledby="tab-versions">
-                <VersionRail deckId={deck.id} versions={versions} />
+                <VersionRail
+                  deckId={deck.id}
+                  versions={versions}
+                  foot={preconLink ? <LinkPreconRow deckId={deck.id} deckName={deck.name} picker={preconLink.picker} /> : null}
+                />
               </div>
             ) : view === "consider" ? (
               <ConsiderPanel
