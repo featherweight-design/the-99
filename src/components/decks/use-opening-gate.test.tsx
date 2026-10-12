@@ -195,3 +195,12 @@ describe("deckAnalyzed", () => {
     expect(deckAnalyzed({ storedPermits: null, hasReading: false, storedUnknown: true })).toBe(true);
   });
 });
+
+describe("isOpening after a failed stored read", () => {
+  it("waits on the peek, since a reading may yet be found", () => {
+    const failed = { shown: true, kind: "idle", storedPermits: null, peekSettled: false };
+    expect(isOpening(failed)).toBe(false);
+    expect(isOpening({ ...failed, storedUnknown: true })).toBe(true);
+    expect(isOpening({ ...failed, storedUnknown: true, peekSettled: true })).toBe(false);
+  });
+});

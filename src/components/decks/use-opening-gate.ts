@@ -24,13 +24,16 @@ export function isOpening({
   kind,
   storedPermits,
   peekSettled,
+  storedUnknown = false,
 }: {
   shown: boolean;
   kind: string;
   storedPermits: readonly unknown[] | null;
   peekSettled: boolean;
+  /** The page's stored read FAILED: there may be a reading to fetch, so the peek is waited on. */
+  storedUnknown?: boolean;
 }): boolean {
-  return shown && kind === "idle" && storedPermits !== null && !peekSettled;
+  return shown && kind === "idle" && (storedPermits !== null || storedUnknown) && !peekSettled;
 }
 
 /**

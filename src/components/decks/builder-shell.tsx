@@ -501,7 +501,7 @@ export function BuilderShell({
   );
   const holding = holdsOpening({
     analyzed: deckAnalyzed({ storedPermits, hasReading: reading !== null, storedUnknown: storedPermitsUnknown }),
-    peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled }),
+    peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
     suggestionsSettled: tuningHubEnabled || tuningSettled === visitKey,
