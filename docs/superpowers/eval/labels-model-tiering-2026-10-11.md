@@ -68,17 +68,40 @@ Input was identical for both, 180,347 tokens; output was 47,020 (Haiku) and 44,1
 
 ## Limits of this result
 
-- **One run per model, no control.** The eval did not re-ask Sonnet 4.5, so it cannot say how much of the 49% and 30% job-set misses is ordinary run-to-run noise on borderline themes. A Sonnet 4.5 self-repeat on the same 299 cards would cost about $1.20 in real time ($0.60 in batch) and would set the ceiling any candidate could reach. It did not fit the cap.
+- **One run per candidate.** The control below re-asks Sonnet 4.5 once, so it gives one observed reference point for 4.5's self-agreement, not its spread or a proven ceiling.
 - **The reference is not truth.** Where a stored label is wrong, a candidate that disagrees scores a miss.
-- **Real time, not Batch.** Production uses the Batch API at half price; the batch rows above are the standard cost halved, not a batch run.
+- **Real time, not Batch, for the candidates.** Production uses the Batch API at half price; the candidates' batch rows above are the standard cost halved, not a batch run. Only the Sonnet 4.5 control was a real batch.
 - **Pricing.** `scripts/eval/lib/pricing.mts` already prices both models (Haiku 5.5 at the up-to-100K-token rate). The label prompts here are about 600 input tokens per card and about 9,000 per request, so the higher Haiku tier never applies and the repository holds no rate for it. `scripts/lib/card-labels-pricing.mjs` has no row for either model; it needs one, tied to the canonical table by `card-labels-pricing.test.mts`, only if a model is adopted.
+
+## Control: Sonnet 4.5 asked again (2026-10-11)
+
+The same 299 cards, the same prompt (version 8, batch size 12), sent to Sonnet 4.5 by Batch exactly as the labeler sends it (`labels-tiering.mts --control`), scored against the stored Sonnet 4.5 labels with the same pairing. This is one observation of the stored label's own run-to-run agreement, a reference point for the candidates rather than a proven ceiling.
+
+| | Sonnet 4.5 again | Sonnet 5.5 | Haiku 5.5 |
+|---|---|---|---|
+| Same job set as the stored label | 75.9% (227) | 69.6% | 47.2% |
+| Same jobs and every limit | 60.2% (180) | 51.2% | 24.4% |
+| Role jobs identical on the card | 94.6% (283) | 88.0% | 77.3% |
+| Role recall / precision | 94.7% / 96.5% | 86.3% / 94.2% | 82.4% / 82.4% |
+| Theme recall / precision | 83.2% / 86.5% | 79.4% / 87.4% | 66.8% / 72.3% |
+| Jobs rejected by the parser | 0 | 1 | 10 |
+
+Measured spend: $0.58 (135,988 input and 50,139 output tokens, batch rates), against a $0.60 estimate; the budget guard's reservation ceiling was set to $4 for the run because it reserves every reply at `max_tokens` twice over. Per 1,000 cards that is $1.94 at batch rates, Sonnet 4.5's measured cost, against the $2.01 derived above from Sonnet 5.5's token counts. (The script's own summary line printed $0.97 for this mode because it halved an already batch-priced figure; fixed in this change.)
+
+What it says:
+
+- **In this run, most of the job-set miss is also present in 4.5 itself.** Sonnet 4.5 disagrees with its own stored label on 24% of cards (40% on full jobs and limits), so Sonnet 5.5's 30% (49%) is 6 points (9) beyond that one observation. One repeat gives no spread, so these are observed differences, not a significance test.
+- **The role gap is the largest observed difference.** 4.5 reproduces 94.6% of cards' role jobs against 5.5's 88.0%, and recall drops 94.7% to 86.3%. Roles are what mana-base and ramp counts read; themes differ by about 4 points of recall, which is within what a self-repeat moves.
+- **Per-label noise sits on the same labels.** The control's weak rows (`role:tutor` 77.1%, `theme:spellslinger` 40.0%, `theme:tribal` 65.4%) are borderline themes, where any model would score low.
+
+Recommendation: stay on Sonnet 4.5. Sonnet 5.5 is closer than the single run read, but its 6.6-point role gap is a measured loss on the labels that feed counts, for a saving of about a third ($1.34 against $1.94 per 1,000 cards at batch rates).
 
 ## Decision for Hugh
 
 Nothing is changed. The evidence:
 
 - **Haiku 5.5 is not safe as a drop-in.** It costs about 3.5% of Sonnet 4.5 but drops the `land` role on three lands in four, invents jobs on thin cards and returns invalid kinds. A mana-base or ramp count built on its labels would be wrong.
-- **Sonnet 5.5 comes close on roles** (88% of cards identical on every role, 94% precision, land 100%) at about two thirds of the 4.5 cost, but it matches the stored label in full on only 51% of cards. Whether the other 49% is drift or noise is what the missing 4.5 self-repeat would say.
+- **Sonnet 5.5 comes close on roles** (88% of cards identical on every role, 94% precision, land 100%) at about two thirds of the 4.5 cost, but it matches the stored label in full on only 51% of cards. The 4.5 self-repeat above gives one reference point: 4.5 reproduced its stored label on 60% of cards in full, so 51% is nine points under that single observation, and the role gap (88.0% against 94.6%) is the largest difference observed.
 - **Either model needs two code changes first** (`acceptsTemperature` and `needsThinkingDisabled`, above), and `LABEL_PROMPT_VERSION`'s freshness rules mean relabeling under a new model is a deliberate `list:` build, not a silent restale.
 
-Options: (a) stay on Sonnet 4.5; (b) spend about $0.60 (batch) on the 4.5 self-repeat control to decide whether Sonnet 5.5 is a safe switch for roughly a third off the label bill; (c) try Haiku 5.5 only on a narrow step where the land role does not matter, after a prompt trial on lands. My lean is (b): it is the cheapest way to find out whether Sonnet 5.5's 51% is a real gap.
+Options: (a) stay on Sonnet 4.5 (the control above supports it); (b) ~~the 4.5 self-repeat control~~, now run (above) to decide whether Sonnet 5.5 is a safe switch for roughly a third off the label bill; (c) try Haiku 5.5 only on a narrow step where the land role does not matter, after a prompt trial on lands. My lean, now that (b) is done, is (a).

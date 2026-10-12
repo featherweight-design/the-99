@@ -5,7 +5,13 @@
  * claude-sonnet-4-5? A stratified sample of staging's FRESH labels is re-asked under the SAME prompt
  * (`buildRequest`, version 8) of each candidate, real time, and compared with the scorer's own pairing.
  *
- *   pnpm tsx scripts/eval/labels-tiering.mts <out.json> [--cap 1] [--per-stratum 30] [--batch 12]
+ *   pnpm tsx scripts/eval/labels-tiering.mts <out.json> [--cap 1] [--per-stratum 30] [--batch 12] [--control]
+ *
+ * `--control` re-asks the REFERENCE model (Sonnet 4.5) itself, by batch, on the sample already in <out.json>: the
+ * self-repeat that says how much of a candidate's miss is run-to-run noise. The request is exactly the labeler's,
+ * with no override. The budget guard counts every model already in <out.json> and reserves each reply at
+ * `max_tokens` twice over, so a control on a file holding earlier spend needs `--cap` well above 1 (it ran at 4;
+ * measured spend was $0.58).
  *
  * STAGING is read-only (`connectStaging`); nothing is written to any database. Every reply is priced
  * as it lands and the run refuses a request whose worst case could cross `--cap`, counting what the
@@ -18,6 +24,7 @@ import { sql } from "drizzle-orm";
 import { requireEnv } from "../lib/env.mjs";
 import { bestPairing } from "../lib/card-labels-pairing.mjs";
 import { connectStaging } from "./lib/staging.mjs";
+import { countTokens, sendBatch } from "./lib/batch.mjs";
 import { costUsd, worstCaseUsd } from "./lib/pricing.mjs";
 import { buildRequest, LABEL_PROMPT_VERSION, labelIsFresh, renderBody, SYSTEM, SYSTEM_TOKENS_BOUND } from "../../src/lib/labels/prompt";
 import { readReply } from "../../src/lib/labels/parse";
@@ -26,7 +33,7 @@ import type { Job } from "../../src/lib/labels/types";
 
 const args = process.argv.slice(2);
 const out = args.find((a) => !a.startsWith("--") && !/^\d/.test(a));
-if (!out) throw new Error("usage: labels-tiering.mts <out.json> [--cap N] [--per-stratum N] [--batch N]");
+if (!out) throw new Error("usage: labels-tiering.mts <out.json> [--cap N] [--per-stratum N] [--batch N] [--control]");
 const flag = (name: string, d: number) => {
   const i = args.indexOf(`--${name}`);
   if (i < 0) return d;
@@ -37,8 +44,9 @@ const flag = (name: string, d: number) => {
 const CAP = flag("cap", 1);
 const PER = flag("per-stratum", 30);
 const BATCH = flag("batch", 12); // production's CARDS_PER_REQUEST (src/lib/labels/plan.ts)
-const MODELS = ["claude-haiku-5-5", "claude-sonnet-5-5"] as const;
 const REFERENCE = "claude-sonnet-4-5";
+const CONTROL = args.includes("--control");
+const MODELS = (CONTROL ? [REFERENCE] : ["claude-haiku-5-5", "claude-sonnet-5-5"]) as readonly string[];
 
 type Card = { oracleId: string; name: string; mana_cost: string | null; type_line: string; oracle_text: string | null; layout: string };
 type Run = {
@@ -106,6 +114,35 @@ for (const model of MODELS) {
   const m = (run.models[model] ??= { replies: {}, rejected: [], usd: 0, usage: [], failed: 0 });
   m.failed = 0; // counted per invocation: a resumed run retries what is missing and must not inherit the last run's tally
   const todo = run.sample.filter((s) => !(s.card.oracleId in m.replies));
+  if (CONTROL) {
+    const groups: typeof todo[] = [];
+    for (let i = 0; i < todo.length; i += BATCH) groups.push(todo.slice(i, i + BATCH));
+    if (groups.length === 0) continue;
+    const sent = groups.map((g, i) => ({ customId: `c-${i}`, params: buildRequest(`c-${i}`, model, g.map((x) => x.card)).params as never }));
+    // Input tokens from the free counting endpoint, per request: a character count is not a token ceiling for non-ASCII text.
+    let worst = 0;
+    for (let i = 0; i < groups.length; i++) worst += worstCaseUsd(model, await countTokens(sent[i].params), (sent[i].params as { max_tokens: number }).max_tokens, { batch: true });
+    if (spent() + worst > CAP) { console.log(`STOP ${model}: worst case $${worst.toFixed(3)} would cross the $${CAP} cap (spent $${spent().toFixed(3)})`); save(); process.exit(0); }
+    const { results } = await sendBatch(sent, (line) => console.log(line));
+    for (const r of results) {
+      const g = groups[Number(r.customId.slice(2))];
+      if (!r.ok) { m.failed += g.length; m.rejected.push(`${r.customId}: ${r.reason}`); continue; }
+      const usd = costUsd(model, r.message.usage as never, { batch: true });
+      m.usd += usd;
+      m.usage.push({ input: r.message.usage.input_tokens, output: r.message.usage.output_tokens });
+      const read = readReply(r.message.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join(""), g.map((x) => x.card.name));
+      if (read === null) { m.failed += g.length; m.rejected.push(`${r.customId}: unreadable reply (stop ${r.message.stop_reason})`); continue; }
+      m.rejected.push(...read.rejected);
+      for (const x of g) {
+        const jobs = read.byName.get(x.card.name);
+        if (jobs) m.replies[x.card.oracleId] = searchesOnlyLands(x.card.oracle_text) ? jobs.filter((j) => j.kind !== "tutor") : jobs;
+        else m.failed++;
+      }
+    }
+    console.log(`${model}: ${Object.keys(m.replies).length} replied, ${m.failed} failed, $${m.usd.toFixed(4)}`);
+    save();
+    continue;
+  }
   for (let i = 0; i < todo.length; i += BATCH) {
     const group = todo.slice(i, i + BATCH);
     const cards = group.map((g) => g.card);
@@ -212,7 +249,9 @@ for (const model of MODELS) {
     console.log(`  ${space} recall ${pct(t.tp, t.tp + t.fn)}  precision ${pct(t.tp, t.tp + t.fp)}`);
   }
   console.log(`  jobs the parser rejected: ${m.rejected.length}`);
-  console.log(`  per 1,000 cards: standard $${((m.usd / Math.max(1, asked.length)) * 1000).toFixed(2)}, batch $${((m.usd / Math.max(1, asked.length)) * 500).toFixed(2)}`);
+  // `m.usd` is the price actually billed: real-time for a candidate, batch for the control.
+  const perThousand = (m.usd / Math.max(1, asked.length)) * 1000;
+  console.log(CONTROL ? `  per 1,000 cards, as billed (batch): $${perThousand.toFixed(2)}` : `  per 1,000 cards: standard $${perThousand.toFixed(2)}, batch $${(perThousand / 2).toFixed(2)}`);
   writeFileSync(`${out.replace(/\.json$/, "")}-${model}-diffs.json`, JSON.stringify(diffs, null, 1));
 }
 process.exit(0);
