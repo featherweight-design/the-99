@@ -20,10 +20,19 @@ export type ManaInputs = {
   landText: ReadonlyMap<string, string | null>;
 };
 
+/** What the reads take from a deck: a `DeckDetail` is one, and so is a caller that read the list itself
+ *  (Find a deck's read, which judges a basic land's cut by this deck's Mana Balance). */
+type ManaCommander = Pick<DeckDetail["commander"], "name" | "typeLine" | "manaCost" | "colorIdentity">;
+export type ManaDeck = {
+  cards: readonly Pick<DeckDetail["cards"][number], "oracleId" | "name" | "typeLine" | "manaCost" | "cmc" | "quantity" | "role">[];
+  commander: ManaCommander;
+  partner: ManaCommander | null;
+};
+
 /** The three reads the Colors card makes plus the text of each land for the tapped count, as the rows
  *  the engine counts. Null when a text read failed: the evidence would then state what the reads
  *  never learned. */
-export async function loadManaInputs(deck: Pick<DeckDetail, "cards" | "commander" | "partner">): Promise<ManaInputs | null> {
+export async function loadManaInputs(deck: ManaDeck): Promise<ManaInputs | null> {
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const deckColors = commanders.flatMap((c) => c.colorIdentity);
   const labels = await loadStatsLabels(deck.cards);
@@ -47,7 +56,7 @@ export async function loadManaInputs(deck: Pick<DeckDetail, "cards" | "commander
 }
 
 /** Mana Balance's evidence for a deck. */
-export async function loadManaBalance(deck: Pick<DeckDetail, "cards" | "commander" | "partner">): Promise<ManaBalance | null> {
+export async function loadManaBalance(deck: ManaDeck): Promise<ManaBalance | null> {
   const inputs = await loadManaInputs(deck);
   return inputs && readManaBalance(inputs);
 }

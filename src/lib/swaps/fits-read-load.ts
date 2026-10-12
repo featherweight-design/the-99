@@ -9,6 +9,7 @@ import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS }
 import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { loadFits, type FitsRead } from "./fits";
+import { loadBasicCuts } from "./fits-read-basics";
 import { fitsReadCandidates, type CandidateFacts, type FitsDeckBlock, type FitsReadInputs, type PlanSource, type ReadCardFacts } from "./fits-read";
 
 /**
@@ -158,7 +159,12 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
     };
   });
 
-  const candidateFacts: CandidateFacts[] = candidates.map((c) => ({ deckId: c.id, need: c.need, inclusion: inclusion.get(c.id) ?? null }));
+  // Which basics each candidate can spare for this card (Hugh's rule, `basicCutFair`).
+  const basicCuts = await loadBasicCuts(deckRows.filter((d) => candidateIds.has(d.id)), subjectRow.type_line);
+  const candidateFacts: CandidateFacts[] = candidates.map((c) => ({
+    deckId: c.id, need: c.need, inclusion: inclusion.get(c.id) ?? null,
+    ...(basicCuts.has(c.id) ? { basicCuts: basicCuts.get(c.id)! } : {}),
+  }));
   return {
     fits,
     inputs: {

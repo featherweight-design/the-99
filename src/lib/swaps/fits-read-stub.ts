@@ -50,7 +50,9 @@ export function stubFitsReply(inputs: FitsReadInputs, prompt: Pick<FitsReadPromp
     if (!d || !deck || !subject || !commander) return [];
     if (mode === "failed") return [{ deck, sentence: `{${subject}} works beside {${commander}}.`, cut: `{${subject}}`, cites: [] }];
     const never = new Set([...d.keyCardIds, ...d.lockedIds]);
-    const cut = d.list.find((x) => !never.has(x.oracleId) && !BASIC(x.typeLine));
+    // A basic only where the deck can spare it, and only when nothing else may go.
+    const spare = new Set(c.basicCuts ?? []);
+    const cut = d.list.find((x) => !never.has(x.oracleId) && !BASIC(x.typeLine)) ?? d.list.find((x) => spare.has(x.oracleId) && !never.has(x.oracleId));
     return [{ deck, sentence: `{${subject}} works beside {${commander}}.`, cut: cut ? `{${keyOfCard.get(cut.oracleId)}}` : null, cites: [] }];
   });
   return { ok: true, value: { picks }, usage: USAGE };
