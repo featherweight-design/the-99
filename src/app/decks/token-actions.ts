@@ -20,11 +20,13 @@ function revalidateTokenSurfaces(deckId: string): void {
   revalidatePath("/decks/shopping");
 }
 
-async function guard(rawDeckId: unknown, rawTokenId: unknown): Promise<
+async function guard(rawDeckId: unknown, rawTokenId: unknown, flag: unknown): Promise<
   { off: true } | { off: false; userId: string; deckId: string; tokenId: string }
 > {
   if (!deckTokensEnabled()) return { off: true };
   const userId = await requireUserId();
+  // A Server Action argument is a runtime value: `"false"` is a string, and truthy.
+  if (typeof flag !== "boolean") throw new Error("bad token input");
   if (typeof rawDeckId !== "string" || typeof rawTokenId !== "string" || !isUuid(rawDeckId) || !isUuid(rawTokenId)) {
     throw new Error("bad token input");
   }
@@ -36,7 +38,7 @@ async function guard(rawDeckId: unknown, rawTokenId: unknown): Promise<
 
 /** `Add to Shopping` (joined) and its undo (not joined), for one token of one deck. */
 export async function setTokenJoined(deckId: string, tokenOracleId: string, joined: boolean): Promise<TokenActionResult> {
-  const g = await guard(deckId, tokenOracleId);
+  const g = await guard(deckId, tokenOracleId, joined);
   if (g.off) return { ok: false, reason: "off" };
   if (joined) {
     if ((await joinToken(g.userId, g.deckId, g.tokenId)) === "notThisDeck") return { ok: false, reason: "notThisDeck" };
@@ -49,12 +51,12 @@ export async function setTokenJoined(deckId: string, tokenOracleId: string, join
 
 /** `I have one` (held) and its undo, for one token. Holding it takes it off this deck's Shopping list. */
 export async function setTokenHeld(deckId: string, tokenOracleId: string, held: boolean): Promise<TokenActionResult> {
-  const g = await guard(deckId, tokenOracleId);
+  const g = await guard(deckId, tokenOracleId, held);
   if (g.off) return { ok: false, reason: "off" };
   if (held) {
     if ((await markOwnedOnDeck(g.userId, g.deckId, g.tokenId)) === "notThisDeck") return { ok: false, reason: "notThisDeck" };
   } else {
-    await unmarkOwned(g.userId, g.tokenId);
+    if ((await unmarkOwned(g.userId, g.deckId, g.tokenId)) === "notThisDeck") return { ok: false, reason: "notThisDeck" };
   }
   revalidateTokenSurfaces(g.deckId);
   return { ok: true };

@@ -17,13 +17,18 @@ vi.mock("../../db", () => {
         onConflictDoNothing: async () => { stub.log.push({ op: "insert", table: getTableName(t as never), values }); },
       }),
     }),
-    delete: (t: object) => ({ where: async (where: unknown) => { stub.log.push({ op: "delete", table: getTableName(t as never), where }); } }),
+    delete: (t: object) => ({
+      where: (where: unknown) => {
+        stub.log.push({ op: "delete", table: getTableName(t as never), where });
+        return Object.assign(Promise.resolve(), { returning: async () => [] });
+      },
+    }),
     select: () => ({ from: () => ({ where: () => ({ limit: async () => (stub.linked ? [{ id: "t" }] : []) }) }) }),
   };
   return { db: { ...tx, transaction: async (fn: (t: typeof tx) => Promise<void>) => fn(tx) } };
 });
 
-import { joinToken, leaveToken, markOwnedOnDeck } from "./joins";
+import { joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "./joins";
 
 const dialect = new PgDialect();
 const T = "00000000-0000-4000-8000-0000000000a1";
@@ -68,5 +73,19 @@ describe("markOwnedOnDeck", () => {
     stub.linked = false;
     expect(await markOwnedOnDeck("u1", "d1", T)).toBe("notThisDeck");
     expect(stub.log).toEqual([]);
+  });
+});
+
+describe("unmarkOwned", () => {
+  it("refuses, deleting nothing, for a token the deck does not make (the delete itself is account-wide)", async () => {
+    stub.linked = false;
+    expect(await unmarkOwned("u1", "d1", T)).toBe("notThisDeck");
+    expect(stub.log).toEqual([]);
+  });
+
+  it("deletes the hand mark only, for a token the deck makes", async () => {
+    expect(await unmarkOwned("u1", "d1", T)).toBe("done");
+    expect(stub.log.map((l) => `${l.op}:${l.table}`)).toEqual(["delete:token_ownership"]);
+    expect(dialect.sqlToQuery(stub.log[0].where as SQL).params).toEqual(["u1", T, "manual"]);
   });
 });

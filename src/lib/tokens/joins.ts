@@ -46,7 +46,12 @@ export async function markOwnedOnDeck(userId: string, deckId: string, tokenOracl
   return "done";
 }
 
-/** Unmarks a HAND mark; an upload row is left standing. */
-export async function unmarkOwned(userId: string, tokenOracleId: string): Promise<void> {
+/**
+ * Unmarks a HAND mark; an upload row is left standing. Held to the same rule as every other write
+ * here: the token must be one this deck makes, because the unmark itself is account-wide.
+ */
+export async function unmarkOwned(userId: string, deckId: string, tokenOracleId: string): Promise<TokenWrite> {
+  if (!(await deckMakesToken(deckId, userId, tokenOracleId))) return "notThisDeck";
   await unmarkTokenOwned(userId, tokenOracleId);
+  return "done";
 }

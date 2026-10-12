@@ -36,6 +36,13 @@ describe("token actions", () => {
     expect(stub.revalidate).not.toHaveBeenCalled();
   });
 
+  it("refuse a flag that is not a boolean, before reading the deck", async () => {
+    await expect(setTokenJoined(DECK, TOKEN, "false" as never)).rejects.toThrow("bad token input");
+    await expect(setTokenHeld(DECK, TOKEN, 0 as never)).rejects.toThrow("bad token input");
+    expect(stub.requireDeck).not.toHaveBeenCalled();
+    expect(stub.join).not.toHaveBeenCalled();
+  });
+
   it("refuse a malformed id before reading the deck", async () => {
     await expect(setTokenJoined("nope", TOKEN, true)).rejects.toThrow("bad token input");
     await expect(setTokenHeld(DECK, 5 as never, true)).rejects.toThrow("bad token input");
@@ -53,7 +60,7 @@ describe("token actions", () => {
     await setTokenHeld(DECK, TOKEN, true);
     expect(stub.mark).toHaveBeenCalledWith("user_1", DECK, TOKEN);
     await setTokenHeld(DECK, TOKEN, false);
-    expect(stub.unmark).toHaveBeenCalledWith("user_1", TOKEN);
+    expect(stub.unmark).toHaveBeenCalledWith("user_1", DECK, TOKEN);
   });
 
   it("retire the deck page and the cart, never Home or the deck list", async () => {
@@ -64,8 +71,10 @@ describe("token actions", () => {
   it("report a token the deck does not make, and revalidate nothing", async () => {
     stub.join.mockResolvedValue("notThisDeck");
     stub.mark.mockResolvedValue("notThisDeck");
+    stub.unmark.mockResolvedValue("notThisDeck");
     expect(await setTokenJoined(DECK, TOKEN, true)).toEqual({ ok: false, reason: "notThisDeck" });
     expect(await setTokenHeld(DECK, TOKEN, true)).toEqual({ ok: false, reason: "notThisDeck" });
+    expect(await setTokenHeld(DECK, TOKEN, false)).toEqual({ ok: false, reason: "notThisDeck" });
     expect(stub.revalidate).not.toHaveBeenCalled();
   });
 });

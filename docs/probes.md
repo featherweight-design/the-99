@@ -1815,7 +1815,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   decks, then delete the branch. It checks Aang (four tokens, six makers, the commander counted) and Omnath (14,
   `Copy` among them), the three states, that an unrelated token is refused, that `I have one` takes the token
   off this deck's list, and that a hand mark leaves every other token not known. Measured 2026-10-11 on a scratch
-  branch of staging: all 17 checks passed.
+  branch of staging: all 18 checks passed, and the account's own rows were put back exactly.
 
 - `pnpm probe:tokens` reproduces the tokens brief's Fixtures
   (`docs/superpowers/design-briefs/2026-10-11-tokens-for-my-deck.md`) against the real bytes. It builds
