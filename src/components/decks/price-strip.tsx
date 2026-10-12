@@ -49,9 +49,15 @@ export function PriceStrip({
 }) {
   // The figure includes priced tokens, so it is as old as the oldest price in it. A deck whose card prices are
   // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
-  const dated = tokens && tokens.priced > 0
-    ? (summary.pricedCopies === 0 ? tokenOwnProvenance : tokenProvenance) ?? provenance ?? tokenOwnProvenance
-    : provenance ?? (tokens ? tokenOwnProvenance : null);
+  // Which feeds the figure draws on: the rows that carry a price when any does, else the rows themselves.
+  const anyPriced = summary.pricedCopies > 0 || (tokens?.priced ?? 0) > 0;
+  const cardsIn = anyPriced ? summary.pricedCopies > 0 : summary.totalCopies > 0;
+  const tokensIn = tokens !== null && (anyPriced ? tokens.priced > 0 : tokens.rows.length > 0);
+  const dated = tokensIn
+    // Tokens alone: their own feed's date, even when it is the newer one. Both: the older of the two (the
+    // page supplies `tokenProvenance` only when the tokens' is the older).
+    ? (cardsIn ? tokenProvenance ?? provenance ?? tokenOwnProvenance : tokenOwnProvenance ?? provenance)
+    : provenance;
   if (!dated) return null;
 
   const tokenN = tokens?.rows.length ?? 0;

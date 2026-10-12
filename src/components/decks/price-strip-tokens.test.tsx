@@ -70,6 +70,15 @@ describe("PriceStrip with tokens joined", () => {
     expect(href(container)).not.toBe("");
   });
 
+  it("dates an unpriced token-only list by the tokens' feed, not the cards'", () => {
+    const own: ProvenanceForm = { behind: true, when: "3 September" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={fresh} shoppingCards={[]} tokens={tokens({ priced: 0, cents: 0 })} tokenOwnProvenance={own} />,
+    );
+    expect(container.textContent).toContain("3 September");
+    expect(container.textContent).not.toContain("Monday");
+  });
+
   it("draws nothing when neither source can date it", () => {
     const { container } = render(
       <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={null} shoppingCards={[]} tokens={tokens()} />,
