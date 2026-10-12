@@ -312,7 +312,7 @@ Copy strings are recorded for identification only; copy content is `/copy-review
 
 | Property | 390 | 1300 | Source |
 |---|---|---|---|
-| placement | own line below the action row | inline in the action row, after Stop | V2:570 / V2:471 |
+| placement | own line below the action row | inline in the action row, after the `Reading…` press (it followed Stop until Stop was removed on 2026-10-12) | V2:570 / V2:471 |
 | font-family | mono | mono | V2:570 / V2:471 |
 | font-size | 9.5px | 11px | V2:570 / V2:471 |
 | color | var(--fg-faint) | var(--fg-faint) | V2:570 / V2:471 |
@@ -1221,8 +1221,8 @@ logged games; `markedCount` stands for games carrying a worked/hurt mark.
 | S-B Never run, no games | as S-A with `gameCount == 0` | `noGamesLead`, dashed "none logged" row + 2 rows ("This list, against the recommended mix", collection), primary, first-run note | gameCount = 0, Log a game → setView('games') | D1 (1300), E3 (390) |
 | S-C Never run, games unmarked | as S-A with `gameCount > 0` and no game marked | `unmarkedLead`, 4 rows with games count "{n} games · no marks", primary, first-run note | gameCount, markedCount = 0 | E5 (1300), E5b (390) |
 | Intent ask shown | RETIRED (H35) — superseded by the empty-state field and header pencil, neither of which is drawn in this panel | — | — | see "Component: DeckIntentAsk (in-panel) — RETIRED" above |
-| S-D Loading | `run.status == 'running'` (pending) | accent border, aria-busy, fan + "Shuffling…" heading (role=status) + `loadingLead`, ticking manifest, "Reading…" + "Stop" + progress | per-row done flags, done/total | C2 (1300), C2b (390) |
-| Stopped (removed 2026-10-12; an old `cancelled` row draws as never-run) | user pressed Stop | returns to never-run (S-A/B/C), manifest unchecked, no error, no tag; refunded | — | ST:44, R:91 |
+| S-D Loading | `run.status == 'running'` (pending) | accent border, aria-busy, fan + "Shuffling…" heading (role=status) + `loadingLead`, ticking manifest, "Reading…" + progress ("Stop" removed 2026-10-12) | per-row done flags, done/total | C2 (1300), C2b (390) |
+| Stopped (removed 2026-10-12; an old `cancelled` row is drawn like any re-run that did not land: the newest `ok` set stays on screen, or the never-run state when there is none) | user pressed Stop | returns to never-run (S-A/B/C), manifest unchecked, no error, no tag; refunded | — | ST:44, R:91 |
 | S-E Results (full) | `run.status == 'ok'`, all `items[].verdict == null`, `items.length == 5` | read line, `resultsLead` (1300 only), 5 SuggestionCards, "Suggest again", again note | items[], allowance.used/limit | A1 (1300), A2 (390) |
 | S-E Results (fewer) | as above with `items.length < 5` | `fewerLead` (1300; placement relative to resultsLead undrawn), n cards, never padded | items.length, dropped count | V2:754, R:78 |
 | S-E Results, no games | as S-E with `gameCount == 0` | read line with "the recommended mix" and "no games logged" (--fg-body); no lead; no games/note chips | gameCount = 0 | D2 (1300); 390 not drawn |

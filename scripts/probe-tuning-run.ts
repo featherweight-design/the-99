@@ -239,7 +239,10 @@ async function run() {
     const started = await startRun(u, deck, "fp", null, { runId: chosen });
     if (started.kind !== "started") return fail("case 2 start", started.kind);
     check("2 · the run is written under the id the panel chose", started.runId, chosen);
-    check("2 · and reads pending until it settles", (await runRow(started.runId))?.status ?? null, "pending");
+    check("2 · and reads pending while it runs", (await runRow(started.runId))?.status ?? null, "pending");
+    // Settled here, so the case leaves no pending run or reserved unit behind.
+    await finishRun(started, { status: "failed", errorClass: "timeout" });
+    check("2 · and settles under that id", (await runRow(started.runId))?.status ?? null, "failed");
   }
 
   // 3 · A second run on one deck, both sequentially and started together.

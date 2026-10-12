@@ -315,6 +315,12 @@ describe("TuningPanel", () => {
     expect(screen.getByRole("button", { name: copy.suggest })).toBeInTheDocument();
   });
 
+  it("keeps the standing set on screen under an old cancelled re-run", async () => {
+    await draw(deps([{ ...results, run: { ...okRun, id: "r2", status: "cancelled" } }]));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+  });
+
   it("renders an interrupted run with its own copy, and no suggestions", async () => {
     await draw(deps([{ ...fresh, run: { ...okRun, status: "failed", errorClass: "interrupted" } }]));
     expect(screen.getByText(deckTuningCopy.failure.interrupted.tag)).toBeInTheDocument();

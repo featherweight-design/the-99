@@ -146,6 +146,12 @@ describe("CutsPanelView", () => {
     expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
   });
 
+  it("keeps the last run's cuts standing under an old cancelled re-run", async () => {
+    await mount(deps(withResult(3, 6, { run: { id: "r2", status: "cancelled", errorClass: null, createdAt: new Date(), droppedCount: 0 } })));
+    expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
+    expect(screen.getByText("Card 1")).toBeTruthy();
+  });
+
   it("C3: six named, each with the Suggestion tag, a sentence and chips quoting the figure", async () => {
     await mount(deps(withResult(6, 6)));
     expect(screen.getAllByText("Suggestion")).toHaveLength(6);
