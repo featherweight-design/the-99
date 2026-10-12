@@ -1,6 +1,9 @@
-// The proxy's one admin rule: `/admin` reads the session and never protects it, so a signed-out
-// reader reaches the admin's own `notFound()` (STATES D3) rather than a sign-in redirect that says
-// the route exists. The REAL route matcher, so the pattern itself is under test.
+// The proxy has NO admin rule, and that is the rule (admin STATES must-not: no hint that `/admin`
+// exists). The matcher protects every non-public path, an unknown one included, so a signed-out
+// reader of `/admin` is sent to sign-in exactly as a reader of `/no-such-page` is, and a signed-in
+// stranger then gets `requireAdmin()`'s 404, exactly as an unknown path 404s. Exempting `/admin` to
+// answer a signed-out reader with a 404 would make it the one private path that does not redirect,
+// which says it is there.
 import { NextRequest, type NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -28,20 +31,9 @@ beforeEach(() => {
 });
 
 describe("the admin route in the proxy", () => {
-  it.each(["/admin", "/admin/switches", "/admin/accounts/user_1"])("reads the session on %s without protecting it", async (path) => {
-    const res = await proxy(auth, new NextRequest(`https://the99.test${path}`, { headers: { accept: "text/html" } }));
-    expect(protect).not.toHaveBeenCalled();
-    expect(session).toHaveBeenCalledOnce();
-    expect(res?.headers.get("location") ?? null).toBeNull();
-  });
-
-  it("still protects every other private route", async () => {
-    await proxy(auth, new NextRequest("https://the99.test/decks", { headers: { accept: "text/html" } }));
+  it.each(["/admin", "/admin/switches", "/no-such-page"])("protects %s like any other private path", async (path) => {
+    await proxy(auth, new NextRequest(`https://the99.test${path}`, { headers: { accept: "text/html" } }));
     expect(protect).toHaveBeenCalledOnce();
-  });
-
-  it("does not open a route that merely starts with the word", async () => {
-    await proxy(auth, new NextRequest("https://the99.test/administrator", { headers: { accept: "text/html" } }));
-    expect(protect).toHaveBeenCalledOnce();
+    expect(session).not.toHaveBeenCalled();
   });
 });

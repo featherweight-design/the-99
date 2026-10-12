@@ -31,13 +31,6 @@ import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib
 // does not become public by accident.
 const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
 
-// The admin answers a stranger with the app's own 404 (admin STATES D3), signed out included, so
-// it must not be protected here: `auth.protect()` would send a signed-out reader to sign-in, which
-// says the route exists. The session is read, and `requireAdmin()` in the admin's layout, pages
-// and actions decides.
-// The two exact forms, as `/api/health` does above: `/admin(.*)` would open `/administrator` too.
-const isAdmin = createRouteMatcher(["/admin", "/admin/(.*)"]);
-
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
   // uses constantly — it renders the dashboard, and it is where Clerk lands
@@ -45,7 +38,7 @@ export default clerkMiddleware(async (auth, req) => {
   // most likely arrival in the app ungated, which is the one place the About
   // page most needs to appear. So: protect what is not public, read the session
   // on what is, and let the gate below judge both.
-  const { userId } = isPublic(req) || isAdmin(req) ? await auth() : await auth.protect();
+  const { userId } = isPublic(req) ? await auth() : await auth.protect();
   if (aboutSheetEnabled()) return sheet(req, userId);
   if (!userId) return;
 

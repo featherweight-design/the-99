@@ -60,7 +60,7 @@ type MenuItemsProps = {
 };
 
 /**
- * The two `role="menuitem"` children, shared by both panels. Roving focus:
+ * The `role="menuitem"` children (three, or four with the Admin row), shared by both panels. Roving focus:
  * exactly one item is tabbable at a time and ↑/↓ move between them with wrap
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
@@ -69,7 +69,7 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // One ref per item, sized from the list rather than written out: the row
-  // count was two for this menu's whole life and is three now, and a modulo
+  // count was two for this menu's whole life and is three or four now, and a modulo
   // hard-coded to the old count wraps focus into the wrong row silently.
   const aboutRef = useRef<HTMLAnchorElement>(null);
   const adminRef = useRef<HTMLAnchorElement>(null);
@@ -102,9 +102,9 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, o
     }
   }
 
-  // About is a real link, not a button that routes: it is the one row here
-  // that goes somewhere, so it should open in a new tab when a reader asks it
-  // to. The other two act on the session and have no URL to offer.
+  // About and Admin are real links, not buttons that route: they go somewhere,
+  // so they should open in a new tab when a reader asks them to. Manage account
+  // and Sign out act on the session and have no URL to offer.
   const rowClass = (i: number) =>
     `flex w-full items-center text-left text-[color:var(--fg)] transition-colors duration-[120ms] hover:bg-[color:var(--elevated)] focus-visible:bg-[color:var(--elevated)] disabled:opacity-60 ${
       popover
