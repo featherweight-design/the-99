@@ -87,7 +87,7 @@ export async function pressFitsRead(userId: string, oracleId: string, deps: Deps
   if (inputs.candidates.length === 0) return { ok: false, reason: "noCandidates" };
   const model = deps.model();
   const hashes = candidateHashes(inputs, model);
-  const before = fitsReadView(await readFitsReadRows(userId, oracleId), hashes);
+  const before = fitsReadView(await readFitsReadRows(userId, oracleId), hashes, new Set(load.fits.holds.map((h) => h.id)));
   if (before.pending) return { ok: true, panel: await panelFor(userId, oracleId, load, model, now) };
   if (before.stored?.current) return { ok: false, reason: "current" };
 

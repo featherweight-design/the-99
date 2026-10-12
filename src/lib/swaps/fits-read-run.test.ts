@@ -72,6 +72,18 @@ describe("pressFitsRead: refusals that cost nothing", () => {
     expect(call).not.toHaveBeenCalled();
   });
 
+  it("a read still current but for a deck the reader added the card to is not asked again (F2)", async () => {
+    const inp = inputs();
+    const stored = candidateHashes(inp, MODEL);
+    store.rows = [{ id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: stored, picks: [] }];
+    // Kratos took the card: it holds it now and has left the candidates.
+    const after = inputs(["deck-goblins"]);
+    const { d, call } = deps({ picks: [] }, after);
+    d.load = async () => ({ fits: { holds: [{ id: "deck-kratos", name: "Kratos", quantity: 1 }] } as unknown as FitsReadLoad["fits"], inputs: after, planOf: new Map() }) as FitsReadLoad;
+    expect(await pressFitsRead("u", "card", d)).toEqual({ ok: false, reason: "current" });
+    expect(call).not.toHaveBeenCalled();
+  });
+
   it("a run in flight is returned as it stands, never charged twice (lock 5)", async () => {
     store.rows = [{ id: "p", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [] }];
     const { d, call } = deps({ picks: [] });
