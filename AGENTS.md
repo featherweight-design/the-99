@@ -957,6 +957,16 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   lazily, a cold `/collection` at 1300 asked for 200 images (20.3MB) and never reached its load
   event on the slow profile.
 
+  **`MEASURE_DEPLOYED=1` measures deployed staging instead** (Hugh, 2026-10-12: a local server skews
+  the figures; option C, production, is off). It refuses any host but `staging.the-99.dev` and writes
+  nothing to any database: it signs in with a Clerk sign-in token minted from
+  `STAGING_CLERK_SECRET_KEY` for `MEASURE_USER_ID` (a testing token works only on a development
+  instance), takes the deck as `MEASURE_DECK_ID`, clears About with the sheet cookie alone, reads the
+  `[perf]` lines from Vercel's runtime logs of `the-99-staging` (which needs `PERF_TIMING=1` there),
+  and takes database time from `MEASURE_PGSTAT_URL` as the delta between two `pg_stat_statements`
+  snapshots, never a reset (installed on staging 2026-10-12). `MEASURE_SERVER_LOG` and
+  `MEASURE_DB_URL` stay local-only and are refused.
+
   **Two traps it was built around.** Playwright turns the HTTP cache OFF for a context carrying a
   route, and Clerk's testing token is one. So the harness signs in once, carries the session into
   contexts with no route, and only then is "warm" warm. The first version read 0 cached scripts on
