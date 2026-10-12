@@ -331,6 +331,12 @@ describe("Help me choose's read (rework plan PR 5: the entry rewritten, version 
     expect(unseenEntries(visibleEntries(on), behind).map((e) => e.id)).toEqual(["help-me-choose"]);
   });
 
+  it("is seen by id, so a reader who met the entry before the rewrite is not shown it again", () => {
+    // The bump moves no switched entry: an entry with a switch is announced by its switch.
+    const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION - 1, ["help-me-choose"]))).toEqual([]);
+  });
+
   it("names the read's credit in the credits entry only with the switch on", () => {
     const bullet = "- Each “Help me choose” search where you fill in “Anything else?”";
     const credits = (env: Record<string, string>) =>

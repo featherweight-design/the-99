@@ -526,7 +526,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'HELP_ME_CHOOSE_ENABLED',
     caption:
-      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nColors, themes, sets, a budget and a bracket narrow the list for free. Or describe the deck in your own words: how it should feel, or how it should differ from the decks you’ve built. That uses a credit, and up to ten picks come first, each with a line on why.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
+      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nColors, themes, sets, a budget and a bracket narrow the list for free. Or describe the deck in your own words: how it should feel, or how it should differ from your decks. That uses a credit, and up to ten picks come first, each with a line on why.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
     keys: [
       'Words in the “Anything else?” box are read against every commander your answers allow.',
       'Your answers always hold, so no pick falls outside them.',
@@ -1158,9 +1158,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'inset',
     // Hugh, 2026-10-05: credits get ONE entry of their own, and every other entry says only that
     // an action "uses a credit". Every spender is a `ModelFeature` (`allowance-rule.ts`): the
-    // Overview (`synopsis`), Suggested changes (`tuning`) and Look deeper (`intake`). Each refund
+    // Overview (`synopsis`), Suggested changes (`tuning`) and Help me choose's read (`intake`). Each refund
     // rule is its own: `chargeFor` (all four sections), `tuning-actions.ts` (zero swaps kept
-    // fails the run), `run-store.ts` for intake (`useful`: at least one valid answer). NO switch. It shipped at
+    // fails the run), `settleTheRead` in `run-store.ts` for intake (at least one valid pick). NO switch. It shipped at
     // `since: 10` with no bump; Hugh then ruled (2026-10-06) that it is announced, so it moved to
     // `since: 11` with the ABOUT_VERSION bump that ends the second prose pass.
     // "You get five" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
@@ -1168,7 +1168,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Help me choose” search where you fill in “Anything else?”\n\nDetermining your deck’s bracket is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
-    // the Overview and Look deeper still spend credits — so, unlike the rest of this entry
+    // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
     captionLineSwitches: {
       '- Each “Suggested changes” run': 'TUNING_ENABLED',

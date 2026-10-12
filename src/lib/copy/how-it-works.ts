@@ -220,7 +220,7 @@ export const howItWorksRowsCopy = {
         `The commander sentence updates ${INDEX_CADENCE}. The Overview and Suggested changes are ` +
         "written when you press for them, and the Overview stays until the list changes. Help me " +
         "choose keeps its answer while your words, your answers, your Collection and your decks stay " +
-        "the same, and reads again when any of them changes.",
+        "the same, and reads again when any of them changes, or after the daily card update.",
       exact: "Neither. It’s written, not measured.",
     },
   ] as const satisfies readonly HowRowCopy[],
