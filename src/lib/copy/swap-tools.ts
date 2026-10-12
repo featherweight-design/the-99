@@ -365,6 +365,11 @@ export const swapToolsCopy = {
       failedBody: "The credit came back, and the list below is as it was. It isn’t something you did.",
       retry: "Try again",
       announceFailed: "The read didn’t come back. The credit came back.",
+      // Refused before any credit: the prompt would pass the input ceiling, and the same decks would
+      // refuse again, so no Try again is drawn (Proposed cuts' `tooBig` is the sibling).
+      tooBigHead: "Too many decks for one read",
+      tooBigBody: "This card fits more of your decks than a read can take at once. No credit is used.",
+      announceTooBig: "Too many decks for one read. No credit is used.",
       fold: "Every deck that could take it",
       foldAria: (n: number, open: boolean) => `${open ? "Hide" : "Show"} every deck that could take it, ${n}`,
     },

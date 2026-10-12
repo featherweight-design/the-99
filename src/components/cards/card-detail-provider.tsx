@@ -1499,8 +1499,10 @@ export function CardDetailProvider({
           backLabel={partnerOf ? (trail.at(-1)?.label ?? partnerOf.name) : backLabel}
           phoneBackLabel={partnerOf ? undefined : phoneBackLabel}
           // Fits your decks' door, on a card with no sheet under it (stacked sheets R1, call 8): nothing
-          // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway.
-          onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
+          // in a stacked card opens a further layer, and a stand-in's Take replaces the door anyway. A
+          // card opened from a read's view is such a layer too: its own view would take the one slot and
+          // lose the read the reader came back for.
+          onFindDeck={sheetsBelow > 0 || (fitsViewFor !== null && fitsViewFor !== card.oracleId) ? null : fitsDoor(card)}
           fitsReading={fitsReading.has(card.oracleId)}
           view={fitsViewFor === card.oracleId && sheetsBelow === 0 ? {
             onBack: leaveView,

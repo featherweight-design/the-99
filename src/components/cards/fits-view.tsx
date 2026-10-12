@@ -18,7 +18,7 @@ import { addFromFits, swapFromReadAction, undoReadAddAction, undoReadSwapAction 
 import { pressFitsReadAction, readFitsReadAction } from "../../lib/swaps/fits-read-actions";
 import type { FitsReadPanel } from "../../lib/swaps/fits-read-run";
 import { FitsHolds, FitsRows, FitsStapleNote, useFitsList } from "./fits-picker";
-import { FailedBand, NoFitBox, OfferBand, RunningBand } from "./read-band";
+import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
 import { ReadRow, type RowAct } from "./read-row";
 
 const copy = swapToolsCopy.fits;
@@ -58,6 +58,8 @@ export function FitsView({
   // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
   const [runCount, setRunCount] = useState<number | null>(null);
   const [pressFailed, setPressFailed] = useState(false);
+  // The press was refused before any credit because the decks are too many for one read (`tooBig`).
+  const [tooBig, setTooBig] = useState(false);
   // The read this visit's press produced: its sub reads `just now` rather than a date.
   const [fresh, setFresh] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -151,7 +153,10 @@ export function FitsView({
       // credit, the pause) rather than a failure the reader did not have.
       const again = await readFitsReadAction(card.oracleId).catch(() => null);
       if (again) adopt(again);
-      if (res.reason === "notFound" || res.reason === "noCandidates" || res.reason === "tooBig") setPressFailed(true);
+      if (res.reason === "tooBig") {
+        setTooBig(true);
+        setAnnounced(read.announceTooBig);
+      } else if (res.reason === "notFound" || res.reason === "noCandidates") setPressFailed(true);
     } catch {
       pressing.current = false;
       readingRef.current(false);
@@ -258,6 +263,7 @@ export function FitsView({
   let band = null;
   if (showsBand) {
     if (running !== null) band = <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} />;
+    else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
     else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
       band = <NoFitBox

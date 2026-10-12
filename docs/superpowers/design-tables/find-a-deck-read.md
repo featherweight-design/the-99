@@ -93,6 +93,9 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | failedBody | “The credit came back, and the list below is as it was. It isn’t something you did.” |
 | retry | “Try again” |
 | announceFailed | “The read didn’t come back. The credit came back.” |
+| tooBigHead (eng, no frame) | “Too many decks for one read” (/copy-review; the press refused before any credit, `tooBig`: no Try again, since the same decks refuse again) |
+| tooBigBody (eng, no frame) | “This card fits more of your decks than a read can take at once. No credit is used.” (/copy-review: Proposed cuts' `tooBig` is the sibling) |
+| announceTooBig (eng, no frame) | “Too many decks for one read. No credit is used.” |
 | staleOne | “{deck} has changed since this read on {when}, so the read may not hold any more.” |
 | staleMany | “{n} of your decks have changed since this read on {when}, so the read may not hold any more.” |
 | staleSet | “Your decks that can take this card aren’t the same ones as at this read on {when}, so the read may not hold any more.” |

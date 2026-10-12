@@ -286,6 +286,19 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
   });
 
+  it("too many decks for one read: refused before any credit, with no Try again, the list open", async () => {
+    await draw(panel());
+    readActions.pressFitsReadAction.mockResolvedValue({ ok: false, reason: "tooBig" });
+    fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+    await settle();
+    expect(screen.queryByTestId("read-band-failed")).toBeNull();
+    const band = screen.getByTestId("read-band-refused");
+    expect(band).toHaveTextContent(r.tooBigHead);
+    expect(band).toHaveTextContent(r.tooBigBody);
+    expect(within(band).queryByRole("button")).toBeNull();
+    expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+  });
+
   it("the offer counts the decks left after a free-list add, and a run keeps the count it started with", async () => {
     await draw(panel());
     actions.addFromFits.mockResolvedValue({ ok: true });

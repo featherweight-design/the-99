@@ -106,6 +106,17 @@ export function FailedBand({ blocked, spent, closed = false, standing, onRetry }
   );
 }
 
+/** Refused before any credit (too many decks for one read): no press, since the same decks refuse again. */
+export function RefusedBand({ head, body, standing }: { head: string; body: string; standing: string }) {
+  return (
+    <Band testId="read-band-refused">
+      <p className="m-0 text-[13.5px] font-semibold text-[color:var(--fg)]">{head}</p>
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">{body}</p>
+      <Standing line={standing} />
+    </Band>
+  );
+}
+
 /** P6, P6b: no real fit. No press: the same inputs would say the same thing. */
 export function NoFitBox({ body, foot }: { body: string; foot: string }) {
   return (
