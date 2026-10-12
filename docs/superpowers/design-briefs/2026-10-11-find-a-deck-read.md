@@ -9,7 +9,7 @@ engineering has locked, and what Design owns.
 ## The problem, on Hugh's decks
 
 The picker (`FitsPicker`, `src/components/cards/fits-picker.tsx`, opened from card details at
-`src/components/cards/card-detail-provider.tsx:968` and `:1448`) reads `loadFits`
+the door `fitsDoor`, `src/components/cards/card-detail-provider.tsx:969`, rendered at `:1448`) reads `loadFits`
 (`src/lib/swaps/fits.ts:150`, through `loadFitsAction`, `src/lib/swaps/actions.ts:72`) and orders the decks with
 `shapeFits` (`fits.ts:86`): a combo the card completes, then the theme it joins with the most cards in the deck, then
 the commander's synergy figure, then the name. Each row draws one reason line, `{reason} · this deck {need}`
@@ -39,7 +39,8 @@ minus two draws a card per creature: that is a reason for Goblins (Krenko's toke
 want it, and the list puts them tenth and eighth, behind decks that already run more draw than their target. The
 theme count measures how much of a theme the deck HAS, not whether this card helps it.
 
-The niche cards in his collection, which are what Hugh asked about, fare worse. Same measurement:
+Other niche cards from his collection fare worse. These eight were picked by this brief (owned, in no deck, with an
+index row under few commanders), not by Hugh; his own eval cards are in "Hugh's eval cards" below. Same measurement:
 
 | Card | Decks listed | Reason lines |
 | --- | --- | --- |
@@ -68,18 +69,26 @@ Add a model call. Not reopened here.
 Locked for this round. **Override if Hugh disagrees**: each is a default the orchestrator chose, not a ruling of
 Hugh's.
 
-1. **On demand.** Opening the picker stays free and instant and shows today's list. A press inside it starts the
-   read. Placeholder label `Which deck needs it most?`, owed to /copy-review.
+1. **On demand: a "look deeper" read on top of the instant list.** Opening the picker stays free and instant and
+   shows today's list. A press inside it starts the read. Placeholder label `Which deck needs it most?`, owed to
+   /copy-review. Hugh likes this shape (relayed 2026-10-11). **The read must add information the list does not
+   have, not re-order it**: Help me choose's Look deeper is the cautionary precedent. Hugh found it added no
+   value because it only re-ranked the same list, and it now refunds a read that adds nothing new
+   (`src/lib/intake/deeper-read.ts`, #1283). What this read adds is the one thing no free figure carries: how the
+   card serves each deck's plan, in that deck's own cards. Lock 10 makes that enforceable.
 2. **Candidates.** Every deck of the reader's, brews and drafts included, where the card is legal (commander-legal
-   and inside the deck's color identity) and that neither holds it nor is led by it: exactly `loadFits`'s `open`
-   set (`fits.ts`, the `open` filter after the deck read).
+   and inside the deck's color identity) and that neither holds it nor is led by it. That is `loadFits`'s `open`
+   set (`fits.ts:188`: no copies held, not led by it, inside the colors) PLUS the commander-legal check, which
+   `open` does not make: today only the door does (`fitsDoor` draws no door for a card that is not
+   commander-legal, `card-detail-provider.tsx:969`). The read's server action checks it itself.
 3. **Inputs per candidate**, all already stored (verified in `src/db/schema.ts`):
    - the card: name, type line, oracle text (`cards`, `schema.ts:45`, `typeLine` and `oracleText` at `:52-53`), its
      roles and themes (`card_labels.labels`, `schema.ts:2619`);
    - the deck's commander or pair, with their oracle text (`decks`, `schema.ts:469`, joined to `cards`);
-   - the deck's plan: its stored Overview (`deck_synopses.content`, `schema.ts:2389`, the `overview` prose and the
-     primer's `strategy`, `src/lib/synopsis/types.ts` `CheckedSynopsis`), else the commander and the deck's top
-     themes (see Finding 1 below on how often each applies);
+   - the deck's plan: its stored Overview v2 (contracts 11 and 12, `src/lib/synopsis/limits.ts`; read from
+     `deck_synopses.content`, `schema.ts:2389`, the `overview` prose and the primer's `strategy`,
+     `src/lib/synopsis/types.ts` `CheckedSynopsis`) when present, else the commander and the deck's top themes
+     (Finding 1 below widens this);
    - how often decks with that commander play the card (`commander_support_cards.inclusion`, `schema.ts:1416`;
      `commander_pair_support_cards` for a pair), when the index holds a row;
    - the deck's need in the card's role (`shapeFits`'s `need`, from the recommended mix);
@@ -151,10 +160,13 @@ out; Haiku 5.5 $0.10 / $0.50 up to 100K prompt tokens):
 | Case | Input tokens | Sonnet 5.5 | Haiku 5.5 |
 | --- | --- | --- | --- |
 | Ajani, 11 candidates | 162 + 25,069 + 1,500 = 26,731 | 26,731 × $2/M = $0.053, + 400 to 4,000 out × $10/M = $0.004 to $0.040: **$0.057 to $0.093** | 26,731 × $0.10/M = $0.0027, + $0.0002 to $0.002: **$0.003 to $0.005** |
-| Worst case: a colorless card, all 21 decks, every block at the measured maximum 2,691 | 162 + 56,511 + 1,500 = 58,173 | $0.116 + $0.040 = **$0.156** | $0.0058 + $0.002 = **$0.008** |
+| A colorless card: all 21 decks (Tangle Wire and Mind's Eye, both Hugh's eval cards) | 162 + 44,238 + 1,500 = 45,900 | $0.092 + up to $0.040: **$0.096 to $0.132** | $0.0046 + up to $0.002: **$0.005 to $0.007** |
+| Ceiling: all 21 decks, every block at the measured maximum 2,691 (room for the 9 decks without an Overview to gain one) | 162 + 56,511 + 1,500 = 58,173 | $0.116 + $0.040 = **$0.156** | $0.0058 + $0.002 = **$0.008** |
 
-The worst case is under Haiku's 100K boundary. Either model fits one credit: Suggested changes' own reservation is
-priced at a 12,000-token input ceiling on `claude-sonnet-5` (`FEATURE_CALLS.tuning`, `prices.ts:100`).
+The ceiling is under Haiku's 100K boundary. A credit is a unit, not a dollar figure: the new feature's
+`FEATURE_CALLS` entry is priced at its own worst case (lock 4), and on Sonnet that ceiling, $0.156, is above
+Suggested changes' own reservation (`FEATURE_CALLS.tuning`, `prices.ts:111`: 12,000 input and 8,000 output tokens
+on `claude-sonnet-5`, about $0.104). On Haiku it is a fraction of it.
 
 ## Prior art in the app
 
@@ -198,19 +210,49 @@ priced at a 12,000-token input ceiling on `claude-sonnet-5` (`FEATURE_CALLS.tuni
    additive, behind `FIND_A_DECK_READ_ENABLED`; off, the picker is exactly today's.
 8. **Fewer than five candidates still runs**; a single candidate still runs. No candidates (every deck holds it,
    or none can play it) draws no press: the picker's existing `allHold` and `noneByColors` states stand.
-9. **Model chosen by eval** before the build is merged: Sonnet 5.5 at effort medium against Haiku 5.5, on a corpus
-   of Ajani Unrelenting, the eight niche cards measured above, and **Hugh's 5 to 8 named niche cards (slot: Hugh
-   to name them)**. Candidates from his staging collection, owned, in no deck, with an index row under few
-   commanders: Kavaron Skywarden, Goldfury Strider, Lavamancer's Skill, Cryotheory Adept, Daru Stinger, Airtight
-   Alibi, Infernal Caretaker, Emissary of Soulfire. Scored blind, per deck, on: names a real interaction with the
-   deck's own cards or plan; every citation valid; leaves out the decks where it does not fit; the cut is
-   defensible. A second step is added only if the one call fails on this corpus.
+9. **Model chosen by eval** before the build is merged: Sonnet 5.5 at effort medium against Haiku 5.5, on Hugh's
+   eval cards (below; the nine that resolve, and the two that do not once he corrects them) and the eight niche
+   cards measured above. Scored blind, per deck, on: names a real interaction with the deck's own cards or plan;
+   every citation valid; leaves out the decks where it does not fit; the cut is defensible; and it says something
+   the free row does not (lock 10). A second step is added only if the one call fails on this corpus. The eval
+   follows `scripts/eval/cuts-model.mts`: dry by default, token counts free, a dollar cap and its own ledger.
+10. **The read adds, never only re-ranks** (default 1). Every deck the read lists carries its sentence, and the
+   sentence must cite at least one card in that deck (by key) or quote the deck's stored plan; a sentence citing
+   neither drops the deck. A read whose every deck drops finds nothing and refunds. A read never returns an order
+   alone.
+
+## Hugh's eval cards (named 2026-10-11)
+
+Checked on staging, read-only, by exact name against `cards.name`, and against his collection. **Two do not
+resolve and no substitute is assumed**: `Future Insight` and `Feral Felix` match no card name in the catalog
+(searches for `%insight%` and `%felix%` return neither). Hugh to correct them.
+
+The "before" fixture is the current picker on his decks (`loadFits`, his account, 2026-10-11): its counts and its
+first three rows as the reason line draws them.
+
+| Card | Owned | Can take it | Holds / ruled out | Reasons across the list | First three rows today |
+| --- | --- | --- | --- | --- | --- |
+| Ajani Unrelenting (R planeswalker) | 1 | 11 | 0 / 10 | 5 × card-draw, 4 × token, 1 × pump, 1 × haste | Prismari Artistry: Joins 19 other token cards · this deck draw 10 of 11; Avatar Aang: Joins 15 other card-draw cards · draw 13 of 10; Omnath: Joins 15 other card-draw cards · draw 9 of 7 |
+| Maddening Cacophony (U sorcery) | 1 | 10 | 0 / 11 | 1 × combo, 5 × mill, 4 × none | Mutant Menace: Completes a combo with Fraying Sanity; Sultai Arisen: Joins 8 other mill cards; Wizards: Joins 2 other mill cards |
+| Maddening Hex (R curse) | 1 | 11 | 0 / 10 | 11 × none | Avatar Aang, Gishath, Goblins: no reason line at all |
+| Mind's Eye (colorless artifact) | 1 | 21 | 0 / 0 | 21 × card-draw | Wizards: Joins 24 other card-draw cards · draw 19 of 12; Eldrazi: Joins 16 other card-draw cards · draw 3 of 10; Avatar Aang: Joins 15 other card-draw cards · draw 13 of 10 |
+| Molten Collapse (BR sorcery) | 1 | 1 | 0 / 20 | 1 × none | Avatar Aang: no reason · this deck removal 2 of 3 |
+| Throes of Chaos (R sorcery) | 2 | 10 | 1 / 10 | 10 × none | Avatar Aang, Gishath, Goblins: no reason line |
+| Time Stretch (U sorcery) | 1 | 10 | 0 / 11 | 10 × none | Yuriko, Avatar Aang, Brago: no reason line |
+| Tangle Wire (colorless artifact) | 1 | 21 | 0 / 0 | 21 × none | Avatar Aang, Brago, Eldrazi: no reason line (alphabetical) |
+| Kwia Vigorbloom (GW creature) | 1 | 4 | 0 / 17 | 3 × token, 1 × protection | Omnath: Joins 15 other token cards · ramp 20 of 9; Scrappy Survivors: Joins 10 other protection cards · ramp 5 of 6; Gishath: Joins 7 other token cards · ramp 11 of 9 |
+| Future Insight | not resolved | | | | |
+| Feral Felix | not resolved | | | | |
+
+What it shows: five of the nine draw no reason on any row (Maddening Hex, Molten Collapse, Throes of Chaos, Time
+Stretch, Tangle Wire), and Mind's Eye draws the same reason on all 21. Tangle Wire and Mind's Eye are colorless,
+so they are the 21-deck cost case measured above. Molten Collapse (one candidate) and Kwia Vigorbloom (four) test
+the read's short end, and Maddening Cacophony is the one card where today's list already has a combo to beat.
 
 ## What Design owns
 
-1. **Where the press lives** in the picker, and what it says while the free list is on screen. The picker is
-   being changed by a separate bug fix: on desktop it currently stacks a second modal over card details; the fix
-   makes it swap in place inside card details. Draw for that, not the stack.
+1. **Where the press lives** in the picker, and what it says while the free list is on screen. Where the picker
+   itself sits is Open question 7: draw the read inside whichever container that answer picks.
 2. **The credit line** beside the press, from `src/lib/copy/credits.ts`, and the state where the reader has no
    credit left.
 3. **The loading state.** A call over ~27K input tokens takes seconds, not a moment. What the reader sees, and
@@ -241,6 +283,19 @@ priced at a 12,000-token input ceiling on `claude-sonnet-5` (`FEATURE_CALLS.tuni
 5. The suggested cut: a card-open mark inside the sentence, or its own line?
 6. Does the read make the free row's need line (`draw 13 of 10`) worth clarifying, or removing? Out of scope unless
    Design needs it.
+7. **Does the picker stack over card details on desktop?** Today it stacks at BOTH widths, by design: a second
+   modal over Card Details, 560 on desktop with a `← {card}` back pill, a sheet from 96px on the phone
+   (`design/design_handoff_the99_swap_tools/README.md:24`); the stacked-sheets round kept that geometry (its call
+   7, `design/design_handoff_the99_stacked_sheets/README.md:36`, and `READINESS.md` A8 names the picker on the same
+   `overCard` path); and the build pins it (`src/components/cards/fits-picker.test.tsx:286`, "stacks the picker
+   over the card, which stays mounted and covered"). Hugh has reported that "it shouldn't stack on desktop". Three
+   options:
+   - **(a)** the picker becomes a view inside the card dialog at both widths, reversing stacked-sheets call 7;
+   - **(b)** it swaps in place on desktop only, and still stacks on the phone, splitting the widths;
+   - **(c)** it keeps the stack, with the desktop geometry fixed so it does not read as two modals.
+
+   **Hugh's answer: pending.** A read adds a loading state and three to five longer rows to this container, so
+   whichever option Design draws, draw the read in it.
 
 ## Fixtures
 
@@ -249,10 +304,10 @@ Hugh's staging account (`user_3GkZrrTwOJBdqUpq6GambP0BC8w`; project `misty-rain-
 
 - **Ajani Unrelenting** (R, Legendary Planeswalker), 11 candidates, every reason a theme, the table above. Its
   likely real fits are Goblins (Krenko, Mob Boss) and Kratos (draw 2 of 5).
-- **Lavamancer's Skill** (R, Aura) and **Mind Swords** (B): 11 and 6 candidates, no reason on any row. The read's
-  clearest win and its likeliest "none fits" result.
-- **Kavaron Skywarden** (R): 11 candidates, the same theme on all 11.
-- **Cryotheory Adept** (U, Human Wizard): 10 candidates, two of them `Wizard`, the plain right answer being HD -
-  Wizards.
+- **Tangle Wire** and **Maddening Hex**: 21 and 11 candidates, no reason on any row. The read's clearest win, and
+  its likeliest "none fits" result.
+- **Mind's Eye**: 21 candidates, the same reason on all 21; the longest list Design has to draw the press over.
+- **Molten Collapse**: one candidate. **Kwia Vigorbloom**: four. The short end.
+- **Maddening Cacophony**: the one list with a combo row today.
 - **A deck with a v2 plan** (Avatar Aang, Gishath, Soldiers, Wizards), **one with an older Overview** (Omnath,
   Tovolar), and **one with none** (Prismari Artistry, Counter Intelligence), so each plan source is drawn.
