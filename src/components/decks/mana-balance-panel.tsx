@@ -140,8 +140,9 @@ export function ManaBalancePanel({
       </div>
 
       {colorless ? (
-        // Alone, every source is colorless, so a share of them says nothing.
-        colorlessRow ? <ColorlessLine row={colorlessRow} share={false} /> : null
+        // Alone, every source is colorless, so a share of them says nothing. A deck with no {C} pip and
+        // no source still draws the line the note points to, at zero.
+        <ColorlessLine row={colorlessRow ?? { c: "C", pips: 0, lands: 0, other: 0, pipShare: 0, sourceShare: 0 }} share={false} />
       ) : (
         <div className="flex flex-col gap-[8px]">
           <ManaEvidenceTable balance={balance} commander={commander} />

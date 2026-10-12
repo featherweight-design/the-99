@@ -210,6 +210,13 @@ describe("ManaBalancePanel: thin decks", () => {
     expect(document.querySelector("[data-mana-citation]")?.textContent).toContain(copy.cite.landOnlyBefore);
   });
 
+  it("draws the colorless line at zero for a colorless deck with no {C} pip and no source", async () => {
+    const data = panelData([commander("{4}"), spell("Golem", "{3}")], []);
+    render(<ManaBalancePanel deckId="d" read={async () => data} />);
+    await waitFor(() => expect(heading()).not.toBeNull());
+    expect(document.querySelector("[data-mana-colorless]")?.textContent).toContain("no {C} pips · 0 sources");
+  });
+
   it("replaces the lead for a deck with no lands, and keeps the Needed figures", async () => {
     const data = panelData([commander("{5}{R}{G}{W}"), spell("Archdruid", "{1}{G}{G}", 3)], ["R", "G", "W"], NO_TAPPED_LANDS);
     render(<ManaBalancePanel deckId="d" read={async () => data} />);
