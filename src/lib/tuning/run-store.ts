@@ -168,8 +168,9 @@ export async function finishRun(
 }
 
 /**
- * A successful run: the items and the outcome in one transaction, and the unit spent. False
- * when the run was superseded, in which case no item is written.
+ * A successful run: the items and the outcome in one transaction, and the unit spent, or given back
+ * when the caller settles it `refunded` (an answer too thin to charge for, `refundsCredit`: the items are
+ * stored and shown all the same). False when the run was superseded, in which case no item is written.
  *
  * The status update comes FIRST inside the transaction. A guard that fails throws before the
  * insert runs and rolls everything back, so "items persisted, status did not" cannot happen.
@@ -180,6 +181,9 @@ export async function persistRun(
   droppedCount: number,
   billed?: Billed,
   validationReport?: ValidationReport,
+  /** `refunded` for an answer too thin to charge for (`refundsCredit`): it is stored, shown and
+   *  billed as an ok run, and the credit comes back. */
+  settleAs: "spent" | "refunded" = "spent",
 ): Promise<boolean> {
   try {
     await db.transaction(async (tx) => {
@@ -200,7 +204,7 @@ export async function persistRun(
           bracketAfter: s.bracketAfter,
         })));
       }
-      await settleModelCall(tx, written[0].callId, "spent", billed);
+      await settleModelCall(tx, written[0].callId, settleAs, billed);
     });
   } catch (err) {
     if (err instanceof RunSupersededError) {

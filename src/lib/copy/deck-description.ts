@@ -96,6 +96,8 @@ export const deckDescriptionCopy = {
     // its own buy tag and price. Hugh, 2026-10-11; owned cards come first whenever any fit.
     ownedNone:
       "Nothing in your collection fits these needs, so the additions are cards to buy.",
+    // The credit came back though suggestions are shown: too few held up (`refundsCredit`). Hugh, 2026-10-11.
+    refunded: (nWord: string) => `Only ${nWord} held up, so this one’s on us.`,
     nothingLeft:
       "Nothing in your notes could be done within this deck’s rules, so these suggestions come from the list alone.",
   },

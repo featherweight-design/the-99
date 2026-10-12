@@ -407,6 +407,22 @@ async function run() {
     check("9 · an answered run spends its unit", (await runRow(runId))!.unit, "spent");
     check("9 · and the allowance counts it", (await readAllowance(u)).used, before + 1);
 
+    // 9b · An answer too thin to charge for (`refundsCredit`, Hugh 2026-10-11) is stored and shown as an
+    // ok run, and its unit comes back. Its own player and deck: an ok run moves the gate for its deck.
+    {
+      const u2 = newUser();
+      const deck2 = await makeDeck(u2, c);
+      const used = (await readAllowance(u2)).used;
+      const thin = await startRun(u2, deck2, "fp-thin", null);
+      if (thin.kind !== "started") return fail("case 9b start", thin.kind);
+      await persistRun(thin, [suggestion(c)], 0, undefined, undefined, "refunded");
+      check("9b · a thin answer reads ok and keeps its item",
+        [(await runRow(thin.runId))!.status, (await rows<{ n: number }>(sql`
+          select count(*)::int as n from deck_suggestion_items where run_id = ${thin.runId}::uuid`))[0].n], ["ok", 1]);
+      check("9b · but its unit is refunded", (await runRow(thin.runId))!.unit, "refunded");
+      check("9b · and the allowance counts nothing for it", (await readAllowance(u2)).used, used);
+    }
+
     const same = await readTuningState(deck, u, "fp-1");
     check("9 · the panel reads the answer's items", same.items.length, 1);
     check("9 · an unchanged deck gates as unchanged", gateReason(same)?.kind ?? null, "unchanged");

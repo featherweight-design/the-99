@@ -478,6 +478,19 @@ describe("TuningPanel", () => {
     expect(screen.queryByText(deckDescriptionCopy.refusal.ownedNone)).toBeNull();
   });
 
+  // Too few held up (`refundsCredit`): the suggestions are shown and the note says the credit is back.
+  it("says this one is on us for a refunded run, in the note frame, and not otherwise", async () => {
+    const run = { ...okRun, validationReport: { askedCount: 11, survivedCount: 2, keptCount: 2, refunded: true as const } };
+    await draw(deps([{ ...results, run }]));
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.refunded("two"));
+    expect(banner.className).not.toMatch(/\bhidden\b/);
+    cleanup();
+    await draw(deps([{ ...results, run: { ...okRun, validationReport: { askedCount: 8, survivedCount: 3, keptCount: 3 } } }]));
+    expect(screen.queryByText(deckDescriptionCopy.refusal.refunded("three"))).toBeNull();
+  });
+
   // H35, PR 4a, review round 4: "your limits" is read off the LIVE deck setting (`facts.limits`),
   // which only still describes the shown run while nothing has changed since it ran — exactly
   // what `state.stale` already tracks, since the tuning fingerprint includes limits.

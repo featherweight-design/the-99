@@ -299,6 +299,40 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
     expect(report).toEqual({ askedCount: 12, survivedCount: 12, keptCount: 10, hadNotes: false, drops: [] });
   });
 
+  // The refund floor (Hugh, 2026-10-11): fewer than three kept, or under a third of what the model
+  // returned, still shows what held up and gives the credit back. `persistRun`'s sixth argument is how
+  // the run settles; the report carries `refunded` for the panel's note.
+  describe("the refund floor", () => {
+    const bogus = (n: number, tag: string) => Array.from({ length: n }, (_, i) => LINE(`${tag} ${i} that is not a card`));
+    const run = async (adds: ReturnType<typeof LINE>[], cuts: ReturnType<typeof LINE>[]) => {
+      calls.modelOutcome = {
+        ok: true, value: { additions: adds, cuts },
+        usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      };
+      await runTuning(DECK, { anyway: true });
+      const [, , , , report, settleAs] = calls.persisted[0] as [unknown, unknown, unknown, unknown, Report & { refunded?: true }, string];
+      return { report, settleAs };
+    };
+
+    it("refunds 2 of 11, still persisting the two that held up", async () => {
+      const { report, settleAs } = await run([...ADDS.slice(0, 2), ...bogus(4, "Add")], bogus(5, "Cut"));
+      expect(report).toMatchObject({ askedCount: 11, keptCount: 2, refunded: true });
+      expect(settleAs).toBe("refunded");
+    });
+
+    it("spends 3 of 8 and 9 of 10", async () => {
+      const three = await run(ADDS.slice(0, 3), bogus(5, "Cut"));
+      expect(three.report).toMatchObject({ askedCount: 8, keptCount: 3 });
+      expect(three.report.refunded).toBeUndefined();
+      expect(three.settleAs).toBe("spent");
+
+      calls.persisted = [];
+      const nine = await run(ADDS.slice(0, 5), [...CUTS.slice(0, 4), ...bogus(1, "Cut")]);
+      expect(nine.report).toMatchObject({ askedCount: 10, keptCount: 9 });
+      expect(nine.settleAs).toBe("spent");
+    });
+  });
+
   // "Additional notes" (H35, PR 4b): the persisted report says whether THIS run carried any,
   // since the field itself is never saved and `ReadFrom`'s "your notes" line has nothing else
   // to read.
