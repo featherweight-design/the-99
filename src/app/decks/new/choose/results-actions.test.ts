@@ -7,12 +7,13 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn() }));
+const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn(), read: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => true }));
 vi.mock("../../../../db", () => ({ db: { execute: stub.execute } }));
 vi.mock("../../../../lib/intake/trial", () => ({ trialFill: stub.trial }));
 vi.mock("../../../../lib/intake/rows", () => ({ loadResultsPage: stub.page }));
+vi.mock("../../../../lib/intake/run-store", () => ({ loadTheRead: stub.read }));
 
 import { moreRows, trialFillRows } from "./results-actions";
 
@@ -24,6 +25,7 @@ beforeEach(() => {
   stub.execute.mockReset().mockResolvedValue({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
   stub.page.mockReset().mockResolvedValue({ rows: [] });
   stub.trial.mockReset().mockResolvedValue({ owned: 60, buyCents: 1000, unpricedCard: null });
+  stub.read.mockReset().mockResolvedValue({ kind: "none" });
 });
 
 describe("trialFillRows", () => {
@@ -71,12 +73,27 @@ describe("trialFillRows", () => {
 describe("moreRows", () => {
   it("hands the parsed answers and the offset to the page loader", async () => {
     await moreRows("?t=dinosaurs&b=150", 12);
-    expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12);
+    expect(stub.page).toHaveBeenCalledWith("user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null);
+  });
+
+  it("orders a slice by the reader's own done read, and by nothing for any other state", async () => {
+    const READ = "0000cccc-0000-4000-8000-000000000001";
+    const result = { picks: [{ oracleId: LEGAL, reason: [{ text: "Fits." }] }], pool: 10, weighed: 3 };
+    stub.read.mockResolvedValueOnce({ kind: "done", result });
+    await moreRows(`?t=dinosaurs&r=${READ}`, 12);
+    expect(stub.read).toHaveBeenCalledWith(READ, "user_1");
+    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.anything(), 12, result);
+    // Pending, or a read that is not this reader's (`none`): the free order.
+    for (const state of [{ kind: "pending", phase: null }, { kind: "none" }]) {
+      stub.read.mockResolvedValueOnce(state);
+      await moreRows(`?t=dinosaurs&r=${READ}`, 12);
+      expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.anything(), 12, null);
+    }
   });
 
   it("ignores the retired card answer (F1)", async () => {
     await moreRows("?t=dinosaurs&a=0000aaaa-0000-4000-8000-000000000001", 0);
-    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.objectContaining({ card: null }), 0);
+    expect(stub.page).toHaveBeenLastCalledWith("user_1", expect.objectContaining({ card: null }), 0, null);
   });
 
   it("refuses a forged offset or query before any read", async () => {

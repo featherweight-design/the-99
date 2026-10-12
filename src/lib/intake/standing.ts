@@ -52,9 +52,15 @@ export function standingLine(s: Standing): string {
   }
 }
 
-/** The count alone: `4 of 5 left · reset at 2:01 AM`. */
+/**
+ * The count alone: `4 of 5 left · reset at 2:01 AM`. Spent, it is 0, never negative when more are
+ * out than the limit, and the time is when the next credit returns: the oldest counted unit's
+ * leaving, which is later than the next one's then.
+ */
 export function bareStanding(s: Standing): string {
-  return creditsCopy.standing(s.limit - s.used, s.limit, s.nextAt ? new Date(s.nextAt) : null);
+  const spent = s.used >= s.limit;
+  const at = spent ? s.reopensAt ?? s.nextAt : s.nextAt;
+  return creditsCopy.standing(Math.max(0, s.limit - s.used), s.limit, at ? new Date(at) : null);
 }
 
 /**
@@ -64,7 +70,5 @@ export function bareStanding(s: Standing): string {
  */
 export function formLine(s: Standing): string {
   if (closedBy(s) !== "spent") return standingLine(s);
-  // When the next credit returns, as the results' spent line says it: the oldest counted unit's
-  // leaving, which is later than the next one's when more are out than the limit.
-  return copy.intake.extra.spentLine(bareStanding({ ...s, used: s.limit, nextAt: s.reopensAt ?? s.nextAt }));
+  return copy.intake.extra.spentLine(bareStanding(s));
 }

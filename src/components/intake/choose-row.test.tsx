@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 
@@ -138,5 +138,75 @@ describe("own-only (three answers §3)", () => {
     expect(line).toContain("58 of its usual 99 are yours");
     // Nothing is bought for the 99: no figure to buy.
     expect(line).not.toMatch(/to buy/);
+  });
+});
+
+describe("the read's reason line (the read addendum R1)", () => {
+  const DECK = "0000bbbb-0000-4000-8000-000000000001";
+  const reason = [{ text: "Unlike " }, { deck: DECK }, { text: ", every land you play makes a creature." }];
+  const drawWith = (r: ResultRow, best?: number, deckNames: Record<string, string> = { [DECK]: "Omnath" }) =>
+    render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ul>
+          <ChooseRow row={r} figures={[]} owned={false} params={params} cardName={null} trial={pending} retry={vi.fn()} best={best} deckNames={deckNames} />
+        </ul>
+      </CardDetailProvider>,
+    );
+
+  it("draws the reason under the name, whole, with a deck drawn by its commander's short name in 600 --fg", () => {
+    drawWith(row({ reason }));
+    const line = screen.getByTestId("row-reason");
+    expect(line.textContent).toBe("Unlike Omnath, every land you play makes a creature.");
+    expect(line.className).toContain("text-[12.5px]");
+    expect(line.className).toContain("md:text-[13px]");
+    expect(line.className).toContain("[text-wrap:pretty]");
+    expect(line.className).not.toMatch(/truncate|line-clamp/);
+    const deck = screen.getByTestId("reason-deck");
+    expect(deck.className).toContain("font-semibold");
+    expect(deck.className).toContain("text-[color:var(--fg)]");
+    // The row's grid makes room: the reason takes the line under the name.
+    expect(line.parentElement!.className).toContain("row-start-2");
+  });
+
+  it("draws the reason on a best fit, after the name and before the figures", () => {
+    drawWith(row({ reason }), 1);
+    const card = screen.getByTestId("best-fit");
+    const line = screen.getByTestId("row-reason");
+    expect(card.contains(line)).toBe(true);
+    expect(line.previousElementSibling!.contains(screen.getByTestId("row-name"))).toBe(true);
+  });
+
+  it("draws no line for a reason naming a deck it cannot name, nor for a row with no reason", () => {
+    // Dropping the name alone would leave "Unlike , every land ...".
+    drawWith(row({ reason }), undefined, {});
+    expect(screen.queryByTestId("row-reason")).toBeNull();
+    cleanup();
+    drawWith(row());
+    expect(screen.queryByTestId("row-reason")).toBeNull();
+  });
+});
+
+describe("a best fit's art and rank (F11)", () => {
+  it("sizes the desktop art by the crop's own ratio, and moves the phone's rank into the name line", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn()}>
+        <ul>
+          <ChooseRow row={row({ artCropUri: "https://img/crop.jpg" })} figures={[]} owned={false} params={params} cardName={null} trial={pending} retry={vi.fn()} best={2} />
+        </ul>
+      </CardDetailProvider>,
+    );
+    const art = container.querySelector<HTMLElement>("[aria-hidden][style]")!;
+    expect(art.className).toContain("md:aspect-[626/457]");
+    expect(art.className).not.toContain("md:h-[132px]");
+    // Desktop: the shipped badge over the art. Phone: a 20px ring first in the name line.
+    const badge = screen.getByTestId("best-rank");
+    expect(badge.className).toContain("hidden");
+    expect(badge.className).toContain("md:flex");
+    const ring = screen.getByTestId("best-rank-phone");
+    expect(ring.textContent).toBe("2");
+    expect(ring.className).toContain("md:hidden");
+    expect(ring.className).toContain("w-[20px]");
+    expect(ring.parentElement!.firstElementChild).toBe(ring);
+    expect(ring.parentElement!.contains(screen.getByTestId("row-name"))).toBe(true);
   });
 });

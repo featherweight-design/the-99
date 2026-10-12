@@ -150,7 +150,7 @@ export function IntakeForm({
     <>
       {paid && (
         <span aria-hidden className="inline-flex items-center h-[32px] md:h-[30px] px-[10px] rounded-[7px] font-mono text-[11px] font-semibold text-[color:var(--bg)] bg-[color:color-mix(in_oklab,var(--bg)_22%,transparent)]">
-          {copy.intake.extra.cost}
+          {copy.read.cost}
         </span>
       )}
       {copy.intake.submit}
@@ -257,7 +257,7 @@ export function IntakeForm({
         {/* Desktop: the submit closes the panel, its credit line beside it. Never disabled: a
             blank submit searches. */}
         <div className="hidden md:flex items-center gap-[18px] pt-[20px] border-0 border-t border-solid border-[color:var(--border)]">
-          <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} aria-describedby={line ? lineDeskId : undefined} className={`${submitClass} h-[44px]`}>
+          <button type="submit" aria-label={paid ? copy.read.pressAria : undefined} aria-describedby={line ? lineDeskId : undefined} className={`${submitClass} h-[44px]`}>
             {press}
           </button>
           {line && <p id={lineDeskId} className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
@@ -269,7 +269,7 @@ export function IntakeForm({
         data-testid="choose-dock"
         className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20 p-[10px_16px_12px] border-0 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)]"
       >
-        <button type="submit" aria-label={paid ? copy.intake.extra.pressAria : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
+        <button type="submit" aria-label={paid ? copy.read.pressAria : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
           {press}
         </button>
         {line && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}

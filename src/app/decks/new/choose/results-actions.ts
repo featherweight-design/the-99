@@ -7,6 +7,7 @@ import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
+import { loadTheRead } from "../../../../lib/intake/run-store";
 import { isCandidate } from "../../../../lib/intake/search";
 import { trialFill, type TrialFigures } from "../../../../lib/intake/trial";
 import { isUuid } from "../../../../lib/uuid";
@@ -41,7 +42,10 @@ export async function moreRows(queryString: string, offset: number): Promise<Res
   if (typeof offset !== "number" || !Number.isInteger(offset) || offset < 0 || offset > MAX_OFFSET) {
     throw new Error("bad offset");
   }
-  return loadResultsPage(userId, answersOf(parseLiveParams(new URLSearchParams(qs))), offset);
+  const p = parseLiveParams(new URLSearchParams(qs));
+  // The read `r` names orders the list the same way on every slice, so a pick is never repeated.
+  const read = p.readId ? await loadTheRead(p.readId, userId) : null;
+  return loadResultsPage(userId, answersOf(p), offset, read?.kind === "done" ? read.result : null);
 }
 
 /** At most one slice of rows is counted per call. */

@@ -69,11 +69,16 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
   it("lands a repeat on its stored read, and a refusal (no credit, paused, in flight) on the free results", async () => {
     stub.begin.mockResolvedValue({ kind: "read", readId: "old", result: { picks: [], pool: 1, weighed: 0 }, repeat: true });
     expect(await landed("?w=scary")).toContain("r=old");
+    // Marked as a repeat, so its line says no credit was used (7m).
+    expect(await landed("?w=scary")).toContain("rr=1");
     for (const kind of ["allowance", "paused", "ownerShare", "in_flight"]) {
       stub.begin.mockResolvedValue({ kind });
       const to = await landed("?w=scary");
       expect(to).not.toContain("r=");
+      expect(to).not.toContain("rr=");
       expect(to).toContain("w=scary");
+      // Only a read already running names its cause (rb=1); the standing line says the rest.
+      expect(to?.includes("rb=1")).toBe(kind === "in_flight");
     }
     expect(stub.after).not.toHaveBeenCalled();
   });

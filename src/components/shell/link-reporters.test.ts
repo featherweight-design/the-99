@@ -38,6 +38,7 @@ const EXEMPT: Record<string, string> = {
   "components/intake/help-me-choose-door.tsx :: qs ? `${CHOOSE_PATH}?${qs}` : CHOOSE_PATH": KEPT,
   "components/intake/narrow-note.tsx :: changeHref": KEPT,
   "components/intake/narrow-note.tsx :: optionHref(o)": KEPT,
+  "components/intake/read-panel.tsx :: changeHref": KEPT,
   "components/intake/read-as-bar.tsx :: changeHref": KEPT,
   "components/intake/read-as-bar.tsx :: startOverHref": KEPT,
   "components/intake/search-failed.tsx :: changeHref": KEPT,

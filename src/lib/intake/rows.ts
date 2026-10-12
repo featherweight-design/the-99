@@ -8,6 +8,7 @@ import { loadPrices, slotFor } from "../discovery/price";
 import { loadCommanderPrintings } from "../sets/printed-in-read";
 import type { Answers, CardFacts, Ranked, SearchResult } from "./rank";
 import { loadCardRow, searchCommanders } from "./search";
+import { reorder, type ReadPicks, type ReasonPart } from "./the-read";
 
 /**
  * The results as the screen draws them (plan, PR 5a). SERVER-ONLY.
@@ -47,6 +48,8 @@ export type ResultRow = {
    * (addendum §2), from the lanes' `Printed in` index. Absent or null with none asked.
    */
   set?: { code: string; name: string } | null;
+  /** The read's line for this commander, on its picks alone (rework plan PR 4). */
+  reason?: ReasonPart[];
 };
 
 export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
@@ -54,17 +57,31 @@ export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
   rows: ResultRow[];
   /** More rows past this slice: *Show 12 more* is drawn only then. */
   hasMore: boolean;
+  /**
+   * How many commanders the answers allow: the read's pool, which its panel names while it reads
+   * (`read.stepScan`). Never printed as a count of results (F6).
+   */
+  total: number;
 };
 
-export async function loadResultsPage(userId: string, answers: Answers, offset = 0): Promise<ResultsPage> {
+/**
+ * `picks`: a settled read's (rework plan PR 4). Its commanders come first, in the read's order and
+ * each with its line, then every other row in the free order: the same list, re-ordered, so a slice
+ * past the first page never repeats a pick. A pick the current answers no longer list is skipped.
+ */
+export async function loadResultsPage(userId: string, answers: Answers, offset = 0, picks: ReadPicks | null = null): Promise<ResultsPage> {
   const outcome = await searchCommanders(userId, answers);
-  const slice = outcome.rows.slice(offset, offset + RESULT_PAGE);
+  const ordered = picks ? reorder(outcome.rows, (r) => r.candidate.oracleId, picks) : outcome.rows;
+  const slice = ordered.slice(offset, offset + RESULT_PAGE);
+  const reasons = new Map((picks?.picks ?? []).map((p) => [p.oracleId, p.reason]));
+  const rows = await decorate(userId, slice, answers.sets ?? []);
   return {
     order: outcome.order,
     tooNarrow: outcome.tooNarrow,
     card: outcome.card,
-    rows: await decorate(userId, slice, answers.sets ?? []),
-    hasMore: outcome.rows.length > offset + RESULT_PAGE,
+    rows: rows.map((r) => (reasons.has(r.oracleId) ? { ...r, reason: reasons.get(r.oracleId) } : r)),
+    hasMore: ordered.length > offset + RESULT_PAGE,
+    total: ordered.length,
   };
 }
 

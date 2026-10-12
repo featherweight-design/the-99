@@ -118,6 +118,44 @@ export async function loadOwnRead(readId: string, userId: string): Promise<{ kin
 }
 
 /**
+ * A two-step read by its id, as the results page and its panel draw it (rework plan PR 4): where it
+ * stands, and its picks once settled. Scoped to the reader: another player's id reads as none.
+ */
+export type TheReadState =
+  | { kind: "pending"; phase: "shortlist" | "judge" | null }
+  | { kind: "done"; result: TheReadResult }
+  | { kind: "nothing"; result: TheReadResult | null }
+  | { kind: "failed" }
+  | { kind: "stopped" }
+  | { kind: "none" };
+
+export async function loadTheRead(readId: string, userId: string, now: Date = new Date()): Promise<TheReadState> {
+  const [row] = await db.select({
+    status: intakeReads.status, errorClass: intakeReads.errorClass, phase: intakeReads.phase,
+    result: intakeReads.result, createdAt: intakeReads.createdAt, chips: intakeReads.chips,
+  }).from(intakeReads).where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
+  if (!row) return { kind: "none" };
+  const result = (row.result ?? null) as TheReadResult | null;
+  if (row.status === "pending") {
+    if (row.createdAt >= reapCutoff(now)) return { kind: "pending", phase: (row.phase ?? null) as "shortlist" | "judge" | null };
+    // Past the reaper's cutoff nothing will settle it. Reap it here, refunding its credit, before
+    // the panel says the credit came back: the allowance then agrees with what it is told. A
+    // settle or a Stop can land between the read above and the reap, which then takes nothing:
+    // the row is read again, so it answers as what it became rather than as failed.
+    const reaped = await db.transaction((tx) => reapReads(tx, userId, now));
+    if (reaped === 0) return loadTheRead(readId, userId, now);
+    return { kind: "failed" };
+  }
+  if (row.status === "ok" && result) return { kind: "done", result };
+  // A read from the retired one-call engine carries `chips` and no `result`: it settled, and was
+  // charged, but has nothing this panel can draw. It reads as no read at all, never as failed.
+  if (!result && row.chips) return { kind: "none" };
+  if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", result };
+  if (row.status === "cancelled") return { kind: "stopped" };
+  return { kind: "failed" };
+}
+
+/**
  * The player's settled read of this ask, with its own id, when there is one: a delivered read, or
  * one that found nothing to add. Both are the ask's answer, so neither is asked again; a repeat of
  * a nothing read would otherwise call the model again for the same words.

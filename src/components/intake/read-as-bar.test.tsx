@@ -13,7 +13,7 @@ const chip = (over: Partial<CardChip> = {}): CardChip => ({
   oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 }, ...over,
 });
 
-function bar(props: { card?: CardChip | null; notUsed?: string[]; empty?: boolean } = {}) {
+function bar(props: { card?: CardChip | null; words?: string; empty?: boolean } = {}) {
   const p = props.empty
     ? emptyParams()
     : { ...emptyParams(), colors: ["r", "g"], match: "exactly" as const, themes: ["dinosaurs"], card: CARD, budgetDollars: 150, bracket: 2 as const };
@@ -22,7 +22,7 @@ function bar(props: { card?: CardChip | null; notUsed?: string[]; empty?: boolea
       <ReadAsBar
         chips={answerChips(p, labels)}
         card={props.card === undefined ? chip() : props.card}
-        notUsed={props.notUsed ?? []}
+        words={props.words}
         changeHref="/decks/new/choose?t=dinosaurs"
         startOverHref="/decks/new/choose"
       />
@@ -30,7 +30,7 @@ function bar(props: { card?: CardChip | null; notUsed?: string[]; empty?: boolea
   );
 }
 
-describe("We read this as", () => {
+describe("Your answers", () => {
   it("draws one read-only chip per answer, in the form's order", () => {
     bar();
     const chips = screen.getAllByTestId("answer-chip").map((c) => c.textContent);
@@ -45,16 +45,14 @@ describe("We read this as", () => {
     expect(within(screen.getByRole("region")).getAllByRole("button")).toHaveLength(1);
   });
 
-  it("draws the deeper look's chips after every free-match chip", () => {
-    const p = { ...emptyParams(), themes: ["tokens", "dinosaurs"], budgetDollars: 150 };
-    render(
-      <CardDetailProvider fetchCard={vi.fn()}>
-        <ReadAsBar chips={answerChips(p, labels, ["t:tokens"])} card={null} notUsed={[]} changeHref="/x" startOverHref="/y" />
-      </CardDetailProvider>,
-    );
-    const chips = screen.getAllByTestId("answer-chip");
-    expect(chips.map((c) => c.textContent)).toEqual(["themeDinosaurs", "budget$150", "themetokensdeeper"]);
-    expect(chips[2].dataset.deeper).toBe("true");
+  it("heads the answers Your answers, and draws every chip solid, with no deeper mark (T1)", () => {
+    bar();
+    expect(screen.getByRole("heading", { name: "Your answers" })).toBeTruthy();
+    for (const c of screen.getAllByTestId("answer-chip")) {
+      expect(c.className).toContain("border-solid");
+      expect(c.className).not.toContain("border-dashed");
+      expect(c.textContent).not.toContain("deeper");
+    }
   });
 
   it("opens the card from the card chip's name, and prices an unowned card on its buy tag", () => {
@@ -80,28 +78,33 @@ describe("We read this as", () => {
     expect(screen.getByTestId("card-chip-held").textContent).toBe("none free, in Atraxa");
   });
 
-  it("quotes Not used as phrases, apart from the chips, and only when there are any", () => {
-    bar({ notUsed: ["that stomp", "$200"] });
-    const line = screen.getByTestId("not-used");
-    // The quotes are the text's own: a `q` element's are the browser's to draw, or not.
-    expect(line.textContent).toBe("Not used“that stomp”“$200”");
-    expect(line.querySelectorAll("q")).toHaveLength(0);
-    expect(screen.getAllByTestId("not-used-phrase")[0].className).toContain("border-dotted");
+  it("quotes what the player wrote under You wrote, in curly quotes, and draws no Not used", () => {
+    bar({ words: "  something scary and a little nasty  " });
+    const wrote = screen.getByTestId("you-wrote");
+    expect(wrote.textContent).toBe("You wrote“something scary and a little nasty”");
+    expect(wrote.className).toContain("border-t");
+    expect(wrote.querySelectorAll("q")).toHaveLength(0);
+    expect(screen.queryByTestId("not-used")).toBeNull();
+  });
+
+  it("draws no You wrote block with no words, or only spaces", () => {
     bar({});
-    expect(screen.getAllByTestId("not-used")).toHaveLength(1);
+    expect(screen.queryByTestId("you-wrote")).toBeNull();
+    bar({ words: "   " });
+    expect(screen.queryByTestId("you-wrote")).toBeNull();
   });
 
   it("says no answers were given, and still offers both ways back", () => {
     bar({ empty: true, card: null });
-    expect(screen.getByText("No answers given")).toBeTruthy();
+    expect(screen.getByText("No answers given: every commander you haven’t built")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Change answers" }).getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs");
     expect(screen.getByRole("link", { name: "Start over" }).getAttribute("href")).toBe("/decks/new/choose");
   });
 
-  it("does not say no answers were given beside words it could not use", () => {
-    bar({ empty: true, card: null, notUsed: ["that stomp"] });
-    expect(screen.queryByText("No answers given")).toBeNull();
-    expect(screen.getByTestId("not-used")).toBeTruthy();
+  it("says no answers were given beside words, which are never answers", () => {
+    bar({ empty: true, card: null, words: "something scary" });
+    expect(screen.getByText("No answers given: every commander you haven’t built")).toBeTruthy();
+    expect(screen.getByTestId("you-wrote")).toBeTruthy();
   });
 });
 
@@ -111,7 +114,7 @@ describe("an any-of chip", () => {
     const p = { ...emptyParams(), themes: ["orcs", "elves", "wizards"], themeJoin: "any" as const };
     render(
       <CardDetailProvider fetchCard={vi.fn()}>
-        <ReadAsBar chips={answerChips(p, tribes)} card={null} notUsed={[]} changeHref="/x" startOverHref="/y" />
+        <ReadAsBar chips={answerChips(p, tribes)} card={null} changeHref="/x" startOverHref="/y" />
       </CardDetailProvider>,
     );
     const [only] = screen.getAllByTestId("answer-chip");
@@ -130,7 +133,7 @@ describe("a printed-in chip", () => {
     const p = { ...emptyParams(), sets: ["hob", "hoc"] };
     render(
       <CardDetailProvider fetchCard={vi.fn()}>
-        <ReadAsBar chips={answerChips(p, labels2)} card={null} notUsed={[]} changeHref="/x" startOverHref="/y" />
+        <ReadAsBar chips={answerChips(p, labels2)} card={null} changeHref="/x" startOverHref="/y" />
       </CardDetailProvider>,
     );
     const [only] = screen.getAllByTestId("answer-chip");
