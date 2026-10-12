@@ -55,7 +55,7 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
   const scopeLine = <span data-stats-scope className="font-mono text-[11px] text-[color:var(--fg-muted)]">{scope}</span>;
 
   return (
-    <div data-decks-stats className="flex min-h-0 flex-auto flex-col">
+    <div data-decks-stats className="flex min-h-0 w-full flex-auto flex-col md:max-w-[900px]">
       {/* The view row: the switch, then (from md) the filter and its scope line in the same row. */}
       <div className="flex items-center gap-[8px] px-[16px] pt-[8px] pb-[10px] md:flex-wrap md:gap-[6px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:py-[10px]">
         {viewSwitch}

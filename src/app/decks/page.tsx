@@ -20,7 +20,7 @@ import { noticesEnabled } from "../../lib/notices/flag";
 import { DecksView } from "../../components/decks/decks-view";
 import { cookies } from "next/headers";
 import { lineupEnabled } from "../../lib/decks/lineup-flag";
-import { loadLineup } from "../../lib/lineup/load";
+import { readLineupCached } from "../../lib/lineup/cached";
 import { DECKS_STATS_OPEN_COOKIE, DECKS_VIEW_COOKIE, parseDecksViewCookie } from "../../components/ui/view-cookie";
 
 
@@ -51,7 +51,7 @@ export default async function DecksPage({
   const askedView = Array.isArray(params.view) ? params.view[0] : params.view;
   const view = !statsOn ? "tiles" : askedView === "stats" ? "stats" : askedView === undefined && parseDecksViewCookie(jar?.get(DECKS_VIEW_COOKIE)?.value) === "stats" ? "stats" : "tiles";
   const lineupData = view === "stats"
-    ? cachePageForUser(userId, "lineup", [], async () => ({ value: await loadLineup(userId), store: true }))
+    ? readLineupCached(userId)
     : null;
   // The tile's bracket chip reads each deck's last analyzed bracket. Off with the Analysis tab's
   // flag, because a chip that lands on a tab nobody can open is a promise the page cannot keep.

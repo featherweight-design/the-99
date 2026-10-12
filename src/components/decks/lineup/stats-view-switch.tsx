@@ -11,14 +11,20 @@ export const SEGMENT = "inline-flex h-[40px] items-center justify-center rounded
 export const SEGMENT_ON = "bg-[var(--elevated)] font-semibold text-[color:var(--fg)]";
 export const SEGMENT_OFF = "bg-transparent font-normal text-[color:var(--fg-muted)]";
 
-export function StatsViewSwitch({ view, onView }: { view: DecksView; onView: (v: DecksView) => void }) {
+export function StatsViewSwitch({ view, onView, busy = false }: {
+  view: DecksView;
+  onView: (v: DecksView) => void;
+  /** Stats is being read for the first time this visit: the switch says so and ignores a second press. */
+  busy?: boolean;
+}) {
   const seg = (v: DecksView, label: string) => (
     <button
       type="button"
       role="tab"
       aria-selected={view === v}
       data-decks-view={v}
-      onClick={() => { if (view !== v) onView(v); }}
+      aria-busy={busy && v === "stats" ? true : undefined}
+      onClick={() => { if (view !== v && !busy) onView(v); }}
       className={`${SEGMENT} ${view === v ? SEGMENT_ON : SEGMENT_OFF}`}
     >
       {label}

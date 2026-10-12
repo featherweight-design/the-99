@@ -88,6 +88,7 @@ import { DecksMarkKey } from "./decks-mark-key";
 import { mirrorUrl } from "../../lib/url/mirror";
 import type { LineupData } from "../../lib/lineup/types";
 import { DECKS_VIEW_COOKIE, type DecksView as DecksViewName } from "../ui/view-cookie";
+import { readLineupStats } from "../../app/decks/lineup-actions";
 import { LineupView } from "./lineup/lineup-view";
 import { StatsViewSwitch } from "./lineup/stats-view-switch";
 
@@ -329,6 +330,7 @@ export function DecksView({
   // from the server always replaces it, adjusted in render so the old one never paints first.
   const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : "tiles");
   const [heldStats, setHeldStats] = useState<LineupData | null>(lineup?.data ?? null);
+  const [statsPending, setStatsPending] = useState(false);
   if (lineup?.data && lineup.data !== heldStats) {
     setHeldStats(lineup.data);
     // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
@@ -344,16 +346,26 @@ export function DecksView({
     if (next === "stats") params.set("view", "stats");
     else params.delete("view");
     const url = params.size > 0 ? `?${params}` : window.location.pathname;
-    // Stats not read yet this visit: ask the server for it, which is what reads it.
+    // Stats not read yet this visit: read it (the page's own cached read), then flip in place. A failed read
+    // leaves Tiles drawn, and a second press asks again.
     if (next === "stats" && !heldStats) {
-      router.push(url);
+      setStatsPending(true);
+      readLineupStats()
+        .then((data) => {
+          if (!data) return;
+          setHeldStats(data);
+          setView("stats");
+          mirrorUrl(url);
+        })
+        .catch(() => {})
+        .finally(() => setStatsPending(false));
       return;
     }
     setView(next);
     mirrorUrl(url);
   };
   const statsOn = lineup !== null && view === "stats" && heldStats !== null;
-  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={onView} /> : null;
+  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={onView} busy={statsPending} /> : null;
 
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a
