@@ -6,16 +6,17 @@ import { gotItCopy } from "../../../lib/copy/i-got-it";
 import { cardAssignmentsCopy } from "../../../lib/copy/card-assignments";
 import type { SelectedLine } from "../../../lib/decks/cart";
 
-const { loadPrintingChoices, markBoughtForDecks, readCartChooser, previewRevert } = vi.hoisted(() => ({
+const { loadPrintingChoices, markBoughtForDecks, readCartChooser, previewRevert, revertCollectionEntry } = vi.hoisted(() => ({
   loadPrintingChoices: vi.fn(),
   markBoughtForDecks: vi.fn(),
   readCartChooser: vi.fn(),
   previewRevert: vi.fn(),
+  revertCollectionEntry: vi.fn(),
 }));
 vi.mock("../../../app/collection/edit-actions", () => ({ loadPrintingChoices }));
 vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, readCartChooser, markBought: vi.fn() }));
 vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
-vi.mock("../../../app/collection/history-actions", () => ({ previewRevert, revertCollectionEntry: vi.fn() }));
+vi.mock("../../../app/collection/history-actions", () => ({ previewRevert, revertCollectionEntry }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { CartGotItProvider, cartReceiptBody, useCartGotIt } = await import("./cart-got-it");
@@ -159,6 +160,57 @@ describe("CartGotItProvider", () => {
     await act(async () => { fireEvent.click(add); });
     expect(await screen.findByText(copy.confirm.staleBody(2), { exact: false })).toBeTruthy();
   });
+
+  // What the line says was added this visit, read from the provider as the cart's rows read it.
+  function Counts() {
+    const held = useCartGotIt()!.held.get(ORACLE);
+    return <output data-testid="held">{held ? `${held.added}|${[...held.deckIds].sort().join(",")}` : "none"}</output>;
+  }
+  const oneDeck = (deckId: string, id: string): SelectedLine => ({
+    ...line, copies: 1, cents: 150, pricedCopies: 1, selectedRows: line.selectedRows.filter((r) => r.deckId === deckId),
+  });
+  function Press({ of, label }: { of: SelectedLine; label: string }) {
+    const gotIt = useCartGotIt()!;
+    return <button type="button" onClick={(e) => gotIt.open(of, e.currentTarget)}>{label}</button>;
+  }
+  const buy = async (label: string, entry: string, quantity: number) => {
+    markBoughtForDecks.mockResolvedValueOnce({ applied: { id: entry, quantity, receipt: { covered: [], still: [] } } });
+    fireEvent.click(screen.getByRole("button", { name: label }));
+    const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(quantity) });
+    await act(async () => { fireEvent.click(add); });
+    await waitFor(() => expect(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })).toBeTruthy());
+  };
+
+  it("counts what was added across presses, for the union of their decks", async () => {
+    render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><Press of={oneDeck(G, "a")} label="g" /><Press of={oneDeck(K, "b")} label="k" /><Counts /></CartGotItProvider>);
+    await buy("g", "e1", 1);
+    expect(screen.getByTestId("held").textContent).toBe(`1|${G}`);
+    await buy("k", "e2", 1);
+    // The second press was for another deck: both decks keep the slot, and both copies are counted.
+    expect(screen.getByTestId("held").textContent).toBe(`2|${[G, K].sort().join(",")}`);
+  });
+
+  it("forgets the line once its only press is undone, so no slot is held for it", async () => {
+    revertCollectionEntry.mockResolvedValue({ reverted: true });
+    render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><Press of={oneDeck(G, "a")} label="g" /><Counts /></CartGotItProvider>);
+    await buy("g", "e1", 1);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    await waitFor(() => expect(screen.getByTestId("held").textContent).toBe("none"));
+  });
+
+  it("takes an undone press back out of the count, and its decks", async () => {
+    revertCollectionEntry.mockResolvedValue({ reverted: true });
+    render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><Press of={oneDeck(G, "a")} label="g" /><Press of={oneDeck(K, "b")} label="k" /><Counts /></CartGotItProvider>);
+    await buy("g", "e1", 1);
+    await buy("k", "e2", 1);
+    // The receipt on screen is the latest press's: undoing it subtracts that purchase only.
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    await waitFor(() => expect(screen.getByTestId("held").textContent).toBe(`1|${G}`));
+    await buy("k", "e3", 1);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    await waitFor(() => expect(screen.getByTestId("held").textContent).toBe(`1|${G}`));
+  });
+
 });
 
 describe("the S1b chooser", () => {

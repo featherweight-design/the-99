@@ -332,6 +332,38 @@ describe("CartView by deck (A5)", () => {
       expect(list().queryAllByRole("listitem").some((li) => li.hasAttribute("data-held-slot"))).toBe(false);
     });
 
+    it("keeps the slot for either deck a line was bought for, whichever press the cart remembers", async () => {
+      loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 17 },
+      }]);
+      const toggle = (name: string, on: boolean) =>
+        fireEvent.click(screen.getAllByRole("checkbox", { name: copy.selections.aria(name, on) })[0]);
+      const buyFor = async (entry: string) => {
+        markBoughtForDecks.mockResolvedValueOnce({ applied: { id: entry, quantity: 1, receipt: { covered: [], still: [] } } });
+        fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
+        const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(1) });
+        await act(async () => { fireEvent.click(add); });
+        await screen.findByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") });
+      };
+      const { rerender } = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      toggle("HD - Gishath", true);
+      await buyFor("e1");
+      toggle("HD - Gishath", false);
+      toggle("HD - Kratos", true);
+      await buyFor("e2");
+      const after = cart();
+      after.lines = after.lines.filter((l) => l.oracleId !== "sol");
+      rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      const slots = () => list().queryAllByRole("listitem").filter((li) => li.hasAttribute("data-held-slot"));
+      // Gishath alone, then Kratos alone: each deck was bought for in one press, and each keeps the slot.
+      expect(slots()).toHaveLength(1);
+      toggle("HD - Gishath", true);
+      toggle("HD - Kratos", false);
+      expect(slots()).toHaveLength(1);
+    });
+
     it("names a deck the purchase finished from the cart as it was when the confirm opened", async () => {
       loadPrintingChoices.mockResolvedValue([{
         scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",

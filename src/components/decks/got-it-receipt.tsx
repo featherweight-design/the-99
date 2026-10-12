@@ -66,6 +66,8 @@ export type GotItUndoHost = {
   end: (oracleId: string) => void;
   /** It failed after this toast was replaced: the provider brings this receipt back, failed. */
   failedAway: () => void;
+  /** The revert committed (or was already committed elsewhere): what the host counted for this entry no longer holds. */
+  undone?: (entryId: string) => void;
 };
 
 export function GotItReceipt({
@@ -194,13 +196,16 @@ export function GotItReceipt({
    * The revert committed. `reverted` invalidated the deck page in the action; `alreadyReverted`
    * wrote nothing, so nothing did, and the list is re-read here (C7). The toast says only what the
    * revert did, which is true whatever the list then shows (the deck may still be covered by
-   * copies added since). The held entry stays until the next read: the decklist draws the slot
-   * only while the list omits the card, so it steps aside once a list billing the card arrives.
+   * copies added since). On the deck page the held entry stays until the next read: the decklist
+   * draws the slot only while the list omits the card, so it steps aside once a list billing the
+   * card arrives. A host that implements `undone` (the cart) drops that purchase from its own
+   * held figures at once.
    */
   function done(refresh: boolean) {
     if (refresh) router.refresh();
     stage.current = "idle";
     host.end(oracleId);
+    host.undone?.(written.entryId);
     restart();
     setPhase({ k: "undone" });
   }

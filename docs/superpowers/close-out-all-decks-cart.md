@@ -45,7 +45,7 @@ Every inventory row is in the contact sheet at each width it exists at: 18 cells
 
 ## Follow-ups
 
-- **`added this visit` over-counts after an undo** (from #1479, round 4, declined there as a scope decision). The held map adds every successful press's copies and never subtracts an undone one. A line the read lists again after an Undo then reads `N added this visit` one press high, until the cart is next read. A second press on the same line for a different deck selection keeps only the first press's decks, so it can suppress a held slot for a line the read still lists. The receipt, the collection and History are all correct. The fix is to key the held map per purchase, with the union of their decks, and subtract on a committed undo.
+- **`added this visit` over-counts after an undo: fixed** (2026-10-12). The held map is keyed per purchase (the ledger entry), with the decks each press was for. A committed undo (`GotItUndoHost.undone`, called when the revert commits or was already committed) takes its own purchase back out, so the count drops and the slot's decks are the union of the presses that remain; a line left with no purchase is forgotten. A second press for other decks now adds to the first's decks instead of being dropped. Tests in `cart-got-it.test.tsx`.
 
 ## Seen, not changed
 

@@ -28,8 +28,28 @@ type Receipt = {
   picked: string | null;
 };
 
-/** A line bought this visit: the line as drawn before the first press, and every copy added since. */
-export type CartHeld = { line: SelectedLine; added: number };
+/**
+ * A line bought this visit: the line as drawn before the first press (it pins the slot's place and name),
+ * the copies added since and the decks those presses were for. Kept per PURCHASE (`purchases`, by ledger
+ * entry) so an undo takes back exactly its own press and a second press for other decks adds to the first's
+ * decks rather than being dropped; `added` and `deckIds` are what the purchases sum to.
+ */
+export type CartHeld = {
+  line: SelectedLine;
+  added: number;
+  deckIds: ReadonlySet<string>;
+  purchases: ReadonlyMap<string, { quantity: number; deckIds: readonly string[] }>;
+};
+
+function summed(line: SelectedLine, purchases: CartHeld["purchases"]): CartHeld {
+  let added = 0;
+  const deckIds = new Set<string>();
+  for (const p of purchases.values()) {
+    added += p.quantity;
+    for (const d of p.deckIds) deckIds.add(d);
+  }
+  return { line, added, deckIds, purchases };
+}
 
 const NONE: ReadonlyMap<string, CartHeld> = new Map();
 const NO_IDS: ReadonlySet<string> = new Set();
@@ -133,8 +153,15 @@ export function CartGotItProvider({
     close();
     if (!t) return;
     const id = t.line.oracleId;
-    // The first press's line pins the slot; every press adds its copies.
-    setHeld((h) => new Map(h).set(id, { line: h.get(id)?.line ?? t.line, added: (h.get(id)?.added ?? 0) + written.quantity }));
+    // The first press's line pins the slot; every press is its own purchase, with the decks it was for.
+    setHeld((h) => {
+      const prev = h.get(id);
+      const purchases = new Map(prev?.purchases ?? []).set(written.entryId, {
+        quantity: written.quantity,
+        deckIds: t.line.selectedRows.map((r) => r.deckId),
+      });
+      return new Map(h).set(id, summed(prev?.line ?? t.line, purchases));
+    });
     setReceipt({ line: t.line, written, names: t.names, picked });
   }, [close]);
   const undoHost = useMemo(() => ({
@@ -142,8 +169,20 @@ export function CartGotItProvider({
     end: (id: string) => setUndoing((u) => (u.has(id) ? new Set([...u].filter((x) => x !== id)) : u)),
   }), []);
   const expire = useCallback(() => setReceipt(null), []);
+  // A committed undo takes back its own purchase. A line left with none has nothing bought this visit.
+  const undone = useCallback((id: string, entryId: string) => setHeld((h) => {
+    const prev = h.get(id);
+    if (!prev?.purchases.has(entryId)) return h;
+    const purchases = new Map(prev.purchases);
+    purchases.delete(entryId);
+    const next = new Map(h);
+    if (purchases.size === 0) next.delete(id);
+    else next.set(id, summed(prev.line, purchases));
+    return next;
+  }), []);
   const hostFor = (r: Receipt): GotItUndoHost => ({
     ...undoHost,
+    undone: (entryId) => undone(r.line.oracleId, entryId),
     failedAway: () => setReceipt((cur) => (cur?.written.entryId === r.written.entryId ? cur : { ...r, failed: true })),
   });
   const value = useMemo<CartGotIt>(
