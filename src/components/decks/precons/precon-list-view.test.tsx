@@ -127,4 +127,14 @@ describe("PreconListView", () => {
     fireEvent.change(search, { target: { value: "eldrazi" } });
     expect(window.location.search).toBe("?q=eldrazi&view=rows");
   });
+
+  it("keeps an explicit ?view=tiles through a filter's mirror, over a stored rows", () => {
+    window.localStorage.setItem("the99:precons:view", "rows");
+    window.history.replaceState(null, "", "/decks/precons?view=tiles");
+    view({ q: "", colours: [], order: null, view: "tiles" });
+    expect(screen.getByRole("button", { name: "Tiles view" })).toHaveAttribute("aria-pressed", "true");
+    const search = screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
+    fireEvent.change(search, { target: { value: "eldrazi" } });
+    expect(window.location.search).toBe("?q=eldrazi&view=tiles");
+  });
 });

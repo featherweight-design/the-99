@@ -89,8 +89,13 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
     if (next.q.trim()) live.set("q", next.q.trim());
     if (next.colours.length) live.set("colour", next.colours.join(","));
     if (next.order !== "newest") live.set("sort", next.order);
-    // Tiles is the default, so only rows is written (R4 §2).
-    if ((next.view ?? view) === "rows") live.set("view", "rows");
+    // Tiles is the default, so only rows is written when the reader picks a view (R4 §2). A filter's
+    // mirror keeps the view the address already names, an explicit `?view=tiles` included: dropping it
+    // would leave a URL that reloads as this browser's stored rows while the page draws tiles.
+    if (next.view !== undefined) {
+      if (next.view === "rows") live.set("view", "rows");
+    } else if (urlView !== null) live.set("view", urlView);
+    else if (view === "rows") live.set("view", "rows");
     const written = live.toString();
     // Seen before it is written, so this view's own write never reads back as a navigation (which
     // would re-parse a search mid-word and drop its trailing space).
