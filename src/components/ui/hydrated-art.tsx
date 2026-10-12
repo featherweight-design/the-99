@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ImgHTMLAttributes, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ImgHTMLAttributes, type RefObject } from "react";
 
 /**
  * Card art that waits for the page to hydrate.
@@ -64,16 +64,75 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
 }
 
 /**
+ * How card art arrives (motion plan E4; Hugh, 2026-10-12: art popped in on /collection's tiles).
+ * `armArtArrival` marks `el` with `data-arrival="pending"` while `image`'s bytes are on their way, `in`
+ * for the one fade when they land (or fail: a broken image is not held behind a fade that never
+ * ends), and `done` when `image` had already settled the moment it was armed, so art drawn from the
+ * cache, or already painted before the page hydrated, is never faded or hidden. The CSS hides
+ * `pending` and plays `in` only under `prefers-reduced-motion: no-preference` (and an art-wash
+ * layer under reduced transparency, whose opacity is fixed, appears without the fade). Written to
+ * the DOM from a layout effect rather than rendered: the server HTML carries no mark, so art is
+ * visible without script, and the mark lands before the first paint that could show the source.
+ */
+export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => void {
+  // Complete when its source is set means settled already: drawn from the cache, or already broken,
+  // and a broken one would fire nothing more to release it.
+  // Disarming clears the mark too: an element that stops fading (its source moved, or it became
+  // eager) must not keep a `pending` it will never leave.
+  const clear = () => {
+    delete el.dataset.arrival;
+  };
+  if (image.complete) {
+    el.dataset.arrival = "done";
+    return clear;
+  }
+  el.dataset.arrival = "pending";
+  const land = () => {
+    if (el.dataset.arrival === "pending") el.dataset.arrival = "in";
+  };
+  image.addEventListener("load", land);
+  image.addEventListener("error", land);
+  return () => {
+    image.removeEventListener("load", land);
+    image.removeEventListener("error", land);
+    clear();
+  };
+}
+
+/**
+ * Fades an <img>'s art in when it lands (`armArtArrival`), re-armed for each new source (a printing
+ * pick swaps a tile's art in place). For any <img> of card art, eager or lazy, server-drawn or not.
+ */
+export function useArtFade(ref: RefObject<HTMLImageElement | null>, src: unknown): void {
+  useLayoutEffect(() => {
+    const img = ref.current;
+    if (!img || !src) return;
+    return armArtArrival(img, img);
+  }, [ref, src]);
+}
+
+/**
  * An <img> whose `src` and `srcSet` are withheld until the page has hydrated AND the img has come
  * within 600px of the viewport, unless `eager`, which asks for them in the server HTML. A `srcSet`
  * left on the element would let the browser pick and fetch a candidate with no `src` at all, past
  * both gates. Everything else passes through, so a surface keeps its own box: before its source arrives the img still takes its size,
- * and the ground behind it shows.
+ * and the ground behind it shows. Its art fades in when it lands (`useArtFade`); eager art that
+ * has already painted by the time the page hydrates is left as it is.
  */
 export function HydratedImg({ eager = false, src, srcSet, alt = "", ...rest }: ImgHTMLAttributes<HTMLImageElement> & { eager?: boolean }) {
   const ref = useRef<HTMLImageElement | null>(null);
   const near = useNearViewport(ref, !eager);
   const show = eager || near;
+  useArtFade(ref, show ? (src ?? srcSet) : undefined);
   // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
   return <img ref={ref} alt={alt} src={show ? src : undefined} srcSet={show ? srcSet : undefined} {...rest} />;
+}
+
+/** A plain <img> of card art that fades in when it lands (`useArtFade`): for a surface that loads
+ *  its art natively (`loading="lazy"`) rather than through `HydratedImg`'s gates. */
+export function FadingImg({ src, alt = "", ...rest }: ImgHTMLAttributes<HTMLImageElement>) {
+  const ref = useRef<HTMLImageElement | null>(null);
+  useArtFade(ref, src);
+  // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
+  return <img ref={ref} alt={alt} src={src} {...rest} />;
 }

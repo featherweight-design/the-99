@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, type CSSProperties } from "react";
-import { useNearViewport } from "./hydrated-art";
+import { useLayoutEffect, useRef, type CSSProperties } from "react";
+import { cssUrl } from "../../lib/collection/browse";
+import { armArtArrival, useNearViewport } from "./hydrated-art";
 
 /**
  * An art-wash layer that asks for its crop only once the page has hydrated and the layer is within
@@ -9,9 +10,20 @@ import { useNearViewport } from "./hydrated-art";
  * so a list that draws its art eagerly spends the slow link on art the reader cannot see while the
  * page's own script waits behind it. The layer keeps its box and style throughout: before the crop
  * arrives the band's plate shows, exactly as it does while an eager crop is still loading.
+ *
+ * A background has no load event, so a preloaded Image of the same source stands in for one: the
+ * layer fades in when it lands, or draws at once when the crop is already cached (`armArtArrival`).
+ * The Image and the background are asked for in the same commit, so the fade adds no wait of its own.
  */
-export function NearViewportArt({ uri, className, style }: { uri: string; className: string; style: CSSProperties }) {
+export function NearViewportArt({ src, className, style }: { src: string; className: string; style: CSSProperties }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const near = useNearViewport(ref, true);
-  return <div ref={ref} className={className} style={near ? { ...style, backgroundImage: uri } : style} />;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!near || !el) return;
+    const image = new Image();
+    image.src = src;
+    return armArtArrival(el, image);
+  }, [near, src]);
+  return <div ref={ref} className={className} style={near ? { ...style, backgroundImage: cssUrl(src) } : style} />;
 }

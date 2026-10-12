@@ -25,6 +25,7 @@ import { setPageCopy } from "../../lib/copy/set-collections";
 import { PriceTag } from "../cards/price-tag";
 import type { Cell } from "../../lib/sets/completion";
 import { PreviewButton } from "../ui/preview-button";
+import { FadingImg } from "../ui/hydrated-art";
 
 // The cell carries NO width or height literal, at any width (addendum R2 §27). The grid
 // track sets the width and `aspect-ratio: 63/88` sets the height, which makes the
@@ -113,8 +114,7 @@ export function SetCell({
         }}
       >
         {cell.imageUriSmall ? (
-          // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote and unsized; next/image would need a loader per host for no gain at a ~150px track
-          <img
+          <FadingImg
             src={cell.imageUriSmall}
             alt=""
             loading="lazy"

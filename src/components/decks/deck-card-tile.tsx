@@ -55,6 +55,7 @@ import { useLockCards } from "./lock-cards";
 import { LockMark } from "./lock-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { usePreviewRow } from "./hover-preview";
+import { FadingImg } from "../ui/hydrated-art";
 
 // The shell and the art ratio live in `ui/card-tile-caption`, a server-safe module: this one is
 // `"use client"`, so a server component reading them from here got client references, not strings.
@@ -265,8 +266,7 @@ export function DeckCardTile({
                 99-card deck asked for every card's `normal` art at once. `object-cover`
                 centred is exactly what `center / cover` drew. */}
             {card.imageUri ? (
-              // eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host and would re-encode art the CDN already sizes
-              <img
+              <FadingImg
                 src={card.imageUri}
                 alt=""
                 loading="lazy"

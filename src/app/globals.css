@@ -897,6 +897,24 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .gentle-hold { opacity: 0; }
 }
 
+/* Card art fades in when its bytes land (motion plan E4; `armArtArrival`): the img or
+   art-wash layer holds transparent while `pending`, so the ground behind it shows, then fades to
+   its own opacity (no `to` frame) on the motion curve. No `--motion-delay`: the art has already
+   arrived, and a beat would only hold it back. Art already painted when the page hydrates, and
+   cached art, never take `pending`, and with reduced motion the attribute does nothing: the art is
+   drawn as it lands. */
+@keyframes art-in {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* `!important`: an art-wash layer sets its own opacity inline, which would otherwise win. The
+     doubled attribute outranks reduced transparency's fixed `.art-wash-art` opacity too, so a layer
+     still holds while pending there (it then appears at that opacity without the fade, since that
+     rule's `!important` also outranks the animation). */
+  [data-arrival="pending"][data-arrival] { opacity: 0 !important; }
+  [data-arrival="in"] { animation: art-in var(--motion-duration) var(--motion-ease); }
+}
+
 /* The phone card sheet's snap between the teaser and full (H23 PR 3, README R2 "Motion"), and the
    card band dimming to .35 under it, on the same 240ms. A drag marks the sheet `data-dragging`,
    and it follows the finger with no transition at all. Here rather than as utilities because the

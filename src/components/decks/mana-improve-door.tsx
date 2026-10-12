@@ -35,6 +35,7 @@ import { ColorDisc, NeedsExplainer } from "./mana-evidence";
 import { FailureMark } from "./tuning-history";
 import { AnsweredRow, Arrow } from "./suggestion-card";
 import { MutationError } from "./mutation-error";
+import { FadingImg } from "../ui/hydrated-art";
 
 export type HelpRead = (deckId: string, color: string) => Promise<ManaHelp | null>;
 export type TradeActions = {
@@ -527,8 +528,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
           aria-hidden
           className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] ${staple.imageUri ? "bg-[var(--surface)]" : "bg-[repeating-linear-gradient(135deg,var(--surface)_0_3px,var(--surface-sunken)_3px_6px)]"} ${owned ? "border border-[color:var(--border-strong)]" : "border border-dashed border-[color:var(--border-dashed)]"}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host for a 22px thumbnail */}
-          {staple.imageUri ? <img src={staple.imageUri} alt="" loading="lazy" className="size-full object-cover" /> : null}
+          {staple.imageUri ? <FadingImg src={staple.imageUri} alt="" loading="lazy" className="size-full object-cover" /> : null}
         </span>
         <button
           type="button"
