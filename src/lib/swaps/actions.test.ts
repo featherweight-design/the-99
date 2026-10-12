@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The two Fits actions are PUBLIC ENDPOINTS: every gate is re-checked here, and the add's
 // revalidation waits for `after()` rather than shipping the caller's page back.
-const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[], enabled: true }));
+const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[], enabled: true, readEnabled: true }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => state.afters.push(fn) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("../auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("./flag", () => ({ swapToolsEnabled: () => state.enabled }));
+vi.mock("./flag", () => ({ swapToolsEnabled: () => state.enabled, findADeckReadEnabled: () => state.readEnabled }));
+vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: vi.fn() }));
+vi.mock("../decks/read", () => ({ requireDeck: vi.fn(async () => ({ id: "deck" })) }));
+vi.mock("../decks/remove-card", () => ({ removeOneCopy: vi.fn(async () => true) }));
 vi.mock("./fits", () => ({ loadFits: vi.fn(async () => ({ fits: [] })) }));
 vi.mock("./gather", () => ({ loadStandIns: vi.fn() }));
 vi.mock("./take", () => ({ setShoppingLimit: vi.fn(), takeStandIn: vi.fn(), undoSwap: vi.fn() }));
@@ -15,7 +18,11 @@ vi.mock("../decks/add-card", () => ({
   revalidateAdd: vi.fn(),
 }));
 
-const { addFromFits, loadFitsAction } = await import("./actions");
+const { addFromFits, loadFitsAction, swapFromReadAction, undoReadAddAction, undoReadSwapAction } = await import("./actions");
+const { takeStandIn, undoSwap } = await import("./take");
+const { revalidateClaims } = await import("../decks/revalidate-claims");
+const { requireDeck } = await import("../decks/read");
+const { removeOneCopy } = await import("../decks/remove-card");
 const { addCardToDeckFor, revalidateAdd } = await import("../decks/add-card");
 const { loadFits } = await import("./fits");
 
@@ -25,6 +32,7 @@ const CARD = "22222222-2222-4222-8222-222222222222";
 beforeEach(() => {
   state.afters = [];
   state.enabled = true;
+  state.readEnabled = true;
   vi.clearAllMocks();
 });
 
@@ -70,5 +78,81 @@ describe("loadFitsAction", () => {
     state.enabled = true;
     expect(await loadFitsAction("nope")).toBeNull();
     expect(loadFits).not.toHaveBeenCalled();
+  });
+});
+
+// Find a deck read's row actions: the same gates, a take and its undo, and Add only's undo, each
+// revalidating in after() because the caller is whatever route the card was opened on.
+const CUT = "33333333-3333-4333-8333-333333333333";
+const SWAP = "44444444-4444-4444-8444-444444444444";
+
+describe("swapFromReadAction", () => {
+  it("takes the card for the read's cut, for the signed-in reader, and revalidates in after()", async () => {
+    vi.mocked(takeStandIn).mockResolvedValueOnce({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
+    expect(await swapFromReadAction(DECK, CUT, CARD)).toEqual({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
+    expect(takeStandIn).toHaveBeenCalledWith(DECK, "user_1", CUT, CARD);
+    expect(revalidateClaims).not.toHaveBeenCalled();
+    await state.afters[0]();
+    expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
+  });
+
+  it("refuses with the read's switch off or a malformed id, writing nothing", async () => {
+    state.readEnabled = false;
+    expect(await swapFromReadAction(DECK, CUT, CARD)).toEqual({ ok: false, reason: "notFound" });
+    state.readEnabled = true;
+    expect(await swapFromReadAction(DECK, "x", CARD)).toEqual({ ok: false, reason: "notFound" });
+    expect(takeStandIn).not.toHaveBeenCalled();
+  });
+
+  it("revalidates nothing when the take is refused", async () => {
+    vi.mocked(takeStandIn).mockResolvedValueOnce({ ok: false, reason: "notFound" });
+    await swapFromReadAction(DECK, CUT, CARD);
+    expect(state.afters).toHaveLength(0);
+  });
+});
+
+describe("undoReadSwapAction", () => {
+  it("undoes the reader's own swap and revalidates its deck in after()", async () => {
+    vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
+    expect(await undoReadSwapAction(SWAP)).toEqual({ ok: true });
+    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1");
+    await state.afters[0]();
+    expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
+  });
+
+  it("is refused for a swap that is not the reader's or already undone, and gated", async () => {
+    vi.mocked(undoSwap).mockResolvedValueOnce(null);
+    expect(await undoReadSwapAction(SWAP)).toEqual({ ok: false });
+    expect(state.afters).toHaveLength(0);
+    state.readEnabled = false;
+    expect(await undoReadSwapAction(SWAP)).toEqual({ ok: false });
+    expect(undoSwap).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("undoReadAddAction", () => {
+  it("takes one copy out of the reader's own deck and revalidates in after()", async () => {
+    expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: true });
+    expect(requireDeck).toHaveBeenCalledWith(DECK, "user_1");
+    expect(removeOneCopy).toHaveBeenCalledWith(DECK, CARD);
+    await state.afters[0]();
+    expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
+  });
+
+  it("refuses a deck that is not the reader's, writing nothing", async () => {
+    vi.mocked(requireDeck).mockRejectedValueOnce(new Error("deck not found"));
+    expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: false });
+    expect(removeOneCopy).not.toHaveBeenCalled();
+  });
+
+  it("is refused with the switch off or a malformed id, and when nothing was there to take out", async () => {
+    state.readEnabled = false;
+    expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: false });
+    state.readEnabled = true;
+    expect(await undoReadAddAction("x", CARD)).toEqual({ ok: false });
+    expect(removeOneCopy).not.toHaveBeenCalled();
+    vi.mocked(removeOneCopy).mockResolvedValueOnce(false);
+    expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: false });
+    expect(state.afters).toHaveLength(0);
   });
 });

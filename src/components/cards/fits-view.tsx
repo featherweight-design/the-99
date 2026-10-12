@@ -264,9 +264,13 @@ export function FitsView({
     }
   }
 
-  const freeList = list.read && list.shown.length > 0 ? (
+  // The decks holding the card as the list was last read: a deck the read's row just swapped or added
+  // into, or one another tab got to, leaves the free list and turns its read row's actions off.
+  const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
+  const freeRows = list.shown.filter((r) => !heldNow.has(r.id) || list.noteFor(r.id) !== null);
+  const freeList = list.read && freeRows.length > 0 ? (
     <FitsRows
-      rows={list.shown}
+      rows={freeRows}
       staple={list.read.staple}
       cardName={name}
       freeNow={freeNow}
@@ -337,7 +341,7 @@ export function FitsView({
                   act={memory[p.deckId] ?? null}
                   // Took the card some other way since the read (the free list, another visit): resolved,
                   // not changed (READINESS-audit F2), and nothing left to press on this row.
-                  settled={!memory[p.deckId] && result.resolved.includes(p.deckId)}
+                  settled={!memory[p.deckId] && (result.resolved.includes(p.deckId) || heldNow.has(p.deckId))}
                   busy={busy}
                   refused={refused?.deckId === p.deckId ? refused.kind : null}
                   onSwap={() => p.cut && void onSwap(p.deckId, p.cut, panel?.names[p.cut] ?? "")}
@@ -390,13 +394,13 @@ export function FitsView({
               type="button"
               data-testid="fits-fold"
               aria-expanded={foldOpen}
-              aria-label={read.foldAria(list.shown.length, foldOpen)}
+              aria-label={read.foldAria(freeRows.length, foldOpen)}
               onClick={() => setFoldOpen((o) => !o)}
               className={`flex items-center justify-between gap-[10px] min-h-[44px] md:min-h-[38px] bg-transparent cursor-pointer border-0 border-t border-solid border-t-[color:var(--border)] text-left ${foldOpen ? "" : "border-b-[1px] border-b-[color:var(--border)]"}`}
             >
               <span className="text-[13px] text-[color:var(--fg-body)]">{read.fold}</span>
               <span className="flex items-center gap-[8px]">
-                <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">{list.shown.length}</span>
+                <span className="font-mono text-[11px] text-[color:var(--fg-muted)]">{freeRows.length}</span>
                 <span aria-hidden className="text-[10px] text-[color:var(--fg-muted)]">{foldOpen ? "▾" : "▸"}</span>
               </span>
             </button>

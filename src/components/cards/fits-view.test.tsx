@@ -185,6 +185,14 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(row).not.toHaveTextContent(r.swapRefused);
   });
 
+  it("a deck the free list shows holding the card leaves the fold, and its read row's actions go off", async () => {
+    await draw(panel({}, { stored: stored() }), list({ holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    const row = screen.getByTestId("read-row");
+    expect(within(row).getByRole("button", { name: r.addOnlyAria(card.name, "Goblins") })).toBeDisabled();
+    fireEvent.click(screen.getByTestId("fits-fold"));
+    expect(screen.getAllByTestId("fits-row").map((x) => x.querySelector("a")?.textContent)).toEqual(["Kratos"]);
+  });
+
   it("with no free copy left, both actions read to buy (P3b)", async () => {
     await draw(panel({}, { stored: stored() }), list({ free: 0 }));
     const row = screen.getByTestId("read-row");

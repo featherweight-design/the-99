@@ -335,7 +335,7 @@ export const swapToolsCopy = {
       addedToBuy: "Added, to buy",
       addOnlyAria: (card: string, deck: string) => `Add ${card} to ${deck} without cutting anything`,
       addedAria: (card: string, deck: string) => `${card} is in the ${deck} draft, with nothing cut. Press to take it out.`,
-      addedNote: (deck: string) => `In the draft, which is now at 100. Cut a card of your choice from ${deck}.`,
+      addedNote: (deck: string) => `In the draft with nothing cut. Pick a card to cut from ${deck} when you’re ready.`,
       cutLabel: "cut",
       cutNote: "goes out when you swap it in",
       cutNoteSwapped: "out of the draft · press Swapped in to put it back",
