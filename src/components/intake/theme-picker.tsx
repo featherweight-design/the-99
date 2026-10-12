@@ -11,6 +11,7 @@ import { useId, useMemo, useState } from "react";
 
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
+import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
 
 export function ThemePicker({
   themes,
@@ -50,7 +51,8 @@ export function ThemePicker({
     // always drew.
     <div className="relative flex flex-col gap-[6px]">
       <div
-        className="flex flex-wrap items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)]"
+        // The chips' remove buttons ring themselves, so only the input's focus lights the field.
+        className={`flex flex-wrap items-center gap-[6px] min-h-[44px] md:min-h-[40px] px-[10px] py-[6px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS_INPUT}`}
       >
         {value.map((slug) => {
           const label = bySlug.get(slug)?.label ?? slug;
@@ -110,7 +112,7 @@ export function ThemePicker({
               onChange(value.slice(0, -1));
             }
           }}
-          className="flex-1 min-w-[120px] h-[28px] px-[4px] bg-transparent border-0 outline-none text-[16px] md:text-[13.5px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]"
+          className={`flex-1 min-w-[120px] h-[28px] px-[4px] ${AFFIX_INPUT} text-[16px] md:text-[13.5px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]`}
         />
       </div>
       <ul

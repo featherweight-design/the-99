@@ -555,15 +555,15 @@ const NeighborPlate = React.forwardRef<
       type="button"
       onClick={(e) => { e.stopPropagation(); onPress(); }}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      // `DesktopModal.dc.html` D1: the plate rests at .55 and a hover or keyboard focus raises it to
-      // .92, the focused plate ringed in `--accent` 3px out. The ring is the
-      // plate's, not the button's, so the browser's own ring around both is turned off.
+      // `DesktopModal.dc.html` D1, with the plate OPAQUE (Hugh, 2026-10-12: at .55 the grid cards behind the
+      // dialog showed through and clashed). Keyboard focus rings the plate in `--accent` 3px out. The ring
+      // is the plate's, not the button's, so the browser's own ring around both is turned off.
       className="group absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-[10px] cursor-pointer bg-transparent border-0 p-0 outline-none"
       style={{ left }}
     >
       <span
         aria-hidden="true"
-        className="block rounded-[9px] opacity-[.55] group-hover:opacity-[.92] group-focus-visible:opacity-[.92] group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--accent)] group-focus-visible:[outline-style:solid]"
+        className="block rounded-[9px] group-focus-visible:outline-2 group-focus-visible:outline-offset-[3px] group-focus-visible:outline-[color:var(--accent)] group-focus-visible:[outline-style:solid]"
         style={{
           width: PLATE_WIDTH,
           height: 235,
@@ -575,7 +575,8 @@ const NeighborPlate = React.forwardRef<
         // `--fg`, not the handoff's `--fg-muted` (ledger 1, measured in build on every backdrop
         // pixel behind the name, six themes): `--fg-muted` put 39% to 78% of them under AA's 4.5:1
         // for 12.5px text, and `--fg-body` still up to 6%; `--fg` holds 5.5:1 at its worst pixel.
-        // A hover is carried by the plate rising to .92, since the name has no brighter ink left.
+        // No hover state: the plate is already opaque (Hugh, 2026-10-12) and the name has no brighter ink
+        // left; the pointer cursor and keyboard focus ring mark it as a control.
         <span className="flex gap-[6px] max-w-[168px] text-[12.5px] whitespace-nowrap text-[color:var(--fg)]">
           <span aria-hidden="true">{direction === "previous" ? "‹" : "›"}</span>
           <span className="truncate">{sibling.name}</span>

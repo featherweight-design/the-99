@@ -18,6 +18,23 @@ import { twMerge } from "tailwind-merge";
 // drop a class it recognizes as the same property. Against the shorthand the
 // caller's color was silently reset — several fields lost their specified
 // border that way.
+/**
+ * An input drawn inside a bordered field (a `$` prefix, a magnifier, a stepper) shows focus on the FIELD,
+ * not on itself: the input is only part of what looks focused, and its own ring would sit inside the
+ * border. These two halves are the one definition (Hugh, 2026-10-12: Suggested changes' "Most per card"
+ * had lost it); `wrapped-input-focus.test.ts` fails any input that suppresses its own outline without them.
+ *
+ * `AFFIX_FOCUS` goes on a wrapper whose focusable content is the input (and, for `SearchField`, a trailing
+ * clear button: a press there is the field still in use). `AFFIX_FOCUS_INPUT` goes on a wrapper that also
+ * holds controls with rings of their own (a stepper's buttons), so only the input's focus lights it.
+ */
+export const AFFIX_FOCUS =
+  "focus-within:border-[color:var(--accent)] focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]";
+export const AFFIX_FOCUS_INPUT =
+  "has-[input:focus-visible]:border-[color:var(--accent)] has-[input:focus-visible]:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]";
+/** The inner input's half: no ring, border or shadow of its own. */
+export const AFFIX_INPUT = "bg-transparent border-none outline-none shadow-none focus:outline-none focus-visible:outline-none";
+
 const FIELD_CHROME =
   "rounded-lg bg-[color:var(--surface-sunken)] " +
   "border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] " +
@@ -90,9 +107,7 @@ export function SearchField({
       data-search-field
       className={twMerge(
         FIELD_CHROME,
-        "flex items-center gap-[10px] px-[12px] " +
-          "focus-within:border-[color:var(--accent)] " +
-          "focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]",
+        `flex items-center gap-[10px] px-[12px] ${AFFIX_FOCUS}`,
         containerClassName,
       )}
     >
@@ -114,8 +129,7 @@ export function SearchField({
       <input
         type={type}
         className={twMerge(
-          "min-w-0 flex-1 bg-transparent border-none outline-none shadow-none " +
-            "focus:outline-none focus-visible:outline-none " +
+          `min-w-0 flex-1 ${AFFIX_INPUT} ` +
             // WebKit draws its own cancel ✕ on type="search", in its own blue,
             // beside whatever the caller passes as `trailing` — two adjacent
             // glyphs doing one job, one of them off-palette.

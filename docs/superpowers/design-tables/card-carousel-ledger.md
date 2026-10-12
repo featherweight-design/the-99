@@ -44,13 +44,13 @@ from the prose alone. The specimen's values, now built:
 
 | Property | Design | Built | |
 |---|---|---|---|
-| Plate | 168x235, radius 9, opacity .55 | `rounded-[9px] opacity-[.55]` | ✅ (was radius 10, opacity 1) |
+| Plate | 168x235, radius 9, opacity 1 (Hugh 2026-10-12: the .55 fade clashed with the grid cards behind the dialog; was .55) | `rounded-[9px]`, opaque | ✅ |
 | Plate shadow | `0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)` | same | ✅ (was `0 12px 30px rgba(0,0,0,0.4)`) |
 | Plate to name | gap 10 | `gap-[10px]` | ✅ (was 6) |
 | Name | 12.5px, the page's sans, `‹` / `›` aria-hidden before it, gap 6, one line with an ellipsis | same | ✅ (was mono, no chevron) |
 | Name ink | `--fg-muted`, `--fg` on hover | `--fg` throughout (ledger 1: the only ink at AA on every pixel) | ✅ |
-| Hover | the plate rises to .92, the name to `--fg` | the plate rises to .92; the name is already `--fg` | ✅ (was absent) |
-| Keyboard focus | `2px solid var(--accent)`, offset 3, on the plate | the same on the plate, at .92; the button's own ring off | ✅ (was the browser ring) |
+| Hover | the plate is already opaque (Hugh 2026-10-12), the name to `--fg` | no change on hover; the name is already `--fg` | ✅ |
+| Keyboard focus | `2px solid var(--accent)`, offset 3, on the plate | the same on the plate; the button's own ring off | ✅ (was the browser ring) |
 
 ## Ledger
 
