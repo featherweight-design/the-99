@@ -58,11 +58,11 @@ function recorder() {
 const render = (q: unknown) => dialect.sqlToQuery(q as SQL).sql;
 
 describe("writeUploadTokens", () => {
-  it("Replace removes the upload rows first, then writes the holdings, then the marker", async () => {
+  it("Replace takes the joins first (the hand mark's lock order), then removes the upload rows, then writes the holdings and the marker", async () => {
     const { tx, log } = recorder();
     await writeUploadTokens(tx, "u1", "up1", "replace", [{ tokenOracleId: T1, quantity: 3 }]);
     expect(log.map((l) => `${l.op}:${l.table}`)).toEqual([
-      "delete:token_ownership", "delete:deck_token_joins", "upsert:token_ownership", "upsert:token_reads",
+      "delete:deck_token_joins", "delete:token_ownership", "upsert:token_ownership", "upsert:token_reads",
     ]);
     expect(log[2].rows).toEqual([{ userId: "u1", tokenOracleId: T1, quantity: 3, source: "upload" }]);
   });

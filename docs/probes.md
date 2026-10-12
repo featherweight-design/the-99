@@ -1827,7 +1827,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   off every deck's list (a token joined on two decks leaves both, and unmarking restores neither), that an upload which
   reads a joined token does the same, that a joined token no card of the deck makes stays with no maker and leaves once
   taken off, and that a hand mark leaves every other token not known. Measured 2026-10-12 on a scratch branch of
-  staging (PR 5): all 24 checks passed, and the account's own rows were put back exactly.
+  staging (PR 5): every check passed, and the account's own rows were put back exactly.
 
 - `pnpm probe:tokens` reproduces the tokens brief's Fixtures
   (`docs/superpowers/design-briefs/2026-10-11-tokens-for-my-deck.md`) against the real bytes. It builds

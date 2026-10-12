@@ -77,6 +77,14 @@ export async function writeUploadTokens(
   mode: "replace" | "add",
   holdings: TokenHolding[],
 ): Promise<void> {
+  // Joins first, for every token read, before any ownership row is touched: the hand mark takes the join
+  // rows and then its ownership row (`markOwnedOnDeck`), so the two cannot each hold what the other waits for.
+  for (let i = 0; i < holdings.length; i += BATCH) {
+    await tx.delete(deckTokenJoins).where(and(
+      eq(deckTokenJoins.userId, userId),
+      inArray(deckTokenJoins.tokenOracleId, holdings.slice(i, i + BATCH).map((h) => h.tokenOracleId)),
+    ));
+  }
   if (mode === "replace") {
     await tx.delete(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "upload")));
   }
@@ -84,10 +92,6 @@ export async function writeUploadTokens(
     const rows = holdings.slice(i, i + BATCH).map((h) => ({
       userId, tokenOracleId: h.tokenOracleId, quantity: h.quantity, source: "upload" as const,
     }));
-    await tx.delete(deckTokenJoins).where(and(
-      eq(deckTokenJoins.userId, userId),
-      inArray(deckTokenJoins.tokenOracleId, rows.map((r) => r.tokenOracleId)),
-    ));
     await tx.insert(tokenOwnership).values(rows).onConflictDoUpdate({
       target: [tokenOwnership.userId, tokenOwnership.tokenOracleId],
       set: {

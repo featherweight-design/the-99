@@ -40,7 +40,7 @@ export type DeckToken = {
 };
 
 export type DeckTokensRead =
-  /** Nothing to draw: no token catalog here, or the deck makes no token. The group is absent (T5). */
+  /** Nothing to draw: no token catalog here, or the deck makes no token and holds no joined token. The group is absent (T5). */
   | { status: "absent" }
   /** A read threw. The group draws its failed line rather than nothing (T4). */
   | { status: "failed" }
@@ -220,7 +220,7 @@ async function linksFor(makerIds: string[]): Promise<DeckTokenInputs["links"]> {
 /**
  * The Tokens group's rows for one deck of one player. Never throws: a read that fails returns
  * `failed` so the deck page draws its failed line and the rest of the page stands. A deck that is not
- * the player's reads as `absent`, the same as one with no tokens.
+ * the player's reads as `absent`, the same as one with neither linked tokens nor retained joined ones.
  */
 export async function loadDeckTokens(
   deckId: string,

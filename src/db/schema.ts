@@ -288,8 +288,9 @@ export const tokenReads = pgTable("token_reads", {
 /**
  * A token a player has put on ONE deck's Shopping list (plan `2026-10-11-tokens-for-my-deck.md`, PR 4).
  * Per deck, because Shopping is per deck; the token's own `oracle_id` is the identity. Holding a token
- * (an ownership row) never deletes a join: the READERS leave an owned token off Shopping, so an upload
- * that reads a token takes it off every deck's list without writing here. `user_id` is carried so no
+ * (an ownership row) is also drawn as not joined by the READERS, and the two writers of ownership (the hand
+ * mark and an upload that reads the token) delete the player's joins for it in the same transaction, so
+ * owned means off every deck's list and an unmark restores none. `user_id` is carried so no
  * read needs a join to `decks` to scope by player.
  */
 export const deckTokenJoins = pgTable("deck_token_joins", {
