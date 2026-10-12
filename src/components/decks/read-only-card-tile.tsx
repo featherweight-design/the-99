@@ -16,10 +16,9 @@ import { preconsCopy } from "../../lib/copy/precons";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
-import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { HydratedImg } from "../ui/hydrated-art";
 import { OwnershipDot } from "../ui/ownership-dot";
-import { TILE_ART_RATIO, TILE_SHELL } from "./deck-card-tile";
 import { usePreviewRow } from "./hover-preview";
 
 const copy = preconsCopy;

@@ -10,9 +10,8 @@ import type { PreconCommander, PreconRow as Row } from "../../../lib/precons/lis
 import { WUBRG_COLOR } from "../../../lib/collection/browse";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { PendingReporter } from "../../shell/pending-reporter";
-import { CardTileCaption, TILE_ART_CLIP } from "../../ui/card-tile-caption";
+import { CardTileCaption, TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../../ui/card-tile-caption";
 import { HydratedImg } from "../../ui/hydrated-art";
-import { TILE_ART_RATIO, TILE_SHELL } from "../deck-card-tile";
 
 const copy = preconsCopy.tile;
 const rowCopy = preconsCopy.row;
