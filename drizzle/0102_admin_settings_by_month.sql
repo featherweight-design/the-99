@@ -9,7 +9,8 @@ ALTER TABLE "admin_settings" ADD CONSTRAINT "admin_settings_key_month_pk" PRIMAR
 ALTER TABLE "admin_settings" ADD CONSTRAINT "admin_settings_month_check" CHECK ("admin_settings"."month" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$');
 --> statement-breakpoint
 ALTER TABLE "admin_events" ADD COLUMN "setting_month" text;--> statement-breakpoint
-UPDATE "admin_events" SET "setting_month" = to_char("at", 'YYYY-MM') WHERE "kind" = 'setting_set';--> statement-breakpoint
+-- No backfill: the only writer of setting_set ships with this migration, so no such row exists yet.
+-- Were one to, the constraint below would refuse it loudly rather than take a guessed month.
 ALTER TABLE "admin_events" DROP CONSTRAINT "admin_events_fields_check";--> statement-breakpoint
 ALTER TABLE "admin_events" ADD CONSTRAINT "admin_events_fields_check" CHECK (case "admin_events"."kind"
     when 'override_set' then "admin_events"."switch" is not null and "admin_events"."scope" is not null and "admin_events"."new_value" is not null

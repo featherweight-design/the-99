@@ -13,7 +13,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 type Write = { op: string; values?: Record<string, unknown> };
 const writes: Write[] = [];
-let before: { valueMicroUsd: number }[] = [];
+let before: { valueMicroUsd: number; asOf: string }[] = [];
 const executed: string[] = [];
 const tx = {
   execute: async (q: { queryChunks?: unknown[] }) => {
@@ -140,7 +140,7 @@ describe("the settings writes", () => {
   });
 
   it("writes the setting, then its setting_set event, in one transaction", async () => {
-    before = [{ valueMicroUsd: 250_000_000 }];
+    before = [{ valueMicroUsd: 250_000_000, asOf: `${thisMonth()}-02` }];
     await expect(actions.setAccountCap({ amount: "$100", note: "  November cap  " })).resolves.toEqual({ ok: true });
     expect(transaction).toHaveBeenCalledOnce();
     expect(writes.map((w) => w.op)).toEqual(["admin_settings", "admin_events"]);
@@ -150,8 +150,8 @@ describe("the settings writes", () => {
       kind: "setting_set",
       settingKey: "account_cap_usd",
       settingMonth: thisMonth(),
-      oldValue: "250.00",
-      newValue: "100.00",
+      oldValue: `250.00 as of ${thisMonth()}-02`,
+      newValue: `100.00 as of ${new Date().toISOString().slice(0, 10)}`,
       note: "November cap",
     });
   });
@@ -159,7 +159,13 @@ describe("the settings writes", () => {
   it("records elsewhere with the day it was read and no old value the first time", async () => {
     await expect(actions.setElsewhere({ amount: "18.4", asOf: "2026-10-09", note: "" })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ key: "elsewhere_usd", valueMicroUsd: 18_400_000, asOf: "2026-10-09", note: null });
-    expect(writes[1].values).toMatchObject({ settingKey: "elsewhere_usd", oldValue: null, newValue: "18.40" });
+    expect(writes[1].values).toMatchObject({ settingKey: "elsewhere_usd", oldValue: null, newValue: "18.40 as of 2026-10-09" });
+  });
+
+  it("records a change of the day alone, which the dollars by themselves would hide", async () => {
+    before = [{ valueMicroUsd: 18_400_000, asOf: "2026-10-09" }];
+    await expect(actions.setElsewhere({ amount: "18.40", asOf: "2026-10-12" })).resolves.toEqual({ ok: true });
+    expect(writes[1].values).toMatchObject({ oldValue: "18.40 as of 2026-10-09", newValue: "18.40 as of 2026-10-12" });
   });
 
   it("refuses a ceiling start that is not this month or a later one, writing nothing", async () => {
@@ -173,7 +179,7 @@ describe("the settings writes", () => {
   it("stores a ceiling under the first day of the month it starts", async () => {
     await expect(actions.setSystemCeiling({ amount: "15", start: monthFrom(1), note: "from next month" })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ key: "system_ceiling_usd", month: monthFrom(1), valueMicroUsd: 15_000_000, asOf: `${monthFrom(1)}-01`, note: "from next month" });
-    expect(writes[1].values).toMatchObject({ settingKey: "system_ceiling_usd", settingMonth: monthFrom(1), newValue: "15.00" });
+    expect(writes[1].values).toMatchObject({ settingKey: "system_ceiling_usd", settingMonth: monthFrom(1), newValue: `15.00 as of ${monthFrom(1)}-01` });
     writes.length = 0;
     await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth() })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ asOf: `${thisMonth()}-01` });

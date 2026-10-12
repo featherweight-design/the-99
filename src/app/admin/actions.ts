@@ -44,6 +44,9 @@ function startOf(value: unknown, now: Date): string | null {
 
 const dollars = (micro: number) => (micro / 1_000_000).toFixed(2);
 
+/** A setting as its event records it: the dollars and the day they hold from, so a change to either is visible. */
+const audited = (micro: number, asOf: string) => `${dollars(micro)} as of ${asOf}`;
+
 /**
  * Writes the setting for the month its `asOf` falls in, so a change never rewrites another month's
  * value (a cap holds from its month on; `settingsForMonth` reads it back).
@@ -71,8 +74,8 @@ async function writeSetting(actorId: string, key: SettingKey, micro: number, asO
         kind: "setting_set",
         settingKey: key,
         settingMonth: month,
-        oldValue: before ? dollars(before.valueMicroUsd) : null,
-        newValue: dollars(micro),
+        oldValue: before ? audited(before.valueMicroUsd, before.asOf) : null,
+        newValue: audited(micro, asOf),
         note,
       });
     });
