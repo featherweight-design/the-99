@@ -191,6 +191,8 @@ describe("the makers fold", () => {
     draw(ok([token({ makers: makers(12) })]));
     open();
     expect(document.querySelector("li[aria-hidden]")?.className).not.toMatch(/md:hidden|max-md:hidden/);
+    // In flow, never an overlay: a negative margin would put the fade over the last row.
+    expect(document.querySelector("li[aria-hidden]")?.className).not.toMatch(/-mt-/);
     cleanup();
     draw(ok([token({ makers: makers(4) })]));
     open();

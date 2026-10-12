@@ -64,11 +64,13 @@ export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; pr
       </p>
       <ul className={`m-0 grid list-none grid-cols-1 gap-x-[18px] p-0 ${columns} ${box}`}>
         {makers.map((m) => <Maker key={m.oracleId} maker={m} siblings={makers} />)}
-        {/* The sticky 28px fade at the box's foot, drawn only where the box scrolls at that width. */}
+        {/* The sticky 28px fade at the box's foot, drawn only where the box scrolls at that width. It takes its own
+            28px at the end of the list rather than overlaying it, so a box that does not overflow (10 names in
+            3 columns is about 120px under a 158px cap) never has text under the fade. */}
         {boxPhone || boxDesktop ? (
           <li
             aria-hidden
-            className={`pointer-events-none sticky bottom-0 -mt-[28px] h-[28px] list-none [background:linear-gradient(to_top,var(--surface-sunken),transparent)] [grid-column:1/-1] ${
+            className={`pointer-events-none sticky bottom-0 h-[28px] list-none [background:linear-gradient(to_top,var(--surface-sunken),transparent)] [grid-column:1/-1] ${
               boxPhone && boxDesktop ? "" : boxPhone ? "md:hidden" : "max-md:hidden"
             }`}
           />
