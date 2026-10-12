@@ -65,5 +65,6 @@ export function defaultPatternColor(colors: readonly ColorEvidence[]): BalanceCo
   return pipped.reduce<ColorEvidence | null>((best, c) => (best === null || c.pips.withCommander > best.pips.withCommander ? c : best), null)?.color ?? null;
 }
 
-/** The lands clause's tapped figure: every land that can enter tapped. */
-export const tappedTotal = (t: ManaBalance["lands"]["tapped"]) => t.always + t.unless + t.fetch;
+/** The lands clause's tapped figure: the lands that can themselves enter tapped. A fetcher enters
+ *  untapped and only puts its land onto the battlefield tapped, so it is not one of them. */
+export const tappedTotal = (t: ManaBalance["lands"]["tapped"]) => t.always + t.unless;

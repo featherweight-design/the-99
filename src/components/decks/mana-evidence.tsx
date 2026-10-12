@@ -85,14 +85,14 @@ function Row({ row, e, widest, commander }: { row: ColorRow; e: ColorEvidence; w
 }
 
 /** The colorless line: `{C}` pips and colorless sources, drawn under the colored rows (or alone). */
-export function ColorlessLine({ row }: { row: ColorRow }) {
+export function ColorlessLine({ row, share = true }: { row: ColorRow; share?: boolean }) {
   return (
     <p data-mana-colorless className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px] border-b border-b-[color:var(--border)] px-[2px] py-[10px]">
       <span className="flex items-center gap-[8px]">
         <ColorDisc c="C" size={18} />
         <span className="text-[13px] text-[color:var(--fg-body)]">{capitalized(deckStatsCopy.colors.names.C)}</span>
       </span>
-      <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{copy.table.colorless(row.pips, row.lands + row.other, row.sourceShare)}</span>
+      <span className="font-mono text-[11px] text-[color:var(--fg-body)]">{copy.table.colorless(row.pips, row.lands + row.other, share ? row.sourceShare : null)}</span>
     </p>
   );
 }

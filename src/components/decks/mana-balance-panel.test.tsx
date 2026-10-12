@@ -206,6 +206,7 @@ describe("ManaBalancePanel: thin decks", () => {
     expect(screen.queryByRole("button", { name: /Hardest costs/ })).toBeNull();
     expect(screen.getByRole("button", { name: /Lands/ })).toBeTruthy();
     expect(document.querySelector("[data-mana-colorless]")?.textContent).toContain("6 {C} pips · 10 sources");
+    expect(document.querySelector("[data-mana-colorless]")?.textContent).not.toContain("%");
     expect(document.querySelector("[data-mana-citation]")?.textContent).toContain(copy.cite.landOnlyBefore);
   });
 

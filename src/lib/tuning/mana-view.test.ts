@@ -83,3 +83,17 @@ describe("Mana Balance's counted strings", () => {
     expect(c.lands.averageNote("Gishath", 1)).toBe("counts Gishath as a card");
   });
 });
+
+describe("the source split and the tapped figure", () => {
+  it("leaves a zero side out of the split", async () => {
+    const { manaBalanceCopy: c } = await import("../copy/mana-balance");
+    expect(c.table.split(3, 0)).toBe("3 lands");
+    expect(c.table.split(0, 2)).toBe("2 other");
+    expect(c.table.colorless(6, 10, null)).toBe("6 {C} pips · 10 sources");
+  });
+
+  it("counts the lands that can themselves enter tapped, never a fetcher", async () => {
+    const { tappedTotal } = await import("./mana-view");
+    expect(tappedTotal({ ...NO_TAPPED_LANDS, always: 2, unless: 3, fetch: 4 })).toBe(5);
+  });
+});

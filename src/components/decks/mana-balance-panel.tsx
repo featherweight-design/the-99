@@ -140,7 +140,8 @@ export function ManaBalancePanel({
       </div>
 
       {colorless ? (
-        colorlessRow ? <ColorlessLine row={colorlessRow} /> : null
+        // Alone, every source is colorless, so a share of them says nothing.
+        colorlessRow ? <ColorlessLine row={colorlessRow} share={false} /> : null
       ) : (
         <div className="flex flex-col gap-[8px]">
           <ManaEvidenceTable balance={balance} commander={commander} />

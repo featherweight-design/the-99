@@ -481,6 +481,8 @@ export function BuilderShell({
   const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
   const [cutsSettledKey, setCutsSettledKey] = useState<string | null>(null);
   const onCutsSettled = useCallback(() => setCutsSettledKey(visitKey), [visitKey]);
+  const [manaSettledKey, setManaSettledKey] = useState<string | null>(null);
+  const onManaSettled = useCallback(() => setManaSettledKey(visitKey), [visitKey]);
   // With the hub on, the tools mount only when opened, so the tab's loader waits on the landing's
   // own first read instead of on theirs.
   const [hubSettledKey, setHubSettledKey] = useState<string | null>(null);
@@ -509,10 +511,12 @@ export function BuilderShell({
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
-    suggestionsSettled: tuningHubEnabled || tuningSettled === visitKey,
+    // A tool that is off is never mounted, so it has nothing to wait for.
+    suggestionsSettled: tuningHubEnabled || !tuningEnabled || tuningSettled === visitKey,
+    // The tools mounted directly (hub off): Proposed cuts and, alone, Mana Balance.
     cutsSettled: tuningHubEnabled
       ? hubSettledKey === visitKey
-      : !proposedCutsEnabled || cutsSettledKey === visitKey,
+      : (!proposedCutsEnabled || cutsSettledKey === visitKey) && (!manaBalanceEnabled || manaSettledKey === visitKey),
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1335,6 +1339,8 @@ export function BuilderShell({
       deckId={deck.id}
       // The commanders count too: their pips, their identity and the cards figure.
       revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}`}
+      // Mounted directly (Mana alone on), its first read holds the tab's opening, as Proposed cuts' does.
+      onSettled={onManaSettled}
     />
   );
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (

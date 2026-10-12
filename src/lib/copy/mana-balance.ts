@@ -18,13 +18,18 @@ export const manaBalanceCopy = {
     head: { color: "Color", pips: "Pips", sources: "Sources", needed: "Needed" },
     share: (n: number, pct: number) => `${n} · ${pct}%`,
     without: (n: number, commander: string) => `${n} without ${commander}`,
-    split: (lands: number, other: number) => (lands > 0 ? `${lands} ${lands === 1 ? "land" : "lands"} · ${other} other` : `${other} other`),
+    /** A zero side is left out: `5 other`, `3 lands`, or both. */
+    split: (lands: number, other: number) => {
+      const landsText = `${lands} ${lands === 1 ? "land" : "lands"}`;
+      return lands > 0 && other > 0 ? `${landsText} · ${other} other` : lands > 0 ? landsText : `${other} other`;
+    },
     neededFor: (card: string, more: number, code: string) => (more > 0 ? `for ${card} and ${more} more (${code})` : `for ${card} (${code})`),
     noPips: "no pips to cast",
     /** A color with pips and no cost Karsten publishes a figure for (a hybrid or X cost alone). */
     noPublished: "no published figure",
-    colorless: (pips: number, sources: number, pct: number) =>
-      `${pips === 0 ? "no" : pips} {C} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"} · ${pct}%`,
+    /** `pct` is the share of all sources, drawn beside colored rows; the colorless deck draws none. */
+    colorless: (pips: number, sources: number, pct: number | null) =>
+      `${pips === 0 ? "no" : pips} {C} ${pips === 1 ? "pip" : "pips"} · ${sources} ${sources === 1 ? "source" : "sources"}${pct === null ? "" : ` · ${pct}%`}`,
     /** Engineering: the row's spoken form, since its figures sit in separate cells. */
     rowAria: (name: string, pips: string, sources: string, needed: string) => `${name}. Pips ${pips}. Sources ${sources}. Needed ${needed}.`,
   },
