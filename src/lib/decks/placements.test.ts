@@ -92,6 +92,12 @@ describe("foldCount", () => {
     expect(foldCount(claimants(5, claims), 1, 5)).toBe(2);
   });
 
+  it("lets no pick spend the counterfactual's supply: a picked trailing brew does not shrink the fold", () => {
+    // The reviewer's case: 17 committed, 17 owned, one copy in play, the pick on a trailing brew.
+    const cs = claimants(17, [...committed(17), brew("k", 1)]);
+    expect(foldCount(cs, 1, 17)).toBe(16);
+  });
+
   it("folds nothing when the head of the queue is short", () => {
     expect(foldCount(claimants(1, committed(3)), 1, 1)).toBe(0);
   });

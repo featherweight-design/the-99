@@ -71,10 +71,14 @@ export function foldCount(
   copiesInPlay: number,
   owned: number,
 ): number {
-  const without = allocate(Math.max(owned - copiesInPlay, 0), claimants);
+  // The counterfactual drops every pick too: a pick is itself one of the moves in question, and a
+  // reservation left in place would spend the reduced supply ahead of the decks that keep theirs.
+  // The authored row is still read off the REAL claimant below, so a picked deck never folds.
+  const picked = new Map(claimants.map((c) => [c.deckId, c.granted]));
+  const without = allocate(Math.max(owned - copiesInPlay, 0), claimants.map((c) => ({ ...c, granted: 0 })));
   let n = 0;
   for (const c of without) {
-    if (c.brew || c.granted > 0 || c.allocated < c.quantity) break;
+    if (c.brew || (picked.get(c.deckId) ?? 0) > 0 || c.allocated < c.quantity) break;
     n++;
   }
   return n;
