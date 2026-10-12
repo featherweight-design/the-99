@@ -33,7 +33,7 @@ import { parseArgs } from "node:util";
 
 import { countTokens, sendBatch, sendRealtime, type Got, type Sent } from "./lib/batch.mjs";
 import { loadCutTruth, pairedSwaps } from "./lib/cuts-truth.mjs";
-import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
+import { LEDGER_LIMITS, ledgerLimits } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply } from "./lib/request.mjs";
@@ -52,17 +52,20 @@ const { values: args } = parseArgs({
     model: { type: "string" },
     // Model tiering (2026-10-12): a separate ledger and a lower cap, so an arm set is bounded on its own.
     ledger: { type: "string" },
-    cap: { type: "string" },
     label: { type: "string", default: "cuts-model" },
   },
 });
 
-const BASE_LIMITS = LEDGER_LIMITS["ledger-cuts.jsonl"];
-const CAP_USD = args.cap === undefined ? BASE_LIMITS.hardCapUsd : Number(args.cap);
-if (!(CAP_USD > 0 && CAP_USD <= BASE_LIMITS.hardCapUsd)) throw new Error(`--cap must be above 0 and at most ${BASE_LIMITS.hardCapUsd}`);
-const ASK_AT_USD = CAP_USD * (BASE_LIMITS.askAtUsd / BASE_LIMITS.hardCapUsd);
+const CAP_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].hardCapUsd;
+const ASK_AT_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].askAtUsd;
+// Model tiering (2026-10-12): `--ledger ledger-model-tiering-cuts` bounds an arm set on its own ledger and its own, lower limits.
+const ledgerName = `${args.ledger ?? "ledger-cuts"}.jsonl`;
+const LIMITS = ledgerName === "ledger-cuts.jsonl" ? { hardCapUsd: CAP_USD, askAtUsd: ASK_AT_USD } : ledgerLimits(ledgerName);
+if (!LIMITS || LIMITS.askAtUsd === null) throw new Error(`${ledgerName} has no limits in src/lib/eval/ledger-limits.ts`);
+const RUN_CAP_USD = LIMITS.hardCapUsd;
+const RUN_ASK_AT_USD = LIMITS.askAtUsd;
 const MAX_TOKENS = 6_000;
-const LEDGER_CUTS = new URL(`${args.ledger ?? "ledger-cuts"}.jsonl`, ROOT).pathname;
+const LEDGER_CUTS = new URL(ledgerName, ROOT).pathname;
 const trials = Number(args.trials);
 if (!Number.isInteger(trials) || trials < 1 || trials > 10) throw new Error("--trials must be 1 to 10");
 
@@ -165,17 +168,17 @@ const inputTokens = prepared.reduce((n, p) => n + tokens.get(createHash("sha256"
 const perRequest = prepared.map((p) => tokens.get(createHash("sha256").update(JSON.stringify(p.sent.params)).digest("hex"))!);
 if (args.send) acquireRunLock(LEDGER_CUTS);
 const before = spent(readLedger(LEDGER_CUTS));
-console.error(`${prepared.length} requests, ~${inputTokens} input tokens (largest request ${Math.max(...perRequest)}); worst case $${worst.toFixed(2)} (two attempts each, ${args.realtime ? "real-time" : "batch"} prices); spent so far on this ledger $${before.toFixed(2)} of $${CAP_USD}`);
+console.error(`${prepared.length} requests, ~${inputTokens} input tokens (largest request ${Math.max(...perRequest)}); worst case $${worst.toFixed(2)} (two attempts each, ${args.realtime ? "real-time" : "batch"} prices); spent so far on this ledger $${before.toFixed(2)} of $${RUN_CAP_USD}`);
 if (!args.send) {
   console.error("DRY: nothing sent. Add --send to spend.");
   process.exit(0);
 }
-if (before + worst > CAP_USD) {
-  console.error(`NOT SENT: ${before.toFixed(2)} spent + up to ${worst.toFixed(2)} would cross the $${CAP_USD} cap`);
+if (before + worst > RUN_CAP_USD) {
+  console.error(`NOT SENT: ${before.toFixed(2)} spent + up to ${worst.toFixed(2)} would cross the $${RUN_CAP_USD} cap`);
   process.exit(2);
 }
-if (before >= ASK_AT_USD) {
-  console.error(`NOT SENT: $${before.toFixed(2)} already spent (ask line $${ASK_AT_USD}); stop and ask the orchestrator`);
+if (before >= RUN_ASK_AT_USD) {
+  console.error(`NOT SENT: $${before.toFixed(2)} already spent (ask line $${RUN_ASK_AT_USD}); stop and ask the orchestrator`);
   process.exit(2);
 }
 
@@ -192,7 +195,7 @@ const send = async (batch: Sent[], pass: string, worstUsd: number): Promise<Got[
   appendFileSync(new URL(`raw-${pass}.jsonl`, dir), got.map((g) => JSON.stringify(g)).join("\n") + "\n");
   const usd = got.reduce((n, g) => n + (g.ok ? costUsd(MODEL, g.message.usage as Usage, { batch: !args.realtime }) : 0), 0);
   const after = record(LEDGER_CUTS, { at: new Date().toISOString(), runId: pendingId, source: args.realtime ? `realtime:${batch.length}` : "batch", usd, requests: batch.length, settles: pendingId });
-  log(`${pass}: ${got.length} replies, $${usd.toFixed(4)}; ledger total $${spent(after).toFixed(2)} of $${CAP_USD}`);
+  log(`${pass}: ${got.length} replies, $${usd.toFixed(4)}; ledger total $${spent(after).toFixed(2)} of $${RUN_CAP_USD}`);
   return got;
 };
 
@@ -200,10 +203,10 @@ const schemaOf = new Map(prepared.map((p) => [p.customId, cutsResponseSchema(p.o
 const attempts = new Map<string, Got[]>();
 for (const g of await send(prepared.map((p) => p.sent), "a1", worst / 2)) attempts.set(g.customId, [g]);
 const midway = spent(readLedger(LEDGER_CUTS));
-if (midway >= ASK_AT_USD) {
-  console.error(`STOPPED before the retry pass: $${midway.toFixed(2)} spent (ask line $${ASK_AT_USD}); ask the orchestrator`);
+if (midway >= RUN_ASK_AT_USD) {
+  console.error(`STOPPED before the retry pass: $${midway.toFixed(2)} spent (ask line $${RUN_ASK_AT_USD}); ask the orchestrator`);
 }
-const retry = midway >= ASK_AT_USD ? [] : prepared.filter((p) => {
+const retry = midway >= RUN_ASK_AT_USD ? [] : prepared.filter((p) => {
   const g = attempts.get(p.customId)?.[0];
   return !g || (g.ok ? !parseReply(schemaOf.get(p.customId)!, g.message).ok : g.retry);
 });
@@ -257,7 +260,7 @@ const swapN = sum(prepared.map((p) => [...p.cut].filter((id) => p.paired.has(id)
 const netN = totalK - swapN;
 console.log(`# Proposed cuts model tier: recall against the cuts Hugh made${args.leak ? " (LEAKAGE DIAGNOSTIC: the v2 note was shown)" : ""}\n`);
 console.log(`Run ${runId}. Model ${MODEL} at effort ${EFFORT}${args.text ? ", type, mana value and card text shown" : ", type and mana value shown, no card text"}, ${args.realtime ? "real-time" : "batch"}, ${trials} trial(s) per deck, no intent${args.leak ? " except the v2 note" : ""}, no Key cards.\n`);
-console.log(`**${hits} of ${totalK} cuts found** across ${rows.length} answers (${answered.length} answered), ${(100 * hits / Math.max(totalK, 1)).toFixed(0)}% against the free tier's 17% (10 of 58) and chance ${chance.toFixed(1)}. Swaps ${sum(rows.map((r) => r.swapHits))} of ${swapN}, net reductions ${sum(rows.map((r) => r.netHits))} of ${netN}. Cost $${sum(rows.map((r) => r.usd)).toFixed(3)}; ledger total $${spent(readLedger(LEDGER_CUTS)).toFixed(2)} of $${CAP_USD}.\n`);
+console.log(`**${hits} of ${totalK} cuts found** across ${rows.length} answers (${answered.length} answered), ${(100 * hits / Math.max(totalK, 1)).toFixed(0)}% against the free tier's 17% (10 of 58) and chance ${chance.toFixed(1)}. Swaps ${sum(rows.map((r) => r.swapHits))} of ${swapN}, net reductions ${sum(rows.map((r) => r.netHits))} of ${netN}. Cost $${sum(rows.map((r) => r.usd)).toFixed(3)}; ledger total $${spent(readLedger(LEDGER_CUTS)).toFixed(2)} of $${RUN_CAP_USD}.\n`);
 console.log("| Deck | Trial | Cut (K) | Asked | Kept | Hits | Dropped | Cost | Out tokens |");
 console.log("|---|---|---|---|---|---|---|---|---|");
 for (const r of rows) console.log(`| ${r.deck} | ${r.trial} | ${r.k} | ${r.asked} | ${r.kept} | ${r.answered ? r.hits : "no answer"} | ${r.drops.join(", ") || "none"} | $${r.usd.toFixed(4)} | ${r.outTokens} |`);

@@ -8,6 +8,8 @@ describe("LEDGER_LIMITS", () => {
       "ledger-overview-accuracy.jsonl": { hardCapUsd: 15, askAtUsd: 11 },
       "ledger-tuning-lists.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
       "ledger-cuts.jsonl": { hardCapUsd: 15, askAtUsd: 10 },
+      "ledger-model-tiering-tuning.jsonl": { hardCapUsd: 2, askAtUsd: 1.6 },
+      "ledger-model-tiering-cuts.jsonl": { hardCapUsd: 2, askAtUsd: 1.6 },
       "ledger-help-me-choose.jsonl": { hardCapUsd: 5, askAtUsd: null },
       "ledger-find-a-deck.jsonl": { hardCapUsd: 2, askAtUsd: null },
     });

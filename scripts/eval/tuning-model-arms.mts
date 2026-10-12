@@ -15,6 +15,7 @@ import "../lib/env.mjs";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
+import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { buildParams } from "./lib/request.mjs";
 import { commonRow, parseCell, ROOT, runRequests } from "./lib/run.mjs";
 import { openTuning } from "./lib/tuning-app.mjs";
@@ -32,7 +33,7 @@ const log = (line: string) => console.log(`[eval:tuning-model-arms] ${line}`);
 const NAMES = ["HD - Wizards", "HD - Yuriko", "HD - Gishath", "HD - Brago", "HD - Eldrazi", "HD Tune - Counter Intelligence",
   "HD - Avatar Aang", "HD - Elves", "HD - Goblins", "HD - Gods", "HD - Kratos", "HD - Zombies"];
 const LEDGER = new URL("ledger-model-tiering-tuning.jsonl", ROOT).pathname;
-const LIMITS = { hardCapUsd: 2, askAtUsd: 1.6 };
+const LIMITS = LEDGER_LIMITS["ledger-model-tiering-tuning.jsonl"];
 
 const app = await openTuning();
 // The guard sums each request's WORST case (reply at max_tokens, two attempts), which for twelve
