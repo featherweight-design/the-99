@@ -33,9 +33,10 @@ import type { Answers } from "./rank";
 /**
  * Folded into the fingerprint, so a prompt change is a new ask and never answers from a result the
  * old prompt wrote. 1 (2026-10-11): the two-step read. 2 (2026-10-11): a named type, keyword or
- * mechanic is a requirement in both steps, and each deck is named at most once.
+ * mechanic is a requirement in both steps, and each deck is named at most once. 3 (2026-10-12): a card the
+ * player TAGGED in the words is a requirement too: only commanders whose decks run it.
  */
-export const THE_READ_PROMPT_VERSION = 2;
+export const THE_READ_PROMPT_VERSION = 3;
 
 /** The free filters the read obeys: every answer but the card, which the box now carries (F1). */
 export type ReadFilters = Omit<Answers, "card">;
@@ -63,7 +64,7 @@ export type JudgeCandidate = {
 };
 
 /** A card the player's words name, resolved by the free match, as a build-around ask (F1). */
-export type ReadCard = { name: string; oracleText: string; runBy: readonly number[] };
+export type ReadCard = { name: string; oracleText: string; runBy: readonly number[]; required?: boolean };
 
 // ---- the shortlist ---------------------------------------------------------------------------
 
@@ -82,6 +83,13 @@ export type ShortlistReply = z.infer<typeof shortlistSchema>;
 const REQUIREMENT_RULE =
   "A creature type, keyword or mechanic the words name (for instance horrors, Landfall, Elves, proliferate) is a requirement, not a mood: a commander qualifies only if it has it in its creature types or type line, its rules text, or its leading deck themes.";
 
+/**
+ * A card the player picked from the card list while writing (a tag) is not a mood either: the request
+ * marks it "Required card", and a commander qualifies only if its decks run it (the keys listed under it).
+ */
+const CARD_REQUIREMENT_RULE =
+  "A card the request marks as a required card is a requirement: return only commanders whose decks run it (the keys listed under it), and none if no commander's decks do.";
+
 const SHORTLIST_RULES = [
   "You help a Magic: The Gathering Commander player choose a commander for a new deck.",
   PLAYER_TEXT_SYSTEM_RULE,
@@ -91,6 +99,7 @@ const SHORTLIST_RULES = [
   REQUIREMENT_RULE,
   "If only a few commanders have what the words require, return only those; never fill the list with near misses.",
   "If the words name a card to build around, prefer the commanders whose decks run it.",
+  CARD_REQUIREMENT_RULE,
   "If nothing in the list fits, return no keys.",
 ].join("\n");
 
@@ -119,7 +128,7 @@ export function describeFilters(f: ReadFilters): string[] {
 
 function cardLines(cards: readonly ReadCard[]): string[] {
   return cards.flatMap((c) => [
-    `Card named in the words: ${c.name}. Rules text: ${oneLine(c.oracleText)}`,
+    `${c.required ? "Required card" : "Card named in the words"}: ${c.name}. Rules text: ${oneLine(c.oracleText)}`,
     c.runBy.length > 0 ? `Commanders whose decks run it (keys): ${c.runBy.join(", ")}.` : "No commander in the list has decks that run it.",
   ]);
 }
@@ -167,6 +176,7 @@ export const JUDGE_SYSTEM = [
   // asked for 140 (eval, 2026-10-11), and an over-long reason is refused, never cut.
   `A reason is at most ${READ_REASON_MAX_CHARS - 20} characters. It never contains a digit, a percentage, a score, a rank, or words like strong, great or best. It never names a card other than the commander.`,
   REQUIREMENT_RULE,
+  CARD_REQUIREMENT_RULE,
   "Never keep a pick that lacks what the words require. If only a few qualify, return only those, however few; never fill with near misses.",
   "Name one of the player's decks only when what they wrote asks for something like or unlike what they own, and then only as its token, for instance {D2}. Never write a deck's name or its commander's name yourself.",
   "Each deck token may appear in one reason only: once a reason has used {D2}, no other reason may use {D2}, so name a different deck or none. A reason that repeats a token is thrown away. Never name a deck whose commander shares a name with the pick.",
@@ -371,6 +381,8 @@ export function readFingerprint(args: {
   /** A digest of the cards the player owns (`collectionDigest`). */
   collection: string;
   decks: readonly ReadDeck[];
+  /** The oracle ids of cards the player tagged in the words; order does not matter. */
+  tagged?: readonly string[];
 }): string {
   const f = args.filters;
   return createHash("sha256").update(JSON.stringify([
@@ -382,6 +394,7 @@ export function readFingerprint(args: {
     [...args.pool].sort(),
     args.collection,
     args.decks.map((d) => [d.commanderOracleId, d.partner, [...d.themes]]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+    [...(args.tagged ?? [])].sort(),
   ])).digest("hex");
 }
 

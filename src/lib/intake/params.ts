@@ -4,7 +4,8 @@ import { isUuid } from "../uuid";
 import { MAX_BUDGET_DOLLARS } from "./answers";
 import type { Chip } from "./match";
 import type { Answers, Bracket, Pool, ThemeJoin } from "./rank";
-import { READ_WORDS_MAX_CHARS } from "./limits";
+import { capBody } from "../decks/notes-body";
+import { READ_WORDS_MAX_CHARS, READ_WORDS_URL_MAX } from "./limits";
 
 // The words box's limit is the read's (`limits.ts`), so the URL, the submit and the read
 // never disagree about how much of the words there is. Re-exported for the form.
@@ -106,7 +107,7 @@ export function parseChooseParams(sp: URLSearchParams): ChooseParams {
   const readId = sp.get("r");
   const card = sp.get("a");
   return {
-    words: (sp.get("w") ?? "").slice(0, READ_WORDS_MAX_CHARS),
+    words: capBody((sp.get("w") ?? "").slice(0, READ_WORDS_URL_MAX), READ_WORDS_MAX_CHARS),
     colors: WUBRG.filter((c) => raw.includes(c.toUpperCase())),
     match: sp.get("m") === "exact" ? "exactly" : "contains",
     themes: [...new Set((sp.get("t") ?? "").split(",").filter((s) => SLUG.test(s)))],

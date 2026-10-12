@@ -61,8 +61,20 @@ export async function collectionDigest(userId: string): Promise<string> {
  * in the box steers the read), each with its rules text and the pool commanders whose decks run it
  * most. The words are never turned into chips: this only tells the read what was named.
  */
-export async function loadReadCards(words: string, index: PhraseIndex, list: PoolList, pool: ReadonlySet<number>): Promise<ReadCard[]> {
-  const named = matchWords(words, index).chips.flatMap((c) => (c.kind === "card" ? [c] : [])).slice(0, READ_CARDS_MAX);
+/** A card the player tagged in the words: the catalog's id and name for it, resolved on the server. */
+export type TaggedCard = { oracleId: string; name: string };
+
+export async function loadReadCards(
+  words: string, index: PhraseIndex, list: PoolList, pool: ReadonlySet<number>, tagged: readonly TaggedCard[] = [],
+): Promise<ReadCard[]> {
+  // The tagged cards come first and are REQUIRED; a card the free match also finds in the words is the
+  // same card, once. Untagged names keep working through the match, as before.
+  const required = new Set(tagged.map((t) => t.oracleId));
+  const matched = matchWords(words, index).chips.flatMap((c) => (c.kind === "card" ? [c] : [])).filter((c) => !required.has(c.oracleId));
+  const named = [
+    ...tagged.map((t) => ({ oracleId: t.oracleId, name: t.name, required: true })),
+    ...matched.map((c) => ({ oracleId: c.oracleId, name: c.name, required: false })),
+  ].slice(0, READ_CARDS_MAX);
   if (named.length === 0) return [];
   const ids = named.map((c) => c.oracleId);
   const [texts, runs] = await Promise.all([
@@ -75,6 +87,7 @@ export async function loadReadCards(words: string, index: PhraseIndex, list: Poo
   ]);
   return named.map((c) => ({
     name: c.name,
+    required: c.required,
     oracleText: texts.get(c.oracleId) ?? "",
     runBy: runs.filter((r) => r.card === c.oracleId)
       .flatMap((r) => { const k = list.keyOf.get(r.commander); return k !== undefined && pool.has(k) ? [k] : []; })

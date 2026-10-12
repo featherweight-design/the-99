@@ -18,6 +18,13 @@ export const INTAKE_MAX_TOKENS = 3_000;
  */
 export const READ_WORDS_MAX_CHARS = 800;
 
+/**
+ * The most RAW characters of the words the address or a submit may carry: the cap above on what is
+ * drawn, plus room for the ids of the cards tagged in it (`[[<uuid>|Name]]` is 38 characters longer than
+ * its name, and eight tags are far more than a read uses). The cap itself is on rendered text.
+ */
+export const READ_WORDS_URL_MAX = READ_WORDS_MAX_CHARS + 8 * 48;
+
 /** A retry needs this much of the deadline left to finish one whole answer; less, and it fails. */
 export const INTAKE_RETRY_FLOOR_MS = 40_000;
 

@@ -1,3 +1,4 @@
+import { capBody, plainText } from "../decks/notes-body";
 import { matchWords, type Chip, type MatchResult, type PhraseIndex } from "./match";
 import { READ_WORDS_MAX_CHARS, resolveWords, serializeChooseParams, type ChooseParams } from "./params";
 
@@ -21,7 +22,7 @@ export const CHOOSE_PATH = "/decks/new/choose";
  */
 export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string {
   // Bounded here as the parser bounds `w`, so no answer comes from words the results would cut.
-  const words = p.words.slice(0, READ_WORDS_MAX_CHARS).trim();
+  const words = plainText(capBody(p.words, READ_WORDS_MAX_CHARS)).trim();
   const match: Pick<MatchResult, "chips" | "phrases" | "themeJoin"> = words && index
     ? matchWords(words, index)
     : { chips: [], phrases: [], themeJoin: "all" };
@@ -77,7 +78,7 @@ export type Arrival = "repeat" | "busy" | "form";
 export function resultsTarget(p: ChooseParams, readId: string | null, arrival: Arrival | null = null): string {
   const target = `${CHOOSE_PATH}${serializeChooseParams({
     ...p,
-    words: p.words.slice(0, READ_WORDS_MAX_CHARS).trim(),
+    words: capBody(p.words, READ_WORDS_MAX_CHARS).trim(),
     card: null,
     notUsed: [],
     deeper: [],

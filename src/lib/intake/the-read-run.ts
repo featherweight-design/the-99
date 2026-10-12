@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { readAllowance, type Billed } from "../model/allowance";
 import { callModel, type ModelOutcome } from "../model/client";
-import { collectionDigest, loadReadCards, loadReadDecks } from "./the-read-load";
+import { collectionDigest, loadReadCards, loadReadDecks, type TaggedCard } from "./the-read-load";
 import {
   READ_JUDGE_EFFORT, READ_JUDGE_MAX_TOKENS, READ_JUDGE_MODEL, READ_SHORTLIST_DEADLINE_MS, READ_SHORTLIST_EFFORT,
   READ_SHORTLIST_MAX_TOKENS, READ_SHORTLIST_MODEL, READ_TOTAL_DEADLINE_MS, INTAKE_RETRY_FLOOR_MS,
@@ -119,7 +119,7 @@ export type TheReadInputs = {
   fingerprint: string;
 };
 
-export async function loadTheReadInputs(userId: string, words: string, filters: ReadFilters): Promise<TheReadInputs> {
+export async function loadTheReadInputs(userId: string, words: string, filters: ReadFilters, tagged: readonly TaggedCard[] = []): Promise<TheReadInputs> {
   const [list, facts, decks, collection, catalog] = await Promise.all([
     loadPoolList(),
     loadSearchFacts(userId, { ...filters, card: null }),
@@ -131,11 +131,11 @@ export async function loadTheReadInputs(userId: string, words: string, filters: 
   const ranked = rankCandidates(facts.candidates, facts.answers, facts.card, facts.tribes);
   const poolIds = ranked.rows.map((r) => r.candidate.oracleId);
   const pool = new Set(poolIds.flatMap((id) => list.keyOf.get(id) ?? []));
-  const cards = await loadReadCards(words, catalog.index, list, pool);
+  const cards = await loadReadCards(words, catalog.index, list, pool, tagged);
   const narrowed = filtersSet(filters);
   return {
     list, pool, narrowed, decks, cards, collection,
-    fingerprint: readFingerprint({ words, filters, listGeneration: list.generation, pool: poolIds, collection, decks }),
+    fingerprint: readFingerprint({ words, tagged: tagged.map((t) => t.oracleId), filters, listGeneration: list.generation, pool: poolIds, collection, decks }),
   };
 }
 
@@ -157,7 +157,7 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
 /** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[] },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
@@ -173,7 +173,7 @@ export async function runTheRead(
  */
 export async function beginTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[] },
   deps: TheReadDeps = defaultTheReadDeps(),
   /** The inputs, or a loader for them (a test counts its calls); omitted, they are read here. */
   inputs?: TheReadInputs | (() => Promise<TheReadInputs>),
@@ -192,7 +192,7 @@ export async function beginTheRead(
   if (closed) return { kind: closed };
   // And one press per player at a time through the pool read and the reservation, so a burst reads
   // the pool once, not once per press.
-  const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.words, input.filters);
+  const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.words, input.filters, input.tagged ?? []);
   const admitted = await withReadAdmission(userId, async () => {
     // A press that arrives after another has reserved and let go finds the admission free, so the
     // running read is looked for again here, before anything is loaded.

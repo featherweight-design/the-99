@@ -63,6 +63,35 @@ export function withCurrentNames(body: string, names: ReadonlyMap<string, string
     .join("");
 }
 
+/** The body as plain words: each tag drawn as its stored name. What a box that is not a note shows and sends. */
+export function plainText(body: string): string {
+  return parseBody(body).map((s) => (s.kind === "text" ? s.text : s.name)).join("");
+}
+
+/**
+ * The body cut to `max` RENDERED characters (a tag counts as its name), never through the middle of a tag: a
+ * tag that would cross the cap is dropped whole, with everything after it. Code points, as `renderedLength`.
+ */
+export function capBody(body: string, max: number): string {
+  let used = 0;
+  let out = "";
+  for (const s of parseBody(body)) {
+    if (s.kind === "tag") {
+      const n = [...s.name].length;
+      if (used + n > max) return out;
+      used += n;
+      out += formatTag(s.oracleId, s.name);
+    } else {
+      const room = max - used;
+      const chars = [...s.text];
+      if (chars.length > room) return out + chars.slice(0, room).join("");
+      used += chars.length;
+      out += s.text;
+    }
+  }
+  return out;
+}
+
 export type BodyCheck = { ok: true; body: string } | { ok: false; reason: "empty" | "too-long" };
 
 /** The shared shape rule: one line, not empty, within the rendered cap. Tag ids are checked by the caller. */

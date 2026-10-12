@@ -162,6 +162,21 @@ describe("the judgement", () => {
   });
 });
 
+describe("a tagged card", () => {
+  const card = { name: "Rhystic Study", oracleText: "Whenever an opponent casts a spell...", runBy: [3, 4] };
+
+  it("reads as a required card in the request, and a card only named in the words does not", () => {
+    const req = (c: typeof card & { required?: boolean }) => shortlistRequest({ words: "draw", filters: none, cards: [c] });
+    expect(req({ ...card, required: true })).toContain("Required card: Rhystic Study");
+    expect(req(card)).toContain("Card named in the words: Rhystic Study");
+  });
+
+  it("is a requirement in both steps' rules", () => {
+    expect(shortlistSystem("")).toContain("required card");
+    expect(JUDGE_SYSTEM).toContain("required card");
+  });
+});
+
 describe("the fingerprint", () => {
   const base = { words: "A Landfall  deck", filters: none, listGeneration: "g", pool: ["x", "y"], collection: "c", decks };
 
@@ -182,6 +197,7 @@ describe("the fingerprint", () => {
       { collection: "c2" },
       { decks: [omnath] },
       { decks: [{ ...omnath, themes: ["Ramp"] }, teval] },
+      { tagged: ["card-1"] },
     ]) {
       expect(readFingerprint({ ...base, ...changed })).not.toBe(fp);
     }

@@ -63,3 +63,23 @@ describe("notes body", () => {
     });
   });
 });
+
+describe("plainText and capBody (boxes that are not notes)", () => {
+  const ID = "0000aaaa-0000-4000-8000-000000000001";
+  const tag = `[[${ID}|Sol Ring]]`;
+
+  it("draws each tag as its name", async () => {
+    const { plainText } = await import("./notes-body");
+    expect(plainText(`with ${tag} and ${tag}!`)).toBe("with Sol Ring and Sol Ring!");
+  });
+
+  it("cuts to the rendered cap, never through a tag, and drops a tag that would cross it with all that follows", async () => {
+    const { capBody, renderedLength } = await import("./notes-body");
+    const body = `ab ${tag} cd`; // 3 + 8 + 3 = 14 rendered
+    expect(capBody(body, 100)).toBe(body);
+    expect(capBody(body, 11)).toBe(`ab ${tag}`);
+    expect(renderedLength(capBody(body, 10))).toBe(3);
+    expect(capBody(body, 10)).toBe("ab ");
+    expect(capBody("abcdef", 4)).toBe("abcd");
+  });
+});
