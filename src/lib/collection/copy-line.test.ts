@@ -67,6 +67,17 @@ describe("liveSentence", () => {
       .toBe(copy.row.freeForBrews(2));
   });
 
+  it("names every destination when a pick took one new copy and seniority placed another", () => {
+    expect(liveSentence(card(3, 2, [committed("s", "HD - Senior", 1), committed("a", "HD - Brago", 1), brew("t", "HD -Thorin", 1, 1)])))
+      .toBe(copy.row.goesToMany(["HD - Brago", "HD -Thorin"]));
+  });
+
+  it("names only the copies still owned when another tab removed some since the import", () => {
+    // Two arrived over one held before; one has since been removed, so one new copy is left.
+    const c = { ...card(2, 2, [committed("s", "HD - Senior", 1), committed("a", "HD - Brago", 1)]), ownedBefore: 1 };
+    expect(liveSentence(c)).toBe(copy.row.goesTo("HD - Brago"));
+  });
+
   it("has nothing to say when no deck holds or reads the new copy", () => {
     expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1)]))).toBeNull();
   });

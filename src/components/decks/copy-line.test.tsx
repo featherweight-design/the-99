@@ -87,6 +87,16 @@ describe("CopyLine", () => {
     await waitFor(() => expect(screen.queryByText(copy.row.goesToEarlier("HD -Thorin"))).toBeNull());
   });
 
+  it("stops naming a destination when the write settles with no card to read back", async () => {
+    // The last copy was removed in another tab: the pick is refused and the live read finds nothing.
+    assign.mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
+    render(line(card()));
+    fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
+    fireEvent.click(screen.getByText("HD -Thorin"));
+    await waitFor(() => expect(assign).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText(copy.row.goesTo("HD - Brago"))).toBeNull());
+  });
+
   it("draws no Change when there is no chooser to open", () => {
     render(line());
     expect(screen.queryByRole("button")).toBeNull();

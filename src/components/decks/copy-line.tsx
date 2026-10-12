@@ -25,11 +25,13 @@ export function CopyLine({
   chooser?: ContestedCard;
 }) {
   const [open, setOpen] = useState(false);
-  // The card the last settled write read back. Once there is one the sentence follows it, and the
-  // frozen sentence is never drawn again: after a pick is cleared it could name that pick.
-  const [live, setLive] = useState<ContestedCard | null>(null);
+  // The card the last settled write read back. `undefined` is BEFORE any write, and only then is
+  // the frozen sentence drawn: after a pick is cleared it could name that pick. Null is a write
+  // that settled with no card to read back (the last copy went in another tab), which says nothing
+  // rather than claim a destination.
+  const [live, setLive] = useState<ContestedCard | null | undefined>(undefined);
   const panel = useId();
-  const said = live ? liveSentence(live) : sentence;
+  const said = live === undefined ? sentence : live ? liveSentence(live) : null;
 
   return (
     <li style={{ borderTop: "1px solid var(--border)" }}>

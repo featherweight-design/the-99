@@ -27,31 +27,39 @@ export function wentSentence(went: WentRow, deckNames: Record<string, string>): 
  * row): the frozen sentence is true only until the first write, and after a pick is cleared it can
  * name a pick that no longer exists.
  *
- * A pick names its deck (`as you picked`). With none, the new copies are where seniority puts them:
- * the spare first (copies no deck holds), then the junior-most committed holders. A spare that
- * brews read is `is free for`. Null when no deck holds or reads a new copy any more.
+ * The new copies are the import's, capped at the live surplus over `ownedBefore`: `arrived` is
+ * frozen and `owned` is live, so copies removed in another tab since are not named. A pick takes
+ * new copies first, up to what the player gave it; the rest are where seniority puts them: the
+ * spare first (copies no deck holds), then the junior-most committed holders. Every destination is
+ * named, and `as you picked` only when the pick is the sole one. A spare that brews read is `is
+ * free for`. Null when no deck holds or reads a new copy any more.
  */
 export function liveSentence(card: ContestedCard): string | null {
-  const picked = card.claimants.find((c) => c.granted > 0);
-  if (picked) return copy.row.goesToPicked(picked.deckName);
-  const committed = card.claimants.filter((c) => !c.brew);
-  const held = committed.reduce((n, c) => n + c.allocated, 0);
+  let left = Math.min(card.arrived, Math.max(card.owned - card.ownedBefore, 0));
+  const took = new Map<string, { name: string; copies: number; picked: boolean }>();
+  const picks = card.claimants.filter((c) => c.granted > 0);
+  for (const c of picks) {
+    const t = Math.min(c.granted, left);
+    if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t, picked: true });
+    left -= t;
+  }
+  const committed = card.claimants.filter((c) => !c.brew && !(c.granted > 0));
+  const held = [...committed, ...picks].reduce((n, c) => n + c.allocated, 0);
   const spare = Math.max(card.owned - held, 0);
-  let fromQueue = Math.max(card.arrived - spare, 0);
-  const took = new Map<string, { name: string; copies: number }>();
+  let fromQueue = Math.max(left - spare, 0);
   for (const c of [...committed].reverse()) {
     if (fromQueue <= 0) break;
     const t = Math.min(c.allocated, fromQueue);
-    if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t });
+    if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t, picked: false });
     fromQueue -= t;
   }
-  const decks = committed.flatMap((c) => took.get(c.deckId) ?? []);
-  if (decks.length === 1) return copy.row.goesTo(decks[0].name);
+  const decks = card.claimants.flatMap((c) => took.get(c.deckId) ?? []);
+  if (decks.length === 1) return decks[0].picked ? copy.row.goesToPicked(decks[0].name) : copy.row.goesTo(decks[0].name);
   if (decks.length > 1) {
     const names = decks.map((d) => d.name);
     return decks.every((d) => d.copies === 1) ? copy.row.goesToMany(names) : copy.row.goesToManyUneven(names);
   }
-  const brews = card.claimants.filter((c) => c.brew && c.allocated > 0);
+  const brews = card.claimants.filter((c) => c.brew && !(c.granted > 0) && c.allocated > 0);
   if (brews.length === 1) return copy.row.freeForBrew(brews[0].deckName);
   if (brews.length > 1) return copy.row.freeForBrews(brews.length);
   return null;

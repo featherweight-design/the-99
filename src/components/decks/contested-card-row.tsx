@@ -169,8 +169,11 @@ export function ContestedCardRow({
    * `can use it` rather than `gets it`. Off, the row is exactly what it was.
    */
   addedCopy?: boolean;
-  /** The card a settled pick read back, for a surface that redraws its own line from it. */
-  onCard?: (card: ContestedCard) => void;
+  /**
+   * The card a settled pick read back, for a surface that redraws its own line from it. Null when
+   * the write settled and the live read found no card (the last copy went in another tab).
+   */
+  onCard?: (card: ContestedCard | null) => void;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -289,10 +292,12 @@ export function ContestedCardRow({
       // A superseded tap's answer is DISCARDED rather than drawn: the player has since named a
       // different deck, and its own write — already queued behind this one — is the truth now.
       if (mine !== tap.current) return;
-      if (fresh) {
-        setCard(fresh);
-        onCard?.(fresh);
-      }
+      if (fresh) setCard(fresh);
+      // A SETTLED NULL IS NEWS TOO when the refusal says the last copy went in another tab
+      // (`no-supply-left`, and the live read found no card): a surface redrawing its own line from
+      // the read-back card has to hear it, or it keeps naming a destination that no longer exists.
+      // Any other null (a read that failed, a deck that is not the player's) says nothing new.
+      if (fresh || (!result.ok && result.cause === "no-supply-left")) onCard?.(fresh);
       // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
       // announces a trade that may not have happened.
