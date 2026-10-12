@@ -18,7 +18,7 @@ import { GhostButton } from "../ui/button";
 const c = gotItCopy.receipt;
 
 export function CopyChooserDialog({
-  card, cardName, thisDeckId, onCard, onWrite, onClose,
+  card, cardName, thisDeckId, onCard, onWrite, onPending, onClose,
 }: {
   card: ContestedCard;
   cardName: string;
@@ -27,7 +27,9 @@ export function CopyChooserDialog({
   /** The card a write read back; null when it settled with none (the last copy went elsewhere). */
   onCard: (card: ContestedCard | null) => void;
   /** A write that landed: whether it left a pick on `deckId` (the row's `onWrite`). */
-  onWrite?: (deckId: string, picked: boolean) => void;
+  onWrite?: (deckId: string, picked: boolean, createdAt?: string) => void;
+  /** Whether a write is still out (the row's `onPending`). */
+  onPending?: (pending: boolean) => void;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -57,7 +59,7 @@ export function CopyChooserDialog({
           {c.changeTitle}
         </h2>
         <p className="mt-[4px] mb-[14px] text-[14px]" style={{ color: "var(--fg-body)" }}>{c.changeSub(cardName)}</p>
-        <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} />
+        <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} />
         <div className="mt-[16px] flex justify-end">
           <GhostButton onClick={onClose} className="px-[18px] py-[9px] text-[13.5px]">{c.done}</GhostButton>
         </div>

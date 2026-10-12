@@ -84,10 +84,14 @@ function ignoredDecks(value: string | string[] | undefined): { ignoreDeckId?: st
 function placementOf(value: unknown): { undoPlacement?: UndoPlacement } {
   if (value === undefined || value === null) return {};
   if (typeof value !== "object" || Array.isArray(value)) throw new Error("bad undo placement");
-  const { oracleId, deckId, restore } = value as { oracleId?: unknown; deckId?: unknown; restore?: unknown };
+  const { oracleId, deckId, createdAt, restore } = value as { oracleId?: unknown; deckId?: unknown; createdAt?: unknown; restore?: unknown };
   if (typeof oracleId !== "string" || !isUuid(oracleId)) throw new Error("bad undo placement");
   // The deck is required: an undo drops the one pick it names, never every reservation of the card.
   if (typeof deckId !== "string" || !isUuid(deckId)) throw new Error("bad undo placement");
+  // The pick's exact instant, as Postgres printed it: compared by the write, never parsed here.
+  if (createdAt !== undefined && (typeof createdAt !== "string" || !/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d{1,6})?$/.test(createdAt))) {
+    throw new Error("bad undo placement");
+  }
   let back: { deckId: string; copies: number } | undefined;
   if (restore !== undefined && restore !== null) {
     // A restore only beside the pick it undoes: the write checks both against the entry's record.
@@ -102,6 +106,7 @@ function placementOf(value: unknown): { undoPlacement?: UndoPlacement } {
     undoPlacement: {
       oracleId: oracleId.toLowerCase(),
       deckId: deckId.toLowerCase(),
+      ...(typeof createdAt === "string" ? { createdAt } : {}),
       ...(back ? { restore: back } : {}),
     },
   };

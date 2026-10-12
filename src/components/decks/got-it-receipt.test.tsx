@@ -25,6 +25,7 @@ const c = gotItCopy.receipt;
 const DECK = "11111111-1111-4111-8111-111111111111";
 const ENTRY = "e0000000-0000-4000-8000-000000000001";
 const ORACLE = "33333333-3333-4333-8333-333333333333";
+const AT = "2026-10-12 09:00:00.123456";
 const NAME = "Etali, Primal Conqueror";
 
 const written = (over: Partial<GotItWritten> = {}): GotItWritten => ({
@@ -432,7 +433,7 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
   });
 
   it("redraws the sentence from the pick, and Undo drops that pick with the copy", async () => {
-    assignCopy.mockResolvedValue({ ok: true, card: chooser(OTHER) });
+    assignCopy.mockResolvedValue({ ok: true, card: chooser(OTHER), createdAt: AT });
     previewRevert.mockResolvedValue(preview());
     revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
     draw(written({ facts: facts() }));
@@ -443,8 +444,27 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     // The receipt's own sentence ends in a period, as every receipt body does.
     expect(toast().textContent).toContain(`${addedCopyCopy.line.goesToPicked(NAME, "HD - Brago")}.`);
     await act(async () => fireEvent.click(undo()));
-    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
-    expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, undefined, DECK, { oracleId: ORACLE, deckId: OTHER });
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
+    expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, undefined, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
+  });
+
+  it("holds Undo while a Change write is still out, even once the chooser is closed", async () => {
+    let land!: (r: unknown) => void;
+    assignCopy.mockReturnValue(new Promise((r) => { land = r; }));
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ facts: facts() }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(undo()).toHaveAttribute("aria-disabled", "true");
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).not.toHaveBeenCalled();
+    // Once it lands, Undo goes, with the pick that write left standing.
+    await act(async () => { land({ ok: true, card: chooser(OTHER), createdAt: AT }); });
+    expect(undo()).not.toHaveAttribute("aria-disabled");
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
   });
 
   it("never counts a pick that predates the purchase as the Change's, after a refused write", async () => {
@@ -468,7 +488,7 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     // Brago held a reservation before the purchase. The first press clears it; the second writes a new one.
     assignCopy
       .mockResolvedValueOnce({ ok: true, card: chooser() })
-      .mockResolvedValueOnce({ ok: true, card: chooser(OTHER) });
+      .mockResolvedValueOnce({ ok: true, card: chooser(OTHER), createdAt: AT });
     previewRevert.mockResolvedValue(preview());
     revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
     draw(written({ facts: facts({ chooser: chooser(OTHER) }) }));
@@ -479,7 +499,7 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     fireEvent.click(screen.getByRole("button", { name: c.done }));
     expect(toast().textContent).toContain(`${addedCopyCopy.line.goesToPicked(NAME, "HD - Brago")}.`);
     await act(async () => fireEvent.click(undo()));
-    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
   });
 
   it("says where seniority now puts the copy after a Change that clears the purchase-time pick", async () => {
@@ -506,7 +526,7 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
 
   it("treats a null read-back as terminal: the chooser keeps its last card, then the body and Change go", async () => {
     assignCopy
-      .mockResolvedValueOnce({ ok: true, card: chooser(OTHER) })
+      .mockResolvedValueOnce({ ok: true, card: chooser(OTHER), createdAt: AT })
       .mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
     draw(written({ facts: facts() }));
     fireEvent.click(change());
@@ -525,7 +545,7 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     previewRevert.mockResolvedValue(preview());
     revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
     await act(async () => fireEvent.click(undo()));
-    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER, createdAt: AT });
   });
 
   it("draws Change 32 tall, with the phone's 44 hit area through padding the margin takes back", () => {

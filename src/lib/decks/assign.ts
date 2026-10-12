@@ -56,6 +56,7 @@ export async function assignCopyFor(
   userId: string,
   oracleId: string,
   deckId: string,
+  report?: AssignReport,
 ): Promise<AssignRefusal | null> {
   if (!isUuid(oracleId) || !isUuid(deckId)) return "not-your-deck";
   return db.transaction<AssignRefusal | null>(async (tx) => {
@@ -71,7 +72,7 @@ export async function assignCopyFor(
     // taking a weaker lock, which is how the probe caught it. `hashtextextended` for the reason
     // `replaceCollection` uses it: the ids are text of arbitrary length.
     await lockCardClaims(tx, userId, oracleId);
-    return assignCopyIn(tx, userId, oracleId, deckId, "toggle");
+    return assignCopyIn(tx, userId, oracleId, deckId, "toggle", report);
   });
 }
 
@@ -89,6 +90,8 @@ export async function lockCardClaims(tx: Tx, userId: string, oracleId: string): 
 /** What `assignCopyIn` did, for a caller that may have to undo it. */
 export type AssignReport = {
   created: boolean;
+  /** The exact `created_at` of the reservation this call wrote, as text: an undo drops that row and no other. */
+  createdAt?: string;
   /** The reservation a move deleted (another deck's), as it stood: its copies and its exact `created_at`. */
   displaced?: DisplacedReservation;
 };
@@ -210,8 +213,12 @@ export async function assignCopyIn(
     if (report) report.displaced = { deckId: oldest.deckId, copies: oldest.copies, createdAt: oldest.createdAt };
   }
 
-  await tx.insert(cardAssignments).values({ userId, oracleId, deckId });
-  if (report) report.created = true;
+  const [made] = await tx.insert(cardAssignments).values({ userId, oracleId, deckId })
+    .returning({ createdAt: sql<string>`${cardAssignments.createdAt}::text` });
+  if (report) {
+    report.created = true;
+    report.createdAt = made?.createdAt;
+  }
   return null;
 }
 

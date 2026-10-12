@@ -319,6 +319,18 @@ async function main() {
     check("Undo with that pick drops the reservation in the same revert",
       undone.status === "applied" && await reservedF(brewY) === 0, `${undone.status}; reserved ${await reservedF(brewY)}`);
 
+    // The same deck picked again since (another tab cleared the press's pick and made a new one):
+    // the undo names the press's row by its instant, so the newer pick survives.
+    const e1b = randomUUID();
+    const madeAgain = await buyF(0, e1b);
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query("insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, now() + interval '1 second')", [USER, F, brewY]);
+    const undoneB = await applyCollectionChange(USER, { kind: "revert", entryId: e1b, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID() });
+    check("Undo leaves a newer pick of the same deck, made since the press",
+      madeAgain.status === "applied" && undoneB.status === "applied" && await reservedF(brewY) === 1,
+      `${madeAgain.status}/${undoneB.status}; reserved ${await reservedF(brewY)}`);
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+
     await pool.query("insert into card_assignments (user_id, oracle_id, deck_id) values ($1, $2, $3)", [USER, F, brewY]);
     const e2 = randomUUID();
     const kept = await buyF(0, e2);

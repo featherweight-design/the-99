@@ -107,19 +107,30 @@ export type CollectionChange =
       undoPlacement?: UndoPlacement;
     };
 
-export type UndoPlacement = { oracleId: string; deckId: string; restore?: { deckId: string; copies: number } };
+/**
+ * `createdAt` names the pick exactly (the receipt's Change heard it from `assignCopy`); a cart pick's
+ * comes from the entry's own record instead. A pick made since, even on the same deck, is never it.
+ */
+export type UndoPlacement = { oracleId: string; deckId: string; createdAt?: string; restore?: { deckId: string; copies: number } };
 
 /**
- * The pick an undo may drop: only one on a card the reverted entry wrote, and only the named deck's.
- * An undo naming any other card, or no deck, drops nothing, so a revert can never be used to clear
- * an unrelated reservation.
+ * The pick an undo may drop: only one on a card the reverted entry wrote, only the named deck's, and
+ * only the reservation row the press made, by its exact `created_at`: the entry's own record when the
+ * entry made that pick, else the one the undo names. An undo naming any other card, no deck, or no
+ * instant drops nothing, so a revert can never clear an unrelated reservation, nor a newer pick of
+ * the same deck made since.
  */
 export function placementToUndo(
   undo: UndoPlacement | undefined,
-  entryRows: readonly { oracleId: string }[],
-): { oracleId: string; deckId: string } | null {
-  if (!undo?.deckId || !entryRows.some((r) => r.oracleId === undo.oracleId)) return null;
-  return { oracleId: undo.oracleId, deckId: undo.deckId };
+  entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[],
+): { oracleId: string; deckId: string; createdAt: string } | null {
+  if (!undo?.deckId) return null;
+  const row = entryRows.find((r) => r.oracleId === undo.oracleId);
+  if (!row) return null;
+  const own = row.placed?.deckId === undo.deckId ? row.placed.createdAt : undefined;
+  const createdAt = own ?? undo.createdAt;
+  if (!createdAt) return null;
+  return { oracleId: undo.oracleId, deckId: undo.deckId, createdAt };
 }
 
 /**
@@ -701,14 +712,15 @@ export async function applyCollectionChange(
         const drop = placementToUndo(change.undoPlacement, row.rows);
         if (drop) {
           await lockCardClaims(tx, userId, drop.oracleId);
-          await tx.delete(cardAssignments).where(and(
+          const dropped = await tx.delete(cardAssignments).where(and(
             eq(cardAssignments.userId, userId),
             eq(cardAssignments.oracleId, drop.oracleId),
             eq(cardAssignments.deckId, drop.deckId),
-          ));
-          const restore = restoreToUndo(change.undoPlacement, row.rows);
-          // Only onto a card left with no reservation (one authored reservation per card: a pick
-          // made since owns it), and only for a deck the player still has.
+            sql`${cardAssignments.createdAt} = ${drop.createdAt}::timestamp`,
+          )).returning({ deckId: cardAssignments.deckId });
+          const restore = dropped.length > 0 ? restoreToUndo(change.undoPlacement, row.rows) : null;
+          // Only once the press's own pick went, onto a card left with no reservation (one authored
+          // reservation per card: a pick made since owns it), and only for a deck the player still has.
           if (restore) {
             await tx.execute(sql`
               insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
@@ -838,6 +850,7 @@ export async function applyCollectionChange(
         if (card) {
           card.placed = {
             deckId: opts.assign.deckId,
+            ...(assigned.createdAt ? { createdAt: assigned.createdAt } : {}),
             ...(assigned.displaced ? { displaced: assigned.displaced } : {}),
           };
         }
@@ -906,7 +919,11 @@ async function raisedCards(tx: Tx, userId: string, plan: Planned[]): Promise<Rec
     if (d > 0) brought.set(p.oracleId, (brought.get(p.oracleId) ?? 0) + d);
   }
   if (brought.size === 0) return {};
-  const ids = [...brought.keys()];
+  const ids = [...brought.keys()].sort();
+  // UNDER EVERY RAISED CARD'S CLAIM LOCK, which every reservation write takes first, so a pick in
+  // another tab cannot land between the allocation read and the reservation read below and pair one
+  // with the other's order. Sorted, so two writes locking overlapping cards take them in one order.
+  for (const id of ids) await lockCardClaims(tx, userId, id);
   const availability = await loadAvailability(userId, { oracleIds: ids }, tx);
   const reservations = new Map<string, { deckId: string; copies: number }[]>();
   for (const r of await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })

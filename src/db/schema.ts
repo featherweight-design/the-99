@@ -409,7 +409,7 @@ export type HistoryRow = {
    * move deleted, as it stood. A retry reads it to answer as the first request did, and the undo
    * reads it to know what it may put back. Absent on every other row and entry.
    */
-  placed?: { deckId: string; displaced?: { deckId: string; copies: number; createdAt: string } };
+  placed?: { deckId: string; createdAt?: string; displaced?: { deckId: string; copies: number; createdAt: string } };
 };
 
 /**

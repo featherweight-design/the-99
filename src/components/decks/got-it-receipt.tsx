@@ -179,12 +179,19 @@ export function GotItReceipt({
   // write that leaves a pick, cleared by one that clears it: there is one authored pick per card,
   // so a clear leaves none. Never inferred from the purchase-time card, which cannot tell a pick
   // the Change made from one it cleared and made again.
-  const [changePick, setChangePick] = useState<string | null>(null);
-  const onWrite = useCallback((deck: string, picked: boolean) => setChangePick(picked ? deck : null), []);
+  // `createdAt` names the reservation exactly, so Undo drops that row and never a newer pick of the deck.
+  const [changePick, setChangePick] = useState<{ deckId: string; createdAt?: string } | null>(null);
+  const onWrite = useCallback((deck: string, picked: boolean, createdAt?: string) => {
+    setChangePick((was) => picked ? { deckId: deck, createdAt: createdAt ?? (was?.deckId === deck ? was.createdAt : undefined) } : null);
+  }, []);
+  // A Change write still out, chooser open or closed: Undo holds until it settles, or it would go
+  // without the pick that write is about to leave standing.
+  const [changing, setChanging] = useState(false);
   const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
+  const held = busy || changing;
   // The toast's clock holds while the chooser is open, as it does for an undo (design table: open).
-  const inFlight = busy || phase.k === "warning" || choosing;
+  const inFlight = held || phase.k === "warning" || choosing;
   const { restart } = useToastClock(ref, !hover && !focus && !inFlight, onExpire);
 
   // A warning closes with its toast; a request out is still the host's, and ends when it settles.
@@ -204,10 +211,10 @@ export function GotItReceipt({
   const chooser = bodyOverride === undefined && sourceDeckId && receiptChangeable(facts) ? facts!.chooser! : null;
   const body = bodyOverride !== undefined
     ? bodyOverride
-    : live !== undefined && chooser && sourceDeckId ? bodyAfterChange(live, cardName, sourceDeckId, changePick) : purchased;
+    : live !== undefined && chooser && sourceDeckId ? bodyAfterChange(live, cardName, sourceDeckId, changePick?.deckId ?? null) : purchased;
   // The pick Undo drops with the copy: the press's own (the cart's), else the one the Change's
   // writes left standing (it still stands after the copy went).
-  const dropPick = undoPlacement ?? (changePick ? { oracleId, deckId: changePick } : undefined);
+  const dropPick = undoPlacement ?? (changePick ? { oracleId, ...changePick } : undefined);
   // Sent only when there is one, so an undo with no pick asks exactly what it always asked.
   const picks = dropPick ? [dropPick] as const : [] as const;
   const closeChooser = useCallback(() => {
@@ -424,10 +431,10 @@ export function GotItReceipt({
             type="button"
             aria-label={busy ? undefined : c.undoAria(cardName)}
             // Not the native attribute: the button keeps focus while it reads Checking or Undoing.
-            aria-disabled={busy || undefined}
-            aria-busy={busy || undefined}
-            onClick={() => { if (!busy) void check(); }}
-            className={`${btn} font-semibold ${busy ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
+            aria-disabled={held || undefined}
+            aria-busy={held || undefined}
+            onClick={() => { if (!held) void check(); }}
+            className={`${btn} font-semibold ${held ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
           >
             {phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}
           </button>
@@ -443,6 +450,7 @@ export function GotItReceipt({
         thisDeckId={sourceDeckId}
         onCard={onCard}
         onWrite={onWrite}
+        onPending={setChanging}
         onClose={closeChooser}
       />
     ) : null}

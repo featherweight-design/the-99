@@ -147,6 +147,7 @@ export function ContestedCardRow({
   addedCopy = false,
   onCard,
   onWrite,
+  onPending,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -182,7 +183,12 @@ export function ContestedCardRow({
    * the card it read back, and only without one is it taken from the press. Every landed write is
    * reported, a superseded one included: it changed the stored pick whether or not it is drawn.
    */
-  onWrite?: (deckId: string, picked: boolean) => void;
+  onWrite?: (deckId: string, picked: boolean, createdAt?: string) => void;
+  /**
+   * Whether any write is still out, on every change: a caller whose own action depends on where the
+   * pick ends up (the receipt's Undo) holds until this reads false.
+   */
+  onPending?: (pending: boolean) => void;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -222,6 +228,8 @@ export function ContestedCardRow({
   // arriving from the server does it too. Both advance this, and a write whose number is stale
   // neither draws its answer nor stands anything down.
   const tap = useRef(0);
+  // Writes still out, for `onPending`: taps can overlap, so a count rather than a flag.
+  const out = useRef(0);
   const [, startTransition] = useTransition();
   // A fresh server payload always wins, and is filed on its way past. Adjusted during render
   // rather than in an effect, or the previous allocation paints once before being corrected.
@@ -283,6 +291,8 @@ export function ContestedCardRow({
     // one option is ever checked. Seniority allocates every other copy.
     setPicked(wasChosen ? new Set() : new Set([deckId]));
     const mine = ++tap.current;
+    out.current += 1;
+    onPending?.(true);
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
       // session — exits this callback, and the optimistic accent would then stand
@@ -309,7 +319,7 @@ export function ContestedCardRow({
         : null;
       // Including when the live read came back null, which the action's own type allows: the
       // `finally` below is what makes that case, and a thrown one, stand down too.
-      if (result.ok) onWrite?.(deckId, fresh ? (fresh.claimants.find((c) => c.deckId === deckId)?.granted ?? 0) > 0 : !wasChosen);
+      if (result.ok) onWrite?.(deckId, fresh ? (fresh.claimants.find((c) => c.deckId === deckId)?.granted ?? 0) > 0 : !wasChosen, result.createdAt);
       // A superseded tap's answer is DISCARDED rather than drawn: the player has since named a
       // different deck, and its own write — already queued behind this one — is the truth now.
       if (mine !== tap.current) return;
@@ -366,6 +376,8 @@ export function ContestedCardRow({
         // the assertions are written — three spellings of it hung on the harness rather than on
         // the assertion. The sibling guard above IS covered, by the superseded-answer case.
         if (mine === tap.current) setPicked(null);
+        out.current -= 1;
+        onPending?.(out.current > 0);
       }
     });
   };

@@ -257,13 +257,25 @@ describe("warningCovers", () => {
 });
 
 describe("placementToUndo", () => {
+  const at = "2026-10-12 09:00:00.123456";
   it("drops the undo's pick only on a card the reverted entry wrote", () => {
     const rows = [{ oracleId: A }];
-    expect(placementToUndo({ oracleId: A, deckId: "d" }, rows)).toEqual({ oracleId: A, deckId: "d" });
-    expect(placementToUndo({ oracleId: B, deckId: "d" }, rows)).toBeNull();
+    expect(placementToUndo({ oracleId: A, deckId: "d", createdAt: at }, rows)).toEqual({ oracleId: A, deckId: "d", createdAt: at });
+    expect(placementToUndo({ oracleId: B, deckId: "d", createdAt: at }, rows)).toBeNull();
     expect(placementToUndo(undefined, rows)).toBeNull();
     // Never every reservation of the card: an undo naming no deck drops nothing.
-    expect(placementToUndo({ oracleId: A } as never, rows)).toBeNull();
+    expect(placementToUndo({ oracleId: A, createdAt: at } as never, rows)).toBeNull();
+  });
+  it("names the exact reservation, never any pick of the deck", () => {
+    // No instant from the undo or the entry: nothing to tell the press's pick from a newer one.
+    expect(placementToUndo({ oracleId: A, deckId: "d" }, [{ oracleId: A }])).toBeNull();
+    // The entry's own record wins over what the undo says, for the pick the entry made.
+    const own = "2026-10-12 08:00:00.5";
+    expect(placementToUndo({ oracleId: A, deckId: "d", createdAt: at }, [{ oracleId: A, placed: { deckId: "d", createdAt: own } }]))
+      .toEqual({ oracleId: A, deckId: "d", createdAt: own });
+    // Another deck's record says nothing about this deck's pick.
+    expect(placementToUndo({ oracleId: A, deckId: "d", createdAt: at }, [{ oracleId: A, placed: { deckId: "e", createdAt: own } }]))
+      .toEqual({ oracleId: A, deckId: "d", createdAt: at });
   });
 });
 
@@ -286,6 +298,8 @@ describe("restoreToUndo", () => {
     expect(restoreToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, [{ oracleId: A }])).toBeNull();
   });
   it("drops the pick on its own: placementToUndo never carries the restore", () => {
-    expect(placementToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, rows)).toEqual({ oracleId: A, deckId: "b" });
+    const made = [{ oracleId: A, placed: { deckId: "b", createdAt: "2026-10-12 09:00:00.1", displaced: was } }];
+    expect(placementToUndo({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } }, made))
+      .toEqual({ oracleId: A, deckId: "b", createdAt: "2026-10-12 09:00:00.1" });
   });
 });
