@@ -142,3 +142,16 @@ describe("animation utilities", () => {
     expect(exemptedUtilities().filter((c) => !declared.has(c))).toEqual([]);
   });
 });
+
+// A chart's bars draw once on mount (motion plan E3): transform only, on the shared tokens.
+describe("the bar grow", () => {
+  it("grows on transform from zero, never on width or height", () => {
+    expect(css).toMatch(/@keyframes grow-x \{\s*from \{ transform: scaleX\(0\); \}\s*\}/);
+    expect(css).toMatch(/@keyframes grow-y \{\s*from \{ transform: scaleY\(0\); \}\s*\}/);
+  });
+  it("runs on the shared beat, length and curve", () => {
+    for (const axis of ["x", "y"]) {
+      expect(css).toContain(`.anim-grow-${axis} { animation: grow-${axis} var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }`);
+    }
+  });
+});

@@ -41,7 +41,7 @@ export function WorthBody({ decks, chosenId, pricesAsOf, now }: { decks: readonl
             >
               <span className="min-w-0 [grid-area:n]"><DeckName id={r.deck.id} name={r.deck.name} identity={r.deck.identity} small accent={on} /></span>
               <div aria-hidden="true" className="relative h-[16px] [grid-area:t] md:h-[22px]">
-                <span className={`absolute top-[5px] bottom-[5px] left-0 rounded-r-[3px] ${on ? "bg-[var(--accent)]" : "bg-[var(--fg-muted)] opacity-75"}`} style={{ width: pct(r.share) }} />
+                <span className={`anim-grow-x origin-left absolute top-[5px] bottom-[5px] left-0 rounded-r-[3px] ${on ? "bg-[var(--accent)]" : "bg-[var(--fg-muted)] opacity-75"}`} style={{ width: pct(r.share) }} />
                 <span className="absolute -top-[2px] -bottom-[2px] border-l border-dashed border-l-[color:var(--fg-body)]" style={{ left: pct(med) }} />
               </div>
               <span className={`whitespace-nowrap text-right font-mono text-[11.5px] [grid-area:f] ${on ? "font-semibold text-[color:var(--accent)]" : "text-[color:var(--fg)]"}`}>{copy.money(r.cents)}</span>

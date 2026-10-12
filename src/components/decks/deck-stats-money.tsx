@@ -113,7 +113,7 @@ export function MoneyCard({ money, onShop }: { money: MoneyStats; onShop?: () =>
                 </span>
                 <span aria-hidden="true" className="col-span-2 h-[4px] overflow-hidden rounded-full bg-[color:var(--elevated)]">
                   <span
-                    className="block h-full"
+                    className="anim-grow-x origin-left block h-full"
                     style={{ width: `${p.cents === null ? 0 : (p.cents / widest) * 100}%`, background: p.toBuy ? "var(--warning)" : "var(--fg-muted)" }}
                   />
                 </span>

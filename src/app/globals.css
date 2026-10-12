@@ -880,6 +880,23 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 .anim-phone-card-enter { animation: phone-card-enter 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 
+/* A chart's bar draws once when it mounts (motion plan E3): it grows from its own baseline on the
+   shared tokens, so a figure arriving reads as measured out rather than stamped on. Transform
+   only, never width or height, so nothing reflows while it grows; the bar's own width or height
+   is its final size throughout. The baseline is the caller's `origin-*` utility (left for a bar
+   read left to right, right for one that grows toward a centre axis, bottom for a column). One
+   plain grow, no stagger. It runs once per mount: a re-render or a re-sort keeps the element and
+   never replays it, while a row a filter removes and later brings back is a new mount and grows
+   again. Reduced motion: the bar is simply there, in the block below. */
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+}
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+}
+.anim-grow-x { animation: grow-x var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+.anim-grow-y { animation: grow-y var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+
 /* A surface arriving in place of another (the Tuning hub's tool replacing its tiles, and the tiles
    coming back): a short fade and a 6px rise on the shared motion tokens. `both`, so it holds
    transparent through the delay rather than showing, vanishing and fading back. Reduced motion:
@@ -951,6 +968,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-phone-card-enter,
   /* The hub's tool and its tiles appear in place, opaque. */
   .anim-gentle-in,
+  /* A chart's bars are drawn at their size. */
+  .anim-grow-x,
+  .anim-grow-y,
   /* A card over a sheet swaps in and out in place (stacked sheets R1). */
   .anim-stack-rise,
   .anim-sheet-up {

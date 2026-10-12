@@ -149,7 +149,7 @@ function FitHero({ commander: c, rank, isBestFit, avail, width }: FitHeroProps) 
         className="overflow-hidden flex rounded-full"
         style={{ height: 12, background: "var(--elevated)", marginTop: 18 }}
       >
-        <div className="flex h-full" style={{ width: `${fit.pct}%` }}>
+        <div className="anim-grow-x origin-left flex h-full" style={{ width: `${fit.pct}%` }}>
           {fit.segments.map((seg) => (
             <div
               key={seg.key}

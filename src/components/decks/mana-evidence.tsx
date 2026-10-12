@@ -60,7 +60,7 @@ function Row({ row, e, widest }: { row: ColorRow; e: ColorEvidence; widest: numb
       <span aria-hidden="true" className="order-last flex min-w-0 flex-col gap-[4px] md:order-none">
         <span className={MINI}>{copy.table.head.pips}</span>
         <span className="flex items-center gap-[8px]">
-          {row.pips ? <span className="h-[14px] min-w-[8px] flex-none rounded-[3px]" style={{ width: `${(row.pipShare / widest) * 60}%`, background: PIP_STYLE[e.color].bg }} /> : null}
+          {row.pips ? <span className="anim-grow-x origin-left h-[14px] min-w-[8px] flex-none rounded-[3px]" style={{ width: `${(row.pipShare / widest) * 60}%`, background: PIP_STYLE[e.color].bg }} /> : null}
           <span className={row.pips ? FIGURE : `${FIGURE} text-[color:var(--fg-locked)]`}>{pipsText}</span>
         </span>
       </span>
