@@ -228,6 +228,22 @@ describe("the makers fold", () => {
   });
 });
 
+describe("two tokens of one name", () => {
+  it("are told apart for assistive technology by their colors, stats and rules text, on both controls", () => {
+    const a = token({ oracleId: "ga", name: "Goblin", typeLine: "Token Creature — Goblin", colors: ["R"], power: "1", toughness: "1", oracleText: "Haste" });
+    const b = token({ oracleId: "gb", name: "Goblin", typeLine: "Token Creature — Goblin", colors: ["R"], power: "1", toughness: "1", oracleText: "Menace" });
+    draw(ok([a, b]));
+    const [haveA, haveB] = screen.getAllByRole("button", { name: /Mark the Goblin token/ });
+    const describe_ = (el: HTMLElement) => document.getElementById(el.getAttribute("aria-describedby")!)?.textContent;
+    expect(describe_(haveA)).toContain("Haste");
+    expect(describe_(haveB)).toContain("Menace");
+    expect(describe_(haveA)).toContain("1/1");
+    const [joinA, joinB] = screen.getAllByRole("button", { name: /Add the Goblin token/ });
+    expect(describe_(joinA)).toContain("Haste");
+    expect(describe_(joinB)).toContain("Menace");
+  });
+});
+
 describe("the line that says what is sent", () => {
   const NEWEST = new Date("2026-10-11");
   const withPrice = (product: { productName: string | null; productSet: string | null; productNumber: string | null }) =>

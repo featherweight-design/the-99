@@ -62,6 +62,7 @@ import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
 import { deckTokensEnabled } from "../../../lib/decks/tokens-flag";
+import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
@@ -228,8 +229,8 @@ export default async function DeckBuilderPage({
   const tokensRead = deckTokensEnabled()
     ? early(detailRead.then((d) => (d
       ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
-        ...d.cards.map((c) => [c.oracleId, c.imageUri ?? null] as const),
-        ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, c!.imageUri ?? null] as const),
+        ...d.cards.map((c) => [c.oracleId, { imageUri: c.imageUri ?? null, name: printedNameOf(c) }] as const),
+        ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, { imageUri: c!.imageUri ?? null, name: c!.printedName ?? c!.name }] as const),
       ])))
       : ({ status: "absent" } as const))))
     : null;

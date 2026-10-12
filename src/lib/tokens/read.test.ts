@@ -110,11 +110,13 @@ describe("assembleDeckTokens", () => {
         { tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: "catalog-1" },
         { tokenOracleId: A, makerOracleId: M2, makerName: "Alpha", makerImageUri: "catalog-2" },
       ],
-      art: new Map([[M1, "owned-1"]]),
+      art: new Map([[M1, { imageUri: "owned-1", name: "Zed (Secret Lair)" }]]),
     })));
-    const byId = new Map(r.tokens[0].makers.map((m) => [m.oracleId, m.imageUri]));
-    expect(byId.get(M1)).toBe("owned-1");
-    expect(byId.get(M2)).toBe("catalog-2");
+    const byId = new Map(r.tokens[0].makers.map((m) => [m.oracleId, m]));
+    expect(byId.get(M1)).toMatchObject({ imageUri: "owned-1", name: "Zed (Secret Lair)" });
+    expect(byId.get(M2)).toMatchObject({ imageUri: "catalog-2", name: "Alpha" });
+    // Sorted by the name it is shown under, not the oracle name.
+    expect(r.tokens[0].makers.map((m) => m.name)).toEqual(["Alpha", "Zed (Secret Lair)"]);
   });
 
   it("skips a token row no link reaches", () => {

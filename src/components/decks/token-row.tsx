@@ -7,6 +7,7 @@ import { tokensCopy } from "../../lib/copy/tokens";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
 import { tokenManapoolLine } from "../../lib/tokens/price-line";
 import type { DeckToken } from "../../lib/tokens/read";
+import { spokenFullManaCost } from "../../lib/copy/card-surfaces";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
 
@@ -17,6 +18,17 @@ export function tokenPips(colors: string[]): string {
 
 export function tokenPT(t: Pick<DeckToken, "power" | "toughness">): string | null {
   return t.power !== null && t.toughness !== null ? `${t.power}/${t.toughness}` : null;
+}
+
+/**
+ * What tells this token from another of its name, said in words: its colors, type line, P/T and rules text.
+ * Both controls are described by it, so two Goblins that differ only by their pips and stats are two
+ * different controls to a screen reader as well as to the eye.
+ */
+export function tokenFaceDescription(token: DeckToken): string {
+  return [spokenFullManaCost(tokenPips(token.colors)), tokensCopy.row.type(token.typeLine, tokenPT(token)), token.oracleText]
+    .filter(Boolean)
+    .join(". ");
 }
 
 /** The "pictured and sent" line, only for a token that has a figure to name (an unpriced one sends nothing). */
@@ -75,6 +87,7 @@ export function TokenRow({
       <span id={`token-${token.oracleId}-toggle`} className="sr-only">
         {tokensCopy.row.toggleAria(token.name, token.makers.length)}
       </span>
+      <span id={`token-${token.oracleId}-face`} className="sr-only">{tokenFaceDescription(token)}</span>
       <div className="flex flex-wrap items-start md:flex-nowrap md:gap-[10px]">
         <button
           type="button"
@@ -138,6 +151,7 @@ export function TokenRow({
               type="button"
               disabled={pending}
               aria-busy={pending}
+              aria-describedby={`token-${token.oracleId}-face`}
               aria-pressed={byHand}
               aria-label={byHand ? tokensCopy.row.haveOffAria(token.name) : tokensCopy.row.haveAria(token.name)}
               onClick={() => press(() => setTokenHeld(deckId, token.oracleId, !byHand))}
@@ -156,6 +170,7 @@ export function TokenRow({
               type="button"
               disabled={pending}
               aria-busy={pending}
+              aria-describedby={`token-${token.oracleId}-face`}
               aria-pressed={token.joined}
               aria-label={token.joined ? tokensCopy.row.leaveAria(token.name) : tokensCopy.row.joinAria(token.name)}
               onClick={() => press(() => setTokenJoined(deckId, token.oracleId, !token.joined))}

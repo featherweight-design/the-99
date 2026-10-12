@@ -77,12 +77,16 @@ export type DeckTokenInputs = {
   prices: Map<string, TokenPriceFact>;
   newestPriceAsOf: Date | null;
   /**
-   * The art the DECK draws for its own cards (the printing the player owns or picked), by oracle id. A maker's
-   * hover preview and card-details opener use it, so a maker shows the same art here as on its decklist row; a
-   * card missing from it keeps the catalog's own.
+   * The art the DECK draws for its own cards (the printing the player owns or picked), by oracle id, WITH the
+   * name of that printing: a Secret Lair art under the oracle name is the mismatch every decklist row refuses.
+   * A maker's name, hover preview and card-details opener use it, so a maker reads here as it does on its
+   * decklist row; a card missing from it keeps the catalog's own.
    */
-  art?: ReadonlyMap<string, string | null>;
+  art?: ReadonlyMap<string, DeckArt>;
 };
+
+/** What the deck draws for one of its cards: the art, and the name of the printing that art is of. */
+export type DeckArt = { imageUri: string | null; name: string };
 
 /**
  * The rows of a deck's Tokens group, from what the queries returned. Pure, so the rules that are easy
@@ -96,7 +100,9 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
   for (const l of i.links) {
     const m = makersOf.get(l.tokenOracleId) ?? new Map<string, TokenMaker>();
     m.set(l.makerOracleId, {
-      oracleId: l.makerOracleId, name: l.makerName, imageUri: i.art?.get(l.makerOracleId) ?? l.makerImageUri,
+      oracleId: l.makerOracleId,
+      name: i.art?.get(l.makerOracleId)?.name ?? l.makerName,
+      imageUri: i.art?.get(l.makerOracleId)?.imageUri ?? l.makerImageUri,
     });
     makersOf.set(l.tokenOracleId, m);
   }
@@ -214,7 +220,7 @@ async function linksFor(makerIds: string[]): Promise<DeckTokenInputs["links"]> {
 export async function loadDeckTokens(
   deckId: string,
   userId: string,
-  art?: ReadonlyMap<string, string | null>,
+  art?: ReadonlyMap<string, DeckArt>,
 ): Promise<DeckTokensRead> {
   try {
     if (!(await tokenTablesExist())) return { status: "absent" };
