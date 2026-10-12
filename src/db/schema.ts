@@ -285,6 +285,23 @@ export const tokenReads = pgTable("token_reads", {
   readAt: timestamp("read_at").notNull().defaultNow(),
 });
 
+/**
+ * A token a player has put on ONE deck's Shopping list (plan `2026-10-11-tokens-for-my-deck.md`, PR 4).
+ * Per deck, because Shopping is per deck; the token's own `oracle_id` is the identity. Holding a token
+ * (an ownership row) never deletes a join: the READERS leave an owned token off Shopping, so an upload
+ * that reads a token takes it off every deck's list without writing here. `user_id` is carried so no
+ * read needs a join to `decks` to scope by player.
+ */
+export const deckTokenJoins = pgTable("deck_token_joins", {
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.deckId, t.tokenOracleId] }),
+  index("deck_token_joins_user_idx").on(t.userId),
+]);
+
 /** Which card makes which token: `all_parts` entries with `component: "token"`, nothing else. */
 export const cardTokens = pgTable("card_tokens", {
   cardOracleId: uuid("card_oracle_id").notNull().references(() => cards.oracleId, { onDelete: "cascade" }),

@@ -1807,6 +1807,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
 
+- `pnpm probe:deck-tokens` proves the deck-tokens seams (`loadDeckTokens`, the join and hand-mark writes) against a real
+  database that holds a published token catalog. It WRITES (joins, hand marks, a read marker for the account) and
+  cleans up after itself, so it fails closed: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL` reports, and
+  staging and production are refused by id. Run it on a scratch branch of staging after `pnpm db:migrate`,
+  `db:seed:printings` and `db:seed:prices` with `CATALOG_FETCH_DIR` set, `PROBE_USER_ID` the account owning the
+  decks, then delete the branch. It checks Aang (four tokens, six makers, the commander counted) and Omnath (14,
+  `Copy` among them), the three states, that an unrelated token is refused, that `I have one` takes the token
+  off this deck's list, and that a hand mark leaves every other token not known. Measured 2026-10-11 on a scratch
+  branch of staging: all 18 checks passed, and the account's own rows were put back exactly.
+
 - `pnpm probe:tokens` reproduces the tokens brief's Fixtures
   (`docs/superpowers/design-briefs/2026-10-11-tokens-for-my-deck.md`) against the real bytes. It builds
   the token catalog in memory exactly as the printings ingest does, from `CATALOG_FETCH_DIR=<dir>`

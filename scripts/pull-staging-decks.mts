@@ -165,6 +165,9 @@ let fillPassCards: Record<string, unknown>[] = [];
 let unresolved: Record<string, unknown>[] = [];
 let artPrefs: Record<string, unknown>[] = [];
 let uploads: Record<string, unknown>[] = [];
+let tokenOwned: Record<string, unknown>[] = [];
+let tokenReads: Record<string, unknown>[] = [];
+let tokenJoins: Record<string, unknown>[] = [];
 
 try {
   await client.query("begin isolation level repeatable read read only");
@@ -209,6 +212,14 @@ try {
   const deckIds = decks.map((d) => d.id as string);
   const byDeck = async (table: string) =>
     deckIds.length === 0 ? [] : rows(`select * from ${table} where deck_id = any($1)`, [deckIds]);
+
+  // The token state every Tokens surface reads (plan `2026-10-11-tokens-for-my-deck.md`): what the player holds,
+  // whether the account has been read, and each deck's Shopping joins. A source that has not migrated them yet
+  // simply has none, which is the state it is in.
+  const has = async (t: string) => (await rows("select to_regclass($1) is not null as ok", [`public.${t}`]))[0].ok === true;
+  if (await has("token_ownership")) tokenOwned = await rows("select * from token_ownership where user_id = $1", [owner]);
+  if (await has("token_reads")) tokenReads = await rows("select * from token_reads where user_id = $1", [owner]);
+  if (await has("deck_token_joins")) tokenJoins = await byDeck("deck_token_joins");
 
   cards = await byDeck("deck_cards");
   proxies = await byDeck("deck_proxies");
@@ -256,6 +267,7 @@ for (const [name, rows] of [
   ["fill_passes", fillPasses], ["fill_pass_cards", fillPassCards],
   ["deck_unresolved_rows", unresolved], ["collection_items", collection],
   ["card_art_preferences", artPrefs], ["csv_uploads", uploads],
+  ["token_ownership", tokenOwned], ["token_reads", tokenReads], ["deck_token_joins", tokenJoins],
 ] as const) {
   console.log(`  ${String(rows.length).padStart(6)}  ${name}`);
 }
@@ -322,13 +334,19 @@ try {
   // branch its own comment described.
   const existing = (await out.query("select id from decks where user_id = $1", [AS_USER]))
     .rows as { id: string }[];
-  const USER_TABLES = [
+  const targetHas = async (t: string) =>
+    ((await out.query("select to_regclass($1) is not null as ok", [`public.${t}`])).rows as { ok: boolean }[])[0].ok;
+  // Token ownership is per user and has no deck to cascade from, so it is cleared like the others, where the
+  // target has the table at all.
+  const USER_TABLES: string[] = [
     "collection_items",
     "deck_folders",
     "card_art_preferences",
     "csv_uploads",
     "pull_releases",
-  ] as const;
+    ...((await targetHas("token_ownership")) ? ["token_ownership"] : []),
+    ...((await targetHas("token_reads")) ? ["token_reads"] : []),
+  ];
   let otherRows = 0;
   for (const t of USER_TABLES) {
     otherRows += Number(
@@ -385,6 +403,27 @@ try {
   await insert("collection_items", collection);
   await insert("card_art_preferences", artPrefs);
   await insert("csv_uploads", uploads);
+
+  // Tokens last. A row names a token by its own oracle id, and the target holds only the catalog ITS ingest built,
+  // so a row for a token the target has never seen is left out and counted rather than failing the whole snapshot
+  // on a foreign key.
+  const knownTokens = (await targetHas("tokens"))
+    ? new Set(((await out.query("select oracle_id from tokens")).rows as { oracle_id: string }[]).map((r) => r.oracle_id))
+    : new Set<string>();
+  const knownOnly = (rowsIn: Record<string, unknown>[]) => rowsIn.filter((r) => knownTokens.has(r.token_oracle_id as string));
+  let tokenSkipped = 0;
+  if (await targetHas("token_ownership")) {
+    const keep = knownOnly(tokenOwned);
+    tokenSkipped += tokenOwned.length - keep.length;
+    await insert("token_ownership", keep);
+  }
+  if (await targetHas("token_reads")) await insert("token_reads", tokenReads);
+  if (await targetHas("deck_token_joins")) {
+    const keep = knownOnly(tokenJoins);
+    tokenSkipped += tokenJoins.length - keep.length;
+    await insert("deck_token_joins", keep);
+  }
+  if (tokenSkipped > 0) console.log(`  ${tokenSkipped} token row(s) left out: the target's catalog does not hold that token.`);
 
   const landed = (await out.query("select count(*)::int as n from decks where user_id = $1", [
     AS_USER,

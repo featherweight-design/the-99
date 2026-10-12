@@ -99,8 +99,12 @@ export async function writeUploadTokens(
 }
 
 /** The player's own `I have one`. Never writes the read marker; never touches an upload row. */
-export async function markTokenOwned(userId: string, tokenOracleId: string): Promise<void> {
-  await db.insert(tokenOwnership)
+export async function markTokenOwned(
+  userId: string,
+  tokenOracleId: string,
+  runner: Pick<typeof db, "insert"> = db,
+): Promise<void> {
+  await runner.insert(tokenOwnership)
     .values({ userId, tokenOracleId, quantity: 1, source: "manual" })
     .onConflictDoNothing();
 }

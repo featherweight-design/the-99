@@ -81,7 +81,8 @@ export type AboutSwitch =
   | 'OVERVIEW_V2_ENABLED'
   | 'DECK_BENCHMARKS_ENABLED'
   | 'SHOPPING_MARK_BOUGHT_ENABLED'
-  | 'DECK_PRINTINGS_ENABLED';
+  | 'DECK_PRINTINGS_ENABLED'
+  | 'DECK_TOKENS_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is

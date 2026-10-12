@@ -158,8 +158,10 @@ revalidates that route pattern itself. Home and `/decks` read no token table, so
 
 ### PR 4: Tokens group on the deck page (read side, first UI; introduces the switch)
 
+**Split as planned.** 4a (flag, migration, loader, writes, actions, copy, design table, `probe:deck-tokens`) is dark with no UI; 4b (components, wiring, inventory, contact sheet) is the first thing a reader could see.
+
 `DECK_TOKENS_ENABLED` (server-side, exact `'true'`, `src/lib/decks/tokens-flag.ts`) and a member of `AboutSwitch`
-for the entry. Migration 0096 (`deck_token_joins`). Loader `loadDeckTokens(deckId, userId)` (`src/lib/tokens/read.ts`):
+for the entry. Migration 0097 (`deck_token_joins`; 0096 went to deck notes, so take the next free number at the rebase). Loader `loadDeckTokens(deckId, userId)` (`src/lib/tokens/read.ts`):
 the deck's makers from `deck_cards` UNION the commanders (as `list_claims` does, G10), tokens via `card_tokens`,
 owned state from the pure rule, the pictured printing and price from `tokenPrice`, joins, and oracle text only for
 a colliding pair. Components: `TokensGroup` at the foot of Your deck under All (`DecklistGroupHeader` with its note),

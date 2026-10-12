@@ -411,6 +411,14 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   would turn every other token from unknown into not owned. Replace removes upload rows only; a hand mark an upload
   also reads becomes an upload row. The review screen's `skipped by design` count still includes tokens: they are
   not in `collection_items`.
+- **A deck's tokens are read by `loadDeckTokens` and written by two actions** (`DECK_TOKENS_ENABLED`, staging on, production off;
+  plan `2026-10-11-tokens-for-my-deck.md`, PR 4a). The makers are the deck's `deck_cards` UNION both commanders (a commander
+  makes tokens too), joined through `card_tokens`; `assembleDeckTokens` is the pure half. **A held token is never drawn as joined**
+  whatever its `deck_token_joins` row says, so an upload that reads a token takes it off every deck's Shopping list without
+  writing there; `I have one` (`setTokenHeld`) records a hand mark and deletes THIS deck's join in one transaction. Rules text
+  is attached only to a token sharing name, colors and P/T with another in the same deck. The loader never throws (a failed read is
+  `failed`, drawn as the group's own line), and the actions revalidate the deck page and the cart, never Home or `/decks`: a token
+  moves none of their figures. `pnpm probe:deck-tokens` proves the queries on a scratch branch (docs/probes.md).
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and
