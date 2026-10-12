@@ -1991,8 +1991,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   downward would sit under it) and the option painted at its centre is the list's own, inside the window;
   and pressing Find commanders sends the picked card as `[[<oracle id>|Name]]` in the server action's
   request, which the probe ABORTS in the browser, so no read runs and no credit is spent. It writes the
-  account's About row through `clearAboutSheet` and nothing else; run it against a dev server with
-  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. Measured 2026-10-12 on local-dev:   At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
+  account's About row through `clearAboutSheet` and nothing else, and puts it back in its `finally` (`captureAboutSeen`, `restoreAboutSeen`); run it against a dev server with
+  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
   short, and requires the list to end above the dock's top (the list is held to that room and scrolls
   inside it; `listMax` in `intake-form.tsx`). Without that hold the list is its 220px height and runs
   under the dock there.

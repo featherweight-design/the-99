@@ -85,12 +85,18 @@ export async function loadReadCards(
       where oracle_id = any(${sql.param(ids)}::uuid[]) order by inclusion desc nulls last
     `).then((r) => r.rows as { card: string; commander: string }[]),
   ]);
-  return named.map((c) => ({
-    name: c.name,
-    required: c.required,
-    oracleText: texts.get(c.oracleId) ?? "",
-    runBy: runs.filter((r) => r.card === c.oracleId)
-      .flatMap((r) => { const k = list.keyOf.get(r.commander); return k !== undefined && pool.has(k) ? [k] : []; })
-      .slice(0, RUN_BY_MAX),
-  }));
+  return named.map((c) => {
+    const eligible = runs.filter((r) => r.card === c.oracleId)
+      .flatMap((r) => { const k = list.keyOf.get(r.commander); return k !== undefined && pool.has(k) ? [k] : []; });
+    // `runBy` is the bounded list the prompt shows. A REQUIRED card also carries every pool key whose decks
+    // run it, which is what the code-level gate (`allowedKeys`) holds a reply to: the bound is a prompt
+    // size, and a legal commander past it must not be rejected.
+    return {
+      name: c.name,
+      required: c.required,
+      oracleText: texts.get(c.oracleId) ?? "",
+      runBy: eligible.slice(0, RUN_BY_MAX),
+      ...(c.required ? { eligible } : {}),
+    };
+  });
 }

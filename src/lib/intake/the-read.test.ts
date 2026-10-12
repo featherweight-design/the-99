@@ -171,6 +171,10 @@ describe("allowedKeys", () => {
     expect([...allowedKeys(new Set([1, 2, 3]), [card("A", [1, 2, 9], true)])]).toEqual([1, 2]);
     expect([...allowedKeys(new Set([1, 2, 3]), [card("A", [1, 2], true), card("B", [2, 3], true)])]).toEqual([2]);
   });
+  it("holds a reply to every commander whose decks run the card, not only the bounded list the prompt shows", () => {
+    const c = { name: "A", oracleText: "", runBy: [1], eligible: [1, 2, 3], required: true };
+    expect([...allowedKeys(new Set([1, 2, 3, 4]), [c])]).toEqual([1, 2, 3]);
+  });
   it("is empty when no listed commander is in the pool", () => {
     expect(allowedKeys(new Set([1]), [card("A", [7], true)]).size).toBe(0);
   });

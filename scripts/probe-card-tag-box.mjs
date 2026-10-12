@@ -15,7 +15,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { clearAboutSheet } from "./lib/about-clear.mjs";
+import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
@@ -68,17 +68,29 @@ async function signIn(page) {
 
 await clerkSetup();
 const browser = await chromium.launch();
+let prior = null;
 
 try {
   for (const vp of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const page = await context.newPage();
     const userId = await signIn(page);
+    if (prior === null) prior = await captureAboutSeen(userId);
     await clearAboutSheet(page, userId);
 
     await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
     const box = onPage(page, "textarea");
     await box.waitFor({ timeout: 60_000 });
+
+    // The ⓘ's tooltip sits right under the label row, inside the box's own field, not at a distant container.
+    await onPageRole(page, "button", /How card tags work/).click();
+    const tip = await onPage(page, '[role="tooltip"]:not([hidden])').last().evaluate((t) => {
+      const r = t.getBoundingClientRect();
+      const field = document.querySelector("main textarea").getBoundingClientRect();
+      return { tipTop: Math.round(r.top), boxTop: Math.round(field.top), left: Math.round(r.left), right: Math.round(r.right), viewW: window.innerWidth };
+    });
+    report(`${vp.label} the card-tag tooltip opens under its label, at the box and inside the window`, Math.abs(tip.tipTop - tip.boxTop) < 40 && tip.left >= 0 && tip.right <= tip.viewW, JSON.stringify(tip));
+    await page.keyboard.press("Escape");
 
     // Put the box at the foot of the window, where the phone's dock is, so a list opening downward would be under it.
     await box.evaluate((n) => {
@@ -189,6 +201,7 @@ try {
     }
   }
 } finally {
+  if (prior) await restoreAboutSeen(prior).catch((e) => report("About row restored", false, String(e)));
   await browser.close();
 }
 

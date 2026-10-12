@@ -64,7 +64,14 @@ export type JudgeCandidate = {
 };
 
 /** A card the player's words name, resolved by the free match, as a build-around ask (F1). */
-export type ReadCard = { name: string; oracleText: string; runBy: readonly number[]; required?: boolean };
+export type ReadCard = {
+  name: string; oracleText: string;
+  /** The commanders shown under the card in the prompt: bounded. */
+  runBy: readonly number[];
+  required?: boolean;
+  /** For a required card, every pool key whose decks run it: what a reply is held to, not bounded. */
+  eligible?: readonly number[];
+};
 
 // ---- the shortlist ---------------------------------------------------------------------------
 
@@ -157,7 +164,7 @@ export function allowedKeys(pool: ReadonlySet<number>, cards: readonly ReadCard[
   let allowed = pool;
   for (const c of cards) {
     if (!c.required) continue;
-    const runs = new Set(c.runBy);
+    const runs = new Set(c.eligible ?? c.runBy);
     allowed = new Set([...allowed].filter((k) => runs.has(k)));
   }
   return allowed;

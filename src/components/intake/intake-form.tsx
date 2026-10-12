@@ -324,6 +324,7 @@ export function IntakeForm({
           captionTone={written && closed !== null ? "muted" : "faint"}
           // Counted as the picker caps it (a tag counts as its name), so the count and the box stop together.
           count={written ? copy.intake.extra.count(picker.count, READ_WORDS_MAX_CHARS) : null}
+          tipAnchor
           aside={
             <>
               <InfoTip id={`${wordsId}-info`} lines={copy.intake.extra.tagHelp.lines} label={copy.intake.extra.tagHelp.infoAria} className="self-center" />
@@ -395,6 +396,7 @@ function Field({
   tag,
   count = null,
   aside,
+  tipAnchor = false,
   children,
 }: {
   label: string;
@@ -405,6 +407,8 @@ function Field({
   count?: string | null;
   /** Drawn at the label's right, on its line: the Theme field's join. */
   aside?: ReactNode;
+  /** The aside holds an ⓘ: its tooltip anchors to this row, so the row is positioned. */
+  tipAnchor?: boolean;
   htmlFor?: string;
   labelId?: string;
   caption: string;
@@ -413,7 +417,7 @@ function Field({
   const labelClass = "font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]";
   return (
     <div className="flex flex-col gap-[9px]">
-      <div className={aside ? "flex items-center gap-[10px] min-h-[28px]" : "contents"}>
+      <div className={aside ? `${tipAnchor ? "relative " : ""}flex items-center gap-[10px] min-h-[28px]` : "contents"}>
         {htmlFor ? (
           <label htmlFor={htmlFor} className={tag ? `${labelClass} inline-flex items-baseline gap-[8px]` : labelClass}>
             {label}

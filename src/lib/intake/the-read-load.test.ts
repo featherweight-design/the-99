@@ -38,6 +38,8 @@ describe("loadReadCards", () => {
     const cards = await loadReadCards("w", {} as never, list, pool, [{ oracleId: "tagged", name: "Tagged Card" }]);
     expect(cards.map((c) => [c.name, c.required])).toEqual([["Tagged Card", true], ["Typed Card", false]]);
     expect(cards[0].runBy).toEqual([1, 2]);
+    expect(cards[0].eligible).toEqual([1, 2]);
+    expect(cards[1].eligible).toBeUndefined();
   });
 
   it("reads a card both tagged and typed once, as the required one", async () => {
