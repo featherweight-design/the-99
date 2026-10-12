@@ -66,13 +66,12 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
-import { dailyLimitFor, readAllowance, recordModelUsage, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
+import { dailyLimitFor, ownerShareMicro, readAllowance, recordModelUsage, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
 import type { ModelUsage } from "../src/lib/model/client";
 import { costMicroUsd, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
 import {
   HARD_STOP_USD,
   monthStartUtc,
-  OWNER_SHARE_USD,
   unpricedWorstCaseMicro,
   usdToMicro,
   type UnpricedCall,
@@ -334,9 +333,13 @@ async function run() {
     const owner = newUser();
     const friend = newUser();
     process.env.MODEL_OWNER_USER_ID = owner;
+    // Pinned to the default share: an override at or above the $20 hard stop (staging's is $25)
+    // makes `ownerShare` unreachable, because the stop is checked first and wins.
+    const shareOverride = process.env.MODEL_OWNER_MONTHLY_USD;
+    delete process.env.MODEL_OWNER_MONTHLY_USD;
     const seeded: string[] = [];
     try {
-      seeded.push(await seed(owner, "spent", usdToMicro(OWNER_SHARE_USD) - W));
+      seeded.push(await seed(owner, "spent", ownerShareMicro() - W));
       check("f · the owner reserves while one call still fits their share", kindOf(await reserve(owner)), "reserved");
       check("f · then the owner is refused ownerShare", kindOf(await reserve(owner)), "ownerShare");
       check("f · readAllowance says ownerShare for the owner", (await readAllowance(owner)).ownerShare, true);
@@ -344,6 +347,7 @@ async function run() {
       check("f · and reads no share", (await readAllowance(friend)).ownerShare, undefined);
     } finally {
       delete process.env.MODEL_OWNER_USER_ID;
+      if (shareOverride !== undefined) process.env.MODEL_OWNER_MONTHLY_USD = shareOverride;
       await unseed(seeded);
       await fixture.execute(sql`delete from model_calls where user_id in (${owner}, ${friend})`);
     }

@@ -4,18 +4,54 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { callMicroFor, dailyLimitFor, joinBilled, recordModelUsage, reserveModelCall } from "./allowance";
+import { callMicroFor, dailyLimitFor, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall } from "./allowance";
 import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
 import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "./allowance-rule";
 
-describe("dailyLimitFor", () => {
-  const before = process.env.MODEL_OWNER_USER_ID;
+describe("ownerShareMicro", () => {
+  const before = process.env.MODEL_OWNER_MONTHLY_USD;
   afterEach(() => {
-    if (before === undefined) delete process.env.MODEL_OWNER_USER_ID;
-    else process.env.MODEL_OWNER_USER_ID = before;
+    if (before === undefined) delete process.env.MODEL_OWNER_MONTHLY_USD;
+    else process.env.MODEL_OWNER_MONTHLY_USD = before;
+  });
+
+  it("reads MODEL_OWNER_MONTHLY_USD, and falls back to five on unset or garbage", () => {
+    delete process.env.MODEL_OWNER_MONTHLY_USD;
+    expect(ownerShareMicro()).toBe(5_000_000);
+    process.env.MODEL_OWNER_MONTHLY_USD = "25";
+    expect(ownerShareMicro()).toBe(25_000_000);
+    process.env.MODEL_OWNER_MONTHLY_USD = "-1";
+    expect(ownerShareMicro()).toBe(5_000_000);
+  });
+});
+
+describe("dailyLimitFor", () => {
+  const keys = ["MODEL_OWNER_USER_ID", "MODEL_OWNER_DAILY_ALLOWANCE"] as const;
+  const before = keys.map((k) => process.env[k]);
+  afterEach(() => {
+    keys.forEach((k, i) => {
+      if (before[i] === undefined) delete process.env[k];
+      else process.env[k] = before[i];
+    });
+  });
+
+  it("gives the owner an overridden limit, and a friend still five", () => {
+    process.env.MODEL_OWNER_USER_ID = "user_owner";
+    process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
+    expect(dailyLimitFor("user_owner")).toBe(100);
+    expect(dailyLimitFor("user_friend")).toBe(5);
+  });
+
+  it("ignores a garbage override, and an override with no owner", () => {
+    process.env.MODEL_OWNER_USER_ID = "user_owner";
+    process.env.MODEL_OWNER_DAILY_ALLOWANCE = "lots";
+    expect(dailyLimitFor("user_owner")).toBe(10);
+    delete process.env.MODEL_OWNER_USER_ID;
+    process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
+    expect(dailyLimitFor("user_owner")).toBe(5);
   });
 
   it("gives the owner ten and everyone else five", () => {

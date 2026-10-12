@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { ALLOWANCE_WINDOW_MS, MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS, allowanceFrom, counts } from "./allowance-rule";
+import {
+  ALLOWANCE_WINDOW_MS,
+  MODEL_FRIEND_DAILY_ALLOWANCE,
+  MODEL_OWNER_DAILY_ALLOWANCE,
+  RESERVATION_TTL_MS,
+  allowanceFrom,
+  counts,
+  ownerDailyAllowanceFrom,
+} from "./allowance-rule";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
@@ -92,5 +100,25 @@ describe("counts", () => {
   it("stops counting a reservation nothing can still be running under", () => {
     // A deck deleted mid-run cascades its run away, and nothing is left to settle the unit.
     expect(counts({ status: "reserved", createdAt: new Date(now.getTime() - RESERVATION_TTL_MS) }, now)).toBe(false);
+  });
+});
+
+describe("ownerDailyAllowanceFrom", () => {
+  it("falls back to the owner's ten when unset or blank", () => {
+    expect(ownerDailyAllowanceFrom(undefined)).toBe(MODEL_OWNER_DAILY_ALLOWANCE);
+    expect(ownerDailyAllowanceFrom("")).toBe(MODEL_OWNER_DAILY_ALLOWANCE);
+    expect(ownerDailyAllowanceFrom("   ")).toBe(MODEL_OWNER_DAILY_ALLOWANCE);
+  });
+
+  it("takes a positive whole number, trimmed", () => {
+    expect(ownerDailyAllowanceFrom("100")).toBe(100);
+    expect(ownerDailyAllowanceFrom(" 25 ")).toBe(25);
+    expect(ownerDailyAllowanceFrom("1")).toBe(1);
+  });
+
+  it("falls back on anything else", () => {
+    for (const raw of ["0", "-5", "2.5", "1e3", "abc", "10abc", "0x10", "Infinity", "NaN", "99999999999999999999"]) {
+      expect(ownerDailyAllowanceFrom(raw), raw).toBe(MODEL_OWNER_DAILY_ALLOWANCE);
+    }
   });
 });

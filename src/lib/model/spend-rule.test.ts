@@ -10,6 +10,7 @@ import {
   monthStartUtc,
   nextMonthStartUtc,
   OWNER_SHARE_USD,
+  ownerShareUsdFrom,
   countsAtWorstCase,
   unpricedWorstCaseMicro,
   spendRefusal,
@@ -95,6 +96,21 @@ describe("spendRefusal", () => {
     expect(spendRefusal({ appMonthMicro: share, ownerMonthMicro: null, callMicro: call })).toBeNull();
   });
 
+  it("holds the owner to an overridden share when one is passed", () => {
+    // Below the stop, and the app total equal to the owner's own: the state a lone owner reaches.
+    const wide = usdToMicro(15);
+    const at = (owner: number) => spendRefusal({ appMonthMicro: owner, ownerMonthMicro: owner, callMicro: call, ownerShareMicro: wide });
+    expect(at(share)).toBeNull();
+    expect(at(wide - call)).toBeNull();
+    expect(at(wide - call + 1)).toBe("ownerShare");
+  });
+
+  it("pauses at the hard stop before an owner share above it can refuse", () => {
+    const above = usdToMicro(25);
+    const owner = stop - call + 1;
+    expect(spendRefusal({ appMonthMicro: owner, ownerMonthMicro: owner, callMicro: call, ownerShareMicro: above })).toBe("paused");
+  });
+
   it("names the pause over the share when both apply", () => {
     expect(spendRefusal({ appMonthMicro: stop, ownerMonthMicro: share, callMicro: call })).toBe("paused");
   });
@@ -116,5 +132,25 @@ describe("crossedAlarms", () => {
   it("stays quiet below a line, and once past it", () => {
     expect(crossedAlarms(0, five - 1)).toEqual([]);
     expect(crossedAlarms(five, five + 1_000)).toEqual([]);
+  });
+});
+
+describe("ownerShareUsdFrom", () => {
+  it("falls back to the owner's five when unset or blank", () => {
+    expect(ownerShareUsdFrom(undefined)).toBe(OWNER_SHARE_USD);
+    expect(ownerShareUsdFrom("")).toBe(OWNER_SHARE_USD);
+    expect(ownerShareUsdFrom("  ")).toBe(OWNER_SHARE_USD);
+  });
+
+  it("takes a positive decimal number, trimmed", () => {
+    expect(ownerShareUsdFrom("25")).toBe(25);
+    expect(ownerShareUsdFrom(" 7.5 ")).toBe(7.5);
+    expect(ownerShareUsdFrom("0.01")).toBe(0.01);
+  });
+
+  it("falls back on anything else", () => {
+    for (const raw of ["0", "0.0", "0.0000004", "-5", "1e3", "$25", "25usd", ".5", "5.", "abc", "Infinity", "NaN"]) {
+      expect(ownerShareUsdFrom(raw), raw).toBe(OWNER_SHARE_USD);
+    }
   });
 });
