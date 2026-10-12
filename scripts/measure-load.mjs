@@ -47,7 +47,26 @@
 // The table also prints, per route, the card images a cold load ASKED for and the kilobytes that
 // landed, because an image is not in any RSC figure and can still be most of what a page costs.
 //
-// Where to point it: a `next start` (never `next dev`, whose compile times swamp everything) on a
+// DEPLOYED MODE (MEASURE_DEPLOYED=1, Hugh 2026-10-12: a local server skews the figures). Staging
+// only (`lib/measure-deployed.mjs` refuses every other host), and the harness itself writes nothing to
+// any database (the pages it loads write what any reader's visit writes, on the measurement account):
+//   - sign-in is a Clerk sign-in token minted with THE_99_CLERK_SECRET_KEY_STAGING for the account
+//     THE_99_E2E_AUDIT_USER_EMAIL names, redeemed on the app's origin; testing tokens exist only on a
+//     development instance;
+//   - the deck is MEASURE_DECK_ID (no database lookup); About is settled by one signed-in document
+//     load, on which the proxy sets its own sheet cookie;
+//   - the `[perf]` spans come from Vercel's runtime logs of MEASURE_VERCEL_PROJECT (default
+//     the-99-staging, which needs PERF_TIMING=1 set), read after each run and matched to the measured
+//     request by its `x-vercel-id`, never by time;
+//   - MEASURE_PGSTAT_URL (staging only) gives database time as the delta between two
+//     `pg_stat_statements` snapshots around each warm load, never a reset. Other readers'
+//     statements in that window count too, so it is an upper bound.
+// MEASURE_SERVER_LOG and MEASURE_DB_URL are refused in this mode.
+//
+//   MEASURE_DEPLOYED=1 MEASURE_BASE=https://staging.the-99.dev \
+//     MEASURE_DECK_ID=<uuid> MEASURE_PGSTAT_URL=<staging, read-only> pnpm measure:load
+//
+// Where to point it locally: a `next start` (never `next dev`, whose compile times swamp everything) on a
 // scratch Neon branch holding a `pull:staging` copy, signed in as E2E_AUDIT_USER_EMAIL. The
 // worktree's `.env` DATABASE_URL must name THAT server's database: `env.mjs` loads `.env` over the
 // shell, so a DATABASE_URL given on the command line is discarded, and the About write and the deck
@@ -62,6 +81,7 @@
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
+import { execFileSync } from "node:child_process";
 import { readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -69,15 +89,41 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
+import {
+  assertDeployedBase,
+  lookupUserId,
+  mintSignInToken,
+  perfLinesFromVercel,
+  spansForRequest,
+  statDelta,
+  vercelRequestId,
+} from "./lib/measure-deployed.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+// MEASURE_DEPLOYED=1 measures a deployed app (staging only); the harness itself writes to no database:
+// see `lib/measure-deployed.mjs`. Local mode keeps every rule below exactly as it was.
+const DEPLOYED = process.env.MEASURE_DEPLOYED === "1";
 const BASE = process.env.MEASURE_BASE;
 if (!BASE) throw new Error("Set MEASURE_BASE to the server under test, e.g. http://localhost:3060.");
+if (DEPLOYED) assertDeployedBase(BASE);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = DEPLOYED
+  ? {}
+  : requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+const DEPLOYED_ENV = DEPLOYED
+  ? requireEnv(["THE_99_CLERK_SECRET_KEY_STAGING", "THE_99_E2E_AUDIT_USER_EMAIL", "MEASURE_DECK_ID"])
+  : null;
+// Where the deployed function's `[perf]` lines are read back from (PERF_TIMING=1 on that project).
+const VERCEL_PROJECT = process.env.MEASURE_VERCEL_PROJECT ?? "the-99-staging";
+// Read-only `pg_stat_statements` deltas on staging, taken around each warm load. No reset.
+const PGSTAT_URL = process.env.MEASURE_PGSTAT_URL ?? null;
 const RUNS = Math.max(1, Number(process.env.MEASURE_RUNS ?? 3));
 const OUT = process.env.MEASURE_OUT ?? path.join(os.tmpdir(), `measure-load-${Date.now()}.json`);
 const SERVER_LOG = process.env.MEASURE_SERVER_LOG ?? null;
 const DB_URL = process.env.MEASURE_DB_URL ?? null;
 const DB_BRANCH = process.env.MEASURE_DB_BRANCH ?? null;
+if (DEPLOYED && (SERVER_LOG || DB_URL)) {
+  throw new Error("MEASURE_DEPLOYED reads Vercel's logs and MEASURE_PGSTAT_URL; MEASURE_SERVER_LOG and MEASURE_DB_URL are local-only.");
+}
+if (PGSTAT_URL && !DEPLOYED) throw new Error("MEASURE_PGSTAT_URL is deployed-only; a local run takes MEASURE_DB_URL.");
 
 const PRODUCTION = "br-noisy-violet-a6vw4ess";
 const STAGING = "br-polished-pond-a6e63y0b";
@@ -134,7 +180,33 @@ const CONTENT_PROBE = () => {
   requestAnimationFrame(tick);
 };
 
+/** Deployed sign-in: a Backend-API sign-in token, redeemed on the app's own origin. Writes nothing. */
+async function signInDeployed(browser) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const secret = DEPLOYED_ENV.THE_99_CLERK_SECRET_KEY_STAGING;
+  const expected = await lookupUserId(secret, DEPLOYED_ENV.THE_99_E2E_AUDIT_USER_EMAIL);
+  const ticket = await mintSignInToken(secret, expected);
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 60_000 });
+  const userId = await page.evaluate(async (t) => {
+    const a = await window.Clerk.client.signIn.create({ strategy: "ticket", ticket: t });
+    if (a.status !== "complete") throw new Error(`sign-in status ${a.status}`);
+    await window.Clerk.setActive({ session: a.createdSessionId });
+    return window.Clerk.user.id;
+  }, ticket);
+  if (userId !== expected) throw new Error(`Signed in as ${userId}, not the measurement account.`);
+  // One full document load, signed in, so the proxy decides the About sheet and sets its own
+  // cookie (keyed to the switched entries this deployment draws). Every measured context carries
+  // it through `storageState`. Never `markEveryEntrySeen`: that is a database write.
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  const state = await context.storageState();
+  await context.close();
+  return { userId, state };
+}
+
 async function signIn(browser) {
+  if (DEPLOYED) return signInDeployed(browser);
   const context = await browser.newContext();
   const page = await context.newPage();
   await setupClerkTestingToken({ page });
@@ -172,7 +244,13 @@ async function capture(page) {
   });
   cdp.on("Network.responseReceived", (e) => {
     const r = reqs.get(e.requestId);
-    if (r) { r.headersAt = e.timestamp; r.cached = Boolean(e.response.fromDiskCache || e.response.fromMemoryCache); }
+    if (r) {
+      r.headersAt = e.timestamp;
+      r.cached = Boolean(e.response.fromDiskCache || e.response.fromMemoryCache);
+      // The id Vercel logs this request under, so a deployed run can read back ITS `[perf]` line.
+      const h = e.response.headers ?? {};
+      r.vercelId = vercelRequestId(h["x-vercel-id"] ?? h["X-Vercel-Id"]);
+    }
   });
   cdp.on("Network.dataReceived", (e) => { const r = reqs.get(e.requestId); if (r) r.decoded = (r.decoded ?? 0) + e.dataLength; });
   cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.end = e.timestamp; r.transferred = e.encodedDataLength; } });
@@ -195,6 +273,9 @@ function network(reqs, t0) {
     imageKb: Math.round(images.reduce((n, r) => n + (r.transferred ?? 0), 0) / 1024),
     docKb: doc ? kb(doc.transferred ?? 0) : null,
     jsKb: kb(scripts.reduce((n, r) => n + (r.transferred ?? 0), 0)),
+    docId: doc?.vercelId ?? null,
+    actionId: reqs.find((r) => r.url.startsWith(BASE) && r.method === "POST")?.vercelId ?? null,
+    prefetchId: reqs.find((r) => r.url.startsWith(BASE) && new URL(r.url).pathname === "/api/card-detail")?.vercelId ?? null,
     // The card-detail reads, kept apart: the press's own read is a server action (a POST to the
     // page), and a prefetch is `GET /api/card-detail`. A press can make either or both, so one
     // column for "the read" would time whichever happened to start first.
@@ -224,6 +305,44 @@ function serverSpans(from, pattern) {
   return line ? line.slice(7) : null;
 }
 const logSize = () => (SERVER_LOG ? statSync(SERVER_LOG).size : 0);
+
+/** Where a local load's spans start: a byte offset into the server log. */
+const mark = () => logSize();
+
+/**
+ * A load's spans. Locally, `ref` is a byte offset into the server log and the line is read now.
+ * Deployed, `ref` is the request id Vercel logged the request under (`x-vercel-id`), and the line
+ * is read once the run ends, when Vercel's logs have caught up (`resolveDeployedSpans`).
+ */
+const spansFor = (ref, pattern) =>
+  DEPLOYED ? { deferred: { id: ref, pattern } } : serverSpans(ref, pattern);
+
+/** Replaces every deferred span in `node` with the `[perf]` line its own request logged. */
+async function resolveDeployedSpans(node, since) {
+  if (!DEPLOYED) return;
+  // Runtime logs reach the API some seconds after the request; 20s is generous.
+  await new Promise((r) => setTimeout(r, 20_000));
+  let byId = new Map();
+  try {
+    const out = execFileSync(
+      "vercel",
+      ["logs", "-p", VERCEL_PROJECT, "--environment", "production", "--no-branch",
+        "--since", new Date(since - 60_000).toISOString(), "-n", "5000", "-j"],
+      { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, cwd: os.tmpdir() },
+    );
+    byId = perfLinesFromVercel(out);
+  } catch (error) {
+    console.warn(`vercel logs failed, spans left null: ${error.message}`);
+  }
+  const walk = (n) => {
+    if (!n || typeof n !== "object") return;
+    for (const [k, v] of Object.entries(n)) {
+      if (v && typeof v === "object" && v.deferred) n[k] = spansForRequest(byId, v.deferred.id, v.deferred.pattern);
+      else walk(v);
+    }
+  };
+  walk(node);
+}
 
 /**
  * Who a startup request belongs to, for the startup pass's breakdown. `clerk` is what Clerk serves
@@ -440,8 +559,26 @@ async function dbExec(sql, run) {
   };
 }
 
+/**
+ * Deployed: database execution time over one warm load as the difference between two
+ * `pg_stat_statements` snapshots, never a reset. Other readers' statements in the same window are
+ * counted too, so this is an upper bound; staging carries little traffic.
+ */
+async function dbDelta(sql, run) {
+  const snap = async () =>
+    (await sql`select coalesce(sum(total_exec_time), 0) as ms, coalesce(sum(calls), 0) as calls
+      from pg_stat_statements where query not ilike '%pg_stat_statements%'
+        and dbid = (select oid from pg_database where datname = current_database())`)[0];
+  const before = await snap();
+  await run();
+  return { ...statDelta(before, await snap()), top: [] };
+}
+
 /** Both card-detail reads' `[perf]` lines: the press's action and a prefetch's route, apart. */
-const cardSpans = (from) => ({ action: serverSpans(from, "getCardDetail"), prefetch: serverSpans(from, "/api/card-detail") });
+const cardSpans = (from, net) => ({
+  action: spansFor(DEPLOYED ? net.actionId : from, "getCardDetail"),
+  prefetch: spansFor(DEPLOYED ? net.prefetchId : from, "/api/card-detail"),
+});
 
 async function cardPress(page, cap, width) {
   const triggers = onPage(page, '[aria-label^="View details for "]').filter({ visible: true });
@@ -453,7 +590,7 @@ async function cardPress(page, cap, width) {
   // which is where a prefetch-on-intent build answers from what it already read.
   for (const [key, index] of [["cold", 0], ["warm", 0], ["coldOther", 3], ["intent", 5]]) {
     cap.reset();
-    const from = logSize();
+    const from = mark();
     if (key === "intent") {
       // Keyboard focus at 390: the provider prefetches on :focus-visible, which Chrome grants to
       // programmatic focus only after a key. Shift sets that and types nothing.
@@ -472,7 +609,7 @@ async function cardPress(page, cap, width) {
     await page.waitForTimeout(400);
     // The read logs its spans in `after()`, once it has answered; the 400ms above covers that.
     const net = network(cap.all(), 0);
-    out[key] = { dialog: dialogMs, art, action: net.actionMs, prefetch: net.prefetchMs, spans: cardSpans(from) };
+    out[key] = { dialog: dialogMs, art, action: net.actionMs, prefetch: net.prefetchMs, spans: cardSpans(from, net) };
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
   }
@@ -488,12 +625,18 @@ async function one(browser, state, width, routes, sql) {
     const page = await context.newPage();
     const cap = await capture(page);
     await cap.cdp.send("Network.clearBrowserCache");
+    // The cold load's spans too: worth having, and locally its own log offset keeps the warm
+    // read from taking the cold request's line.
+    const coldFrom = mark();
     const cold = await load(page, cap, `${BASE}${route.path}`);
-    const from = logSize();
+    const coldSpans = route.pattern ? spansFor(DEPLOYED ? cold.docId : coldFrom, route.pattern) : null;
+    const from = mark();
     const warm = await load(page, cap, `${BASE}${route.path}`);
-    const spans = route.pattern ? serverSpans(from, route.pattern) : null;
-    const db = sql ? await dbExec(sql, () => load(page, cap, `${BASE}${route.path}`)) : null;
-    result.routes[route.label] = { cold, warm, spans, db };
+    const spans = route.pattern ? spansFor(DEPLOYED ? warm.docId : from, route.pattern) : null;
+    const db = sql
+      ? await (DEPLOYED ? dbDelta : dbExec)(sql, () => load(page, cap, `${BASE}${route.path}`))
+      : null;
+    result.routes[route.label] = { cold, warm, coldSpans, spans, db };
     if (route.label === "deck") result.card = await cardPress(page, cap, width);
     await context.close();
   }
@@ -559,6 +702,7 @@ function table(runs, routes) {
 }
 
 async function main() {
+  if (DEPLOYED) return mainDeployed();
   const serverBranch = await refuseShared(DATABASE_URL, null);
   const sql = DB_URL ? neon(DB_URL) : null;
   if (sql) {
@@ -581,46 +725,72 @@ async function main() {
           select d.id from decks d where d.user_id = ${userId}
           order by (select coalesce(sum(quantity), 0) from deck_cards c where c.deck_id = d.id) desc, d.id limit 1`;
     if (!deck) throw new Error(deckName ? `The account has no deck named ${deckName}.` : "The account has no decks.");
-    const routes = [
-      // `pattern` is the name the page's `perfRoute` logs under; a route with none logs no spans.
-      { label: "home", path: "/", pattern: "/" },
-      { label: "decks", path: "/decks", pattern: "/decks" },
-      { label: "deck", path: `/decks/${deck.id}`, pattern: "/decks/[id]" },
-      { label: "collection", path: "/collection" },
-      { label: "commanders", path: "/commanders" },
-      { label: "discover", path: "/discover" },
-    ];
-    if (ONLY) {
-      const unknown = [...ONLY].filter((l) => !routes.some((r) => r.label === l));
-      if (unknown.length) throw new Error(`MEASURE_ROUTES names no route: ${unknown.join(", ")}.`);
-      routes.splice(0, routes.length, ...routes.filter((r) => ONLY.has(r.label)));
-    }
-    console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}${PRESS_AT == null ? "" : `, startup pass: press at ${PRESS_AT}ms to ${PRESS_TO}`}`);
-    const runs = [];
-    for (let i = 0; i < RUNS; i += 1) {
-      const run = {};
-      for (const width of MEASURED_WIDTHS) {
-        if (PRESS_AT == null) run[width.label] = await one(browser, state, width, routes, sql);
-        else {
-          run[width.label] = {};
-          for (const route of routes) run[width.label][route.label] = await pressRun(browser, state, width, route);
-        }
-      }
-      runs.push(run);
-      // Written after EVERY run, not once at the end: a slow-profile run of seven takes over an
-      // hour, and a run stopped part-way (to hand a shared machine back) used to lose the raw
-      // figures of every run it had finished. Only the raw JSON survives a stop; the median table
-      // below prints only once the loop ends. Written to a temporary file and renamed over OUT,
-      // so a stop that lands mid-write leaves the previous run's file whole rather than truncated.
-      writeFileSync(`${OUT}.tmp`, JSON.stringify({ base: BASE, at: new Date().toISOString(), complete: i + 1 === RUNS, runs }, null, 2));
-      renameSync(`${OUT}.tmp`, OUT);
-      console.error(`run ${i + 1} of ${RUNS} done — ${OUT}`);
-    }
-    console.log(PRESS_AT == null ? table(runs, routes) : pressTable(runs, routes));
-    console.log(`\nRaw figures, server spans and the top statements: ${OUT}`);
+    await runAll(browser, state, routesFor(deck.id), sql);
   } finally {
     await browser.close();
   }
+}
+
+/** Deployed: staging only, no write from the harness, the deck named by id, spans from Vercel's logs. */
+async function mainDeployed() {
+  const sql = PGSTAT_URL ? neon(PGSTAT_URL) : null;
+  if (sql) {
+    const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
+    if (branch !== STAGING) throw new Error(`MEASURE_PGSTAT_URL must be staging (${STAGING}); it reports ${branch}.`);
+  }
+  const browser = await chromium.launch();
+  try {
+    const { state } = await signIn(browser);
+    await runAll(browser, state, routesFor(DEPLOYED_ENV.MEASURE_DECK_ID), sql);
+  } finally {
+    await browser.close();
+  }
+}
+
+function routesFor(deckId) {
+  const routes = [
+    // `pattern` is the name the page's `perfRoute` logs under; a route with none logs no spans.
+    { label: "home", path: "/", pattern: "/" },
+    { label: "decks", path: "/decks", pattern: "/decks" },
+    { label: "deck", path: `/decks/${deckId}`, pattern: "/decks/[id]" },
+    { label: "collection", path: "/collection" },
+    { label: "commanders", path: "/commanders" },
+    { label: "discover", path: "/discover" },
+  ];
+  if (ONLY) {
+    const unknown = [...ONLY].filter((l) => !routes.some((r) => r.label === l));
+    if (unknown.length) throw new Error(`MEASURE_ROUTES names no route: ${unknown.join(", ")}.`);
+    routes.splice(0, routes.length, ...routes.filter((r) => ONLY.has(r.label)));
+  }
+  return routes;
+}
+
+async function runAll(browser, state, routes, sql) {
+  console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}${PRESS_AT == null ? "" : `, startup pass: press at ${PRESS_AT}ms to ${PRESS_TO}`}`);
+  const runs = [];
+  for (let i = 0; i < RUNS; i += 1) {
+    const run = {};
+    const runStarted = Date.now();
+    for (const width of MEASURED_WIDTHS) {
+      if (PRESS_AT == null) run[width.label] = await one(browser, state, width, routes, sql);
+      else {
+        run[width.label] = {};
+        for (const route of routes) run[width.label][route.label] = await pressRun(browser, state, width, route);
+      }
+    }
+    await resolveDeployedSpans(run, runStarted);
+    runs.push(run);
+    // Written after EVERY run, not once at the end: a slow-profile run of seven takes over an
+    // hour, and a run stopped part-way (to hand a shared machine back) used to lose the raw
+    // figures of every run it had finished. Only the raw JSON survives a stop; the median table
+    // below prints only once the loop ends. Written to a temporary file and renamed over OUT,
+    // so a stop that lands mid-write leaves the previous run's file whole rather than truncated.
+    writeFileSync(`${OUT}.tmp`, JSON.stringify({ base: BASE, at: new Date().toISOString(), complete: i + 1 === RUNS, runs }, null, 2));
+    renameSync(`${OUT}.tmp`, OUT);
+    console.error(`run ${i + 1} of ${RUNS} done — ${OUT}`);
+  }
+  console.log(PRESS_AT == null ? table(runs, routes) : pressTable(runs, routes));
+  console.log(`\nRaw figures, server spans and the top statements: ${OUT}`);
 }
 
 main().catch((error) => {
