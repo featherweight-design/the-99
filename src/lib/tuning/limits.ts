@@ -71,7 +71,8 @@ export const ANSWER_TOKENS_WORST_CASE = 4_800;
 
 /**
  * The output ceiling, which must hold ADAPTIVE THINKING as well as the answer. `callModel` sends
- * no `thinking` field, so Sonnet 5 thinks adaptively, and that thinking is counted inside
+ * no `thinking` field, so Sonnet 5 thinks adaptively (Sonnet 5.5, run the same way in the model-tiering
+ * eval, reported thinking tokens too; one answer used none), and that thinking is counted inside
  * `max_tokens`. At the old 3,000, sized for the answer alone, the eval harness (2026-09-24, n=4)
  * saw 2 of 4 decks hit the ceiling on the first try AND the retry: a mean output of 2,691 tokens
  * against about 450 visible, one reply all thinking, and the player got nothing.
@@ -92,7 +93,8 @@ export const TUNING_EFFORT = "medium";
 /**
  * The least of `MODEL_TIMEOUT_MS` a retry needs to START (Hugh's ruling, 2026-09-24: fail fast
  * and refund). A retry that cannot finish still bills its tokens and keeps the player waiting the
- * whole deadline for a certain failure. 70s is the p95 of one S-medium attempt, read from the
+ * whole deadline for a certain failure. 70s is the p95 of one Sonnet 5 medium attempt (Sonnet 5.5's p95
+ * measured 14s in the tiering eval, so it is conservative for the model now in use), read from the
  * output tokens of all 21 attempts the eval measured at the slowest real-time rate it saw, 79
  * tokens a second (p95 69.0s), rounded up to 5s. So a retry starts only after a first attempt that
  * ended within 40s.
