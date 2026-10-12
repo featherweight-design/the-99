@@ -211,7 +211,7 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
       month,
     ),
     paused: !!allowance?.paused,
-    outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro },
+    outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro, labelsIncomplete: detail.labelsIncomplete },
   };
   return { summary: costSummary(rows, month, now), detail };
 }

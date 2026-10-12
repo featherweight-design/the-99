@@ -29,7 +29,7 @@ function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "produc
   const days = (detailRows.calls ?? []).map((c) => ({ day: c.createdAt.getUTCDate(), origin: c.origin, runs: 1, micro: c.micro ?? 0 }));
   const rows: CostRows = {
     days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {}, paused: false,
-    outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro },
+    outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro, labelsIncomplete: d.labelsIncomplete },
   };
   return render(<CostsView s={costSummary(rows, month, NOW)} detail={d} env={opts.env} month={month} current={OCT} />);
 }
@@ -75,6 +75,22 @@ describe("CostsDetail, a month with runs", () => {
     const { container } = draw({ calls });
     expect(container.querySelector('[data-feature="tuning"]')).toHaveTextContent(/\$0\.045 of \$0\.\d{3}/);
     expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("no press yet");
+  });
+
+  it("says a press with no cost yet is a press, not none", () => {
+    const { container } = draw({ calls: [...calls, call({ feature: "proposed_cuts", status: "reserved", micro: null })] });
+    expect(container.querySelector('[data-feature="proposed_cuts"]')).toHaveTextContent("1 press, none priced yet");
+  });
+
+  it("marks label figures so far while chunks are still collecting", () => {
+    const { container } = draw({ calls, labelRuns: [{ ...labelRun, batches: 2678 }] });
+    expect(container.querySelector('[data-series="labels"]')).toHaveTextContent("$59.48 so far");
+    const labels = screen.getByRole("table", { name: "Card label runs" });
+    expect(within(labels).getAllByText("$59.48 so far")).toHaveLength(2);
+    expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent("label runs still collecting or not priced");
+    // The caps hold system spend too: the ceiling and the account figures read so far as well.
+    expect(screen.getByText("$59.53 so far · not set")).toBeInTheDocument();
+    expect(screen.getByText("$59.65 so far · not set")).toBeInTheDocument();
   });
 
   it("lists accounts by id and the label runs by run", () => {

@@ -120,6 +120,7 @@ function ByModel({ d }: { d: CostDetail }) {
       m.calls > 0 ? copy.modelSub.calls(m.calls, m.features.map(featureName).join(", ")) : null,
       m.batches > 0 ? copy.modelSub.batches(m.batches) : null,
       m.composite ? copy.modelSub.composite : null,
+      m.incomplete ? copy.labelsPartial : null,
     ].filter(Boolean).join("; "),
     parts: [{ micro: m.segs.player, ink: INK.player }, { micro: m.segs.rewrites, ink: INK.rewrites }, { micro: m.segs.labels, ink: INK.labels }],
   }));
@@ -150,7 +151,7 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
   const sys = s.systemSplit;
   const parts = [
     { key: "player", t: copy.series.player, micro: s.player.micro, ink: INK.player },
-    { key: "labels", t: copy.series.labels, micro: sys.labels, ink: INK.labels },
+    { key: "labels", t: copy.series.labels, micro: sys.labels, ink: INK.labels, partial: sys.incomplete },
     { key: "evals", t: copy.series.evals, micro: sys.evals, ink: INK.evals },
     { key: "rewrites", t: copy.series.rewrites, micro: sys.rewrites, ink: INK.rewrites },
   ];
@@ -166,7 +167,7 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
           <div key={p.key} className="flex min-w-0 items-baseline gap-[8px]" data-series={p.key}>
             <span aria-hidden className="h-[9px] w-[9px] flex-none self-center rounded-[2px]" style={{ background: p.ink }} />
             <span className="min-w-0 flex-1 text-[13px] text-[color:var(--fg-body)]">{p.t}</span>
-            <span className="font-mono text-[12.5px] text-[color:var(--fg)]">{usd(p.micro)}</span>
+            <span className="font-mono text-[12.5px] text-[color:var(--fg)]">{"partial" in p && p.partial ? copy.soFar(usd(p.micro)) : usd(p.micro)}</span>
             <span className="w-[46px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{share(p.micro, total)}</span>
           </div>
         ))}
@@ -218,7 +219,7 @@ function Reserved({ d }: { d: CostDetail }) {
             )}
           </div>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-            {r.meanMicro === null ? copy.noPress : copy.reservedShare(pctOf(r.meanMicro, r.reservedMicro))}
+            {r.meanMicro !== null ? copy.reservedShare(pctOf(r.meanMicro, r.reservedMicro)) : r.runs > 0 ? copy.noCostYet(r.runs) : copy.noPress}
           </span>
         </div>
       ))}
@@ -244,13 +245,14 @@ function LabelRuns({ d, month }: { d: CostDetail; month: MonthKey }) {
   const rows: Row[] = d.labelRuns.map((r) => {
     const title = `${fmtDay(r.firstAt)} · ${r.runId ?? copy.labelSource.collector}`;
     const tokens = r.tokens ? `${millions(r.tokens.in)} / ${millions(r.tokens.out)}` : null;
-    const fig = r.unpriced ? copy.unpriced : usd(r.micro);
+    const fig = r.unpriced ? copy.unpriced : r.uncollected ? copy.soFar(usd(r.micro)) : usd(r.micro);
     return { cells: [title, r.batches ?? "—", tokens ?? "—", fig], title, fig, meta: copy.labelMeta(r.batches, tokens) };
   });
   const batches = d.labelRuns.reduce((n, r) => n + (r.batches ?? 0), 0);
   const micro = d.labelRuns.reduce((n, r) => n + r.micro, 0);
   const name = monthLabel(month, "long").split(" ")[0];
-  rows.push({ cells: [name, batches, "", usd(micro)], foot: true, title: name, fig: usd(micro), meta: copy.labelMeta(batches, null) });
+  const total = d.labelsIncomplete ? copy.soFar(usd(micro)) : usd(micro);
+  rows.push({ cells: [name, batches, "", total], foot: true, title: name, fig: total, meta: copy.labelMeta(batches, null) });
   return <Table label={copy.labels} head={[h.run, h.batches, h.tokens, h.cost]} right={[1, 2, 3]} grid="minmax(0,1fr) 90px 150px 80px" rows={rows} />;
 }
 

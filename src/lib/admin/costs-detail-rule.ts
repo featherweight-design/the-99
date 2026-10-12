@@ -10,7 +10,9 @@ import { monthParam, type MonthKey } from "./costs-rule";
  * client-safe: `costs.ts` reads the month's rows and the committed ledgers and hands them here.
  *
  * Every dollar is integer micro-dollars. A run is one `model_calls` row; a provider call is one
- * `model_call_parts` row, or the run itself when it has none (a row from before the parts table).
+ * `model_call_parts` row, or the run itself when it has none and cost something (a row from before the
+ * parts table). A partless run that cost nothing made no provider call: it is a `noCall` bill (an
+ * empty Look-deeper pool settles at $0 and writes no part), counted as a run and never as a call.
  * Such a row keeps its own `model`, and when that joins two models with `+` it is a COMPOSITE,
  * named as one and never split by guesswork (brief, locked rule 13): its effort is not recorded.
  */
@@ -58,7 +60,7 @@ const seriesOf = (c: { origin: Origin; feature: string }): "player" | "rewrites"
 
 export const isComposite = (model: string) => model.includes("+");
 
-/** The provider calls under each priced run: its parts, or the run itself when it has none. */
+/** The provider calls under each priced run: its parts, or the run itself when it has none and cost something. */
 function providerCalls(calls: readonly CallRow[], parts: readonly PartRow[]) {
   const byCall = new Map<string, PartRow[]>();
   for (const p of parts) byCall.set(p.callId, [...(byCall.get(p.callId) ?? []), p]);
@@ -70,7 +72,9 @@ function providerCalls(calls: readonly CallRow[], parts: readonly PartRow[]) {
         call: c,
         steps: own?.length
           ? own.map((p) => ({ step: p.step as string | null, model: p.model, effort: p.effort ?? null, recorded: true, micro: p.micro }))
-          : [{ step: null, model: c.model ?? "", effort: null, recorded: false, micro: c.micro ?? 0 }],
+          : c.micro === 0
+            ? []
+            : [{ step: null, model: c.model ?? "", effort: null, recorded: false, micro: c.micro ?? 0 }],
       };
     });
 }
@@ -98,6 +102,8 @@ export type ModelRow = {
   batches: number;
   features: string[];
   segs: Omit<Series, "evals">;
+  /** A label run at this model has chunks still collecting, or could not be priced: the figure is so far. */
+  incomplete: boolean;
 };
 
 export type FeatureRow = {
@@ -114,7 +120,11 @@ export type FeatureRow = {
   p90Micro: number | null;
 };
 
-export type LabelRun = { runId: string | null; firstAt: Date; source: "batches" | "collector"; batches: number | null; tokens: { in: number; out: number } | null; micro: number; unpriced?: true };
+/**
+ * `unpriced`: a chunk's model cannot be batch-priced, so its dollars are unknown. `uncollected`: chunks
+ * whose usage has not arrived, so `micro` prices only the collected ones. Either makes the figure partial.
+ */
+export type LabelRun = { runId: string | null; firstAt: Date; source: "batches" | "collector"; batches: number | null; tokens: { in: number; out: number } | null; micro: number; unpriced?: true; uncollected?: number };
 
 export type LedgerRow = {
   file: string;
@@ -133,12 +143,15 @@ export type CostDetail = {
   series: Series;
   /** `model_calls` system rows that are card labels (the manual collector), already inside `series.labels`. */
   labelCallsMicro: number;
+  /** Some label run is unpriced or still collecting, so `series.labels` and every total holding it are so far. */
+  labelsIncomplete: boolean;
   models: ModelRow[];
   modelsTotal: number;
   features: FeatureRow[];
   runs: number;
   callsMicro: number;
   refunds: { runs: number; micro: number; byFeature: { feature: string; runs: number; micro: number }[] };
+  /** `runs` counts every player press of the feature; `meanMicro` is over the priced ones, null when none is priced yet. */
   reserved: { feature: ModelFeature; reservedMicro: number; meanMicro: number | null; runs: number }[];
   accounts: { userId: string; presses: number; credits: number; micro: number }[];
   labelRuns: LabelRun[];
@@ -190,7 +203,7 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   const models = new Map<string, ModelRow>();
   const modelRow = (model: string) => {
     let m = models.get(model);
-    if (!m) models.set(model, (m = { model, composite: isComposite(model), micro: 0, calls: 0, batches: 0, features: [], segs: { player: 0, rewrites: 0, labels: 0 } }));
+    if (!m) models.set(model, (m = { model, composite: isComposite(model), micro: 0, calls: 0, batches: 0, features: [], segs: { player: 0, rewrites: 0, labels: 0 }, incomplete: false }));
     return m;
   };
   for (const { call, steps } of calls) {
@@ -205,25 +218,33 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   const labelRuns: LabelRun[] = [];
   const runsById = new Map<string, LabelRun>();
   let batchMicro = 0;
+  let labelsIncomplete = false;
   for (const r of rows.labelRuns) {
     // `batchCostMicroUsd` prices a dated id on its base card and refuses a model it cannot price
     // from summed meters (no rate, or a rate step). Such a run is drawn as unpriced, never as $0.
+    // Chunks still collecting have no usage yet, so a run with any is priced from the collected ones
+    // and marked partial, and so is every total it reaches.
     const priced = r.collected === 0 ? 0 : batchPrice(r.model, r);
     const micro = priced ?? 0;
+    const uncollected = r.batches - r.collected;
+    const partial = priced === null || uncollected > 0;
+    if (partial) labelsIncomplete = true;
     const m = modelRow(r.model);
     m.micro += micro;
     m.batches += r.batches;
     m.segs.labels += micro;
+    if (partial) m.incomplete = true;
     batchMicro += micro;
     const run = runsById.get(r.runId);
     if (run) {
       run.batches = (run.batches ?? 0) + r.batches;
       run.micro += micro;
       if (priced === null) run.unpriced = true;
+      if (uncollected > 0) run.uncollected = (run.uncollected ?? 0) + uncollected;
       if (r.firstAt < run.firstAt) run.firstAt = r.firstAt;
       if (r.collected > 0) run.tokens = { in: (run.tokens?.in ?? 0) + r.inTokens, out: (run.tokens?.out ?? 0) + r.outTokens };
     } else {
-      const fresh: LabelRun = { runId: r.runId, firstAt: r.firstAt, source: "batches", batches: r.batches, tokens: r.collected > 0 ? { in: r.inTokens, out: r.outTokens } : null, micro, ...(priced === null ? { unpriced: true as const } : {}) };
+      const fresh: LabelRun = { runId: r.runId, firstAt: r.firstAt, source: "batches", batches: r.batches, tokens: r.collected > 0 ? { in: r.inTokens, out: r.outTokens } : null, micro, ...(priced === null ? { unpriced: true as const } : {}), ...(uncollected > 0 ? { uncollected } : {}) };
       runsById.set(r.runId, fresh);
       labelRuns.push(fresh);
     }
@@ -278,8 +299,9 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   }
 
   const reserved = RESERVED_FEATURES.map((feature) => {
-    const priced = player.filter((c) => c.feature === feature && c.micro !== null).map((c) => c.micro as number);
-    return { feature, reservedMicro: featureWorstCaseMicroUsd(feature), meanMicro: mean(priced), runs: priced.length };
+    const pressed = player.filter((c) => c.feature === feature);
+    const priced = pressed.flatMap((c) => (c.micro === null ? [] : [c.micro]));
+    return { feature, reservedMicro: featureWorstCaseMicroUsd(feature), meanMicro: mean(priced), runs: pressed.length };
   });
 
   const accounts = new Map<string, { userId: string; presses: number; credits: number; micro: number }>();
@@ -295,6 +317,7 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   return {
     series,
     labelCallsMicro,
+    labelsIncomplete,
     models: modelList,
     modelsTotal: modelList.reduce((n, m) => n + m.micro, 0) + series.evals,
     features,

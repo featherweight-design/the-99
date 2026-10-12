@@ -216,6 +216,8 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
     { micro: sys.rewrites, ink: INK.rewrites },
   ].filter((seg) => seg.micro > 0);
   const accountTotal = s.player.micro + sys.total + (elsewhere?.micro ?? 0);
+  // A label run still collecting, or unpriced, leaves every figure holding system spend partial.
+  const sysUsd = (micro: number) => (sys.incomplete ? copy.soFar(usd(micro)) : usd(micro));
   const note = (text: string | null | undefined) => (text ? ` ${copy.note(text)}` : "");
 
   let banner: ReactNode = null;
@@ -226,7 +228,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
   const tiles = [
     { label: copy.tiles.calls, fig: usd(s.calls.micro), sub: [copy.tileSub.runs(s.calls.runs), s.callsPaceMicro !== null && s.calls.runs > 0 ? copy.tileSub.pace(usd(s.callsPaceMicro)) : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.player, fig: usd(s.player.micro), sub: copy.tileSub.ofPlan(pct(s.player.micro, planMicro), plan), warn: s.alarm >= 80 },
-    { label: copy.tiles.system, fig: usd(sys.total), sub: ceiling && ceiling.micro > 0 ? copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.system },
+    { label: copy.tiles.system, fig: usd(sys.total), sub: [ceiling && ceiling.micro > 0 ? copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.system, sys.incomplete ? copy.labelsPartial : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.perAccount, fig: usd(s.perAccountMicro ?? 0), sub: copy.tileSub.accounts(s.accounts) },
   ];
 
@@ -296,7 +298,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
           <CapRow
             label={copy.capRows.ceiling}
             here
-            figure={ceiling ? copy.of(usd(sys.total), capMicro(ceiling.micro)) : copy.notSet(usd(sys.total))}
+            figure={ceiling ? copy.of(sysUsd(sys.total), capMicro(ceiling.micro)) : copy.notSet(sysUsd(sys.total))}
             sub={ceilingSub + note(storedCeiling?.note)}
             actions={s.current && <SettingAction kind="ceiling" label={copy.changeCeiling} />}
           >
@@ -309,7 +311,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
           <CapRow
             label={copy.capRows.account}
             here
-            figure={cap ? copy.of(usd(accountTotal), capMicro(cap.micro)) : copy.notSet(usd(accountTotal))}
+            figure={cap ? copy.of(sysUsd(accountTotal), capMicro(cap.micro)) : copy.notSet(sysUsd(accountTotal))}
             sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf), elsewhere.by === undefined ? null : elsewhere.by === viewerId ? copy.capSub.you : elsewhere.by) + note(elsewhere.note) : copy.capSub.noElsewhere)}
             actions={s.current && <>
               <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />

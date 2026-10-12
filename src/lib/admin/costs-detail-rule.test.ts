@@ -86,6 +86,32 @@ describe("costDetail, by model", () => {
       ["weekly-2026-W40", 127, null],
     ]);
     expect(d.labelRuns[1].micro).toBe(0);
+    // Chunks still collecting leave the run, its model and the month's labels partial.
+    // 2,678 chunks with 2,677 collected, and one more with none.
+    expect(d.labelRuns.map((r) => r.uncollected)).toEqual([2, 127]);
+    expect(d.models[0].incomplete).toBe(true);
+    expect(d.labelsIncomplete).toBe(true);
+  });
+
+  it("calls a fully collected, priced month complete", () => {
+    const d = costDetail(rows({ labelRuns: [labelRun({})] }), OCT);
+    expect(d.labelRuns[0].uncollected).toBeUndefined();
+    expect(d.models[0].incomplete).toBe(false);
+    expect(d.labelsIncomplete).toBe(false);
+  });
+
+  it("counts a partless run that cost nothing as a run, never as a provider call", () => {
+    // An empty Look-deeper pool settles a `noCall` bill at $0 and writes no part.
+    const d = costDetail(rows({ calls: [call({ micro: 0 }), call({ micro: 40_000 })] }), OCT);
+    expect(d.models).toEqual([expect.objectContaining({ model: "claude-sonnet-5", calls: 1, micro: 40_000 })]);
+    expect(d.features).toEqual([expect.objectContaining({ runs: 1, micro: 40_000 })]);
+    expect(d.runs).toBe(2);
+  });
+
+  it("keeps a $0 part as a provider call", () => {
+    const c = call({ micro: 0 });
+    const d = costDetail(rows({ calls: [c], parts: [part(c.id, { micro: 0 })] }), OCT);
+    expect(d.models[0]).toMatchObject({ calls: 1, micro: 0 });
   });
 
   it("prices a dated model id as its model", () => {
@@ -96,6 +122,7 @@ describe("costDetail, by model", () => {
   it("draws a run whose model cannot be priced from summed meters as unpriced, never as $0", () => {
     const d = costDetail(rows({ labelRuns: [labelRun({ model: "claude-haiku-5-5" })] }), OCT);
     expect(d.labelRuns[0]).toMatchObject({ unpriced: true, micro: 0 });
+    expect(d.labelsIncomplete).toBe(true);
   });
 });
 
@@ -132,6 +159,11 @@ describe("costDetail, refunds, reservations and accounts", () => {
     expect(tuning).toEqual({ feature: "tuning", reservedMicro: featureWorstCaseMicroUsd("tuning"), meanMicro: 40_000, runs: 2 });
     expect(d.reserved.find((r) => r.feature === "proposed_cuts")?.meanMicro).toBeNull();
     expect(d.reserved.map((r) => r.feature)).toEqual(["tuning", "synopsis", "intake", "proposed_cuts", "fits_read"]);
+  });
+
+  it("counts a press whose cost has not landed, without a mean", () => {
+    const d = costDetail(rows({ calls: [call({ feature: "intake", status: "reserved", micro: null })] }), OCT);
+    expect(d.reserved.find((r) => r.feature === "intake")).toMatchObject({ meanMicro: null, runs: 1 });
   });
 
   it("sums each account's presses, credits used and dollars, players only", () => {
