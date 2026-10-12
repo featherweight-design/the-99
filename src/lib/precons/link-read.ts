@@ -11,7 +11,14 @@ import { preconArt, type Reader } from "./list-read";
 import { sameCommanders } from "./shared";
 
 export async function readDeckPreconLink(userId: string, deckId: string): Promise<DeckPreconLink | null> {
-  const [head] = await db
+  // One snapshot: an edit committing between the head and the counts would otherwise offer a precon
+  // for a deck that never existed (its old commanders against its new cards). No `accessMode`, for
+  // the pooled connection's sake (`READ_SNAPSHOT`, decks/draft-state.ts).
+  return db.transaction((tx) => readLink(tx, userId, deckId), { isolationLevel: "repeatable read" });
+}
+
+async function readLink(q: Reader, userId: string, deckId: string): Promise<DeckPreconLink | null> {
+  const [head] = await q
     .select({ builtFrom: decks.builtFromPrecon, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
@@ -19,7 +26,7 @@ export async function readDeckPreconLink(userId: string, deckId: string): Promis
   // A linked deck is offered nothing (lock 2), so it pays for no count.
   if (head.builtFrom !== null) return { linked: head.builtFrom, suggestions: [], picker: [] };
   const commanders = head.partner ? [head.commander, head.partner] : [head.commander];
-  const matches = (await preconMatchQuery(deckId, commanders)).map((r) => toMatch(r, commanders));
+  const matches = (await preconMatchQuery(deckId, commanders, q)).map((r) => toMatch(r, commanders));
   return {
     linked: null,
     suggestions: pickSuggestions(matches, null),
