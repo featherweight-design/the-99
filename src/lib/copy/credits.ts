@@ -18,7 +18,8 @@
 // LINK, NEVER LIST (Hugh, 2026-10-12, Find a deck read R2 item 4, app-wide). `spent` and the pause's
 // reason used to name the features that share credits, and a table of switches decided which; every
 // new spender widened the table and every caller passed its flags. They now end in `What uses
-// credits?`, a link to the About `credits` entry, which lists them (gated per line by switch). A
+// credits?`, a link to the About `credits` entry, which says how credits work and lists what spends
+// them (gated per line by switch; the list is owed Proposed cuts and Find a deck's read). A
 // surface draws the line through `CreditsText`, which turns the phrase into that link.
 
 /** A time in the reader's clock, 12-hour: `2:20 PM`. Client-side only, where the clock is theirs. */

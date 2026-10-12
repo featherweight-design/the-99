@@ -206,8 +206,9 @@ export function AnalysisEmpty({
                 data-testid="press-note"
                 className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:max-w-[340px] md:text-left md:text-[11px]"
               >
-                {/* The button's description is the note's TEXT: a control inside it would be read as
-                    part of the description, so the id sits on the words alone. */}
+                {/* The button's description is the note's words, so the id sits on them alone and the
+                    See which press stays outside it. A spent or paused line's `What uses credits?` link
+                    does sit inside, and a description reads a link as its text, which is the line. */}
                 <span id={noteId}><CreditsText text={shownNote} /></span>
                 {see ? (
                   <>

@@ -1,0 +1,27 @@
+{
+  "feature": "Credit lines link to What uses credits? instead of listing features (Find a deck read R2 item 4, app-wide)",
+  "note": "Needs an account whose credits are all spent (model_calls rows at the limit, on a scratch branch) and a deck it owns with an Analysis tab: CREDITS_DECK. TUNING_ENABLED and PROPOSED_CUTS_ENABLED 'true' draw Suggested changes' line too.",
+  "out": "contact-sheets/credits-link",
+  "rows": [
+    {
+      "id": "about-credits",
+      "label": "/about#credits: the entry that lists what uses credits, and its figure's spent and paused lines drawn with the link",
+      "view": "src/components/about/ch01-figures.tsx",
+      "steps": [
+        { "goto": "/about#credits", "wait": "#credits", "settle": 1200 },
+        { "scrollTo": "#credits", "settle": 400 }
+      ]
+    },
+    {
+      "id": "analysis-spent",
+      "label": "/decks/[id] Analysis, every credit out: the credit line ends in the What uses credits? link",
+      "view": "src/components/ui/credits-text.tsx",
+      "steps": [
+        { "goto": "/decks/${CREDITS_DECK}", "wait": "[role=tablist]", "settle": 1500 },
+        { "clickRole": "tab", "name": "Analysis", "settle": 900 },
+        { "wait": "a[href=\"/about#credits\"]", "settle": 600 },
+        { "scrollTo": "a[href=\"/about#credits\"]", "settle": 400 }
+      ]
+    }
+  ]
+}
