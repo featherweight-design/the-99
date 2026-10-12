@@ -130,6 +130,17 @@ describe("reveal", () => {
     });
   }
 
+  it("keeps going while the reader types inside the target it is bringing in", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(1000);
+  });
+
   it("stops before it starts when the reader moves during the beat", () => {
     media(false);
     const { box, el } = scene();

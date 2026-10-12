@@ -10,7 +10,7 @@ import { useState } from "react";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { undoSwapAction } from "../../lib/swaps/actions";
 import { useSwapTools, type SwapReceipt } from "../../lib/swaps/context";
-import { MOTION } from "../../lib/ui/motion";
+import { MOTION, prefersReducedMotion } from "../../lib/ui/motion";
 import { reveal } from "../../lib/ui/reveal";
 import { MutationError } from "./mutation-error";
 
@@ -78,7 +78,8 @@ export function landOnReceipt(swapId: string): () => void {
       const now = performance.now();
       if ((!landed || box.top < 0 || box.bottom > window.innerHeight) && (receipt !== revealed || now > revealEnds)) {
         revealed = receipt;
-        revealEnds = now + MOTION.delayMs + MOTION.scrollMaxMs;
+        // Reduced motion jumps at once, so there is nothing in flight to wait out.
+        revealEnds = prefersReducedMotion() ? now : now + MOTION.delayMs + MOTION.scrollMaxMs;
         cancelReveal = reveal(receipt, "center");
       }
       landed = true;

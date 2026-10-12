@@ -223,6 +223,9 @@ function ShelfSection({
   onToggleFold: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // The tiles' arrival plays when the reader unfolds the shelf, not on every visit to Consider, where
+  // every shelf mounts open.
+  const [pressed, setPressed] = useState(false);
   // Folding CLEARS the expansion (handoff s4) — adjusted DURING RENDER, the
   // pattern React's own docs give for "reset state when a prop changes",
   // rather than a `useEffect` whose synchronous `setState` this codebase's
@@ -310,7 +313,7 @@ function ShelfSection({
             // `unresolved-row.tsx`, `combo-partners-detail.tsx` and `issue-inspector.tsx`
             // already apply to their own disclosures (pre-open review).
             aria-controls={folded ? undefined : bodyId}
-            onClick={onToggleFold}
+            onClick={() => { setPressed(true); onToggleFold(); }}
             className="flex items-baseline gap-x-[8px] md:gap-x-[10px] min-h-[52px] md:min-h-[44px] p-0 border-none bg-transparent cursor-pointer text-left"
           >
             <span
@@ -356,7 +359,7 @@ function ShelfSection({
         )}
       </div>
       {folded ? null : (
-      <ul id={bodyId} className="anim-gentle-in grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]">
+      <ul id={bodyId} className={`${pressed ? "anim-gentle-in " : ""}grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]`}>
         {shown.map((s) => (
           <SuggestionTile
             key={s.oracleId}

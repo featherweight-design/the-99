@@ -149,10 +149,16 @@ export function reveal(
     if (timer !== null) clearTimeout(timer);
     if (frame !== null) cancelAnimationFrame(frame);
     timer = frame = null;
-    for (const type of CANCEL_EVENTS) window.removeEventListener(type, stop, true);
+    for (const type of CANCEL_EVENTS) window.removeEventListener(type, onInput, true);
     if (active === stop) active = null;
   };
-  for (const type of CANCEL_EVENTS) window.addEventListener(type, stop, { capture: true, passive: true });
+  // A keypress inside the target is the reader using what was brought to them (typing in the note
+  // field whose picker opened the reveal), not the reader going elsewhere, so it lets the scroll run.
+  const onInput = (e: Event) => {
+    if (e.type === "keydown" && e.target instanceof Node && el.contains(e.target)) return;
+    stop();
+  };
+  for (const type of CANCEL_EVENTS) window.addEventListener(type, onInput, { capture: true, passive: true });
   active = stop;
 
   // Measured after the beat, not before it: whatever the reader's press drew has laid out by then.
