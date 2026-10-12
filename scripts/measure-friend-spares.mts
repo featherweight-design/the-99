@@ -1,0 +1,45 @@
+// Times what `loadFriendSpares` costs per granting friend (plan `boards/plan-social-foundation-2026-10-12.md`,
+// PR 2): the grant read once, then the friend's own claim model narrowed to the viewer's asked cards, once
+// per friend. Read-only. `MEASURE_FRIEND_USER_ID` names an account whose real collection stands in for a
+// friend's (Hugh's, on a staging copy); `MEASURE_ASKED` sets how many asked cards (default 60).
+//
+//   MEASURE_FRIEND_USER_ID=user_… pnpm measure:friend-spares
+import "./lib/env.mjs";
+
+async function main() {
+  const friend = process.env.MEASURE_FRIEND_USER_ID;
+  if (!friend) throw new Error("measure:friend-spares: set MEASURE_FRIEND_USER_ID");
+  const askedCount = Number(process.env.MEASURE_ASKED ?? 60);
+  const { db } = await import("../src/db");
+  const { sql } = await import("drizzle-orm");
+  const { loadAvailability } = await import("../src/lib/decks/availability-query");
+  const { spareGrantorsQuery } = await import("../src/lib/social/spares");
+  const { rows } = await db.execute<{ o: string }>(sql`
+    select distinct oracle_id as o from collection_items where user_id = ${friend} order by oracle_id limit ${askedCount}`);
+  const asked = rows.map((r) => r.o);
+  const time = async (fn: () => Promise<unknown>, runs = 9) => {
+    const ms: number[] = [];
+    for (let i = 0; i < runs; i++) {
+      const t = performance.now();
+      await fn();
+      ms.push(performance.now() - t);
+    }
+    ms.sort((a, b) => a - b);
+    return { median: Math.round(ms[Math.floor(runs / 2)]), min: Math.round(ms[0]), max: Math.round(ms[runs - 1]) };
+  };
+  const model = await time(() => loadAvailability(friend, { oracleIds: asked }));
+  const grants = await time(() => spareGrantorsQuery(friend));
+  console.log(`asked cards: ${asked.length}`);
+  console.log(`claim model per friend: median ${model.median}ms (min ${model.min}, max ${model.max})`);
+  console.log(`grant read: median ${grants.median}ms`);
+  for (const n of [1, 3, 6]) {
+    const side = await time(() => Promise.all(Array.from({ length: n }, () => loadAvailability(friend, { oracleIds: asked }))), 5);
+    console.log(`${n} granting friend(s), models side by side: median ${grants.median + side.median}ms with the grant read`);
+  }
+  process.exit(0);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

@@ -736,6 +736,13 @@
       "when": 1791841939454,
       "tag": "0104_social_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1791842863105,
+      "tag": "0105_pod_spare_shares",
+      "breakpoints": true
     }
   ]
 }

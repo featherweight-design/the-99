@@ -9,12 +9,12 @@
 // Static: no server, no database. `pnpm probe:list-stamp` proves the triggers against a real one.
 //
 // Run: `pnpm check:list-cache`
-import { listCacheProblems, tablesRead, triggeredTables, unrecordedCatches } from "./lib/list-cache-tables.mjs";
+import { listCacheProblems, socialKeyProblems, tablesRead, triggeredTables, unrecordedCatches } from "./lib/list-cache-tables.mjs";
 
 const { perUser, catalog } = tablesRead();
 // Both halves of what keeps a cached page true: every write moves the stamp, and no payload
 // built over a read that fell back is stored.
-const problems = [...listCacheProblems(perUser, triggeredTables()), ...unrecordedCatches()];
+const problems = [...listCacheProblems(perUser, triggeredTables()), ...unrecordedCatches(), ...socialKeyProblems()];
 for (const p of problems) console.error(p);
 if (problems.length) {
   console.error(

@@ -9,7 +9,7 @@
  */
 import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { friendInvites, friendLinks, podMembers, pods, socialProfiles } from "../../db/schema";
+import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
 import {
   cleanDisplayName, friendshipRows, INVITE_TTL_MS, inviteState, MAX_OPEN_INVITES, newInviteToken, type InviteState,
@@ -192,6 +192,8 @@ export async function unfriend(viewerId: string, friendPublicId: unknown): Promi
     for (const [owner, member] of [[viewerId, friendId], [friendId, viewerId]] as const) {
       const ownedBy = tx.select({ id: pods.id }).from(pods).where(eq(pods.ownerUserId, owner));
       await tx.delete(podMembers).where(and(eq(podMembers.userId, member), inArray(podMembers.podId, ownedBy)));
+      // A member out of a pod shares nothing with it any more.
+      await tx.delete(podSpareShares).where(and(eq(podSpareShares.userId, member), inArray(podSpareShares.podId, ownedBy)));
     }
     return true;
   });

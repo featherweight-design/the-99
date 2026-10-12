@@ -158,3 +158,29 @@ export function unrecordedCatches(files = loaderFiles()) {
   }
   return out;
 }
+
+/**
+ * A FRIEND's rows ride a cached page only with the friends' stamps in its key (social plan, scope §5).
+ * The reader's own stamp moves when the reader writes, never when a friend does, so a page whose loaders
+ * reach `src/lib/social/` (where every cross-user read lives) must pass `friendGeneration` in its
+ * `cachePageForUser` key, or a friend's write leaves it stale. A page that reaches the module is held to
+ * the rule whether or not it reads a friend's data today: the import is the cheap, honest proxy.
+ */
+export function socialKeyProblems(
+  pages = CACHED_PAGES,
+  filesOf = (page) => loaderFiles([page]),
+  source = (file) => readFileSync(file, "utf8"),
+) {
+  const out = [];
+  for (const page of pages) {
+    // The switch reads an env var and no rows, and `page-cache.ts` itself keys on it.
+    const social = filesOf(page)
+      .map((f) => f.split("\\").join("/"))
+      .filter((f) => f.includes("src/lib/social/") && !f.endsWith("src/lib/social/flag.ts"));
+    if (social.length === 0) continue;
+    if (!/\bfriendGeneration\s*\(/.test(source(page))) {
+      out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
+    }
+  }
+  return out;
+}

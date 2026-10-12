@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  listCacheProblems, loaderFiles, schemaTables, tablesRead, triggeredTables, unrecordedCatches,
+  listCacheProblems, loaderFiles, schemaTables, socialKeyProblems, tablesRead, triggeredTables, unrecordedCatches,
 } from "./list-cache-tables.mjs";
 
 const create = (table: string, column: string, deferred = true) =>
@@ -125,3 +125,27 @@ describe("the shipped tree", () => {
     expect(unrecordedCatches()).toEqual([]);
   });
 });
+
+describe("socialKeyProblems", () => {
+  const page = "src/app/decks/shopping/page.tsx";
+  const reach = (files: string[]) => () => [page, ...files];
+
+  it("fails a cached page that reaches src/lib/social without friendGeneration in its key", () => {
+    const problems = socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => "cachePageForUser(userId, 'cart', [], load)");
+    expect(problems).toEqual([expect.stringContaining(`FRIEND KEY ${page} reaches src/lib/social/spares.ts`)]);
+  });
+
+  it("passes it once the key carries friendGeneration", () => {
+    const src = "cachePageForUser(userId, 'cart', [await friendGeneration(userId)], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
+  });
+
+  it("holds no page that reaches no social module", () => {
+    expect(socialKeyProblems([page], reach(["src/lib/decks/cart.ts"]), () => "")).toEqual([]);
+  });
+
+  it("holds the shipped tree's cached pages", () => {
+    expect(socialKeyProblems()).toEqual([]);
+  });
+});
+

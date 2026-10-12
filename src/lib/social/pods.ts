@@ -7,11 +7,18 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { podMembers, pods, socialProfiles } from "../../db/schema";
+import { podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
 import { cleanPodName, isUuid, nextPodOwner } from "./rules";
 
 const isId = isUuid;
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** A member out of a pod shares nothing with it any more (the read joins membership too). */
+async function dropShare(tx: Tx, userId: string, podId: string): Promise<void> {
+  await tx.delete(podSpareShares).where(and(eq(podSpareShares.userId, userId), eq(podSpareShares.podId, podId)));
+}
 
 export async function createPod(viewerId: string, rawName: unknown): Promise<{ id: string } | null> {
   const name = cleanPodName(rawName);
@@ -88,6 +95,7 @@ export async function removeMember(viewerId: string, podId: unknown, memberPubli
         sql`${podMembers.userId} <> ${viewerId}`,
       ))
       .returning({ userId: podMembers.userId });
+    for (const { userId } of written) await dropShare(tx, userId, podId);
     return written.length > 0;
   });
 }
@@ -111,6 +119,7 @@ export async function leavePod(viewerId: string, podId: unknown): Promise<"left"
     if (!members.some((m) => m.userId === viewerId)) return "notMember";
     if (pod.ownerUserId !== viewerId) {
       await tx.delete(podMembers).where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
+      await dropShare(tx, viewerId, podId);
       return "left";
     }
     const next = nextPodOwner(members, viewerId);
@@ -120,6 +129,7 @@ export async function leavePod(viewerId: string, podId: unknown): Promise<"left"
     }
     await tx.update(pods).set({ ownerUserId: next }).where(eq(pods.id, podId));
     await tx.delete(podMembers).where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
+    await dropShare(tx, viewerId, podId);
     return "handedOn";
   });
 }
