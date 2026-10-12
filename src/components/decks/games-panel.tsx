@@ -318,7 +318,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
       {tuned && onOpenAnalysis ? (
         <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
           {deckTuningCopy.gamesLine.lead}{" "}
-          <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent)] hover:underline transition-colors">
+          <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent)] hover:underline">
             {deckTuningCopy.gamesLine.link}
           </button>
         </p>

@@ -225,7 +225,7 @@ function Name({ item }: { item: LineItem }) {
       type="button"
       {...trigger}
       aria-label={copy.open(item.cardName)}
-      className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] transition-colors ${add ? "font-semibold text-[color:var(--fg)]" : "font-normal text-[color:var(--fg-body)] line-through [text-decoration-color:var(--fg-locked)]"}`}
+      className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${add ? "font-semibold text-[color:var(--fg)]" : "font-normal text-[color:var(--fg-body)] line-through [text-decoration-color:var(--fg-locked)]"}`}
     >
       {item.cardName}
     </button>

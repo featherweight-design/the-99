@@ -128,7 +128,7 @@ export function BracketClimb({
           onClick={() => setAllOpen(true)}
           className="group flex min-h-[44px] items-center rounded-[6px] px-[8px] font-mono text-[11px] text-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] active:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] active:text-[color:var(--accent-hover)] md:h-[28px] md:min-h-0 md:hover:bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] md:hover:text-[color:var(--accent-hover)] transition-colors"
         >
-          <span className="border-b border-b-current border-dotted border-current group-active:border-solid md:group-hover:border-solid transition-colors">
+          <span className="border-b border-b-current border-dotted border-current group-active:border-solid md:group-hover:border-solid">
             {deckAnalysisCopy.bracketsSheet.open} <span aria-hidden="true">→</span>
           </span>
         </button>

@@ -250,7 +250,7 @@ function Name({ item, side }: { item: TuningItem; side: "cut" | "add" }) {
       type="button"
       {...trigger}
       aria-label={copy.open(name)}
-      className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] transition-colors ${side === "cut" ? "text-[color:var(--fg-body)] line-through [text-decoration-color:var(--fg-locked)]" : "font-semibold text-[color:var(--fg)]"}`}
+      className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${side === "cut" ? "text-[color:var(--fg-body)] line-through [text-decoration-color:var(--fg-locked)]" : "font-semibold text-[color:var(--fg)]"}`}
     >
       {name}
     </button>

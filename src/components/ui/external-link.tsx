@@ -13,7 +13,7 @@ const LINK =
   "underline decoration-1 underline-offset-[3px] " +
   "decoration-[color-mix(in_srgb,var(--accent-hover)_45%,transparent)] " +
   "hover:text-[color:var(--fg)] hover:decoration-[color:var(--fg)] " +
-  "active:text-[color:var(--fg)] active:decoration-[color:var(--fg)] active:decoration-2 transition-colors " +
+  "active:text-[color:var(--fg)] active:decoration-[color:var(--fg)] active:decoration-2 transition-[color,text-decoration-color,text-decoration-thickness] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
 type ExternalLinkProps = {

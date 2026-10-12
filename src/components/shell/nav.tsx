@@ -582,7 +582,7 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
               className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
                 active
                   ? "bg-elevated text-[color:var(--fg)]"
-                  : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)] transition-colors"
+                  : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover has-[[data-pending]]:bg-elevated-hover has-[[data-pending]]:text-[color:var(--fg)]"
               }`}
             >
               <NavIcon href={href} />

@@ -345,7 +345,7 @@ function PulledFrom({ deck }: { deck: { sourceDeckId: string; sourceDeckName: st
   return (
     <Link
       href={`/decks/${deck.sourceDeckId}`}
-      className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)] underline-offset-2 hover:underline transition-colors"
+      className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)] underline-offset-2 hover:underline"
     >
       {deckVersioningCopy.review.pulledFrom(deck.sourceDeckName)}
     </Link>
@@ -536,7 +536,7 @@ export function DiffRowKeep({
         "flex items-center justify-center cursor-pointer bg-transparent transition-colors",
         kept
           ? "text-[color:var(--accent)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
-          : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)] transition-colors",
+          : "text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] md:hover:[border-color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
       ].join(" ")}
     >
       <span className="md:hidden">{kept ? copy.keptMobile : copy.keep}</span>
