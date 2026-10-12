@@ -55,7 +55,7 @@ describe("a Look deeper row from the retired one-call engine", () => {
 
 describe("a new press whose ask matches a retired one-call row", () => {
   it("starts a new read instead of answering from the row's missing result", async () => {
-    stub.rows = [{ id: "old", result: null, status: "ok", ...legacy("ok", null) }];
+    stub.rows = [{ id: "old", ...legacy("ok", null) }];
     expect(await startRead("user_1", "hash", "claude-sonnet-5-5")).toMatchObject({ kind: "started", readId: "new-read" });
   });
 
