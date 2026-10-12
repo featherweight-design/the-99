@@ -70,8 +70,9 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
 
 /**
  * "Improve my mana" for one color the player picked: basics that could swap to it and staples the
- * commander's decks run, owned first. Free and asked for; never prefetched, never recorded in
- * History. A PUBLIC ENDPOINT: any color outside the five, or outside the commander's identity, is
+ * commander's decks run, owned first. Free and asked for; never prefetched. A read in the
+ * commander's identity is recorded for History once per list and color (a `mana_help` count, the
+ * help as shown), so History can reopen it. A PUBLIC ENDPOINT: any color outside the five, or outside the commander's identity, is
  * refused. Null on a refusal or a failed read; the panel draws its help-failed state.
  */
 export async function readManaHelpFor(deckId: string, color: string): Promise<ManaHelp | null> {
