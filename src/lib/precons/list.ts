@@ -160,14 +160,22 @@ export function groupByYear(rows: readonly PreconRow[]): { year: string; rows: P
 
 const PIPS = ["W", "U", "B", "R", "G"];
 
-/** The URL's filters and order (`q`, `colour`, `sort=owned`), parsed once by the page, so the first
- *  render draws the list the URL names. An order the URL does not name is null: the browser's
- *  remembered order then applies. */
-export function parsePreconParams(params: URLSearchParams): { q: string; colours: string[]; order: PreconOrder | null } {
+/** The list's two views (R4 §2). Tiles is the default, so only `rows` is ever written to the URL. */
+export type PreconView = "tiles" | "rows";
+export const isPreconView = (v: unknown): v is PreconView => v === "tiles" || v === "rows";
+
+/** The URL's filters, order and view (`q`, `colour`, `sort=owned`, `view`), parsed once by the page,
+ *  so the first render draws the list the URL names. An order or view the URL does not name is null:
+ *  the browser's remembered choice then applies (T2u: an unknown `view` is ignored). */
+export function parsePreconParams(params: URLSearchParams): {
+  q: string; colours: string[]; order: PreconOrder | null; view: PreconView | null;
+} {
   const on = (params.get("colour") ?? "").split(",");
+  const view = params.get("view");
   return {
     q: params.get("q") ?? "",
     colours: PIPS.filter((c) => on.includes(c)),
     order: params.get("sort") === "owned" ? "owned" : null,
+    view: isPreconView(view) ? view : null,
   };
 }

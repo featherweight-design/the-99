@@ -25,6 +25,14 @@ export function parseWideCookie(raw: string | undefined | null): boolean | null 
   return raw === "1" ? true : raw === "0" ? false : null;
 }
 
+/** The view the reader last chose on `/decks/precons` (R4), mirrored from localStorage. Tiles or rows
+ *  differ in height and in what art they ask for, so the server has to draw the stored one. */
+export const PRECONS_VIEW_COOKIE = "precons_view";
+
+export function parsePreconsViewCookie(raw: string | undefined | null): "tiles" | "rows" | null {
+  return raw === "tiles" || raw === "rows" ? raw : null;
+}
+
 /** A year: the preference outlives a session, and a stale one costs only a flip. */
 const MAX_AGE_S = 60 * 60 * 24 * 365;
 

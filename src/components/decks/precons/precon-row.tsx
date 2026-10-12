@@ -25,12 +25,17 @@ function DeckLink({ deckId, deckName }: { deckId: string; deckName: string }) {
   );
 }
 
-export function PreconRow({ row, href }: { row: Row; href: string }) {
+export function PreconRow({ row, href, eager = false }: {
+  row: Row;
+  href: string;
+  /** The row is in the list's first screen, so its thumb's art is in the server HTML. */
+  eager?: boolean;
+}) {
   const lead = row.commanders[0];
   const built = row.built;
   return (
     <li className="relative flex min-h-[44px] items-center gap-[11px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] p-[10px_8px_10px_12px] md:gap-[14px] md:rounded-[11px] md:p-[11px_12px_11px_15px]">
-      <CommanderThumb imageUri={lead?.imageUri ?? null} colorIdentity={row.identity} size="list" />
+      <CommanderThumb imageUri={lead?.imageUri ?? null} colorIdentity={row.identity} size="list" lazy eager={eager} />
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <div className="flex items-baseline justify-between gap-[10px]">
           <Link

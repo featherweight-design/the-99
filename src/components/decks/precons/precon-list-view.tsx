@@ -1,8 +1,9 @@
 "use client";
 
-// `/decks/precons` (design table: Route /decks/precons). Filters and order live in the URL (`q`,
-// `colour`, `sort=owned`), mirrored through `mirrorUrl` as `/decks` does, and the order is also
-// remembered per browser. Everything here is a view over rows the server summarised.
+// `/decks/precons` (design table: Route /decks/precons). Filters, order and view live in the URL
+// (`q`, `colour`, `sort=owned`, `view=rows`), mirrored through `mirrorUrl` as `/decks` does, and the
+// order and view are also remembered per browser. Everything here is a view over rows the server
+// summarised. Tiles are the default view (R4 §1); rows stay one press away.
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -10,23 +11,34 @@ import { preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { PIP_ORDER, type PipCode } from "../../../lib/copy/filter-chassis";
 import {
-  filterPrecons, groupByYear, isPreconOrder, orderPrecons, parsePreconParams, PRECON_ORDERS,
-  type PreconOrder, type PreconRow as Row,
+  filterPrecons, groupByYear, isPreconOrder, isPreconView, orderPrecons, parsePreconParams, PRECON_ORDERS,
+  type PreconOrder, type PreconRow as Row, type PreconView,
 } from "../../../lib/precons/list";
+import { viewToggleCopy } from "../../../lib/copy/card-surfaces";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { ColourPips } from "../../ui/colour-pips";
 import { FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { useMinWidth } from "../../ui/use-min-width";
 import { useStoredView } from "../../ui/use-stored-view";
+import { ViewToggle, type ViewToggleOption } from "../../ui/view-toggle";
+import { PRECONS_VIEW_COOKIE } from "../../ui/view-cookie";
+import { GRID_EAGER_TILES } from "../../collection/grid-view";
 import { SearchField } from "../deck-filter-column";
 import { OrderMenu } from "../deck-sort-menu";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { PreconRow } from "./precon-row";
+import { PreconTile } from "./precon-tile";
 import { EmptyCollectionBand } from "./empty-collection-band";
 
 const copy = preconsCopy;
 export const PRECON_ORDER_KEY = "the99:precons:order";
+export const PRECON_VIEW_KEY = "the99:precons:view";
+
+const VIEWS: readonly [ViewToggleOption<PreconView>, ViewToggleOption<PreconView>] = [
+  { value: "rows", glyph: "≣", label: viewToggleCopy.precons.rows },
+  { value: "tiles", glyph: "▦", label: viewToggleCopy.precons.tiles },
+];
 
 export type PreconListViewProps = {
   /** The page's query string, as the server read it. */
@@ -35,12 +47,16 @@ export type PreconListViewProps = {
   rows: Row[];
   hasCollection: boolean;
   fromNew: boolean;
-  initial: { q: string; colours: string[]; order: PreconOrder | null };
+  initial: { q: string; colours: string[]; order: PreconOrder | null; view: PreconView | null };
+  /** The view this browser stored, as the page read it from `PRECONS_VIEW_COOKIE`, so the server
+   *  draws the view the reader will see (audit finding 2). */
+  storedView?: PreconView | null;
 };
 
 const isOrder = (v: string): v is PreconOrder => isPreconOrder(v);
+const isView = (v: string): v is PreconView => isPreconView(v);
 
-export function PreconListView({ rows, hasCollection, fromNew, initial, query }: PreconListViewProps) {
+export function PreconListView({ rows, hasCollection, fromNew, initial, query, storedView: cookieView = null }: PreconListViewProps) {
   // `md`, not the chassis's 1000: the table draws the wide form at 900, and this chassis holds
   // three controls where `/decks`' holds six.
   const wide = useMinWidth("(min-width: 768px)");
@@ -48,6 +64,8 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
   const [colours, setColours] = useState<string[]>(initial.colours);
   const [urlOrder, setUrlOrder] = useState<PreconOrder | null>(initial.order);
   const [storedOrder, storeOrder] = useStoredView(PRECON_ORDER_KEY, isOrder);
+  const [urlView, setUrlView] = useState<PreconView | null>(initial.view);
+  const [storedView, storeView] = useStoredView(PRECON_VIEW_KEY, isView, { cookie: PRECONS_VIEW_COOKIE, serverValue: cookieView });
 
   // The URL owns `q`, `colour` and `sort`. A navigation to another /decks/precons URL keeps this
   // view mounted, so the live query is read on every render and a change re-parses all three,
@@ -60,15 +78,19 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
     setQ(next.q);
     setColours(next.colours);
     setUrlOrder(next.order);
+    setUrlView(next.view);
   }
   const order: PreconOrder = urlOrder ?? storedOrder ?? "newest";
+  const view: PreconView = urlView ?? storedView ?? "tiles";
 
-  function mirror(next: { q: string; colours: string[]; order: PreconOrder }) {
+  function mirror(next: { q: string; colours: string[]; order: PreconOrder; view?: PreconView }) {
     const live = new URLSearchParams(window.location.search);
-    for (const key of ["q", "colour", "sort"]) live.delete(key);
+    for (const key of ["q", "colour", "sort", "view"]) live.delete(key);
     if (next.q.trim()) live.set("q", next.q.trim());
     if (next.colours.length) live.set("colour", next.colours.join(","));
     if (next.order !== "newest") live.set("sort", next.order);
+    // Tiles is the default, so only rows is written (R4 §2).
+    if ((next.view ?? view) === "rows") live.set("view", "rows");
     const written = live.toString();
     // Seen before it is written, so this view's own write never reads back as a navigation (which
     // would re-parse a search mid-word and drop its trailing space).
@@ -88,6 +110,11 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
     storeOrder(next);
     mirror({ q, colours, order: next });
   };
+  const onView = (next: PreconView) => {
+    setUrlView(next);
+    storeView(next);
+    mirror({ q, colours, order, view: next });
+  };
   const clearAll = () => { setQ(""); setColours([]); mirror({ q: "", colours: [], order }); };
   // The no-match state clears the one filter its button names: the search first, so a search and
   // colours that both narrow fall back to the colours' own no-match state rather than losing both.
@@ -98,6 +125,9 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
   const dates = rows.map((r) => r.releaseDate).sort();
   const first = dates[0]?.slice(0, 4) ?? "";
   const last = dates[dates.length - 1]?.slice(0, 4) ?? "";
+  // The first screen's art is eager, counted down the whole list rather than per year: 4 is one row
+  // at 900 and two at 390 (`GRID_EAGER_TILES`, as /collection's grid). Rows take the same rule.
+  const eagerIds = new Set(shown.slice(0, GRID_EAGER_TILES).map((r) => r.fileName));
   const href = (r: Row) => `/decks/precons/${encodeURIComponent(r.fileName)}${fromNew ? "?from=new" : ""}`;
 
   // The search is a chip too, labelled with the term itself, as `/decks` labels it: a searched list
@@ -112,7 +142,10 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
   ];
 
   const pips = <ColourPips form="wide" value={colours} onToggle={onColour} />;
-  const sort = (
+  const toggle = (
+    <ViewToggle options={VIEWS} value={view} onChange={onView} compact={!wide} className={wide ? "ml-[2px]" : ""} />
+  );
+  const sortMenu = (
     <OrderMenu
       value={order}
       order={PRECON_ORDERS}
@@ -123,6 +156,17 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
       wideFrom="md"
     />
   );
+  // 900: the well sits after sort in the chassis (search · pips · sort · well). 390: it sits on the
+  // search row instead, so neither row overflows at 358px.
+  const sort = wide ? <div className="flex items-center gap-[8px]">{sortMenu}{toggle}</div> : sortMenu;
+  const item = (r: Row) => view === "tiles"
+    ? <PreconTile key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} />
+    : <PreconRow key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} />;
+  // Tiles: 2-up at 390 (gap 10), 4-up at 900 (gap 12), each tile stretched to its row so the art and
+  // the caption line up and only the foot differs (R4 §5).
+  const listClass = view === "tiles"
+    ? "m-0 grid list-none grid-cols-2 items-stretch gap-[10px] p-0 md:grid-cols-4 md:gap-[12px]"
+    : "m-0 flex list-none flex-col gap-[8px] p-0";
 
   return (
     <div className="pb-[96px]">
@@ -138,8 +182,11 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
 
       <div className="px-[16px] pt-[12px] md:px-[22px]">
         {!wide && (
-          <div className="mb-[8px]">
-            <SearchField value={q} onChange={onSearch} size="sheet" placeholder={copy.list.search} />
+          <div className="mb-[8px] flex items-center gap-[8px]">
+            <div className="min-w-0 flex-1">
+              <SearchField value={q} onChange={onSearch} size="sheet" placeholder={copy.list.search} />
+            </div>
+            {toggle}
           </div>
         )}
         <FilterChassis
@@ -180,13 +227,13 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
           </button>
         </div>
       ) : order === "owned" ? (
-        <ul className="m-0 flex list-none flex-col gap-[8px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
-          {shown.map((r) => <PreconRow key={r.fileName} row={r} href={href(r)} />)}
-        </ul>
+        <div className="p-[16px_16px_24px] md:p-[18px_22px_8px]">
+          <ul className={listClass}>{shown.map(item)}</ul>
+        </div>
       ) : (
         <div className="flex flex-col gap-[22px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
           {groupByYear(shown).map((g) => (
-            <section key={g.year} aria-labelledby={`precons-${g.year}`} className="flex flex-col gap-[8px]">
+            <section key={g.year} aria-labelledby={`precons-${g.year}`} className={`flex flex-col ${view === "tiles" ? "gap-[10px]" : "gap-[8px]"}`}>
               <h2
                 id={`precons-${g.year}`}
                 className="m-0 flex items-baseline gap-[8px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px] font-display text-[17px] font-normal text-[color:var(--fg)]"
@@ -194,9 +241,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
                 {g.year}
                 <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.list.year(g.rows.length)}</span>
               </h2>
-              <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
-                {g.rows.map((r) => <PreconRow key={r.fileName} row={r} href={href(r)} />)}
-              </ul>
+              <ul className={listClass}>{g.rows.map(item)}</ul>
             </section>
           ))}
         </div>

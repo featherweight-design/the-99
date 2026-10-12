@@ -60,6 +60,18 @@ export const preconsCopy = {
     unmapped: (count: number) => `${plural(count, "card", "cards")} not in our catalog yet`,
     aria: (name: string, owned: number, of: number) => `${name}. You own ${n(owned)} of ${n(of)} of its cards.`,
   },
+  // R4: the list in tiles (`precons-tiles · copy strings.ts`). The caption's lead, figure and
+  // unmapped line are the row's own (`row.ownLead`, `row.own`, `row.unmapped`).
+  tile: {
+    meta: (setCode: string, month: string) => `${setCode} · ${month}`,
+    footShared: (shared: number) => `${n(shared)} shared`,
+    footBuilt: (shared: number) => `built from this · ${n(shared)} shared`,
+    footTwin: "also sold as a Collector’s Edition",
+    noArt: "no art on file",
+    // The link's accessible name: the caption is clipped, and the commander is on the art only.
+    aria: (name: string, commanders: string[], owned: number, of: number) =>
+      `${name}, with ${commanders.join(" and ")}. You own ${n(owned)} of ${n(of)} of its cards.`,
+  },
   open: {
     back: "‹ Commander precons",
     backNew: "‹ New deck",

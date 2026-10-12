@@ -1,5 +1,6 @@
 import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
+import { HydratedImg } from "./hydrated-art";
 
 /**
  * A commander's card face at thumb size. Five renders each invented one of
@@ -64,6 +65,8 @@ export function CommanderThumb({
   colorIdentity,
   size = "row",
   className = "",
+  lazy = false,
+  eager = false,
 }: {
   imageUri: string | null;
   colorIdentity: ThumbIdentity;
@@ -71,8 +74,34 @@ export function CommanderThumb({
   /** Layout only — the flex behaviour of whatever row this sits in. The box, the
       radius, the ring and the ground are not a caller's to set. */
   className?: string;
+  /** OPT-IN: draw the art as an `<img>` that waits for hydration and the viewport (`HydratedImg`),
+      rather than a CSS background, which a browser fetches for every rendered thumb on or off
+      screen. The precon list's rows asked for all ~186 commanders' `normal` art (~16MB) that way.
+      Every other call site draws a handful of thumbs and keeps the background. */
+  lazy?: boolean;
+  /** With `lazy`: this thumb is in the first screen, so its art is in the server HTML. */
+  eager?: boolean;
 }) {
   const box = BOX[size];
+  if (lazy && imageUri) {
+    return (
+      <span
+        aria-hidden
+        data-commander-thumb={size}
+        className={`relative block shrink-0 overflow-hidden ${box.radius} ${className}`}
+        style={{ width: box.width, height: box.height, background: THUMB_GROUND }}
+      >
+        <HydratedImg
+          eager={eager}
+          src={imageUri}
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+        {/* The ring, drawn OVER the art: an inset shadow on this box would paint under its img. */}
+        <span className="pointer-events-none absolute inset-0 rounded-[inherit]" style={{ boxShadow: CARD_ART_RING }} />
+      </span>
+    );
+  }
   return (
     <span
       // Decorative at every call site: each row names its commander in text
