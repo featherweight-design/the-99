@@ -86,6 +86,19 @@ export async function writeUploadTokens(
     ));
   }
   if (mode === "replace") {
+    // Replace is about to drop every upload row, held tokens the new upload omits among them. Owned clears
+    // joins, so any join on a token the player still holds is from before that rule: by definition it was
+    // hidden only by the hold, and it would be drawn as joined the moment the hold goes. Take it with the
+    // hold, in the same order (joins, then ownership). A hand mark has no upload row and keeps both its
+    // state and the absence of a join.
+    await tx.delete(deckTokenJoins).where(and(
+      eq(deckTokenJoins.userId, userId),
+      inArray(
+        deckTokenJoins.tokenOracleId,
+        sql`(select ${tokenOwnership.tokenOracleId} from ${tokenOwnership}
+          where ${tokenOwnership.userId} = ${userId} and ${tokenOwnership.source} = 'upload')`,
+      ),
+    ));
     await tx.delete(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "upload")));
   }
   for (let i = 0; i < holdings.length; i += BATCH) {
