@@ -66,9 +66,9 @@ describe("loadPreconCatalog", () => {
       executions += 1;
       return Promise.resolve([] as never[]);
     };
-    const lazy = {
-      then: (ok: (v: never[]) => unknown, no?: (e: unknown) => unknown) => run().then(ok, no),
-      catch: (no: (e: unknown) => unknown) => run().catch(no),
+    const lazy: PromiseLike<never[]> & Pick<Promise<never[]>, "catch"> = {
+      then: (ok, no) => run().then(ok, no),
+      catch: (no) => run().catch(no),
     };
     await loadPreconCatalog(10_000, () => lazy);
     await loadPreconCatalog(10_001, () => lazy);
