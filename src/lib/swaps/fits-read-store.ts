@@ -45,7 +45,7 @@ export function candidateHashes(inputs: FitsReadInputs, model: string): Record<s
     // half alone, and reads as a new Overview (P3g), never as a deck change.
     const plan = sha([d?.plan ?? null, sorted(d?.keyCardIds ?? []), d?.themes ?? []]);
     const rest = sha([
-      FITS_READ_PROMPT_VERSION, model, card, c.need, c.inclusion,
+      FITS_READ_PROMPT_VERSION, model, card, c.need, c.inclusion, sorted(c.basicCuts ?? []),
       d && {
         commanders: d.commanders.map(facts),
         list: d.list.map(facts).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),

@@ -31,7 +31,7 @@ export * from "./fits-read-limits";
  */
 
 /** Folded into any future cache key, so a prompt change never answers from an older prompt's result. */
-export const FITS_READ_PROMPT_VERSION = 2;
+export const FITS_READ_PROMPT_VERSION = 3;
 /** The most decks a read lists (default 4: three to five). */
 export const FITS_READ_TOP = 5;
 /** A sentence's drawn length, card tokens drawn as names. Refused over it, never cut. */
@@ -87,7 +87,12 @@ export type FitsDeckBlock = {
 };
 
 /** What a candidate deck carries about THIS card: its need in the card's role and the inclusion. */
-export type CandidateFacts = { deckId: string; need: FitDeck["need"]; inclusion: number | null };
+export type CandidateFacts = {
+  deckId: string; need: FitDeck["need"]; inclusion: number | null;
+  /** The basic lands, by oracle id, this deck may cut for the card (`fits-read-basics.ts`, Hugh's rule:
+   *  lands over the target, and the basic's color not left short). Absent or empty, no basic may go. */
+  basicCuts?: readonly string[];
+};
 
 export type FitsReadInputs = {
   card: ReadTextCard;
@@ -118,7 +123,7 @@ export const FITS_READ_RULES = [
   "A sentence must name at least one card from that deck or its commander by key, or quote the deck's written plan word for word inside double quotes. A sentence doing neither is thrown away.",
   "Quote only the plan text shown for that same deck, exactly as written. Never invent a quote.",
   `A sentence is at most ${SENTENCE_ASK_CHARS} characters with the card names drawn in. It never contains a digit, a percentage, a score, a rank, or words like best, great, strong or perfect. That includes rules notation: never write "+1/+1" or "3 damage"; write "a +1/+1 counter" as "a counter" and "3 damage" as "damage".`,
-  "For each deck you list, suggest one card to cut from that deck's list, by key, in `cut`: never its commander, never the card being asked about, never a Key card, never a card marked never cut, and never a basic land (cutting one changes the deck's mana). Use null only if no card can be cut.",
+  "For each deck you list, suggest one card to cut from that deck's list, by key, in `cut`: never its commander, never the card being asked about, never a Key card, never a card marked never cut, and never a basic land unless that deck's candidate line names it as one it can spare. A basic can be spared only when the deck runs more lands than it needs and that basic's color keeps enough sources for the deck's spells; cutting any other basic leaves the deck's mana short. Use null only if no card can be cut.",
   "In `cites`, give every card your sentence names, and the card being asked about, each with the one job it does in your sentence. The job must be one of the labels shown beside that card; a card shown with no labels cannot be cited.",
   `List at most ${FITS_READ_TOP} decks, the deck it helps most first. Leave out every deck where the card is not a real fit: a deck it would merely sit in is not a fit. If none fits, return no picks.`,
   "Do not rank by how much of a theme a deck already has. Judge whether this card's own text does something that deck's plan wants.",
@@ -163,10 +168,12 @@ function cardBlock(card: ReadTextCard, keyOf: ReadonlyMap<string, string>): stri
   return `The card: ${keyOf.get(card.oracleId)} ${card.name} (${card.typeLine})${kindsOf(card.kinds)}: ${oneLine(card.oracleText)}`;
 }
 
-function candidateLine(deckKey: string, c: CandidateFacts): string {
+function candidateLine(deckKey: string, c: CandidateFacts, keyOf: ReadonlyMap<string, string>): string {
   const need = c.need ? `has ${c.need.have} ${c.need.role} cards against a target of ${c.need.target}` : "no measured need in the card's role";
   const inc = c.inclusion === null ? "no inclusion figure is recorded for the card with this commander" : `the card is run by ${Math.round(c.inclusion)}% of decks with this commander`;
-  return `${deckKey}: ${need}; ${inc}.`;
+  const basics = (c.basicCuts ?? []).flatMap((id) => keyOf.get(id) ?? []);
+  const spare = basics.length > 0 ? `basic lands it can spare: ${basics.join(", ")}` : "no basic land to spare";
+  return `${deckKey}: ${need}; ${inc}; ${spare}.`;
 }
 
 export type FitsReadPrompt = {
@@ -194,7 +201,7 @@ export function buildFitsReadPrompt(inputs: FitsReadInputs, layout: FitsReadLayo
   const deckKeyOf = new Map(shown.map((d, i) => [d.deckId, `D${i + 1}`]));
   const blocks = shown.map((d) => deckBlock(deckKeyOf.get(d.deckId)!, d, keyOf));
   const candidates = inputs.candidates.filter((c) => deckKeyOf.has(c.deckId));
-  const candidateLines = candidates.map((c) => candidateLine(deckKeyOf.get(c.deckId)!, c));
+  const candidateLines = candidates.map((c) => candidateLine(deckKeyOf.get(c.deckId)!, c, keyOf));
   const card = cardBlock(inputs.card, keyOf);
   const system = layout === "cached-decks"
     ? `${FITS_READ_RULES}\n\nThe player's decks:\n\n${blocks.join("\n\n")}`
@@ -218,7 +225,8 @@ export type FitsDropReason =
   | "unknownDeck" | "notCandidate" | "duplicateDeck"
   /** 2. A card key (sentence, cut or cite) that is not that deck's, its commander's or the card's. */
   | "cardOutsideDeck"
-  /** 3. The cut is the commander, the card itself, a Key card, a never-cut card, a basic land, or not in the 99. */
+  /** 3. The cut is the commander, the card itself, a Key card, a never-cut card, a basic land the deck
+   *  cannot spare (`CandidateFacts.basicCuts`), or not in the 99. */
   | "cutCommander" | "cutSelf" | "cutKeyCard" | "cutLocked" | "cutNotInDeck" | "cutBasicLand"
   /** 4. A quoted phrase that is not in the deck's stored plan. */
   | "falseQuote"
@@ -257,12 +265,13 @@ const QUOTE = /["“]([^"“”]+)["”]/g;
  * `notInDeck`, a Key card is `keyCard`. The commander, the card itself and a never-cut card are
  * checked first so each is counted by its own reason.
  */
-function cutFailure(cutId: string, deck: FitsDeckBlock, subjectId: string, nameOf: ReadonlyMap<string, string>): FitsDropReason | null {
+function cutFailure(cutId: string, deck: FitsDeckBlock, subjectId: string, nameOf: ReadonlyMap<string, string>, spareBasics: ReadonlySet<string>): FitsDropReason | null {
   if (deck.commanders.some((c) => c.oracleId === cutId)) return "cutCommander";
   if (cutId === subjectId) return "cutSelf";
   if (deck.lockedIds.includes(cutId)) return "cutLocked";
-  // A basic land is never the cut (orchestrator, 2026-10-12): it changes the mana, not the plan.
-  if (deck.list.some((c) => c.oracleId === cutId && /\bBasic\b/.test(c.typeLine) && /\bLand\b/.test(c.typeLine))) return "cutBasicLand";
+  // A basic land is the cut only where the deck can spare it (Hugh, 2026-10-12: `basicCutFair`, read
+  // by the loader into `basicCuts`); any other basic changes the mana, not the plan.
+  if (!spareBasics.has(cutId) && deck.list.some((c) => c.oracleId === cutId && /\bBasic\b/.test(c.typeLine) && /\bLand\b/.test(c.typeLine))) return "cutBasicLand";
   const locked = new Set(deck.lockedIds);
   // The cuttable list, as Proposed cuts builds it: a commander or locked card is absent from it.
   const cards = deck.list.filter((c) => !locked.has(c.oracleId)).map((c): CutsPackCard =>
@@ -328,6 +337,7 @@ export function validFitsRead(args: {
 }): FitsReadValidated {
   const { reply, prompt, inputs } = args;
   const candidates = new Set(inputs.candidates.map((c) => c.deckId));
+  const spareOf = new Map(inputs.candidates.map((c) => [c.deckId, new Set(c.basicCuts ?? [])]));
   const byId = new Map(inputs.decks.map((d) => [d.deckId, d]));
   const subject = inputs.card;
   // Every card shown: its name and labels, for drawing a token and checking a cite's job.
@@ -370,6 +380,7 @@ export function validFitsRead(args: {
     if (seen.has(deckId)) return "duplicateDeck";
     const deck = byId.get(deckId);
     if (!deck) return "unknownDeck";
+    const spare = spareOf.get(deckId) ?? new Set<string>();
     const allowed = new Set([...deck.list.map((c) => c.oracleId), ...deck.commanders.map((c) => c.oracleId), subject.oracleId]);
     const ownDeck = new Set([...deck.list.map((c) => c.oracleId), ...deck.commanders.map((c) => c.oracleId)]);
     const resolve = (key: string) => prompt.cardOf.get(key.trim().replace(/^\{|\}$/g, ""));
@@ -410,7 +421,7 @@ export function validFitsRead(args: {
     }
     // 3. The cut.
     if (cutId) {
-      const r = cutFailure(cutId, deck, subject.oracleId, nameOf);
+      const r = cutFailure(cutId, deck, subject.oracleId, nameOf, spare);
       if (r) return r;
     }
     // 4. Every quote is a true quote of this deck's stored plan.
@@ -427,7 +438,7 @@ export function validFitsRead(args: {
     const marked = parts.map((x) => ("card" in x ? `[[${x.card}]]` : "quote" in x ? `"${x.quote}"` : x.text)).join("");
     if (keywordClaims(marked, factsOf).length > 0) return "keywordClaim";
     // 8. A cut, whenever the deck holds a card that may be one.
-    if (!cutId && deck.list.some((c) => c.oracleId !== subject.oracleId && cutFailure(c.oracleId, deck, subject.oracleId, nameOf) === null)) return "noCut";
+    if (!cutId && deck.list.some((c) => c.oracleId !== subject.oracleId && cutFailure(c.oracleId, deck, subject.oracleId, nameOf, spare) === null)) return "noCut";
     // 7. Each cite's job is a label kind that card carries.
     for (const c of cites) if (!(facts.get(c.oracleId)?.kinds ?? []).includes(c.job)) return "jobMismatch";
     return { deckId, parts, cut: cutId ?? null, cites };

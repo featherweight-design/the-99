@@ -103,11 +103,12 @@ const BASIC_COLOR: Record<string, BalanceColor> = { Plains: "W", Island: "U", Sw
 const basicColorOf = (r: ManaSupplyCardRow): BalanceColor | null =>
   isBasicType(r.typeLine) && r.produces?.length === 1 ? (BASIC_COLOR[r.typeLine.split("—")[1]?.trim() ?? ""] ?? null) : null;
 
-const total = (b: ManaBalance, c: BalanceColor) => b.colors.find((x) => x.color === c)!.sources.total;
+/** A color's sources, the count the panel shows. */
+export const total = (b: ManaBalance, c: BalanceColor) => b.colors.find((x) => x.color === c)!.sources.total;
 
 /** The color's Needed, as the panel shows it: Karsten's 99-card figure for the tightest pattern its nonland cards
  *  share (every pattern, not the few the evidence lists), 0 where none is published. */
-function requirement(b: ManaBalance, c: BalanceColor): number {
+export function requirement(b: ManaBalance, c: BalanceColor): number {
   return b.colors.find((x) => x.color === c)!.needed?.requires ?? 0;
 }
 

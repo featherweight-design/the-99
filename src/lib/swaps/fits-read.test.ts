@@ -143,6 +143,33 @@ describe("validFitsRead", () => {
     expect(validFitsRead({ reply: { picks: [pick({ cut: key })] }, prompt, inputs: inp }).drops).toEqual({ cutBasicLand: 1 });
   });
 
+  it("3: keeps a basic as the cut where the deck can spare it, and only in that deck (Hugh, 2026-10-12)", () => {
+    const base = inputs();
+    const forest = { oracleId: id(15), name: "Forest", typeLine: "Basic Land — Forest", kinds: [] };
+    const decks = [{ ...base.decks[0], list: [...base.decks[0].list, forest] }, { ...base.decks[1], list: [...base.decks[1].list, forest] }, ...base.decks.slice(2)];
+    const spared = { ...base, decks, candidates: [{ ...base.candidates[0], basicCuts: [id(15)] }, base.candidates[1]] };
+    const prompt = buildFitsReadPrompt(spared, "per-press");
+    const key = [...prompt.cardOf.entries()].find(([, v]) => v === id(15))![0];
+    // The rule is stated, and each candidate's line says which basics, if any, it can spare.
+    expect(prompt.system).toContain("never a basic land unless that deck's candidate line names it");
+    expect(prompt.user).toContain(`D1: has 2 draw cards against a target of 5; no inclusion figure is recorded for the card with this commander; basic lands it can spare: ${key}.`);
+    expect(prompt.user).toContain("D2: has 2 draw cards against a target of 5; no inclusion figure is recorded for the card with this commander; no basic land to spare.");
+    expect(validFitsRead({ reply: { picks: [pick({ cut: key })] }, prompt, inputs: spared })).toMatchObject({ drops: {}, picks: [{ cut: id(15) }] });
+    // The same basic, in the deck that cannot spare it, is refused as before.
+    expect(validFitsRead({ reply: { picks: [pick({ deck: "D2", sentence: "{C8} pairs with {C7}.", cut: key, cites: [] })] }, prompt, inputs: spared }).drops).toEqual({ cutBasicLand: 1 });
+  });
+
+  it("8: a spare basic counts as a card that may be cut, so a pick without a cut is refused", () => {
+    const base = inputs(["deck-omnath"]);
+    const forest = { oracleId: id(15), name: "Forest", typeLine: "Basic Land — Forest", kinds: [] };
+    const only = { ...base.decks[2], list: [forest], plan: { source: "v2" as const, text: "Lands matter." } };
+    const at = (basicCuts?: string[]) => ({ ...base, decks: [base.decks[0], base.decks[1], only], candidates: [{ ...base.candidates[0], ...(basicCuts ? { basicCuts } : {}) }] });
+    const line = { deck: "D1", sentence: "{C1} grows with each land.", cut: null, cites: [] };
+    const read = (inp: ReturnType<typeof at>) => validFitsRead({ reply: { picks: [line] }, prompt: buildFitsReadPrompt(inp, "per-press"), inputs: inp });
+    expect(read(at()).drops).toEqual({});
+    expect(read(at([id(15)])).drops).toEqual({ noCut: 1 });
+  });
+
   it("4: drops a quote the deck's plan does not hold", () => {
     expect(run([pick({ sentence: "It helps the deck \"go wide with goblins\" through {C1}." })]).drops).toEqual({ falseQuote: 1 });
     expect(run([pick({ sentence: "It helps the deck \"Go wide with goblins\"." })]).drops).toEqual({});

@@ -339,3 +339,9 @@ only edge it has, and the cached layout that would make it cheap brings its own 
 
 Result: 14 of 14 lines kept, no drops, no basic land cut (the first run cut a Mountain for Omnath and a Forest for
 Gishath). The three-card section at the top quotes it.
+
+**Since then (Hugh, 2026-10-12), a basic is not refused outright.** It may be the cut when the deck runs more lands
+than its land target AND that basic's color stays at or above its Needed after the cut: Improve my mana's rule,
+`basicCutFair` (`src/lib/mana/basic-cut.ts`), read per candidate by `fits-read-basics.ts`. Each candidate's line names
+the basics it can spare, and any other basic is still `cutBasicLand`. The prompt moved to version 3, so every stored
+read went out of date. No rerun was paid for it; the rule is the validator's.
