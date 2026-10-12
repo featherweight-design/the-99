@@ -50,6 +50,7 @@ import {
 } from "../../app/decks/actions";
 import { saveDeckDescription } from "../../app/decks/tuning-actions";
 import { Decklist } from "./decklist";
+import { TokensGroup } from "./tokens-group";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
@@ -1800,9 +1801,10 @@ export function BuilderShell({
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
-              /* §Empty Builder Mark + empty state (§Empty Builder Mark section).
+              <>
+              {/* §Empty Builder Mark + empty state (§Empty Builder Mark section).
                  Branches on deck.filled: a deck reached by deletion congratulates
-                 the sweep; one that was never built welcomes the player. */
+                 the sweep; one that was never built welcomes the player. */}
               <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
                 {/* §Mark container (mobile). Each breakpoint keeps its own
                     card-mark geometry; the quiet crown sits below both. */}
@@ -1938,6 +1940,12 @@ export function BuilderShell({
                   </>
                 )}
               </section>
+              {/* A commander makes tokens whether or not the list holds a card yet, so the group is drawn here
+                  too, with its own preview provider (the decklist's is not mounted on this branch). */}
+              <HoverPreviewProvider className="px-[16px] pb-[12px] md:px-[26px]">
+                <TokensGroup />
+              </HoverPreviewProvider>
+              </>
             ) : (
               /* Task 8: Decklist body */
               /* The provider wraps the list from out here rather than from

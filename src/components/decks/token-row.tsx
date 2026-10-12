@@ -5,7 +5,7 @@ import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
 import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
-import { tokenManapoolLine } from "../../lib/tokens/price";
+import { tokenManapoolLine } from "../../lib/tokens/price-line";
 import type { DeckToken } from "../../lib/tokens/read";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
