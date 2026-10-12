@@ -11,7 +11,7 @@ import { spokenFullManaCost } from "../../lib/copy/card-surfaces";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
 import { Chevron } from "../ui/chevron";
-import { useCardDetailIfAny } from "../cards/card-detail-provider";
+import { useCardDetailIfAny, useCardIntentIfAny } from "../cards/card-detail-provider";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -95,6 +95,9 @@ export function TokenRow({
   // Focus comes back to the NAME when the details close, whichever of the two opened them: the image
   // is out of the tab order and the accessibility tree, so it is never a place to land.
   const nameRef = useRef<HTMLButtonElement>(null);
+  // A pointer resting on the name or the image, or keyboard focus on the name, reads the details ahead
+  // of the press, as a card's trigger does.
+  const intent = useCardIntentIfAny(token.oracleId);
   const openDetails = detail
     ? (e: MouseEvent<HTMLElement>) => {
         // The row's own press toggles the makers; this one is the card's.
@@ -147,6 +150,7 @@ export function TokenRow({
                   aria-hidden
                   // A pointer press must not focus it either: it is in no tree a reader can follow.
                   onMouseDown={(e) => e.preventDefault()}
+                  {...intent}
                   onClick={openDetails}
                   {...art}
                   className={`${art.className} cursor-pointer`}
@@ -160,6 +164,7 @@ export function TokenRow({
                 <button
                   ref={nameRef}
                   type="button"
+                  {...intent}
                   onClick={openDetails}
                   aria-describedby={`token-${token.oracleId}-face`}
                   className="cursor-pointer text-left"

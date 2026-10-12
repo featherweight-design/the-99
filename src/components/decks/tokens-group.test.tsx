@@ -2,13 +2,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-const stub = vi.hoisted(() => ({ held: vi.fn(), joined: vi.fn(), open: vi.fn() }));
+const stub = vi.hoisted(() => ({ held: vi.fn(), joined: vi.fn(), open: vi.fn(), prefetch: vi.fn() }));
 
 vi.mock("../../app/decks/token-actions", () => ({ setTokenHeld: stub.held, setTokenJoined: stub.joined }));
 vi.mock("../cards/card-detail-provider", () => ({
   useCardDetail: () => ({ open: stub.open }),
   useCardDetailIfAny: () => ({ open: stub.open }),
   useCardIntent: () => ({}),
+  useCardIntentIfAny: (id: string) => ({ onFocus: () => stub.prefetch(id) }),
 }));
 
 import { DeckTokensProvider } from "./deck-tokens-context";
@@ -189,6 +190,9 @@ describe("the makers fold", () => {
     expect(stub.open.mock.calls[1][0]).toBe("t-goblin");
     // The way back is the name, never the image the reader cannot reach.
     expect(stub.open.mock.calls[1][3]).toMatchObject({ opener: name });
+    // Intent on the name reads the token ahead of the press, as a card's trigger does.
+    fireEvent.focus(name);
+    expect(stub.prefetch).toHaveBeenCalledWith("t-goblin");
     expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
   });
 
