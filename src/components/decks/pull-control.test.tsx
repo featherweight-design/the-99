@@ -570,6 +570,37 @@ describe("PullControl — 2+ choosable sources", () => {
     ).toBe("false");
   });
 
+  // Bug batch 2026-10-12: the phone sheet's body takes the other sheets' inset (16 / 14 / 16), and
+  // the desktop popover keeps its own box padding with no second inset inside it.
+  it("insets the phone sheet's body, and leaves the popover's own padding alone", () => {
+    const INSET = ["px-[16px]", "pt-[14px]", "pb-[16px]"];
+    const insetOf = () => {
+      // The order line, a direct child of the shared body column, whose parent is this shell's.
+      const line = screen.getByText("In the order they committed it");
+      return (line.parentElement!.parentElement!.className ?? "").split(/\s+/);
+    };
+    setViewport(false);
+    const { unmount } = render(
+      <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    expect(insetOf()).toEqual(expect.arrayContaining(INSET));
+    unmount();
+
+    setViewport(true);
+    render(
+      <PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    const popover = insetOf();
+    expect(popover).toContain("p-[14px]");
+    expect(popover).not.toContain("px-[16px]");
+  });
+
   // Found missing by Copilot's round-2 review: `Sheet` owns no focus trap or Escape handling of
   // its own — every caller wires `useDialogA11y` itself, and the mobile branch here did not.
   it("wires Escape to dismiss at phone width too", () => {

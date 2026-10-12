@@ -424,6 +424,26 @@ describe("ReplaceFlow · the ledger review (collection edit A2)", () => {
     expect(await screen.findByRole("radiogroup")).toBeTruthy();
   });
 
+  // Bug batch 2026-10-12: each step's section grows into the route's flex column (`flex-1`) rather
+  // than guessing the chrome's height, so its action bar sits on `main`'s foot. The route side of
+  // the chain is `src/app/collection/replace/page.test.tsx`.
+  const stretches = (el: Element | null) => {
+    const cls = (el?.className ?? "").toString().split(/\s+/);
+    return cls.includes("flex-1") && cls.includes("flex-col") && !cls.some((c) => c.includes("100vh"));
+  };
+
+  it("draws the choice as a section that grows into the route's column", async () => {
+    serve(data());
+    const group = await reachChoice();
+    expect(stretches(group.closest("section"))).toBe(true);
+  });
+
+  it("draws the review as a section that grows into the route's column", async () => {
+    serve(data());
+    const confirm = await reachReview();
+    expect(stretches(confirm.closest("section"))).toBe(true);
+  });
+
   it("draws the choice with nothing picked, each card's after-figure, and Continue held", async () => {
     serve(data());
     await reachChoice();

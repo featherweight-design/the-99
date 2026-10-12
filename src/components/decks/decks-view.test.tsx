@@ -314,6 +314,17 @@ describe("DecksView", () => {
     expect(screen.getAllByRole("link", { name: /Import/ })).toHaveLength(2);
   });
 
+  // Bug batch 2026-10-12: on a phone the pair is two equal halves, the grid the cart/precons row
+  // draws its pair in. As a flex row each button took its label's width.
+  it("draws the phone's New deck and Import as two equal grid columns", () => {
+    render(view([deckOf()]));
+    const row = screen.getAllByRole("link", { name: "New deck" }).map((a) => a.parentElement!).find((p) => /\bsm:hidden\b/.test(p.className))!;
+    const cls = row.className.split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["grid", "grid-cols-2"]));
+    expect(cls).not.toContain("flex");
+    expect(within(row).getByRole("link", { name: /Import/ })).toBeTruthy();
+  });
+
   it("draws the zero state, with both routes in, when no deck exists at all", () => {
     render(view([]));
     expect(screen.getByText("No decks yet")).toBeInTheDocument();
