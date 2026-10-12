@@ -74,6 +74,8 @@ async function signIn(page) {
 
 /** The image the open dialog draws: its first `<img>` or a url() background. */
 async function dialogArt(page) {
+  // The card dialog is portaled out of `<main>`, so `onPage` cannot reach it; the one just opened is the
+  // last in the document, after the shell's own account sheet.
   const dialog = page.locator('[role="dialog"]').last();
   await dialog.waitFor({ state: "visible", timeout: 10_000 });
   await page.waitForTimeout(800);
@@ -93,6 +95,7 @@ async function openDeck(page, tab) {
 await clerkSetup();
 const browser = await chromium.launch();
 const seen = new Map();
+const found = new Set();
 try {
   // ---- 1300: hover, then details, per surface ----
   const wide = await browser.newContext({ viewport: { width: 1300, height: 900 } });
@@ -116,11 +119,13 @@ try {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(400);
       measured += 1;
+      found.add(name);
       if (surface === "deck") seen.set(name, details);
       report(`${surface} · ${name} (1300)`, printing(hovered) !== null && printing(hovered) === details, `hover ${printing(hovered)}, details ${details}`);
     }
     report(`${surface} measured at least one card`, measured > 0, `${measured} of ${CARDS.length}`);
   }
+  for (const name of CARDS) report(`${name} found on a desktop surface`, found.has(name), found.has(name) ? "yes" : "on neither the decklist nor Review changes");
   await wide.close();
 
   // ---- 390: no hover on a phone; the dialog must still open on the same printing ----
