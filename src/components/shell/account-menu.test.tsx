@@ -380,3 +380,54 @@ describe("AccountMenu items", () => {
     expect(marker.style.background).toBe("var(--danger)");
   });
 });
+
+describe("AccountMenu admin door (admin STATES D1, D2)", () => {
+  it("draws no Admin row without the door", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    expect(screen.queryByRole("menuitem", { name: "Admin" })).toBeNull();
+    expect(screen.getAllByRole("menuitem")).toHaveLength(3);
+  });
+
+  it.each(["popover", "sheet"] as const)("puts Admin after About and before Manage account in the %s", (panel) => {
+    render(<AccountMenu panel={panel} theme="amonkhet" adminDoor adminEnv="production" />);
+    fireEvent.click(trigger());
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((i) => i.getAttribute("href") ?? i.textContent)).toEqual(["/about", "/admin", "Manage account", "Sign out"]);
+    // The environment rides at the row's end, hidden from its name: the page head says it.
+    const admin = screen.getByRole("menuitem", { name: "Admin" });
+    const env = within(admin).getByText("production");
+    expect(env).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("roves through four rows and wraps", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="staging" />);
+    fireEvent.click(trigger());
+    const [about, admin, manage, signOutItem] = screen.getAllByRole("menuitem");
+    fireEvent.keyDown(about, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(admin);
+    fireEvent.keyDown(admin, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(manage);
+    fireEvent.keyDown(manage, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(signOutItem);
+    fireEvent.keyDown(signOutItem, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(about);
+    fireEvent.keyDown(about, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(signOutItem);
+  });
+
+  it("hands the Admin navigation to the provider and closes the menu", () => {
+    push.mockClear();
+    window.history.replaceState(null, "", "/");
+    const providerPush = vi.fn();
+    render(
+      <Report.Provider value={{ report: () => {}, pathname: "/", push: providerPush, registerContentScope: () => {} }}>
+        <AccountMenu panel="popover" theme="amonkhet" adminDoor adminEnv="staging" />
+      </Report.Provider>,
+    );
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Admin" }));
+    expect(providerPush).toHaveBeenCalledWith("/admin");
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+});

@@ -15,6 +15,7 @@ import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog"
 import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
+import { adminCopy } from "../../lib/copy/admin";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
@@ -52,26 +53,38 @@ type MenuItemsProps = {
   /** Leaves for /about. Owned by `AccountMenu`, which outlives the panel: the press closes the
    *  panel and the link with it, and a link that is gone cannot report its navigation pending. */
   onAbout: () => void;
+  /** The admin's environment when this reader holds the door (admin STATES D1), else null: no row. */
+  admin: string | null;
+  /** Leaves for /admin, as `onAbout` leaves for /about. */
+  onAdmin: () => void;
 };
 
 /**
- * The two `role="menuitem"` children, shared by both panels. Roving focus:
+ * The `role="menuitem"` children (three, or four with the Admin row), shared by both panels. Roving focus:
  * exactly one item is tabbable at a time and ↑/↓ move between them with wrap
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
   // One ref per item, sized from the list rather than written out: the row
-  // count was two for this menu's whole life and is three now, and a modulo
+  // count was two for this menu's whole life and is three or four now, and a modulo
   // hard-coded to the old count wraps focus into the wrong row silently.
   const aboutRef = useRef<HTMLAnchorElement>(null);
+  const adminRef = useRef<HTMLAnchorElement>(null);
   const manageRef = useRef<HTMLButtonElement>(null);
   const signOutRef = useRef<HTMLButtonElement>(null);
   // Typed as the common supertype so one `move` can focus any of them; the
-  // rows are not the same element and the focus model does not care.
-  const refs: React.RefObject<HTMLElement | null>[] = [aboutRef, manageRef, signOutRef];
+  // rows are not the same element and the focus model does not care. The
+  // Admin row sits second when it is drawn, so the buttons start after it.
+  const links: { href: string; label: string; trailing: string | null; go: () => void }[] = [
+    { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
+    ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
+  ];
+  const refs: React.RefObject<HTMLElement | null>[] = admin
+    ? [aboutRef, adminRef, manageRef, signOutRef]
+    : [aboutRef, manageRef, signOutRef];
 
   function move(delta: number) {
     const next = (active + delta + refs.length) % refs.length;
@@ -89,9 +102,9 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout }: MenuIt
     }
   }
 
-  // About is a real link, not a button that routes: it is the one row here
-  // that goes somewhere, so it should open in a new tab when a reader asks it
-  // to. The other two act on the session and have no URL to offer.
+  // About and Admin are real links, not buttons that route: they go somewhere,
+  // so they should open in a new tab when a reader asks them to. Manage account
+  // and Sign out act on the session and have no URL to offer.
   const rowClass = (i: number) =>
     `flex w-full items-center text-left text-[color:var(--fg)] transition-colors duration-[120ms] hover:bg-[color:var(--elevated)] focus-visible:bg-[color:var(--elevated)] disabled:opacity-60 ${
       popover
@@ -109,48 +122,55 @@ function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout }: MenuIt
 
   return (
     <>
-      <Link
-        ref={aboutRef}
-        href="/about"
-        role="menuitem"
-        tabIndex={active === 0 ? 0 : -1}
-        onFocus={() => setActive(0)}
-        onKeyDown={onKeyDown}
-        // `aria-disabled` ANNOUNCES the state; it does not enforce it, and an
-        // anchor has no `disabled`. Both halves are needed or the row says it
-        // is unavailable and navigates anyway, racing the sign-out it claims
-        // to be waiting for.
-        aria-disabled={busy || undefined}
-        onClick={(e) => {
-          if (busy) {
+      {links.map((link, i) => (
+        <Link
+          key={link.href}
+          ref={i === 0 ? aboutRef : adminRef}
+          href={link.href}
+          role="menuitem"
+          tabIndex={active === i ? 0 : -1}
+          onFocus={() => setActive(i)}
+          onKeyDown={onKeyDown}
+          // `aria-disabled` ANNOUNCES the state; it does not enforce it, and an
+          // anchor has no `disabled`. Both halves are needed or the row says it
+          // is unavailable and navigates anyway, racing the sign-out it claims
+          // to be waiting for.
+          aria-disabled={busy || undefined}
+          onClick={(e) => {
+            if (busy) {
+              e.preventDefault();
+              return;
+            }
+            // A modified press opens a new tab and navigates nothing here.
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+              onClose();
+              return;
+            }
             e.preventDefault();
-            return;
-          }
-          // A modified press opens a new tab and navigates nothing here.
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
-            onClose();
-            return;
-          }
-          e.preventDefault();
-          onAbout();
-        }}
-        className={rowClass(0)}
-      >
-        <ItemDiamond />
-        <span>{aboutLabel}</span>
-      </Link>
+            link.go();
+          }}
+          className={rowClass(i)}
+        >
+          <ItemDiamond />
+          <span>{link.label}</span>
+          {/* The environment, named again by the page head, so hidden from the row's name. */}
+          {link.trailing && (
+            <span aria-hidden className="ml-auto font-mono text-[10.5px] text-[color:var(--fg-faint)]">{link.trailing}</span>
+          )}
+        </Link>
+      ))}
       {buttons.map((item, i) => (
         <button
           key={item.label}
           ref={i === 0 ? manageRef : signOutRef}
           type="button"
           role="menuitem"
-          tabIndex={active === i + 1 ? 0 : -1}
+          tabIndex={active === links.length + i ? 0 : -1}
           disabled={busy}
-          onFocus={() => setActive(i + 1)}
+          onFocus={() => setActive(links.length + i)}
           onKeyDown={onKeyDown}
           onClick={item.onClick}
-          className={rowClass(i + 1)}
+          className={rowClass(links.length + i)}
         >
           <ItemDiamond danger={item.danger} />
           <span>{item.label}</span>
@@ -342,7 +362,19 @@ function Avatar({
   );
 }
 
-export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKey }) {
+export function AccountMenu({
+  panel,
+  theme,
+  adminDoor = false,
+  adminEnv,
+}: {
+  panel: PanelKind;
+  theme: ThemeKey;
+  /** Computed on the server against `ADMIN_USER_IDS`; only this boolean reaches the client. */
+  adminDoor?: boolean;
+  /** The admin's environment, named at the row's end. Read only with the door. */
+  adminEnv?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const { user } = useUser();
@@ -364,20 +396,23 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
   // The About row's press closes this menu, which unmounts the row, so its own link status cannot
   // carry the navigation to the 400ms screen. The navigation runs as a transition here instead,
   // and this component, which stays mounted, reports it.
-  const about = usePendingPush();
-  function onAbout() {
-    // Already on /about, the press navigates nothing: it only closes the menu, and the sheet's
+  const leave = usePendingPush();
+  function go(href: string) {
+    // Already there, the press navigates nothing: it only closes the menu, and the sheet's
     // entry has to come back off in the ordinary way or the next Back would land on this page.
-    if (window.location.pathname === "/about") {
+    if (window.location.pathname === href) {
       close();
       return;
     }
-    // The sheet's release would otherwise step back off its history entry while /about is still
+    // The sheet's release would otherwise step back off its history entry while the page is still
     // loading, and that Back cancels the navigation.
     leaveDialogsForNavigation();
     close();
-    about.go("/about");
+    leave.go(href);
   }
+  const onAbout = () => go("/about");
+  const onAdmin = () => go("/admin");
+  const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
   // Table ambiguity 13: the menu dismisses before Clerk's modal mounts, so the
   // focus trap is handed over rather than nested. useDialogA11y returns focus
@@ -478,6 +513,8 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
             onManage={onManage}
             onSignOut={onSignOut}
             onAbout={onAbout}
+            admin={admin}
+            onAdmin={onAdmin}
           />
         ) : (
           <AccountSheet
@@ -491,6 +528,8 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
             onManage={onManage}
             onSignOut={onSignOut}
             onAbout={onAbout}
+            admin={admin}
+            onAdmin={onAdmin}
           />
         ))}
     </div>

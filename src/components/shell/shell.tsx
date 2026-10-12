@@ -7,6 +7,8 @@ import { aboutSheetEnabled } from "../../lib/about/flag";
 import { readSheetState } from "../../lib/about/sheet-state";
 import { AboutSheet } from "./about-sheet";
 import { NavigationPendingProvider, ShellMain } from "./navigation-pending";
+import { isAdmin } from "../../lib/admin/access";
+import { adminEnvironment } from "../../lib/admin/environment";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -41,6 +43,8 @@ export default async function Shell({
   // with: a later re-render of this layout (router.refresh, a revalidating
   // action) arrives without the header and must not unmount an unread sheet.
   const sheet = aboutSheetEnabled() ? readSheetState(await headers()) : null;
+  // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
+  const door = isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {};
 
   return (
     // While locked the phone's tab bar carries the lock's bracket over its tabs and grows to
@@ -52,9 +56,9 @@ export default async function Shell({
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <NavigationPendingProvider>
       <div className="flex min-h-screen flex-1">
-        <NavRail locked={locked} theme={theme} />
+        <NavRail locked={locked} theme={theme} {...door} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <MobileHeader theme={theme} />
+          <MobileHeader theme={theme} {...door} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
           {/* `flex flex-col` continues the stretch chain the rail already starts,
