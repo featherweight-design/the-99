@@ -296,11 +296,26 @@ Replaces R1's CutRow and "shortlist size" tables (rank number, `Rank again`, ove
 
 ## PastRun (History, opened)
 
+Since the re-review (Hugh, 2026-10-12) a run that named something reopens in its OWN tool, under
+the review note below, with the tool's rows, Apply/Cut and Undo; a free count opens its tool on the
+deck as it is now. This view is left for a run with nothing to load (failed, refused, stopped, ok
+with no lines), a run whose tool has no panel to draw (Suggested changes before a reading), and a
+run in flight or a count on a tool that is inert now.
+
 | Property | Mobile | Desktop |
 |---|---|---|
 | back | `‹ History` in the back slot | 12.5 / 500 `--fg-muted` above the heading |
 | heading | tool name, display 17 | 19 |
 | meta | mono 10.5 `--fg-faint`: date · version · tier | same |
 | read-only note | `1px dashed --border-dashed`, radius 9, `9px 12px`, 12.5 `--fg-faint` | same |
-| rows | `AnsweredRow` tones, plus `left open` (sunken, dashed border, `--fg-faint`) | same |
+| rows | a run's lines only when its tool has no panel: one neutral row each (`--surface`, `1px --border`, radius 9, `9px 12px`), the verdict in mono 9.5 uppercase `--fg-locked` from the tool's own words (`applied`/`rejected`, `cut`/`kept`; none for an open line), the names, the reason open in 12.5 `--fg-body`, cites mono 10.5 `--fg-faint` | same |
 | write controls | none | none |
+
+## Review note (a run reopened in its tool)
+
+| Property | Mobile | Desktop |
+|---|---|---|
+| note | the read-only note's frame (`1px dashed --border-dashed`, radius 9, `9px 12px`), 12.5 `--fg-muted`, above the tool | same, beside `‹ History` |
+| copy | `From a run on {date}. Each cut is checked against the deck as it is now.` (Proposed cuts), `From a run on {date}. Each change is checked against the deck as it is now.` (Suggested changes); a free count `Counted {date}: {summary}. Below is the deck as it is now.` | same |
+| back | `‹ History` in the switch slot | `‹ History` 12.5 / 500 `--fg-muted`, right of the note |
+| a cut or trade the deck has moved past | `no longer applies` (mono 9.5 uppercase `--fg-locked`) and the reason it cannot apply; no write control | same |
