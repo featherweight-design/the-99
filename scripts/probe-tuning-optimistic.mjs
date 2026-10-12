@@ -54,6 +54,8 @@ async function holdActions(page) {
   });
   return {
     count: () => held.length,
+    /** Until the pressed row's request is in hand (a loaded machine can take a while to send it). */
+    async caught() { for (let i = 0; i < 100 && held.length === 0; i += 1) await page.waitForTimeout(100); return held.length; },
     async release() { mode = "pass"; for (const r of held.splice(0)) await r.fallback(); await page.unroute("**/*"); },
     async fail() { mode = "pass"; for (const r of held.splice(0)) await r.abort("failed"); await page.unroute("**/*"); },
   };
@@ -80,7 +82,7 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
   const name = await article.getAttribute("aria-label");
   const gate = await holdActions(page);
   await article.getByRole("button", { name: "Cut", exact: true }).click();
-  await page.waitForTimeout(300);
+  await gate.caught();
   const cutRow = onPage(page, "[data-testid='answered-cut']").filter({ hasText: name });
   check(`${w.label} cuts: the row reads cut while its action is still unanswered`, (await cutRow.count()) === 1 && gate.count() >= 1, { held: gate.count() });
   await gate.release();
@@ -97,7 +99,7 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
   const openBefore = await onPageRole(page, "button", /^Reject$/).count();
   const gate2 = await holdActions(page);
   await reject.click();
-  await page.waitForTimeout(300);
+  await gate2.caught();
   const rejected = await onPage(page, "[data-testid='answered-rejected']").count();
   check(`${w.label} suggested: the row reads rejected while its action is still unanswered`, rejected >= 1 && gate2.count() >= 1, { rejected, held: gate2.count() });
   await gate2.fail();
