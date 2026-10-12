@@ -62,7 +62,19 @@ commanders (it has 36 rows, all for commanders Hugh does not play).
 > "I want to know specifically how a given card can support a deck's plan/theme. This would be incredibly helpful
 > information, especially for some of my niche cards."
 
-Add a model call. Not reopened here.
+1. **Add a model call.**
+2. **The picker becomes a view inside the card-details dialog, at both widths** (Hugh's answer to the stacking
+   question, relayed 2026-10-11; he had reported that "it shouldn't stack on desktop"). `← {card}` returns to the
+   details. This reverses stacked-sheets call 7 (`design/design_handoff_the99_stacked_sheets/README.md:36`) for the
+   Find a deck picker ONLY. Today the picker stacks at both widths by design: a second modal over Card Details,
+   560 on desktop with a `← {card}` back pill, a sheet from 96px on the phone
+   (`design/design_handoff_the99_swap_tools/README.md:24`), pinned by
+   `src/components/cards/fits-picker.test.tsx:286`. No other stacked sheet is affected: the stand-ins sheet shares
+   the picker's `overCard` path (`design/design_handoff_the99_stacked_sheets/READINESS.md` A8) and keeps the
+   stacked geometry, and a card opened from the picker still stacks over it as before. Design draws the view as
+   part of this handoff.
+
+Neither is reopened here.
 
 ## Orchestrator defaults (decided as Hugh's proxy, 2026-10-11)
 
@@ -269,8 +281,9 @@ the read's short end, and Maddening Cacophony is the one card where today's list
 
 ## What Design owns
 
-1. **Where the press lives** in the picker, and what it says while the free list is on screen. Where the picker
-   itself sits is Open question 7: draw the read inside whichever container that answer picks.
+1. **The picker as a view inside card details** (ruling 2), at 900 and 390: how the details give way to it, the
+   `← {card}` return, and the free list in it. Then where the press lives in that view, and what it says while
+   the free list is on screen. The read draws inside this view.
 2. **The credit line** beside the press, from `src/lib/copy/credits.ts`, and the state where the reader has no
    credit left.
 3. **The loading state.** A call over ~27K input tokens takes seconds, not a moment. What the reader sees, and
@@ -301,19 +314,8 @@ the read's short end, and Maddening Cacophony is the one card where today's list
 5. The suggested cut: a card-open mark inside the sentence, or its own line?
 6. Does the read make the free row's need line (`draw 13 of 10`) worth clarifying, or removing? Out of scope unless
    Design needs it.
-7. **Does the picker stack over card details on desktop?** Today it stacks at BOTH widths, by design: a second
-   modal over Card Details, 560 on desktop with a `← {card}` back pill, a sheet from 96px on the phone
-   (`design/design_handoff_the99_swap_tools/README.md:24`); the stacked-sheets round kept that geometry (its call
-   7, `design/design_handoff_the99_stacked_sheets/README.md:36`, and `READINESS.md` A8 names the picker on the same
-   `overCard` path); and the build pins it (`src/components/cards/fits-picker.test.tsx:286`, "stacks the picker
-   over the card, which stays mounted and covered"). Hugh has reported that "it shouldn't stack on desktop". Three
-   options:
-   - **(a)** the picker becomes a view inside the card dialog at both widths, reversing stacked-sheets call 7;
-   - **(b)** it swaps in place on desktop only, and still stacks on the phone, splitting the widths;
-   - **(c)** it keeps the stack, with the desktop geometry fixed so it does not read as two modals.
-
-   **Hugh's answer: pending.** A read adds a loading state and three to five longer rows to this container, so
-   whichever option Design draws, draw the read in it.
+7. *(Closed 2026-10-11: whether the picker stacks on desktop. Hugh chose a view inside card details at both
+   widths; see ruling 2.)*
 
 ## Fixtures
 
