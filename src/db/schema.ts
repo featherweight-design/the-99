@@ -2141,6 +2141,97 @@ export const modelCalls = pgTable("model_calls", {
 ]);
 
 /**
+ * One provider call under a `model_calls` row (admin brief, locked rule 13): its step, model,
+ * effort, meters and cost. A run that calls twice (Look deeper's shortlist and judgement, an
+ * overview and its repair) records two parts, each on its own model's rates, while the parent row
+ * keeps its role as the allowance's reservation and the month's billed total. Written by
+ * `recordModelUsage` in the same statement window that records the parent's meters, and only when
+ * those were first recorded, so a retried or late write never adds a second set. Rows from before
+ * this table have no parts: readers show them by feature, never split by guesswork.
+ */
+export const modelCallParts = pgTable("model_call_parts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  callId: uuid("call_id").notNull().references(() => modelCalls.id),
+  // Which call in the run: `write`, `repair`, `shortlist`, `judgement`, ... `call` when a
+  // single-call feature names none.
+  step: text("step").notNull(),
+  model: text("model").notNull(),
+  // Null when the call set none (the request carried no `effort`): drawn as `not recorded`.
+  effort: text("effort"),
+  inputTokens: integer("input_tokens").notNull(),
+  outputTokens: integer("output_tokens").notNull(),
+  cacheReadTokens: integer("cache_read_tokens").notNull(),
+  cacheWriteTokens: integer("cache_write_tokens").notNull(),
+  costMicroUsd: bigint("cost_micro_usd", { mode: "number" }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("model_call_parts_effort_check", sql`${t.effort} is null or ${t.effort} in ('low', 'medium', 'high')`),
+  index("model_call_parts_call_idx").on(t.callId),
+]);
+
+/**
+ * The admin's own figures (brief, locked rule 11): the caps that live outside the code. The account
+ * cap is set in Anthropic's console and shared with another app, the system ceiling is a ruling, and
+ * `elsewhere` is what this environment's ledger cannot see (the other environment, the other app),
+ * entered by hand with the date it was read. One row per key; every change is also an
+ * `admin_events` `setting_set` row.
+ */
+export const adminSettings = pgTable("admin_settings", {
+  key: text("key").primaryKey(),
+  valueMicroUsd: bigint("value_micro_usd", { mode: "number" }).notNull(),
+  // The day the figure was read, for `elsewhere` (STATES C7); the write's own day otherwise.
+  asOf: date("as_of", { mode: "string" }).notNull(),
+  note: text("note"),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  check("admin_settings_key_check", sql`${t.key} in ('account_cap_usd', 'system_ceiling_usd', 'elsewhere_usd')`),
+  check("admin_settings_value_check", sql`${t.valueMicroUsd} >= 0`),
+]);
+
+/**
+ * The admin's audit trail (brief, locked rule 5, with the audit's finding 7): append-only, never
+ * updated or deleted. Every admin write inserts one row in its own transaction. Each kind's
+ * required fields are tied to it by a check constraint, so a membership change and a setting are
+ * as representable as an override. `group_id` carries no foreign key: a group can be deleted from
+ * a later PR's tables while its history stays.
+ */
+export const adminEvents = pgTable("admin_events", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  at: timestamp("at").notNull().defaultNow(),
+  actorId: text("actor_id").notNull(),
+  kind: text("kind").notNull(),
+  switchName: text("switch"),
+  scope: text("scope"),
+  groupId: uuid("group_id"),
+  userId: text("user_id"),
+  settingKey: text("setting_key"),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  note: text("note"),
+}, (t) => [
+  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set')`),
+  check("admin_events_scope_check", sql`${t.scope} is null or ${t.scope} in ('app', 'group', 'user')`),
+  // Each kind names what it changed.
+  check("admin_events_fields_check", sql`case ${t.kind}
+    when 'override_set' then ${t.switchName} is not null and ${t.scope} is not null and ${t.newValue} is not null
+    when 'override_cleared' then ${t.switchName} is not null and ${t.scope} is not null and ${t.oldValue} is not null
+    when 'group_created' then ${t.groupId} is not null and ${t.newValue} is not null
+    when 'group_renamed' then ${t.groupId} is not null and ${t.oldValue} is not null and ${t.newValue} is not null
+    when 'group_described' then ${t.groupId} is not null
+    when 'member_added' then ${t.groupId} is not null and ${t.userId} is not null
+    when 'member_removed' then ${t.groupId} is not null and ${t.userId} is not null
+    when 'setting_set' then ${t.settingKey} is not null and ${t.newValue} is not null
+  end`),
+  // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
+  check("admin_events_scope_target_check", sql`${t.scope} is null
+    or (${t.scope} = 'app' and ${t.groupId} is null and ${t.userId} is null)
+    or (${t.scope} = 'group' and ${t.groupId} is not null and ${t.userId} is null)
+    or (${t.scope} = 'user' and ${t.userId} is not null and ${t.groupId} is null)`),
+  index("admin_events_at_idx").on(t.at),
+]);
+
+/**
  * One Look deeper read in Help me choose (sub-project 8). It happens before any deck exists, so it
  * cannot hang off a deck's row the way tuning's run and the overview do, and it needs a row of its
  * own because a Stop must refund (F4): written `pending` with its allowance unit BEFORE the model is

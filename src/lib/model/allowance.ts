@@ -1,7 +1,7 @@
 import { and, eq, gt, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { modelCalls } from "../../db/schema";
+import { modelCallParts, modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
   MODEL_FRIEND_DAILY_ALLOWANCE,
@@ -245,7 +245,12 @@ export async function settleModelCall(
   if (billed) await recordModelUsage(tx, callId, billed, now);
 }
 
-export type Billed = { model: string; usage: ModelUsage };
+/**
+ * One provider call's bill. `step` names it within its run (`write`, `repair`, `shortlist`, ...;
+ * `call` when absent) and `effort` is the reasoning effort the request asked for, null when it set
+ * none: both land on the call's `model_call_parts` row, never on the parent.
+ */
+export type Billed = { model: string; usage: ModelUsage; step?: string; effort?: "low" | "medium" | "high" | null };
 
 /**
  * Several calls billed under one reservation (Help me choose's read: a shortlist and a judgement,
@@ -279,7 +284,8 @@ function isBilledList(b: Billed | readonly Billed[]): b is readonly Billed[] {
 }
 
 export async function recordModelUsage(tx: Tx, callId: string, billed: Billed | readonly Billed[], now: Date = new Date()): Promise<void> {
-  const one = isBilledList(billed) ? joinBilled(billed) : { ...billed, costMicroUsd: costMicroUsd(billed.model, billed.usage) };
+  const parts: readonly Billed[] = isBilledList(billed) ? billed : [billed];
+  const one = joinBilled(parts);
   const [row] = await tx
     .update(modelCalls)
     .set({
@@ -292,6 +298,21 @@ export async function recordModelUsage(tx: Tx, callId: string, billed: Billed | 
     })
     .where(and(eq(modelCalls.id, callId), isNull(modelCalls.costMicroUsd)))
     .returning({ createdAt: modelCalls.createdAt, cost: modelCalls.costMicroUsd });
+  // ONE PART PER PROVIDER CALL (admin brief, locked rule 13), written only when the parent's meters
+  // were first recorded here: the same guard that keeps a retried or late write from counting twice.
+  if (row && parts.length > 0) {
+    await tx.insert(modelCallParts).values(parts.map((p) => ({
+      callId,
+      step: p.step ?? "call",
+      model: p.model,
+      effort: p.effort ?? null,
+      inputTokens: p.usage.inputTokens,
+      outputTokens: p.usage.outputTokens,
+      cacheReadTokens: p.usage.cacheReadTokens,
+      cacheWriteTokens: p.usage.cacheWriteTokens,
+      costMicroUsd: costMicroUsd(p.model, p.usage),
+    })));
+  }
   if (row?.cost && row.createdAt >= monthStartUtc(now)) await alarm(tx, row.cost, now);
 }
 

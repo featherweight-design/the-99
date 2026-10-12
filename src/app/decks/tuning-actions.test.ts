@@ -190,7 +190,7 @@ describe("runTuning after the call returned", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
-      { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 } },
+      { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "suggest", effort: "medium" },
     ]]);
   });
 });
@@ -241,7 +241,7 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "malformed", droppedCount: undefined },
-      { model: "claude-sonnet-5", usage },
+      { model: "claude-sonnet-5", usage, step: "suggest", effort: "medium" },
     ]]);
   });
 });

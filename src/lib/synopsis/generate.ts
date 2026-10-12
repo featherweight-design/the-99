@@ -10,7 +10,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses, decks } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
-import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall } from "../model/allowance";
+import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import { callModel, type ModelOutcome, type ModelUsage } from "../model/client";
 import { readProfileHead } from "../profile/load";
 import { readStoredReading, sameList, type StoredProfileDeps } from "../profile/stored";
@@ -536,7 +536,7 @@ export async function finishRun(
     usage: { inputTokens: number; outputTokens: number } | null;
     charge: "spent" | "refunded";
     /** What the call was billed for, when it got a response; written on the unit as it settles. */
-    billed?: { model: string; usage: ModelUsage };
+    billed?: Billed | readonly Billed[];
     /** The failing call's HTTP status, when it had one (`ModelOutcome.status`). */
     errorStatus?: number;
   },
@@ -574,7 +574,7 @@ export async function finishRun(
  */
 export function failedRunSet(
   outcome: Extract<ModelOutcome<unknown>, { ok: false }>,
-  billed: { model: string; usage: ModelUsage } | undefined,
+  billed: Billed | readonly Billed[] | undefined,
 ): Parameters<typeof finishRun>[1] {
   return { outcome: outcome.errorClass, content: null, usage: null, charge: "refunded", billed, errorStatus: outcome.status };
 }
@@ -638,7 +638,10 @@ async function run(
   // `billed` is in scope for the WHOLE block for the same reason: once the call has returned, every
   // settle records what it cost, the fallback in the `catch` included. A throw in the catalog read
   // or the checks comes after a reply that was billed all the same.
-  let billed: { model: string; usage: ModelUsage } | undefined;
+  let billed: Billed[] | undefined;
+  // Each provider call is its own part (the write, then any repair), with the effort the request
+  // asked for; a stub sets none.
+  const effort = modelName === STUB_MODEL ? null : synopsisCallSettings(v2).effort;
   // ONE budget for the whole write, the repair included (contract B): the repair is sent only with
   // what is left of it, so the write can never outlast the deck page's `maxDuration`.
   const startedAt = deps.now().getTime();
@@ -653,7 +656,7 @@ async function run(
   };
   try {
     const outcome = await call(prompt);
-    if (outcome.usage) billed = { model: modelName, usage: outcome.usage };
+    if (outcome.usage) billed = [{ model: modelName, usage: outcome.usage, step: "write", effort }];
 
     if (!outcome.ok) {
       const settled = await finishRun(started, failedRunSet(outcome, billed), deps.now());
@@ -673,7 +676,7 @@ async function run(
       const failing = refusedSections(content);
       const repair = await call(repairPrompt(facts, content, failing, v2, outcome.value));
       usage = sumUsage(usage, repair.usage);
-      if (usage) billed = { model: modelName, usage };
+      if (repair.usage) billed = [...(billed ?? []), { model: modelName, usage: repair.usage, step: "repair", effort }];
       content = await applyRepair(content, repair, failing, facts, v2);
     }
     const charge = chargeFor(content);

@@ -52,7 +52,7 @@ describe("runTheRead", () => {
     const out = await runTheRead("u", input, d, inputs());
     expect(out).toEqual({ kind: "read", readId: "r", repeat: false, result: { picks: [{ oracleId: "b", reason: [{ text: "Its horrors drain each opponent." }] }], pool: 2, weighed: 2 } });
     expect(store.setReadPhase.mock.calls.map((c) => c[1])).toEqual(["shortlist", "judge"]);
-    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }, { model: "j", usage }]);
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage, step: "shortlist", effort: "medium" }, { model: "j", usage, step: "judgement", effort: "medium" }]);
     // Key 3 is outside the pool, so the judgement is never shown it.
     expect(vi.mocked(d.judge).mock.calls[0][0].user).not.toContain("3|Gamma");
   });
@@ -69,7 +69,7 @@ describe("runTheRead", () => {
     const d = deps(ok({ keys: [] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs({ pool: new Set() }))).toMatchObject({ kind: "nothing" });
     expect(d.shortlist).not.toHaveBeenCalled();
-    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }]);
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "shortlist", effort: null }]);
   });
 
   it("gives the shortlist no more than what is left of the whole deadline", async () => {
@@ -88,7 +88,7 @@ describe("runTheRead", () => {
   it("settles a failed judgement as failed, still billing the shortlist", async () => {
     const d = deps(ok({ keys: [1] }), { ok: false, errorClass: "timeout" });
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "failed", errorClass: "timeout" });
-    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }]);
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage, step: "shortlist", effort: "medium" }]);
   });
 
   it("stops between the calls when a Stop has settled the read, landing only the shortlist's bill", async () => {
@@ -96,7 +96,7 @@ describe("runTheRead", () => {
     const d = deps(ok({ keys: [1] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "stopped" });
     expect(d.judge).not.toHaveBeenCalled();
-    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }]);
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage, step: "shortlist", effort: "medium" }]);
   });
 
   it("answers a repeat from the store and calls nothing", async () => {
@@ -131,7 +131,7 @@ describe("runTheRead", () => {
     vi.mocked(d.judge).mockRejectedValue(new Error("boom"));
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "failed", errorClass: "interrupted" });
     expect(store.settleTheRead.mock.calls[0][1]).toEqual({ kind: "failed", errorClass: "interrupted" });
-    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage }]);
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage, step: "shortlist", effort: "medium" }]);
   });
 
   it("begins by reserving alone: no model is called until the submit's after() runs finish (F8)", async () => {
