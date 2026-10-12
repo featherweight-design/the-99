@@ -113,6 +113,7 @@ import {
   PRECON_ROW,
   TOKEN_SOLDIER,
 } from "../../lib/about/fixtures";
+import { Chevron } from "../ui/chevron";
 
 /** The four availability states, including the one that draws nothing. */
 function AvailabilityFigure({ width }: { width: AboutWidth }) {
@@ -501,7 +502,7 @@ function SetsFigure({ width }: { width: AboutWidth }) {
         <SetsColourFigure />
         <span className="flex h-[26px] items-center gap-[6px] rounded-[7px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[9px] text-[11px] text-[color:var(--fg-muted)]">
           {setFilterCopy.rarityPanel.triggerCount(0)}
-          <span aria-hidden className="text-[color:var(--fg-faint)]">▾</span>
+          <Chevron className="text-[color:var(--fg-faint)]" />
         </span>
         <span className="flex h-[26px] items-center rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] text-[11px] text-[color:var(--fg-muted)]">
           {setFilterCopy.ownership.missing.label}

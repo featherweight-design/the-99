@@ -38,7 +38,7 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
           onClick={onToggle}
           className="flex min-h-[52px] w-full cursor-pointer items-center gap-x-[8px] border-none bg-transparent p-0 text-left md:min-h-[44px] md:gap-x-[10px]"
         >
-          <span aria-hidden className={`inline-block text-[color:var(--fg-muted)] transition-transform duration-150 ${open ? "rotate-90" : ""}`}>▸</span>
+          <span aria-hidden className={`inline-block ${CHEVRON_CLASS} text-[color:var(--fg-muted)] transition-transform duration-150 ${open ? "rotate-90" : ""}`}>▸</span>
           <span className="flex flex-col gap-x-[10px] gap-y-[2px] md:flex-row md:items-baseline">
             <span className="font-sans text-[16px] font-semibold leading-[1.2] text-[color:var(--fg)] md:text-[17px]">{label}</span>
             <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] md:text-[11px]">{clause}</span>

@@ -23,6 +23,7 @@ import { foldCount } from "../../lib/decks/placements";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
+import { CHEVRON_CLASS } from "../ui/chevron";
 
 
 /**
@@ -491,7 +492,7 @@ export function ContestedCardRow({
             className="flex items-center gap-[9px] py-[6px] px-[8px] min-h-[44px]"
             style={{ borderRadius: 7, border: "1px dashed var(--border)" }}
           >
-            <span aria-hidden className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>▸</span>
+            <span aria-hidden className={`font-mono ${CHEVRON_CLASS}`} style={{ color: "var(--fg-faint)" }}>▸</span>
             <span className="font-mono text-[11px] flex-1 min-w-0" style={{ color: "var(--fg-faint)" }}>
               {addedCopyCopy.chooser.fold(foldN, thisDeckName)}
             </span>

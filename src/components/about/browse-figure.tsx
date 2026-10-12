@@ -24,6 +24,7 @@ import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { BROWSE_CELLS, BROWSE_SET_CODE } from "../../lib/about/fixtures";
 import { FilterChipPill, type FilterChip } from "../ui/filter-chassis";
 import { KeyNumeral } from "./numeral";
+import { Chevron } from "../ui/chevron";
 
 // Inert, like every specimen: `Specimen` sets `pointer-events: none` over the
 // whole figure, so none of these is ever called. They exist because the types
@@ -54,9 +55,7 @@ function Trigger({ label, active = false }: { label: string; active?: boolean })
       }`}
     >
       {label}
-      <span aria-hidden className="text-[9px] text-[color:var(--fg-faint)]">
-        ▾
-      </span>
+      <Chevron className="text-[color:var(--fg-faint)]" />
     </span>
   );
 }
