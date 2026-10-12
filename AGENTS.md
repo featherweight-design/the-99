@@ -397,7 +397,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   the name alone; `pnpm probe:manapool-token-link` is the proof, in a browser. A run that prices fewer than
   `TOKEN_PRICE_FLOOR` (1,400, half of the 2,919 measured) token printings against a POPULATED token catalog
   writes the card prices, writes NO token prices and exits non-zero: a collapsed id match would otherwise leave
-  the table's newest `as_of` unchanged and every old token price reading as live.
+  the table's newest `as_of` unchanged and every old token price reading as live. The same refusal applies when
+  fewer than `TOKEN_IDENTITY_SHARE` (90%) of the matched rows carry Mana Pool's name, set and number (100% did on
+  2026-10-11): a renamed feed field would otherwise erase every stored product identity.
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

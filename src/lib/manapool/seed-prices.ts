@@ -115,7 +115,8 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   const { cardRows: rows, skippedOrphan } = partitioned;
   // A collapsed token match set is refused, not written: card prices still go in (they are not what
   // broke) and the run reports the refusal for the CLI to exit on. See `tokenPriceFloorFailure`.
-  const tokenRefusal = tokenPriceFloorFailure(partitioned.tokenRows.length, tokenCatalogSize);
+  const completeIdentity = partitioned.tokenRows.filter((r) => r.productName && r.productSet && r.productNumber).length;
+  const tokenRefusal = tokenPriceFloorFailure(partitioned.tokenRows.length, tokenCatalogSize, completeIdentity);
   const tokenRows = tokenRefusal ? [] : partitioned.tokenRows;
 
   // One transaction across every batch. The staleness rule schema.ts documents

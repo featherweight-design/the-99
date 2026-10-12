@@ -130,6 +130,24 @@ describe("seedPrices", () => {
     expect(stub.order).toEqual(["commit", "stamp"]);
   });
 
+  it("refuses token prices whose product identity collapsed, even when the count passes", async () => {
+    vi.mocked(tokenPriceTablesExist).mockResolvedValueOnce(true);
+    vi.mocked(countTokenPrintings).mockResolvedValueOnce(3_163);
+    // 1,400 token rows, none carrying a product identity: the count floor passes, the identity floor must not.
+    const ids = Array.from({ length: 1_400 }, (_, i) => `t${i}`);
+    let lookups = 0;
+    stub.db.select = () => ({ from: () => ({ where: async () => { lookups++; /* 1,401 feed ids = two card-lookup chunks, then the token lookups */ return lookups === 1 ? [{ scryfallId: "a" }] : lookups === 2 ? [] : ids.map((scryfallId) => ({ scryfallId })); } }) });
+    const parsed = await import("./parse");
+    vi.mocked(parsed.parseManapoolPayload).mockReturnValueOnce({ rows: [row("a"), ...ids.map(row)], collapsedDuplicates: 0, asOf: new Date(0) });
+    const written: string[] = [];
+    stub.db.transaction = async (run: (tx: unknown) => Promise<void>) => {
+      await run({ insert: (t: object) => ({ values: () => ({ onConflictDoUpdate: async () => { written.push(getTableName(t as never)); } }) }) });
+    };
+    const r = await seedPrices();
+    expect(r.tokenRefusal).toMatch(/carry Mana Pool's name, set and number/);
+    expect(written).toEqual(["printing_prices"]);
+  });
+
   it("does not enforce the token floor on a database whose token catalog is not filled", async () => {
     vi.mocked(tokenPriceTablesExist).mockResolvedValueOnce(true);
     vi.mocked(countTokenPrintings).mockResolvedValueOnce(12);

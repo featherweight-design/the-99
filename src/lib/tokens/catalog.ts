@@ -262,13 +262,32 @@ export const TOKEN_FLOORS = {
  */
 export const TOKEN_PRICE_FLOOR = 1_400;
 
-/** Why the token prices of this run must not be written, or null when they may. Pure. */
-export function tokenPriceFloorFailure(priced: number, catalogTokenPrintings: number): string | null {
+/**
+ * The share of matched token price rows that must carry Mana Pool's whole product identity (name, set
+ * code, number). 100% of the 104,444 feed rows did on 2026-10-11; 90% leaves room for the odd row. A
+ * renamed or dropped feed field would otherwise match every token id, pass the count above, and
+ * overwrite every stored identity with null, so every token link silently fell back to a bare name.
+ */
+export const TOKEN_IDENTITY_SHARE = 0.9;
+
+/**
+ * Why the token prices of this run must not be written, or null when they may. Pure. `complete` is how
+ * many of the `priced` rows carry a whole product identity.
+ */
+export function tokenPriceFloorFailure(priced: number, catalogTokenPrintings: number, complete: number = priced): string | null {
   if (catalogTokenPrintings < TOKEN_FLOORS.tokenPrintings) return null;
-  if (priced >= TOKEN_PRICE_FLOOR) return null;
-  return `Token prices were not written: ${priced} feed rows matched a token printing (floor ${TOKEN_PRICE_FLOOR}, `
-    + `against ${catalogTokenPrintings} token printings in the catalog). That is an upstream id or shape change, not `
-    + "a market state; the previous token prices are untouched and the card prices of this run were written.";
+  const tail = "the previous token prices are untouched and the card prices of this run were written.";
+  if (priced < TOKEN_PRICE_FLOOR) {
+    return `Token prices were not written: ${priced} feed rows matched a token printing (floor ${TOKEN_PRICE_FLOOR}, `
+      + `against ${catalogTokenPrintings} token printings in the catalog). That is an upstream id or shape change, not `
+      + `a market state; ${tail}`;
+  }
+  if (complete / priced < TOKEN_IDENTITY_SHARE) {
+    return `Token prices were not written: only ${complete} of ${priced} matched feed rows carry Mana Pool's name, set and `
+      + `number (floor ${TOKEN_IDENTITY_SHARE * 100}%). A feed field was renamed or dropped, and writing these would erase `
+      + `every stored product identity; ${tail}`;
+  }
+  return null;
 }
 
 /** Why this run must not publish, or null when it may. Pure so every floor has a test. */
