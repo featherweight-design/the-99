@@ -440,6 +440,7 @@ vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
 // SCHEDULES it, off its own path, for the version it wrote.
 vi.mock("../../lib/profile/stored", () => ({ pinAnalysisToVersion: vi.fn() }));
 vi.mock("../../lib/synopsis/pin", () => ({ pinSynopsisToVersion: vi.fn() }));
+vi.mock("../../lib/precons/origin-read", () => ({ readDeckOrigin: vi.fn(async () => null) }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
 vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
 
@@ -478,6 +479,7 @@ import {
   commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt,
 } from "../../lib/decks/versions";
+import { readDeckOrigin } from "../../lib/precons/origin-read";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { writePullRelease } from "../../lib/decks/pull-release";
@@ -1906,7 +1908,27 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null]);
+  });
+
+  // Precons R3 K10: a linked deck's v1 diffs against v0, read from the precon and never a version.
+  it("hands a linked deck's first version v0 as its predecessor", async () => {
+    vi.stubEnv("PRECONS_ENABLED", "true");
+    try {
+      stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID, commanderOracleId: CMD, partnerOracleId: null });
+      vi.mocked(readDeckOrigin).mockResolvedValueOnce({
+        summary: {} as never,
+        cards: [],
+        nonBasic: ["a", "b"],
+      });
+      await getVersionDiff(DECK_ID, VERSION_ID);
+      expect(readDeckOrigin).toHaveBeenCalledWith(USER_ID, DECK_ID);
+      expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([
+        VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] },
+      ]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

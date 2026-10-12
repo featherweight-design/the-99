@@ -551,3 +551,30 @@ export const deckVersioningCopy = {
     absent: "—",
   },
 } as const;
+
+/**
+ * v0 in Versions (precons R3 §5, `precons-link · copy strings.ts`): a linked deck's precon, drawn
+ * last in the rail, its panel, and v1's line against it. One phrase for the box's list, `as the box
+ * lists it` (R3 audit finding 8), and a brew form of the panel's body, which has no version to name.
+ * The card count is the precon's own (finding 6).
+ */
+export const historyOriginCopy = {
+  originDivider: "from the precon · before your first commit",
+  originNote: (precon: string) => `${precon}, as the box lists it`,
+  originMeta: (set: string, released: string, cards: number) =>
+    `the precon · ${set} · released ${released} · ${plural(cards, "card")}`,
+  originDelta: "the box",
+  originHeading: "Before your first commit.",
+  /** `current` is the newest committed version, `v3`; null on a linked brew (K14). */
+  originBody: (precon: string, current: string | null) =>
+    current === null
+      ? `v0 is ${precon}’s list as the box lists it. It’s history only.`
+      : `v0 is ${precon}’s list as the box lists it. It’s history only: this deck is sleeved as ${current}.`,
+  originOpen: (precon: string) => `Open ${precon} ›`,
+  againstOrigin: (precon: string) => `against v0 · ${precon}, as the box lists it`,
+  kept: (kept: number, of: number) => `${kept} of the precon’s ${of} cards kept`,
+  brewLine: "Not committed yet. Your first commit is v1, and it diffs against v0.",
+  /** The tab's name with v0 in the rail: v0 is not a committed version, so it is named apart. */
+  tabAria: (committed: number) =>
+    committed === 0 ? "Versions, v0 only, nothing committed yet" : `Versions, v0 and ${plural(committed, "version")} committed`,
+} as const;

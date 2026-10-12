@@ -2,7 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VersionDiff } from "./version-diff";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { deckVersioningCopy, historyOriginCopy } from "../../lib/copy/deck-versioning";
+import type { DeckOrigin } from "../../lib/precons/origin";
 import type { VersionDiffCard, VersionDiffPayload, VersionSummary } from "../../lib/decks/versions";
 import { COST_TRACK } from "../ui/cost-pips";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -491,5 +492,35 @@ describe("VersionDiff", () => {
     const { container } = mount();
     await screen.findByText(copy.diffUnavailable);
     expect(container.querySelector("[data-diff-pending]")).toBeNull();
+  });
+});
+
+// v1 against v0 (precons R3 K10, K11): a linked deck's v1 is a diff, not the initial arm.
+describe("VersionDiff against v0", () => {
+  beforeEach(() => getVersionDiff.mockClear());
+  const origin: DeckOrigin = {
+    fileName: "CounterIntelligence_ONC", name: "Counter Intelligence", setCode: "ONC", releaseDate: "2023-02-03",
+    cardCount: 100, commanderOracleId: "kilo", partnerOracleId: null, commanderName: "Kilo, Apogee Mind",
+    partnerName: null, manaValue: 2.9,
+  };
+  const v1 = () => version({ number: 1, commanderName: "Prosper", commanderOracleId: "prosper", manaValue: 3.1 });
+
+  it("fetches v1's diff, draws the against-v0 box with the kept count, and the commander line from v0", async () => {
+    getVersionDiff.mockResolvedValueOnce({ newestAsOf: null, in: [card()], out: [], origin: { kept: 64, of: 91 } });
+    mount({ version: v1(), previous: null, origin });
+    expect(await screen.findByText(historyOriginCopy.againstOrigin("Counter Intelligence"))).toBeInTheDocument();
+    expect(screen.getByText(historyOriginCopy.kept(64, 91))).toBeInTheDocument();
+    expect(screen.getByText(copy.commanderChange("Kilo, Apogee Mind", "Prosper"))).toBeInTheDocument();
+    expect(screen.queryByText(copy.initialHeading)).toBeNull();
+    // The mana-value box compares against v0's figure.
+    expect(screen.getByText("2.90")).toBeInTheDocument();
+    expect(getVersionDiff).toHaveBeenCalledWith("deck_1", "v_1");
+  });
+
+  it("draws no against-v0 box on a later version, whose predecessor is a version", async () => {
+    getVersionDiff.mockResolvedValueOnce({ newestAsOf: null, in: [card()], out: [] });
+    mount({ origin });
+    await screen.findByText(copy.diffIn(1));
+    expect(screen.queryByText(historyOriginCopy.againstOrigin("Counter Intelligence"))).toBeNull();
   });
 });

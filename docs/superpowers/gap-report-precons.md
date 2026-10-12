@@ -85,3 +85,38 @@ credits block for it to join (R1/R2 finding 5).
 
 Confirm pass: rows p1, n1 and ab on the contact sheet at both widths, and the P1/P4 head row in
 `decks-view.test.tsx`.
+
+## PR 6b
+
+v0 in Versions (R3 §5, §6; STATES K4, K10 to K14). v0 is drawn AT READ from `precon_cards` and
+`precons` (`src/lib/precons/origin-read.ts`) and is never a `deck_versions` row. Every lock-4 reader
+reads `deck_versions` (or `deck_version_cards`) and nothing else for committed history, so each
+skips v0 by construction. Found by grep for `deckVersions` / `deck_versions` across `src`:
+
+| Reader | Where |
+|---|---|
+| `newestVersion` | `src/lib/decks/versions.ts:59` |
+| `versionLiveAt`, and game stamping through it (`logGame`) | `src/lib/decks/versions.ts:79`; `src/app/decks/actions.ts:1548` |
+| A commit's `since` inheritance (predecessor read; a linked brew's first commit inherits nothing) | `commitVersionIn`, `src/lib/decks/versions.ts:146` |
+| The claim model (the version each deck is sleeved as) | `claimModel`, `src/lib/decks/availability-query.ts:58`; `assignCopyIn` / `reservableAsk`, `src/lib/decks/assign.ts:94`, `:272`; `pruneOrphanAssignments`, `src/lib/decks/prune-assignments.ts:37` |
+| Home's and `/decks`' `max(committed_at)`, pending count, newest number | `lastCommittedSql`, `pendingChangesSql`, `deckPendingSql`, `newestVersionNumberSql`, `src/lib/decks/read.ts:960`, `:1014`, `:1052`, `:1065` |
+| `pinAnalysisToVersion` / `isNewestVersion`, and the analysis head | `src/lib/profile/stored.ts:577`, `:529`, `:84` |
+| The synopsis pin and its read | `pinSynopsisToVersion`, `src/lib/synopsis/pin.ts:22`; `readVersionSynopsis`, `src/lib/synopsis/read.ts:243` |
+| Brew / committed tests | `cartDecksQuery`, `src/lib/decks/cart-read.ts:73`; `preconArrivalQuery`, `src/lib/precons/arrival-read.ts:20`; the builder's `hasVersion` (`versions.length`, committed rows only) |
+| Other committed-history reads | `deckCommanderMovedSql`, `src/lib/commander-change/pending.ts:53`; `readProposedCuts`, `src/lib/decks/cuts-read.ts:114`; `tuningInputs`, `src/lib/decks/tuning-read.ts:66`; `listDeckGames`, `src/lib/decks/games.ts:70` |
+| The rail and v1's diff (the only two that SEE v0, and only as a value passed in) | `listVersions`, `src/lib/decks/versions.ts:457`; `getVersionDiff`, `src/app/decks/actions.ts:1944` |
+
+**The pin** (`src/lib/precons/origin-read.test.ts`): the v0 query's rendered SQL names no
+`deck_version*` table and is owner-scoped; the only module in `src` that inserts into or updates a
+version table is `src/lib/decks/versions.ts` (the commit); and neither v0's modules nor the link's
+actions name a version table in code. Together they make "v0 is never a version row" a checked
+fact, which is what every reader above relies on. `version-history.test.tsx` pins the drawn half:
+`current` stays on the newest committed row, v0 is last and never current, and a linked brew has
+no current row.
+
+**Decisions.** The Versions tab counts the rail's rows (v0 included), which is K14's `1` on a brew;
+its accessible name names v0 apart from committed versions (`historyOriginCopy.tabAria`, a new
+string for /copy-review). The v0 read starts in Stage A with no test of the link: the read is the
+test (an unlinked deck joins no row). v0's Out rows in v1's diff draw today's art, since the
+precon's printing is not one the deck recorded. `UnlinkDialog` is the same component, props and
+copy as PR 6a-2's, exported so 6a-2 can drop its own on rebase.

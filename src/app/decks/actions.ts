@@ -75,6 +75,8 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
 import { addCardToDeckFor, deckValidationContext, revalidateAdd } from "../../lib/decks/add-card";
+import { preconsEnabled } from "../../lib/precons/flag";
+import { readDeckOrigin } from "../../lib/precons/origin-read";
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -1947,7 +1949,11 @@ export async function getVersionDiff(
   if (!isUuid(deckId) || !isUuid(versionId)) return null;
   await requireDeck(deckId, userId);
 
-  const [asked] = await db.select({ number: deckVersions.number })
+  const [asked] = await db.select({
+    number: deckVersions.number,
+    commanderOracleId: deckVersions.commanderOracleId,
+    partnerOracleId: deckVersions.partnerOracleId,
+  })
     .from(deckVersions)
     .where(and(eq(deckVersions.deckId, deckId), eq(deckVersions.id, versionId)))
     .limit(1);
@@ -1961,8 +1967,15 @@ export async function getVersionDiff(
     .where(and(eq(deckVersions.deckId, deckId), lt(deckVersions.number, asked.number)))
     .orderBy(desc(deckVersions.number))
     .limit(1);
-  // A v1 has none, and `loadVersionDiff` answers that with two empty lists.
-  return loadVersionDiff(versionId, previous?.id ?? null, userId, deckId);
+  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId);
+  // A v1 has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
+  // from the precon and never from a version. An unlinked one answers two empty lists.
+  const origin = preconsEnabled() ? await readDeckOrigin(userId, deckId) : null;
+  return loadVersionDiff(versionId, null, userId, deckId, origin && {
+    cards: origin.cards,
+    nonBasic: origin.nonBasic,
+    commanders: [asked.commanderOracleId, ...(asked.partnerOracleId ? [asked.partnerOracleId] : [])],
+  });
 }
 
 /**

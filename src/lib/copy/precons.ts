@@ -209,8 +209,11 @@ export const preconsCopy = {
       rowClause: " · built from this",
       dock: (precon: string, deck: string) => `${precon} · your deck ${deck} was built from this`,
     },
+    // K13: the confirm, opened from v0's panel here and from the open precon (PR 6a-2). `Unlink` is
+    // the bone fill, never `--danger`: nothing the player made is lost (lock 5).
     unlink: {
       entry: "Unlink",
+      entryLong: "Unlink from this precon",
       title: (deck: string, precon: string) => `Unlink ${deck} from ${precon}?`,
       lead: "v0, the precon’s list, leaves this deck’s history. v1 goes back to having nothing before it.",
       factLabels: { history: "History" },
