@@ -50,6 +50,9 @@ export function spareCount(a: { owned: number; hard: number; soft: number }): nu
   return Math.max(0, a.owned - a.hard - a.soft);
 }
 
+/** How many friends' claim models one read runs at once. */
+export const CLAIM_MODELS_AT_ONCE = 4;
+
 export type FriendSpare = { oracleId: string; friend: { publicId: string; displayName: string }; spare: number };
 
 /**
@@ -61,9 +64,16 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   const asked = [...new Set(oracleIds.filter(isUuid))];
   if (asked.length === 0) return [];
   const grantors = await spareGrantorsQuery(viewerId);
-  // One claim model per friend, run side by side: measured at ~100ms each on a staging copy
-  // (`measure:friend-spares`), so a handful of friends costs about one model, not their sum.
-  const models = await Promise.all(grantors.map((g) => loadAvailability(g.userId, { oracleIds: asked })));
+  // One claim model per friend, at most CLAIM_MODELS_AT_ONCE side by side: measured at ~100ms each on a
+  // staging copy (`measure:friend-spares`), so a handful of friends costs about one model, not their sum,
+  // and a large pod queues behind the bound rather than taking the whole connection pool.
+  const models: Awaited<ReturnType<typeof loadAvailability>>[] = new Array(grantors.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, grantors.length) }, async () => {
+    for (let i = next++; i < grantors.length; i = next++) {
+      models[i] = await loadAvailability(grantors[i].userId, { oracleIds: asked });
+    }
+  }));
   // The models are separate statements, so a grant revoked while they ran would otherwise still return
   // spares. Re-read the grants after: a friend counts only when the grant held both before and after the
   // reads, so nothing read once access ended is returned.
