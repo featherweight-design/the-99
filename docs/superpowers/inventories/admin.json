@@ -3,10 +3,61 @@
   "note": "Run against a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL set; without both, /admin is the app's 404 and every row fails, which is the gate working. The account menu's Admin row sits outside <main>, where every verb here is scoped, so account-menu.test.tsx covers the door. A signed-out /admin redirects to sign-in exactly as an unknown path does, so it is not photographed.",
   "rows": [
     {
-      "id": "admin-costs-head",
-      "label": "/admin: the head (eyebrow, env chip, Costs title and sub, the tab strip)",
-      "view": "src/app/admin/layout.tsx",
-      "steps": [{ "goto": "/admin", "wait": "h1", "settle": 1500 }]
+      "id": "admin-costs-current",
+      "label": "/admin: Costs, the current month (tiles, trend against the plan, by day, caps; pace banner when it applies)",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "admin-costs-caps",
+      "label": "/admin: Costs, scrolled to the caps (IN CODE / SET HERE tags, Enter elsewhere)",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"Against the caps\")"
+        }
+      ]
+    },
+    {
+      "id": "admin-costs-past",
+      "label": "/admin?month=2026-09: a past month (no pace, \u203a live)",
+      "view": "src/components/admin/costs-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin?month=2026-09",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "admin-costs-dialog",
+      "label": "/admin: Enter elsewhere dialog (C7)",
+      "view": "src/components/admin/setting-dialog.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Enter elsewhere"
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 600
+        }
+      ]
     }
   ]
 }
