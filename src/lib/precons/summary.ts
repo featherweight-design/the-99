@@ -9,12 +9,17 @@ import { precons } from "../../db/schema";
 
 export type PreconSummary = { count: number; newest: string };
 
+/** The read itself: plain editions only, since a twin folds into the edition it names. */
+export function preconSummaryQuery() {
+  return db
+    .select({ count: sql<number>`count(*)::int`, newest: sql<string | null>`max(${precons.releaseDate})::text` })
+    .from(precons)
+    .where(isNull(precons.twinOf));
+}
+
 export async function readPreconSummary(): Promise<PreconSummary | null> {
   try {
-    const [row] = await db
-      .select({ count: sql<number>`count(*)::int`, newest: sql<string | null>`max(${precons.releaseDate})::text` })
-      .from(precons)
-      .where(isNull(precons.twinOf));
+    const [row] = await preconSummaryQuery();
     return row && row.count > 0 && row.newest ? { count: row.count, newest: row.newest } : null;
   } catch (error) {
     // not a fallback: read beside the cached payload, never inside it, so nothing is stored.

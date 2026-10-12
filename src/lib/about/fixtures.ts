@@ -2355,17 +2355,17 @@ export const ALL_DECKS_CART_LINE: { line: import("../decks/cart").SelectedLine; 
   };
 })();
 /** The precons entry's row (handoff `about · precons.ts`): a Commander Masters precon, mostly
- *  owned, that one of the reader's decks shares. Ulalek's hybrid costs give it all five colors. */
+ *  owned, that one of the reader's decks shares. Zhulodok leads it, and the list is colorless. */
 export const PRECON_ROW: PreconRow = {
   fileName: "about-eldrazi-unbound",
   name: "Eldrazi Unbound",
   setCode: "CMM",
   releaseDate: "2023-08-04",
   twinName: null,
-  commanders: [{ oracleId: "about-ulalek", name: "Ulalek, Fused Atrocity", imageUri: null, colorIdentity: ["W", "U", "B", "R", "G"] }],
-  identity: ["W", "U", "B", "R", "G"],
+  commanders: [{ oracleId: "about-zhulodok", name: "Zhulodok, Void Gorger", imageUri: null, colorIdentity: [] }],
+  identity: [],
   owned: 74,
   of: 85,
   unmapped: 0,
-  built: [{ deckId: "about-eldrazi", deckName: "Ulalek’s Eldrazi", shared: 73, sameCommanders: true }],
+  built: [{ deckId: "about-eldrazi", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }],
 };
