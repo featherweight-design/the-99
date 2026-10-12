@@ -12,26 +12,27 @@ beforeEach(() => recordAboutVisit.mockClear());
 
 describe("RecordVisit (R6 §O4, audit E2)", () => {
   it("records once after mount when the reader is behind", () => {
-    render(<RecordVisit behind />);
+    render(<RecordVisit behind shown={["notes"]} />);
     expect(recordAboutVisit).toHaveBeenCalledOnce();
+    expect(recordAboutVisit).toHaveBeenCalledWith(["notes"]);
   });
 
   it("records once under StrictMode's double effect", () => {
     render(
       <StrictMode>
-        <RecordVisit behind />
+        <RecordVisit behind shown={[]} />
       </StrictMode>,
     );
     expect(recordAboutVisit).toHaveBeenCalledOnce();
   });
 
   it("records nothing for a reader who is current", () => {
-    render(<RecordVisit behind={false} />);
+    render(<RecordVisit behind={false} shown={[]} />);
     expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 
   it("records nothing during a server render, which is all a prefetch is", () => {
-    renderToString(<RecordVisit behind />);
+    renderToString(<RecordVisit behind shown={[]} />);
     expect(recordAboutVisit).not.toHaveBeenCalled();
   });
 });

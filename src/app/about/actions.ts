@@ -6,7 +6,7 @@ import { safeNext } from "../../lib/about/gate";
 import { markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
-import { resolveSwitchEnv } from "../../lib/switches/snapshot";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
 /**
@@ -25,13 +25,28 @@ import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
  */
 export async function dismissAbout(formData: FormData): Promise<string> {
   const userId = await requireUserId();
-  // The version AND the switched entries this reader is drawn, as a visit does: the legacy gate
+  // The version AND the switched entries the page showed, as a visit does: the legacy gate
   // redirects on an unseen switched entry, so acknowledging only the version would send the same
-  // reader back from another browser. Their RESOLVED switches, as the gate's: an entry an override
-  // shows them must be recordable, or the gate sends them back for it forever.
-  const env = await resolveSwitchEnv(userId);
-  await markAboutVisited(userId, ABOUT_VERSION, switchedIds(visibleEntries(env)));
+  // reader back from another browser.
+  await markAboutVisited(userId, ABOUT_VERSION, await acknowledged(userId, formData.getAll("shown")));
   return safeNext(formData.get("next")?.toString());
+}
+
+/** No page draws more than this many switched entries and appendix ids; anything longer is not one. */
+const MAX_SHOWN = 200;
+
+/**
+ * The switched ids a visit or a dismiss records: the ones the page SHOWED (sent back by the page,
+ * so an entry an override turned on after it rendered is not marked seen unread), and of those only
+ * the ones this reader's switches still draw now (decided here from the proxy's resolution, so a
+ * caller can drop an id but never add one). The appendix by its id, while its switch is on (plan
+ * 2026-09-28, PR C).
+ */
+async function acknowledged(userId: string, shown: readonly unknown[]): Promise<string[]> {
+  const env = await requestSwitchEnv(userId);
+  const drawn = new Set([...switchedIds(visibleEntries(env)), ...(howItWorksEnabled(env) ? [HOW_IT_WORKS_ID] : [])]);
+  const claimed = shown.slice(0, MAX_SHOWN).filter((id): id is string => typeof id === "string");
+  return [...new Set(claimed.filter((id) => drawn.has(id)))];
 }
 
 /**
@@ -45,12 +60,7 @@ export async function dismissAbout(formData: FormData): Promise<string> {
  * would re-render the route inside this action's reply and take the index away
  * while the reader is reading it.
  */
-export async function recordAboutVisit() {
+export async function recordAboutVisit(shown: readonly string[]) {
   const userId = await requireUserId();
-  // The switched entries THIS reader is drawn, decided here from their resolved switches and never
-  // taken from the client: a visit records what the page could have shown, not what a caller claims
-  // it showed. The appendix is seen the same way, by its id, while its switch is on (plan 2026-09-28, PR C).
-  const env = await resolveSwitchEnv(userId);
-  const appendix = howItWorksEnabled(env) ? [HOW_IT_WORKS_ID] : [];
-  await markAboutVisited(userId, ABOUT_VERSION, [...switchedIds(visibleEntries(env)), ...appendix]);
+  await markAboutVisited(userId, ABOUT_VERSION, await acknowledged(userId, Array.isArray(shown) ? shown : []));
 }

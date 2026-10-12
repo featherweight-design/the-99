@@ -20,16 +20,19 @@ let memo: { at: number; snapshot: Promise<SwitchSnapshot | null> } | null = null
 
 async function readSnapshot(): Promise<SwitchSnapshot | null> {
   try {
-    const [rows, members] = await Promise.all([
-      db.select({
+    // One snapshot of both tables: an admin moving an account between groups and changing an
+    // override commits both at once, and two separate reads could pair one's old rows with the
+    // other's new ones, a combination that never existed, and hold it for the whole window.
+    const [rows, members] = await db.transaction((tx) => Promise.all([
+      tx.select({
         switchName: flagOverrides.switchName,
         scope: flagOverrides.scope,
         groupId: flagOverrides.groupId,
         userId: flagOverrides.userId,
         value: flagOverrides.value,
       }).from(flagOverrides),
-      db.select({ userId: flagGroupMembers.userId, groupId: flagGroupMembers.groupId }).from(flagGroupMembers),
-    ]);
+      tx.select({ userId: flagGroupMembers.userId, groupId: flagGroupMembers.groupId }).from(flagGroupMembers),
+    ]), { isolationLevel: "repeatable read", accessMode: "read only" });
     const overrides = rows.filter((r) => isSwitchName(r.switchName)) as OverrideRow[];
     return { overrides, groupOf: new Map(members.map((m) => [m.userId, m.groupId])) };
   } catch (error) {

@@ -26,7 +26,7 @@ import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { howItWorksRowsCopy } from "../../lib/copy/how-it-works";
 import { entryRow, HOW_IT_WORKS_ID, howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { RecordVisit } from "./record-visit";
-import { unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
+import { switchedIds, unseenEntries, visibleEntries, type SeenState } from "../../lib/about/visible";
 import {
   ABOUT_VERSION,
   aboutCopy,
@@ -272,6 +272,9 @@ export function AboutPage({
   // "How the app reaches its answers" (plan 2026-09-28): its section, its clause in the intro,
   // and the jump mark its rows share with the entries. Off, the page is exactly as it was.
   const howItWorks = howItWorksEnabled(env);
+  // What this render shows, by id, for the visit and the dismiss to acknowledge: nothing they did
+  // not draw, so an entry switched on between this render and the write is still new afterwards.
+  const shown = [...switchedIds(visible), ...(howItWorks ? [HOW_IT_WORKS_ID] : [])];
   // "New" is the one rule the sheet and both gates read (`unseenEntries`): an unswitched entry by
   // the version floor, a switched one by its id. The legacy gate redirects on it too, so the page
   // it lands on must mark and acknowledge the same things or the reader is sent with nothing new.
@@ -374,7 +377,7 @@ export function AboutPage({
       {/* The appendix is recorded by the same visit, and a reader current on every entry who has
           not seen it still owes the write. Not `behind`: nothing about the appendix is NEW. */}
       {sheetMode && (
-        <RecordVisit behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))} />
+        <RecordVisit behind={behind || (howItWorks && !seenIds.includes(HOW_IT_WORKS_ID))} shown={shown} />
       )}
       {(sheetMode || howItWorks) && <JumpMark />}
 
@@ -442,6 +445,7 @@ export function AboutPage({
       {offerDismiss && (
         <DismissForm
           destination={destination}
+          shown={shown}
           className="fixed inset-x-0 z-30 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] pt-[10px] pb-[12px] min-[1000px]:hidden"
           style={{ bottom: "var(--tabbar-h)" }}
         >
@@ -463,7 +467,7 @@ export function AboutPage({
           chapters={railChapters}
           dismiss={
             offerDismiss
-              ? { destination, clause: destinationClause }
+              ? { destination, clause: destinationClause, shown }
               : null
           }
         />

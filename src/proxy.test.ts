@@ -299,6 +299,20 @@ describe("the sheet switch, per reader", () => {
     expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBe("1");
   });
 
+  it("forwards the reader's resolved switches for the page to read, and never a client's", async () => {
+    resolveSwitchEnv.mockImplementation(async () => ({ ...process.env, ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" }));
+    aboutVersionSeen.mockResolvedValue(99);
+    const forged = "1".repeat(40);
+    // `/about` itself, which the gate never redirects (the reader is behind on the notes entry).
+    const res = await proxy(auth, request("/about", { "x-switches": forged }));
+    const bits = res?.headers.get("x-middleware-request-x-switches");
+    const { switchBits } = await import("./lib/switches/resolve");
+    expect(bits).toBe(switchBits({ ...process.env, ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" } as NodeJS.ProcessEnv));
+    session.mockResolvedValue({ userId: null });
+    const out = await proxy(auth, request("/", { "x-switches": forged }));
+    expect(out?.headers.get("x-middleware-request-x-switches")).toBeNull();
+  });
+
   it("strips a forged sheet-on header from a reader the sheet is off for", async () => {
     aboutVersionSeen.mockResolvedValue(99);
     const res = await proxy(auth, request("/decks", { "x-about-sheet-on": "1", "x-about-sheet": "0" }));

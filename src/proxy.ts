@@ -19,6 +19,8 @@ import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutSeen } from "./lib/about/read";
 import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib/about/visible";
 import { resolveSwitchEnv } from "./lib/switches/snapshot";
+import { SWITCHES_HEADER } from "./lib/switches/request";
+import { switchBits } from "./lib/switches/resolve";
 
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
@@ -49,6 +51,10 @@ export default clerkMiddleware(async (auth, req) => {
   const headers = new Headers(req.headers);
   headers.delete(SHEET_HEADER);
   headers.delete(SHEET_ON_HEADER);
+  // The reader's resolved switches travel with the request, so `/about` and its actions decide from
+  // this same snapshot (`requestSwitchEnv`) and never from a second memo of their own.
+  headers.delete(SWITCHES_HEADER);
+  if (userId) headers.set(SWITCHES_HEADER, switchBits(env));
   const pass = () => NextResponse.next({ request: { headers } });
   if (userId && aboutSheetEnabled(env)) {
     headers.set(SHEET_ON_HEADER, "1");

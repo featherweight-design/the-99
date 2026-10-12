@@ -10,10 +10,10 @@ const redirect = vi.fn((to: string) => {
 vi.mock("../../lib/auth", () => ({ requireUserId }));
 vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited }));
 vi.mock("next/navigation", () => ({ redirect }));
-// The reader's resolved switches, as the proxy's gate decides from them.
+// The reader's switches as the proxy resolved them for this request.
 const resolved = vi.hoisted(() => ({ env: {} as Record<string, string> }));
-const resolveSwitchEnv = vi.fn(async () => ({ ...process.env, ...resolved.env }));
-vi.mock("../../lib/switches/snapshot", () => ({ resolveSwitchEnv }));
+const requestSwitchEnv = vi.fn(async () => ({ ...process.env, ...resolved.env }));
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv }));
 // What this deployment draws. The real rule, handed a catalog with a switched entry in it when a
 // test sets one: no shipped entry has a switch yet, and the write must still name them.
 const extraEntries: { id: string; switch?: string }[] = [];
@@ -29,9 +29,10 @@ const { dismissAbout, recordAboutVisit } = await import("./actions");
 const { ABOUT_VERSION } = await import("../../lib/copy/about");
 
 /** The dismiss RETURNS where the reader goes; the page navigates there itself. */
-async function dismiss(next?: string): Promise<string> {
+async function dismiss(next?: string, shown: string[] = []): Promise<string> {
   const form = new FormData();
   if (next !== undefined) form.set("next", next);
+  for (const id of shown) form.append("shown", id);
   const to = await dismissAbout(form);
   // It never redirects: a server redirect would give the page nothing to report as pending.
   expect(redirect).not.toHaveBeenCalled();
@@ -53,12 +54,11 @@ describe("dismissAbout", () => {
     expect(to).toBe("/decks?sort=name");
   });
 
-  it("records the switched entries this deployment draws too, so the legacy gate asks once", async () => {
+  it("records the switched entries the page showed too, so the legacy gate asks once", async () => {
     extraEntries.push({ id: "switched-a", switch: "NEVER_CUT_ENABLED" });
     try {
-      await dismiss("/decks");
-      const ids = (markAboutVisited.mock.calls.at(-1) as unknown as [string, number, string[]])[2];
-      expect(ids).toContain("switched-a");
+      await dismiss("/decks", ["switched-a"]);
+      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["switched-a"]);
     } finally {
       extraEntries.length = 0;
     }
@@ -67,13 +67,27 @@ describe("dismissAbout", () => {
   it("records an entry the reader's own override shows them, which the gate counts as unseen", async () => {
     resolved.env = { DECK_NOTES_ENABLED: "true" };
     try {
-      await dismiss("/decks");
-      expect(resolveSwitchEnv).toHaveBeenCalledWith("user_1");
-      const ids = (markAboutVisited.mock.calls.at(-1) as unknown as [string, number, string[]])[2];
-      expect(ids).toContain("notes");
+      await dismiss("/decks", ["notes"]);
+      expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
+      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["notes"]);
     } finally {
       resolved.env = {};
     }
+  });
+
+  it("does not mark seen an entry switched on after the page rendered", async () => {
+    resolved.env = { DECK_NOTES_ENABLED: "true" };
+    try {
+      await dismiss("/decks", []);
+      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
+    } finally {
+      resolved.env = {};
+    }
+  });
+
+  it("refuses an id the reader's switches do not draw: a caller can drop one, never add one", async () => {
+    await dismiss("/decks", ["notes", "made-up"]);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
   });
 
   it("validates `next` HERE, because this is what decides the destination", async () => {
@@ -92,18 +106,18 @@ describe("dismissAbout", () => {
 });
 
 describe("recordAboutVisit (R6)", () => {
-  it("records the current version and the switched entries this deployment draws", async () => {
-    await recordAboutVisit();
+  it("records the current version and the switched entries the page showed", async () => {
+    await recordAboutVisit([]);
     expect(requireUserId).toHaveBeenCalledOnce();
     // No shipped entry has a switch yet, so the ids are empty; the entry-level rule is
     // `visible.test.ts`'s, and the stored union is `read.test.ts`'s.
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
   });
 
-  it("records every switched entry the deployment draws, and only those", async () => {
+  it("records every switched entry the page showed that the reader's switches draw, and only those", async () => {
     extraEntries.push({ id: "locked-cards", switch: "NEVER_CUT_ENABLED" });
     try {
-      await recordAboutVisit();
+      await recordAboutVisit(["locked-cards", "made-up"]);
       expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
     } finally {
       extraEntries.length = 0;
@@ -114,18 +128,18 @@ describe("recordAboutVisit (R6)", () => {
   it("records the appendix's id while HOW_IT_WORKS_ENABLED is on, and not while it is off", async () => {
     process.env.HOW_IT_WORKS_ENABLED = "true";
     try {
-      await recordAboutVisit();
+      await recordAboutVisit(["how-it-works"]);
       expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["how-it-works"]);
     } finally {
       delete process.env.HOW_IT_WORKS_ENABLED;
     }
     markAboutVisited.mockClear();
-    await recordAboutVisit();
+    await recordAboutVisit(["how-it-works"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
   });
 
   it("never redirects, so the index stays where the reader is reading it", async () => {
-    await recordAboutVisit();
+    await recordAboutVisit([]);
     expect(redirect).not.toHaveBeenCalled();
   });
 });
