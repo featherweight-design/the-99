@@ -1,10 +1,12 @@
 /**
  * The read's fixed numbers, in one place. Pure and client-safe: `src/lib/model/prices.ts`
- * prices every reservation from these, and the form (PR 5) caps its field with the words limit.
+ * prices the two steps from the models and ceilings below, and the form (PR 5) caps its field with
+ * the words limit.
  *
- * `INTAKE_MODEL` and `INTAKE_MAX_TOKENS` are the RETIRED one-call read's, kept only because a row
- * reserved before the rework still prices from them (`FEATURE_CALLS.intake`); the two-step read's
- * models and ceilings are below and in `prices.ts`.
+ * `INTAKE_MODEL` and `INTAKE_MAX_TOKENS` are the RETIRED one-call read's. They stay only as the
+ * base fields `FEATURE_CALLS` requires of every feature; `FEATURE_CALLS.intake.steps` prices every
+ * reservation, so nothing is priced from them. The two-step read's models and ceilings are below
+ * and in `prices.ts`.
  */
 export const INTAKE_MODEL = "claude-sonnet-5";
 export const INTAKE_MAX_TOKENS = 3_000;

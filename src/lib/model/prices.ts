@@ -120,8 +120,8 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // reads the whole commander list as a cached prefix, MEASURED 147,736 tokens on claude-haiku-5-5
   // (`scripts/eval/measure-pool-list.mts`, staging, 3,467 commanders), so its ceiling is that list
   // plus the request with room to grow, priced as a cold cache write on the >100K rate card. The
-  // judgement reads only the shortlist. The first fields are the retired one-call read's, which a
-  // row reserved before the rework still names; `steps` prices every reservation from now on.
+  // judgement reads only the shortlist. The first fields are the retired one-call read's, kept only as the shape's required
+  // base; `steps` prices every reservation.
   intake: {
     model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1,
     steps: [
