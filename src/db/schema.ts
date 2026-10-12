@@ -2220,7 +2220,7 @@ export const adminEvents = pgTable("admin_events", {
     when 'override_cleared' then ${t.switchName} is not null and ${t.scope} is not null and ${t.oldValue} is not null
     when 'group_created' then ${t.groupId} is not null and ${t.newValue} is not null
     when 'group_renamed' then ${t.groupId} is not null and ${t.oldValue} is not null and ${t.newValue} is not null
-    when 'group_described' then ${t.groupId} is not null
+    when 'group_described' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
     when 'member_added' then ${t.groupId} is not null and ${t.userId} is not null
     when 'member_removed' then ${t.groupId} is not null and ${t.userId} is not null
     when 'setting_set' then ${t.settingKey} is not null and ${t.newValue} is not null

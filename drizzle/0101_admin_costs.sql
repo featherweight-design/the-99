@@ -18,7 +18,7 @@ CREATE TABLE "admin_events" (
     when 'override_cleared' then "admin_events"."switch" is not null and "admin_events"."scope" is not null and "admin_events"."old_value" is not null
     when 'group_created' then "admin_events"."group_id" is not null and "admin_events"."new_value" is not null
     when 'group_renamed' then "admin_events"."group_id" is not null and "admin_events"."old_value" is not null and "admin_events"."new_value" is not null
-    when 'group_described' then "admin_events"."group_id" is not null
+    when 'group_described' then "admin_events"."group_id" is not null and ("admin_events"."old_value" is not null or "admin_events"."new_value" is not null)
     when 'member_added' then "admin_events"."group_id" is not null and "admin_events"."user_id" is not null
     when 'member_removed' then "admin_events"."group_id" is not null and "admin_events"."user_id" is not null
     when 'setting_set' then "admin_events"."setting_key" is not null and "admin_events"."new_value" is not null
