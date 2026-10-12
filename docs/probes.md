@@ -1807,6 +1807,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and that an apply prunes the player's day-old snapshots. Its failure path was run: dropping the under-lock
   list check fails the first three checks.
 
+- `pnpm probe:fits-read-state` proves Find a deck read's store and press against a real Postgres,
+  with NO model call: the read runs on its stub (`FITS_READ_LIVE` unset), which the ledger prices at
+  nothing. It asserts that a press reserves one unit with its pending row, that a second press for
+  the same reader and card is `in_flight` and reserves nothing (the partial unique index), that a
+  read that held up spends its unit and a failure refunds it, that a write to a settled read
+  changes nothing, and that a pending read past `FITS_READ_REAP_MS` is reaped and refunded. Then,
+  end to end on a real reader's decks (`PROBE_FITS_USER`, default the local fixture account), that
+  the stub's read is stored as current and a second press is refused as `current`. It deletes every
+  read and unit it wrote in a `finally`, and refuses staging and production by `neon.branch_id`:
+  point `.env`'s `DATABASE_URL` at local-dev or a scratch branch. Run 2026-10-12 on a scratch copy of
+  staging's decks: every check passed.
+
 - `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
   running server (`PROBE_BASE`, `next start` preferred; `PROBE_WIDTH=390` runs one width,
   `PROBE_SHOTS=<dir>` saves the panel). It clones an over-100 deck under the audit account (a
