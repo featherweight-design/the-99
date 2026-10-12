@@ -22,15 +22,15 @@ describe("assertDeployedBase", () => {
 
 describe("mintSignInToken", () => {
   it("asks Clerk for a token for the user, with the secret as a bearer", async () => {
-    const calls: [string, RequestInit][] = [];
-    const token = await mintSignInToken("sk_live_x", "user_1", async (url: string, init: RequestInit) => {
-      calls.push([url, init]);
+    const calls: [string, RequestInit | undefined][] = [];
+    const token = await mintSignInToken("sk_live_x", "user_1", async (url: RequestInfo | URL, init?: RequestInit) => {
+      calls.push([String(url), init]);
       return new Response(JSON.stringify({ token: "tok" }), { status: 200 });
     });
     expect(token).toBe("tok");
     expect(calls[0][0]).toBe("https://api.clerk.com/v1/sign_in_tokens");
-    expect((calls[0][1].headers as Record<string, string>).Authorization).toBe("Bearer sk_live_x");
-    expect(JSON.parse(calls[0][1].body as string)).toMatchObject({ user_id: "user_1" });
+    expect((calls[0][1]!.headers as Record<string, string>).Authorization).toBe("Bearer sk_live_x");
+    expect(JSON.parse(calls[0][1]!.body as string)).toMatchObject({ user_id: "user_1" });
   });
 
   it("throws on a refusal rather than signing in as nobody", async () => {
@@ -72,8 +72,8 @@ describe("statDelta", () => {
 
 describe("lookupUserId", () => {
   it("returns the one user's id for the email", async () => {
-    const id = await lookupUserId("k", "a+b@x.dev", async (url: string) => {
-      expect(url).toContain("email_address=a%2Bb%40x.dev");
+    const id = await lookupUserId("k", "a+b@x.dev", async (url: RequestInfo | URL) => {
+      expect(String(url)).toContain("email_address=a%2Bb%40x.dev");
       return new Response(JSON.stringify([{ id: "user_9" }]), { status: 200 });
     });
     expect(id).toBe("user_9");
