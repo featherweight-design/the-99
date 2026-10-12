@@ -303,10 +303,11 @@ the read's short end, and Maddening Cacophony is the one card where today's list
 10. **Phone at 390 and desktop at 900**, in the same round.
 11. **The About entry**, on the per-entry artboard (`design/design_handoff_the99_about/`), gated on the switch.
     The shipped entry `fits-your-decks` (`src/lib/copy/about.ts:825`) describes the free list and stays.
-12. **A result row whose deck has no Overview, or only an old one** (Open question 8). Hugh asked for this to go
+12. **A result row whose deck has no Overview, or only an older one** (Open question 8). Hugh asked for this to go
    to Design (2026-10-11): on his decks today, only 4 of 21 have a v2 Overview, 8 an older one and 9 none
-   (Finding 1). For those decks the read leans on the commander and the deck's top themes, not the deck's own plan.
-   Draw such a row, and draw the answer to Open question 8.
+   (Finding 1). The three read from different plan sources: a v2 Overview's plan; an older Overview's plan text,
+   written by the method v2 replaced; and, with no Overview, the commander and the deck's top themes alone. Draw a
+   row for each where they differ, and draw the answer to Open question 8.
 
 ## Open questions for Design
 
@@ -322,10 +323,11 @@ the read's short end, and Maddening Cacophony is the one card where today's list
    Design needs it.
 7. *(Closed 2026-10-11: whether the picker stacks on desktop. Hugh chose a view inside card details at both
    widths; see ruling 2.)*
-8. **A deck with no Overview, or only an old one.** How does its result row read, given the sentence comes from
-   the commander and themes rather than a written plan: the same as a row with a v2 Overview, or saying what it
-   was based on? And does the picker offer a way to run the Overview for that deck (a credit of its own, today run from
-   the deck page, `src/components/decks/synopsis-overview.tsx`), or only point there?
+8. **A deck with no Overview, or only an older one.** How does its result row read? With no Overview, the sentence
+   comes from the commander and themes rather than a written plan; with an older one, from a plan written by the
+   method v2 replaced. Does either row say what it was based on, or read the same as a v2 row? And does the picker
+   offer a way to run the Overview for that deck (a credit of its own, today run from the deck page,
+   `src/components/decks/synopsis-overview.tsx`), or only point there?
 
 ## Fixtures
 
