@@ -119,6 +119,10 @@ function readIco(bytes: Buffer): Map<number, Png> {
 
 const ico = readIco(readFileSync(join(HERE, "favicon.ico")));
 const apple = readPng(readFileSync(join(HERE, "apple-icon.png")));
+// The installed app's icons (`manifest.ts`), drawn from `icon.svg`; the maskable one at 80%.
+const installed = new Map(
+  ["icon-192.png", "icon-512.png", "maskable-512.png"].map((f) => [f, readPng(readFileSync(join(HERE, "../../public/icons", f)))]),
+);
 
 // Antialiasing means most pixels are a blend of two tokens, so the question
 // each check asks is "is this pixel that token", within a tolerance, rather
@@ -161,13 +165,16 @@ describe("the raster icons", () => {
       expect(distance(face.pixel(0, 0), "bg"), `${size}px face corner`).toBeLessThanOrEqual(NEAR);
     }
     expect(distance(apple.pixel(0, 0), "bg"), "apple corner").toBeLessThanOrEqual(NEAR);
+    for (const [file, face] of installed) {
+      expect(distance(face.pixel(0, 0), "bg"), `${file} corner`).toBeLessThanOrEqual(NEAR);
+    }
   });
 
   // The 48px face and the apple icon both carry the full lockup, so the crown's
   // accent and the numeral's bone both have to be in them. The 16px face is the
   // numeral alone and is checked for bone only.
   it("draws the crown in accent and the numeral in bone", () => {
-    for (const [size, face] of [[32, ico.get(32)!], [48, ico.get(48)!], [180, apple]] as const) {
+    for (const [size, face] of [[32, ico.get(32)!], [48, ico.get(48)!], [180, apple], ...installed] as const) {
       expect(carries(face, "accent"), `${size}px face carries the crown`).toBe(true);
       expect(carries(face, "fg"), `${size}px face carries the numeral`).toBe(true);
     }
