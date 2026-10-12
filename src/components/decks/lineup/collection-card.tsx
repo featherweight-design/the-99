@@ -5,7 +5,6 @@
 // 10 copies or $10. Then the owned copies no deck in scope needs that your commanders' decks run: a deck
 // select (All decks by default) and two cuts that recount with it and the filter.
 
-import { useState } from "react";
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { collectionScope, CUTS, wantedRows, WANTED_ROWS } from "../../../lib/lineup/collection";
 import type { LineupCollection, LineupDeck, LineupFilter } from "../../../lib/lineup/types";
@@ -35,15 +34,19 @@ function Field({ k1, v1, k2, v2, on, all, unit }: { k1: string; v1: string; k2: 
   );
 }
 
-export function CollectionBody({ c, decks, filter, age }: {
+/** The wanted list's deck select and cut, held by the view so the folded summary counts what they show. */
+export type WantedPick = { deckId: string | null; cut: (typeof CUTS)[number] };
+
+export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
   c: LineupCollection;
   decks: readonly LineupDeck[];
   filter: LineupFilter;
   /** The price age (`2h ago`), or null without a price. */
   age: string | null;
+  pick: WantedPick;
+  onPick: (pick: WantedPick) => void;
 }) {
-  const [deckId, setDeckId] = useState<string | null>(null);
-  const [cut, setCut] = useState<(typeof CUTS)[number]>(40);
+  const { deckId, cut } = pick;
   const s = collectionScope(c, filter);
   const inScope = new Set(decks.map((d) => d.id));
   const chosen = deckId && inScope.has(deckId) ? deckId : null;
@@ -60,10 +63,10 @@ export function CollectionBody({ c, decks, filter, age }: {
       <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.fact(s.pctCopies, s.pctValue)}</span>
       <div className="flex flex-col gap-[8px] border-t border-t-[color:var(--border)] pt-[12px]">
         <span className="text-[14px] font-semibold text-[color:var(--fg)]">{copy.wantsHead}</span>
-        <DeckSelect decks={decks} value={chosen ?? ""} onChange={(id) => setDeckId(id || null)} label={copy.selectAria} allLabel={copy.allDecks} />
+        <DeckSelect decks={decks} value={chosen ?? ""} onChange={(id) => onPick({ ...pick, deckId: id || null })} label={copy.selectAria} allLabel={copy.allDecks} />
         <div role="group" aria-label={copy.cutsAria} className="flex flex-wrap gap-[6px]">
           {CUTS.map((p) => (
-            <button key={p} type="button" aria-pressed={cut === p} onClick={() => setCut(p)} className={cut === p ? CHIP_ON : CHIP_OFF}>{copy.cut(p, at(p).length)}</button>
+            <button key={p} type="button" aria-pressed={cut === p} onClick={() => onPick({ ...pick, cut: p })} className={cut === p ? CHIP_ON : CHIP_OFF}>{copy.cut(p, at(p).length)}</button>
           ))}
         </div>
         <HoverPreviewProvider className="flex flex-col">

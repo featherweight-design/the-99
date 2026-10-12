@@ -152,7 +152,7 @@ export const decksStatsCopy = {
     cutsAria: "How often their decks run it",
     cut: (pct: number, k: number) => `${pct}% or more · ${n(k)}`,
     wantCopies: (k: number) => `×${n(k)}`,
-    wantShare: (pct: number) => `${pct}%`,
+    wantShare: (pct: number) => `${Math.floor(pct)}%`,
     wantBasis: (basis: string) => `of ${basis} decks`,
     more: (k: number) => `${n(k)} more`,
     none: "None at this share.",

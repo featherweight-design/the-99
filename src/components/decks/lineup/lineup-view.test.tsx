@@ -317,4 +317,25 @@ describe("LineupView: your collection, put to work", () => {
     expect(rows()).toEqual(["beast", "boots"]);
     expect(within(card("collection")).getByRole("button", { name: "40% or more · 1" })).toBeTruthy();
   });
+
+  it("folds to a summary counting what the select and the cut last showed", () => {
+    draw(CO, "collection");
+    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    fireEvent.click(head("collection"));
+    // The default (All decks, 40%) would count 2.
+    expect(card("collection").textContent).toContain("3 wanted by your commanders");
+    fireEvent.click(head("collection"));
+    fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "scrappy" } });
+    fireEvent.click(head("collection"));
+    expect(card("collection").textContent).toContain("1 wanted by your commanders");
+  });
+
+  it("cuts on the share as read, so 39.6% is not 40% or more, and shows it as 39%", () => {
+    const c = CO.collection!;
+    draw({ ...CO, collection: { ...c, wanted: c.wanted.map((w) => (w.oracleId === "boots" ? { ...w, hits: [{ deckId: "gishath", pct: 39.6 }] } : w)) } }, "collection");
+    const rows = () => [...card("collection").querySelectorAll("[data-stats-wanted]")].map((r) => r.getAttribute("data-stats-wanted"));
+    expect(rows()).toEqual(["beast"]);
+    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    expect(within(card("collection")).getByText("39%")).toBeTruthy();
+  });
 });

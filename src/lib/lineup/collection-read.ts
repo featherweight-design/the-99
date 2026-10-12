@@ -83,7 +83,7 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
   const hits = new Map<string, { deckId: string; pct: number }[]>();
   const add = (oracleId: string, deckId: string, pct: number | null) => {
     if (pct === null) return;
-    hits.set(oracleId, [...(hits.get(oracleId) ?? []), { deckId, pct: Math.round(pct) }]);
+    hits.set(oracleId, [...(hits.get(oracleId) ?? []), { deckId, pct }]);
   };
   for (const r of single) for (const h of singles) if (h.commander === r.commander) add(r.oracleId, h.deckId, r.inclusion);
   for (const r of pair) for (const p of pairs) if (p.commanderOracleId === r.a && p.partnerOracleId === r.b) add(r.oracleId, p.deckId, r.inclusion);
