@@ -11,7 +11,9 @@ import type { HistoryTool } from "../../lib/tuning/history";
 
 export type ReviewRun = {
   tool: HistoryTool;
-  /** The paid run to load. Null for a free count, whose tool reads the deck as it is now. */
+  /** The stored record to load: a paid run's id (Proposed cuts, Suggested changes), or for Mana
+   *  Balance an Improve-my-mana help read's `deck_tool_counts` id, with `color`. Null for a free
+   *  count that named no card, whose tool reads the deck as it is now. */
   runId: string | null;
   /** Mana Balance only: the color of the Improve-my-mana help reopened by `runId`. */
   color?: string;
