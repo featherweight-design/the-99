@@ -73,13 +73,14 @@ describe("SuggestionLine", () => {
     expect(settled).toHaveBeenCalledWith(deckTuningCopy.announce.rejected);
   });
 
-  it("disables both answers while one is in flight", async () => {
+  it("draws the line as added at once, its Undo held while the press is in flight", async () => {
     let release: () => void = () => {};
     const apply = vi.fn(() => new Promise<{ ok: true }>((r) => { release = () => r({ ok: true }); }));
     draw(add, { apply });
     await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: copy.add })[0]); });
-    for (const b of screen.getAllByRole("button", { name: copy.reject })) expect(b).toBeDisabled();
-    expect(screen.getAllByRole("button", { name: copy.working })[0]).toBeDisabled();
+    expect(screen.getByTestId("answered-applied")).toHaveTextContent(copy.added);
+    expect(screen.queryAllByRole("button", { name: copy.reject })).toHaveLength(0);
+    expect(screen.getByRole("button", { name: copy.undo })).toBeDisabled();
     await act(async () => { release(); });
   });
 

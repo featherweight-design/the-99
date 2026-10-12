@@ -27,6 +27,7 @@ import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
+import { useOptimisticVerdict } from "./use-optimistic-verdict";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -580,10 +581,19 @@ function CutRow({ item, panel, deps, items, onSettled }: {
   const openCard = (event: React.MouseEvent<HTMLElement>) =>
     open(item.cutOracleId, items.map((i) => ({ oracleId: i.cutOracleId, name: i.cutName, imageUri: i.cutImageUri })), undefined, { opener: event.currentTarget });
 
+  // The row flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
+  const optimistic = useOptimisticVerdict(item.verdict);
+  const verdict = optimistic.verdict;
+  const TARGET = { cut: "accepted", keep: "dismissed", undo: "pending", restore: "pending" } as const;
+
   async function answer(kind: "cut" | "undo" | "keep" | "restore") {
     setBusy(kind);
     const reviewing = !!panel.review;
-    const result = await (kind === "cut" || kind === "undo" ? deps[kind](item.id, reviewing) : deps[kind](item.id)).catch((): DeckMutationResult => ({ ok: false, message: copy.refusals.generic }));
+    const result = (await optimistic.press(
+      TARGET[kind],
+      () => (kind === "cut" || kind === "undo" ? deps[kind](item.id, reviewing) : deps[kind](item.id)),
+      copy.refusals.generic,
+    )) ?? { ok: false as const, message: copy.refusals.generic };
     // Busy until the follow-up read has replaced this row: a second press in that gap would repeat
     // the verdict and overwrite the answer with a refusal.
     if (!result.ok) {
@@ -597,11 +607,13 @@ function CutRow({ item, panel, deps, items, onSettled }: {
         : kind === "undo" ? copy.announce.undone(item.cutName)
           : kind === "keep" ? copy.announce.kept : copy.announce.restored,
     );
+    // The re-read has landed: the row is now the server's.
+    optimistic.release();
     setBusy(null);
   }
 
-  if (item.verdict !== "pending") {
-    const done = item.verdict === "accepted";
+  if (verdict !== "pending") {
+    const done = verdict === "accepted";
     return (
       <div>
         <div

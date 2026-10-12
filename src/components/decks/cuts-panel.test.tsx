@@ -457,3 +457,27 @@ describe("a past run History reopened (re-review)", () => {
     expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 });
+
+describe("an answer flips its row at once (optimistic)", () => {
+  it("draws a pressed Cut as cut before the action answers, and Keep as kept", async () => {
+    let answer!: (r: { ok: true }) => void;
+    const d = deps(withResult(2, 2), { cut: vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; })) });
+    await mount(d);
+    fireEvent.click(within(screen.getAllByRole("article")[0]).getByRole("button", { name: copy.cut }));
+    // The action has not answered: the row is already drawn as cut.
+    expect(screen.getByTestId("answered-cut").textContent).toContain("Card 1");
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    await act(async () => { answer({ ok: true }); });
+  });
+
+  it("rolls a refused Cut back to its row, with the refusal", async () => {
+    let answer!: (r: { ok: false; message: string }) => void;
+    const d = deps(withResult(1, 1), { cut: vi.fn(() => new Promise<{ ok: false; message: string }>((r) => { answer = r; })) });
+    await mount(d);
+    fireEvent.click(within(screen.getByRole("article")).getByRole("button", { name: copy.cut }));
+    expect(screen.queryByRole("article")).toBeNull();
+    await act(async () => { answer({ ok: false, message: copy.refusals.cutLocked }); });
+    await waitFor(() => expect(screen.getByRole("article", { name: "Card 1" })).toBeTruthy());
+    expect(screen.getByText(copy.refusals.cutLocked)).toBeTruthy();
+  });
+});

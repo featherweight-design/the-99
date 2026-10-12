@@ -1544,7 +1544,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(reads + 1);
     });
 
-    it("keeps a line busy through the re-read after its own press", async () => {
+    it("flips a line at once, and holds its own control through the re-read after the press", async () => {
       const apply = vi.fn(async () => ({ ok: true as const }));
       let release: () => void = () => undefined;
       const gate = new Promise<void>((r) => { release = r; });
@@ -1553,8 +1553,9 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       const d = { ...base, read: vi.fn(async () => { calls += 1; if (calls > 1) await gate; return withLines([a1, c1]); }) };
       await draw(d);
       await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: copy_lists.reject })[0]); });
-      expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).toBeDisabled();
+      expect(screen.getByRole("button", { name: copy_lists.showAgain })).toBeDisabled();
       await act(async () => { release(); });
+      // The re-read landed and still reads the line as open (the fixture never moves): it is the server's again.
       expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).not.toBeDisabled();
     });
 

@@ -170,11 +170,22 @@ describe("SuggestionCard", () => {
     expect(screen.queryByTestId("bracket-flag")).not.toBeInTheDocument();
   });
 
-  it("stays mounted while applying, with the card in place", async () => {
+  it("flips to applied at once while the apply is in flight, its Undo held until it lands", async () => {
     draw(item, { apply: () => new Promise(() => {}) });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.apply })); });
-    expect(screen.getByRole("button", { name: copy.applying })).toBeInTheDocument();
-    expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    expect(screen.getByTestId("answered-applied")).toHaveTextContent("Rhystic Study");
+    expect(screen.getByRole("button", { name: copy.undo })).toBeDisabled();
+  });
+
+  it("rolls a refused apply back to the card, with its refusal", async () => {
+    let answer!: (r: { ok: false; message: string }) => void;
+    draw(item, { apply: () => new Promise((r) => { answer = r; }) });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.apply })); });
+    expect(screen.getByTestId("answered-applied")).toBeInTheDocument();
+    await act(async () => { answer({ ok: false, message: copy.applyRefused }); });
+    expect(screen.queryByTestId("answered-applied")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.apply })).not.toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(copy.applyRefused);
   });
 
   it("keeps the card and says why when an apply is refused", async () => {

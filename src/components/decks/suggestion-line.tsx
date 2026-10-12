@@ -6,7 +6,6 @@ import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { suggestionNeedsBuy } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
-import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { Bracket } from "../../lib/profile/types";
@@ -20,6 +19,9 @@ import { BuyTag } from "./buy-tag";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import type { CardActions } from "./suggestion-card";
+import { useOptimisticVerdict } from "./use-optimistic-verdict";
+
+const TARGET = { apply: "accepted", reject: "dismissed", undo: "pending", restore: "pending" } as const;
 
 /**
  * One line of the two lists (sub-project 8; Design's B10/B10b): a card to ADD or a card to CUT,
@@ -48,12 +50,15 @@ export function SuggestionLine({
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
   const isAdd = item.side === "add";
+  // The line flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
+  const optimistic = useOptimisticVerdict(item.verdict);
+  const verdict = optimistic.verdict;
 
   async function answer(kind: keyof CardActions) {
     setBusy(kind);
     setRefused(null);
     const refusal = kind === "apply" ? copy.applyRefused : kind === "undo" ? copy.undoRefused : cardCopy.verdictRefused;
-    const result = await actions[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: refusal }));
+    const result = (await optimistic.press(TARGET[kind], () => actions[kind](item.id), refusal)) ?? { ok: false as const, message: refusal };
     if (!result.ok) {
       setBusy(null);
       setRefused(result.message);
@@ -68,28 +73,30 @@ export function SuggestionLine({
           : kind === "reject" ? announce.rejected
             : announce.restored,
     );
+    // The re-read has landed: the line is now the server's.
+    optimistic.release();
     setBusy(null);
   }
 
-  if (item.verdict === "accepted") {
+  if (verdict === "accepted") {
     return (
       <Answered
         tone="applied"
         label={isAdd ? copy.added : copy.cutDone}
         name={item.cardName}
         struck={!isAdd}
-        action={{ label: copy.undo, onPress: () => answer("undo"), busy: busy === "undo" }}
+        action={{ label: copy.undo, onPress: () => answer("undo"), busy: busy !== null }}
         refused={refused}
       />
     );
   }
-  if (item.verdict === "dismissed") {
+  if (verdict === "dismissed") {
     return (
       <Answered
         tone="rejected"
         label={copy.rejected}
         name={item.cardName}
-        action={{ label: copy.showAgain, onPress: () => answer("restore"), busy: busy === "restore" }}
+        action={{ label: copy.showAgain, onPress: () => answer("restore"), busy: busy !== null }}
         refused={refused}
       />
     );
