@@ -11,7 +11,7 @@ export type SharedRow = {
   oracleId: string;
   name: string;
   owned: number;
-  /** Decks in scope playing it, held ones first, so the filled squares lead. */
+  /** Decks in scope playing it, held ones first, so the filled squares lead: `held` is any copy, `short` the copies it still lacks. */
   decks: { id: string; held: boolean; short: number }[];
   /** Copies the decks in scope ask for. */
   wants: number;
@@ -28,7 +28,7 @@ export function sharedView(shared: readonly LineupShared[], inScope: ReadonlySet
   const all = shared.flatMap((card): SharedRow[] => {
     const decks = card.decks.filter((d) => inScope.has(d.id));
     if (decks.length < 2) return [];
-    const rows = decks.map((d) => ({ id: d.id, held: d.held >= d.wants, short: Math.max(0, d.wants - d.held) }));
+    const rows = decks.map((d) => ({ id: d.id, held: d.held > 0, short: Math.max(0, d.wants - d.held) }));
     rows.sort((a, b) => Number(b.held) - Number(a.held));
     return [{
       oracleId: card.oracleId,

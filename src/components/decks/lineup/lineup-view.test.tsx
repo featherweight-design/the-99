@@ -235,6 +235,15 @@ describe("LineupView: cards your decks share", () => {
     expect(within(card("shared")).getByRole("link", { name: "1 on Shopping for all decks" }).getAttribute("href")).toBe("/decks/shopping");
   });
 
+  it("opens a row whose only short deck holds some of its copies, naming no deck and still linking the buy", () => {
+    const rats = { oracleId: "rats", name: "Relentless Rats", owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
+    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    expect(card("shared").querySelectorAll('[data-stats-shared="rats"] [data-held]').length).toBe(2);
+    fireEvent.click(within(card("shared")).getByRole("button", { name: /^Which decks have Relentless Rats/ }));
+    expect(within(card("shared")).queryByText(/^No copy left/)).toBeNull();
+    expect(within(card("shared")).getByRole("link", { name: "3 on Shopping for all decks" })).toBeTruthy();
+  });
+
   it("lists only the cards wanted more than owned under that chip", () => {
     render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
     fireEvent.click(within(card("shared")).getByRole("button", { name: "Wanted more than you own · 1" }));

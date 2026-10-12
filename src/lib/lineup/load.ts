@@ -13,7 +13,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckCards, deckGames, deckProxies, decks as decksTable } from "../../db/schema";
+import { cards, deckCards, deckGames, decks as decksTable } from "../../db/schema";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { isLandFace } from "../cards/facet";
 import { isBasicLand } from "../decks/grouping";
@@ -24,8 +24,7 @@ import { readHeldPricePicks } from "../decks/printings";
 import { primaryRole } from "../decks/read";
 import { moneyStats } from "../decks/stats-money";
 import { readLabels } from "../labels/read";
-import { allocateClaims } from "../decks/allocate";
-import { loadAvailability } from "../decks/availability-query";
+import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { deckIdentity } from "../decks/format";
@@ -62,16 +61,15 @@ async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders
 
 /** Each deck's build figures, or null for every deck when the labels or the prices could not be read. */
 /**
- * The cards two or more decks play, basics left out, each with what the collection holds and what the claim
- * model gives each deck (lock 3: who holds a contested copy is the model's, never re-derived here): a
- * committed deck holds its allocation, a brew only what the player gave it, as the cart reads it. A row the deck
- * proxies is acquired, as Shopping and Money read it, so it is never short: the claim model leaves a proxied row
- * out of its claims, and counting it short would name a buy `/decks/shopping` does not have.
+ * The cards two or more decks play, basics left out, each with what the collection holds and how many of each
+ * deck's copies it already has. What a deck still lacks is Shopping's own buy row (lock 3: the claim model's,
+ * never re-derived here), so the count a row links to is the count `/decks/shopping` lists: it reads each
+ * deck's draft against the copies left to it, bills nothing a deck proxies, and lets a brew take a free copy.
  */
 export function sharedCards(
   lists: { deckId: string; oracleId: string; name: string; typeLine: string; quantity: number }[],
-  availability: ReadonlyMap<string, Pick<Availability, "owned" | "claims">>,
-  proxied: ReadonlySet<string> = new Set(),
+  availability: ReadonlyMap<string, Pick<Availability, "owned">>,
+  buys: readonly DeckBuyRow[],
 ): LineupShared[] {
   const byCard = new Map<string, { name: string; decks: Map<string, number> }>();
   for (const c of lists) {
@@ -80,16 +78,13 @@ export function sharedCards(
     row.decks.set(c.deckId, (row.decks.get(c.deckId) ?? 0) + c.quantity);
     byCard.set(c.oracleId, row);
   }
-  return [...byCard].filter(([, r]) => r.decks.size >= 2).map(([oracleId, r]) => {
-    const a = availability.get(oracleId);
-    const held = new Map(a ? allocateClaims(a).map((c) => [c.deckId, c.brew ? c.granted : c.allocated]) : []);
-    return {
-      oracleId,
-      name: r.name,
-      owned: a?.owned ?? 0,
-      decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: proxied.has(`${id}|${oracleId}`) ? wants : Math.min(wants, held.get(id) ?? 0) })),
-    };
-  });
+  const buy = new Map(buys.map((r) => [`${r.deckId}|${r.oracleId}`, r.quantity]));
+  return [...byCard].filter(([, r]) => r.decks.size >= 2).map(([oracleId, r]) => ({
+    oracleId,
+    name: r.name,
+    owned: availability.get(oracleId)?.owned ?? 0,
+    decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: Math.max(0, wants - (buy.get(`${id}|${oracleId}`) ?? 0)) })),
+  }));
 }
 
 type ListRow = { deckId: string; oracleId: string; typeLine: string };
@@ -100,19 +95,20 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
   let jobs: JobRowsByCard;
   let prices: PriceRead;
   let availability: Map<string, Availability>;
-  let proxied: Set<string>;
+  let buys: DeckBuyRow[];
   try {
     lists = await readLists(ids);
     const all = [...lists.list, ...lists.commanders];
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
-    const [labels, read, avail, proxyRows] = await Promise.all([
+    const [labels, read, avail, buyRows] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
       readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
       // The whole collection's claim model, once (lock 3, lock 4).
       loadAvailability(userId),
-      db.select({ deckId: deckProxies.deckId, oracleId: deckProxies.oracleId }).from(deckProxies).where(inArray(deckProxies.deckId, ids)),
+      // Shopping's own buy rows, so a row's to-buy count is the cart's.
+      loadDeckBuyRows(userId, ids),
     ]);
-    proxied = new Set(proxyRows.map((r) => `${r.deckId}|${r.oracleId}`));
+    buys = buyRows;
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));
     prices = read;
     availability = avail;
@@ -143,7 +139,7 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
     });
   }
   const every = [...lists.list, ...lists.commanders];
-  return { builds, asOf: prices.newestAsOf, shared: sharedCards(every, availability, proxied), lists: every };
+  return { builds, asOf: prices.newestAsOf, shared: sharedCards(every, availability, buys), lists: every };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {

@@ -35,7 +35,7 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
       <div className="flex flex-col">
         {v.rows.map((r) => {
           const short = r.decks.filter((d) => !d.held);
-          const isOpen = open === r.oracleId && short.length > 0;
+          const isOpen = open === r.oracleId && r.short > 0;
           const squares = (
             <span aria-hidden="true" className="flex flex-wrap gap-[3px] [grid-area:q]">
               {r.decks.map((d) => (
@@ -57,7 +57,7 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
                 </span>
                 {squares}
                 {/* The figure is the row's press when a deck is short: it opens the decks with no copy. */}
-                {short.length > 0 ? (
+                {r.short > 0 ? (
                   <button
                     type="button"
                     aria-expanded={isOpen}
@@ -71,7 +71,7 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
               </div>
               {isOpen ? (
                 <div className="flex flex-col gap-[4px] pt-[2px] text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty] md:pl-[202px]">
-                  <span>{copy.noCopy(short.map((d) => names.get(d.id) ?? ""))}</span>
+                  {short.length > 0 ? <span>{copy.noCopy(short.map((d) => names.get(d.id) ?? ""))}</span> : null}
                   {cartEnabled ? (
                     <Link href="/decks/shopping" className="self-start font-mono text-[11px] text-[color:var(--warning)] underline decoration-[color:color-mix(in_oklab,var(--warning)_45%,transparent)]">
                       {copy.toCart(r.short)}

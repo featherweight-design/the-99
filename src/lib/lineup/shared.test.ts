@@ -16,6 +16,11 @@ describe("sharedView", () => {
     expect([v.twoPlus, v.fivePlus, v.wantedMore]).toEqual([3, 0, 2]);
   });
 
+  it("fills a deck holding some of several copies, and still counts the copies it lacks", () => {
+    const rats = card("Relentless Rats", 3, [["a", 4, 1], ["b", 2, 2]]);
+    expect(sharedView([rats], ALL, "most").rows[0]).toMatchObject({ short: 3, decks: [{ id: "a", held: true, short: 3 }, { id: "b", held: true, short: 0 }] });
+  });
+
   it("lists only the cards wanted more than owned under that chip, the widest gap first", () => {
     expect(sharedView([SIGNET, SOL, ORCHARD], ALL, "wanted").rows.map((r) => r.name)).toEqual(["Exotic Orchard", "Sol Ring"]);
   });
