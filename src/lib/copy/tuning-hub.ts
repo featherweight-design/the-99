@@ -5,6 +5,7 @@
 // words AI, model or LLM: tier 2 is "a deeper look". Engineering additions are marked.
 
 import { deckStatsCopy } from "./deck-stats";
+import { manaBalanceCopy as mana } from "./mana-balance";
 
 export const tuningHubCopy = {
   title: "Tuning",
@@ -92,7 +93,7 @@ export const tuningHubCopy = {
      *  run's lines are re-checked one by one; a free count named no card, so its tool reads the
      *  deck as it is now and the note keeps what the count found. /copy-review, 2026-10-12. */
     review: {
-      note: { cuts: (date: string) => `From a run on ${date}. Each cut is checked against the deck as it is now.`, suggested: (date: string) => `From a run on ${date}. Each change is checked against the deck as it is now.` },
+      note: { cuts: (date: string) => `From a run on ${date}. Each cut is checked against the deck as it is now.`, suggested: (date: string) => `From a run on ${date}. Each change is checked against the deck as it is now.`, mana: (date: string) => `From ${date}. Each trade is checked against the deck as it is now.` },
       counted: (date: string, summary: string) => `Counted ${date}: ${summary}. Below is the deck as it is now.`,
     },
     /** Engineering: a past run that returned no lines, and a free count's own body. */
@@ -124,6 +125,8 @@ export const tuningHubCopy = {
        *  states them. The canvas fixtures (`green short by 3`, `every color covered`) are R1
        *  verdicts, which R3 retired. */
       manaFree: (pips: number, sources: number) => deckStatsCopy.colors.denom(pips, sources),
+      /** Engineering (re-review PR 3): an Improve my mana help read, named by its color. */
+      manaHelp: (color: string, trades: number) => `${mana.door.title.toLowerCase()} for ${color} · ${trades === 0 ? "no trades" : trades === 1 ? "1 trade" : `${trades} trades`}`,
       counted: "counted",
     },
   },

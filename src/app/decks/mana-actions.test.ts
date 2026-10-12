@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
   undone: null as string | null,
   writes: [] as unknown[][],
   revalidated: [] as unknown[][],
+  helpRows: [] as unknown[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -25,7 +26,8 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit: async () => state.helpRows }) }) }) } }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
   applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string) => {
     state.writes.push(["apply", deckId, userId, trade.cutOracleId, trade.addOracleId, listKey]);
@@ -37,7 +39,7 @@ vi.mock("../../lib/decks/revalidate-claims", () => ({ revalidateClaims: (...args
 vi.mock("../../lib/cards/chain-art", () => ({ chainArt: async (...args: unknown[]) => { state.artCalls.push(args); return state.art; } }));
 vi.mock("../../lib/tuning/tool-counts", () => ({ recordToolCount: async (row: unknown) => { state.recorded.push(row); } }));
 
-import { applyManaTrade, readManaBalance, readManaHelpFor, undoManaTrade } from "./mana-actions";
+import { applyManaTrade, readManaBalance, readManaHelpFor, readManaHelpReview, undoManaTrade } from "./mana-actions";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
@@ -120,9 +122,10 @@ describe("readManaBalance with a partner", () => {
 });
 
 describe("readManaHelpFor (the action)", () => {
-  it("answers a color in the commander's identity, and records nothing for History", async () => {
-    expect(await readManaHelpFor(DECK, "G")).toEqual({ color: "G", staples: [], trades: [] });
-    expect(state.recorded).toEqual([]);
+  it("answers a color in the commander's identity, and records that help for History, keyed on the list and the color", async () => {
+    const shown = await readManaHelpFor(DECK, "G");
+    expect(shown).toEqual({ color: "G", inIdentity: true, staples: [], trades: [] });
+    expect(state.recorded).toEqual([{ deckId: DECK, userId: "user_1", tool: "mana_help", listFingerprint: "list-fp:G", readVersion: null, summary: { color: "G", help: shown } }]);
   });
 
   it("draws each staple with the printing the player's chain gives it, and the catalog's otherwise", async () => {
@@ -195,5 +198,28 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
     state.undone = null;
     expect(await undoManaTrade(APPLY)).toEqual({ ok: false, message: deckTuningCopy.card.undoRefused });
     reset();
+  });
+});
+
+describe("readManaHelpReview (History's re-review)", () => {
+  const COUNT = "22222222-2222-4222-8222-222222222222";
+  const trade = (stapleId: string, outId: string) => ({ kind: "trade", out: { id: outId, name: outId }, staple: { oracleId: stapleId, name: stapleId }, changes: [] });
+  const past = { color: "G", inIdentity: true, sourcesNow: 9, rebalance: [], trades: [trade("s1", "forest"), trade("s2", "forest")], staples: [] };
+
+  it("draws the help as it was shown, each trade re-checked against today's help for that color", async () => {
+    state.helpRows = [{ summary: { color: "G", help: past } }];
+    state.trades = [trade("s1", "forest")];
+    const shown = await readManaHelpReview(DECK, COUNT);
+    expect(shown?.trades.map((t) => t.staple.oracleId)).toEqual(["s1", "s2"]);
+    expect(shown?.noLonger).toEqual(["s2"]);
+  });
+
+  it("is null for an id that names no help read of this reader on this deck, a bad id, or the switch off", async () => {
+    state.helpRows = [];
+    expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
+    state.helpRows = [{ summary: { color: "G", help: past } }];
+    expect(await readManaHelpReview(DECK, "nope")).toBeNull();
+    state.enabled = false;
+    expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
   });
 });

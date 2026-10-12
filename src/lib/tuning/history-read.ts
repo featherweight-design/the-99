@@ -85,7 +85,7 @@ export async function readHistory(
   // opened, so its runs are not listed or counted either.
   const tools = opts.tool ? opts.drawn.filter((t) => t === opts.tool) : opts.drawn;
   const runTools = tools.flatMap((t) => (RUN_TOOL_OF[t].run ? [RUN_TOOL_OF[t].run!] : []));
-  const countTools = tools.flatMap((t) => (RUN_TOOL_OF[t].count ? [RUN_TOOL_OF[t].count!] : []));
+  const countTools = tools.flatMap((t) => RUN_TOOL_OF[t].counts);
 
   const { runs, counts } = await db.transaction(async (tx) => {
     // One after the other: a transaction is one connection.
@@ -143,7 +143,7 @@ export async function readHistoryCountIn(
   // Aggregates in SQL: runs are kept for as long as the deck is, and this read repeats every few
   // seconds while a run is in flight, so it returns two numbers rather than every row.
   const runTools = drawn.flatMap((t) => (RUN_TOOL_OF[t].run ? [RUN_TOOL_OF[t].run!] : []));
-  const countTools = drawn.flatMap((t) => (RUN_TOOL_OF[t].count ? [RUN_TOOL_OF[t].count!] : []));
+  const countTools = drawn.flatMap((t) => RUN_TOOL_OF[t].counts);
   const [paid] = runTools.length === 0 ? [{ n: 0, running: 0 }] : await tx.select({
     n: sql<number>`count(*)::int`,
     // In flight: pending and inside the reaper's cutoff, as `runOutcome` reads a row.

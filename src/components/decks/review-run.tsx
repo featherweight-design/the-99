@@ -13,6 +13,8 @@ export type ReviewRun = {
   tool: HistoryTool;
   /** The paid run to load. Null for a free count, whose tool reads the deck as it is now. */
   runId: string | null;
+  /** Mana Balance only: the color of the Improve-my-mana help reopened by `runId`. */
+  color?: string;
   /** The reader started a new run from the reopened tool: the hub drops the note, and the tool
    *  goes back to its ordinary read without remounting. Absent where nothing listens (tests). */
   leave?: () => void;

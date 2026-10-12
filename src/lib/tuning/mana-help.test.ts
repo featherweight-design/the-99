@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ManaColor, ManaSupplyCardRow } from "../mana/supply";
-import { helpAddColor, type BasicCatalog, type TradeInputs } from "./mana-help";
+import { helpAddColor, reviewHelp, type BasicCatalog, type ManaHelp, type TradeInputs, type TradeMove } from "./mana-help";
 import type { StapleCandidate } from "./mana-staples";
 
 const basics: BasicCatalog = {
@@ -242,5 +242,24 @@ describe("helpAddColor: a trade can cut a card that is not a basic", () => {
 
   it("holds an off-plan land to the land target for a nonland staple", () => {
     expect(help(rows(), "G", [], [staple("Elfhat", ["G"])], undefined, { landTarget: 36 }).trades).toEqual([]);
+  });
+});
+
+describe("reviewHelp: a past help reopened from History", () => {
+  const trade = (stapleId: string, outId: string): TradeMove => ({
+    kind: "trade", out: { id: outId, name: outId } as TradeMove["out"], staple: { ...staple(stapleId, ["G"]), oracleId: stapleId }, changes: [],
+  });
+  const helpOf = (trades: TradeMove[]): ManaHelp => ({ color: "G", inIdentity: true, sourcesNow: 10, rebalance: [], trades, staples: trades.map((t) => t.staple) });
+
+  it("keeps its own trades and marks the ones today's help no longer offers with the same card out", () => {
+    const past = helpOf([trade("a", "forest"), trade("b", "island"), trade("c", "wastes")]);
+    const today = helpOf([trade("a", "forest"), trade("b", "plains")]);
+    const shown = reviewHelp(past, today);
+    expect(shown.trades.map((t) => t.staple.oracleId)).toEqual(["a", "b", "c"]);
+    expect(shown.noLonger).toEqual(["b", "c"]);
+  });
+
+  it("marks every trade when today's help could not be read", () => {
+    expect(reviewHelp(helpOf([trade("a", "forest")]), null).noLonger).toEqual(["a"]);
   });
 });

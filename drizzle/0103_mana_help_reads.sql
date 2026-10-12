@@ -1,0 +1,2 @@
+ALTER TABLE "deck_tool_counts" DROP CONSTRAINT "deck_tool_counts_tool_check";--> statement-breakpoint
+ALTER TABLE "deck_tool_counts" ADD CONSTRAINT "deck_tool_counts_tool_check" CHECK ("deck_tool_counts"."tool" in ('proposed_cuts', 'mana_balance', 'mana_help'));

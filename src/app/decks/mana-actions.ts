@@ -9,7 +9,11 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { manaBalanceEnabled } from "../../lib/tuning/flag";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { loadManaBalance } from "../../lib/tuning/mana-balance-load";
-import type { ManaHelp } from "../../lib/tuning/mana-help";
+import { reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
+import { isManaHelpSummary } from "../../lib/tuning/history";
+import { db } from "../../db";
+import { deckToolCounts } from "../../db/schema";
+import { and, eq } from "drizzle-orm";
 import { listKeyOf } from "../../lib/tuning/list-key";
 import { loadManaHelp } from "../../lib/tuning/mana-help-load";
 import { applyTrade, undoTrade } from "../../lib/tuning/mana-trade";
@@ -75,11 +79,32 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
   const read = await helpFor(deckId, color, userId);
   if (!read) return null;
   const { deckId: id, listKey, ...help } = read;
-  void listKey; // the write's precondition, never sent to the client
+  // `listKey` is the write's precondition and History's key, never sent to the client.
   // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
   // one the player owns, else the catalog's (`chainArt`, as Suggested changes and Proposed cuts do).
   const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId));
-  return art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
+  const shown = art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
+  // History's row for this help, once per list and color: it reopens with exactly what was shown here.
+  if (shown.inIdentity) {
+    await recordToolCount({ deckId: id, userId, tool: "mana_help", listFingerprint: `${listKey}:${shown.color}`, readVersion: null, summary: { color: shown.color, help: shown } });
+  }
+  return shown;
+}
+
+/**
+ * A help History reopened (re-review): the help as it was shown, with each of its trades checked
+ * against today's help for that color (`reviewHelp`). Null for an id that is not this reader's help
+ * read on this deck. An Apply from it goes through `applyManaTrade`, which checks today's help again.
+ */
+export async function readManaHelpReview(deckId: string, countId: string): Promise<ManaHelp | null> {
+  const userId = await requireUserId();
+  if (!manaBalanceEnabled() || !isUuid(deckId) || !isUuid(countId)) return null;
+  const [row] = await db.select({ summary: deckToolCounts.summary }).from(deckToolCounts)
+    .where(and(eq(deckToolCounts.id, countId), eq(deckToolCounts.deckId, deckId), eq(deckToolCounts.userId, userId), eq(deckToolCounts.tool, "mana_help")))
+    .limit(1);
+  if (!row || !isManaHelpSummary(row.summary)) return null;
+  const today = await helpFor(deckId, row.summary.color, userId);
+  return reviewHelp(row.summary.help, today);
 }
 
 /** Improve my mana for one of the reader's decks, read fresh, with the key of the list it was read from:

@@ -2496,7 +2496,8 @@ export const deckToolCounts = pgTable("deck_tool_counts", {
   summary: jsonb("summary").$type<ToolCountSummary>().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
-  check("deck_tool_counts_tool_check", sql`${t.tool} in ('proposed_cuts', 'mana_balance')`),
+  // `mana_help`: one Improve-my-mana help read (a color's trades and staples), so History can reopen it.
+  check("deck_tool_counts_tool_check", sql`${t.tool} in ('proposed_cuts', 'mana_balance', 'mana_help')`),
   unique("deck_tool_counts_deck_tool_fingerprint_key").on(t.deckId, t.tool, t.listFingerprint),
   index("deck_tool_counts_deck_created_idx").on(t.deckId, t.createdAt),
 ]);

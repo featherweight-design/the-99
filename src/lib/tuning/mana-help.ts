@@ -93,7 +93,20 @@ export type ManaHelp = {
   trades: TradeMove[];
   /** Staples that add the color, owned copies first, whether or not a trade for them is safe. */
   staples: StapleCandidate[];
+  /** A help History reopened (re-review): the staples of its trades that today's help no longer
+   *  offers with the same card out, drawn as no longer applying. Absent on a live read. */
+  noLonger?: string[];
 };
+
+/**
+ * A past help read as History reopens it: its own trades and staples, with each trade checked
+ * against today's help for the same color. A trade applies only when today's help still offers the
+ * same staple for the same card out, which is the check `applyManaTrade` makes before it writes.
+ */
+export function reviewHelp(past: ManaHelp, today: ManaHelp | null): ManaHelp {
+  const offered = new Set((today?.trades ?? []).map((t) => `${t.staple.oracleId}|${t.out.id}`));
+  return { ...past, noLonger: past.trades.filter((t) => !offered.has(`${t.staple.oracleId}|${t.out.id}`)).map((t) => t.staple.oracleId) };
+}
 
 const isBasicType = (typeLine: string) => isLandFace(typeLine) && /\bBasic\b/.test(typeLine);
 

@@ -12,10 +12,11 @@ import type { StapleCandidate } from "../../lib/tuning/mana-staples";
 import { toClientBalance } from "../../lib/tuning/mana-view";
 import { ImproveDoor, type HelpRead, type TradeActions } from "./mana-improve-door";
 import { reveal } from "../../lib/ui/reveal";
+import { ReviewRunProvider } from "./review-run";
 
 const openCard = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: openCard }), useCardIntent: () => ({}) }));
-vi.mock("../../app/decks/mana-actions", () => ({ readManaHelpFor: vi.fn(), applyManaTrade: vi.fn(), undoManaTrade: vi.fn() }));
+vi.mock("../../app/decks/mana-actions", () => ({ readManaHelpFor: vi.fn(), readManaHelpReview: vi.fn(), applyManaTrade: vi.fn(), undoManaTrade: vi.fn() }));
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -423,5 +424,29 @@ describe("ImproveDoor: applying a trade", () => {
     noteDeckRoute(`/decks/${A}`);
     render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades} />);
     expect(document.querySelector("[data-mana-applied]")).toBeNull();
+  });
+});
+
+describe("ImproveDoor: a help read History reopened (re-review)", () => {
+  const COUNT = "33333333-3333-4333-8333-333333333333";
+  const tradeOf = (oracleId: string, out: string) => ({ kind: "trade" as const, out: { id: `${out}-id`, name: out, kind: "basic" as const }, staple: staple({ oracleId, name: oracleId }), changes: [] });
+  const past = helpFor("R", { staples: [staple({ oracleId: "s1", name: "s1" }), staple({ oracleId: "s2", name: "s2" })], trades: [tradeOf("s1", "Forest"), tradeOf("s2", "Island")], noLonger: ["s2"] });
+
+  it("opens on that color at once with the trades it showed: one still offered with Apply, one no longer applying", async () => {
+    const live = vi.fn();
+    const readReview = vi.fn(async () => past);
+    const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };
+    render(
+      <ReviewRunProvider value={{ tool: "mana", runId: COUNT, color: "R" }}>
+        <ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={live} readReview={readReview} trades={trades} />
+      </ReviewRunProvider>,
+    );
+    await screen.findByRole("button", { name: copy.help.tradeApply("Forest") });
+    expect(readReview).toHaveBeenCalledWith(A, COUNT);
+    expect(live).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: copy.help.tradeApply("Island") })).toBeNull();
+    expect(document.querySelectorAll("[data-mana-trade-stale]")).toHaveLength(1);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.help.tradeApply("Forest") })); });
+    expect(trades.apply).toHaveBeenCalledWith(A, "R", "s1", "Forest-id");
   });
 });

@@ -308,7 +308,10 @@ export function TuningHub({
     if (press.kind === "live" && !press.counted) { open(row.tool, { focus: true }); return; }
     setPast(null);
     setReturnRow(null);
-    setReview({ run: { tool: row.tool, runId: press.kind === "review" ? press.runId : null }, row, left: false });
+    const run: ReviewRun = press.kind === "review" ? { tool: row.tool, runId: press.runId }
+      : press.kind === "manaHelp" ? { tool: row.tool, runId: press.countId, color: press.color }
+        : { tool: row.tool, runId: null };
+    setReview({ run, row, left: false });
     setOpening((prev) => ({ tool: row.tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
   };
   const backToHistory = () => {
@@ -448,7 +451,7 @@ function ReviewNote({ row, counted, onBack }: { row: HistoryRow; counted: boolea
   const r = copy.history.review;
   const text = counted
     ? r.counted(date, summaryText(row))
-    : row.tool === "cuts" ? r.note.cuts(date) : r.note.suggested(date);
+    : row.tool === "cuts" ? r.note.cuts(date) : row.tool === "mana" ? r.note.mana(date) : r.note.suggested(date);
   return (
     <div data-review-note={row.id} className="mb-[2px] flex flex-col gap-[6px] md:flex-row md:items-baseline md:justify-between md:gap-[14px]">
       <p className="rounded-[9px] px-[12px] py-[9px] text-[12.5px] leading-[1.55] md:flex-1" style={{ color: "var(--fg-muted)", border: "1px dashed var(--border-dashed)" }}>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  afterKey, decodeCursor, encodeCursor, historyPress, mergePage, parseHistoryId, pastCutChips, pastVerdict, runOutcome,
+  afterKey, decodeCursor, encodeCursor, historyPress, mergePage, RUN_TOOL_OF, parseHistoryId, pastCutChips, pastVerdict, runOutcome,
   shapeCount, shapeRun, type HistoryRow, type RunRecord,
 } from "./history";
 import { REAPER_CUTOFF_MS } from "./limits";
@@ -162,5 +162,23 @@ describe("historyPress: where a History row's press goes", () => {
 
   it("keeps the past-run view for an id it did not write", () => {
     expect(historyPress(row({ id: "run:nope" }))).toEqual({ kind: "past" });
+  });
+});
+
+describe("Improve my mana's help reads in History", () => {
+  const ID = "88888888-8888-4888-8888-888888888888";
+  const help = { color: "G", inIdentity: true, sourcesNow: 9, rebalance: [], trades: [{}, {}], staples: [] } as never;
+
+  it("shapes a help read as a Mana row naming its color and its trades", () => {
+    const row = shapeCount({ id: ID, tool: "mana_help", createdAt: new Date("2026-10-12T12:00:00Z"), summary: { color: "G", help } });
+    expect([row.id, row.tool, row.tier, row.summary]).toEqual([`count:${ID}`, "mana", "free", { kind: "manaHelp", color: "G", trades: 2 }]);
+  });
+
+  it("reopens a help read in Mana Balance with its color", () => {
+    expect(historyPress({ id: `count:${ID}`, outcome: "ok", summary: { kind: "manaHelp", color: "G", trades: 2 } })).toEqual({ kind: "manaHelp", countId: ID, color: "G" });
+  });
+
+  it("lists help reads under the Mana chip", () => {
+    expect(RUN_TOOL_OF.mana.counts).toContain("mana_help");
   });
 });

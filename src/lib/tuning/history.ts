@@ -4,12 +4,18 @@ import type { CutCite } from "./cuts-schema";
 // one deck, newest first. Pure and client-safe: the row shapes, the outcome a stored status reads
 // as, the summary facts per tool, and the opaque keyset cursor. `history-read.ts` reads the rows.
 
+import type { ManaHelp } from "./mana-help";
 import { isManaCountSummary, type ManaCountSummary } from "./mana-view";
 import { reapCutoff } from "./reaper";
 
-/** A FREE tool pass, recorded once per tool per version of the list (`deck_tool_counts`). */
-export type CountTool = "proposed_cuts" | "mana_balance";
-export const COUNT_TOOLS: readonly CountTool[] = ["proposed_cuts", "mana_balance"];
+/** A FREE tool pass, recorded once per tool per version of the list (`deck_tool_counts`).
+ *  `mana_help` is one Improve-my-mana help read: a color's trades and staples, once per list and color. */
+export type CountTool = "proposed_cuts" | "mana_balance" | "mana_help";
+export const COUNT_TOOLS: readonly CountTool[] = ["proposed_cuts", "mana_balance", "mana_help"];
+
+/** Improve my mana's help as History stores it: the help the reader was shown, whole, so it can be
+ *  drawn again; every trade in it is re-checked against today's help before it applies. */
+export type ManaHelpSummary = { color: string; help: ManaHelp };
 
 /** Proposed cuts' free count as stored: how far over, and the roles that run long. */
 export type CutsCountSummary = {
@@ -18,7 +24,7 @@ export type CutsCountSummary = {
 };
 
 /** What `deck_tool_counts.summary` holds. */
-export type ToolCountSummary = CutsCountSummary | ManaCountSummary | Record<string, unknown>;
+export type ToolCountSummary = CutsCountSummary | ManaCountSummary | ManaHelpSummary | Record<string, unknown>;
 
 /** The filter chips' tools, and a row's tool. */
 export type HistoryTool = "suggested" | "mana" | "cuts";
@@ -32,6 +38,8 @@ export type HistorySummary =
   | { kind: "cutsFree"; over: number; roles: { label: string; over: number }[] }
   /** Mana Balance's free count: the Colors card's totals, never a verdict on a color. */
   | { kind: "manaFree"; pips: number; sources: number }
+  /** An Improve-my-mana help read: the color it was for and how many trades it offered. */
+  | { kind: "manaHelp"; color: string; trades: number }
   | { kind: "none" };
 
 export type HistoryRow = {
@@ -50,10 +58,10 @@ export type HistoryPage = { rows: HistoryRow[]; nextCursor: string | null };
 export const HISTORY_PAGE = 20;
 
 /** The DB tool names behind each chip. */
-export const RUN_TOOL_OF: Record<HistoryTool, { run: string | null; count: CountTool | null }> = {
-  suggested: { run: "suggested_changes", count: null },
-  cuts: { run: "proposed_cuts", count: "proposed_cuts" },
-  mana: { run: null, count: "mana_balance" },
+export const RUN_TOOL_OF: Record<HistoryTool, { run: string | null; counts: readonly CountTool[] }> = {
+  suggested: { run: "suggested_changes", counts: [] },
+  cuts: { run: "proposed_cuts", counts: ["proposed_cuts"] },
+  mana: { run: null, counts: ["mana_balance", "mana_help"] },
 };
 
 export type RunStatus = "pending" | "ok" | "failed" | "cancelled";
@@ -124,13 +132,22 @@ export function shapeRun(r: RunRecord, now: Date): HistoryRow {
   };
 }
 
+export function isManaHelpSummary(s: unknown): s is ManaHelpSummary {
+  if (!s || typeof s !== "object") return false;
+  const o = s as Record<string, unknown>;
+  const help = o.help as Record<string, unknown> | null | undefined;
+  return typeof o.color === "string" && !!help && typeof help === "object" && Array.isArray(help.trades);
+}
+
 export function shapeCount(c: CountRecord): HistoryRow {
   const s = c.summary;
   const summary: HistorySummary = c.tool === "proposed_cuts" && isCutsCountSummary(s)
     ? { kind: "cutsFree", over: s.over, roles: s.roles.map((r) => ({ label: r.label, over: r.over })) }
     : c.tool === "mana_balance" && isManaCountSummary(s)
       ? { kind: "manaFree", pips: s.pips, sources: s.sources }
-      : { kind: "none" };
+      : c.tool === "mana_help" && isManaHelpSummary(s)
+        ? { kind: "manaHelp", color: s.color, trades: s.help.trades.length }
+        : { kind: "none" };
   return {
     id: `count:${c.id}`,
     tool: c.tool === "proposed_cuts" ? "cuts" : "mana",
@@ -260,12 +277,19 @@ export function pastCutChips(evidence: readonly CutCite[] | null, reason: string
  * - `past`: the read-only past-run view, for a run with nothing to load (failed, refused, stopped,
  *   or ok with no lines).
  */
-export type HistoryPress = { kind: "review"; runId: string } | { kind: "live"; counted: boolean } | { kind: "past" };
+export type HistoryPress =
+  | { kind: "review"; runId: string }
+  /** An Improve-my-mana help read: Mana Balance reopens that color's help with the trades it showed. */
+  | { kind: "manaHelp"; countId: string; color: string }
+  | { kind: "live"; counted: boolean }
+  | { kind: "past" };
 
 export function historyPress(row: Pick<HistoryRow, "id" | "outcome" | "summary">): HistoryPress {
   const ref = parseHistoryId(row.id);
   if (!ref) return { kind: "past" };
-  if (ref.kind === "count") return { kind: "live", counted: true };
+  if (ref.kind === "count") {
+    return row.summary.kind === "manaHelp" ? { kind: "manaHelp", countId: ref.uuid, color: row.summary.color } : { kind: "live", counted: true };
+  }
   if (row.outcome === "running") return { kind: "live", counted: false };
   if (row.outcome !== "ok") return { kind: "past" };
   const s = row.summary;
