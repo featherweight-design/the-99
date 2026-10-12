@@ -89,6 +89,17 @@ describe("the choose page", () => {
     expect(find(find(pending, ReadAsBar)!.props.offer, ReadPanel)!.props.served).toEqual({ kind: "pending", phase: null });
   });
 
+  it("keys the results' Suspense on the answers, not on the read, so a retry keeps the list on screen", async () => {
+    stub.themes.mockResolvedValue([]);
+    stub.read.mockResolvedValue({ kind: "pending", phase: "shortlist" });
+    const keyOf = (page: unknown) => (find(page, Suspense) as unknown as { key: string }).key;
+    const unread = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", t: "horrors" }) });
+    const reading = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", t: "horrors", r: "0000cccc-0000-4000-8000-000000000003" }) });
+    const other = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", t: "dinosaurs" }) });
+    expect(keyOf(reading)).toBe(keyOf(unread));
+    expect(keyOf(other)).not.toBe(keyOf(unread));
+  });
+
   describe("the list while a read is pending (entry path)", () => {
     const R = "0000cccc-0000-4000-8000-000000000002";
     // Whether the search under the results' Suspense is told to hold its rows back for the loading state.
