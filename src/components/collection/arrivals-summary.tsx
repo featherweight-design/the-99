@@ -14,11 +14,14 @@
 
 import { useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
-import type { ArrivalsSummary, StillRow } from "../../lib/collection/arrivals";
+import type { ArrivalsSummary, ClearedRow, StillRow } from "../../lib/collection/arrivals";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
+import { wentSentence } from "../../lib/collection/copy-line";
 import { IssueInspector } from "./issue-inspector";
 import { ContestedCardRow } from "../decks/contested-card-row";
+import { CopyLine } from "../decks/copy-line";
 import { PrimaryButton } from "../ui/button";
 
 /** Money sections truncate at four; the contested section never does. */
@@ -99,6 +102,43 @@ export function ReceiptRow({
   );
 }
 
+/** One `No longer to buy` row: the line for a whole card (version 4), or the shipped deck row. */
+type ClearedItem =
+  | { kind: "line"; oracleId: string; sentence: string }
+  | { kind: "row"; row: ClearedRow };
+
+/**
+ * The `No longer to buy` rows. A version-4 receipt read with the switch on draws ONE ROW PER CARD,
+ * carrying where its copies went; a card the line cannot speak for (no `went`, a frozen name gone,
+ * or a card the contested section is still deciding) keeps its shipped per-deck rows. Every other
+ * receipt draws exactly what it always did.
+ */
+export function clearedItems(
+  summary: ArrivalsSummary | null,
+  addedCopy: boolean,
+  contestedIds: ReadonlySet<string>,
+): ClearedItem[] {
+  const cleared = summary?.cleared ?? [];
+  const went = summary?.went;
+  if (!addedCopy || summary?.version !== 4 || !went) return cleared.map((row) => ({ kind: "row", row }));
+  const byCard = new Map<string, ClearedRow[]>();
+  for (const row of cleared) byCard.set(row.oracleId, [...(byCard.get(row.oracleId) ?? []), row]);
+  return [...byCard].flatMap(([oracleId, rows]): ClearedItem[] => {
+    const w = went[oracleId];
+    const sentence = w && !contestedIds.has(oracleId) ? wentSentence(w, summary.names.decks) : null;
+    if (!sentence || !w) return rows.map((row) => ({ kind: "row", row }));
+    // THE LINE SPEAKS FOR THE DECKS IT NAMES, and no others. Every L-state names one kind of
+    // destination (a holder, or the brews reading a loose copy), so a deck the sentence does not
+    // name (a brew whose soft read rose beside a committed holder, or a draft-shaped row) keeps its
+    // shipped row rather than losing its fact to a sentence about someone else.
+    const named = new Set(w.decks.map((d) => d.deckId));
+    return [
+      { kind: "line", oracleId, sentence },
+      ...rows.filter((row) => !named.has(row.deckId)).map((row): ClearedItem => ({ kind: "row", row })),
+    ];
+  });
+}
+
 function reasonText(row: StillRow): { text: string; warn: boolean } {
   switch (row.reason.kind) {
     case "partly":
@@ -116,6 +156,8 @@ export function ArrivalsSummary({
   preview,
   filename,
   stampDate,
+  addedCopy = false,
+  chooser = {},
 }: {
   /** Null when the receipt did not survive its write — renders the nothing-to-report state. */
   summary: ArrivalsSummary | null;
@@ -124,12 +166,20 @@ export function ArrivalsSummary({
   preview: UploadPreview | null;
   filename: string;
   stampDate: string;
+  /** `ADDED_COPY_ENABLED`, read by the page. Off, the receipt draws what it always drew. */
+  addedCopy?: boolean;
+  /** The chooser behind each line's Change, by oracle id (`loadSummaryView`). */
+  chooser?: Record<string, ContestedCard>;
 }) {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [showAllCleared, setShowAllCleared] = useState(false);
   const [showAllStill, setShowAllStill] = useState(false);
 
   const cleared = summary?.cleared ?? [];
+  const clearedRows = clearedItems(summary, addedCopy, new Set(contested.map((c) => c.oracleId)));
+  // The note's tail offers Change, so it is said only when a drawn row carries one.
+  const clearedShown = showAllCleared ? clearedRows : clearedRows.slice(0, MONEY_LIMIT);
+  const hasChange = clearedShown.some((r) => r.kind === "line" && chooser[r.oracleId] !== undefined);
   const still = summary?.still ?? [];
   // What `Still to buy` is actually SHOWING — the rest sit behind `Show all`.
   const stillShown = showAllStill ? still : still.slice(0, MONEY_LIMIT);
@@ -213,23 +263,35 @@ export function ArrivalsSummary({
 
       {cleared.length > 0 ? (
         <section className="mt-[26px]">
-          <SectionHead label={copy.summary.sectionCleared(cleared.length)} note={copy.summary.sectionClearedNote} />
+          <SectionHead
+            label={copy.summary.sectionCleared(clearedRows.length)}
+            note={hasChange ? copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail : copy.summary.sectionClearedNote}
+          />
           <ul className="list-none p-0 m-0">
-            {(showAllCleared ? cleared : cleared.slice(0, MONEY_LIMIT)).map((row) => (
-              <ReceiptRow
-                key={`${row.deckId}:${row.oracleId}`}
-                cardName={names.cards[row.oracleId] ?? ""}
-                deckName={names.decks[row.deckId] ?? ""}
-              />
+            {clearedShown.map((item) => (
+              item.kind === "line" ? (
+                <CopyLine
+                  key={item.oracleId}
+                  cardName={names.cards[item.oracleId] ?? ""}
+                  sentence={item.sentence}
+                  chooser={chooser[item.oracleId]}
+                />
+              ) : (
+                <ReceiptRow
+                  key={`${item.row.deckId}:${item.row.oracleId}`}
+                  cardName={names.cards[item.row.oracleId] ?? ""}
+                  deckName={names.decks[item.row.deckId] ?? ""}
+                />
+              )
             ))}
           </ul>
-          {cleared.length > MONEY_LIMIT && !showAllCleared ? (
+          {clearedRows.length > MONEY_LIMIT && !showAllCleared ? (
             <button
               type="button"
               onClick={() => setShowAllCleared(true)}
               className="font-mono text-[11px] mt-[8px] text-[color:var(--accent)]"
             >
-              {copy.summary.showAll(cleared.length)}
+              {copy.summary.showAll(clearedRows.length)}
             </button>
           ) : null}
         </section>
@@ -275,6 +337,7 @@ export function ArrivalsSummary({
               <ContestedCardRow
                 key={card.oracleId}
                 card={card}
+                addedCopy={addedCopy}
               />
             ))}
           </div>

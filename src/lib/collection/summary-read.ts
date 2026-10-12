@@ -75,6 +75,12 @@ export type SummaryView = {
   /** Null when the receipt did not survive its write. Renders as nothing-to-report. */
   summary: ArrivalsSummary | null;
   contested: ContestedCard[];
+  /**
+   * The chooser behind each version-4 row's Change, keyed by oracle id: any card with a claimant,
+   * contested or not. Read only while `ADDED_COPY_ENABLED` is on; empty otherwise, and for a
+   * version 2 or 3 receipt, which draws no Change.
+   */
+  chooser: Record<string, ContestedCard>;
 };
 
 
@@ -162,6 +168,40 @@ export async function loadContestedCard(
 }
 
 /**
+ * The chooser for cards that may not be contested (plan `plan-added-copy-2026-10-12`, G3): the
+ * plural sibling of `loadContestedCard`, read live, with NO `isContested` gate. A card one deck
+ * needs is not contested and has no contested row, but the line's Change still opens a chooser on
+ * it, so this loads any card with a claimant. A card no deck claims has nothing to choose between
+ * and is left out.
+ *
+ * `frozen` carries a receipt's facts per card (copies brought, copies held before); a card it does
+ * not name reads as the supply, the way `loadContestedCards` reads a card with no import behind it.
+ */
+export async function loadChooserCards(
+  oracleIds: string[],
+  userId: string,
+  frozen: Record<string, { arrived: number; ownedBefore: number }> = {},
+): Promise<ContestedCard[]> {
+  if (oracleIds.length === 0) return [];
+  const availability = await loadAvailability(userId, { oracleIds });
+  const ids = [...availability.keys()].filter((id) => (availability.get(id)?.claims.length ?? 0) > 0);
+  if (ids.length === 0) return [];
+  const names = new Map<string, string>();
+  for (const row of await db.select({ oracleId: cards.oracleId, name: cards.name })
+    .from(cards).where(inArray(cards.oracleId, ids))) {
+    names.set(row.oracleId, row.name);
+  }
+  return ids.flatMap((oracleId) => {
+    const a = availability.get(oracleId);
+    if (!a) return [];
+    const f = frozen[oracleId];
+    return [buildContestedCard(oracleId, names.get(oracleId) ?? "", a, f
+      ? { arrived: f.arrived, ownedBefore: f.ownedBefore, fromImport: true }
+      : { arrived: a.owned, ownedBefore: 0, fromImport: false })];
+  });
+}
+
+/**
  * The shape both readers build, so the summary's rows and a redrawn row cannot differ.
  *
  * `arrived` and `ownedBefore` come from the FROZEN receipt when there is one — they are facts
@@ -184,7 +224,12 @@ function buildContestedCard(
   };
 }
 
-export async function loadSummaryView(uploadId: string, userId: string): Promise<SummaryView | null> {
+export async function loadSummaryView(
+  uploadId: string,
+  userId: string,
+  /** `addedCopy`: read the chooser behind each version-4 row's Change (the switch, from the page). */
+  opts: { addedCopy?: boolean } = {},
+): Promise<SummaryView | null> {
   // Projected, not `select()`. `preview_payload` carries every aggregated row of the import —
   // thousands of them on a real collection — and this route reads none of it. The issues line's
   // route back fetches that separately, and only when there are issues to show.
@@ -227,22 +272,52 @@ export async function loadSummaryView(uploadId: string, userId: string): Promise
     })];
   });
 
+  // The money sections lose whatever the chooser below is still deciding — see
+  // `withoutUndecided`. Keyed on the LIVE list above, not the payload's, so a card whose
+  // contention has resolved leaves the chooser and returns to the money sections together.
+  const shown = summary
+    ? withoutUndecided(
+        summary,
+        // The chooser's OWN claimants per card, not just the card: a money row belonging to a
+        // deck the chooser never lists is a deck whose demand nothing else would report.
+        contested.map((c) => ({ oracleId: c.oracleId, deckIds: c.claimants.map((x) => x.deckId) })),
+      )
+    : null;
+
   return {
     uploadId: upload.id,
     filename: upload.filename,
     createdAt: upload.createdAt,
     confirmedAt: upload.confirmedAt,
-    // The money sections lose whatever the chooser below is still deciding — see
-    // `withoutUndecided`. Keyed on the LIVE list above, not the payload's, so a card whose
-    // contention has resolved leaves the chooser and returns to the money sections together.
-    summary: summary
-      ? withoutUndecided(
-          summary,
-          // The chooser's OWN claimants per card, not just the card: a money row belonging to a
-          // deck the chooser never lists is a deck whose demand nothing else would report.
-          contested.map((c) => ({ oracleId: c.oracleId, deckIds: c.claimants.map((x) => x.deckId) })),
-        )
-      : null,
+    summary: shown,
     contested,
+    chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId) : {},
   };
+}
+
+/**
+ * The version-4 rows' choosers: the cards a `No longer to buy` row draws the line for, which the
+ * receipt says a deck took or read. That section has already lost every card the contested section
+ * decides (`withoutUndecided`) for that card's claimants; a draft-shaped row the chooser never
+ * lists can survive it, so a contested card is skipped here too and one card never draws two
+ * choosers on the page.
+ */
+async function chooserFor(
+  summary: ArrivalsSummary,
+  contested: ContestedCard[],
+  userId: string,
+): Promise<Record<string, ContestedCard>> {
+  const drawn = new Set(contested.map((c) => c.oracleId));
+  const frozen: Record<string, { arrived: number; ownedBefore: number }> = {};
+  for (const { oracleId } of summary.cleared) {
+    const w = summary.went?.[oracleId];
+    if (w && w.kind !== "none" && !drawn.has(oracleId)) {
+      frozen[oracleId] = { arrived: w.copies, ownedBefore: w.ownedBefore };
+    }
+  }
+  const out: Record<string, ContestedCard> = {};
+  for (const card of await loadChooserCards(Object.keys(frozen), userId, frozen)) {
+    out[card.oracleId] = { ...card, cardName: summary.names.cards[card.oracleId] ?? card.cardName };
+  }
+  return out;
 }

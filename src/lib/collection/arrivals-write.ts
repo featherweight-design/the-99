@@ -16,13 +16,15 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, csvUploads, collectionItems, decks } from "../../db/schema";
+import { cardAssignments, cards, csvUploads, collectionItems, decks } from "../../db/schema";
 import {
-  buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
+  arrivalPlacement, buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
 } from "./arrivals";
 import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import { holdsCopy } from "../decks/availability";
+import type { Placement } from "../decks/placements";
+import { addedCopyEnabled } from "./added-copy-flag";
 
 /** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
 export async function deckNamesFor(userId: string): Promise<Record<string, string>> {
@@ -108,9 +110,13 @@ export async function writeArrivalsReceipt(args: {
   nowShort?: (NowShortRow & { deckName?: string; cardName?: string })[];
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
+  /**
+   * Write version 4's `went` (where each arrived card's copies went). Defaults to the switch, read
+   * per request; off, the receipt is the version 3 it always was.
+   */
+  addedCopy?: boolean;
 }): Promise<ArrivalsSummary> {
   const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
-  const buyAfter = await loadDeckBuyRows(userId);
 
   // Only the cards that GAINED copies. Contention is a question about arrivals, so the
   // claim read is narrowed to them — passing every oracle in the old and new collection
@@ -119,9 +125,39 @@ export async function writeArrivalsReceipt(args: {
   const arrivedIds = Object.keys(ownedAfter).filter(
     (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
   );
-  const availability: Awaited<ReturnType<typeof loadAvailability>> = arrivedIds.length
-    ? await loadAvailability(userId, { oracleIds: arrivedIds })
-    : new Map();
+  // ONE SNAPSHOT for the money rows, the availability and the reservation rows, while the switch
+  // is on: separate READ COMMITTED statements would let a pick moved between them credit the
+  // arrived copy to a deck the availability never saw holding it, or keep A's "No longer to buy"
+  // row beside a line saying the copy went to B. Repeatable read fixes all three at the first
+  // statement. Off, the money rows are read as they always were.
+  const addedCopyOn = args.addedCopy ?? addedCopyEnabled();
+  type Reservations = Map<string, { deckId: string; copies: number }[]>;
+  type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
+  const read: Read = !addedCopyOn
+    ? {
+      buyAfter: await loadDeckBuyRows(userId),
+      availability: arrivedIds.length ? await loadAvailability(userId, { oracleIds: arrivedIds }) : new Map(),
+      reservations: new Map(),
+    }
+    : await db.transaction(async (tx): Promise<Read> => {
+        const buyAfter = await loadDeckBuyRows(userId, undefined, tx);
+        if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
+        const availability = await loadAvailability(userId, { oracleIds: arrivedIds }, tx);
+        // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
+        // the one `regrant` needs to say which reservation the smaller supply covered.
+        const reservations: Reservations = new Map();
+        if (addedCopyOn && availability.size > 0) {
+          for (const r of await tx
+            .select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+            .from(cardAssignments)
+            .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, [...availability.keys()])))
+            .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
+            reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
+          }
+        }
+        return { buyAfter, availability, reservations };
+      }, { isolationLevel: "repeatable read" });
+  const { buyAfter, availability, reservations } = read;
   const claims: Record<string, ArrivedClaimState> = {};
   for (const [oracleId, a] of availability) {
     claims[oracleId] = {
@@ -133,6 +169,19 @@ export async function writeArrivalsReceipt(args: {
       // note in `arrivals.ts`. The same test `isContested` reads, so the two agree.
       committedDecks: a.claims.filter(holdsCopy).length,
     };
+  }
+
+  // WHERE THE COPIES WENT, from the same read (`arrivalPlacement`). Only while the switch is on.
+  let placements: Record<string, Placement> | undefined;
+  if (addedCopyOn) {
+    placements = {};
+    for (const [oracleId, a] of availability) {
+      placements[oracleId] = arrivalPlacement(
+        a,
+        (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0),
+        reservations.get(oracleId) ?? [],
+      );
+    }
   }
 
   // Names for the rows the diff CAN EMIT, and nothing else: a card on a buy row either
@@ -166,6 +215,7 @@ export async function writeArrivalsReceipt(args: {
     parseErrorCount: args.parseErrorCount,
     cardNames: { ...(await cardNamesFor([...named])), ...shortCardNames },
     deckNames: { ...(await deckNamesFor(userId)), ...shortDeckNames },
+    placements,
   });
   await db.update(csvUploads).set({ summaryPayload: summary })
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));

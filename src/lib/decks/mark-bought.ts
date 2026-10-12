@@ -2,6 +2,7 @@
 // the card's availability either side of the write (`ReceiptSnapshots`, taken under the write's
 // lock). Pure.
 import { allocateClaims } from "./allocate";
+import { placementsOf } from "./placements";
 import { availabilityState, type Availability } from "./availability";
 
 /**
@@ -49,20 +50,13 @@ export function receiptFacts(
   afterFromDeck: Pick<Availability, "owned" | "free" | "soft"> | null,
   sourceDeckId: string,
 ): ReceiptFacts {
-  // What each deck HOLDS: a committed deck its allocation, a brew only what the player gave it.
-  // A brew's soft share is not a copy taken (every brew reads the same leftover), so naming it
-  // would tell the player a copy went to several decks at once.
-  const held = (c: ReturnType<typeof allocateClaims>[number]) => (c.brew ? c.granted : c.allocated);
-  const allocated = (a: Snap) =>
-    new Map(a ? allocateClaims(a).map((c) => [c.deckId, c]) : []);
-  const was = allocated(before);
-  const tookCopy = [...allocated(after).values()]
+  // Who took the copy, from the one helper every add surface reads (`placementsOf`): a committed
+  // deck by its allocation, a brew only by what the player gave it. A brew's soft share is not a
+  // copy taken (every brew reads the same leftover), so naming it would tell the player a copy
+  // went to several decks at once. The source deck is dropped only here, from the names printed.
+  const tookCopy = placementsOf(before, after).held
     .filter((c) => c.deckId !== sourceDeckId)
-    .map((c) => {
-      const prior = was.get(c.deckId);
-      return { deckId: c.deckId, deckName: c.deckName, copies: held(c) - (prior ? held(prior) : 0) };
-    })
-    .filter((c) => c.copies > 0);
+    .map(({ deckId, deckName, copies }) => ({ deckId, deckName, copies }));
   return { tookCopy, stillNeeds: stillNeedsOf(afterFromDeck) };
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ArrivalsSummary } from "./arrivals-summary";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
 import type { ArrivalsSummary as Summary } from "../../lib/collection/arrivals";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 
@@ -216,5 +217,119 @@ describe("copy.summary.nowShort", () => {
   });
   it("joins three with and", () => {
     expect(copy.summary.nowShort(["A", "B", "C"])).toBe("Replacing left 3 decks short: A, B and C.");
+  });
+});
+
+describe("ArrivalsSummary — where an added copy goes", () => {
+  const SOL = "sol";
+  const BRAGO = "brago";
+  const ELDRAZI = "eldrazi";
+  const names = {
+    cards: { [CARD]: "Brushland", [SOL]: "Sol Ring" },
+    decks: { [DECK]: "HD Avatar Aang", [BRAGO]: "HD - Brago", [ELDRAZI]: "HD - Eldrazi" },
+  };
+  // Two decks stopped owing Sol Ring and one stopped owing Brushland.
+  const cleared = [
+    { deckId: BRAGO, oracleId: SOL, copies: 1 },
+    { deckId: ELDRAZI, oracleId: SOL, copies: 1 },
+    { deckId: DECK, oracleId: CARD, copies: 1 },
+  ];
+  const v4 = summary({
+    version: 4,
+    cleared,
+    names,
+    went: {
+      [SOL]: { kind: "held", decks: [{ deckId: BRAGO, copies: 1, picked: false }, { deckId: ELDRAZI, copies: 1, picked: false }], copies: 2, ownedBefore: 15 },
+      [CARD]: { kind: "held", decks: [{ deckId: DECK, copies: 1, picked: true }], copies: 1, ownedBefore: 0 },
+    },
+  });
+  const chooser: Record<string, ContestedCard> = { [SOL]: { ...contestedCard(), oracleId: SOL, cardName: "Sol Ring" } };
+  const render4 = (s: Summary, addedCopy: boolean) => render(
+    <ArrivalsSummary
+      summary={s}
+      contested={[]}
+      preview={null}
+      filename="collection.csv"
+      stampDate="14 Sep 2026"
+      addedCopy={addedCopy}
+      chooser={chooser}
+    />,
+  );
+
+  it("draws one row per card on a version-4 receipt, carrying where its copies went", () => {
+    render4(v4, true);
+    expect(screen.getByText(copy.summary.sectionCleared(2))).toBeTruthy();
+    expect(screen.getByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeTruthy();
+    expect(screen.getByText(addedCopyCopy.row.goesToEarlier("HD Avatar Aang"))).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail)).toBeTruthy();
+    // Change only where there is a chooser to open.
+    expect(screen.getByRole("button", { name: addedCopyCopy.changeAria("Sol Ring") })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: addedCopyCopy.changeAria("Brushland") })).toBeNull();
+  });
+
+  it("keeps the shipped row for a deck the line does not name, so a brew's soft read is not lost", () => {
+    const BREW = "brew";
+    const s4 = summary({
+      version: 4,
+      cleared: [{ deckId: BRAGO, oracleId: SOL, copies: 1 }, { deckId: BREW, oracleId: SOL, copies: 1 }],
+      names: { cards: names.cards, decks: { ...names.decks, [BREW]: "HD - Kratos" } },
+      went: { [SOL]: { kind: "held", decks: [{ deckId: BRAGO, copies: 1, picked: false }], copies: 2, ownedBefore: 15 } },
+    });
+    render4(s4, true);
+    expect(screen.getByText(addedCopyCopy.row.goesTo("HD - Brago"))).toBeTruthy();
+    expect(screen.getByText("HD - Kratos")).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionCleared(2))).toBeTruthy();
+  });
+
+  it("offers Change in the note only when a drawn row has a chooser", () => {
+    render(
+      <ArrivalsSummary
+        summary={v4}
+        contested={[]}
+        preview={null}
+        filename="collection.csv"
+        stampDate="14 Sep 2026"
+        addedCopy
+        chooser={{}}
+      />,
+    );
+    expect(screen.getByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionClearedNote)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail)).toBeNull();
+  });
+
+  it("draws a version-3 receipt per deck and card, with no line and no Change", () => {
+    const v3: Summary = { ...v4, version: 3 };
+    delete v3.went;
+    render4(v3, true);
+    expect(screen.getByText(copy.summary.sectionCleared(3))).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionClearedNote)).toBeTruthy();
+    expect(screen.getByText("HD - Brago")).toBeTruthy();
+    expect(screen.getByText("HD - Eldrazi")).toBeTruthy();
+    expect(screen.queryByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeNull();
+    expect(screen.queryByRole("button", { name: addedCopyCopy.changeAria("Sol Ring") })).toBeNull();
+  });
+
+  it("draws a version-4 receipt exactly as before with the switch off", () => {
+    render4(v4, false);
+    expect(screen.getByText(copy.summary.sectionCleared(3))).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionClearedNote)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: addedCopyCopy.changeAria("Sol Ring") })).toBeNull();
+  });
+
+  it("keeps the shipped deck rows for a card the contested section is still deciding", () => {
+    render(
+      <ArrivalsSummary
+        summary={v4}
+        contested={[{ ...contestedCard(), oracleId: SOL, cardName: "Sol Ring" }]}
+        preview={null}
+        filename="collection.csv"
+        stampDate="14 Sep 2026"
+        addedCopy
+        chooser={chooser}
+      />,
+    );
+    expect(screen.queryByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeNull();
+    expect(screen.getByText(copy.summary.sectionCleared(3))).toBeTruthy();
   });
 });
