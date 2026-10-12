@@ -719,8 +719,9 @@ export async function applyCollectionChange(
             sql`${cardAssignments.createdAt} = ${drop.createdAt}::timestamp`,
           )).returning({ deckId: cardAssignments.deckId });
           const restore = dropped.length > 0 ? restoreToUndo(change.undoPlacement, row.rows) : null;
-          // Only once the press's own pick went, onto a card left with no reservation (one authored
-          // reservation per card: a pick made since owns it), and only for a deck the player still has.
+          // Only once the press's own pick went, never over a row the restored deck already holds,
+          // and only for a deck the player still has. Another deck's reservation does not block it: a card can carry older
+          // reservations than the one-per-card rule, and the press moved only the oldest.
           if (restore) {
             await tx.execute(sql`
               insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
@@ -728,7 +729,8 @@ export async function applyCollectionChange(
               from decks d
               where d.id = ${restore.deckId} and d.user_id = ${userId}
                 and not exists (
-                  select 1 from card_assignments a where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId}
+                  select 1 from card_assignments a
+                  where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId} and a.deck_id = ${restore.deckId}
                 )
             `);
           }
