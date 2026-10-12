@@ -1850,6 +1850,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
 
+- `pnpm probe:social` proves the social foundation's queries (plan `boards/plan-social-foundation-2026-10-12.md`,
+  PR 1): three made-up accounts plus a fourth, where the stranger gets nothing from any read or write; a token that
+  is spent, declined, revoked or expired cannot be accepted, and two accepts at once let exactly one through; the
+  10-invite cap; pods are friends-only with owner-only writes; unfriending takes each out of the other's pods; an
+  owner leaving hands the pod to the longest-standing member; and befriending moves both readers' data stamps, with
+  concurrent befriend and unfriend from both sides committing without a deadlock. It WRITES and removes every row it
+  wrote, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production
+  and local-dev are refused by id. Run it on a scratch branch after `pnpm db:migrate`, then delete the branch.
 - `pnpm probe:deck-tokens` proves the deck-tokens seams (`loadDeckTokens`, the join and hand-mark writes) against a real
   database that holds a published token catalog. It WRITES (joins, hand marks, a read marker for the account) and
   cleans up after itself, so it fails closed: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL` reports, and

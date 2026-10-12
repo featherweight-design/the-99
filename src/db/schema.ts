@@ -2888,3 +2888,76 @@ export const fitsReads = pgTable("fits_reads", {
   uniqueIndex("fits_reads_one_pending_idx").on(t.userId, t.oracleId).where(sql`${t.status} = 'pending'`),
   index("fits_reads_user_card_idx").on(t.userId, t.oracleId, t.createdAt),
 ]);
+
+// ── Social foundation (plan `boards/plan-social-foundation-2026-10-12.md`, scope
+// `scope-social-2026-10-12.md` and Hugh's rulings of 2026-10-12). Every row keys on the Clerk user
+// id, as `decks.user_id` does. Every cross-user read lives in `src/lib/social/`, and
+// `check:social-reads` keeps it there.
+
+/** The name a friend sees, and the id a client payload carries in place of a Clerk id. */
+export const socialProfiles = pgTable("social_profiles", {
+  userId: text("user_id").primaryKey(),
+  publicId: uuid("public_id").notNull().unique().defaultRandom(),
+  /** Player-typed: 1 to 30 code points, validated by `rules.ts` before every write. */
+  displayName: text("display_name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("social_profiles_display_name_check", sql`char_length(${t.displayName}) between 1 and 30`),
+]);
+
+/**
+ * One friendship is TWO rows, one per direction, always written and deleted together by
+ * `befriend`/`unfriend` in one transaction. Directed rows let `user_data_touch` keep its one owner
+ * column, and make "my friends" a primary-key prefix.
+ */
+export const friendLinks = pgTable("friend_links", {
+  userId: text("user_id").notNull(),
+  friendUserId: text("friend_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.friendUserId] }),
+  check("friend_links_not_self_check", sql`${t.userId} <> ${t.friendUserId}`),
+]);
+
+/**
+ * A single-use invite: a link or its QR code (Hugh, Q1/Q2). 128 random bits, seven days, at most one
+ * of redeemed, declined or revoked. There is no search and no short code: the token is the only way
+ * to reach another account.
+ */
+export const friendInvites = pgTable("friend_invites", {
+  token: text("token").primaryKey(),
+  inviterUserId: text("inviter_user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  redeemedBy: text("redeemed_by"),
+  redeemedAt: timestamp("redeemed_at"),
+  declinedAt: timestamp("declined_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (t) => [
+  check(
+    "friend_invites_one_end_check",
+    sql`(case when ${t.redeemedAt} is null then 0 else 1 end) + (case when ${t.declinedAt} is null then 0 else 1 end) + (case when ${t.revokedAt} is null then 0 else 1 end) <= 1`,
+  ),
+  check("friend_invites_redeemer_check", sql`(${t.redeemedAt} is null) = (${t.redeemedBy} is null)`),
+  index("friend_invites_inviter_idx").on(t.inviterUserId, t.createdAt),
+]);
+
+/** A named group: an owner adds members only from their own friends (Hugh, Q4). The owner is always a member too. */
+export const pods = pgTable("pods", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerUserId: text("owner_user_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("pods_name_check", sql`char_length(${t.name}) between 1 and 40`),
+  index("pods_owner_idx").on(t.ownerUserId),
+]);
+
+export const podMembers = pgTable("pod_members", {
+  podId: uuid("pod_id").notNull().references(() => pods.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.podId, t.userId] }),
+  index("pod_members_user_idx").on(t.userId),
+]);

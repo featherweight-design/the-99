@@ -729,6 +729,13 @@
       "when": 1791840561883,
       "tag": "0103_mana_help_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1791841939454,
+      "tag": "0104_social_foundation",
+      "breakpoints": true
     }
   ]
 }
