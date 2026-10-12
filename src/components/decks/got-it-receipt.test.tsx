@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import type { ShortDeck } from "../../lib/collection/write";
 import type { GotItWritten } from "./got-it-receipt";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 
 const { previewRevert, revertCollectionEntry } = vi.hoisted(() => ({
   previewRevert: vi.fn(),
@@ -12,8 +14,11 @@ vi.mock("../../app/collection/history-actions", () => ({ previewRevert, revertCo
 vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: vi.fn() }));
 const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+const { assignCopy } = vi.hoisted(() => ({ assignCopy: vi.fn() }));
+vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy }));
 
 const { GotItReceipt, receiptBody } = await import("./got-it-receipt");
+const { addedCopyCopy } = await import("../../lib/copy/added-copy");
 const { TOAST_MS } = await import("../collection/edit-toast");
 
 const c = gotItCopy.receipt;
@@ -362,5 +367,91 @@ describe("Undo", () => {
     draw(written(), NAME, { failed: true });
     expect(toast()).toHaveAttribute("role", "alert");
     expect(screen.getByRole("link", { name: c.openHistory })).toBeInTheDocument();
+  });
+});
+
+describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
+  const OTHER = "22222222-2222-4222-8222-222222222222";
+  type Claimant = ContestedCard["claimants"][number];
+  const claimant = (deckId: string, deckName: string, over: Partial<Claimant> = {}): Claimant => ({
+    deckId, deckName, quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 1, allocated: 1, ...over,
+  });
+  // The copy went to this deck by seniority; HD - Brago is the junior committed deck behind it.
+  const chooser = (picked: string | null = null): ContestedCard => ({
+    oracleId: ORACLE, cardName: "", arrived: 1, ownedBefore: 0, fromImport: true, owned: 1,
+    claimants: [
+      claimant(DECK, "HD - Eldrazi", { allocated: picked === OTHER ? 0 : 1 }),
+      claimant(OTHER, "HD - Brago", { since: 2, allocated: picked === OTHER ? 1 : 0, granted: picked === OTHER ? 1 : 0 }),
+    ],
+  });
+  const went = (held: string[], soft: { deckId: string; deckName: string }[] = []) => ({
+    held: held.map((deckId) => ({ deckId, deckName: "x", copies: 1, picked: false })), soft, unplaced: 0,
+  });
+  const facts = (over: Partial<ReceiptFacts> = {}): ReceiptFacts => ({
+    tookCopy: [], stillNeeds: 0, went: went([DECK]), chooser: chooser(), ...over,
+  });
+  const change = () => screen.getByRole("button", { name: c.changeAria(NAME) });
+
+  it("says the copy went to this deck, and offers Change (IG3)", () => {
+    draw(written({ facts: facts() }));
+    expect(toast().textContent).toContain(c.self);
+    expect(change().textContent).toBe(c.change);
+  });
+
+  it("says a loose copy is free for this brew, naming the others that read it (IG2)", () => {
+    const soft = [{ deckId: DECK, deckName: "HD -Thorin" }, { deckId: "k", deckName: "HD - Kratos" }, { deckId: "g", deckName: "HD - Gishath" }];
+    expect(receiptBody(facts({ went: went([], soft) }), DECK)).toBe(c.softSelf(["HD - Kratos", "HD - Gishath"]));
+    expect(receiptBody(facts({ went: went([], soft.slice(0, 1)) }), DECK)).toBe(c.softSelf([]));
+  });
+
+  it("says a copy no deck needs is free, with no Change (IG4)", () => {
+    draw(written({ facts: facts({ went: went([]) }) }));
+    expect(toast().textContent).toContain(c.nobody);
+    expect(screen.queryByRole("button", { name: c.changeAria(NAME) })).toBeNull();
+  });
+
+  it("keeps the shipped silence with the switch off (no `went`)", () => {
+    expect(receiptBody({ tookCopy: [], stillNeeds: 0 }, DECK)).toBeNull();
+    draw(written({ facts: { tookCopy: [], stillNeeds: 0 } }));
+    expect(screen.queryByRole("button", { name: c.changeAria(NAME) })).toBeNull();
+  });
+
+  it("opens the chooser in a dialog on Change, holds the toast's clock, and closes on Done", async () => {
+    const { onExpire } = draw(written({ facts: facts() }));
+    fireEvent.click(change());
+    const dialog = screen.getByRole("dialog", { name: c.changeTitle });
+    expect(dialog.textContent).toContain(c.changeSub(NAME));
+    expect(screen.getByRole("radiogroup")).toBeInTheDocument();
+    expect(change()).toHaveAttribute("aria-expanded", "true");
+    await tick(TOAST_MS * 3);
+    expect(onExpire).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await tick(TOAST_MS + 300);
+    expect(onExpire).toHaveBeenCalled();
+  });
+
+  it("redraws the sentence from the pick, and Undo drops that pick with the copy", async () => {
+    assignCopy.mockResolvedValue({ ok: true, card: chooser(OTHER) });
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ facts: facts() }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    expect(assignCopy).toHaveBeenCalledWith(ORACLE, OTHER);
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(toast().textContent).toContain(addedCopyCopy.line.goesToPicked(NAME, "HD - Brago"));
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
+    expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, undefined, DECK, { oracleId: ORACLE, deckId: OTHER });
+  });
+
+  it("drops no pick on an Undo when Change was never pressed", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ facts: facts() }));
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK);
+    expect(previewRevert.mock.calls[0]).toHaveLength(2);
   });
 });

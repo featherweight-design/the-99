@@ -2,7 +2,8 @@
 // the card's availability either side of the write (`ReceiptSnapshots`, taken under the write's
 // lock). Pure.
 import { allocateClaims } from "./allocate";
-import { placementsOf } from "./placements";
+import { placementsOf, type Placement } from "./placements";
+import type { ContestedCard } from "../collection/summary-read";
 import { availabilityState, type Availability } from "./availability";
 
 /**
@@ -40,6 +41,13 @@ export type ReceiptFacts = {
   tookCopy: { deckId: string; deckName: string; copies: number }[];
   /** Copies the source deck still needs, from its own vantage: the figure its Shopping row draws. */
   stillNeeds: number;
+  /**
+   * Where an added copy goes (`ADDED_COPY_ENABLED` only, so absent with the switch off): every
+   * deck the copy went to, the source deck included, and the brews that read it as theirs.
+   */
+  went?: Placement;
+  /** The chooser Change opens, built from the write's own snapshot, so it opens with no fetch. */
+  chooser?: ContestedCard | null;
 };
 
 type Snap = Pick<Availability, "owned" | "claims"> | null;

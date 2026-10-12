@@ -58,6 +58,20 @@ export const gotItCopy = {
     claimedMany: (decks: number, need: number) =>
       `${n(decks)} older decks were short too, so the copies went there first. This deck still needs ${n(need)}.`,
     partial: (need: number) => `The deck still needs ${n(need)}.`,
+    /**
+     * Where an added copy goes (`ADDED_COPY_ENABLED`). Placeholders pending /copy-review, from
+     * the handoff's `added-copy · copy strings.ts`. `claimed` / `claimedMany` are unchanged.
+     */
+    self: "It goes to this deck.",
+    softSelf: (others: string[]) => (others.length === 0
+      ? "It’s free, so this deck can use it."
+      : `It’s free, so this deck can use it. So can ${others.length < 2 ? others.join("") : `${others.slice(0, -1).join(", ")} and ${others[others.length - 1]}`}, which ${others.length === 1 ? "needs" : "need"} one too.`),
+    nobody: "No deck needs this copy, so it’s free.",
+    change: "Change",
+    changeAria: (card: string) => `Change where ${card} goes`,
+    changeTitle: "Where this copy goes",
+    changeSub: (card: string) => `${card} · added just now`,
+    done: "Done",
     history: "History",
     undo: "Undo",
     undoAria: (card: string) => `Undo adding ${card}`,

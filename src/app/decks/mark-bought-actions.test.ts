@@ -46,6 +46,7 @@ vi.mock("../../lib/collection/write", () => ({
 }));
 
 vi.mock("../../lib/collection/summary-read", () => ({
+  buildContestedCard: (oracleId: string, _name: string, a: { owned: number }, frozen: unknown) => ({ oracleId, owned: a.owned, frozen }),
   loadContestedCard: async (...args: unknown[]) => {
     state.contestedArgs = args;
     return state.contested;
@@ -72,6 +73,7 @@ beforeEach(() => {
   process.env.SHOPPING_MARK_BOUGHT_ENABLED = "true";
   process.env.COLLECTION_EDIT_ENABLED = "true";
   process.env.ALL_DECKS_CART_ENABLED = "true";
+  delete process.env.ADDED_COPY_ENABLED;
 });
 
 describe("markBought", () => {
@@ -130,6 +132,23 @@ describe("markBought", () => {
       requireMember: { deckIds: [DECK], oracleId: CARD },
     });
     expect(out).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
+  });
+
+  it("adds where the copy went and the chooser Change opens, from the write's own snapshot, only with the switch on", async () => {
+    const claim = { id: DECK, name: "HD - Brago", quantity: 1, mature: true, since: 1 };
+    state.result = applied({
+      before: { owned: 1, claims: [claim] },
+      after: { owned: 3, claims: [claim] },
+      afterFromDecks: { [DECK]: { owned: 3, free: 0, soft: 0 } },
+    });
+    expect(await press()).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
+    process.env.ADDED_COPY_ENABLED = "true";
+    expect(await press()).toEqual({ applied: { id: ID, receipt: {
+      tookCopy: [],
+      stillNeeds: 0,
+      went: { held: [], soft: [], unplaced: 2 },
+      chooser: { oracleId: CARD, owned: 3, frozen: { arrived: 2, ownedBefore: 1, fromImport: true } },
+    } } });
   });
 
   it("invalidates before it answers, and warms after", async () => {

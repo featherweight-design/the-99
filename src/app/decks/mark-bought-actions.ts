@@ -12,7 +12,9 @@ import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
-import { loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
+import { buildContestedCard, loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
+import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
+import { placementsOf } from "../../lib/decks/placements";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
@@ -109,10 +111,26 @@ export async function markBought(
       invalidateCollectionReaders(userId);
       after(() => warmCommanderScores(userId));
       const snaps = result.status === "applied" ? result.receipt : undefined;
+      const facts = snaps ? receiptFacts(snaps.before, snaps.after, snaps.afterFromDecks[deckId] ?? null, deckId) : null;
       return {
         applied: {
           id: result.entry.id,
-          receipt: snaps ? receiptFacts(snaps.before, snaps.after, snaps.afterFromDecks[deckId] ?? null, deckId) : null,
+          // Where the copy went, and the chooser Change opens on it, both from the write's own
+          // snapshot (taken under its locks), so the receipt says what the write did and the
+          // chooser opens with no second read. Only while the switch is on.
+          receipt: facts && snaps && addedCopyEnabled()
+            ? {
+                ...facts,
+                went: placementsOf(snaps.before, snaps.after),
+                chooser: snaps.after && snaps.after.claims.length > 0
+                  ? buildContestedCard(oracleId, "", snaps.after, {
+                      arrived: quantity as number,
+                      ownedBefore: Math.max(snaps.after.owned - (quantity as number), 0),
+                      fromImport: true,
+                    })
+                  : null,
+              }
+            : facts,
         },
       };
     }

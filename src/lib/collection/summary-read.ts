@@ -207,7 +207,7 @@ export async function loadChooserCards(
  * `arrived` and `ownedBefore` come from the FROZEN receipt when there is one — they are facts
  * about an import, not about now — and are nought for a row read outside that context.
  */
-function buildContestedCard(
+export function buildContestedCard(
   oracleId: string,
   cardName: string,
   a: Availability,

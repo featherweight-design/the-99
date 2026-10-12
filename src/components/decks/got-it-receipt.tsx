@@ -9,7 +9,7 @@
 // short (call B: the source deck is passed as `ignoreDeckId`, on this undo only), then in flight,
 // then done or failed. A failed undo withdraws Undo and points to History (the UndoRow rule).
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { previewRevert, revertCollectionEntry } from "../../app/collection/history-actions";
@@ -17,6 +17,9 @@ import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { Finish } from "../../lib/collection/key";
 import type { ShortDeck } from "../../lib/collection/write";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+import { CopyChooserDialog } from "./copy-chooser-dialog";
 import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -35,13 +38,52 @@ export type GotItWritten<F = ReceiptFacts> = {
   finish: Finish;
 };
 
-/** The receipt's sentence after the detail line: who took the copy, or what is still needed. */
-export function receiptBody(facts: ReceiptFacts | null): string | null {
-  if (!facts || facts.stillNeeds <= 0) return null;
+/**
+ * The receipt's sentence after the detail line: who took the copy, or what is still needed.
+ *
+ * With `went` (where an added copy goes, `ADDED_COPY_ENABLED`) it is never silent: a copy this deck
+ * took says so (`self`), a loose copy this brew reads says so and names the other brews reading it
+ * (`softSelf`), and a copy no deck needed is free (`nobody`). Without it, the shipped rule: nothing
+ * once the deck needs no more.
+ */
+export function receiptBody(facts: ReceiptFacts | null, sourceDeckId?: string): string | null {
+  if (!facts) return null;
   const took = facts.tookCopy;
-  if (took.length === 1) return c.claimed(took[0].deckName, facts.stillNeeds);
-  if (took.length > 1) return c.claimedMany(took.length, facts.stillNeeds);
-  return c.partial(facts.stillNeeds);
+  if (facts.stillNeeds > 0) {
+    if (took.length === 1) return c.claimed(took[0].deckName, facts.stillNeeds);
+    if (took.length > 1) return c.claimedMany(took.length, facts.stillNeeds);
+    return c.partial(facts.stillNeeds);
+  }
+  const went = facts.went;
+  if (!went) return null;
+  if (went.held.some((h) => h.deckId === sourceDeckId)) return c.self;
+  if (went.soft.some((b) => b.deckId === sourceDeckId)) {
+    return c.softSelf(went.soft.filter((b) => b.deckId !== sourceDeckId).map((b) => b.deckName));
+  }
+  if (placedNowhere(facts)) return c.nobody;
+  return null;
+}
+
+/**
+ * The body after a Change, from the card the chooser's last write read back: the deck the player
+ * gave the copy to (this deck reads `self`). With no pick standing, the body the purchase wrote.
+ */
+export function bodyAfterChange(
+  live: ContestedCard, cardName: string, sourceDeckId: string, purchased: string | null,
+): string | null {
+  const picked = live.claimants.find((x) => x.granted > 0);
+  if (!picked) return purchased;
+  return picked.deckId === sourceDeckId ? c.self : addedCopyCopy.line.goesToPicked(cardName, picked.deckName);
+}
+
+/** No deck took or read the copy: the one body with no Change (IG4). */
+function placedNowhere(facts: ReceiptFacts): boolean {
+  return !!facts.went && facts.went.held.length === 0 && facts.went.soft.length === 0;
+}
+
+/** Whether the receipt offers Change: a chooser to open, and a copy some deck took or read. */
+export function receiptChangeable(facts: ReceiptFacts | null): boolean {
+  return !!facts?.chooser && !placedNowhere(facts);
 }
 
 type Phase =
@@ -72,6 +114,7 @@ export type GotItUndoHost = {
 
 export function GotItReceipt({
   deckId, oracleId, cardName, written, body: bodyOverride, placement = "deck", host, failed = false, onExpire,
+  undoPlacement,
 }: {
   /**
    * The decks the undo leaves out of its deck check (call B): the deck the copy was bought for, or
@@ -90,6 +133,8 @@ export function GotItReceipt({
   /** Drawn straight in the failed form: an undo that failed after its toast was replaced. */
   failed?: boolean;
   onExpire: () => void;
+  /** The pick the press itself made (the cart's chooser): Undo drops it with the copy. */
+  undoPlacement?: { oracleId: string; deckId?: string };
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
@@ -102,8 +147,14 @@ export function GotItReceipt({
   const stage = useRef<"idle" | "warning" | "network">("idle");
   const mounted = useRef(true);
   const router = useRouter();
+  // Change (where an added copy goes): the chooser open over the toast, and the card its last
+  // write read back. Both are null until the player presses Change.
+  const [choosing, setChoosing] = useState(false);
+  const [live, setLive] = useState<ContestedCard | null>(null);
+  const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
-  const inFlight = busy || phase.k === "warning";
+  // The toast's clock holds while the chooser is open, as it does for an undo (design table: open).
+  const inFlight = busy || phase.k === "warning" || choosing;
   const { restart } = useToastClock(ref, !hover && !focus && !inFlight, onExpire);
 
   // A warning closes with its toast; a request out is still the host's, and ends when it settles.
@@ -115,7 +166,25 @@ export function GotItReceipt({
     };
   }, [host, oracleId]);
 
-  const body = bodyOverride !== undefined ? bodyOverride : receiptBody(written.facts as ReceiptFacts | null);
+  const facts = written.facts as ReceiptFacts | null;
+  const sourceDeckId = typeof deckId === "string" ? deckId : null;
+  const purchased = receiptBody(facts, sourceDeckId ?? undefined);
+  const body = bodyOverride !== undefined
+    ? bodyOverride
+    : live && sourceDeckId ? bodyAfterChange(live, cardName, sourceDeckId, purchased) : purchased;
+  // Change belongs to a deck's receipt (the cart writes its own body), and only where a chooser came
+  // back with the write and some deck took or read the copy.
+  const chooser = bodyOverride === undefined && sourceDeckId && receiptChangeable(facts) ? facts!.chooser! : null;
+  // The pick Undo drops with the copy: the press's own (the cart's), else the one Change left standing.
+  const livePick = live?.claimants.find((x) => x.granted > 0)?.deckId;
+  const dropPick = undoPlacement ?? (livePick ? { oracleId, deckId: livePick } : undefined);
+  // Sent only when there is one, so an undo with no pick asks exactly what it always asked.
+  const picks = dropPick ? [dropPick] as const : [] as const;
+  const closeChooser = useCallback(() => {
+    setChoosing(false);
+    restart();
+    requestAnimationFrame(() => changeRef.current?.focus());
+  }, [restart]);
 
   // The check asked for a warning, but the toast that would show it has gone: nothing was written.
   function abandon() {
@@ -136,7 +205,7 @@ export function GotItReceipt({
   // an invalidation error can follow a write that landed. The entry is read back first.
   async function reconcile() {
     try {
-      const p = await previewRevert(written.entryId, deckId);
+      const p = await previewRevert(written.entryId, deckId, ...picks);
       if ("alreadyReverted" in p) return done(true);
       fail();
     } catch {
@@ -149,7 +218,7 @@ export function GotItReceipt({
     setPhase({ k: "undoing" });
     actionId.current ??= crypto.randomUUID();
     try {
-      const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId);
+      const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId, ...picks);
       if ("reverted" in out) return done(false);
       if ("alreadyReverted" in out) return done(true);
       if ("wouldShort" in out) {
@@ -178,7 +247,7 @@ export function GotItReceipt({
     host.start(oracleId);
     setPhase({ k: "checking" });
     try {
-      const p = await previewRevert(written.entryId, deckId);
+      const p = await previewRevert(written.entryId, deckId, ...picks);
       if ("alreadyReverted" in p) return done(true);
       if (!("rows" in p)) return fail();
       if (p.decks.length > 0) {
@@ -284,13 +353,30 @@ export function GotItReceipt({
     );
   }
   return (
+    <>
     <ToastFrame
       frameRef={ref}
       placement={placement}
       onHold={hold}
       title={added}
       detail={detail}
-      body={body}
+      body={chooser && body && !busy ? (
+        <>
+          {body}
+          <button
+            ref={changeRef}
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={choosing}
+            aria-label={c.changeAria(cardName)}
+            onClick={() => setChoosing(true)}
+            // 32 tall from `md`, a 44 hit area on the phone through its padding (design table).
+            className="ml-[6px] inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[12.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2 md:min-h-[32px]"
+          >
+            {c.change}
+          </button>
+        </>
+      ) : body}
       actions={
         <>
           {/* History steps aside while the undo is checked or written (C3). */}
@@ -315,6 +401,16 @@ export function GotItReceipt({
         </>
       }
     />
+    {choosing && chooser && sourceDeckId ? (
+      <CopyChooserDialog
+        card={live ?? chooser}
+        cardName={cardName}
+        thisDeckId={sourceDeckId}
+        onCard={setLive}
+        onClose={closeChooser}
+      />
+    ) : null}
+    </>
   );
 }
 
