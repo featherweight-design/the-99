@@ -196,6 +196,47 @@ describe("ImproveDoor: the result lasts the visit (Hugh, 2026-10-11)", () => {
   });
 });
 
+describe("ImproveDoor: review round 1", () => {
+  it("focuses the result heading once, and never takes focus back when the read lands", async () => {
+    let answer!: (h: ManaHelp) => void;
+    render(door(() => new Promise<ManaHelp>((r) => { answer = r; })));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    await waitFor(() => expect(document.activeElement?.tagName).toBe("H3"));
+    const elsewhere = document.createElement("button");
+    document.body.appendChild(elsewhere);
+    elsewhere.focus();
+    await act(async () => { answer(helpFor("R")); });
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+
+  it("keeps nothing from a read that lands after the player left the deck and came back", async () => {
+    let answer!: (h: ManaHelp) => void;
+    const { unmount } = render(door(() => new Promise<ManaHelp>((r) => { answer = r; })));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    noteDeckRoute("/decks");
+    noteDeckRoute(`/decks/${A}`);
+    await act(async () => { answer(helpFor("R")); });
+    unmount();
+    render(door(vi.fn()));
+    expect(document.querySelector("[data-mana-help]")).toBeNull();
+  });
+
+  it("draws no buy tag and no link for a staple with no price", async () => {
+    render(door(async () => helpFor("R", { staples: [staple({ priceCents: null })] })));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    await waitFor(() => expect(document.querySelector("[data-mana-staple='s1']")).not.toBeNull());
+    const row = document.querySelector("[data-mana-staple='s1']") as HTMLElement;
+    expect(row.textContent).toContain(copy.help.toBuy);
+    expect(within(row).queryByRole("link")).toBeNull();
+    // `to buy` alone: no tag's own `buy` beside it.
+    expect(row.textContent!.match(/buy/g)).toHaveLength(1);
+  });
+});
+
 describe("ImproveDoor: absent", () => {
   it("draws nothing for a colorless deck", () => {
     const colorless = balanceOf([spell("Ring", "{C}{C}"), land("wastes", 10, ["C"])], []);

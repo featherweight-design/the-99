@@ -122,7 +122,9 @@ describe("a visit's kept values", () => {
   });
 
   it("clears a value set to undefined", () => {
+    noteDeckRoute(`/decks/${A}`);
     setVisitValue(A, "mana-help", 1);
+    expect(visitValue(A, "mana-help")).toBe(1);
     setVisitValue(A, "mana-help", undefined);
     expect(visitValue(A, "mana-help")).toBeUndefined();
   });

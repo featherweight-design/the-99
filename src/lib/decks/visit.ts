@@ -88,6 +88,12 @@ export function setVisitValue(anyCaseId: string, slot: VisitSlot, value: unknown
   else visit.values[slot] = value;
 }
 
+/** The open visit to the deck, as an identity a reply can be checked against: a later visit to
+ *  the same deck is a different token. Null with no visit open to it. */
+export function visitToken(anyCaseId: string): object | null {
+  return visit?.deckId === anyCaseId.toLowerCase() ? visit : null;
+}
+
 export function resetDeckVisitForTests(): void {
   visit = null;
 }

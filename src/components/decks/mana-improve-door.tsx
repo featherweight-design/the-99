@@ -15,7 +15,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { readManaHelpFor } from "../../app/decks/mana-actions";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { PriceFact } from "../../lib/decks/price";
-import { setVisitValue, visitValue } from "../../lib/decks/visit";
+import { setVisitValue, visitToken, visitValue } from "../../lib/decks/visit";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tuning/mana-balance";
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
@@ -65,7 +65,10 @@ export function ImproveDoor({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const firstRowRef = useRef<HTMLButtonElement>(null);
   const resultRef = useRef<HTMLHeadingElement>(null);
-  const [focus, setFocus] = useState<"none" | "step" | "result" | "button">("none");
+  // Where focus goes on the next door change, CONSUMED by the first one: a read landing later
+  // re-renders the result and must not pull focus back from wherever the reader moved meanwhile.
+  const wantFocus = useRef<"step" | "result" | "button" | null>(null);
+  const setFocus = (target: "step" | "result" | "button") => { wantFocus.current = target; };
   const asked = useRef(0);
 
   // The list moved under a kept result: it described a deck that is gone.
@@ -79,15 +82,20 @@ export function ImproveDoor({
   }, [revision, deckId]);
 
   useEffect(() => {
-    if (focus === "step") firstRowRef.current?.focus();
-    else if (focus === "result") resultRef.current?.focus();
-    else if (focus === "button") buttonRef.current?.focus();
-  }, [focus, door]);
+    const target = wantFocus.current;
+    if (target === null) return;
+    wantFocus.current = null;
+    if (target === "step") firstRowRef.current?.focus();
+    else if (target === "result") resultRef.current?.focus();
+    else buttonRef.current?.focus();
+  }, [door]);
 
   if (order.length === 0) return null;
 
   const run = async (color: BalanceColor) => {
     const mine = ++asked.current;
+    // The visit this press belongs to: a reply landing in a later visit to the deck keeps nothing.
+    const token = visitToken(deckId);
     setVisitValue(deckId, "mana-help", undefined);
     setDoor({ at: "result", color, help: { kind: "reading" } });
     setFocus("result");
@@ -104,7 +112,7 @@ export function ImproveDoor({
       setFocus("step");
       return;
     }
-    if (help) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
+    if (help && visitToken(deckId) === token) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
     setDoor({ at: "result", color, help: help ? { kind: "ok", help } : { kind: "failed" } });
   };
 
@@ -359,7 +367,7 @@ function StapleRow({ staple, siblings, trade, picked, commander }: { staple: Sta
       <div className="flex flex-wrap items-center gap-x-[10px] gap-y-[8px]">
         <span
           aria-hidden
-          className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-[var(--surface)] ${owned ? "border border-[color:var(--border-strong)]" : "border border-dashed border-[color:var(--border-dashed)]"}`}
+          className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] ${staple.imageUri ? "bg-[var(--surface)]" : "bg-[repeating-linear-gradient(135deg,var(--surface)_0_3px,var(--surface-sunken)_3px_6px)]"} ${owned ? "border border-[color:var(--border-strong)]" : "border border-dashed border-[color:var(--border-dashed)]"}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- Scryfall art is remote; next/image would need a loader per host for a 22px thumbnail */}
           {staple.imageUri ? <img src={staple.imageUri} alt="" loading="lazy" className="size-full object-cover" /> : null}
@@ -380,8 +388,8 @@ function StapleRow({ staple, siblings, trade, picked, commander }: { staple: Sta
           <span className="flex flex-wrap items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">
             <span aria-hidden className="size-[7px] rounded-full border border-dashed border-[color:var(--fg-faint)]" />
             {copy.help.toBuy}
-            <BuyTag variant="row" {...priceOf(staple.priceCents)} />
-            {/* With no price there is nothing to buy at (R3b's priceless staple draws no link). */}
+            {/* With no price there is nothing to buy at: R3b's priceless staple draws no tag and no link. */}
+            {staple.priceCents === null ? null : <BuyTag variant="row" {...priceOf(staple.priceCents)} />}
             {staple.priceCents === null ? null : <a
               href={manapoolCardUrl(staple.name)}
               target="_blank"
