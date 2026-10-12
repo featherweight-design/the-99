@@ -169,12 +169,13 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
   const item = (r: Row) => view === "tiles"
     ? <PreconTile key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} />
     : <PreconRow key={r.fileName} row={r} href={href(r)} eager={eagerIds.has(r.fileName)} />;
-  // Tiles: 2-up at 390 (gap 10); from `md` a 178px floor (the deck grid's and /collection's), which
-  // is 4-up at 900 (gap 12) and keeps every tile under ~226px wide however wide the window, so the
-  // art's corners always clear the 3.1% matte rule. Each tile stretches to its row so the art and the
-  // caption line up and only the foot differs (R4 §5).
+  // Tiles: 2-up to 480px (174px at 390, gap 10); a 150px floor from 480 to `md`; from `md` a 178px
+  // floor (the deck grid's and /collection's), 4-up at 900 (gap 12). Every width therefore holds a
+  // tile under ~230px, where the shell's 9-10px radius and a partner card's 5px both clear the 3.1%
+  // matte rule; a fixed column count grew tiles past it (329px at 700). Each tile stretches to its
+  // row so the art and the caption line up and only the foot differs (R4 §5).
   const listClass = view === "tiles"
-    ? "m-0 grid list-none grid-cols-2 items-stretch gap-[10px] p-0 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[12px]"
+    ? "m-0 grid list-none grid-cols-2 items-stretch gap-[10px] p-0 min-[480px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] md:gap-[12px]"
     : "m-0 flex list-none flex-col gap-[8px] p-0";
 
   return (
