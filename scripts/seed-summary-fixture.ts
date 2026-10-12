@@ -38,7 +38,7 @@ const db = drizzle(pool);
 const userId = process.argv[2];
 const clean = process.argv.includes("--clean");
 const addedCopy = process.argv.includes("--added-copy");
-if (!userId) throw new Error("usage: pnpm seed:summary <userId> [--clean]");
+if (!userId) throw new Error("usage: pnpm seed:summary <userId> [--added-copy] [--clean]");
 
 /**
  * Ids derived FROM THE USER, so a re-run replaces its own fixture rather than accumulating
