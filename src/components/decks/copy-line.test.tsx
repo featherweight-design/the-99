@@ -5,6 +5,7 @@ const assign = vi.hoisted(() => vi.fn());
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: assign }));
 import { CopyLine } from "./copy-line";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
+import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 
 // One new Sol Ring, held by HD - Brago by seniority; HD -Thorin is a brew that wants one too.
@@ -95,8 +96,29 @@ describe("CopyLine", () => {
     fireEvent.click(screen.getByText("HD -Thorin"));
     await waitFor(() => expect(assign).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText(copy.row.goesTo("HD - Brago"))).toBeNull());
-    // And Change goes with it: the chooser it would reopen could only be refused.
-    await waitFor(() => expect(screen.queryByRole("button", { name: copy.changeAria("Sol Ring") })).toBeNull());
+    // And Change goes once the chooser closes: the chooser it would reopen could only be refused.
+    fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
+    expect(screen.queryByRole("button", { name: copy.changeAria("Sol Ring") })).toBeNull();
+  });
+
+  it("keeps the chooser and its refusal when the last copy went, and Done then closes it for good", async () => {
+    assign.mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
+    render(line(card()));
+    const change = screen.getByRole("button", { name: copy.changeAria("Sol Ring") });
+    fireEvent.click(change);
+    const thorin = screen.getByText("HD -Thorin").closest("[role=radio]") as HTMLElement;
+    thorin.focus();
+    fireEvent.click(thorin);
+    // The refusal is drawn, in the chooser the press left focus in.
+    const refusal = cardAssignmentsCopy.contested.refusedNoSupply("HD - Brago", 1, "HD -Thorin");
+    await waitFor(() => expect(screen.getAllByText(refusal).some((el) => el.tagName === "P")).toBe(true));
+    expect(screen.getByRole("radiogroup").contains(document.activeElement)).toBe(true);
+    expect(change.textContent).toBe(copy.done);
+    // Done closes it, and nothing reopens a chooser whose every option could only be refused.
+    fireEvent.click(change);
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByText("Sol Ring"));
   });
 
   it("draws no Change when there is no chooser to open", () => {

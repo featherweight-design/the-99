@@ -7,7 +7,7 @@
 // Drawn on the upload summary's `No longer to buy` rows. Add Cards and I got it reuse it in the
 // next PR, which is why it lives beside `ContestedCardRow` and not in the summary.
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
 import { liveSentence } from "../../lib/collection/copy-line";
 import type { ContestedCard } from "../../lib/collection/summary-read";
@@ -30,16 +30,34 @@ export function CopyLine({
   // that settled with no card to read back (the last copy went in another tab), which says nothing
   // rather than claim a destination.
   const [live, setLive] = useState<ContestedCard | null | undefined>(undefined);
+  // The last card a write read back (before any, the chooser prop), kept for the one state with no
+  // card to draw: a null read-back arrives WITH the chooser's refusal, and unmounting the chooser in
+  // that same update would drop the sentence and the focus the player's press left on it.
+  const [last, setLast] = useState<ContestedCard | undefined>(undefined);
   const panel = useId();
+  const name = useRef<HTMLSpanElement>(null);
   const said = live === undefined ? sentence : live ? liveSentence(live) : null;
   // The chooser behind Change: the read-back once there is one. A null read-back (the last copy
-  // went) takes Change away, since every option it offered can only be refused.
-  const current = live === null ? null : (live ?? chooser);
+  // went) is terminal: the open chooser stays to show its refusal, and `Done` closes it for good,
+  // since every option a reopened chooser offered could only be refused.
+  const gone = live === null;
+  const current = gone ? (open ? (last ?? chooser) : undefined) : (live ?? chooser);
+  const onCard = (c: ContestedCard | null) => {
+    setLive(c);
+    if (c) setLast(c);
+  };
+  const toggle = () => {
+    // Closing the terminal chooser takes its button with it, so focus goes to the row's card.
+    if (gone && open) name.current?.focus();
+    setOpen((o) => !o);
+  };
 
   return (
     <li style={{ borderTop: "1px solid var(--border)" }}>
       <div className="flex flex-col md:flex-row md:items-center gap-[2px] md:gap-[10px] py-[6px] min-h-[46px] md:min-h-[44px]">
         <span
+          ref={name}
+          tabIndex={-1}
           className="text-[13.5px] font-semibold md:w-[170px] md:flex-none min-w-0 md:truncate"
           style={{ color: "var(--fg)" }}
         >
@@ -53,7 +71,7 @@ export function CopyLine({
               aria-expanded={open}
               aria-controls={panel}
               aria-label={copy.changeAria(cardName)}
-              onClick={() => setOpen((o) => !o)}
+              onClick={toggle}
               className="text-[13.5px] min-h-[44px] flex-none text-[color:var(--accent)]"
             >
               {open ? copy.done : copy.change}
@@ -63,7 +81,7 @@ export function CopyLine({
       </div>
       {current && open ? (
         <div id={panel} className="pt-[2px] pb-[12px]">
-          <ContestedCardRow card={current} addedCopy onCard={setLive} />
+          <ContestedCardRow card={current} addedCopy onCard={onCard} />
         </div>
       ) : null}
     </li>
