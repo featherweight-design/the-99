@@ -10,6 +10,8 @@ import { useState } from "react";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { undoSwapAction } from "../../lib/swaps/actions";
 import { useSwapTools, type SwapReceipt } from "../../lib/swaps/context";
+import { MOTION } from "../../lib/ui/motion";
+import { reveal } from "../../lib/ui/reveal";
 import { MutationError } from "./mutation-error";
 
 const copy = swapToolsCopy.row;
@@ -33,6 +35,11 @@ export function landOnReceipt(swapId: string): () => void {
   let landed = false;
   let stopped = false;
   let frames = 0;
+  // One eased reveal per receipt node at a time: asked again every frame, it would restart its beat
+  // and never move. A new node (the revalidated page's), or one that ran out, is revealed afresh.
+  let revealed: Element | null = null;
+  let revealEnds = 0;
+  let cancelReveal = () => {};
   const until = performance.now() + 3000;
   // The reader's own input ends the hold at once: nothing here may fight a scroll or a keypress.
   const inputs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
@@ -58,14 +65,22 @@ export function landOnReceipt(swapId: string): () => void {
     const button = receipt?.querySelector<HTMLButtonElement>("button");
     const active = document.activeElement;
     // The reader has gone somewhere of their own: leave them there.
-    if (landed && active && active !== document.body && !receipt?.contains(active)) return stop();
+    if (landed && active && active !== document.body && !receipt?.contains(active)) {
+      cancelReveal();
+      return stop();
+    }
     // The sheet that is closing is still in the document the frame after its unmount began; a list
     // still re-rendering has no receipt yet. Both are waited out.
     if (receipt && button && !document.querySelector('[role="dialog"]')) {
       if (!receipt.contains(active)) button.focus({ preventScroll: true });
       const box = receipt.getBoundingClientRect();
       // Out of view, it is brought back: the page moves under it as the revalidated list lands.
-      if (!landed || box.top < 0 || box.bottom > window.innerHeight) receipt.scrollIntoView?.({ block: "center" });
+      const now = performance.now();
+      if ((!landed || box.top < 0 || box.bottom > window.innerHeight) && (receipt !== revealed || now > revealEnds)) {
+        revealed = receipt;
+        revealEnds = now + MOTION.delayMs + MOTION.scrollMaxMs;
+        cancelReveal = reveal(receipt, "center");
+      }
       landed = true;
     }
     frame = requestAnimationFrame(land);

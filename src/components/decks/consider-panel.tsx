@@ -315,7 +315,7 @@ function ShelfSection({
           >
             <span
               aria-hidden
-              className={`inline-block ${CHEVRON_CLASS} transition-transform duration-150 ${folded ? "" : "rotate-90"}`}
+              className={`inline-block ${CHEVRON_CLASS} transition-transform duration-[var(--motion-duration)] ease-[var(--motion-ease)] motion-reduce:transition-none ${folded ? "" : "rotate-90"}`}
               style={{ color: "var(--fg-muted)" }}
             >
               ▸
@@ -356,7 +356,7 @@ function ShelfSection({
         )}
       </div>
       {folded ? null : (
-      <ul id={bodyId} className="grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]">
+      <ul id={bodyId} className="anim-gentle-in grid grid-cols-2 gap-[12px] md:grid-cols-6 md:gap-[14px]">
         {shown.map((s) => (
           <SuggestionTile
             key={s.oracleId}

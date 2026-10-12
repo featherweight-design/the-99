@@ -14,6 +14,7 @@ import { Crowned99 } from "../marks";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { nameList } from "../../lib/copy/deck-analysis";
 import type { ThemeKey } from "../../lib/theme/themes";
+import { reveal } from "../../lib/ui/reveal";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -88,7 +89,7 @@ function useGoToStep1() {
       document.querySelector<HTMLElement>("[data-step1-upload]") ??
       document.querySelector<HTMLElement>("[data-step1-card]");
     if (target) {
-      target.scrollIntoView?.({ block: "center" });
+      reveal(target, "center");
       target.focus({ preventScroll: true });
     } else {
       go("/collection/replace");

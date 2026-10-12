@@ -5,6 +5,7 @@ import type { HowMethod } from "../../lib/copy/about";
 import type { HowRowCopy, HowRowLabels } from "../../lib/copy/how-it-works";
 import { MethodTags } from "../ui/method-tag";
 import { Chevron } from "../ui/chevron";
+import { reveal } from "../../lib/ui/reveal";
 
 type SubRow = { label: string; methods: readonly HowMethod[]; lines: string[] };
 
@@ -48,7 +49,7 @@ export function HowRows({
       // Already open (Back to a row still open, say): no render follows, so scroll now. A pending
       // id left for the layout effect would fire on the next press of ANY row.
       if (document.getElementById(`${id}-body`)) {
-        document.getElementById(id)?.scrollIntoView({ block: "start" });
+        reveal(document.getElementById(id), "start");
         return;
       }
       pendingScroll.current = id;
@@ -64,7 +65,7 @@ export function HowRows({
     const id = pendingScroll.current;
     if (!id) return;
     pendingScroll.current = null;
-    document.getElementById(id)?.scrollIntoView({ block: "start" });
+    reveal(document.getElementById(id), "start");
   });
 
   const toggle = (id: string) =>

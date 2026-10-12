@@ -1,3 +1,5 @@
+import { reveal } from "../../lib/ui/reveal";
+
 // Landing on the deck's Tokens group from card details (design D1, `Tokens ›`). The press closes the sheet,
 // asks the deck to show its All view (the Tokens group is drawn only there), and once that has drawn,
 // scrolls to the group's heading and focuses it. The deck's builder shell listens for the request; nothing
@@ -12,7 +14,7 @@ export function landOnDeckTokens(): void {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     const target = document.getElementById(HEADING);
     if (!target) return;
-    target.scrollIntoView({ block: "start" });
+    reveal(target, "start");
     target.focus({ preventScroll: true });
   }));
 }

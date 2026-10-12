@@ -33,6 +33,7 @@ import { TopOffList } from "./top-off-list";
 import type { NoteCounts } from "../../lib/bracket/card-note";
 import type { Bracket } from "../../lib/bracket/types";
 import { useTopOffDraft } from "./use-top-off-draft";
+import { reveal } from "../../lib/ui/reveal";
 
 export interface LastSlotsStripProps {
   deckId: string;
@@ -362,10 +363,8 @@ function LastSlotsStripInner({
     // Scrolling the focus target would only re-reveal the head, which is already
     // visible, so the scroll is asked of the panel and denied to the focus.
     target?.focus({ preventScroll: true });
-    // Instant, like every other scroll on this surface: an animated scroll has
-    // to answer prefers-reduced-motion, and the jump answers it by not moving.
-    // Optional call: jsdom does not implement scrollIntoView at all.
-    if (open) rootRef.current?.scrollIntoView?.({ block: "start" });
+    // Eased, and a jump under prefers-reduced-motion: `reveal` answers both.
+    if (open) reveal(rootRef.current, "start");
   }, [open]);
 
   // The strip unmounts the moment the deck fills, and a fill can land from the

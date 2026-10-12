@@ -110,6 +110,7 @@ import { openNotices, peekNotices } from "../../lib/notices/actions";
 import { NOTICES_PARAM } from "../../lib/notices/arrival";
 import type { DeckNotices } from "../../lib/notices/read";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { reveal } from "../../lib/ui/reveal";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
@@ -121,7 +122,7 @@ import type { PrintedInSet } from "../../lib/sets/printed-in";
 function scrollToShelf(role: MixRole) {
   const heading = document.getElementById(`shelf-${role}`);
   if (!heading) return;
-  heading.scrollIntoView({ block: "start" });
+  reveal(heading, "start");
   heading.focus({ preventScroll: true });
 }
 
@@ -129,7 +130,7 @@ function scrollToShelf(role: MixRole) {
 // both paths into it — already there, or having just been sent there — land on
 // the same call.
 function scrollToUnresolved() {
-  document.getElementById("unresolved-group")?.scrollIntoView({ block: "start" });
+  reveal(document.getElementById("unresolved-group"), "start");
 }
 
 /** Immutable omit of one key, for the per-card receipt maps (H29): returns the

@@ -24,6 +24,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { DECK_VIEW_KEY } from "./group-toggle";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { recommendedMix } from "../../lib/decks/mix";
+import { reveal } from "../../lib/ui/reveal";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -40,6 +41,8 @@ vi.mock("../../app/decks/actions", () => ({
   renameDeck: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 
 // ── Dynamic imports (after mocks are set up) ─────────────────────────────────
 const { Decklist, LockModeLine, receiptHome } = await import("./decklist");
@@ -1498,17 +1501,15 @@ describe("the Stats panel", () => {
   });
 
   it("opens at the card a ledger's Stats link asks for, and scrolls it into view once", () => {
-    const scroll = vi.fn();
-    const before = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = scroll;
-    onTestFinished(() => { Element.prototype.scrollIntoView = before; });
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     const focused = vi.fn();
     renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, statsFocus: { card: "jobs", n: 1 }, onStatsFocused: focused });
     expect(document.querySelector("[data-deck-stats]")).not.toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
     // The shell is told, so it drops the request: a remount on a tab switch must not answer it again.
     expect(focused).toHaveBeenCalledTimes(1);
-    expect(scroll.mock.contexts[0]).toBe(document.querySelector('[data-stats-card="jobs"]'));
+    expect(scroll).toHaveBeenCalledWith(document.querySelector('[data-stats-card="jobs"]'), "start");
     // Focus lands on that card, not the body: the ledger that held it has unmounted.
     expect(document.activeElement).toBe(document.querySelector('[data-stats-card="jobs"]'));
     // Back to the list: the answered request does not reopen Stats.

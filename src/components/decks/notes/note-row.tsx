@@ -11,6 +11,7 @@ import { DeleteConfirm } from "../../ui/delete-confirm";
 import { MutationError } from "../mutation-error";
 import { NoteField, type DeckCardOption } from "./note-field";
 import { NoteTags } from "./note-tags";
+import { reveal } from "../../../lib/ui/reveal";
 
 /** `2 Oct`, or `2 Oct 2025` outside the current year: absolute and mono, in the player's own calendar. Never relative (the Must-nots). */
 export function formatNoteDate(iso: string, now: Date = new Date()): string {
@@ -53,7 +54,7 @@ export function NoteRow({
   // The confirm opens under the row, which on a phone can be behind the fixed tab bar and the sticky add
   // bar. Bring it fully into view, clear of both (the bottom margin is their height plus a little air).
   useEffect(() => {
-    if (confirming) confirmPane.current?.scrollIntoView?.({ block: "nearest" });
+    if (confirming) reveal(confirmPane.current, "nearest");
     else if (restoreFocus.current) {
       // Keep went away with its subtree while it held focus: hand it back to what opened the confirm. On a
       // phone the menu item that opened it is gone too, so the More button stands in.

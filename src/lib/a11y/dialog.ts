@@ -322,6 +322,7 @@ function pinScrollY(y: number | null) {
       stop();
       return;
     }
+    // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move.
     if (window.scrollY !== offset) window.scrollTo(0, offset);
     frames += 1;
     if (frames < 30) rafId = requestAnimationFrame(reassert);

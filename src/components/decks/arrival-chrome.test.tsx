@@ -9,6 +9,7 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { arrivalDismissKey } from "../../lib/decks/arrival";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { recommendedMix } from "../../lib/decks/mix";
+import { reveal } from "../../lib/ui/reveal";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -24,6 +25,8 @@ vi.mock("../../app/decks/actions", () => ({
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 
 const { BuilderShell } = await import("./builder-shell");
 
@@ -271,19 +274,17 @@ describe("The banner's jump to the unresolved group", () => {
     localStorage.clear();
   });
 
-  // jsdom implements no layout, so it ships no scrollIntoView to spy on — the
-  // stub below gives vi.spyOn something to replace. Restored after every test:
-  // a bare prototype assignment outlives the file and makes test order matter.
-  if (!Element.prototype.scrollIntoView) {
-    Element.prototype.scrollIntoView = () => {};
-  }
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
+  // The jump lands on the group itself, at its top.
   function spyOnScroll() {
-    return vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    vi.mocked(reveal).mockClear();
+    return {
+      landed: () => vi.mocked(reveal).mock.calls.some(([el, block]) =>
+        el === document.getElementById("unresolved-group") && el !== null && block === "start"),
+    };
   }
 
   function clickJump(index = 0) {
@@ -296,7 +297,7 @@ describe("The banner's jump to the unresolved group", () => {
       renderBuilder(shortDeck());
     });
     await act(async () => clickJump());
-    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollIntoView.landed()).toBe(true);
   });
 
   // Shopping hides the group outright, so the jump has to put the filter back
@@ -313,7 +314,7 @@ describe("The banner's jump to the unresolved group", () => {
 
     await act(async () => clickJump());
     expect(document.getElementById("unresolved-group")).not.toBeNull();
-    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollIntoView.landed()).toBe(true);
   });
 
   // Consider does not draw the decklist at all.
@@ -329,6 +330,6 @@ describe("The banner's jump to the unresolved group", () => {
 
     await act(async () => clickJump());
     expect(document.getElementById("unresolved-group")).not.toBeNull();
-    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollIntoView.landed()).toBe(true);
   });
 });

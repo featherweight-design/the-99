@@ -270,6 +270,7 @@ export function FilterBar({
     window.addEventListener("touchstart", stop, { passive: true });
     window.addEventListener("keydown", stop);
     function reassert() {
+      // Instant, not `reveal`: a restore puts back where the reader was, and must not be seen to move.
       if (window.scrollY !== offset) window.scrollTo(0, offset);
       frames++;
       if (frames < 30) rafId = requestAnimationFrame(reassert);

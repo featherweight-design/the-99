@@ -4,6 +4,9 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { topOffDraftKey } from "../../lib/decks/top-off-draft";
+import { reveal } from "../../lib/ui/reveal";
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 
 const actions = vi.hoisted(() => ({ commit: vi.fn(), chooseBulk: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({
@@ -551,20 +554,17 @@ describe("LastSlotsStrip", () => {
   // below the fold and the player is handed a commit bar with no card on screen.
   // Closing must not scroll: the door is already where the reader is looking.
   it("brings the panel into view when the list opens, and not when it closes", async () => {
-    const scrollIntoView = vi.fn();
-    const original = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = scrollIntoView;
-    try {
-      render(<LastSlotsStrip {...base} />);
-      await click(screen.getByRole("button", { name: doorName("3") }));
-      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
+    const { container } = render(<LastSlotsStrip {...base} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll.mock.calls[0][1]).toBe("start");
+    expect(container.contains(scroll.mock.calls[0][0] as Node)).toBe(true);
 
-      scrollIntoView.mockClear();
-      await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
-      expect(scrollIntoView).not.toHaveBeenCalled();
-    } finally {
-      Element.prototype.scrollIntoView = original;
-    }
+    scroll.mockClear();
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+    expect(scroll).not.toHaveBeenCalled();
   });
 
   // A remount with the same deck id is what a reload is, from this component's

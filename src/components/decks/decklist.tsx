@@ -68,6 +68,7 @@ import { deckRowTag } from "../../lib/decks/row-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useGotIt } from "./got-it";
+import { reveal } from "../../lib/ui/reveal";
 
 // Role order for Shopping groups — matches ROLE_TARGETS keys.
 const SHOPPING_ROLE_ORDER: Array<"ramp" | "draw" | "removal" | "wipes"> = [
@@ -418,7 +419,7 @@ export function Decklist({
     }
     answered.current = statsFocus.n;
     const target = document.querySelector<HTMLElement>(`[data-stats-card="${statsFocus.card}"]`);
-    target?.scrollIntoView({ block: "start" });
+    reveal(target, "start");
     // The ledger and the control that opened it are gone (the tab switched), so focus would fall to
     // the body: it lands on the card the link named instead.
     if (target) {

@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { aboutEntries } from "../../lib/copy/about";
 import { bracketSubRows, howItWorksRowsCopy as copy } from "../../lib/copy/how-it-works";
 import { HowItWorks } from "./how-it-works";
+import { reveal } from "../../lib/ui/reveal";
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 
 const head = (title: string) => screen.getByRole("button", { name: new RegExp("^" + title) });
 
@@ -62,17 +65,16 @@ describe("HowItWorks", () => {
   });
 
   it("opens the row a hash names and scrolls it into view after it opens", () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     window.history.replaceState(null, "", "/about#how-written");
     render(<HowItWorks entries={aboutEntries} />);
     expect(document.getElementById("how-written-body")).not.toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
-    expect(scroll.mock.instances[0]).toBe(document.getElementById("how-written"));
+    expect(scroll).toHaveBeenCalledWith(document.getElementById("how-written"), "start");
   });
 
   it("opens a row when the hash moves to it, and ignores a hash that names no row", () => {
-    Element.prototype.scrollIntoView = vi.fn();
     render(<HowItWorks entries={aboutEntries} />);
     act(() => {
       window.history.replaceState(null, "", "/about#chapter-01");
@@ -89,8 +91,8 @@ describe("HowItWorks", () => {
   // Back to a row still open renders nothing, so the scroll cannot wait for a render; and nothing
   // may be left pending for the next press of another row to act on.
   it("scrolls to a row the hash names that is already open, and leaves nothing pending", () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     window.history.replaceState(null, "", "/about#how-prices");
     render(<HowItWorks entries={aboutEntries} />);
     act(() => {
@@ -103,7 +105,7 @@ describe("HowItWorks", () => {
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
     expect(scroll).toHaveBeenCalledTimes(1);
-    expect(scroll.mock.instances[0]).toBe(document.getElementById("how-prices"));
+    expect(scroll).toHaveBeenCalledWith(document.getElementById("how-prices"), "start");
     scroll.mockClear();
     fireEvent.click(head("Roles and targets"));
     expect(scroll).not.toHaveBeenCalled();
