@@ -249,6 +249,8 @@ describe("the S1b chooser", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
     fireEvent.click(radios()[0]);
     expect(radios().map((o) => o.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
+    // Held, and said so: no option is operable or a tab stop while the press is in flight.
+    expect(radios().every((o) => o.getAttribute("aria-disabled") === "true" && o.tabIndex === -1)).toBe(true);
     expect((screen.getByRole("button", { name: copy.confirm.backToDefault }) as HTMLButtonElement).disabled).toBe(true);
   });
 

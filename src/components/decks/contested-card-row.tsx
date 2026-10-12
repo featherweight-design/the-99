@@ -450,6 +450,9 @@ export function ContestedCardRow({
           // An option nobody can choose: a commander-only claimant, or any option on a card with
           // no spare copy at all. A folded claim is NOT inert — its spare is live.
           const inert = nothingToChoose || c.commanderCopies >= c.quantity;
+          // The chooser's caller has a write in flight: every option is held, and says so, without
+          // the dashed border that means nobody can ever choose it.
+          const held = inert || chooser?.disabled === true;
           const first = card.claimants.find((x) => !(nothingToChoose || x.commanderCopies >= x.quantity))?.deckId === c.deckId;
           const outcome = c.commanderCopies > 0 && c.allocated > 0 && predates
             ? (spareToThisDeck > 0
@@ -464,8 +467,8 @@ export function ContestedCardRow({
               // which is a different fact and must not read as a selection.
               role="radio"
               aria-checked={chosenIds.has(c.deckId)}
-              aria-disabled={inert || undefined}
-              tabIndex={inert ? -1 : chosenIds.has(c.deckId) || (chosenIds.size === 0 && first) ? 0 : -1}
+              aria-disabled={held || undefined}
+              tabIndex={held ? -1 : chosenIds.has(c.deckId) || (chosenIds.size === 0 && first) ? 0 : -1}
               aria-label={
                 c.commanderCopies >= c.quantity
                   ? copy.contested.a11yCommander(c.deckName, card.cardName)
@@ -473,12 +476,12 @@ export function ContestedCardRow({
                     ? copy.contested.a11ySelected(c.deckName)
                     : copy.contested.a11yOption(c.deckName, outcome)
               }
-              onClick={inert ? undefined : () => pick(c.deckId, c.deckName)}
+              onClick={held ? undefined : () => pick(c.deckId, c.deckName)}
               // A radiogroup is reached by Tab and traversed by ARROWS — every option but one
               // carries `tabIndex={-1}`, so without this a keyboard reader can see the group and
               // never reach the second deck in it. Roving focus, wrapping at both ends, skipping
               // the options nobody can choose.
-              onKeyDown={inert ? undefined : (e) => {
+              onKeyDown={held ? undefined : (e) => {
                 if (e.key === " " || e.key === "Enter") {
                   e.preventDefault();
                   pick(c.deckId, c.deckName);
@@ -517,7 +520,7 @@ export function ContestedCardRow({
                   : chosenIds.has(c.deckId)
                     ? "1px solid var(--accent)"
                     : "1px solid transparent",
-                cursor: inert ? "default" : "pointer",
+                cursor: held ? "default" : "pointer",
               }}
             >
               <span className="flex items-center gap-[11px] md:gap-[11px] md:flex-1 min-w-0">
