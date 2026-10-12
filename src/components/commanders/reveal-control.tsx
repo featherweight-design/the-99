@@ -58,12 +58,12 @@ export function RevealControl({
       >
         Show {REVEAL_STEP} more<span className="sm:hidden"> ↓</span>
       </span>
-      <span className="font-mono text-[11px] sm:text-[11.5px] text-[color:var(--fg-faint)] group-hover:text-[color:var(--fg-muted)] group-focus-visible:text-[color:var(--fg-muted)]">
+      <span className="font-mono text-[11px] sm:text-[11.5px] text-[color:var(--fg-faint)] group-hover:text-[color:var(--fg-muted)] group-focus-visible:text-[color:var(--fg-muted)] transition-colors">
         {remaining.toLocaleString("en-US")} remaining
       </span>
       <span
         aria-hidden
-        className="hidden sm:block text-[13px] leading-none text-[color:var(--fg-faint)] group-hover:text-[color:var(--accent)] group-focus-visible:text-[color:var(--accent)]"
+        className="hidden sm:block text-[13px] leading-none text-[color:var(--fg-faint)] group-hover:text-[color:var(--accent)] group-focus-visible:text-[color:var(--accent)] transition-colors"
       >
         ↓
       </span>
@@ -77,7 +77,7 @@ export function RevealControl({
       aria-busy={busy || undefined}
       aria-label={`Show ${REVEAL_STEP} more commanders, ${remaining.toLocaleString("en-US")} remaining`}
       className={[
-        "group w-full rounded-lg flex flex-col items-center min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:justify-center sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]",
+        "group w-full rounded-lg flex flex-col items-center min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:justify-center sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] transition-colors",
         // With a band the control stays a column at both widths and the shipped
         // row moves inside — "shipped geometry unchanged, plus one line". Without
         // one it is byte-identical to what the owned scope shipped.

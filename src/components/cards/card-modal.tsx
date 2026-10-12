@@ -182,7 +182,7 @@ function ProxyDetail({ card }: { card: BrowseCard }) {
             <Link
               href={`/decks/${deck.id}`}
               aria-label={c.deckLinkAria(deck.name)}
-              className="block truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+              className="block truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
             >
               {deck.name}
             </Link>
@@ -440,7 +440,7 @@ function AvailabilityDetail({
                 <Link
                   href={`/decks/${claim.id}`}
                   aria-label={c.detailDeckLinkAria(claim.name)}
-                  className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+                  className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
                 >
                   {claim.name}
                 </Link>

@@ -181,7 +181,7 @@ function Field({
               aria-label={copy.clear}
               onClick={() => setQuery("")}
               className={
-                "flex flex-none items-center justify-center rounded-[6px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] " +
+                "flex flex-none items-center justify-center rounded-[6px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors " +
                 (tall ? "h-[32px] w-[32px]" : "h-[22px] w-[22px]")
               }
             >
@@ -271,7 +271,7 @@ export function ContentsRailR6({
                     className={`flex items-center justify-between gap-[10px] rounded-[6px] px-[10px] py-[8px] text-[13px] ${
                       chapterCurrent
                         ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                        : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                        : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors"
                     }`}
                   >
                     <span className="min-w-0 truncate">
@@ -305,7 +305,7 @@ export function ContentsRailR6({
                               className={`flex items-baseline rounded-[6px] py-[4px] pr-[10px] pl-[30px] text-[12.5px] leading-[1.35] ${
                                 current
                                   ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                                  : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                                  : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors"
                               }`}
                             >
                               <span className="min-w-0 flex-1">
@@ -329,7 +329,7 @@ export function ContentsRailR6({
                   className={`flex items-center rounded-[6px] px-[10px] py-[7px] text-[13px] ${
                     place.entry === appendix.id
                       ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                      : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                      : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors"
                   }`}
                 >
                   <span className="min-w-0 truncate">{appendix.title}</span>
@@ -346,7 +346,7 @@ export function ContentsRailR6({
                           className={`flex items-baseline rounded-[6px] py-[4px] pr-[10px] pl-[30px] text-[12.5px] leading-[1.35] ${
                             current
                               ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
-                              : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+                              : "text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors"
                           }`}
                         >
                           <span className="min-w-0 flex-1">

@@ -283,7 +283,7 @@ export function CollectionPlaceHead({
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
                 on
                   ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"
-                  : "font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]",
+                  : "font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors",
               ].join(" ")}
             >
               {tab.label}

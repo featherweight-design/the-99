@@ -215,7 +215,7 @@ export function ResolutionExpander({
         <button
           type="button"
           onClick={onCollapse}
-          className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)]"
+          className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)] transition-colors"
         >
           {copy.collapse} <Chevron open />
         </button>
@@ -296,25 +296,27 @@ export function ResolutionExpander({
                     aria-hidden
                   >
                     <span
+                      className="transition-colors motion-reduce:transition-none"
                       style={{
                         display: "block",
                         width: 30,
                         height: 17,
                         borderRadius: 999,
                         background: ownedOnly ? "var(--accent)" : "var(--elevated)",
-                        transition: "background 0.15s",
                       }}
                     />
                     <span
+                      className="transition-[transform,background-color] motion-reduce:transition-none"
                       style={{
                         position: "absolute",
                         top: 2,
-                        left: ownedOnly ? 15 : 2,
+                        left: 2,
+                        // The knob slides on transform, not `left`: a layout property animates on the main thread.
+                        transform: ownedOnly ? "translateX(13px)" : "none",
                         width: 13,
                         height: 13,
                         borderRadius: 999,
                         background: ownedOnly ? "var(--bg)" : "var(--fg-faint)",
-                        transition: "left 0.15s",
                       }}
                     />
                   </span>
@@ -418,14 +420,14 @@ export function ResolutionExpander({
             <button
               type="button"
               onClick={remove}
-              className="flex-1 md:w-full font-semibold text-[13px] md:text-[13px] rounded-[8px] py-[12px] md:py-[10px] min-h-[44px] md:min-h-0 cursor-pointer bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+              className="flex-1 md:w-full font-semibold text-[13px] md:text-[13px] rounded-[8px] py-[12px] md:py-[10px] min-h-[44px] md:min-h-0 cursor-pointer bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
             >
               {copy.delete}
             </button>
             <button
               type="button"
               onClick={onCollapse}
-              className="md:hidden flex-1 font-semibold text-[13px] rounded-[8px] py-[12px] min-h-[44px] cursor-pointer bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+              className="md:hidden flex-1 font-semibold text-[13px] rounded-[8px] py-[12px] min-h-[44px] cursor-pointer bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
             >
               {copy.dismiss}
             </button>

@@ -199,7 +199,7 @@ export function DeckCardTile({
         className={`${TILE_SHELL} relative bg-[color:var(--surface)] ${
           availState === "over"
             ? "[border:1px_solid_var(--avail-over-border)]"
-            : "[border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)]"
+            : "[border:1px_solid_var(--border)] md:hover:[border:1px_solid_var(--border-strong)] transition-colors"
         }`}
       >
         {/* A DRAWN ELEMENT, not an inset shadow on the shell. An inset shadow
@@ -524,7 +524,7 @@ export function DeckCardTile({
                 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
                 md:group-hover:text-[color:var(--fg-body)]
                 active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-                cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                cursor-pointer disabled:opacity-50 disabled:cursor-default transition-[color,background-color,border-color,text-decoration-color,opacity]"
               aria-label={
                 card.quantity > 1
                   ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)

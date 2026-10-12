@@ -1805,8 +1805,8 @@ function OwnershipToggles({
               o.disabled
                 ? "cursor-default opacity-[0.42] text-[color:var(--fg-locked)] border-[color:var(--border)]"
                 : on
-                  ? "text-[color:var(--accent)] border-[color:var(--accent)] hover:bg-[color:var(--elevated)]"
-                  : "text-[color:var(--fg-muted)] border-[color:var(--border)] hover:bg-[color:var(--elevated)]",
+                  ? "text-[color:var(--accent)] border-[color:var(--accent)] hover:bg-[color:var(--elevated)] transition-colors"
+                  : "text-[color:var(--fg-muted)] border-[color:var(--border)] hover:bg-[color:var(--elevated)] transition-colors",
             ].join(" ")}
           >
             {setFilterCopy.ownership[o.own].label}

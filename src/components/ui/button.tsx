@@ -37,12 +37,12 @@ const BASE =
 // than a second one that drifts.
 export const PRIMARY =
   "bg-[color:var(--fg)] text-[color:var(--bg)] hover:bg-[color:var(--fg-body)] " +
-  "disabled:hover:bg-[color:var(--fg)]";
+  "disabled:hover:bg-[color:var(--fg)] transition-colors";
 
 const GHOST =
   "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] " +
   "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] " +
-  "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)]";
+  "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)] transition-colors";
 
 // The refresh's conformance geometry: "a 32px hairline pill (--border-strong,
 // 12.5px label, 14px side padding)". Prefixed at sm: because the figure is a
@@ -92,7 +92,7 @@ const PENDING: Record<string, string> = {
   [GHOST]:
     "has-[[data-pending]]:bg-[color:var(--elevated-hover)] has-[[data-pending]]:[border-color:var(--border-strong)] " +
     "has-[[data-pending]]:[color:var(--fg)] hover:has-[[data-pending]]:[border-color:var(--border-strong)] " +
-    "hover:has-[[data-pending]]:[color:var(--fg)]",
+    "hover:has-[[data-pending]]:[color:var(--fg)] transition-colors",
 };
 
 function renderButton(variant: string, props: ButtonProps) {

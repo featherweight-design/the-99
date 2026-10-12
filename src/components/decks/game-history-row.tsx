@@ -175,7 +175,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
             setError(null);
             setConfirming((c) => !c);
           }}
-          className="flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer"
+          className="flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer transition-colors"
         >
           ×
         </button>

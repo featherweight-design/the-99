@@ -372,7 +372,7 @@ export function CutsPanelView({
                   </p>
                 </div>
                 <button type="button" onClick={() => void stop()} disabled={stopping}
-                  className="h-[44px] rounded-[8px] px-[14px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:py-[10px]">
+                  className="h-[44px] rounded-[8px] px-[14px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:py-[10px] transition-colors">
                   {copy.deeper.stop}
                 </button>
               </div>
@@ -621,7 +621,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
             {item.cutName}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer(done ? "undo" : "restore")}
-            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]">
+            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors">
             {done ? copy.undo : copy.showAgain}
           </button>
         </div>
@@ -664,11 +664,11 @@ function CutRow({ item, panel, deps, items, onSettled }: {
         </span>
         <span className="flex gap-[8px] md:flex-none md:gap-[7px]">
           <button type="button" disabled={busy !== null} onClick={() => void answer("cut")}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px]">
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] transition-colors">
             {copy.cut}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer("keep")}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:flex-none md:rounded-[7px] md:px-[12px] md:py-[6px] md:text-[12.5px]">
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:flex-none md:rounded-[7px] md:px-[12px] md:py-[6px] md:text-[12.5px] transition-colors">
             {copy.keep}
           </button>
         </span>

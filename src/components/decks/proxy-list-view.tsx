@@ -160,7 +160,7 @@ export function ProxyListView({
               {rows.map((row) => (
                 <li
                   key={row.oracleId}
-                  className="relative flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px] hover:bg-[color:var(--elevated)]"
+                  className="relative flex items-center gap-[12px] rounded-[10px] px-[12px] py-[11px] min-h-[44px] hover:bg-[color:var(--elevated)] transition-colors"
                 >
                   <span className="min-w-0 flex-1">
                     {/* The whole row opens the card (H20): the card name's
@@ -192,7 +192,7 @@ export function ProxyListView({
                           key={deck.id}
                           href={`/decks/${deck.id}`}
                           aria-label={proxyCopy.row.deckAria(deck.name)}
-                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
                         >
                           {deck.name}
                         </Link>

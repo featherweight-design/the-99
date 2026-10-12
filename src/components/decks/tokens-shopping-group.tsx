@@ -56,7 +56,7 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
           disabled={pending}
           aria-label={tokensCopy.shopping.removeAria(token.name)}
           onClick={() => press(() => setTokenJoined(deckId, token.oracleId, false))}
-          className="flex h-[44px] w-[44px] flex-none items-center justify-center border-0 bg-transparent text-[14px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:opacity-60 md:h-[22px] md:w-[22px]"
+          className="flex h-[44px] w-[44px] flex-none items-center justify-center border-0 bg-transparent text-[14px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:opacity-60 md:h-[22px] md:w-[22px] transition-colors"
         >
           ✕
         </button>

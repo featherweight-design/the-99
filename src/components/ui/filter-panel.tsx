@@ -606,7 +606,7 @@ export function FilterPanel({
           // The keyboard-active row never also takes the hover fill (§Keyboard-
           // active: "Hover fill — none, never combined"). The class is withheld
           // rather than overridden, so nothing rests on generated-CSS order.
-          !option.disabled && !isActive ? "md:hover:bg-[color:var(--surface-raised)]" : "",
+          !option.disabled && !isActive ? "md:hover:bg-[color:var(--surface-raised)] transition-colors" : "",
           isActive
             ? "rounded-[6px] outline outline-2 -outline-offset-2 outline-[color:var(--accent)]"
             : "",
@@ -1018,8 +1018,8 @@ export function FilterPanel({
               // See `selectionOrnament`. The `open` branch above keeps its
               // accent either way: that one is transient and it means something.
               : selectionOrnament && selected.length > 0
-                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)]"
-                : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)]",
+                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)] transition-colors"
+                : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)] transition-colors",
         ].join(" ")}
       >
         {copy.triggerCount ? (

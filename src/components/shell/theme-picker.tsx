@@ -208,7 +208,7 @@ export function ThemePicker({
             onClick={() => dismissNotice(notice.survivor)}
             // Negative margin so a 44px touch target does not force the line
             // taller than its text: the hit area grows, the footprint does not.
-            className={`flex shrink-0 items-center justify-center rounded-[6px] leading-none text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] ${
+            className={`flex shrink-0 items-center justify-center rounded-[6px] leading-none text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors ${
               compact ? "-m-[10px] h-[44px] w-[44px]" : "-m-[5px] h-[26px] w-[26px]"
             }`}
           >
@@ -247,7 +247,7 @@ export function ThemePicker({
               } ${
                 isSelected
                   ? "bg-[color:var(--elevated)] outline outline-1 outline-[color:var(--accent)]"
-                  : "hover:bg-[color:var(--surface-raised)]"
+                  : "hover:bg-[color:var(--surface-raised)] transition-colors"
               }`}
             >
               <ThemeMiniature theme={key} compact={compact} selected={isSelected} />

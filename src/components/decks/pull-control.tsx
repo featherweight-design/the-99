@@ -683,7 +683,7 @@ function SourcePickerBody({
                   ? "cursor-default border border-dashed border-[color:var(--border-strong)] opacity-60"
                   : checked
                     ? "cursor-pointer border border-solid border-[color:var(--accent)] bg-[color:var(--elevated)]"
-                    : "cursor-pointer border border-solid border-[color:var(--border-strong)] hover:bg-[color:var(--surface-raised)]"
+                    : "cursor-pointer border border-solid border-[color:var(--border-strong)] hover:bg-[color:var(--surface-raised)] transition-colors"
               }`}
             >
               <span className="flex min-w-0 flex-col gap-[2px]">

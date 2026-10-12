@@ -463,7 +463,7 @@ const SECONDARY_CTA =
 // Demoted to a link at six changes or fewer, and still a touch target there.
 const REVIEW_LINK =
   "flex-none inline-flex items-center min-h-[44px] md:min-h-0 font-mono text-[11px] " +
-  "text-[color:var(--accent)] no-underline hover:text-[color:var(--accent-hover)]";
+  "text-[color:var(--accent)] no-underline hover:text-[color:var(--accent-hover)] transition-colors";
 
 // The clean state is not the pending banner — it is a single line — so it keeps
 // the strip it shipped in.

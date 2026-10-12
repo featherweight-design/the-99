@@ -26,7 +26,7 @@ const copy = deckVersioningCopy.restore;
 export const PUT_BACK_LINK =
   "inline-flex items-center justify-end min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-[34px] " +
   "pr-[3px] bg-transparent border-0 font-sans font-semibold text-[12.5px] md:text-[12px] " +
-  "text-[color:var(--accent)] md:hover:text-[color:var(--accent-hover)] cursor-pointer " +
+  "text-[color:var(--accent)] md:hover:text-[color:var(--accent-hover)] cursor-pointer transition-colors " +
   "disabled:opacity-50 disabled:cursor-default";
 
 export function PutBackControl({

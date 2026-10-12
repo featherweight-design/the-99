@@ -842,7 +842,7 @@ export function DecklistRow({
           className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
             rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
             active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-            md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
           aria-label={
             card.quantity > 1
               ? addPanelCopy.row.removeCopyAria(displayName, card.quantity)
@@ -936,7 +936,7 @@ function UndoRow({
             className="flex-none flex items-center h-[44px] px-[12px] md:h-auto md:px-0
               bg-transparent border-0 md:border-b md:border-b-accent-shadow md:border-accent-shadow
               text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
-              text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default"
+              text-accent md:hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
             aria-label={addPanelCopy.undo.actionAria(printedFaceName(card))}
           >
             {addPanelCopy.undo.action}

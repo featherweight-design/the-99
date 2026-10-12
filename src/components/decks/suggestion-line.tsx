@@ -130,7 +130,7 @@ export function SuggestionLine({
       onClick={() => answer("apply")}
       aria-disabled={busy !== null || undefined}
       disabled={busy !== null}
-      className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-[32px] md:flex-none md:rounded-[7px] md:px-[13px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+      className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-[32px] md:flex-none md:rounded-[7px] md:px-[13px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
     >
       {busy === "apply" ? copy.working : isAdd ? copy.add : copy.cut}
     </button>
@@ -140,7 +140,7 @@ export function SuggestionLine({
       type="button"
       onClick={() => answer("reject")}
       disabled={busy !== null}
-      className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-[32px] md:flex-none md:rounded-[7px] md:px-[12px] md:text-[12.5px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+      className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-[32px] md:flex-none md:rounded-[7px] md:px-[12px] md:text-[12.5px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors"
     >
       {copy.reject}
     </button>
@@ -244,7 +244,7 @@ function Thumb({ item }: { item: LineItem }) {
       {...trigger}
       tabIndex={-1}
       aria-hidden
-      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] ${add ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${src ? "" : add ? "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
+      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${add ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${src ? "" : add ? "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]"}`}
       style={src ? { backgroundImage: cssUrl(src) } : undefined}
       title={item.cardName}
     />
@@ -302,7 +302,7 @@ function Answered({
             type="button"
             onClick={action.onPress}
             disabled={action.busy}
-            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors"
           >
             {action.label}
           </button>

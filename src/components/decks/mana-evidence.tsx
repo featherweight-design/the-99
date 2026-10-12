@@ -130,7 +130,7 @@ function ArticleLink({ label }: { label: string }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={copy.newTab(label)}
-      className="inline-flex items-center gap-[4px] whitespace-nowrap font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+      className="inline-flex items-center gap-[4px] whitespace-nowrap font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
     >
       {label}
       <LinkOut />
@@ -166,7 +166,7 @@ export function NeedsExplainer() {
           <button
             type="button"
             onClick={() => { setOpen(false); triggerRef.current?.focus(); }}
-            className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-body)] md:min-h-[32px]"
+            className="inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[11px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg-body)] md:min-h-[32px] transition-colors"
           >
             {copy.needs.close}
           </button>

@@ -54,9 +54,9 @@ export function VersionOverviewLink({ versionId }: { versionId: string }) {
           type="button"
           onClick={() => setOpen(true)}
           data-testid="synopsis-version-link"
-          className="group inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[11px] text-[var(--accent)] hover:text-[var(--accent-hover)] md:min-h-0 cursor-pointer"
+          className="group inline-flex min-h-[44px] items-center gap-[8px] font-mono text-[11px] text-[var(--accent)] hover:text-[var(--accent-hover)] md:min-h-0 cursor-pointer transition-colors"
         >
-          <span className="border-b border-b-[color:var(--accent)] border-dotted border-[var(--accent)] group-hover:border-[var(--accent-hover)]">
+          <span className="border-b border-b-[color:var(--accent)] border-dotted border-[var(--accent)] group-hover:border-[var(--accent-hover)] transition-colors">
             {synopsisCopy.version.entry}
           </span>
           <span aria-hidden>→</span>

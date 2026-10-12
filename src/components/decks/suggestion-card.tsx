@@ -195,7 +195,7 @@ export function SuggestionCard({
             onClick={() => answer("apply")}
             aria-disabled={busy !== null || undefined}
             disabled={busy !== null}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
           >
             {busy === "apply" ? copy.applying : copy.apply}
           </button>
@@ -203,7 +203,7 @@ export function SuggestionCard({
             type="button"
             onClick={() => answer("reject")}
             disabled={busy !== null}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-auto md:flex-none md:rounded-[7px] md:px-[12px] md:py-[7px] md:text-[12.5px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-auto md:flex-none md:rounded-[7px] md:px-[12px] md:py-[7px] md:text-[12.5px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors"
           >
             {copy.reject}
           </button>
@@ -267,7 +267,7 @@ function Thumb({ item, side }: { item: TuningItem; side: "cut" | "add" }) {
       {...trigger}
       tabIndex={-1}
       aria-hidden
-      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] ${side === "cut" ? "[border:1px_solid_var(--border-strong)]" : "[border:1px_solid_var(--border-dashed)]"} ${src ? "" : side === "cut" ? "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]"}`}
+      className={`h-[31px] w-[22px] flex-none overflow-hidden rounded-[3px] bg-cover bg-center hover:[border-color:var(--accent)] transition-colors ${side === "cut" ? "[border:1px_solid_var(--border-strong)]" : "[border:1px_solid_var(--border-dashed)]"} ${src ? "" : side === "cut" ? "bg-[image:repeating-linear-gradient(135deg,var(--border),var(--border)_3px,var(--surface-raised)_3px,var(--surface-raised)_6px)]" : "bg-[image:repeating-linear-gradient(135deg,var(--elevated),var(--elevated)_3px,var(--border)_3px,var(--border)_6px)]"}`}
       // eslint-disable-next-line no-restricted-syntax -- the card's own art, a per-item URL no class can hold
       style={src ? { backgroundImage: cssUrl(src) } : undefined}
       title={name}
@@ -326,7 +326,7 @@ export function AnsweredRow({
             type="button"
             onClick={action.onPress}
             disabled={action.busy}
-            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+            className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors"
           >
             {action.label}
           </button>

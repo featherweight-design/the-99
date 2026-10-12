@@ -65,7 +65,9 @@ export function RowsView({
         // border, so an over-committed row was the one row on the surface that
         // did not answer the pointer. The ring states the same fact and leaves
         // the border free to do its own job.
-        const border = "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)]";
+        // Border color only: this row also swaps `--row-bg` on hover, which cannot ease, and the
+        // availability seam reads it, so the fill must change in the same frame as the seam.
+        const border = "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)] transition-[border-color]";
         const overRing =
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
         const pending = pendingOracleId === c.oracleId;

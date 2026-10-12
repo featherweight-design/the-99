@@ -265,7 +265,7 @@ function Opener({ label, aria, rows, onPress }: { label: string; aria: string; r
       aria-label={aria}
       onClick={onPress}
       className={
-        "inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[10px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] "
+        "inline-flex min-h-[44px] cursor-pointer items-center font-mono text-[10px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors "
         + (rows ? "" : "md:min-h-0 md:text-[9.5px]")
       }
     >

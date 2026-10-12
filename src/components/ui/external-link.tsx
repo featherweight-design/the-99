@@ -13,7 +13,7 @@ const LINK =
   "underline decoration-1 underline-offset-[3px] " +
   "decoration-[color-mix(in_srgb,var(--accent-hover)_45%,transparent)] " +
   "hover:text-[color:var(--fg)] hover:decoration-[color:var(--fg)] " +
-  "active:text-[color:var(--fg)] active:decoration-[color:var(--fg)] active:decoration-2 " +
+  "active:text-[color:var(--fg)] active:decoration-[color:var(--fg)] active:decoration-2 transition-[color,text-decoration-color,text-decoration-thickness] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
 type ExternalLinkProps = {
@@ -35,7 +35,7 @@ export function ExternalLink({ href, label, className }: ExternalLinkProps) {
           It belongs here and not in the copy string. */}
       <span
         aria-hidden="true"
-        className="text-[0.85em] text-[color:var(--fg-muted)] group-hover:text-[color:var(--fg)] group-active:text-[color:var(--fg)]"
+        className="text-[0.85em] text-[color:var(--fg-muted)] group-hover:text-[color:var(--fg)] group-active:text-[color:var(--fg)] transition-colors"
       >
         {" ↗"}
       </span>

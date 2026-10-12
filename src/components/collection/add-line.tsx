@@ -117,7 +117,7 @@ export function AddLine(props: AddLineProps) {
           disabled={disabled}
           aria-label={copy.removeLineAria(line.name)}
           onClick={props.onRemove}
-          className="-mr-[8px] -mt-[8px] flex h-[44px] w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[7px] text-[13px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg)] disabled:cursor-default md:mr-0 md:mt-0 md:h-[28px] md:w-[28px]"
+          className="-mr-[8px] -mt-[8px] flex h-[44px] w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[7px] text-[13px] text-[color:var(--fg-faint)] hover:text-[color:var(--fg)] disabled:cursor-default md:mr-0 md:mt-0 md:h-[28px] md:w-[28px] transition-colors"
         >
           {"✕"}
         </button>
