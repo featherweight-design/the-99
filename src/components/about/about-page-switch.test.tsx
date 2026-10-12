@@ -2,7 +2,7 @@
 // NEVER_CUT_ENABLED. Everything between that and the page — which entries draw, which are new,
 // what the index lists — is the code that ships.
 
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVisit: vi.fn(async () => {}) }));
@@ -112,5 +112,34 @@ describe("all-decks-cart, on the page", () => {
     for (const part of ["Sol Ring", "HD - Gishath", "HD - Kratos", "HD -Thorin", "you own 17 · all 17 in other decks", "$3.87"]) {
       expect(text, part).toContain(part);
     }
+  });
+});
+
+describe("notes, on the page", () => {
+  afterEach(() => {
+    delete process.env.DECK_NOTES_ENABLED;
+  });
+
+  it("draws only while its switch is on", () => {
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    expect(document.getElementById("notes")).toBeNull();
+    cleanup();
+    process.env.DECK_NOTES_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    expect(document.getElementById("notes")).not.toBeNull();
+  });
+
+  it("draws the note in its figure: both tagged cards and the date, the panel's own tags", () => {
+    process.env.DECK_NOTES_ENABLED = "true";
+    render(<AboutPage seen={ABOUT_VERSION} sheetMode />);
+    const el = document.querySelector<HTMLElement>('[data-specimen="notes"]')!;
+    expect(el).not.toBeNull();
+    expect(el.textContent).toContain("Laboratory Maniac");
+    expect(el.textContent).toContain("Thassa’s Oracle");
+    expect(el.textContent).toContain("2 Oct");
+    // Both of the row's date placements, as the real row has them: under the text on a phone, beside it from md.
+    expect([...el.querySelectorAll("span")].filter((n) => n.textContent === "2 Oct").map((n) => n.className.includes("md:hidden") ? "phone" : "wide")).toEqual(["phone", "wide"]);
+    expect(within(el).getByRole("button", { name: /Laboratory Maniac/, hidden: true }).className).toContain("decoration-solid");
+    expect(within(el).getByRole("button", { name: /Thassa’s Oracle/, hidden: true }).className).toContain("decoration-dashed");
   });
 });

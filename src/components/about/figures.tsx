@@ -23,6 +23,7 @@ import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { PreconRow } from "../decks/precons/precon-row";
 import { TokenRow } from "../decks/token-row";
+import { NotesFigureBody } from "./notes-figure";
 import { BrowseFigureBody } from "./browse-figure";
 import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
@@ -808,6 +809,16 @@ function DeckStatsFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** One note as the Notes view draws it. The body is a client module (`notes-figure.tsx`): it holds a
+ *  `CardDetailProvider` with a callback, which cannot be built in a server module. */
+function NotesFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="notes" width={width}>
+      <NotesFigureBody />
+    </Specimen>
+  );
+}
+
 /** One precon row as the list draws it: the name and owned figure, the commander, the set, and
  *  the reader's deck that shares it. */
 function PreconsFigure({ width }: { width: AboutWidth }) {
@@ -1185,6 +1196,7 @@ export const FIGURES: Partial<
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
   "deck-stats": DeckStatsFigure,
+  notes: NotesFigure,
   "mana-balance": ManaBalanceFigure,
   credits: CreditsFigure,
   "collection-add": CollectionAddFigure,

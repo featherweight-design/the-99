@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -70,6 +70,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["suggested-changes", "TUNING_ENABLED"],
       ["mana-balance", "MANA_BALANCE_ENABLED"],
       ["deck-stats", "DECK_STATS_ENABLED"],
+      ["notes", "DECK_NOTES_ENABLED"],
     ]);
     // Versions 12 (collection edit), 13 (evidence benchmarks) and 14 (deck printings and I got it)
     // added only switched entries, so
@@ -123,16 +124,16 @@ describe("an entry tied to a switch", () => {
     // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
     // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
-    // `mana-balance`, `all-decks-cart`, `precons` and `deck-tokens` since: 14 too, the current version, with no bump
+    // `mana-balance`, `all-decks-cart`, `precons`, `deck-tokens` and `notes` since: 14 too, the current version, with no bump
     // of their own.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "deck-tokens"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, deckTokens] = later.map((id) => launch.filter((e) => e.id === id));
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "deck-tokens", "notes"];
+    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, deckTokens, notes] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
-    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...deckTokens].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14]);
+    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...deckTokens, ...notes].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "upload-choice",
@@ -155,6 +156,7 @@ describe("an entry tied to a switch", () => {
       "suggested-changes",
       "mana-balance",
       "deck-stats",
+      "notes",
     ]);
   });
 
@@ -369,5 +371,15 @@ describe("Help me choose's read (rework plan PR 5: the entry rewritten, no bump)
       visibleEntries(env as unknown as NodeJS.ProcessEnv).find((e) => e.id === "credits")!.caption;
     expect(credits({})).not.toContain(bullet);
     expect(credits({ HELP_ME_CHOOSE_ENABLED: "true" })).toContain(bullet);
+  });
+});
+
+describe("notes follows DECK_NOTES_ENABLED", () => {
+  const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
+
+  it("is hidden while the switch is off, and drawn straight after deck-stats once it is on", () => {
+    expect(ids({ DECK_STATS_ENABLED: "true" })).not.toContain("notes");
+    const on = ids({ DECK_STATS_ENABLED: "true", DECK_NOTES_ENABLED: "true" });
+    expect(on[on.indexOf("deck-stats") + 1]).toBe("notes");
   });
 });
