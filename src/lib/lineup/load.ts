@@ -13,7 +13,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckCards, deckGames, decks as decksTable } from "../../db/schema";
+import { cards, deckCards, deckGames, deckProxies, decks as decksTable } from "../../db/schema";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { isLandFace } from "../cards/facet";
 import { isBasicLand } from "../decks/grouping";
@@ -64,11 +64,14 @@ async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders
 /**
  * The cards two or more decks play, basics left out, each with what the collection holds and what the claim
  * model gives each deck (lock 3: who holds a contested copy is the model's, never re-derived here): a
- * committed deck holds its allocation, a brew only what the player gave it, as the cart reads it.
+ * committed deck holds its allocation, a brew only what the player gave it, as the cart reads it. A row the deck
+ * proxies is acquired, as Shopping and Money read it, so it is never short: the claim model leaves a proxied row
+ * out of its claims, and counting it short would name a buy `/decks/shopping` does not have.
  */
 export function sharedCards(
   lists: { deckId: string; oracleId: string; name: string; typeLine: string; quantity: number }[],
   availability: ReadonlyMap<string, Pick<Availability, "owned" | "claims">>,
+  proxied: ReadonlySet<string> = new Set(),
 ): LineupShared[] {
   const byCard = new Map<string, { name: string; decks: Map<string, number> }>();
   for (const c of lists) {
@@ -84,7 +87,7 @@ export function sharedCards(
       oracleId,
       name: r.name,
       owned: a?.owned ?? 0,
-      decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: Math.min(wants, held.get(id) ?? 0) })),
+      decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: proxied.has(`${id}|${oracleId}`) ? wants : Math.min(wants, held.get(id) ?? 0) })),
     };
   });
 }
@@ -97,16 +100,19 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
   let jobs: JobRowsByCard;
   let prices: PriceRead;
   let availability: Map<string, Availability>;
+  let proxied: Set<string>;
   try {
     lists = await readLists(ids);
     const all = [...lists.list, ...lists.commanders];
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
-    const [labels, read, avail] = await Promise.all([
+    const [labels, read, avail, proxyRows] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
       readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
       // The whole collection's claim model, once (lock 3, lock 4).
       loadAvailability(userId),
+      db.select({ deckId: deckProxies.deckId, oracleId: deckProxies.oracleId }).from(deckProxies).where(inArray(deckProxies.deckId, ids)),
     ]);
+    proxied = new Set(proxyRows.map((r) => `${r.deckId}|${r.oracleId}`));
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));
     prices = read;
     availability = avail;
@@ -137,7 +143,7 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
     });
   }
   const every = [...lists.list, ...lists.commanders];
-  return { builds, asOf: prices.newestAsOf, shared: sharedCards(every, availability), lists: every };
+  return { builds, asOf: prices.newestAsOf, shared: sharedCards(every, availability, proxied), lists: every };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {

@@ -11,6 +11,7 @@ import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { sharedView, type SharedMode } from "../../../lib/lineup/shared";
 import type { LineupDeck, LineupShared } from "../../../lib/lineup/types";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { PendingReporter } from "../../shell/pending-reporter";
 import { CHIP_OFF, CHIP_ON } from "./worth-card";
 
 const copy = decksStatsCopy.shared;
@@ -74,6 +75,7 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
                   {cartEnabled ? (
                     <Link href="/decks/shopping" className="self-start font-mono text-[11px] text-[color:var(--warning)] underline decoration-[color:color-mix(in_oklab,var(--warning)_45%,transparent)]">
                       {copy.toCart(r.short)}
+                      <PendingReporter href="/decks/shopping" />
                     </Link>
                   ) : null}
                 </div>
