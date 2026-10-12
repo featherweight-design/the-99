@@ -758,6 +758,7 @@ export function SetGridView(props: SetGridViewProps) {
                 // state — so focusing here focused a hidden input, which does nothing, and
                 // the keyboard reader stayed on a button that was about to unmount.
                 openHead();
+                // Instant, not `reveal`: the next frame focuses the field, which must find the page at the top.
                 window.scrollTo({ top: 0 });
                 // And on the next frame, once the open head has painted. The control they
                 // asked for is the field this button stands for; landing them anywhere

@@ -21,6 +21,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { ReplaceIcon } from "./replace-icon";
 import { RevertConfirm } from "./revert-confirm";
 import { Chevron } from "../ui/chevron";
+import { reveal } from "../../lib/ui/reveal";
 
 const c = collectionEditCopy.history;
 
@@ -304,7 +305,7 @@ export function HistoryList({
     if (!focusId || focused.current || !initial.some((e) => e.id === focusId)) return;
     focused.current = true;
     void fetchDetail(focusId);
-    document.getElementById(`entry-${focusId}`)?.scrollIntoView({ block: "center" });
+    reveal(document.getElementById(`entry-${focusId}`), "center");
     // Once, on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

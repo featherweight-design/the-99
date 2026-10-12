@@ -27,6 +27,9 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
   children: ReactNode;
 }) {
   const bodyId = useId();
+  // The body's arrival plays when the reader opens it, not when a stored-open section mounts: that
+  // mount is the tool panel's own arrival, which already plays around it.
+  const [pressed, setPressed] = useState(false);
   return (
     <section data-mana-section={id} aria-label={label} className={`border-t border-t-[color:var(--border-strong)] ${tight ? "-mt-[6px]" : ""}`}>
       <h3 className="m-0">
@@ -35,17 +38,17 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
           aria-expanded={open}
           // The body is unmounted while folded, so the reference would dangle.
           aria-controls={open ? bodyId : undefined}
-          onClick={onToggle}
+          onClick={() => { setPressed(true); onToggle(); }}
           className="flex min-h-[52px] w-full cursor-pointer items-center gap-x-[8px] border-none bg-transparent p-0 text-left md:min-h-[44px] md:gap-x-[10px]"
         >
-          <span aria-hidden className={`inline-block ${CHEVRON_CLASS} text-[color:var(--fg-muted)] transition-transform duration-150 ${open ? "rotate-90" : ""}`}>▸</span>
+          <span aria-hidden className={`inline-block ${CHEVRON_CLASS} text-[color:var(--fg-muted)] transition-transform duration-[var(--motion-duration)] ease-[var(--motion-ease)] motion-reduce:transition-none ${open ? "rotate-90" : ""}`}>▸</span>
           <span className="flex flex-col gap-x-[10px] gap-y-[2px] md:flex-row md:items-baseline">
             <span className="font-sans text-[16px] font-semibold leading-[1.2] text-[color:var(--fg)] md:text-[17px]">{label}</span>
             <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] md:text-[11px]">{clause}</span>
           </span>
         </button>
       </h3>
-      {open ? <div id={bodyId} className="mt-[9px] md:mt-[11px]">{children}</div> : null}
+      {open ? <div id={bodyId} className={`${pressed ? "anim-gentle-in " : ""}mt-[9px] md:mt-[11px]`}>{children}</div> : null}
     </section>
   );
 }

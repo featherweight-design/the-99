@@ -392,6 +392,7 @@ export function FilterPanel({
   useEffect(() => {
     if (!activeCode || !listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>(`[data-code="${activeCode}"]`);
+    // Instant, not `reveal`: it follows the keyboard, and an eased scroll would trail each key.
     el?.scrollIntoView({ block: "nearest" });
   }, [activeCode]);
 

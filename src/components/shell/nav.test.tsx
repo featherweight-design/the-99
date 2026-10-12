@@ -2,6 +2,9 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
 import { setAboutSheetUp } from "./about-sheet-presence";
+import { reveal } from "../../lib/ui/reveal";
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 
 const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
 
@@ -434,8 +437,10 @@ describe("The lock, desktop rail", () => {
       </>,
     );
     const decks = slot("Decks");
+    vi.mocked(reveal).mockClear();
     fireEvent.pointerEnter(decks);
     fireEvent.click(within(noteOf(decks)).getByRole("button", { name: "Go to step 1" }));
+    expect(reveal).toHaveBeenCalledWith(screen.getByRole("button", { name: "Upload a CSV" }), "center");
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Upload a CSV" }));
     expect(push).not.toHaveBeenCalled();
     expect(isOpen(decks)).toBe(false);

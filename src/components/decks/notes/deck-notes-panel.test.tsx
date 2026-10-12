@@ -16,9 +16,12 @@ const stub = vi.hoisted(() => ({
 vi.mock("../../../app/decks/notes-actions", () => ({
   addNote: stub.addNote, editNote: stub.editNote, setNoteDone: stub.setNoteDone, deleteNote: stub.deleteNote, searchNoteCards: stub.searchNoteCards,
 }));
+// The scrolls are `reveal`'s; its eased motion is `reveal`'s own test.
+vi.mock("../../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 vi.mock("../../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: stub.open }) }));
 
 const { DeckNotesPanel } = await import("./deck-notes-panel");
+const { reveal } = await import("../../../lib/ui/reveal");
 
 const DECK = "22222222-2222-4222-8222-222222222222";
 const SOL = "6d0a5f7e-1111-4222-8333-444455556666";
@@ -160,6 +163,8 @@ describe("adding", () => {
     click(screen.getByRole("button", { name: "Insert a card tag" }));
     expect(field.value).toBe("[[]]");
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+    // The open picker brings its field to the top.
+    expect(reveal).toHaveBeenCalledWith(field, "start");
   });
 
   it("shows any card after the deck's, and a refused search in place", async () => {
@@ -279,6 +284,10 @@ describe("a row", () => {
     mount(view([note("a", "doomed")]));
     click(screen.getByRole("button", { name: "Delete this note" }));
     const pane = screen.getByText("Delete this note?").closest("div")!.parentElement!;
+    // The confirm is brought fully into view, no further than it needs.
+    const [revealed, block] = vi.mocked(reveal).mock.calls.at(-1)!;
+    expect(block).toBe("nearest");
+    expect((revealed as Element).textContent).toContain("Delete this note?");
     click(within(pane).getByRole("button", { name: "Keep it" }));
     expect(stub.deleteNote).not.toHaveBeenCalled();
     click(screen.getByRole("button", { name: "Delete this note" }));

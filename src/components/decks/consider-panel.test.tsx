@@ -240,6 +240,16 @@ describe("ConsiderPanel — shelf fold (STATES-consider-tiles.md s1–s5)", () =
     expect(button).toHaveAttribute("aria-expanded", "true");
   });
 
+  it("plays the tiles' arrival only when the reader unfolds the shelf, not when Consider mounts", () => {
+    mount({ suggestions: [suggestion({ name: "Cultivate", role: "ramp" })] });
+    const button = disclosureFor("Ramp");
+    const grid = () => document.getElementById(button.getAttribute("aria-controls")!)!;
+    expect(grid().classList.contains("anim-gentle-in")).toBe(false);
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(grid().classList.contains("anim-gentle-in")).toBe(true);
+  });
+
   it("clears the expansion on fold — reopening shows the cap again, not what was expanded", () => {
     const many = Array.from({ length: SHELF_CAP + 2 }, (_, i) => suggestion({ name: `Ramp Card ${i}` }));
     mount({ suggestions: many });

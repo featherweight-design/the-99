@@ -7,6 +7,7 @@ import { deckNotesCopy, NOTE_MAX, NOTE_WARN_AT } from "../../../lib/copy/deck-no
 import { fieldCount, insertOpenTag, insertPick, openTagAt, type Picked } from "../../../lib/decks/notes-field";
 import { PRIMARY } from "../../ui/button";
 import { InfoTip } from "../../ui/info-tip";
+import { reveal } from "../../../lib/ui/reveal";
 
 /** A card the deck holds, for the picker's local "In this deck" group. */
 export type DeckCardOption = { oracleId: string; name: string; typeLine: string; imageUri: string | null };
@@ -96,7 +97,7 @@ export function NoteField({
   // Opening the picker brings the field to the top of the visible area (K9): the sticky add-card bar and a
   // phone keyboard would otherwise cover the list under it.
   useEffect(() => {
-    if (open) input.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    if (open) reveal(input.current, "start");
   }, [open]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;

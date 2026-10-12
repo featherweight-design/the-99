@@ -2,10 +2,13 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import type { HistoryRow } from "../../db/schema";
+import { reveal } from "../../lib/ui/reveal";
 
 const loadEntry = vi.fn();
 const loadPage = vi.fn();
 const previewRevert = vi.fn();
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 vi.mock("../../app/collection/history-actions", () => ({
   previewRevert: (...a: unknown[]) => previewRevert(...a),
   revertCollectionEntry: vi.fn(),
@@ -218,14 +221,15 @@ describe("HistoryList", () => {
 
   it("opens and reads the entry named by the link into view on arrival", async () => {
     const e = entry({});
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
     loadEntry.mockResolvedValue(detail(e, [row("Sol Ring", 1, 3)]));
     await act(async () => {
       draw([e], { focusId: "e1" });
     });
     expect(loadEntry).toHaveBeenCalledWith("e1");
-    expect(scroll).toHaveBeenCalled();
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledWith(document.getElementById("entry-e1"), "center");
     expect(screen.getByRole("button", { expanded: true })).toBeTruthy();
   });
 });

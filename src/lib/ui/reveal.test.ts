@@ -130,6 +130,76 @@ describe("reveal", () => {
     });
   }
 
+  it("keeps going while the reader types inside the target it is bringing in", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(1000);
+  });
+
+  for (const init of [{ key: "Shift" }, { key: "AltGraph" }, { key: "CapsLock" }, { key: "Dead" }, { key: "Compose" }, { key: "Process", isComposing: true }] as KeyboardEventInit[]) {
+    it(`keeps going on ${init.key}, a key on the way to a typed character`, () => {
+      media(false);
+      const { box, el } = scene();
+      const input = document.createElement("input");
+      el.appendChild(input);
+      reveal(el);
+      input.dispatchEvent(new KeyboardEvent("keydown", { ...init, bubbles: true }));
+      vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+      expect(box.scrollTop).toBe(1000);
+    });
+  }
+
+  it("keeps going on a character typed with AltGraph, which a layout may report as Ctrl plus Alt", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    const event = new KeyboardEvent("keydown", { key: "@", ctrlKey: true, altKey: true, bubbles: true });
+    event.getModifierState = (k: string) => k === "AltGraph";
+    input.dispatchEvent(event);
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(1000);
+  });
+
+  it("still stops on a Ctrl shortcut typed in a field inside the target", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "a", ctrlKey: true, bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(0);
+  });
+
+  it("still stops on a key that moves focus, even from inside the target", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(0);
+  });
+
+  it("still stops on a keypress on a button inside the target", () => {
+    media(false);
+    const { box, el } = scene();
+    const button = document.createElement("button");
+    el.appendChild(button);
+    reveal(el);
+    button.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(0);
+  });
+
   it("stops before it starts when the reader moves during the beat", () => {
     media(false);
     const { box, el } = scene();

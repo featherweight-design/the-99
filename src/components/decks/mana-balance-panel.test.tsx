@@ -165,6 +165,18 @@ describe("ManaBalancePanel: the folded sections", () => {
     expect(localStorage.getItem(manaOpenKey("other"))).toBeNull();
   });
 
+  it("plays a section's arrival when the reader opens it, not when a remembered-open one mounts", async () => {
+    const body = (name: RegExp) => document.getElementById(screen.getByRole("button", { name }).getAttribute("aria-controls")!)!;
+    const first = render(<ManaBalancePanel deckId="d" read={async () => gishath()} />);
+    await waitFor(() => expect(heading()).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: /Hardest costs/ }));
+    expect(body(/Hardest costs/).classList.contains("anim-gentle-in")).toBe(true);
+    first.unmount();
+    render(<ManaBalancePanel deckId="d" read={async () => gishath()} />);
+    await waitFor(() => expect(document.querySelector("[data-mana-patterns='G']")).not.toBeNull());
+    expect(body(/Hardest costs/).classList.contains("anim-gentle-in")).toBe(false);
+  });
+
   it("switches colors with the chips, shows three names then +N more, and opens card detail by name", async () => {
     render(<ManaBalancePanel deckId="d" read={async () => gishath()} />);
     await waitFor(() => expect(heading()).not.toBeNull());

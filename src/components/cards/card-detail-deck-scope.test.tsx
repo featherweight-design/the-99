@@ -7,8 +7,11 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import type { BrowseCard } from "../../lib/collection/browse";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { DeckTokensProvider } from "../decks/deck-tokens-context";
+import { reveal } from "../../lib/ui/reveal";
 import type { DeckToken, DeckTokensRead } from "../../lib/tokens/read";
 
+// The jump is `reveal`'s; its eased scroll is `reveal`'s own test.
+vi.mock("../../lib/ui/reveal", () => ({ reveal: vi.fn() }));
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(async () => {}),
@@ -156,7 +159,8 @@ describe("the tokens line in the deck box", () => {
 
   it("asks the deck for its All view and focuses the group when the link is pressed", async () => {
     const heading = document.createElement("h3");
-    heading.id = "deck-tokens-heading"; heading.tabIndex = -1; heading.scrollIntoView = vi.fn();
+    heading.id = "deck-tokens-heading"; heading.tabIndex = -1;
+    vi.mocked(reveal).mockClear();
     document.body.append(heading);
     const asked = vi.fn();
     window.addEventListener("the99:show-deck-tokens", asked);
@@ -168,7 +172,7 @@ describe("the tokens line in the deck box", () => {
     vi.useRealTimers();
     window.removeEventListener("the99:show-deck-tokens", asked);
     expect(asked).toHaveBeenCalledTimes(1);
-    expect(heading.scrollIntoView).toHaveBeenCalled();
+    expect(reveal).toHaveBeenCalledWith(heading, "start");
     expect(document.activeElement).toBe(heading);
     heading.remove();
   });

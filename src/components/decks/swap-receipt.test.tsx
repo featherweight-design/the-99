@@ -8,6 +8,9 @@ import type { SwapReceipt } from "../../lib/swaps/context";
 
 const { undoSwapAction } = vi.hoisted(() => ({ undoSwapAction: vi.fn() }));
 vi.mock("../../lib/swaps/actions", () => ({ undoSwapAction }));
+// The scroll is `reveal`'s; its eased motion is `reveal`'s own test. It hands back its cancel.
+const { reveal } = vi.hoisted(() => ({ reveal: vi.fn(() => () => {}) }));
+vi.mock("../../lib/ui/reveal", () => ({ reveal }));
 
 const { SwapToolsProvider, useSwapTools } = await import("../../lib/swaps/context");
 const { SwapReceiptRow, landOnReceipt } = await import("./swap-receipt");
@@ -130,6 +133,28 @@ describe("landOnReceipt", () => {
       expect(document.activeElement).toBe(screen.getByRole("button", { name: "Undo swap" }));
     } finally {
       rects.mockRestore();
+    }
+  });
+
+  // Held each frame while out of view, a reveal asked again every frame would restart its beat and
+  // never move: it is asked once per receipt node, and again for the node a revalidated page draws.
+  it("reveals an out-of-view receipt once, not every frame, and again when the page redraws it", async () => {
+    const rects = vi.spyOn(Element.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    const box = vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({ top: -400, bottom: -350 } as DOMRect);
+    reveal.mockClear();
+    try {
+      const view = render(<div key="a" data-swap-id="held"><button type="button">Undo swap</button></div>);
+      const stop = landOnReceipt("held");
+      await frames(6);
+      expect(reveal).toHaveBeenCalledTimes(1);
+      expect(reveal).toHaveBeenLastCalledWith(document.querySelector('[data-swap-id="held"]'), "center");
+      view.rerender(<div key="b" data-swap-id="held"><button type="button">Undo swap</button></div>);
+      await frames(3);
+      expect(reveal).toHaveBeenCalledTimes(2);
+      stop();
+    } finally {
+      rects.mockRestore();
+      box.mockRestore();
     }
   });
 });
