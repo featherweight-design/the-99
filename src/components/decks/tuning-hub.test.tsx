@@ -271,6 +271,25 @@ describe("TuningHub opening a tool", () => {
     await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
   });
 
+  it("scrolls and focuses anyway once History's first read outlasts the wait", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const scroll = vi.fn();
+      Element.prototype.scrollIntoView = scroll;
+      readHistoryPage.mockReturnValue(new Promise(() => {}));
+      render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "history" }]} />);
+      fireEvent.click(tile("history"));
+      await waitFor(() => expect(document.getElementById("history-heading")).not.toBeNull());
+      await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+      expect(scroll).not.toHaveBeenCalled();
+      vi.setSystemTime(Date.now() + 11_000);
+      await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" }));
+      await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("waits for a hidden tab body to be shown before it scrolls and focuses", async () => {
     const scroll = vi.fn();
     Element.prototype.scrollIntoView = scroll;
