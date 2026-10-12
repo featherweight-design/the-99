@@ -2,6 +2,10 @@
 
 Two tools, three models: today's `claude-sonnet-5` (effort medium, the `TUNING_MODEL` and `TUNING_EFFORT` both tools use), `claude-sonnet-5-5` and `claude-haiku-5-5`, the last two at the same effort. Real-time prices throughout (what the app pays), staging read-only, no production model constant or behavior changed (the only `src/` change registers the two eval ledgers' limits). Harness: `pnpm eval:tuning-model-arms` (Suggested changes) and `pnpm eval:cuts-model --model … --text --realtime` (Proposed cuts). Ledgers: `ledger-model-tiering-tuning.jsonl` ($0.67 of $2) and `ledger-model-tiering-cuts.jsonl` ($1.55 of $2, which includes one $0.081 line that is an estimate, see below).
 
+## Decision and follow-up (same day)
+
+Hugh chose option 1: both tools move to Sonnet 5.5 (`TUNING_MODEL = "claude-sonnet-5-5"`), shipped as its own PR. He asked for the gaps to be measured before it lands, so a follow-up round ran on its own $1.50 ledger (`ledger-model-switch.jsonl`, $1.33 spent) and is the last section of this document. Where it supersedes a figure below, the follow-up says so; the original tables and recommendations are left as they were written.
+
 ## Read this first: what this does and does not show
 
 - **Suggested changes has no gold.** Nobody has marked which suggestions are right for these decks, so "accuracy" here is *contract survival* (did the reply pass the app's own checks: legal, in the pool, citations that hold) plus how many suggestions came back. It cannot say whether a rationale is good. The verbatim lines below are there for Hugh to judge that himself.
@@ -194,3 +198,48 @@ Every suggestion the model returned for these decks, in the model's own words (`
 - Cut Tome of Legends: Tome of Legends adds little beside the deck's other draw
 - Cut Swan Song: Swan Song is spare removal beside Swords and Dovin's Veto
 
+## Follow-up: Sonnet 5.5 at three trials, a second sample, and a blind judge
+
+Spend $1.33 of the $1.50 (ledger `ledger-model-switch.jsonl`), real-time prices, same decks and prompts as above.
+
+**Proposed cuts, Sonnet 5.5 at three trials per deck (15 trials, the first round's 5 plus 10 new):**
+
+| | Sonnet 5 (today) | Sonnet 5.5 | Haiku 5.5 |
+|---|---|---|---|
+| Cuts of Hugh's found | 27 of 174 (16%) | **39 of 174 (22%)** | 29 of 174 (17%) |
+| Against chance | 21.7 expected, 1.25x | 24.0 expected, **1.63x** | 24.0 expected, 1.21x |
+| Kept of asked | 132 of 141 | 153 of 156 | 150 of 156 |
+| Cost per trial | $0.0825 | $0.0373 | $0.0031 |
+| Latency p50 / p95 (per trial) | 42.8 s / 115.7 s | 9.8 s / 10.4 s | 17.3 s / 23.0 s |
+| Unanswered trials | 1 | 0 | 0 |
+
+Per deck, Sonnet 5.5: Aang 15 of 57, Counter Intelligence 17 of 51, Prismari 4 of 45, Gods 3 of 18, Wizards 0 of 3. Sonnet 5 found 11, 3, 10, 3 and 0 on the same decks. Sonnet 5.5 is ahead on two decks (Aang, Counter Intelligence), behind on one (Prismari) and level elsewhere. Fifteen trials over five decks is still a small sample, but with the first round's single-trial reading (11 of 58) now at three trials the direction held: it does not look worse than Sonnet 5, and it was never slower or less reliable. **This supersedes the first round's "Sonnet 5.5 is not distinguishable" and its recommendation of Haiku 5.5 for cuts on recall grounds**; Haiku 5.5 remains the cheapest.
+
+**Suggested changes, a second Sonnet 5.5 sample on the same twelve decks:**
+
+| | Sonnet 5 | Sonnet 5.5, sample 1 | Sonnet 5.5, sample 2 |
+|---|---|---|---|
+| Suggestions returned per deck | 8.4 | 5.9 | 5.9 |
+| Kept after the app's checks | 91 of 101 | 65 of 71 | 68 of 71 |
+| Answers that passed the contract | 12 of 12 | 11 of 12 | 12 of 12 |
+| Cost per call | $0.0326 | $0.0211 | $0.0198 |
+| Latency p50 / p95 | 25.1 s / 30.3 s | 8.2 s / 13.9 s | 7.9 s / 11.4 s |
+
+The suggestion count is the real gap: Sonnet 5.5 returns about 30% fewer suggestions per deck (5.9 against 8.4) and does so on both samples, so it is a property of the model rather than noise.
+
+**The empty Eldrazi answer.** In sample 1, Sonnet 5.5 at medium effort used **no thinking tokens and 95 output tokens** and returned one addition, Mind Stone, with the rationale "Already in the list, so no change; skip." (short form "Placeholder skip"). Mind Stone is already in the deck, so the app dropped it (`addNotLegal`), nothing was left, and the existing contract fired: the run ends `ungrounded` and the credit is refunded. It did not recur in sample 2, so **1 of 24 Sonnet 5.5 answers** was a degenerate placeholder. No new guard is added: refuse-and-refund already covers it, at the cost of one failed press the player can repeat. A retry would be one more model call (about $0.02) on roughly 4% of presses; it can be added if Hugh would rather the player never see it.
+
+**Blind judge.** Opus 5.5 (a third model) was shown the deck's evidence pack and the two lists, labelled only List 1 and List 2, in an order fixed by a hash of the deck name, and scored each 1 to 5. **This is a model's judgement, not Hugh's, and it is incomplete.** My first run capped the judge's reply at 700 tokens; Opus spent part of that on hidden reasoning and most replies were cut off mid-JSON. I recovered the scores that appear in the cut-off text (both lists' scores for 5 of the 12 decks), and a re-run of the rest was refused by the ledger's ask line at $1.30, so seven decks have no usable judgement.
+
+| Deck | Sonnet 5 | Sonnet 5.5 |
+|---|---|---|
+| HD - Avatar Aang | 3 | 2 |
+| HD - Eldrazi | 3 | 1 (the empty answer) |
+| HD - Gishath | 2 | 4 |
+| HD - Wizards | 3 | 4 |
+| HD - Yuriko | 2 | 3 |
+| Mean of the five | 2.6 | 2.8 |
+
+Sonnet 5.5 won three decks of five, Sonnet 5 two (one of them the empty answer). Five decks cannot separate two models whose means differ by 0.2, and the judge's own notes on the lists were about specific rationale errors, such as a Peek rationale that says it does not replace itself, in both arms. Read this as "no quality gap visible", not as a result. The scores are in `model-tiering-blind-scores-2026-10-12.json`; the raw judge replies are in the (gitignored) run directories.
+
+**What would change the call.** The gap that is established is quantity: about 30% fewer suggestions per deck from Sonnet 5.5, for a third of the latency and about 40% less cost. Whether the 8.4 included more good suggestions than the 5.9 is exactly what the incomplete judge could not answer; Hugh reading the verbatim lines above is still the better test.

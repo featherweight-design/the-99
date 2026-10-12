@@ -22,7 +22,7 @@ import { openTuning } from "./lib/tuning-app.mjs";
 import { TUNING_VARIANTS } from "./variants/tuning.mjs";
 
 const { values: args } = parseArgs({
-  options: { "dry-run": { type: "boolean", default: false }, arm: { type: "string" }, part: { type: "string" }, label: { type: "string" } },
+  options: { "dry-run": { type: "boolean", default: false }, arm: { type: "string" }, ledger: { type: "string" }, part: { type: "string" }, label: { type: "string" } },
 });
 const ARMS = ["sonnet-medium", "sonnet55-medium", "haiku55-medium"] as const;
 if (!args.arm || !(ARMS as readonly string[]).includes(args.arm)) throw new Error(`--arm must be one of ${ARMS.join(", ")}`);
@@ -32,8 +32,10 @@ const log = (line: string) => console.log(`[eval:tuning-model-arms] ${line}`);
  *  Gishath, Eldrazi), Brago (replacing Omnath, no longer on staging) and Aang, Counter Intelligence (a counterspell deck), and five more. */
 const NAMES = ["HD - Wizards", "HD - Yuriko", "HD - Gishath", "HD - Brago", "HD - Eldrazi", "HD Tune - Counter Intelligence",
   "HD - Avatar Aang", "HD - Elves", "HD - Goblins", "HD - Gods", "HD - Kratos", "HD - Zombies"];
-const LEDGER = new URL("ledger-model-tiering-tuning.jsonl", ROOT).pathname;
-const LIMITS = LEDGER_LIMITS["ledger-model-tiering-tuning.jsonl"];
+const LEDGER_FILE = `${args.ledger ?? "ledger-model-tiering-tuning"}.jsonl`;
+if (!["ledger-model-tiering-tuning.jsonl", "ledger-model-switch.jsonl"].includes(LEDGER_FILE)) throw new Error(`--ledger must be ledger-model-tiering-tuning or ledger-model-switch`);
+const LEDGER = new URL(LEDGER_FILE, ROOT).pathname;
+const LIMITS = LEDGER_LIMITS[LEDGER_FILE as "ledger-model-switch.jsonl"];
 
 const app = await openTuning();
 // The guard sums each request's WORST case (reply at max_tokens, two attempts), which for twelve

@@ -232,6 +232,7 @@
     "eval:cuts-blind-score": "tsx scripts/eval/cuts-blind-score.mts",
     "eval:tuning-lists": "tsx scripts/eval/tuning-lists.mts",
     "eval:tuning-model-arms": "tsx scripts/eval/tuning-model-arms.mts",
+    "eval:tuning-blind-judge": "tsx scripts/eval/tuning-blind-judge.mts",
     "eval:tuning-lists-report": "tsx scripts/eval/tuning-lists-report.mts",
     "eval:strategy-input": "tsx scripts/eval/strategy-input.mts",
     "eval:tuning-strategy": "tsx scripts/eval/tuning-strategy-metrics.mts",

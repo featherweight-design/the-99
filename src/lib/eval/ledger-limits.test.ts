@@ -10,6 +10,7 @@ describe("LEDGER_LIMITS", () => {
       "ledger-cuts.jsonl": { hardCapUsd: 15, askAtUsd: 10 },
       "ledger-model-tiering-tuning.jsonl": { hardCapUsd: 2, askAtUsd: 1.6 },
       "ledger-model-tiering-cuts.jsonl": { hardCapUsd: 2, askAtUsd: 1.6 },
+      "ledger-model-switch.jsonl": { hardCapUsd: 1.5, askAtUsd: 1.3 },
       "ledger-help-me-choose.jsonl": { hardCapUsd: 5, askAtUsd: null },
       "ledger-find-a-deck.jsonl": { hardCapUsd: 2, askAtUsd: null },
     });
