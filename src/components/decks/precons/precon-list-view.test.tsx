@@ -41,6 +41,19 @@ describe("PreconListView", () => {
     expect(screen.getByRole("button", { name: "Clear the colors" })).toBeInTheDocument();
   });
 
+  it("clears only the search when a search and colors both emptied the list", () => {
+    view({ q: "zzzz", colours: ["B"], order: null });
+    fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
+    expect(screen.getByRole("button", { name: "Clear the colors" })).toBeInTheDocument();
+  });
+
+  it("names every shared deck, however many", () => {
+    const three = [row("Eldrazi Unbound", "2023-08-04", { built: ["A", "B", "C"].map((n, i) =>
+      ({ deckId: n, deckName: `Deck ${n}`, shared: 70 - i, sameCommanders: true })) })];
+    render(<PreconListView rows={three} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null }} />);
+    for (const n of ["A", "B", "C"]) expect(screen.getByRole("link", { name: `Deck ${n}` })).toBeInTheDocument();
+  });
+
   it("draws a flat list, no year heads, in the most-owned order", () => {
     view({ q: "", colours: [], order: "owned" as never });
     expect(screen.queryAllByRole("heading", { level: 2 })).toHaveLength(0);

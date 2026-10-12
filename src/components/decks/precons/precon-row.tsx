@@ -13,7 +13,7 @@ const copy = preconsCopy.row;
 
 export function PreconRow({ row, href }: { row: Row; href: string }) {
   const lead = row.commanders[0];
-  const built = row.built.slice(0, 2);
+  const built = row.built;
   return (
     <li className="relative flex min-h-[44px] items-center gap-[11px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] p-[10px_8px_10px_12px] md:gap-[14px] md:rounded-[11px] md:p-[11px_12px_11px_15px]">
       <CommanderThumb imageUri={lead?.imageUri ?? null} colorIdentity={row.identity} size="list" />
@@ -52,7 +52,7 @@ export function PreconRow({ row, href }: { row: Row; href: string }) {
             {built.length === 1 ? copy.built : copy.builtTwo}{" "}
             {built.map((b, i) => (
               <span key={b.deckId}>
-                {i > 0 && copy.builtAnd}
+                {i > 0 && (i === built.length - 1 ? copy.builtAnd : ", ")}
                 <Link
                   href={`/decks/${b.deckId}`}
                   className="relative z-[1] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]"

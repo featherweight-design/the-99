@@ -69,6 +69,10 @@ export function PreconListView({ rows, hasCollection, fromNew, initial }: Precon
     mirror({ q, colours, order: next });
   };
   const clearAll = () => { setQ(""); setColours([]); mirror({ q: "", colours: [], order }); };
+  // The no-match state clears the one filter its button names: the search first, so a search and
+  // colours that both narrow fall back to the colours' own no-match state rather than losing both.
+  const clearSearch = () => { setQ(""); mirror({ q: "", colours, order }); };
+  const clearColours = () => { setColours([]); mirror({ q, colours: [], order }); };
 
   const shown = useMemo(() => orderPrecons(filterPrecons(rows, q, colours), order), [rows, q, colours, order]);
   const dates = rows.map((r) => r.releaseDate).sort();
@@ -147,7 +151,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial }: Precon
           <p className="m-0 max-w-[360px] text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{copy.none.body}</p>
           <button
             type="button"
-            onClick={clearAll}
+            onClick={q.trim() ? clearSearch : clearColours}
             className="min-h-[44px] cursor-pointer border-0 bg-transparent font-sans text-[13px] font-medium text-[color:var(--fg)] underline underline-offset-[3px]"
           >
             {q.trim() ? copy.none.clear : copy.none.clearColours}
