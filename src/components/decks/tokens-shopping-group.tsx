@@ -85,6 +85,8 @@ export function TokensShoppingGroup() {
         label={tokensCopy.group.label}
         count={shopping.rows.length}
         gapClause={tokensCopy.shopping.clause(shopping.rows.length)}
+        headingId="deck-tokens-shopping-heading"
+        focusable
       />
       <ul className="m-0 flex list-none flex-col gap-[3px] p-0 md:grid md:gap-y-[4px] md:gap-x-[20px]" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
         {shopping.rows.map((t) => (

@@ -910,6 +910,27 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 1,
   },
   {
+    id: 'deck-tokens',
+    chapter: '03',
+    title: 'The tokens your deck makes',
+    route: '/decks',
+    opens: 'opens a deck’s tokens',
+    width: 'plate',
+    switch: 'DECK_TOKENS_ENABLED',
+    caption:
+      'Anyone who plays Food, Treasure or Soldier makers knows the token drawer is never quite right. Your deck now lists the tokens its cards make, one row each, in a Tokens group under the last card group.\n\nOwn one? Say so, and it comes off every deck’s Shopping list. Don’t? Add it to Shopping, where tokens get their own group and never count toward what the deck needs.',
+    keys: [
+      'Any printing counts, so one Treasure covers every deck.',
+      'Uploading your Collection reads its tokens. “I have one” marks them by hand.',
+      'Open a token to see which cards make it.',
+      'On Shopping, tokens go to Mana Pool by set and number where it has one.',
+    ],
+    // The version current when it was written: an entry tied to a switch is announced by the
+    // switch, and nothing bumps the version for it.
+    marksPending: true,
+    since: 14,
+  },
+  {
     id: 'stand-ins',
     chapter: '03',
     title: 'Cheaper stand-ins',

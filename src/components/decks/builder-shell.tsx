@@ -4,6 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
+import { SHOW_DECK_TOKENS } from "./deck-tokens-landing";
 import type { DeckStatsInput } from "../../lib/decks/stats";
 import { printedFaceName } from "../../lib/collection/browse";
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
@@ -452,6 +453,16 @@ export function BuilderShell({
     },
     [setLockMode],
   );
+  // Card details' `Tokens ›` asks for the deck's list at All, where the Tokens group is drawn: from Analysis, Consider or Games too.
+  useEffect(() => {
+    const show = () => {
+      setView("deck");
+      deckPanel[1]("list");
+      changeFilter("all");
+    };
+    window.addEventListener(SHOW_DECK_TOKENS, show);
+    return () => window.removeEventListener(SHOW_DECK_TOKENS, show);
+  }, [changeFilter, deckPanel]);
   // Keyed on the list the page DRAWS, the optimistic one, so an edit made in this visit retires the
   // reading on screen the moment the edit is drawn rather than when the server answers.
   const listKey = useMemo(

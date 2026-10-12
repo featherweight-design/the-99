@@ -22,6 +22,7 @@ import { ManaEvidenceTable } from "../decks/mana-evidence";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { PreconRow } from "../decks/precons/precon-row";
+import { TokenRow } from "../decks/token-row";
 import { BrowseFigureBody } from "./browse-figure";
 import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
@@ -109,6 +110,7 @@ import {
   BENCHMARKS_SCRAPPY,
   BENCHMARKS_ANALYZED_AT,
   PRECON_ROW,
+  TOKEN_SOLDIER,
 } from "../../lib/about/fixtures";
 
 /** The four availability states, including the one that draws nothing. */
@@ -818,6 +820,17 @@ function PreconsFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** One token row as the deck's Tokens group draws it: a Soldier that is not held, on Shopping, made by one card. */
+function DeckTokensFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="deck-tokens" width={width}>
+      <ul className="m-0 list-none p-[12px]">
+        <TokenRow deckId="about" token={TOKEN_SOLDIER} newestAsOf={null} />
+      </ul>
+    </Specimen>
+  );
+}
+
 /** The shared credit line in the three states a friend sees: credits left, every credit out, the monthly limit. */
 function CreditsFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1152,6 +1165,7 @@ export const FIGURES: Partial<
   "review-and-commit": ReviewAndCommitFigure,
   "new-deck": NewDeckFigure,
   precons: PreconsFigure,
+  "deck-tokens": DeckTokensFigure,
   "undo-removal": UndoRemovalFigure,
   "locked-cards": LockedCardsFigure,
   "change-commander": ChangeCommanderFigure,

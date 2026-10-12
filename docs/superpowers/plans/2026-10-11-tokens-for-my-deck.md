@@ -212,6 +212,13 @@ not deferred. `about.test.ts` content hash is re-pinned deliberately. The `featu
 inventory below with the switch on, against a `pull:staging` copy.
 
 - Files (about 8): `card-modal.tsx` / its in-this-deck box, copy, `about.ts`, `about.test.ts`, fixtures, inventory, README status.
+- **Built** (2026-10-12): `token-card-line.tsx` mounted as `ProxyControl`'s `footer`, `tokensCopy.details`, the `deck-tokens`
+  entry (prose-passed; the `about - tokens.ts` draft was rewritten to the shipped behavior), its `Specimen` figure from
+  `TOKEN_SOLDIER`, the hash re-pinned with `ABOUT_VERSION` still 14.
+- **Close-out walk** (`feature-acceptance`, against a `pull:staging` copy on a scratch branch, switch on, 390 and 900):
+  `tokens.json` (read, unknown via `tokens-unknown.json`, Aang/Omnath/Wizards, card view, the three no-Tokens routes),
+  `tokens-shopping.json` (Shopping, tokens only and with cards, the Tokens group last, the press) and `tokens-closeout.json`
+  (card details with and without the line, the About figure) all reached every cell at both widths.
 
 ## The switch
 

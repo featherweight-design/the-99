@@ -1,0 +1,139 @@
+{
+  "feature": "Tokens for my deck (PR 6): the card-details line and the About entry",
+  "note": "Run against a scratch branch holding a pull:staging copy under the audit account, DECK_TOKENS_ENABLED=true on the dev server. TOKENS_AANG is a deck id of that account (Aang makes Food and Soldier; Food and Soldier are joined on it). The first row is a card that makes tokens, the second one that makes none, the third the About figure.",
+  "out": "contact-sheets/tokens-closeout",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 900,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "details-maker",
+      "label": "/decks/[id] card details for Appa: the tokens line at the foot of In this deck (desktop)",
+      "view": "src/components/decks/token-card-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1200,
+          "click": "button[aria-label^='View details for Appa']:visible"
+        },
+        {
+          "scrollTo": "[role=dialog] [role=switch]",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "details-maker-phone",
+      "label": "/decks/[id] card details for Appa: the tokens line at the foot of In this deck (phone: the sheet opened to All details)",
+      "view": "src/components/decks/token-card-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1200,
+          "click": "button[aria-label^='View details for Appa']:visible"
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[role=dialog] [role=switch]",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "details-none",
+      "label": "/decks/[id] card details for a card that makes no token: no line (desktop)",
+      "view": "src/components/decks/token-card-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1200,
+          "click": "button[aria-label^='View details for Mountain']:visible"
+        },
+        {
+          "scrollTo": "[role=dialog] [role=switch]",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    },
+    {
+      "id": "details-none-phone",
+      "label": "/decks/[id] card details for a card that makes no token: no line (phone: the sheet opened to All details)",
+      "view": "src/components/decks/token-card-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1200,
+          "click": "button[aria-label^='View details for Mountain']:visible"
+        },
+        {
+          "clickRole": "button",
+          "name": "All details",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[role=dialog] [role=switch]",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "about-tokens",
+      "label": "/about: the deck-tokens entry and its figure",
+      "view": "src/components/about/figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen='deck-tokens']",
+          "settle": 1200,
+          "scrollTo": "[data-specimen='deck-tokens']"
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 // A commander makes tokens whether or not the list holds a card yet, and the shell draws its own empty
 // state (not `Decklist`) for a deck with nothing built. The Tokens group must be on that branch too.
 // Follows `builder-shell-tuning-off.test.tsx`.
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckTokensRead } from "../../lib/tokens/read";
@@ -67,5 +67,33 @@ describe("BuilderShell: the Tokens group on an empty deck", () => {
   it("draws nothing there without the provider (the switch off)", () => {
     draw(EMPTY, null);
     expect(screen.queryByRole("heading", { name: /Tokens/ })).toBeNull();
+  });
+});
+
+describe("BuilderShell: card details asks for the Tokens group", () => {
+  const WITH_CARD = {
+    ...EMPTY,
+    cards: [{ oracleId: "sol-ring", name: "Sol Ring", quantity: 1, typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "other", owned: false }],
+    built: 1, total: 1, toBuyCount: 1,
+  } as unknown as DeckDetail;
+
+  it("moves a deck on its Shopping view back to All, where the group is drawn", async () => {
+    const { SHOW_DECK_TOKENS } = await import("./deck-tokens-landing");
+    draw(WITH_CARD, read);
+    // The Tokens group is the All view's: on Shopping, with nothing joined, there is no such heading.
+    expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^Shopping/ }));
+    expect(screen.queryByRole("heading", { name: /^Tokens/ })).toBeNull();
+    act(() => { window.dispatchEvent(new Event(SHOW_DECK_TOKENS)); });
+    expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
+  });
+
+  it("brings a deck on another tab back to its list", async () => {
+    const { SHOW_DECK_TOKENS } = await import("./deck-tokens-landing");
+    draw(WITH_CARD, read);
+    fireEvent.click(screen.getByRole("tab", { name: /^Games/ }));
+    expect(screen.queryByRole("heading", { name: /^Tokens/ })).toBeNull();
+    act(() => { window.dispatchEvent(new Event(SHOW_DECK_TOKENS)); });
+    expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
   });
 });

@@ -426,6 +426,13 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   status and the roll-up stay the cards' alone (pinned in `decklist.test.tsx`). The buy tag on a token row is the shipped tag as a
   button of its own: one press marks the token held, no confirm. A joined token whose maker has left the deck stays joined and
   says `from no card in this deck`, with only its remove press (a hand mark on it could be unmarked from nowhere, since the unmark holds the same maker rule).
+  **Card details and About** (PR 6): from a deck, a card that makes one of the deck's tokens gets one line at the foot of the
+  `In this deck` box (`TokenCardLine`, passed to `ProxyControl` as its `footer`): `Makes an Ally token · In Shopping`
+  (or `· in your collection` when every token it makes is held) and a `Tokens ›` press that closes the sheet and scrolls to the
+  group. It reads the deck's own tokens through the provider, so it is absent with the switch off, outside a deck and for a
+  card no token comes from. The About entry `deck-tokens` follows `DECK_TOKENS_ENABLED` through `AboutSwitch` and is
+  `since: 14`, the current version: a switched entry is announced when its switch flips, so the line **bumped nothing** and
+  only re-pinned the content hash.
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

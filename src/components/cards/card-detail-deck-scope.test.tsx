@@ -3,9 +3,11 @@
 // handed the modal nothing — which is the production path, and the one that
 // decides whether the deck sheet has a control at all.
 import { describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { proxyCopy } from "../../lib/copy/proxies";
+import { DeckTokensProvider } from "../decks/deck-tokens-context";
+import type { DeckToken, DeckTokensRead } from "../../lib/tokens/read";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -80,5 +82,101 @@ describe("the provider scopes the proxy control", () => {
     // the open card's own refresh is the behaviour, and pinning the number
     // would break on a second, equally correct read.
     expect(fetchCard.mock.calls.length).toBeGreaterThan(beforeWrite);
+  });
+});
+
+describe("the tokens line in the deck box", () => {
+  const food = (over: Partial<DeckToken> = {}): DeckToken => ({
+    oracleId: "t1", name: "Food", typeLine: "Token Artifact — Food", colors: [], power: null, toughness: null,
+    oracleText: null, makers: [{ oracleId: "held", name: "The Ozolith", imageUri: null }], state: "not", source: null,
+    joined: false, picture: null, price: null, ...over,
+  });
+  const readOf = (tokens: DeckToken[]): DeckTokensRead =>
+    ({ status: "ok", read: true, tokens, makerCount: 1, newestPriceAsOf: null });
+  // The line is a sentence with the names in their own weight, so it is matched by the span's whole text.
+  const lineIs = (text: string) => screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === text);
+  const mountWithTokens = (read: DeckTokensRead | null) => {
+    const fetchCard = async (id: string) => card({ oracleId: id });
+    const tree = (
+      <CardDetailProvider fetchCard={fetchCard} deckId="d1" deckName="HD Gods" deckOracleIds={new Set(["held"])}>
+        <Open id="held" />
+        <Open id="loose" />
+      </CardDetailProvider>
+    );
+    return render(read ? <DeckTokensProvider deckId="d1" read={read}>{tree}</DeckTokensProvider> : tree);
+  };
+
+  it("draws one line, with In Shopping and the link, for a card that makes a joined token", async () => {
+    mountWithTokens(readOf([food({ joined: true })]));
+    await openCard("open held");
+    expect(lineIs("Makes a Food token · In Shopping")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Show this deck’s tokens" }).textContent).toBe("Tokens ›");
+  });
+
+  it("says nothing of Shopping when the token is not joined, and names a held one as in the collection", async () => {
+    mountWithTokens(readOf([food()]));
+    await openCard("open held");
+    expect(lineIs("Makes a Food token")).toBeTruthy();
+    cleanup();
+    mountWithTokens(readOf([food({ state: "owned", source: "upload" })]));
+    await openCard("open held");
+    expect(lineIs("Makes a Food token · in your collection")).toBeTruthy();
+    cleanup();
+    mountWithTokens(readOf([food({ name: "Ally", state: "owned", source: "upload" })]));
+    await openCard("open held");
+    expect(lineIs("Makes an Ally token · in your collection")).toBeTruthy();
+  });
+
+  it("draws nothing outside the switch (no provider), for a card that makes no token, or when the read failed", async () => {
+    mountWithTokens(null);
+    await openCard("open held");
+    expect(screen.queryByText(/Makes a/)).toBeNull();
+    cleanup();
+    mountWithTokens(readOf([food({ makers: [{ oracleId: "other", name: "Other", imageUri: null }] })]));
+    await openCard("open held");
+    expect(screen.queryByText(/Makes a/)).toBeNull();
+    cleanup();
+    mountWithTokens({ status: "failed" });
+    await openCard("open held");
+    expect(screen.queryByText(/Makes a/)).toBeNull();
+  });
+
+  it("is absent from a card the deck does not hold, which has no In this deck box at all", async () => {
+    mountWithTokens(readOf([food({ makers: [{ oracleId: "loose", name: "Loose", imageUri: null }] })]));
+    await openCard("open loose");
+    expect(screen.queryByText(/Makes a/)).toBeNull();
+  });
+
+  it("bolds each name whole when one token's name begins another's", async () => {
+    mountWithTokens(readOf([food({ oracleId: "z1", name: "Zombie" }), food({ oracleId: "z2", name: "Zombie Army" })]));
+    await openCard("open held");
+    const bold = [...document.querySelectorAll("b")].map((b) => b.textContent);
+    expect(bold).toEqual(["Zombie", "Zombie Army"]);
+  });
+
+  it("asks the deck for its All view and focuses the group when the link is pressed", async () => {
+    const heading = document.createElement("h3");
+    heading.id = "deck-tokens-heading"; heading.tabIndex = -1; heading.scrollIntoView = vi.fn();
+    document.body.append(heading);
+    const asked = vi.fn();
+    window.addEventListener("the99:show-deck-tokens", asked);
+    mountWithTokens(readOf([food()]));
+    await openCard("open held");
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame"] });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Show this deck’s tokens" })); });
+    await act(async () => { vi.advanceTimersByTime(100); });
+    vi.useRealTimers();
+    window.removeEventListener("the99:show-deck-tokens", asked);
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(heading.scrollIntoView).toHaveBeenCalled();
+    expect(document.activeElement).toBe(heading);
+    heading.remove();
+  });
+
+  it("closes the sheet when the link is pressed", async () => {
+    mountWithTokens(readOf([food()]));
+    await openCard("open held");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Show this deck’s tokens" })); });
+    expect(screen.queryByRole("switch")).toBeNull();
   });
 });
