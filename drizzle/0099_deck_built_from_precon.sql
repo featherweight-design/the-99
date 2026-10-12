@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "built_from_precon" text;

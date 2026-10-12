@@ -3,7 +3,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, deckPrintings, deckUnresolvedRows, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
@@ -18,14 +18,13 @@ import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { touchDeck } from "../../lib/decks/touch";
+import { writeImportedDeck } from "../../lib/decks/write-imported-deck";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
   type DeckImportSource,
 } from "../../lib/upload-limits";
-
-const INSERT_BATCH = 500;
 
 export type ImportDeckInput = {
   /** The decklist exactly as the player gave it — pasted text or file text. */
@@ -323,41 +322,15 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
 
   // One transaction: a deck that exists without its unresolved rows is a deck that
   // silently lost the player's data, and there is no second chance to write them.
-  const deckId = await db.transaction(async (tx) => {
-    const [deck] = await tx
-      .insert(decks)
-      .values({ userId, name, commanderOracleId, partnerOracleId })
-      .returning({ id: decks.id });
-
-    for (let i = 0; i < deckCardValues.length; i += INSERT_BATCH) {
-      await tx.insert(deckCards).values(
-        deckCardValues.slice(i, i + INSERT_BATCH).map((c) => ({
-          deckId: deck.id,
-          oracleId: c.oracleId,
-          quantity: c.quantity,
-        })),
-      );
-    }
-
-    for (let i = 0; i < result.unresolved.length; i += INSERT_BATCH) {
-      await tx.insert(deckUnresolvedRows).values(
-        result.unresolved.slice(i, i + INSERT_BATCH).map((r) => ({
-          deckId: deck.id,
-          rawName: r.rawName,
-          quantity: r.quantity,
-          sourceLine: r.sourceLine,
-        })),
-      );
-    }
-
-    for (let i = 0; i < printingPicks.length; i += INSERT_BATCH) {
-      await tx.insert(deckPrintings).values(
-        printingPicks.slice(i, i + INSERT_BATCH).map((p) => ({ deckId: deck.id, ...p })),
-      );
-    }
-
-    return deck.id;
-  });
+  const deckId = await db.transaction((tx) => writeImportedDeck(tx, {
+    userId,
+    name,
+    commanderOracleId,
+    partnerOracleId,
+    cards: deckCardValues.map((c) => ({ oracleId: c.oracleId, quantity: c.quantity })),
+    unresolved: result.unresolved,
+    printings: printingPicks,
+  }));
 
   revalidateClaims(deckId, userId);
   return {

@@ -11,6 +11,8 @@ vi.mock("../../cards/card-detail-provider", () => ({
   },
   useCardDetail: () => ({ open: vi.fn() }),
 }));
+const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown } }));
+vi.mock("./start-precon", () => ({ StartPrecon: (p: { illegal: string[]; row: { built: unknown } }) => { startProps.illegal = p.illegal; startProps.row = p.row; return null; } }));
 vi.mock("../decklist-group", () => ({
   DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; cards: { name: string; layout?: string | null }[]; footer?: React.ReactNode; footerCount?: number }) => (
     <section data-testid="group" data-readonly={String(p.readOnly)} data-footer-count={p.footerCount ?? 0}>
@@ -22,7 +24,7 @@ import { OpenPreconView } from "./open-precon-view";
 
 const card = (name: string, over: Partial<OpenPreconCard> = {}): OpenPreconCard => ({
   oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1,
-  isCommander: false, basic: false, owned: true, printing: { scryfallId: `p-${name}`, setCode: "cmm", collectorNumber: "1", label: "CMM 1", imageUri: null, backImageUri: null }, ...over,
+  isCommander: false, basic: false, owned: true, legal: true, printing: { scryfallId: `p-${name}`, setCode: "cmm", collectorNumber: "1", label: "CMM 1", imageUri: null, backImageUri: null }, ...over,
 });
 
 function precon(over: Partial<Extract<OpenPrecon, { kind: "precon" }>["row"]> = {}, cards = [
@@ -77,6 +79,30 @@ describe("OpenPreconView", () => {
       card("Delver of Secrets", { layout: "transform" }),
     ])} fromNew={false} />);
     expect(screen.getByText("Delver of Secrets").dataset.layout).toBe("transform");
+  });
+
+  it("names a banned card once to the start dialog, however many printings list it", () => {
+    render(<OpenPreconView precon={precon({}, [
+      card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+      card("Dockside Extortionist", { legal: false }),
+      { ...card("Dockside Extortionist", { legal: false }), printing: null },
+    ])} fromNew={false} />);
+    expect(startProps.illegal).toEqual(["Dockside Extortionist"]);
+  });
+
+  it("draws no built line without a collection, but still hands the decks to the start dialog", () => {
+    const built = [{ deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }];
+    render(<OpenPreconView precon={{ ...precon({ built }), hasCollection: false }} fromNew={false} />);
+    expect(screen.queryByText(/Your deck HD - Eldrazi/)).toBeNull();
+    expect(startProps.row?.built).toEqual(built);
+  });
+
+  it("never tells the start dialog a banned commander stays in", () => {
+    render(<OpenPreconView precon={precon({}, [
+      card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi", legal: false }),
+      card("Dockside Extortionist", { legal: false }),
+    ])} fromNew={false} />);
+    expect(startProps.illegal).toEqual(["Dockside Extortionist"]);
   });
 
   it("lists the basics under Lands and counts them in its figure (O2)", () => {

@@ -591,6 +591,10 @@ export const decks = pgTable("decks", {
   // answers the question this column exists to answer. Never reset by a sweep:
   // the swept-empty copy branches on "was this ever filled", not "is it filled".
   filled: boolean("filled").notNull().default(false),
+  // The precon (`precons.file_name`) a deck was started from, by "Start a deck from this". A link
+  // the deck keeps, not a key: no foreign key, because the precon ingest replaces its tables whole,
+  // and a precon a later feed drops must not take the deck's record of where it began with it.
+  builtFromPrecon: text("built_from_precon"),
 },
   (t) => [
     // 1-5 or nothing. A 0 or a 6 is not a bracket, and a column that accepts one would put a

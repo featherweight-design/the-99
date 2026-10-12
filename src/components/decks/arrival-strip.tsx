@@ -9,6 +9,8 @@
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { arrivalDismissKey, type ArrivalPrintings } from "../../lib/decks/arrival";
 import { useLocalFlag } from "./use-local-flag";
+import { preconsCopy } from "../../lib/copy/precons";
+import type { PreconArrival } from "../../lib/precons/arrival-read";
 
 const copy = deckImportCopy.arrival;
 
@@ -22,12 +24,29 @@ interface ArrivalStripProps {
 }
 
 export function ArrivalStrip({ deckId, importedLineCount, printings = null }: ArrivalStripProps) {
-  const [dismissed, dismiss] = useLocalFlag(arrivalDismissKey(deckId));
-  if (dismissed) return null;
-
   // The locale is pinned for the same reason src/lib/copy/commanders.ts pins
   // it: an unpinned toLocaleString renders "1.418" under a European locale.
   const n = importedLineCount.toLocaleString("en-US");
+  return (
+    <ArrivalBand
+      deckId={deckId}
+      phone={printings ? copy.cleanWithPrintingsMobile(n, printings.kept, printings.notOwned) : copy.cleanMobile(n)}
+      desktop={printings ? copy.cleanWithPrintings(n, printings.kept, printings.notOwned) : copy.clean(n)}
+    />
+  );
+}
+
+/**
+ * The strip's shell, for any arrival that says where a deck came from: an import, in one line per
+ * width, or a precon start, in three lines at both (its handoff's S2: a head, a body, a meta line).
+ * One dismissal per deck, kept in the browser, so a refresh does not bring it back.
+ */
+export function ArrivalBand({ deckId, ...text }: { deckId: string } & (
+  | { phone: string; desktop: string }
+  | { lines: { head: string; body: string; meta: string } }
+)) {
+  const [dismissed, dismiss] = useLocalFlag(arrivalDismissKey(deckId));
+  if (dismissed) return null;
 
   return (
     <div
@@ -41,14 +60,18 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null }: Ar
       >
         ✓
       </span>
-      <p className="flex-1 m-0" style={{ color: "var(--fg-body)" }}>
-        <span className="md:hidden font-mono text-[10.5px]">
-          {printings ? copy.cleanWithPrintingsMobile(n, printings.kept, printings.notOwned) : copy.cleanMobile(n)}
-        </span>
-        <span className="hidden md:inline text-[13.5px]">
-          {printings ? copy.cleanWithPrintings(n, printings.kept, printings.notOwned) : copy.clean(n)}
-        </span>
-      </p>
+      {"lines" in text ? (
+        <div className="flex flex-1 flex-col gap-[3px]">
+          <p className="m-0 text-[13.5px] font-semibold text-[color:var(--fg)]">{text.lines.head}</p>
+          <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{text.lines.body}</p>
+          <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{text.lines.meta}</p>
+        </div>
+      ) : (
+        <p className="flex-1 m-0" style={{ color: "var(--fg-body)" }}>
+          <span className="md:hidden font-mono text-[10.5px]">{text.phone}</span>
+          <span className="hidden md:inline text-[13.5px]">{text.desktop}</span>
+        </p>
+      )}
       <button
         type="button"
         onClick={dismiss}
@@ -59,5 +82,23 @@ export function ArrivalStrip({ deckId, importedLineCount, printings = null }: Ar
         <span className="hidden md:inline">{copy.dismiss} ✕</span>
       </button>
     </div>
+  );
+}
+
+/** The strip after "Start a deck from this" (precons S2, S2b). Every card the reader does not own
+ *  is in the deck's Shopping, since the deck holds the precon's whole list. */
+export function PreconArrivalBand({ deckId, arrival }: { deckId: string; arrival: PreconArrival }) {
+  const c = preconsCopy.arrival;
+  return (
+    <ArrivalBand
+      deckId={deckId}
+      lines={{
+        head: c.head(arrival.name),
+        body: arrival.owned === arrival.of
+          ? c.bodyAll(arrival.cards, arrival.unmapped)
+          : c.body(arrival.cards, arrival.unmapped, arrival.owned, arrival.of, arrival.of - arrival.owned),
+        meta: c.meta(arrival.setCode),
+      }}
+    />
   );
 }

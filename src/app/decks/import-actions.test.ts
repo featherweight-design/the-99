@@ -456,6 +456,9 @@ describe("resolveUnresolvedRow", () => {
       "/collection/replace/summary/[uploadId]",
       "/decks/[id]",
       "/collection/proxies",
+      // Both precon routes name the reader's decks that share a list.
+      "/decks/precons",
+      "/decks/precons/[fileName]",
     ]);
     // And the reader's cached list payloads, which the revalidated pages read.
     expect(stub.state.updatedTags).toEqual(["user-lists:user_1"]);

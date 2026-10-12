@@ -22,6 +22,8 @@ export type OpenPreconCard = {
   isCommander: boolean;
   basic: boolean;
   owned: boolean;
+  /** Legal in Commander today. A precon can hold a card banned since it shipped; the start keeps it and says so. */
+  legal: boolean;
   /** The precon's printing, `SET number`, or null when the catalog lacks it. */
   printing: { scryfallId: string; setCode: string; collectorNumber: string; label: string; imageUri: string | null; backImageUri: string | null } | null;
 };
@@ -49,8 +51,9 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   const ownedRows = ids.length === 0 ? [] : await db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
     .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, ids)));
   const any = await db.select({ oracleId: collectionItems.oracleId }).from(collectionItems).where(eq(collectionItems.userId, userId)).limit(1);
-  // No built lines without a collection, as the list draws none in L2.
-  const readerDecks = any.length > 0 ? await readReaderDecks(userId, db) : [];
+  // Read whether or not there is a collection: the page draws no built lines without one (L2), but
+  // the start dialog still owes its "already have" note to a reader whose decks share the list.
+  const readerDecks = await readReaderDecks(userId, db);
   const setRow = await db.select({ name: sets.name }).from(sets).where(eq(sets.code, head.setCode.toLowerCase()));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const basic = (typeLine: string) => /^Basic\b/.test(typeLine);
@@ -87,6 +90,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
       isCommander: l.isCommander,
       basic: basic(l.typeLine),
       owned: owned.has(l.oracleId),
+      legal: l.legal,
       printing: l.scryfallId && l.setCode && l.collectorNumber
         ? { scryfallId: l.scryfallId, setCode: l.setCode, collectorNumber: l.collectorNumber, label: `${l.setCode.toUpperCase()} ${l.collectorNumber}`, imageUri: l.printingImage, backImageUri: l.printingBack }
         : null,
@@ -108,6 +112,7 @@ export function openPreconLines(db: Reader, fileName: string) {
       layout: cards.layout,
       colorIdentity: cards.colorIdentity,
       imageUri: preconArt,
+      legal: cards.commanderLegal,
       scryfallId: printings.scryfallId,
       setCode: printings.setCode,
       collectorNumber: printings.collectorNumber,

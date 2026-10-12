@@ -39,3 +39,31 @@ deck (`open.backNew` was never drawn). Fixed.
 Confirm pass: 1 to 4 and 6 checked on the contact sheet (rows o2, v2, o6) at both widths. 5 (O5) is
 confirmed by `open-precon-view.test.tsx` only: the sheet's account holds a collection. O4 (an unmapped
 card) has no row because no precon on any branch has one today; its sentence is tested.
+
+## PR 4: starting a deck from a precon
+
+Verify pass against "Component: StartPreconDialog", "Change: arrival strip (`?from=precon`)" and
+the start rows of the open precon, with S1 to S2c: 3 visual gaps, 1 state gap, all in the arrival
+strip. The start button, the phone dock and the dialog matched on every row, and S1 to S1e were
+reachable.
+
+| # | Gap | Resolution |
+|---|---|---|
+| 1 | The strip drew one sentence per width; the table asks for a head (13.5 / 600), a body (12.5 / 1.55) and a meta line (mono 10.5) | Fixed. `ArrivalBand` takes three `lines`, drawn at both widths; `PreconArrivalBand` fills them. The shell and lifetime stay as G12 resolved them. |
+| 2 | The body had no owned or to-buy figure | Fixed. `readPreconArrival` counts the precon's distinct non-basic cards and how many the reader owns, as the list counts them; every card not owned is in the deck's Shopping. |
+| 3 | No meta line with the printings clause | Fixed. `arrival.meta(set)`. |
+| 4 | S2b (`bodyAll`) unreachable | Fixed. Owning every card draws `bodyAll`, with no Shopping clause. |
+
+Confirm pass: the figures were checked against the scratch database (74 of 85 on Eldrazi Unbound,
+the same as its open page), and both bodies are tested and mutation-checked.
+
+The card a precon holds that Commander bans (Dockside Extortionist in Mystic Intellect, Trade
+Secrets in Political Puppets) is named in the dialog and kept. The deck's own notices read the same
+column (`cards.commander_legal`, `notices/rules-violations.ts`), so the two cannot disagree.
+
+## Follow-up, logged 2026-10-12
+
+- **Card details on an open precon show the precon's printing only when the reader holds it** (PR 3,
+  gap 6). The provider's `open` already takes an `atPrinting` that views one printing without picking
+  it (the set grid uses it), so the row's trigger can pass the precon's printing as `atPrinting` rather
+  than relying on held picks. Not built in PR 3 or PR 4.
