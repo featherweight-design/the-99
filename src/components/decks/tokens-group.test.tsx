@@ -7,6 +7,7 @@ const stub = vi.hoisted(() => ({ held: vi.fn(), joined: vi.fn(), open: vi.fn() }
 vi.mock("../../app/decks/token-actions", () => ({ setTokenHeld: stub.held, setTokenJoined: stub.joined }));
 vi.mock("../cards/card-detail-provider", () => ({
   useCardDetail: () => ({ open: stub.open }),
+  useCardDetailIfAny: () => ({ open: stub.open }),
   useCardIntent: () => ({}),
 }));
 
@@ -156,17 +157,37 @@ describe("pressing", () => {
 });
 
 describe("the makers fold", () => {
+  // The phone's chevron and the desktop's: one is display:none at any width, so jsdom holds both.
   const open = () => {
-    fireEvent.click(screen.getByRole("button", { expanded: false }));
+    fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
   };
 
-  it("is named by what it shows, and described by the disclosure sentence", () => {
+  // Bug batch 2026-10-12: the token's name and image open its card details, so the summary is no
+  // longer one button; the chevron is the disclosure, named by the disclosure sentence.
+  it("is the chevron, named by the disclosure sentence, at both widths", () => {
     draw(ok([token({ name: "Goblin", typeLine: "Token Creature — Goblin", power: "1", toughness: "1", makers: makers(3) })]));
-    const toggle = screen.getByRole("button", { expanded: false });
-    expect(toggle.getAttribute("aria-label")).toBeNull();
-    expect(toggle.textContent).toContain("Token Creature — Goblin · 1/1");
-    const described = document.getElementById(toggle.getAttribute("aria-describedby")!);
-    expect(described?.textContent).toBe("Goblin token, made by 3 cards");
+    const toggles = screen.getAllByRole("button", { expanded: false });
+    expect(toggles).toHaveLength(2);
+    for (const t of toggles) expect(t.getAttribute("aria-label")).toBe("Goblin token, made by 3 cards");
+    expect(toggles.map((t) => t.className.match(/\bmd:hidden\b|\bmd:flex\b/)?.[0])).toEqual(["md:hidden", "md:flex"]);
+    // A press elsewhere on the row still unfolds it, for a pointer.
+    fireEvent.click(screen.getByText("Token Creature — Goblin · 1/1"));
+    expect(screen.getAllByRole("button", { expanded: true })).toHaveLength(2);
+  });
+
+  it("opens the token's own card details from its name and its image, and folds nothing", () => {
+    draw(ok([token({ name: "Goblin", oracleId: "t-goblin", makers: makers(3) })]));
+    const name = screen.getByRole("button", { name: "Goblin" });
+    fireEvent.click(name);
+    expect(stub.open.mock.calls[0][0]).toBe("t-goblin");
+    // No siblings: a token opens alone, so the modal draws no Prev/Next.
+    expect(stub.open.mock.calls[0][1]).toBeUndefined();
+    expect(stub.open.mock.calls[0][3]).toMatchObject({ opener: name });
+    const art = document.querySelector("li button[aria-hidden]") as HTMLElement;
+    expect(art.tabIndex).toBe(-1);
+    fireEvent.click(art);
+    expect(stub.open.mock.calls[1][0]).toBe("t-goblin");
+    expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
   });
 
   it("is closed until the row is pressed, then names its cards A to Z with the count", () => {

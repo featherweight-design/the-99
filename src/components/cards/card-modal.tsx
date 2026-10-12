@@ -1316,6 +1316,11 @@ export function CardModal({
     [card.printings],
   );
   const hasPicker = ownedPrintings.length > 1 && (deckPrinting === undefined || deckPrinting.save !== undefined);
+  // A token's details (`loadTokenDetail`) draw only what a token has: no rarity, identity or owned
+  // count, and a buy link only to the Mana Pool product its price is for (none when it lists none).
+  const isToken = card.kind === "token";
+  const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
+  const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
 
   /**
    * Closing unmounts the layer.
@@ -2414,7 +2419,8 @@ export function CardModal({
                   {cardSheetCopy.printing(resolved.setCode, resolved.collectorNumber)}
                 </span>
               )}
-              <OwnedLine card={card} deckPage={deckPage} />
+              {/* A token has no owned count here (its holding is the deck row's own mark). */}
+              {isToken ? null : <OwnedLine card={card} deckPage={deckPage} />}
             </div>
 
             {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
@@ -2520,17 +2526,22 @@ export function CardModal({
               >
                 {!hasPicker && (
                   // Set + collector number of the printing on screen (§Phase 5) — the art is a
-                  // specific printing now, so the caption names it.
-                  <MetaCell label="Set" value={caption} />
+                  // specific printing now, so the caption names it. A token's details draw this cell
+                  // alone, across the grid, since a token has no rarity, identity or owned count here.
+                  <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} />
                 )}
-                <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-                <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-                <MetaCell
-                  label="You own"
-                  value={`×${card.quantity}`}
-                  quantity
-                  span={hasPicker ? 2 : undefined}
-                />
+                {isToken ? null : (
+                  <>
+                    <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+                    <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+                    <MetaCell
+                      label="You own"
+                      value={`×${card.quantity}`}
+                      quantity
+                      span={hasPicker ? 2 : undefined}
+                    />
+                  </>
+                )}
               </div>
 
               {hasPicker && (
@@ -2565,9 +2576,13 @@ export function CardModal({
                 ) : (
                   <MetaField label="Set" value={caption} />
                 )}
-                <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-                <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-                <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+                {isToken ? null : (
+                  <>
+                    <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+                    <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+                    <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+                  </>
+                )}
               </div>
 
               {hasPicker && <div className="hidden md:block">{renderRegion(REGION_DESKTOP)}</div>}
@@ -2581,9 +2596,11 @@ export function CardModal({
                   className="md:hidden flex flex-col mt-[14px]"
                   style={{ borderTop: "1px solid var(--border)" }}
                 >
-                  <div className="flex items-center min-h-[44px]">
-                    <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
-                  </div>
+                  {buyUrl ? (
+                    <div className="flex items-center min-h-[44px]">
+                      <ExternalLink href={buyUrl} label={buyLabel} />
+                    </div>
+                  ) : null}
                   {onFindDeck ? (
                     <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" />
                   ) : null}
@@ -2604,10 +2621,10 @@ export function CardModal({
                 otherwise have taken it — but the order after it is still this one. */}
             {footer ? footer("row") : onFindDeck ? (
               <span className="flex flex-col gap-[8px] min-w-0">
-                <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+                {buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
                 <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" />
               </span>
-            ) : <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />}
+            ) : buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
             {/* One / two (handoff decision 6): a list of one drops the whole counter and
                 both dead controls, so the link beside it stands alone. */}
             {total > 1 ? (

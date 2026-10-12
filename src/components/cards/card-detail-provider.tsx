@@ -232,6 +232,11 @@ export function useCardDetail(): CardDetailContextValue {
   return ctx;
 }
 
+/** The provider when there is one, else null: for a row also drawn as an About specimen, outside any. */
+export function useCardDetailIfAny(): CardDetailContextValue | null {
+  return useContext(CardDetailContext);
+}
+
 /**
  * How long a press waits on its card's prefetch before reading for itself: the warm route's p90,
  * MEASURED rather than chosen, rounded up to the next 10ms. Sixty prefetches of distinct cards on a `pull:staging` deck, 30 at

@@ -117,6 +117,13 @@ export type PreferredPrinting = { setCode: string; collectorNumber: string };
 export type ProxyingDeck = { id: string; name: string };
 
 export type BrowseCard = {
+  /**
+   * `"token"` for a token's card details (`loadTokenDetail`): the modal draws only what a token has,
+   * omitting rarity, identity and owned copies, and links its own Mana Pool product. Absent for a card.
+   */
+  kind?: "token";
+  /** A token's Mana Pool link, for the product its price is for; null when Mana Pool lists none. */
+  tokenBuyUrl?: string | null;
   oracleId: string;
   name: string;
   typeLine: string;

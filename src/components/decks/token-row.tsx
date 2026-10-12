@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type ElementType } from "react";
+import { useState, useTransition, type MouseEvent } from "react";
 import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
 import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
@@ -11,6 +11,7 @@ import { spokenFullManaCost } from "../../lib/copy/card-surfaces";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
 import { Chevron } from "../ui/chevron";
+import { useCardDetailIfAny } from "../cards/card-detail-provider";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -88,33 +89,31 @@ export function TokenRow({
   const first = token.makers[0];
   // A joined token whose maker has left the deck has nothing to unfold: it says so and draws no chevron.
   const canOpen = token.makers.length > 0;
-  // Nothing to unfold is not a button either: a focusable control that does nothing is a dead stop.
-  const Summary: ElementType = canOpen ? "button" : "div";
+  // The token's image and name open its card details, as a card's do (bug batch 2026-10-12). Outside a
+  // card provider (the About specimen) they stay plain.
+  const detail = useCardDetailIfAny();
+  const openDetails = detail
+    ? (e: MouseEvent<HTMLElement>) => {
+        // The row's own press toggles the makers; this one is the card's.
+        e.stopPropagation();
+        detail.open(token.oracleId, undefined, undefined, { opener: e.currentTarget });
+      }
+    : null;
+  const toggleAria = tokensCopy.row.toggleAria(token.name, token.makers.length);
 
   return (
     <li
       className="list-none rounded-[7px] bg-[color:var(--surface-rail)] pb-[8px] pl-[8px] pr-[6px] pt-[10px] md:px-[9px] md:py-[8px]"
       data-token-state={token.state}
     >
-      {canOpen ? (
-        <span id={`token-${token.oracleId}-toggle`} className="sr-only">
-          {tokensCopy.row.toggleAria(token.name, token.makers.length)}
-        </span>
-      ) : null}
       <span id={`token-${token.oracleId}-face`} className="sr-only">{tokenFaceDescription(token)}</span>
       <div className="flex flex-wrap items-start md:flex-nowrap md:gap-[10px]">
-        <Summary
-          {...(canOpen
-            ? {
-                type: "button" as const,
-                "aria-expanded": open,
-                // Named by what it shows (the name, pips, type and makers), as any button is. The disclosure's own
-                // sentence is its description, so the visible content is not replaced by it.
-                "aria-describedby": `token-${token.oracleId}-toggle`,
-                onClick: () => setOpen((v) => !v),
-              }
-            : {})}
-          className="flex min-w-0 items-start gap-[10px] text-left max-md:basis-full md:flex-1"
+        {/* The summary is not one button any more: the image and the name inside it are the card's
+            details, and a button cannot hold a button. A press anywhere else on it still unfolds the
+            makers, for a pointer; the chevron is the disclosure's control for a keyboard and a reader. */}
+        <div
+          onClick={canOpen ? () => setOpen((v) => !v) : undefined}
+          className={`flex min-w-0 items-start gap-[10px] text-left max-md:basis-full md:flex-1 ${canOpen ? "cursor-pointer" : ""}`}
         >
           <span
             aria-hidden
@@ -128,17 +127,33 @@ export function TokenRow({
                   : undefined
             }
           />
-          <span
-            aria-hidden
-            className="h-[42px] w-[30px] md:h-[36px] md:w-[26px] flex-none rounded-[3px] bg-cover bg-center"
-            style={{
-              boxShadow: "inset 0 0 0 1px var(--border-strong)",
-              backgroundImage: token.picture?.imageUriSmall ? cssUrl(token.picture.imageUriSmall) : undefined,
-            }}
-          />
+          {(() => {
+            const art = {
+              className: "h-[42px] w-[30px] md:h-[36px] md:w-[26px] flex-none rounded-[3px] bg-cover bg-center",
+              style: {
+                boxShadow: "inset 0 0 0 1px var(--border-strong)",
+                backgroundImage: token.picture?.imageUriSmall ? cssUrl(token.picture.imageUriSmall) : undefined,
+              },
+            };
+            // Out of the tab order, as the name beside it is the same press for a keyboard.
+            return openDetails
+              ? <button type="button" tabIndex={-1} aria-hidden onClick={openDetails} {...art} className={`${art.className} cursor-pointer`} />
+              : <span aria-hidden {...art} />;
+          })()}
           <span className="flex min-w-0 flex-col gap-[2px]">
             <span className="flex flex-wrap items-center gap-x-[8px] text-[13.5px] leading-[1.4] text-[color:var(--fg)]">
-              <span>{token.name}</span>
+              {openDetails ? (
+                <button
+                  type="button"
+                  onClick={openDetails}
+                  aria-describedby={`token-${token.oracleId}-face`}
+                  className="cursor-pointer text-left"
+                >
+                  {token.name}
+                </button>
+              ) : (
+                <span>{token.name}</span>
+              )}
               {/* The row's own pip: 13 on a phone, 12 from md up, the decklist row's sizes. */}
               <span className="md:hidden"><CostPips cost={tokenPips(token.colors)} size={13} spoken /></span>
               <span className="hidden md:inline"><CostPips cost={tokenPips(token.colors)} size={12} spoken /></span>
@@ -154,11 +169,20 @@ export function TokenRow({
             </span>
           </span>
           {canOpen ? (
-            <span aria-hidden className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden">
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-label={toggleAria}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen((v) => !v);
+              }}
+              className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden"
+            >
               <Chevron open={open} />
-            </span>
+            </button>
           ) : null}
-        </Summary>
+        </div>
 
         <div className="order-3 flex basis-full items-center gap-[10px] pl-[56px] md:order-none md:basis-auto md:pl-0">
           {upload ? (
@@ -208,8 +232,8 @@ export function TokenRow({
         {canOpen ? (
           <button
             type="button"
-            tabIndex={-1}
-            aria-hidden
+            aria-expanded={open}
+            aria-label={toggleAria}
             onClick={() => setOpen((v) => !v)}
             className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:flex"
           >
