@@ -575,7 +575,8 @@ const NeighborPlate = React.forwardRef<
         // `--fg`, not the handoff's `--fg-muted` (ledger 1, measured in build on every backdrop
         // pixel behind the name, six themes): `--fg-muted` put 39% to 78% of them under AA's 4.5:1
         // for 12.5px text, and `--fg-body` still up to 6%; `--fg` holds 5.5:1 at its worst pixel.
-        // A hover is carried by the plate rising to .92, since the name has no brighter ink left.
+        // No hover state: the plate is already opaque (Hugh, 2026-10-12) and the name has no brighter ink
+        // left; the pointer cursor and keyboard focus ring mark it as a control.
         <span className="flex gap-[6px] max-w-[168px] text-[12.5px] whitespace-nowrap text-[color:var(--fg)]">
           <span aria-hidden="true">{direction === "previous" ? "‹" : "›"}</span>
           <span className="truncate">{sibling.name}</span>
