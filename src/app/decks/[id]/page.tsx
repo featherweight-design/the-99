@@ -381,14 +381,15 @@ export default async function DeckBuilderPage({
   const allNegative = poolEmptiedByNegativeCut({ ranked, inDeckOracleIds });
 
   // Sequential, not part of the Promise.all above: the suggestion and candidate
-  // oracle ids come out of those calls, so there is nothing to price or to ask
-  // availability for until they resolve.
+  // oracle ids come out of those calls, so there is nothing to price until they
+  // resolve. Availability is the exception: the page's one read (`availabilityRead`)
+  // started with the request over the whole collection, so it waits on nothing here.
   //
-  // Each read is scoped to the half of the candidate list that can use it. Only
-  // an unowned row draws a BuyTag, so pricing an owned candidate buys nothing;
-  // and `loadAvailability` is driven by the collection, so an unowned oracle id
-  // can never come back from it. `excludeDeckId` is the deck being built, so its
-  // own claims do not count against its own candidates.
+  // The price read is scoped to the unowned half of the candidate list: only an unowned row draws a
+  // BuyTag, so pricing an owned candidate buys nothing. Availability is looked up for the owned
+  // half only (`loadAvailability` is driven by the collection, so an unowned id is never in it),
+  // and `excludeDeckId` is the deck being built, so its own claims do not count against its own
+  // candidates.
   //
   // The Consider tiles take their markers from this same read, rather than from
   // the cached suggestions payload: a claim is point-in-time — another deck of

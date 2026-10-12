@@ -441,11 +441,13 @@ export async function getDeckDetail(
   // Swallowed because the decklist is the deck — it has to render whether or not
   // the availability rollup succeeded. A null map leaves every row markerless,
   // which is the same rendering as a card with nothing competing for it.
-  // Narrowed to this deck's owned rows, the only cards that will ever be looked
-  // up in the map. Unscoped, this aggregated the player's whole collection on
-  // every deck-page load; unowned rows are excluded for the same reason the
-  // search action excludes them, which is that the rollup is driven by the
-  // collection and cannot return them.
+  // Its own read is narrowed to this deck's owned rows, the only cards ever looked up in the
+  // map; unowned rows are excluded because the rollup is driven by the collection and cannot
+  // return them. The deck page passes `sharedAvailability` instead: one read over the whole
+  // collection that the page's candidate pool uses too. That costs no more than the narrowed one,
+  // measured on staging for the reference deck (92 owned ids: 96-177ms; the whole collection,
+  // 2,920 cards: 100-200ms; five runs each), because the claim model is the same work either way
+  // and the narrowing only filters its output.
   //
   // The printed name and the art both come from the player's own copy, which this
   // route does not otherwise read: the deck query is oracle-level. One extra query
