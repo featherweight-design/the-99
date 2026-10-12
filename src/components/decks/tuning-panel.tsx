@@ -250,11 +250,17 @@ export function TuningPanel({
   // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
   // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
   // run or read leaves the reading state with the run's own refusal.
+  // Only the newest read is drawn: two rows answered together each ask for one, and the older read
+  // can land last holding a snapshot from before the newer answer committed.
+  const asked = useRef(0);
   const reread = useCallback(async () => {
+    const mine = ++asked.current;
     try {
       const next = await deps.read(deckId, leftReview.current ? null : reviewRunId);
-      setState(next);
-      stateRef.current = next;
+      if (mine === asked.current) {
+        setState(next);
+        stateRef.current = next;
+      }
       return next;
     } catch {
       return null;
@@ -790,11 +796,15 @@ export function TuningPanel({
     if (cancelled) setAnnounced(deckTuningCopy.announce.stopped);
   }
 
-  /** After a row's answer: announce it and read again. False when the re-read failed, so the row
-   *  keeps drawing its answer rather than falling back to the verdict the failed read never moved. */
+  /** After a row's answer: announce it and read again. False when the re-read failed or a newer
+   *  read superseded it, so the row keeps drawing its answer rather than falling back to a verdict
+   *  the drawn state never moved; a newer read that lands moves the row's server verdict itself. */
   async function settled(announce: string): Promise<boolean> {
     setAnnounced(announce);
-    return (await reread()) !== null;
+    // `reread` takes its ticket synchronously, so this is the one it will compare against.
+    const ticket = asked.current + 1;
+    const next = await reread();
+    return next !== null && ticket === asked.current;
   }
 
   // The absent description row's own "Describing in place" editor (STATES §3 state 2, review
