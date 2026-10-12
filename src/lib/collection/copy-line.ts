@@ -34,6 +34,21 @@ export function wentDestination(went: WentRow, deckNames: Record<string, string>
  * when no deck holds or reads a new copy any more.
  */
 export function liveDestination(card: ContestedCard): Destination | null {
+  const { decks, brews } = liveTook(card);
+  if (decks.length === 1 && decks[0].picked) return { kind: "picked", deck: decks[0].name };
+  if (decks.length === 1) return { kind: "held", decks: [{ name: decks[0].name, copies: decks[0].copies, picked: false }] };
+  if (decks.length > 1) return { kind: "held", decks: decks.map((d) => ({ name: d.name, copies: d.copies, picked: false })) };
+  return brews.length > 0 ? { kind: "soft", brews: brews.map((b) => b.name) } : null;
+}
+
+/**
+ * `liveDestination`'s reading, by deck id: the decks holding a new copy (`picked` when a grant put
+ * it there), in claimant order, and the brews reading a spare when no deck holds one.
+ */
+export function liveTook(card: ContestedCard): {
+  decks: { deckId: string; name: string; copies: number; picked: boolean }[];
+  brews: { deckId: string; name: string }[];
+} {
   let left = Math.min(card.arrived, Math.max(card.owned - card.ownedBefore, 0));
   const took = new Map<string, { name: string; copies: number; picked: boolean }>();
   for (const c of card.claimants.filter((x) => x.granted > 0)) {
@@ -57,12 +72,10 @@ export function liveDestination(card: ContestedCard): Destination | null {
     }
     fromQueue -= t;
   }
-  const decks = card.claimants.flatMap((c) => took.get(c.deckId) ?? []);
-  if (decks.length === 1 && decks[0].picked) return { kind: "picked", deck: decks[0].name };
-  if (decks.length === 1) return { kind: "held", decks: [{ ...decks[0], picked: false }] };
-  if (decks.length > 1) return { kind: "held", decks: decks.map((d) => ({ ...d, picked: false })) };
-  const brews = card.claimants.filter((c) => c.brew && !(c.granted > 0) && c.allocated > 0).map((c) => c.deckName);
-  return brews.length > 0 ? { kind: "soft", brews } : null;
+  const decks = card.claimants.flatMap((c) => ((t) => (t ? [{ deckId: c.deckId, ...t }] : []))(took.get(c.deckId)));
+  const brews = decks.length > 0 ? []
+    : card.claimants.filter((c) => c.brew && !(c.granted > 0) && c.allocated > 0).map((c) => ({ deckId: c.deckId, name: c.deckName }));
+  return { decks, brews };
 }
 
 /** The summary's short form: the card is the row's first column. */

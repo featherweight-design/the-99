@@ -457,8 +457,49 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     fireEvent.click(change());
     await act(async () => { fireEvent.click(screen.getByText("HD - Eldrazi")); });
     fireEvent.click(screen.getByRole("button", { name: c.done }));
-    expect(toast().textContent).toContain(c.self);
+    // Said from the card read back, and as the older pick it is, never `as you picked`.
+    expect(toast().textContent).toContain(`${addedCopyCopy.line.goesToEarlier(NAME, "HD - Brago")}.`);
     expect(toast().textContent).not.toContain(addedCopyCopy.line.goesToPicked(NAME, "HD - Brago"));
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK);
+  });
+
+  it("drops a pick the Change cleared and made again, though one stood there before the purchase", async () => {
+    // Brago held a reservation before the purchase. The first press clears it; the second writes a new one.
+    assignCopy
+      .mockResolvedValueOnce({ ok: true, card: chooser() })
+      .mockResolvedValueOnce({ ok: true, card: chooser(OTHER) });
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ facts: facts({ chooser: chooser(OTHER) }) }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    expect(assignCopy).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(toast().textContent).toContain(`${addedCopyCopy.line.goesToPicked(NAME, "HD - Brago")}.`);
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
+  });
+
+  it("says where seniority now puts the copy after a Change that clears the purchase-time pick", async () => {
+    // Clearing this deck's grant hands the one copy to HD - Brago, which seniority now ranks ahead.
+    const after: ContestedCard = {
+      ...chooser(),
+      claimants: [claimant(DECK, "HD - Eldrazi", { since: 2, allocated: 0 }), claimant(OTHER, "HD - Brago", { since: 1, allocated: 1 })],
+    };
+    assignCopy.mockResolvedValueOnce({ ok: true, card: after });
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    const before: ContestedCard = { ...chooser(), claimants: [claimant(DECK, "HD - Eldrazi", { granted: 1 }), claimant(OTHER, "HD - Brago", { allocated: 0 })] };
+    draw(written({ facts: facts({ chooser: before }) }));
+    expect(toast().textContent).toContain(c.self);
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Eldrazi")); });
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(toast().textContent).not.toContain(c.self);
+    expect(toast().textContent).toContain(`${addedCopyCopy.line.goesTo(NAME, "HD - Brago")}.`);
+    // The clear left no pick of the Change's: Undo drops none.
     await act(async () => fireEvent.click(undo()));
     expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK);
   });

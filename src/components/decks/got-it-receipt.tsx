@@ -19,6 +19,7 @@ import type { ShortDeck, UndoPlacement } from "../../lib/collection/write";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { addedCopyCopy } from "../../lib/copy/added-copy";
 import type { ContestedCard } from "../../lib/collection/summary-read";
+import { liveDestination, liveTook, longSentence } from "../../lib/collection/copy-line";
 import { CopyChooserDialog } from "./copy-chooser-dialog";
 import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
@@ -65,29 +66,28 @@ export function receiptBody(facts: ReceiptFacts | null, sourceDeckId?: string): 
 }
 
 /**
- * The pick a Change made: a deck granted a copy in the card a write read back that the
- * purchase-time card did not grant. A reservation that predates the purchase is not one, however
- * it reads back (a refused write reads back the older pick still standing).
- */
-export function changeMadePick(live: ContestedCard, atPurchase: ContestedCard): ContestedCard["claimants"][number] | undefined {
-  const had = new Map(atPurchase.claimants.map((x) => [x.deckId, x.granted]));
-  return live.claimants.find((x) => x.granted > 0 && (had.get(x.deckId) ?? 0) === 0);
-}
-
-/**
- * The body after a Change, from the card the chooser's last write read back: the deck the Change
- * gave the copy to (this deck reads `self`). With no pick of the Change's standing, the body the
- * purchase wrote. A null read-back is terminal (the copy is gone, in another tab): no body, since
- * no shipped sentence says where a copy that is no longer there went.
+ * The body after a Change, from the card the chooser's last write read back, in the purchase's own
+ * forms: this deck holds the copy (`self`), this brew reads it loose (`softSelf`), no deck takes or
+ * reads it (`nobody`), or the Add Cards sentence for where it went instead. A clear can leave the
+ * copy anywhere seniority puts it, so the purchase-time body is never kept. `changePick` is the
+ * pick the Change's own writes left standing: a sole pick is `as you picked` only when it is that
+ * one, and `which you picked earlier` when it predates the purchase. A null read-back is terminal
+ * (the copy is gone, in another tab): no body, since no shipped sentence says where a copy that is
+ * no longer there went.
  */
 export function bodyAfterChange(
-  live: ContestedCard | null, atPurchase: ContestedCard, cardName: string, sourceDeckId: string, purchased: string | null,
+  live: ContestedCard | null, cardName: string, sourceDeckId: string, changePick: string | null,
 ): string | null {
   if (live === null) return null;
-  const picked = changeMadePick(live, atPurchase);
-  if (!picked) return purchased;
+  const { decks, brews } = liveTook(live);
+  if (decks.some((d) => d.deckId === sourceDeckId)) return c.self;
+  if (brews.some((b) => b.deckId === sourceDeckId)) return c.softSelf(brews.filter((b) => b.deckId !== sourceDeckId).map((b) => b.name));
+  const d = liveDestination(live);
+  if (!d) return c.nobody;
+  const earlier = d.kind === "picked" && decks[0].deckId !== changePick;
+  const said = earlier ? addedCopyCopy.line.goesToEarlier(cardName, d.deck) : longSentence(d, cardName);
   // Every receipt body is a sentence that ends in a period; the Add Cards line it borrows does not.
-  return picked.deckId === sourceDeckId ? c.self : `${addedCopyCopy.line.goesToPicked(cardName, picked.deckName)}.`;
+  return `${said}.`;
 }
 
 /** No deck took or read the copy: the one body with no Change (IG4). */
@@ -175,6 +175,12 @@ export function GotItReceipt({
     setLive(card);
     if (card) setLast(card);
   }, []);
+  // The pick the Change's own landed writes left standing, which Undo drops with the copy. Set by a
+  // write that leaves a pick, cleared by one that clears it: there is one authored pick per card,
+  // so a clear leaves none. Never inferred from the purchase-time card, which cannot tell a pick
+  // the Change made from one it cleared and made again.
+  const [changePick, setChangePick] = useState<string | null>(null);
+  const onWrite = useCallback((deck: string, picked: boolean) => setChangePick(picked ? deck : null), []);
   const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
   // The toast's clock holds while the chooser is open, as it does for an undo (design table: open).
@@ -198,12 +204,10 @@ export function GotItReceipt({
   const chooser = bodyOverride === undefined && sourceDeckId && receiptChangeable(facts) ? facts!.chooser! : null;
   const body = bodyOverride !== undefined
     ? bodyOverride
-    : live !== undefined && chooser && sourceDeckId ? bodyAfterChange(live, chooser, cardName, sourceDeckId, purchased) : purchased;
-  // The pick Undo drops with the copy: the press's own (the cart's), else one a Change made and
-  // left standing, read off the last card read back (it still stands after the copy went).
-  const readBack = live === null ? last : live;
-  const livePick = readBack && chooser ? changeMadePick(readBack, chooser)?.deckId : undefined;
-  const dropPick = undoPlacement ?? (livePick ? { oracleId, deckId: livePick } : undefined);
+    : live !== undefined && chooser && sourceDeckId ? bodyAfterChange(live, cardName, sourceDeckId, changePick) : purchased;
+  // The pick Undo drops with the copy: the press's own (the cart's), else the one the Change's
+  // writes left standing (it still stands after the copy went).
+  const dropPick = undoPlacement ?? (changePick ? { oracleId, deckId: changePick } : undefined);
   // Sent only when there is one, so an undo with no pick asks exactly what it always asked.
   const picks = dropPick ? [dropPick] as const : [] as const;
   const closeChooser = useCallback(() => {
@@ -438,6 +442,7 @@ export function GotItReceipt({
         cardName={cardName}
         thisDeckId={sourceDeckId}
         onCard={onCard}
+        onWrite={onWrite}
         onClose={closeChooser}
       />
     ) : null}
