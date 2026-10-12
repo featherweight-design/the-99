@@ -4,6 +4,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const router = { push: vi.fn(), refresh: vi.fn() };
@@ -263,6 +264,19 @@ describe("7j: nothing fits", () => {
     expect(screen.getByTestId("read-line").textContent).toBe("No credit used · 8 of 10 left");
     expect(screen.queryByRole("button")).toBeNull();
     noReadIt();
+  });
+});
+
+describe("the standing line and the server's HTML", () => {
+  it("leaves a standing line out of the server's HTML, which cannot know the reader's time zone", () => {
+    const html = renderToString(
+      <ReadScope initial="done">
+        <ReadPanel readId={READ} served={done()} standing={standing({ nextAt: "2026-10-12T02:01:00Z" })} params={params}
+          changeHref="/decks/new/choose" deps={deps() as never} />
+      </ReadScope>,
+    );
+    expect(html).not.toContain("left");
+    expect(html).toContain("Read what you wrote");
   });
 });
 

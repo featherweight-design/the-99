@@ -95,6 +95,15 @@ describe("the choose page", () => {
     expect(find(find(pending, ReadAsBar)!.props.offer, ReadPanel)!.props.served).toEqual({ kind: "pending", phase: null });
   });
 
+  it("reads the credit standing only after the read's state, which can reap and refund an abandoned read", async () => {
+    stub.themes.mockResolvedValue([]);
+    const order: string[] = [];
+    stub.read.mockImplementation(async () => { await new Promise((r) => setTimeout(r, 5)); order.push("read"); return { kind: "failed" }; });
+    stub.allowance.mockImplementation(async () => { order.push("allowance"); return STANDING; });
+    await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: "0000aaaa-0000-4000-8000-0000000000aa" }) });
+    expect(order).toEqual(["read", "allowance"]);
+  });
+
   it("hands the form the player's credit standing, and none when that read fails (F7)", async () => {
     stub.themes.mockResolvedValue([]);
     const form = find(await ChoosePage({ searchParams: Promise.resolve({ w: "scary" }) }), IntakeForm)!;

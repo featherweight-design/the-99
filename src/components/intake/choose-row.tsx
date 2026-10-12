@@ -78,7 +78,10 @@ export function ChooseRow({
   deckNames?: Readonly<Record<string, string>>;
 }) {
   const href = handOffHref(row.oracleId, params);
-  const reason = row.reason && row.reason.length > 0 ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
+  // A reason naming a deck that no longer resolves (deleted since) is drawn not at all: dropping only
+  // the name would leave a sentence with a hole in it ("Unlike , it ...").
+  const whole = row.reason?.every((part) => "text" in part || deckNames[part.deck] !== undefined) ?? false;
+  const reason = row.reason && row.reason.length > 0 && whole ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
   const own = (
     <OwnershipLine
       mark={row.mark}
@@ -199,7 +202,7 @@ export function ChooseRow({
 /**
  * The read's line on why this commander (handoff "The reason line"): never truncated, wrapped
  * pretty, and a deck the read names drawn by its commander's short name, which the app supplies
- * from the id the read returned. A deck id with no name here (a deck deleted since) draws nothing.
+ * from the id the read returned. Every deck it names resolves: the row draws no line otherwise.
  */
 function Reason({ parts, deckNames }: { parts: readonly ReasonPart[]; deckNames: Readonly<Record<string, string>> }) {
   return (
@@ -207,9 +210,9 @@ function Reason({ parts, deckNames }: { parts: readonly ReasonPart[]; deckNames:
       {parts.map((part, i) =>
         "text" in part ? (
           <span key={i}>{part.text}</span>
-        ) : deckNames[part.deck] ? (
+        ) : (
           <span key={i} data-testid="reason-deck" className="font-semibold text-[color:var(--fg)]">{deckNames[part.deck]}</span>
-        ) : null,
+        ),
       )}
     </p>
   );

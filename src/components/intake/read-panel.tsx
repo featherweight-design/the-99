@@ -25,6 +25,7 @@ import { INTAKE_POLL_MS } from "../../lib/intake/limits";
 import { serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
 import { phaseOf, type ReadPhase } from "../../lib/intake/read-phase";
 import type { TheReadState } from "../../lib/intake/run-store";
+import { useHydrated } from "../ui/hydrated-art";
 import { bareStanding, closedBy, standingLine, type Standing } from "../../lib/intake/standing";
 
 
@@ -111,6 +112,7 @@ export function ReadPanel({
   const [step, setStep] = useState<"shortlist" | "judge">(served?.kind === "pending" && served.phase === "judge" ? "judge" : "shortlist");
   const [stopping, setStopping] = useState(false);
   const [announced, setAnnounced] = useState("");
+  const hydrated = useHydrated();
   const [retrying, startRetry] = useTransition();
   const live = useRef(true);
 
@@ -195,7 +197,9 @@ export function ReadPanel({
   const line =
     phase === "reading" ? copy.read.pendingLine
     : phase === "done" && repeat ? copy.read.repeatLine
-    : !standing ? null
+    // A standing line can name a time in the reader's own zone, which the server cannot know: it
+    // is drawn after hydration, as the form's is, so the server's HTML and the first render agree.
+    : !standing || !hydrated ? null
     : phase === "done" ? copy.read.doneLine(bareStanding(standing))
     : phase === "nothing" ? copy.read.emptyLine(bareStanding(standing))
     // Unread: the lead says why, so the bare count; paused or the owner's share say their own (7n).

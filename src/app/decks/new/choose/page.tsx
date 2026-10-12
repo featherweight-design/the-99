@@ -91,14 +91,18 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // and the credit standing its panel's line says.
   const words = p.words.trim();
   const now = new Date();
-  const [card, served, allowance] = await Promise.all([
+  const [card, [served, allowance]] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
     p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
-    // A failed read of the read's state draws it as running: the panel then asks again itself.
-    words && p.readId
-      ? loadTheRead(p.readId, userId, now).catch((): TheReadState => ({ kind: "pending", phase: null }))
-      : null,
-    words ? readAllowance(userId, now, "intake").catch(() => null) : null,
+    // The standing is read AFTER the read's state: reading the state can reap an abandoned read and
+    // refund its credit, and a standing read beside it could count the credit the panel says came back.
+    (async () => {
+      // A failed read of the read's state draws it as running: the panel then asks again itself.
+      const state = words && p.readId
+        ? await loadTheRead(p.readId, userId, now).catch((): TheReadState => ({ kind: "pending", phase: null }))
+        : null;
+      return [state, words ? await readAllowance(userId, now, "intake").catch(() => null) : null] as const;
+    })(),
   ]);
   // A done read orders the results, and its reasons name the player's decks by their commanders.
   const picks: ReadPicks | null = served?.kind === "done" ? served.result : null;

@@ -176,10 +176,10 @@ describe("the read's reason line (the read addendum R1)", () => {
     expect(line.previousElementSibling!.contains(screen.getByTestId("row-name"))).toBe(true);
   });
 
-  it("draws nothing for a deck it cannot name, and no line on a row with no reason", () => {
+  it("draws no line for a reason naming a deck it cannot name, nor for a row with no reason", () => {
+    // Dropping the name alone would leave "Unlike , every land ...".
     drawWith(row({ reason }), undefined, {});
-    expect(screen.getByTestId("row-reason").textContent).toBe("Unlike , every land you play makes a creature.");
-    expect(screen.queryByTestId("reason-deck")).toBeNull();
+    expect(screen.queryByTestId("row-reason")).toBeNull();
     cleanup();
     drawWith(row());
     expect(screen.queryByTestId("row-reason")).toBeNull();
