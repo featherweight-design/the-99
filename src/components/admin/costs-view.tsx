@@ -302,7 +302,7 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
             here
             figure={ceiling ? copy.of(usd(s.system.micro), capMicro(ceiling.micro)) : copy.notSet(usd(s.system.micro))}
             sub={ceilingSub + note(storedCeiling?.note)}
-            actions={<SettingAction kind="ceiling" label={copy.changeCeiling} />}
+            actions={s.current && <SettingAction kind="ceiling" label={copy.changeCeiling} />}
           >
             <CapBar
               scale={Math.max(ceiling?.micro ?? 0, s.system.micro, 1)}
@@ -315,7 +315,7 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
             here
             figure={cap ? copy.of(usd(accountTotal), capMicro(cap.micro)) : copy.notSet(usd(accountTotal))}
             sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf)) + note(elsewhere.note) : copy.capSub.noElsewhere)}
-            actions={<>
+            actions={s.current && <>
               <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />
               <SettingAction kind="cap" label={copy.changeCap} />
             </>}

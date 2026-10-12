@@ -207,6 +207,22 @@ describe("Enter elsewhere (C7)", () => {
   });
 });
 
+describe("the settings actions belong to the current month", () => {
+  it("offers no setting action on a past month, whose rows they could not change", () => {
+    draw(rows([p(2, 1)]), { year: 2026, month: 8 });
+    for (const name of ["Change the cap", "Change the ceiling", "Enter elsewhere"]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+  });
+
+  it("offers all three on the current month", () => {
+    draw(rows([p(2, 1)]));
+    for (const name of ["Change the cap", "Change the ceiling", "Enter elsewhere"]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+  });
+});
+
 describe("the account cap row", () => {
   it("shows the note saved with the cap, beside the elsewhere note", () => {
     draw(rows([p(2, 1)], { settings: {

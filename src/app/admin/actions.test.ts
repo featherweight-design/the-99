@@ -68,6 +68,18 @@ function exportsOfSource(path: string, text: string): { name: string; gated: boo
     return /^(const \{[^}]*\} = |const \w+ = )?await requireAdmin\(\);?$/.test(text);
   };
   for (const st of source.statements) {
+    // `export { name }`, `export * from` and `export default <expr>` are refused outright rather
+    // than resolved: each can expose a function whose body this guard never reads.
+    if (ts.isExportDeclaration(st) && !st.isTypeOnly) {
+      const named = st.exportClause && ts.isNamedExports(st.exportClause) ? st.exportClause.elements.filter((e) => !e.isTypeOnly) : null;
+      if (!named) out.push({ name: "*", gated: false });
+      else for (const e of named) out.push({ name: e.name.text, gated: false });
+      continue;
+    }
+    if (ts.isExportAssignment(st)) {
+      out.push({ name: "default", gated: false });
+      continue;
+    }
     const exported = ts.getModifiers(st as ts.HasModifiers)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
     if (!exported) continue;
     if (ts.isFunctionDeclaration(st)) out.push({ name: st.name?.text ?? "default", gated: isGate(st.body?.statements[0]) });
@@ -108,6 +120,10 @@ describe("every admin action is gated first", () => {
         `export async function never() { return 1; }`,
         `export const arrow = async () => { await somethingElse(); };`,
         `export async function gated() { const { userId } = await requireAdmin(); return userId; }`,
+        `async function unsafe() { return 1; }`,
+        `export { unsafe };`,
+        `export * from "./elsewhere";`,
+        `export type { Thing } from "./types";`,
       ].join("\n"),
     );
     expect(found).toEqual([
@@ -115,6 +131,8 @@ describe("every admin action is gated first", () => {
       { name: "never", gated: false },
       { name: "arrow", gated: false },
       { name: "gated", gated: true },
+      { name: "unsafe", gated: false },
+      { name: "*", gated: false },
     ]);
   });
 });
