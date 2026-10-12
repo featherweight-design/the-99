@@ -7,7 +7,7 @@
 //   record  after every ingest succeeded: writes each source's `updated_at` and hash to
 //           `catalog_sources`, which is what the next run's `verify` compares against.
 //
-// Both take the sources the run ingests (`sets oracle_cards default_cards prices`, default all),
+// Both take the sources the run ingests (`sets oracle_cards default_cards prices precons`, default all),
 // so a dispatch that ingests one source neither judges nor records the others.
 import "./lib/env.mjs";
 import { readFileSync } from "node:fs";
@@ -18,6 +18,7 @@ import {
   FETCH_SOURCES, fetchDir, fetchedPath, manifestRefusal, manifestShapeRefusal, MANIFEST_FILE, sha256File,
   type FetchSource, type Ingested, type Manifest,
 } from "../src/lib/catalog/fetch-dir";
+import { preconTablesExist } from "../src/lib/precons/ingest";
 
 async function main() {
   const [command, ...named] = process.argv.slice(2);
@@ -59,7 +60,11 @@ async function main() {
     return;
   }
   if (command === "record") {
+    // A database the precon migration has not reached skipped that ingest (`db:seed:precons`), and
+    // its `catalog_sources` check does not admit the source yet: record nothing for it.
+    const skipPrecons = !(await preconTablesExist());
     for (const s of manifest.sources) {
+      if (s.source === "precons" && skipPrecons) { console.log("precons: not recorded, no precon tables yet"); continue; }
       await db.insert(catalogSources)
         .values({ source: s.source, updatedAt: new Date(s.updatedAt), sha256: s.sha256 })
         .onConflictDoUpdate({
@@ -67,7 +72,7 @@ async function main() {
           set: { updatedAt: sql`excluded.updated_at`, sha256: sql`excluded.sha256`, ingestedAt: sql`now()` },
         });
     }
-    console.log(`recorded ${manifest.sources.length} sources`);
+    console.log(`recorded ${manifest.sources.length - (skipPrecons && manifest.sources.some((s) => s.source === "precons") ? 1 : 0)} sources`);
     return;
   }
   throw new Error("usage: db:catalog-sources verify|record [source ...]");

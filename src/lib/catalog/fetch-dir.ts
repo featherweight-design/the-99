@@ -18,6 +18,9 @@ export const FETCH_SOURCES = {
   oracle_cards: { files: ["bulk-oracle_cards.json", "bulk-oracle_cards.jsonl.gz"] },
   default_cards: { files: ["bulk-default_cards.json", "bulk-default_cards.jsonl.gz"] },
   prices: { files: ["manapool-singles.json"] },
+  // MTGJSON's index as fetched, then OUR derived file of its Commander decks (`precons/feed.ts`):
+  // the body is our output, so its hash identifies what we ingest, not an upstream file.
+  precons: { files: ["mtgjson-decklist.json", "mtgjson-precons.json"] },
 } as const;
 
 export type FetchSource = keyof typeof FETCH_SOURCES;

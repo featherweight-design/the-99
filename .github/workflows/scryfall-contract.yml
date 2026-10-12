@@ -43,3 +43,7 @@ jobs:
       - name: Check the Commander Spellbook contract
         if: always()
         run: pnpm check:spellbook
+      # always(), for the same reason: MTGJSON is a fourth independent upstream.
+      - name: Check the MTGJSON precon contract
+        if: always()
+        run: pnpm check:mtgjson

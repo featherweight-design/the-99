@@ -26,7 +26,7 @@ on:
         # are filtered out as FK orphans, so that run reports its orphan count loudly.
         description: Which ingest to run (`printings` alone assumes a current oracle catalog)
         type: choice
-        options: [all, sets, printings, oracle, prices]
+        options: [all, sets, printings, oracle, precons, prices]
         default: all
 
 permissions:
@@ -76,9 +76,22 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # MTGJSON's 197 Commander deck files are ~31MB gzipped; the fetch re-downloads them only when
+      # the decks the index lists have moved or the cached derived file is a week old
+      # (`canReuse`), and otherwise reuses the derived file the last run saved here.
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/precons-cache
+          key: precons-feed-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: precons-feed-
       - name: Fetch the catalog
         shell: bash
-        run: pnpm --silent catalog:fetch /tmp/catalog-fetch | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          PRECON_REUSE_FILE: /tmp/precons-cache/mtgjson-precons.json
+        run: |
+          pnpm --silent catalog:fetch /tmp/catalog-fetch | tee -a "$GITHUB_STEP_SUMMARY"
+          mkdir -p /tmp/precons-cache
+          cp /tmp/catalog-fetch/mtgjson-precons.json /tmp/precons-cache/mtgjson-precons.json
       - uses: actions/upload-artifact@v4
         with:
           name: catalog-fetch
@@ -150,6 +163,7 @@ jobs:
             oracle) echo "SOURCES=oracle_cards" >> "$GITHUB_ENV" ;;
             printings) echo "SOURCES=default_cards" >> "$GITHUB_ENV" ;;
             prices) echo "SOURCES=prices" >> "$GITHUB_ENV" ;;
+            precons) echo "SOURCES=precons" >> "$GITHUB_ENV" ;;
             *) echo "Unrecognised job: $JOB" >&2; exit 1 ;;
           esac
 
@@ -190,6 +204,14 @@ jobs:
                  >> "$GITHUB_STEP_SUMMARY"
           fi
           pnpm --silent db:seed:printings | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh precons
+        # After printings, so a precon card printed in today's set maps; before prices, which stay
+        # last. Skips cleanly (exit 0) on a database the precon migration has not reached yet.
+        if: env.JOB == 'all' || env.JOB == 'precons'
+        run: |
+          echo "### Precons" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:precons | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Refresh prices
         if: env.JOB == 'all' || env.JOB == 'prices'
