@@ -19,7 +19,7 @@ export type SharedRow = {
   short: number;
 };
 
-export type SharedView = { rows: SharedRow[]; cards: number; twoPlus: number; fivePlus: number; wantedMore: number };
+export type SharedView = { rows: SharedRow[]; twoPlus: number; fivePlus: number; wantedMore: number };
 
 /** How many rows a chip shows (the canvas draws eight). */
 export const SHARED_ROWS = 8;
@@ -48,7 +48,6 @@ export function sharedView(shared: readonly LineupShared[], inScope: ReadonlySet
   );
   return {
     rows: rows.slice(0, SHARED_ROWS),
-    cards: all.length,
     twoPlus: all.length,
     fivePlus: all.filter((r) => r.decks.length >= 5).length,
     wantedMore: wanted.length,

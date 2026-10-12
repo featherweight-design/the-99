@@ -50,6 +50,8 @@ export type LineupData = {
   decks: LineupDeck[];
   /** Null when the claim read failed, with the build figures. */
   shared: LineupShared[] | null;
+  /** Distinct nonbasic cards across every deck, and across the finished ones: the Shared card's denominator. */
+  cardCounts: { all: number; finished: number };
   /** The newest price the values were read at, ISO, or null with none. */
   pricesAsOf: string | null;
 };

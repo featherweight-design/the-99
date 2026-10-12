@@ -89,8 +89,10 @@ export function sharedCards(
   });
 }
 
-async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null }> {
-  if (ids.length === 0) return { builds: new Map(), asOf: null, shared: [] };
+type ListRow = { deckId: string; oracleId: string; typeLine: string };
+
+async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null }> {
+  if (ids.length === 0) return { builds: new Map(), asOf: null, shared: [], lists: [] };
   let lists: Awaited<ReturnType<typeof readLists>>;
   let jobs: JobRowsByCard;
   let prices: PriceRead;
@@ -111,7 +113,7 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
-    return { builds: null, asOf: null, shared: null };
+    return { builds: null, asOf: null, shared: null, lists: null };
   }
   const byDeck = new Map<string, BuildCard[]>();
   for (const c of lists.list) byDeck.set(c.deckId, [...(byDeck.get(c.deckId) ?? []), c]);
@@ -134,7 +136,8 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
       valueCents: money?.value.cents ?? 0,
     });
   }
-  return { builds, asOf: prices.newestAsOf, shared: sharedCards([...lists.list, ...lists.commanders], availability) };
+  const every = [...lists.list, ...lists.commanders];
+  return { builds, asOf: prices.newestAsOf, shared: sharedCards(every, availability), lists: every };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {
@@ -157,7 +160,11 @@ export async function loadLineup(userId: string): Promise<LineupData> {
     list.push({ result: r.result as LineupGame["result"], playedAt: r.playedAt.toISOString(), podSize: r.podSize });
     games.set(r.deckId, list);
   }
+  const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
+  const distinct = (keep: (deckId: string) => boolean) =>
+    new Set((built.lists ?? []).filter((c) => keep(c.deckId) && !isBasicLand(c.typeLine)).map((c) => c.oracleId)).size;
   return {
+    cardCounts: { all: distinct(() => true), finished: distinct((id) => !brews.has(id)) },
     decks: decks.map((d) => ({
       id: d.id,
       name: d.name,

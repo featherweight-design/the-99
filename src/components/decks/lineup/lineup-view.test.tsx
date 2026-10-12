@@ -17,6 +17,7 @@ const DATA: LineupData = {
   ],
   pricesAsOf: null,
   shared: null,
+  cardCounts: { all: 0, finished: 0 },
 };
 
 const draw = (data = DATA, foldServer: string | null = null) =>
@@ -86,7 +87,7 @@ describe("LineupView: the filter", () => {
 
 describe("LineupView: one deck", () => {
   it("says 1 deck under All decks, and counts what Finished only kept when the only deck is a brew", () => {
-    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null, shared: null });
+    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 } });
     expect(screen.getAllByText("1 deck").length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
     expect(screen.getAllByText("0 finished decks · 1 brew left out").length).toBeGreaterThan(0);
@@ -164,6 +165,7 @@ describe("LineupView: among, jobs and worth", () => {
     ],
     pricesAsOf: "2026-10-11T10:00:00.000Z",
     shared: null,
+    cardCounts: { all: 0, finished: 0 },
   };
 
   it("compares the deck played most recently by default, with its rank, most first", () => {
@@ -202,7 +204,7 @@ describe("LineupView: among, jobs and worth", () => {
   });
 
   it("draws none of the three with one deck (T1)", () => {
-    draw({ decks: [BUILT.decks[0]], pricesAsOf: null, shared: null });
+    draw({ decks: [BUILT.decks[0]], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 } });
     expect(["among", "jobs", "worth"].map((id) => card(id))).toEqual([null, null, null]);
   });
 });
@@ -243,6 +245,19 @@ describe("LineupView: cards your decks share", () => {
     render(<LineupView data={{ ...SH, shared: [] }} now={NOW} foldServer="-" viewSwitch={null} />);
     expect(within(card("shared")).getByText("no card in two decks")).toBeTruthy();
     expect(within(card("shared")).getByText("4 decks · 0 cards")).toBeTruthy();
+  });
+
+  it("counts every distinct card in scope in the denominator, and says nothing is in scope with zero decks", () => {
+    render(<LineupView data={{ ...SH, cardCounts: { all: 120, finished: 100 } }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    expect(within(card("shared")).getByText("4 decks · 120 cards")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(within(card("shared")).getByText("3 decks · 100 cards")).toBeTruthy();
+  });
+
+  it("uses the plural denominator, not the one-deck shorthand, when Finished only keeps no deck", () => {
+    render(<LineupView data={{ ...SH, decks: [deck("Gishath", { brew: true }), deck("Kratos", { brew: true })] }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(within(card("shared")).getByText("0 decks · 0 cards")).toBeTruthy();
   });
 
   it("says a card is shared once two decks play it, with one deck (T1)", () => {

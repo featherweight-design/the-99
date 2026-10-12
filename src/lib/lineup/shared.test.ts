@@ -13,7 +13,7 @@ describe("sharedView", () => {
     const v = sharedView([SIGNET, SOL, ORCHARD], ALL, "most");
     expect(v.rows.map((r) => r.name)).toEqual(["Sol Ring", "Arcane Signet", "Exotic Orchard"]);
     expect(v.rows[0]).toMatchObject({ wants: 3, owned: 2, short: 1, decks: [{ id: "a", held: true }, { id: "c", held: true }, { id: "b", held: false, short: 1 }] });
-    expect([v.cards, v.fivePlus, v.wantedMore]).toEqual([3, 0, 2]);
+    expect([v.twoPlus, v.fivePlus, v.wantedMore]).toEqual([3, 0, 2]);
   });
 
   it("lists only the cards wanted more than owned under that chip, the widest gap first", () => {
