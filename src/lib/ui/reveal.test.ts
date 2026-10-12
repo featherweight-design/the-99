@@ -141,7 +141,7 @@ describe("reveal", () => {
     expect(box.scrollTop).toBe(1000);
   });
 
-  for (const init of [{ key: "Shift" }, { key: "Dead" }, { key: "Process", isComposing: true }] as KeyboardEventInit[]) {
+  for (const init of [{ key: "Shift" }, { key: "AltGraph" }, { key: "CapsLock" }, { key: "Dead" }, { key: "Compose" }, { key: "Process", isComposing: true }] as KeyboardEventInit[]) {
     it(`keeps going on ${init.key}, a key on the way to a typed character`, () => {
       media(false);
       const { box, el } = scene();
@@ -153,6 +153,19 @@ describe("reveal", () => {
       expect(box.scrollTop).toBe(1000);
     });
   }
+
+  it("keeps going on a character typed with AltGraph, which a layout may report as Ctrl plus Alt", () => {
+    media(false);
+    const { box, el } = scene();
+    const input = document.createElement("input");
+    el.appendChild(input);
+    reveal(el);
+    const event = new KeyboardEvent("keydown", { key: "@", ctrlKey: true, altKey: true, bubbles: true });
+    event.getModifierState = (k: string) => k === "AltGraph";
+    input.dispatchEvent(event);
+    vi.advanceTimersByTime(MOTION.delayMs + MOTION.scrollMaxMs + 50);
+    expect(box.scrollTop).toBe(1000);
+  });
 
   it("still stops on a Ctrl shortcut typed in a field inside the target", () => {
     media(false);
