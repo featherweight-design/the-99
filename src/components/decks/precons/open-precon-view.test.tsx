@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { OpenPrecon, OpenPreconCard } from "../../../lib/precons/open-read";
 
 const providerProps = vi.hoisted(() => ({ picks: null as unknown, views: null as unknown }));
@@ -11,8 +11,14 @@ vi.mock("../../cards/card-detail-provider", () => ({
   },
   useCardDetail: () => ({ open: vi.fn() }),
 }));
-const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown } }));
-vi.mock("./start-precon", () => ({ StartPrecon: (p: { illegal: string[]; row: { built: unknown } }) => { startProps.illegal = p.illegal; startProps.row = p.row; return null; } }));
+const startProps = vi.hoisted(() => ({ illegal: [] as string[], row: null as null | { built: unknown }, dock: undefined as string | undefined }));
+vi.mock("./start-precon", () => ({
+  StartPrecon: (p: { illegal: string[]; row: { built: unknown }; dockSummary?: string }) => {
+    startProps.illegal = p.illegal; startProps.row = p.row; startProps.dock = p.dockSummary; return null;
+  },
+}));
+const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn() }));
+vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
 vi.mock("../decklist-group", () => ({
   DecklistGroup: (p: { label: string; note?: string; readOnly?: boolean; cards: { name: string; layout?: string | null }[]; footer?: React.ReactNode; footerCount?: number }) => (
     <section data-testid="group" data-readonly={String(p.readOnly)} data-footer-count={p.footerCount ?? 0}>
@@ -34,7 +40,7 @@ function precon(over: Partial<Extract<OpenPrecon, { kind: "precon" }>["row"]> = 
   card("Wastes", { typeLine: "Basic Land", basic: true, quantity: 15 }),
 ]): Extract<OpenPrecon, { kind: "precon" }> {
   return {
-    kind: "precon", setName: "Commander Masters", hasCollection: true, cards,
+    kind: "precon", setName: "Commander Masters", hasCollection: true, cards, decks: [],
     row: {
       fileName: "EldraziUnbound_CMM", name: "Eldrazi Unbound", setCode: "CMM", releaseDate: "2023-08-04",
       twinName: null, commanders: [], identity: [], owned: 1, of: 2, unmapped: 0, built: [], ...over,
@@ -46,7 +52,8 @@ describe("OpenPreconView", () => {
   it("says how many it owns, basics aside, and draws every group read-only", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} />);
     expect(screen.getByText("1 of 2")).toBeInTheDocument();
-    expect(screen.getByText("15 basic lands not counted")).toBeInTheDocument();
+    // R3: the own box no longer repeats the basics rule (the list's sub line says it once).
+    expect(screen.queryByText(/basic lands not counted/)).toBeNull();
     expect(screen.getAllByTestId("group").every((g) => g.dataset.readonly === "true")).toBe(true);
     expect(screen.getByText("Wastes ×15")).toBeInTheDocument();
     expect(screen.getByText("you own 0 of 1")).toBeInTheDocument();
@@ -91,7 +98,7 @@ describe("OpenPreconView", () => {
   });
 
   it("draws no built line without a collection, but still hands the decks to the start dialog", () => {
-    const built = [{ deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }];
+    const built = [{ deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true, linked: false }];
     render(<OpenPreconView precon={{ ...precon({ built }), hasCollection: false }} fromNew={false} />);
     expect(screen.queryByText(/Your deck HD - Eldrazi/)).toBeNull();
     expect(startProps.row?.built).toEqual(built);
@@ -138,14 +145,14 @@ describe("OpenPreconView", () => {
   });
 
   it("names every deck that shares the list, not the first two", () => {
-    render(<OpenPreconView precon={precon({ built: ["A", "B", "C"].map((d, i) => ({ deckId: d, deckName: d, shared: 70 - i, sameCommanders: false })) })} fromNew={false} />);
+    render(<OpenPreconView precon={precon({ built: ["A", "B", "C"].map((d, i) => ({ deckId: d, deckName: d, shared: 70 - i, sameCommanders: false, linked: false })) })} fromNew={false} />);
     expect(screen.getByText("Your deck C shares 68 of its cards.")).toBeInTheDocument();
   });
 
   it("words a shared deck by whether it kept the commander", () => {
     render(<OpenPreconView precon={precon({ built: [
-      { deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true },
-      { deckId: "b", deckName: "Kilo", shared: 64, sameCommanders: false },
+      { deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true, linked: false },
+      { deckId: "b", deckName: "Kilo", shared: 64, sameCommanders: false, linked: false },
     ] })} fromNew={false} />);
     expect(screen.getByText("Your deck HD - Eldrazi has the same commander and 73 of its cards.")).toBeInTheDocument();
     expect(screen.getByText("Your deck Kilo shares 64 of its cards.")).toBeInTheDocument();
@@ -157,7 +164,7 @@ describe("OpenPreconView", () => {
         { oracleId: "a", name: "Frodo", imageUri: null, colorIdentity: ["G"] },
         { oracleId: "b", name: "Sam", imageUri: null, colorIdentity: ["W"] },
       ],
-      built: [{ deckId: "a", deckName: "Shire", shared: 80, sameCommanders: true }],
+      built: [{ deckId: "a", deckName: "Shire", shared: 80, sameCommanders: true, linked: false }],
     }, [
       card("Frodo", { isCommander: true, typeLine: "Legendary Creature — Halfling" }),
       card("Sam", { isCommander: true, typeLine: "Legendary Creature — Halfling" }),
@@ -172,5 +179,56 @@ describe("OpenPreconView", () => {
     render(<OpenPreconView precon={precon({ twinName: "Eldrazi Unbound Collector’s Edition", unmapped: 1 })} fromNew={false} />);
     expect(screen.getByText(/Also sold as Eldrazi Unbound Collector’s Edition/)).toBeInTheDocument();
     expect(screen.getByText("1 card in this precon isn’t in our catalog yet, so 18 are listed.")).toBeInTheDocument();
+  });
+
+  it("says a linked deck was built from it, with Unlink, before the decks that only share (K8, K16)", () => {
+    render(<OpenPreconView precon={precon({ of: 85, built: [
+      { deckId: "a", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true, linked: true },
+      { deckId: "b", deckName: "Kilo", shared: 64, sameCommanders: false, linked: false },
+    ] })} fromNew={false} />);
+    const sentence = screen.getByText("Your deck HD - Eldrazi was built from this. 73 of its 85 cards are still in it.");
+    const lines = screen.getAllByText(/^Your deck /).map((e) => e.textContent);
+    expect(lines.indexOf(sentence.textContent)).toBeLessThan(lines.indexOf("Your deck Kilo shares 64 of its cards."));
+    expect(screen.queryByText(/HD - Eldrazi has the same commander/)).toBeNull();
+    expect(within(sentence.parentElement!).getByRole("button", { name: "Unlink" })).toBeInTheDocument();
+  });
+
+  it("keeps the linked line, and its Unlink, without a collection", () => {
+    render(<OpenPreconView precon={{ ...precon({ built: [{ deckId: "a", deckName: "HD - Eldrazi", shared: 1, sameCommanders: true, linked: true }] }), hasCollection: false }} fromNew={false} />);
+    expect(screen.getByText(/Your deck HD - Eldrazi was built from this/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unlink" })).toBeInTheDocument();
+  });
+
+  it("unlinks from the confirm, naming what leaves, and says so when it fails (K13)", async () => {
+    linkActions.unlinkPrecon.mockRejectedValueOnce(new Error("boom"));
+    render(<OpenPreconView precon={precon({ built: [{ deckId: "a", deckName: "HD - Eldrazi", shared: 1, sameCommanders: true, linked: true }] })} fromNew={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Unlink" }));
+    const dialog = screen.getByRole("dialog", { name: "Unlink HD - Eldrazi from Eldrazi Unbound?" });
+    expect(within(dialog).getByText("v0 leaves · v1 is first again")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Unlink" }));
+    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("That didn’t unlink. Try again."));
+    expect(linkActions.unlinkPrecon).toHaveBeenCalledWith("a", "EldraziUnbound_CMM");
+  });
+
+  it("links a deck from the picker, most shared first, naming one linked elsewhere (K7)", async () => {
+    linkActions.linkPrecon.mockResolvedValueOnce(undefined);
+    render(<OpenPreconView precon={{ ...precon({ of: 85 }), decks: [
+      { deckId: "e", deckName: "HD - Eldrazi", commanders: ["Ulalek"], shared: 73, sameCommanders: true, linkedElsewhere: null },
+      { deckId: "k", deckName: "Kilo", commanders: ["Kilo"], shared: 6, sameCommanders: false, linkedElsewhere: "Counter Intelligence" },
+    ] }} fromNew={false} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Link a deck" })[0]);
+    const dialog = screen.getByRole("dialog", { name: "Link a deck to Eldrazi Unbound" });
+    const radios = within(dialog).getAllByRole("radio");
+    expect(radios.map((r) => r.getAttribute("aria-label"))).toEqual(["Select HD - Eldrazi", "Select Kilo"]);
+    expect(within(dialog).getByText("built from Counter Intelligence · linking moves it here")).toBeInTheDocument();
+    expect(within(dialog).getByText("73 of 85")).toBeInTheDocument();
+    fireEvent.click(radios[1]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Link Kilo" }));
+    await waitFor(() => expect(linkActions.linkPrecon).toHaveBeenCalledWith("k", "EldraziUnbound_CMM"));
+  });
+
+  it("names the linked deck in the phone dock", () => {
+    render(<OpenPreconView precon={precon({ built: [{ deckId: "a", deckName: "HD - Eldrazi", shared: 1, sameCommanders: true, linked: true }] })} fromNew={false} />);
+    expect(startProps.dock).toBe("Eldrazi Unbound · your deck HD - Eldrazi was built from this");
   });
 });

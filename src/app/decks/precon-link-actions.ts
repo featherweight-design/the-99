@@ -23,19 +23,26 @@ export async function linkPrecon(deckId: string, fileName: string): Promise<void
   await writeLink(userId, deckId, head.twinOf ?? head.fileName);
 }
 
-export async function unlinkPrecon(deckId: string): Promise<void> {
+/** Clears the link only while it still names `fileName`, the precon the confirm named: a deck
+ *  moved to another precon since the dialog opened keeps its newer link, and the confirm fails. */
+export async function unlinkPrecon(deckId: string, fileName: string): Promise<void> {
   if (!preconsEnabled()) throw new Error("precons are off");
   const userId = await requireUserId();
-  await writeLink(userId, deckId, null);
+  if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
+  await writeLink(userId, deckId, null, fileName);
 }
 
-async function writeLink(userId: string, deckId: string, builtFromPrecon: string | null): Promise<void> {
+async function writeLink(userId: string, deckId: string, builtFromPrecon: string | null, expected?: string): Promise<void> {
   if (typeof deckId !== "string" || deckId.length === 0) throw new Error("deck not found");
   // Owner-scoped in the statement itself: a deck that is not the reader's updates nothing.
   const written = await db
     .update(decks)
     .set({ builtFromPrecon })
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
+    .where(and(
+      eq(decks.id, deckId),
+      eq(decks.userId, userId),
+      expected === undefined ? undefined : eq(decks.builtFromPrecon, expected),
+    ))
     .returning({ id: decks.id });
   if (written.length === 0) throw new Error("deck not found");
   // Not `revalidateClaims`: no claim moved. The deck's own surfaces, and both precon routes, which

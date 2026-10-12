@@ -78,12 +78,21 @@ describe("linkPrecon", () => {
 describe("unlinkPrecon", () => {
   it("clears the link and nothing else", async () => {
     state.updated = [[{ id: "deck-1" }]];
-    await unlinkPrecon("deck-1");
+    await unlinkPrecon("deck-1", "EldraziUnbound_CMM");
     expect(state.sets).toEqual([{ builtFromPrecon: null }]);
+  });
+
+  it("clears only the link the confirm named, so a stale confirm leaves a newer link standing", async () => {
+    state.updated = [[]];
+    await expect(unlinkPrecon("deck-1", "EldraziUnbound_CMM")).rejects.toThrow("deck not found");
+    const { sql, params } = rendered(state.wheres[0]);
+    expect(sql).toBe(`("decks"."id" = $1 and "decks"."user_id" = $2 and "decks"."built_from_precon" = $3)`);
+    expect(params).toEqual(["deck-1", "user_1", "EldraziUnbound_CMM"]);
+    expect(state.revalidated).toEqual([]);
   });
 
   it("refuses a deck the reader does not own", async () => {
     state.updated = [[]];
-    await expect(unlinkPrecon("deck-2")).rejects.toThrow("deck not found");
+    await expect(unlinkPrecon("deck-2", "X")).rejects.toThrow("deck not found");
   });
 });

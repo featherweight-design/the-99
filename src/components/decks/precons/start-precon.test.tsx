@@ -10,7 +10,7 @@ const row: PreconRow = {
   fileName: "MysticIntellect_C19", name: "Mystic Intellect", setCode: "C19", releaseDate: "2019-08-23", twinName: null,
   commanders: [{ oracleId: "sevinne", name: "Sevinne, the Chronoclasm", imageUri: null, colorIdentity: ["U", "R", "W"] }],
   identity: ["W", "U", "R"], owned: 40, of: 80, unmapped: 0,
-  built: [{ deckId: "d", deckName: "HD - Sevinne", shared: 50, sameCommanders: true }],
+  built: [{ deckId: "d", deckName: "HD - Sevinne", shared: 50, sameCommanders: true, linked: false }],
 };
 
 describe("StartPrecon", () => {

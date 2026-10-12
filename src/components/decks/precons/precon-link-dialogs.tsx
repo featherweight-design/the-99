@@ -1,18 +1,21 @@
 "use client";
 
-// The built-from link's dialogs (R3 addendum, STATES K3, K5, K6). Each is the start dialog's
+// The built-from link's dialogs (R3 addendum, STATES K3, K5 to K7, K13). Each is the start dialog's
 // chrome (`start-precon.tsx`): a modal at 900, a bottom sheet at 390, focus held inside, a press
-// outside or Escape dismisses unless a write is in flight. Linking returns rather than redirects:
-// the action revalidates the page under the reader, and the dialog closes.
+// outside or Escape dismisses unless a write is in flight. Linking and unlinking return rather than
+// redirect: the action revalidates the page under the reader, and the dialog closes.
 //
 // - K3 `ConfirmLinkDialog`: the suggestion's `Link it`, the one link path that confirms.
 // - K6 `LinkPreconRow`: the dashed row at the foot of Versions, and its precon picker.
+// - K7 `LinkDeckButton`: the open precon's `Link a deck`, and its deck picker.
+// - K13 `UnlinkPrecon`: the open precon's `Unlink`, and its confirm.
 
 import { startTransition, useId, useRef, useState, type ReactNode, type RefObject } from "react";
-import { linkPrecon } from "../../../app/decks/precon-link-actions";
+import { linkPrecon, unlinkPrecon } from "../../../app/decks/precon-link-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { preconMonth, preconsCopy } from "../../../lib/copy/precons";
 import type { PreconMatch } from "../../../lib/precons/link";
+import type { PreconDeckChoice } from "../../../lib/precons/open-read";
 import { GhostButton, PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { SearchField } from "../../ui/text-field";
@@ -154,6 +157,43 @@ export function ConfirmLinkDialog({ deckId, deckName, match, onDismiss }: {
         pending={pending}
         onDismiss={onDismiss}
         submit={() => run(() => linkPrecon(deckId, match.fileName))}
+        submitLabel={pending ? c.pending : c.submit}
+      />
+    </Shell>
+  );
+}
+
+/** K8 / K13: `Unlink` beside the open precon's built sentence, and its confirm. */
+export function UnlinkPrecon({ deckId, deckName, fileName, preconName }: {
+  deckId: string; deckName: string; fileName: string; preconName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <GhostButton type="button" onClick={() => setOpen(true)} className="h-[32px] flex-none rounded-[7px] px-[11px] text-[12.5px]">
+        {copy.unlink.entry}
+      </GhostButton>
+      {open && <UnlinkDialog deckId={deckId} deckName={deckName} fileName={fileName} preconName={preconName} onDismiss={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function UnlinkDialog({ deckId, deckName, fileName, preconName, onDismiss }: {
+  deckId: string; deckName: string; fileName: string; preconName: string; onDismiss: () => void;
+}) {
+  const c = copy.unlink;
+  const { pending, failed, run } = useLinkWrite(onDismiss);
+  return (
+    <Shell title={c.title(deckName, preconName)} pending={pending} onDismiss={onDismiss}>
+      <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{c.lead}</p>
+      <div className="flex flex-col">
+        <Fact k={c.factLabels.history} v={c.facts.history} />
+      </div>
+      {failed && <Failed text={c.failed} />}
+      <Actions
+        pending={pending}
+        onDismiss={onDismiss}
+        submit={() => run(() => unlinkPrecon(deckId, fileName))}
         submitLabel={pending ? c.pending : c.submit}
       />
     </Shell>
@@ -302,7 +342,7 @@ export function LinkPreconRow({ deckId, deckName, picker }: { deckId: string; de
           items={picker.map((m) => ({
             id: m.fileName,
             name: m.name,
-            meta: [m.commanders.join(" + "), m.setCode, preconMonth(m.releaseDate), ...(m.sameCommanders ? [c.sameClause] : [])].join(" · "),
+            meta: [m.commanders.join(" + "), m.setCode, preconMonth(m.releaseDate), ...(m.sameCommanders ? [c.sameClause(m.commanders.length === 2)] : [])].join(" · "),
             note: null,
             fig: c.fig(m.shared, m.of),
             search: [m.name, m.setCode, ...m.commanders].join(" "),
@@ -313,6 +353,43 @@ export function LinkPreconRow({ deckId, deckName, picker }: { deckId: string; de
           footNone={c.footNone}
           submit={c.submit}
           onLink={(fileName) => linkPrecon(deckId, fileName)}
+          onDismiss={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/** K7: the open precon's `Link a deck`, a ghost beside Start (docked beside it at 390). */
+export function LinkDeckButton({ fileName, preconName, of, decks, className }: {
+  fileName: string; preconName: string; of: number; decks: PreconDeckChoice[]; className: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const c = copy.pickDeck;
+  return (
+    <>
+      <GhostButton type="button" onClick={() => setOpen(true)} className={className}>{c.entry}</GhostButton>
+      {open && (
+        <LinkPicker
+          title={c.title(preconName)}
+          lead={c.lead}
+          searchLabel={c.search}
+          label={c.label}
+          figSub={c.figSub}
+          items={decks.map((d) => ({
+            id: d.deckId,
+            name: d.deckName,
+            meta: [d.commanders.join(" + "), ...(d.sameCommanders ? [c.sameClause(d.commanders.length === 2)] : [])].join(" · "),
+            note: d.linkedElsewhere ? c.linkedElsewhere(d.linkedElsewhere) : null,
+            fig: c.fig(d.shared, of),
+            search: [d.deckName, ...d.commanders].join(" "),
+          }))}
+          none={c.none}
+          noMatch={c.noMatch}
+          foot={c.foot}
+          footNone={c.footNone}
+          submit={c.submit}
+          onLink={(deckId) => linkPrecon(deckId, fileName)}
           onDismiss={() => setOpen(false)}
         />
       )}

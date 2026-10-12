@@ -2368,7 +2368,7 @@ export const PRECON_ROW: PreconRow = {
   owned: 74,
   of: 85,
   unmapped: 0,
-  built: [{ deckId: "about-eldrazi", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }],
+  built: [{ deckId: "about-eldrazi", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true, linked: false }],
 };
 
 /** The tokens entry's row (handoff `about - tokens.ts`): a Soldier no card of the reader's collection has

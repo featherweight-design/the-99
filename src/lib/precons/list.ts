@@ -7,7 +7,7 @@
  * printing. The figure counts the precon's DISTINCT non-basic cards, its commanders included
  * (design G4); basics are left out and every figure says so.
  */
-import { sharedWith } from "./shared";
+import { sharedCount, sharedWith } from "./shared";
 
 export type PreconCardFact = {
   oracleId: string;
@@ -28,11 +28,20 @@ export type PreconSource = {
   cards: PreconCardFact[];
 };
 
-export type ReaderDeck = { id: string; name: string; commanders: string[]; cards: ReadonlySet<string> };
+export type ReaderDeck = {
+  id: string;
+  name: string;
+  commanders: string[];
+  cards: ReadonlySet<string>;
+  /** The precon the deck is linked to (`decks.built_from_precon`, always a plain edition). */
+  builtFrom?: string | null;
+};
 
 export type PreconCommander = { oracleId: string; name: string; imageUri: string | null; colorIdentity: string[] };
 
-export type PreconBuilt = { deckId: string; deckName: string; shared: number; sameCommanders: boolean };
+/** A reader's deck beside a precon: one the shared rule finds, or one linked to it (`linked`), which
+ *  is listed whatever it shares (R3 K9). */
+export type PreconBuilt = { deckId: string; deckName: string; shared: number; sameCommanders: boolean; linked: boolean };
 
 export type PreconRow = {
   fileName: string;
@@ -47,7 +56,7 @@ export type PreconRow = {
   owned: number;
   of: number;
   unmapped: number;
-  /** The reader's decks that share this list, the larger share first. */
+  /** The reader's decks linked to this list, then those that share it, the larger share first. */
   built: PreconBuilt[];
 };
 
@@ -83,10 +92,12 @@ export function summarisePrecons(
     const precon = { cards: counted, commanders: commanders.map((c) => c.oracleId) };
     const built: PreconBuilt[] = [];
     for (const d of decks) {
-      const match = sharedWith(precon, d);
-      if (match) built.push({ deckId: d.id, deckName: d.name, ...match });
+      const linked = d.builtFrom === s.fileName;
+      const match = linked ? sharedCount(precon, d) : sharedWith(precon, d);
+      if (match) built.push({ deckId: d.id, deckName: d.name, ...match, linked });
     }
-    built.sort((a, b) => b.shared - a.shared || byCodePoint(a.deckName.toLowerCase(), b.deckName.toLowerCase()));
+    built.sort((a, b) => Number(b.linked) - Number(a.linked) || b.shared - a.shared
+      || byCodePoint(a.deckName.toLowerCase(), b.deckName.toLowerCase()));
 
     rows.push({
       fileName: s.fileName,

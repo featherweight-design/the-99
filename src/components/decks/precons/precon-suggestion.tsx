@@ -55,7 +55,7 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
                 {m.sameCommanders ? copy.lead(m.name) : copy.leadOtherCommander(m.name)}
               </p>
               <p className="m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-                {m.sameCommanders ? copy.metaSame(m.shared, m.of) : copy.metaOther(m.shared, m.of, m.commanders.join(" + "))}
+                {m.sameCommanders ? copy.metaSame(m.shared, m.of, m.commanders.length === 2) : copy.metaOther(m.shared, m.of, m.commanders.join(" + "))}
               </p>
             </div>
             <button type="button" onClick={() => setConfirming(m)} className={`${LINK} self-start md:self-auto`}>{copy.link}</button>
@@ -81,7 +81,7 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
               <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                 <span className="font-display text-[15px] text-[color:var(--fg)]">{m.name}</span>
                 <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-muted)]">
-                  {copy.rowMeta(m.setCode, preconMonth(m.releaseDate), m.sameCommanders ? copy.sameClause : copy.ledBy(m.commanders.join(" + ")), m.shared, m.of)}
+                  {copy.rowMeta(m.setCode, preconMonth(m.releaseDate), m.sameCommanders ? copy.sameClause(m.commanders.length === 2) : copy.ledBy(m.commanders.join(" + ")), m.shared, m.of)}
                 </span>
               </div>
               <button type="button" onClick={() => setConfirming(m)} aria-label={copy.linkOneAria(m.name)} className={LINK}>{copy.linkOne}</button>

@@ -11,6 +11,19 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { CommanderThumb } from "../../ui/commander-thumb";
 
 const copy = preconsCopy.row;
+const linkedClause = preconsCopy.link.linked.rowClause;
+
+function DeckLink({ deckId, deckName }: { deckId: string; deckName: string }) {
+  return (
+    <Link
+      href={`/decks/${deckId}`}
+      className="relative z-[1] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]"
+    >
+      {deckName}
+      <PendingReporter href={`/decks/${deckId}`} />
+    </Link>
+  );
+}
 
 export function PreconRow({ row, href }: { row: Row; href: string }) {
   const lead = row.commanders[0];
@@ -50,19 +63,21 @@ export function PreconRow({ row, href }: { row: Row; href: string }) {
           </span>
           {row.setCode} · {preconMonth(row.releaseDate)}
         </span>
-        {built.length > 0 && (
+        {/* R3 K9: once a deck is linked, each deck takes its own line, the linked first (the
+            summary's order), and replaces R6's single `your decks A and B` line. */}
+        {built.some((b) => b.linked) ? built.map((b) => (
+          <span key={b.deckId} className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
+            {copy.built} <DeckLink deckId={b.deckId} deckName={b.deckName} />
+            {b.linked && linkedClause}
+            {copy.builtShared(b.shared)}
+          </span>
+        )) : built.length > 0 && (
           <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
             {built.length === 1 ? copy.built : copy.builtTwo}{" "}
             {built.map((b, i) => (
               <span key={b.deckId}>
                 {i > 0 && (i === built.length - 1 ? copy.builtAnd : ", ")}
-                <Link
-                  href={`/decks/${b.deckId}`}
-                  className="relative z-[1] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]"
-                >
-                  {b.deckName}
-                  <PendingReporter href={`/decks/${b.deckId}`} />
-                </Link>
+                <DeckLink deckId={b.deckId} deckName={b.deckName} />
                 {/* Each deck carries its own figure: two decks rarely share the same count. */}
                 {copy.builtShared(b.shared)}
               </span>
