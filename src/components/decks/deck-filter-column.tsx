@@ -68,11 +68,14 @@ export function SearchField({
   onChange,
   size,
   autoFocus,
+  placeholder = refreshCopy.filters.searchPlaceholder,
 }: {
   value: string;
   onChange: (next: string) => void;
   size: "column" | "sheet";
   autoFocus?: boolean;
+  /** What the field searches, when it is not a deck list's. */
+  placeholder?: string;
 }) {
   const column = size === "column";
   return (
@@ -89,10 +92,10 @@ export function SearchField({
         value={value}
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={refreshCopy.filters.searchPlaceholder}
-        aria-label={refreshCopy.filters.searchPlaceholder}
+        placeholder={placeholder}
+        aria-label={placeholder}
         className={`min-w-0 flex-1 border-none bg-transparent text-[color:var(--fg)] outline-none placeholder:text-[color:var(--fg-faint)] [&::-webkit-search-cancel-button]:appearance-none ${
-          column ? "text-[12.5px]" : "text-[13.5px]"
+          column ? "text-[12.5px]" : "text-[16px]"
         }`}
       />
     </label>

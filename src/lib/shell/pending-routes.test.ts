@@ -21,6 +21,8 @@ describe("pendingRouteFor: the screen each route shows while it loads", () => {
     expect(key("/discover")).toBe("discover");
     expect(key("/decks")).toBe("decks");
     expect(key("/decks/import")).toBe("decks");
+    expect(key("/decks/precons")).toBe("decks");
+    expect(key("/decks/precons/EldraziUnbound_CMM")).toBe("decks");
     expect(key("/decks/new")).toBe("deckNew");
   });
 
