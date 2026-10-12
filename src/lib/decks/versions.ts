@@ -12,6 +12,7 @@ import {
 } from "../../db/schema";
 import type { Bracket } from "../profile/types";
 import { type CardQty, draftDiff } from "./draft-diff";
+import { keptFromOrigin, type OriginCard } from "../precons/origin";
 import { touchDeck } from "./touch";
 import { averageManaValue } from "./mana-value";
 import { pruneOrphanProxies } from "./prune-proxies";
@@ -453,7 +454,14 @@ export function versionsQuery(deckId: string, userId: string) {
  * beside its ownership guard rather than after it, and authorization has to come before data
  * access either way.
  */
-export async function listVersions(deckId: string, userId: string): Promise<VersionSummary[]> {
+export async function listVersions(
+  deckId: string,
+  userId: string,
+  /** A linked deck's v0 list (precons R3 §5), read beside this and awaited only once the versions
+   *  are in: v1 counts its adds and removes against it rather than reading `initial`. v0 itself is
+   *  never a row here. */
+  origin: Promise<CardQty[] | null> | null = null,
+): Promise<VersionSummary[]> {
   const versions = (await versionsQuery(deckId, userId)).map((r) => r.version);
   if (versions.length === 0) return [];
   const ids = versions.map((v) => v.id);
@@ -494,13 +502,15 @@ export async function listVersions(deckId: string, userId: string): Promise<Vers
   for (const row of rows) byVersion.get(row.versionId)!.push(row);
   const gamesBy = new Map(games.map((g) => [g.versionId!, Number(g.n)]));
 
+  const before = origin ? await origin : null;
   // Ascending, so each version's predecessor is the one before it in the walk.
   const ascending = [...versions].reverse();
   return ascending.map((version, i) => {
     const mine = byVersion.get(version.id)!;
     // A v1 has no predecessor, so it has no diff — never a diff against the
-    // empty list, which would report ninety-nine decisions nobody took.
-    const diff = i === 0 ? null : draftDiff(mine, byVersion.get(ascending[i - 1]!.id)!);
+    // empty list, which would report ninety-nine decisions nobody took. A linked
+    // deck's v1 has v0, the precon's list, before it.
+    const diff = railDiff(mine, i === 0 ? null : byVersion.get(ascending[i - 1]!.id)!, before);
     return {
       ...version,
       cardCount: mine.reduce((n, r) => n + r.quantity, 0),
@@ -527,6 +537,16 @@ export type VersionDiffPayload = {
   out: VersionDiffCard[];
   /** `max(printing_prices.as_of)`: what `BuyTag` compares a card's own `asOf` to. */
   newestAsOf: Date | null;
+  /** v1 against v0 only (precons R3 K10): v0's distinct non-basic cards v1 kept, of how many. */
+  origin?: { kept: number; of: number };
+};
+
+/** v0 as v1's predecessor: its 99, and the figures v1's `kept` line counts. */
+export type OriginPredecessor = {
+  cards: OriginCard[];
+  nonBasic: string[];
+  /** v1's commanders, which count as held for `kept`. */
+  commanders: string[];
 };
 
 /**
@@ -536,8 +556,9 @@ export type VersionDiffPayload = {
  * `todayNote` says so. Pull offers stay off these rows: a pull is an offer about the deck
  * as it is now, and this list is the deck as it was.
  *
- * `previousVersionId` is null for a v1, which returns two empty lists rather
- * than diffing against nothing — the caller draws the initial arm instead.
+ * `previousVersionId` is null for a v1. With an `origin` (a deck linked to its precon) a v1
+ * is diffed against v0, the precon's list; without one it returns two empty lists rather
+ * than diffing against nothing, and the caller draws the initial arm instead.
  *
  * Read on open rather than with the rail: a ten-version deck would otherwise pay
  * ten diffs to draw ten closed rows.
@@ -547,8 +568,10 @@ export async function loadVersionDiff(
   previousVersionId: string | null,
   userId: string,
   deckId: string,
+  /** A linked deck's v1 diffs against v0, which is read from the precon and is never a version. */
+  origin: OriginPredecessor | null = null,
 ): Promise<VersionDiffPayload> {
-  if (previousVersionId === null) return { in: [], out: [], newestAsOf: null };
+  if (previousVersionId === null && origin === null) return { in: [], out: [], newestAsOf: null };
 
   const rows = await db.select({
     versionId: deckVersionCards.versionId,
@@ -563,13 +586,15 @@ export async function loadVersionDiff(
     collectorNumber: deckVersionCards.collectorNumber,
   }).from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
-    .where(inArray(deckVersionCards.versionId, [versionId, previousVersionId]));
+    .where(inArray(deckVersionCards.versionId, previousVersionId === null ? [versionId] : [versionId, previousVersionId]));
 
-  const describe = new Map(rows.map((r) => [r.oracleId, r]));
-  const { adds, removes } = draftDiff(
-    rows.filter((r) => r.versionId === versionId),
-    rows.filter((r) => r.versionId === previousVersionId),
-  );
+  const mine = rows.filter((r) => r.versionId === versionId);
+  // v0's cards draw today's art: the precon's printing is not a printing this deck recorded.
+  const before = origin
+    ? origin.cards.map((c) => ({ ...c, versionId: null, setCode: null, collectorNumber: null }))
+    : rows.filter((r) => r.versionId === previousVersionId);
+  const describe = new Map([...before, ...mine].map((r) => [r.oracleId, r]));
+  const { adds, removes, origin: kept } = diffAgainstPredecessor(mine, before, origin);
   const card = (change: { oracleId: string; from: number; to: number }): VersionDiffBase | null => {
     const described = describe.get(change.oracleId);
     // A card the catalog no longer describes. Dropping it is the only honest
@@ -648,6 +673,26 @@ export async function loadVersionDiff(
     // An Out row draws no tag, and its claims were not read: its buy is 0 by construction.
     out: assembleVersionRows(outs, owned, priced, claims).map(asRecorded(recordedOut)).map((c) => ({ ...c, buy: 0 })),
     newestAsOf: priced.newestAsOf,
+    ...(kept ? { origin: kept } : {}),
+  };
+}
+
+/** A rail row's adds and removes: against the version before it, or, for a v1 (`previous` null),
+ *  against v0 when the deck is linked, and nothing at all when it is not. */
+export function railDiff(mine: CardQty[], previous: CardQty[] | null, origin: CardQty[] | null) {
+  if (previous !== null) return draftDiff(mine, previous);
+  return origin === null ? null : draftDiff(mine, origin);
+}
+
+/** A version's diff against its predecessor (`before`: the previous version's rows, or v0's cards
+ *  when `origin` is given), and against v0 the kept line: v0's distinct non-basic cards still held,
+ *  counting v1's commanders as held. */
+export function diffAgainstPredecessor(mine: CardQty[], before: CardQty[], origin: OriginPredecessor | null) {
+  const { adds, removes } = draftDiff(mine, before);
+  return {
+    adds,
+    removes,
+    origin: origin ? keptFromOrigin(origin.nonBasic, [...mine.map((r) => r.oracleId), ...origin.commanders]) : null,
   };
 }
 

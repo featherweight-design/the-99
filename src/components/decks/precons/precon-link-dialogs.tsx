@@ -8,7 +8,8 @@
 // - K3 `ConfirmLinkDialog`: the suggestion's `Link it`, the one link path that confirms.
 // - K6 `LinkPreconRow`: the dashed row at the foot of Versions, and its precon picker.
 // - K7 `LinkDeckButton`: the open precon's `Link a deck`, and its deck picker.
-// - K13 `UnlinkPrecon`: the open precon's `Unlink`, and its confirm.
+// - K13 `UnlinkPrecon`: the open precon's `Unlink`; `UnlinkDialog` is its confirm, which v0's panel
+//   opens too (precons PR 6b).
 
 import { startTransition, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { linkPrecon, unlinkPrecon } from "../../../app/decks/precon-link-actions";
@@ -178,7 +179,8 @@ export function UnlinkPrecon({ deckId, deckName, fileName, preconName }: {
   );
 }
 
-function UnlinkDialog({ deckId, deckName, fileName, preconName, onDismiss }: {
+/** K13: unlink's confirm. What leaves (v0), one fact (History), `Cancel` · `Unlink` in the bone fill. */
+export function UnlinkDialog({ deckId, deckName, fileName, preconName, onDismiss }: {
   deckId: string; deckName: string; fileName: string; preconName: string; onDismiss: () => void;
 }) {
   const c = copy.unlink;

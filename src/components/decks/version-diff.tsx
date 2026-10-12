@@ -21,13 +21,14 @@ import { useEffect, useId, useState } from "react";
 import { getVersionDiff } from "../../app/decks/actions";
 import { printedFaceName } from "../../lib/collection/browse";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { deckVersioningCopy, historyOriginCopy } from "../../lib/copy/deck-versioning";
 import { printsPair } from "../../lib/decks/draft-shape";
 import { cardTypeGroup, groupByCardType } from "../../lib/decks/grouping";
 import { formatDeckDate } from "../../lib/decks/format";
 // Type only: `versions.ts` reaches `src/db`, which throws at module init in a
 // browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { VersionDiffCard, VersionDiffPayload, VersionSummary } from "../../lib/decks/versions";
+import type { DeckOrigin } from "../../lib/precons/origin";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { CostTrack } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -262,10 +263,31 @@ function InitialPanel() {
  * case: the primary still names the deck, and dropping the partner's absent name
  * is better than dropping the sentence.
  */
-function helm(version: VersionSummary | null): string | null {
+/** What a predecessor needs to be compared against: a version, or v0 (precons R3 K10). */
+type Before = {
+  commanderOracleId: string | null;
+  partnerOracleId: string | null;
+  commanderName: string | null;
+  partnerName: string | null;
+  manaValue: number | null;
+};
+
+function helm(version: Before | null): string | null {
   if (!version || version.commanderName === null) return null;
   if (version.partnerName === null) return version.commanderName;
   return copy.commanderPair(version.commanderName, version.partnerName);
+}
+
+
+/** The rail's cache key for one version's diff. A v1's diff depends on what it is diffed against
+ *  (v0, or nothing), so a link that changes on this page (unlink, then link another precon) names
+ *  a different entry, and the rail keys the open panel on it so the panel remounts. */
+export function diffCacheKey(
+  version: { id: string },
+  previous: { id: string } | null,
+  origin: { fileName: string } | null,
+): string {
+  return previous !== null ? version.id : `${version.id}@${origin?.fileName ?? ""}`;
 }
 
 /**
@@ -281,14 +303,19 @@ export function VersionDiff({
   deckId,
   version,
   previous,
+  origin = null,
   panelId,
   cache,
 }: {
   deckId: string;
   version: VersionSummary;
-  /** The version committed before this one, or null for a v1. Null is the arm
-   *  that draws the provenance note rather than two empty columns. */
+  /** The version committed before this one, or null for a v1. Null with no `origin`
+   *  draws the provenance note; null with one draws the against-v0 box. */
   previous: VersionSummary | null;
+  /** A linked deck's v0, v1's predecessor when there is no committed one (precons R3 K10, K11):
+   *  v1 is then a diff rather than the initial arm, and the commander line and the mana-value box
+   *  compare against the precon. Ignored when `previous` is set. */
+  origin?: DeckOrigin | null;
   /** Owned by the rail, which points its row's `aria-controls` at it. */
   panelId: string;
   /** The rail's own map of the diffs this visit has already read, keyed on
@@ -298,13 +325,15 @@ export function VersionDiff({
    *  flips between". */
   cache: Map<string, VersionDiffPayload>;
 }) {
-  const initial = previous === null;
+  const before: Before | null = previous ?? origin;
+  const initial = before === null;
+  const key = diffCacheKey(version, previous, origin);
   // `"unavailable"` is a third state, not an empty payload: two empty lists are a
   // real answer for a version that moved no cards, and rendering a refused or
   // failed read as that answer claims something about the version the app does not
   // know.
   const [diff, setDiff] = useState<VersionDiffPayload | "unavailable" | null>(
-    initial ? { in: [], out: [], newestAsOf: null } : cache.get(version.id) ?? null,
+    initial ? { in: [], out: [], newestAsOf: null } : cache.get(key) ?? null,
   );
   // Phone only, and it decides which column is on screen rather than which one is
   // drawn twice.
@@ -323,7 +352,7 @@ export function VersionDiff({
     // that retry.
     getVersionDiff(deckId, version.id)
       .then((result) => {
-        if (result !== null) cache.set(version.id, result);
+        if (result !== null) cache.set(key, result);
         if (live) setDiff(result ?? "unavailable");
       })
       .catch(() => {
@@ -347,20 +376,20 @@ export function VersionDiff({
   // Each side is the whole helm rather than the primary alone: a version piloted
   // by a pair reads as both names, so a partner arriving, leaving or being
   // swapped says what moved instead of rendering `Korvold → Korvold`.
-  const from = helm(previous);
+  const from = helm(before);
   const to = helm(version);
   // `from !== to` as well as the ids: a swap between two partners the name index
   // cannot resolve moves the ids while leaving both sides reading as the primary
   // alone, and `Korvold → Korvold` says nothing.
   const commanderMoved =
-    previous !== null &&
+    before !== null &&
     from !== null &&
     to !== null &&
     from !== to &&
-    (previous.commanderOracleId !== version.commanderOracleId ||
-      previous.partnerOracleId !== version.partnerOracleId);
+    (before.commanderOracleId !== version.commanderOracleId ||
+      before.partnerOracleId !== version.partnerOracleId);
 
-  const manaBefore = previous?.manaValue ?? null;
+  const manaBefore = before?.manaValue ?? null;
   const manaAfter = version.manaValue;
 
   return (
@@ -480,6 +509,14 @@ export function VersionDiff({
         </p>
       ) : (
         <>
+          {previous === null && origin !== null && diff.origin && (
+            // K10: what v1 is drawn against, and how much of the box it kept. Above the phone's pair
+            // too, because it describes both directions.
+            <div className="mb-[12px] rounded-[8px] border border-dashed border-[color:var(--border-dashed)] px-[11px] py-[8px] font-mono text-[10.5px] leading-[1.5]">
+              <p className="m-0 text-[color:var(--fg-muted)]">{historyOriginCopy.againstOrigin(origin.name)}</p>
+              <p className="m-0 text-[color:var(--fg-faint)]">{historyOriginCopy.kept(diff.origin.kept, diff.origin.of)}</p>
+            </div>
+          )}
           {segmented && (
             <div className="md:hidden flex gap-[6px] mb-[12px]">
               {(

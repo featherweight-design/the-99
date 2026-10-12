@@ -37,6 +37,7 @@ import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
 import type { PreconArrival } from "../../lib/precons/arrival-read";
 import type { PreconMatch } from "../../lib/precons/link";
+import type { DeckOrigin } from "../../lib/precons/origin";
 import { PreconSuggestion } from "./precons/precon-suggestion";
 import { LinkPreconRow } from "./precons/precon-link-dialogs";
 import { UpdateStrip } from "./update-strip";
@@ -161,6 +162,9 @@ interface BuilderShellProps {
   /** An UNLINKED deck's precon link doors (precons R3): the shared rule's suggestions (K1, K15) and
    *  the Versions foot row's picker (K5, K6). Null for a linked deck, or with precons off. */
   preconLink?: { suggestions: PreconMatch[]; picker: PreconMatch[] } | null;
+  /** A linked deck's v0 (precons PR 6b): drawn last in Versions, never current. Its presence also
+   *  draws the Versions tab on a linked brew (K14); the deck stays a brew. Null when unlinked or off. */
+  preconOrigin?: DeckOrigin | null;
   /** Counts from the navigation an applied update made, or null on every other
    *  arrival. Like `arrivedFromImport`, true of one trip rather than of the deck. */
   updateArrival?: UpdateArrivalState | null;
@@ -222,7 +226,8 @@ interface BuilderShellProps {
   versionCards?: number;
   /** Every version this deck has committed, newest first. Empty on a brew, which
       draws no `Versions` tab at all — a tab explaining that a deck has no
-      history is a tab advertising its own emptiness (§Decisions 4). */
+      history is a tab advertising its own emptiness (§Decisions 4) — unless it is
+      linked to a precon, whose v0 is history (`preconOrigin`, K14). */
   versions?: VersionSummary[];
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
@@ -298,6 +303,7 @@ export function BuilderShell({
   preconArrival = null,
   arrivalPrintings = null,
   preconLink = null,
+  preconOrigin = null,
   updateArrival = null,
   shoppingFigures = {},
   newestAsOf,
@@ -338,10 +344,13 @@ export function BuilderShell({
   // a tab switch, and a deck opened afresh must open on its list.
   const deckPanel = useState<DeckPanel>("list");
   const [view, setView] = useState<BuilderView>(
-    initialBuilderView(initialView, versions.length, analysisEnabled),
+    initialBuilderView(initialView, versions.length + (preconOrigin ? 1 : 0), analysisEnabled),
   );
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
+  // Unlinking a brew from v0's panel takes the Versions tab away with v0: fall back to the deck
+  // during render, so no frame draws an empty rail under no selected tab.
+  if (view === "versions" && versions.length === 0 && preconOrigin === null) setView("deck");
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
   const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {
@@ -1685,6 +1694,7 @@ export function BuilderShell({
                 suggestionCount: suggestions.length,
                 gameCount: games.length,
                 versionCount: versions.length,
+                hasOrigin: preconOrigin !== null,
                 analysisEnabled,
               })}
               view={view}
@@ -1815,8 +1825,11 @@ export function BuilderShell({
               <div id="panel-versions" role="tabpanel" aria-labelledby="tab-versions">
                 <VersionRail
                   deckId={deck.id}
+                  deckName={deck.name}
                   versions={versions}
-                  foot={preconLink ? <LinkPreconRow deckId={deck.id} deckName={deck.name} picker={preconLink.picker} /> : null}
+                  origin={preconOrigin}
+                  // K5's row is the unlinked deck's door; a linked deck has v0 in its place.
+                  foot={preconLink && !preconOrigin ? <LinkPreconRow deckId={deck.id} deckName={deck.name} picker={preconLink.picker} /> : null}
                 />
               </div>
             ) : view === "consider" ? (

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { builderTabSpecs } from "./builder-tab-specs";
+import { historyOriginCopy } from "../copy/deck-versioning";
 
 const base = {
   built: 99,
@@ -54,5 +55,15 @@ describe("which tabs the builder draws", () => {
     const specs = builderTabSpecs({ ...base, gameCount: 0, versionCount: 0 });
     expect(specs.find((t) => t.id === "games")?.count).toBeUndefined();
     expect(specs.map((t) => t.id)).not.toContain("versions");
+  });
+
+  // Precons R3 K14: a brew linked to a precon has v0 in Versions, so the tab is drawn with one row.
+  it("draws Versions on a LINKED brew, counting v0, and names v0 apart from committed versions", () => {
+    const brew = builderTabSpecs({ ...base, versionCount: 0, hasOrigin: true }).find((t) => t.id === "versions");
+    expect(brew?.count).toBe(1);
+    expect(brew?.accessibleName).toBe(historyOriginCopy.tabAria(0));
+    const committed = builderTabSpecs({ ...base, versionCount: 2, hasOrigin: true }).find((t) => t.id === "versions");
+    expect(committed?.count).toBe(3);
+    expect(committed?.accessibleName).toBe(historyOriginCopy.tabAria(2));
   });
 });

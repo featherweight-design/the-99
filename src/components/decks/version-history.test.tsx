@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VersionRail } from "./version-history";
-import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { deckVersioningCopy, historyOriginCopy } from "../../lib/copy/deck-versioning";
+import { preconsCopy } from "../../lib/copy/precons";
+import type { DeckOrigin } from "../../lib/precons/origin";
 import type { VersionSummary } from "../../lib/decks/versions";
 
 // The rail never fetches. Only an opened row does, and the diff's own suite
@@ -13,6 +15,11 @@ const getVersionDiff = vi.fn<
 >(async () => ({ in: [], out: [] }));
 vi.mock("../../app/decks/actions", () => ({
   getVersionDiff: (deckId: string, versionId: string) => getVersionDiff(deckId, versionId),
+}));
+const unlinkPrecon = vi.fn(async (deckId: string, fileName: string) => { void deckId; void fileName; });
+vi.mock("../../app/decks/precon-link-actions", () => ({
+  linkPrecon: vi.fn(),
+  unlinkPrecon: (deckId: string, fileName: string) => unlinkPrecon(deckId, fileName),
 }));
 
 const copy = deckVersioningCopy.history;
@@ -207,5 +214,119 @@ describe("VersionRail", () => {
     const foot = screen.getByText("Built from a precon?");
     const rows = screen.getAllByRole("button", { expanded: false });
     expect(rows[2].compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+// v0 (precons R3 §5): a third kind of row, passed in, drawn last and never current (lock 4).
+const ORIGIN: DeckOrigin = {
+  fileName: "EldraziUnbound_CMM",
+  name: "Eldrazi Unbound",
+  setCode: "CMM",
+  releaseDate: "2023-08-04",
+  cardCount: 99,
+  commanderOracleId: "ulalek",
+  partnerOracleId: null,
+  commanderName: "Ulalek, Fused Atrocity",
+  partnerName: null,
+  manaValue: 3.6,
+};
+
+function mountLinked(versions: VersionSummary[]) {
+  return render(<VersionRail deckId="deck_1" deckName="HD - Eldrazi" versions={versions} origin={ORIGIN} />);
+}
+
+const originRow = () => document.querySelector<HTMLElement>("[data-origin-row]")!;
+
+describe("VersionRail with v0", () => {
+  // v1's diff depends on its v0: a relink on this page (unlink, then another precon) must read v1
+  // again, open or not, rather than serve the old precon's rows under the new one's name.
+  it("reads v1's diff again when the deck is relinked to another precon", async () => {
+    getVersionDiff.mockClear();
+    const v1 = [version({ number: 1 })];
+    const { rerender } = render(<VersionRail deckId="deck_1" deckName="HD - Eldrazi" versions={v1} origin={ORIGIN} />);
+    fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    await waitFor(() => expect(getVersionDiff).toHaveBeenCalledTimes(1));
+    const other = { ...ORIGIN, fileName: "Other_C21", name: "Other Deck" };
+    rerender(<VersionRail deckId="deck_1" deckName="HD - Eldrazi" versions={v1} origin={other} />);
+    await waitFor(() => expect(getVersionDiff).toHaveBeenCalledTimes(2));
+  });
+
+  // v0 is the precon's list, not a version the reader committed: three commits read three.
+  it("counts committed versions only in the panel's heading", () => {
+    mountLinked(THREE);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(copy.heading(3));
+  });
+
+  it("draws v0 last, below the divider, naming the precon with its own card count", () => {
+    mountLinked(THREE);
+    const rows = screen.getAllByRole("button", { expanded: false });
+    expect(rows).toHaveLength(4);
+    expect(rows[3]).toBe(originRow());
+    const divider = screen.getByText(historyOriginCopy.originDivider);
+    expect(rows[2].compareDocumentPosition(divider) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(divider.compareDocumentPosition(rows[3]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(rows[3].textContent).toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
+    // Never a literal 100: a precon missing a card lists 99 (audit finding 6).
+    expect(rows[3].textContent).toContain(historyOriginCopy.originMeta("CMM", "Aug 2023", 99));
+    expect(within(rows[3]).getAllByText(historyOriginCopy.originDelta).length).toBeGreaterThan(0);
+  });
+
+  it("keeps `current` on the newest committed version and never on v0", () => {
+    mountLinked(THREE);
+    const rows = screen.getAllByRole("button", { expanded: false });
+    expect(within(rows[0]).getAllByText(copy.current).length).toBeGreaterThan(0);
+    expect(within(originRow()).queryByText(copy.current)).toBeNull();
+    expect(originRow().className).not.toContain("--accent");
+    expect(originRow().className).not.toContain("--surface-rail");
+    expect(originRow().className).toContain("border-dashed");
+  });
+
+  it("gives v1 its delta against v0 rather than `initial`", () => {
+    mountLinked([version({ number: 2, adds: 1, removes: 1 }), version({ number: 1, adds: 12, removes: 12 })]);
+    const rows = screen.getAllByRole("button", { expanded: false });
+    expect(within(rows[1]).queryByText(copy.initial)).toBeNull();
+    expect(rows[1].textContent).toContain("+12");
+  });
+
+  it("on a linked brew, draws the brew line and v0 alone, with nothing current", () => {
+    mountLinked([]);
+    expect(screen.getByText(historyOriginCopy.brewLine)).toBeTruthy();
+    expect(screen.getAllByRole("button", { expanded: false })).toEqual([originRow()]);
+    expect(screen.queryByText(copy.current)).toBeNull();
+    // The divider is drawn only with committed versions above it.
+    expect(screen.queryByText(historyOriginCopy.originDivider)).toBeNull();
+  });
+
+  it("opens v0's note in the panel's place, naming the version the deck is sleeved as", async () => {
+    getVersionDiff.mockClear();
+    mountLinked(THREE);
+    fireEvent.click(originRow());
+    const panel = await screen.findByText(historyOriginCopy.originHeading);
+    expect(originRow().getAttribute("aria-controls")).toBe(panel.closest("[data-origin-panel]")!.id);
+    expect(screen.getByText(historyOriginCopy.originBody("Eldrazi Unbound", "v3"), { exact: false })).toBeTruthy();
+    const open = screen.getByRole("link", { name: historyOriginCopy.originOpen("Eldrazi Unbound") });
+    expect(open.getAttribute("href")).toBe("/decks/precons/EldraziUnbound_CMM");
+    // v0 opens a note, never a diff.
+    expect(getVersionDiff).not.toHaveBeenCalled();
+  });
+
+  it("drops the sleeved clause on a linked brew", async () => {
+    mountLinked([]);
+    fireEvent.click(originRow());
+    const body = historyOriginCopy.originBody("Eldrazi Unbound", null);
+    expect(await screen.findByText(body, { exact: false })).toBeTruthy();
+    expect(body).not.toContain("sleeved");
+  });
+
+  it("unlinks through the confirm, never on the first press", async () => {
+    unlinkPrecon.mockClear();
+    mountLinked(THREE);
+    fireEvent.click(originRow());
+    fireEvent.click(await screen.findByRole("button", { name: preconsCopy.link.unlink.entryLong }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(preconsCopy.link.unlink.title("HD - Eldrazi", "Eldrazi Unbound"))).toBeTruthy();
+    expect(unlinkPrecon).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: preconsCopy.link.unlink.submit }));
+    await waitFor(() => expect(unlinkPrecon).toHaveBeenCalledWith("deck_1", ORIGIN.fileName));
   });
 });

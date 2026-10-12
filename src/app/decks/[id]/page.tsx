@@ -9,6 +9,7 @@ import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
 import { readDeckPreconLink } from "../../../lib/precons/link-read";
+import { readDeckOrigin } from "../../../lib/precons/origin-read";
 import { preconsEnabled } from "../../../lib/precons/flag";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
@@ -195,8 +196,19 @@ export default async function DeckBuilderPage({
   // take the banner away, and a deck with pending changes and no banner offers no route to a
   // commit at all.
   const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
-  // The rail rides the deck's own `Versions` tab, so its rows are part of this page.
-  const versionsRead = early(perf.timed("versions", () => listVersions(id, userId)));
+  // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
+  // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
+  // unlinked deck joins no row. A failed read draws no v0, rather than failing the deck.
+  const originRead = preconsEnabled()
+    ? early(perf.timed("preconOrigin", () => readDeckOrigin(userId, id)).catch((error) => {
+      // not a fallback: v0 is drawn beside the history, never part of it.
+      console.error("precons: the deck's v0 could not be read", error);
+      return null;
+    }))
+    : null;
+  // The rail rides the deck's own `Versions` tab, so its rows are part of this page. v1's delta is
+  // counted against v0 when there is one.
+  const versionsRead = early(perf.timed("versions", () => listVersions(id, userId, originRead?.then((o) => o?.cards ?? null) ?? null)));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
   // Tuning-only: the Set picker lives inside the tuning panel alone (`builder-shell.tsx`), so
@@ -597,6 +609,7 @@ export default async function DeckBuilderPage({
       preconLink={preconLinkRead
         ? await preconLinkRead.then((l) => (l && l.linked === null ? { suggestions: l.suggestions, picker: l.picker } : null))
         : null}
+      preconOrigin={originRead ? (await originRead)?.summary ?? null : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
       // Left in the URL for the same reason. Its strip is dismissible too, but
@@ -646,7 +659,8 @@ export default async function DeckBuilderPage({
       // row above an empty panel — the same rule `versions` already has for a brew.
       initialView={initialBuilderView(
         readBuilderView(query[TAB_PARAM]),
-        versions.length,
+        // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
+        versions.length + (originRead && (await originRead) ? 1 : 0),
         analysisEnabled,
       )}
     />
