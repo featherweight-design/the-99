@@ -66,13 +66,12 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
-import { dailyLimitFor, readAllowance, recordModelUsage, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
+import { dailyLimitFor, ownerShareMicro, readAllowance, recordModelUsage, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
 import type { ModelUsage } from "../src/lib/model/client";
 import { costMicroUsd, featureWorstCaseMicroUsd } from "../src/lib/model/prices";
 import {
   HARD_STOP_USD,
   monthStartUtc,
-  OWNER_SHARE_USD,
   unpricedWorstCaseMicro,
   usdToMicro,
   type UnpricedCall,
@@ -336,7 +335,8 @@ async function run() {
     process.env.MODEL_OWNER_USER_ID = owner;
     const seeded: string[] = [];
     try {
-      seeded.push(await seed(owner, "spent", usdToMicro(OWNER_SHARE_USD) - W));
+      // The share the app applies, so a `MODEL_OWNER_MONTHLY_USD` override in the environment moves both.
+      seeded.push(await seed(owner, "spent", ownerShareMicro() - W));
       check("f · the owner reserves while one call still fits their share", kindOf(await reserve(owner)), "reserved");
       check("f · then the owner is refused ownerShare", kindOf(await reserve(owner)), "ownerShare");
       check("f · readAllowance says ownerShare for the owner", (await readAllowance(owner)).ownerShare, true);

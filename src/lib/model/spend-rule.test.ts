@@ -144,7 +144,7 @@ describe("ownerShareUsdFrom", () => {
   });
 
   it("falls back on anything else", () => {
-    for (const raw of ["0", "0.0", "-5", "1e3", "$25", "25usd", ".5", "5.", "abc", "Infinity", "NaN"]) {
+    for (const raw of ["0", "0.0", "0.0000004", "-5", "1e3", "$25", "25usd", ".5", "5.", "abc", "Infinity", "NaN"]) {
       expect(ownerShareUsdFrom(raw), raw).toBe(OWNER_SHARE_USD);
     }
   });

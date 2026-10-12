@@ -32,8 +32,8 @@ export const OWNER_SHARE_USD = 5;
 
 /**
  * The owner's monthly share in dollars, from `MODEL_OWNER_MONTHLY_USD` when it is set to a
- * positive decimal number (`25`, `7.5`). Anything else (unset, blank, zero, negative, exponent
- * forms, or not a number) falls back to `OWNER_SHARE_USD`. It exists for staging testing (Hugh,
+ * positive decimal number (`25`, `7.5`) that is at least one micro-dollar. Anything else (unset,
+ * blank, zero, negative, exponent forms, a value that rounds to zero, or not a number) falls back to `OWNER_SHARE_USD`. It exists for staging testing (Hugh,
  * 2026-10-12); production stays unset, at five. `HARD_STOP_USD` still applies to every call, so a
  * share above it can never let the app spend past the stop.
  */
@@ -41,7 +41,9 @@ export function ownerShareUsdFrom(raw: string | undefined): number {
   const v = raw?.trim() ?? "";
   if (!/^\d+(\.\d+)?$/.test(v)) return OWNER_SHARE_USD;
   const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : OWNER_SHARE_USD;
+  // Positive in MICRO-dollars, not just in dollars: a share that rounds to zero would refuse every
+  // owner call rather than fall back.
+  return Number.isFinite(n) && usdToMicro(n) > 0 ? n : OWNER_SHARE_USD;
 }
 
 export const MICRO = 1_000_000;
