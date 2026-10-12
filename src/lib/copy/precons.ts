@@ -21,6 +21,15 @@ function cardsIn(cards: number, unmapped: number): string {
 }
 
 export const preconsCopy = {
+  door: {
+    head: "Start from a precon",
+    body: "Any Commander precon, with how many of its cards you already own. It starts as a draft you can change.",
+    cta: "Browse precons →",
+    line: "Commander precons",
+    lineMeta: (count: number, newest: string) => `${plural(count, "decklist", "decklists")} · newest ${newest}`,
+    linePhone: "Precons",
+    lineMetaPhone: (count: number) => plural(count, "decklist", "decklists"),
+  },
   list: {
     title: "Commander precons",
     back: "‹ Decks",

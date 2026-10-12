@@ -21,6 +21,7 @@ import { CurveCard } from "../decks/deck-stats-view";
 import { ManaEvidenceTable } from "../decks/mana-evidence";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
+import { PreconRow } from "../decks/precons/precon-row";
 import { BrowseFigureBody } from "./browse-figure";
 import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
@@ -107,6 +108,7 @@ import {
   MANA_BALANCE,
   BENCHMARKS_SCRAPPY,
   BENCHMARKS_ANALYZED_AT,
+  PRECON_ROW,
 } from "../../lib/about/fixtures";
 
 /** The four availability states, including the one that draws nothing. */
@@ -804,6 +806,18 @@ function DeckStatsFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** One precon row as the list draws it: the name and owned figure, the commander, the set, and
+ *  the reader's deck that shares it. */
+function PreconsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="precons" width={width}>
+      <ul className="m-0 list-none p-[12px]">
+        <PreconRow row={PRECON_ROW} href="/decks/precons" />
+      </ul>
+    </Specimen>
+  );
+}
+
 /** The shared credit line in the three states a friend sees: credits left, every credit out, the monthly limit. */
 function CreditsFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1137,6 +1151,7 @@ export const FIGURES: Partial<
   "add-cards": AddCardsFigure,
   "review-and-commit": ReviewAndCommitFigure,
   "new-deck": NewDeckFigure,
+  precons: PreconsFigure,
   "undo-removal": UndoRemovalFigure,
   "locked-cards": LockedCardsFigure,
   "change-commander": ChangeCommanderFigure,

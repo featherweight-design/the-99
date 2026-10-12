@@ -11,6 +11,7 @@ import type { VersionSummary } from "../decks/versions";
 import type { DeckListItem } from "../decks/read";
 import type { DeckFolderWithCount } from "../decks/folders";
 import type { ShelfCounts } from "../decks/folder-view";
+import type { PreconRow } from "../precons/list";
 import type { GameSummary } from "../decks/games";
 import type { DraftRow } from "../decks/draft-state";
 import type { DeckClaim } from "../decks/availability";
@@ -2353,3 +2354,18 @@ export const ALL_DECKS_CART_LINE: { line: import("../decks/cart").SelectedLine; 
     deckNames: new Map([["about-gishath", "HD - Gishath"], ["about-kratos", "HD - Kratos"], ["about-thorin", "HD -Thorin"]]),
   };
 })();
+/** The precons entry's row (handoff `about · precons.ts`): a Commander Masters precon, mostly
+ *  owned, that one of the reader's decks shares. Zhulodok leads it, and the list is colorless. */
+export const PRECON_ROW: PreconRow = {
+  fileName: "about-eldrazi-unbound",
+  name: "Eldrazi Unbound",
+  setCode: "CMM",
+  releaseDate: "2023-08-04",
+  twinName: null,
+  commanders: [{ oracleId: "about-zhulodok", name: "Zhulodok, Void Gorger", imageUri: null, colorIdentity: [] }],
+  identity: [],
+  owned: 74,
+  of: 85,
+  unmapped: 0,
+  built: [{ deckId: "about-eldrazi", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }],
+};

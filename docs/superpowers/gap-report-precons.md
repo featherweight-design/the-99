@@ -67,3 +67,21 @@ column (`cards.commander_legal`, `notices/rules-violations.ts`), so the two cann
   gap 6). The provider's `open` already takes an `atPrinting` that views one printing without picking
   it (the set grid uses it), so the row's trigger can pass the precon's printing as `atPrinting` rather
   than relying on held picks. Not built in PR 3 or PR 4.
+
+## PR 5: the ways in, and the About entry
+
+Verify pass against "R2 change: /decks head on a phone", "Change: /decks head" and "Component:
+PreconDoor", with P1 to P4 and N1 to N4, and the About entry's structure: 2 visual gaps, 1 state gap.
+The door, the phone cells and the About entry matched.
+
+| # | Gap | Resolution |
+|---|---|---|
+| 1 | The cart cell's chevron 18 at 390; the table says 16 | Fixed, on the paired cell. |
+| 2 | The head row's top padding 16 at 900; the table says 0 | Fixed, with the precons line on. |
+| 3 | P4: with the precons switch off, the cart line dropped to a half cell at 900 and took the short phone form | Fixed. `CartEntry` takes `paired`; unpaired, the cart's own row draws exactly as it shipped. |
+
+The MTGJSON credit is the entry's fourth key line with its notice verbatim: the About page has no
+credits block for it to join (R1/R2 finding 5).
+
+Confirm pass: rows p1, n1 and ab on the contact sheet at both widths, and the P1/P4 head row in
+`decks-view.test.tsx`.
