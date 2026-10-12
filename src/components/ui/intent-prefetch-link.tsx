@@ -23,14 +23,21 @@
 // schedules at once and leaves Link's own default prefetch and intent handling alone. Its `kind`
 // option is typed (`PrefetchOptions`) but not in the public docs, so it is set in this one place.
 //
+// `eager="phone-in-view"` is the /decks grid's form of it: the grid draws every deck, and a full render
+// for each would be dozens of deck renders per visit, so only the tiles a caller names opt in, and
+// only on a phone (where a tap gives no hover to start one), only once the tile is on screen, and
+// only at an idle moment, so the prefetch never competes with the page's own startup. Any eager form
+// is skipped for a reader asking to save data (Save-Data, or a 2g connection): a prefetch is a guess,
+// paid in their bytes.
+//
 // The router is read from its context rather than `useRouter`, which throws outside an app router:
 // the About page draws deck tiles as specimens, and tests render them bare. With no router there is
 // nothing to prefetch into, and the link is a plain link.
 import Link from "next/link";
 import { AppRouterContext, type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { useContext, useEffect, useRef, type ComponentProps } from "react";
+import { useCallback, useContext, useEffect, useRef, type ComponentProps } from "react";
 
-type Props = ComponentProps<typeof Link> & { href: string; eager?: boolean };
+type Props = ComponentProps<typeof Link> & { href: string; eager?: boolean | "phone-in-view" };
 type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>;
 
 /** Whether focus arrived from the keyboard rather than with a press. */
@@ -42,25 +49,77 @@ function keyboardFocus(el: Element): boolean {
   }
 }
 
+/** Below Tailwind's `sm`, the width the deck grid is one column at. */
+const PHONE = "(width < 40rem)";
+
+/** Whether the reader has asked to spend as few bytes as possible. */
+function savesData(): boolean {
+  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  return c?.saveData === true || /(^|-)2g$/.test(c?.effectiveType ?? "");
+}
+
+/** Runs `fn` at the browser's next idle moment; returns the cancel. */
+function onIdle(fn: () => void): () => void {
+  const w = window as Window & {
+    requestIdleCallback?: (cb: () => void) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+  if (w.requestIdleCallback) {
+    const id = w.requestIdleCallback(fn);
+    return () => w.cancelIdleCallback?.(id);
+  }
+  const t = setTimeout(fn, 200);
+  return () => clearTimeout(t);
+}
+
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
-export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, ...props }: Props) {
+export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, ref, ...props }: Props) {
   const router = useContext(AppRouterContext);
   const done = useRef(false);
+  const anchor = useRef<HTMLAnchorElement | null>(null);
+  // Stable across renders: Link re-runs its own ref callback, and its viewport prefetch, when this
+  // identity changes.
+  const setRef = useCallback(
+    (el: HTMLAnchorElement | null) => {
+      anchor.current = el;
+      if (typeof ref === "function") ref(el);
+      else if (ref) ref.current = el;
+    },
+    [ref],
+  );
   const prefetch = () => {
     if (done.current || !router) return;
     done.current = true;
     router.prefetch(href, FULL);
   };
   useEffect(() => {
-    if (eager) prefetch();
+    if (!eager || !router || done.current || savesData()) return;
+    if (eager === true) {
+      prefetch();
+      return;
+    }
+    const el = anchor.current;
+    if (!el || !window.matchMedia?.(PHONE).matches || typeof IntersectionObserver === "undefined") return;
+    let cancelIdle = () => {};
+    const seen = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      seen.disconnect();
+      cancelIdle = onIdle(prefetch);
+    });
+    seen.observe(el);
+    return () => {
+      seen.disconnect();
+      cancelIdle();
+    };
     // Once per mount: `prefetch` is idempotent through `done`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eager, href]);
   return (
     <Link
       {...props}
+      ref={setRef}
       href={href}
       onPointerEnter={(e) => {
         // A pointer that can rest: a mouse or a pen. A touch's pointerenter is the tap itself.

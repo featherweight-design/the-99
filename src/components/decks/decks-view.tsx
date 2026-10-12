@@ -1259,7 +1259,7 @@ export function DecksView({
           ) : (
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
               <DecksMarkKey decks={shown} />
-              {shown.map((deck) => (
+              {shown.map((deck, i) => (
                 // `sm:h-full` so the tile fills the GRID row rather than
                 // sitting at its own content height: a tile with no detail line
                 // is shorter than its neighbour with one, and three tiles in a
@@ -1276,6 +1276,8 @@ export function DecksView({
                 <li key={deck.id} className="sm:h-full flex-none">
                   <DeckCard
                     deck={deck}
+                    // The two a phone shows first: its likeliest next press, prefetched on sight.
+                    eager={i < 2}
                     shopping={shopping.byDeck.get(deck.id)}
                     cartLink={cartEnabled}
                     now={now}
