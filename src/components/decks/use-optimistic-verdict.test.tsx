@@ -87,13 +87,33 @@ describe("useVerdictOverrideView", () => {
       () => ({ row: useOptimisticVerdict("pending", "a"), view: useVerdictOverrideView() }),
       { wrapper: Panel },
     );
-    expect(result.current.view.anyFlipped).toBe(false);
+    expect(result.current.view.anyBusy).toBe(false);
     let settled: Promise<unknown> = Promise.resolve();
     act(() => { settled = result.current.row.press("accepted", () => answer.promise); });
-    expect(result.current.view.anyFlipped).toBe(true);
+    expect(result.current.view.anyBusy).toBe(true);
     expect(result.current.view.verdictOf({ id: "a", verdict: "pending" })).toBe("accepted");
     await act(async () => { answer.resolve({ ok: true }); await settled; });
     act(() => result.current.row.release());
-    expect(result.current.view.anyFlipped).toBe(false);
+    expect(result.current.view.anyBusy).toBe(false);
+  });
+
+  it("stays busy while a row's action is unanswered, even once a re-read has ended its flip", async () => {
+    const answer = deferred<{ ok: true }>();
+    function Panel({ children }: { children: ReactNode }) {
+      const overrides = useVerdictOverrides();
+      return <VerdictOverridesProvider value={overrides.value}>{children}</VerdictOverridesProvider>;
+    }
+    const { result, rerender } = renderHook(
+      ({ server }: { server: RowVerdict }) => ({ row: useOptimisticVerdict(server, "a"), view: useVerdictOverrideView() }),
+      { wrapper: Panel, initialProps: { server: "pending" as RowVerdict } },
+    );
+    let settled: Promise<unknown> = Promise.resolve();
+    act(() => { settled = result.current.row.press("accepted", () => answer.promise); });
+    // Another row's answer re-read the panel and moved this row's server verdict: the flip ends.
+    rerender({ server: "dismissed" });
+    expect(result.current.row.verdict).toBe("dismissed");
+    expect(result.current.view.anyBusy).toBe(true);
+    await act(async () => { answer.resolve({ ok: true }); await settled; });
+    expect(result.current.view.anyBusy).toBe(false);
   });
 });

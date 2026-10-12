@@ -19,18 +19,21 @@ export type RowVerdict = "pending" | "accepted" | "dismissed";
  * the panel reads, for its counts only: a row is always handed the server's own verdict.
  */
 type Report = (id: string, verdict: RowVerdict | null) => void;
-type Overrides = { report: Report; map: ReadonlyMap<string, RowVerdict> };
+type ReportBusy = (id: string, busy: boolean) => void;
+type Overrides = { report: Report; reportBusy: ReportBusy; map: ReadonlyMap<string, RowVerdict>; busy: ReadonlySet<string> };
 const OverridesContext = createContext<Overrides | null>(null);
 export const VerdictOverridesProvider = OverridesContext.Provider;
 
 /** For a panel's other parts (a bulk control): each item's verdict as its row draws it, and whether
- *  any row is mid-answer, so a bulk press never races a row's own. */
+ *  any row's action is still unanswered, so a bulk press never races a row's own. A row's flip can
+ *  end before its action does (a re-read moved its server verdict), so "busy" is tracked on its own
+ *  and holds until each press settles. */
 export function useVerdictOverrideView() {
   const ctx = useContext(OverridesContext);
   const map = ctx?.map;
   return {
     verdictOf: (item: { id: string; verdict: RowVerdict }) => map?.get(item.id) ?? item.verdict,
-    anyFlipped: !!map && map.size > 0,
+    anyBusy: !!ctx && (ctx.busy.size > 0 || ctx.map.size > 0),
   };
 }
 
@@ -46,8 +49,18 @@ export function useVerdictOverrides() {
       return next;
     });
   }, []);
+  const [busy, setBusy] = useState<ReadonlySet<string>>(() => new Set());
+  const reportBusy = useCallback<ReportBusy>((id, on) => {
+    setBusy((b) => {
+      if (b.has(id) === on) return b;
+      const next = new Set(b);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
   const verdictOf = (item: { id: string; verdict: RowVerdict }) => map.get(item.id) ?? item.verdict;
-  const value = useMemo<Overrides>(() => ({ report, map }), [report, map]);
+  const value = useMemo<Overrides>(() => ({ report, reportBusy, map, busy }), [report, reportBusy, map, busy]);
   return { report, verdictOf, value };
 }
 
@@ -83,12 +96,21 @@ export function useOptimisticVerdict(server: RowVerdict, id?: string) {
   const flipped = shown && server === shown.from ? shown.verdict : null;
   // Tell the panel, so its counts read this row as it is drawn; and forget it when the row goes.
   // Before paint, so the row and the panel's counts never show two answers in one frame.
-  const report = useContext(OverridesContext)?.report;
+  const ctx = useContext(OverridesContext);
+  const report = ctx?.report;
+  const reportBusy = ctx?.reportBusy;
   useLayoutEffect(() => {
     if (!id || !report) return;
     report(id, flipped);
   }, [id, report, flipped]);
-  useLayoutEffect(() => (id && report ? () => report(id, null) : undefined), [id, report]);
+  useLayoutEffect(() => {
+    if (!id || !reportBusy) return;
+    reportBusy(id, inFlight);
+  }, [id, reportBusy, inFlight]);
+  useLayoutEffect(
+    () => (id && report && reportBusy ? () => { report(id, null); reportBusy(id, false); } : undefined),
+    [id, report, reportBusy],
+  );
 
   return { verdict: flipped ?? server, inFlight, press, release };
 }

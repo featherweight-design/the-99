@@ -129,9 +129,13 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
   } finally {
     // Whatever failed above, the deck is left as it was found: an answered cut is undone.
     if (!undone) {
+      // The cut may have committed whatever the page shows now (a failed re-read can drop the row),
+      // so the deck is read fresh: reopen the run, whose rows carry the live in-deck flag, and undo
+      // the cut if it is there.
       await gate.release().catch(() => {});
-      await page.waitForTimeout(2500);
-      if ((await cutRow.count()) > 0) await undoCut(page, cutRow, name).catch(() => {});
+      await openFromHistory(page, CUTS, "deeper look").catch(() => {});
+      if ((await cutRow.count().catch(() => 0)) > 0) await undoCut(page, cutRow, name).catch(() => {});
+      if ((await cutRow.count().catch(() => 0)) > 0) check(`${w.label} cleanup: the cut was undone`, false, { name, deck: CUTS, fix: "undo it by hand" });
     }
   }
 
