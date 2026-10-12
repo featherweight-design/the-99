@@ -22,7 +22,7 @@ import { ManaEvidenceTable } from "../decks/mana-evidence";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { BrowseFigureBody } from "./browse-figure";
-import { DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
+import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
 import { SetsColourFigure } from "./sets-colour-figure";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -1053,6 +1053,15 @@ function FitsYourDecksFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** `all-decks-cart`: the cart's Sol Ring line, three decks short of one copy each. */
+function AllDecksCartFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="all-decks-cart" width={width}>
+      <AllDecksCartFigureBody />
+    </Specimen>
+  );
+}
+
 /** `shopping-got-it`: two Shopping rows whose buy tag is the button, and the receipt one leaves. */
 function GotItFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1123,6 +1132,7 @@ export const FIGURES: Partial<
   "fits-your-decks": FitsYourDecksFigure,
   "stand-ins": StandInsFigure,
   "shopping-got-it": GotItFigure,
+  "all-decks-cart": AllDecksCartFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,
