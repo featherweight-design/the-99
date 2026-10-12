@@ -78,6 +78,7 @@ export function ShelfLine({
   onSelect,
   onCreate,
   menu,
+  lead,
 }: {
   folders: readonly DeckFolderWithCount[];
   counts: ShelfCounts;
@@ -91,8 +92,11 @@ export function ShelfLine({
    * segment.
    */
   menu?: (segment: ShelfSegment) => React.ReactNode;
+  /** What leads the row, outside the shelves' group: the `Tiles · Stats` switch (Stats on /decks), then a
+   *  hairline. Absent, the line is exactly as it shipped. */
+  lead?: React.ReactNode;
 }) {
-  return (
+  const line = (
     <div
       data-shelf-line
       // A named GROUP: an `aria-label` on a bare div names nothing in the
@@ -118,7 +122,7 @@ export function ShelfLine({
       // the container's own 20px of padding is inside the box under this app's
       // border-box reset — at 74 the second row was already in the scroll area
       // rather than on screen, which is the opposite of a two-row ceiling.
-      className="flex max-h-[94px] flex-wrap items-center gap-[6px] overflow-y-auto bg-[color:var(--bg)] px-[22px] py-[10px]"
+      className={`flex max-h-[94px] flex-wrap items-center gap-[6px] overflow-y-auto bg-[color:var(--bg)] py-[10px] ${lead ? "min-w-0 flex-1 pr-[22px]" : "px-[22px]"}`}
     >
       {shelfSegments(folders, counts).map((segment) => {
         const selected = segment.shelf === shelf;
@@ -173,6 +177,16 @@ export function ShelfLine({
       </button>
     </div>
   );
+  if (!lead) return line;
+  return (
+    <div className="flex items-center bg-[color:var(--bg)] pl-[22px]">
+      <span className="flex flex-none items-center py-[10px]">
+        {lead}
+        <span aria-hidden="true" className="mx-[6px] h-[22px] w-[1px] bg-[var(--border-strong)]" />
+      </span>
+      {line}
+    </div>
+  );
 }
 
 /**
@@ -192,18 +206,23 @@ export function ShelfTrigger({
   onOpen,
   open,
   menu,
+  lead,
 }: {
   label: string;
   count: number;
   onOpen: () => void;
   open: boolean;
   menu?: React.ReactNode;
+  /** The `Tiles · Stats` switch (Stats on /decks), drawn at the row's left with the trigger pushed right.
+   *  Absent, the row is exactly as it shipped. */
+  lead?: React.ReactNode;
 }) {
   return (
     <div
       data-shelf-trigger
-      className="flex items-center gap-[8px] overflow-hidden bg-[color:var(--bg)] px-[16px] py-[8px]"
+      className={`flex items-center gap-[8px] overflow-hidden bg-[color:var(--bg)] px-[16px] ${lead ? "pt-[8px] pb-[10px]" : "py-[8px]"}`}
     >
+      {lead ? <>{lead}<span className="flex-1" /></> : null}
       <button
         type="button"
         onClick={onOpen}

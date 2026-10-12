@@ -86,6 +86,10 @@ import { NewDeckButton } from "./new-deck-button";
 import { SearchIcon } from "./search-icon";
 import { DecksMarkKey } from "./decks-mark-key";
 import { mirrorUrl } from "../../lib/url/mirror";
+import type { LineupData } from "../../lib/lineup/types";
+import { DECKS_VIEW_COOKIE, type DecksView as DecksViewName } from "../ui/view-cookie";
+import { LineupView } from "./lineup/lineup-view";
+import { StatsViewSwitch } from "./lineup/stats-view-switch";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -114,7 +118,15 @@ export type DecksViewProps = {
    * `This month` predicate — wants the server's instant, not the browser's.
    */
   now: string;
+  /**
+   * Stats on /decks (`LINEUP_ENABLED`, read on the server), or null with the switch off: then there is no
+   * `Tiles · Stats` switch, no Stats read, and `?view` is ignored. `data` is the Stats payload, read only when
+   * the page was asked for Stats; `view` is the view the server drew; `foldServer` the fold memory's cookie.
+   */
+  lineup?: { data: LineupData | null; view: DecksViewName; foldServer: string | null } | null;
 };
+
+const isDecksView = (v: string): v is DecksViewName => v === "tiles" || v === "stats";
 
 /** The parameters this view owns. Everything else on the URL is left alone. */
 // Every parameter `filtersToParams` can WRITE has to be listed here, or
@@ -187,6 +199,7 @@ export function DecksView({
   buildable,
   cards,
   now: nowIso,
+  lineup = null,
 }: DecksViewProps) {
   // Seeded from the URL, so a shared link paints filtered on the first frame
   // rather than painting everything and then correcting itself. Read through
@@ -310,6 +323,38 @@ export function DecksView({
   // that action's own `revalidatePath`, and refreshing on top of it fetched an
   // expensive route twice per write.
   const router = useRouter();
+
+  // Tiles or Stats (G7): the server drew `lineup.view`, from `?view=stats` or the reader's remembered choice.
+  // The Stats payload, once read this visit, is held, so a flip back to Stats re-reads nothing; a fresh one
+  // from the server always replaces it, adjusted in render so the old one never paints first.
+  const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : "tiles");
+  const [heldStats, setHeldStats] = useState<LineupData | null>(lineup?.data ?? null);
+  if (lineup?.data && lineup.data !== heldStats) {
+    setHeldStats(lineup.data);
+    // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
+    if (lineup.view === "stats") setView("stats");
+  }
+  const [, chooseView] = useStoredView<DecksViewName>("the99:decks:view", isDecksView, {
+    cookie: DECKS_VIEW_COOKIE,
+    serverValue: lineup?.view ?? null,
+  });
+  const onView = (next: DecksViewName) => {
+    chooseView(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next === "stats") params.set("view", "stats");
+    else params.delete("view");
+    const url = params.size > 0 ? `?${params}` : window.location.pathname;
+    // Stats not read yet this visit: ask the server for it, which is what reads it.
+    if (next === "stats" && !heldStats) {
+      router.push(url);
+      return;
+    }
+    setView(next);
+    mirrorUrl(url);
+  };
+  const statsOn = lineup !== null && view === "stats" && heldStats !== null;
+  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={onView} /> : null;
+
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a
   // sequence so a second create on the same card closes it again.
@@ -841,8 +886,12 @@ export function DecksView({
           {/* THE LEVEL, above the chassis and on its own ground. It draws only
               when there is at least one deck: a shelf for nothing is furniture
               (STATES W6/C5), and `zero` above has already taken that case. */}
+          {statsOn ? (
+            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} />
+          ) : (<>
           {wide ? (
             <ShelfLine
+              lead={viewSwitch}
               folders={folders}
               counts={counts}
               shelf={state.shelf}
@@ -854,6 +903,7 @@ export function DecksView({
             />
           ) : (
             <ShelfTrigger
+              lead={viewSwitch}
               label={selectedShelf.label}
               count={selectedShelf.count}
               menu={shelfMenu(
@@ -1222,6 +1272,7 @@ export function DecksView({
               ))}
             </ul>
           )}
+          </>)}
 
         </div>
       )}
