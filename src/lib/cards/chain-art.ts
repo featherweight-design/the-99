@@ -8,8 +8,9 @@ import { resolveDeckOwnedPrintings } from "../decks/printings";
  * representative it already holds (`cards.image_uri`).
  *
  * ONE RULE FOR A SURFACE THAT DRAWS A CARD WITHOUT OPENING IT: Suggested changes, Proposed cuts, the
- * stand-ins sheet and Improve my mana's staples call this. The Top-off shelves list only cards NOT in the deck, which have no deck pick, so
- * `resolveOwnedPrintings` is already their whole chain. `cards.image_uri` is oracle-level,
+ * stand-ins sheet and Improve my mana's staples call this. The Top-off list shows only cards NOT in the deck, which have no deck pick, so
+ * `resolveOwnedPrintings` is already their whole chain; the deck page overlays it on the candidates it
+ * hands the list (`readSynergyCards` carries the catalog's printing). `cards.image_uri` is oracle-level,
  * one arbitrary printing per card, so a hover preview that read it showed a different printing from the
  * card details the same row opens (Suggested changes, Hugh 2026-10-11). A loader that feeds a hover
  * preview overlays this on the art it read, at the draw rather than inside a shared loader, the same
@@ -31,4 +32,16 @@ export async function chainArt(
     : await resolveOwnedPrintings(userId, ids);
   for (const [id, p] of printings) if (p.imageUri) art.set(id, p.imageUri);
   return art;
+}
+
+/**
+ * `rows` drawn with the chain's art where it has some, and with the art they arrived with where it has
+ * none (a card the player does not own). The overlay half of `chainArt`, named so the one place a
+ * surface applies the map is a function a test can break.
+ */
+export function withChainArt<T extends { oracleId: string; imageUri: string | null }>(
+  rows: readonly T[],
+  art: ReadonlyMap<string, string>,
+): T[] {
+  return rows.map((row) => ({ ...row, imageUri: art.get(row.oracleId) ?? row.imageUri }));
 }
