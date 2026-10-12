@@ -190,7 +190,8 @@ export function TuningHistory({
   // Back from a run History reopened in its tool: that row, once the list has drawn it.
   const focused = useRef(false);
   useEffect(() => {
-    if (focused.current || !focusRow || state.kind !== "ok") return;
+    // Settled either way: a list that failed to arrive has no row, and focus goes to the heading.
+    if (focused.current || !focusRow || state.kind === "loading") return;
     focused.current = true;
     // The list comes back on All, first page: a row from a filter or a later page may not be in it,
     // and focus then lands on History's heading rather than nowhere.

@@ -211,6 +211,13 @@ describe("PastRun", () => {
     await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
   });
 
+  it("focuses History's heading when the list it came back to failed to arrive", async () => {
+    readPage.mockRejectedValueOnce(new Error("down"));
+    render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow={rows[2].id} />);
+    await waitFor(() => expect(screen.getByText(copy.retry)).toBeTruthy());
+    await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
+  });
+
   it("focuses the row the reader came back from, once the list has drawn it", async () => {
     render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow={rows[2].id} />);
     await waitFor(() => expect(rowEls()).toHaveLength(5));
