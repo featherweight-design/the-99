@@ -21,9 +21,9 @@ type Props = {
 export default async function OpenPreconPage({ params, searchParams }: Props) {
   if (!preconsEnabled()) notFound();
   const userId = await requireUserId();
-  const { fileName } = await params;
+  // Next hands the segment over decoded; decoding it again would throw on a `%`.
+  const { fileName: name } = await params;
   const from = (await searchParams).from;
-  const name = decodeURIComponent(fileName);
   const precon = await cachePageForUser(userId, "precon", [name], async () => ({
     value: await loadOpenPrecon(userId, name),
     store: true,
