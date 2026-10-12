@@ -75,10 +75,12 @@ export function costMicroUsd(model: string, usage: ModelUsage): number {
  * The most one call can cost: both attempts (a malformed reply is sent once more), each with the
  * whole input ceiling and the reply at its `max_tokens`. The input is at the plain rate, or, for a
  * call that writes a cache (`cacheWrite`), all of it at the cache-write rate: a cold cache on both
- * attempts is the worst case. Each attempt is priced on its own prompt's rate card.
+ * attempts is the worst case. The rate card is the one BOTH attempts' summed prompt picks, because
+ * that is how `costMicroUsd` settles them: a retry of a 60,000-token Haiku prompt settles at the
+ * rate above 100,000, and a reservation priced per attempt would be a third of what it costs.
  */
 export function worstCaseMicroUsd(model: string, inputCeilingTokens: number, maxTokens: number, opts: { cacheWrite?: boolean } = {}): number {
-  const r = ratesFor(model, inputCeilingTokens);
+  const r = ratesFor(model, 2 * inputCeilingTokens);
   const input = inputCeilingTokens * (opts.cacheWrite ? CACHE_WRITE_MULTIPLIER : 1);
   return Math.ceil(2 * (input * r.input + maxTokens * r.output));
 }
@@ -132,8 +134,8 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // output tokens against the 8,000 ceiling.
   proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
   // Find a deck read (eval 2026-10-12, `docs/superpowers/eval/metrics-find-a-deck-read.md`): one
-  // call. MEASURED 63,360 input tokens at most (21 candidate decks) and 4,257 output; priced at the
-  // ceiling the action refuses above, so a reservation never under-prices a read.
+  // call. MEASURED 63,360 input tokens at most on the eval (21 candidates) and 4,257 output; the
+  // press refuses a prompt over `FITS_READ_INPUT_CEILING`, so this prices the worst it can settle at.
   fits_read: { model: FITS_READ_MODEL, inputCeilingTokens: FITS_READ_INPUT_CEILING, maxTokens: FITS_READ_MAX_TOKENS, callsPerWrite: 1 },
 };
 

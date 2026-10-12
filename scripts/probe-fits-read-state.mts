@@ -89,6 +89,16 @@ try {
   check("the view keeps the done read as the stored read, current", [view.stored?.readId, view.stored?.current], [s1.readId, true]);
   check("and reports the newer failure", view.failed?.errorClass, "timeout");
 
+  // 5b. A long run of failures after the done read never pushes it out of the panel.
+  for (let i = 0; i < 12; i += 1) {
+    const f = await store.startFitsRead(PROBE, card, { d: `f${i}` }, STUB_MODEL, new Date(now.getTime() + 2000 + i * 1000));
+    if (f.kind !== "started") throw new Error(`start refused: ${f.kind}`);
+    readIds.push(f.readId);
+    await store.finishFitsRead(f, { status: "failed", errorClass: "upstream_busy" });
+  }
+  const after = fitsReadView(await store.readFitsReadRows(PROBE, card), { d: "h" });
+  check("twelve failures later the stored read still stands", after.stored?.readId, s1.readId);
+
   // 6. End to end on a real reader's decks, through the stub.
   const { rows: [pick] } = await db.execute<{ oracle_id: string }>(sql`
     select c.oracle_id from cards c

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
 import { fitsReads } from "../../db/schema";
@@ -129,22 +129,27 @@ export async function reapFitsReads(userId: string, oracleId: string, now = new 
   });
 }
 
-/** How many of a reader's rows for one card the view reads: enough to hold a pending, a done and a failure. */
-const VIEW_ROWS = 10;
-
-/** The reader's newest rows for one card, newest first. */
+/**
+ * The rows the view needs for a reader and card, newest first: the newest pending, the newest done
+ * and the newest of all. Three reads rather than a window of the newest N, so no run of failures,
+ * however long, can push the stored read out of the panel.
+ */
 export async function readFitsReadRows(userId: string, oracleId: string): Promise<FitsReadRow[]> {
-  const rows = await db.select({
+  const cols = {
     id: fitsReads.id, status: fitsReads.status, outcome: fitsReads.outcome, errorClass: fitsReads.errorClass,
     refunded: fitsReads.refunded, createdAt: fitsReads.createdAt, finishedAt: fitsReads.finishedAt,
     candidateHashes: fitsReads.candidateHashes, picks: fitsReads.picks,
-  }).from(fitsReads)
-    .where(and(eq(fitsReads.userId, userId), eq(fitsReads.oracleId, oracleId)))
-    .orderBy(desc(fitsReads.createdAt))
-    .limit(VIEW_ROWS);
-  return rows.map((r) => ({
-    ...r,
-    status: r.status as FitsReadRow["status"],
-    outcome: (r.outcome ?? null) as FitsReadRow["outcome"],
-  }));
+  };
+  const mine = and(eq(fitsReads.userId, userId), eq(fitsReads.oracleId, oracleId));
+  const newest = (where: SQL | undefined) =>
+    db.select(cols).from(fitsReads).where(where).orderBy(desc(fitsReads.createdAt)).limit(1);
+  const found = (await Promise.all([
+    newest(and(mine, eq(fitsReads.status, "pending"))),
+    newest(and(mine, eq(fitsReads.status, "done"))),
+    newest(mine),
+  ])).flat();
+  const byId = new Map(found.map((r) => [r.id, r]));
+  return [...byId.values()]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .map((r) => ({ ...r, status: r.status as FitsReadRow["status"], outcome: (r.outcome ?? null) as FitsReadRow["outcome"] }));
 }
