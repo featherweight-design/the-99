@@ -244,6 +244,12 @@ describe("LineupView: cards your decks share", () => {
     expect(within(card("shared")).getByRole("link", { name: "3 on Shopping for all decks" })).toBeTruthy();
   });
 
+  it("draws that row closed, with nothing to open, when the cart is off", () => {
+    const rats = { oracleId: "rats", name: "Relentless Rats", owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
+    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} />);
+    expect(within(card("shared")).queryByRole("button", { name: /^Which decks have Relentless Rats/ })).toBeNull();
+  });
+
   it("lists only the cards wanted more than owned under that chip", () => {
     render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
     fireEvent.click(within(card("shared")).getByRole("button", { name: "Wanted more than you own · 1" }));

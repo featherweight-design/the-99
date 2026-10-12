@@ -35,7 +35,9 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
       <div className="flex flex-col">
         {v.rows.map((r) => {
           const short = r.decks.filter((d) => !d.held);
-          const isOpen = open === r.oracleId && r.short > 0;
+          // A row opens only when it has something to say: a deck with no copy to name, or the buy to link.
+          const opens = r.short > 0 && (short.length > 0 || cartEnabled);
+          const isOpen = open === r.oracleId && opens;
           const squares = (
             <span aria-hidden="true" className="flex flex-wrap gap-[3px] [grid-area:q]">
               {r.decks.map((d) => (
@@ -57,7 +59,7 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
                 </span>
                 {squares}
                 {/* The figure is the row's press when a deck is short: it opens the decks with no copy. */}
-                {r.short > 0 ? (
+                {opens ? (
                   <button
                     type="button"
                     aria-expanded={isOpen}
