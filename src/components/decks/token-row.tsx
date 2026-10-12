@@ -5,6 +5,7 @@ import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
 import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
 import { formatPriceFigure, priceState } from "../../lib/decks/price";
+import { tokenManapoolLine } from "../../lib/tokens/price";
 import type { DeckToken } from "../../lib/tokens/read";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
@@ -24,7 +25,14 @@ export function printingLine(token: DeckToken, newestAsOf: Date | null): string 
   const figure = formatPriceFigure(token.price, priceState(token.price, newestAsOf));
   if (!figure) return null;
   const { setCode, collectorNumber, printings } = token.picture;
-  return tokensCopy.makers.printing(`${setCode.toUpperCase()} ${collectorNumber}`, figure, printings);
+  const pictured = `${setCode.toUpperCase()} ${collectorNumber}`;
+  // What a link SENDS is Mana Pool's own product (set and number differ from Scryfall's on 42% of priced
+  // token printings), or the name alone where Mana Pool cannot place a number exactly. The picture is
+  // Scryfall's, so the line names both only where they are the same printing.
+  const line = tokenManapoolLine(token.name, 1, token.price);
+  const sent = line.printing ? `${line.printing.setCode.toUpperCase()} ${line.printing.collectorNumber}` : null;
+  if (sent === pictured) return tokensCopy.makers.printing(pictured, figure, printings);
+  return sent ? tokensCopy.makers.sent(sent, figure, printings) : tokensCopy.makers.sentByName(figure, printings);
 }
 
 // Shared by both controls: the rest is each control's own (padding, height and weight differ).

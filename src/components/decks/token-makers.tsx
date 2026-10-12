@@ -5,13 +5,30 @@ import type { TokenMaker } from "../../lib/tokens/read";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { usePreviewRow } from "./hover-preview";
 
-/** Past this many names the list scrolls in a box: 9 on desktop, 5 on a phone (design table). */
-export const MAKERS_BOX_DESKTOP = 9;
-export const MAKERS_BOX_PHONE = 5;
-
 /** Columns from md up: one name, two to six, seven or more. */
 export function makerColumns(count: number): 1 | 2 | 3 {
   return count <= 1 ? 1 : count <= 6 ? 2 : 3;
+}
+
+// The box exists to stop a long list pushing the page down, so it appears where the list can actually
+// outgrow its cap, worked out from the design's own numbers: a name is 44px tall on a phone (one column)
+// and 30px from md up (`makerColumns` of them), the box pads 2px top and bottom, and its cap is 240px on a
+// phone and 158px from md up. That is past 5 names on a phone, as the design table says. From md up the
+// table says "past 9", which is the one-column count; with two and three columns the same 158px holds
+// 10 to 15 names, and a box and a fade drawn over a list that cannot scroll are noise, so desktop turns
+// on at the first count that overflows (16).
+const PHONE_ROW = 44;
+const DESKTOP_ROW = 30;
+const BOX_PAD = 4;
+const PHONE_CAP = 240;
+const DESKTOP_CAP = 158;
+
+export function boxedOnPhone(count: number): boolean {
+  return count * PHONE_ROW + BOX_PAD > PHONE_CAP;
+}
+
+export function boxedOnDesktop(count: number): boolean {
+  return Math.ceil(count / makerColumns(count)) * DESKTOP_ROW + BOX_PAD > DESKTOP_CAP;
 }
 
 function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] }) {
@@ -44,8 +61,8 @@ function Maker({ maker, siblings }: { maker: TokenMaker; siblings: TokenMaker[] 
  */
 export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; printingLine: string | null }) {
   const n = makers.length;
-  const boxPhone = n > MAKERS_BOX_PHONE;
-  const boxDesktop = n > MAKERS_BOX_DESKTOP;
+  const boxPhone = boxedOnPhone(n);
+  const boxDesktop = boxedOnDesktop(n);
   const cols = makerColumns(n);
   const box = [
     boxPhone ? "max-md:max-h-[240px] max-md:overflow-y-auto max-md:overscroll-contain max-md:rounded-[8px] max-md:border max-md:border-[color:var(--border)] max-md:bg-[color:var(--surface-sunken)] max-md:px-[12px] max-md:py-[2px]" : "",
@@ -56,8 +73,8 @@ export function TokenMakers({ makers, printingLine }: { makers: TokenMaker[]; pr
     <div className="mt-[8px] flex flex-col gap-[6px] border-t border-t-[color:var(--border)] pt-[9px] md:ml-[54px]">
       <p className="m-0 flex items-baseline gap-[8px] font-mono text-[9.5px] uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
         <span>{tokensCopy.makers.label(n)}</span>
-        {boxPhone ? (
-          <span className={`text-[10px] normal-case tracking-normal text-[color:var(--fg-locked)] ${boxDesktop ? "" : "md:hidden"}`}>
+        {boxPhone || boxDesktop ? (
+          <span className={`text-[10px] normal-case tracking-normal text-[color:var(--fg-locked)] ${boxPhone && boxDesktop ? "" : boxPhone ? "md:hidden" : "max-md:hidden"}`}>
             {tokensCopy.makers.scrolls}
           </span>
         ) : null}

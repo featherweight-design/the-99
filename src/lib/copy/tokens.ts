@@ -44,5 +44,11 @@ export const tokensCopy = {
     scrolls: "A–Z · scrolls",
     printing: (code: string, cost: string, printings: number) =>
       `pictured and sent: ${code} · ${cost} · cheapest of ${n(printings)} ${printings === 1 ? "printing" : "printings"}`,
+    /** Mana Pool's product is not the printing pictured (their set and number differ from Scryfall's). */
+    sent: (code: string, cost: string, printings: number) =>
+      `sent: ${code} · ${cost} · cheapest of ${n(printings)} ${printings === 1 ? "printing" : "printings"}`,
+    /** Mana Pool cannot place the number exactly, so the link names the token alone. */
+    sentByName: (cost: string, printings: number) =>
+      `sent by name · ${cost} · cheapest of ${n(printings)} ${printings === 1 ? "printing" : "printings"}`,
   },
 } as const;

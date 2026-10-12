@@ -12,7 +12,8 @@ vi.mock("../cards/card-detail-provider", () => ({
 
 import { DeckTokensProvider } from "./deck-tokens-context";
 import { TokensGroup } from "./tokens-group";
-import { makerColumns } from "./token-makers";
+import { boxedOnDesktop, boxedOnPhone, makerColumns } from "./token-makers";
+import { printingLine } from "./token-row";
 import type { DeckToken, DeckTokensRead, TokenMaker } from "../../lib/tokens/read";
 
 const DECK = "00000000-0000-4000-8000-0000000000d1";
@@ -178,12 +179,12 @@ describe("the makers fold", () => {
     expect((siblings as { oracleId: string }[]).map((s) => s.oracleId)).toEqual(["m001", "m002"]);
   });
 
-  it("scrolls past 5 names on a phone and past 9 from md up, and says so", () => {
+  it("scrolls where the list can outgrow its cap, and says so", () => {
     draw(ok([token({ makers: makers(7) })]));
     open();
     expect(screen.getByText("A–Z · scrolls").className).toContain("md:hidden");
     cleanup();
-    draw(ok([token({ makers: makers(12) })]));
+    draw(ok([token({ makers: makers(18) })]));
     open();
     expect(screen.getByText("A–Z · scrolls").className).not.toContain("md:hidden");
     cleanup();
@@ -197,7 +198,7 @@ describe("the makers fold", () => {
     open();
     expect(document.querySelector("li[aria-hidden]")?.className).toContain("md:hidden");
     cleanup();
-    draw(ok([token({ makers: makers(12) })]));
+    draw(ok([token({ makers: makers(18) })]));
     open();
     expect(document.querySelector("li[aria-hidden]")?.className).not.toMatch(/md:hidden|max-md:hidden/);
     // In flow, never an overlay: a negative margin would put the fade over the last row.
@@ -208,7 +209,46 @@ describe("the makers fold", () => {
     expect(document.querySelector("li[aria-hidden]")).toBeNull();
   });
 
+  it("turns the box on at the count whose rows pass the cap: 6 on a phone, 16 from md up", () => {
+    expect([5, 6].map(boxedOnPhone)).toEqual([false, true]);
+    expect([9, 10, 15, 16].map(boxedOnDesktop)).toEqual([false, false, false, true]);
+  });
+
   it("uses one column for one maker, two for 2 to 6, three from 7", () => {
     expect([1, 2, 6, 7, 19].map(makerColumns)).toEqual([1, 2, 2, 3, 3]);
+  });
+});
+
+describe("the line that says what is sent", () => {
+  const NEWEST = new Date("2026-10-11");
+  const withPrice = (product: { productName: string | null; productSet: string | null; productNumber: string | null }) =>
+    token({
+      name: "Soldier",
+      picture: { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUriSmall: null, artCropUri: null, printings: 5 },
+      price: {
+        cents: 15, foilCents: null, etchedCents: null, asOf: NEWEST,
+        printing: { scryfallId: "p", setCode: "tla", collectorNumber: "8", ...product },
+      },
+    });
+
+  it("says pictured and sent only where Mana Pool's product is the printing pictured", () => {
+    expect(printingLine(withPrice({ productName: "Soldier", productSet: "tla", productNumber: "8" }), NEWEST))
+      .toBe("pictured and sent: TLA 8 · $0.15 · cheapest of 5 printings");
+  });
+
+  it("names Mana Pool's own set and number when they are not Scryfall's", () => {
+    expect(printingLine(withPrice({ productName: "Soldier // Eldrazi", productSet: "tonc", productNumber: "1-17" }), NEWEST))
+      .toBe("sent: TONC 1-17 · $0.15 · cheapest of 5 printings");
+  });
+
+  it("says it is sent by name where Mana Pool cannot place the number or the product is unknown", () => {
+    expect(printingLine(withPrice({ productName: "Angel // Demon", productSet: "phel", productNumber: "1★" }), NEWEST))
+      .toBe("sent by name · $0.15 · cheapest of 5 printings");
+    expect(printingLine(withPrice({ productName: null, productSet: null, productNumber: null }), NEWEST))
+      .toBe("sent by name · $0.15 · cheapest of 5 printings");
+  });
+
+  it("draws no line for a token with no figure", () => {
+    expect(printingLine(token(), NEWEST)).toBeNull();
   });
 });
