@@ -17,7 +17,7 @@ Mono = `'IBM Plex Mono',monospace`; body text inherits `'IBM Plex Sans',sans-ser
 | R1 | Audit H2 (Hugh, 2026-09-24); READINESS reading 6; HANDOFF §3 | The offer shows whenever the submit had words, even when every word matched | STATES marks the Offer "hidden" on 4c, 4d, 4e and 5b, all of which had words. The canvas logic (`offerKey = sc.offer ?? (sc.text ? "ready" : null)`) draws the 3a offer on those four. H2 and the canvas win: the offer shows on any results screen whose submit had words |
 | R2 | Audit F11 | The owner-share state has no frame. It is 3g's disabled button with `creditsCopy.ownerShare` as the line | Owner-share rows below are derived from 3g |
 | R3 | STATES "Credit line, by allowance"; audit F11 | Precedence: paused, then owner share, then spent | See State Coverage |
-| R4 | Audit F9; READINESS "Copy that needs widening" | `creditsCopy.spent`'s tail widens to name deeper looks; `PAUSED_REASON` widens. Both via `/copy-review` | The 3f and 3g lines are `creditsCopy.*` keys, not the canvas's literal strings |
+| R4 | Audit F9; READINESS "Copy that needs widening" | `creditsCopy.spent`'s tail widens to name deeper looks; `PAUSED_REASON` widens. Both via `/copy-review`. **Superseded (Hugh, 2026-10-12, link, never list):** neither line names a feature; both end in the `What uses credits?` link to About `credits` | The 3f and 3g lines are `creditsCopy.*` keys, not the canvas's literal strings |
 | R5 | Audit F12 | `var(--display)` is a canvas alias | Title family is `--font-display` |
 | R6 | HANDOFF §3 ("first results at 0.45") vs canvas | The canvas applies `opacity: dim` only to the `More commanders` rows (`s.row`); the Best fits cards (`s.bestCard`) carry no opacity, so in 3b's frame (5 results, 3 as best fits) only 2 rows dim | HANDOFF text is the spec: the first results dim at 0.45. Flagged for the verify pass: whether Best fits cards dim is not drawn |
 | R7 | Canvas legend (`The 99 - Help Me Choose.dc.html:73`) vs mounted frame | Legend's `deeper` tag has no letter-spacing; the mounted chip has 0.06em | The mounted frame's 0.06em is used |
@@ -218,8 +218,8 @@ answers / Start over). The bar is a flex column, gap 14; padding 14 (mobile) / 1
 | copy, 3e | `creditsCopy.standing` (no press follows) | same |
 | copy, 3b | `deeper.pendingLine` | same |
 | copy, 3c | `deeper.doneLine(creditsCopy.standing)` | same |
-| copy, 3f | `creditsCopy.spent`. `deeper.spentLine` was dropped (orchestrator ruling); the widened tail naming deeper looks lands in `creditsCopy` with F9, in PR 6b | same |
-| copy, 3g | `creditsCopy.paused`; its reason widens with F9, in PR 6b | same |
+| copy, 3f | `creditsCopy.spent`. `deeper.spentLine` was dropped (orchestrator ruling); it ends in the `What uses credits?` link (superseded F9, 2026-10-12) | same |
+| copy, 3g | `creditsCopy.paused`; its reason ends in the same link (superseded F9, 2026-10-12) | same |
 | copy, owner share | `creditsCopy.ownerShare` (R2) | same |
 | font-family | mono | mono |
 | font-size | 10px | 10.5px |
@@ -334,8 +334,8 @@ The same line as before a look; only its label key changes. It is not a chip.
 | 3c done (`read`) | The look returned ≥ 1 valid answer | Deeper chip(s) with dashed accent edge + `deeper`; `Still not used` with the remaining phrases; panel title + `DONE` tag, lead, no button, line; results re-ranked with the new answer's figure on each row (canvas: 3 figures) | title `deeper.doneTitle`; tag `deeper.doneTag`; lead `deeper.doneLead`; line `deeper.doneLine(standing)`; chip `readAs.deeperMark` |
 | 3d failed (`failed`) | The look errored or timed out; credit refunded | Title + `DIDN'T FINISH` tag (danger); failed lead; live button (`1 credit` · Try again); standing line; first results at 1; `Not used` unchanged | title `deeper.title`; tag `deeper.failTag`; lead `deeper.failedLead`; label `deeper.retry`; line `creditsCopy.first` |
 | 3e nothing to add (`emptyread`) | The look returned no valid answer; credit refunded (READINESS 1, audit F4) | Title `Deeper look`, no tag; empty lead; no button (no second offer for the same words); standing line; `Still not used` with every phrase; first results | title `deeper.doneTitle`; lead `deeper.emptyLead`; line `creditsCopy.standing` |
-| 3f no credits (`spent`) | 0 credits left; not paused; owner share not used | Title + lead as 3a; disabled button (`0 left` · Look deeper); spent line; first results | stub `deeper.costSpent`; line `creditsCopy.spent` (widened with F9, PR 6b) |
-| 3g paused (`paused`) | App-wide spend limit reached (highest precedence) | Title + lead as 3a; disabled button (`Paused` · Look deeper); paused line; first results | stub `deeper.costPaused`; line `creditsCopy.paused` (reason widened with F9, PR 6b) |
+| 3f no credits (`spent`) | 0 credits left; not paused; owner share not used | Title + lead as 3a; disabled button (`0 left` · Look deeper); spent line; first results | stub `deeper.costSpent`; line `creditsCopy.spent` (ends in the `What uses credits?` link) |
+| 3g paused (`paused`) | App-wide spend limit reached (highest precedence) | Title + lead as 3a; disabled button (`Paused` · Look deeper); paused line; first results | stub `deeper.costPaused`; line `creditsCopy.paused` (its reason ends in the same link) |
 | Owner share (F11, no frame) | Owner's share used; not paused (precedes spent) | 3g's disabled button with a different line | stub `deeper.costPaused`; line `creditsCopy.ownerShare` |
 | No offer | Results screen and the submit had no words (2a blank, 4a, 4b, 4f, 5a, 5c–5e) | No panel; no deeper chip; no Not used row | — |
 
@@ -345,6 +345,6 @@ Credit line by allowance (the line in 3a/3d/3e and the stub):
 |---|---|---|---|
 | ≥ 1 left, none out | `1 credit` | live | `creditsCopy.first` |
 | ≥ 1 left, some out | `1 credit` | live | `creditsCopy.first` (with next-at time) |
-| 0 left | `0 left` | disabled | `creditsCopy.spent`, widened with F9 (PR 6b) |
+| 0 left | `0 left` | disabled | `creditsCopy.spent`, ending in the `What uses credits?` link |
 | owner's share used | `Paused` | disabled | `creditsCopy.ownerShare` |
-| app paused | `Paused` | disabled | `creditsCopy.paused`, reason widened |
+| app paused | `Paused` | disabled | `creditsCopy.paused`, its reason ending in the same link |

@@ -1,9 +1,8 @@
 // With Analysis on and Tuning off (TUNING_ENABLED unset), the shell must withhold every surface
-// that spends a Suggested-changes credit: no tuning render-prop/section, no tuning-specific
-// prompt in the Analysis empty state, and a `tuning=false` arg on the Overview's and the press
-// notes' credit copy — the thing that keeps "Suggested changes" out of their lines (see
-// `src/lib/copy/credits.ts`). Follows the `builder-shell-deeper-looks.test.tsx` pattern, which
-// forces `tuningEnabled` ON; this is its mirror, with Tuning off.
+// that spends a Suggested-changes credit: no tuning render-prop/section and no tuning-specific
+// prompt in the Analysis empty state. The credit lines name no feature since 2026-10-12 (Hugh,
+// link, never list: `src/lib/copy/credits.ts`), so no switch reaches them: the Overview takes no
+// `tuning` prop and the press notes take only the view and the press.
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
