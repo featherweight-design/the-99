@@ -42,6 +42,9 @@ const FEEDERS: Record<string, string> = {
   "components/decks/benchmark-ledger.tsx": "lib/decks/read.ts",
   // Tokens are their own bug batch's, and precons their own lane's: named so the list stays complete, not checked.
   "components/decks/token-makers.tsx": "",
+  // The open precon's Card view: its art and card details both show the precon's own printing (O6, `preconArt` in
+  // `lib/precons/open-read.ts` and the page's `viewPrintings`), not the owned-printing chain, by design.
+  "components/decks/read-only-card-tile.tsx": "",
 };
 
 function walk(dir: string): string[] {
