@@ -153,7 +153,8 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
       themes: source === "none" ? leadingThemes(list, labels) : [],
       list,
       keyCardIds,
-      lockedIds: [...(locks.get(d.id) ?? [])].filter((id) => runs.has(id)),
+      // Sorted: the statement has no order, and the cached layout's prefix must be byte-stable.
+      lockedIds: [...(locks.get(d.id) ?? [])].filter((id) => runs.has(id)).sort(),
     };
   });
 
