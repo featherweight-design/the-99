@@ -9,7 +9,7 @@
 // dock over the tab bar on the phone (create-picker's dock), whose measured height the form
 // reserves under itself. No motion anywhere (STATES invariant).
 
-import { useId, useLayoutEffect, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 
 import { PRIMARY } from "../ui/button";
 import { ColourControl } from "../commanders/rack/colour-control";
@@ -30,6 +30,10 @@ import { closedBy, formLine, type Standing } from "../../lib/intake/standing";
 import { submitChoose } from "../../app/decks/new/choose/actions";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { CreditsText } from "../ui/credits-text";
+import { InfoTip } from "../ui/info-tip";
+import { CardTagList, useCardTagPicker } from "../cards/card-tag-picker";
+import { searchTagCards } from "../../app/cards/tag-actions";
+import { serialize, toField } from "../../lib/decks/notes-field";
 
 /** What the budget box holds, as a whole-dollar answer: `$` and commas stripped, 1 to 100,000. */
 export function parseBudget(raw: string): number | null {
@@ -46,6 +50,12 @@ export function parseBudget(raw: string): number | null {
 export function submitQuery(p: ChooseParams): string {
   return serializeChooseParams({ ...p, card: null, readId: null, deeper: [], notUsed: [], results: false });
 }
+
+/** The tag picker's lookup, module-level so its identity is stable across renders. */
+const searchIntakeCards = (query: string) => searchTagCards("intake", query);
+
+/** The tag list's tallest box (220px) and its gap, the room it needs under the box. */
+const TAG_LIST_ROOM = 232;
 
 const BRACKETS: readonly Bracket[] = [1, 2, 3, 4, 5];
 
@@ -75,7 +85,12 @@ export function IntakeForm({
   // that is still reading the text it was sent with.
   const [sent, setSent] = useState<{ width: number | null; paid: boolean } | null>(null);
   const wide = useIsDesktop();
-  const [words, setWords] = useState(initial.words);
+  // The box's text carries its tags as `[[Name]]` with a mark; `tags` holds the card each marked name is,
+  // and the submitted words are the stored body (`[[id|Name]]`).
+  const [{ text: words, tags }, setField] = useState(() => {
+    const f = toField(initial.words);
+    return { text: f.text, tags: f.picked as ReadonlyMap<string, string> };
+  });
   const [colors, setColors] = useState<string[]>(initial.colors);
   const [match, setMatch] = useState(initial.match);
   const [picked, setPicked] = useState<string[]>(initial.themes);
@@ -112,6 +127,30 @@ export function IntakeForm({
     return () => observer.disconnect();
   }, []);
 
+  // The box takes the Notes `[[` card tag. On a phone the fixed dock covers the foot of the page, so a list
+  // that would run under it opens above the box instead.
+  const wordsRef = useRef<HTMLTextAreaElement>(null);
+  const picker = useCardTagPicker({
+    value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, field: wordsRef,
+    onChange: (text, next) => setField({ text, tags: next }),
+  });
+  const [listAbove, setListAbove] = useState(false);
+  useEffect(() => {
+    if (!picker.open) return;
+    const place = () => {
+      const el = wordsRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const viewport = window.visualViewport?.height ?? window.innerHeight;
+      const below = viewport - (window.matchMedia("(min-width: 768px)").matches ? 0 : dockHeight) - rect.bottom;
+      setListAbove(below < TAG_LIST_ROOM && rect.top > below);
+    };
+    place();
+    // The picker eases the box to the top of the screen a beat after it opens; measure again once that has settled.
+    const settled = setTimeout(place, 700);
+    return () => clearTimeout(settled);
+  }, [picker.open, dockHeight]);
+
   const names = copy.intake.colorsJoin(colorNames(colors.map((c) => c.toUpperCase())));
   const colorsCaption =
     colors.length === 0
@@ -126,7 +165,7 @@ export function IntakeForm({
     setSent({ width: deskPressRef.current?.getBoundingClientRect().width ?? null, paid });
     const query = submitQuery({
       ...initial,
-      words: words.trim(),
+      words: serialize(words, tags).trim(),
       colors,
       match,
       themes: picked,
@@ -268,23 +307,43 @@ export function IntakeForm({
           htmlFor={wordsId}
           caption={caption}
           captionTone={written && closed !== null ? "muted" : "faint"}
-          // Counted as `maxLength` counts (UTF-16 units), so the count and the box stop together.
-          count={written ? copy.intake.extra.count(words.length, READ_WORDS_MAX_CHARS) : null}
+          // Counted as the picker caps it (a tag counts as its name), so the count and the box stop together.
+          count={written ? copy.intake.extra.count(picker.count, READ_WORDS_MAX_CHARS) : null}
+          aside={
+            <>
+              <InfoTip id={`${wordsId}-info`} lines={copy.intake.extra.tagHelp.lines} label={copy.intake.extra.tagHelp.infoAria} className="self-center" />
+              <button
+                type="button"
+                aria-label={copy.intake.extra.tagHelp.insertAria}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={picker.insertTag}
+                className="ml-auto h-[28px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)]"
+              >
+                {copy.intake.extra.tagHelp.insert}
+              </button>
+            </>
+          }
         >
-          <textarea
-            id={wordsId}
-            value={words}
-            maxLength={READ_WORDS_MAX_CHARS}
-            placeholder={copy.intake.extra.placeholder}
-            onChange={(e) => setWords(e.target.value)}
-            className={[
-              "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
-              "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] outline-none",
-              // Accent while the words will be read: a credit free, or a standing that could not be
-              // read (the press then draws plain, and the submit decides).
-              written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
-            ].join(" ")}
-          />
+          <div className="relative">
+            <textarea
+              ref={wordsRef}
+              id={wordsId}
+              value={words}
+              placeholder={copy.intake.extra.placeholder}
+              aria-describedby={`${wordsId}-info`}
+              {...picker.fieldProps}
+              onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
+              onKeyDown={(e) => { picker.onKeyDown(e); }}
+              className={[
+                "block w-full resize-y min-h-[96px] md:min-h-[84px] p-[12px_13px] md:p-[12px_14px] rounded-[9px] border border-solid",
+                "bg-[color:var(--surface-sunken)] text-[16px] md:text-[14px] leading-[1.55] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] outline-none",
+                // Accent while the words will be read: a credit free, or a standing that could not be
+                // read (the press then draws plain, and the submit decides).
+                written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
+              ].join(" ")}
+            />
+            {picker.open && <CardTagList {...picker.list} placement={listAbove ? "above" : "below"} />}
+          </div>
         </Field>
 
         {/* Desktop: the submit closes the panel, its credit line beside it. Never disabled: a

@@ -14,6 +14,13 @@ vi.mock("../../../../lib/sets/printed-in-read", () => ({ loadCommanderPrintings:
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
+const tags = vi.hoisted(() => ({ resolve: vi.fn() }));
+vi.mock("../../../../lib/cards/tagged-text", async (original) => {
+  const real = await original<typeof import("../../../../lib/cards/tagged-text")>();
+  tags.resolve.mockImplementation(real.resolveTaggedText);
+  return { ...real, resolveTaggedText: tags.resolve };
+});
+
 import { submitChoose } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
@@ -59,6 +66,25 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     expect(stub.after).toHaveBeenCalledWith(finish);
     expect(to).toContain(`r=${ID}`);
     expect(to).toContain("w=scary+horrors");
+  });
+
+  it("reads a tagged card by its name, hands the read the card as tagged, and keeps the stored tag in the address", async () => {
+    const finish = vi.fn();
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish });
+    tags.resolve.mockResolvedValueOnce({
+      text: "a deck with Rhystic Study", body: "a deck with [[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]",
+      tagged: [{ oracleId: "c0ffee00-0000-4000-8000-000000000009", name: "Rhystic Study" }],
+    });
+    const to = await landed(`?w=${encodeURIComponent("a deck with [[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]")}`);
+    expect(stub.begin.mock.calls[0][1]).toMatchObject({ words: "a deck with Rhystic Study", tagged: [{ name: "Rhystic Study" }] });
+    expect(decodeURIComponent(String(to).replace(/\+/g, " "))).toContain("[[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]");
+  });
+
+  it("refuses words whose rendered text is over the cap even when the stored body fits the address bound", async () => {
+    const tag = "[[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]";
+    // 790 + a space + the 13-letter name is 804 as the box counts it; the tag's id and brackets are free.
+    expect(await submitChoose(`?w=${encodeURIComponent(`${"x".repeat(790)} ${tag}`)}`)).toEqual({ kind: "refused" });
+    expect(stub.begin).not.toHaveBeenCalled();
   });
 
   it("marks a read started from the form, and leaves a retry from the results unmarked (entry path)", async () => {

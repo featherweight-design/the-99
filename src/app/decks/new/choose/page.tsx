@@ -6,6 +6,7 @@
 //  - `v=results`: the results. The bar is drawn at once, and the search streams in under it.
 //
 // Behind `HELP_ME_CHOOSE_ENABLED` (F3): off, the route is not found, before any read.
+import { plainText } from "../../../../lib/decks/notes-body";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 
@@ -163,7 +164,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           <ReadScope initial={words ? phaseOf(served) : null}>
           <ReadAsBar
             chips={answerChips(p, labels)}
-            words={words}
+            words={plainText(words)}
             offer={panel}
             card={card ?? null}
             changeHref={changeHref}

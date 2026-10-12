@@ -1984,3 +1984,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   hold switched off the form path's no-list and not-dimmed checks fail at both widths (the dimmed
   list draws ~3s into the read), with the pool report removed the step-1 check fails at both, and
   every check passes on the change.
+
+- `pnpm probe:card-tag-box` types `[[Rhys` into Help me choose's "Anything else?" box at 1300x900 and
+  390x844 and checks the three facts jsdom cannot: the picker's list opens with a card to pick; the list
+  does not overlap the phone's fixed dock (the box is first scrolled to the dock's edge, so a list opening
+  downward would sit under it) and the option painted at its centre is the list's own, inside the window;
+  and pressing Find commanders sends the picked card as `[[<oracle id>|Name]]` in the server action's
+  request, which the probe ABORTS in the browser, so no read runs and no credit is spent. It writes the
+  account's About row through `clearAboutSheet` and nothing else; run it against a dev server with
+  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. Measured 2026-10-12 on local-dev: all ten checks pass.
+  It does not exercise the list FLIPPING above the box: the picker eases the box to the top of the
+  screen, which leaves room below on both viewports, so the flip (`listAbove` in `intake-form.tsx`) is
+  unreached here and is covered only by reading its geometry.

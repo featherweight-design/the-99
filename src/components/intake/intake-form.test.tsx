@@ -7,6 +7,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push }));
+const searchTag = vi.hoisted(() => vi.fn(async (surface: string, query: string) => {
+  void surface; void query;
+  return [{ oracleId: "3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60", name: "Rhystic Study", typeLine: "Enchantment", imageUri: null, commanderLegal: true }];
+}));
+vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: searchTag }));
 
 const { IntakeForm } = await import("./intake-form");
 const { emptyParams } = await import("../../lib/intake/params");
@@ -75,8 +80,11 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
 
   it("is the form's last field, marked optional", () => {
     render(<IntakeForm themes={[]} initial={emptyParams()} standing={credit} />);
-    const fields = screen.getAllByRole("textbox");
-    expect(fields[fields.length - 1]).toBe(box());
+    // The box is a combobox (the card-tag picker), so it is not among the textboxes; it follows every one.
+    expect(box().tagName).toBe("TEXTAREA");
+    for (const field of [...screen.getAllByRole("textbox"), ...screen.getAllByRole("combobox")].filter((f) => f !== box())) {
+      expect(field.compareDocumentPosition(box()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
     expect(screen.getByText("optional")).toBeTruthy();
   });
 
@@ -213,5 +221,37 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     const sent = new URLSearchParams(String(push.mock.calls[0][0]).slice(1));
     expect(sent.get("w")).toBe("a Landfall deck unlike mine");
     expect(sent.get("a")).toBeNull();
+  });
+
+  describe("a tagged card in the box", () => {
+    const type = (text: string) => fireEvent.change(screen.getByLabelText(/Anything else\?/), { target: { value: text } });
+
+    it("opens the picker on [[, looks the card up as the intake surface, and submits the stored tag", async () => {
+      push.mockClear();
+      searchTag.mockClear();
+      render(<IntakeForm themes={[]} initial={emptyParams()} />);
+      type("a deck with [[Rhy");
+      const option = await screen.findByRole("option", { name: /Rhystic Study/ });
+      expect(searchTag).toHaveBeenCalledWith("intake", "Rhy");
+      fireEvent.mouseDown(option);
+      expect((screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement).value).toContain("Rhystic Study");
+      fireEvent.click(screen.getAllByRole("button", { name: /Find commanders|1 credit/ })[0]);
+      const sent = new URLSearchParams(String(push.mock.calls[0][0]).slice(1));
+      expect(sent.get("w")).toBe("a deck with [[3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60|Rhystic Study]]");
+    });
+
+    it("keeps a name typed without picking it as plain text", () => {
+      push.mockClear();
+      render(<IntakeForm themes={[]} initial={emptyParams()} />);
+      type("a deck with [[Rhystic Study]]");
+      fireEvent.click(screen.getAllByRole("button", { name: /Find commanders|1 credit/ })[0]);
+      expect(new URLSearchParams(String(push.mock.calls[0][0]).slice(1)).get("w")).toBe("a deck with [[Rhystic Study]]");
+    });
+
+    it("shows a stored tag as its name when the form is filled from the address", () => {
+      render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "a deck with [[3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60|Rhystic Study]]" }} />);
+      expect((screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement).value).toContain("Rhystic Study");
+      expect((screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement).value).not.toContain("3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60");
+    });
   });
 });

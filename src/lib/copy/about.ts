@@ -586,7 +586,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     caption:
       'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nColors, themes, sets, a budget and a bracket narrow the list for free. Or describe the deck in your own words: how it should feel, or how it should differ from your decks. That uses a credit, and up to ten picks come first, each with a line on why.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
     keys: [
-      'Words in the “Anything else?” box are read against every commander your answers allow.',
+      'Words in the “Anything else?” box are read against every commander your answers allow. Tag a card there with [[ and it is required: only commanders whose decks run it are suggested.',
       'Your answers always hold, so no pick falls outside them.',
       'Ask for something unlike your decks, and it compares their commanders and themes.',
       'The rest of your results follow the picks, in the usual order.',
@@ -1314,7 +1314,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // because Notes sits beside Stats in Your deck. Copy through /prose-pass.
     switch: 'DECK_NOTES_ENABLED',
     caption:
-      'Every deck keeps a short list of notes, under Notes in Your deck, next to Stats. One line each, newest first, dated when you add it.\n\nType [[ or press [[ ]] and start a card’s name to tag it. The deck’s own cards come first, then any card, and a tagged name opens that card. Say you want to try Laboratory Maniac beside Thassa’s Oracle: write it down with both tagged, and it waits for you.\n\nSelect a note when it’s done and it folds under Done. Edit or delete any of them. Notes belong to the deck, not a version, so they carry over when you commit.',
+      'Every deck keeps a short list of notes, under Notes in Your deck, next to Stats. One line each, newest first, dated when you add it.\n\nType [[ or press [[ ]] and start a card’s name to tag it. The deck’s own cards come first, then any card, and a tagged name opens that card. Say you want to try Laboratory Maniac beside Thassa’s Oracle: write it down with both tagged, and it waits for you.\n\nSelect a note when it’s done and it folds under Done. Edit or delete any of them. Notes belong to the deck, not a version, so they carry over when you commit.\n\nTagging works in other boxes too, such as “Anything else?” in Help me choose.',
     keys: [
       'A solid underline means the deck holds the card. Dashed means it doesn’t, including a card you’ve since taken out.',
       'One line is 140 characters, and a tag counts as its name.',
