@@ -7,14 +7,16 @@
 // behind a LIVE figure, nothing otherwise, and a card's only printing is selected (gotItPreset).
 // Nothing is written until Add; Cancel, Escape, the ✕ and a press outside write nothing.
 
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { loadPrintingChoices } from "../../app/collection/edit-actions";
-import { markBought } from "../../app/decks/mark-bought-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
-import { FINISHES, type Finish } from "../../lib/collection/key";
+import { FINISHES, type CollectionItemIdentity, type Finish } from "../../lib/collection/key";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { markBought } from "../../app/decks/mark-bought-actions";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { ReceiptFacts } from "../../lib/decks/mark-bought";
+import type { PriceFact } from "../../lib/decks/price";
 import { collapseTwins, finishFor, gotItNeed, gotItPreset, presetQuantity, rebaseStale, type GotItChoice } from "../../lib/decks/got-it-preset";
 import { MARK_BOUGHT_MAX } from "../../lib/decks/mark-bought";
 import { cssUrl } from "../../lib/collection/browse";
@@ -31,18 +33,77 @@ const BANNER =
 // its title is drawn; the need line under the stepper carries the new need.
 type Notice = "stale" | "staleRemoved" | "failed" | null;
 
-export function GotItConfirm({
-  deckId, card, cardName, newestAsOf, onClose, onDone, onPendingChange, returnFocusRef,
-}: {
+/** What a press sends: one printing, its finish, the count to add and the count it was read at. */
+export type GotItWriteInput = { scryfallId: string; finish: Finish; quantity: number; expected: number; id: string };
+
+/**
+ * What the write answered, as the confirm needs it. Every refusal folds into `failed`: nothing was
+ * written and the choices stay (B9). The caller maps its own action's outcome onto this.
+ */
+export type GotItWriteResult<F> =
+  | { applied: { id: string; receipt: F | null } }
+  | { stale: (CollectionItemIdentity & { quantity: number })[] }
+  | { failed: true };
+
+type DeckConfirmProps = {
   deckId: string;
   card: DeckDetailCard;
+  cardName: string;
+  newestAsOf: Date | null;
+  onClose: () => void;
+  onDone: (written: GotItWritten) => void;
+  onPendingChange: (pending: boolean) => void;
+  returnFocusRef?: RefObject<HTMLElement | null>;
+};
+
+/** I got it on a deck's own Shopping row: one deck, through `markBought`. */
+export function GotItConfirm({ deckId, card, ...rest }: DeckConfirmProps) {
+  return (
+    <GotItConfirmForm<ReceiptFacts>
+      oracleId={card.oracleId}
+      price={card.price}
+      initialNeed={gotItNeed(card)}
+      listQuantity={card.quantity}
+      write={async (input) => {
+        const out = await markBought(deckId, card.oracleId, input);
+        return "applied" in out ? out : "stale" in out ? out : { failed: true };
+      }}
+      {...rest}
+    />
+  );
+}
+
+/**
+ * The form itself, with its write injected: a deck's Shopping row (`GotItConfirm`, below) or a cart
+ * line (cart PR 6). Everything a press decides (printing, finish, count, the press id, the stale
+ * re-base) lives here once.
+ */
+export function GotItConfirmForm<F>({
+  oracleId, price, initialNeed, listQuantity, write, needLine, children, footer,
+  cardName, newestAsOf, onClose, onDone, onPendingChange, returnFocusRef,
+}: {
+  oracleId: string;
+  /** The figure the row drew, which decides the preset printing (gotItPreset). */
+  price: PriceFact | null | undefined;
+  /** Copies still to buy, which the stepper presets to (capped at `MARK_BOUGHT_MAX`). */
+  initialNeed: number;
+  /** Copies the list asks for in all: a stale answer never re-bases the need above it. */
+  listQuantity: number;
+  /** The write: a deck's `markBought`, or the cart's `markBoughtForDecks`. */
+  write: (input: GotItWriteInput) => Promise<GotItWriteResult<F>>;
+  /** The line under the stepper; the deck's own by default (`gotItCopy.confirm.need`). */
+  needLine?: (need: number) => ReactNode;
+  /** Drawn after the card's name: the cart's deck list, or its chooser. */
+  children?: ReactNode;
+  /** Drawn under the stepper: the cart's lock-7 sentence. */
+  footer?: ReactNode;
   /** The name the row prints. */
   cardName: string;
   /** The price table's newest `as_of`, which decides whether the row's figure is live. */
   newestAsOf: Date | null;
   onClose: () => void;
   /** The write landed: what it recorded, for the receipt (call 5). */
-  onDone: (written: GotItWritten) => void;
+  onDone: (written: GotItWritten<F>) => void;
   /** The tag behind the scrim reads `adding…` while this is true (A8). */
   onPendingChange: (pending: boolean) => void;
   /** Where focus goes when the confirm closes: the tag that opened it, or a stable fallback. */
@@ -58,8 +119,8 @@ export function GotItConfirm({
   const [loadFailed, setLoadFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [finish, setFinish] = useState<Finish | null>(null);
-  const [need, setNeed] = useState(() => gotItNeed(card));
-  const [qty, setQty] = useState(() => presetQuantity(gotItNeed(card)));
+  const [need, setNeed] = useState(initialNeed);
+  const [qty, setQty] = useState(() => presetQuantity(initialNeed));
   const [notice, setNotice] = useState<Notice>(null);
   const [pending, setPending] = useState(false);
   // Minted once per decision and reused on a retry, so a press that did commit records once. Any
@@ -70,11 +131,11 @@ export function GotItConfirm({
 
   useEffect(() => {
     let live = true;
-    loadPrintingChoices(card.oracleId)
+    loadPrintingChoices(oracleId)
       .then((all) => {
         if (!live) return;
-        const cs = collapseTwins(all, card.price?.printing?.scryfallId);
-        const preset = gotItPreset(card.price, newestAsOf, cs);
+        const cs = collapseTwins(all, price?.printing?.scryfallId);
+        const preset = gotItPreset(price, newestAsOf, cs);
         setChoices(cs);
         setSelected(preset.scryfallId);
         setFinish(preset.finish);
@@ -83,7 +144,7 @@ export function GotItConfirm({
     return () => {
       live = false;
     };
-  }, [card.oracleId, card.price, newestAsOf]);
+  }, [oracleId, price, newestAsOf]);
 
   // B4: one printing draws no picker, so focus goes to the form's action instead of a tile.
   const single = choices !== null && choices.length === 1;
@@ -125,7 +186,7 @@ export function GotItConfirm({
     setNotice(null);
     pressId.current ??= crypto.randomUUID();
     try {
-      const out = await markBought(deckId, card.oracleId, {
+      const out = await write({
         scryfallId: choice.idFor[finish] ?? choice.scryfallId, finish, quantity: qty, expected, id: pressId.current,
       });
       if ("applied" in out) {
@@ -137,7 +198,7 @@ export function GotItConfirm({
       }
       if ("stale" in out) {
         // Nothing was written. Re-base on the count the server holds now, and confirm again.
-        const next = rebaseStale(out.stale, choice, finish, expected, need, card.quantity);
+        const next = rebaseStale(out.stale, choice, finish, expected, need, listQuantity);
         setChoices((cs) => cs?.map((p) => (p.scryfallId === choice.scryfallId
           ? { ...p, owned: { ...p.owned, [finish]: next.expected } }
           : p)) ?? cs);
@@ -213,6 +274,7 @@ export function GotItConfirm({
           <h3 id={titleId} className="m-0 font-display text-[19px] font-bold leading-[1.25] text-[color:var(--fg)] md:text-[21px]">{c.title}</h3>
           <span id={nameId} className="text-[15px] leading-[1.4] text-[color:var(--fg-body)]">{cardName}</span>
         </div>
+        {children}
 
         {notice === "stale" || notice === "staleRemoved" ? (
           <div ref={bannerRef} role="status" tabIndex={-1} className={BANNER}>
@@ -328,10 +390,11 @@ export function GotItConfirm({
                   </button>
                 </span>
                 <span className="text-[12.5px] text-[color:var(--fg-body)]">
-                  {c.need(need)}
+                  {needLine ? needLine(need) : c.need(need)}
                   {spare > 0 ? <span className="text-[color:var(--fg-muted)]">{` · ${c.spare(spare)}`}</span> : null}
                 </span>
               </div>
+              {footer}
             </div>
           </div>
         </div>

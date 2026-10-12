@@ -143,6 +143,7 @@ export function buildCart(
       held: ownership.get(r.oracleId)?.heldByDeck.get(r.deckId) ?? 0,
       // `priceOf` reads a foil-only fact's foil price first, then its etched one.
       finish: state === "foilOnly" && fact ? (fact.foilCents !== null ? "foil" : "etched") : null,
+      printing: fact?.printing?.scryfallId ?? null,
     });
     byCard.set(r.oracleId, line);
   }

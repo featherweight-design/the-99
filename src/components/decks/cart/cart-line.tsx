@@ -3,9 +3,11 @@
 // the owned fact when the player owns it, and the buy tag at the line's total.
 
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { PriceFact } from "../../../lib/decks/price";
 import type { SelectedLine } from "../../../lib/decks/cart";
 import { BuyTag } from "../buy-tag";
+import { useCartGotIt } from "./cart-got-it";
 
 /**
  * The line's figure as one fact for the shared tag: the priced copies' sum (audit finding 9), each
@@ -45,6 +47,19 @@ export function CartLine({
   newestAsOf: Date | null;
 }) {
   const names = line.selectedRows.map((r) => deckNames.get(r.deckId) ?? "");
+  // I got it (cart PR 6): the tag is the press, when buying is on (the provider is mounted).
+  const gotIt = useCartGotIt();
+  const id = line.oracleId;
+  const added = gotIt?.held.get(id)?.added ?? 0;
+  const press = gotIt
+    ? {
+        onPress: (trigger: HTMLElement) => gotIt.open(line, trigger),
+        state: gotIt.openFor === id
+          ? (gotIt.pending ? "pending" as const : "open" as const)
+          : gotIt.undoing.has(id) ? "disabled" as const : "rest" as const,
+        cardName: line.name,
+      }
+    : undefined;
   return (
     <li className="flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]">
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
@@ -68,10 +83,29 @@ export function CartLine({
               : copy.list.ownedSome(line.owned, line.heldElsewhere)}
           </span>
         ) : null}
+        {/* S4: bought this visit and still listed, at the count the read gives it now. */}
+        {added > 0 ? (
+          <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.list.addedThisVisit(added)}</span>
+        ) : null}
       </div>
       <span className="mt-[3px] flex-none">
-        <BuyTag variant="row" reserveSlot price={lineFact(line, newestAsOf)} newestAsOf={newestAsOf} />
+        <BuyTag variant="row" reserveSlot price={lineFact(line, newestAsOf)} newestAsOf={newestAsOf} press={press} />
       </span>
+    </li>
+  );
+}
+
+/**
+ * S3: a line bought this visit that the cart no longer lists keeps its place as a held slot, the
+ * shape a deck's Shopping row leaves (`gotItCopy.slot.held`), until the cart is next read.
+ */
+export function CartHeldSlot({ name, added }: { name: string; added: number }) {
+  return (
+    <li data-held-slot className="anim-slot-in my-[6px] flex items-center gap-[10px] rounded-[9px] border border-dashed border-[color:var(--border-dashed)] px-[12px] py-[11px]">
+      <span className="min-w-0 flex-1 text-[13.5px] leading-[1.4] text-[color:var(--fg-muted)] [text-wrap:pretty]">
+        {gotItCopy.slot.held(name)}
+      </span>
+      <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.list.added(added)}</span>
     </li>
   );
 }

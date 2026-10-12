@@ -33,6 +33,11 @@ export type CartRow = {
    * carried a foil price, `etched` when only an etched one. Null for every other state.
    */
   finish: "foil" | "etched" | null;
+  /**
+   * The printing this deck's figure was read from (its pick when priced, else the read's choice):
+   * what I got it's confirm presets, never drawn. Absent on a failed read and in every fixture.
+   */
+  printing?: string | null;
 };
 
 export type CartLine = {
