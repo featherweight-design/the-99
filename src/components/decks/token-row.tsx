@@ -193,6 +193,9 @@ export function TokenRow({
               type="button"
               aria-expanded={open}
               aria-label={toggleAria}
+              // What tells this token from another of its name and maker count, as the old summary's
+              // visible pips and type line did.
+              aria-describedby={`token-${token.oracleId}-face`}
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen((v) => !v);
@@ -254,6 +257,7 @@ export function TokenRow({
             type="button"
             aria-expanded={open}
             aria-label={toggleAria}
+            aria-describedby={`token-${token.oracleId}-face`}
             onClick={() => setOpen((v) => !v)}
             className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:flex"
           >

@@ -169,7 +169,11 @@ describe("the makers fold", () => {
     draw(ok([token({ name: "Goblin", typeLine: "Token Creature — Goblin", power: "1", toughness: "1", makers: makers(3) })]));
     const toggles = screen.getAllByRole("button", { expanded: false });
     expect(toggles).toHaveLength(2);
-    for (const t of toggles) expect(t.getAttribute("aria-label")).toBe("Goblin token, made by 3 cards");
+    for (const t of toggles) {
+      expect(t.getAttribute("aria-label")).toBe("Goblin token, made by 3 cards");
+      // Described by the token's face, so two Goblins made by as many cards are two controls.
+      expect(document.getElementById(t.getAttribute("aria-describedby")!)?.textContent).toContain("Token Creature — Goblin");
+    }
     expect(toggles.map((t) => t.className.match(/\bmd:hidden\b|\bmd:flex\b/)?.[0])).toEqual(["md:hidden", "md:flex"]);
     // A press elsewhere on the row still unfolds it, for a pointer.
     fireEvent.click(screen.getByText("Token Creature — Goblin · 1/1"));
