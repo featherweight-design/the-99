@@ -132,10 +132,12 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
       // The cut may have committed whatever the page shows now (a failed re-read can drop the row),
       // so the deck is read fresh: reopen the run, whose rows carry the live in-deck flag, and undo
       // the cut if it is there.
+      // Every step is checked: a cleanup that could not look is reported, never taken as clean.
       await gate.release().catch(() => {});
-      await openFromHistory(page, CUTS, "deeper look").catch(() => {});
-      if ((await cutRow.count().catch(() => 0)) > 0) await undoCut(page, cutRow, name).catch(() => {});
-      if ((await cutRow.count().catch(() => 0)) > 0) check(`${w.label} cleanup: the cut was undone`, false, { name, deck: CUTS, fix: "undo it by hand" });
+      const reopened = await openFromHistory(page, CUTS, "deeper look").then(() => true, () => false);
+      const stillCut = reopened && (await cutRow.count().catch(() => 1)) > 0;
+      const undoneNow = stillCut ? await undoCut(page, cutRow, name).catch(() => false) : true;
+      check(`${w.label} cleanup: the deck was left as it was found`, reopened && undoneNow, { name, deck: CUTS, reopened, fix: "check the card is in the deck; undo it by hand if not" });
     }
   }
 
