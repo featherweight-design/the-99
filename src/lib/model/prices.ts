@@ -54,9 +54,9 @@ const UNBILLED_MODELS: ReadonlySet<string> = new Set([STUB_MODEL]);
  * The Batch API halves every meter, cache reads and writes included (the discounts stack).
  *
  * ONE source for the card-label job's rates (admin audit finding 9): the label scripts
- * (`scripts/lib/card-labels-pricing.mjs`) and the admin's Card label runs both read `batchRates`,
- * because `card_label_batches` stores tokens and no dollars, so a second table would price the
- * same run twice and could disagree.
+ * (`scripts/lib/card-labels-pricing.mjs`) read `batchRates`, and any app reader of
+ * `card_label_batches` (the admin's Card label runs is the planned one) prices from the same
+ * function, because the table stores tokens and no dollars and a second rate table could disagree.
  */
 export const BATCH_DISCOUNT = 0.5;
 

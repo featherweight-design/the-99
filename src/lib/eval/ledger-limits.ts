@@ -1,7 +1,8 @@
 /**
  * Each committed eval ledger's limits, keyed by its file under `docs/superpowers/eval/`. ONE
- * source: the eval scripts that guard a ledger import their numbers from here, and the admin Costs
- * page reads the same table, so the page can never print a limit the scripts stopped enforcing.
+ * source: every eval script and probe that guards a ledger imports its numbers from here, so a
+ * reader of this table (the admin's Costs page is the planned one) can never print a limit the
+ * scripts stopped enforcing.
  *
  * `hardCapUsd` is the line a send is refused at. `askAtUsd` is where a script stops and asks
  * before spending more; null when that ledger's script has no ask line, only the hard cap.

@@ -69,7 +69,7 @@ describe("the label pricing after the move to prices.ts", () => {
     });
   });
 
-  it("prices a run as the admin prices it", () => {
+  it("prices a run as the app's own batchCostMicroUsd prices it", () => {
     // The 2026-10-03 backfill on staging: 13,862,095 in and 5,157,552 out, $59.47.
     const usage = { i: 13_862_095, o: 5_157_552 };
     expect(costOf("sonnet", usage)).toBeCloseTo(59.47, 2);

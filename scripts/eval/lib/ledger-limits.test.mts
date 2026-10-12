@@ -1,13 +1,14 @@
 // The eval scripts read their ledger limits from `src/lib/eval/ledger-limits.ts` and restate none
-// of them: the admin Costs page prints that table, so a script holding its own number would let
-// the page show a limit nothing enforces.
-import { readFileSync } from "node:fs";
+// of them, so any reader of that table (the admin Costs page is the planned one) cannot show a
+// limit nothing enforces.
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ASK_AT_USD, DEFAULT_LIMITS, HARD_CAP_USD, OVERVIEW_ACCURACY_LIMITS } from "./ledger.mjs";
 
 const EVAL = join(dirname(fileURLToPath(import.meta.url)), "..");
+const SCRIPTS = join(EVAL, "..");
 const source = (f: string) => readFileSync(join(EVAL, f), "utf8");
 
 describe("eval ledger limits, one source", () => {
@@ -27,5 +28,16 @@ describe("eval ledger limits, one source", () => {
     const s = source(file);
     expect(s).toMatch(wiring);
     expect(s).not.toMatch(/const (CAP_USD|ASK_AT_USD|LIMITS) = [\d{]/);
+  });
+
+  it("finds no script or probe that writes a ledger limit as a number of its own", () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const p = join(dir, e.name);
+        if (e.isDirectory()) return e.name === "node_modules" ? [] : walk(p);
+        return /\.(m?ts|mjs)$/.test(e.name) && !/\.test\./.test(e.name) ? [p] : [];
+      });
+    const offenders = walk(SCRIPTS).filter((p) => /(hardCapUsd|askAtUsd):\s*\d/.test(readFileSync(p, "utf8")));
+    expect(offenders).toEqual([]);
   });
 });

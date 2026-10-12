@@ -19,7 +19,7 @@ export const ASK_AT_USD = LEDGER_LIMITS["ledger.jsonl"].askAtUsd;
  * A ledger's two thresholds. The original campaign's file keeps `DEFAULT_LIMITS`; the Overview
  * accuracy line (plan 2026-10-10, Hugh's $15 cap) has its own file and `OVERVIEW_ACCURACY_LIMITS`, because
  * the original holds $23.72 of settled spend and could not carry a second campaign. The numbers live
- * in `src/lib/eval/ledger-limits.ts`, which the admin Costs page reads too.
+ * in `src/lib/eval/ledger-limits.ts`, the one table every script and probe on a ledger reads.
  */
 export type Limits = { hardCapUsd: number; askAtUsd: number };
 export const DEFAULT_LIMITS: Limits = { hardCapUsd: HARD_CAP_USD, askAtUsd: ASK_AT_USD };

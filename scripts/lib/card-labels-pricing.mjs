@@ -7,8 +7,8 @@
 //
 // Per million tokens, BATCH rate (half of standard). The rates are read from
 // `src/lib/model/prices.ts` (`batchRates`), the app's own table, since admin audit
-// finding 9: the admin's Card label runs price `card_label_batches` from the same
-// function, so the script and the admin cannot disagree about a run. Every caller of
+// finding 9: any app reader pricing `card_label_batches` uses the same function, so
+// the script and the app cannot disagree about a run. Every caller of
 // this module runs under tsx or Vitest, which load the TypeScript import.
 //
 // `caches` is MEASURED, not assumed. Two identical calls per model:
