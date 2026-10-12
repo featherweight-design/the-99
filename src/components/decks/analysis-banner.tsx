@@ -4,6 +4,7 @@ import { useId } from "react";
 
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { WorkPulse } from "./work-pulse";
+import { CreditsText } from "../ui/credits-text";
 
 /**
  * The staleness banner (Analysis tab handoff, 2i and 2d): the ONE place staleness is said, drawn
@@ -103,7 +104,7 @@ export function AnalysisBanner(props:
         >
           {/* The button's description is the note's TEXT: a control inside it would be read as
               part of the description, so the id sits on the words alone. */}
-          <span id={noteId}>{shownNote}</span>
+          <span id={noteId}><CreditsText text={shownNote} /></span>
           {see ? (
             <>
               {" "}

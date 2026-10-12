@@ -261,9 +261,6 @@ interface BuilderShellProps {
   /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
    *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
   neverCut?: boolean;
-  /** `HELP_ME_CHOOSE_ENABLED` (`src/lib/intake/flag.ts`): whether the credit lines name Help me
-   *  choose among what shares the credits. Off, they read as before it. */
-  deeperLooks?: boolean;
   /** `tuningEnabled()` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
    *  changes". Off, the Analysis tab still draws the bracket and the Overview — the tab mounts
    *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
@@ -332,7 +329,6 @@ export function BuilderShell({
   storedPermits = null,
   storedPermitsUnknown = false,
   neverCut = false,
-  deeperLooks = false,
   tuningEnabled = false,
   proposedCutsEnabled = false,
   manaBalanceEnabled = false,
@@ -560,8 +556,8 @@ export function BuilderShell({
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
-  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze", deeperLooks, tuningEnabled) : null;
-  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze", deeperLooks, tuningEnabled) : null;
+  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze") : null;
+  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze") : null;
   // A PRESS WRITES ONLY WHAT ITS NOTE SAID IT WOULD. Recorded when the press is made, so a note
   // that was not drawn (the state not yet read, the list already written, no credit left) is a
   // press that spends nothing, whatever the state says by the time the reading lands.
@@ -1367,7 +1363,6 @@ export function BuilderShell({
       freshEachVisit={freshEachVisit}
       key={deck.id}
       deckId={deck.id}
-      deeperLooks={deeperLooks}
       onSettled={onCutsSettled}
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
@@ -1391,7 +1386,6 @@ export function BuilderShell({
       freshEachVisit={freshEachVisit}
       deckId={deck.id}
       permits={permits}
-      deeperLooks={deeperLooks}
       facts={{
         gameCount: gameSummary.count,
         noteCount: games.filter((g) => g.note !== null).length,
@@ -1771,8 +1765,6 @@ export function BuilderShell({
                         onWrite={() => { setQuietReady(false); return synopsis.write(); }}
                         onRetry={(id) => { setQuietReady(false); return synopsis.retry(id); }}
                         onSeeWhich={openNoticesSheet}
-                        deeperLooks={deeperLooks}
-                        tuning={tuningEnabled}
                         reanalyze={{
                           onPress: requestAnalysis,
                           disabled: profile.state.kind === "loading" || built !== bodySize,

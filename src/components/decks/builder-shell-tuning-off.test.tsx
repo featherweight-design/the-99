@@ -69,7 +69,7 @@ function renderWithAnalysisOnly() {
 }
 
 describe("BuilderShell — Analysis on, Tuning off", () => {
-  it("mounts no tuning section, withholds the empty-state prompt, and hands tuning=false to every credit line", () => {
+  it("mounts no tuning section, withholds the empty-state prompt, and hands no switch to any credit line", () => {
     const panel = renderWithAnalysisOnly();
 
     // No tuning section/callback: `tuning={!tuningEnabled ? undefined : (permits) => (...)}` in
@@ -81,13 +81,10 @@ describe("BuilderShell — Analysis on, Tuning off", () => {
     // entirely — must be false too.
     expect(panel.tuningEnabled).toBe(false);
 
-    // The Overview's own credit copy: `tuning` reaches `SynopsisOverview` as a prop and from
-    // there into `creditsCopy`, which is what keeps "Suggested changes" out of a paused/spent
-    // line when this is false.
-    expect(panel.overview?.props.tuning).toBe(false);
-
-    // Both Analyze/reanalyze press notes: `pressNote(view, where, deeperLooks, tuning)`.
+    // The credit lines name no feature (Hugh, 2026-10-12: link, never list), so no switch reaches
+    // them: the Overview takes no `tuning` prop, and the press notes take the view and the press.
+    expect(panel.overview?.props.tuning).toBeUndefined();
     expect(seen.notes.length).toBeGreaterThanOrEqual(2);
-    expect(seen.notes.every((args) => args[3] === false)).toBe(true);
+    expect(seen.notes.every((args) => args.length === 2)).toBe(true);
   });
 });

@@ -127,7 +127,7 @@ Changed in `creditsCopy` (R2, Hugh’s decision, app-wide: link, never list):
 | Key | String |
 |---|---|
 | spent | “{left} of {total} left · reset at {time}” + “ · ” + creditsLink |
-| pausedReason | “The app has reached its monthly limit for credits. Nothing you did caused this.” + “ · ” + creditsLink |
+| pausedReason | “The app has reached its monthly limit. Nothing you did caused this. ” + creditsLink (shipped: /copy-review dropped “for credits”, which read as the player’s own, and the `·` after a sentence) |
 
 Reused verbatim: `swapToolsCopy.fits.pickerTitle` “Find a deck for it”, `callout` “Find a deck for it”, `identity` “{colors} · legal in Commander”, `copies` “×{owned} · {free} free” / “×{owned} · none free”, `groupJoin` “could take it”, `orderReasons` “combos first, then themes”, `groupHolds` “already holds it”, `addUsesFree` “Add”, `addToBuy` “Add to buy”, `reasonTheme`, `needLabel` “this deck”, `need`, `allHold`, `noneByColors(One)`; `swapToolsCopy.sheet.backToCardAria` “Back to {card}”; `creditsCopy.standing` “{left} of {total} left · reset at {time}”, `paused`, `ownerShare`.
 

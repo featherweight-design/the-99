@@ -8,6 +8,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { AnalysisRing } from "./analysis-ring";
 import { DeckDescriptionField } from "./deck-description-field";
 import { ProvenanceOpener } from "./provenance-panel";
+import { CreditsText } from "../ui/credits-text";
 
 const copy = deckAnalysisCopy.panel;
 
@@ -207,7 +208,7 @@ export function AnalysisEmpty({
               >
                 {/* The button's description is the note's TEXT: a control inside it would be read as
                     part of the description, so the id sits on the words alone. */}
-                <span id={noteId}>{shownNote}</span>
+                <span id={noteId}><CreditsText text={shownNote} /></span>
                 {see ? (
                   <>
                     {" "}

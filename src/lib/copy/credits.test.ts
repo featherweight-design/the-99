@@ -1,39 +1,25 @@
 import { describe, expect, it } from "vitest";
 
-import { clockTime, creditsCopy } from "./credits";
+import { clockTime, CREDITS_HREF, creditsCopy } from "./credits";
 
 // Pinned by LITERAL, never by key: a key would pass any later edit of the string it names.
-describe("the lines naming what shares the credits, by Help me choose's switch", () => {
+// LINK, NEVER LIST (Hugh, 2026-10-12): no line names the features that share the credits, so no
+// switch changes one, and each ends in the link phrase `CreditsText` draws as a link.
+describe("the lines that once named what shares the credits", () => {
   const next = new Date("2026-09-24T14:20:00");
-  it("read exactly as before the deeper looks with the switch off, which is the default", () => {
-    expect(creditsCopy.spent(3, null)).toBe("0 of 3 left. Your overview and suggestions share these credits.");
-    expect(creditsCopy.spent(3, next, false)).toBe(`0 of 3 left · reset at ${clockTime(next)}. Your overview and suggestions share these credits.`);
-    expect(creditsCopy.pausedReason()).toBe("The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.");
+  it("end in the link phrase and name no feature", () => {
+    expect(creditsCopy.spent(3, null)).toBe("0 of 3 left · What uses credits?");
+    expect(creditsCopy.spent(3, next)).toBe(`0 of 3 left · reset at ${clockTime(next)} · What uses credits?`);
+    expect(creditsCopy.pausedReason).toBe("The app has reached its monthly limit. Nothing you did caused this. What uses credits?");
+    for (const line of [creditsCopy.spent(3, next), creditsCopy.pausedReason]) {
+      expect(line.endsWith(creditsCopy.link)).toBe(true);
+      expect(line).not.toMatch(/overview|suggestion|Help me choose/i);
+    }
   });
 
-  it("name the deeper looks, in Hugh's order, with the switch on", () => {
-    expect(creditsCopy.spent(3, null, true)).toBe("0 of 3 left. Suggestions, overviews and Help me choose share these credits.");
-    expect(creditsCopy.pausedReason(true)).toBe("The app has reached its monthly limit for suggestions, overviews and Help me choose. Nothing you did caused this.");
-  });
-});
-
-// `tuning` (TUNING_ENABLED, decoupled from the Analysis tab, 2026-10-08) drops "suggestions"
-// from the same two lines, the same shape `deeperLooks` already has. It defaults to true, so
-// every call above — written before this flag existed — keeps naming suggestions unchanged.
-describe("the lines naming what shares the credits, by the Tuning switch", () => {
-  it("drop suggestions with Tuning off, deeper looks off", () => {
-    expect(creditsCopy.spent(3, null, false, false)).toBe("0 of 3 left. Your overview shares these credits.");
-    expect(creditsCopy.pausedReason(false, false)).toBe("The app has reached its monthly limit for overviews. Nothing you did caused this.");
-  });
-
-  it("drop suggestions alone with Tuning off, deeper looks on", () => {
-    expect(creditsCopy.spent(3, null, true, false)).toBe("0 of 3 left. Your overview and Help me choose share these credits.");
-    expect(creditsCopy.pausedReason(true, false)).toBe("The app has reached its monthly limit for overviews and Help me choose. Nothing you did caused this.");
-  });
-
-  it("composes paused from its reason with Tuning off too", () => {
-    const until = new Date("2026-10-01T00:00:00Z");
-    expect(creditsCopy.paused(until, false, false)).toBe(`Paused until October 1. ${creditsCopy.pausedReason(false, false)}`);
+  it("links to the About entry that lists them", () => {
+    expect(creditsCopy.link).toBe("What uses credits?");
+    expect(CREDITS_HREF).toBe("/about#credits");
   });
 });
 
@@ -41,7 +27,7 @@ describe("the spend cap's copy", () => {
   it("names the month a pause lifts in, read in UTC", () => {
     // 00:00 UTC on October 1 is still September 30 in every US clock: the name must be October.
     expect(creditsCopy.paused(new Date("2026-10-01T00:00:00Z"))).toBe(
-      "Paused until October 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.",
+      "Paused until October 1. The app has reached its monthly limit. Nothing you did caused this. What uses credits?",
     );
   });
 
@@ -67,7 +53,6 @@ describe("the spend cap's copy", () => {
 
   it("composes paused from its reason, so the reason is said in one place", () => {
     const until = new Date("2026-10-01T00:00:00Z");
-    expect(creditsCopy.paused(until)).toBe(`Paused until October 1. ${creditsCopy.pausedReason()}`);
-    expect(creditsCopy.paused(until, true)).toBe(`Paused until October 1. ${creditsCopy.pausedReason(true)}`);
+    expect(creditsCopy.paused(until)).toBe(`Paused until October 1. ${creditsCopy.pausedReason}`);
   });
 });

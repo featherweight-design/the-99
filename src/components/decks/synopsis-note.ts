@@ -19,10 +19,7 @@ export type PressWhere = "analyze" | "reanalyze";
 /** `see`: the note is the overview check's, which carries *See which →* to the Notices sheet. */
 export type PressNote = { text: string; writes: boolean; see?: true };
 
-/** `deeperLooks`: `HELP_ME_CHOOSE_ENABLED`, so the credit lines name the looks only where they
- *  exist. `tuning`: `tuningEnabled()`, so they stop naming Suggested changes when it is off
- *  (2026-10-08) — defaults true, the wording from before this flag existed. */
-export function pressNote(view: SynopsisView, where: PressWhere, deeperLooks = false, tuning = true): PressNote | null {
+export function pressNote(view: SynopsisView, where: PressWhere): PressNote | null {
   if (view.kind !== "ready" || !view.current) return null;
   // THE CHECK FIRST (deck notices HANDOFF §6, plan D10): while a legality entry stands, the press
   // reads the bracket and the overview is withheld, whatever the list or the credits would say. The
@@ -45,10 +42,10 @@ export function pressNote(view: SynopsisView, where: PressWhere, deeperLooks = f
   // share is used, or every credit is out. Bare, the cap's line beside a working Analyze read as
   // the analysis itself being paused (the-99-d9's ruling, 2026-09-24).
   if (allowance.paused) {
-    return { text: `${synopsisCopy.pressNote.paused(monthName(allowance.paused.until))} ${creditsCopy.pausedReason(deeperLooks, tuning)}`, writes: false };
+    return { text: `${synopsisCopy.pressNote.paused(monthName(allowance.paused.until))} ${creditsCopy.pausedReason}`, writes: false };
   }
   if (allowance.ownerShare) return { text: synopsisCopy.pressNote.ownerShare(monthName(new Date())), writes: false };
   const lead = where === "analyze" ? synopsisCopy.pressNote.analyzeUsedUp : synopsisCopy.pressNote.reanalyzeUsedUp;
   if (left > 0) return { text: synopsisCopy.pressNote.writes(creditsCopy.standing(left, allowance.limit, allowance.nextAt)), writes: true };
-  return { text: `${lead} ${creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt, deeperLooks, tuning)}`, writes: false };
+  return { text: `${lead} ${creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)}`, writes: false };
 }

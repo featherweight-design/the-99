@@ -36,6 +36,7 @@ import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
 import { TuningLimitsBox } from "./tuning-limits-box";
 import { TuningNotesField } from "./tuning-notes-field";
+import { CreditsText } from "../ui/credits-text";
 
 /**
  * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
@@ -112,7 +113,6 @@ export function TuningPanel({
   onLogGame,
   printedInSets = [],
   deps = SERVER,
-  deeperLooks = false,
   onSettled,
   onSaveDescription,
   freshEachVisit = false,
@@ -125,9 +125,6 @@ export function TuningPanel({
    *  (H35, PR 2), the same list help-me-choose's intake form reads. */
   printedInSets?: readonly PrintedInSet[];
   deps?: TuningDeps;
-  /** `HELP_ME_CHOOSE_ENABLED`: the credit lines name Help me choose as sharing the credits. Off,
-      they read exactly as before the looks existed. */
-  deeperLooks?: boolean;
   /** The first read has answered or failed: the tab's opening holds its loader until it has, so
    *  Suggested changes and its credit line never arrive after the rest of the tab. */
   onSettled?: () => void;
@@ -994,13 +991,13 @@ export function TuningPanel({
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
   const credit = paused
-    ? creditsCopy.paused(paused.until, deeperLooks)
+    ? creditsCopy.paused(paused.until)
     : state.allowance.ownerShare
       ? creditsCopy.ownerShare(new Date())
       : spent
         // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
         // more counted than the limit the reader still has none left at that time.
-        ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt, deeperLooks)
+        ? creditsCopy.spent(state.allowance.limit, state.allowance.reopensAt ?? state.allowance.nextAt)
         : primary.again
           ? creditsCopy.again(left, state.allowance.limit, state.allowance.nextAt)
           : creditsCopy.first(left, state.allowance.limit, state.allowance.nextAt);
@@ -1119,7 +1116,7 @@ export function TuningPanel({
               className={`text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px] md:leading-[1.5] ${blocked ? "md:max-w-[380px]" : ""}`}
               style={{ color: "var(--fg-faint)" }}
             >
-              {noteLine}
+              <CreditsText text={noteLine} />
             </span>
           </>
         )}

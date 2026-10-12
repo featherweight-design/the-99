@@ -13,13 +13,14 @@ import { clockTime } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
+import { creditLine } from "../ui/credit-line-matcher";
 
 const onWrite = vi.fn();
 const onRetry = vi.fn();
 const onReanalyze = vi.fn();
 const onSeeWhich = vi.fn();
 const inert = (el: HTMLElement) => el.getAttribute("aria-disabled") === "true";
-type Over = Partial<{ readingFresh: boolean; busy: boolean; pressed: boolean; announceReady: boolean; settled: boolean; reanalyzeBlocked: boolean; deeperLooks: boolean }>;
+type Over = Partial<{ readingFresh: boolean; busy: boolean; pressed: boolean; announceReady: boolean; settled: boolean; reanalyzeBlocked: boolean }>;
 const tree = (state: SynopsisState, over: Over = {}) => (
     <CardDetailProvider fetchCard={async () => null}>
       <SynopsisOverview
@@ -30,7 +31,6 @@ const tree = (state: SynopsisState, over: Over = {}) => (
         deckName="Hoof"
         art={new Map()}
         readingFresh={over.readingFresh ?? true}
-        deeperLooks={over.deeperLooks}
         settled={over.settled ?? true}
         onWrite={onWrite}
         onRetry={onRetry}
@@ -94,13 +94,10 @@ describe("SynopsisOverview", () => {
     expect(screen.getByText(/0 of 3 left · reset at/)).toBeTruthy();
   });
 
-  it("says what shares the credits exactly as before the deeper looks, unless Help me choose is on", () => {
-    const out = { used: 3, limit: 3, reopensAt: null, nextAt: null };
-    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: out }));
-    expect(screen.getByText("0 of 3 left. Your overview and suggestions share these credits.")).toBeTruthy();
-    cleanup();
-    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: out }), { deeperLooks: true });
-    expect(screen.getByText("0 of 3 left. Suggestions, overviews and Help me choose share these credits.")).toBeTruthy();
+  it("names no feature in the spent line, and links to what uses credits", () => {
+    draw(synopsisState({ synopsis: null, wouldSpend: false, allowance: { used: 3, limit: 3, reopensAt: null, nextAt: null } }));
+    expect(screen.getByText(creditLine("0 of 3 left · What uses credits?"))).toBeTruthy();
+    expect(screen.getByRole("link", { name: "What uses credits?" }).getAttribute("href")).toBe("/about#credits");
   });
 
   it("names when a credit truly comes back once every one is out, not the earliest expiry", () => {
