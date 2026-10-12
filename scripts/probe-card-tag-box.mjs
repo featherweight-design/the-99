@@ -192,11 +192,12 @@ try {
         const t = document.querySelector("main textarea").getBoundingClientRect();
         const dockEl = document.querySelector('[data-testid="choose-dock"]');
         const dock = dockEl ? dockEl.getBoundingClientRect() : null;
-        return { listTop: Math.round(l.top), listBottom: Math.round(l.bottom), boxTop: Math.round(t.top), boxBottom: Math.round(t.bottom), dockTop: dock ? Math.round(dock.top) : null };
+        const first = ul.querySelector('[role="option"]').getBoundingClientRect();
+        const hit = document.elementFromPoint(first.left + first.width / 2, first.top + Math.min(first.height / 2, 10));
+        return { listTop: Math.round(l.top), listBottom: Math.round(l.bottom), boxTop: Math.round(t.top), boxBottom: Math.round(t.bottom), dockTop: dock ? Math.round(dock.top) : null, firstOnTop: Boolean(hit && ul.contains(hit)) };
       });
-      const clear = flip.listBottom <= flip.boxTop && flip.listTop >= 0;
-      const below = flip.dockTop !== null && flip.listTop >= flip.boxBottom && flip.listBottom <= flip.dockTop;
-      report(`${vp.label} in a 300px window the list clears the box and the dock (above it, or below within the room)`, clear || below, JSON.stringify(flip));
+      // Almost no room: the list opens below the box and keeps its floor, a row or two that scroll, painted on top.
+      report(`${vp.label} in a 300px window the list still opens under the box with its first option painted on top`, flip.listTop >= flip.boxBottom && flip.firstOnTop, JSON.stringify(flip));
       await tiny.close();
     }
   }

@@ -1996,7 +1996,6 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   short, and requires the list to end above the dock's top (the list is held to that room and scrolls
   inside it; `listMax` in `intake-form.tsx`). Without that hold the list is its 220px height and runs
   under the dock there.
-  A 300px window checks the same clearance with almost no room. The list opening ABOVE the box (`listAbove`)
-  needs the box to sit lower than the room over it, which the picker's own scroll to the top prevents on a page
-  that can scroll, so this probe does not reach it; it is covered by reading the geometry.
+  A 300px window checks the same clearance with almost no room, where the list keeps a floor of 96px (a row or two,
+  scrolling) rather than opening above the box: that flip was cut after three review rounds on its geometry.
   Measured 2026-10-12 on local-dev: all twelve checks pass.

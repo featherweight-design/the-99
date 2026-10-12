@@ -137,33 +137,33 @@ export function IntakeForm({
   });
   // The list is held to the room between the box and whatever ends the screen below it (the phone's fixed
   // dock, else the window) and scrolls inside that, so it never runs under the dock or off the screen. When that
-  // room is under TAG_LIST_MIN and there is more over the box, it opens above the box, held to that room instead.
+  // room is under TAG_LIST_MIN it keeps TAG_LIST_MIN (a row or two, scrolling): scope decision, three rounds
+  // on this geometry; the list always opens below the box.
   // null: not measured yet.
   const [listMax, setListMax] = useState<number | null>(null);
-  const [listAbove, setListAbove] = useState(false);
   useEffect(() => {
-    if (!picker.open) { setListMax(null); setListAbove(false); return; }
+    if (!picker.open) { setListMax(null); return; }
     const place = () => {
       const el = wordsRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const dock = dockRef.current;
       const dockShown = dock !== null && getComputedStyle(dock).display !== "none";
-      const floor = dockShown ? dock.getBoundingClientRect().top : (window.visualViewport?.height ?? window.innerHeight);
-      const below = Math.floor(floor - rect.bottom - 12);
-      const above = Math.floor(rect.top - 12);
-      // Too little room under the box and more over it: the list opens above, held to that room.
-      const flip = below < TAG_LIST_MIN && above > below;
-      setListAbove(flip);
-      setListMax(Math.max(0, flip ? above : below));
+      // `getBoundingClientRect` is in layout-viewport coordinates, so the visible bottom is the visual viewport's
+      // offset plus its height: a keyboard that pans the page moves the offset, not the height.
+      const vv = window.visualViewport;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const floor = dockShown ? Math.min(dock.getBoundingClientRect().top, visibleBottom) : visibleBottom;
+      setListMax(Math.max(TAG_LIST_MIN, Math.floor(floor - rect.bottom - 12)));
     };
     place();
     // The picker eases the box to the top of the screen a beat after it opens; measure again once that has settled.
     const settled = setTimeout(place, 1200);
     // The phone's keyboard finishing its opening moves the visual viewport; measure again then.
     window.visualViewport?.addEventListener("resize", place);
+    window.visualViewport?.addEventListener("scroll", place);
     window.addEventListener("scroll", place, { passive: true });
-    return () => { clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); window.removeEventListener("scroll", place); };
+    return () => { clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); window.visualViewport?.removeEventListener("scroll", place); window.removeEventListener("scroll", place); };
   }, [picker.open]);
 
   const names = copy.intake.colorsJoin(colorNames(colors.map((c) => c.toUpperCase())));
@@ -358,7 +358,7 @@ export function IntakeForm({
                 written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
               ].join(" ")}
             />
-            {picker.open && <CardTagList {...picker.list} maxHeightPx={listMax ?? undefined} placement={listAbove ? "above" : "below"} />}
+            {picker.open && <CardTagList {...picker.list} maxHeightPx={listMax ?? undefined} />}
           </div>
         </Field>
 
