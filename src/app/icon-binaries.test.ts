@@ -180,6 +180,26 @@ describe("the raster icons", () => {
     }
   });
 
+  // A launcher crops a maskable icon to a circle, and only the central 80% (radius 0.4 of the
+  // width) is promised to survive. The mark has to sit inside it; the plain 512 does not, which is
+  // why the maskable one is its own drawing.
+  it("keeps the maskable icon's mark inside the safe circle", () => {
+    const reach = (face: Png) => {
+      let far = 0;
+      for (let y = 0; y < face.height; y += 1) {
+        for (let x = 0; x < face.width; x += 1) {
+          if (distance(face.pixel(x, y), "bg") > NEAR) {
+            far = Math.max(far, Math.hypot(x + 0.5 - face.width / 2, y + 0.5 - face.height / 2) / face.width);
+          }
+        }
+      }
+      return far;
+    };
+    expect(reach(installed.get("maskable-512.png")!)).toBeLessThanOrEqual(0.4);
+    // The check can fail: the full-size drawing reaches past the circle.
+    expect(reach(installed.get("icon-512.png")!)).toBeGreaterThan(0.4);
+  });
+
   // The smallest face drops the crown: at 16px three diamonds are three specks
   // and the numeral under them is a blot. Losing the accent there is the point
   // of drawing it differently, so it is asserted rather than left to chance.
