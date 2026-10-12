@@ -376,6 +376,26 @@ export function deckDetailReads(deckId: string, userId: string) {
   };
 }
 
+/**
+ * `getDeckDetail`'s availability: the caller's shared read when it passed one (the deck page's,
+ * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
+ * to look up. Apart so a test can pin that a shared read stands in for the query.
+ */
+export function deckAvailabilityRead(
+  userId: string,
+  deckId: string,
+  ids: readonly string[],
+  shared: Promise<Map<string, Availability> | null> | undefined,
+  load: typeof loadAvailability = loadAvailability,
+): Promise<Map<string, Availability> | null> | null {
+  if (ids.length === 0) return null;
+  if (shared) return shared;
+  return load(userId, { excludeDeckId: deckId, oracleIds: [...ids] }).catch(() => {
+    recordSoftFailure();
+    return null;
+  });
+}
+
 export async function getDeckDetail(
   deckId: string,
   userId: string,
@@ -483,14 +503,7 @@ export async function getDeckDetail(
     .map((r) => r.oracleId);
   const availabilityIds = [...new Set([...ownedIds, ...ownedCommanderIds])];
   const [availability, resolved, bracketFlags] = await Promise.all([
-    availabilityIds.length === 0
-      ? null
-      : sharedAvailability
-        ? sharedAvailability
-        : loadAvailability(userId, { excludeDeckId: deckId, oracleIds: availabilityIds }).catch(() => {
-            recordSoftFailure();
-            return null;
-          }),
+    deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
     resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),

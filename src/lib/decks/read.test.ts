@@ -7,6 +7,7 @@ vi.mock("../bracket/flags-read", () => ({ loadBracketFlags: vi.fn() }));
 
 import {
   cardTypeGroup,
+  deckAvailabilityRead,
   deckIsFlippable,
   primaryRole,
   colorIdentityMask,
@@ -501,5 +502,31 @@ describe("readNoteFlags", () => {
   it("passes an empty map through as an empty map", async () => {
     flagsRead.loadBracketFlags.mockResolvedValueOnce(new Map());
     await expect(readNoteFlags(["o-1"])).resolves.toEqual(new Map());
+  });
+});
+
+// The deck page's ONE availability read (speed plan, fix 1): passed in, it stands in for
+// getDeckDetail's own query, so the claim model runs once per render rather than twice.
+describe("deckAvailabilityRead", () => {
+  it("uses the shared read and never runs its own query", async () => {
+    const shared = Promise.resolve(new Map([["c1", { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]));
+    const load = vi.fn();
+    const read = deckAvailabilityRead("u", "d", ["c1"], shared as never, load as never);
+    expect(read).toBe(shared);
+    expect((await read)?.get("c1")?.free).toBe(1);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it("runs its own query, narrowed to the deck's ids, when no shared read is passed", async () => {
+    const own = new Map();
+    const load = vi.fn().mockResolvedValue(own);
+    expect(await deckAvailabilityRead("u", "d", ["c1", "c2"], undefined, load as never)).toBe(own);
+    expect(load).toHaveBeenCalledWith("u", { excludeDeckId: "d", oracleIds: ["c1", "c2"] });
+  });
+
+  it("reads nothing for a deck that owns nothing", () => {
+    const load = vi.fn();
+    expect(deckAvailabilityRead("u", "d", [], Promise.resolve(new Map()), load as never)).toBeNull();
+    expect(load).not.toHaveBeenCalled();
   });
 });
