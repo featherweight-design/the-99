@@ -36,6 +36,8 @@ export const RATES: Readonly<Record<string, Rate & { above?: Rate & { promptToke
   // Help me choose's shortlist step from 2026-10-11 (rework plan, the orchestrator's ruling).
   "claude-haiku-5-5": { input: 0.1, output: 0.5, above: { promptTokens: 100_000, input: 0.5, output: 2.5 } },
   "claude-opus-5": { input: 5, output: 25 },
+  // The card-label job's model, called only through the Batch API (`batchRates`); no press uses it.
+  "claude-sonnet-4-5": { input: 3, output: 15 },
 };
 
 export const CACHE_READ_MULTIPLIER = 0.1;
@@ -47,6 +49,55 @@ export const CACHE_WRITE_MULTIPLIER = 1.25;
  * priced at zero in `RATES`, so a zero can only ever mean "no request was made".
  */
 const UNBILLED_MODELS: ReadonlySet<string> = new Set([STUB_MODEL]);
+
+/**
+ * The Batch API halves every meter, cache reads and writes included (the discounts stack).
+ *
+ * ONE source for the card-label job's rates (admin audit finding 9): the label scripts
+ * (`scripts/lib/card-labels-pricing.mjs`) read `batchRates`, and any app reader of
+ * `card_label_batches` (the admin's Card label runs is the planned one) prices from the same
+ * function, because the table stores tokens and no dollars and a second rate table could disagree.
+ */
+export const BATCH_DISCOUNT = 0.5;
+
+/** Dollars per million tokens at Batch API rates (so also micro-dollars per token). */
+export type BatchRates = { in: number; out: number; cacheWrite: number; cacheRead: number };
+
+// Rounded to a millionth of a dollar, so a product like 3 x 0.1 x 0.5 reads 0.15 and not 0.15000000000000002.
+const exact = (x: number) => Math.round(x * 1e6) / 1e6;
+
+/**
+ * The rate card a stored model id names. A dated snapshot id (`claude-haiku-4-5-20251001`, as the
+ * label job stores it on `card_label_batches.model`) is priced as its base model.
+ */
+export function batchRateCard(model: string): (typeof RATES)[string] | undefined {
+  return RATES[model] ?? RATES[model.replace(/-\d{8}$/, "")];
+}
+
+/**
+ * Batch rates for a model with ONE rate card. A model whose price steps up past a prompt length
+ * (an `above` row) is refused: batch meters are summed across requests, so no single card can be
+ * chosen for them, and the lower one would understate every long request.
+ */
+export function batchRates(model: string): BatchRates {
+  const r = batchRateCard(model);
+  if (!r) throw new Error(`prices: no rate for model ${model}`);
+  if (r.above) throw new Error(`prices: ${model} has a rate step past ${r.above.promptTokens} prompt tokens, so summed batch meters cannot be priced`);
+  return {
+    in: exact(r.input * BATCH_DISCOUNT),
+    out: exact(r.output * BATCH_DISCOUNT),
+    cacheWrite: exact(r.input * CACHE_WRITE_MULTIPLIER * BATCH_DISCOUNT),
+    cacheRead: exact(r.input * CACHE_READ_MULTIPLIER * BATCH_DISCOUNT),
+  };
+}
+
+export type BatchTokens = { inTokens: number; outTokens: number; cacheWriteTokens: number; cacheReadTokens: number };
+
+/** What batched requests cost, in whole micro-dollars, from their summed meters. */
+export function batchCostMicroUsd(model: string, t: BatchTokens): number {
+  const r = batchRates(model);
+  return Math.round(t.inTokens * r.in + t.outTokens * r.out + t.cacheWriteTokens * r.cacheWrite + t.cacheReadTokens * r.cacheRead);
+}
 
 /** The rate card for a prompt of `promptTokens` input tokens, cached or not. */
 function ratesFor(model: string, promptTokens: number): Rate {

@@ -34,10 +34,11 @@ import "../lib/env.mjs";
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
+import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 
 const LEDGER = "docs/superpowers/eval/ledger-help-me-choose.jsonl";
-const CAP_USD = 5;
+const CAP_USD = LEDGER_LIMITS["ledger-help-me-choose.jsonl"].hardCapUsd;
 const HUGH = "user_3GkZrrTwOJBdqUpq6GambP0BC8w";
 
 const { values: args } = parseArgs({ options: {

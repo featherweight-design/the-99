@@ -1,5 +1,6 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
+import { LEDGER_LIMITS } from "../../../src/lib/eval/ledger-limits";
 
 /**
  * The running spend, kept on disk so it survives every run and every process.
@@ -11,17 +12,18 @@ import { dirname } from "node:path";
  * Two thresholds, from the lane brief: $25 is the hard stop; $15 reached before the run plan is
  * half done is a stop-and-ask. The second needs the plan's progress, which the caller supplies.
  */
-export const HARD_CAP_USD = 25;
-export const ASK_AT_USD = 15;
+export const HARD_CAP_USD = LEDGER_LIMITS["ledger.jsonl"].hardCapUsd;
+export const ASK_AT_USD = LEDGER_LIMITS["ledger.jsonl"].askAtUsd;
 
 /**
  * A ledger's two thresholds. The original campaign's file keeps `DEFAULT_LIMITS`; the Overview
  * accuracy line (plan 2026-10-10, Hugh's $15 cap) has its own file and `OVERVIEW_ACCURACY_LIMITS`, because
- * the original holds $23.72 of settled spend and could not carry a second campaign.
+ * the original holds $23.72 of settled spend and could not carry a second campaign. The numbers live
+ * in `src/lib/eval/ledger-limits.ts`, the one table every script and probe on a ledger reads.
  */
 export type Limits = { hardCapUsd: number; askAtUsd: number };
 export const DEFAULT_LIMITS: Limits = { hardCapUsd: HARD_CAP_USD, askAtUsd: ASK_AT_USD };
-export const OVERVIEW_ACCURACY_LIMITS: Limits = { hardCapUsd: 15, askAtUsd: 11 };
+export const OVERVIEW_ACCURACY_LIMITS: Limits = LEDGER_LIMITS["ledger-overview-accuracy.jsonl"];
 
 /**
  * An entry is either SETTLED (what a batch actually cost, from its usage meters) or PENDING (a

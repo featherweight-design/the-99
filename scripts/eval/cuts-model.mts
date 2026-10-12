@@ -33,6 +33,7 @@ import { parseArgs } from "node:util";
 
 import { countTokens, sendBatch, sendRealtime, type Got, type Sent } from "./lib/batch.mjs";
 import { loadCutTruth, pairedSwaps } from "./lib/cuts-truth.mjs";
+import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply } from "./lib/request.mjs";
@@ -53,8 +54,8 @@ const { values: args } = parseArgs({
   },
 });
 
-const CAP_USD = 15;
-const ASK_AT_USD = 10;
+const CAP_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].hardCapUsd;
+const ASK_AT_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].askAtUsd;
 const MAX_TOKENS = 6_000;
 const LEDGER_CUTS = new URL("ledger-cuts.jsonl", ROOT).pathname;
 const trials = Number(args.trials);

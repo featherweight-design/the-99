@@ -30,11 +30,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import { countTokens } from "./lib/batch.mjs";
+import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 import { buildParams } from "./lib/request.mjs";
 
 const LEDGER = "docs/superpowers/eval/ledger-find-a-deck.jsonl";
-const CAP_USD = 2;
+const CAP_USD = LEDGER_LIMITS["ledger-find-a-deck.jsonl"].hardCapUsd;
 const HUGH = "user_3GkZrrTwOJBdqUpq6GambP0BC8w";
 /** Hugh's eval cards (brief, "Hugh's eval cards"), by oracle name: "Future Insight" is Future Sight and
  *  "Feral Felix" is Barrowgoyf. */

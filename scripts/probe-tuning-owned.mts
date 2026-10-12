@@ -24,6 +24,9 @@ import { parseArgs } from "node:util";
 import { connectStaging } from "./eval/lib/staging.mjs";
 import { acquireRunLock, readLedger, record, refusal, spent } from "./eval/lib/ledger.mjs";
 import { costUsd, worstCaseUsd } from "./eval/lib/pricing.mjs";
+import { LEDGER_LIMITS } from "../src/lib/eval/ledger-limits";
+
+const TUNING_CAP = LEDGER_LIMITS["ledger-tuning-lists.jsonl"].hardCapUsd;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -103,7 +106,8 @@ async function ask() {
   const probeSpent = spent({ entries: readLedger(LEDGER).entries.filter((e) => e.note?.startsWith("probe-tuning-owned")) });
   const stop = probeSpent + worst > CAP
     ? `probe spend $${probeSpent.toFixed(3)} plus this call's worst case $${worst.toFixed(3)} would cross its $${CAP} cap`
-    : refusal(readLedger(LEDGER), worst, 1, { hardCapUsd: 3, askAtUsd: 3 });
+    // The ledger's cap from the one table, with no separate ask line: a one-call probe either fits or stops.
+    : refusal(readLedger(LEDGER), worst, 1, { hardCapUsd: TUNING_CAP, askAtUsd: TUNING_CAP });
   if (stop) { console.log(`STOP: ${stop}`); process.exit(0); }
   const runId = `${new Date().toISOString()}-probe-tuning-owned-${deckId.slice(0, 8)}`;
   record(LEDGER, { at: new Date().toISOString(), runId, source: "pending", usd: worst, requests: 1, pending: runId, note: "probe-tuning-owned (pending worst case)" });

@@ -46,6 +46,10 @@ import { costUsd, worstCaseUsd, type Usage } from "./lib/pricing.mjs";
 import { buildParams, parseReply } from "./lib/request.mjs";
 import { ROOT } from "./lib/run.mjs";
 import { connectStaging } from "./lib/staging.mjs";
+import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
+
+const LEDGER_CUTS_CAP = LEDGER_LIMITS["ledger-cuts.jsonl"].hardCapUsd;
+const LEDGER_CUTS_ASK = LEDGER_LIMITS["ledger-cuts.jsonl"].askAtUsd;
 
 const { values: args } = parseArgs({
   options: {
@@ -207,6 +211,11 @@ if (args.reuse) {
   console.error(`${prepared.length} requests, largest ${Math.max(...tokens)} input tokens; worst case $${expected.toFixed(2)}; this task has spent $${taskSpent().toFixed(3)} of $${CAP}`);
   if (!args.send) { console.error("DRY: nothing sent."); process.exit(0); }
   if (taskSpent() + expected > CAP) { console.error("NOT SENT: would cross the task cap"); process.exit(2); }
+  // The ledger's own cap holds too: tasks share the file, so per-task caps alone could carry it past.
+  const ledgerSpent = spent(readLedger(LEDGER_CUTS));
+  if (ledgerSpent + expected > LEDGER_CUTS_CAP) { console.error(`NOT SENT: would cross the cuts ledger's $${LEDGER_CUTS_CAP} cap`); process.exit(2); }
+  // The ask line, as cuts-model and cuts-blind hold it: past it, a writer stops and asks.
+  if (LEDGER_CUTS_ASK !== null && ledgerSpent >= LEDGER_CUTS_ASK) { console.error(`NOT SENT: $${ledgerSpent.toFixed(2)} already spent (ask line $${LEDGER_CUTS_ASK}); stop and ask the orchestrator`); process.exit(2); }
 
   runId = `${new Date().toISOString().replace(/[:.]/g, "-")}-${args.label}`;
   const dir = new URL(`runs/${runId}/`, ROOT);
@@ -227,7 +236,11 @@ if (args.reuse) {
     const g = attempts.get(p.customId)?.[0];
     return !g || (g.ok ? !parseReply(schemaOf.get(p.customId)!, g.message).ok : g.retry);
   });
-  if (retry.length > 0 && taskSpent() + retry.reduce((n, p) => n + worstOf.get(p.customId)! / 2, 0) <= CAP) {
+  const retryWorst = retry.reduce((n, p) => n + worstOf.get(p.customId)! / 2, 0);
+  const midway = spent(readLedger(LEDGER_CUTS));
+  const askStops = LEDGER_CUTS_ASK !== null && midway >= LEDGER_CUTS_ASK;
+  if (retry.length > 0 && askStops) console.error(`STOPPED before the retry pass: $${midway.toFixed(2)} spent (ask line $${LEDGER_CUTS_ASK}); ask the orchestrator`);
+  if (retry.length > 0 && !askStops && taskSpent() + retryWorst <= CAP && midway + retryWorst <= LEDGER_CUTS_CAP) {
     for (const g of await send(retry.map((p) => ({ ...p.sent, customId: `${p.customId}-r` })), "a2")) {
       const base = g.customId.replace(/-r$/, "");
       attempts.set(base, [...(attempts.get(base) ?? []), g]);

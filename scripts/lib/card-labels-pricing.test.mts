@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { BATCH_DISCOUNT, CACHE_READ, CACHE_WRITE_5M, RATES } from "../eval/lib/pricing.mjs";
-import { ALL_MODELS, PRICING } from "./card-labels-pricing.mjs";
+import { batchCostMicroUsd } from "../../src/lib/model/prices";
+import { ALL_MODELS, costOf, PRICING } from "./card-labels-pricing.mjs";
 
 /**
  * This module's rates must be the canonical table's, halved by the Batch API.
@@ -51,4 +52,40 @@ describe("the label pricing is the canonical table at batch rates", () => {
       expect(p.cacheRead, "cache read").toBeCloseTo(canonical.input * CACHE_READ * BATCH_DISCOUNT, 6);
     });
   }
+});
+
+/**
+ * The rates moved into `src/lib/model/prices.ts` (admin audit finding 9) and this module now reads
+ * them from there. The move must change no figure the scripts compute: these are the literals the
+ * table held before it, to the bit, so a float product that drifted (3 x 0.1 x 0.5 is not 0.15)
+ * fails here rather than shifting a cap by a rounding error nobody would see.
+ */
+describe("the label pricing after the move to prices.ts", () => {
+  it("is the table the scripts carried before, exactly", () => {
+    expect(PRICING).toStrictEqual({
+      haiku: { in: 0.50, out: 2.50, cacheWrite: 0.625, cacheRead: 0.05, caches: false },
+      sonnet: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
+      sonnet5: { in: 1.00, out: 5.00, cacheWrite: 1.25, cacheRead: 0.10, caches: true },
+    });
+  });
+
+  it("prices a run as the app's own batchCostMicroUsd prices it", () => {
+    // The 2026-10-03 backfill on staging: 13,862,095 in and 5,157,552 out, $59.47.
+    const usage = { i: 13_862_095, o: 5_157_552 };
+    expect(costOf("sonnet", usage)).toBeCloseTo(59.47, 2);
+    expect(batchCostMicroUsd("claude-sonnet-4-5", { inTokens: usage.i, outTokens: usage.o, cacheWriteTokens: 0, cacheReadTokens: 0 }) / 1e6)
+      .toBeCloseTo(costOf("sonnet", usage), 6);
+  });
+});
+
+describe("PRICING reads its rates from prices.ts", () => {
+  it("builds every row from batchRates, so a change there reaches the scripts", async () => {
+    vi.resetModules();
+    const sentinel = { in: 7, out: 8, cacheWrite: 9, cacheRead: 10 };
+    vi.doMock("../../src/lib/model/prices.ts", () => ({ batchRates: () => sentinel }));
+    const { PRICING: fresh } = await import("./card-labels-pricing.mjs");
+    for (const row of Object.values(fresh)) expect(row).toMatchObject(sentinel);
+    vi.doUnmock("../../src/lib/model/prices.ts");
+    vi.resetModules();
+  });
 });
