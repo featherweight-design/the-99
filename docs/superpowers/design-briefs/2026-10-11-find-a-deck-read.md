@@ -133,7 +133,8 @@ Staging, read-only, Hugh's account, 2026-10-11.
 **Decks.** 21 decks, 23 committed versions. Every deck is full: 99 cards, or 98 under the one pair (Gods). Each
 list holds 65 to 94 distinct cards, the rest stacked basics. So a suggested cut is always needed; no deck has room.
 
-**Finding 1: most decks have no v2 plan.** The newest passing Overview per deck:
+**Finding 1: most decks have no v2 plan.** The newest passing Overview per deck, on 2026-10-11 (Hugh is running
+the Overview on his other decks that night, so these counts will move; re-measure them before the eval):
 
 | Overview | Decks | Of Ajani's 11 candidates |
 | --- | --- | --- |
@@ -241,7 +242,7 @@ Sonnet this read's ceiling is half again that; on Haiku it is under a tenth of i
 8. **Fewer than five candidates still runs**; a single candidate still runs. No candidates (every deck holds it,
    or none can play it) draws no press: the picker's existing `allHold` and `noneByColors` states stand.
 9. **Model chosen by eval** before the build is merged: Sonnet 5.5 at effort medium against Haiku 5.5, on Hugh's
-   eval cards (below; the nine that resolve, and the two that do not once he corrects them) and the eight niche
+   eval cards (below, all eleven) and the eight niche
    cards measured above. Scored blind, per deck, on: names a real interaction with the deck's own cards or plan;
    every citation valid; leaves out the decks where it does not fit; the cut is defensible; and it says something
    the free row does not (lock 10). A second step is added only if the one call fails on this corpus. The eval
@@ -253,9 +254,10 @@ Sonnet this read's ceiling is half again that; on Haiku it is under a tenth of i
 
 ## Hugh's eval cards (named 2026-10-11)
 
-Checked on staging, read-only, by exact name against `cards.name`, and against his collection. **Two do not
-resolve and no substitute is assumed**: `Future Insight` and `Feral Felix` match no card name in the catalog
-(searches for `%insight%` and `%felix%` return neither). Hugh to correct them.
+Checked on staging, read-only, against `cards.name` and his collection; he owns every one. Two were named by a
+printing rather than the card: **"Future Insight" is Future Sight** (Hugh, 2026-10-11; he owns a Secret Lair
+printing), and **"Feral Felix" is Barrowgoyf**, under the Secret Lair flavor name `Feral Felix` (`printings`,
+set `sld`, `flavor_name`; verified on staging).
 
 The "before" fixture is the current picker on his decks (`loadFits`, his account, 2026-10-11): its counts and its
 first three rows as the reason line draws them.
@@ -271,10 +273,10 @@ first three rows as the reason line draws them.
 | Time Stretch (U sorcery) | 1 | 10 | 0 / 11 | 10 × none | Yuriko, Avatar Aang, Brago: no reason line |
 | Tangle Wire (colorless artifact) | 1 | 21 | 0 / 0 | 21 × none | Avatar Aang, Brago, Eldrazi: no reason line (alphabetical) |
 | Kwia Vigorbloom (GW creature) | 1 | 4 | 0 / 17 | 3 × token, 1 × protection | Omnath: Joins 15 other token cards · ramp 20 of 9; Scrappy Survivors: Joins 10 other protection cards · ramp 5 of 6; Gishath: Joins 7 other token cards · ramp 11 of 9 |
-| Future Insight | not resolved | | | | |
-| Feral Felix | not resolved | | | | |
+| Future Sight (U enchantment; named as "Future Insight") | 1 | 10 | 0 / 11 | 10 × none | Avatar Aang, Brago, Gods: no reason line |
+| Barrowgoyf (B creature; Secret Lair "Feral Felix") | 1 | 6 | 0 / 15 | 3 × mill, 3 × none | Mutant Menace: Joins 11 other mill cards; Sultai Arisen: Joins 8 other mill cards; Yuriko: Joins 1 other mill card |
 
-What it shows: five of the nine draw no reason on any row (Maddening Hex, Molten Collapse, Throes of Chaos, Time
+What it shows: six of the eleven draw no reason on any row (Future Sight, Maddening Hex, Molten Collapse, Throes of Chaos, Time
 Stretch, Tangle Wire), and Mind's Eye draws the same reason on all 21. Tangle Wire and Mind's Eye are colorless,
 so they are the 21-deck cost case measured above. Molten Collapse (one candidate) and Kwia Vigorbloom (four) test
 the read's short end, and Maddening Cacophony is the one card where today's list already has a combo to beat.
@@ -301,6 +303,10 @@ the read's short end, and Maddening Cacophony is the one card where today's list
 10. **Phone at 390 and desktop at 900**, in the same round.
 11. **The About entry**, on the per-entry artboard (`design/design_handoff_the99_about/`), gated on the switch.
     The shipped entry `fits-your-decks` (`src/lib/copy/about.ts:825`) describes the free list and stays.
+12. **A result row whose deck has no Overview, or only an old one** (Open question 8). Hugh asked for this to go
+   to Design (2026-10-11): on his decks today, only 4 of 21 have a v2 Overview, 8 an older one and 9 none
+   (Finding 1). For those decks the read leans on the commander and the deck's top themes, not the deck's own plan.
+   Draw such a row, and draw the answer to Open question 8.
 
 ## Open questions for Design
 
@@ -316,6 +322,10 @@ the read's short end, and Maddening Cacophony is the one card where today's list
    Design needs it.
 7. *(Closed 2026-10-11: whether the picker stacks on desktop. Hugh chose a view inside card details at both
    widths; see ruling 2.)*
+8. **A deck with no Overview, or only an old one.** How does its result row read, given the sentence comes from
+   the commander and themes rather than a written plan: the same as a row with a v2 Overview, or saying what it
+   was based on? And does the picker offer a way to run the Overview for that deck (a credit of its own, today run from
+   the deck page, `src/components/decks/synopsis-overview.tsx`), or only point there?
 
 ## Fixtures
 
