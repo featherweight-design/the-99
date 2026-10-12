@@ -1851,7 +1851,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   store and read functions (`notes-store.ts`, `notes-read.ts`): add, read, edit (the creation date stays,
   `updated_at` is stamped), select and unselect, delete; another player's id and another deck's id match
   nothing; a tag reads held, not held or unresolvable; the 100-per-deck cap holds under TWO CONCURRENT ADDS at
-  99 (exactly one lands, the deck holds 100) and a done note still counts; the check constraint refuses an
+  99 (exactly one lands, the deck holds 100) and done notes count (49 of the 100 are done); selecting a note already done leaves its date alone; the check constraint refuses an
   empty and a 1,001-character body and allows 1,000; the picker lookup returns a card Commander does not allow
   and says so; deleting the deck deletes its notes. It writes a fixture under per-run user ids and deletes it
   in a `finally`: local-dev or a scratch branch, never production. Measured 2026-10-11 on local-dev: all
