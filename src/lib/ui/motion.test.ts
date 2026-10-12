@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { cubicBezier, MOTION, MOTION_EASE_POINTS } from "./motion";
 
-const css = readFileSync(join(__dirname, "../../app/globals.css"), "utf8");
+// import.meta.url, not __dirname: Vitest runs tests as ESM.
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../app/globals.css"), "utf8");
 const token = (name: string) => css.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1].trim();
 
 describe("MOTION", () => {
