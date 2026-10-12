@@ -241,7 +241,7 @@ if (dry) {
   process.exit(0);
 }
 
-const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+const stamp = `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}-${[...new Set(calls.map((c) => c.arm))].join("+")}`;
 mkdirSync("docs/superpowers/eval/answers", { recursive: true });
 const file = `docs/superpowers/eval/answers/fits-read-${stamp}.json`;
 const staleTotal = calls.reduce((n, c) => n + c.staleOverviewPicks, 0);

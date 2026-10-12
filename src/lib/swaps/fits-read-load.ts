@@ -109,7 +109,13 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
     const byName = deckNameIndex(list);
     const keyCardIds = [...new Set((shown?.content.keyCards ?? []).flatMap((k) => { const hit = byName.get(normalizeName(k.card)); return hit ? [hit.oracleId] : []; }))];
     const runs = new Set([...list.map((c) => c.oracleId), ...commanders.map((c) => c.oracleId)]);
-    const staleNames = shown ? Object.values(shown.content.cards ?? {}).filter((c) => !runs.has(c.oracleId)).map((c) => c.name) : [];
+    // Stale: a Key card the Overview says the deck runs that the current list no longer holds. Not
+    // `content.cards`, which resolves every card the prose names, threats and weaknesses included.
+    // The commanders count as run: a Key card is very often the commander, who is not in the 99.
+    const commanderNames = deckNameIndex(commanders.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, kinds: c.kinds })));
+    void runs;
+    const staleNames = (shown?.content.keyCards ?? []).map((k) => k.card)
+      .filter((n) => !byName.has(normalizeName(n)) && !commanderNames.has(normalizeName(n)));
     planOf.set(d.id, { source, staleNames: [...new Set(staleNames)] });
     return {
       deckId: d.id,

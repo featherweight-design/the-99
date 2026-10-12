@@ -5,7 +5,7 @@ Sonnet 5.5 and Haiku 5.5, both at effort medium, on Hugh's eleven eval cards aga
 The harness is `scripts/eval/fits-read.mts` (`pnpm eval:fits-read`), with its own ledger
 (`ledger-find-a-deck.jsonl`) and a $2 cap.
 
-**Status: skeleton.** The dry run's figures are below. Every other section is filled in after the paid run.
+**Status: run 2026-10-12.** Total spend was $1.80 of the $2 cap (ledger). The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` and `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm). The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80, not ~$1.05.
 
 ## Method
 
@@ -53,7 +53,7 @@ The newest passing Overview per deck, re-measured at the start of each run.
 | --- | --- | --- | --- |
 | Brief, 2026-10-11 | 4 | 8 | 9 |
 | Dry run, 2026-10-11 | 20 | 1 | 0 |
-| Paid run | | | |
+| Paid run, 2026-10-12 | 20 | 1 | 0 |
 
 ## Candidates and input size (dry run)
 
@@ -75,46 +75,174 @@ Input tokens were counted on the free count-tokens endpoint, structured-output s
 
 ## Per card, side by side
 
-To be filled in after the paid run. Each card gets the free list's first rows, then each arm's kept decks with the
-sentence, the cut and the drops.
+Kept picks only. A dropped pick is counted under its reason. Names are drawn from the keys; no deck name was sent to
+the model.
 
-| Card | Free list (first three) | Haiku | Sonnet | Sonnet warm |
+### Ajani Unrelenting (11 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD - Goblins | Ajani Unrelenting gives the whole team haste and extra power through its pump ability, so the tokens Krenko, Mob Boss makes attack the turn they arrive. | Wave of Indifference |
+| Haiku 5.5 | HD - Kratos | Each loyalty activation of Ajani Unrelenting makes a token that Kratos, God of War punishes at end step if it sits idle, so the table takes damage. | Wrenn's Resolve |
+| Haiku 5.5 | HD Tune - Prismari Artistry | Each loyalty activation of Ajani Unrelenting adds a Cadet body, and its team haste lets Ovika, Enigma Goliath attack in the turn it arrives. | Abstract Performance |
+| Haiku 5.5 | HD - Gishath | The team pump from Ajani Unrelenting raises the combat damage that Gishath, Sun's Avatar deals to players, so more Dinosaurs drop in from the reveal. | Runic Armasaur |
+| Sonnet 5.5 | (none kept; 3 returned, dropped: figureOrScore 3) | | |
+
+### Maddening Cacophony (10 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | (none kept; 1 returned, dropped: figureOrScore 1) | | |
+| Sonnet 5.5 | HD - Wizards | Maddening Cacophony can empty a library at instant-like pace with kicker, giving Jace, Wielder of Mysteries and Brain Freeze a mill finish that backs up the plan to draw from an empty library with Laboratory Maniac. | Mind Bend |
+| Sonnet 5.5 | (also dropped: falseQuote 1) | | |
+
+### Maddening Hex (11 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD - Kratos | Each noncreature spell an opponent casts makes Maddening Hex burn them, advancing the plan of "burning the table out" alongside Torbran, Thane of Red Fell as another drain source. | Wrenn's Resolve |
+| Sonnet 5.5 | HD - Kratos | Torbran, Thane of Red Fell adds extra damage to each roll from Maddening Hex, so every noncreature spell an opponent casts feeds the burn-the-table plan alongside Repercussion. | Embrace the Unknown |
+| Sonnet 5.5 | HD Tune - Scrappy Survivors | Maddening Hex is a cheap Aura that triggers Sram, Senior Edificer and Kor Spiritdancer when cast, while pinging opponents as it hops between them. | Inventory Management |
+
+### Mind's Eye (21 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD - Wizards | Spare mana held on opponents' draw steps lets Mind's Eye draw off each opponent's draw while Counterspell keeps countering, so Baral's counter-looting stays online. | Mind Bend |
+| Haiku 5.5 | HD - Yuriko | Holding Counterspell and Negate mana, as Counterspell and Negate do in this deck, leaves spare mana for Mind's Eye to draw on each opponent's draw step. | Flusterstorm |
+| Sonnet 5.5 | HD - Wizards | Mind's Eye turns every cantrip and opposing draw into extra cards while Counterspell keeps spells countered, feeding the looting engine on Baral, Chief of Compliance and helping dig toward Laboratory Maniac. | Collective Restraint |
+| Sonnet 5.5 | HD - Yuriko | Mind's Eye gives extra cards whenever opponents draw, adding to the card flow from Ninja of the Deep Hours and Satoru Umezawa while Counterspell protects the unblocked ninja attacks. | Blinkmoth Infusion |
+
+### Molten Collapse (1 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | (none kept; 0 returned) | | |
+| Sonnet 5.5 | (none kept; 0 returned) | | |
+
+### Throes of Chaos (10 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD - Omnath | Retrace lets Throes of Chaos return from the graveyard by discarding a spare land, fitting the "land-recursion effects keep the land engine running" plan. | Mountain |
+| Haiku 5.5 | HD - Gishath | Cascade on Throes of Chaos casts a cheaper spell for free, supporting the plan to "land big trampling Dinosaurs" while spare lands fuel retrace. | Forest |
+| Sonnet 5.5 | HD - Avatar Aang | Cascade off Throes of Chaos can hit a cheap Lesson such as Airbending Lesson for free, and retrace turns spare lands into repeat casts that feed Avatar Aang // Aang, Master of Elements with more bending triggers. | Crashing Wave |
+| Sonnet 5.5 | (also dropped: figureOrScore 1) | | |
+
+### Time Stretch (10 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD - Yuriko | Backup plan chains extra turns: Time Stretch adds two more turns beside Temporal Manipulation and Time Warp, letting Yuriko's unblocked ninjas attack again after each hit. | Commandeer |
+| Sonnet 5.5 | HD - Yuriko | Time Stretch fits the written backup to "chain extra turns with Temporal Manipulation and Time Warp to attack again", giving Yuriko, the Tiger's Shadow and the ninjas two more attack steps beside Temporal Manipulation. | Shadow of Mortality |
+
+### Tangle Wire (21 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD - Kratos | Each upkeep Tangle Wire forces the player to tap a permanent, so creatures kept tapped cannot attack and Kratos, God of War damages their controller for not attacking. | Abrade |
+| Sonnet 5.5 | HD - Kratos | Tangle Wire taps down opposing creatures at upkeep, so with Kratos, God of War haste for all and idle creatures hurting their controllers, tapped ones still deal damage while Ensnaring Bridge style stax holds the table. | Bolt Bend |
+| Sonnet 5.5 | HD - Wizards | Tangle Wire taps lands on each upkeep, letting Baral, Chief of Compliance and counterspells like Counterspell win the mana game while opponents cannot untap into their own answers. | Mind Bend |
+| Sonnet 5.5 | HD - Goblins | Tangle Wire slows opposing blockers and mana each upkeep, so Krenko, Mob Boss can double the Goblin count and swing wide while Sulfuric Vortex adds pressure. | Wave of Indifference |
+
+### Kwia Vigorbloom (4 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD Tune - Scrappy Survivors | The plan to "pile Auras and Equipment onto one creature" suits Kwia Vigorbloom: its lifelink gains life on attack, making a Lotus to fund more Auras. | Forest |
+| Haiku 5.5 | (also dropped: noCitation 1) | | |
+| Sonnet 5.5 | HD - Omnath | Kwia Vigorbloom turns the life from Omnath, Locus of Creation landfall into Lotus tokens for three mana, and Tatyova, Benthic Druid and Courser of Kruphix give more life triggers to feed a land-heavy engine. | Wastes |
+| Sonnet 5.5 | (also dropped: noCitation 1) | | |
+
+### Future Sight (10 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | (none kept; 0 returned) | | |
+| Sonnet 5.5 | (none kept; 3 returned, dropped: jobMismatch 3) | | |
+
+### Barrowgoyf (6 candidate decks)
+
+| Model | Deck | Sentence | Cut |
+|---|---|---|---|
+| Haiku 5.5 | HD Tune - Sultai Arisen | Barrowgoyf mills on combat damage and can return a creature from those cards, feeding the plan to "spends the graveyard as a second hand" alongside Teval, the Balanced Scale's graveyard recursion. | Wonder |
+| Haiku 5.5 | (also dropped: figureOrScore 1) | | |
+| Sonnet 5.5 | HD Tune - Sultai Arisen | Barrowgoyf grows from a stocked graveyard, and its combat mill trigger refills the yard so Teval, the Balanced Scale keeps making Zombies as cards leave it and it digs up a creature. | Wonder |
+| Sonnet 5.5 | (also dropped: figureOrScore 1) | | |
+
+
+## Cost, latency and yield per press
+
+| Arm | Cost per press: mean (min to max) | Latency p50 / max | Returned | Kept |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| Haiku 5.5, per-press (cold) | $0.0040 ($0.0007 to $0.0071) | 7.8 s / 17.6 s | 16 | 13 |
+| Sonnet 5.5, per-press (cold) | $0.0686 ($0.0092 to $0.1305) | 3.0 s / 6.9 s | 22 | 12 |
+| Sonnet 5.5, cached decks: first press (cache write) | $0.1620 | 4.1 s | 4 | 4 |
+| Sonnet 5.5, cached decks: warm press (cache read) | $0.018 to $0.027 | 3.5 to 10.8 s | 6 | 3 |
 
-## Cost per press
-
-To be filled in after the paid run.
-
-| Arm | Cold (mean, max) | Warm (mean, max) | Cache read / write tokens |
-| --- | --- | --- | --- |
-| haiku | | n/a | |
-| sonnet | | n/a | |
-| sonnet-warm | first press | second and third | |
-
-## Latency
-
-To be filled in after the paid run.
-
-| Arm | Median | Max |
-| --- | --- | --- |
-| haiku | | |
-| sonnet | | |
-| sonnet-warm | | |
+- **Per-press layout.** Haiku's cost per press is about 1/17 of Sonnet's. No cache is involved: only the 1.5K
+  rules would cache, so warm and cold presses cost the same.
+- **Cached-decks layout.** Every deck goes into a cached prefix of about 62K tokens. The prefix lives five minutes,
+  so a press is warm only if another press came within that window. The first press writes the cache and costs more
+  than a per-press call.
+- **Why Haiku is slower.** It has more thinking at effort medium; Sonnet answered faster on every card.
 
 ## Validator drops
 
-To be filled in after the paid run: counts by reason, per arm.
+| Arm | Drops by reason |
+| --- | --- |
+| Haiku | figureOrScore 2, noCitation 1 |
+| Sonnet | figureOrScore 6, jobMismatch 3, falseQuote 1, noCitation 1 |
+| Sonnet, warm | cardOutsideDeck 3 |
+
+- **Sonnet's `figureOrScore` drops (all three Ajani picks).** They write rules notation with digits ("+1/+1"). The
+  rule is the brief's (no figures in the line), so they are dropped. The prompt can say this more plainly; see the
+  proposed rerun.
+- **`jobMismatch` (all of Sonnet's Future Sight picks).** Each cites a job the card's labels do not carry.
+- **`cardOutsideDeck` (all three of Tangle Wire's picks, cached layout).** With every deck in the prompt, the model
+  named cards from another deck. The validator caught every one, but this is a real cost of the cached layout.
 
 ## Stale Overviews
 
-The count of kept picks whose deck's Overview names a card the deck no longer runs, from each call's
-`staleOverviewPicks`.
+The check: a picked deck counts as stale when its Overview names a **Key card** the deck no longer runs, with the
+commanders counted as run.
 
-| Arm | Stale picks | Of kept |
-| --- | --- | --- |
-| | | |
+The first runs used every card the Overview's prose names (`content.cards`), threats and weaknesses included, and
+left out the commanders. They reported 13 of 15 picks stale. Every name flagged under that rule was the deck's own
+commander, or a card the prose names as a threat. Corrected and recounted from the stored answers: **0 of 12
+Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key card it no longer runs.
+`fits-read-load.ts` now applies the corrected rule.
+
+## Accuracy notes (read by hand, against the cards' rules text)
+
+- **Haiku**
+  - **Kratos and Ajani, wrong.** It says Kratos "punishes" idle tokens so "the table takes damage". Kratos damages
+    each player for their own creatures that did not attack, so idle tokens hurt their own controller.
+  - **Basic lands as cuts, twice.** Mountain (Omnath) and Forest (Gishath, Kwia on Scrappy Survivors) are a poor
+    cut: they change the mana. The validator allows them today.
+  - **Right:** the Wizards and Mind's Eye line (it draws on opponents' draws while holding counter mana), Time
+    Stretch on Yuriko, Barrowgoyf on Sultai, Throes of Chaos retrace on Omnath.
+- **Sonnet**
+  - **Mind's Eye, wrong.** "Turns every cantrip … into extra cards". Mind's Eye triggers only on opponents' draws.
+  - **Tangle Wire and Kratos, muddled.** "Tapped ones still deal damage" is not what either card does.
+  - **Kwia, a basic land cut.** Wastes, on Omnath.
+  - **Right:** Maddening Hex on Kratos (Torbran) and on Scrappy Survivors (Aura triggers), Throes of Chaos and Aang
+    (cascade into Lessons), Time Stretch on Yuriko, Barrowgoyf on Sultai.
+- **Both**
+  - Each model made about two clear rules errors in 12 to 13 kept lines.
+  - Neither model invented a deck card: the validator caught every attempt.
+  - Both returned nothing for Molten Collapse (one candidate) and for Future Sight, after Sonnet's drops. That is
+    an honest no-fit.
 
 ## Recommendation
 
-<!-- Left blank until the paid run is scored. -->
+**Haiku 5.5, per-press layout, at effort medium.** It costs $0.004 a press against Sonnet's $0.07 (up to $0.13 for
+a colorless card with 21 candidates). Its accuracy here matched Sonnet's (about two rules errors each), it kept more
+of its lines (13 of 16 against 12 of 22), and its 8 to 18 s fits behind a "Reading…" state. Sonnet's speed is the
+only edge it has, and the cached layout that would make it cheap brings its own failure (cards from other decks).
+
+**Proposed single rerun** (not run; it needs the orchestrator's go):
+1. Refuse a basic land as the cut, in the validator, and say so in the prompt.
+2. State the no-figures rule with the rules-notation example ("+1/+1" is not allowed; write "a counter").
+
+Both changes are free to build and cost about $0.05 to re-measure on Haiku.

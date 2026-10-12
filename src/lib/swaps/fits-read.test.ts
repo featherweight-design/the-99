@@ -103,6 +103,12 @@ describe("validFitsRead", () => {
     }]);
   });
 
+  it("says picks, a no-fit when the model named no deck, and failed when every named deck failed (F5)", () => {
+    expect(run([pick()]).outcome).toBe("picks");
+    expect(run([]).outcome).toBe("noFit");
+    expect(run([pick({ deck: "D9" })]).outcome).toBe("failed");
+  });
+
   it("1: drops a deck key never shown, a shown non-candidate, and a repeat", () => {
     expect(run([pick({ deck: "D9" })]).drops).toEqual({ unknownDeck: 1 });
     // Cached layout shows Omnath (D3) but it is not a candidate.

@@ -1,0 +1,2006 @@
+{
+  "at": "2026-10-12T04:45:09.853Z",
+  "promptVersion": 1,
+  "coverage": {
+    "older": 1,
+    "v2": 20
+  },
+  "cards": [
+    {
+      "card": "Ajani Unrelenting",
+      "oracleId": "71620e92-45a4-49cb-94d5-348013ecf886",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 10,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 19
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 11
+          }
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 13,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 7
+          }
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 14
+          },
+          "need": {
+            "role": "draw",
+            "have": 4,
+            "target": 5
+          }
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 13
+          },
+          "need": {
+            "role": "draw",
+            "have": 12,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 11
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 10
+          },
+          "need": {
+            "role": "draw",
+            "have": 2,
+            "target": 5
+          }
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 9
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 9
+          }
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": {
+            "kind": "theme",
+            "theme": "haste",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 1,
+            "target": 4
+          }
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 7
+          },
+          "need": {
+            "role": "draw",
+            "have": 5,
+            "target": 6
+          }
+        }
+      ]
+    },
+    {
+      "card": "Maddening Cacophony",
+      "oracleId": "e0f0f290-c83f-4d97-9f5d-786c7136b0d1",
+      "commanderLegal": true,
+      "candidates": 10,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": {
+            "kind": "combo",
+            "with": {
+              "oracleId": "ab4e9284-7904-413e-97b0-69793be79cc5",
+              "name": "Fraying Sanity"
+            }
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 8
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Wizards",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 2
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Maddening Hex",
+      "oracleId": "5d96170f-14dd-496e-a485-bd3b9eedfe02",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 10,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Mind's Eye",
+      "oracleId": "63fd2a57-7a47-4e07-947c-f4e9da7ee538",
+      "commanderLegal": true,
+      "candidates": 21,
+      "planSources": {
+        "v2": 20,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Wizards",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 24
+          },
+          "need": {
+            "role": "draw",
+            "have": 19,
+            "target": 12
+          }
+        },
+        {
+          "deck": "HD - Eldrazi",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 16
+          },
+          "need": {
+            "role": "draw",
+            "have": 3,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 13,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 7
+          }
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 13
+          },
+          "need": {
+            "role": "draw",
+            "have": 12,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 11
+          }
+        },
+        {
+          "deck": "HD Tune - Blood Rites",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 11
+          },
+          "need": {
+            "role": "draw",
+            "have": 7,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 11
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 9
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 9
+          }
+        },
+        {
+          "deck": "HD - Zombies",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 8,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 7,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 7
+          }
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 6
+          },
+          "need": {
+            "role": "draw",
+            "have": 5,
+            "target": 6
+          }
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 6
+          },
+          "need": {
+            "role": "draw",
+            "have": 2,
+            "target": 5
+          }
+        },
+        {
+          "deck": "HD - Soldiers",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 5
+          },
+          "need": {
+            "role": "draw",
+            "have": 6,
+            "target": 7
+          }
+        },
+        {
+          "deck": "HD - Elves",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 4
+          },
+          "need": {
+            "role": "draw",
+            "have": 3,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 4
+          },
+          "need": {
+            "role": "draw",
+            "have": 4,
+            "target": 5
+          }
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 1
+          },
+          "need": {
+            "role": "draw",
+            "have": 1,
+            "target": 4
+          }
+        }
+      ]
+    },
+    {
+      "card": "Molten Collapse",
+      "oracleId": "f0d1636e-6f80-44fe-869a-1749ab249815",
+      "commanderLegal": true,
+      "candidates": 1,
+      "planSources": {
+        "v2": 1,
+        "older": 0,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 2,
+            "target": 3
+          }
+        }
+      ]
+    },
+    {
+      "card": "Throes of Chaos",
+      "oracleId": "e3444fcf-70ed-4d6e-aea9-030af15cad56",
+      "commanderLegal": true,
+      "candidates": 10,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Time Stretch",
+      "oracleId": "72e56963-a9dd-44dc-a4d3-992b4d89dd28",
+      "commanderLegal": true,
+      "candidates": 10,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Yuriko",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Wizards",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Tangle Wire",
+      "oracleId": "c4ea0931-43e0-4214-9e0b-213eee3a7e69",
+      "commanderLegal": true,
+      "candidates": 21,
+      "planSources": {
+        "v2": 20,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Eldrazi",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Elves",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Soldiers",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Wizards",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Zombies",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Blood Rites",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Kwia Vigorbloom",
+      "oracleId": "07a28621-e617-46b0-af3e-2efb03b5056a",
+      "commanderLegal": true,
+      "candidates": 4,
+      "planSources": {
+        "v2": 3,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 15
+          },
+          "need": {
+            "role": "ramp",
+            "have": 20,
+            "target": 9
+          }
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 10
+          },
+          "need": {
+            "role": "ramp",
+            "have": 5,
+            "target": 6
+          }
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 7
+          },
+          "need": {
+            "role": "ramp",
+            "have": 11,
+            "target": 9
+          }
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "tokens",
+            "n": 6
+          },
+          "need": {
+            "role": "ramp",
+            "have": 13,
+            "target": 9
+          }
+        }
+      ]
+    },
+    {
+      "card": "Future Sight",
+      "oracleId": "93a0e938-b916-47ec-9803-369e885e253c",
+      "commanderLegal": true,
+      "candidates": 10,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Wizards",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Barrowgoyf",
+      "oracleId": "74c0164c-130f-4572-9066-626c77f6e2ff",
+      "commanderLegal": true,
+      "candidates": 6,
+      "planSources": {
+        "v2": 6,
+        "older": 0,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 11
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 8
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": {
+            "kind": "theme",
+            "theme": "mill",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Zombies",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Blood Rites",
+          "reason": null,
+          "need": null
+        }
+      ]
+    }
+  ],
+  "calls": [
+    {
+      "card": "Ajani Unrelenting",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 38742,
+      "reservedUsd": 0.314968,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 3772,
+      "usd": 0.07401,
+      "usage": {
+        "inputTokens": 35220,
+        "outputTokens": 357,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D10",
+            "sentence": "Every loyalty activation makes a Cadet, and the +1 gives {C640}'s Goblin tokens haste and +1/+0, while the -3 clears blockers without hitting tokens.",
+            "cut": "C701",
+            "cites": [
+              {
+                "key": "C765",
+                "job": "pump"
+              },
+              {
+                "key": "C640",
+                "job": "tokens"
+              }
+            ]
+          },
+          {
+            "deck": "D8",
+            "sentence": "The +1 pumps the team that {C517} already hastes, and each activation adds a Cadet that must attack or hurt its controller, while the -3 wipes blockers.",
+            "cut": "C525",
+            "cites": [
+              {
+                "key": "C765",
+                "job": "wipes"
+              },
+              {
+                "key": "C517",
+                "job": "haste"
+              }
+            ]
+          },
+          {
+            "deck": "D1",
+            "sentence": "Each loyalty activation makes a Cadet body, and the +1 gives {C48} and other Elementals extra power to push \"It wins by combat damage.\"",
+            "cut": "C67",
+            "cites": [
+              {
+                "key": "C765",
+                "job": "tokens"
+              },
+              {
+                "key": "C48",
+                "job": "tokens"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [],
+      "drops": {
+        "figureOrScore": 3
+      },
+      "returned": 3,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Maddening Cacophony",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 34238,
+      "reservedUsd": 0.296952,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 3040,
+      "usd": 0.065,
+      "usage": {
+        "inputTokens": 31125,
+        "outputTokens": 275,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "{C699} mills a huge chunk of the library, and {C1} turns every nonland card milled into +1/+1 counters, which fits the plan to \"mill opponents and convert every nonland card milled into +1/+1 counters\".",
+            "cut": "C60",
+            "cites": [
+              {
+                "key": "C699",
+                "job": "mill"
+              },
+              {
+                "key": "C1",
+                "job": "counters"
+              }
+            ]
+          },
+          {
+            "deck": "D3",
+            "sentence": "{C699} can empty a library at instant-like pace with kicker, giving {C185} and {C168} a mill finish that backs up the plan to draw from an empty library with {C186}.",
+            "cut": "C192",
+            "cites": [
+              {
+                "key": "C699",
+                "job": "mill"
+              },
+              {
+                "key": "C185",
+                "job": "mill"
+              },
+              {
+                "key": "C186",
+                "job": "finisher"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Wizards",
+          "plan": "v2",
+          "staleOverview": [
+            "Baral, Chief of Compliance"
+          ],
+          "sentence": "[[Maddening Cacophony]] can empty a library at instant-like pace with kicker, giving [[Jace, Wielder of Mysteries]] and [[Brain Freeze]] a mill finish that backs up the plan to draw from an empty library with [[Laboratory Maniac]].",
+          "cut": "Mind Bend",
+          "cites": [
+            {
+              "card": "Maddening Cacophony",
+              "job": "mill"
+            },
+            {
+              "card": "Jace, Wielder of Mysteries",
+              "job": "mill"
+            },
+            {
+              "card": "Laboratory Maniac",
+              "job": "finisher"
+            }
+          ]
+        }
+      ],
+      "drops": {
+        "falseQuote": 1
+      },
+      "returned": 2,
+      "staleOverviewPicks": 1
+    },
+    {
+      "card": "Maddening Hex",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 38605,
+      "reservedUsd": 0.31442,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 6929,
+      "usd": 0.07828,
+      "usage": {
+        "inputTokens": 35095,
+        "outputTokens": 809,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D5",
+            "sentence": "{C347} adds extra damage to each roll from {C765}, so every noncreature spell an opponent casts feeds the burn-the-table plan alongside {C334}.",
+            "cut": "C310",
+            "cites": [
+              {
+                "key": "C347",
+                "job": "drain"
+              },
+              {
+                "key": "C765",
+                "job": "drain"
+              },
+              {
+                "key": "C334",
+                "job": "drain"
+              }
+            ]
+          },
+          {
+            "deck": "D11",
+            "sentence": "{C765} is a cheap Aura that triggers {C546} and {C727} when cast, while pinging opponents as it hops between them.",
+            "cut": "C723",
+            "cites": [
+              {
+                "key": "C546",
+                "job": "draw"
+              },
+              {
+                "key": "C727",
+                "job": "draw"
+              },
+              {
+                "key": "C765",
+                "job": "drain"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Kratos",
+          "plan": "v2",
+          "staleOverview": [
+            "Kratos, God of War"
+          ],
+          "sentence": "[[Torbran, Thane of Red Fell]] adds extra damage to each roll from [[Maddening Hex]], so every noncreature spell an opponent casts feeds the burn-the-table plan alongside [[Repercussion]].",
+          "cut": "Embrace the Unknown",
+          "cites": [
+            {
+              "card": "Torbran, Thane of Red Fell",
+              "job": "drain"
+            },
+            {
+              "card": "Maddening Hex",
+              "job": "drain"
+            },
+            {
+              "card": "Repercussion",
+              "job": "drain"
+            }
+          ]
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "plan": "v2",
+          "staleOverview": [
+            "Dogmeat, Ever Loyal"
+          ],
+          "sentence": "[[Maddening Hex]] is a cheap Aura that triggers [[Sram, Senior Edificer]] and [[Kor Spiritdancer]] when cast, while pinging opponents as it hops between them.",
+          "cut": "Inventory Management",
+          "cites": [
+            {
+              "card": "Sram, Senior Edificer",
+              "job": "draw"
+            },
+            {
+              "card": "Kor Spiritdancer",
+              "job": "draw"
+            },
+            {
+              "card": "Maddening Hex",
+              "job": "drain"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 2,
+      "staleOverviewPicks": 2
+    },
+    {
+      "card": "Mind's Eye",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 69614,
+      "reservedUsd": 0.438456,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 3013,
+      "usd": 0.12941,
+      "usage": {
+        "inputTokens": 63285,
+        "outputTokens": 284,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "Mind's Eye turns every cantrip and opposing draw into extra cards while {C14} keeps spells countered, feeding the looting engine on {C1} and helping dig toward {C30}.",
+            "cut": "C12",
+            "cites": [
+              {
+                "key": "C1395",
+                "job": "draw"
+              },
+              {
+                "key": "C14",
+                "job": "counterspell"
+              },
+              {
+                "key": "C30",
+                "job": "finisher"
+              }
+            ]
+          },
+          {
+            "deck": "D7",
+            "sentence": "Mind's Eye gives extra cards whenever opponents draw, adding to the card flow from {C484} and {C491} while {C14} protects the unblocked ninja attacks.",
+            "cut": "C440",
+            "cites": [
+              {
+                "key": "C1395",
+                "job": "draw"
+              },
+              {
+                "key": "C484",
+                "job": "draw"
+              },
+              {
+                "key": "C14",
+                "job": "counterspell"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Wizards",
+          "plan": "v2",
+          "staleOverview": [
+            "Baral, Chief of Compliance"
+          ],
+          "sentence": "Mind's Eye turns every cantrip and opposing draw into extra cards while [[Counterspell]] keeps spells countered, feeding the looting engine on [[Baral, Chief of Compliance]] and helping dig toward [[Laboratory Maniac]].",
+          "cut": "Collective Restraint",
+          "cites": [
+            {
+              "card": "Mind's Eye",
+              "job": "draw"
+            },
+            {
+              "card": "Counterspell",
+              "job": "counterspell"
+            },
+            {
+              "card": "Laboratory Maniac",
+              "job": "finisher"
+            }
+          ]
+        },
+        {
+          "deck": "HD - Yuriko",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Mind's Eye gives extra cards whenever opponents draw, adding to the card flow from [[Ninja of the Deep Hours]] and [[Satoru Umezawa]] while [[Counterspell]] protects the unblocked ninja attacks.",
+          "cut": "Blinkmoth Infusion",
+          "cites": [
+            {
+              "card": "Mind's Eye",
+              "job": "draw"
+            },
+            {
+              "card": "Ninja of the Deep Hours",
+              "job": "draw"
+            },
+            {
+              "card": "Counterspell",
+              "job": "counterspell"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 2,
+      "staleOverviewPicks": 1
+    },
+    {
+      "card": "Molten Collapse",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 5032,
+      "reservedUsd": 0.180128,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 1614,
+      "usd": 0.009248,
+      "usage": {
+        "inputTokens": 4574,
+        "outputTokens": 10,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": []
+      },
+      "picks": [],
+      "drops": {},
+      "returned": 0,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Throes of Chaos",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 35305,
+      "reservedUsd": 0.30122,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 3059,
+      "usd": 0.06684,
+      "usage": {
+        "inputTokens": 32095,
+        "outputTokens": 265,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "Cascade off {C696} can hit a cheap Lesson such as {C7} for free, and retrace turns spare lands into repeat casts that feed {C1} with more bending triggers.",
+            "cut": "C15",
+            "cites": [
+              {
+                "key": "C696",
+                "job": "castFree"
+              },
+              {
+                "key": "C7",
+                "job": "draw"
+              },
+              {
+                "key": "C1",
+                "job": "draw"
+              }
+            ]
+          },
+          {
+            "deck": "D6",
+            "sentence": "Retrace on {C696} discards extra lands to recast it, and each cascade hit tends to ramp or make tokens, a good use for surplus lands in a landfall engine around {C357}.",
+            "cut": "C432",
+            "cites": [
+              {
+                "key": "C696",
+                "job": "castFree"
+              },
+              {
+                "key": "C357",
+                "job": "landfall"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Avatar Aang",
+          "plan": "v2",
+          "staleOverview": [
+            "Avatar Aang // Aang, Master of Elements"
+          ],
+          "sentence": "Cascade off [[Throes of Chaos]] can hit a cheap Lesson such as [[Airbending Lesson]] for free, and retrace turns spare lands into repeat casts that feed [[Avatar Aang // Aang, Master of Elements]] with more bending triggers.",
+          "cut": "Crashing Wave",
+          "cites": [
+            {
+              "card": "Throes of Chaos",
+              "job": "castFree"
+            },
+            {
+              "card": "Airbending Lesson",
+              "job": "draw"
+            },
+            {
+              "card": "Avatar Aang // Aang, Master of Elements",
+              "job": "draw"
+            }
+          ]
+        }
+      ],
+      "drops": {
+        "figureOrScore": 1
+      },
+      "returned": 2,
+      "staleOverviewPicks": 1
+    },
+    {
+      "card": "Time Stretch",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 34197,
+      "reservedUsd": 0.296788,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 2271,
+      "usd": 0.063556,
+      "usage": {
+        "inputTokens": 31088,
+        "outputTokens": 138,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "Time Stretch fits the written backup to \"chain extra turns with Temporal Manipulation and Time Warp to attack again\", giving {C1} and the ninjas two more attack steps beside {C82}.",
+            "cut": "C66",
+            "cites": [
+              {
+                "key": "C699",
+                "job": "finisher"
+              },
+              {
+                "key": "C82",
+                "job": "finisher"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Yuriko",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Time Stretch fits the written backup to \"chain extra turns with Temporal Manipulation and Time Warp to attack again\", giving [[Yuriko, the Tiger's Shadow]] and the ninjas two more attack steps beside [[Temporal Manipulation]].",
+          "cut": "Shadow of Mortality",
+          "cites": [
+            {
+              "card": "Time Stretch",
+              "job": "finisher"
+            },
+            {
+              "card": "Temporal Manipulation",
+              "job": "finisher"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 1,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Tangle Wire",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 69588,
+      "reservedUsd": 0.438352,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 4086,
+      "usd": 0.130452,
+      "usage": {
+        "inputTokens": 63261,
+        "outputTokens": 393,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D8",
+            "sentence": "{C1395} taps down opposing creatures at upkeep, so with {C522} haste for all and idle creatures hurting their controllers, tapped ones still deal damage while {C534} style stax holds the table.",
+            "cut": "C526",
+            "cites": [
+              {
+                "key": "C1395",
+                "job": "stax"
+              },
+              {
+                "key": "C522",
+                "job": "haste"
+              }
+            ]
+          },
+          {
+            "deck": "D12",
+            "sentence": "{C1395} taps lands on each upkeep, letting {C765} and counterspells like {C775} win the mana game while opponents cannot untap into their own answers.",
+            "cut": "C795",
+            "cites": [
+              {
+                "key": "C1395",
+                "job": "stax"
+              },
+              {
+                "key": "C765",
+                "job": "spellslinger"
+              },
+              {
+                "key": "C775",
+                "job": "counterspell"
+              }
+            ]
+          },
+          {
+            "deck": "D6",
+            "sentence": "{C1395} slows opposing blockers and mana each upkeep, so {C388} can double the Goblin count and swing wide while {C449} adds pressure.",
+            "cut": "C452",
+            "cites": [
+              {
+                "key": "C1395",
+                "job": "stax"
+              },
+              {
+                "key": "C388",
+                "job": "tokens"
+              },
+              {
+                "key": "C449",
+                "job": "stax"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Kratos",
+          "plan": "v2",
+          "staleOverview": [
+            "Kratos, God of War"
+          ],
+          "sentence": "[[Tangle Wire]] taps down opposing creatures at upkeep, so with [[Kratos, God of War]] haste for all and idle creatures hurting their controllers, tapped ones still deal damage while [[Ensnaring Bridge]] style stax holds the table.",
+          "cut": "Bolt Bend",
+          "cites": [
+            {
+              "card": "Tangle Wire",
+              "job": "stax"
+            },
+            {
+              "card": "Kratos, God of War",
+              "job": "haste"
+            }
+          ]
+        },
+        {
+          "deck": "HD - Wizards",
+          "plan": "v2",
+          "staleOverview": [
+            "Baral, Chief of Compliance"
+          ],
+          "sentence": "[[Tangle Wire]] taps lands on each upkeep, letting [[Baral, Chief of Compliance]] and counterspells like [[Counterspell]] win the mana game while opponents cannot untap into their own answers.",
+          "cut": "Mind Bend",
+          "cites": [
+            {
+              "card": "Tangle Wire",
+              "job": "stax"
+            },
+            {
+              "card": "Baral, Chief of Compliance",
+              "job": "spellslinger"
+            },
+            {
+              "card": "Counterspell",
+              "job": "counterspell"
+            }
+          ]
+        },
+        {
+          "deck": "HD - Goblins",
+          "plan": "v2",
+          "staleOverview": [
+            "Krenko, Mob Boss"
+          ],
+          "sentence": "[[Tangle Wire]] slows opposing blockers and mana each upkeep, so [[Krenko, Mob Boss]] can double the Goblin count and swing wide while [[Sulfuric Vortex]] adds pressure.",
+          "cut": "Wave of Indifference",
+          "cites": [
+            {
+              "card": "Tangle Wire",
+              "job": "stax"
+            },
+            {
+              "card": "Krenko, Mob Boss",
+              "job": "tokens"
+            },
+            {
+              "card": "Sulfuric Vortex",
+              "job": "stax"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 3,
+      "staleOverviewPicks": 3
+    },
+    {
+      "card": "Kwia Vigorbloom",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 15788,
+      "reservedUsd": 0.223152,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 2606,
+      "usd": 0.030614,
+      "usage": {
+        "inputTokens": 14352,
+        "outputTokens": 191,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "{C310} turns the life from {C1} landfall into Lotus tokens for three mana, and {C80} and {C23} give more life triggers to feed a land-heavy engine.",
+            "cut": "C88",
+            "cites": [
+              {
+                "key": "C310",
+                "job": "ramp"
+              },
+              {
+                "key": "C1",
+                "job": "lifegain"
+              },
+              {
+                "key": "C80",
+                "job": "lifegain"
+              },
+              {
+                "key": "C23",
+                "job": "lifegain"
+              }
+            ]
+          },
+          {
+            "deck": "D4",
+            "sentence": "x",
+            "cut": null,
+            "cites": []
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Omnath",
+          "plan": "older",
+          "staleOverview": [
+            "Omnath, Locus of Creation"
+          ],
+          "sentence": "[[Kwia Vigorbloom]] turns the life from [[Omnath, Locus of Creation]] landfall into Lotus tokens for three mana, and [[Tatyova, Benthic Druid]] and [[Courser of Kruphix]] give more life triggers to feed a land-heavy engine.",
+          "cut": "Wastes",
+          "cites": [
+            {
+              "card": "Kwia Vigorbloom",
+              "job": "ramp"
+            },
+            {
+              "card": "Omnath, Locus of Creation",
+              "job": "lifegain"
+            },
+            {
+              "card": "Tatyova, Benthic Druid",
+              "job": "lifegain"
+            },
+            {
+              "card": "Courser of Kruphix",
+              "job": "lifegain"
+            }
+          ]
+        }
+      ],
+      "drops": {
+        "noCitation": 1
+      },
+      "returned": 2,
+      "staleOverviewPicks": 1
+    },
+    {
+      "card": "Future Sight",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 34218,
+      "reservedUsd": 0.296872,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 3146,
+      "usd": 0.066104,
+      "usage": {
+        "inputTokens": 31107,
+        "outputTokens": 389,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D10",
+            "sentence": "{C699} lets Teval's graveyard fill double as a card source, and milling with {C654} and {C684} reveals more of the top cards to play while the yard keeps feeding {C642}.",
+            "cut": "C698",
+            "cites": [
+              {
+                "key": "C699",
+                "job": "draw"
+              },
+              {
+                "key": "C654",
+                "job": "mill"
+              },
+              {
+                "key": "C684",
+                "job": "mill"
+              },
+              {
+                "key": "C642",
+                "job": "recursion"
+              }
+            ]
+          },
+          {
+            "deck": "D9",
+            "sentence": "{C699} lets Rootha cast spells straight off the top, so every extra instant or sorcery before combat feeds {C574} and grows the Elemental token.",
+            "cut": "C601",
+            "cites": [
+              {
+                "key": "C699",
+                "job": "draw"
+              },
+              {
+                "key": "C574",
+                "job": "tokens"
+              }
+            ]
+          },
+          {
+            "deck": "D4",
+            "sentence": "{C699} lets lands be played from the top of the library, giving {C228} extra landfall triggers and replacing cards drawn by {C260}.",
+            "cut": "C300",
+            "cites": [
+              {
+                "key": "C699",
+                "job": "land"
+              },
+              {
+                "key": "C228",
+                "job": "landfall"
+              },
+              {
+                "key": "C260",
+                "job": "draw"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [],
+      "drops": {
+        "jobMismatch": 3
+      },
+      "returned": 3,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Barrowgoyf",
+      "arm": "sonnet",
+      "model": "claude-sonnet-5-5",
+      "layout": "per-press",
+      "inputCeiling": 21015,
+      "reservedUsd": 0.24406,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 2835,
+      "usd": 0.040638,
+      "usage": {
+        "inputTokens": 19104,
+        "outputTokens": 243,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "When {C434} connects, its mill trigger feeds {C1}, which puts +1/+1 counters on creatures for each nonland card milled, and it can pull a creature back to hand.",
+            "cut": "C69",
+            "cites": [
+              {
+                "key": "C434",
+                "job": "mill"
+              },
+              {
+                "key": "C1",
+                "job": "counters"
+              }
+            ]
+          },
+          {
+            "deck": "D2",
+            "sentence": "{C434} grows from a stocked graveyard, and its combat mill trigger refills the yard so {C92} keeps making Zombies as cards leave it and it digs up a creature.",
+            "cut": "C159",
+            "cites": [
+              {
+                "key": "C434",
+                "job": "mill"
+              },
+              {
+                "key": "C92",
+                "job": "mill"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "plan": "v2",
+          "staleOverview": [
+            "Teval, the Balanced Scale"
+          ],
+          "sentence": "[[Barrowgoyf]] grows from a stocked graveyard, and its combat mill trigger refills the yard so [[Teval, the Balanced Scale]] keeps making Zombies as cards leave it and it digs up a creature.",
+          "cut": "Wonder",
+          "cites": [
+            {
+              "card": "Barrowgoyf",
+              "job": "mill"
+            },
+            {
+              "card": "Teval, the Balanced Scale",
+              "job": "mill"
+            }
+          ]
+        }
+      ],
+      "drops": {
+        "figureOrScore": 1
+      },
+      "returned": 2,
+      "staleOverviewPicks": 1
+    }
+  ],
+  "staleOverview": {
+    "picks": 10,
+    "of": 12
+  }
+}

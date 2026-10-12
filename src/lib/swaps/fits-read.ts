@@ -228,7 +228,13 @@ export type FitsPick = {
   cut: string | null;
   cites: { oracleId: string; job: string }[];
 };
-export type FitsReadValidated = { picks: FitsPick[]; drops: Partial<Record<FitsDropReason, number>> };
+/**
+ * `outcome` (handoff audit F5): `picks` when at least one deck survived; `noFit` when the model named
+ * no deck, a real answer that may be stored; `failed` when it named decks and every one failed
+ * validation, which is a failed read (refunded, never stored as a no-fit).
+ */
+export type FitsReadOutcome = "picks" | "noFit" | "failed";
+export type FitsReadValidated = { outcome: FitsReadOutcome; picks: FitsPick[]; drops: Partial<Record<FitsDropReason, number>> };
 
 const CARD_TOKEN = /\{(C\d+)\}/g;
 /** A phrase in straight or curly double quotes. */
@@ -303,7 +309,8 @@ export function validFitsRead(args: {
     seen.add(fail.deckId);
     picks.push(fail);
   }
-  return { picks, drops };
+  const outcome: FitsReadOutcome = picks.length > 0 ? "picks" : reply.picks.length === 0 ? "noFit" : "failed";
+  return { outcome, picks, drops };
 
   function check(p: FitsReadReply["picks"][number]): FitsPick | FitsDropReason {
     // 1. A deck the call was shown, a candidate, once.
