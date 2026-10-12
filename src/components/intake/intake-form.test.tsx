@@ -139,6 +139,58 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     expect(push).toHaveBeenCalledTimes(1);
   });
 
+  describe("the press answers at once, before the server round trip", () => {
+    // A submit that has not come back: the page is still the form, as it is for seconds on a slow
+    // connection while the Server Action loads the pool.
+    const slow = () => {
+      let release!: () => void;
+      push.mockImplementationOnce(() => new Promise((resolve) => { release = () => resolve({ kind: "refused" as const }); }));
+      return () => act(async () => { release(); });
+    };
+
+    it("hairlines a paid press, keeps its pill and says Reading…, on both the desktop and phone buttons", async () => {
+      push.mockClear();
+      const settle = slow();
+      render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={credit} />);
+      await act(async () => { fireEvent.click(presses()[0]); });
+      for (const press of presses()) {
+        // aria-disabled, not disabled: a disabled button would drop the focus it was pressed with.
+        expect(press.getAttribute("aria-disabled")).toBe("true");
+        expect(press.hasAttribute("disabled")).toBe(false);
+        expect(press.getAttribute("aria-busy")).toBe("true");
+        expect(press.textContent).toBe("1 creditReading…");
+        expect(press.getAttribute("aria-label")).toBe("1 credit. Reading…");
+        expect(press.className).not.toContain("bg-[color:var(--fg)]");
+      }
+      await settle();
+      // A refusal returns the form to what it was.
+      for (const press of presses()) {
+        expect(press.hasAttribute("aria-disabled")).toBe(false);
+        expect(press.textContent).toContain("Find commanders");
+      }
+    });
+
+    it("ignores a second press while it works", async () => {
+      push.mockClear();
+      slow();
+      render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={credit} />);
+      const press = presses()[0];
+      await act(async () => { fireEvent.click(press); });
+      await act(async () => { fireEvent.click(press); });
+      expect(push).toHaveBeenCalledTimes(1);
+    });
+
+    it("names the free search on an unpaid press, in the results' own words", async () => {
+      push.mockClear();
+      slow();
+      render(<IntakeForm themes={[]} initial={emptyParams()} standing={credit} />);
+      await act(async () => { fireEvent.click(presses()[0]); });
+      const pending = screen.getAllByRole("button", { name: "Finding commanders…" });
+      expect(pending).toHaveLength(2);
+      for (const press of pending) expect(press.getAttribute("aria-disabled")).toBe("true");
+    });
+  });
+
   it("submits the words whole with the answers, and never a card", () => {
     push.mockClear();
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), card: "11111111-1111-4111-8111-111111111111", words: "x" }} standing={credit} />);

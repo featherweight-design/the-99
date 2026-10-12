@@ -1906,6 +1906,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 
 - `pnpm probe:help-me-choose-one-loading` presses Help me choose's credit press in a real browser at
   1300x900 and 390x844, down BOTH entry paths, sampling the page every 40ms.
+  **The press answers at once.** On Chrome's Slow 4G with a 4x slower CPU, the form's press must
+  change (its words, or greyed with `aria-disabled`) within 250ms of the click, before the Server
+  Action's round trip, which Slow 4G's 562ms latency makes the soonest any server answer can arrive
+  (Hugh, 2026-10-12: the press had a delay with no sign anything was happening). It also checks the
+  press keeps its width and height and the credit line beside it does not move (without the width
+  lock the line jumps 55px at 1300). It is greyed with
+  `aria-disabled`, not `disabled`, so it keeps the focus it was pressed with. Measured against
+  `next dev` 2026-10-12: 119ms at 1300 and 128ms at 390, to "1 credit Reading…"; a production build
+  has not been measured. With the pending press removed the check fails at both widths ("no change
+  in 4s"); a class or attribute that moves for another reason does not count as an answer.
   **From the form** the free list was never on screen, so while the read is pending the results'
   loading state stands in for it: the probe fails when the list draws while the panel reads, when
   step 1 never names the commanders it scans (the held state still reports the pool), or when

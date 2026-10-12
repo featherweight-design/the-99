@@ -1,6 +1,8 @@
 // probe:help-me-choose-one-loading — how a read press loads on Help me choose, in a real browser at
 // 1300x900 and 390x844, down BOTH entry paths. Samples the page every 40ms and records a video.
 //
+//  0. THE PRESS ANSWERS AT ONCE, on Slow 4G and a 4x CPU: its button changes within PRESS_ACK_MS of the
+//     click, before the Server Action's round trip.
 //  1. FROM THE FORM. The free list was never on screen, so while the read is pending the results'
 //     loading state stands in for it (no list, not dimmed), and the list draws once the read settles.
 //     Hugh, 2026-10-12: a list replaced moments later "felt buggy".
@@ -99,6 +101,17 @@ async function assertServerReadsTarget(page, userId) {
   const drawn = res?.status() === 200 && (await page.getByText(name).count()) > 0;
   if (!drawn) throw new Error("the server does not draw a deck written to PROBE_TARGET_URL: it reads another database. Nothing was pressed.");
 }
+/** Chrome's own Slow 4G, as `measure:load` runs it. */
+const SLOW_4G = { offline: false, latency: 562.5, downloadThroughput: 180_000, uploadThroughput: 84_375 };
+/**
+ * How soon after the press its button must change. Slow 4G's latency alone is 562ms, so no server
+ * answer can arrive before that: a change inside this bound is the press answering for itself.
+ * Measured 2026-10-12 against `next dev` (React in development mode, the whole form re-rendering
+ * under a 4x slower CPU): 119ms at 1300 and 128ms at 390. The bar is set where the dev build clears
+ * it and a button that waits for the server (several seconds) cannot; a production build has not
+ * been measured.
+ */
+const PRESS_ACK_MS = 250;
 const SETTLED = new Set(["done", "nothing", "failed", "stopped"]);
 
 /** Skeleton samples after the list has drawn: the flash the one-loading fix removed. */
@@ -158,10 +171,50 @@ async function run() {
       // as a bug). The list may not draw until the read has settled.
       await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
       await page.locator(`${PAGE} textarea`).fill(`big dumb lizards that stomp ${width} ${Date.now()}`);
-      const form = await press(page, () => page.getByRole("button", { name: /^1 credit\. Find commanders/ }).first().click());
+      // The press answers at once: on Chrome's Slow 4G and a 4x slower CPU (the performance lane's slow
+      // profile) its button must change within PRESS_ACK_MS of the click, before the Server Action's
+      // round trip comes back. Hugh, 2026-10-12: the press had a delay with no sign anything happened.
+      const cdp = await context.newCDPSession(page);
+      await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", SLOW_4G);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+      let ack = null;
+      const form = await press(page, async () => {
+        ack = await page.evaluate(() => new Promise((resolve) => {
+          const btn = [...document.querySelectorAll("form button[type='submit']")].find((b) => b.getClientRects().length > 0);
+          const before = btn.textContent;
+          const rect0 = btn.getBoundingClientRect();
+          const line0 = btn.nextElementSibling?.getBoundingClientRect().left ?? null;
+          const t0 = performance.now();
+          // The press must say it is working: its words change, or it is greyed. A class or an
+          // attribute that moves for another reason (focus, hydration) is not an answer.
+          const obs = new MutationObserver(() => {
+            if (btn.textContent === before && btn.getAttribute("aria-disabled") !== "true") return;
+            obs.disconnect();
+            const rect = btn.getBoundingClientRect();
+            const line = btn.nextElementSibling?.getBoundingClientRect().left ?? null;
+            resolve({
+              ms: performance.now() - t0, text: btn.textContent, busy: btn.getAttribute("aria-disabled") === "true",
+              dw: rect.width - rect0.width, dh: rect.height - rect0.height, dline: line === null || line0 === null ? 0 : line - line0,
+            });
+          });
+          obs.observe(btn, { attributes: true, childList: true, subtree: true, characterData: true });
+          setTimeout(() => resolve(null), 4_000);
+          btn.click();
+        }));
+        // Unthrottle once the press has answered, so the rest of the run measures the page, not the profile.
+        await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+        await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+      });
       const at = (s) => `${s} @ ${width}`;
       console.log(`  form path timeline @ ${width}: ${show(form.timeline)}`);
       const reading = form.timeline.filter((t) => t.phase === "reading");
+      report(at(`form: the press changes within ${PRESS_ACK_MS}ms on Slow 4G`), ack !== null && ack.ms <= PRESS_ACK_MS,
+        ack ? `${ack.ms.toFixed(0)}ms, now "${ack.text}"${ack.busy ? ", greyed" : ""}` : "no change in 4s");
+      // The press keeps its box, the credit line beside it does not move, and it keeps the focus.
+      report(at("form: the pending press keeps its size and the line beside it stays put"),
+        ack !== null && Math.abs(ack.dw) < 1 && Math.abs(ack.dh) < 1 && Math.abs(ack.dline) < 1,
+        ack ? `width ${ack.dw.toFixed(1)}px, height ${ack.dh.toFixed(1)}px, line ${ack.dline.toFixed(1)}px` : "no press");
       report(at("form: the read settled"), form.done !== null, `final phase ${form.timeline.at(-1)?.phase}`);
       report(at("form: the loading state is drawn while it reads"), reading.some((t) => t.skeleton), "");
       report(at("form: no free list is drawn while it reads"), reading.length > 0 && reading.every((t) => !t.list),
