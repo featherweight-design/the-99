@@ -82,7 +82,7 @@ export function GotItReceipt({
   written: GotItWritten<unknown>;
   /** The receipt's body when the caller writes its own (the cart's); else read from a deck's facts. */
   body?: string | null;
-  /** Where the toast sits: a deck page's slot, or the cart's (bottom right, above the dock). */
+  /** Where the toast sits: a deck page's slot, or the cart's (bottom right; on the phone above the tab bar). */
   placement?: "deck" | "cart";
   host: GotItUndoHost;
   /** Drawn straight in the failed form: an undo that failed after its toast was replaced. */

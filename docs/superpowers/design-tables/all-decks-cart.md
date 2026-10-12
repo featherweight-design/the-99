@@ -29,8 +29,10 @@ Committed from the R1 handoff with Hugh's 2026-10-11 rulings applied (READINESS-
 | Property | Mobile | Desktop |
 |---|---|---|
 | header | back mono 11 `--fg-faint` · h1 display 22 / 700 · sub mono 11 `--fg-faint` · pad 16 16 12, rule below | pad 20 22 16 |
-| grid | one column: selections / list / checkout, gap 14, pad 14 16 | `280px minmax(0,1fr)`, areas `selections list / checkout list`, gap 14 24, pad 18 22 |
-| checkout | docked: `position: sticky; bottom: var(--tabbar-h)` (clears the tab bar), full bleed, pad 10 16 16, `--surface-rail`, top 1px `--border-strong` | `position: sticky; top: 18px` under the selections |
+| page | one screen tall (Hugh, 2026-10-11): `100dvh` less the tab bar, an open About sheet and the measured top of the page; the document does not scroll, the list does (except with the deck select open, below) | `100dvh` less the measured top; the document never scrolls |
+| grid | rows `auto minmax(0,1fr)`: the checkout and selections column, then the list filling to the tab bar; gap 12, pad 12 16 | `280px minmax(0,1fr)`, one `minmax(0,1fr)` row: the selections and checkout column beside the list; gap 14 24, pad 18 22 |
+| checkout | heads the page, above the selections (Hugh, 2026-10-11); in flow, the CartCheckout card as drawn | under the selections, in the same column |
+| list box | the cart's own scroll box, `flex: 1`, filling what the page leaves below the switch and the head line; never under 120, so with the deck select open the page scrolls rather than squeezing it; 36 fade at its foot | same; the switch and the head line stay put above it |
 
 ## Component: DeckSelect
 
@@ -38,7 +40,7 @@ Committed from the R1 handoff with Hugh's 2026-10-11 rulings applied (READINESS-
 |---|---|---|
 | card | radius 12, 1px `--border`, `--surface`, pad 2 14 4 | same |
 | head | mono 10 / .14em uppercase `--fg-faint`, `selections.headPhone` / `selections.head`, h 44 | same |
-| fold | the head is the toggle; folded by default; `▾ / ▴` 12 `--fg-muted` | not folded |
+| fold | the head is the toggle; folded by default; `▾ / ▴` 12 `--fg-muted`. Open, the deck rows scroll inside a `max-height: 30dvh` cap | not folded; the deck rows scroll inside the column under the head when they outgrow it |
 | Select all / Unselect all | 13 `--accent`, h 44, at the head's right; shown when there are 2+ decks (phone: when open) | same |
 | row | min-h 44, pad 11 0 10, top 1px `--border`; the whole row is the checkbox's label | same |
 | box | 18 × 18, radius 4. On: `--accent` fill, `✓` 12 / 700 `--bg`. Off: 1.5px `--border-strong` | same |
@@ -114,6 +116,6 @@ Committed from the R1 handoff with Hugh's 2026-10-11 rulings applied (READINESS-
 
 | Property | Value |
 |---|---|
-| placement | the cart's toast slot: desktop bottom-right 22, w 380; phone above the dock |
+| placement | the cart's toast slot: desktop bottom-right 22, w 380; phone above the tab bar, over the foot of the list |
 | body | `receipt.covered` / `still` / `stillMany`, from the roll-up read after the write |
 | actions | History · Undo, as shipped |

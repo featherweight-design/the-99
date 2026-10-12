@@ -104,23 +104,21 @@ export function CartView({
     .map((l) => selectLine(l, selected))
     .filter((l): l is SelectedLine => l !== null)
     .sort(byCardOrder), [cart.lines, selected]);
-  // The phone's toast sits above the checkout dock, whose height moves with its links.
-  const dockRef = useRef<HTMLDivElement>(null);
-  const [dockH, setDockH] = useState(0);
-  // Re-bound when the cart empties or fills: buying the last line removes the dock, and an undo
-  // brings a new one back without remounting the page.
-  const hasDock = cart.decks.length > 0;
+  // The page is one screen tall at both widths (Hugh, 2026-10-11), so the list scrolls in its own
+  // box and the sort, the decks and the checkout stay on screen. Its top is measured rather than
+  // assumed: the phone's shell header above it has no fixed height. Re-bound when the cart empties
+  // or fills, since the empty page draws no list to size.
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [top, setTop] = useState<number | null>(null);
+  const hasList = cart.decks.length > 0;
   useEffect(() => {
-    const el = dockRef.current;
-    if (!el) {
-      setDockH(0);
-      return;
-    }
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setDockH(el.offsetHeight));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [hasDock]);
+    const el = pageRef.current;
+    if (!el) return;
+    const measure = () => setTop(Math.max(0, el.getBoundingClientRect().top + window.scrollY));
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [hasList]);
   // K1, once per visit: armed when the Mana Pool link is pressed, shown when the tab comes back,
   // and never again once dismissed. Held here, so nothing that remounts the list resets it.
   const [band, setBand] = useState<"off" | "armed" | "shown" | "dismissed">("off");
@@ -203,13 +201,39 @@ export function CartView({
       </div>
   ) : null;
 
+  // `flex-none`: the shell's column is `min-h-screen` (100vh), taller than 100dvh while the
+  // browser's bars show, and a growing page would take that slack and scroll the document.
+  // Until the top is measured the phone reserves the shell header's usual height, so the first
+  // paint is not a header taller than the screen. The phone also clears an open About sheet, as
+  // the shell's own padding does. The list never shrinks under 120px: with the phone's deck
+  // select open, the page scrolls rather than squeezing the list to nothing.
+  const pageHeight = top === null
+    ? "h-[calc(100dvh-var(--tabbar-h)-var(--about-sheet-h,0px)-64px)] md:h-dvh"
+    : "h-[calc(100dvh-var(--tabbar-h)-var(--about-sheet-h,0px)-var(--cart-top))] md:h-[calc(100dvh-var(--cart-top))]";
   const page = empty ?? (
-    <div className="flex min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans">
+    <div
+      ref={pageRef}
+      className={`flex min-h-[420px] min-w-0 flex-none flex-col bg-[color:var(--bg)] font-sans ${pageHeight}`}
+      style={top === null ? undefined : ({ "--cart-top": `${top}px` } as CSSProperties)}
+    >
       {header}
-      <div className="grid grid-cols-1 gap-[14px] px-[16px] pt-[14px] pb-0 [grid-template-areas:'selections'_'list'_'checkout'] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-[24px] md:gap-y-[14px] md:px-[22px] md:pt-[18px] md:pb-0 md:[grid-template-areas:'selections_list'_'checkout_list']">
-        <DeckSelect decks={cart.decks} selected={selected} priced={cart.priced} onToggle={toggle} onAll={all} />
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] gap-[12px] px-[16px] pt-[12px] pb-[12px] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-x-[24px] md:px-[22px] md:pt-[18px] md:pb-[18px]">
+        {/* Phone: the checkout heads the page, above the decks (Hugh, 2026-10-11). Desktop: the
+            decks, then the checkout under them, the decks scrolling inside the column. */}
+        <div className="flex min-h-0 min-w-0 flex-col gap-[12px] md:gap-[14px]">
+          <DeckSelect decks={cart.decks} selected={selected} priced={cart.priced} onToggle={toggle} onAll={all} />
+          <div
+            data-cart-checkout
+            tabIndex={-1}
+            onClickCapture={arm}
+            onAuxClickCapture={arm}
+            className="order-1 flex-none outline-none md:order-2"
+          >
+            <CartCheckout total={total} deckCount={deckCount} priced={cart.priced} provenance={provenance} links={links} />
+          </div>
+        </div>
 
-        <section className="flex min-w-0 flex-col gap-[12px] [grid-area:list]">
+        <section className="flex min-h-0 min-w-0 flex-col gap-[12px]">
           {deckCount === 0 ? (
             // A4: every deck unselected. The list's place holds the way back, not an empty list.
             <div className="flex flex-col gap-[8px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] px-[20px] py-[22px]">
@@ -237,13 +261,13 @@ export function CartView({
               <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
                 {byDeck ? copy.list.headByDeck(deckCount, total.copies) : copy.list.headByCard(lines.length)}
               </h2>
-              {/* P1: on a phone the list is its own scroll box so the checkout stays docked under
-                  it. Focusable and named, so a keyboard reader can scroll it. */}
+              {/* The list is its own scroll box at both widths, filling what the page leaves, so the
+                  controls above it stay put. Focusable and named, so a keyboard reader can scroll it. */}
               <div
                 tabIndex={0}
                 role="region"
                 aria-label={copy.list.regionAria}
-                className="-mx-[13px] max-h-[460px] overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] px-[13px] md:mx-0 md:max-h-none md:overflow-visible md:border-b-0 md:px-0"
+                className="-mx-[13px] min-h-[120px] flex-1 overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] px-[13px]"
               >
                 {byDeck ? (
                   // Largest first, in the selections' own order; an unselected deck keeps its place.
@@ -273,34 +297,17 @@ export function CartView({
                 )}
                 <div
                   aria-hidden
-                  className="pointer-events-none sticky bottom-0 -mt-[36px] h-[36px] md:hidden"
+                  className="pointer-events-none sticky bottom-0 -mt-[36px] h-[36px]"
                   style={{ background: "linear-gradient(to bottom, transparent, var(--bg))" }}
                 />
               </div>
             </>
           )}
         </section>
-
-        {/* Docked: under the list on a phone (P1, full bleed on the rail), and sticky under the
-            selections on desktop. */}
-        <div
-          ref={dockRef}
-          data-cart-checkout
-          tabIndex={-1}
-          onClickCapture={arm}
-          onAuxClickCapture={arm}
-          className="sticky bottom-[var(--tabbar-h)] z-20 -mx-[16px] mt-[8px] border-t border-t-[color:var(--border-strong)] bg-[color:var(--surface-rail)] px-[16px] pt-[10px] pb-[16px] [grid-area:checkout] md:top-[18px] md:bottom-auto md:mx-0 md:mt-0 md:border-t-0 md:bg-transparent md:p-0 outline-none"
-        >
-          <CartCheckout total={total} deckCount={deckCount} priced={cart.priced} provenance={provenance} links={links} />
-        </div>
       </div>
     </div>
   );
-  // The dock's height rides on a box around the receipt too, which the provider draws beside the
-  // page: the phone's toast sits above the dock.
   return buyEnabled ? (
-    <div className="contents" style={{ "--cart-dock-h": `${dockH}px` } as CSSProperties}>
-      <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{page}</CartGotItProvider>
-    </div>
+    <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{page}</CartGotItProvider>
   ) : page;
 }

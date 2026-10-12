@@ -84,11 +84,11 @@ const DECK_SLOT =
   "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
 
 /**
- * The all-decks cart's slot: bottom right at 380 on desktop; on the phone above the tab bar AND the
- * cart's checkout dock, whose height the cart publishes as `--cart-dock-h` on its own subtree.
+ * The all-decks cart's slot: bottom right at 380 on desktop; on the phone above the tab bar, over
+ * the foot of the cart's list (the checkout heads the page there).
  */
 const CART_SLOT =
-  "fixed bottom-[calc(var(--tabbar-h,0px)+var(--cart-dock-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px]";
+  "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px]";
 
 export function ToastFrame({
   frameRef, role = "status", placement = "center", title, detail, body, actions, onHold,

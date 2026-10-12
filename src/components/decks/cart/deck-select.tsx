@@ -41,7 +41,7 @@ export function DeckSelect({
 
   return (
     <section
-      className="min-w-0 rounded-[12px] border border-[color:var(--border)] px-[14px] pt-[2px] pb-[4px] [grid-area:selections]"
+      className="order-2 flex min-w-0 flex-col rounded-[12px] border border-[color:var(--border)] px-[14px] pt-[2px] pb-[4px] md:order-1 md:min-h-0"
       style={{ background: "var(--surface)" }}
     >
       <div className="flex min-h-[44px] items-center gap-[10px]">
@@ -74,7 +74,9 @@ export function DeckSelect({
           {open ? "▴" : "▾"}
         </button>
       </div>
-      <div id={listId} className={open ? "" : "hidden md:block"}>
+      {/* The page is one screen tall (Hugh, 2026-10-11): an open phone list scrolls inside a cap, and
+          the desktop column scrolls the decks under its head. */}
+      <div id={listId} className={`max-h-[30dvh] min-h-0 overflow-y-auto overscroll-contain md:max-h-none ${open ? "" : "hidden md:block"}`}>
         <ul className="m-0 list-none p-0">
           {decks.map((d) => {
             const isOn = selected.has(d.id);
