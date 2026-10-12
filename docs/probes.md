@@ -1840,6 +1840,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   point `.env`'s `DATABASE_URL` at local-dev or a scratch branch. Run 2026-10-12 on a scratch copy of
   staging's decks: every check passed.
 
+- `pnpm probe:tuning-optimistic` proves that a Tuning row's answer flips the row BEFORE its server
+  action answers (Hugh, 2026-10-12), at 1300x900 and 390x844. It holds every `next-action` POST once
+  a row is pressed and asserts what the row draws while held: a Cut on a reopened Proposed cuts run
+  reads `cut`, stays cut once released, and its Undo puts the card back; a Reject on a reopened
+  Suggested changes run reads `rejected`, and a FAILED action rolls it back with its refusal. Needs a
+  running server signed in as `E2E_AUDIT_USER_EMAIL`, and `OPTIMISTIC_CUTS_DECK` /
+  `OPTIMISTIC_SUGGESTED_DECK`, two of that account's decks with an ok deeper Proposed cuts run and an
+  ok Suggested changes run in History. It writes one cut and undoes it in a `finally`, and it FAILS CLOSED:
+  `PROBE_BASE` must be a server on this machine, and the database the worktree's `.env` names must not
+  report the production or staging branch by `neon.branch_id` (exit 2 before signing in).
+
 - `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
   running server (`PROBE_BASE`, `next start` preferred; `PROBE_WIDTH=390` runs one width,
   `PROBE_SHOTS=<dir>` saves the panel). It clones an over-100 deck under the audit account (a

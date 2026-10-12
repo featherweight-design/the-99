@@ -30,6 +30,7 @@ import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { useReviewRun } from "./review-run";
+import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
@@ -138,6 +139,8 @@ export function TuningPanel({
   freshEachVisit?: boolean;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
+  // The rows' flips, so the tally and the answered layout read each answer the moment its row does.
+  const overrides = useVerdictOverrides();
   // A past run History reopened here: its lines are read in place of the newest run's, each still
   // re-checked by Apply. This panel's own Suggest changes leaves it, at once (`leftReview`).
   const review = useReviewRun("suggested");
@@ -247,9 +250,15 @@ export function TuningPanel({
   // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
   // rejection must never strand the panel: a failed re-read keeps what is on screen, and a failed
   // run or read leaves the reading state with the run's own refusal.
+  // Only the newest read is drawn: two rows answered together each ask for one, and the older read
+  // can land last holding a snapshot from before the newer answer committed. A superseded read
+  // answers null, as a failed one does: every caller reads non-null as "this read landed".
+  const asked = useRef(0);
   const reread = useCallback(async () => {
+    const mine = ++asked.current;
     try {
       const next = await deps.read(deckId, leftReview.current ? null : reviewRunId);
+      if (mine !== asked.current) return null;
       setState(next);
       stateRef.current = next;
       return next;
@@ -787,9 +796,12 @@ export function TuningPanel({
     if (cancelled) setAnnounced(deckTuningCopy.announce.stopped);
   }
 
-  async function settled(announce: string) {
+  /** After a row's answer: announce it and read again. False when the re-read failed or a newer
+   *  read superseded it, so the row keeps drawing its answer rather than falling back to a verdict
+   *  the drawn state never moved; a newer read that lands moves the row's server verdict itself. */
+  async function settled(announce: string): Promise<boolean> {
     setAnnounced(announce);
-    await reread();
+    return (await reread()) !== null;
   }
 
   // The absent description row's own "Describing in place" editor (STATES §3 state 2, review
@@ -895,8 +907,8 @@ export function TuningPanel({
     );
   } else if (hasSet) {
     const total = state.items.length;
-    const applied = state.items.filter((i) => i.verdict === "accepted").length;
-    const rejected = state.items.filter((i) => i.verdict === "dismissed").length;
+    const applied = state.items.filter((i) => overrides.verdictOf(i) === "accepted").length;
+    const rejected = state.items.filter((i) => overrides.verdictOf(i) === "dismissed").length;
     const answered = applied + rejected === total;
     const lines = state.items.filter(isLine);
     const pairs = state.items.filter((i) => !isLine(i));
@@ -1013,6 +1025,7 @@ export function TuningPanel({
   const noteLine = note ? `${note} · ${tail}` : tail;
 
   return (
+    <VerdictOverridesProvider value={overrides.value}>
     <section
       aria-labelledby="tuning-heading"
       aria-busy={reading || undefined}
@@ -1124,6 +1137,7 @@ export function TuningPanel({
       {refused ? <MutationError message={refused} /> : null}
       <p role="status" className="sr-only">{announced}</p>
     </section>
+    </VerdictOverridesProvider>
   );
 }
 

@@ -27,6 +27,7 @@ import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
+import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -91,6 +92,8 @@ export function CutsPanelView({
   revision?: string;
 }) {
   const [panel, setPanel] = useState<CutsPanel | null>(null);
+  // The rows' flips, so the lead and the counts read each answer the moment its row does.
+  const overrides = useVerdictOverrides();
   // A past run History reopened here: its cuts are read in place of the newest run's.
   const review = useReviewRun("cuts");
   const reviewRunId = review?.runId ?? null;
@@ -212,8 +215,8 @@ export function CutsPanelView({
   }
 
   const { items, over, run } = panel;
-  const answered = items.filter((i) => i.verdict !== "pending").length;
-  const cutCount = items.filter((i) => i.verdict === "accepted").length;
+  const answered = items.filter((i) => overrides.verdictOf(i) !== "pending").length;
+  const cutCount = items.filter((i) => overrides.verdictOf(i) === "accepted").length;
   // A prior visit's result, and a prior visit's failed run, are hidden: the tool opens on its offer.
   const priorResult = isPriorResult(baseline, okKeyOf(panel.lastOkAt));
   const priorRun = isPriorRun(baseline, run?.id);
@@ -322,19 +325,24 @@ export function CutsPanelView({
     }
   }
 
-  async function verdictSettled(announce: string, refusal?: string) {
+  /** Resolves true only when THIS re-read is the one drawn: a newer read asked meanwhile (another
+   *  row answered) discards it, and a row must then keep its flip until that newer read lands. */
+  async function verdictSettled(announce: string, refusal?: string): Promise<boolean> {
     setAnnounced(announce);
     // A refusal retires the result it was about, which unmounts the row that drew it: so the panel
     // keeps the reason itself, and the next press or answered verdict clears it.
     setRefused(refusal ?? null);
-    await reread();
+    // `reread` takes its ticket synchronously, so this is the one it will compare against.
+    const ticket = asked.current + 1;
+    const next = await reread();
+    return next !== null && ticket === asked.current;
   }
 
   // The lead: the over figure in --fg (never --warning), then what the state says next.
   const lead = (() => {
     if (running) return copy.deeper.pendingLead(cutsAsk(over));
     if (resultShown && answered > 0) {
-      return copy.leadPart(cutCount, items.filter((i) => i.verdict === "dismissed").length, items.length, items.length - answered);
+      return copy.leadPart(cutCount, items.filter((i) => overrides.verdictOf(i) === "dismissed").length, items.length, items.length - answered);
     }
     if (resultShown) return copy.leadNamed(items.length);
     if (failed || refusedRun) return copy.leadBare;
@@ -343,6 +351,7 @@ export function CutsPanelView({
   const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : copy.overLead(overWords(over), panel.bodySize);
 
   return (
+    <VerdictOverridesProvider value={overrides.value}>
     <section
       aria-labelledby="cuts-heading"
       aria-busy={running || undefined}
@@ -410,6 +419,7 @@ export function CutsPanelView({
       )}
       <p role="status" className="sr-only">{announced}</p>
     </section>
+    </VerdictOverridesProvider>
   );
 }
 
@@ -532,7 +542,7 @@ function CountLine({ row }: { row: CountRow }) {
 }
 
 function ResultBlock({ panel, deps, standing, onSettled }: {
-  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<void>;
+  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
@@ -570,7 +580,7 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
 }
 
 function CutRow({ item, panel, deps, items, onSettled }: {
-  item: CutItem; panel: CutsPanel; deps: CutsDeps; items: CutItem[]; onSettled: (announce: string, refusal?: string) => Promise<void>;
+  item: CutItem; panel: CutsPanel; deps: CutsDeps; items: CutItem[]; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const { open } = useCardDetail();
@@ -580,10 +590,19 @@ function CutRow({ item, panel, deps, items, onSettled }: {
   const openCard = (event: React.MouseEvent<HTMLElement>) =>
     open(item.cutOracleId, items.map((i) => ({ oracleId: i.cutOracleId, name: i.cutName, imageUri: i.cutImageUri })), undefined, { opener: event.currentTarget });
 
+  // The row flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
+  const optimistic = useOptimisticVerdict(item.verdict, item.id);
+  const verdict = optimistic.verdict;
+  const TARGET = { cut: "accepted", keep: "dismissed", undo: "pending", restore: "pending" } as const;
+
   async function answer(kind: "cut" | "undo" | "keep" | "restore") {
     setBusy(kind);
     const reviewing = !!panel.review;
-    const result = await (kind === "cut" || kind === "undo" ? deps[kind](item.id, reviewing) : deps[kind](item.id)).catch((): DeckMutationResult => ({ ok: false, message: copy.refusals.generic }));
+    const result = (await optimistic.press(
+      TARGET[kind],
+      () => (kind === "cut" || kind === "undo" ? deps[kind](item.id, reviewing) : deps[kind](item.id)),
+      copy.refusals.generic,
+    )) ?? { ok: false as const, message: copy.refusals.generic };
     // Busy until the follow-up read has replaced this row: a second press in that gap would repeat
     // the verdict and overwrite the answer with a refusal.
     if (!result.ok) {
@@ -592,16 +611,19 @@ function CutRow({ item, panel, deps, items, onSettled }: {
       setBusy(null);
       return;
     }
-    await onSettled(
+    const landed = await onSettled(
       kind === "cut" ? copy.announce.cut(item.cutName)
         : kind === "undo" ? copy.announce.undone(item.cutName)
           : kind === "keep" ? copy.announce.kept : copy.announce.restored,
     );
+    // The re-read has landed: the row is now the server's. A read another row's answer superseded
+    // was discarded, so the flip holds until the newer read moves this row's server verdict.
+    if (landed) optimistic.release();
     setBusy(null);
   }
 
-  if (item.verdict !== "pending") {
-    const done = item.verdict === "accepted";
+  if (verdict !== "pending") {
+    const done = verdict === "accepted";
     return (
       <div>
         <div

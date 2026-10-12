@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveDeckLimits } from "../../app/decks/tuning-actions";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -1544,7 +1544,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(reads + 1);
     });
 
-    it("keeps a line busy through the re-read after its own press", async () => {
+    it("flips a line at once, and holds its own control through the re-read after the press", async () => {
       const apply = vi.fn(async () => ({ ok: true as const }));
       let release: () => void = () => undefined;
       const gate = new Promise<void>((r) => { release = r; });
@@ -1553,9 +1553,27 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       const d = { ...base, read: vi.fn(async () => { calls += 1; if (calls > 1) await gate; return withLines([a1, c1]); }) };
       await draw(d);
       await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: copy_lists.reject })[0]); });
-      expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).toBeDisabled();
+      expect(screen.getByRole("button", { name: copy_lists.showAgain })).toBeDisabled();
       await act(async () => { release(); });
+      // The re-read landed and still reads the line as open (the fixture never moves): it is the server's again.
       expect(screen.getAllByRole("button", { name: copy_lists.reject })[0]).not.toBeDisabled();
+    });
+
+    it("never lets an older re-read land over a newer one when two lines are answered together", async () => {
+      const apply = vi.fn(async () => ({ ok: true as const }));
+      const d = deps([withLines([a1, c1])], { card: { apply, undo: apply, reject: apply, restore: apply } });
+      await draw(d);
+      const reads: Array<(p: ReturnType<typeof withLines>) => void> = [];
+      vi.mocked(d.read).mockImplementation(() => new Promise((r) => { reads.push(r); }));
+      await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: copy_lists.reject })[0]); });
+      await waitFor(() => expect(reads).toHaveLength(1));
+      await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: copy_lists.reject })[0]); });
+      await waitFor(() => expect(reads).toHaveLength(2));
+      // The newer read lands first, with both lines rejected; the older one lands last, from before.
+      await act(async () => { reads[1](withLines([{ ...a1, verdict: "dismissed" }, { ...c1, verdict: "dismissed" }])); });
+      await act(async () => { reads[0](withLines([a1, c1])); });
+      expect(screen.getAllByRole("button", { name: copy_lists.showAgain })).toHaveLength(2);
+      expect(screen.queryAllByRole("button", { name: copy_lists.reject })).toHaveLength(0);
     });
 
     it("stops at the first refusal and shows it", async () => {

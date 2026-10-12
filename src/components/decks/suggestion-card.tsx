@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+
+import { useOptimisticVerdict } from "./use-optimistic-verdict";
+
+const TARGET = { apply: "accepted", reject: "dismissed", undo: "pending", restore: "pending" } as const;
+
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -48,46 +53,53 @@ export function SuggestionCard({
   newestPriceAsOf: Date | null;
   actions: CardActions;
   /** Told after a verdict lands, with what to announce, so the panel can re-read. */
-  onSettled: (announce: string) => void;
+  /** Resolves false when the panel's re-read failed: the row then keeps its answer drawn. */
+  onSettled: (announce: string) => void | boolean | Promise<void | boolean>;
 }) {
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
+  // The card flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
+  const optimistic = useOptimisticVerdict(item.verdict, item.id);
+  const verdict = optimistic.verdict;
 
   async function answer(kind: keyof CardActions) {
     setBusy(kind);
     setRefused(null);
     // A rejection is a refusal too: the card must never stay disabled with nothing said.
     const refusal = kind === "apply" ? copy.applyRefused : kind === "undo" ? copy.undoRefused : copy.verdictRefused;
-    const result = await actions[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: refusal }));
-    setBusy(null);
+    const result = (await optimistic.press(TARGET[kind], () => actions[kind](item.id), refusal)) ?? { ok: false as const, message: refusal };
     if (!result.ok) {
+      setBusy(null);
       setRefused(result.message);
       return;
     }
-    onSettled(
+    const read = await onSettled(
       kind === "apply" ? deckTuningCopy.announce.applied(item.cutName, item.addName)
         : kind === "undo" ? deckTuningCopy.announce.undone(item.cutName)
           : kind === "reject" ? deckTuningCopy.announce.rejected
             : deckTuningCopy.announce.restored,
     );
+    // The re-read has landed: the card is now the server's. A failed re-read leaves the answer drawn.
+    if (read !== false) optimistic.release();
+    setBusy(null);
   }
 
-  if (item.verdict === "accepted") {
+  if (verdict === "accepted") {
     return (
       <AnsweredRow
         tone="applied"
         pair={<><span>{item.cutName}</span> <Arrow ink="var(--success)" /> <b className="font-semibold" style={{ color: "var(--fg)" }}>{item.addName}</b></>}
-        action={{ label: copy.undo, onPress: () => answer("undo"), busy: busy === "undo" }}
+        action={{ label: copy.undo, onPress: () => answer("undo"), busy: busy !== null }}
         refused={refused}
       />
     );
   }
-  if (item.verdict === "dismissed") {
+  if (verdict === "dismissed") {
     return (
       <AnsweredRow
         tone="rejected"
         pair={<>{item.cutName} <Arrow ink="var(--fg-faint)" /> {item.addName}</>}
-        action={{ label: copy.restore, onPress: () => answer("restore"), busy: busy === "restore" }}
+        action={{ label: copy.restore, onPress: () => answer("restore"), busy: busy !== null }}
         refused={refused}
       />
     );
