@@ -29,6 +29,8 @@ export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | nu
       .from(tokens)
       .where(eq(tokens.oracleId, oracleId));
     if (!token) return null;
+    // Each read fails on its own, as the card's side reads do: a failed printing read costs the art
+    // and the set line, a failed price read costs the price and the link, and neither costs the token.
     const [printings, priced] = await Promise.all([
       db
         .select({
@@ -37,8 +39,16 @@ export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | nu
           backImageUri: tokenPrintings.backImageUri,
         })
         .from(tokenPrintings)
-        .where(eq(tokenPrintings.tokenOracleId, oracleId)),
-      (await tokenPriceTablesExist()) ? loadTokenPrices([oracleId]) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
+        .where(eq(tokenPrintings.tokenOracleId, oracleId))
+        .catch((err: unknown) => {
+          console.error("[tokens] token detail printings failed", err instanceof Error ? err.message : err);
+          return [] as TokenDetailPrinting[];
+        }),
+      (async () => (await tokenPriceTablesExist()) ? loadTokenPrices([oracleId]) : { prices: new Map<string, TokenPriceFact>(), newestAsOf: null })()
+        .catch((err: unknown) => {
+          console.error("[tokens] token detail price failed", err instanceof Error ? err.message : err);
+          return { prices: new Map<string, TokenPriceFact>(), newestAsOf: null };
+        }),
     ]);
     return assembleTokenDetail(token, printings, priced.prices.get(oracleId) ?? null, priced.newestAsOf);
   } catch (err) {

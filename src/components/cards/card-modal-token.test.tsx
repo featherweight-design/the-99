@@ -56,6 +56,8 @@ describe("a token's card details", () => {
     const links = screen.getAllByRole("link", { name: new RegExp(cardLinkOutCopy.token) });
     expect(links.length).toBeGreaterThan(0);
     for (const a of links) expect(a.getAttribute("href")).toContain("manapool.com");
+    const row = [...document.querySelectorAll("div")].find((d) => d.className.includes("mx-[32px] mb-[30px] pt-[20px]"))!;
+    expect(row.className.split(/\s+/)).toContain("md:flex");
     expect(screen.queryByRole("link", { name: new RegExp(cardLinkOutCopy.card) })).toBeNull();
   });
 
@@ -73,6 +75,9 @@ describe("a token's card details", () => {
     mount(false);
     expect(screen.queryByTestId("modal-price-desktop")).toBeNull();
     expect(screen.queryByRole("link", { name: /Mana Pool/ })).toBeNull();
+    // Nor the desktop row's hairline, which would hold no link, door or Prev/Next.
+    const row = [...document.querySelectorAll("div")].find((d) => d.className.includes("mx-[32px] mb-[30px] pt-[20px]"))!;
+    expect(row.className.split(/\s+/)).not.toContain("md:flex");
     // Nor the phone link-out's hairline strip, which would hold nothing.
     expect(document.querySelector('div.md\\:hidden.mt-\\[14px\\]')).toBeNull();
   });

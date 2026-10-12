@@ -98,13 +98,12 @@ export function TokenRow({
   // A pointer resting on the name or the image, or keyboard focus on the name, reads the details ahead
   // of the press, as a card's trigger does.
   const intent = useCardIntentIfAny(token.oracleId);
-  const openDetails = detail
-    ? (e: MouseEvent<HTMLElement>) => {
-        // The row's own press toggles the makers; this one is the card's.
-        e.stopPropagation();
-        detail.open(token.oracleId, undefined, undefined, { opener: nameRef.current ?? e.currentTarget });
-      }
-    : null;
+  // Read only in the press, never during render: the ref is the element the press hands focus back to.
+  const openDetails = (e: MouseEvent<HTMLElement>) => {
+    // The row's own press toggles the makers; this one is the card's.
+    e.stopPropagation();
+    detail?.open(token.oracleId, undefined, undefined, { opener: nameRef.current ?? e.currentTarget });
+  };
   const toggleAria = tokensCopy.row.toggleAria(token.name, token.makers.length);
 
   return (
@@ -142,7 +141,7 @@ export function TokenRow({
               },
             };
             // Out of the tab order, as the name beside it is the same press for a keyboard.
-            return openDetails
+            return detail
               ? (
                 <button
                   type="button"
@@ -160,7 +159,7 @@ export function TokenRow({
           })()}
           <span className="flex min-w-0 flex-col gap-[2px]">
             <span className="flex flex-wrap items-center gap-x-[8px] text-[13.5px] leading-[1.4] text-[color:var(--fg)]">
-              {openDetails ? (
+              {detail ? (
                 <button
                   ref={nameRef}
                   type="button"

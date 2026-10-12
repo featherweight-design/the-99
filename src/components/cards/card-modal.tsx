@@ -2611,9 +2611,10 @@ export function CardModal({
           </div>
 
 
-          {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
+          {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation. With nothing to hold (an unpriced
+              token opened alone) the row and its hairline are not drawn at all. */}
           <div
-            className="hidden md:flex items-center gap-[16px] flex-none mx-[32px] mb-[30px] pt-[20px]"
+            className={`${footer || onFindDeck || buyUrl || total > 1 ? "hidden md:flex" : "hidden"} items-center gap-[16px] flex-none mx-[32px] mb-[30px] pt-[20px]`}
             style={{ borderTop: "1px solid var(--border)" }}
           >
             {/* The link is first in the DOM because the focus trap follows DOM order
