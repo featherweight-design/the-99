@@ -91,7 +91,9 @@ export type AboutSwitch =
   // Not an env var of its own: on when the Tuning hub draws (two or more of its tools on), which
   // is where History lives. For a line that names History, never for a whole entry.
   | 'TUNING_HUB_ENABLED'
-  | 'LINEUP_ENABLED';
+  | 'LINEUP_ENABLED'
+  | 'PROPOSED_CUTS_ENABLED'
+  | 'FIND_A_DECK_READ_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -901,6 +903,28 @@ export const aboutEntries: readonly AboutEntry[] = [
     since: 9,
   },
   {
+    // Find a deck, with a read (handoff `design_handoff_the99_find_a_deck_read`, R2): straight after
+    // `fits-your-decks`, which keeps describing the free list. Its own switch, so no ABOUT_VERSION
+    // bump: a switched entry is announced when its switch turns on. Through /prose-pass, 2026-10-12.
+    id: 'find-a-deck-read',
+    chapter: '03',
+    title: 'Which deck needs it most?',
+    route: '/collection',
+    opens: 'opens the card detail',
+    width: 'plate',
+    switch: 'FIND_A_DECK_READ_ENABLED',
+    caption:
+      'Some cards fit a dozen of your decks on paper and really help two of them. A read takes the card through each deck’s plan and list to find those two.\n\nIt names up to five decks the card actually helps, says how in that deck’s own cards, and suggests a card it would replace. That rare from the prerelease finally gets a deck.',
+    keys: [
+      'Press “Which deck needs it most?” in “Find a deck for it”. It uses a credit.',
+      'The credit comes back if the read fails, finds no fit or barely holds up.',
+      '“Swap in” trades the card for the cut. “Add only” adds it alone. Press either again to undo.',
+      'Reopening a read is free until one of your decks changes.',
+    ],
+    marksPending: true,
+    since: 14,
+  },
+  {
     id: 'versions',
     chapter: '03',
     title: 'Committing a deck and its versions',
@@ -1342,7 +1366,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // "You get five" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
     // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "friends only". The friend number went 3 to 5 on 2026-10-09 (a copy edit, no bump).
     caption:
-      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each new “Help me choose” search where you fill in “Anything else?”\n\nDetermining your deck’s bracket is free.',
+      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
     // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
@@ -1350,6 +1374,10 @@ export const aboutEntries: readonly AboutEntry[] = [
       '- Each “Suggested changes” run': 'TUNING_ENABLED',
       // The read spends only with Help me choose on; the bullet names it, so it follows that switch.
       '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
+      // 2026-10-12 (Find a deck read, UI-3): the credit lines link here rather than list (Hugh), so the
+      // list names every spender, each line behind its own feature's switch. An ordinary edit, no bump.
+      '- Each “Look deeper” in Proposed cuts': 'PROPOSED_CUTS_ENABLED',
+      '- Each “Which deck needs it most?” read': 'FIND_A_DECK_READ_ENABLED',
     },
     keys: [
       'A run that comes back empty-handed or doesn’t finish gives the credit back.',

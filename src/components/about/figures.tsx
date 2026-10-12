@@ -52,6 +52,7 @@ import {
   LockedCardsFigureBody,
   ChangeCommanderFigureBody,
   HelpMeChooseFigureBody,
+  FindADeckReadFigureBody,
   FitsYourDecksFigureBody,
   StandInsFigureBody,
   CardDetailFigureBody,
@@ -1088,6 +1089,15 @@ function HelpMeChooseFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** `find-a-deck-read`: one row of a read, read-only (`Specimen` is inert). The body is client-side. */
+function FindADeckReadFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="find-a-deck-read" width={width}>
+      <FindADeckReadFigureBody />
+    </Specimen>
+  );
+}
+
 function FitsYourDecksFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="fits-your-decks" width={width}>
@@ -1202,6 +1212,7 @@ export const FIGURES: Partial<
   "change-commander": ChangeCommanderFigure,
   "help-me-choose": HelpMeChooseFigure,
   "fits-your-decks": FitsYourDecksFigure,
+  "find-a-deck-read": FindADeckReadFigure,
   "stand-ins": StandInsFigure,
   "shopping-got-it": GotItFigure,
   "all-decks-cart": AllDecksCartFigure,

@@ -51,6 +51,7 @@ import {
   LOCKED_ROWS,
   CHANGE_COMMANDER,
   CHOOSE,
+  FIND_A_DECK_READ,
   FITS,
   STAND_INS,
   READY_IN_USE,
@@ -132,6 +133,7 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
 import { ChooseRow } from "../intake/choose-row";
 import { FitsHolds, FitsPlate, FitsRows } from "../cards/fits-picker";
+import { ReadRow } from "../cards/read-row";
 import { StandInGroup, StandInRow } from "../decks/stand-ins-sheet";
 import { StandInLimit } from "../decks/stand-in-limit";
 import { SwapToolsProvider } from "../../lib/swaps/context";
@@ -1943,6 +1945,35 @@ export function HelpMeChooseFigureBody() {
         ))}
       </ul>
       </AnchoredNumerals>
+    </CardDetailProvider>
+  );
+}
+
+/**
+ * `find-a-deck-read`: one row of a read, drawn by the view's own `ReadRow` from Design's fixture.
+ * Every handler is a no-op; `Specimen` is inert.
+ */
+export function FindADeckReadFigureBody() {
+  const f = FIND_A_DECK_READ;
+  return (
+    <CardDetailProvider fetchCard={async () => null}>
+      <ReadRow
+        deckId={f.deckId}
+        deckName={f.deckName}
+        commanders={f.commanders}
+        planSource="v2"
+        parts={f.parts}
+        cut={f.cut}
+        names={f.names}
+        cardName={f.card}
+        freeNow={1}
+        act={null}
+        busy={false}
+        refused={null}
+        onSwap={() => {}}
+        onAdd={() => {}}
+        onOpenCard={() => {}}
+      />
     </CardDetailProvider>
   );
 }

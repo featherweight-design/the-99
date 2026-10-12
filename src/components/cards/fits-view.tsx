@@ -18,6 +18,8 @@ import { addFromFits, swapFromReadAction, undoReadAddAction, undoReadSwapAction 
 import { pressFitsReadAction, readFitsReadAction } from "../../lib/swaps/fits-read-actions";
 import type { FitsReadPanel } from "../../lib/swaps/fits-read-run";
 import { FitsHolds, FitsRows, FitsStapleNote, useFitsList } from "./fits-picker";
+import { CreditButton } from "../ui/credit-button";
+import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
 import { ReadRow, type RowAct } from "./read-row";
 
@@ -283,9 +285,9 @@ export function FitsView({
         ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
         : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
   const stored = panel?.view.stored ?? null;
-  // Shown only while CURRENT (lock 6). A read that has gone out of date offers the press again,
-  // and never draws as if it still held.
-  const current = stored?.current ? stored : null;
+  // A stored read that has gone out of date is drawn marked so, never as current (lock 6): a note
+  // names what moved and offers Read again, and a changed deck's row is dimmed with its actions off.
+  const stale = stored && !stored.current ? stored : null;
   const failed = pressFailed || (panel?.view.failed != null && running === null);
   // Who can take the card is the list as last read, never the panel's opening count: an add from the
   // free list leaves fewer decks to read. The panel's zero (no deck, or not Commander-legal) stands.
@@ -299,8 +301,35 @@ export function FitsView({
   const showsBand = panel !== null && candidates > 0 && !noList;
   // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
   // and the read still reopens with its rows settled.
-  const result = panel !== null && running === null && !failed && current?.outcome === "picks" ? current : null;
-  const noFit = showsBand && running === null && !failed && current?.outcome === "noFit" ? current : null;
+  const result = panel !== null && running === null && !failed && stored?.outcome === "picks" ? stored : null;
+  const noFit = showsBand && running === null && !failed && stored?.outcome === "noFit" ? stored : null;
+  const changedOf = new Map((stale?.changed ?? []).map((c) => [c.deckId, c.reason]));
+  // A deck that is no longer a candidate drops from the read (P10b); one that took the card stays,
+  // resolved, whether before this visit, through the free list, or through the row's own press.
+  const fitsNow = list.read ?? panel?.fits ?? null;
+  const keptIds = new Set([...(fitsNow?.fits ?? []), ...(fitsNow?.holds ?? [])].map((d) => d.id));
+  const rowsShown = result?.picks.filter((p) => keptIds.has(p.deckId) || result.resolved.includes(p.deckId) || !!actOf(p.deckId)) ?? [];
+  const staleText = !stale ? null
+    : stale.setChanged && stale.changed.length === 0 ? read.staleSet(when(stale.at))
+    : stale.changed.length > 1 ? read.staleMany(stale.changed.length, when(stale.at))
+    : stale.outcome === "noFit" ? read.noFitChanged(deckOf(stale.changed[0]?.deckId ?? "").name, when(stale.at))
+    : stale.changed[0]?.reason === "overview" ? read.staleOverview(deckOf(stale.changed[0].deckId).name, when(stale.at))
+    : stale.changed.length === 1 ? read.staleOne(deckOf(stale.changed[0].deckId).name, when(stale.at))
+    : read.staleSet(when(stale.at));
+  const staleLine = blocked
+    ? standing
+    : stale?.outcome === "noFit"
+      ? creditsCopy.first(left, allowance!.limit, allowance!.nextAt)
+      : read.again(creditsCopy.standing(left, allowance!.limit, allowance!.nextAt));
+  const staleNote = stale && staleText ? (
+    <section data-testid="read-stale" className="flex flex-col gap-[10px] rounded-[10px] px-[14px] py-[12px] border border-dashed border-[color:var(--border-dashed)]">
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">{staleText}</p>
+      <div className="flex">
+        <CreditButton label={read.readAgain} credit={read.credit} filled={false} blocked={blocked} spent={spent || closed} onPress={() => void press()} />
+      </div>
+      <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]"><CreditsText text={staleLine} /></p>
+    </section>
+  ) : null;
   const isFresh = (s: { readId: string }) => s.readId === fresh;
 
   let band = null;
@@ -309,10 +338,14 @@ export function FitsView({
     else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
     else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
-      band = <NoFitBox
+      const box = <NoFitBox
         body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}
         foot={isFresh(noFit) ? read.noFitFootNow : read.noFitFootStored(when(noFit.at))}
       />;
+      // P6c: the old no fit stays on screen, faded, under the note that re-offers the read.
+      band = stale ? <>{staleNote}<div className="opacity-[0.72]">{box}</div></> : box;
+    } else if (result && stale) {
+      band = staleNote;
     } else if (!result) {
       band = <OfferBand
         lead={oneDeck ? read.offerLeadOne(oneDeck, name) : read.offerLead(candidates, name)}
@@ -395,12 +428,14 @@ export function FitsView({
             <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]">
               <h3 className="m-0 text-[14px] font-semibold text-[color:var(--fg)]">{read.resultHead}</h3>
               <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                {isFresh(result)
-                  ? (result.candidates === 1 ? read.resultSubNowOne : read.resultSubNow(result.picks.length, result.candidates))
-                  : read.resultSubStored(when(result.at), result.picks.length, result.candidates)}
+                {stale
+                  ? read.resultSubStale(when(result.at))
+                  : isFresh(result)
+                    ? (result.candidates === 1 ? read.resultSubNowOne : read.resultSubNow(result.picks.length, result.candidates))
+                    : read.resultSubStored(when(result.at), result.picks.length, result.candidates)}
               </span>
             </div>
-            {result.picks.map((p) => {
+            {rowsShown.map((p) => {
               const deck = deckOf(p.deckId);
               return (
                 <ReadRow
@@ -418,6 +453,7 @@ export function FitsView({
                   // Took the card some other way since the read (the free list, another visit): resolved,
                   // not changed (READINESS-audit F2), and nothing left to press on this row.
                   settled={!actOf(p.deckId) && (result.resolved.includes(p.deckId) || heldNow.has(p.deckId))}
+                  changed={changedOf.get(p.deckId) ?? null}
                   busy={rowsLocked}
                   refused={refused?.deckId === p.deckId ? refused.kind : null}
                   onSwap={() => p.cut && void onSwap(p.deckId, p.cut, panel?.names[p.cut] ?? "")}
@@ -426,7 +462,7 @@ export function FitsView({
                 />
               );
             })}
-            {result.refunded ? (
+            {stale ? null : result.refunded ? (
               <div data-testid="read-thin" className="flex flex-col gap-[4px] rounded-[9px] px-[14px] py-[11px] border border-dashed border-[color:var(--border-dashed)]">
                 <p className="m-0 text-[12.5px] text-[color:var(--fg-body)]">{read.thin(result.picks.length)}</p>
                 <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{`${read.thinSub} · ${standing}`}</p>

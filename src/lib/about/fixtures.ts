@@ -2034,6 +2034,27 @@ export const FITS = {
 };
 
 /**
+ * `find-a-deck-read`: one row of a read, Design's fixture (handoff About entry): Ajani Unrelenting in
+ * HD - Goblins, led by Krenko, Mob Boss, read from its Overview, with Skirk Prospector as the cut. The
+ * sentence is illustrative, written in the shape the validator accepts: the deck's own cards by name,
+ * no figure, no score word.
+ */
+export const FIND_A_DECK_READ = {
+  card: "Ajani Unrelenting",
+  deckId: "about-read-goblins",
+  deckName: "HD - Goblins",
+  commanders: ["Krenko, Mob Boss"],
+  cut: "about-read-skirk",
+  names: { "about-read-ajani": "Ajani Unrelenting", "about-read-krenko": "Krenko, Mob Boss", "about-read-skirk": "Skirk Prospector" },
+  parts: [
+    { card: "about-read-ajani" },
+    { text: " puts a body on the board every turn for " },
+    { card: "about-read-krenko" },
+    { text: " to count, so the goblins go wide a turn sooner." },
+  ],
+};
+
+/**
  * `stand-ins` — Shopping's limit line over one row it marks, then the first group of that row's
  * stand-ins. Design's fixture: Plateau at $293.84 in HD - Gishath, six cards to buy with one over
  * the limit, and the same-type lands group. Design drew it eight long showing three; the sheet shows

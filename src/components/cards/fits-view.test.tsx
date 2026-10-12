@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -72,6 +72,7 @@ function Harness() {
   const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
   return <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} />;
 }
+const cleanupAll = () => cleanup();
 const settle = () => act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
 async function draw(p: FitsReadPanel, l: FitsRead = list()) {
   actions.loadFitsAction.mockResolvedValue(l);
@@ -282,10 +283,55 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getByText(/^read Oct 12/)).toBeInTheDocument();
   });
 
-  it("a stored read gone out of date never draws as current: the press is offered again", async () => {
+  it("a read gone out of date is marked so, never current: the changed row dims with its actions off (P10)", async () => {
     await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
-    expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
+    const note = screen.getByTestId("read-stale");
+    expect(note).toHaveTextContent(r.staleOne("Goblins", "Oct 12, 8:00 PM").slice(0, 30));
+    expect(within(note).getByRole("button", { name: `${r.readAgain}. Uses 1 credit.` })).toBeEnabled();
+    expect(note).toHaveTextContent(r.again(creditsCopy.standing(4, 5, null)));
+    expect(screen.queryByTestId("read-band-offer")).toBeNull();
+    expect(screen.getByText(/· out of date$/)).toBeInTheDocument();
+    const row = screen.getByTestId("read-row");
+    expect(within(row).getByTestId("read-row-changed")).toHaveTextContent(r.changedTag);
+    expect(row).toHaveTextContent(r.cutNoteChanged);
+    expect(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") })).toBeDisabled();
+    // Read again presses the read.
+    readActions.pressFitsReadAction.mockResolvedValue({ ok: true, panel: panel({}, { stored: stored({ readId: "r2" }) }) });
+    fireEvent.click(within(note).getByRole("button", { name: `${r.readAgain}. Uses 1 credit.` }));
+    await settle();
+    expect(readActions.pressFitsReadAction).toHaveBeenCalledWith("o-ajani");
+    expect(screen.queryByTestId("read-stale")).toBeNull();
+  });
+
+  it("a new overview tags the row and drops its source note (P3g); several or a set change say so (P10a)", async () => {
+    await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "overview" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleOverview("Goblins", "x").split(" has")[0]);
+    expect(screen.getByTestId("read-row-changed")).toHaveTextContent(r.changedTagOverview);
+    cleanupAll();
+    await draw(panel({}, { stored: stored({ current: false, setChanged: true }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(/aren’t the same ones/);
+    expect(screen.queryByTestId("read-row-changed")).toBeNull();
+  });
+
+  it("a deck no longer a candidate drops from the read (P10b)", async () => {
+    await draw(panel({}, { stored: stored({ current: false, setChanged: true }) }), list({ fits: [list().fits[1]] }));
     expect(screen.queryByTestId("read-row")).toBeNull();
+  });
+
+  it("a row read from an older overview, or none, says so and points at the deck page (P3f)", async () => {
+    const pick = stored().picks[0];
+    await draw(panel({}, { stored: stored({ picks: [{ ...pick, planSource: "none" }] }) }));
+    const note = screen.getByTestId("read-row-source-note");
+    expect(note).toHaveTextContent(r.srcNoteNone("Krenko, Mob Boss"));
+    expect(within(note).getByRole("link", { name: r.srcLinkNone })).toHaveAttribute("href", "/decks/d-gob?tab=analysis");
+  });
+
+  it("a kept no fit whose decks changed fades under a note that offers the read again (P6c)", async () => {
+    await draw(panel({}, { stored: stored({ outcome: "noFit", picks: [], refunded: true, current: false, changed: [{ deckId: "d-kra", reason: "deck" }] }) }));
+    const note = screen.getByTestId("read-stale");
+    expect(note).toHaveTextContent(/Kratos has changed since this read/);
+    expect(note).toHaveTextContent(creditsCopy.first(4, 5, null));
+    expect(screen.getByTestId("read-band-nofit").parentElement).toHaveClass("opacity-[0.72]");
   });
 
   it("a no fit is a box with no press, the list open beneath (P6)", async () => {

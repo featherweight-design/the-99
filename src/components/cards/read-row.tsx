@@ -10,6 +10,8 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { PlanSource } from "../../lib/swaps/fits-read";
 import type { FitsSentencePart } from "../../lib/swaps/fits-read";
 import { MutationError } from "../decks/mutation-error";
+import { useCardDetailIfAny } from "./card-detail-provider";
+import { PendingReporter } from "../shell/pending-reporter";
 
 const copy = swapToolsCopy.fits.read;
 
@@ -29,7 +31,7 @@ function Mark({ id, name, onOpenCard, className = markClass }: { id: string; nam
 }
 
 export function ReadRow({
-  deckId, deckName, commanders, planSource, parts, cut, names, cardName, freeNow, act, settled = false, busy, refused, onSwap, onAdd, onOpenCard,
+  deckId, deckName, commanders, planSource, parts, cut, names, cardName, freeNow, act, settled = false, changed = null, busy, refused, onSwap, onAdd, onOpenCard,
 }: {
   deckId: string;
   deckName: string;
@@ -44,6 +46,9 @@ export function ReadRow({
   act: RowAct;
   /** The deck has taken the card since the read, not through this visit's press: both actions off. */
   settled?: boolean;
+  /** The deck's inputs moved since the read (lock 6): a new Overview (P3g) or anything else (P10).
+   *  The row is dimmed and tagged, and its actions are off: its cut may be gone. */
+  changed?: "deck" | "overview" | null;
   /** An action on any row is in flight: every action waits for it. */
   busy: boolean;
   /** This row's last press was refused, and how. */
@@ -59,8 +64,15 @@ export function ReadRow({
   const commanderLine = [commanders.join(" & "), copy.planFrom[planSource]].filter(Boolean).join(" · ");
   const actionBase =
     "inline-flex items-center justify-center h-[44px] rounded-[8px] px-[12px] text-[13px] leading-none whitespace-nowrap cursor-pointer border border-solid disabled:cursor-default md:h-[32px] md:rounded-[7px] md:text-[12.5px]";
-  const swapOff = busy || added || !cut || settled;
-  const addOff = busy || swapped || settled;
+  const swapOff = busy || added || !cut || settled || changed !== null;
+  const addOff = busy || swapped || settled || changed !== null;
+  const detail = useCardDetailIfAny();
+  // P3f: an older or missing Overview says so, and points at the deck page; a new Overview's tag says it instead.
+  const sourceNote = changed === "overview" ? null
+    : planSource === "older" ? { note: copy.srcNoteOlder, link: copy.srcLinkOlder }
+    : planSource === "none" ? { note: copy.srcNoteNone(commanders.join(" & ")), link: copy.srcLinkNone }
+    : null;
+  const analysisHref = `/decks/${deckId}?tab=analysis`;
   const swapClass = swapped
     ? "bg-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--bg)] font-semibold"
     : swapOff
@@ -77,9 +89,14 @@ export function ReadRow({
   return (
     <article
       data-testid="read-row"
-      className="flex flex-col gap-[9px] rounded-[9px] p-[12px] md:px-[14px]"
+      className={`flex flex-col gap-[9px] rounded-[9px] p-[12px] md:px-[14px] ${changed ? "opacity-[0.72]" : ""}`}
       style={{ background: "var(--surface-sunken)", border: `1px solid ${swapped ? "var(--accent)" : "var(--border)"}` }}
     >
+      {changed ? (
+        <span data-testid="read-row-changed" className="self-start rounded-full px-[8px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-muted)] border border-dashed border-[color:var(--border-dashed)]">
+          {changed === "overview" ? copy.changedTagOverview : copy.changedTag}
+        </span>
+      ) : null}
       <div className="flex flex-col gap-[3px] min-w-0">
         <Link
           href={`/decks/${deckId}`}
@@ -113,9 +130,25 @@ export function ReadRow({
             />
           </span>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-            {swapped ? copy.cutNoteSwapped : added ? copy.cutNoteAdded : settled ? null : copy.cutNote}
+            {swapped ? copy.cutNoteSwapped : added ? copy.cutNoteAdded : changed === "deck" ? copy.cutNoteChanged : settled ? null : copy.cutNote}
           </span>
         </div>
+      ) : null}
+
+      {sourceNote ? (
+        <p data-testid="read-row-source-note" className="m-0 flex flex-wrap gap-x-[8px] gap-y-[4px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
+          <span>{sourceNote.note}</span>
+          {/* Points, never runs (addendum): the Overview is its own credit, on the deck's Analysis tab.
+              The dialog closes first, so the deck page is what the reader lands on. */}
+          <Link
+            href={analysisHref}
+            onClick={() => detail?.close()}
+            className="whitespace-nowrap text-[color:var(--accent)] [border-bottom:1px_solid_var(--accent-shadow)]"
+          >
+            {sourceNote.link}
+            <PendingReporter href={analysisHref} />
+          </Link>
+        </p>
       ) : null}
 
       <div className="grid grid-cols-2 gap-[8px] md:flex md:flex-wrap md:items-center">
