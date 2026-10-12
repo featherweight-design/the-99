@@ -29,7 +29,7 @@ import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib
 // returns migration counts and tags only — never connection details. Listed as
 // the two exact forms rather than a prefix so a future /api/health-something
 // does not become public by accident.
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/", "/api/zz-pool"]);
+const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // `isPublic` is path-only, and "/" is the one public path a SIGNED-IN reader
