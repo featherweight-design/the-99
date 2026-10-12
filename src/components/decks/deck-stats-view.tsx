@@ -72,7 +72,7 @@ export function CurveCard({ data, initialLit = null }: { data: DeckStatsSlice; i
                   CARD_TYPES.filter((t) => per[t] > 0).map((t) => `${per[t]} ${per[t] === 1 ? copy.types[t] : copy.typesPlural[t]}`),
                 )}
               </span>
-              <div aria-hidden="true" className="flex min-h-[10px] flex-col-reverse gap-[2px]">
+              <div aria-hidden="true" className="anim-grow-y origin-bottom flex min-h-[10px] flex-col-reverse gap-[2px]">
                 {CARD_TYPES.flatMap((t) =>
                   Array.from({ length: per[t] }, (_, k) => (
                     <span
@@ -240,7 +240,7 @@ function ColorsCard({ mana }: { mana: ManaSupply }) {
                 className="grid grid-cols-[minmax(0,1fr)_26px_minmax(0,1fr)] items-center gap-[10px]"
               >
                 <div aria-hidden="true" className="flex flex-row-reverse items-center gap-[8px]">
-                  <span className="h-[14px] flex-none rounded-[3px]" style={{ width: `${(shares[i].pips / widest) * 60}%`, background: PIP_STYLE[r.c].bg }} />
+                  <span className="anim-grow-x origin-right h-[14px] flex-none rounded-[3px]" style={{ width: `${(shares[i].pips / widest) * 60}%`, background: PIP_STYLE[r.c].bg }} />
                   <span className="whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-body)]">{r.pips ? `${r.pips} · ${shares[i].pips}%` : "0"}</span>
                 </div>
                 <span

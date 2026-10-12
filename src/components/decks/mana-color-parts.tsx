@@ -22,7 +22,7 @@ export function SourceBar({ c, lands, other, widthPct }: { c: ManaColor; lands: 
   if (total === 0) return null;
   return (
     <span
-      className={`flex h-[14px] flex-none gap-[1px] ${lands > 0 && other > 0 ? "min-w-[13px] md:min-w-[15px]" : "min-w-[8px] md:min-w-[10px]"}`}
+      className={`anim-grow-x origin-left flex h-[14px] flex-none gap-[1px] ${lands > 0 && other > 0 ? "min-w-[13px] md:min-w-[15px]" : "min-w-[8px] md:min-w-[10px]"}`}
       style={{ width: `${widthPct}%` }}
       data-source-bar
     >

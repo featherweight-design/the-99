@@ -38,11 +38,11 @@ function Row({ r }: { r: AverageRow }) {
       <div aria-hidden="true" className="grid h-[22px] grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] items-center">
         <div className="flex min-w-0 items-center justify-end">
           {r.cut && r.side === "fewer" ? <span data-cut="fewer" className="mr-[2px] text-[10px] text-[color:var(--fg)]">‹</span> : null}
-          <span data-bar="fewer" className="h-[10px] rounded-l-[2px]" style={{ width: r.side === "fewer" ? pct : "0%", background: FEWER }} />
+          <span data-bar="fewer" className="anim-grow-x origin-right h-[10px] rounded-l-[2px]" style={{ width: r.side === "fewer" ? pct : "0%", background: FEWER }} />
         </div>
         <span className="h-[22px] bg-[color:var(--border-strong)]" />
         <div className="flex min-w-0 items-center">
-          <span data-bar="more" className="h-[10px] rounded-r-[2px]" style={{ width: r.side === "more" ? pct : "0%", background: MORE }} />
+          <span data-bar="more" className="anim-grow-x origin-left h-[10px] rounded-r-[2px]" style={{ width: r.side === "more" ? pct : "0%", background: MORE }} />
           {r.cut && r.side === "more" ? <span data-cut="more" className="ml-[2px] text-[10px] text-[color:var(--fg)]">›</span> : null}
         </div>
       </div>
@@ -87,11 +87,11 @@ export function AverageCard({ average }: { average: AverageComparison }) {
               return (
                 <li key={m.label} aria-label={copy.miniColumn(label, m.diff)} className="flex flex-col items-center gap-[3px]">
                   <div aria-hidden="true" className="flex h-[22px] w-full items-end justify-center">
-                    <span data-mini="more" className="w-[14px] rounded-t-[2px]" style={{ height: m.diff > 0 ? m.px : 0, background: MORE }} />
+                    <span data-mini="more" className="anim-grow-y origin-bottom w-[14px] rounded-t-[2px]" style={{ height: m.diff > 0 ? m.px : 0, background: MORE }} />
                   </div>
                   <span aria-hidden="true" className="h-px w-full bg-[color:var(--border-strong)]" />
                   <div aria-hidden="true" className="flex h-[22px] w-full items-start justify-center">
-                    <span data-mini="fewer" className="w-[14px] rounded-b-[2px]" style={{ height: m.diff < 0 ? m.px : 0, background: FEWER }} />
+                    <span data-mini="fewer" className="anim-grow-y origin-top w-[14px] rounded-b-[2px]" style={{ height: m.diff < 0 ? m.px : 0, background: FEWER }} />
                   </div>
                   <span aria-hidden="true" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{label}</span>
                 </li>

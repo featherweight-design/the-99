@@ -36,7 +36,7 @@ export function FitBar({ fit, legend = false }: FitBarProps) {
       >
         {/* Filled region — dynamic width = pct% of track */}
         <div
-          className="flex h-full"
+          className="anim-grow-x origin-left flex h-full"
           style={{ width: `${fit.pct}%` }}
         >
           {fit.segments.map((seg) => (
