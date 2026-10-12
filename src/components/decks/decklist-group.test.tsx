@@ -64,3 +64,26 @@ describe("DecklistGroup — a footer", () => {
     expect(screen.getByText("17")).toBeInTheDocument();
   });
 });
+
+// Precons R4 §6: a read-only group in card view draws `ReadOnlyCardTile`, which carries none of the
+// deck tile's editing: no `✕`, no buy tag, no chip. The tail lands inside the same grid.
+describe("DecklistGroup — read-only card view", () => {
+  it("draws read-only tiles with no remove control, and the tail in the same grid", () => {
+    const precon = [
+      { oracleId: "sol-ring", name: "Sol Ring", owned: true, quantity: 1, printedSetCode: "cmm", printedCollectorNumber: "312" },
+      { oracleId: "mind-stone", name: "Mind Stone", owned: false, quantity: 1, printedSetCode: "cmm", printedCollectorNumber: "380" },
+    ] as DeckDetailCard[];
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistGroup deckId="" readOnly view="card" label="Artifacts" cards={precon} newestAsOf={null}
+          cardTail={<li data-testid="tail">basics</li>} />
+      </CardDetailProvider>,
+    );
+    expect(screen.getAllByTestId("read-only-card-tile")).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /remove/i })).toBeNull();
+    expect(screen.getByText("CMM 312")).toBeInTheDocument();
+    expect(screen.getByText("not owned")).toBeInTheDocument();
+    expect(screen.getByLabelText("Not owned")).toBeInTheDocument();
+    expect(screen.getByTestId("tail").parentElement).toBe(screen.getAllByTestId("read-only-card-tile")[0].parentElement);
+  });
+});

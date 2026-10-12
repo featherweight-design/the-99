@@ -41,7 +41,8 @@ export function isDeckView(value: string): value is DeckView {
 
 export type DeckPanel = "list" | "stats" | "notes";
 
-const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
+/** Exported for the open precon's Card view switch, which is this well (precons R4 §6). */
+export const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
   { value: "list", glyph: "≣", label: viewToggleCopy.deck.list },
   { value: "card", glyph: "▦", label: viewToggleCopy.deck.card },
 ];

@@ -90,6 +90,13 @@ export const preconsCopy = {
       `${count === 1 ? "1 card in this precon isn’t" : `${n(count)} cards in this precon aren’t`} in our catalog yet, so ${n(listed)} are listed.`,
     listNote: "By type, A–Z within each group · press a card for its details, hover for its art · each row shows the precon’s printing",
     listNotePhone: "By type · press a card for its details",
+    // R4 §6, Card view. The phone note is the list's own (`listNotePhone`).
+    listNoteCard: "By type, A–Z within each group · press a card for its details · each card shows the precon’s printing",
+    // The read-only tile has no buy tag to carry it, and a lone dot is too quiet at tile density.
+    tileNotOwned: "not owned",
+    /** A basic's sub-line when the precon holds it in more than one art (at one, the printing). */
+    basicArts: (setCode: string, arts: number) => `${setCode} · first of ${n(arts)} arts`,
+    basicCount: (copies: number) => `×${n(copies)}`,
   },
   group: {
     commander: "Commander",
