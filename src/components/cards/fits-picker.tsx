@@ -270,14 +270,22 @@ export function useFitsList(card: BrowseCard) {
   // Decks an add found already holding the card: they leave the list for `already holds it`.
   const [heldAlready, setHeldAlready] = useState<string[]>([]);
 
-  const fetchRead = useCallback(() => {
-    loadFitsAction(card.oracleId)
+  // Every read of the list is numbered, and only the newest one asked lands: a slow read from before
+  // a write must never replace what a later read says about the copies left or the decks holding it.
+  const asked = useRef(0);
+  const readList = useCallback(() => {
+    const n = ++asked.current;
+    return loadFitsAction(card.oracleId)
+      .catch(() => null)
       .then((r) => {
-        setLoad(r ? { state: "ready", read: r } : { state: "failed" });
-        if (r) setRows((prev) => prev ?? r.fits);
-      })
-      .catch(() => setLoad({ state: "failed" }));
+        if (n === asked.current) {
+          setLoad(r ? { state: "ready", read: r } : { state: "failed" });
+          if (r) setRows((prev) => prev ?? r.fits);
+        }
+        return r;
+      });
   }, [card.oracleId]);
+  const fetchRead = useCallback(() => { void readList(); }, [readList]);
   useEffect(fetchRead, [fetchRead]);
   const retry = () => {
     setLoad({ state: "loading" });
@@ -306,11 +314,10 @@ export function useFitsList(card: BrowseCard) {
         setRefused(deck.id);
         return;
       }
-      const after = await loadFitsAction(card.oracleId).catch(() => null);
+      const after = await readList();
       if (result.held) {
         // Nothing was written and no copy used, so no stamp: the re-read lists the deck under holds.
         setHeldAlready((h) => [...h, deck.id]);
-        setLoad(after ? { state: "ready", read: after } : { state: "failed" });
         return;
       }
       // A re-read that failed says nothing about the copies left, so the note makes no claim that
@@ -318,10 +325,9 @@ export function useFitsList(card: BrowseCard) {
       const note = freeBefore === 0
         ? copy.addedToBuy
         : after && Math.max(0, after.free ?? 0) === 0 ? copy.addedUsedLast : copy.addedFree;
-      setAdded((a) => [...a, { deckId: deck.id, note }]);
       // A failed re-read leaves no count to draw: the old one is spent, and every row's Add or Add to
-      // buy would be a claim about it. So the picker fails, and Try again reads the server's count.
-      setLoad(after ? { state: "ready", read: after } : { state: "failed" });
+      // buy would be a claim about it. So the picker fails (`readList`), and Try again reads the count.
+      setAdded((a) => [...a, { deckId: deck.id, note }]);
     } catch {
       setRefused(deck.id);
     } finally {
@@ -338,10 +344,8 @@ export function useFitsList(card: BrowseCard) {
   /** Re-reads the list. `afterWrite`: the caller just wrote, so a failed re-read leaves no count. */
   const refresh = useCallback(async (afterWrite = false) => {
     if (afterWrite) setWrote(true);
-    const after = await loadFitsAction(card.oracleId).catch(() => null);
-    setLoad(after ? { state: "ready", read: after } : { state: "failed" });
-    return after;
-  }, [card.oracleId]);
+    return readList();
+  }, [readList]);
 
   return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh, claim, release };
 }

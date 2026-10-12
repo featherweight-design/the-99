@@ -186,7 +186,7 @@ describe("FitsPicker", () => {
   });
 
   it("stamps nothing when the deck already held it, and moves the deck to its holders", async () => {
-    const heldBy = { id: "d-g", name: "Gishath", quantity: 1 };
+    const heldBy = { id: "d-g", name: "Gishath", quantity: 1, commanders: [] };
     actions.loadFitsAction.mockResolvedValueOnce(read())
       .mockResolvedValueOnce(read({ fits: [read().fits[1]], holds: [...read().holds, heldBy] }));
     actions.addFromFits.mockResolvedValue({ ok: true, held: true });

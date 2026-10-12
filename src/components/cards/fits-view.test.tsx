@@ -310,6 +310,27 @@ describe("FitsView (Find a deck read, R2)", () => {
     await settle();
   });
 
+  it("only the newest read of the list lands: a slow one asked before a write never replaces it", async () => {
+    await draw(panel());
+    let pressed!: (v: unknown) => void;
+    readActions.pressFitsReadAction.mockReturnValue(new Promise((res) => { pressed = res; }));
+    fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+    // The read settles and asks after the list; that answer is slow, and still says one copy is free.
+    let slow!: (v: unknown) => void;
+    actions.loadFitsAction.mockReturnValueOnce(new Promise((res) => { slow = res; }));
+    await act(async () => pressed({ ok: true, panel: panel({}, { stored: stored() }) }));
+    await settle();
+    // A swap lands and its own re-read says the copy is spent.
+    actions.swapFromReadAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: true, cutLeft: 0 });
+    actions.loadFitsAction.mockResolvedValue(list({ free: 0 }));
+    fireEvent.click(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") }));
+    await settle();
+    expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(1, 0));
+    await act(async () => slow(list()));
+    await settle();
+    expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(1, 0));
+  });
+
   it("an add to the last deck that could take the card takes the offer away (P1b)", async () => {
     await draw(panel({ candidates: 1 }), list({ fits: [list().fits[0]] }));
     expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
