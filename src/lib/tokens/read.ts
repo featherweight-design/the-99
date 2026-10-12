@@ -1,8 +1,6 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import {
-  cardTokens, cards, deckCards, deckTokenJoins, decks, tokenOwnership, tokenPrintings, tokenReads, tokens,
-} from "../../db/schema";
+import { cardTokens, cards, deckCards, decks, tokenPrintings, tokens } from "../../db/schema";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
 import { tokenOwnershipTablesExist, type TokenOwnership } from "./ownership";
 import { tokenPriceTablesExist, tokenTablesExist } from "./publish";
@@ -143,6 +141,39 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
   };
 }
 
+export type UserTokenState = {
+  held: { id: string; source: "upload" | "manual" }[];
+  read: boolean;
+  joined: string[];
+};
+
+/**
+ * The query, exported so a test can render it. ONE STATEMENT, because the three facts are written
+ * together: an upload commits ownership with the read marker, and `I have one` commits ownership with
+ * the join's deletion. Three statements could each land on a different side of such a commit and draw
+ * a state that never existed (a first-upload token as "not owned", a joined token as neither joined
+ * nor owned); one statement reads one snapshot.
+ */
+export function userTokenStateQuery(deckId: string, userId: string, tokenIds: string[], ownershipReady: boolean) {
+  const ids = sql.param(tokenIds);
+  const joined = sql`(select coalesce(jsonb_agg(j.token_oracle_id), '[]'::jsonb) from deck_token_joins j
+    where j.deck_id = ${deckId} and j.user_id = ${userId})`;
+  if (!ownershipReady) return sql`select '[]'::jsonb as held, false as read, ${joined} as joined`;
+  return sql`select
+    (select coalesce(jsonb_agg(jsonb_build_object('id', o.token_oracle_id, 'source', o.source)), '[]'::jsonb)
+      from token_ownership o where o.user_id = ${userId} and o.token_oracle_id = any(${ids}::uuid[])) as held,
+    exists (select 1 from token_reads r where r.user_id = ${userId}) as read,
+    ${joined} as joined`;
+}
+
+async function loadUserTokenState(
+  deckId: string, userId: string, tokenIds: string[], ownershipReady: boolean,
+): Promise<UserTokenState> {
+  const { rows } = await db.execute<UserTokenState>(userTokenStateQuery(deckId, userId, tokenIds, ownershipReady));
+  const row = rows[0];
+  return { held: row.held ?? [], read: row.read === true, joined: row.joined ?? [] };
+}
+
 /** The ids of every card a deck holds: its list plus both commanders (G10: a commander makes tokens too). */
 export async function deckMakerIds(deckId: string, userId: string): Promise<string[] | null> {
   const [deck] = await db
@@ -179,7 +210,7 @@ export async function loadDeckTokens(deckId: string, userId: string): Promise<De
     const tokenIds = [...new Set(links.map((l) => l.tokenOracleId))];
 
     const ownershipReady = await tokenOwnershipTablesExist();
-    const [tokenRows, printingRows, held, read, joined, priced] = await Promise.all([
+    const [tokenRows, printingRows, state, priced] = await Promise.all([
       db.select({
         oracleId: tokens.oracleId, name: tokens.name, typeLine: tokens.typeLine, colors: tokens.colors,
         power: tokens.power, toughness: tokens.toughness, oracleText: tokens.oracleText,
@@ -189,24 +220,16 @@ export async function loadDeckTokens(deckId: string, userId: string): Promise<De
         setCode: tokenPrintings.setCode, collectorNumber: tokenPrintings.collectorNumber,
         imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
       }).from(tokenPrintings).where(inArray(tokenPrintings.tokenOracleId, tokenIds)),
-      ownershipReady
-        ? db.select({ id: tokenOwnership.tokenOracleId, source: tokenOwnership.source }).from(tokenOwnership)
-          .where(and(eq(tokenOwnership.userId, userId), inArray(tokenOwnership.tokenOracleId, tokenIds)))
-        : Promise.resolve([] as { id: string; source: "upload" | "manual" }[]),
-      ownershipReady
-        ? db.select({ userId: tokenReads.userId }).from(tokenReads).where(eq(tokenReads.userId, userId))
-        : Promise.resolve([] as { userId: string }[]),
-      db.select({ id: deckTokenJoins.tokenOracleId }).from(deckTokenJoins)
-        .where(and(eq(deckTokenJoins.deckId, deckId), eq(deckTokenJoins.userId, userId))),
+      loadUserTokenState(deckId, userId, tokenIds, ownershipReady),
       (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
     ]);
 
     return assembleDeckTokens({
       links,
       tokens: tokenRows,
-      held: new Map(held.map((h) => [h.id, h.source])),
-      read: read.length > 0,
-      joined: new Set(joined.map((j) => j.id)),
+      held: new Map(state.held.map((h) => [h.id, h.source])),
+      read: state.read,
+      joined: new Set(state.joined),
       printings: printingRows,
       prices: priced.prices,
       newestPriceAsOf: priced.newestAsOf,

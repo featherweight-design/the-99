@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
 
-import { assembleDeckTokens, type DeckTokenInputs, type TokenPrintingFacts } from "./read";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
+import { assembleDeckTokens, userTokenStateQuery, type DeckTokenInputs, type TokenPrintingFacts } from "./read";
 import type { TokenPriceFact } from "./price";
 
 const A = "00000000-0000-4000-8000-00000000000a";
@@ -105,5 +107,35 @@ describe("assembleDeckTokens", () => {
   it("skips a token row no link reaches", () => {
     const r = ok(assembleDeckTokens(base({ tokens: [tok(A, "Goblin"), tok(B, "Stray")] })));
     expect(r.tokens.map((t) => t.oracleId)).toEqual([A]);
+  });
+});
+
+describe("userTokenStateQuery", () => {
+  const dialect = new PgDialect();
+  const render = (ready: boolean) => dialect.sqlToQuery(userTokenStateQuery("d1", "u1", [A, B], ready) as SQL);
+
+  it("reads the holdings, the read marker and the joins in ONE statement, so they share a snapshot", () => {
+    const q = render(true);
+    expect(q.sql.match(/^\s*select/gi)?.length).toBe(1);
+    expect(q.sql).toContain("from token_ownership");
+    expect(q.sql).toContain("from token_reads");
+    expect(q.sql).toContain("from deck_token_joins");
+    expect(q.params).toContain("d1");
+    expect(q.params.filter((p) => p === "u1").length).toBe(3);
+  });
+
+  it("scopes every read to the player and the holdings to the deck's tokens", () => {
+    const q = render(true);
+    expect(q.sql).toContain("o.user_id =");
+    expect(q.sql).toContain("r.user_id =");
+    expect(q.sql).toContain("j.user_id =");
+    expect(q.sql).toContain("o.token_oracle_id = any(");
+  });
+
+  it("names no ownership table where they do not exist yet, and still reads the joins", () => {
+    const q = render(false);
+    expect(q.sql).not.toContain("token_ownership");
+    expect(q.sql).not.toContain("token_reads");
+    expect(q.sql).toContain("from deck_token_joins");
   });
 });
