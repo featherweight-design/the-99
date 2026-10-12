@@ -102,9 +102,13 @@ export async function loadPreconList(userId: string): Promise<PreconList> {
     const sources = await readPreconSources(tx);
     const ownedRows = await ownedPreconCards(userId, tx);
     const any = await tx.select({ one: sql<number>`1` }).from(collectionItems).where(eq(collectionItems.userId, userId)).limit(1);
-    const readerDecks = await readReaderDecks(userId, tx);
+    // L2 draws no built lines: with no collection the page is a band and a column of zeros, and a
+    // reader who cleared their collection still holds decks.
+    const readerDecks = any.length > 0 ? await readReaderDecks(userId, tx) : [];
     const rows = summarisePrecons(sources, new Set(ownedRows.map((r) => r.oracleId)), readerDecks);
     const newest = rows.reduce<string | null>((m, r) => (m === null || r.releaseDate > m ? r.releaseDate : m), null);
     return { rows, listed: sources.length, hasCollection: any.length > 0, newest };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    // No `accessMode: "read only"`: on the pooled connection it leaks into the next transaction
+    // (`READ_SNAPSHOT` in `decks/draft-state.ts` says how).
+  }, { isolationLevel: "repeatable read" });
 }
