@@ -83,6 +83,21 @@ describe("IntentPrefetchLink", () => {
     expect(prefetch).not.toHaveBeenCalled();
   });
 
+  it("runs a caller's callback-ref cleanup, and nulls a plain one, on unmount", () => {
+    const release = vi.fn();
+    const object = { current: null as HTMLAnchorElement | null };
+    const { unmount } = render(
+      <>
+        <IntentPrefetchLink href="/decks/d1" ref={(node) => () => release(node)}>One</IntentPrefetchLink>
+        <IntentPrefetchLink href="/decks/d2" ref={object}>Two</IntentPrefetchLink>
+      </>,
+    );
+    expect(object.current?.getAttribute("href")).toBe("/decks/d2");
+    unmount();
+    expect(release).toHaveBeenCalledWith(expect.objectContaining({ tagName: "A" }));
+    expect(object.current).toBeNull();
+  });
+
   it("still calls the caller's own handlers", () => {
     const onFocus = vi.fn();
     render(<IntentPrefetchLink href="/decks/d1" onFocus={onFocus}>Deck</IntentPrefetchLink>);

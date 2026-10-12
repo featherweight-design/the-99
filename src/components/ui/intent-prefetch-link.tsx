@@ -81,11 +81,18 @@ export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocu
   const anchor = useRef<HTMLAnchorElement | null>(null);
   // Stable across renders: Link re-runs its own ref callback, and its viewport prefetch, when this
   // identity changes.
+  // A React 19 callback ref may return its own cleanup, which React then runs in place of calling
+  // it with null. This one always returns a cleanup, so it does both on the caller's behalf.
   const setRef = useCallback(
-    (el: HTMLAnchorElement | null) => {
+    (el: HTMLAnchorElement) => {
       anchor.current = el;
-      if (typeof ref === "function") ref(el);
-      else if (ref) ref.current = el;
+      const cleanup = typeof ref === "function" ? ref(el) : ref ? ((ref.current = el), undefined) : undefined;
+      return () => {
+        anchor.current = null;
+        if (typeof cleanup === "function") cleanup();
+        else if (typeof ref === "function") ref(null);
+        else if (ref) ref.current = null;
+      };
     },
     [ref],
   );
