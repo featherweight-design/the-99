@@ -36,7 +36,7 @@ describe("switchSnapshot", () => {
   it("reads both tables from one repeatable-read snapshot", async () => {
     transactions.length = 0;
     await switchSnapshot(1_000);
-    expect(transactions).toEqual([{ isolationLevel: "repeatable read", accessMode: "read only" }]);
+    expect(transactions).toEqual([{ isolationLevel: "repeatable read" }]);
     expect(reads.n).toBe(2);
   });
 

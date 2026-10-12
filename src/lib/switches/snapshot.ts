@@ -32,7 +32,9 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
         value: flagOverrides.value,
       }).from(flagOverrides),
       tx.select({ userId: flagGroupMembers.userId, groupId: flagGroupMembers.groupId }).from(flagGroupMembers),
-    ]), { isolationLevel: "repeatable read", accessMode: "read only" });
+    // Repeatable read alone: no `accessMode: "read only"`, which leaks through the pooled Neon
+    // connection to the next transaction (`READ_SNAPSHOT`, `src/lib/decks/draft-state.ts`).
+    ]), { isolationLevel: "repeatable read" });
     const overrides = rows.filter((r) => isSwitchName(r.switchName)) as OverrideRow[];
     return { overrides, groupOf: new Map(members.map((m) => [m.userId, m.groupId])) };
   } catch (error) {
