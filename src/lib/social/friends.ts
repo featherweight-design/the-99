@@ -169,7 +169,7 @@ export async function declineInvite(viewerId: string, token: string, now = new D
 
 /**
  * Remove a friend, from either side, silently: both directed rows, and each of the two from every pod
- * the other owns (pods are friends-only, Q4), in one transaction. Rows are deleted in `friendshipRows`'
+ * the other owns (an owner adds only friends, Q4), in one transaction. Rows are deleted in `friendshipRows`'
  * order so the two readers' stamps are taken the same way round as `befriendIn` takes them.
  */
 export async function unfriend(viewerId: string, friendPublicId: unknown): Promise<boolean> {

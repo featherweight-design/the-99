@@ -11,6 +11,10 @@ describe("socialReadsIn", () => {
     expect(socialReadsIn(src)).toEqual([{ line: 2, why: "reads schema.podMembers" }]);
   });
 
+  it("finds the relational API, which needs no schema import", () => {
+    expect(socialReadsIn(`const rows = await db.query.friendLinks.findMany();`)).toEqual([{ line: 1, why: "reads db.query.friendLinks" }]);
+  });
+
   it("finds a table named in raw SQL, pods included where SQL names a table", () => {
     expect(socialReadsIn("sql`select * from friend_links where user_id = ${id}`").map((f) => f.why)).toEqual(["names friend_links in SQL"]);
     expect(socialReadsIn('sql`select 1 from "pods" p`').map((f) => f.why)).toEqual(['names from "pods" in SQL']);

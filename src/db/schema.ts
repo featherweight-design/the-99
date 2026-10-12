@@ -2942,7 +2942,7 @@ export const friendInvites = pgTable("friend_invites", {
   index("friend_invites_inviter_idx").on(t.inviterUserId, t.createdAt),
 ]);
 
-/** A named group of friends (Hugh, Q4: friends-only). The owner is always a member too. */
+/** A named group: an owner adds members only from their own friends (Hugh, Q4). The owner is always a member too. */
 export const pods = pgTable("pods", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerUserId: text("owner_user_id").notNull(),

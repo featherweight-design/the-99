@@ -1,8 +1,10 @@
-// The social tables may be read and written ONLY by `src/lib/social/**` (plan
+// Under `src/`, the social tables may be read and written ONLY by `src/lib/social/**` (plan
 // `boards/plan-social-foundation-2026-10-12.md`). Every read there takes the viewer from the session
 // and joins the grant on that viewer in the same statement; a query on these tables anywhere else is a
 // cross-user read nobody reviewed against that rule. Static, by import and by name: a Drizzle binding
-// imported from the schema, a schema namespace's property, or a table named in raw SQL.
+// imported from the schema, a schema namespace's property, the relational API (`db.query.friendLinks`,
+// which reaches every table through the schema `db` was built with, no import needed), or a table named
+// in raw SQL. Scripts (`scripts/`) are outside it: a probe writes fixtures on a scratch branch.
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 
@@ -30,6 +32,9 @@ export function socialReadsIn(source) {
   const namespace = new RegExp(`\\.(${SOCIAL_BINDINGS.join("|")})\\b`, "g");
   if (/import\s*\*\s*as\s+\w+\s+from\s*["'][^"']*db\/schema["']/.test(source)) {
     for (const m of source.matchAll(namespace)) findings.push({ line: lineAt(m.index), why: `reads schema.${m[1]}` });
+  }
+  for (const m of source.matchAll(new RegExp(`\\.query\\.(${SOCIAL_BINDINGS.join("|")})\\b`, "g"))) {
+    findings.push({ line: lineAt(m.index), why: `reads db.query.${m[1]}` });
   }
   for (const pattern of RAW) {
     for (const m of source.matchAll(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))) {

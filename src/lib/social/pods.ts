@@ -83,7 +83,9 @@ export async function removeMember(viewerId: string, podId: unknown, memberPubli
 
 /**
  * Leave a pod. A member just goes. An owner hands the pod to the longest-standing remaining member
- * (Q5, `nextPodOwner`), and the last member out deletes it. The pod row is locked first, so two leaves
+ * (Q5, `nextPodOwner`), and the last member out deletes it. The new owner need not be every member's
+ * friend: "friends-only" governs who an owner may ADD, and a pod grants no visibility of its own, since
+ * every read that uses one also joins the friendship. The pod row is locked first, so two leaves
  * at once cannot both hand it on.
  */
 export async function leavePod(viewerId: string, podId: unknown): Promise<"left" | "handedOn" | "deleted" | "notMember"> {

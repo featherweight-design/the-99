@@ -21,6 +21,10 @@ describe("inviteState", () => {
 });
 
 describe("names", () => {
+  it("keeps a composed emoji, whose zero-width joiners are format characters", () => {
+    expect(cleanDisplayName("Hugh 👨‍👩‍👧")).toBe("Hugh 👨‍👩‍👧");
+  });
+
   it("trims and collapses whitespace, and counts code points, not UTF-16 units", () => {
     expect(cleanDisplayName("  Hugh   H  ")).toBe("Hugh H");
     expect(cleanDisplayName("🐉".repeat(30))).toBe("🐉".repeat(30));

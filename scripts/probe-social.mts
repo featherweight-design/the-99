@@ -133,14 +133,18 @@ async function main() {
     // Stamp order: befriend and unfriend from both sides at once never deadlock. D's capped invites are
     // cleared first so D can invite again.
     await db.execute(sql`delete from friend_invites where inviter_user_id = ${D}`);
+    let befriended = 0;
     const pairs = await Promise.allSettled(Array.from({ length: 6 }, async (_, i) => {
-      const t = await friends.createInvite(i % 2 ? C : D);
-      if (!t.ok) return;
-      await friends.redeemInvite(i % 2 ? D : C, t.token);
-      await friends.unfriend(i % 2 ? C : D, i % 2 ? d.publicId : c.publicId);
+      const [inviter, invitee, them] = i % 2 ? [C, D, d.publicId] : [D, C, c.publicId];
+      const t = await friends.createInvite(inviter);
+      if (!t.ok) throw new Error("createInvite refused");
+      const r = await friends.redeemInvite(invitee, t.token);
+      if (r.ok) befriended++;
+      await friends.unfriend(inviter, them);
     }));
-    const deadlocks = pairs.filter((p) => p.status === "rejected" && /deadlock/i.test(String(p.reason)));
-    check("concurrent befriend and unfriend in both orders commit without a deadlock", deadlocks.length === 0, `${deadlocks.length}`);
+    const errors = pairs.filter((p) => p.status === "rejected").map((p) => String((p as PromiseRejectedResult).reason));
+    check("concurrent befriend and unfriend in both orders commit without an error", errors.length === 0, errors.join("; "));
+    check("and the befriends really ran", befriended === 6, `${befriended}`);
   } finally {
     // Stamps last: every delete above fires the deferred stamp trigger, which writes them back.
     const who = sql`(${A}, ${B}, ${C}, ${D})`;

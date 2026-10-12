@@ -36,14 +36,15 @@ export function inviteState(row: InviteRow, now: Date): InviteState {
 
 /**
  * Player-typed text, so the same contract everywhere it lands: NFC, trimmed, inner whitespace collapsed
- * to one space, no control or format characters, and 1 to `max` code points (not UTF-16 units, so an
- * emoji counts once). Null means the input is refused, never repaired into something the player did
- * not type.
+ * to one space, no control or format characters except the zero-width joiner (which composed emoji such
+ * as 👨‍👩‍👧 need), and 1 to `max` CODE POINTS, which is what the column's `char_length` check counts. A
+ * composed emoji is several code points, so it spends more than one of the cap. Null means the input is
+ * refused, never repaired into something the player did not type.
  */
 export function cleanName(raw: unknown, max: number): string | null {
   if (typeof raw !== "string") return null;
   const name = raw.normalize("NFC").replace(/\s+/gu, " ").trim();
-  if (/[\p{Cc}\p{Cf}]/u.test(name)) return null;
+  if (/[\p{Cc}\p{Cf}]/u.test(name.replace(/\u200D/gu, ""))) return null;
   const length = [...name].length;
   return length >= 1 && length <= max ? name : null;
 }
