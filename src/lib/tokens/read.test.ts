@@ -166,10 +166,10 @@ describe("userTokenStateQuery", () => {
     expect(q.sql).toContain("o.token_oracle_id = any(");
   });
 
-  it("names no ownership table where they do not exist yet, and still reads the joins", () => {
+  it("names none of the three player tables where they do not exist yet (the readiness check covers the joins too)", () => {
     const q = render(false);
     expect(q.sql).not.toContain("token_ownership");
     expect(q.sql).not.toContain("token_reads");
-    expect(q.sql).toContain("from deck_token_joins");
+    expect(q.sql).not.toContain("deck_token_joins");
   });
 });

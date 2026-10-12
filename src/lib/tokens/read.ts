@@ -176,7 +176,8 @@ export function userTokenStateQuery(deckId: string, userId: string, tokenIds: st
   const ids = sql.param(tokenIds);
   const joined = sql`(select coalesce(jsonb_agg(j.token_oracle_id), '[]'::jsonb) from deck_token_joins j
     where j.deck_id = ${deckId} and j.user_id = ${userId})`;
-  if (!ownershipReady) return sql`select '[]'::jsonb as held, false as read, ${joined} as joined`;
+  // `ownershipReady` includes `deck_token_joins`, so a database that lags a migration reads none of the three.
+  if (!ownershipReady) return sql`select '[]'::jsonb as held, false as read, '[]'::jsonb as joined`;
   return sql`select
     (select coalesce(jsonb_agg(jsonb_build_object('id', o.token_oracle_id, 'source', o.source)), '[]'::jsonb)
       from token_ownership o where o.user_id = ${userId} and (o.token_oracle_id = any(${ids}::uuid[])
