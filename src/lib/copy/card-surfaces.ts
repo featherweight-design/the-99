@@ -61,6 +61,7 @@ export const manaCopy = {
 export const viewToggleCopy = {
   deck: { list: "List view", card: "Card view" },
   collection: { rows: "Rows view", grid: "Grid view" },
+  precons: { rows: "Rows view", tiles: "Tiles view" },
 } as const;
 
 /**

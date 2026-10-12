@@ -103,7 +103,13 @@ describe("filter, order, group", () => {
 
   it("parses the URL, ignoring what it does not name", () => {
     expect(parsePreconParams(new URLSearchParams("q=eldrazi&colour=G,X,W&sort=owned")))
-      .toEqual({ q: "eldrazi", colours: ["W", "G"], order: "owned" });
+      .toEqual({ q: "eldrazi", colours: ["W", "G"], order: "owned", view: null });
     expect(parsePreconParams(new URLSearchParams("sort=oldest")).order).toBeNull();
+  });
+
+  it("parses the view, and ignores one it does not know (T2u)", () => {
+    expect(parsePreconParams(new URLSearchParams("view=rows")).view).toBe("rows");
+    expect(parsePreconParams(new URLSearchParams("view=tiles")).view).toBe("tiles");
+    expect(parsePreconParams(new URLSearchParams("view=grid")).view).toBeNull();
   });
 });

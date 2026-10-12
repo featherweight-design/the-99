@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CommanderThumb } from "./commander-thumb";
 
@@ -84,5 +85,26 @@ describe("CommanderThumb", () => {
       "aria-hidden",
       "true",
     );
+  });
+
+  // The precon list's rows: a CSS background is fetched for every rendered row, on screen or not,
+  // so `lazy` draws an img that waits for hydration and the viewport instead.
+  it("draws lazy art as an img kept out of the server HTML unless eager, and no background", () => {
+    const html = (eager: boolean) =>
+      renderToString(<CommanderThumb imageUri="https://img/a.jpg" colorIdentity={["G"]} size="list" lazy eager={eager} />);
+    expect(html(false)).not.toContain("https://img/a.jpg");
+    expect(html(true)).toContain('src="https://img/a.jpg"');
+    const el = thumb(<CommanderThumb imageUri="https://img/a.jpg" colorIdentity={["G"]} size="list" lazy />);
+    expect(el.style.background).not.toContain("url(");
+    expect(el.style.width).toBe("34px");
+  });
+
+  it("keeps the identity fallback when lazy art has no image", () => {
+    const el = thumb(<CommanderThumb imageUri={null} colorIdentity={null} size="list" lazy />);
+    expect(el.querySelector("img")).toBeNull();
+    // The unknown-identity stripes, exactly as the thumb draws them without `lazy`.
+    const plain = thumb(<CommanderThumb imageUri={null} colorIdentity={null} size="list" />);
+    expect(el.style.background).not.toBe("");
+    expect(el.style.background).toBe(plain.style.background);
   });
 });

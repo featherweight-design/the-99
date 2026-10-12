@@ -3,6 +3,7 @@
 // stamp, as `/decks` is, and on the catalog generation the precon ingest moves.
 
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { cachePageForUser } from "../../../lib/cache/page-cache";
@@ -12,6 +13,7 @@ import { parsePreconParams } from "../../../lib/precons/list";
 import { loadPreconList, type PreconList } from "../../../lib/precons/list-read";
 import { PreconListView } from "../../../components/decks/precons/precon-list-view";
 import { PreconsDown } from "../../../components/decks/precons/precons-down";
+import { parsePreconsViewCookie, PRECONS_VIEW_COOKIE } from "../../../components/ui/view-cookie";
 
 export const metadata: Metadata = { title: preconsCopy.list.title };
 
@@ -35,6 +37,9 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
     console.error("precons: the list could not be read", error);
   }
   if (!list || list.rows.length === 0) return <PreconsDown />;
+  // The view the browser stored, so the server draws tiles or rows as the reader will see them. A
+  // hint only: anything but `tiles` or `rows` reads as absent.
+  const storedView = parsePreconsViewCookie((await cookies()).get(PRECONS_VIEW_COOKIE)?.value);
 
   return (
     <PreconListView
@@ -43,6 +48,7 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
       fromNew={params.get("from") === "new"}
       initial={parsePreconParams(params)}
       query={params.toString()}
+      storedView={storedView}
     />
   );
 }

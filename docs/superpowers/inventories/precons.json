@@ -1,10 +1,10 @@
 {
   "feature": "Commander precons (handoff design_handoff_the99_precons, R2)",
-  "note": "PR 2 rows: the /decks/precons list. PR 3 adds the open precon. The start in PR 4, the /decks line, the New deck door and the About entry in PR 5. Needs PRECONS_ENABLED=true, a database holding the precon tables, and an account with a collection and precon-built decks (a pull:staging copy of Hugh's).",
+  "note": "PR 2 rows: the /decks/precons list. PR 3 adds the open precon. The start in PR 4, the /decks line, the New deck door and the About entry in PR 5. Needs PRECONS_ENABLED=true, a database holding the precon tables, and an account with a collection and precon-built decks (a pull:staging copy of Hugh's). R4: tiles are the list's default; rows are ?view=rows.",
   "rows": [
     {
       "id": "l1",
-      "label": "/decks/precons, newest first under year heads (L1), with shared-deck and twin lines",
+      "label": "/decks/precons (tiles, the R4 default), newest first under year heads (L1), with shared-deck and twin lines",
       "view": "src/components/decks/precons/precon-list-view.tsx",
       "steps": [
         {
@@ -16,8 +16,8 @@
     },
     {
       "id": "l1-built",
-      "label": "/decks/precons, a row naming the reader's deck (R2) and a twin (R3)",
-      "view": "src/components/decks/precons/precon-row.tsx",
+      "label": "/decks/precons (tiles, the R4 default), a row naming the reader's deck (R2) and a twin (R3)",
+      "view": "src/components/decks/precons/precon-tile.tsx",
       "steps": [
         {
           "goto": "/decks/precons?q=eldrazi",
@@ -28,7 +28,7 @@
     },
     {
       "id": "l1n",
-      "label": "/decks/precons?from=new, the back link reads New deck (L1n)",
+      "label": "/decks/precons (tiles, the R4 default)?from=new, the back link reads New deck (L1n)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
       "steps": [
         {
@@ -40,7 +40,7 @@
     },
     {
       "id": "l1o",
-      "label": "/decks/precons?sort=owned, most owned first, no year heads (L1o)",
+      "label": "/decks/precons (tiles, the R4 default)?sort=owned, most owned first, no year heads (L1o)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
       "steps": [
         {
@@ -52,7 +52,7 @@
     },
     {
       "id": "l1f",
-      "label": "/decks/precons?colour=W,U, the colour filter and its chips (L1f)",
+      "label": "/decks/precons (tiles, the R4 default)?colour=W,U, the colour filter and its chips (L1f)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
       "steps": [
         {
@@ -64,7 +64,7 @@
     },
     {
       "id": "l3",
-      "label": "/decks/precons?q=zzzz, no precon matches (L3)",
+      "label": "/decks/precons (tiles, the R4 default)?q=zzzz, no precon matches (L3)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
       "steps": [
         {
@@ -75,9 +75,33 @@
       ]
     },
     {
-      "id": "l1-pair",
-      "label": "/decks/precons?q=frodo, a two-commander row (R4)",
+      "id": "t2",
+      "label": "/decks/precons?view=rows, R2's rows with lazy thumbs (T2)",
       "view": "src/components/decks/precons/precon-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?view=rows",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "t2-built",
+      "label": "/decks/precons?view=rows&q=eldrazi, a row naming the reader's deck and a twin",
+      "view": "src/components/decks/precons/precon-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons?view=rows&q=eldrazi",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "l1-pair",
+      "label": "/decks/precons (tiles, the R4 default)?q=frodo, a two-commander row (R4)",
+      "view": "src/components/decks/precons/precon-tile.tsx",
       "steps": [
         {
           "goto": "/decks/precons?q=frodo",
@@ -188,7 +212,7 @@
     },
     {
       "id": "s2",
-      "label": "Start the deck: the new draft with the precon arrival strip (S2) \u00b7 creates a draft deck on the account each run: capture it on a scratch branch, never a shared database",
+      "label": "Start the deck: the new draft with the precon arrival strip (S2) · creates a draft deck on the account each run: capture it on a scratch branch, never a shared database",
       "view": "src/components/decks/arrival-strip.tsx",
       "steps": [
         {
