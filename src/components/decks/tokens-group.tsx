@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { tokensCopy } from "../../lib/copy/tokens";
+import { PendingReporter } from "../shell/pending-reporter";
 import { useDeckTokens } from "./deck-tokens-context";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { TokenRow } from "./token-row";
@@ -43,6 +44,7 @@ export function TokensGroup() {
             className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent)] md:min-h-[30px]"
           >
             {tokensCopy.unknown.action}
+            <PendingReporter href="/collection" />
           </Link>
         </div>
       )}

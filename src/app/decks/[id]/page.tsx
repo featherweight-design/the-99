@@ -605,9 +605,7 @@ export default async function DeckBuilderPage({
     />
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
-  const deckTokens = tokensRead ? await tokensRead : null;
-  const withTokens = deckTokens ? <DeckTokensProvider deckId={id} read={deckTokens}>{shell}</DeckTokensProvider> : shell;
-  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{withTokens}</DeckPageSwitches>;
+  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{shell}</DeckPageSwitches>;
   // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
   // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
   const bought = shoppingMarkBoughtEnabled() ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
@@ -616,7 +614,7 @@ export default async function DeckBuilderPage({
   ) : bought;
   // Change commander's door and sheet read this context; without it the deck header draws exactly
   // the card-details trigger it drew before the feature (audit F6).
-  return changeCommanderEnabled() ? (
+  const page = changeCommanderEnabled() ? (
     <ChangeCommanderProvider
       // One provider per deck: a client navigation to another deck must not carry an open sheet
       // or its chosen candidate across, where it would be written against the new deck.
@@ -629,4 +627,7 @@ export default async function DeckBuilderPage({
       {tooled}
     </ChangeCommanderProvider>
   ) : tooled;
+  // The deck's tokens reach the decklist through a context, outermost so no wrap above has to know of them.
+  const deckTokens = tokensRead ? await tokensRead : null;
+  return deckTokens ? <DeckTokensProvider deckId={id} read={deckTokens}>{page}</DeckTokensProvider> : page;
 }
