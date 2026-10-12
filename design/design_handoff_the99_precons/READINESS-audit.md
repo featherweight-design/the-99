@@ -1,5 +1,7 @@
 # READINESS audit: Commander precons (R1/R2 audit, 2026-10-11)
 
+**R3 addendum (built-from link and v0): re-audited 2026-10-11, GREEN. See "R3 re-audit" at the end of this file.** The R1/R2 audit below is unchanged.
+
 Audited against `docs/superpowers/design-briefs/2026-10-11-commander-precons.md` (Hugh's five rulings,
 engineering's nine locks, six open questions, Fixtures) and the tree at `origin/main` 00e254f17.
 **Build from R2**: `The 99 - Precons (R2).dc.html` (canvas) and `Precons R2.dc.html` (frame). R1's two
@@ -171,3 +173,151 @@ the build follows, not edits to the drawing.
 ## Questions for Hugh
 
 None open. Both were answered on 2026-10-11 (above).
+
+
+---
+
+# R3 re-audit: built-from link and v0 (2026-10-11)
+
+Audited against the brief's "Addendum: built-from link and v0 (2026-10-11)" (Hugh's three rulings, the six
+engineering locks, open question 2, "What Design owns", the fixtures), the prompt Design received, and the
+tree at `origin/main` a201f9048. Files: `HANDOFF-R3 · built-from link.md`, canvas
+`The 99 - Precons R3 · Built-from Link.dc.html` (K1–K16), frame `Precons Link.dc.html`, STATES §K,
+`design-tables/precons.md` §K, `precons-link · copy strings.ts`, and one key line in `about · precons.ts`.
+Design's drop deleted this file; it is kept, and this section is added to it.
+
+## Verdict: GREEN
+
+Every ruling and lock is honored, every deliverable is drawn at 900 and 390, open question 2 is answered,
+and every figure drawn is computable from stored data. Every finding below is engineering's to resolve in
+the PR 6 plan or `/copy-review`'s to word; none needs a Design round. Design's two gaps are decided here
+(findings 3 and 4), and Hugh can overrule either.
+
+## Coverage
+
+| Requirement | Where | Holds |
+|---|---|---|
+| Ruling 1: link from the deck page or the precon page; the 40% / 60% rule suggests, never links | K1, K2, K3, K5, K6, K7, K15 | yes; the suggestion only offers `Link it` (finding 3 for the one deck with no deck-page door) |
+| Ruling 2: v0 is the precon's list, before v1; no version rewritten or renumbered | K10, K11, K12, K14 | yes |
+| Ruling 3: unlink | K8, K12, K13 | yes |
+| Lock 1: one link per deck; a CE twin links to its plain edition | K7 (`linking moves it here`), HANDOFF §1 | yes; a precon may carry several decks (K16), which the lock allows |
+| Lock 2: suggestion computed at read; none on a linked deck | K4, K15, HANDOFF §2 | yes; the dismissal is client-side, nothing stored |
+| Lock 3: v0 lowest, LAST in a newest-first rail, never reordered | K10, STATES K must-nots | yes |
+| Lock 4: v0 is never current, sleeved, stamped, a `since` source, a pin, or a reason to call a deck committed | K10, K12, K14, HANDOFF §5, §6 | yes on every drawn surface; the `since` and pin readers are engineering's (finding 7) |
+| Lock 5: unlink removes the link and v0 only | K13 (`Unlink` in the bone fill, not `--danger`) | yes |
+| Lock 6: the deck is never rewritten | K1–K4 draw the decklist unchanged on purpose | yes |
+| Open question 2: a linked brew's Versions tab | K14: yes, count 1, v0 alone, nothing current, still a brew | yes |
+| Design owns: link control, suggestion + dismissal, linked state (deck, open precon, row), unlink + confirm, v0 row + v1's diff, two precons, two decks | K1–K16 | all drawn |
+| Every frame at 900 and 390 | canvas renders each section twice (`hint-size` 900 and 390, `phone`) | yes, all 16 |
+| Fixtures | K1 Eldrazi Unbound 73/85; K2/K11 Counter Intelligence 64/91, swapped; K15 Mutant Menace 41/85; K5 HD - Zombies vs Wretched Ranks 13/67, no suggestion | yes |
+| No verdict word on a share | strings and frame | yes: counts only (`73 of its 85`, `73 shared`); the canvas's percentages are Design's notes, never drawn copy |
+| Select / unselect, never tick | `pickPrecon.selectAria` / `unselectAria`, K6 | yes; no `tick` anywhere |
+| US English | R3 strings | yes in R3; the R2 errata (`licence`) still stand |
+| STATES and design-table rows | STATES K1–K16 + K1d, K3p, K6n; table §K, nine rows | yes (finding 9 for the gaps) |
+
+**Spot-checked against the frame:** suggestion strip `border 1px var(--border-strong)`, `border-radius:10px`,
+`--surface-rail`, `padding:11px 4px 11px 14px`, inset 22 / 16; Link button height `phone ? 44 : 36`; picker
+radio 22px, `2px solid var(--accent)` on and `--border-dashed` off; picker rows `minHeight: phone ? 56 : 52`;
+v0 divider mono 9.5px, `letter-spacing:0.14em`, uppercase, `--fg-faint`; against-v0 box dashed, radius 8;
+v0 panel note `--surface-sunken`, dashed, radius 9, full width. All match the table. Every token the frame
+reads is in `globals.css` except `--btn`, read as `var(--btn, var(--fg))`: the shipped `PrimaryButton` fill,
+as the R1/R2 audit already noted.
+
+## Engineering facts verified
+
+- `precons` carries `file_name`, `name`, `set_code`, `release_date`, `twin_of` and `unmapped_count`;
+  `precon_cards` carries `oracle_id`, `quantity` and `is_commander` (`src/db/schema.ts:2657`, `:2675`). So
+  v0's name, set, `released Aug 2023`, commander(s), card count and mana value, and every share and kept
+  count (distinct non-basic oracle ids against a deck's current list or v1's), are computable at read. The
+  link column on `decks` does not exist yet; PR 6 adds it (lock 1).
+- `VersionRail` marks `current: i === 0` and `initial={previous === null}`
+  (`src/components/decks/version-history.tsx:272-273`). HANDOFF's "v0 is a third kind passed in, `current`
+  stays over committed rows only" is required: with v0 as an ordinary row, a linked brew's only row would be
+  `i === 0` and read as current.
+- `VersionDiff` already draws the commander change (`commanderMoved`, `copy.commanderChange`), the mana-value
+  box and `todayNote` (`src/components/decks/version-diff.tsx:355-517`), so K11's swapped commander needs
+  nothing new, as Design says.
+- The brew test HANDOFF §6 cites at `builder-shell.tsx:210` is the `versions` prop's doc at `:211-214` on this
+  tree; the line moved, the claim holds.
+- `ArrivalStrip` (`src/components/decks/arrival-strip.tsx`) and `useLocalFlag(key)`
+  (`src/components/decks/use-local-flag.ts:23`) exist as the strip shell and the per-browser dismissal.
+- `ABOUT_VERSION` is 14 (`src/lib/copy/about.ts:61`, `about.version.json`). `AboutEntry.keys` is "0–4 lines".
+- Open PRs touching precons: #1484 "Precons PR 3: an open precon, /decks/precons/[fileName]" (titles read
+  only). PR 4 and PR 5 are not open. R3 is PR 6 and lands after them: it adds `Link a deck` beside PR 4's
+  Start button and replaces O1's built sentence on PR 3's page, so it edits their surfaces later rather than
+  conflicting with them in flight.
+
+## Findings
+
+1. **eng-resolvable · About entry: no `ABOUT_VERSION` bump, `since: 14`.** The entry is switch-gated on
+   `PRECONS_ENABLED`, and a switched entry is seen by its id, so turning the switch on is what announces it.
+   `since` equals the current `ABOUT_VERSION`, 14, not the handoff's 17. This supersedes R1/R2 finding 10's
+   "the next free number". R3's key line rides in the same entry; it needs no bump of its own.
+2. **prose-pass · Six key lines against a contract of four.** R3 adds a fifth line to `about · precons.ts`,
+   and R1/R2 finding 5 already put the MTGJSON credit in as a key line, so the entry carries six against
+   `keys`' "0–4 lines". `/prose-pass` cuts the entry to four (the CE line and the printings line are the
+   likeliest to merge or move into the caption), keeping the R3 line's two facts: a link starts Versions at
+   v0, and nothing in the deck changes.
+3. **decided · G-R3-1: an unlinked brew with no suggestion links from the open precon only.** Ruling 1 offers
+   the deck page or the precon page; for this one case the precon page is the door. The alternatives cost
+   more than the case: a Versions tab on every brew is the empty tab Versioning ruled out, and a standing
+   header control is noise on the fifteen of Hugh's 21 decks that are not precon builds. A brew started from
+   a precon is linked by PR 4 and gets K14's tab, so the case is a brew built by hand that shares under 40%
+   with the same commander and under 60% with any. Hugh can overrule.
+4. **decided · G-R3-2: the dismissal is per browser**, keyed `deckId + fileName` through `useLocalFlag`, as
+   Design recommends. It is the shipped precedent (the arrival strip and the deck sort), it writes nothing,
+   which keeps lock 2's "never stored" literal, and Versions' foot row stays as the way back.
+5. **eng-resolvable · The suggestion strip takes the shipped `ArrivalStrip` shell.** HANDOFF §2 and table §K
+   draw it as R2's rounded box (radius 10, `--border-strong`, inset 22 / 16). R1/R2 finding 3 already settled
+   that the arrival strip is built in the shipped full-width band (`--surface-rail`, `border-bottom`), so two
+   strips under one header would otherwise differ. The suggestion builds in that band, holding its meta line,
+   `Link it` (36 / 44) and ✕ (44); K15's two rows stack inside it. Frame mismatch: the shipped shell wins,
+   for the same reason as R1/R2 finding 3.
+6. **eng-resolvable · "100 cards" is hard-coded twice.** `confirm.facts.v0` and `historyOriginCopy.originMeta`
+   say `100 cards`. HANDOFF's own "Not done" says a precon with an unmapped card lists 99, so both take the
+   card count from `precon_cards` (the R1/R2 finding 4 rule), never a literal.
+7. **eng-resolvable · Readers lock 4 names that no frame can show.** The plan's answer to open question 1
+   lists every reader and proves v0 is skipped by each: `newestVersion`, the claim model, `versionLiveAt` and
+   game stamping, Home's `max(committed_at)`, the commit's `since` inheritance (a linked brew's first commit
+   must inherit from nothing, so every `since` falls through to v1's `committed_at`),
+   `pinAnalysisToVersion` / `isNewestVersion`, the synopsis pin, and the brew/committed tests. The drawn
+   surfaces (K10, K12, K14) already keep v0 out of `current`, the accent and the committed status.
+8. **copy-review · `originBody` has no brew form.** `v0 is <precon>’s list as the box sells it. It’s history
+   only: this deck is sleeved as <vN>.` has no `vN` on a linked brew (K14), and K14 does not draw v0 opened.
+   A brew's v0 note drops the sleeved clause (for example, ending at `It’s history only.`). Also for
+   `/copy-review`: `73 of its 85 cards are still in it` (K8), where `its` is the precon's and `it` the deck,
+   and the `the box lists it` / `the box sells it` pair, which should be one phrase.
+9. **eng-resolvable · Undrawn states follow R2.** STATES has K3p for link pending and failed; unlink's
+   `Unlinking…` and `That didn’t unlink. Try again.` follow the same S1d/S1e row, in the K13 dialog. Table §K
+   has no rows for K8's `Unlink` beside the built sentence, K9's row clause, K14's brew line or K15's two
+   rows; each reuses R2's own-box, row-line and strip-row values.
+10. **superseded · R1/R2 finding 8's shared rule.** The 75% same-commander rule there is replaced by ruling 1's
+    40% with the same commander or 60% with any, for the suggestion and, per K9, for the row and open-precon
+    shared line. The plan still measures the thresholds on staging before they are constants.
+11. **note · The approval line.** README and HANDOFF say R3 was "approved (Hugh, 2026-10-12)" with three R1
+    notes applied. The date is after this audit, and nothing on record here shows the approval; it is
+    Design's statement and is carried as such. The three notes it names (no header line, the basics note
+    dropped, the v0 note full width) are drawn.
+
+## R3 errata (Design's files, for the next round; not edited here)
+
+Raised in review round 1 (Copilot, 2026-10-11). The handoff is Design's record, so these are corrections the
+build follows, not edits to the drawing.
+
+| File | Says | Build follows |
+|---|---|---|
+| `Precons Link.dc.html` (K12, the v0 note) | `…as the box sells it, It’s history only` (comma) | `precons-link · copy strings.ts` `originBody`, which ends the sentence at `sells it.`. Frame mismatch: the copy strings win, and `/copy-review` words the line (finding 8). |
+| `README.md` (R3 status line) | G-R3-1 and G-R3-2 "still open for Hugh" | Both are decided here (findings 3 and 4); Hugh can overrule either. |
+| `design-tables/precons.md` §K (Suggestion strip row) and HANDOFF §2 | radius 10, `--border-strong`, inset 22 / 16 | The shipped `ArrivalStrip` band (`src/components/decks/arrival-strip.tsx:34-35`: `--surface-rail`, `border-bottom`, full width), per finding 5 and R1/R2 finding 3. Here the shipped component wins over the table. |
+
+## Decisions made here (only one answer defensible)
+
+- `since: 14` and no `ABOUT_VERSION` bump (finding 1).
+- G-R3-1: the open precon is the door for an unlinked brew with no suggestion (finding 3).
+- G-R3-2: dismissal per browser through `useLocalFlag` (finding 4).
+- The suggestion strip builds in the shipped `ArrivalStrip` shell (finding 5).
+- Card counts in R3 copy come from `precon_cards`, never a literal 100 (finding 6).
+
+## Questions for Hugh
+
+None blocking. Findings 3 and 4 are decided on precedent and can be overruled.

@@ -17,6 +17,8 @@ export const preconsEntry = {
     "If a deck of yours has the same commander and most of the same cards, the precon says so.",
     "A Collector’s Edition with the same cards is listed once, under the plain edition.",
     "Your deck picks printings from the copies you hold, not the precon’s.",
+    // R3 addendum (built-from link), placeholder:
+    "Link a deck to the precon it came from, and its Versions start from the box as v0. Nothing in the deck changes.",
   ],
   specimen: {
     component: "PreconRow",

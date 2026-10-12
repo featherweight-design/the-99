@@ -2,6 +2,8 @@
 
 `design/design_handoff_the99_precons/` · 2026-10-11 · mirrors `design_handoff_the99_tokens/` and `design_handoff_the99_all_decks_cart/`
 
+**R3 addendum (built-from link and v0): approved (Hugh, 2026-10-12). Build from it.** `HANDOFF-R3 · built-from link.md`, canvas `The 99 - Precons R3 · Built-from Link.dc.html`, frame `Precons Link.dc.html`, STATES §K, copy `precons-link · copy strings.ts`. It is newer than R2 and wins where they disagree: the shared line (R2/R6/O1/S1b), and the own box's `N basic lands not counted` note, which R3 drops. **About entry:** one key line added to `about · precons.ts` (the link and v0); no new entry or artboard, since this extends the precons entry. Still open for Hugh: G-R3-1 (unlinked brew with no suggestion links only from the precon) and G-R3-2 (dismissal per browser vs per account).
+
 **Status: R2, approved (Hugh, 2026-10-11). Build from the R2 files.** R1 is kept for history only. R2 applies Hugh's two R1 notes (2026-10-11) and is in `The 99 - Precons (R2).dc.html` and `Precons R2.dc.html`. R1's files are kept beside them, unchanged. Still open for Hugh: the phone label `Shop all decks` (R2 change 3) and the reading of ruling 3 as a route rather than a tab (G11).
 
 ## R2 changes (supersede R1 where they differ)
@@ -24,6 +26,7 @@
 | `precons · copy strings.ts` | Proposed `src/lib/copy/precons.ts`. Placeholders; `/copy-review` resolves wording. |
 | `about · precons.ts` | The new About entry and the credit line. |
 | `READINESS.md` | Self-assessed readiness and the gap report. |
+| `The 99 - Precons R3 · Built-from Link.dc.html` · `Precons Link.dc.html` · `HANDOFF-R3 · built-from link.md` · `precons-link · copy strings.ts` | **R3 addendum**: K1–K16, the link, the suggestion, the linked state, unlink, v0 in Versions, two-precon cases. STATES §K. |
 | `brand/` | Locked brand sheet, copied for self-containment. |
 
 ## Design's calls (§What Design owns)
