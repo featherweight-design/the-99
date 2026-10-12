@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useEffect, useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readTuningHistory, readTuningHub, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
@@ -21,8 +21,14 @@ function tile(tool: string) {
   return document.querySelector(`[data-tool-tile="${tool}"]`) as HTMLElement;
 }
 
+// jsdom has no scrollIntoView, and a tile press now scrolls the hub into view. Every test's stub
+// (here and in the tests below) is undone after it, so none leaks into another file's spy.
+const realScrollIntoView = Element.prototype.scrollIntoView;
+afterEach(() => {
+  Element.prototype.scrollIntoView = realScrollIntoView;
+});
+
 beforeEach(() => {
-  // jsdom has no scrollIntoView, and a tile press now scrolls the hub into view.
   Element.prototype.scrollIntoView = vi.fn();
   read.mockReset();
   read.mockResolvedValue(empty);

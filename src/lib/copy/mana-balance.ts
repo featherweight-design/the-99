@@ -92,7 +92,8 @@ export const manaBalanceCopy = {
   failed: {
     tag: "Couldn’t count",
     heading: "We couldn’t count this deck’s mana",
-    body: "The card catalog didn’t answer, so there is nothing to show yet. It is usually back within a minute.",
+    /** Cause-neutral: the panel lands here for any failed read, not only the catalog's. */
+    body: "The count didn’t finish, so there is nothing to show yet. Open Mana Balance again to count once more.",
     kept: "your list is untouched · nothing was spent",
   },
   cite: {
