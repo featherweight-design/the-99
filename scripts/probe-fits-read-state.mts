@@ -21,6 +21,8 @@ import { requireEnv } from "./lib/env.mjs";
 process.env.FIND_A_DECK_READ_ENABLED = "true";
 process.env.SWAP_TOOLS_ENABLED = "true";
 delete process.env.FITS_READ_LIVE;
+// `fitsReadLive` is also true in production, whatever FITS_READ_LIVE says: a probe never is.
+(process.env as Record<string, string>).NODE_ENV = "development";
 
 requireEnv(["DATABASE_URL"]);
 const { sql } = await import("drizzle-orm");

@@ -96,8 +96,14 @@ describe("pressFitsRead: refusals that cost nothing", () => {
 
   it("a double press that loses the race to the pending row is shown the run, never asks", async () => {
     store.started = { kind: "in_flight" };
+    // The winner's pending row, which the loser's panel reads.
+    vi.mocked(startFitsRead).mockImplementationOnce(async () => {
+      store.rows = [{ id: "winner", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [] }];
+      return { kind: "in_flight" };
+    });
     const { d, call } = deps({ picks: [] });
-    expect((await pressFitsRead("u", "card", d)).ok).toBe(true);
+    const r = await pressFitsRead("u", "card", d);
+    expect(r.ok && r.panel.view.pending?.readId).toBe("winner");
     expect(call).not.toHaveBeenCalled();
   });
 
