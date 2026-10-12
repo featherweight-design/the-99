@@ -157,6 +157,14 @@ describe("IntentPrefetchLink eager on a phone, in view", () => {
     expect(prefetch).toHaveBeenCalledWith("/decks/d1", { kind: "full" });
   });
 
+  it("drops a waiting prefetch once the tile is pressed", () => {
+    tile();
+    observed!([{ isIntersecting: true }]);
+    fireEvent.click(screen.getByRole("link"));
+    idle!();
+    expect(prefetch).not.toHaveBeenCalled();
+  });
+
   it("does nothing on a wider screen", () => {
     phone = false;
     tile();

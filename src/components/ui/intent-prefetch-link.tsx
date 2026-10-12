@@ -75,7 +75,7 @@ function onIdle(fn: () => void): () => void {
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
-export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, ref, ...props }: Props) {
+export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
   const router = useContext(AppRouterContext);
   const done = useRef(false);
   const anchor = useRef<HTMLAnchorElement | null>(null);
@@ -132,6 +132,12 @@ export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocu
         // A pointer that can rest: a mouse or a pen. A touch's pointerenter is the tap itself.
         if (e.pointerType !== "touch") prefetch();
         onPointerEnter?.(e);
+      }}
+      onClick={(e) => {
+        // The press is the navigation: a prefetch still waiting for an idle moment would fetch the
+        // page a second time beside it, the duplicate #1571 removed for touches.
+        done.current = true;
+        onClick?.(e);
       }}
       onFocus={(e) => {
         // KEYBOARD focus only: a press focuses the link too (Chrome on mousedown, a tap as well),
