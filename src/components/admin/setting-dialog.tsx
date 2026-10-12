@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { setAccountCap, setElsewhere, setSystemCeiling, type SettingResult } from "../../app/admin/actions";
+import { useRouter } from "next/navigation";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { adminCopy } from "../../lib/copy/admin";
 
@@ -23,7 +24,8 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
   const ref = useRef<HTMLDivElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const id = useId();
-  const [error, setError] = useState<Extract<SettingResult, { ok: false }>["error"] | null>(null);
+  const [error, setError] = useState<Extract<SettingResult, { ok: false }>["error"] | "unknown" | null>(null);
+  const router = useRouter();
   const [pending, start] = useTransition();
   useDialogA11y(ref, onClose, { initialFocusRef: amountRef, closeOnEscape: !pending });
 
@@ -33,12 +35,22 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
     const amount = String(form.get("amount") ?? "");
     const note = String(form.get("note") ?? "");
     start(async () => {
-      const result =
-        kind === "elsewhere"
-          ? await setElsewhere({ amount, asOf: String(form.get("asOf") ?? ""), note })
-          : kind === "cap"
-            ? await setAccountCap({ amount, note })
-            : await setSystemCeiling({ amount, start: String(form.get("start") ?? ""), note });
+      let result: SettingResult;
+      try {
+        result =
+          kind === "elsewhere"
+            ? await setElsewhere({ amount, asOf: String(form.get("asOf") ?? ""), note })
+            : kind === "cap"
+              ? await setAccountCap({ amount, note })
+              : await setSystemCeiling({ amount, start: String(form.get("start") ?? ""), note });
+      } catch {
+        // A rejected action (a dropped connection, an expired session) may have committed before the
+        // reply was lost, so this is never "nothing changed": refresh the page under the dialog and
+        // say the outcome is unknown, keeping what was typed.
+        setError("unknown");
+        router.refresh();
+        return;
+      }
       if (result.ok) onClose();
       else setError(result.error);
     });
@@ -46,7 +58,7 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
 
   // The current UTC month, as the action reads it: a ceiling starts no earlier.
   const thisMonth = new Date().toISOString().slice(0, 7);
-  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : null;
+  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : error === "unknown" ? copy.unknown : null;
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center">
       <div

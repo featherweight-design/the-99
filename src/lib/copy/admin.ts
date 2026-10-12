@@ -39,7 +39,7 @@ export const adminCopy = {
     },
     banner: {
       paused: (month: string) => `Presses are paused until ${month} 1.`,
-      alarm: (pct: number) => `Player presses are past ${pct}% of the plan.`,
+      alarm: (pct: number) => `Player presses have reached ${pct}% of the plan.`,
       pace: (plan: string, date: string) => `On this pace, player presses pass the ${plan} plan around ${date}.`,
     },
     caps: "Against the caps",
@@ -98,6 +98,7 @@ export const adminCopy = {
     badDate: "Enter the date it was read.",
     badMonth: "Pick this month or a later one.",
     badNote: "Keep the note to 500 characters.",
+    unknown: "The page lost touch with the server, so it may have saved. Check the figure above before saving again.",
     saveFailed: "Didn’t save. Nothing changed.",
   },
 } as const;

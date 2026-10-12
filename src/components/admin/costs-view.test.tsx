@@ -14,7 +14,8 @@ vi.mock("../../app/admin/actions", () => ({
   setSystemCeiling: (i: unknown) => setSystemCeiling(i),
 }));
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/admin" }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ usePathname: () => "/admin", useRouter: () => ({ refresh }) }));
 
 const { CostsView } = await import("./costs-view");
 const { AdminHead } = await import("./admin-head");
@@ -159,9 +160,9 @@ describe("CostsView banners", () => {
     expect(screen.getByRole("status")).toHaveTextContent("On this pace, player presses pass the $10 plan around 28 October.");
   });
 
-  it("warns past 80% and inks the player tile (C5)", () => {
+  it("warns at 80% and inks the player tile (C5)", () => {
     draw(rows([p(2, 8.1)]));
-    expect(screen.getByRole("status")).toHaveTextContent("Player presses are past 80% of the plan.");
+    expect(screen.getByRole("status")).toHaveTextContent("Player presses have reached 80% of the plan.");
     expect(screen.getByText("81% of the $10 plan").className).toContain("var(--warning)");
   });
 
@@ -219,6 +220,19 @@ describe("the settings dialog", () => {
     expect(setAccountCap).toHaveBeenCalledWith({ amount: "12.345", note: "console" });
     expect(within(dialog).getByLabelText("Amount ($)")).toHaveValue("12.345");
     expect(within(dialog).getByLabelText("Note (optional)")).toHaveValue("console");
+  });
+
+  it("says the outcome is unknown and refreshes when the action itself is rejected, keeping what was typed", async () => {
+    setAccountCap.mockRejectedValueOnce(new Error("network"));
+    draw(rows([p(2, 1)]));
+    fireEvent.click(screen.getByRole("button", { name: "Change the cap" }));
+    const dialog = screen.getByRole("dialog", { name: "Change the cap" });
+    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "100" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent(/may have saved/));
+    expect(within(dialog).getByRole("alert")).not.toHaveTextContent(/Nothing changed/);
+    expect(refresh).toHaveBeenCalled();
+    expect(within(dialog).getByLabelText("Amount ($)")).toHaveValue("100");
   });
 
   it("takes the month a ceiling starts, from this UTC month on", async () => {

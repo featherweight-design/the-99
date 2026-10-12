@@ -14,7 +14,11 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 type Write = { op: string; values?: Record<string, unknown> };
 const writes: Write[] = [];
 let before: { valueMicroUsd: number }[] = [];
+const executed: string[] = [];
 const tx = {
+  execute: async (q: { queryChunks?: unknown[] }) => {
+    executed.push(JSON.stringify(q.queryChunks ?? q));
+  },
   select: () => ({ from: () => ({ where: () => ({ for: async () => before }) }) }),
   insert: (table: { [k: symbol]: unknown }) => ({
     values: (values: Record<string, unknown>) => {
@@ -31,6 +35,7 @@ const actions = await import("./actions");
 
 beforeEach(() => {
   writes.length = 0;
+  executed.length = 0;
   before = [];
   gate.mockClear();
   transaction.mockClear();
@@ -172,6 +177,13 @@ describe("the settings writes", () => {
     writes.length = 0;
     await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth() })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ asOf: `${thisMonth()}-01` });
+  });
+
+  it("takes a lock on the (key, month) pair before reading the prior value, so two first saves serialise", async () => {
+    await actions.setAccountCap({ amount: "100" });
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toContain("pg_advisory_xact_lock");
+    expect(executed[0]).toContain(`admin_setting:account_cap_usd:${thisMonth()}`);
   });
 
   it("refuses a note past 500 characters rather than cutting it short, writing nothing", async () => {

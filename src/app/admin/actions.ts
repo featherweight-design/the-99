@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminEvents, adminSettings } from "../../db/schema";
 import { requireAdmin } from "../../lib/admin/access";
@@ -52,6 +52,10 @@ async function writeSetting(actorId: string, key: SettingKey, micro: number, asO
   const month = asOf.slice(0, 7);
   try {
     await db.transaction(async (tx) => {
+      // A row lock finds nothing to lock on a first write, so two first saves of one (key, month)
+      // would both read no prior value and one event would record a wrong `oldValue`. A
+      // transaction-scoped lock on the pair serialises them before the read.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`admin_setting:${key}:${month}`}, 0))`);
       const [before] = await tx
         .select()
         .from(adminSettings)
