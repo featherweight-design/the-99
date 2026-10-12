@@ -5,7 +5,47 @@ Sonnet 5.5 and Haiku 5.5, both at effort medium, on Hugh's eleven eval cards aga
 The harness is `scripts/eval/fits-read.mts` (`pnpm eval:fits-read`), with its own ledger
 (`ledger-find-a-deck.jsonl`) and a $2 cap.
 
-**Status: run 2026-10-12.** Total spend was $1.80 of the $2 cap (ledger). The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` and `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm). The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80, not ~$1.05.
+**Status: run 2026-10-12.** Total spend was $1.85 of the $2 cap (ledger), the Haiku rerun included. The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm) and `answers/fits-read-2026-10-12-05-07-32-haiku.json` (the Haiku rerun). The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80 before the rerun, not ~$1.05.
+
+## Three cards, before and after (for Hugh)
+
+"Before" is the picker as it ships today: its first rows, each with the reason it draws. "After" is the read's
+lines, verbatim. Haiku is the **rerun** with the basic-land and no-figures rules (prompt version 2, 14 of 14 kept,
+none dropped); Sonnet is the version 1 run.
+
+### Ajani Unrelenting (11 candidate decks)
+
+| | Deck | What the row says |
+| --- | --- | --- |
+| Before | HD Tune - Prismari Artistry | shares the Tokens theme (19 cards) |
+| Before | HD - Avatar Aang | shares the Draw theme (15 cards) |
+| Before | HD - Omnath | shares the Draw theme (15 cards) |
+| Before | HD -Thorin | shares the Tokens theme (15 cards) |
+| Haiku | HD - Goblins | Ajani Unrelenting grants haste to the team through its loyalty ability, and its damage spares the Goblin tokens made by Krenko, Mob Boss. Cut: Goblin Grappler. |
+| Haiku | HD - Kratos | Ajani Unrelenting deals damage to each creature except your tokens, and Repercussion turns that damage into damage to an opponent for Kratos, God of War's burn plan. Cut: Reckless Impulse. |
+| Haiku | HD -Thorin | Plan: "artifacts, legendaries and Sagas turn on the enduring story"; Ajani Unrelenting is a legendary permanent that counts toward Thorin Oakenshield's enduring story, and its loyalty ability gives the Dwarves haste. Cut: Iron Hills Stalwart. |
+| Sonnet | (none) | All three of its lines wrote "+1/+1" and were dropped (no figures). |
+
+### Tangle Wire (21 candidate decks)
+
+| | Deck | What the row says |
+| --- | --- | --- |
+| Before | HD - Avatar Aang, HD - Brago, HD - Eldrazi, HD - Elves | no reason: a colorless card fits every deck, listed by name |
+| Haiku | HD - Soldiers | The plan "fills the board with cheap Humans, Soldiers and tokens", so Battle Screech and the token bodies can pay the upkeep tap that Tangle Wire forces, while opponents with fewer creatures run short. Cut: Gustcloak Runner. |
+| Sonnet | HD - Kratos | Tangle Wire taps down opposing creatures at upkeep, so with Kratos, God of War haste for all and idle creatures hurting their controllers, tapped ones still deal damage while Ensnaring Bridge style stax holds the table. Cut: Bolt Bend. (Muddled: "tapped ones still deal damage" is not what either card does.) |
+| Sonnet | HD - Wizards | Tangle Wire taps lands on each upkeep, letting Baral, Chief of Compliance and counterspells like Counterspell win the mana game while opponents cannot untap into their own answers. Cut: Mind Bend. |
+| Sonnet | HD - Goblins | Tangle Wire slows opposing blockers and mana each upkeep, so Krenko, Mob Boss can double the Goblin count and swing wide while Sulfuric Vortex adds pressure. Cut: Wave of Indifference. |
+
+### Throes of Chaos (10 candidate decks)
+
+| | Deck | What the row says |
+| --- | --- | --- |
+| Before | HD - Avatar Aang, HD - Gishath, HD - Goblins, HD - Gods | no reason, listed by name |
+| Haiku | HD - Omnath | Retrace lets Throes of Chaos return from the graveyard by discarding a spare land, so extra lands feed the "land-recursion effects keep the land engine running" plan while cascade casts a free spell. Cut: Ashaya, Soul of the Wild. |
+| Sonnet | HD - Avatar Aang | Cascade off Throes of Chaos can hit a cheap Lesson such as Airbending Lesson for free, and retrace turns spare lands into repeat casts that feed Avatar Aang // Aang, Master of Elements with more bending triggers. Cut: Crashing Wave. |
+
+**The Haiku rerun** (`answers/fits-read-2026-10-12-05-07-32-haiku.json`, $0.045): 14 of 14 lines kept, no basic land
+cut, no figure drop, 0 of 14 stale. Its cost per press is unchanged ($0.0006 to $0.0072); its latency was 2.5 to 21 s.
 
 ## Method
 
@@ -241,8 +281,9 @@ a colorless card with 21 candidates). Its accuracy here matched Sonnet's (about 
 of its lines (13 of 16 against 12 of 22), and its 8 to 18 s fits behind a "Reading…" state. Sonnet's speed is the
 only edge it has, and the cached layout that would make it cheap brings its own failure (cards from other decks).
 
-**Proposed single rerun** (not run; it needs the orchestrator's go):
-1. Refuse a basic land as the cut, in the validator, and say so in the prompt.
-2. State the no-figures rule with the rules-notation example ("+1/+1" is not allowed; write "a counter").
+**The single rerun** (approved, run on Haiku for $0.045):
+1. A basic land as the cut is refused in the validator (`cutBasicLand`), and the prompt says so.
+2. The no-figures rule names the rules notation ("+1/+1" is not allowed; write "a counter").
 
-Both changes are free to build and cost about $0.05 to re-measure on Haiku.
+Result: 14 of 14 lines kept, no drops, no basic land cut (the first run cut a Mountain for Omnath and a Forest for
+Gishath). The three-card section at the top quotes it.

@@ -134,6 +134,16 @@ describe("validFitsRead", () => {
     expect(run([pick({ cut: null })]).drops).toEqual({});
   });
 
+  it("3: drops a basic land as the cut, which changes the mana rather than the plan", () => {
+    const base = inputs();
+    const forest = { oracleId: id(15), name: "Forest", typeLine: "Basic Land — Forest", kinds: [] };
+    const inp = { ...base, decks: [{ ...base.decks[0], list: [...base.decks[0].list, forest] }, ...base.decks.slice(1)] };
+    // C-keys follow the blocks: find the Forest's key from the prompt itself.
+    const prompt = buildFitsReadPrompt(inp, "per-press");
+    const key = [...prompt.cardOf.entries()].find(([, v]) => v === id(15))![0];
+    expect(validFitsRead({ reply: { picks: [pick({ cut: key })] }, prompt, inputs: inp }).drops).toEqual({ cutBasicLand: 1 });
+  });
+
   it("4: drops a quote the deck's plan does not hold", () => {
     expect(run([pick({ sentence: "It helps the deck \"go wide with goblins\" through {C1}." })]).drops).toEqual({ falseQuote: 1 });
     expect(run([pick({ sentence: "It helps the deck \"Go wide with goblins\"." })]).drops).toEqual({});

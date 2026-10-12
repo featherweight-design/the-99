@@ -27,7 +27,7 @@ import type { FitDeck, FitsRead } from "./fits";
  */
 
 /** Folded into any future cache key, so a prompt change never answers from an older prompt's result. */
-export const FITS_READ_PROMPT_VERSION = 1;
+export const FITS_READ_PROMPT_VERSION = 2;
 /** The most decks a read lists (default 4: three to five). */
 export const FITS_READ_TOP = 5;
 /** A sentence's drawn length, card tokens drawn as names. Refused over it, never cut. */
@@ -108,8 +108,8 @@ export const FITS_READ_RULES = [
   "Name a card in a sentence only as its key in braces, for instance {C12}, and only a card from that deck's list, its commander, or the card being asked about. Never write a card's name yourself, and never write a deck's name.",
   "A sentence must name at least one card from that deck or its commander by key, or quote the deck's written plan word for word inside double quotes. A sentence doing neither is thrown away.",
   "Quote only the plan text shown for that same deck, exactly as written. Never invent a quote.",
-  `A sentence is at most ${SENTENCE_ASK_CHARS} characters with the card names drawn in. It never contains a digit, a percentage, a score, a rank, or words like best, great, strong or perfect.`,
-  "For each deck you list, suggest one card to cut from that deck's list, by key, in `cut`: never its commander, never the card being asked about, never a Key card, never a card marked never cut. Use null only if no card can be cut.",
+  `A sentence is at most ${SENTENCE_ASK_CHARS} characters with the card names drawn in. It never contains a digit, a percentage, a score, a rank, or words like best, great, strong or perfect. That includes rules notation: never write "+1/+1" or "3 damage"; write "a +1/+1 counter" as "a counter" and "3 damage" as "damage".`,
+  "For each deck you list, suggest one card to cut from that deck's list, by key, in `cut`: never its commander, never the card being asked about, never a Key card, never a card marked never cut, and never a basic land (cutting one changes the deck's mana). Use null only if no card can be cut.",
   "In `cites`, give every card your sentence names, and the card being asked about, each with the one job it does in your sentence. The job must be one of the labels shown beside that card; a card shown with no labels cannot be cited.",
   `List at most ${FITS_READ_TOP} decks, the deck it helps most first. Leave out every deck where the card is not a real fit: a deck it would merely sit in is not a fit. If none fits, return no picks.`,
   "Do not rank by how much of a theme a deck already has. Judge whether this card's own text does something that deck's plan wants.",
@@ -210,7 +210,7 @@ export type FitsDropReason =
   /** 2. A card key (sentence, cut or cite) that is not that deck's, its commander's or the card's. */
   | "cardOutsideDeck"
   /** 3. The cut is the commander, the card itself, a Key card, a never-cut card, or not in the 99. */
-  | "cutCommander" | "cutSelf" | "cutKeyCard" | "cutLocked" | "cutNotInDeck"
+  | "cutCommander" | "cutSelf" | "cutKeyCard" | "cutLocked" | "cutNotInDeck" | "cutBasicLand"
   /** 4. A quoted phrase that is not in the deck's stored plan. */
   | "falseQuote"
   /** 5. Neither a deck card by key nor a plan quote. */
@@ -249,6 +249,8 @@ function cutFailure(cutId: string, deck: FitsDeckBlock, subjectId: string, nameO
   if (deck.commanders.some((c) => c.oracleId === cutId)) return "cutCommander";
   if (cutId === subjectId) return "cutSelf";
   if (deck.lockedIds.includes(cutId)) return "cutLocked";
+  // A basic land is never the cut (orchestrator, 2026-10-12): it changes the mana, not the plan.
+  if (deck.list.some((c) => c.oracleId === cutId && /\bBasic\b/.test(c.typeLine) && /\bLand\b/.test(c.typeLine))) return "cutBasicLand";
   const locked = new Set(deck.lockedIds);
   // The cuttable list, as Proposed cuts builds it: a commander or locked card is absent from it.
   const cards = deck.list.filter((c) => !locked.has(c.oracleId)).map((c): CutsPackCard =>
