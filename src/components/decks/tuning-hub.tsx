@@ -24,6 +24,8 @@ const SHOWN_WAIT_MS = 10_000;
 
 export type HubToolSpec =
   | { tool: "suggested"; panel: ReactNode | null }
+  /** Free and read on every open: no run in flight, never inert. */
+  | { tool: "mana"; panel: ReactNode }
   | { tool: "cuts"; panel: ReactNode; over: number; total: number }
   /** History is part of the hub: drawn last whenever the hub draws, and its panel is the hub's own. */
   | { tool: "history" };
@@ -40,7 +42,9 @@ const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { m
 /** Each tool's own, stable heading: the one focus moves to on opening. A tool draws a temporary
  *  heading while its first read is pending, which is replaced when it lands, so the first heading
  *  found is not the one to take. */
-const HEADING_IDS: Partial<Record<TuningTool, string>> = { suggested: "tuning-heading", cuts: "cuts-heading", history: "history-heading" };
+const HEADING_IDS: Partial<Record<TuningTool, string>> = {
+  suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading",
+};
 
 const NAMES: Record<TuningTool, string> = {
   suggested: copy.tools.suggested.name,
@@ -87,6 +91,11 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number): TileVie
     const run = runStatus(tiles?.suggested_changes ?? null, copy.runningWords.suggested,
       (r) => (r.total === 0 ? copy.outcome.nothing : copy.outcome.applied(r.accepted, r.total)), now);
     return { tool: "suggested", purpose: t.purpose, cost: t.cost, ...run, offer: false, inert: false };
+  }
+  if (spec.tool === "mana") {
+    // Its last count's date and nothing more: a free count has no outcome to report (R3: no verdict).
+    const status = tiles?.mana ? copy.lastRun(shortDate(tiles.mana)) : "";
+    return { tool: "mana", purpose: copy.tools.mana.purpose, cost: copy.tools.mana.cost, status, statusPhone: status, running: false, offer: false, inert: false };
   }
   const t = copy.tools.cuts;
   const run = runStatus(tiles?.proposed_cuts ?? null, copy.runningWords.deeper,
@@ -239,17 +248,18 @@ export function TuningHub({
     // A shortcut lands on the tab while its opening loader still hides the body under a `hidden`
     // ancestor (`analysis-panel`), and a hidden box can be neither scrolled to nor focused; and both
     // tools draw nothing until their own first read lands, so their heading arrives later still.
-    // So scroll once the section is shown, and focus once the tool's heading exists.
+    // So wait for the section to be shown AND the tool's heading to exist, then scroll and focus:
+    // scrolled any sooner, the page is not yet tall enough to bring the hub to the top, and the
+    // tool then grows below the fold (measured: the hub stopped 508px down at 1300).
     const shown = () => !!sectionRef.current && !sectionRef.current.closest("[hidden]");
-    let scrolled = !opening.scroll;
     const step = () => {
       if (!shown()) return false;
-      if (!scrolled) { sectionRef.current?.scrollIntoView({ block: "start" }); scrolled = true; }
-      if (!opening.focus) return true;
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
       const id = HEADING_IDS[opening.tool];
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
-      if (!heading) return false;
+      if (opening.focus && !heading) return false;
+      if (opening.scroll) sectionRef.current?.scrollIntoView({ block: "start" });
+      if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });
       return true;
@@ -363,7 +373,10 @@ export function TuningHub({
         </>
       ) : (
         <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
-          {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool)} />)}
+          {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
+              bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11). Instant: the app
+              sets no smooth scrolling, so reduced motion is already honored. */}
+          {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} />)}
         </div>
       )}
     </section>

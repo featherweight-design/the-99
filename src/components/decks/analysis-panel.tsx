@@ -50,6 +50,7 @@ export function AnalysisPanel({
   legality,
   tuning,
   cuts,
+  mana,
   hub,
   opening = "off",
   overview,
@@ -95,6 +96,9 @@ export function AnalysisPanel({
    *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
    *  `held`. Absent with `PROPOSED_CUTS_ENABLED` off. */
   cuts?: ReactNode;
+  /** Mana Balance, mounted directly when it is the only Tuning tool on. Like `cuts`, it needs no
+   *  reading. */
+  mana?: ReactNode;
   /** The Tuning hub (`tuningHubEnabled`, two or more tools on): when present it is drawn INSTEAD of `tuning` and `cuts`,
    *  which it mounts inside its own tiles. Handed the held reading's permits, or null with no
    *  reading (a deck built long), and it decides for itself whether it draws at all. */
@@ -232,6 +236,7 @@ export function AnalysisPanel({
           other: a deck built long was never read. Its facts come from the profile it builds for itself
           and it draws nothing for a deck that is not over 100. */}
       {!hub && cuts ? <div hidden={behind} className="contents">{cuts}</div> : null}
+      {!hub && mana ? <div hidden={behind} className="contents">{mana}</div> : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>

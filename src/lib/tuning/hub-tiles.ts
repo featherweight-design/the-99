@@ -26,6 +26,9 @@ export type HubTiles = Record<HubTool, HubTileRun | null> & {
   /** The History tile: every run and free count on the deck, and the runs in flight. Absent when
    *  the read did not carry it. */
   history?: { runs: number; running: number };
+  /** Mana Balance's newest free count (ISO), null with none. A free count has no run in flight and
+   *  no outcome, so this is its tile's whole status. Absent when the read did not carry it. */
+  mana?: string | null;
   /** What each tool held when the hub read it: its last ok result and its newest settled run. The
    *  hub records it as the visit's baseline (`lib/decks/visit.ts`) before any tool is opened, so a
    *  run that was in flight on arrival and settles before the tool's own first read still counts

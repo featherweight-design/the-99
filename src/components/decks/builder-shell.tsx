@@ -19,6 +19,7 @@ import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
+import { ManaBalancePanel } from "./mana-balance-panel";
 import { TuningPanel } from "./tuning-panel";
 import { TuningHub, type HubRequest } from "./tuning-hub";
 import { pressNote } from "./synopsis-note";
@@ -248,6 +249,9 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `proposedCutsEnabled()`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
+  /** `manaBalanceEnabled()`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
+   *  directly when it is the only tool on). */
+  manaBalanceEnabled?: boolean;
   /** `tuningHubEnabled()`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
@@ -304,6 +308,7 @@ export function BuilderShell({
   deeperLooks = false,
   tuningEnabled = false,
   proposedCutsEnabled = false,
+  manaBalanceEnabled = false,
   tuningHubEnabled = false,
 }: BuilderShellProps) {
   // UI state
@@ -476,6 +481,8 @@ export function BuilderShell({
   const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
   const [cutsSettledKey, setCutsSettledKey] = useState<string | null>(null);
   const onCutsSettled = useCallback(() => setCutsSettledKey(visitKey), [visitKey]);
+  const [manaSettledKey, setManaSettledKey] = useState<string | null>(null);
+  const onManaSettled = useCallback(() => setManaSettledKey(visitKey), [visitKey]);
   // With the hub on, the tools mount only when opened, so the tab's loader waits on the landing's
   // own first read instead of on theirs.
   const [hubSettledKey, setHubSettledKey] = useState<string | null>(null);
@@ -504,10 +511,12 @@ export function BuilderShell({
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
-    suggestionsSettled: tuningHubEnabled || tuningSettled === visitKey,
+    // A tool that is off is never mounted, so it has nothing to wait for.
+    suggestionsSettled: tuningHubEnabled || !tuningEnabled || tuningSettled === visitKey,
+    // The tools mounted directly (hub off): Proposed cuts and, alone, Mana Balance.
     cutsSettled: tuningHubEnabled
       ? hubSettledKey === visitKey
-      : !proposedCutsEnabled || cutsSettledKey === visitKey,
+      : (!proposedCutsEnabled || cutsSettledKey === visitKey) && (!manaBalanceEnabled || manaSettledKey === visitKey),
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1312,7 +1321,7 @@ export function BuilderShell({
 
   const openExport = () => setExportOpen(true);
 
-  // The two tools, built once and mounted either directly (hub off) or inside the hub's tiles.
+  // The tools, built once and mounted either directly (hub off) or inside the hub's tiles.
   const cutsPanel = (freshEachVisit: boolean) => (
     <CutsPanelView
       freshEachVisit={freshEachVisit}
@@ -1321,6 +1330,17 @@ export function BuilderShell({
       deeperLooks={deeperLooks}
       onSettled={onCutsSettled}
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
+    />
+  );
+  // Read fresh on every open, and again whenever the list moves: the count is of the list alone.
+  const manaPanel = (
+    <ManaBalancePanel
+      key={deck.id}
+      deckId={deck.id}
+      // The commanders count too: their pips, their identity and the cards figure.
+      revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}`}
+      // Mounted directly (Mana alone on), its first read holds the tab's opening, as Proposed cuts' does.
+      onSettled={onManaSettled}
     />
   );
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
@@ -1709,18 +1729,21 @@ export function BuilderShell({
                     ) : null
                   }
                   cuts={proposedCutsEnabled ? cutsPanel(false) : undefined}
+                  mana={manaBalanceEnabled ? manaPanel : undefined}
                   hub={!tuningHubEnabled ? undefined : (permits) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      drawn={permits !== null || built > bodySize}
+                      // Mana Balance needs no reading, so with it on the hub draws for any deck.
+                      drawn={permits !== null || built > bodySize || manaBalanceEnabled}
                       request={hubRequest}
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
                         ...(tuningEnabled ? [{ tool: "suggested" as const, panel: permits ? suggestedPanel(permits, true) : null }] : []),
+                        ...(manaBalanceEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
                         ...(proposedCutsEnabled
                           ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
                           : []),

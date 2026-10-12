@@ -4,6 +4,8 @@
 // `shortcuts` blocks, with the R2 Proposed cuts purpose). US English, no em dashes, and never the
 // words AI, model or LLM: tier 2 is "a deeper look". Engineering additions are marked.
 
+import { deckStatsCopy } from "./deck-stats";
+
 export const tuningHubCopy = {
   title: "Tuning",
   allTools: "All tools",
@@ -23,7 +25,8 @@ export const tuningHubCopy = {
     mana: {
       name: "Mana Balance",
       purpose: "Counts every source of each color against what your spells ask for.",
-      cost: "free · look deeper 1 credit",
+      /** Mana Balance has no Look deeper (tier 2 is a later sub-project), so the pill says free. */
+      cost: "free",
     },
     cuts: {
       name: "Proposed cuts",
@@ -110,6 +113,10 @@ export const tuningHubCopy = {
       failed: "didn’t finish · credit back",
       refused: "found nothing it could check · credit back",
       stopped: { suggested: "stopped while reading · credit back", deeper: "stopped while looking · credit back" },
+      /** Engineering (Mana Balance PR 3): the Colors card's own totals, as the tool's sub-line
+       *  states them. The canvas fixtures (`green short by 3`, `every color covered`) are R1
+       *  verdicts, which R3 retired. */
+      manaFree: (pips: number, sources: number) => deckStatsCopy.colors.denom(pips, sources),
       counted: "counted",
     },
   },

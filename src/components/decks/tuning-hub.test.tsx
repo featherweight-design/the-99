@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useEffect, useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readTuningHistory, readTuningHub, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
@@ -21,7 +21,15 @@ function tile(tool: string) {
   return document.querySelector(`[data-tool-tile="${tool}"]`) as HTMLElement;
 }
 
+// jsdom has no scrollIntoView, and a tile press now scrolls the hub into view. Every test's stub
+// (here and in the tests below) is undone after it, so none leaks into another file's spy.
+const realScrollIntoView = Element.prototype.scrollIntoView;
+afterEach(() => {
+  Element.prototype.scrollIntoView = realScrollIntoView;
+});
+
 beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
   read.mockReset();
   read.mockResolvedValue(empty);
 });
@@ -107,6 +115,28 @@ describe("TuningHub landing", () => {
 });
 
 describe("TuningHub opening a tool", () => {
+  it("draws Mana Balance second, free, with its last count's date and never a running or inert state", async () => {
+    read.mockResolvedValue({ ...empty, mana: "2026-10-07T12:00:00.000Z" });
+    const mana: HubToolSpec = { tool: "mana", panel: <h2 id="mana-heading">Mana Balance</h2> };
+    render(<TuningHub deckId="d" drawn tools={[suggested(), mana, cuts(6), { tool: "history" }]} />);
+    await waitFor(() => expect(tile("mana").textContent).toContain(copy.lastRun("Oct 7")));
+    const tiles = [...document.querySelectorAll("[data-tool-tile]")].map((t) => t.getAttribute("data-tool-tile"));
+    expect(tiles).toEqual(["suggested", "mana", "cuts", "history"]);
+    expect(tile("mana").tagName).toBe("BUTTON");
+    expect(tile("mana").textContent).toContain(copy.tools.mana.cost);
+    fireEvent.click(tile("mana"));
+    const heading = await screen.findByRole("heading", { name: "Mana Balance" });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+  });
+
+  it("draws the Mana Balance tile with no status before its first count", async () => {
+    read.mockResolvedValue({ ...empty, mana: null });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "mana", panel: null }]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    await act(async () => {});
+    expect(tile("mana").getAttribute("aria-label")).toBe(copy.tools.mana.name);
+  });
+
   it("opens a tool in place of the tiles, focuses its heading, and All tools returns to the landing", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
@@ -131,8 +161,15 @@ describe("TuningHub opening a tool", () => {
       return ready ? <section><h2 id="cuts-heading">Proposed cuts</h2></section> : <div><h2>Counting</h2></div>;
     }
     render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "cuts", panel: <LatePanel />, over: 6, total: 106 }]} />);
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
     fireEvent.click(tile("cuts"));
+    // No scroll while only the temporary heading is drawn: the page is not yet tall enough to
+    // bring the hub to the top, and the tool would then grow below the fold.
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Counting" })).toBeTruthy());
+    expect(scroll).not.toHaveBeenCalled();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" })));
+    expect(scroll).toHaveBeenCalledWith({ block: "start" });
   });
 
   it("reads again a moment after returning to the tiles, catching a run the tool just started", async () => {
@@ -190,8 +227,8 @@ describe("TuningHub opening a tool", () => {
     // Its owner is told, so it can drop the request before the next visit remounts the hub.
     await waitFor(() => expect(answered).toHaveBeenCalledWith(1));
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
-    // The Tuning heading is brought to the top.
-    expect(scroll).toHaveBeenCalledWith({ block: "start" });
+    // The Tuning heading is brought to the top, once the tool's heading has drawn.
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start" }));
     expect(scroll.mock.contexts[0]).toBe(document.querySelector("[data-tuning-hub]"));
     fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
     // A re-render with the same request leaves the landing alone.
@@ -199,6 +236,23 @@ describe("TuningHub opening a tool", () => {
     expect(tile("cuts")).not.toBeNull();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 2 }} />);
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+  });
+
+  it("brings the opened tool into view from a tile, for every tool, and focuses its heading", async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const mana: HubToolSpec = { tool: "mana", panel: <h2 id="mana-heading">Mana Balance</h2> };
+    readHistoryPage.mockResolvedValue({ rows: [], nextCursor: null });
+    for (const tool of ["suggested", "mana", "cuts", "history"] as const) {
+      scroll.mockClear();
+      const { unmount } = render(<TuningHub deckId="d" drawn tools={[suggested(), mana, cuts(6), { tool: "history" }]} />);
+      fireEvent.click(tile(tool));
+      await waitFor(() => expect(scroll).toHaveBeenCalledWith({ block: "start" }));
+      expect(scroll.mock.contexts[0]).toBe(document.querySelector("[data-tuning-hub]"));
+      const heading = { suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading" }[tool];
+      await waitFor(() => expect(document.activeElement?.id).toBe(heading));
+      unmount();
+    }
   });
 
   it("waits for a hidden tab body to be shown before it scrolls and focuses", async () => {
