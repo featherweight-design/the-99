@@ -394,7 +394,7 @@ export function VersionRail({
 
   return (
     <div className="w-full">
-      <h2 className="sr-only">{copy.heading(versions.length + (origin ? 1 : 0))}</h2>
+      <h2 className="sr-only">{copy.heading(versions.length)}</h2>
       <div className="flex flex-col gap-[6px] px-[14px] md:px-[26px] pt-[18px] md:pt-[14px] mb-[18px] md:mb-[26px]">
         {origin && versions.length === 0 && (
           // K14: a linked brew. Nothing is committed, so nothing is current; v0 stands alone.

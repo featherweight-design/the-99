@@ -348,6 +348,9 @@ export function BuilderShell({
   );
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
+  // Unlinking a brew from v0's panel takes the Versions tab away with v0: fall back to the deck
+  // during render, so no frame draws an empty rail under no selected tab.
+  if (view === "versions" && versions.length === 0 && preconOrigin === null) setView("deck");
   const [statsFocus, setStatsFocus] = useState<{ card: "curve" | "jobs"; n: number } | null>(null);
   const clearStatsFocus = useCallback(() => setStatsFocus(null), []);
   const openStatsAt = useCallback((card: "curve" | "jobs") => {

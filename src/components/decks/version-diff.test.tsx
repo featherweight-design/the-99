@@ -518,7 +518,8 @@ describe("VersionDiff against v0", () => {
   });
 
   it("draws no against-v0 box on a later version, whose predecessor is a version", async () => {
-    getVersionDiff.mockResolvedValueOnce({ newestAsOf: null, in: [card()], out: [] });
+    // The payload carries a kept count, so only the `previous === null` guard keeps the box away.
+    getVersionDiff.mockResolvedValueOnce({ newestAsOf: null, in: [card()], out: [], origin: { kept: 64, of: 91 } });
     mount({ origin });
     await screen.findByText(copy.diffIn(1));
     expect(screen.queryByText(historyOriginCopy.againstOrigin("Counter Intelligence"))).toBeNull();

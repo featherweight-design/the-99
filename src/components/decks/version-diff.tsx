@@ -297,8 +297,8 @@ export function VersionDiff({
 }: {
   deckId: string;
   version: VersionSummary;
-  /** The version committed before this one, or null for a v1. Null is the arm
-   *  that draws the provenance note rather than two empty columns. */
+  /** The version committed before this one, or null for a v1. Null with no `origin`
+   *  draws the provenance note; null with one draws the against-v0 box. */
   previous: VersionSummary | null;
   /** A linked deck's v0, v1's predecessor when there is no committed one (precons R3 K10, K11):
    *  v1 is then a diff rather than the initial arm, and the commander line and the mana-value box

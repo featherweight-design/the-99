@@ -558,8 +558,9 @@ export type OriginPredecessor = {
  * `todayNote` says so. Pull offers stay off these rows: a pull is an offer about the deck
  * as it is now, and this list is the deck as it was.
  *
- * `previousVersionId` is null for a v1, which returns two empty lists rather
- * than diffing against nothing — the caller draws the initial arm instead.
+ * `previousVersionId` is null for a v1. With an `origin` (a deck linked to its precon) a v1
+ * is diffed against v0, the precon's list; without one it returns two empty lists rather
+ * than diffing against nothing, and the caller draws the initial arm instead.
  *
  * Read on open rather than with the rail: a ten-version deck would otherwise pay
  * ten diffs to draw ten closed rows.
