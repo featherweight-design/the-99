@@ -51,6 +51,12 @@ describe("fairBasicCuts (Hugh, 2026-10-12: over the land target, and the color n
     expect(fair(20, 38, true)).toEqual([FOREST]);
   });
 
+  it("counts the last basic of a color across printings: a Forest beside a Snow-Covered Forest can go", () => {
+    const snow = land("snow-forest", "Forest", "G", 1);
+    const pair = [land(FOREST, "Forest", "G", 1), { ...snow, typeLine: "Basic Snow Land — Forest" }, ...rows(0, 18).slice(1)];
+    expect(fairBasicCuts({ rows: pair, nameOf, identity: ["R"], landTarget: 10, subjectIsLand: true }).sort()).toEqual([FOREST, "snow-forest"]);
+  });
+
   it("never cuts Wastes, whose colorless sources Mana Balance has no Needed for", () => {
     const wastes = { id: "wastes", typeLine: "Basic Land", manaCost: null, quantity: 10, produces: ["C" as "G"] };
     expect(fairBasicCuts({ rows: [wastes, ...rows(20, 18)], nameOf, identity, landTarget: 30, subjectIsLand: false })).not.toContain("wastes");

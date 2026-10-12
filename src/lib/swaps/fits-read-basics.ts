@@ -22,11 +22,11 @@ import { requirement, total } from "../tuning/mana-help";
  * so leaving it out never lets an unfair cut through. A land coming in keeps the land count where it
  * was, so only the color half applies (`replacedByLand`).
  *
- * THE LAST COPY OF A BASIC NEVER GOES. A basic-land search (Cultivate, a fetch for "a basic land")
+ * THE LAST BASIC OF A COLOR NEVER GOES. A basic-land search (Cultivate, a fetch for "a basic land")
  * makes the colors of the basics the deck plays, read at load (`loadSourceMana`), so cutting a
- * deck's only Forest would also take green from every such searcher, and the re-read here would not
- * see it. Refusing that copy keeps every simulated figure true; a deck with one copy has no basic of
- * that type to spare anyway.
+ * deck's only green basic would also take green from every such searcher, and the re-read here
+ * would not see it. Counted by color, not by card: a Forest beside a Snow-Covered Forest leaves
+ * green to search for whichever goes.
  *
  * ONLY THE FIVE COLORED BASICS. Mana Balance reads W U B R G and no Needed for `{C}`, so Wastes would
  * pass on the land count alone, however many colorless pips the deck holds; Improve my mana's
@@ -48,7 +48,8 @@ export function fairBasicCuts(args: {
   const before = read(rows);
   const coloredBasic = (r: ManaSupplyCardRow) =>
     isBasic(r.typeLine) && r.produces?.length === 1 && (BALANCE_COLORS as readonly string[]).includes(r.produces[0]);
-  return rows.filter((r) => r.quantity > 1 && coloredBasic(r)).flatMap((r) => {
+  const basicsOf = (c: string) => rows.reduce((n, x) => n + (coloredBasic(x) && x.produces![0] === c ? x.quantity : 0), 0);
+  return rows.filter((r) => r.quantity > 0 && coloredBasic(r) && basicsOf(r.produces![0]) > 1).flatMap((r) => {
     const after = read(rows.map((x) => (x.id === r.id ? { ...x, quantity: x.quantity - 1 } : x)));
     const colors = BALANCE_COLORS.filter((c) => identity.includes(c) && (r.produces ?? []).includes(c))
       .map((c) => ({ sourcesAfter: total(after, c), needed: requirement(before, c) }));
