@@ -149,6 +149,15 @@ try {
   check("review: it removed one copy", await qty2(), before2 - 1);
   const reviewUndo = await undoCutItem(itemIds[2], USER, { review: true });
   check("review: its undo puts the row back over the list the cut left", [reviewUndo.ok, await qty2()], [true, before2]);
+  // A cut card that has since become the commander is never put back in the body by a review Undo.
+  await cutItem(itemIds[2], USER, { review: true });
+  const commanderWas = (await q(`select commander_oracle_id c from decks where id = $1`, [deckId]))[0].c;
+  await q(`update decks set commander_oracle_id = $2 where id = $1`, [deckId, picks[2].oracleId]);
+  const undoCommander = await undoCutItem(itemIds[2], USER, { review: true });
+  check("review: an undo whose card is now the commander refuses", undoCommander.ok ? "ok" : undoCommander.reason, "moved");
+  check("review: and the commander is not put in the list", await qty2(), before2 - 1);
+  await q(`update decks set commander_oracle_id = $2 where id = $1`, [deckId, commanderWas]);
+  check("review: with the commander back, that undo goes through", (await undoCutItem(itemIds[2], USER, { review: true })).ok, true);
   const lockedReview = await cutItem(itemIds[1], USER, { review: true });
   check("review: a locked card is still refused", lockedReview.ok ? "ok" : lockedReview.reason, "cutLocked");
   await q(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]);

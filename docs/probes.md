@@ -1797,7 +1797,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   run on a deck is refused and Stop refunds. It also proves History's re-review: a run named by
   id is read with its own cuts while a newer ok run stands, never for another reader; each cut
   reads `inDeck` and `locked` live; in review a cut over a moved list is taken and undone, while a
-  locked card and a card that has left are still refused. It preloads `scripts/lib/no-next-cache.cjs`, because
+  locked card and a card that has left are still refused, and a review Undo whose card has since
+  become the commander refuses. It preloads `scripts/lib/no-next-cache.cjs`, because
   `readProposedCuts` reads through `unstable_cache`, which raises outside a request.
 
 - `pnpm probe:mana-trade` proves Improve my mana's trade write and its Undo (`src/lib/tuning/mana-trade.ts`)

@@ -156,6 +156,12 @@ export async function undoCutItem(itemId: string, userId: string, mode: VerdictM
     // In review only the card's own row is held to that (below): the list moved before the press.
     if (item.runStatus !== "ok" || before === null || (!mode.review && item.fingerprint !== before)) return { ok: false, reason: "moved" };
 
+    // A card that has since become a commander is never put back in the list: its row is absent
+    // either way, so the snapshot check below cannot tell. Review skips the fingerprint above, which
+    // is otherwise what would refuse it.
+    const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+      .from(decks).where(eq(decks.id, deckId));
+    if (!deck || oracleId === deck.commander || oracleId === deck.partner) return { ok: false, reason: "moved" };
     const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto })
       .from(deckCards).where(rowOf(deckId, oracleId)).for("update");
     const left = snap.quantity - 1;
