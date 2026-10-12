@@ -82,7 +82,8 @@ export type AboutSwitch =
   | 'DECK_BENCHMARKS_ENABLED'
   | 'SHOPPING_MARK_BOUGHT_ENABLED'
   | 'DECK_PRINTINGS_ENABLED'
-  | 'DECK_TOKENS_ENABLED';
+  | 'DECK_TOKENS_ENABLED'
+  | 'MANA_BALANCE_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -1120,6 +1121,28 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 10,
+  },
+  {
+    id: 'mana-balance',
+    chapter: '04',
+    title: 'Reading your deck’s mana',
+    route: '/decks',
+    opens: 'opens a deck’s Analysis tab',
+    width: 'plate',
+    // 2026-10-11 (Tuning line close-out; R3 M10 in `design_handoff_the99_tuning_hub/mana-balance R3 ·
+    // copy strings.ts`): follows MANA_BALANCE_ENABLED, so turning the tool on is what announces it.
+    // NO BUMP, as `deck-stats`: a switched entry is seen by its id, and `since` is the current version.
+    switch: 'MANA_BALANCE_ENABLED',
+    caption:
+      'Wondering whether your deck can cast what it asks for? Mana Balance, under Tuning on a deck’s Analysis tab, puts each color’s pips beside its sources, counted the same way as the Colors card, with what each color’s tightest cost needs alongside.\n\nIt won’t tell you a color is short. That call depends on how the deck plays, so the figures sit side by side and you decide. Want help? Improve my mana lists your colors, tightest first. Pick one to see basics that could swap to it and staples your commander’s decks run, the ones you own first.',
+    keys: [
+      'Pips count the commander, as the Colors card does.',
+      'Needs is Frank Karsten’s figure: the sources a 99-card deck needs to cast a cost on curve about 9 times in 10.',
+      'Improve my mana only offers your commander’s colors, and nothing is picked for you.',
+      'Karsten’s figures come from his 2022 article on TCGplayer. They’re a reference point, not a target.',
+    ],
+    marksPending: true,
+    since: 14,
   },
   {
     id: 'deck-stats',

@@ -11,7 +11,7 @@ import { howItWorksEnabled } from "./how-it-works-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
-import { tuningEnabled } from "../tuning/flag";
+import { manaBalanceEnabled, tuningEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { collectionEditEnabled } from "../collection/edit-flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -44,6 +44,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_TOKENS_ENABLED: deckTokensEnabled,
+  // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
+  MANA_BALANCE_ENABLED: manaBalanceEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

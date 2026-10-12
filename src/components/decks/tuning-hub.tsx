@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Reac
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
+import { reveal } from "../../lib/ui/reveal";
 import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
 import type { HistoryRow, HistoryTool } from "../../lib/tuning/history";
@@ -250,15 +251,18 @@ export function TuningHub({
     // tools draw nothing until their own first read lands, so their heading arrives later still.
     // So wait for the section to be shown AND the tool's heading to exist, then scroll and focus:
     // scrolled any sooner, the page is not yet tall enough to bring the hub to the top, and the
-    // tool then grows below the fold (measured: the hub stopped 508px down at 1300).
+    // tool then grows below the fold (measured: the hub stopped 508px down at 1300). A tool whose
+    // heading draws before its first rows (History) marks that wait `data-hub-pending`, and the scroll
+    // waits for it too; past the wait the scroll and focus happen anyway rather than never.
     const shown = () => !!sectionRef.current && !sectionRef.current.closest("[hidden]");
-    const step = () => {
+    const step = (late = false) => {
       if (!shown()) return false;
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
       const id = HEADING_IDS[opening.tool];
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
       if (opening.focus && !heading) return false;
-      if (opening.scroll) sectionRef.current?.scrollIntoView({ block: "start" });
+      if (!late && opening.scroll && toolRef.current?.querySelector("[data-hub-pending]")) return false;
+      if (opening.scroll) reveal(sectionRef.current);
       if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });
@@ -267,7 +271,9 @@ export function TuningHub({
     if (step()) return;
     const giveUp = Date.now() + SHOWN_WAIT_MS;
     let frame = requestAnimationFrame(function wait() {
-      if (!step() && Date.now() < giveUp) frame = requestAnimationFrame(wait);
+      if (step()) return;
+      if (Date.now() < giveUp) frame = requestAnimationFrame(wait);
+      else step(true);
     });
     return () => cancelAnimationFrame(frame);
   }, [opening]);
@@ -374,8 +380,8 @@ export function TuningHub({
       ) : (
         <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
           {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
-              bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11). Instant: the app
-              sets no smooth scrolling, so reduced motion is already honored. */}
+              bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11), smoothly unless the
+              reader asks for reduced motion (`reveal`). */}
           {views.map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} />)}
         </div>
       )}

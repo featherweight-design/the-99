@@ -139,6 +139,18 @@ function CardNames({ pattern, ids }: { pattern: PatternEvidence; ids: Readonly<R
   );
 }
 
+/** A `You have N · Needs M` figure that may wrap only at its ` · `, the dot kept on the first line, so the
+ *  longest (`Needs at most`) stays inside its column instead of running past it. */
+function SeparatedFigure({ text }: { text: string }) {
+  const parts = text.split(" · ");
+  return parts.map((part, i) => (
+    <span key={i}>
+      {i > 0 ? " " : null}
+      <span className="whitespace-nowrap">{i < parts.length - 1 ? `${part} ·` : part}</span>
+    </span>
+  ));
+}
+
 function haveNeeds(p: PatternEvidence, have: number): { text: string; known: boolean } {
   if (p.karsten.kind === "known") return { text: copy.patterns.haveNeeds(have, p.karsten.sources), known: true };
   if (p.karsten.kind === "atMost") return { text: copy.patterns.haveNeedsAtMost(have, p.karsten.sources), known: true };
@@ -175,8 +187,8 @@ export function PatternRows({ colors, initial, ids }: { colors: readonly ColorEv
                   <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.patterns.copies(p.copies)}</span>
                 </span>
                 <span className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"><CardNames pattern={p} ids={ids} /></span>
-                <span className={`col-start-3 row-start-1 whitespace-nowrap text-right font-mono text-[12px] md:col-start-auto md:row-start-auto ${figure.known ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}>
-                  {figure.text}
+                <span className={`col-start-3 row-start-1 min-w-0 text-right font-mono text-[12px] md:col-start-auto md:row-start-auto ${figure.known ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}>
+                  <SeparatedFigure text={figure.text} />
                 </span>
               </li>
             );

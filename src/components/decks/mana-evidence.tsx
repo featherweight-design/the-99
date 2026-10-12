@@ -40,19 +40,17 @@ function neededText(e: ColorEvidence): { figure: string; sub: string | null } {
   return { figure: "—", sub: e.pips.withCommander > 0 ? copy.table.noPublished : copy.table.noPips };
 }
 
-function Row({ row, e, widest, commander }: { row: ColorRow; e: ColorEvidence; widest: number; commander: string }) {
+function Row({ row, e, widest }: { row: ColorRow; e: ColorEvidence; widest: number }) {
   const sources = row.lands + row.other;
   const needed = neededText(e);
   const pipsText = row.pips ? copy.table.share(row.pips, row.pipShare) : "0";
   const sourcesText = sources ? copy.table.share(sources, row.sourceShare) : "0";
-  // Under every color with a pip, equal or not (R3b), so the commander's share is always readable.
-  const without = row.pips ? copy.table.without(e.pips.withoutCommander, commander) : null;
   const split = sources ? copy.table.split(row.lands, row.other) : null;
   const name = colorName(e.color);
   return (
     <li
       data-mana-row={e.color}
-      aria-label={copy.table.rowAria(name, [pipsText, without].filter(Boolean).join(", "), [sourcesText, split].filter(Boolean).join(", "), [needed.figure === "—" ? "" : needed.figure, needed.sub].filter(Boolean).join(", "))}
+      aria-label={copy.table.rowAria(name, pipsText, [sourcesText, split].filter(Boolean).join(", "), [needed.figure === "—" ? "" : needed.figure, needed.sub].filter(Boolean).join(", "))}
       className={`${GRID} items-start border-b border-b-[color:var(--border)] px-[2px] py-[11px]`}
     >
       <span aria-hidden="true" className="flex items-center gap-[8px]">
@@ -65,7 +63,6 @@ function Row({ row, e, widest, commander }: { row: ColorRow; e: ColorEvidence; w
           {row.pips ? <span className="h-[14px] min-w-[8px] flex-none rounded-[3px]" style={{ width: `${(row.pipShare / widest) * 60}%`, background: PIP_STYLE[e.color].bg }} /> : null}
           <span className={row.pips ? FIGURE : `${FIGURE} text-[color:var(--fg-locked)]`}>{pipsText}</span>
         </span>
-        {without ? <span className={SUB}>{without}</span> : null}
       </span>
       <span aria-hidden="true" className="order-last flex min-w-0 flex-col gap-[4px] md:order-none">
         <span className={MINI}>{copy.table.head.sources}</span>
@@ -97,7 +94,7 @@ export function ColorlessLine({ row, share = true }: { row: ColorRow; share?: bo
   );
 }
 
-export function ManaEvidenceTable({ balance, commander }: { balance: ClientManaBalance; commander: string }) {
+export function ManaEvidenceTable({ balance }: { balance: ClientManaBalance }) {
   const { rows, widest } = colorRows(balance.supply);
   const colored = rows.filter((r): r is ColorRow & { c: BalanceColor } => r.c !== "C");
   const colorless = rows.find((r) => r.c === "C");
@@ -111,7 +108,7 @@ export function ManaEvidenceTable({ balance, commander }: { balance: ClientManaB
         <span>{copy.table.head.needed}</span>
       </div>
       <ul>
-        {colored.map((r) => <Row key={r.c} row={r} e={byColor.get(r.c)!} widest={widest} commander={commander} />)}
+        {colored.map((r) => <Row key={r.c} row={r} e={byColor.get(r.c)!} widest={widest} />)}
       </ul>
       {colorless ? <ColorlessLine row={colorless} /> : null}
     </div>

@@ -19,7 +19,6 @@ export const manaBalanceCopy = {
   table: {
     head: { color: "Color", pips: "Pips", sources: "Sources", needed: "Needed" },
     share: (n: number, pct: number) => `${n} · ${pct}%`,
-    without: (n: number, commander: string) => `${n} without ${commander}`,
     /** A zero side is left out: `5 other`, `3 lands`, or both. */
     split: (lands: number, other: number) => {
       const landsText = `${lands} ${lands === 1 ? "land" : "lands"}`;

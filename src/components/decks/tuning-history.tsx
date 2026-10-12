@@ -198,7 +198,9 @@ export function TuningHistory({
       </div>
       {showChips ? <Chips tools={chips} value={filter} onChange={choose} /> : null}
       {state.kind === "loading" ? (
-        <div aria-busy="true" className="min-h-[60px]" />
+        // `data-hub-pending` while nothing has been read yet: the hub waits for it before scrolling, or the
+        // page is too short to bring the hub's top up and the rows land below the fold.
+        <div aria-busy="true" data-hub-pending={state.chips === true ? undefined : ""} className="min-h-[60px]" />
       ) : state.kind === "failed" ? (
         <LoadFailed onRetry={() => load(filter)} />
       ) : empty ? (

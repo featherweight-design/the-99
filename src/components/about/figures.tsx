@@ -18,6 +18,7 @@ import { SetCell } from "../sets/set-cell";
 import { RoleGroupHeader } from "../commanders/coverage-section";
 import { CommitmentsCard } from "../home/commitments-card";
 import { CurveCard } from "../decks/deck-stats-view";
+import { ManaEvidenceTable } from "../decks/mana-evidence";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { BrowseFigureBody } from "./browse-figure";
@@ -100,6 +101,7 @@ import {
   PRICES,
   STATUSES,
   DECK_STATS,
+  MANA_BALANCE,
   BENCHMARKS_SCRAPPY,
   BENCHMARKS_ANALYZED_AT,
 } from "../../lib/about/fixtures";
@@ -778,6 +780,19 @@ function SuggestedChangesFigure({ width }: { width: AboutWidth }) {
 }
 
 /** Stats' curve card at plate width with Creature lit, drawn by the card itself from a fixture. */
+/**
+ * Mana Balance's color table, drawn by the tool's own table from Gishath's figures (R3 M10): the table is
+ * what the entry explains. The handoff draws it at the phone layout; the table switches on the viewport,
+ * so the plate shows whichever layout the reader's screen gets.
+ */
+function ManaBalanceFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="mana-balance" width={width}>
+      <ManaEvidenceTable balance={MANA_BALANCE.balance} />
+    </Specimen>
+  );
+}
+
 function DeckStatsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="deck-stats" width={width}>
@@ -1119,6 +1134,7 @@ export const FIGURES: Partial<
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
   "deck-stats": DeckStatsFigure,
+  "mana-balance": ManaBalanceFigure,
   credits: CreditsFigure,
   "collection-add": CollectionAddFigure,
   "upload-choice": UploadChoiceFigure,
