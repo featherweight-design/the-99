@@ -138,3 +138,15 @@ matches.
   must-not.
 - G1–G10 stand as the build's tasks. G3 (a label generation in the `/decks` cache key) gates the strips
   and the jobs grid.
+
+### Copilot round 1 (four findings on the canvas, all valid)
+
+These are four places where the R2 canvas draws something the table and README already rule out:
+- the color bars light the first N segments instead of each deck's own segment;
+- the Collection fold summary hard-codes `67`;
+- F2 omits Worth and Jobs;
+- F2 does not narrow the wanted block.
+
+All four are now recorded under "Frame mismatch" in `design-tables/lineup.md`, with the behavior the
+build follows. The table wins over the canvas, as for the proposal styling. None of them changes a
+ruling, so the verdict stays GREEN.

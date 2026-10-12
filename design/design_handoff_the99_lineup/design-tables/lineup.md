@@ -10,6 +10,9 @@
 - **Proposal styling:** the R2 frames still draw the `PROPOSAL` badge and the dashed brass border on Worth and Jobs.
 - **Build:** both use the standard Shell, with no badge.
 - **Canvas:** unchanged this round.
+- **Decks per color:** the canvas lights the first N segments (`j < ds.length`, `Decks Stats.dc.html:739`). The build keeps one fixed segment per deck, in lineup order, and lights the segment of each deck that plays the color, so the chosen deck's ring stays in one place on every row.
+- **Fold summaries follow the card state:** the canvas hard-codes `67 wanted by your commanders` in Collection's summary (`:778`). The build's summary counts whatever the deck select and the filter currently show (T5: Gods' own count).
+- **Finished only (F2):** the canvas omits Worth and Jobs from F2 (`:570`) and leaves the wanted block at the All-decks `67` / `144` and the same rows (`:800-802`). The build draws every card under Finished only, with the brews left out of Worth, Jobs and the wanted list, and the wanted counts recounted on the finished decks.
 
 ## Component: StatsViewSwitch (/decks, `Tiles · Stats`)
 
