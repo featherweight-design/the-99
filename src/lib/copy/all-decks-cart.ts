@@ -8,6 +8,9 @@
 const n = (x: number) => x.toLocaleString("en-US");
 const copies = (x: number) => (x === 1 ? "1 copy" : `${n(x)} copies`);
 const decks = (x: number) => (x === 1 ? "1 deck" : `${n(x)} decks`);
+/** `Gishath, Kratos and Thorin`: receipt prose only, since a line names its decks with commas. */
+const and = (names: string[]) =>
+  names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
 export const allDecksCartCopy = {
   title: "Shopping for all decks",
@@ -60,6 +63,10 @@ export const allDecksCartCopy = {
     owned: (owned: number) => `you own ${n(owned)} · all ${n(owned)} in other decks`,
     /** Some owned copies are held by a deck on this line itself. */
     ownedSome: (owned: number, held: number) => `you own ${n(owned)} · ${n(held)} in other decks`,
+    /** A line still listed after a press this visit (S4). */
+    addedThisVisit: (q: number) => `${n(q)} added this visit`,
+    /** Beside the held slot (`gotItCopy.slot.held`) of a line that left (S3). */
+    added: (q: number) => `${n(q)} added`,
   },
 
   none: {
@@ -91,5 +98,33 @@ export const allDecksCartCopy = {
       `part ${n(i)} of ${n(of)} · ${n(lines)} ${lines === 1 ? "line" : "lines"}`,
     unread: "prices couldn’t be read just now",
     noneSelected: "Select a deck to build a cart.",
+  },
+
+  /** K1: once per visit, when the tab regains focus after the Mana Pool link was pressed. */
+  back: {
+    title: "Back from Mana Pool?",
+    body: "Press buy on each card you got to add it to your collection.",
+    dismiss: "Dismiss",
+  },
+
+  /** I got it's confirm on a cart line. Title, printing, finish and Add are `gotItCopy.confirm`'s. */
+  confirm: {
+    forDecks: (deckN: number) => `For ${decks(deckN)} in this cart`,
+    needsEach: (q: number) => `needs ${n(q)}`,
+    /** Replaces `gotItCopy.confirm.need` on a cart line. */
+    need: (q: number, deckN: number) =>
+      deckN > 1 && q === deckN ? `The cart needs ${n(q)}, one for each deck` : `The cart needs ${n(q)}`,
+    /** Lock 7, said once. */
+    readAgain: "Which decks these cover is worked out once they’re added.",
+    /** The stale banner on a cart line: `gotItCopy.confirm.staleBody`, said of the cart. */
+    staleBody: (need: number) => `A copy was added somewhere else, so the cart needs ${n(need)} now. Nothing was added yet.`,
+    staleBodyDone: "A copy was added somewhere else, so the cart needs no more. Add anyway if this is a spare.",
+  },
+
+  /** I got it's receipt body on a cart press, from the read after the write (lock 7). */
+  receipt: {
+    covered: (names: string[]) => `${and(names)} ${names.length === 1 ? "is" : "are"} covered.`,
+    still: (deck: string, need: number) => `${deck} still needs ${n(need)}.`,
+    stillMany: (deckN: number, need: number) => `${decks(deckN)} still need ${n(need)} between them.`,
   },
 } as const;

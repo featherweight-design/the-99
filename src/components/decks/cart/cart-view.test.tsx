@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { CartView } from "./cart-view";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { gotItCopy } from "../../../lib/copy/i-got-it";
+
+const { loadPrintingChoices, markBoughtForDecks } = vi.hoisted(() => ({
+  loadPrintingChoices: vi.fn(),
+  markBoughtForDecks: vi.fn(),
+}));
+vi.mock("../../../app/collection/edit-actions", () => ({ loadPrintingChoices }));
+vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, markBought: vi.fn() }));
+vi.mock("../../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
+const { CartView } = await import("./cart-view");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
 import { priceCopy } from "../../../lib/copy/price";
@@ -259,5 +270,120 @@ describe("CartView by deck (A5)", () => {
     expect(screen.queryByText("Command Tower")).toBeNull();
     const toggle = screen.getAllByRole("button", { expanded: false }).find((b) => b.textContent?.includes("HD - Gishath"))!;
     expect(toggle.hasAttribute("disabled")).toBe(true);
+  });
+
+  describe("buying from the cart (cart PR 6)", () => {
+    it("draws the buy key beside the switch, and nothing to press with buying off", () => {
+      const { unmount } = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      expect(screen.getByText(gotItCopy.row.keyBuy)).toBeTruthy();
+      expect(screen.getAllByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") })).toHaveLength(1);
+      unmount();
+      render(<CartView cart={cart()} provenance={provenance} />);
+      expect(screen.queryByText(gotItCopy.row.keyBuy)).toBeNull();
+      expect(screen.queryByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") })).toBeNull();
+    });
+
+    it("keeps a bought line the cart no longer lists as a held slot where it was (S3)", async () => {
+      loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 17 },
+      }]);
+      markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+      const { rerender } = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
+      const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
+      await act(async () => { fireEvent.click(add); });
+      // The action's revalidation reads the cart again, without the line.
+      const after = cart();
+      after.lines = after.lines.filter((l) => l.oracleId !== "sol");
+      rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      const slot = list().getAllByRole("listitem").find((li) => li.hasAttribute("data-held-slot"))!;
+      expect(slot.textContent).toContain(gotItCopy.slot.held("Sol Ring"));
+      expect(slot.textContent).toContain(copy.list.added(2));
+    });
+
+    async function buySolRing(view: ReturnType<typeof render>) {
+      loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 17 },
+      }]);
+      markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
+      fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
+      const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
+      await act(async () => { fireEvent.click(add); });
+      return view;
+    }
+
+    it("keeps the receipt up when the purchase empties the cart", async () => {
+      const view = await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
+      view.rerender(<CartView cart={cart({ decks: [], lines: [] })} provenance={provenance} buyEnabled />);
+      expect(screen.getByText(copy.empty.title)).toBeTruthy();
+      expect(screen.getByText(gotItCopy.receipt.added("Sol Ring", 2))).toBeTruthy();
+    });
+
+    it("draws no held slot for a line that is only unselected, not gone from the cart", async () => {
+      await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
+      for (const name of ["HD - Gishath", "HD - Kratos"]) {
+        fireEvent.click(screen.getAllByRole("checkbox", { name: copy.selections.aria(name, true) })[0]);
+      }
+      expect(list().queryAllByRole("listitem").some((li) => li.hasAttribute("data-held-slot"))).toBe(false);
+    });
+
+    it("names a deck the purchase finished from the cart as it was when the confirm opened", async () => {
+      loadPrintingChoices.mockResolvedValue([{
+        scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
+        collectorNumber: "400", releasedAt: "2023-08-04", imageUri: null, flavorName: null,
+        finishes: ["nonfoil"], owned: { nonfoil: 17 },
+      }]);
+      // The read gives Gishath no name (no claim left), and the next cart no longer lists it.
+      markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [{ deckId: "gishath", deckName: "" }], still: [] } } });
+      const view = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
+      const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
+      await act(async () => { fireEvent.click(add); });
+      const after = cart();
+      after.decks = after.decks.filter((d) => d.id !== "gishath");
+      view.rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      expect(screen.getByText(copy.receipt.covered(["HD - Gishath"]))).toBeTruthy();
+    });
+
+    it("never arms the back band with buying off: it would tell the player to press an inert tag", () => {
+      render(<CartView cart={cart()} provenance={provenance} />);
+      fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
+      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+      expect(screen.queryByText(copy.back.title)).toBeNull();
+    });
+
+    it("says how to record a purchase when the tab comes back from Mana Pool, once (K1)", () => {
+      render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      expect(screen.queryByText(copy.back.title)).toBeNull();
+      fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
+      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+      expect(screen.getByText(copy.back.title)).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: copy.back.dismiss }));
+      expect(screen.queryByText(copy.back.title)).toBeNull();
+      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+      expect(screen.queryByText(copy.back.title)).toBeNull();
+    });
+
+    it("never shows the back band twice in a visit, even after the list goes and comes back", () => {
+      render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
+      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+      fireEvent.click(screen.getByRole("button", { name: copy.back.dismiss }));
+      fireEvent.click(screen.getByRole("button", { name: copy.selections.unselectAll }));
+      fireEvent.click(screen.getByRole("button", { name: copy.none.action(3) }));
+      // Pressed again and back again: a band whose state reset with the list would show here.
+      fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
+      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
+      expect(screen.queryByText(copy.back.title)).toBeNull();
+    });
+
+    it("draws the buy key by card only: a deck's group has no press", () => {
+      render(<CartView cart={cart()} provenance={provenance} buyEnabled initialView="deck" />);
+      expect(screen.queryByText(gotItCopy.row.keyBuy)).toBeNull();
+    });
   });
 });

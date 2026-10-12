@@ -60,7 +60,7 @@ describe("buildCart", () => {
     );
     expect(fromLines).toEqual(cartTotal(cart.decks, all));
     const passage = cart.lines.find((l) => l.oracleId === PASSAGE)!;
-    expect(passage.rows).toEqual([{ deckId: "thorin", quantity: 2, cents: null, state: "soldOut", commander: false, held: 0, finish: null }]);
+    expect(passage.rows).toEqual([{ deckId: "thorin", quantity: 2, cents: null, state: "soldOut", commander: false, held: 0, finish: null, printing: null }]);
     expect(figuresOf(cart.lines.find((l) => l.oracleId === SOL)!.rows)).toEqual({ copies: 3, cents: 450, pricedCopies: 3 });
     expect(cartTotal(cart.decks, all)).toMatchObject({ copies: 8, pricedCopies: 6 });
   });

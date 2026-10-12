@@ -11,6 +11,7 @@ import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
 import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
+import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
@@ -126,7 +127,12 @@ export async function markBought(
 
 export type MarkBoughtForDecksOutcome =
   | { applied: { id: string; receipt: CartReceiptFacts | null } }
-  | { stale: (CollectionItemIdentity & { quantity: number })[] }
+  /**
+   * The holding moved since the confirm read it. `need` is what the line's decks are billed now, from
+   * the roll-up: one copy landing elsewhere can clear several brews' rows, or none, so the cart's
+   * need is read again rather than worked out from the holding.
+   */
+  | { stale: (CollectionItemIdentity & { quantity: number })[]; need: number }
   | { missingCard: string[] }
   /**
    * Either switch off; a deck that no longer holds the card (the line is read again, audit G2); a
@@ -226,7 +232,10 @@ export async function markBoughtForDecks(
         },
       };
     }
-    case "stale": return { stale: result.current };
+    case "stale": {
+      const billed = await loadDeckBuyRows(userId, deckIds);
+      return { stale: result.current, need: billed.filter((r) => r.oracleId === oracleId).reduce((n, r) => n + r.quantity, 0) };
+    }
     case "missingCard": return { missingCard: result.names };
     case "notInDeck": return { refused: "notInDeck" };
     case "assignRefused": return { pickRefused: result.reason };

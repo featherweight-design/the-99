@@ -12,6 +12,7 @@ import { loadCart } from "../../../lib/decks/cart-read";
 import { provenanceForm } from "../../../lib/decks/price";
 import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
+import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
 
@@ -42,5 +43,13 @@ export default async function AllDecksShoppingPage({
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
   const provenance = newest ? provenanceForm(newest, await readNow()) : null;
-  return <CartView cart={cart} provenance={provenance} initialView={initialView} focusDeckId={deck} />;
+  return (
+    <CartView
+      cart={cart}
+      provenance={provenance}
+      initialView={initialView}
+      focusDeckId={deck}
+      buyEnabled={shoppingMarkBoughtEnabled()}
+    />
+  );
 }

@@ -25,10 +25,10 @@ import { ToastFrame, useToastClock } from "../collection/edit-toast";
 const c = gotItCopy.receipt;
 
 /** What one press wrote, handed from the confirm to the receipt. */
-export type GotItWritten = {
+export type GotItWritten<F = ReceiptFacts> = {
   entryId: string;
   /** Null on a retry that found the press already applied (the action reads no second snapshot). */
-  facts: ReceiptFacts | null;
+  facts: F | null;
   quantity: number;
   setCode: string;
   collectorNumber: string;
@@ -69,13 +69,21 @@ export type GotItUndoHost = {
 };
 
 export function GotItReceipt({
-  deckId, oracleId, cardName, written, host, failed = false, onExpire,
+  deckId, oracleId, cardName, written, body: bodyOverride, placement = "deck", host, failed = false, onExpire,
 }: {
-  deckId: string;
+  /**
+   * The decks the undo leaves out of its deck check (call B): the deck the copy was bought for, or
+   * every deck a cart line listed. The write honours each only for an entry with that source.
+   */
+  deckId: string | string[];
   oracleId: string;
   /** The name the row prints. */
   cardName: string;
-  written: GotItWritten;
+  written: GotItWritten<unknown>;
+  /** The receipt's body when the caller writes its own (the cart's); else read from a deck's facts. */
+  body?: string | null;
+  /** Where the toast sits: a deck page's slot, or the cart's (bottom right, above the dock). */
+  placement?: "deck" | "cart";
   host: GotItUndoHost;
   /** Drawn straight in the failed form: an undo that failed after its toast was replaced. */
   failed?: boolean;
@@ -105,7 +113,7 @@ export function GotItReceipt({
     };
   }, [host, oracleId]);
 
-  const body = receiptBody(written.facts);
+  const body = bodyOverride !== undefined ? bodyOverride : receiptBody(written.facts as ReceiptFacts | null);
 
   // The check asked for a warning, but the toast that would show it has gone: nothing was written.
   function abandon() {
@@ -209,11 +217,15 @@ export function GotItReceipt({
   useEffect(() => {
     if (phase.k !== "undone" && phase.k !== "failed") return;
     if (ref.current?.contains(document.activeElement) || document.activeElement === document.body) {
-      document.querySelector<HTMLElement>("[data-shopping-filter]")?.focus();
+      // Where focus lands once the undo's control is gone: the deck's Shopping filter, or on the cart
+      // its checkout (the empty cart's way back when the undo emptied nothing back yet).
+      (placement === "cart"
+        ? document.querySelector<HTMLElement>("[data-cart-checkout]") ?? document.querySelector<HTMLElement>("[data-cart-empty-back]")
+        : document.querySelector<HTMLElement>("[data-shopping-filter]"))?.focus();
       // The control that had focus unmounted without a blur: the focus hold ends here, and only it.
       setFocus(false);
     }
-  }, [phase.k]);
+  }, [phase.k, placement]);
 
   const hold = (kind: "hover" | "focus", on: boolean) => (kind === "hover" ? setHover : setFocus)(on);
 
@@ -243,7 +255,7 @@ export function GotItReceipt({
       <ToastFrame
         frameRef={ref}
         role="alert"
-        placement="deck"
+        placement={placement}
         onHold={hold}
         title={c.undoFailed}
         body={phase.known ? c.undoFailedBody : undefined}
@@ -260,7 +272,7 @@ export function GotItReceipt({
     return (
       <ToastFrame
         frameRef={ref}
-        placement="deck"
+        placement={placement}
         onHold={hold}
         title={c.undoneElsewhere(cardName, written.quantity)}
       />
@@ -269,7 +281,7 @@ export function GotItReceipt({
   return (
     <ToastFrame
       frameRef={ref}
-      placement="deck"
+      placement={placement}
       onHold={hold}
       title={added}
       detail={detail}

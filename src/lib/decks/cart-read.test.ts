@@ -50,8 +50,8 @@ describe("loadCart", () => {
       expect.objectContaining({
         name: "Sol Ring",
         rows: [
-          { deckId: "gishath", quantity: 1, cents: null, state: null, commander: false, held: 0, finish: null },
-          { deckId: "kratos", quantity: 1, cents: null, state: null, commander: false, held: 0, finish: null },
+          { deckId: "gishath", quantity: 1, cents: null, state: null, commander: false, held: 0, finish: null, printing: null },
+          { deckId: "kratos", quantity: 1, cents: null, state: null, commander: false, held: 0, finish: null, printing: null },
         ],
       }),
     ]);

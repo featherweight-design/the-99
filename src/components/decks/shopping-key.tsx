@@ -31,12 +31,19 @@ export function ShoppingKey({ shoppingCount }: { shoppingCount: number }) {
           {gotItCopy.row.keySwap}
         </span>
       ) : null}
-      <span className={ITEM}>
-        <span className="rounded-[3px] px-[4px] text-[color:var(--warning)] bg-[color-mix(in_oklab,var(--warning)_13%,transparent)]">
-          {addPanelCopy.unowned.tag}
-        </span>
-        {gotItCopy.row.keyBuy}
-      </span>
+      <ShoppingKeyBuy />
     </div>
+  );
+}
+
+/** The key's buy item on its own: the all-decks cart draws it alone beside its view switch. */
+export function ShoppingKeyBuy() {
+  return (
+    <span className={ITEM}>
+      <span className="rounded-[3px] px-[4px] text-[color:var(--warning)] bg-[color-mix(in_oklab,var(--warning)_13%,transparent)]">
+        {addPanelCopy.unowned.tag}
+      </span>
+      {gotItCopy.row.keyBuy}
+    </span>
   );
 }

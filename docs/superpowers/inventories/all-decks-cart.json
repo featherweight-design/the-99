@@ -1,6 +1,6 @@
 {
   "feature": "Shopping for all decks: the /decks/shopping cart (handoff design_handoff_the99_all_decks_cart)",
-  "note": "PR 3 rows: the by-card cart and its selections, checkout and empty states. PR 4 adds the by-deck view, ?deck= focus, the /decks entry line and the tile link; the Bought flow and the back band join in PR 6. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
+  "note": "PR 3 rows: the by-card cart and its selections, checkout and empty states. PR 4 adds the by-deck view, ?deck= focus, the /decks entry line and the tile link; PR 6a adds the buy key and the confirm on a cart line (S1); the receipt, the held slot and the back band need a write or a tab switch: the receipt is proved in cart-got-it.test.tsx and cart-view.test.tsx, the held slot and the back band in cart-view.test.tsx. Needs a server with ALL_DECKS_CART_ENABLED=true and an account whose decks are missing cards (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "cart-a2",
@@ -99,6 +99,39 @@
           "goto": "/decks",
           "wait": "h1",
           "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "cart-buy-key",
+      "label": "/decks/shopping with buying on: the buy key beside the view switch (S0)",
+      "view": "src/components/decks/cart/cart-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "cart-confirm",
+      "label": "/decks/shopping, I got it on the Sol Ring line: For 3 decks on this cart (S1)",
+      "view": "src/components/decks/cart/cart-got-it.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Bought Sol Ring\\? Add it to your collection$",
+          "settle": 1500
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1500
         }
       ]
     }
