@@ -74,6 +74,24 @@ function sample(scope) {
 }
 
 const readIds = new Set();
+const markers = new Set();
+
+/**
+ * Proves the server reads PROBE_TARGET_URL before anything is pressed. A marker deck is written to
+ * the target (already refused if it is staging or production) and the server must draw it; a server
+ * on any other database draws no such deck, and the run stops having written nothing there.
+ */
+async function assertServerReadsTarget(page, userId) {
+  const [any] = await sql`select commander_oracle_id from decks where user_id = ${userId} limit 1`;
+  const [card] = any ? [any] : await sql`select oracle_id as commander_oracle_id from cards where type_line like 'Legendary Creature%' limit 1`;
+  const name = `probe-one-loading ${Date.now()}`;
+  const [{ id }] = await sql`insert into decks (user_id, name, commander_oracle_id) values (${userId}, ${name}, ${card.commander_oracle_id}) returning id`;
+  markers.add(id);
+  const res = await page.goto(`${BASE}/decks/${id}`, { waitUntil: "networkidle" });
+  // In the document at all: a phone draws the name in one place and keeps the desktop's hidden.
+  const drawn = res?.status() === 200 && (await page.getByText(name).count()) > 0;
+  if (!drawn) throw new Error("the server does not draw a deck written to PROBE_TARGET_URL: it reads another database. Nothing was pressed.");
+}
 const SETTLED = new Set(["done", "nothing", "failed", "stopped"]);
 
 async function run() {
@@ -91,6 +109,8 @@ async function run() {
       const page = await context.newPage();
       await signIn(page);
       userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
+      if (!userId) throw new Error("no signed-in user id");
+      await assertServerReadsTarget(page, userId);
       await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
       await page.locator(`${PAGE} textarea`).fill(`big dumb lizards that stomp ${width} ${Date.now()}`);
       const t0 = Date.now();
@@ -108,9 +128,7 @@ async function run() {
       }
       const r = new URL(page.url()).searchParams.get("r");
       if (r) readIds.add(r.toLowerCase());
-      // The server writes the read through its own DATABASE_URL. Finding it here is what proves that
-      // is PROBE_TARGET_URL, the database the refusal above checked; a read missing here was written
-      // somewhere else, and the run stops before pressing again.
+      // Belt and braces: the read itself is in the target too.
       const [{ n }] = r ? await sql`select count(*)::int as n from intake_reads where id = ${r}::uuid` : [{ n: 0 }];
       if (n !== 1) throw new Error(`read ${r ?? "(none)"} is not in PROBE_TARGET_URL: the server writes to another database.`);
       const at = (s) => `${s} @ ${width}`;
@@ -126,6 +144,7 @@ async function run() {
     }
   } finally {
     await browser.close();
+    if (markers.size > 0) await sql`delete from decks where id = any(${[...markers]}::uuid[])`;
     const ids = [...readIds];
     if (userId && ids.length > 0) {
       const calls = (await sql`select model_call_id from intake_reads where user_id = ${userId} and id = any(${ids}::uuid[])`).map((x) => x.model_call_id);
