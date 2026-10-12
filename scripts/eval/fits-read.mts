@@ -4,7 +4,7 @@
  * READ-ONLY, and records what each press cost, how long it took, what it said and what the validator
  * dropped. The write-up is `docs/superpowers/eval/metrics-find-a-deck-read.md`.
  *
- *   pnpm eval:fits-read [--only "Ajani Unrelenting,Tangle Wire"] [--arms haiku,sonnet,sonnet-warm] [--budget 0.50] [--dry-run]
+ *   pnpm eval:fits-read [--set hugh|niche] [--only "Ajani Unrelenting,Tangle Wire"] [--arms haiku,sonnet,sonnet-warm] [--budget 0.50] [--send]
  *
  * NO SERVER ACTION EXISTS YET, and the one that comes will reserve a credit and write a row; staging
  * is measured, never written (AGENTS.md). So this calls the pieces it will call, in order:
@@ -21,8 +21,9 @@
  * (`ledger-find-a-deck.jsonl`) or `--budget`. A call's input ceiling is its own request counted on
  * the free token-count endpoint, plus a tenth.
  *
- * `--dry-run` calls no model: it prints the coverage, each card's candidate count, each arm's
- * counted input tokens per press and the worst case each call would reserve.
+ * Without `--send` it calls no model (dry by default; `--dry-run` says the same): it prints the
+ * coverage, each card's candidate count, each arm's counted input tokens per press and the worst case
+ * each call would reserve. `--send` makes the paid calls.
  */
 import "../lib/env.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -60,11 +61,13 @@ const ARMS: Arm[] = [
 ];
 
 const { values: args } = parseArgs({ options: {
-  only: { type: "string" }, arms: { type: "string" }, set: { type: "string" }, "dry-run": { type: "boolean", default: false },
+  only: { type: "string" }, arms: { type: "string" }, set: { type: "string" }, "dry-run": { type: "boolean", default: false }, send: { type: "boolean", default: false },
   // A cap on this run alone, under the ledger's: the run stops before a call that could cross it.
   budget: { type: "string" },
 } });
-const dry = args["dry-run"];
+// DRY BY DEFAULT (brief lock 9, as `cuts-model.mts`): only `--send` spends. `--dry-run` is kept as a
+// no-op spelling of the default, so an older command still reads as it did.
+const dry = !args.send || args["dry-run"];
 const budget = args.budget === undefined ? null : Number(args.budget);
 // A budget that is not a plain positive number would make every cap check compare against NaN.
 if (budget !== null && !(Number.isFinite(budget) && budget > 0)) throw new Error(`--budget must be a positive number of dollars, got ${args.budget}`);
