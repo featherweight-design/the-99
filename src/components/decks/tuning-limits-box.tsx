@@ -14,8 +14,8 @@ import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
 const copy = deckDescriptionCopy.limits;
 
-/** The box's own cap field: whole dollars, the same bound `lookDeeper`'s budget control checks
- *  server-side. Mirrors `parseBudget` (intake-form.tsx) rather than importing it — that one is
+/** The box's own cap field: whole dollars, the same bound help-me-choose's budget control
+ *  checks server-side. Mirrors `parseBudget` (intake-form.tsx) rather than importing it — that one is
  *  scoped to the intake form's own module and not exported. */
 export function parseCapDollars(raw: string): number | null {
   const s = raw.replace(/[$,\s]/g, "");

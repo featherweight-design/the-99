@@ -96,7 +96,7 @@ export type FeatureStep = { model: string; inputCeilingTokens: number; maxTokens
  * and a synopsis section retry adds the kept synopsis on top, up to its 3,000-token output. The
  * ceilings are those maxima with room to grow: tuning 12,000, synopsis 24,000.
  *
- * The deeper read (intake), measured the same way 2026-09-25 against staging's tags: 3,434 tokens
+ * The retired one-call read (intake), measured the same way 2026-09-25 against staging's tags: 3,434 tokens
  * with the picker's 307 labels and the worst 800 characters of words (`READ_WORDS_MAX_CHARS`,
  * dense names and digits), and 3,946 were every one of the 401 tags offered. Its ceiling is 6,000.
  */
@@ -120,8 +120,8 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // reads the whole commander list as a cached prefix, MEASURED 147,736 tokens on claude-haiku-5-5
   // (`scripts/eval/measure-pool-list.mts`, staging, 3,467 commanders), so its ceiling is that list
   // plus the request with room to grow, priced as a cold cache write on the >100K rate card. The
-  // judgement reads only the shortlist. The first fields are the retired one-call read's, which a
-  // row reserved before the rework still names; `steps` prices every reservation from now on.
+  // judgement reads only the shortlist. The first fields are the retired one-call read's, kept only as the shape's required
+  // base; `steps` prices every reservation.
   intake: {
     model: INTAKE_MODEL, inputCeilingTokens: 6_000, maxTokens: INTAKE_MAX_TOKENS, callsPerWrite: 1,
     steps: [

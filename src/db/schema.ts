@@ -2146,9 +2146,12 @@ export const modelCalls = pgTable("model_calls", {
  * own because a Stop must refund (F4): written `pending` with its allowance unit BEFORE the model is
  * called, and settled with that unit in one transaction. A Stop cancels it and refunds, and a late
  * answer finds it no longer pending and writes nothing. `words_hash` is what it was asked: the
- * words and the budget and bracket controls they were read against (`wordsHash`). A repeat of an
- * ask already read gets that read back uncharged, so a read is offered once per ask. `chips` holds
- * only what passed validation.
+ * ask's fingerprint (`readFingerprint`, `lib/intake/the-read.ts`), which covers the words, every
+ * filter, the prompt version, the commander list's generation, the player's pool, collection and
+ * decks. A repeat of an
+ * ask already read gets that read back uncharged, so a read is offered once per ask. `chips` is the
+ * retired one-call read's answer: rows written before the two-step read keep it, nothing writes it
+ * now, and such a row reads as no read (`loadTheRead`).
  */
 export const intakeReads = pgTable("intake_reads", {
   id: uuid("id").primaryKey().defaultRandom(),

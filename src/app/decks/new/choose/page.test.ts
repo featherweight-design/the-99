@@ -17,7 +17,6 @@ vi.mock("../../../../lib/intake/run-store", async (actual) => ({
 vi.mock("../../../../lib/intake/the-read-load", () => ({ loadReadDecks: stub.decks }));
 
 const { default: ChoosePage } = await import("./page");
-const { DeeperLook } = await import("../../../../components/intake/deeper-look");
 const { ReadPanel, ReadScope } = await import("../../../../components/intake/read-panel");
 const { ReadAsBar } = await import("../../../../components/intake/read-as-bar");
 const { IntakeForm } = await import("../../../../components/intake/intake-form");
@@ -56,13 +55,6 @@ describe("the choose page", () => {
     stub.chip.mockClear();
     await ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs", a: CARD }) });
     expect(stub.chip).not.toHaveBeenCalled();
-  });
-
-  it("draws no Look deeper panel on the results: the read starts at the submit now (rework plan PR 3)", async () => {
-    stub.themes.mockResolvedValue([]);
-    stub.chip.mockResolvedValue(null);
-    const page = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary horrors" }) });
-    expect(find(page, DeeperLook)).toBeNull();
   });
 
   it("mounts the read's panel only with words, unread with no r, and quotes the words under You wrote", async () => {

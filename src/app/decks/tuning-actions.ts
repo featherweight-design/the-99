@@ -121,7 +121,7 @@ export async function saveDeckHeader(
 /**
  * "Kept for this deck" (H35, PR 2): the per-card cap, the sets and owned-only Suggested changes'
  * own swaps stay inside. Held per deck, not per run — null/empty/false is "no limit", never
- * seeded. Checked the same way `lookDeeper`'s `budgetDollars` validates help-me-choose's cap:
+ * seeded. Checked the same way help-me-choose's budget control is (`MAX_BUDGET_DOLLARS`):
  * whole dollars, 1 to `MAX_BUDGET_DOLLARS`, converted to cents only after that bound holds.
  *
  * PARTIAL, like `saveDeckHeader` above (pre-open review round 2): each control autosaves on its

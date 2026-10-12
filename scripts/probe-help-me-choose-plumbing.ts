@@ -4,7 +4,7 @@
 // WHAT ONLY A DATABASE CAN ANSWER HERE.
 //   THE MIGRATION'S RULES. A budget answer is whole dollars of at least $1 (stored as cents, a
 //   multiple of 100), a bracket answer is 1 to 5, a build-around card must be a card the catalog
-//   holds, and a player holds at most ONE pending deeper read. `model_calls` accepts the `intake`
+//   holds, and a player holds at most ONE pending read. `model_calls` accepts the `intake`
 //   feature since PR 4 registered its `FEATURE_CALLS` entry, and refuses a feature the code cannot
 //   price. Each is a constraint or a partial index, which no
 //   unit test here can reach.

@@ -79,7 +79,7 @@ const NO_USAGE = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWri
  * No API call: the shortlist takes the pool's first keys, the judgement the first three with a plain
  * reason. `INTAKE_STUB` reaches the panel's other states: `nothing` (no pick fits), `busy` (the
  * judgement fails), and `INTAKE_STUB_DELAY_MS` holds each call that long, so the wait and Stop can
- * be seen. The same switches the retired read's stub reads (`stub.ts`).
+ * be seen. The switches are read by `stub.ts`.
  */
 export function stubTheReadDeps(env: Record<string, string | undefined> = process.env): TheReadDeps {
   const mode = stubMode(env);

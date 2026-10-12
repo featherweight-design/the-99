@@ -1,41 +1,27 @@
 /**
- * The deeper read's fixed numbers, in one place. Pure and client-safe: `src/lib/model/prices.ts`
- * prices every reservation from these, and the form (PR 5) caps its field with the words limit.
+ * The read's fixed numbers, in one place. Pure and client-safe: `src/lib/model/prices.ts`
+ * prices the two steps from the models and ceilings below, and the form (PR 5) caps its field with
+ * the words limit.
  *
- * The model, effort and output room are Hugh's ruling (plan, "The deeper read", 2026-09-25):
- * Sonnet 5 at low effort with the synopsis's 3,000 tokens, the one precedent measured at low.
- * Sonnet 5's adaptive thinking counts inside `max_tokens`, so the room is not cut below that.
+ * `INTAKE_MODEL` and `INTAKE_MAX_TOKENS` are the RETIRED one-call read's. They stay only as the
+ * base fields `FEATURE_CALLS` requires of every feature; `FEATURE_CALLS.intake.steps` prices every
+ * reservation, so nothing is priced from them. The two-step read's models and ceilings are below
+ * and in `prices.ts`.
  */
 export const INTAKE_MODEL = "claude-sonnet-5";
-export const INTAKE_EFFORT = "low" as const;
 export const INTAKE_MAX_TOKENS = 3_000;
 
 /**
- * The most the player's words may run to. The input ceiling in `FEATURE_CALLS` was MEASURED at this
- * length: 800 characters of the densest words (names and digits) with the whole vocabulary came to
- * 3,946 tokens against a ceiling of 6,000, so a press at the cap stays inside what its reservation
- * priced. Raising the cap means measuring again. The Server Action refuses a longer press rather
- * than trimming it: a read of half the words is not the read the player asked for.
+ * The most the player's words may run to. The Server Action refuses a longer press rather than
+ * trimming it: a read of half the words is not the read the player asked for. The prompt's input
+ * ceilings (`FEATURE_CALLS.intake` steps) leave room for the whole cap.
  */
 export const READ_WORDS_MAX_CHARS = 800;
-
-/**
- * One deadline across both attempts. 3,000 tokens at the ~80 tokens a second tuning measured is
- * about 38s, so 100s leaves the retry room for one whole answer. It has to fit under the choose
- * page's `maxDuration` of 120s (PR 5), which bounds the Server Action, with the reserve before the
- * call and the settle after it in what is left.
- */
-export const INTAKE_DEADLINE_MS = 100_000;
 
 /** A retry needs this much of the deadline left to finish one whole answer; less, and it fails. */
 export const INTAKE_RETRY_FLOOR_MS = 40_000;
 
-/**
- * How long a press that found another look already running waits on it, polling, before it reads
- * as failed: the choose page's 120s `maxDuration`, which bounds the other look's own request.
- */
-export const INTAKE_WAIT_MS = 120_000;
-/** How often that waiting press asks whether the other look has settled. */
+/** How often the results panel asks whether its read has settled. */
 export const INTAKE_POLL_MS = 2_000;
 
 /**

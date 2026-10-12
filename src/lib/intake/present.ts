@@ -1,7 +1,6 @@
 import { colorNames } from "../copy/color-labels";
 import { BRACKET_NAMES } from "../copy/deck-analysis";
 import { helpMeChooseCopy as copy, orList } from "../copy/help-me-choose";
-import type { Chip } from "./match";
 import { answersOf, type ChooseParams } from "./params";
 import { answerKeys, isAnyOf, type AnswerKey, type SearchResult } from "./rank";
 import type { ResultRow } from "./rows";
@@ -163,9 +162,8 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
 
 /**
  * The answers with one removed: a drop on the results, and what a chip's own drop does. A new set of
- * answers is a new ask, so it carries neither a deeper read (`r`) nor its marks (`d`): a read is
- * bound to the ask it answered, and removing the very answer it added would otherwise hash back
- * to that ask and draw its look as done over results it never produced.
+ * answers is a new ask, so it carries no read (`r`): a read is bound to the ask it answered, so a read
+ * `r` names must not be drawn over answers it never read.
  */
 export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
   const q = { ...p, readId: null, deeper: [] };
@@ -178,53 +176,6 @@ export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
     case "budget": return { ...q, budgetDollars: null };
     case "bracket": return { ...q, bracket: null };
   }
-}
-
-/**
- * The deeper marks the page may draw. `d` is honored only when `r` named the reader's own delivered
- * read (`loadOwnRead`), and then only mark by mark: each must name an answer that read actually
- * gave AND that the answers still hold. So an address with `d` appended, or `r` reused under other
- * answers, marks nothing the read did not add.
- */
-export function verifiedDeeperMarks(
-  p: ChooseParams,
-  settled: { kind: "read" | "nothing"; read: { chips: readonly Chip[] } } | null,
-): string[] {
-  if (settled?.kind !== "read") return [];
-  const chips = settled.read.chips;
-  return p.deeper.filter((m) => {
-    if (m.startsWith("t:")) {
-      const slug = m.slice(2);
-      return p.themes.includes(slug) && chips.some((c) => c.kind === "theme" && c.slug === slug);
-    }
-    if (m === "a") return p.card !== null && chips.some((c) => c.kind === "card" && c.oracleId === p.card);
-    if (m === "b") return p.budgetDollars !== null && chips.some((c) => c.kind === "budget" && c.dollars === p.budgetDollars);
-    if (m === "k") return p.bracket !== null && chips.some((c) => c.kind === "bracket" && c.bracket === p.bracket);
-    return false;
-  });
-}
-
-/**
- * The controls the look was pressed under, recovered from its own results: a budget or bracket the
- * read added (a verified `b` or `k`) was unset at the press, and every other one stood as it is now.
- * Hashed with the words, this is the ask the read answered (`readForThisAsk`).
- */
-export function pressControls(p: ChooseParams, marks: readonly string[]): { budgetDollars: number | null; bracket: number | null } {
-  return { budgetDollars: marks.includes("b") ? null : p.budgetDollars, bracket: marks.includes("k") ? null : p.bracket };
-}
-
-/**
- * The read `r` names, honored only for the ask it answered: its stored hash must be this address's
- * words under the controls the look was pressed with. So `r` carried onto other answers, by hand
- * or by a stale link, draws no finished look and relabels nothing as still unused.
- */
-export function readForThisAsk<T extends { kind: "read" | "nothing"; read: { chips: readonly Chip[] }; wordsHash: string }>(
-  p: ChooseParams,
-  loaded: T | null,
-  hash: (words: string, controls: { budgetDollars: number | null; bracket: number | null }) => string,
-): T | null {
-  if (loaded === null) return null;
-  return loaded.wordsHash === hash(p.words, pressControls(p, verifiedDeeperMarks(p, loaded))) ? loaded : null;
 }
 
 export type AnswerChip = {
