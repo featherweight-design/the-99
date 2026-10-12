@@ -6,6 +6,7 @@
 // receives strings through `onAnnounce`.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { reveal } from "../../lib/ui/reveal";
 import type { PrintingChoice } from "../../lib/collection/catalog-read";
 import { heldOf } from "../../lib/collection/add-lines";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
@@ -184,10 +185,12 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   useEffect(() => {
     if (!autoFocus) return;
     const root = rootRef.current;
-    // A selected tile takes focus first (I got it: focus starts on the selected printing).
+    // A selected tile takes focus first (I got it: focus starts on the selected printing). Without
+    // the native scroll a focus makes: the reveal below brings the tile in, eased, and the two
+    // would otherwise fight.
     (root?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')
       ?? root?.querySelector<HTMLElement>("input")
-      ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus();
+      ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus({ preventScroll: true });
   }, [autoFocus]);
   const [query, setQuery] = useState("");
   const [finish, setFinish] = useState<FinishFilter>("all");
@@ -337,9 +340,26 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           ? tileKey(navigable[0])
           : null;
 
+  // The tile the reader is looking for: I got it's selection, else the pick, else the printing
+  // shown now. Brought into view inside the modal's own scroller (and centered in a sideways row)
+  // when the picker opens and again after a pick or a Reset moves it (motion plan U1/U2).
+  const revealKey = selectMode ? selectedKey : props.role === "choose" ? null : preferredKey ?? resolvedKey;
+  // An arrow key already moved focus, and the browser's own focus scroll with it: keyboard
+  // focus-following stays instant, so the selection it makes is not revealed again.
+  const keyboardMove = useRef(false);
+  useEffect(() => {
+    if (revealKey === null) return;
+    if (keyboardMove.current) {
+      keyboardMove.current = false;
+      return;
+    }
+    return reveal(tileRefs.current.get(revealKey), "nearest", "center");
+  }, [revealKey]);
+
   function focusAndSelect(index: number) {
     const next = navigable[index];
     if (next === undefined) return;
+    if ((!choose || selectMode) && tileKey(next) !== revealKey) keyboardMove.current = true;
     tileRefs.current.get(tileKey(next))?.focus();
     // Choosing ends the required step, so an arrow key only moves; a controlled group selects.
     if (!choose || selectMode) pick(next);
