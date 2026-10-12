@@ -14,33 +14,29 @@ import { preconArt, type Reader } from "./list-read";
 import { sameCommanders } from "./shared";
 
 export async function readDeckPreconLink(userId: string, deckId: string): Promise<DeckPreconLink | null> {
-  // The precons' own figures move only with the catalog, so they come from a memo keyed on its
-  // generation (`loadPreconCatalog`), started beside the deck's read rather than after it. Only the
-  // count of cards each precon shares with THIS deck is the deck's, and that is counted from the
-  // deck's ids in memory (speed plan, 2026-10-12: the whole aggregate was ~400ms on every deck page,
-  // the page's critical path once availability was shared).
-  const catalog = loadPreconCatalog();
-  catalog.catch(() => {});
   // One snapshot: an edit committing between the head and the deck's cards would otherwise offer a
   // precon for a deck that never existed (its old commanders against its new cards). No
   // `accessMode`, for the pooled connection's sake (`READ_SNAPSHOT`, decks/draft-state.ts).
-  return db.transaction((tx) => readLink(tx, userId, deckId, catalog), { isolationLevel: "repeatable read" });
+  return db.transaction((tx) => readLink(tx, userId, deckId), { isolationLevel: "repeatable read" });
 }
 
-async function readLink(
-  q: Reader,
-  userId: string,
-  deckId: string,
-  catalog: Promise<readonly PreconCatalogRow[]>,
-): Promise<DeckPreconLink | null> {
+async function readLink(q: Reader, userId: string, deckId: string): Promise<DeckPreconLink | null> {
   const [head] = await linkHeadQuery(q, userId, deckId);
   if (!head) return null;
-  // A linked deck is offered nothing (lock 2), so it pays for no count.
+  // A linked deck is offered nothing (lock 2), so it pays for no count, and no catalog read either.
   if (head.builtFrom !== null) return { linked: head.builtFrom, suggestions: [], picker: [] };
   const commanders = head.partner ? [head.commander, head.partner] : [head.commander];
-  const deckIds = await q.select({ id: deckCards.oracleId }).from(deckCards).where(eq(deckCards.deckId, deckId));
-  const held = new Set([...deckIds.map((r) => r.id), ...commanders]);
-  const matches = (await catalog).map((r) => toMatch({ ...r, shared: sharedCount(r.ids, held) }, commanders));
+  // The precons' own figures move only with the catalog, so they come from a memo keyed on its
+  // generation (`loadPreconCatalog`), read beside the deck's own cards. Only the count each precon
+  // shares with THIS deck is the deck's, and that is counted in memory (speed plan, 2026-10-12:
+  // the whole aggregate was ~400ms on every deck page, its critical path once availability was
+  // shared).
+  const [catalog, deckIds] = await Promise.all([
+    loadPreconCatalog(),
+    q.select({ id: deckCards.oracleId }).from(deckCards).where(eq(deckCards.deckId, deckId)),
+  ]);
+  const held = heldIds(deckIds.map((r) => r.id), commanders);
+  const matches = catalog.map((r) => toMatch({ ...r, shared: sharedCount(r.ids, held) }, commanders));
   return {
     linked: null,
     suggestions: pickSuggestions(matches, null),
@@ -64,6 +60,14 @@ export function linkHeadQuery(q: Reader, userId: string, deckId: string) {
 /** One plain precon's catalog figures, and the distinct non-basic cards its `shared` counts. */
 export type PreconCatalogRow = Awaited<ReturnType<typeof preconCatalogQuery>>[number];
 type MatchRow = Omit<PreconCatalogRow, "ids"> & { shared: number };
+
+/**
+ * The cards a deck holds for the overlap: its list AND its commanders, which are columns on
+ * `decks` and never `deck_cards` rows, so a commander-only overlap would otherwise go uncounted.
+ */
+export function heldIds(deckCardIds: readonly string[], commanders: readonly string[]): ReadonlySet<string> {
+  return new Set([...deckCardIds, ...commanders]);
+}
 
 /** How many of a precon's distinct non-basic cards the deck holds, its commanders included. */
 export function sharedCount(ids: readonly string[] | null, held: ReadonlySet<string>): number {

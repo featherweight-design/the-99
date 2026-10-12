@@ -28,4 +28,30 @@ describe("loadPreconCatalog", () => {
     await loadPreconCatalog(5_000, ok);
     expect(ok).toHaveBeenCalledTimes(1);
   });
+
+  it("never lets a call that started earlier replace the memo a later call wrote", async () => {
+    vi.resetModules();
+    const generations: ((g: string) => void)[] = [];
+    vi.doMock("../cache/catalog-generation", () => ({
+      catalogGeneration: () => new Promise<string>((resolve) => generations.push(resolve)),
+    }));
+    const { loadPreconCatalog: load } = await import("./link-read");
+    const old = [{ fileName: "old" }] as never;
+    const fresh = [{ fileName: "new" }] as never;
+    let reads = 0;
+    const earlier = load(1_000, async () => (reads++, old));
+    const later = load(1_000, async () => (reads++, fresh));
+    // The later call learns the NEW generation first and writes the memo.
+    generations[1]("new");
+    await later;
+    // The earlier call finishes last, on the old generation.
+    generations[0]("old");
+    await earlier;
+    // A third call on the new generation is served from the later call's memo: no third read.
+    const third = load(1_001, async () => (reads++, old));
+    generations[2]("new");
+    expect(await third).toBe(fresh);
+    expect(reads).toBe(2);
+    vi.doUnmock("../cache/catalog-generation");
+  });
 });

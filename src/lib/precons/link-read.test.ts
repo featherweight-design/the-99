@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkHeadQuery, preconCatalogQuery, sharedCount, toMatch } from "./link-read";
+import { heldIds, linkHeadQuery, preconCatalogQuery, sharedCount, toMatch } from "./link-read";
 
 // The precons' own figures: nothing in them depends on a deck, which is what lets them be read once
 // per catalog generation.
@@ -18,6 +18,15 @@ describe("preconCatalogQuery", () => {
 
   it("reads plain precons only, one row each", () => {
     expect(sql).toContain(`where "precons"."twin_of" is null group by "precons"."file_name"`);
+  });
+});
+
+describe("heldIds", () => {
+  it("holds the commanders, which are never deck_cards rows", () => {
+    const held = heldIds(["list-1", "list-2"], ["cmd-a", "cmd-b"]);
+    expect(held.has("cmd-a") && held.has("cmd-b") && held.has("list-1")).toBe(true);
+    // A precon sharing only the commander still counts it.
+    expect(sharedCount(["cmd-a", "other"], heldIds([], ["cmd-a"]))).toBe(1);
   });
 });
 
