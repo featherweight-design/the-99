@@ -193,6 +193,24 @@ describe("PastRun", () => {
     expect(screen.getAllByRole("button").filter((b) => b.textContent !== copy.back)).toEqual([]);
   });
 
+  it("draws a past run's lines with their reasons open and no write control, when it lands here", async () => {
+    readPast.mockResolvedValue({
+      kind: "cutsDeeper", at: rows[1].at, outcome: "ok", readVersion: null, moved: null,
+      lines: [{ cut: "Cultivate", reason: "Ramp runs 4 over.", verdict: "applied", cites: ["ROLE ramp 14 · rec 10"] }, { cut: "Explore", reason: "Cheap.", verdict: "open", cites: [] }],
+    });
+    render(<PastRunView deckId="d" row={rows[1]} onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByText("Ramp runs 4 over.")).toBeTruthy());
+    expect(screen.getByText("Cheap.")).toBeTruthy();
+    expect(screen.getByText("ROLE ramp 14 · rec 10")).toBeTruthy();
+    expect(screen.getAllByRole("button").filter((b) => b.textContent !== copy.back)).toEqual([]);
+  });
+
+  it("focuses History's heading when the row is not in the list it came back to", async () => {
+    render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow="run:99999999-9999-4999-8999-999999999999" />);
+    await waitFor(() => expect(rowEls()).toHaveLength(5));
+    await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
+  });
+
   it("focuses the row the reader came back from, once the list has drawn it", async () => {
     render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow={rows[2].id} />);
     await waitFor(() => expect(rowEls()).toHaveLength(5));

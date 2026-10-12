@@ -448,8 +448,10 @@ export function TuningPanel({
   // so every row sits at 0/N and the writing row never activates until the run finally settles.
   // Keyed on the run's own id, not on `ticked`, so setting `ticked` here does not immediately
   // retrigger (and tear down) this same effect.
-  const pendingRunId = state?.run?.status === "pending" ? state.run.id : null;
-  const pendingRunCreatedAt = state?.run?.status === "pending" ? state.run.createdAt.getTime() : null;
+  // Not while a reopened past run is shown: a newer run in flight is not this view's to draw.
+  const watching = state?.run?.status === "pending" && !state.review ? state.run : null;
+  const pendingRunId = watching ? watching.id : null;
+  const pendingRunCreatedAt = watching ? watching.createdAt.getTime() : null;
   const watchedRunId = useRef<string | null>(null);
   useEffect(() => {
     if (pendingRunId === null || pendingRunCreatedAt === null) {
@@ -531,9 +533,11 @@ export function TuningPanel({
   // A reopened past run is never hidden as a prior visit's, nor retired by a commit since.
   const reviewing = !!state.review;
   const priorResult = !reviewing && isPriorResult(baseline, okKeyOf(state.lastOkAt));
-  const priorRun = isPriorRun(baseline, state.run?.id);
+  // A reopened run is what the reader asked for: a newer run's pending or failed state is not drawn
+  // over it (as a prior visit's is not), until the reader presses for a new run here.
+  const priorRun = reviewing || isPriorRun(baseline, state.run?.id);
 
-  const reading = ticked !== null || state.run?.status === "pending";
+  const reading = ticked !== null || (!reviewing && state.run?.status === "pending");
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
   const spent = state.allowance.used >= state.allowance.limit;

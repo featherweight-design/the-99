@@ -175,7 +175,8 @@ export function CutsPanelView({
   }, [revision, reread]);
 
   // A run begun elsewhere (another tab, a reload mid-run) is re-read until it settles.
-  const pendingId = panel?.run?.status === "pending" ? panel.run.id : null;
+  // A reopened past run is drawn over a newer run's pending or failed state, never under it.
+  const pendingId = !panel?.review && panel?.run?.status === "pending" ? panel.run.id : null;
   useEffect(() => {
     if (pendingId === null) return;
     const id = setInterval(() => void reread(), WATCH_MS);
@@ -222,7 +223,7 @@ export function CutsPanelView({
   // Back to 99: the cuts made from a result took the deck to the line, and it finishes in place.
   if (over === 0 && !(resultShown && (cutCount > 0 || reviewing))) return null;
 
-  const failed = !running && !priorRun && run?.status === "failed";
+  const failed = !running && !priorRun && !panel.review && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";
   const left = Math.max(0, panel.allowance.limit - panel.allowance.used);
   const spent = panel.allowance.used >= panel.allowance.limit;

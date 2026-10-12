@@ -517,6 +517,20 @@ describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
     expect(probe()).toBeUndefined();
   });
 
+  it("shows a run read-only in History when its tool has nothing to draw (Suggested changes before a reading)", async () => {
+    readPast.mockResolvedValue({ kind: "suggested", at, outcome: "ok", readVersion: null, moved: null, lines: [{ cut: "Divination", add: "Rhystic Study", verdict: "open", reason: "Draws more.", cites: [] }] });
+    readPast.mockClear();
+    readHistoryPage.mockResolvedValue({ rows: [{ ...rows[0], id: "run:66666666-6666-4666-8666-666666666666", tool: "suggested", tier: "credit", summary: { kind: "suggestedOk", in: 1, out: 1, added: 0, cut: 0, rejected: 0 } }], nextCursor: null });
+    render(<TuningHub deckId="d" drawn tools={[{ tool: "suggested", panel: null }, tools[1], tools[2]]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
+    fireEvent.click(document.querySelector("[data-history-row]")!);
+    await waitFor(() => expect(screen.getByText("Draws more.")).toBeTruthy());
+    expect(readPast).toHaveBeenCalledWith("d", "run:66666666-6666-4666-8666-666666666666");
+    expect(document.querySelector("[data-review-note]")).toBeNull();
+  });
+
   it("drops the run when the tool is opened any other way", async () => {
     await openHistory();
     fireEvent.click(row(`run:${RUN}`));

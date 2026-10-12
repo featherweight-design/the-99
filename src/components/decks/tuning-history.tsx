@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
+import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { afterKey } from "../../lib/tuning/history";
 import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun } from "../../lib/tuning/history";
@@ -190,7 +192,11 @@ export function TuningHistory({
   useEffect(() => {
     if (focused.current || !focusRow || state.kind !== "ok") return;
     focused.current = true;
-    listRef.current?.querySelector<HTMLElement>(`[data-history-row="${CSS.escape(focusRow)}"]`)?.focus();
+    // The list comes back on All, first page: a row from a filter or a later page may not be in it,
+    // and focus then lands on History's heading rather than nowhere.
+    const target = listRef.current?.querySelector<HTMLElement>(`[data-history-row="${CSS.escape(focusRow)}"]`)
+      ?? document.getElementById("history-heading");
+    target?.focus();
   }, [focusRow, state.kind]);
 
   if (past) return <PastRunView deckId={deckId} row={past} onBack={() => onOpenPast(null)} />;
@@ -393,6 +399,12 @@ function LoadFailed({ onRetry }: { onRetry: () => void }) {
 
 // --- A past run with nothing to load, opened read-only (H3 / H3b) ----------------------------
 
+/** An answered line's label, in the words its own tool uses for that verdict. */
+function pastVerdictLabel(kind: "suggested" | "cutsDeeper", v: "applied" | "rejected"): string {
+  if (kind === "cutsDeeper") return v === "applied" ? deckCutsCopy.panel.cutDone : deckCutsCopy.panel.kept;
+  return v === "applied" ? deckTuningCopy.card.applied : deckTuningCopy.card.rejected;
+}
+
 export function PastRunView({ deckId, row, onBack }: { deckId: string; row: HistoryRow; onBack: () => void }) {
   const [run, setRun] = useState<PastRun | null | "loading" | "failed">("loading");
   // A run opened while still in flight is read again at the list's cadence until it settles, so
@@ -442,11 +454,29 @@ export function PastRunView({ deckId, row, onBack }: { deckId: string; row: Hist
         <p className="text-[12.5px]" style={{ color: "var(--fg-body)" }}>{copy.pastFailed}</p>
       ) : loaded.kind === "count" ? (
         <p className="text-[12.5px] leading-[1.45]" style={{ color: "var(--fg-body)" }}>{summaryText({ tool: loaded.tool, tier: "free", outcome: "ok", summary: loaded.summary })}</p>
-      ) : (
-        // A run with lines reopens in its own tool (`historyPress`); this view is for the rest.
+      ) : loaded.lines.length === 0 ? (
         <p className="text-[12.5px] leading-[1.45]" style={{ color: "var(--fg-body)" }}>
           {loaded.outcome === "ok" ? copy.pastNothing : summaryText({ ...row, outcome: loaded.outcome })}
         </p>
+      ) : (
+        // A run with lines reopens in its own tool (`historyPress`). It lands here only when that tool
+        // has nothing to draw, so each line shows its reason open, with no write control.
+        <ul className="flex flex-col gap-[6px]">
+          {loaded.lines.map((l, i) => (
+            <li key={i} data-past-line={l.verdict} className="flex flex-col gap-[4px] rounded-[9px] border border-[var(--border)] bg-[var(--surface)] px-[12px] py-[9px]">
+              <span className="flex flex-wrap items-baseline gap-[9px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>
+                {l.verdict === "open" ? null : (
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{pastVerdictLabel(loaded.kind, l.verdict)}</span>
+                )}
+                {"add" in l ? (
+                  <span>{[l.cut, l.add].filter(Boolean).join(" → ")}</span>
+                ) : <b className="font-semibold" style={{ color: "var(--fg)" }}>{l.cut}</b>}
+              </span>
+              <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)", textWrap: "pretty" }}>{l.reason}</p>
+              {l.cites.length ? <p className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{l.cites.join(" · ")}</p> : null}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

@@ -294,7 +294,10 @@ export function TuningHub({
   const openFromHistory = (row: HistoryRow | null) => {
     if (row === null) { setPast(null); return; }
     const press = historyPress(row);
-    if (press.kind === "past" || !tools.some((t) => t.tool === row.tool)) { setPast(row); return; }
+    // A tool with no panel to draw (Suggested changes before a reading) cannot take the run: History's
+    // read-only view shows its lines instead.
+    const spec = tools.find((t) => t.tool === row.tool);
+    if (press.kind === "past" || !spec || ("panel" in spec && spec.panel === null)) { setPast(row); return; }
     // A run still in flight is the tool's own newest run: the tool as any opening shows it, no note.
     if (press.kind === "live" && !press.counted) { open(row.tool, { focus: true }); return; }
     setPast(null);

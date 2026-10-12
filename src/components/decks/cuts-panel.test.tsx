@@ -434,6 +434,17 @@ describe("a past run History reopened (re-review)", () => {
     await waitFor(() => expect(d.cut).toHaveBeenCalledWith("i1", false));
   });
 
+  it("draws the reopened run over a newer run that is pending or failed, with no Stop", async () => {
+    const newer = (status: "pending" | "failed") => reviewed({ run: { id: "r9", status, errorClass: status === "failed" ? "upstream_busy" : null, createdAt: new Date(), droppedCount: 0 } });
+    await mountReview(deps(newer("pending")));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: copy.deeper.stop })).toBeNull();
+    cleanup();
+    await mountReview(deps(newer("failed")));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
+  });
+
   it("still shows a reopened run on a deck now at 100", async () => {
     await mountReview(deps(reviewed({ over: 0, total: 100 })));
     expect(screen.getAllByRole("article")).toHaveLength(1);

@@ -1727,6 +1727,15 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
     expect(screen.queryByText(copy.retiredLead(3, 4))).toBeNull();
   });
 
+  it("draws the reopened run over a newer run that is pending or failed", async () => {
+    for (const status of ["pending", "failed"] as const) {
+      await drawReview(deps([{ ...reviewed, run: { ...okRun, id: "r9", status, errorClass: status === "failed" ? "upstream_busy" : null } }]));
+      expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+      expect(screen.queryByText(copy.loadingHeading)).toBeNull();
+      cleanup();
+    }
+  });
+
   it("draws a swap the deck has moved past as no longer applying", async () => {
     await drawReview(deps([{ ...reviewed, items: [{ ...item, applies: false, cutInDeck: false }] }]));
     expect(screen.getByText(deckTuningCopy.card.noLongerApplies)).toBeInTheDocument();
