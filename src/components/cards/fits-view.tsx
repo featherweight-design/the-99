@@ -61,7 +61,7 @@ export function FitsView({
   const [now, setNow] = useState(() => Date.now());
   const [foldOpen, setFoldOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [refused, setRefused] = useState<{ deckId: string; kind: "swap" | "undo" } | null>(null);
+  const [refused, setRefused] = useState<{ deckId: string; kind: "swap" | "add" | "undo" } | null>(null);
   const [announced, setAnnounced] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
   // The provider's callback, read through a ref: a press that settles after the view has gone back
@@ -69,10 +69,14 @@ export function FitsView({
   const readingRef = useRef(onReading);
   useEffect(() => { readingRef.current = onReading; });
   // A press made this visit settles after the view has gone and clears the door's note itself. A run
-  // only polled (reopened mid-run, P2a) stops being watched when the view goes, so the note goes too
-  // rather than standing over a run nothing is following.
+  // only polled (reopened mid-run, P2a, or a press answered with a run already pending) stops being
+  // watched when the view goes, so the note goes too rather than standing over a run nothing follows.
   const pressing = useRef(false);
-  useEffect(() => () => { if (!pressing.current) readingRef.current(false); }, []);
+  const mounted = useRef(true);
+  useEffect(() => () => {
+    mounted.current = false;
+    if (!pressing.current) readingRef.current(false);
+  }, []);
 
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);
@@ -131,7 +135,7 @@ export function FitsView({
     try {
       const res = await pressFitsReadAction(card.oracleId);
       pressing.current = false;
-      if (!(res.ok && res.panel.view.pending)) readingRef.current(false);
+      if (!(res.ok && res.panel.view.pending) || !mounted.current) readingRef.current(false);
       if (res.ok) {
         if (res.panel.view.pending) adopt(res.panel);
         else settle(res.panel, before);
@@ -198,7 +202,7 @@ export function FitsView({
       } else {
         const toBuy = freeNow === 0;
         const r = await addFromFits(deckId, card.oracleId);
-        if (!r.ok) return setRefused({ deckId, kind: "swap" });
+        if (!r.ok) return setRefused({ deckId, kind: "add" });
         if (!r.held) {
           setMemory((m) => ({ ...m, [deckId]: { kind: "added", toBuy } }));
           setAnnounced(read.announceAdded(name, deckName));
@@ -206,7 +210,7 @@ export function FitsView({
       }
       await list.refresh();
     } catch {
-      setRefused({ deckId, kind: act?.kind === "added" ? "undo" : "swap" });
+      setRefused({ deckId, kind: act?.kind === "added" ? "undo" : "add" });
     } finally {
       setBusy(false);
     }

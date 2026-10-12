@@ -47,7 +47,7 @@ export function ReadRow({
   /** An action on any row is in flight: every action waits for it. */
   busy: boolean;
   /** This row's last press was refused, and how. */
-  refused: "swap" | "undo" | null;
+  refused: "swap" | "add" | "undo" | null;
   onSwap: () => void;
   onAdd: () => void;
   onOpenCard: (oracleId: string) => void;
@@ -144,7 +144,7 @@ export function ReadRow({
         ) : null}
       </div>
 
-      {refused ? <MutationError message={refused === "swap" ? copy.swapRefused : copy.undoRefused} /> : null}
+      {refused ? <MutationError message={refused === "swap" ? copy.swapRefused : refused === "add" ? swapToolsCopy.fits.addRefused : copy.undoRefused} /> : null}
     </article>
   );
 }

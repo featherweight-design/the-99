@@ -45,7 +45,7 @@ export function OfferBand({ lead, cardName, blocked, spent, closed = false, stan
           blocked={blocked}
           spent={spent || closed}
           onPress={onPress}
-          ariaLabel={spent ? copy.pressAriaSpent : copy.pressAria(cardName)}
+          ariaLabel={spent ? copy.pressAriaSpent : closed ? copy.press : copy.pressAria(cardName)}
         />
       </div>
       <Standing line={standing} />

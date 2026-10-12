@@ -175,6 +175,16 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(within(row).getByRole("button", { name: r.addOnlyAria(card.name, "Goblins") })).toBeDisabled();
   });
 
+  it("a refused Add only says the add was refused, never a swap (P3d)", async () => {
+    await draw(panel({}, { stored: stored() }));
+    actions.addFromFits.mockResolvedValue({ ok: false, message: "no" });
+    const row = screen.getByTestId("read-row");
+    fireEvent.click(within(row).getByRole("button", { name: r.addOnlyAria(card.name, "Goblins") }));
+    await settle();
+    expect(row).toHaveTextContent(copy.addRefused);
+    expect(row).not.toHaveTextContent(r.swapRefused);
+  });
+
   it("with no free copy left, both actions read to buy (P3b)", async () => {
     await draw(panel({}, { stored: stored() }), list({ free: 0 }));
     const row = screen.getByTestId("read-row");
