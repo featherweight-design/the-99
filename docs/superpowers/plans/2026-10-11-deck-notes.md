@@ -26,8 +26,9 @@ delete, `[[Name]]` card links that open card details. No reminders, due dates or
    `setNoteDone` (select or unselect; done notes keep `done_at` for `done 9 Oct`), `deleteNote`. Refusals use the
    shipped `MutationError` copy path. Notes go to no prompt, no fingerprint, no Suggested changes pack (lock 6,
    F10).
-5. **Read:** `readDeckNotes(deckId, userId)` in the deck page's loader behind the flag, one query plus one
-   batched card lookup for tag names and art. Today is the player's local day (G6), as in the game log.
+5. **Read:** `readDeckNotes(deckId, userId, deck)` (`deck` carries the commander and partner ids) in the deck page's
+   loader behind the flag: the notes query, then, only when a note holds tags, two batched lookups, catalog names
+   and which tagged cards the deck holds. It loads no art. Today is the player's local day (G6), as in the game log.
 6. **Picker:** a separate lookup, `searchNoteCards` (`notes-store.ts`, exposed by `notes-actions.ts`), not a mode
    on `searchCards` (F5, G5): it shares `nameSearch` and `isGameCardWhere()`, has no legality filter, and
    returns `oracleId`, `name`, `typeLine`, `commanderLegal`, `imageUri` and the matched `flavorName`. No ownership,
