@@ -54,6 +54,20 @@ describe("an empty deck", () => {
   });
 });
 
+describe("a deck with notes", () => {
+  it("keeps the pitch above the field and the list, as the empty state draws it", () => {
+    mount(view([note("n1", "swap the mana rock")]));
+    expect(screen.getByText("The swap you meant to try.")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Add a note" })).toBeTruthy();
+    expect(screen.getByText("swap the mana rock")).toBeTruthy();
+  });
+
+  it("draws the count before the field has focus", () => {
+    mount(view([]));
+    expect(screen.getByText("0 / 140")).toBeTruthy();
+  });
+});
+
 describe("formatNoteDate", () => {
   const now = new Date("2026-10-12T12:00:00.000Z");
   it("names the year only outside the current one", () => {

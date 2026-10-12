@@ -47,7 +47,6 @@ export function NoteField({
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [caret, setCaret] = useState(0);
-  const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [active, setActive] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -105,7 +104,6 @@ export function NoteField({
   const remoteStatus = !lookup ? "idle" : current ? current.status : "pending";
   const options = [...local, ...(current?.status === "ok" ? current.rows : [])];
   const count = fieldCount(value, picked);
-  const showCounter = focused || value.length > 0;
   const activeIndex = Math.min(active, Math.max(0, options.length - 1));
 
   // The whole-change cap, shared by typing and by every insert: a change that leaves the field over the cap
@@ -175,8 +173,8 @@ export function NoteField({
             aria-controls={open ? listId : undefined}
             aria-activedescendant={open && options.length > 0 ? `${id}-opt-${activeIndex}` : undefined}
             autoComplete="off"
-            onFocus={() => { setFocused(true); sync(); document.documentElement.setAttribute("data-note-focus", ""); }}
-            onBlur={() => { setFocused(false); document.documentElement.removeAttribute("data-note-focus"); }}
+            onFocus={() => { sync(); document.documentElement.setAttribute("data-note-focus", ""); }}
+            onBlur={() => { document.documentElement.removeAttribute("data-note-focus"); }}
             onChange={(e) => {
               const text = e.target.value.replace(/\s+/g, " ");
               // The cap is on RENDERED text, so a longer paste is refused whole rather than cut mid-tag.
@@ -191,9 +189,14 @@ export function NoteField({
             onClick={sync}
             className={`box-border h-[46px] w-full scroll-mt-[96px] rounded-[8px] py-[10px] pl-[12px] pr-[43px] font-sans text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:h-[38px] md:py-[8px] md:pl-[11px] md:pr-[39px] md:text-[13.5px] ${AFFIX_INPUT}`}
           />
-          <span className="absolute right-[13px] top-1/2 -translate-y-1/2 md:right-[11px]">
-            <InfoTip id={infoId} lines={deckNotesCopy.help.lines} label={deckNotesCopy.help.infoAria} />
-          </span>
+          {/* The tip anchors to this field, so on a phone it spans the field instead of the ⓘ's own box. */}
+          <InfoTip
+            id={infoId}
+            lines={deckNotesCopy.help.lines}
+            label={deckNotesCopy.help.infoAria}
+            className="contents"
+            buttonClassName="absolute right-[13px] top-1/2 -translate-y-1/2 md:right-[11px]"
+          />
           {open && (
             <div
               id={listId}
@@ -232,11 +235,15 @@ export function NoteField({
           )}
         </div>
         <div className="flex items-center justify-end gap-[8px]">
-          {showCounter && (
-            <span className={`mr-auto font-mono text-[10px] md:order-2 md:mr-0 md:ml-[4px] ${count >= NOTE_WARN_AT ? "text-[color:var(--warning)]" : "text-[color:var(--fg-locked)]"}`} aria-live="off">
-              {deckNotesCopy.add.counter(String(count), String(NOTE_MAX))}
-            </span>
-          )}
+          {/* Always drawn, at a fixed desktop width (Hugh, 2026-10-12): drawn only on focus it widened this
+              column and shrank the field beside it, and a count growing from `9 / 140` to `140 / 140` would
+              have done the same as the player typed. */}
+          <span
+            className={`mr-auto font-mono text-[10px] tabular-nums md:order-2 md:mr-0 md:ml-[4px] md:w-[68px] md:text-right ${count >= NOTE_WARN_AT ? "text-[color:var(--warning)]" : "text-[color:var(--fg-locked)]"}`}
+            aria-live="off"
+          >
+            {deckNotesCopy.add.counter(String(count), String(NOTE_MAX))}
+          </span>
           <button
             type="button"
             aria-label={deckNotesCopy.help.insertAria}
@@ -269,9 +276,10 @@ export function NoteField({
           </button>
         </div>
       </div>
-      {/* Always in the layout, only unseen until focus: removing it on blur shrank the page under a
-          scrolled-to-the-end reader, moved the Add button between mousedown and mouseup, and lost the click. */}
-      {hint && <p aria-hidden={!focused} className={`m-0 hidden font-mono text-[10.5px] text-[color:var(--fg-faint)] md:block ${focused ? "" : "invisible"}`}>{hint}</p>}
+      {/* Always drawn (Hugh, 2026-10-12): shown only on focus it popped in under the field and moved what was
+          below it, and removing it on blur shrank the page under a scrolled-to-the-end reader, moved the Add
+          button between mousedown and mouseup, and lost the click. */}
+      {hint && <p className="m-0 hidden font-mono text-[10.5px] text-[color:var(--fg-faint)] md:block">{hint}</p>}
       {error && <p role="alert" className="m-0 text-[11.5px] leading-[1.45]" style={{ color: "var(--warning)" }}>{error}</p>}
     </div>
   );
