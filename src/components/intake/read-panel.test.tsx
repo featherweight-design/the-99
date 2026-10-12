@@ -11,7 +11,7 @@ const router = { push: vi.fn(), refresh: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn(), theReadState: vi.fn() }));
 
-const { ReadPanel, ReadScope, DimWhileReading, useReportPool } = await import("./read-panel");
+const { ReadAnnouncer, ReadPanel, ReadScope, DimWhileReading, useReportPool } = await import("./read-panel");
 const { phaseOf } = await import("../../lib/intake/read-phase");
 const { emptyParams } = await import("../../lib/intake/params");
 import type { TheReadState } from "../../lib/intake/run-store";
@@ -40,6 +40,8 @@ function draw(
   { d = deps(), over = {} as object | null, p = params, repeat = false, busy = false, hasDecks = true as boolean | null, pool = null as number | null } = {},
 ) {
   return render(
+    <>
+    <ReadAnnouncer />
     <ReadScope initial={phaseOf(served)}>
       <ReadPanel
         readId={served ? READ : null}
@@ -54,7 +56,8 @@ function draw(
       />
       <DimWhileReading><p>results</p></DimWhileReading>
       {pool !== null && <Pool n={pool} />}
-    </ReadScope>,
+    </ReadScope>
+    </>,
   );
 }
 
@@ -125,6 +128,7 @@ describe("7d: reading", () => {
     // panel still reads and the results stay dimmed, never a done head over the free order.
     expect(panel().dataset.phase).toBe("reading");
     expect(screen.getByTestId("results-dim").dataset.reading).toBe("true");
+    expect(screen.getByRole("status").textContent).toBe("The read is done, and its picks now lead your results.");
     // And it asks no more.
     await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
     expect(state).toHaveBeenCalledTimes(3);
@@ -137,7 +141,8 @@ describe("7d: reading", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
     expect(panel().dataset.phase).toBe("reading");
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
-    expect(panel().dataset.phase).toBe("failed");
+    // Announced at once, drawn once the refresh brings the refunded standing with it.
+    expect(panel().dataset.phase).toBe("reading");
     expect(screen.getByRole("status").textContent).toBe("The read didn’t finish, so your credit came back.");
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -149,7 +154,8 @@ describe("Stop", () => {
     draw({ kind: "pending", phase: "shortlist" }, { d: deps({ stop }) });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Stop" })); });
     expect(stop).toHaveBeenCalledWith(READ);
-    expect(panel().dataset.phase).toBe("stopped");
+    // The press holds at Stopping until the refresh draws the stopped panel with its refund.
+    expect(panel().dataset.phase).toBe("reading");
     expect(screen.getByRole("status").textContent).toBe("Stopped. No credit was used.");
     expect(router.refresh).toHaveBeenCalled();
   });

@@ -16,7 +16,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 
 import { submitChoose, theReadState } from "../../app/decks/new/choose/actions";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
@@ -28,6 +28,30 @@ import type { TheReadState } from "../../lib/intake/run-store";
 import { useHydrated } from "../ui/hydrated-art";
 import { bareStanding, closedBy, standingLine, type Standing } from "../../lib/intake/standing";
 
+
+/** What a settled read is announced as, by its phase. */
+const ANNOUNCED: Partial<Record<ReadPhase, string>> = {
+  done: copy.read.doneAnnounce,
+  nothing: copy.read.emptyTitle,
+  failed: copy.read.failed,
+  stopped: copy.read.stopped,
+};
+
+// The announcement lives outside the read's scope, which remounts when the server's state changes:
+// a live region inside it would be replaced, unread, by the panel the refresh draws.
+let announcement = "";
+const listeners = new Set<() => void>();
+function announce(text: string) {
+  announcement = text;
+  for (const l of listeners) l();
+}
+const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
+
+/** The read's live region, drawn once by the page outside `ReadScope`, so it survives the refresh. */
+export function ReadAnnouncer() {
+  const text = useSyncExternalStore(subscribe, () => announcement, () => "");
+  return <p role="status" aria-live="polite" className="sr-only">{text}</p>;
+}
 
 type Scope = {
   /** `null` with no words: there is no read, and the results say nothing of one. */
@@ -111,7 +135,6 @@ export function ReadPanel({
   const setPhase = scope.setPhase;
   const [step, setStep] = useState<"shortlist" | "judge">(served?.kind === "pending" && served.phase === "judge" ? "judge" : "shortlist");
   const [stopping, setStopping] = useState(false);
-  const [announced, setAnnounced] = useState("");
   const hydrated = useHydrated();
   const [retrying, startRetry] = useTransition();
   const live = useRef(true);
@@ -130,13 +153,10 @@ export function ReadPanel({
         timer = setTimeout(ask, INTAKE_POLL_MS);
         return;
       }
-      const next = phaseOf(s);
-      if (next === "failed") setAnnounced(copy.read.failed);
-      if (next === "stopped") setAnnounced(copy.read.stopped);
-      // A read with an answer (done, nothing fits) stays reading until the refresh lands: its
-      // order and its counts come from the server, and the scope, keyed on the server's state,
-      // remounts on them. Stopped and failed change nothing below, so they show at once.
-      if (next !== "done" && next !== "nothing") setPhase(next);
+      // Every settled read stays reading until the refresh lands: its order, its counts and the
+      // credit standing (a refund included) come from the server, and the scope, keyed on the
+      // server's state, remounts on them. The announcement outlives that remount (`ReadAnnouncer`).
+      announce(ANNOUNCED[phaseOf(s)] ?? "");
       router.refresh();
     };
     timer = setTimeout(ask, INTAKE_POLL_MS);
@@ -150,13 +170,12 @@ export function ReadPanel({
     if (!readId || stopping) return;
     setStopping(true);
     const took = await deps.stop(readId).catch(() => false);
-    setStopping(false);
     // Not taken: the read settled first, or the request failed. The poll reports the first; the
     // player can press Stop again for the second.
-    if (!took) return;
+    if (!took) { setStopping(false); return; }
+    // Taken: the press stays *Stopping* until the refresh draws the stopped panel with its refund.
     live.current = false;
-    setPhase("stopped");
-    setAnnounced(copy.read.stopped);
+    announce(copy.read.stopped);
     router.refresh();
   }
 
@@ -297,7 +316,6 @@ export function ReadPanel({
           </p>
         )}
       </div>
-      <p role="status" aria-live="polite" className="sr-only">{announced}</p>
     </div>
   );
 }

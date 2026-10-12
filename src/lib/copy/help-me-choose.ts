@@ -151,6 +151,7 @@ export const helpMeChooseCopy = {
     // copy-reviewed: Recovery; names the cause, which the standing line under it cannot.
     busyLead: "Another read of yours was still running, so this one didn’t start. These results use your answers alone.",
     stopped: "Stopped. No credit was used.", // announced
+    doneAnnounce: "The read is done, and its picks now lead your results.", // eng: announced
   },
   /**
    * The deeper look's panel (HANDOFF §3, STATES 3a–3g). Credit lines reuse `creditsCopy`; nothing

@@ -27,7 +27,7 @@ import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { BUSY_PARAM, CHOOSE_PATH, formTarget, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { toStanding } from "../../../../lib/intake/standing";
-import { DimWhileReading, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
+import { DimWhileReading, ReadAnnouncer, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
 import { phaseOf } from "../../../../lib/intake/read-phase";
 import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store";
 import { loadReadDecks } from "../../../../lib/intake/the-read-load";
@@ -147,6 +147,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
         <div className={RESULTS_COLUMN}>
           {/* Keyed on the server's state: a refresh that finds the read settled starts the panel and
               the results afresh, in the read's order. */}
+          {words && <ReadAnnouncer />}
           <ReadScope key={served?.kind ?? "unread"} initial={words ? phaseOf(served) : null}>
           <ReadAsBar
             chips={answerChips(p, labels)}
