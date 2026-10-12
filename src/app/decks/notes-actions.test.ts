@@ -14,6 +14,7 @@ const stub = vi.hoisted(() => ({
   calls: [] as { fn: string; args: unknown[] }[],
   names: new Map<string, string>(),
   insert: "ok" as "ok" | "cap",
+  namesThrow: false,
   found: true,
 }));
 
@@ -21,7 +22,10 @@ vi.mock("next/cache", () => ({ revalidatePath: (p: string) => void stub.paths.pu
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK }) }));
 vi.mock("../../lib/decks/notes-store", () => ({
-  currentNames: async () => stub.names,
+  currentNames: async () => {
+    if (stub.namesThrow) throw new Error("db down");
+    return stub.names;
+  },
   insertNote: async (...args: unknown[]) => (stub.calls.push({ fn: "insertNote", args }), stub.insert),
   updateNoteBody: async (...args: unknown[]) => (stub.calls.push({ fn: "updateNoteBody", args }), stub.found),
   setNoteDone: async (...args: unknown[]) => (stub.calls.push({ fn: "setNoteDone", args }), stub.found),
@@ -39,6 +43,7 @@ beforeEach(() => {
   stub.names = new Map();
   stub.insert = "ok";
   stub.found = true;
+  stub.namesThrow = false;
 });
 
 describe("with the switch off", () => {
@@ -80,6 +85,14 @@ describe("addNote", () => {
     stub.names = new Map();
     stub.calls = [];
     expect((await addNote(DECK, `try [[${ID}|Ghost]]`)).ok).toBe(false);
+    expect(stub.calls).toEqual([]);
+  });
+
+  it("answers a failed tag lookup with a refusal, never a rejected action", async () => {
+    stub.namesThrow = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await addNote(DECK, `a [[${ID}|x]]`)).ok).toBe(false);
+    expect((await editNote(DECK, NOTE, `a [[${ID}|x]]`)).ok).toBe(false);
     expect(stub.calls).toEqual([]);
   });
 

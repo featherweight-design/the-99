@@ -14,10 +14,14 @@ import { isGameCardWhere } from "../cards/game-card-where";
 import { nameSearch } from "../cards/name-search";
 import { NOTES_PER_DECK } from "../copy/deck-notes";
 
-/** The current catalog name for each id that resolves. An id with no card is absent. */
+/**
+ * The current catalog name for each GAME card among the ids; any other id is absent. The picker offers only
+ * game cards, and an action is directly callable, so a write must enforce the same domain: a forged tag for
+ * a token or sticker row refuses the note instead of being stored.
+ */
 export async function currentNames(oracleIds: readonly string[]): Promise<Map<string, string>> {
   if (oracleIds.length === 0) return new Map();
-  const rows = await db.select({ id: cards.oracleId, name: cards.name }).from(cards).where(inArray(cards.oracleId, [...oracleIds]));
+  const rows = await db.select({ id: cards.oracleId, name: cards.name }).from(cards).where(and(inArray(cards.oracleId, [...oracleIds]), isGameCardWhere()));
   return new Map(rows.map((r) => [r.id, r.name]));
 }
 

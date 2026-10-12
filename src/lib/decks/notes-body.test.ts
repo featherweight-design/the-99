@@ -58,5 +58,8 @@ describe("notes body", () => {
     it("refuses a raw body past 1,000 characters", () => {
       expect(checkBody(`[[${"x".repeat(1000)}]]`)).toEqual({ ok: false, reason: "too-long" });
     });
+    it("refuses a whitespace-padded payload by its raw length, before it can be folded down", () => {
+      expect(checkBody(`short${" ".repeat(5000)}note`)).toEqual({ ok: false, reason: "too-long" });
+    });
   });
 });

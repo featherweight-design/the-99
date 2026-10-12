@@ -10,11 +10,12 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { insertNote, removeNote, searchNoteCards, setNoteDone, updateNoteBody } from "../src/lib/decks/notes-store";
+import { currentNames, insertNote, removeNote, searchNoteCards, setNoteDone, updateNoteBody } from "../src/lib/decks/notes-store";
 import { readDeckNotes } from "../src/lib/decks/notes-read";
 import { formatTag } from "../src/lib/decks/notes-body";
 import { NOTES_PER_DECK } from "../src/lib/copy/deck-notes";
 import { sqlstate } from "../src/lib/db-error";
+import { PRODUCTION_BRANCH_ID, STAGING_BRANCH_ID } from "./lib/spend-target";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -25,6 +26,8 @@ const USER = `probe-notes-${Date.now()}`;
 const OTHER = `${USER}-other`;
 
 let failures = 0;
+// Set only once the branch is verified: the cleanup in `finally` is itself a write.
+let verified = false;
 const check = (label: string, actual: unknown, expected: unknown) => {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   if (!ok) failures += 1;
@@ -35,6 +38,14 @@ const one = async <T>(q: ReturnType<typeof sql>): Promise<T> => (await fixture.e
 const count = async (deckId: string) => (await one<{ n: number }>(sql`select count(*)::int as n from deck_notes where deck_id = ${deckId}::uuid`)).n;
 
 async function main() {
+  const branchId = (await one<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`)).id;
+  // Fail closed: an unknown branch (a primary, or a non-Neon database) is refused as well as the two named ones.
+  if (!branchId || branchId === PRODUCTION_BRANCH_ID || branchId === STAGING_BRANCH_ID || process.env.VERCEL_ENV === "production") {
+    throw new Error(`refusing to write a fixture to ${branchId ?? "(unknown)"}: point DATABASE_URL at local-dev`);
+  }
+  verified = true;
+  console.log(`branch ${branchId}`);
+
   const commander = (await one<{ oracle_id: string }>(sql`select oracle_id from cards where type_line ~ 'Legendary Creature' order by oracle_id limit 1`)).oracle_id;
   const deck = (await one<{ id: string }>(sql`insert into decks (user_id, name, commander_oracle_id) values (${USER}, ${USER}, ${commander}::uuid) returning id`)).id;
   const other = (await one<{ id: string }>(sql`insert into decks (user_id, name, commander_oracle_id) values (${OTHER}, ${OTHER}, ${commander}::uuid) returning id`)).id;
@@ -88,6 +99,13 @@ async function main() {
   check("a resolved tag draws the catalog's current name, not the stored one", tags[0].name !== "stale", true);
   await fixture.execute(sql`delete from deck_notes where deck_id = ${deck}::uuid`);
 
+  // ---- a tag may only name a game card: a non-game row (token, plane, scheme...) resolves to nothing ----
+  const token = await one<{ oracle_id: string } | undefined>(sql`select oracle_id from cards where layout in ('token', 'double_faced_token', 'emblem', 'planar', 'scheme', 'vanguard', 'art_series') order by oracle_id limit 1`);
+  if (token) {
+    check("a non-game row is not a taggable card", (await currentNames([token.oracle_id, held])).has(token.oracle_id), false);
+    check("a game card still resolves", (await currentNames([held])).has(held), true);
+  }
+
   // ---- the cap, and the race at 99 ----
   // Half of the 99 are done, so the count has to include done notes for the cap to hold at all.
   await fixture.execute(sql`insert into deck_notes (deck_id, user_id, body, done_at) select ${deck}::uuid, ${USER}, 'n' || g, case when g % 2 = 0 then now() end from generate_series(1, ${NOTES_PER_DECK - 1}) g`);
@@ -123,7 +141,12 @@ main()
     console.error(error);
   })
   .finally(async () => {
-    await fixture.execute(sql`delete from decks where user_id in (${USER}, ${OTHER})`);
+    try {
+      if (verified) await fixture.execute(sql`delete from decks where user_id in (${USER}, ${OTHER})`);
+    } catch (error) {
+      failures += 1;
+      console.error("cleanup failed", error);
+    }
     await pool.end();
     console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
     process.exit(failures === 0 ? 0 : 1);

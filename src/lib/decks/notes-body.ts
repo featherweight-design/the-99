@@ -68,9 +68,11 @@ export type BodyCheck = { ok: true; body: string } | { ok: false; reason: "empty
 /** The shared shape rule: one line, not empty, within the rendered cap. Tag ids are checked by the caller. */
 export function checkBody(raw: unknown): BodyCheck {
   if (typeof raw !== "string") return { ok: false, reason: "empty" };
+  // The raw cap BEFORE any scanning: this is a public endpoint, and folding whitespace walks the whole
+  // string, so a huge padded payload must be refused by its length alone.
+  if (raw.length > 1000) return { ok: false, reason: "too-long" };
   const body = oneLine(raw);
   if (body.length === 0) return { ok: false, reason: "empty" };
-  // The raw cap first: it bounds the work below on a public endpoint.
-  if (body.length > 1000 || renderedLength(body) > NOTE_MAX) return { ok: false, reason: "too-long" };
+  if (renderedLength(body) > NOTE_MAX) return { ok: false, reason: "too-long" };
   return { ok: true, body };
 }

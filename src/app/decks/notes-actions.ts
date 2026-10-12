@@ -49,9 +49,9 @@ export async function addNote(deckId: string, rawBody: string): Promise<DeckMuta
   const userId = await requireUserId();
   if (!isUuid(deckId)) return refuse;
   await requireDeck(deckId, userId);
-  const body = await prepareBody(rawBody);
-  if (body === null) return refuse;
   try {
+    const body = await prepareBody(rawBody);
+    if (body === null) return refuse;
     if ((await insertNote(deckId, userId, body)) === "cap") {
       return { ok: false, message: deckNotesCopy.add.atCapRefused };
     }
@@ -69,9 +69,9 @@ export async function editNote(deckId: string, noteId: string, rawBody: string):
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
   await requireDeck(deckId, userId);
-  const body = await prepareBody(rawBody);
-  if (body === null) return refuse;
   try {
+    const body = await prepareBody(rawBody);
+    if (body === null) return refuse;
     if (!(await updateNoteBody(deckId, userId, noteId, body))) return refuse;
   } catch (err) {
     console.error("editNote failed", err);
