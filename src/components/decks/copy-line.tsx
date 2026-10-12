@@ -32,6 +32,9 @@ export function CopyLine({
   const [live, setLive] = useState<ContestedCard | null | undefined>(undefined);
   const panel = useId();
   const said = live === undefined ? sentence : live ? liveSentence(live) : null;
+  // The chooser behind Change: the read-back once there is one. A null read-back (the last copy
+  // went) takes Change away, since every option it offered can only be refused.
+  const current = live === null ? null : (live ?? chooser);
 
   return (
     <li style={{ borderTop: "1px solid var(--border)" }}>
@@ -44,7 +47,7 @@ export function CopyLine({
         </span>
         <span className="flex items-center gap-[10px] min-w-0 md:flex-1">
           <span className="text-[13px] flex-1 min-w-0" style={{ color: "var(--fg-body)" }}>{said ?? ""}</span>
-          {chooser ? (
+          {current ? (
             <button
               type="button"
               aria-expanded={open}
@@ -58,9 +61,9 @@ export function CopyLine({
           ) : null}
         </span>
       </div>
-      {chooser && open ? (
+      {current && open ? (
         <div id={panel} className="pt-[2px] pb-[12px]">
-          <ContestedCardRow card={live ?? chooser} addedCopy onCard={setLive} />
+          <ContestedCardRow card={current} addedCopy onCard={setLive} />
         </div>
       ) : null}
     </li>

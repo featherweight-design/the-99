@@ -783,6 +783,16 @@ describe("ContestedCardRow — where an added copy goes", () => {
     return { ...card(), cardName: "Sol Ring", arrived: 1, ownedBefore: owned - 1, owned, claimants: [...committed, ...brews] };
   }
 
+  it("folds by the copies a pick can move, not every arrival: commanders' copies stay put", () => {
+    // Three copies arrived; two are held as commanders by the senior decks, so one is giveable.
+    const claimants = [
+      ...["A", "B"].map((n, i) => ({ deckId: n, deckName: `HD - ${n}`, quantity: 1, commanderCopies: 1, granted: 0, since: AUG + i, versionNumber: 1, allocated: 1 })),
+      ...["C", "D"].map((n, i) => ({ deckId: n, deckName: `HD - ${n}`, quantity: 1, commanderCopies: 0, granted: 0, since: AUG + 10 + i, versionNumber: 1, allocated: i === 0 ? 1 : 0 })),
+    ];
+    render(<ContestedCardRow card={{ ...card(), cardName: "Sol Ring", arrived: 3, ownedBefore: 0, owned: 3, fromImport: true, claimants }} addedCopy />);
+    expect(screen.getByText(/2 committed decks/)).toBeTruthy();
+  });
+
   it("folds the senior decks no pick can move into one row, and Show draws them", () => {
     render(<ContestedCardRow card={staging(17)} addedCopy />);
     expect(screen.getByText(addedCopyCopy.chooser.fold(16, null))).toBeTruthy();

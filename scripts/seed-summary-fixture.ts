@@ -259,6 +259,11 @@ async function seedAddedCopy(c: {
       values (${userId}, ${card.oracle_id}, ${copies}, ${ARRIVED_SET}, '1')
     `);
   }
+  // US2's `earlier` reads "which you picked earlier": the pick itself, so Change opens on it selected.
+  await db.execute(sql`
+    insert into card_assignments (user_id, oracle_id, deck_id) values (${userId}, ${c.earlier.oracle_id}, ${DECK_A})
+    on conflict do nothing
+  `);
   // Two brews (no version): both read `brews`, the first alone reads `brewOne`.
   for (const [deckId, name, listed] of [
     [DECK_C, `${FIXTURE_NAME} brew one`, [c.brews, c.brewOne]],

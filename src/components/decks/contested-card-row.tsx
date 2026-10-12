@@ -421,7 +421,8 @@ export function ContestedCardRow({
   // THE FOLD (added copy, G7): committed decks at the head of the queue that keep their copies
   // whatever this pick does. Read off the SERVER's claimants, never the preview: a pick cannot move
   // them, so a tap must not unfold them either. Two or more, or there is nothing to save.
-  const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, inPlay, card.owned) : 0;
+  // `giveable`, not every arrival: a copy locked as a commander is one no pick can move either.
+  const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned) : 0;
   const folding = foldN >= 2 && !unfolded;
   const foldedIds = new Set(folding ? card.claimants.slice(0, foldN).map((c) => c.deckId) : []);
   const thisDeckName = card.claimants.find((c) => c.deckId === thisDeckId && !foldedIds.has(c.deckId))?.deckName ?? null;

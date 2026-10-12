@@ -95,6 +95,8 @@ describe("CopyLine", () => {
     fireEvent.click(screen.getByText("HD -Thorin"));
     await waitFor(() => expect(assign).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText(copy.row.goesTo("HD - Brago"))).toBeNull());
+    // And Change goes with it: the chooser it would reopen could only be refused.
+    await waitFor(() => expect(screen.queryByRole("button", { name: copy.changeAria("Sol Ring") })).toBeNull());
   });
 
   it("draws no Change when there is no chooser to open", () => {
