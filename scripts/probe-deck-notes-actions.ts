@@ -129,6 +129,7 @@ async function main() {
   const hits = await searchNoteCards(banned.name);
   const hit = hits.find((h) => h.name === banned.name);
   check("the picker lookup returns a not-legal card and says so", hit?.commanderLegal, false);
+  check("a name match carries no flavor name", hit?.flavorName, null);
 
   // ---- the cascade ----
   await fixture.execute(sql`delete from decks where id = ${deck}::uuid`);

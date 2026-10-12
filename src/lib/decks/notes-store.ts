@@ -60,7 +60,8 @@ export async function removeNote(deckId: string, userId: string, noteId: string)
   return rows.length > 0;
 }
 
-export type NoteCardHit = { oracleId: string; name: string; typeLine: string; commanderLegal: boolean; imageUri: string | null };
+/** `flavorName` is the Secret Lair name the query caught, for a row whose own name did not match; null otherwise. */
+export type NoteCardHit = { oracleId: string; name: string; typeLine: string; commanderLegal: boolean; imageUri: string | null; flavorName: string | null };
 
 /**
  * The `[[` picker's "any card" lookup. Any GAME card, a banned one included (a note can name a card to
@@ -70,11 +71,12 @@ export type NoteCardHit = { oracleId: string; name: string; typeLine: string; co
 export async function searchNoteCards(query: string): Promise<NoteCardHit[]> {
   const match = nameSearch(query);
   if (!match) return [];
-  return db
-    .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, imageUri: cards.imageUri })
+  const rows = await db
+    .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, imageUri: cards.imageUri, flavorName: match.flavorHits.flavorName })
     .from(cards)
     // The name match may be a Secret Lair flavor name, which lives in the join `nameSearch` hands back.
     .leftJoin(match.flavorHits, eq(match.flavorHits.oracleId, cards.oracleId))
     .where(and(match.where, isGameCardWhere()))
     .limit(20);
+  return rows.map((r) => ({ ...r, flavorName: match.shownFlavor(r.name, r.flavorName) }));
 }

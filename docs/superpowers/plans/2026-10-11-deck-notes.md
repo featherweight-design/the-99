@@ -28,8 +28,11 @@ delete, `[[Name]]` card links that open card details. No reminders, due dates or
    F10).
 5. **Read:** `readDeckNotes(deckId, userId)` in the deck page's loader behind the flag, one query plus one
    batched card lookup for tag names and art. Today is the player's local day (G6), as in the game log.
-6. **Picker:** `searchCards` gains a mode without the legality filter that also returns `commanderLegal`
-   (F5, G5); `isGameCardWhere()` stays. The deck's own cards need no search (local list, first).
+6. **Picker:** a separate lookup, `searchNoteCards` (`notes-store.ts`, exposed by `notes-actions.ts`), not a mode
+   on `searchCards` (F5, G5): it shares `nameSearch` and `isGameCardWhere()`, has no legality filter, and
+   returns `oracleId`, `name`, `typeLine`, `commanderLegal`, `imageUri` and the matched `flavorName`. No ownership,
+   availability or facts: the per-keystroke Add search carries those for nothing here. The deck's own cards need
+   no search (local list, first).
 7. **UI:** `DeckPanel` gains `"notes"` (in-memory for one visit, like `"stats"`; F3, the handoff's stored-value
    language is stale). The hairline group draws when either switch is on: `All · Shopping | Stats · Notes`, with
    Stats off `All · Shopping | Notes` (F2). Panel: input (or the cap line), open notes newest first (six, then
@@ -44,7 +47,7 @@ delete, `[[Name]]` card links that open card details. No reminders, due dates or
 
 | PR | Contents | Proof |
 |---|---|---|
-| **1 · data and actions** | migration + schema, `notes-flag.ts`, `notes-body.ts`, `notes-actions.ts`, `readDeckNotes`, `searchCards` picker mode, `probe:deck-notes-actions` (add/edit/done/delete/cap race/refusals on local-dev) | unit tests per action (ownership, flag off answers nothing, caps at 140 rendered and 100 per deck, done keeps date, delete), `.toSQL()` assertion on the read, probe |
+| **1 · data and actions** | migration + schema, `notes-flag.ts`, `notes-body.ts`, `notes-actions.ts`, `readDeckNotes`, the `searchNoteCards` lookup, `probe:deck-notes-actions` (add/edit/done/delete/cap race/refusals on local-dev) | unit tests per action (ownership, flag off answers nothing, caps at 140 rendered and 100 per deck, done keeps date, delete), `.toSQL()` assertion on the read, probe |
 | **2 · panel** | `DeckPanel "notes"`, segment cell and counts, the Notes panel (empty, add, rows, Done, edit, delete, caps, many, refused), picker and tag draw opening card details, focus signal, copy module, design table committed to `docs/superpowers/design-tables/deck-notes.md`, contact-sheet inventory | component tests, `probe:deck-notes` in a browser at 1300 and 390 (add, `[[` pick, tag press opens details, select, edit, delete, cap), `feature-acceptance` route x viewport inventory, `check:copy-drift` |
 | **3 · About** | entry in chapter 03 after Deck stats, `DECK_NOTES_ENABLED` AboutSwitch, re-pin of the About hash | `about.test.ts`, `check:copy-drift` |
 
