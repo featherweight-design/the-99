@@ -16,6 +16,7 @@ const ord = (k: number) => {
   return `${k}${sfx[(v - 20) % 10] || sfx[v] || sfx[0]}`;
 };
 const money = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const and = (xs: readonly string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 const brews = (k: number) => `${n(k)} ${k === 1 ? "brew" : "brews"}`;
 
 export const decksStatsCopy = {
@@ -34,6 +35,8 @@ export const decksStatsCopy = {
     recencyNone: (never: number) => `no games logged · ${n(never)} never played`,
     spread: (slot: string, k: number, na: number) => `bracket ${slot} holds ${n(k)} · ${n(na)} not analyzed`,
     spreadNone: (na: number) => `${n(na)} not analyzed`,
+    shared: (card: string, decks: number, owned: number, wanted: number) => `${card} in ${n(decks)} decks, you own ${n(owned)} · ${n(wanted)} wanted more than you own`,
+    sharedOne: "needs two decks",
     among: (deck: string, valueRank: string, rampRank: string) => `${deck} · ${valueRank} by value, ${rampRank} by ramp`,
     worth: (sum: number, top: number, med: number) => `${money(sum)} · most ${money(top)} · median ${money(med)}`,
     jobs: (ramp: readonly [number, number], draw: readonly [number, number], removal: readonly [number, number]) =>
@@ -115,5 +118,21 @@ export const decksStatsCopy = {
     deck: "Deck",
     sorted: "↓",
     foot: "Press a column to sort.",
+  },
+  shared: {
+    title: "Cards your decks share",
+    denom: (decks: number, cards: number) => `${n(decks)} decks · ${n(cards)} cards`,
+    chipsAria: "Which cards",
+    chipMost: "In the most decks",
+    chipWanted: (k: number) => `Wanted more than you own · ${n(k)}`,
+    want: (decks: number) => `${n(decks)} decks`,
+    own: (owned: number) => `you own ${n(owned)}`,
+    noCopy: (decks: readonly string[]) => `No copy left for ${and(decks)}.`,
+    toCart: (k: number) => `${n(k)} on Shopping for all decks`,
+    legendHeld: "has a copy",
+    legendWanted: "no copy left",
+    caption: (two: number, five: number) => `${n(two)} cards in 2+ decks · ${n(five)} in 5+ · basics not counted`,
+    one: "Needs two decks.",
+    open: (card: string) => `Which decks have ${card}`,
   },
 } as const;

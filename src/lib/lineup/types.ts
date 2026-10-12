@@ -36,8 +36,20 @@ export type LineupBuild = {
   valueCents: number;
 };
 
+/** A nonbasic card two or more decks play (Cards your decks share). */
+export type LineupShared = {
+  oracleId: string;
+  name: string;
+  /** Copies owned, from the collection: never narrowed by a filter (ruling 3). */
+  owned: number;
+  /** Each deck playing it: the copies it asks for, and how many of those the claim model gives it. */
+  decks: { id: string; wants: number; held: number }[];
+};
+
 export type LineupData = {
   decks: LineupDeck[];
+  /** Null when the claim read failed, with the build figures. */
+  shared: LineupShared[] | null;
   /** The newest price the values were read at, ISO, or null with none. */
   pricesAsOf: string | null;
 };

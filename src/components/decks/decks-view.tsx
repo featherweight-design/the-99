@@ -915,7 +915,7 @@ export function DecksView({
               when there is at least one deck: a shelf for nothing is furniture
               (STATES W6/C5), and `zero` above has already taken that case. */}
           {statsOn ? (
-            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} />
+            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} cartEnabled={cartEnabled} />
           ) : (<>
           {wide ? (
             <ShelfLine

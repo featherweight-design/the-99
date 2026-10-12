@@ -24,11 +24,14 @@ import { readHeldPricePicks } from "../decks/printings";
 import { primaryRole } from "../decks/read";
 import { moneyStats } from "../decks/stats-money";
 import { readLabels } from "../labels/read";
+import { allocateClaims } from "../decks/allocate";
+import { loadAvailability } from "../decks/availability-query";
+import type { Availability } from "../decks/availability";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { deckIdentity } from "../decks/format";
 import { listDecksWithStats } from "../decks/read";
 import { DEFAULT_DECK_SORT } from "../decks/sort";
-import type { LineupBuild, LineupData, LineupGame } from "./types";
+import type { LineupBuild, LineupData, LineupGame, LineupShared } from "./types";
 
 type BuildCard = { deckId: string; oracleId: string; name: string; typeLine: string; cmc: number; quantity: number; oracleText: string | null; keywords: string[] };
 
@@ -58,25 +61,57 @@ async function readLists(ids: string[]): Promise<{ list: BuildCard[]; commanders
 }
 
 /** Each deck's build figures, or null for every deck when the labels or the prices could not be read. */
-async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null }> {
-  if (ids.length === 0) return { builds: new Map(), asOf: null };
+/**
+ * The cards two or more decks play, basics left out, each with what the collection holds and what the claim
+ * model gives each deck (lock 3: who holds a contested copy is the model's, never re-derived here): a
+ * committed deck holds its allocation, a brew only what the player gave it, as the cart reads it.
+ */
+export function sharedCards(
+  lists: { deckId: string; oracleId: string; name: string; typeLine: string; quantity: number }[],
+  availability: ReadonlyMap<string, Pick<Availability, "owned" | "claims">>,
+): LineupShared[] {
+  const byCard = new Map<string, { name: string; decks: Map<string, number> }>();
+  for (const c of lists) {
+    if (isBasicLand(c.typeLine)) continue;
+    const row = byCard.get(c.oracleId) ?? { name: c.name, decks: new Map<string, number>() };
+    row.decks.set(c.deckId, (row.decks.get(c.deckId) ?? 0) + c.quantity);
+    byCard.set(c.oracleId, row);
+  }
+  return [...byCard].filter(([, r]) => r.decks.size >= 2).map(([oracleId, r]) => {
+    const a = availability.get(oracleId);
+    const held = new Map(a ? allocateClaims(a).map((c) => [c.deckId, c.brew ? c.granted : c.allocated]) : []);
+    return {
+      oracleId,
+      name: r.name,
+      owned: a?.owned ?? 0,
+      decks: [...r.decks].map(([id, wants]) => ({ id, wants, held: Math.min(wants, held.get(id) ?? 0) })),
+    };
+  });
+}
+
+async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null }> {
+  if (ids.length === 0) return { builds: new Map(), asOf: null, shared: [] };
   let lists: Awaited<ReturnType<typeof readLists>>;
   let jobs: JobRowsByCard;
   let prices: PriceRead;
+  let availability: Map<string, Availability>;
   try {
     lists = await readLists(ids);
     const all = [...lists.list, ...lists.commanders];
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
-    const [labels, read] = await Promise.all([
+    const [labels, read, avail] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
       readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
+      // The whole collection's claim model, once (lock 3, lock 4).
+      loadAvailability(userId),
     ]);
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));
     prices = read;
+    availability = avail;
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
-    return { builds: null, asOf: null };
+    return { builds: null, asOf: null, shared: null };
   }
   const byDeck = new Map<string, BuildCard[]>();
   for (const c of lists.list) byDeck.set(c.deckId, [...(byDeck.get(c.deckId) ?? []), c]);
@@ -99,7 +134,7 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
       valueCents: money?.value.cents ?? 0,
     });
   }
-  return { builds, asOf: prices.newestAsOf };
+  return { builds, asOf: prices.newestAsOf, shared: sharedCards([...lists.list, ...lists.commanders], availability) };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {
@@ -133,5 +168,6 @@ export async function loadLineup(userId: string): Promise<LineupData> {
       build: built.builds?.get(d.id) ?? null,
     })),
     pricesAsOf: built.asOf ? built.asOf.toISOString() : null,
+    shared: built.shared,
   };
 }
