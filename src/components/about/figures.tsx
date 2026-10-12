@@ -22,7 +22,7 @@ import { ManaEvidenceTable } from "../decks/mana-evidence";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
 import { BrowseFigureBody } from "./browse-figure";
-import { DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
+import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
 import { SetsColourFigure } from "./sets-colour-figure";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -80,12 +80,15 @@ import {
 import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { allDecksCartCopy } from "../../lib/copy/all-decks-cart";
+import { formatCents } from "../../lib/decks/price";
 import { FitBar } from "../commanders/fit-bar";
 import {
   Specimen,
 } from "./specimen";
 import type { AboutWidth } from "../../lib/copy/about";
 import {
+  ALL_DECKS_CART_LINE,
   AVAILABILITY,
   COMMITMENTS,
   COMMITMENTS_TOTAL_CARDS,
@@ -1053,6 +1056,24 @@ function FitsYourDecksFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+const CART_LINE = ALL_DECKS_CART_LINE.line;
+
+/** `all-decks-cart`: the cart's Sol Ring line, three decks short of one copy each. */
+function AllDecksCartFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen
+      label="all-decks-cart"
+      width={width}
+      // The owned fact and the line's price are the figure's alone: the keys leave them to the line,
+      // and the figure is hidden from assistive technology, so they are spoken here.
+      spokenAs={`${CART_LINE.name}. ${CART_LINE.copies} · ${CART_LINE.selectedRows
+        .map((r) => ALL_DECKS_CART_LINE.deckNames.get(r.deckId) ?? "").join(", ")}. ${allDecksCartCopy.list.owned(CART_LINE.owned)}. ${formatCents(CART_LINE.cents)}`}
+    >
+      <AllDecksCartFigureBody />
+    </Specimen>
+  );
+}
+
 /** `shopping-got-it`: two Shopping rows whose buy tag is the button, and the receipt one leaves. */
 function GotItFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1123,6 +1144,7 @@ export const FIGURES: Partial<
   "fits-your-decks": FitsYourDecksFigure,
   "stand-ins": StandInsFigure,
   "shopping-got-it": GotItFigure,
+  "all-decks-cart": AllDecksCartFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,

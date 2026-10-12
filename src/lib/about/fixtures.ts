@@ -2338,3 +2338,18 @@ export const MANA_BALANCE: { balance: import("../tuning/mana-view").ClientManaBa
     colorOrder: [],
   },
 };
+
+/** `all-decks-cart`: the Sol Ring line the brief measured, three decks short one copy each (S0). */
+export const ALL_DECKS_CART_LINE: { line: import("../decks/cart").SelectedLine; deckNames: Map<string, string> } = (() => {
+  const row = (deckId: string, cents: number) => ({
+    deckId, quantity: 1, cents, state: "priced" as const, commander: false, held: 0, finish: null,
+  });
+  const rows = [row("about-gishath", 129), row("about-kratos", 129), row("about-thorin", 129)];
+  return {
+    line: {
+      oracleId: "about-sol-ring", name: "Sol Ring", commander: false, owned: 17, heldElsewhere: 17,
+      rows, selectedRows: rows, copies: 3, cents: 387, pricedCopies: 3,
+    },
+    deckNames: new Map([["about-gishath", "HD - Gishath"], ["about-kratos", "HD - Kratos"], ["about-thorin", "HD -Thorin"]]),
+  };
+})();

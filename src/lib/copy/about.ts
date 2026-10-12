@@ -83,7 +83,8 @@ export type AboutSwitch =
   | 'SHOPPING_MARK_BOUGHT_ENABLED'
   | 'DECK_PRINTINGS_ENABLED'
   | 'DECK_TOKENS_ENABLED'
-  | 'MANA_BALANCE_ENABLED';
+  | 'MANA_BALANCE_ENABLED'
+  | 'ALL_DECKS_CART_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -376,6 +377,33 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 1,
+  },
+  // Shopping for all decks (handoff `design_handoff_the99_all_decks_cart`), after the buy tag it
+  // sums. Behind its own switch, so it is announced when the switch flips, by id: no version bump
+  // (the About rule, 2026-10-11). Copy through /prose-pass.
+  {
+    id: 'all-decks-cart',
+    chapter: '01',
+    title: 'Shopping for all your decks',
+    route: '/decks/shopping',
+    opens: 'opens the cart',
+    width: 'plate',
+    switch: 'ALL_DECKS_CART_ENABLED',
+    caption:
+      'Every deck you’re building is short a few cards, and nobody wants to check out five times. Shopping for all decks puts everything they’re missing on one list with one total, ready for Mana Pool, where you pick the printings.\n\nEach card names the decks waiting on it, so you know where every copy is headed.',
+    keys: [
+      'Every deck missing a card starts selected, brews included.',
+      'Unselect a deck to leave it out of this visit only.',
+      'Each deck gets its own copy: three decks, three Sol Rings.',
+      'Back from Mana Pool, press “buy” on what came, and it goes into your Collection.',
+    ],
+    // The press is I got it's: with its switch off the cart's tags are inert, and the line would
+    // promise a button that does nothing.
+    keySwitches: {
+      'Back from Mana Pool, press “buy” on what came, and it goes into your Collection.': 'SHOPPING_MARK_BOUGHT_ENABLED',
+    },
+    marksPending: true,
+    since: 14,
   },
   {
     id: 'card-detail',

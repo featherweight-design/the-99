@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -14,6 +14,16 @@ const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "NEVER_C
 const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "CHANGE_COMMANDER_ENABLED" };
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
+
+describe("all-decks-cart's press line", () => {
+  it("drops the buy key while I got it is off, so the entry never promises an inert tag", () => {
+    const cartOnly = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
+    const withBuy = visibleEntries({ ALL_DECKS_CART_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
+    expect(cartOnly.keys).toHaveLength(3);
+    expect(withBuy.keys).toHaveLength(4);
+    expect(withBuy.keys[3]).toMatch(/press “buy”/);
+  });
+});
 
 describe("with every switch off, nothing changes (the invariance Hugh's ruling requires)", () => {
   // The entries a switch cannot hide. With every switch off they are the whole page, and the page
@@ -41,6 +51,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
     expect(aboutEntries.filter((e) => e.switch).map((e) => [e.id, e.switch])).toEqual([
       ["collection-add", "COLLECTION_EDIT_ENABLED"],
       ["upload-choice", "COLLECTION_EDIT_ENABLED"],
+      ["all-decks-cart", "ALL_DECKS_CART_ENABLED"],
       ["edit-copies", "COLLECTION_EDIT_ENABLED"],
       ["remove-card", "COLLECTION_EDIT_ENABLED"],
       ["collection-history", "COLLECTION_EDIT_ENABLED"],
@@ -109,18 +120,20 @@ describe("an entry tied to a switch", () => {
     const launch = aboutEntries.filter((e) => e.switch && e.switch !== "COLLECTION_EDIT_ENABLED");
     // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
-    // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance] = later.map((id) => launch.filter((e) => e.id === id));
+    // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
+    // `mana-balance` and `all-decks-cart` since: 14 too, the current version, with no bump of their own.
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart"];
+    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
-    expect([...gotIt, ...deckPrintings, ...manaBalance].map((e) => e.since)).toEqual([14, 14, 14]);
+    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart].map((e) => e.since)).toEqual([14, 14, 14, 14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "upload-choice",
+      "all-decks-cart",
       "edit-copies",
       "remove-card",
       "collection-history",

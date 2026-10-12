@@ -1,7 +1,7 @@
 "use client";
 
-// The bodies of two chapter-03 figures added in I got it's PR 5: `shopping-got-it` and
-// `deck-printings`. Each mounts the shipped component on fixture props, inert like every specimen
+// The bodies of two chapter-03 figures added in I got it's PR 5, `shopping-got-it` and
+// `deck-printings`, and chapter 01's `all-decks-cart` (cart PR 7). Each mounts the shipped component on fixture props, inert like every specimen
 // (`Specimen` sets `pointer-events: none`), so nothing here writes or opens anything.
 
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -10,7 +10,8 @@ import { ToastFrame } from "../collection/edit-toast";
 import { DecklistRow } from "../decks/decklist-row";
 import { GotItProvider } from "../decks/got-it";
 import { gotItCopy } from "../../lib/copy/i-got-it";
-import { DECK_PRINTING, GOT_IT_RECEIPT, GOT_IT_ROWS, PRICES } from "../../lib/about/fixtures";
+import { CartLine } from "../decks/cart/cart-line";
+import { ALL_DECKS_CART_LINE, DECK_PRINTING, GOT_IT_RECEIPT, GOT_IT_ROWS, PRICES } from "../../lib/about/fixtures";
 
 const NOOP = () => {};
 const r = gotItCopy.receipt;
@@ -67,5 +68,14 @@ export function DeckPrintingFigureBody() {
         onAnnounce={NOOP}
       />
     </div>
+  );
+}
+
+/** The cart's Sol Ring line: three decks, full names, the owned fact, the tag at the line's total. */
+export function AllDecksCartFigureBody() {
+  return (
+    <ul className="m-0 list-none rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] [&>li:first-child]:border-t-0">
+      <CartLine line={ALL_DECKS_CART_LINE.line} deckNames={ALL_DECKS_CART_LINE.deckNames} newestAsOf={PRICES[0].fact.asOf} />
+    </ul>
   );
 }
