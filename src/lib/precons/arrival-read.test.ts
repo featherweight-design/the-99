@@ -19,4 +19,8 @@ describe("preconArrivalQuery", () => {
     expect(sql).toMatch(/"decks"\."id" = \$\d+ and "decks"\."user_id" = \$\d+/);
     expect(params).toEqual(expect.arrayContaining(["user_1", "deck-1"]));
   });
+
+  it("answers nothing once the deck has a committed version", () => {
+    expect(sql).toContain(`not exists (select 1 from deck_versions dv where dv.deck_id = "decks".id)`);
+  });
 });

@@ -38,5 +38,11 @@ export function preconArrivalQuery(userId: string, deckId: string) {
     })
     .from(decks)
     .innerJoin(precons, eq(precons.fileName, decks.builtFromPrecon))
-    .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+    // Until the first commit (the table's lifetime): the URL keeps `?from=precon`, so a committed
+    // deck reloaded there must not read as just started.
+    .where(and(
+      eq(decks.id, deckId),
+      eq(decks.userId, userId),
+      sql`not exists (select 1 from deck_versions dv where dv.deck_id = ${decks}.id)`,
+    ));
 }

@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ selects: [] as unknown[][], wheres: [] as unknown[], written: [] as unknown[], revalidated: [] as string[] }));
+const state = vi.hoisted(() => ({ selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[] }));
 
 vi.mock("../../db", () => {
   const chain = () => {
     const rows = state.selects.shift() ?? [];
     const q: Record<string, unknown> = {};
-    for (const k of ["from", "innerJoin", "orderBy"]) q[k] = () => q;
+    for (const k of ["from", "innerJoin"]) q[k] = () => q;
+    q.orderBy = (o: unknown) => { state.orders.push(o); return q; };
     q.where = (w: unknown) => { state.wheres.push(w); return q; };
     q.then = (res: (v: unknown) => unknown) => Promise.resolve(rows).then(res);
     return q;
@@ -23,13 +24,14 @@ vi.mock("next/navigation", () => ({ redirect: (u: string) => { throw new Error(`
 
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
+import { preconCards } from "../../db/schema";
 import { createDeckFromPrecon } from "./precon-actions";
 
 const lead = (oracleId: string, name: string, over: Record<string, unknown> = {}) => ({
   oracleId, name, typeLine: "Legendary Creature — Eldrazi", oracleText: "", manaCost: "{5}", layout: "normal", commanderLegal: true, ...over,
 });
 
-beforeEach(() => { state.selects = []; state.wheres = []; state.written = []; state.revalidated = []; });
+beforeEach(() => { state.selects = []; state.wheres = []; state.orders = []; state.written = []; state.revalidated = []; });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
 
 describe("createDeckFromPrecon", () => {
@@ -52,6 +54,8 @@ describe("createDeckFromPrecon", () => {
       builtFromPrecon: "EldraziUnbound_CMM",
     }]);
     expect(state.revalidated).toEqual(["deck-1"]);
+    // The feed's order, so a pair's lead is the commander its page names first.
+    expect(state.orders).toEqual([preconCards.position]);
   });
 
   it("starts a twin's plain edition", async () => {
