@@ -25,7 +25,7 @@ const fact = (scryfallId: string): TokenPriceFact => ({
 });
 
 const base = (over: Partial<DeckTokenInputs> = {}): DeckTokenInputs => ({
-  links: [{ tokenOracleId: A, makerOracleId: M1, makerName: "Zed" }],
+  links: [{ tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: null }],
   tokens: [tok(A, "Goblin")],
   held: new Map(), read: true, joined: new Set(), printings: [], prices: new Map(), newestPriceAsOf: null,
   ...over,
@@ -54,7 +54,7 @@ describe("assembleDeckTokens", () => {
 
   it("shows rules text only for tokens that share a face inside the deck", () => {
     const r = ok(assembleDeckTokens(base({
-      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed" })),
+      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed", makerImageUri: null })),
       tokens: [tok(A, "Goblin"), tok(B, "Goblin"), tok(C, "Goblin", { power: "2", toughness: "2" })],
     })));
     const byId = new Map(r.tokens.map((t) => [t.oracleId, t.oracleText]));
@@ -66,10 +66,10 @@ describe("assembleDeckTokens", () => {
   it("lists each maker once, A to Z, and counts distinct makers across tokens", () => {
     const r = ok(assembleDeckTokens(base({
       links: [
-        { tokenOracleId: A, makerOracleId: M1, makerName: "Zed" },
-        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha" },
-        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha" },
-        { tokenOracleId: B, makerOracleId: M2, makerName: "alpha" },
+        { tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: null },
+        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha", makerImageUri: null },
+        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha", makerImageUri: null },
+        { tokenOracleId: B, makerOracleId: M2, makerName: "alpha", makerImageUri: null },
       ],
       tokens: [tok(A, "Goblin"), tok(B, "Treasure", { colors: [] })],
     })));
@@ -97,11 +97,26 @@ describe("assembleDeckTokens", () => {
 
   it("orders rows by name, then colors, then id", () => {
     const r = ok(assembleDeckTokens(base({
-      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed" })),
+      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed", makerImageUri: null })),
       tokens: [tok(C, "Treasure", { colors: [] }), tok(B, "goblin", { colors: ["G"] }), tok(A, "Goblin", { colors: ["R"] })],
     })));
     // B (green) sorts before A (red) although A has the lower id: only the colors rule gives this order.
     expect(r.tokens.map((t) => t.oracleId)).toEqual([B, A, C]);
+  });
+
+  it("shows a maker with the art the deck draws for it, else the catalog's", () => {
+    const r = ok(assembleDeckTokens(base({
+      links: [
+        { tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: "catalog-1" },
+        { tokenOracleId: A, makerOracleId: M2, makerName: "Alpha", makerImageUri: "catalog-2" },
+      ],
+      art: new Map([[M1, { imageUri: "owned-1", name: "Zed (Secret Lair)" }]]),
+    })));
+    const byId = new Map(r.tokens[0].makers.map((m) => [m.oracleId, m]));
+    expect(byId.get(M1)).toMatchObject({ imageUri: "owned-1", name: "Zed (Secret Lair)" });
+    expect(byId.get(M2)).toMatchObject({ imageUri: "catalog-2", name: "Alpha" });
+    // Sorted by the name it is shown under, not the oracle name.
+    expect(r.tokens[0].makers.map((m) => m.name)).toEqual(["Alpha", "Zed (Secret Lair)"]);
   });
 
   it("skips a token row no link reaches", () => {

@@ -61,6 +61,10 @@ import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
+import { deckTokensEnabled } from "../../../lib/decks/tokens-flag";
+import { printedNameOf } from "../../../lib/collection/browse";
+import { loadDeckTokens } from "../../../lib/tokens/read";
+import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
 import { GotItProvider } from "../../../components/decks/got-it";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
@@ -218,6 +222,18 @@ export default async function DeckBuilderPage({
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.
   const swapTools = swapToolsEnabled();
+  // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
+  // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
+  // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
+  // detail that resolved it; a deck that is not the reader's has no detail and reads absent.
+  const tokensRead = deckTokensEnabled()
+    ? early(detailRead.then((d) => (d
+      ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
+        ...d.cards.map((c) => [c.oracleId, { imageUri: c.imageUri ?? null, name: printedNameOf(c) }] as const),
+        ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, { imageUri: c!.imageUri ?? null, name: c!.printedName ?? c!.name }] as const),
+      ])))
+      : ({ status: "absent" } as const))))
+    : null;
   const shoppingLimitRead = swapTools
     ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
     : Promise.resolve(null);
@@ -608,7 +624,7 @@ export default async function DeckBuilderPage({
   ) : bought;
   // Change commander's door and sheet read this context; without it the deck header draws exactly
   // the card-details trigger it drew before the feature (audit F6).
-  return changeCommanderEnabled() ? (
+  const page = changeCommanderEnabled() ? (
     <ChangeCommanderProvider
       // One provider per deck: a client navigation to another deck must not carry an open sheet
       // or its chosen candidate across, where it would be written against the new deck.
@@ -621,4 +637,7 @@ export default async function DeckBuilderPage({
       {tooled}
     </ChangeCommanderProvider>
   ) : tooled;
+  // The deck's tokens reach the decklist through a context, outermost so no wrap above has to know of them.
+  const deckTokens = tokensRead ? await tokensRead : null;
+  return deckTokens ? <DeckTokensProvider deckId={id} read={deckTokens}>{page}</DeckTokensProvider> : page;
 }

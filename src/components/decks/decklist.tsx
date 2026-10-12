@@ -44,6 +44,7 @@ import {
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
+import { TokensGroup } from "./tokens-group";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
 import { useStoredView } from "../ui/use-stored-view";
@@ -1307,6 +1308,10 @@ export function Decklist({
           commanderOracleId={commanderOracleId}
           onExpandedChange={onUnresolvedExpandedChange}
         />
+
+        {/* The tokens these cards make: not the deck, after every group of it. Draws nothing without the
+            provider, so the list is exactly itself wherever the switch is off. */}
+        <TokensGroup />
       </HoverPreviewProvider>
     </div>
   );

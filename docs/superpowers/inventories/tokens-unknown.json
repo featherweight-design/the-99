@@ -1,0 +1,35 @@
+{
+  "feature": "Tokens for my deck (PR 4b): before the account has been read",
+  "note": "Run BEFORE the token_reads row exists: every token reads not known, the band shows once, no dot is drawn.",
+  "out": "contact-sheets/tokens-unknown",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 900,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "aang-unknown",
+      "label": "/decks/[id] Your deck: Aang before any read (the band, no dots, both controls on every row)",
+      "view": "src/components/decks/tokens-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "#deck-tokens-heading",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#deck-tokens-heading"
+        }
+      ]
+    }
+  ]
+}

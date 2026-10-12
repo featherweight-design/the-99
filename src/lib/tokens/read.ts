@@ -6,7 +6,8 @@ import { tokenOwnershipTablesExist, type TokenOwnership } from "./ownership";
 import { tokenPriceTablesExist, tokenTablesExist } from "./publish";
 import { collidingTokenIds, sortMakers, tokenState } from "./rules";
 
-export type TokenMaker = { oracleId: string; name: string };
+/** A card of the deck that makes the token; its art is what the decklist's hover preview draws. */
+export type TokenMaker = { oracleId: string; name: string; imageUri: string | null };
 
 /** The printing a token is pictured and sent as: the priced one when any is, else the first by set and number. */
 export type TokenPictured = {
@@ -65,7 +66,7 @@ export type TokenPrintingFacts = {
 
 export type DeckTokenInputs = {
   /** One row per (maker card, token it makes), restricted to the deck's cards and commanders. */
-  links: { tokenOracleId: string; makerOracleId: string; makerName: string }[];
+  links: { tokenOracleId: string; makerOracleId: string; makerName: string; makerImageUri: string | null }[];
   tokens: TokenRowFacts[];
   /** The player's held tokens, by oracle id. */
   held: Map<string, "upload" | "manual">;
@@ -75,7 +76,17 @@ export type DeckTokenInputs = {
   printings: TokenPrintingFacts[];
   prices: Map<string, TokenPriceFact>;
   newestPriceAsOf: Date | null;
+  /**
+   * The art the DECK draws for its own cards (the printing the player owns or picked), by oracle id, WITH the
+   * name of that printing: a Secret Lair art under the oracle name is the mismatch every decklist row refuses.
+   * A maker's name, hover preview and card-details opener use it, so a maker reads here as it does on its
+   * decklist row; a card missing from it keeps the catalog's own.
+   */
+  art?: ReadonlyMap<string, DeckArt>;
 };
+
+/** What the deck draws for one of its cards: the art, and the name of the printing that art is of. */
+export type DeckArt = { imageUri: string | null; name: string };
 
 /**
  * The rows of a deck's Tokens group, from what the queries returned. Pure, so the rules that are easy
@@ -88,7 +99,11 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
   const makersOf = new Map<string, Map<string, TokenMaker>>();
   for (const l of i.links) {
     const m = makersOf.get(l.tokenOracleId) ?? new Map<string, TokenMaker>();
-    m.set(l.makerOracleId, { oracleId: l.makerOracleId, name: l.makerName });
+    m.set(l.makerOracleId, {
+      oracleId: l.makerOracleId,
+      name: i.art?.get(l.makerOracleId)?.name ?? l.makerName,
+      imageUri: i.art?.get(l.makerOracleId)?.imageUri ?? l.makerImageUri,
+    });
     makersOf.set(l.tokenOracleId, m);
   }
   const printingsOf = new Map<string, TokenPrintingFacts[]>();
@@ -189,7 +204,9 @@ export async function deckMakerIds(deckId: string, userId: string): Promise<stri
 async function linksFor(makerIds: string[]): Promise<DeckTokenInputs["links"]> {
   if (makerIds.length === 0) return [];
   return db
-    .select({ tokenOracleId: cardTokens.tokenOracleId, makerOracleId: cards.oracleId, makerName: cards.name })
+    .select({
+      tokenOracleId: cardTokens.tokenOracleId, makerOracleId: cards.oracleId, makerName: cards.name, makerImageUri: cards.imageUri,
+    })
     .from(cardTokens)
     .innerJoin(cards, eq(cards.oracleId, cardTokens.cardOracleId))
     .where(inArray(cardTokens.cardOracleId, makerIds));
@@ -200,7 +217,11 @@ async function linksFor(makerIds: string[]): Promise<DeckTokenInputs["links"]> {
  * `failed` so the deck page draws its failed line and the rest of the page stands. A deck that is not
  * the player's reads as `absent`, the same as one with no tokens.
  */
-export async function loadDeckTokens(deckId: string, userId: string): Promise<DeckTokensRead> {
+export async function loadDeckTokens(
+  deckId: string,
+  userId: string,
+  art?: ReadonlyMap<string, DeckArt>,
+): Promise<DeckTokensRead> {
   try {
     if (!(await tokenTablesExist())) return { status: "absent" };
     const makerIds = await deckMakerIds(deckId, userId);
@@ -233,6 +254,7 @@ export async function loadDeckTokens(deckId: string, userId: string): Promise<De
       printings: printingRows,
       prices: priced.prices,
       newestPriceAsOf: priced.newestAsOf,
+      art,
     });
   } catch (err) {
     console.error("[tokens] loadDeckTokens failed", err instanceof Error ? err.message : err);

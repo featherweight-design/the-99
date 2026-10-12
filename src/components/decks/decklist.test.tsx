@@ -14,6 +14,8 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { PendingChangeProvider } from "./pending-change";
+import { DeckTokensProvider } from "./deck-tokens-context";
+import type { DeckTokensRead } from "../../lib/tokens/read";
 import { LabelRowsProvider } from "./label-rows-context";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { cardTileCopy, viewToggleCopy } from "../../lib/copy/card-surfaces";
@@ -82,6 +84,9 @@ const basicLand = makeCard({
   auto: true,
 });
 
+// The Tokens group's press handlers are server actions; nothing here presses them.
+vi.mock("../../app/decks/token-actions", () => ({ setTokenHeld: vi.fn(), setTokenJoined: vi.fn() }));
+
 // A Decklist with the Shopping filter active requires the optimistic-deck
 // providers. Thread through the minimal BuilderShell context.
 const { AddOptimisticCardProvider } = await import("./optimistic-deck");
@@ -113,6 +118,8 @@ function renderDecklist(
     partner?: DeckCommander | null;
     /** Label rows provided around the list, as the deck page does with the switch on. */
     labelRows?: Record<string, readonly ("ramp" | "draw" | "removal" | "wipes")[]>;
+    /** The deck's tokens, provided around the list as the deck page does with the switch on. */
+    tokens?: DeckTokensRead;
   } = {},
 ) {
   const deckEdits = {
@@ -144,11 +151,14 @@ function renderDecklist(
       )
       : node;
 
+  const withTokens = (node: React.ReactNode) =>
+    opts.tokens ? <DeckTokensProvider deckId="deck-1" read={opts.tokens}>{node}</DeckTokensProvider> : node;
+
   render(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withSwaps(withDraft(
+      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withTokens(withSwaps(withDraft(
         <Decklist mix={TEST_MIX}
           deckId="deck-1"
           cards={cards}
@@ -178,7 +188,7 @@ function renderDecklist(
           versions={opts.versions}
           onLogGame={opts.onLogGame}
         />
-      ))}</LabelRowsProvider></AddOptimisticCardProvider>
+      )))}</LabelRowsProvider></AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
@@ -1648,5 +1658,37 @@ describe("the Stats panel", () => {
     fireEvent.click(screen.getByRole("button", { name: /^All\b/ }));
 
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+});
+
+describe("the Tokens group is mounted at the foot of Your deck", () => {
+  const read: DeckTokensRead = {
+    status: "ok", read: true, makerCount: 2, newestPriceAsOf: null,
+    tokens: [{
+      oracleId: "t-food", name: "Food", typeLine: "Token Artifact — Food", colors: [], power: null, toughness: null,
+      oracleText: null, makers: [{ oracleId: "sol-ring", name: "Sol Ring", imageUri: null }], state: "not", source: null,
+      joined: false, picture: null, price: null,
+    }],
+  };
+
+  it("draws after every card group under All, in both groupings", () => {
+    for (const grouping of ["type", "role"] as const) {
+      renderDecklist([rampOwned, drawOwned], { filter: "all", grouping, tokens: read });
+      const heading = screen.getByRole("heading", { name: "Tokens · 1" });
+      // Both cards' rows come first in the document, whichever group they landed in.
+      for (const name of ["Sol Ring", "Rhystic Study"]) {
+        const row = screen.getAllByText(name)[0];
+        expect(row.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      }
+      cleanup();
+    }
+  });
+
+  it("is absent without the provider (the switch off), and on the Shopping filter", () => {
+    renderDecklist([rampOwned], { filter: "all" });
+    expect(screen.queryByRole("heading", { name: /Tokens/ })).toBeNull();
+    cleanup();
+    renderDecklist([rampUnowned], { filter: "shopping", tokens: read });
+    expect(screen.queryByRole("heading", { name: /Tokens/ })).toBeNull();
   });
 });
