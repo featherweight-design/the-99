@@ -6,7 +6,7 @@ import { isUuid } from "../../../../../lib/uuid";
 /**
  * *Stop* for the deeper look (plan, PR 6). A route handler, not a Server Action: the client
  * dispatches a page's Server Actions one at a time, so a Stop sent as one would wait behind the
- * very *Look deeper* it means to stop, and arrive after the read had settled and been charged.
+ * very submit it means to stop, and arrive after the read had settled and been charged.
  *
  * It names the read by the id the panel chose for its press, so it can reach the database before
  * that press's start has: `cancelRead` then leaves the Stop for the start to find (never charged).

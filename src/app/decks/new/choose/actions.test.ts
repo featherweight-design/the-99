@@ -1,30 +1,25 @@
-// The deeper read's actions, at their wire boundary. The probe calls `runDeeperRead` directly,
-// since an action needs a request and a signed-in reader, so what only this file can catch is
-// the action's own refusals: input a forged call can send, refused before anything is reserved.
+// The choose actions, at their wire boundary: what only a test with the action's own seams can
+// catch is its refusals, before anything is reserved.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ run: vi.fn(), status: vi.fn(), begin: vi.fn(), after: vi.fn(), redirect: vi.fn((to: string) => { throw new Error(`REDIRECT ${to}`); }) }));
+const stub = vi.hoisted(() => ({ begin: vi.fn(), after: vi.fn(), redirect: vi.fn((to: string) => { throw new Error(`REDIRECT ${to}`); }) }));
 vi.mock("../../../../lib/intake/the-read-run", () => ({ beginTheRead: stub.begin }));
 vi.mock("next/server", () => ({ after: stub.after }));
 vi.mock("next/navigation", () => ({ redirect: stub.redirect }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../../../lib/intake/deeper-read", () => ({ runDeeperRead: stub.run, deeperStatus: stub.status }));
 const vocab = vi.hoisted(() => ({ themes: vi.fn(), printings: vi.fn() }));
 vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: vocab.themes }));
 vi.mock("../../../../lib/sets/printed-in-read", () => ({ loadCommanderPrintings: vocab.printings }));
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
-import { lookDeeper, lookStatus, submitChoose } from "./actions";
+import { submitChoose } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
-const ok = { readId: ID, words: "big lizards", budgetDollars: null, bracket: null, themes: [], card: null };
 
 beforeEach(() => {
   flag.on = true;
-  stub.run.mockReset().mockResolvedValue({ kind: "read", chips: [], notUsed: [], notUnderstood: [] });
-  stub.status.mockReset().mockResolvedValue({ kind: "running" });
   stub.begin.mockReset();
   stub.after.mockReset();
   vocab.themes.mockReset().mockResolvedValue([{ slug: "landfall", label: "Landfall", commanders: 300 }]);
@@ -102,68 +97,5 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     flag.on = false;
     await expect(submitChoose("?w=scary")).rejects.toThrow("not found");
     expect(stub.begin).not.toHaveBeenCalled();
-  });
-});
-
-describe("lookStatus", () => {
-  const ask = { words: "big lizards", budgetDollars: null, bracket: null };
-
-  it("asks where the checked ask stands", async () => {
-    expect(await lookStatus({ ...ask, words: "  big lizards " })).toEqual({ kind: "running" });
-    expect(stub.status).toHaveBeenCalledWith("user_1", { words: "big lizards", controls: { budgetDollars: null, bracket: null } });
-  });
-
-  it("refuses a forged argument, and is not found with the feature off", async () => {
-    for (const input of [null, { ...ask, words: "" }, { ...ask, budgetDollars: 0 }, { ...ask, bracket: 6 }]) {
-      expect(await lookStatus(input as never)).toEqual({ kind: "refused" });
-    }
-    expect(stub.status).not.toHaveBeenCalled();
-    flag.on = false;
-    await expect(lookStatus(ask)).rejects.toThrow("not found");
-  });
-});
-
-describe("lookDeeper", () => {
-  it("is not found with the feature off, and reserves nothing", async () => {
-    flag.on = false;
-    await expect(lookDeeper(ok)).rejects.toThrow("not found");
-    expect(stub.run).not.toHaveBeenCalled();
-  });
-
-  it("refuses a forged argument before any read is reserved", async () => {
-    const forged = [
-      null, undefined, "words", 42,
-      { ...ok, readId: "not-a-uuid" }, { ...ok, readId: 7 },
-      { ...ok, words: "" }, { ...ok, words: "   " }, { ...ok, words: 5 }, { ...ok, words: "x".repeat(801) },
-      { ...ok, budgetDollars: 0 }, { ...ok, budgetDollars: 1.5 }, { ...ok, budgetDollars: 100_001 },
-      { ...ok, bracket: 0 }, { ...ok, bracket: 6 }, { ...ok, bracket: 2.5 },
-      { ...ok, themes: "dinosaurs" }, { ...ok, themes: [1] }, { ...ok, themes: null },
-      { ...ok, themes: ["Dinosaurs"] }, { ...ok, themes: ["-bad"] },
-      { ...ok, card: "not-a-uuid" }, { ...ok, card: 7 },
-    ];
-    for (const input of forged) {
-      expect(await lookDeeper(input as never)).toEqual({ kind: "refused" });
-    }
-    expect(stub.run).not.toHaveBeenCalled();
-  });
-
-  it("accepts more than MAX_THEMES existing themes (pre-open review): resolveWords never caps what a player's params accumulate", async () => {
-    const themes = Array.from({ length: 12 }, (_, i) => `theme-${i}`);
-    await lookDeeper({ ...ok, themes });
-    expect(stub.run).toHaveBeenCalledWith("user_1", {
-      readId: ID, words: "big lizards", controls: { budgetDollars: null, bracket: null },
-      existing: { themes, card: null },
-    });
-  });
-
-  it("hands a sound press to the read, trimmed, with its controls and existing answers", async () => {
-    const card = "0000aaaa-0000-4000-8000-000000000002";
-    await lookDeeper({
-      ...ok, words: "  big lizards  ", budgetDollars: 100_000, bracket: 5, themes: ["dinosaurs"], card,
-    });
-    expect(stub.run).toHaveBeenCalledWith("user_1", {
-      readId: ID, words: "big lizards", controls: { budgetDollars: 100_000, bracket: 5 },
-      existing: { themes: ["dinosaurs"], card },
-    });
   });
 });

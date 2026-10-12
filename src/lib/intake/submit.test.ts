@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildPhraseIndex } from "./match";
 import { emptyParams, parseChooseParams, READ_WORDS_MAX_CHARS } from "./params";
-import { BUSY_PARAM, deeperTarget, formTarget, REPEAT_PARAM, resultsTarget, submitTarget } from "./submit";
+import { BUSY_PARAM, formTarget, REPEAT_PARAM, resultsTarget, submitTarget } from "./submit";
 
 const DS = "0000aaaa-0000-4000-8000-000000000001";
 const SOL = "0000aaaa-0000-4000-8000-000000000002";
@@ -92,36 +92,6 @@ describe("submitTarget's card and Not used order", () => {
     const p = landed(target({ words: "big energy under $300", budgetDollars: 100 }));
     expect(p.notUsed.indexOf("$300")).toBeGreaterThan(p.notUsed.indexOf("big energy"));
     expect(p.notUsed.indexOf("big energy")).toBeGreaterThanOrEqual(0);
-  });
-});
-
-describe("deeperTarget", () => {
-  const READ = "0000aaaa-0000-4000-8000-0000000000dd";
-  const read = (chips: Parameters<typeof deeperTarget>[1]["chips"], notUnderstood: string[] = [], notUsed: string[] = []) =>
-    ({ chips, notUsed, notUnderstood });
-
-  it("folds the read's chips into the answers, names the read, and marks only what it added", () => {
-    const p = landed(deeperTarget(
-      { ...emptyParams(), results: true, words: "stompy lizards", themes: ["dinosaurs"], budgetDollars: 90 },
-      read([
-        { kind: "theme", slug: "dinosaurs", label: "Dinosaurs" },
-        { kind: "theme", slug: "landfall", label: "Landfall" },
-        { kind: "card", oracleId: DS, name: "Doubling Season" },
-        { kind: "budget", dollars: 200 },
-        { kind: "bracket", bracket: 3 },
-      ], ["stompy"]),
-      READ,
-    ));
-    expect(p).toMatchObject({ themes: ["dinosaurs", "landfall"], card: DS, budgetDollars: 90, bracket: 3, readId: READ, words: "stompy lizards" });
-    expect(p.deeper).toEqual(["t:landfall", "a", "k"]);
-    expect(p.notUsed).toEqual(["stompy", "$200"]);
-  });
-
-  it("keeps a card already given, and lists the read's other card as not used", () => {
-    const p = landed(deeperTarget({ ...emptyParams(), results: true, card: SOL }, read([{ kind: "card", oracleId: DS, name: "Doubling Season" }]), READ));
-    expect(p.card).toBe(SOL);
-    expect(p.deeper).toEqual([]);
-    expect(p.notUsed).toEqual(["Doubling Season"]);
   });
 });
 
