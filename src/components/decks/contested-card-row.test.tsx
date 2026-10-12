@@ -805,6 +805,14 @@ describe("ContestedCardRow — where an added copy goes", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(20);
   });
 
+  it("hands focus to the first deck Show revealed, since the press removes the button", () => {
+    render(<ContestedCardRow card={staging(17)} addedCopy />);
+    const show = screen.getByRole("button", { name: addedCopyCopy.chooser.foldShow });
+    show.focus();
+    fireEvent.click(show);
+    expect(document.activeElement).toBe(screen.getByText("HD - Deck 0").closest("[role=radio]"));
+  });
+
   it("says `can use it` for a brew reading a loose copy, with the note, and draws its mark hollow", () => {
     render(<ContestedCardRow card={staging(18)} addedCopy />);
     expect(screen.getAllByText(addedCopyCopy.chooser.canUse)).toHaveLength(3);

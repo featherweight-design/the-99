@@ -195,6 +195,17 @@ export function ContestedCardRow({
   const [announce, setAnnounce] = useState("");
   // The fold's `Show`, pressed: every folded claimant is drawn again, for this visit.
   const [unfolded, setUnfolded] = useState(false);
+  // THE DECK `Show` HANDS FOCUS TO. Pressing it removes the fold row, and the button with it, so
+  // focus would otherwise fall to the document and a keyboard or screen-reader reader loses their
+  // place. It moves to the first deck the press revealed, once that deck is drawn.
+  const revealFocus = useRef<string | null>(null);
+  const group = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const id = revealFocus.current;
+    if (!unfolded || id === null) return;
+    revealFocus.current = null;
+    group.current?.querySelector<HTMLElement>(`[data-deck="${id}"]`)?.focus();
+  }, [unfolded]);
   // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
   // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
   // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
@@ -467,6 +478,7 @@ export function ContestedCardRow({
 
       <ul
         className="list-none p-0 m-0 flex flex-col gap-[4px]"
+        ref={group}
         role="radiogroup"
         aria-label={words.group(card.cardName, inPlay)}
         aria-describedby={describedBy}
@@ -486,7 +498,10 @@ export function ContestedCardRow({
             <button
               type="button"
               aria-expanded={false}
-              onClick={() => setUnfolded(true)}
+              onClick={() => {
+                revealFocus.current = card.claimants[0]?.deckId ?? null;
+                setUnfolded(true);
+              }}
               className="text-[12.5px] min-h-[44px] px-[4px] flex-none text-[color:var(--accent)]"
             >
               {addedCopyCopy.chooser.foldShow}
