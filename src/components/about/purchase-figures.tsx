@@ -55,6 +55,8 @@ export function DeckPrintingFigureBody() {
   return (
     <div className="rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] p-[14px_16px]">
       <PrintingRegion
+        // A figure on a page the reader is scrolling: it must not move them to its tile.
+        still
         id="about-deck-printing"
         scope="deck"
         notice={null}

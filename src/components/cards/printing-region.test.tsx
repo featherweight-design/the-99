@@ -401,6 +401,19 @@ describe("PrintingRegion reveals the tile the reader is looking for (motion U1)"
   );
   const tileFor = (name: RegExp) => screen.getAllByRole("radio").find((r) => name.test(r.getAttribute("aria-label") ?? ""));
 
+  // The About page's specimen draws this region on a page the reader is scrolling: it must not
+  // move them to its tile (pre-open pass).
+  it("reveals nothing for a still specimen, pick or no pick", () => {
+    revealed.mockClear();
+    const still = (preferred: { setCode: string; collectorNumber: string } | null) => {
+      const el = region(preferred);
+      return { ...el, props: { ...el.props, still: true } };
+    };
+    const { rerender } = render(still(null));
+    rerender(still({ setCode: "LEA", collectorNumber: "270" }));
+    expect(revealed).not.toHaveBeenCalled();
+  });
+
   it("on open, after a pick and after a Reset, nearest in the column and centered in a row", () => {
     revealed.mockClear();
     const { rerender } = render(region(null));

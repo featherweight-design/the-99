@@ -72,6 +72,11 @@ function compareSetGroups(
 }
 
 type ArtRegionProps = {
+  /**
+   * A specimen (the About page's figure): nothing on the page asked for it, so it reveals no tile.
+   * Every live picker leaves this off and brings its tile into view.
+   */
+  still?: boolean;
   role?: "art";
   source?: "owned";
   layout?: undefined;
@@ -347,14 +352,15 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   // An arrow key already moved focus, and the browser's own focus scroll with it: keyboard
   // focus-following stays instant, so the selection it makes is not revealed again.
   const keyboardMove = useRef(false);
+  const still = props.role !== "choose" && props.still === true;
   useEffect(() => {
-    if (revealKey === null) return;
+    if (revealKey === null || still) return;
     if (keyboardMove.current) {
       keyboardMove.current = false;
       return;
     }
     return reveal(tileRefs.current.get(revealKey), "nearest", "center");
-  }, [revealKey]);
+  }, [revealKey, still]);
 
   function focusAndSelect(index: number) {
     const next = navigable[index];
