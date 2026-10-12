@@ -96,12 +96,12 @@ What it says:
 
 Recommendation: stay on Sonnet 4.5. Sonnet 5.5 is closer than the single run read, but its 6.6-point role gap is a measured loss on the labels that feed counts, for a saving of about a third ($1.34 against $1.94 per 1,000 cards at batch rates).
 
-## Decision for Hugh
+## Decision (Hugh, 2026-10-11)
 
-Nothing is changed. The evidence:
+**Card labels stay on Sonnet 4.5. The candidates, Haiku 5.5 and Sonnet 5.5, are closed.** Nothing in the labeler changes; reopen only with a new model or a new reason. The evidence behind it:
 
 - **Haiku 5.5 is not safe as a drop-in.** It costs about 3.5% of Sonnet 4.5 but drops the `land` role on three lands in four, invents jobs on thin cards and returns invalid kinds. A mana-base or ramp count built on its labels would be wrong.
 - **Sonnet 5.5 comes close on roles** (88% of cards identical on every role, 94% precision, land 100%) at about two thirds of the 4.5 cost, but it matches the stored label in full on only 51% of cards. The 4.5 self-repeat above gives one reference point: 4.5 reproduced its stored label on 60% of cards in full, so 51% is nine points under that single observation, and the role gap (88.0% against 94.6%) is the largest difference observed.
 - **Either model needs two code changes first** (`acceptsTemperature` and `needsThinkingDisabled`, above), and `LABEL_PROMPT_VERSION`'s freshness rules mean relabeling under a new model is a deliberate `list:` build, not a silent restale.
 
-Options: (a) stay on Sonnet 4.5 (the control above supports it); (b) ~~the 4.5 self-repeat control~~, now run (above) to decide whether Sonnet 5.5 is a safe switch for roughly a third off the label bill; (c) try Haiku 5.5 only on a narrow step where the land role does not matter, after a prompt trial on lands. My lean, now that (b) is done, is (a).
+Options considered: (a) stay on Sonnet 4.5, which the control supports and which was chosen; (b) the 4.5 self-repeat control, run above; (c) try Haiku 5.5 only on a narrow step where the land role does not matter, after a prompt trial on lands, not pursued.
