@@ -141,12 +141,16 @@ let tickets = 0;
 
 export async function loadPreconCatalog(
   now: number = Date.now(),
-  read: () => Promise<readonly PreconCatalogRow[]> = () => preconCatalogQuery(),
+  read: () => PromiseLike<readonly PreconCatalogRow[]> = () => preconCatalogQuery(),
 ): Promise<readonly PreconCatalogRow[]> {
   const ticket = ++tickets;
   const generation = await catalogGeneration();
   if (memo && memo.generation === generation && now - memo.at < MEMO_MS) return memo.value;
-  const entry = { generation, at: now, ticket, value: read() };
+  // SETTLED ONCE, whatever `read` returns. A Drizzle query builder is a lazy thenable that runs
+  // its query again on every `then` and `catch`, so a memo holding the builder itself memoised
+  // nothing: on staging the catalog query ran 126 times at 492ms mean, once per deck page.
+  // `Promise.resolve().then(read)` adopts it with one `then`, and every later await reads that.
+  const entry = { generation, at: now, ticket, value: Promise.resolve().then(read) };
   // A read that started earlier never replaces one that started later: around a catalog refresh
   // an old-generation read can finish last, and must not roll the memo back to it.
   if (memo && memo.ticket > ticket) return entry.value;

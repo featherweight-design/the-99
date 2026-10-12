@@ -54,4 +54,25 @@ describe("loadPreconCatalog", () => {
     expect(reads).toBe(2);
     vi.doUnmock("../cache/catalog-generation");
   });
+
+  // Drizzle's builder is a thenable that runs its query on EVERY then/catch. A memo holding one
+  // re-ran the query on every await (staging, 2026-10-12: 126 runs at 492ms). Only a real promise
+  // settles once.
+  it("runs a lazy, re-executing read once, the way Drizzle's builder behaves", async () => {
+    generation = "lazy";
+    let executions = 0;
+    // Like Drizzle's QueryPromise: `then` AND `catch` each run the query.
+    const run = () => {
+      executions += 1;
+      return Promise.resolve([] as never[]);
+    };
+    const lazy = {
+      then: (ok: (v: never[]) => unknown, no?: (e: unknown) => unknown) => run().then(ok, no),
+      catch: (no: (e: unknown) => unknown) => run().catch(no),
+    };
+    await loadPreconCatalog(10_000, () => lazy);
+    await loadPreconCatalog(10_001, () => lazy);
+    await loadPreconCatalog(10_002, () => lazy);
+    expect(executions).toBe(1);
+  });
 });
