@@ -9,7 +9,7 @@
 
 import { useId, useRef, useState } from "react";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
-import { destinationDecks, emphasize, liveDestination, liveSentence, longSentence } from "../../lib/collection/copy-line";
+import { liveDestination, liveSentence, longParts, type SentencePart } from "../../lib/collection/copy-line";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { ContestedCardRow } from "./contested-card-row";
 
@@ -18,11 +18,14 @@ export function CopyLine({
   sentence,
   chooser,
   form = "row",
-  decks = [],
+  parts = [],
+  onLive,
 }: {
   form?: "row" | "line";
-  /** The line form: the deck names the frozen sentence prints, drawn in `--fg` (design table). */
-  decks?: readonly string[];
+  /** The line form: the frozen sentence cut at its names, each drawn in `--fg` (design table). */
+  parts?: readonly SentencePart[];
+  /** Every card a Change write read back, for a block whose own figures follow the row (Add Cards' foot). */
+  onLive?: (card: ContestedCard | null) => void;
   cardName: string;
   /** Where the copy went, frozen at the add. */
   sentence: string;
@@ -41,10 +44,8 @@ export function CopyLine({
   const [last, setLast] = useState<ContestedCard | undefined>(undefined);
   const panel = useId();
   const name = useRef<HTMLSpanElement>(null);
-  const said = live === undefined ? sentence
-    : !live ? null
-      : form === "row" ? liveSentence(live)
-        : ((d) => (d ? longSentence(d, cardName) : null))(liveDestination(live));
+  // The row form's sentence; the line form draws its own runs below.
+  const said = live === undefined ? sentence : live ? liveSentence(live) : null;
   // The chooser behind Change: the read-back once there is one. A null read-back (the last copy
   // went) is terminal: the open chooser stays to show its refusal, and `Done` closes it for good,
   // since every option a reopened chooser offered could only be refused.
@@ -53,6 +54,7 @@ export function CopyLine({
   const onCard = (c: ContestedCard | null) => {
     setLive(c);
     if (c) setLast(c);
+    onLive?.(c);
   };
   const toggle = () => {
     // Closing the terminal chooser takes its button with it, so focus goes to the row's card (the
@@ -81,14 +83,13 @@ export function CopyLine({
   if (form === "line") {
     // Add Cards (design table, CopyLine): min-h 44, pad 8 0, a top rule, the sentence 13.5 / 1.5,
     // `--fg-body` with the card `--fg` 600 and each deck `--fg`, frozen and live alike.
-    const liveDecks = live ? ((d) => (d ? destinationDecks(d) : []))(liveDestination(live)) : decks;
-    const parts = said ? emphasize(said, cardName, liveDecks) : [];
+    const runs = live === undefined ? parts : live ? ((d) => (d ? longParts(d, cardName) : []))(liveDestination(live)) : [];
     return (
       <li style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex min-h-[44px] items-center gap-[10px] py-[8px]">
           {/* The terminal chooser's Done takes its button with it: focus comes here, as on the row's card. */}
           <span ref={name} tabIndex={-1} className="min-w-0 flex-1 text-[13.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
-            {parts.map((p, i) => (p.em
+            {runs.map((p, i) => (p.em
               ? <span key={i} data-em={p.em} className={p.em === "card" ? "font-semibold" : undefined} style={{ color: "var(--fg)" }}>{p.text}</span>
               : p.text))}
           </span>

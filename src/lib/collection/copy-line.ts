@@ -114,38 +114,26 @@ export function liveSentence(card: ContestedCard): string | null {
   return d ? shortSentence(d) : null;
 }
 
-/** The deck names a destination's sentence prints, which the line form draws in `--fg`. */
-export function destinationDecks(d: Destination): string[] {
-  if (d.kind === "picked") return [d.deck];
-  if (d.kind === "soft") return d.brews.length === 1 ? d.brews : [];
-  return d.decks.map((x) => x.name);
-}
-
 /** A run of a sentence: plain, or a name the line form emphasizes. */
 export type SentencePart = { text: string; em?: "card" | "deck" };
 
 /**
- * A sentence cut at the names it prints, for Add Cards' emphasis (design table, CopyLine): the
- * card `--fg` 600, each deck `--fg`, the rest `--fg-body`. Each step takes the earliest name, the
- * longer one at a tie, so a deck named inside another's name is never split out of it.
+ * Add Cards' long form cut at the names it prints, for the line's emphasis (design table,
+ * CopyLine): the card `--fg` 600, each deck `--fg`, the rest `--fg-body`. Built from the
+ * destination, never by searching the finished sentence: a name is the player's own text and can
+ * be any word the sentence also says. Each name goes into the copy as a marker the copy cannot
+ * contain, and the sentence is cut at the markers.
  */
-export function emphasize(sentence: string, card: string, decks: readonly string[]): SentencePart[] {
-  const names = [{ text: card, em: "card" as const }, ...decks.map((text) => ({ text, em: "deck" as const }))]
-    .filter((n) => n.text !== "");
-  const parts: SentencePart[] = [];
-  let at = 0;
-  while (at < sentence.length) {
-    let best: { i: number; text: string; em: "card" | "deck" } | null = null;
-    for (const n of names) {
-      const i = sentence.indexOf(n.text, at);
-      if (i < 0) continue;
-      if (!best || i < best.i || (i === best.i && n.text.length > best.text.length)) best = { i, ...n };
-    }
-    if (!best) break;
-    if (best.i > at) parts.push({ text: sentence.slice(at, best.i) });
-    parts.push({ text: best.text, em: best.em });
-    at = best.i + best.text.length;
-  }
-  if (at < sentence.length) parts.push({ text: sentence.slice(at) });
-  return parts;
+export function longParts(d: Destination, card: string): SentencePart[] {
+  const mark = (k: string) => `\u0001${k}\u0002`;
+  const decks = d.kind === "picked" ? [d.deck] : d.kind === "soft" ? d.brews : d.decks.map((x) => x.name);
+  const marked: Destination = d.kind === "picked" ? { kind: "picked", deck: mark("0") }
+    : d.kind === "soft" ? { kind: "soft", brews: d.brews.map((_, i) => mark(String(i))) }
+      : { kind: "held", decks: d.decks.map((x, i) => ({ ...x, name: mark(String(i)) })) };
+  return longSentence(marked, mark("c"))
+    .split(/\u0001(c|\d+)\u0002/)
+    .flatMap((run, i): SentencePart[] => {
+      if (i % 2 === 0) return run ? [{ text: run }] : [];
+      return run === "c" ? [{ text: card, em: "card" }] : [{ text: decks[Number(run)], em: "deck" }];
+    });
 }

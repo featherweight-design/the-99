@@ -35,7 +35,7 @@ describe("whereItWent", () => {
     expect(out.rows.map((r) => r.sentence)).toEqual([
       copy.line.goesTo("Arcane Signet", "HD - Brago"), copy.line.goesTo("Sol Ring", "HD - Brago"),
     ]);
-    expect(out.rows.map((r) => r.decks)).toEqual([["HD - Brago"], ["HD - Brago"]]);
+    expect(out.rows.map((r) => r.parts.filter((p) => p.em === "deck").map((p) => p.text))).toEqual([["HD - Brago"], ["HD - Brago"]]);
     expect(out.foot).toBeNull();
   });
 
@@ -67,6 +67,23 @@ describe("whereItWent", () => {
     // One copy left over is named, since `the other 1` is not a sentence.
     expect(whereItWent([{ oracleId: "sol", name: "Sol Ring", quantity: 2 }], [placed("sol", "Sol Ring")]).foot)
       .toBe(copy.line.nobodyOne("Sol Ring"));
+  });
+
+  it("counts the foot from each row's last Change read-back, both ways", () => {
+    const two = [{ oracleId: "sol", name: "Sol Ring", quantity: 2 }];
+    const claimant = (deckId: string, deckName: string, o: Partial<AddedPlacement["chooser"]["claimants"][number]>) =>
+      ({ deckId, deckName, quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 1, allocated: 0, ...o });
+    const live = (...claimants: AddedPlacement["chooser"]["claimants"]) =>
+      ({ oracleId: "sol", cardName: "Sol Ring", arrived: 2, ownedBefore: 0, fromImport: true, owned: 2, claimants });
+    expect(whereItWent(two, [placed("sol", "Sol Ring")]).foot).toBe(copy.line.nobodyOne("Sol Ring"));
+    // The free copy given to a brew: nothing is free any more.
+    const given = live(claimant("b", "HD - Brago", { allocated: 1 }), claimant("w", "HD - Brew", { brew: true, granted: 1, allocated: 1 }));
+    expect(whereItWent(two, [placed("sol", "Sol Ring")], { sol: given }).foot).toBeNull();
+    // A cleared pick that leaves both copies with no deck: both are free.
+    expect(whereItWent(two, [placed("sol", "Sol Ring")], { sol: live(claimant("w", "HD - Brew", { brew: true })) }).foot)
+      .toBe(copy.line.nobodyRest(2));
+    // The copies went in another tab: the foot claims nothing about them.
+    expect(whereItWent(two, [placed("sol", "Sol Ring")], { sol: null }).foot).toBeNull();
   });
 
   it("counts a card listed twice once", () => {

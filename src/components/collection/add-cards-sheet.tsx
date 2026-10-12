@@ -24,7 +24,8 @@ import { identityGradient } from "../../lib/collection/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PendingReporter } from "../shell/pending-reporter";
-import { whereItWent, type WhereItWent } from "../../lib/collection/add-placements";
+import { whereItWent, type AddedPlacement } from "../../lib/collection/add-placements";
+import type { ContestedCard } from "../../lib/collection/summary-read";
 import { addedCopyCopy } from "../../lib/copy/added-copy";
 import { CopyLine } from "../decks/copy-line";
 import { PRIMARY } from "../ui/button";
@@ -92,7 +93,8 @@ function AddMode({
   const attempt = useRef<{ id: string; payload: string } | null>(null);
   const [lines, setLines] = useState<AddLineState[]>([]);
   const [phase, setPhase] = useState<Phase>("editing");
-  const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string; went: WhereItWent | null } | null>(null);
+  // `went`: what the block is built from, so its foot can follow each row's Change (`whereItWent`).
+  const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string; went: WentInputs | null } | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
@@ -259,7 +261,7 @@ function AddMode({
         const s = summarize(lines);
         // Where each copy went, when the save said (`ADDED_COPY_ENABLED`): absent, nothing is drawn.
         const placed = out.applied.placed;
-        setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id, went: placed ? whereItWent(lines, placed) : null });
+        setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id, went: placed ? { lines, placed } : null });
         setPhase("saved");
         setAnnounce(copy.announceSaved(s.copies));
         onSaved?.(s.copies);
@@ -359,9 +361,7 @@ function AddMode({
                   {copy.countsAfter(baseline, baseline + saved.copies)}
                 </p>
               )}
-              {saved.went && (saved.went.rows.length > 0 || saved.went.foot) ? (
-                <WhereItWentBlock went={saved.went} />
-              ) : null}
+              {saved.went ? <WhereItWentBlock {...saved.went} /> : null}
               {/* B8: the entry this save wrote, one tap away. The sheet closes on the way, since
                   the head that hosts it stays mounted across the route change. */}
               <Link
@@ -560,12 +560,19 @@ function ResultRow({
   );
 }
 
+/** What the `Where it went` block is built from: the save's lines and where the write put them. */
+type WentInputs = { lines: Parameters<typeof whereItWent>[0]; placed: AddedPlacement[] };
+
 /**
  * Where an added copy goes, in the saved state (design table, CopyLine): after the counts, before
  * History. A row per card a deck took or read, each with Change; the cards no deck needed in one
  * faint foot line.
  */
-function WhereItWentBlock({ went }: { went: WhereItWent }) {
+function WhereItWentBlock({ lines, placed }: WentInputs) {
+  // Each row's last Change read-back, by card, so the foot says what is free now.
+  const [live, setLive] = useState<Record<string, ContestedCard | null>>({});
+  const went = whereItWent(lines, placed, live);
+  if (went.rows.length === 0 && !went.foot) return null;
   return (
     <div className="w-full">
       {went.rows.length > 0 ? (
@@ -575,7 +582,15 @@ function WhereItWentBlock({ went }: { went: WhereItWent }) {
           </p>
           <ul className="m-0 list-none p-0">
             {went.rows.map((r) => (
-              <CopyLine key={r.oracleId} form="line" cardName={r.cardName} sentence={r.sentence} decks={r.decks} chooser={r.chooser} />
+              <CopyLine
+                key={r.oracleId}
+                form="line"
+                cardName={r.cardName}
+                sentence={r.sentence}
+                parts={r.parts}
+                chooser={r.chooser}
+                onLive={(card) => setLive((m) => ({ ...m, [r.oracleId]: card }))}
+              />
             ))}
           </ul>
         </>

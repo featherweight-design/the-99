@@ -5,6 +5,7 @@ const assign = vi.hoisted(() => vi.fn());
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: assign }));
 import { CopyLine } from "./copy-line";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
+import { longParts } from "../../lib/collection/copy-line";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 
@@ -133,7 +134,7 @@ describe("CopyLine", () => {
     assign.mockResolvedValueOnce({ ok: true, card: card(1) });
     render(
       <ul>
-        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} decks={["HD - Brago"]} chooser={card()} />
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} parts={longParts({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring")} chooser={card()} />
       </ul>,
     );
     // The card `--fg` 600 and the deck `--fg`, inside the `--fg-body` sentence (design table).
@@ -150,7 +151,7 @@ describe("CopyLine", () => {
     assign.mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
     render(
       <ul>
-        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} decks={["HD - Brago"]} chooser={card()} />
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} parts={longParts({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring")} chooser={card()} />
       </ul>,
     );
     const change = screen.getByRole("button", { name: copy.changeAria("Sol Ring") });

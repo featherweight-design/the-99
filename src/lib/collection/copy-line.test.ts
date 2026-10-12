@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emphasize, liveSentence, longSentence, wentSentence } from "./copy-line";
+import { liveSentence, longParts, longSentence, wentSentence } from "./copy-line";
 import { addedCopyCopy as copy } from "../copy/added-copy";
 import type { WentRow } from "./arrivals";
 import type { ContestedCard } from "./summary-read";
@@ -112,16 +112,24 @@ describe("longSentence (Add Cards)", () => {
   });
 });
 
-describe("emphasize", () => {
-  it("cuts the sentence at the card and each deck, in order", () => {
-    expect(emphasize(copy.line.goesToMany("Sol Ring", 2, ["HD - Brago", "HD - Eldrazi"]), "Sol Ring", ["HD - Brago", "HD - Eldrazi"])).toEqual([
+describe("longParts", () => {
+  const held = (...names: string[]) => ({ kind: "held" as const, decks: names.map((name) => ({ name, copies: 1, picked: false })) });
+  it("cuts the long form at the card and each deck, in order, and says the long form", () => {
+    const parts = longParts(held("HD - Brago", "HD - Eldrazi"), "Sol Ring");
+    expect(parts).toEqual([
       { text: "2 copies of " }, { text: "Sol Ring", em: "card" }, { text: " go to " },
       { text: "HD - Brago", em: "deck" }, { text: " and " }, { text: "HD - Eldrazi", em: "deck" }, { text: ", one each" },
     ]);
+    expect(parts.map((p) => p.text).join("")).toBe(longSentence(held("HD - Brago", "HD - Eldrazi"), "Sol Ring"));
   });
 
-  it("takes the longer name at a tie, so a deck named inside another stays whole", () => {
-    expect(emphasize("Sol Ring goes to HD - Brago Two", "Sol Ring", ["HD - Brago", "HD - Brago Two"]))
-      .toEqual([{ text: "Sol Ring", em: "card" }, { text: " goes to " }, { text: "HD - Brago Two", em: "deck" }]);
+  it("marks names by where the copy puts them, never by matching words in the sentence", () => {
+    // A deck named like a word the sentence says, and a deck named like the card.
+    expect(longParts(held("copies", "Sol Ring"), "Sol Ring")).toEqual([
+      { text: "2 copies of " }, { text: "Sol Ring", em: "card" }, { text: " go to " },
+      { text: "copies", em: "deck" }, { text: " and " }, { text: "Sol Ring", em: "deck" }, { text: ", one each" },
+    ]);
+    expect(longParts(held("HD - Brago", "HD - Brago Two"), "Sol Ring").filter((p) => p.em === "deck").map((p) => p.text))
+      .toEqual(["HD - Brago", "HD - Brago Two"]);
   });
 });
