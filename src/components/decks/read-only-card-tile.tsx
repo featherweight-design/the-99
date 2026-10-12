@@ -15,7 +15,7 @@ import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { preconsCopy } from "../../lib/copy/precons";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { CardDetailTrigger, type Sibling } from "../cards/card-detail-provider";
+import { CardDetailTrigger, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
 import { HydratedImg } from "../ui/hydrated-art";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -59,6 +59,9 @@ export function ReadOnlyCardTile({
           oracleId={card.oracleId}
           name={fullName}
           siblings={siblings}
+          // The trigger's label replaces everything nested in it, and the drawn `×N` is aria-hidden,
+          // so a card the precon lists more than once says so here, as the deck tile does.
+          ariaLabel={card.quantity > 1 ? `${cardDetailCopy.triggerAria(fullName)}, ${copy.open.copiesAria(card.quantity)}` : undefined}
           className={`relative block w-full overflow-hidden ${TILE_ART_CLIP}`}
           style={{ aspectRatio: TILE_ART_RATIO, background: "var(--surface-sunken)" }}
         >

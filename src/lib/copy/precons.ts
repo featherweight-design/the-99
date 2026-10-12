@@ -97,6 +97,8 @@ export const preconsCopy = {
     /** A basic's sub-line when the precon holds it in more than one art (at one, the printing). */
     basicArts: (setCode: string, arts: number) => `${setCode} · first of ${n(arts)} arts`,
     basicCount: (copies: number) => `×${n(copies)}`,
+    /** Spoken with a card tile's name when the precon lists more than one copy. */
+    copiesAria: (copies: number) => `${n(copies)} copies in this precon`,
   },
   group: {
     commander: "Commander",

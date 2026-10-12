@@ -43,4 +43,9 @@ describe("ReadOnlyCardTile", () => {
     tile(card(), { arts: 1 });
     expect(screen.getByText("CMM 287")).toBeInTheDocument();
   });
+
+  it("speaks the copies of a card held more than once in the trigger's name", () => {
+    tile(card({ oracleId: "rats", name: "Relentless Rats", owned: true, quantity: 3, typeLine: "Creature — Rat" }));
+    expect(screen.getByRole("button", { name: /Relentless Rats, 3 copies/ })).toBeInTheDocument();
+  });
 });
