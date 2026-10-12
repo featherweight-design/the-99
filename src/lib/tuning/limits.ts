@@ -50,12 +50,15 @@ export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
 export const MODEL_TIMEOUT_MS = 110_000;
 
 /**
- * The model a run calls, recorded per run in `deck_suggestion_runs.model`.
+ * The model a run calls, recorded per run in `deck_suggestion_runs.model`, for BOTH tools (Suggested
+ * changes and Proposed cuts).
  *
- * The current Sonnet (Hugh confirmed, 2026-09-23), chosen for a structured-output task checked
- * by strict validation, at $2 / $10 per MTok against the current Opus's $5 / $25.
+ * Sonnet 5.5 (Hugh, 2026-10-12, model tiering: `docs/superpowers/eval/model-tiering-2026-10-12.md`),
+ * at the same $2 / $10 per MTok as the Sonnet 5 it replaced and the same effort. Measured on his
+ * twelve staging decks it answered in about a third of the time, at about two thirds of the cost,
+ * and found as many of his cuts. Chosen for a structured-output task checked by strict validation.
  */
-export const TUNING_MODEL = "claude-sonnet-5";
+export const TUNING_MODEL = "claude-sonnet-5-5";
 
 /**
  * The answer's own worst case, from the response schema's caps rather than guessed. One line at its

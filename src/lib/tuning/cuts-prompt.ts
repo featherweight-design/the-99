@@ -4,8 +4,11 @@ import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 
-/** Its own version, apart from Suggested changes' `PROMPT_VERSION`. */
-export const CUTS_PROMPT_VERSION = 3;
+/**
+ * Its own version, apart from Suggested changes' `PROMPT_VERSION`. 4 (2026-10-12, model tiering): no
+ * wording change; the model moved to Sonnet 5.5, so a deck with a run stored at 3 reopens the gate.
+ */
+export const CUTS_PROMPT_VERSION = 4;
 
 /** The last curve bucket holds that mana value and above, so it reads `7+`; a cite still uses 7. */
 const bucket = (cmc: number) => (cmc >= CURVE_MAX ? `${cmc}+` : `${cmc}`);

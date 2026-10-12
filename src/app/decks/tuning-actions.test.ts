@@ -191,7 +191,7 @@ describe("runTuning after the call returned", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
-      { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "suggest", effort: "medium" },
+      { model: "claude-sonnet-5-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "suggest", effort: "medium" },
     ]]);
   });
 });
@@ -201,7 +201,7 @@ describe("runTuning's model call (v2)", () => {
     calls.startKind = "started";
     calls.reachModel = true;
     await runTuning(DECK, { anyway: true }).catch(() => undefined);
-    expect(calls.modelRequest).toMatchObject({ model: "claude-sonnet-5", effort: "medium", deadlineMs: 110_000, retryFloorMs: 70_000 });
+    expect(calls.modelRequest).toMatchObject({ model: "claude-sonnet-5-5", effort: "medium", deadlineMs: 110_000, retryFloorMs: 70_000 });
   });
 
   it("hands the deck's overview and the universal staples to the pack", async () => {
@@ -242,7 +242,7 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "malformed", droppedCount: undefined },
-      { model: "claude-sonnet-5", usage, step: "suggest", effort: "medium" },
+      { model: "claude-sonnet-5-5", usage, step: "suggest", effort: "medium" },
     ]]);
   });
 });

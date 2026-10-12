@@ -29,4 +29,8 @@
 // system message's size line, the independence rule and the `oneCard` rule all change.
 // Unconditional for every deck. A deck with a successful run stored at version 7 reopens the gate
 // and can run again; its stored swaps stay on screen, drawn as the swap card, until it does.
-export const PROMPT_VERSION = 8;
+// 9 (2026-10-12, model tiering): no wording change. The model moves from Sonnet 5 to Sonnet 5.5
+// (`TUNING_MODEL`), whose answers differ in length and in what they choose, so a deck with a successful
+// run stored at version 8 reopens the gate and can run again on the model now in use. The model is
+// recorded per run but is not what the gate compares; this number is.
+export const PROMPT_VERSION = 9;

@@ -22,7 +22,7 @@ describe("buildCutsPrompt", () => {
     expect(user).not.toMatch(/- cmc 7: have/);
   });
 
-  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(3));
+  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(4));
 
   it("asks for exactly over cuts and carries the player-text rule and the cite rules", () => {
     const { system } = build();
