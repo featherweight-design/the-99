@@ -89,10 +89,11 @@ export const tuningHubCopy = {
     /** Engineering: the note when the list has not moved, or the version it read is gone. */
     pastNoteUncounted: "A past run, read-only. Nothing here can be applied now.",
     /** Engineering (re-review, Hugh 2026-10-12): the note above a tool History reopened. A paid
-     *  run's lines are re-checked one by one; a free count named no card, so its tool reads the
-     *  deck as it is now and the note keeps what the count found. /copy-review, 2026-10-12. */
+     *  run's lines, and an Improve-my-mana help read's trades (`mana`), are re-checked one by one;
+     *  a free count that named no card (the cuts count, the Mana Balance totals) reopens its tool
+     *  on the deck as it is now, and `counted` keeps what it found. /copy-review, 2026-10-12. */
     review: {
-      note: { cuts: (date: string) => `From a run on ${date}. Each cut is checked against the deck as it is now.`, suggested: (date: string) => `From a run on ${date}. Each change is checked against the deck as it is now.` },
+      note: { cuts: (date: string) => `From a run on ${date}. Each cut is checked against the deck as it is now.`, suggested: (date: string) => `From a run on ${date}. Each change is checked against the deck as it is now.`, mana: (date: string) => `From ${date}. Each trade is checked against the deck as it is now.` },
       counted: (date: string, summary: string) => `Counted ${date}: ${summary}. Below is the deck as it is now.`,
     },
     /** Engineering: a past run that returned no lines, and a free count's own body. */
@@ -124,6 +125,8 @@ export const tuningHubCopy = {
        *  states them. The canvas fixtures (`green short by 3`, `every color covered`) are R1
        *  verdicts, which R3 retired. */
       manaFree: (pips: number, sources: number) => deckStatsCopy.colors.denom(pips, sources),
+      /** Engineering (re-review PR 3): an Improve my mana help read, named by its color. */
+      manaHelp: (color: string, trades: number) => `help for ${color} · ${trades === 0 ? "no trades" : trades === 1 ? "1 trade" : `${trades} trades`}`,
       counted: "counted",
     },
   },

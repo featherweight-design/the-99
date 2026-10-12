@@ -15,7 +15,8 @@
 
 import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
-import { applyManaTrade, readManaHelpFor, undoManaTrade, type ManaTradeResult } from "../../app/decks/mana-actions";
+import { applyManaTrade, readManaHelpFor, readManaHelpReview, undoManaTrade, type ManaTradeResult } from "../../app/decks/mana-actions";
+import { useReviewRun } from "./review-run";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
@@ -65,7 +66,8 @@ export function ImproveDoor({
   balance,
   commander,
   revision,
-  read = readManaHelpFor,
+  read: readLive = readManaHelpFor,
+  readReview = readManaHelpReview,
   trades = TRADES,
 }: {
   deckId: string;
@@ -74,11 +76,22 @@ export function ImproveDoor({
   /** The list (and locks) the count was read for: a kept result for any other is retired. */
   revision?: string;
   read?: HelpRead;
+  /** A help read History reopened (re-review), by its id. */
+  readReview?: (deckId: string, countId: string) => Promise<ManaHelp | null>;
   trades?: TradeActions;
 }) {
+  // A help read History reopened: its color opens on that read's trades, each re-checked against
+  // today's help, until the reader makes a trade here (`leftReview`): from then on, and for every
+  // other color throughout, the door reads today's help, as an ordinary open does.
+  const review = useReviewRun("mana");
+  const leftReview = useRef(false);
+  const reviewColor = review?.runId && review.color ? (review.color as BalanceColor) : null;
+  const isReviewRead = (c: BalanceColor) => reviewColor !== null && c === reviewColor && !leftReview.current;
+  const read: HelpRead = (d, c) => (isReviewRead(c as BalanceColor) && review?.runId ? readReview(d, review.runId) : readLive(d, c));
   const order = balance.colorOrder;
   const evidence = new Map(balance.colors.map((c) => [c.color, c]));
   const [door, setDoor] = useState<Door>(() => {
+    if (reviewColor !== null) return { at: "result", color: reviewColor, help: { kind: "reading" } };
     const kept = visitValue<Kept>(deckId, "mana-help");
     return kept && kept.revision === revision ? { at: "result", color: kept.help.color, help: { kind: "ok", help: kept.help } } : { at: "closed" };
   });
@@ -150,7 +163,8 @@ export function ImproveDoor({
       setFocus("step");
       return;
     }
-    if (help && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
+    // A reopened past help is never kept as the visit's help: an ordinary open must read today's.
+    if (help && !help.noLonger && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
     if (!quiet) wantReveal.current = true;
     setDoor({ at: "result", color, help: help ? { kind: "ok", help } : { kind: "failed" } });
   };
@@ -170,6 +184,9 @@ export function ImproveDoor({
       setRefused({ key, message: result.message });
       return;
     }
+    // A trade made from a reopened past help leaves the review: the re-read it asks for is today's
+    // help, so the trade just made is not drawn as one that no longer applies.
+    if (review && !leftReview.current) { leftReview.current = true; review.leave?.(); }
     setVisitValue(deckId, "mana-follow", color);
     changeApplied((list) => [...list, { applyId: result.applyId, color, out: trade.out.name, staple: trade.staple.name }]);
   };
@@ -210,6 +227,13 @@ export function ImproveDoor({
     setVisitValue(deckId, "mana-help", undefined);
     setDoor({ at: "closed" });
   }, [revision, deckId]);
+
+  // Reopened from History: that color's help is read at once, with the trades it showed.
+  const openReview = useEffectEvent((c: BalanceColor) => void run(c));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading an external record on mount, as the panels do
+    if (reviewColor !== null) openReview(reviewColor);
+  }, [reviewColor]);
 
   const one = order.length === 1 ? order[0].color : null;
   const open = () => {
@@ -458,7 +482,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
             ) : (
               <ul className="flex flex-col gap-[6px]">
                 {state.help.staples.map((s) => (
-                  <StapleRow key={s.oracleId} staple={s} siblings={state.help.staples.map((x) => x.oracleId)} trade={state.help.trades.find((t) => t.staple.oracleId === s.oracleId) ?? null} picked={color} commander={commander} onApply={onApply} busy={busy} refused={refused?.key === s.oracleId ? refused.message : null} />
+                  <StapleRow key={s.oracleId} staple={s} siblings={state.help.staples.map((x) => x.oracleId)} trade={state.help.trades.find((t) => t.staple.oracleId === s.oracleId) ?? null} stale={state.help.noLonger?.includes(s.oracleId) ?? false} picked={color} commander={commander} onApply={onApply} busy={busy} refused={refused?.key === s.oracleId ? refused.message : null} />
                 ))}
               </ul>
             )}
@@ -478,10 +502,12 @@ function None({ text }: { text: string }) {
   );
 }
 
-function StapleRow({ staple, siblings, trade, picked, commander, onApply, busy, refused }: {
+function StapleRow({ staple, siblings, trade, stale = false, picked, commander, onApply, busy, refused }: {
   staple: StapleCandidate;
   siblings: string[];
   trade: TradeMove | null;
+  /** A reopened past help's trade that today's help no longer offers: drawn, never offered. */
+  stale?: boolean;
   picked: BalanceColor;
   commander: string;
   onApply: (trade: TradeMove) => void;
@@ -551,7 +577,11 @@ function StapleRow({ staple, siblings, trade, picked, commander, onApply, busy, 
           <span className="font-mono text-[10.5px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.help.trade(trade.out.name, changesText(trade.changes, picked))}</span>
         </p>
       ) : null}
-      {trade ? (
+      {trade && stale ? (
+        <p data-mana-trade-stale="" className="flex flex-wrap items-baseline gap-[9px]">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-locked)]">{deckTuningCopy.lists.noLongerApplies}</span>
+        </p>
+      ) : trade ? (
         <div className="flex flex-col gap-[6px]">
           {/* Suggested changes' Apply, as drawn there: the full-width 44px press on a phone, a compact one on desktop. */}
           <button

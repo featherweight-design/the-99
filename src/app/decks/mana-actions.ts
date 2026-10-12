@@ -9,7 +9,11 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { manaBalanceEnabled } from "../../lib/tuning/flag";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { loadManaBalance } from "../../lib/tuning/mana-balance-load";
-import type { ManaHelp } from "../../lib/tuning/mana-help";
+import { reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
+import { isManaHelpSummary } from "../../lib/tuning/history";
+import { db } from "../../db";
+import { deckToolCounts } from "../../db/schema";
+import { helpReadWhere } from "../../lib/tuning/mana-help-read";
 import { listKeyOf } from "../../lib/tuning/list-key";
 import { loadManaHelp } from "../../lib/tuning/mana-help-load";
 import { applyTrade, undoTrade } from "../../lib/tuning/mana-trade";
@@ -66,8 +70,9 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
 
 /**
  * "Improve my mana" for one color the player picked: basics that could swap to it and staples the
- * commander's decks run, owned first. Free and asked for; never prefetched, never recorded in
- * History. A PUBLIC ENDPOINT: any color outside the five, or outside the commander's identity, is
+ * commander's decks run, owned first. Free and asked for; never prefetched. A read in the
+ * commander's identity is recorded for History once per list and color (a `mana_help` count, the
+ * help as shown), so History can reopen it. A PUBLIC ENDPOINT: any color outside the five, or outside the commander's identity, is
  * refused. Null on a refusal or a failed read; the panel draws its help-failed state.
  */
 export async function readManaHelpFor(deckId: string, color: string): Promise<ManaHelp | null> {
@@ -75,11 +80,39 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
   const read = await helpFor(deckId, color, userId);
   if (!read) return null;
   const { deckId: id, listKey, ...help } = read;
-  void listKey; // the write's precondition, never sent to the client
+  // `listKey` is the write's precondition and History's key, never sent to the client.
   // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
   // one the player owns, else the catalog's (`chainArt`, as Suggested changes and Proposed cuts do).
   const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId));
-  return art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
+  const shown = art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
+  // History's row for this help, once per list and color: it reopens with exactly what was shown here.
+  if (shown.inIdentity) {
+    await recordToolCount({ deckId: id, userId, tool: "mana_help", listFingerprint: `${listKey}:${shown.color}`, readVersion: null, summary: { color: shown.color, help: shown } });
+  }
+  return shown;
+}
+
+/**
+ * A help History reopened (re-review): the help as it was shown, with each of its trades checked
+ * against today's help for that color (`reviewHelp`). Null for an id that is not this reader's help
+ * read on this deck. An Apply from it goes through `applyManaTrade`, which checks today's help again.
+ */
+export async function readManaHelpReview(deckId: string, countId: string): Promise<ManaHelp | null> {
+  const userId = await requireUserId();
+  if (!manaBalanceEnabled() || !isUuid(deckId) || !isUuid(countId)) return null;
+  const [row] = await db.select({ summary: deckToolCounts.summary }).from(deckToolCounts)
+    .where(helpReadWhere(countId, deckId, userId)).limit(1);
+  if (!row || !isManaHelpSummary(row.summary)) return null;
+  // Today's help for that color. A color the commander's identity no longer holds offers nothing,
+  // so every stored trade is truly stale; a read that FAILED is not a re-check, so it returns null
+  // and the door draws its own failure state rather than calling every trade gone.
+  const deck = await getDeckDetail(deckId, userId);
+  if (!deck) return null;
+  const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
+  if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
+  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor);
+  if (!today) return null;
+  return reviewHelp(row.summary.help, today);
 }
 
 /** Improve my mana for one of the reader's decks, read fresh, with the key of the list it was read from:

@@ -610,6 +610,22 @@ describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
     expect(probe()).toBeUndefined();
   });
 
+  it("opens an Improve my mana help read in Mana Balance with its id and color, under its note", async () => {
+    function ManaProbe() {
+      const review = useReviewRun("mana");
+      return <h2 id="mana-heading" data-probe={review ? `${review.runId}:${review.color}` : "ordinary"}>mana</h2>;
+    }
+    const HELP = "99999999-9999-4999-8999-999999999999";
+    readHistoryPage.mockResolvedValue({ rows: [{ id: `count:${HELP}`, tool: "mana", tier: "free", outcome: "ok", at, summary: { kind: "manaHelp", color: "G", trades: 2 } }], nextCursor: null });
+    render(<TuningHub deckId="d" drawn tools={[tools[0], { tool: "mana", panel: <ManaProbe /> }, tools[2]]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
+    fireEvent.click(document.querySelector("[data-history-row]")!);
+    await waitFor(() => expect(probe()).toBe(`${HELP}:G`));
+    expect(screen.getByText(copy.history.review.note.mana(historyDate(at)))).toBeTruthy();
+  });
+
   it("drops the run when the tool is opened any other way", async () => {
     await openHistory();
     fireEvent.click(row(`run:${RUN}`));

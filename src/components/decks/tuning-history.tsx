@@ -13,6 +13,8 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { afterKey } from "../../lib/tuning/history";
 import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun } from "../../lib/tuning/history";
+import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
+import { colorWord } from "../../lib/tuning/mana-view";
 import { TuningToolMark } from "./tuning-tool-mark";
 
 const copy = tuningHubCopy.history;
@@ -56,6 +58,7 @@ function summaryOf(summary: HistorySummary): string {
     case "cutsDeeperOk": return s.cutsDeeperOk(summary.named, summary.asked, summary.cut, summary.kept);
     case "cutsFree": return s.cutsFree(summary.over, summary.roles);
     case "manaFree": return s.manaFree(summary.pips, summary.sources);
+    case "manaHelp": return s.manaHelp(BALANCE_COLORS.includes(summary.color as BalanceColor) ? colorWord(summary.color as BalanceColor) : summary.color, summary.trades);
     case "none": return s.counted;
   }
 }
