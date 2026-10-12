@@ -10,6 +10,7 @@ import { allocateClaims } from "../decks/allocate";
 import { assignCopyIn, lockCardClaims, type AssignRefusal, type AssignReport } from "../decks/assign";
 import { cartSourceDecks, regrant } from "../decks/mark-bought";
 import { proxiedMembership } from "../decks/proxies";
+import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
@@ -720,9 +721,13 @@ export async function applyCollectionChange(
           )).returning({ deckId: cardAssignments.deckId });
           const restore = dropped.length > 0 ? restoreToUndo(change.undoPlacement, row.rows) : null;
           // Only once the press's own pick went, never over a row the restored deck already holds,
-          // and only for a deck the player still has. Another deck's reservation does not block it: a card can carry older
-          // reservations than the one-per-card rule, and the press moved only the oldest.
+          // and only for a deck the player still has. Another deck's reservation does not block it:
+          // a card can carry older reservations than the one-per-card rule, and the press moved only
+          // the oldest. Under that deck's row lock (after the card's, the order every reservation
+          // write takes), and swept by the deck's own prune: a deck that has since stopped claiming
+          // the card (a commit without it, a proxy) gets no reservation back.
           if (restore) {
+            await tx.execute(sql`select id from decks where id = ${restore.deckId} and user_id = ${userId} for update`);
             await tx.execute(sql`
               insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
               select ${userId}, ${drop.oracleId}, d.id, ${restore.copies}, ${restore.createdAt}::timestamp
@@ -733,6 +738,7 @@ export async function applyCollectionChange(
                   where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId} and a.deck_id = ${restore.deckId}
                 )
             `);
+            await pruneOrphanAssignments(tx, restore.deckId);
           }
         }
       }

@@ -399,6 +399,25 @@ async function main() {
       moved4.status === "applied" && undone4.status === "applied"
         && await reservedF(brewX) === 1 && await reservedF(brewZ) === 1 && await reservedF(brewY) === 0,
       `${moved4.status}/${undone4.status}; X ${await reservedF(brewX)} Z ${await reservedF(brewZ)} Y ${await reservedF(brewY)}`);
+
+    // ---- A deck that stopped claiming the card since the press gets no reservation back ---------
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query(
+      "insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, '2026-01-02 03:04:05.123456')",
+      [USER, F, brewX],
+    );
+    const e5 = randomUUID();
+    const moved5 = await buyF(await heldNow(), e5);
+    // X prints the card now: a proxied card is not claimed.
+    await pool.query("insert into deck_proxies (deck_id, oracle_id) values ($1, $2)", [brewX, F]);
+    const undone5 = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e5, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
+      { id: randomUUID() },
+    );
+    check("Undo puts nothing back on a deck that no longer claims the card",
+      moved5.status === "applied" && undone5.status === "applied" && await reservedF(brewX) === 0 && await reservedF(brewY) === 0,
+      `${moved5.status}/${undone5.status}; X ${await reservedF(brewX)} Y ${await reservedF(brewY)}`);
+    await pool.query("delete from deck_proxies where deck_id = $1", [brewX]);
   } finally {
     await pool.query("delete from collection_history where user_id = $1", [USER]);
     await pool.query("delete from collection_items where user_id = $1", [USER]);
