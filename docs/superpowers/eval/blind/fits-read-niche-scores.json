@@ -1,0 +1,13 @@
+[
+{"id":"N01","interaction":"real","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"Sacrificing a Goblin to Goblin Sledder is a nonland permanent leaving, which turns on the Void counter."},
+{"id":"N02","interaction":"partial","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"Counting toward Storied is true, but the trample match adds nothing."},
+{"id":"N03","interaction":"partial","citations":"ok","fits":"no","cut":"poor","adds":"yes","note":"The Strider uses no counters, so it does not connect to the proliferate plan; Coretapper does put counters on artifacts."},
+{"id":"N04","interaction":"partial","citations":"ok","fits":"yes","cut":"poor","adds":"yes","note":"Being an Aura does count for the attack plan, but a tap pinger gives the attacker nothing; Acquired Mutation serves the attack plan better."},
+{"id":"N05","interaction":"partial","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"The 2-damage ping on the Wizard is real, but it has nothing to do with turning counters into damage."},
+{"id":"N06","interaction":"real","citations":"ok","fits":"yes","cut":"poor","adds":"yes","note":"Arcane Signet is staple ramp in a three-color deck; a weaker card would be the better cut."},
+{"id":"N07","interaction":"wrong","citations":"bad","fits":"no","cut":"defensible","adds":"yes","note":"Ruin Crab mills only opponents, so it never fills your graveyard toward threshold."},
+{"id":"N08","interaction":"real","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"At 4 mana, calling it cheap is a stretch, but the amplify and tap lines are correct."},
+{"id":"N09","interaction":"real","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"Prowess does trigger on Counterspell; the graveyard stun ability goes unmentioned."},
+{"id":"N10","interaction":"real","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"Uril already has hexproof, so the extra Aura's main value is +2/+2 and the untap."},
+{"id":"N11","interaction":"partial","citations":"ok","fits":"yes","cut":"defensible","adds":"yes","note":"Generic pump and protection with no tie to the Elves deck; the Blanchwood Armor comparison is loose."}
+]

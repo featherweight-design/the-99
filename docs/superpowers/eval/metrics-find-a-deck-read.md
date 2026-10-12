@@ -5,7 +5,7 @@ Sonnet 5.5 and Haiku 5.5, both at effort medium, on Hugh's eleven eval cards aga
 The harness is `scripts/eval/fits-read.mts` (`pnpm eval:fits-read`), with its own ledger
 (`ledger-find-a-deck.jsonl`) and a $2 cap.
 
-**Status: run 2026-10-12.** Total spend was $1.85 of the $2 cap (ledger), the Haiku rerun included. The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm) and `answers/fits-read-2026-10-12-05-07-32-haiku.json` (the Haiku rerun). `answers/fits-read-2026-10-12-04-42.json` is a first Haiku run on the same prompt ($0.045, 14 of 15 kept), made before the arm filenames were fixed; the 04:46 Haiku run is the one reported, so the two Haiku arms compare like for like with Sonnet's. The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80 before the rerun, not ~$1.05.
+**Status: run 2026-10-12.** Total spend was $1.88 of the $2 cap (ledger), the Haiku rerun and the niche run included. The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm) and `answers/fits-read-2026-10-12-05-07-32-haiku.json` (the Haiku rerun). `answers/fits-read-2026-10-12-04-42.json` is a first Haiku run on the same prompt ($0.045, 14 of 15 kept), made before the arm filenames were fixed; the 04:46 Haiku run is the one reported, so the two Haiku arms compare like for like with Sonnet's. The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80 before the rerun, not ~$1.05.
 
 ## Three cards, before and after (for Hugh)
 
@@ -277,6 +277,33 @@ something the free row does not. The sheet, the scores and the key are in `blind
   bucket, and the place a later prompt round would aim.
 - Sonnet's ten dropped lines are not scored: no reader sees them. Its kept share (12 of 22) is the other half of its
   cost.
+
+## The niche cards (lock 9's other eight, Haiku only)
+
+The brief's eight niche cards (Finding 2: owned, in no deck, few index rows) complete lock 9's corpus. Sonnet was not
+run on them: both arms would have passed the $2 cap, and the orchestrator chose Haiku alone (2026-10-12, $0.033; the
+ledger stands at $1.88). The answers are `answers/fits-read-2026-10-12-06-18-13-haiku.json`, the version 2 prompt.
+
+- **Yield.** 12 lines returned, 11 kept (one `noCitation`), 0 stale. **Mind Swords returned no deck**: an honest no fit
+  over 7 candidates, which is the answer the read should give when nothing fits.
+- **Blind scores** (same five questions, `blind/fits-read-niche-*`): interaction real / partial / wrong 5 / 5 / 1;
+  citations ok 10; fits 9 of 11; cut defensible / poor 8 / 3; adds over the free row 11 of 11.
+
+These are weaker than Hugh's eleven: the niche cards are niche because few decks want them, and the model reaches.
+
+| Card | Deck | The read's line, verbatim | Cut | Scored |
+| --- | --- | --- | --- | --- |
+| Kavaron Skywarden | HD - Goblins | Sacrifice outlets like Goblin Sledder make nonland permanents leave the battlefield during the turn, which turns on Kavaron Skywarden's end step counter trigger alongside the Goblin token army. | Bloodlust Inciter | real |
+| Goldfury Strider | HD -Thorin | Goldfury Strider's trample matches Thorin Oakenshield, and as an artifact creature it helps the story: "artifacts, legendaries and Sagas turn on the enduring story". | Dwarven Mauler | partial: the trample match adds nothing |
+| Goldfury Strider | HD Tune - Counter Intelligence | Goldfury Strider is an artifact creature whose pump taps artifacts and creatures, so it fits the plan: "Counters pile onto creatures and artifacts" as Kilo proliferates. | Coretapper | partial, poor cut: it uses no counters |
+| Lavamancer's Skill | HD Tune - Scrappy Survivors | As an Aura that dresses a creature, Lavamancer's Skill feeds the plan: "Attack with the dressed creature so Dogmeat, Ever Loyal makes Junk tokens for extra cards." | Acquired Mutation | partial, poor cut |
+| Lavamancer's Skill | HD - Gods | Enchanting Flux Channeler, a Wizard, gives it a repeatable two-damage ping, so "Proliferate and All Will Be One turn counters into damage." gains a direct damage outlet. | Aggravated Assault | partial |
+| Cephalid Sage | HD Tune - Sultai Arisen | With Teval, the Balanced Scale milling on each attack and Forbidden Alchemy stocking the graveyard, Cephalid Sage reaches threshold and draws three then discards two as a looter. | Arcane Signet | real, poor cut |
+| Cephalid Sage | HD Tune - Mutant Menace | Milling from Court of Cunning and Ruin Crab keeps the graveyard past threshold, so Cephalid Sage draws three and discards two each time it enters. | Wishclaw Talisman | **wrong**: Ruin Crab mills opponents |
+| Daru Stinger | HD - Soldiers | As a cheap Soldier, Daru Stinger enters bigger off Soldiers revealed like Daru Warchief, then its tap ability removes attackers and blockers that stall the swarm. | Chieftain en-Dal | real |
+| Cryotheory Adept | HD - Wizards | Prowess on Cryotheory Adept grows from every counter like Counterspell, advancing the plan of Mono-blue Wizards that counter spells and dig with cheap instants. | Collective Restraint | real |
+| Airtight Alibi | HD Tune - Scrappy Survivors | Flash lets Airtight Alibi join the pile of Auras and Equipment onto one creature mid-combat, and its hexproof untap keeps the dressed attacker safe, as the plan's pile-and-attack line requires alongside Uril, the Miststalker. | Wild Growth | real |
+| Airtight Alibi | HD - Elves | Flash lets Airtight Alibi land on the biggest Elf mid-combat, giving it hexproof through the attack, which matches the plan's backed by pump and works like Blanchwood Armor with extra protection. | Accelerated Mutation | partial: no tie to the Elves deck |
 
 ## Accuracy notes (read by hand, against the cards' rules text)
 
