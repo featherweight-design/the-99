@@ -33,6 +33,9 @@ describe("LineupView: folding", () => {
     expect(head("spread").getAttribute("aria-expanded")).toBe("false");
     expect(within(card("spread")).getByText("bracket 1–2 holds 1 · 1 not analyzed")).toBeTruthy();
     expect(card("recency").querySelector("[data-stats-summary]")).toBeNull();
+    // The head is named by its title, and by the summary while folded; never by the denominator.
+    expect(screen.getByRole("button", { name: "When each deck last played" })).toBe(head("recency"));
+    expect(screen.getByRole("button", { name: "Brackets and colors bracket 1–2 holds 1 · 1 not analyzed" })).toBe(head("spread"));
   });
 
   it("toggles a card from its head, and remembers what is open on this device", () => {
