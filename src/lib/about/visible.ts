@@ -18,6 +18,7 @@ import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
+import { deckTokensEnabled } from "../decks/tokens-flag";
 import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
@@ -42,6 +43,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
+  DECK_TOKENS_ENABLED: deckTokensEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
