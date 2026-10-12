@@ -3,7 +3,7 @@
 import { arrivalPlacement, wentOf, type WentRow } from "./arrivals";
 import { buildContestedCard } from "../decks/allocate";
 import { addedCopyCopy } from "../copy/added-copy";
-import { longSentence, wentDestination } from "./copy-line";
+import { destinationDecks, longSentence, wentDestination } from "./copy-line";
 import type { ContestedCard } from "./summary-read";
 import type { RaisedCard } from "./write";
 
@@ -32,7 +32,8 @@ export function placedOf(raised: Record<string, RaisedCard>, names: Record<strin
 
 /** One row of Add Cards' `Where it went` block, and the block's foot. */
 export type WhereItWent = {
-  rows: { oracleId: string; cardName: string; sentence: string; chooser: ContestedCard }[];
+  /** `decks`: the deck names the sentence prints, which the line draws in `--fg`. */
+  rows: { oracleId: string; cardName: string; sentence: string; decks: string[]; chooser: ContestedCard }[];
   /** The cards no deck needed (L9), said once under the rows; null when every card went somewhere. */
   foot: string | null;
 };
@@ -54,7 +55,9 @@ export function whereItWent(lines: readonly { oracleId: string; name: string }[]
     const names = Object.fromEntries((p?.chooser.claimants ?? []).map((c) => [c.deckId, c.deckName]));
     const d = p ? wentDestination(p.went, names) : null;
     const cardName = p?.cardName || line.name;
-    if (p && d) rows.push({ oracleId: line.oracleId, cardName, sentence: longSentence(d, cardName), chooser: p.chooser });
+    if (p && d) {
+      rows.push({ oracleId: line.oracleId, cardName, sentence: longSentence(d, cardName), decks: destinationDecks(d), chooser: p.chooser });
+    }
     else free.push(line.name);
   }
   const line = addedCopyCopy.line;

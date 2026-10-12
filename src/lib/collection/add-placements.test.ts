@@ -35,6 +35,7 @@ describe("whereItWent", () => {
     expect(out.rows.map((r) => r.sentence)).toEqual([
       copy.line.goesTo("Arcane Signet", "HD - Brago"), copy.line.goesTo("Sol Ring", "HD - Brago"),
     ]);
+    expect(out.rows.map((r) => r.decks)).toEqual([["HD - Brago"], ["HD - Brago"]]);
     expect(out.foot).toBeNull();
   });
 

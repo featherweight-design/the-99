@@ -213,7 +213,8 @@ describe("AddCardsSheet (add)", () => {
     await waitFor(() => expect(field()).not.toBeDisabled());
     fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
     await screen.findByText(addedCopyCopy.line.head(1));
-    expect(screen.getByText(addedCopyCopy.line.goesTo("Sol Ring", "HD - Brago"))).toBeTruthy();
+    const said = addedCopyCopy.line.goesTo("Sol Ring", "HD - Brago");
+    expect(screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === said && el.querySelector("[data-em]") !== null)).toBeTruthy();
     const change = screen.getByRole("button", { name: addedCopyCopy.changeAria("Sol Ring") });
     fireEvent.click(change);
     expect(screen.getByRole("radiogroup")).toBeTruthy();

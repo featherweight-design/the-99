@@ -25,6 +25,14 @@ const line = (chooser?: ContestedCard) => (
   </ul>
 );
 
+/** The line form's sentence element, by its whole text (it is cut into runs at the names). */
+const sentence = (text: string) => screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === text && el.querySelector("[data-em]") !== null);
+/** Each emphasized run: its kind, its text, and whether it is bold; every one is `--fg`. */
+const emphasis = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>("[data-em]")].map((s) => {
+  expect(s.style.color).toBe("var(--fg)");
+  return [s.dataset.em, s.textContent, s.className.includes("font-semibold")];
+});
+
 describe("CopyLine", () => {
   it("says where the copy went, with Change", () => {
     render(line(card()));
@@ -125,13 +133,17 @@ describe("CopyLine", () => {
     assign.mockResolvedValueOnce({ ok: true, card: card(1) });
     render(
       <ul>
-        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} chooser={card()} />
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} decks={["HD - Brago"]} chooser={card()} />
       </ul>,
     );
-    expect(screen.getByText(copy.line.goesTo("Sol Ring", "HD - Brago"))).toBeTruthy();
+    // The card `--fg` 600 and the deck `--fg`, inside the `--fg-body` sentence (design table).
+    const frozen = sentence(copy.line.goesTo("Sol Ring", "HD - Brago"));
+    expect(emphasis(frozen)).toEqual([["card", "Sol Ring", true], ["deck", "HD - Brago", false]]);
     fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
     fireEvent.click(screen.getByText("HD -Thorin"));
-    await waitFor(() => expect(screen.getByText(copy.line.goesToPicked("Sol Ring", "HD -Thorin"))).toBeTruthy());
+    await waitFor(() => expect(sentence(copy.line.goesToPicked("Sol Ring", "HD -Thorin"))).toBeTruthy());
+    expect(emphasis(sentence(copy.line.goesToPicked("Sol Ring", "HD -Thorin"))))
+      .toEqual([["card", "Sol Ring", true], ["deck", "HD -Thorin", false]]);
   });
 
   it("draws no Change when there is no chooser to open", () => {

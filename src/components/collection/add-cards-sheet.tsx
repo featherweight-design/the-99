@@ -575,7 +575,7 @@ function WhereItWentBlock({ went }: { went: WhereItWent }) {
           </p>
           <ul className="m-0 list-none p-0">
             {went.rows.map((r) => (
-              <CopyLine key={r.oracleId} form="line" cardName={r.cardName} sentence={r.sentence} chooser={r.chooser} />
+              <CopyLine key={r.oracleId} form="line" cardName={r.cardName} sentence={r.sentence} decks={r.decks} chooser={r.chooser} />
             ))}
           </ul>
         </>

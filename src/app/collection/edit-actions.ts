@@ -96,7 +96,10 @@ function settled(userId: string, result: ChangeResult): { applied: { id: string 
 export type { AddedPlacement };
 
 export type AddOutcome =
-  /** `placed` only with `ADDED_COPY_ENABLED` on, in the order the write planned the cards. */
+  /**
+   * `placed` only with `ADDED_COPY_ENABLED` on, in no order the sheet relies on: `whereItWent`
+   * draws the rows in the sheet's own order.
+   */
   | { applied: { id: string; placed?: AddedPlacement[] } }
   | { missingCard: string[] };
 

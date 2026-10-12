@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveSentence, longSentence, wentSentence } from "./copy-line";
+import { emphasize, liveSentence, longSentence, wentSentence } from "./copy-line";
 import { addedCopyCopy as copy } from "../copy/added-copy";
 import type { WentRow } from "./arrivals";
 import type { ContestedCard } from "./summary-read";
@@ -103,5 +103,19 @@ describe("longSentence (Add Cards)", () => {
     expect(longSentence({ kind: "picked", deck: "HD -Thorin" }, "Sol Ring")).toBe(copy.line.goesToPicked("Sol Ring", "HD -Thorin"));
     expect(longSentence({ kind: "soft", brews: ["HD -Thorin"] }, "Sol Ring")).toBe(copy.line.freeForBrew("Sol Ring", "HD -Thorin"));
     expect(longSentence({ kind: "soft", brews: ["A", "B", "C"] }, "Sol Ring")).toBe(copy.line.freeForBrews("Sol Ring", 3));
+  });
+});
+
+describe("emphasize", () => {
+  it("cuts the sentence at the card and each deck, in order", () => {
+    expect(emphasize(copy.line.goesToMany("Sol Ring", 2, ["HD - Brago", "HD - Eldrazi"]), "Sol Ring", ["HD - Brago", "HD - Eldrazi"])).toEqual([
+      { text: "2 copies of " }, { text: "Sol Ring", em: "card" }, { text: " go to " },
+      { text: "HD - Brago", em: "deck" }, { text: " and " }, { text: "HD - Eldrazi", em: "deck" }, { text: ", one each" },
+    ]);
+  });
+
+  it("takes the longer name at a tie, so a deck named inside another stays whole", () => {
+    expect(emphasize("Sol Ring goes to HD - Brago Two", "Sol Ring", ["HD - Brago", "HD - Brago Two"]))
+      .toEqual([{ text: "Sol Ring", em: "card" }, { text: " goes to " }, { text: "HD - Brago Two", em: "deck" }]);
   });
 });

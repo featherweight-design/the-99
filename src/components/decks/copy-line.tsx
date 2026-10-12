@@ -9,7 +9,7 @@
 
 import { useId, useRef, useState } from "react";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
-import { liveDestination, liveSentence, longSentence } from "../../lib/collection/copy-line";
+import { destinationDecks, emphasize, liveDestination, liveSentence, longSentence } from "../../lib/collection/copy-line";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { ContestedCardRow } from "./contested-card-row";
 
@@ -18,8 +18,11 @@ export function CopyLine({
   sentence,
   chooser,
   form = "row",
+  decks = [],
 }: {
   form?: "row" | "line";
+  /** The line form: the deck names the frozen sentence prints, drawn in `--fg` (design table). */
+  decks?: readonly string[];
   cardName: string;
   /** Where the copy went, frozen at the add. */
   sentence: string;
@@ -75,11 +78,18 @@ export function CopyLine({
   ) : null;
 
   if (form === "line") {
-    // Add Cards (design table, CopyLine): min-h 44, pad 8 0, a top rule, the sentence 13.5 / 1.5.
+    // Add Cards (design table, CopyLine): min-h 44, pad 8 0, a top rule, the sentence 13.5 / 1.5,
+    // `--fg-body` with the card `--fg` 600 and each deck `--fg`, frozen and live alike.
+    const liveDecks = live ? ((d) => (d ? destinationDecks(d) : []))(liveDestination(live)) : decks;
+    const parts = said ? emphasize(said, cardName, liveDecks) : [];
     return (
       <li style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex min-h-[44px] items-center gap-[10px] py-[8px]">
-          <span className="min-w-0 flex-1 text-[13.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>{said ?? ""}</span>
+          <span className="min-w-0 flex-1 text-[13.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
+            {parts.map((p, i) => (p.em
+              ? <span key={i} data-em={p.em} className={p.em === "card" ? "font-semibold" : undefined} style={{ color: "var(--fg)" }}>{p.text}</span>
+              : p.text))}
+          </span>
           {change}
         </div>
         {panelEl}

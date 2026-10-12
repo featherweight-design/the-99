@@ -96,3 +96,39 @@ export function liveSentence(card: ContestedCard): string | null {
   const d = liveDestination(card);
   return d ? shortSentence(d) : null;
 }
+
+/** The deck names a destination's sentence prints, which the line form draws in `--fg`. */
+export function destinationDecks(d: Destination): string[] {
+  if (d.kind === "picked") return [d.deck];
+  if (d.kind === "soft") return d.brews.length === 1 ? d.brews : [];
+  return d.decks.map((x) => x.name);
+}
+
+/** A run of a sentence: plain, or a name the line form emphasizes. */
+export type SentencePart = { text: string; em?: "card" | "deck" };
+
+/**
+ * A sentence cut at the names it prints, for Add Cards' emphasis (design table, CopyLine): the
+ * card `--fg` 600, each deck `--fg`, the rest `--fg-body`. Each step takes the earliest name, the
+ * longer one at a tie, so a deck named inside another's name is never split out of it.
+ */
+export function emphasize(sentence: string, card: string, decks: readonly string[]): SentencePart[] {
+  const names = [{ text: card, em: "card" as const }, ...decks.map((text) => ({ text, em: "deck" as const }))]
+    .filter((n) => n.text !== "");
+  const parts: SentencePart[] = [];
+  let at = 0;
+  while (at < sentence.length) {
+    let best: { i: number; text: string; em: "card" | "deck" } | null = null;
+    for (const n of names) {
+      const i = sentence.indexOf(n.text, at);
+      if (i < 0) continue;
+      if (!best || i < best.i || (i === best.i && n.text.length > best.text.length)) best = { i, ...n };
+    }
+    if (!best) break;
+    if (best.i > at) parts.push({ text: sentence.slice(at, best.i) });
+    parts.push({ text: best.text, em: best.em });
+    at = best.i + best.text.length;
+  }
+  if (at < sentence.length) parts.push({ text: sentence.slice(at) });
+  return parts;
+}
