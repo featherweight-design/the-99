@@ -1047,8 +1047,9 @@ html {
   --result-win: #C9A54E;
 }
 
-/* Deck notes, phone only: while a note's field has focus the sticky add-card bar and the bottom tab bar step
-   aside so the field keeps the room above the keyboard. `note-field.tsx` sets and clears the attribute. */
+/* Deck notes, phone only: while a note's field has focus the bottom tab bar steps aside so the field keeps
+   the room above the keyboard. `note-field.tsx` sets and clears the attribute. It is FIXED, so hiding it
+   moves nothing in the page; the sticky add-card bar is hidden by the panel instead (`builder-shell.tsx`). */
 @media (max-width: 767px) {
   html[data-note-focus] [data-hide-on-note-focus] { display: none; }
 }

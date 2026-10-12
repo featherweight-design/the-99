@@ -2094,9 +2094,12 @@ export function BuilderShell({
             {(isDesktop || !unresolvedExpanded) && (
               <div
                 data-testid="quick-add-dock"
-                data-hide-on-note-focus=""
                 className={[
                   "sticky bottom-[var(--tabbar-h)] md:bottom-0 z-20 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]",
+                  // On a phone the bar is for the All list only (Hugh, 2026-10-12): Shopping, Notes and Stats
+                  // are not places to add a card from, and a bar that came and went with a note field's focus
+                  // moved the page under the reader. Decided by the panel, never by focus.
+                  deckPanel[0] !== "list" || filter !== "all" ? "max-md:hidden" : "",
                   // The top-off commit bar takes this slot at phone widths. Hidden
                   // rather than unmounted, so the query survives the list closing.
                   topOffOpen ? "max-md:hidden" : "",

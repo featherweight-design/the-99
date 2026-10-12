@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPlayed } from "../../../lib/decks/format";
 import { useIsDesktop } from "../../ui/use-is-desktop";
 import { useEffect, useRef, useState } from "react";
 import { deleteNote, editNote, setNoteDone } from "../../../app/decks/notes-actions";
@@ -13,9 +14,8 @@ import { NoteTags } from "./note-tags";
 
 /** `2 Oct`, or `2 Oct 2025` outside the current year: absolute and mono, in the player's own calendar. Never relative (the Must-nots). */
 export function formatNoteDate(iso: string, now: Date = new Date()): string {
-  const d = new Date(iso);
-  const sameYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString("en-GB", sameYear ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+  // `formatPlayed`, not `en-GB`: that locale writes `Sept` where the rest of the app writes `Sep`.
+  return formatPlayed(new Date(iso), now);
 }
 
 /**

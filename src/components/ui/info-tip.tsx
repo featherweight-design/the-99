@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 /** The ⓘ and its tooltip: a press pins it open on any device, a mouse hovering or the keyboard focusing it shows
  *  it, Esc closes. The box positions against the card header, so on a phone it spans the card instead of
@@ -9,7 +10,16 @@ import { useEffect, useRef, useState } from "react";
  *  Shared by Deck stats and the Analysis tab's benchmarks (audit build rule 5). The ring is 18px; at
  *  phone width its `::after` band makes the hit area 44px. The tooltip positions against the nearest
  *  positioned ancestor, which each caller supplies. */
-export function InfoTip({ id, lines, label }: { id: string; lines: readonly string[]; label: string }) {
+export function InfoTip({
+  id, lines, label, className = "self-center", buttonClassName = "",
+}: {
+  id: string; lines: readonly string[]; label: string;
+  /** The root's own classes. A caller that has to place the ⓘ itself passes `contents` here and puts the
+   *  position on `buttonClassName`, so the tooltip still anchors to the caller's field and not to a box the
+   *  size of the ⓘ (Deck notes: it was squeezed against the screen edge on a phone). */
+  className?: string;
+  buttonClassName?: string;
+}) {
   // Three reasons to be open, kept apart: one flag would let the press that follows a hover close it again.
   const [hover, setHover] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -27,7 +37,7 @@ export function InfoTip({ id, lines, label }: { id: string; lines: readonly stri
   return (
     <span
       ref={box}
-      className="self-center"
+      className={className}
       onPointerEnter={(e) => { if (e.pointerType === "mouse") setHover(true); }}
       onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(false); }}
     >
@@ -43,7 +53,11 @@ export function InfoTip({ id, lines, label }: { id: string; lines: readonly stri
         }}
         onKeyDown={(e) => { if (e.key === "Escape") { setPinned(false); setHover(false); setFocused(false); } }}
         onBlur={() => { setPinned(false); setFocused(false); }}
-        className={`relative flex size-[18px] items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] after:absolute after:-inset-[13px] after:content-[''] md:after:-inset-[5px] ${open ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+        className={twMerge(
+          "relative flex size-[18px] items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] after:absolute after:-inset-[13px] after:content-[''] md:after:-inset-[5px]",
+          open ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]",
+          buttonClassName,
+        )}
       >
         i
       </button>

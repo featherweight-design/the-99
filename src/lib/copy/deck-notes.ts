@@ -25,12 +25,12 @@ export const deckNotesCopy = {
   },
   empty: {
     heading: "The swap you meant to try.",
-    body: "Notes keep the small stuff with the deck: a card to test, a cut to make, a question for the pod. One line each, dated when you add it. Select one when it’s done and it folds away.",
+    body: "Notes keep the small stuff with the deck: a card to test, a cut to make, a question for the pod. Each is one line, dated when you add it, and selecting one folds it under Done.",
   },
   help: {
     infoAria: "How card tags work",
     lines: [
-      "Type [[ and the start of a card’s name to tag it, or press [[ ]] to start one. This deck’s cards come first, then any card.",
+      "Type [[ and the start of a card’s name to tag it, or press [[ ]] to start one.",
       "A tagged name opens that card: underlined solid if it’s in this deck, dashed if it isn’t.",
       "A name typed without picking it from the list stays plain text.",
     ],
@@ -43,7 +43,7 @@ export const deckNotesCopy = {
     label: "Add a note",
     add: "Add",
     adding: "Adding…",
-    hintTyping: (today: string) => `Enter adds · dated today, ${today}`,
+    hintTyping: (today: string) => `Enter adds · dated ${today}`,
     counter: (n: string, max: string) => `${n} / ${max}`,
     refused: "We couldn’t save that note. What you typed is still here, so you can try again.",
     atCap: `This deck holds ${NOTES_PER_DECK} notes, the most it keeps. Delete one to add another.`,

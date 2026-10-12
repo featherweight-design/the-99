@@ -93,6 +93,55 @@ async function walkIn(page, label, card) {
   const field = panel.getByRole("combobox", { name: "Add a note" });
   await field.waitFor();
   check(`${label}: an empty deck draws the empty state`, (await panel.getByText("The swap you meant to try.").count()) === 1);
+  const shot = (name) => process.env.PROBE_SHOTS ? page.screenshot({ path: `${process.env.PROBE_SHOTS}/deck-notes-${label}-${name}.png` }) : null;
+  await shot("empty");
+
+  // Pressing into the field must change nothing around it (Hugh, 2026-10-12): the box keeps its size and
+  // place, the page keeps its height, the count and the hint are already drawn, and on a phone the sticky
+  // add-card bar is not there at all while a note's panel is open.
+  const geometry = () => page.evaluate(() => {
+    const input = document.querySelector('section[aria-label="Notes"] input[role="combobox"]');
+    const r = input.getBoundingClientRect();
+    return { w: r.width, h: r.height, x: r.x, top: r.top + window.scrollY, doc: document.documentElement.scrollHeight };
+  });
+  const same = (a, b) => ["w", "h", "x", "top", "doc"].every((k) => Math.abs(a[k] - b[k]) <= 0.5);
+  const counterShown = () => panel.getByText(/^\d+ \/ 140$/).first().isVisible();
+  const hintShown = () => panel.getByText(/^Enter adds/).first().isVisible();
+  const before = await geometry();
+  check(`${label}: the count is drawn before the field has focus`, await counterShown());
+  if (label === "1300") check("1300: the hint is drawn before the field has focus", await hintShown());
+  const dock = page.getByTestId("quick-add-dock");
+  if (label === "390") check("390: the add-card bar is not drawn under Notes", !(await dock.isVisible()));
+  await field.click();
+  await page.waitForTimeout(300);
+  const focusedGeometry = await geometry();
+  check(`${label}: focusing the field changes no size or position`, same(before, focusedGeometry), JSON.stringify({ before, focusedGeometry }));
+  await field.pressSequentially("swap in a card to test then another");
+  const typed = await geometry();
+  check(`${label}: typing does not resize the field or the page`, same(before, { ...typed, doc: before.doc }) , JSON.stringify({ before, typed }));
+  await field.fill("");
+  await shot("focused");
+
+  // The tip fits the viewport: on a phone it spans the field, not a box the size of the (i).
+  await panel.getByRole("button", { name: "How card tags work" }).click();
+  const tip = panel.getByRole("tooltip");
+  await tip.waitFor({ state: "visible" });
+  const box = await tip.boundingBox();
+  const vw = page.viewportSize().width;
+  check(`${label}: the tag tip sits inside the viewport`, box.x >= 0 && box.x + box.width <= vw + 0.5, JSON.stringify({ box, vw }));
+  check(`${label}: the tag tip is wide enough to read`, box.width >= Math.min(280, vw - 40), `width ${Math.round(box.width)}`);
+  await shot("tip");
+  await page.keyboard.press("Escape");
+  await page.mouse.click(5, 5);
+
+  // [[ ]] then a pick: one finished tag and no stray `]]`.
+  await panel.getByRole("button", { name: "Insert a card tag" }).click();
+  await field.pressSequentially(card.slice(0, 4));
+  await page.getByRole("option", { name: new RegExp(card) }).first().waitFor();
+  await page.keyboard.press("Enter");
+  const value = await field.inputValue();
+  check(`${label}: the [[ ]] button then a pick leaves one tag and no stray ]]`, (value.match(/\]\]/g) ?? []).length === 1, JSON.stringify(value));
+  await field.fill("");
 
   await field.click();
   await field.pressSequentially(`swap in [[${card.slice(0, 4)}`);
@@ -109,6 +158,8 @@ async function walkIn(page, label, card) {
   await tag.waitFor({ timeout: 30_000 });
   check(`${label}: the added note draws the tag`, true);
   check(`${label}: the field cleared`, (await field.inputValue()) === "");
+  check(`${label}: the mark and its pitch stay above the list once a note exists`, (await panel.getByText("The swap you meant to try.").count()) === 1);
+  await shot("with-note");
 
   await tag.click();
   await page.locator('[role="dialog"]').last().waitFor({ timeout: 30_000 });
@@ -136,8 +187,8 @@ async function walkIn(page, label, card) {
 
   await rowButtons("Delete");
   await panel.getByRole("button", { name: "Delete", exact: true }).click();
-  // Deleting the last note returns the panel to its empty state, which is what proves the write landed.
-  await panel.getByText("The swap you meant to try.").waitFor({ timeout: 30_000 });
+  // The pitch stays, so the write landing is the row leaving the list.
+  await panel.getByRole("checkbox").first().waitFor({ state: "detached", timeout: 30_000 });
   check(`${label}: delete asks first, then removes the note`, (await sql`select count(*)::int as n from deck_notes where deck_id = ${deckId}::uuid`)[0].n === 0);
 }
 

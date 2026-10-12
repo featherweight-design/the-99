@@ -30,11 +30,16 @@ export function openTagAt(text: string, caret: number): { start: number; query: 
   return { start: caret - m[0].length, query: m[1] };
 }
 
-/** Replace the open `[[query` (from `start` to `caret`) with a finished tag and one trailing space. */
+/**
+ * Replace the open `[[query` (from `start` to `caret`) with a finished tag and one trailing space. The
+ * `[[ ]]` button leaves its own `]]` after the caret, so a `]]` that follows is part of the tag being
+ * replaced: keeping it printed `[[Name]] ]]`.
+ */
 export function insertPick(text: string, start: number, caret: number, name: string): { text: string; caret: number } {
   const clean = name.replace(/[\[\]|]/g, "").trim();
   const tag = `[[${MARK}${clean}]] `;
-  return { text: text.slice(0, start) + tag + text.slice(caret), caret: start + tag.length };
+  const end = text.startsWith("]]", caret) ? caret + 2 : caret;
+  return { text: text.slice(0, start) + tag + text.slice(end), caret: start + tag.length };
 }
 
 /** `[[]]` at the caret with the caret between, the `[[ ]]` button's insert. */

@@ -24,6 +24,22 @@ describe("notes field", () => {
     });
   });
 
+  it("the [[ ]] button then a pick leaves one finished tag and no stray ]]", () => {
+    // The button's insert leaves `]]` after the caret; picking a card must take it with the open tag.
+    const opened = insertOpenTag("swap ", 5);
+    expect(opened).toEqual({ text: "swap [[]]", caret: 7 });
+    const tag = openTagAt(opened.text, opened.caret);
+    expect(tag).toEqual({ start: 5, query: "" });
+    const picked = insertPick(opened.text, tag!.start, opened.caret, "Sol Ring");
+    expect(picked.text).toBe("swap [[\u2060Sol Ring]] ");
+    expect(picked.text.match(/\]\]/g)).toHaveLength(1);
+    expect(picked.caret).toBe(picked.text.length);
+  });
+
+  it("keeps text after a typed open tag that is not followed by ]]", () => {
+    expect(insertPick("a [[sol ]]", 2, 7, "Sol Ring").text).toBe("a [[\u2060Sol Ring]]  ]]");
+  });
+
   it("inserts [[]] with the caret between", () => {
     expect(insertOpenTag("ab", 1)).toEqual({ text: "a[[]]b", caret: 3 });
   });
