@@ -9,7 +9,7 @@
 
 import { useId, useState } from "react";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
-import { pickedSentence } from "../../lib/collection/copy-line";
+import { liveSentence } from "../../lib/collection/copy-line";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { ContestedCardRow } from "./contested-card-row";
 
@@ -25,10 +25,11 @@ export function CopyLine({
   chooser?: ContestedCard;
 }) {
   const [open, setOpen] = useState(false);
-  // The card the last settled pick read back. The sentence follows it, never the frozen one.
+  // The card the last settled write read back. Once there is one the sentence follows it, and the
+  // frozen sentence is never drawn again: after a pick is cleared it could name that pick.
   const [live, setLive] = useState<ContestedCard | null>(null);
   const panel = useId();
-  const said = (live && pickedSentence(live)) ?? sentence;
+  const said = live ? liveSentence(live) : sentence;
 
   return (
     <li style={{ borderTop: "1px solid var(--border)" }}>
@@ -40,7 +41,7 @@ export function CopyLine({
           {cardName}
         </span>
         <span className="flex items-center gap-[10px] min-w-0 md:flex-1">
-          <span className="text-[13px] flex-1 min-w-0" style={{ color: "var(--fg-body)" }}>{said}</span>
+          <span className="text-[13px] flex-1 min-w-0" style={{ color: "var(--fg-body)" }}>{said ?? ""}</span>
           {chooser ? (
             <button
               type="button"

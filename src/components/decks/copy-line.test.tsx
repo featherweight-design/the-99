@@ -58,6 +58,35 @@ describe("CopyLine", () => {
     expect(screen.queryByText(copy.row.goesTo("HD - Brago"))).toBeNull();
   });
 
+  it("redraws from the read-back card after a pick is cleared, never the frozen sentence", async () => {
+    // Frozen: Thorin, picked earlier. The player clears that pick; Brago now holds the copy.
+    assign.mockResolvedValueOnce({ ok: true, card: card(0) });
+    render(
+      <ul>
+        <CopyLine cardName="Sol Ring" sentence={copy.row.goesToEarlier("HD -Thorin")} chooser={card(1)} />
+      </ul>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
+    fireEvent.click(screen.getByText("HD -Thorin"));
+    await waitFor(() => expect(screen.getByText(copy.row.goesTo("HD - Brago"))).toBeTruthy());
+    expect(screen.queryByText(copy.row.goesToEarlier("HD -Thorin"))).toBeNull();
+  });
+
+  it("never falls back to the frozen sentence after a write, even with nothing to say", async () => {
+    // The read-back card has the copy gone (another tab removed it): no deck holds or reads it.
+    const gone = { ...card(0), owned: 0, claimants: card(0).claimants.map((c) => ({ ...c, allocated: 0 })) };
+    assign.mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: gone });
+    render(
+      <ul>
+        <CopyLine cardName="Sol Ring" sentence={copy.row.goesToEarlier("HD -Thorin")} chooser={card(1)} />
+      </ul>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
+    fireEvent.click(screen.getByText("HD - Brago"));
+    await waitFor(() => expect(assign).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText(copy.row.goesToEarlier("HD -Thorin"))).toBeNull());
+  });
+
   it("draws no Change when there is no chooser to open", () => {
     render(line());
     expect(screen.queryByRole("button")).toBeNull();

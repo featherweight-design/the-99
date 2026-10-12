@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickedSentence, wentSentence } from "./copy-line";
+import { liveSentence, wentSentence } from "./copy-line";
 import { addedCopyCopy as copy } from "../copy/added-copy";
 import type { WentRow } from "./arrivals";
 import type { ContestedCard } from "./summary-read";
@@ -36,20 +36,38 @@ describe("wentSentence", () => {
   });
 });
 
-describe("pickedSentence", () => {
-  const card = (granted: number): ContestedCard => ({
-    oracleId: "o", cardName: "Sol Ring", arrived: 1, ownedBefore: 16, fromImport: true, owned: 17,
-    claimants: [
-      { deckId: "a", deckName: "HD - Brago", quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 1, allocated: 1 },
-      { deckId: "t", deckName: "HD -Thorin", quantity: 1, commanderCopies: 0, granted, since: null, versionNumber: null, brew: true, allocated: granted },
-    ],
-  });
+describe("liveSentence", () => {
+  type Claimant = ContestedCard["claimants"][number];
+  const committed = (deckId: string, deckName: string, allocated: number, granted = 0): Claimant =>
+    ({ deckId, deckName, quantity: 1, commanderCopies: 0, granted, since: 1, versionNumber: 1, allocated });
+  const brew = (deckId: string, deckName: string, allocated: number, granted = 0): Claimant =>
+    ({ ...committed(deckId, deckName, allocated, granted), since: null, versionNumber: null, brew: true });
+  const card = (owned: number, arrived: number, claimants: Claimant[]): ContestedCard =>
+    ({ oracleId: "o", cardName: "Sol Ring", arrived, ownedBefore: owned - arrived, fromImport: true, owned, claimants });
 
   it("names the deck the player gave the copy to (L4)", () => {
-    expect(pickedSentence(card(1))).toBe(copy.row.goesToPicked("HD -Thorin"));
+    expect(liveSentence(card(1, 1, [committed("a", "HD - Brago", 0), brew("t", "HD -Thorin", 1, 1)])))
+      .toBe(copy.row.goesToPicked("HD -Thorin"));
   });
 
-  it("has nothing to say when no deck holds a pick", () => {
-    expect(pickedSentence(card(0))).toBeNull();
+  it("after a pick is cleared, names the junior-most holder seniority gave the new copy", () => {
+    expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1), committed("a", "HD - Brago", 1), brew("t", "HD -Thorin", 0)])))
+      .toBe(copy.row.goesTo("HD - Brago"));
+  });
+
+  it("names every holder of the new copies, in queue order", () => {
+    expect(liveSentence(card(3, 2, [committed("s", "HD - Senior", 1), committed("a", "HD - Brago", 1), committed("b", "HD - Eldrazi", 1)])))
+      .toBe(copy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]));
+  });
+
+  it("calls a spare the brews read `is free for`", () => {
+    expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1), brew("t", "HD -Thorin", 1)])))
+      .toBe(copy.row.freeForBrew("HD -Thorin"));
+    expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1), brew("k", "HD - Kratos", 1), brew("t", "HD -Thorin", 1)])))
+      .toBe(copy.row.freeForBrews(2));
+  });
+
+  it("has nothing to say when no deck holds or reads the new copy", () => {
+    expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1)]))).toBeNull();
   });
 });

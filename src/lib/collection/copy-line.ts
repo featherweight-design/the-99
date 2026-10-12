@@ -23,10 +23,36 @@ export function wentSentence(went: WentRow, deckNames: Record<string, string>): 
 }
 
 /**
- * The line after a Change, from the card the pick read back: the deck the player gave the copy to.
- * Null when no deck holds a pick (the player cleared it), and the row keeps its frozen sentence.
+ * The line after ANY chooser write, from the card that write read back (the design table's `live`
+ * row): the frozen sentence is true only until the first write, and after a pick is cleared it can
+ * name a pick that no longer exists.
+ *
+ * A pick names its deck (`as you picked`). With none, the new copies are where seniority puts them:
+ * the spare first (copies no deck holds), then the junior-most committed holders. A spare that
+ * brews read is `is free for`. Null when no deck holds or reads a new copy any more.
  */
-export function pickedSentence(card: ContestedCard): string | null {
+export function liveSentence(card: ContestedCard): string | null {
   const picked = card.claimants.find((c) => c.granted > 0);
-  return picked ? copy.row.goesToPicked(picked.deckName) : null;
+  if (picked) return copy.row.goesToPicked(picked.deckName);
+  const committed = card.claimants.filter((c) => !c.brew);
+  const held = committed.reduce((n, c) => n + c.allocated, 0);
+  const spare = Math.max(card.owned - held, 0);
+  let fromQueue = Math.max(card.arrived - spare, 0);
+  const took = new Map<string, { name: string; copies: number }>();
+  for (const c of [...committed].reverse()) {
+    if (fromQueue <= 0) break;
+    const t = Math.min(c.allocated, fromQueue);
+    if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t });
+    fromQueue -= t;
+  }
+  const decks = committed.flatMap((c) => took.get(c.deckId) ?? []);
+  if (decks.length === 1) return copy.row.goesTo(decks[0].name);
+  if (decks.length > 1) {
+    const names = decks.map((d) => d.name);
+    return decks.every((d) => d.copies === 1) ? copy.row.goesToMany(names) : copy.row.goesToManyUneven(names);
+  }
+  const brews = card.claimants.filter((c) => c.brew && c.allocated > 0);
+  if (brews.length === 1) return copy.row.freeForBrew(brews[0].deckName);
+  if (brews.length > 1) return copy.row.freeForBrews(brews.length);
+  return null;
 }
