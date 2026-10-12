@@ -197,14 +197,25 @@ describe("TuningHub opening a tool", () => {
       panel().append(shell);
       act(() => observers.at(-1)!());
       expect(panel().classList.contains("gentle-hold")).toBe(true);
-      shell.remove();
-      act(() => observers.at(-1)!());
+      // The shell giving way to content of the same height: no resize, so the MUTATION observer is
+      // what notices. Nothing calls the resize callback here.
+      await act(async () => { shell.remove(); await Promise.resolve(); });
       expect(panel().classList.contains("gentle-hold")).toBe(false);
       expect(panel().classList.contains("anim-gentle-in")).toBe(true);
       tall.mockRestore();
-      // A tab press is a new arrival: the new tool's panel holds again until its own content lands.
+      // A busy panel holding a control (a running tool's Stop) is shown at once, never held.
       fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
       await screen.findByRole("heading", { name: "Suggested changes" });
+      const tall2 = vi.spyOn(panel(), "getBoundingClientRect").mockReturnValue({ height: 500 } as DOMRect);
+      const busy = document.createElement("section");
+      busy.setAttribute("aria-busy", "true");
+      busy.innerHTML = "<button>Stop</button>";
+      await act(async () => { panel().append(busy); await Promise.resolve(); });
+      expect(panel().classList.contains("gentle-hold")).toBe(false);
+      tall2.mockRestore();
+      // A tab press is a new arrival: the new tool's panel holds again until its own content lands.
+      fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Proposed cuts" }));
+      await screen.findByRole("heading", { name: "Proposed cuts" });
       expect(panel().classList.contains("gentle-hold")).toBe(true);
     } finally {
       globalThis.ResizeObserver = RealRO;

@@ -522,10 +522,12 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
  * What a tool draws while its first read is out: History's empty placeholder (marked
  * `data-hub-pending` too), Mana Balance's counting status, Proposed cuts' counting shell, all of them
  * `aria-busy`, and nothing at all for the tools whose body waits on the hub's own read. A box
- * drawing none of these, at some height, has its content. A tool busy for another reason at mount
- * (a run in flight) holds to the cap and then shows.
+ * drawing none of these, at some height, has its content; so has one holding a control, which a
+ * tool busy for another reason at mount (a run in flight, with its Stop) always does.
  */
 const PENDING = '[data-hub-pending], [aria-busy="true"]';
+/** A control a reader can reach: a box holding one is shown, whatever else it is still reading. */
+const CONTROL = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 /** How long a box holds for content before it shows anyway: a slow read must not leave it unseen. */
 const ARRIVAL_CAP_MS = 2500;
 
@@ -544,7 +546,10 @@ function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || key === null || typeof ResizeObserver === "undefined") return;
-    const landed = () => el.getBoundingClientRect().height > 0 && el.querySelector(PENDING) === null;
+    // A box holding a control has content worth showing, busy or not: a held panel must never hide
+    // something a reader can focus or press (a running Proposed cuts panel's Stop, say).
+    const landed = () => el.getBoundingClientRect().height > 0
+      && (el.querySelector(PENDING) === null || el.querySelector(CONTROL) !== null);
     if (landed()) return;
     el.classList.remove("anim-gentle-in");
     el.classList.add("gentle-hold");
