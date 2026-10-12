@@ -5,7 +5,7 @@
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks, preconCards, precons } from "../../db/schema";
+import { cards, collectionItems, deckCards, decks, preconCards, precons, printings } from "../../db/schema";
 import { summarisePrecons, type PreconRow, type PreconSource, type ReaderDeck } from "./list";
 
 export type PreconList = {
@@ -20,9 +20,17 @@ export type PreconList = {
 /** `db`, or a transaction on it: the list's reads run in one snapshot. */
 export type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
-export async function readPreconSources(q: Reader = db): Promise<PreconSource[]> {
-  const heads = await q.select().from(precons);
-  const facts = await q
+/**
+ * The art a precon page draws for one of its cards: the precon's own printing, owned or not, and
+ * the card's default art where the catalog lacks that printing. The one resolver for every precon
+ * surface (the list's thumbs, the open precon's thumbs, rows, hover and card details), so no two of
+ * them can show a card in two printings.
+ */
+export const preconArt = sql<string | null>`coalesce(${printings.imageUri}, ${cards.imageUri})`;
+
+/** Every precon's cards, with the art `preconArt` resolves; apart so a test can render its SQL. */
+export function preconCardFacts(q: Reader = db) {
+  return q
     .select({
       fileName: preconCards.fileName,
       oracleId: preconCards.oracleId,
@@ -30,11 +38,17 @@ export async function readPreconSources(q: Reader = db): Promise<PreconSource[]>
       name: cards.name,
       typeLine: cards.typeLine,
       colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
+      imageUri: preconArt,
     })
     .from(preconCards)
     .innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))
+    .leftJoin(printings, eq(printings.scryfallId, preconCards.scryfallId))
     .orderBy(preconCards.fileName, preconCards.position);
+}
+
+export async function readPreconSources(q: Reader = db): Promise<PreconSource[]> {
+  const heads = await q.select().from(precons);
+  const facts = await preconCardFacts(q);
   const byDeck = new Map<string, PreconSource["cards"]>();
   for (const f of facts) {
     const list = byDeck.get(f.fileName) ?? [];

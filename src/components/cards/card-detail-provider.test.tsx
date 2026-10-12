@@ -2081,3 +2081,50 @@ describe("CardDetailProvider pages the desktop carousel (H23 PR 2)", () => {
   // proved against a real overflowing printing list in card-modal.test.tsx, which can build
   // that fixture directly; this provider-level suite only proves arrow keys page at all.
 });
+
+// A precon's page (Hugh, 2026-10-12): every card is viewed at the precon's own printing, owned or
+// not, on a press and on paging alike, and the set line follows the printing shown.
+describe("viewPrintings", () => {
+  const ownedSol: BrowseCard = {
+    ...SOL,
+    printings: [{ setCode: "FDN", collectorNumber: "222", imageUri: "https://cards.scryfall.io/owned-sol.jpg", quantity: 1, flavorName: null }] as unknown as BrowseCard["printings"],
+    preferredPrinting: { setCode: "FDN", collectorNumber: "222" },
+  };
+  const view = { "o-sol": { setCode: "FDC", collectorNumber: "8", imageUri: "https://cards.scryfall.io/precon-sol.jpg", scryfallId: "s-fdc-8" } };
+  const tree = () => (
+    <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? ownedSol : SIGNET)} viewPrintings={view}>
+      <CardDetailTrigger oracleId="o-sol" name="Sol Ring" siblings={["o-signet", "o-sol"]}>Sol Ring</CardDetailTrigger>
+      <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>Arcane Signet</CardDetailTrigger>
+    </CardDetailProvider>
+  );
+
+  it("opens a listed card at its printing, not the reader's own", async () => {
+    render(tree());
+    await click(screen.getByText("Sol Ring"));
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog.outerHTML).toContain("precon-sol.jpg"));
+    expect(dialog.outerHTML).not.toContain("owned-sol.jpg");
+    expect(dialog.textContent).toContain("FDC");
+  });
+
+  it("draws its neighbor plate at that printing, before it is paged onto", async () => {
+    render(
+      <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? ownedSol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? ownedSol : SIGNET)} viewPrintings={view}>
+        <CardDetailTrigger oracleId="o-signet" name="Arcane Signet" siblings={["o-signet", "o-sol"]}>Arcane Signet</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await click(screen.getByText("Arcane Signet"));
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).toContain("precon-sol.jpg"));
+    expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).not.toContain("owned-sol.jpg");
+  });
+
+  it("views it there when paged onto, too", async () => {
+    render(tree());
+    await click(screen.getByText("Arcane Signet"));
+    await screen.findByRole("dialog");
+    await click(footer("Next card"));
+    await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
+    await waitFor(() => expect(screen.getByRole("dialog").outerHTML).toContain("precon-sol.jpg"));
+  });
+});

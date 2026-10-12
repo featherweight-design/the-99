@@ -185,6 +185,9 @@ export type SiblingCard = {
 };
 export type Sibling = string | SiblingCard;
 
+/** One printing a card is viewed at: `open`'s `atPrinting`. */
+export type ViewPrinting = PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string };
+
 /** A list in the one shape the provider holds. */
 export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
   return list.map((s) => (typeof s === "string" ? { oracleId: s } : s));
@@ -438,6 +441,7 @@ export function CardDetailProvider({
   deckOracleIds,
   comboDeckOracleIds,
   deckPrintingPicks = null,
+  viewPrintings = null,
   collectionEdit = false,
 }: {
   children: ReactNode;
@@ -476,6 +480,12 @@ export function CardDetailProvider({
    * and offers no pick. Null (the switch off) keeps today's collection-scoped picker everywhere.
    */
   deckPrintingPicks?: Readonly<Record<string, PreferredPrinting>> | null;
+  /**
+   * A list whose every card stands for one printing (a precon's): each open of a listed card, by a
+   * press or by paging, views that printing (`atPrinting`'s view, never a pick), whether or not the
+   * reader holds it. A card absent from the map opens as it would anywhere.
+   */
+  viewPrintings?: Readonly<Record<string, ViewPrinting>> | null;
   /**
    * The deck's OWN cards, for the combo block's `in this deck` state.
    *
@@ -547,6 +557,10 @@ export function CardDetailProvider({
   // the one that was asked for" from "this arrival is something else, so let the old one
   // go".
   const [openAt, setOpenAt] = useState<OpenAt>(null);
+  // Read by `load`, which is memoized for every surface holding `open`: a ref, so a new map does
+  // not rebuild it.
+  const viewPrintingsRef = useRef(viewPrintings);
+  useEffect(() => { viewPrintingsRef.current = viewPrintings; }, [viewPrintings]);
   /**
    * The printing an `open` asked for, before the card it describes has arrived. A ref, not
    * state: nothing renders from it, and `show` is memoised on nothing so it must read the
@@ -798,7 +812,10 @@ export function CardDetailProvider({
       // `null` IS an open, for a card with no printing in particular, and has to be able to
       // clear a printing on the card already shown: without the distinction, reopening the
       // current card plainly left it wearing the cell it was opened at last time.
-      pendingAt.current = at === undefined ? null : { oracleId, printing: at };
+      // A listed card views its printing on every open, paging included (`viewPrintings`).
+      const viewed = viewPrintingsRef.current?.[oracleId];
+      const shownAt = viewed ?? at;
+      pendingAt.current = shownAt === undefined ? null : { oracleId, printing: shownAt };
       openRef.current = oracleId;
       inFlight.current = oracleId;
       if (list !== undefined) setSiblings(list);
@@ -1283,6 +1300,10 @@ export function CardDetailProvider({
   // same positions to prefetch them.
   const plate = (s: SiblingCard | undefined): SiblingCard | null => {
     if (!s) return null;
+    // A card viewed at one printing (`viewPrintings`) shows it on its plate too, as it will when
+    // paged onto: the plate never draws the reader's own copy of a card the list stands at another.
+    const viewed = viewPrintings?.[s.oracleId];
+    if (viewed?.imageUri) return viewed.imageUri !== (s.imageUri ?? null) ? { ...s, imageUri: viewed.imageUri } : s;
     const readCard = readArt.get(s.oracleId);
     if (!readCard) return s;
     const shown = withDeckPick(readCard, deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId));
