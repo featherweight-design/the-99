@@ -408,7 +408,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   owned (a row), not owned (no row, and the account has a `token_reads` row), not known (neither). Only a confirmed
   upload writes the marker, including one that read an EMPTY list (a preview payload with no `tokens` at all, from before
   tokens were read, writes nothing: `recordUploadTokens`); a hand mark (`I have one`) never does, or one mark
-  would turn every other token from unknown into not owned. Replace removes upload rows only; a hand mark an upload
+  would turn every other token from unknown into not owned. Replace removes upload rows only (and, first, the player's joins for every token whose
+  row it removes, since a held token's join is pre-rule); a hand mark an upload
   also reads becomes an upload row. The review screen's `skipped by design` count still includes tokens: they are
   not in `collection_items`.
 - **A deck's tokens are read by `loadDeckTokens` and written by two actions** (`DECK_TOKENS_ENABLED`, staging on, production off;

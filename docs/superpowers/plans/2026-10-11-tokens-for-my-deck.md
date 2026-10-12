@@ -222,13 +222,11 @@ inventory below with the switch on, against a `pull:staging` copy.
 - **Copy review** (2026-10-12, `/copy-review`): the About title `The tokens your deck makes`, its `opens` line and
   `tokensCopy.details.*` all KEEP, no edits. The details line's state clause is `In Shopping` but `in your collection`
   (capital then lowercase): both are the ratified handoff's, so it is left as drawn.
-- **Follow-up, open**: a Replace upload (`writeUploadTokens`, mode `replace`) deletes EVERY upload-owned ownership row, but
-  deletes the player's joins only for the tokens the new upload reads. A token held by the old upload and omitted from the
-  new one therefore stops being held at once, and a hidden join left from before the account-wide rule (made while it was
-  held) is then drawn as joined immediately. A hand mark is not affected: it survives Replace, and `unmarkOwned` clears its
-  join before removing the mark. Staging data only (production's switch is off, and no join has been created for a held
-  token since PR 5). Remedy if it matters: on Replace, delete the player's joins for every token whose upload row is
-  deleted, before deleting the rows (joins first, the lock order). Not scheduled.
+- **Follow-up, closed** (2026-10-12): a Replace upload deleted every upload-owned ownership row but cleared joins only for the
+  tokens it read, so a hidden pre-rule join on an omitted token surfaced at once. `writeUploadTokens` now deletes the player's
+  joins for every token whose upload row Replace drops, before dropping the rows (joins first, the hand mark's lock order). Owned
+  clears joins, so a join on a held token is pre-rule by definition. A hand mark has no upload row and keeps its state. Proved on
+  a scratch branch of staging with the exact statement: the upload-owned token lost its join, the hand-marked one kept its hold.
 
 ## The switch
 

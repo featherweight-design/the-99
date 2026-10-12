@@ -42,9 +42,9 @@ describe("aggregateTokenRows", () => {
 });
 
 function recorder() {
-  const log: { op: string; table: string; rows?: unknown[]; set?: Record<string, unknown> }[] = [];
+  const log: { op: string; table: string; rows?: unknown[]; set?: Record<string, unknown>; where?: unknown }[] = [];
   const tx = {
-    delete: (table: object) => ({ where: async () => { log.push({ op: "delete", table: getTableName(table as never) }); } }),
+    delete: (table: object) => ({ where: async (where?: unknown) => { log.push({ op: "delete", table: getTableName(table as never), where }); } }),
     insert: (table: object) => ({
       values: (rows: unknown[]) => ({
         onConflictDoUpdate: async (arg: { set: Record<string, unknown> }) => {
@@ -62,16 +62,34 @@ describe("writeUploadTokens", () => {
     const { tx, log } = recorder();
     await writeUploadTokens(tx, "u1", "up1", "replace", [{ tokenOracleId: T1, quantity: 3 }]);
     expect(log.map((l) => `${l.op}:${l.table}`)).toEqual([
-      "delete:deck_token_joins", "delete:token_ownership", "upsert:token_ownership", "upsert:token_reads",
+      "delete:deck_token_joins", "delete:deck_token_joins", "delete:token_ownership", "upsert:token_ownership", "upsert:token_reads",
     ]);
-    expect(log[2].rows).toEqual([{ userId: "u1", tokenOracleId: T1, quantity: 3, source: "upload" }]);
+    expect(log[3].rows).toEqual([{ userId: "u1", tokenOracleId: T1, quantity: 3, source: "upload" }]);
+  });
+
+  it("Replace clears the joins of every token whose upload row it drops, a hand mark's none (it has no upload row)", async () => {
+    const { tx, log } = recorder();
+    await writeUploadTokens(tx, "u1", "up1", "replace", []);
+    const q = dialect.sqlToQuery(log.find((l) => l.op === "delete" && l.table === "deck_token_joins")!.where as SQL);
+    // By the player, over exactly the tokens held by an UPLOAD row: a hand mark's row is source 'manual'.
+    expect(q.sql).toContain('"deck_token_joins"."user_id" =');
+    expect(q.sql).toContain('select "token_ownership"."token_oracle_id" from "token_ownership"');
+    expect(q.sql).toContain("'upload'");
+    expect(q.params).toContain("u1");
+    expect(q.sql).not.toContain("'manual'");
+  });
+
+  it("Add leaves the joins of tokens it does not read alone", async () => {
+    const { tx, log } = recorder();
+    await writeUploadTokens(tx, "u1", "up1", "add", []);
+    expect(log.some((l) => l.op === "delete" && l.table === "deck_token_joins")).toBe(false);
   });
 
   it("writes the read marker even for an upload that held no token", async () => {
     const { tx, log } = recorder();
     await writeUploadTokens(tx, "u1", "up1", "replace", []);
-    expect(log.map((l) => `${l.op}:${l.table}`)).toEqual(["delete:token_ownership", "upsert:token_reads"]);
-    expect(log[1].rows).toEqual([{ userId: "u1", uploadId: "up1" }]);
+    expect(log.map((l) => `${l.op}:${l.table}`)).toEqual(["delete:deck_token_joins", "delete:token_ownership", "upsert:token_reads"]);
+    expect(log[2].rows).toEqual([{ userId: "u1", uploadId: "up1" }]);
   });
 
   it("Add removes no ownership row and accumulates onto an upload row only", async () => {
@@ -96,8 +114,12 @@ describe("writeUploadTokens", () => {
       const { tx } = recorder();
       const spy = { ...(tx as object), delete: (t: object) => ({ where: async (w: unknown) => { if (getTableName(t as never) === "deck_token_joins") calls.push(w); } }) };
       await writeUploadTokens(spy as never, "u1", "up1", mode, [{ tokenOracleId: T1, quantity: 2 }, { tokenOracleId: T2, quantity: 1 }]);
-      expect(calls).toHaveLength(1);
-      const q = dialect.sqlToQuery(calls[0] as SQL);
+      // Replace also clears the joins of the tokens whose upload rows it drops (the subquery delete); the one that
+      // names the tokens READ is the one with their ids bound.
+      const read = calls.filter((c) => dialect.sqlToQuery(c as SQL).params.includes(T1));
+      expect(read).toHaveLength(1);
+      expect(calls).toHaveLength(mode === "replace" ? 2 : 1);
+      const q = dialect.sqlToQuery(read[0] as SQL);
       expect(q.sql).toContain('"deck_token_joins"."user_id" = $');
       expect(q.params).toEqual(expect.arrayContaining(["u1", T1, T2]));
       expect(q.sql).not.toContain('"deck_id"');
@@ -125,11 +147,12 @@ describe("writeUploadTokens", () => {
       insert: () => ({ values: () => ({ onConflictDoUpdate: async () => {} }) }),
     };
     await writeUploadTokens(tx as never, "u1", "up1", "replace", []);
-    const text = render(calls[0]);
-    expect(text).toContain('"token_ownership"."source" = $');
+    // The join cleanup comes first; the ownership delete is the one that names the source.
+    const own = calls.find((c) => render(c).includes('"token_ownership"."source" = $'))!;
+    expect(own).toBeDefined();
     // The bound value is the source it deletes.
-    expect(dialect.sqlToQuery(calls[0] as SQL).params).toContain("upload");
-    expect(dialect.sqlToQuery(calls[0] as SQL).params).not.toContain("manual");
+    expect(dialect.sqlToQuery(own as SQL).params).toContain("upload");
+    expect(dialect.sqlToQuery(own as SQL).params).not.toContain("manual");
   });
 
   it("writes the holdings in batches that cross the boundary", async () => {
