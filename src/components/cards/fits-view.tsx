@@ -165,7 +165,7 @@ export function FitsView({
   };
 
   async function onSwap(deckId: string, cut: string, cutName: string) {
-    if (busy) return;
+    if (!list.claim()) return;
     const act = memory[deckId];
     setBusy(true);
     setRefused(null);
@@ -181,16 +181,17 @@ export function FitsView({
         setMemory((m) => ({ ...m, [deckId]: { kind: "swapped", swapId: r.swapId } }));
         setAnnounced(read.announceSwapped(name, cutName));
       }
-      await list.refresh();
+      await list.refresh(true);
     } catch {
       setRefused({ deckId, kind: act?.kind === "swapped" ? "undo" : "swap" });
     } finally {
+      list.release();
       setBusy(false);
     }
   }
 
   async function onAdd(deckId: string, deckName: string) {
-    if (busy) return;
+    if (!list.claim()) return;
     const act = memory[deckId];
     setBusy(true);
     setRefused(null);
@@ -209,10 +210,11 @@ export function FitsView({
           setAnnounced(read.announceAdded(name, deckName));
         }
       }
-      await list.refresh();
+      await list.refresh(true);
     } catch {
       setRefused({ deckId, kind: act?.kind === "added" ? "undo" : "add" });
     } finally {
+      list.release();
       setBusy(false);
     }
   }
@@ -269,6 +271,9 @@ export function FitsView({
 
   // The decks holding the card as the list was last read: a deck the read's row just swapped or added
   // into, or one another tab got to, leaves the free list and turns its read row's actions off.
+  // Every row action waits on any write in flight, the folded list's included, and on a count the
+  // view no longer has: a re-read that failed after a write leaves the opening count spent.
+  const rowsLocked = busy || list.busy !== null || list.load.state === "failed";
   const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
   const freeRows = list.shown.filter((r) => !heldNow.has(r.id) || list.noteFor(r.id) !== null);
   const freeList = list.read && freeRows.length > 0 ? (
@@ -277,7 +282,8 @@ export function FitsView({
       staple={list.read.staple}
       cardName={name}
       freeNow={freeNow}
-      busy={list.busy}
+      // A read row's write holds the folded list too: one mutation at a time across the view.
+      busy={list.busy ?? (busy ? "read" : null)}
       refused={list.refused}
       noteFor={list.noteFor}
       onAdd={(deck) => void list.add(deck)}
@@ -345,7 +351,7 @@ export function FitsView({
                   // Took the card some other way since the read (the free list, another visit): resolved,
                   // not changed (READINESS-audit F2), and nothing left to press on this row.
                   settled={!memory[p.deckId] && (result.resolved.includes(p.deckId) || heldNow.has(p.deckId))}
-                  busy={busy}
+                  busy={rowsLocked}
                   refused={refused?.deckId === p.deckId ? refused.kind : null}
                   onSwap={() => p.cut && void onSwap(p.deckId, p.cut, panel?.names[p.cut] ?? "")}
                   onAdd={() => void onAdd(p.deckId, deck.name)}

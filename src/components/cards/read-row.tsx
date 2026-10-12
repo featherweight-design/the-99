@@ -122,7 +122,7 @@ export function ReadRow({
         <button
           type="button"
           onClick={onSwap}
-          disabled={swapOff && !swapped}
+          disabled={busy || (swapOff && !swapped)}
           aria-pressed={swapped}
           aria-label={cutName ? (swapped ? copy.swappedAria(cardName, deckName, cutName) : copy.swapInAria(cardName, deckName, cutName)) : undefined}
           className={`${actionBase} ${swapClass}`}
@@ -132,7 +132,7 @@ export function ReadRow({
         <button
           type="button"
           onClick={onAdd}
-          disabled={addOff && !added}
+          disabled={busy || (addOff && !added)}
           aria-pressed={added}
           aria-label={added ? copy.addedAria(cardName, deckName) : copy.addOnlyAria(cardName, deckName)}
           className={`${actionBase} ${addClass}`}

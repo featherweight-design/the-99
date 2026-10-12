@@ -255,7 +255,16 @@ export function useFitsList(card: BrowseCard) {
   const [added, setAdded] = useState<Added[]>([]);
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // One mutation at a time across the list and anything drawn beside it (the read's rows share it).
   const inFlight = useRef(false);
+  const claim = useCallback(() => {
+    if (inFlight.current) return false;
+    inFlight.current = true;
+    return true;
+  }, []);
+  const release = useCallback(() => { inFlight.current = false; }, []);
+  // A write made beside the list (a read row's Swap in or Add only): the payload's count is spent too.
+  const [wrote, setWrote] = useState(false);
   // The rows as the picker opened: an add re-reads the counts, never the order.
   const [rows, setRows] = useState<FitDeck[] | null>(null);
   // Decks an add found already holding the card: they leave the list for `already holds it`.
@@ -284,11 +293,10 @@ export function useFitsList(card: BrowseCard) {
   // The payload's count is the card as it opened, so once an add has spent a copy only a read knows.
   // Before a read, the payload's count stands only when its availability read worked: a null there is
   // an unknown count, never `none free`.
-  const countsKnown = read !== null || (added.length === 0 && card.availability != null);
+  const countsKnown = read !== null || (!wrote && added.length === 0 && card.availability != null);
 
   const add = async (deck: FitDeck) => {
-    if (inFlight.current) return;
-    inFlight.current = true;
+    if (!claim()) return;
     setBusy(deck.id);
     setRefused(null);
     const freeBefore = freeNow;
@@ -317,7 +325,7 @@ export function useFitsList(card: BrowseCard) {
     } catch {
       setRefused(deck.id);
     } finally {
-      inFlight.current = false;
+      release();
       setBusy(null);
     }
   };
@@ -327,13 +335,15 @@ export function useFitsList(card: BrowseCard) {
   const holds = read?.holds.filter((h) => !added.some((a) => a.deckId === h.id)) ?? [];
   const role = read?.card.role ?? "other";
 
-  const refresh = useCallback(async () => {
+  /** Re-reads the list. `afterWrite`: the caller just wrote, so a failed re-read leaves no count. */
+  const refresh = useCallback(async (afterWrite = false) => {
+    if (afterWrite) setWrote(true);
     const after = await loadFitsAction(card.oracleId).catch(() => null);
     setLoad(after ? { state: "ready", read: after } : { state: "failed" });
     return after;
   }, [card.oracleId]);
 
-  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh };
+  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh, claim, release };
 }
 
 export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {

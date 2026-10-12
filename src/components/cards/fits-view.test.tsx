@@ -151,6 +151,52 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") })).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("one write at a time across the read's rows and the folded list, every action off while it runs", async () => {
+    await draw(panel({}, { stored: stored() }));
+    let resolve!: (v: unknown) => void;
+    actions.swapFromReadAction.mockReturnValue(new Promise((res) => { resolve = res; }));
+    const row = screen.getByTestId("read-row");
+    fireEvent.click(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") }));
+    fireEvent.click(screen.getByTestId("fits-fold"));
+    for (const b of within(screen.getAllByTestId("fits-row")[1]).getAllByRole("button")) {
+      if (b.textContent) fireEvent.click(b);
+    }
+    expect(actions.addFromFits).not.toHaveBeenCalled();
+    for (const b of within(screen.getAllByTestId("fits-row")[1]).getAllByRole("button")) if (b.textContent) expect(b).toBeDisabled();
+    for (const b of within(row).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
+    await act(async () => resolve({ ok: true, swapId: "s1", addWasFree: true, cutLeft: 0 }));
+    await settle();
+    const swapped = () => within(row).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") });
+    expect(swapped()).toBeEnabled();
+    // The folded list's Add in flight holds the selected Swap in too, and undoes nothing under it.
+    let added!: (v: unknown) => void;
+    actions.addFromFits.mockReturnValue(new Promise((res) => { added = res; }));
+    const other = screen.getAllByTestId("fits-row")[1];
+    fireEvent.click(within(other).getAllByRole("button").find((b) => b.textContent && !b.hasAttribute("disabled"))!);
+    expect(swapped()).toBeDisabled();
+    fireEvent.click(swapped());
+    expect(actions.undoReadSwapAction).not.toHaveBeenCalled();
+    await act(async () => added({ ok: true }));
+    await settle();
+    expect(swapped()).toBeEnabled();
+  });
+
+  it("a re-read that fails after a write leaves no count: the copies line goes and the row's actions wait on Try again", async () => {
+    await draw(panel({}, { stored: stored() }));
+    actions.swapFromReadAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: true, cutLeft: 0 });
+    actions.loadFitsAction.mockRejectedValue(new Error("down"));
+    const row = screen.getByTestId("read-row");
+    fireEvent.click(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") }));
+    await settle();
+    expect(screen.queryByTestId("fits-copies")).toBeNull();
+    for (const b of within(row).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
+    actions.loadFitsAction.mockResolvedValue(list());
+    fireEvent.click(screen.getByRole("button", { name: swapToolsCopy.sheet.retry }));
+    await settle();
+    expect(screen.getByTestId("fits-copies")).toBeInTheDocument();
+    expect(within(row).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toBeEnabled();
+  });
+
   it("Add only adds with nothing cut, says the deck is at 100, and pressed again takes it out (P3h, P3i)", async () => {
     await draw(panel({}, { stored: stored() }));
     actions.addFromFits.mockResolvedValue({ ok: true });
