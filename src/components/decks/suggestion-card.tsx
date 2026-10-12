@@ -58,7 +58,7 @@ export function SuggestionCard({
   const [busy, setBusy] = useState<keyof CardActions | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
   // The card flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
-  const optimistic = useOptimisticVerdict(item.verdict);
+  const optimistic = useOptimisticVerdict(item.verdict, item.id);
   const verdict = optimistic.verdict;
 
   async function answer(kind: keyof CardActions) {

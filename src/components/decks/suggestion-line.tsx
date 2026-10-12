@@ -51,7 +51,7 @@ export function SuggestionLine({
   const [refused, setRefused] = useState<string | null>(null);
   const isAdd = item.side === "add";
   // The line flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
-  const optimistic = useOptimisticVerdict(item.verdict);
+  const optimistic = useOptimisticVerdict(item.verdict, item.id);
   const verdict = optimistic.verdict;
 
   async function answer(kind: keyof CardActions) {

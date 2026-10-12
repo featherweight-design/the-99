@@ -7,13 +7,38 @@
 // moves, never `useOptimistic`, whose value is dropped the moment the action's transition ends and
 // would snap the row back before the panel's re-read lands.
 
-import { useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
 export type RowVerdict = "pending" | "accepted" | "dismissed";
 
-export function useOptimisticVerdict(server: RowVerdict) {
+/**
+ * A panel's view of its rows' flips, so its counts (answered, applied, the lead) read the same
+ * answer the rows draw, as `lock-cards.tsx` lays its overrides over the whole list. Rows report;
+ * the panel reads, for its counts only: a row is always handed the server's own verdict.
+ */
+type Report = (id: string, verdict: RowVerdict | null) => void;
+const OverridesContext = createContext<Report | null>(null);
+export const VerdictOverridesProvider = OverridesContext.Provider;
+
+/** For a panel: the report its rows call, and each item's verdict as its row draws it. */
+export function useVerdictOverrides() {
+  const [map, setMap] = useState<ReadonlyMap<string, RowVerdict>>(() => new Map());
+  const report = useCallback<Report>((id, verdict) => {
+    setMap((m) => {
+      if ((m.get(id) ?? null) === verdict) return m;
+      const next = new Map(m);
+      if (verdict === null) next.delete(id);
+      else next.set(id, verdict);
+      return next;
+    });
+  }, []);
+  const verdictOf = (item: { id: string; verdict: RowVerdict }) => map.get(item.id) ?? item.verdict;
+  return { report, verdictOf };
+}
+
+export function useOptimisticVerdict(server: RowVerdict, id?: string) {
   // The verdict pressed, and the server verdict it was pressed over: once the server's moves off
   // that (the re-read landed, or something else changed it), the server's is the truth again.
   const [shown, setShown] = useState<{ verdict: RowVerdict; from: RowVerdict } | null>(null);
@@ -42,5 +67,14 @@ export function useOptimisticVerdict(server: RowVerdict) {
   /** The re-read after an answer has landed: from now the server's verdict is the truth, moved or not. */
   const release = () => setShown(null);
 
-  return { verdict: shown && server === shown.from ? shown.verdict : server, inFlight, press, release };
+  const flipped = shown && server === shown.from ? shown.verdict : null;
+  // Tell the panel, so its counts read this row as it is drawn; and forget it when the row goes.
+  const report = useContext(OverridesContext);
+  useEffect(() => {
+    if (!id || !report) return;
+    report(id, flipped);
+  }, [id, report, flipped]);
+  useEffect(() => (id && report ? () => report(id, null) : undefined), [id, report]);
+
+  return { verdict: flipped ?? server, inFlight, press, release };
 }

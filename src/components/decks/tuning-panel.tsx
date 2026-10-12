@@ -30,6 +30,7 @@ import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { useReviewRun } from "./review-run";
+import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
@@ -138,6 +139,8 @@ export function TuningPanel({
   freshEachVisit?: boolean;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
+  // The rows' flips, so the tally and the answered layout read each answer the moment its row does.
+  const overrides = useVerdictOverrides();
   // A past run History reopened here: its lines are read in place of the newest run's, each still
   // re-checked by Apply. This panel's own Suggest changes leaves it, at once (`leftReview`).
   const review = useReviewRun("suggested");
@@ -895,8 +898,8 @@ export function TuningPanel({
     );
   } else if (hasSet) {
     const total = state.items.length;
-    const applied = state.items.filter((i) => i.verdict === "accepted").length;
-    const rejected = state.items.filter((i) => i.verdict === "dismissed").length;
+    const applied = state.items.filter((i) => overrides.verdictOf(i) === "accepted").length;
+    const rejected = state.items.filter((i) => overrides.verdictOf(i) === "dismissed").length;
     const answered = applied + rejected === total;
     const lines = state.items.filter(isLine);
     const pairs = state.items.filter((i) => !isLine(i));
@@ -1013,6 +1016,7 @@ export function TuningPanel({
   const noteLine = note ? `${note} · ${tail}` : tail;
 
   return (
+    <VerdictOverridesProvider value={overrides.report}>
     <section
       aria-labelledby="tuning-heading"
       aria-busy={reading || undefined}
@@ -1124,6 +1128,7 @@ export function TuningPanel({
       {refused ? <MutationError message={refused} /> : null}
       <p role="status" className="sr-only">{announced}</p>
     </section>
+    </VerdictOverridesProvider>
   );
 }
 

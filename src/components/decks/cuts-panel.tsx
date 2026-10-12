@@ -27,7 +27,7 @@ import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
-import { useOptimisticVerdict } from "./use-optimistic-verdict";
+import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -92,6 +92,8 @@ export function CutsPanelView({
   revision?: string;
 }) {
   const [panel, setPanel] = useState<CutsPanel | null>(null);
+  // The rows' flips, so the lead and the counts read each answer the moment its row does.
+  const overrides = useVerdictOverrides();
   // A past run History reopened here: its cuts are read in place of the newest run's.
   const review = useReviewRun("cuts");
   const reviewRunId = review?.runId ?? null;
@@ -213,8 +215,8 @@ export function CutsPanelView({
   }
 
   const { items, over, run } = panel;
-  const answered = items.filter((i) => i.verdict !== "pending").length;
-  const cutCount = items.filter((i) => i.verdict === "accepted").length;
+  const answered = items.filter((i) => overrides.verdictOf(i) !== "pending").length;
+  const cutCount = items.filter((i) => overrides.verdictOf(i) === "accepted").length;
   // A prior visit's result, and a prior visit's failed run, are hidden: the tool opens on its offer.
   const priorResult = isPriorResult(baseline, okKeyOf(panel.lastOkAt));
   const priorRun = isPriorRun(baseline, run?.id);
@@ -335,7 +337,7 @@ export function CutsPanelView({
   const lead = (() => {
     if (running) return copy.deeper.pendingLead(cutsAsk(over));
     if (resultShown && answered > 0) {
-      return copy.leadPart(cutCount, items.filter((i) => i.verdict === "dismissed").length, items.length, items.length - answered);
+      return copy.leadPart(cutCount, items.filter((i) => overrides.verdictOf(i) === "dismissed").length, items.length, items.length - answered);
     }
     if (resultShown) return copy.leadNamed(items.length);
     if (failed || refusedRun) return copy.leadBare;
@@ -344,6 +346,7 @@ export function CutsPanelView({
   const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : copy.overLead(overWords(over), panel.bodySize);
 
   return (
+    <VerdictOverridesProvider value={overrides.report}>
     <section
       aria-labelledby="cuts-heading"
       aria-busy={running || undefined}
@@ -411,6 +414,7 @@ export function CutsPanelView({
       )}
       <p role="status" className="sr-only">{announced}</p>
     </section>
+    </VerdictOverridesProvider>
   );
 }
 
@@ -582,7 +586,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
     open(item.cutOracleId, items.map((i) => ({ oracleId: i.cutOracleId, name: i.cutName, imageUri: i.cutImageUri })), undefined, { opener: event.currentTarget });
 
   // The row flips the moment it is pressed; a refusal rolls it back (`useOptimisticVerdict`).
-  const optimistic = useOptimisticVerdict(item.verdict);
+  const optimistic = useOptimisticVerdict(item.verdict, item.id);
   const verdict = optimistic.verdict;
   const TARGET = { cut: "accepted", keep: "dismissed", undo: "pending", restore: "pending" } as const;
 

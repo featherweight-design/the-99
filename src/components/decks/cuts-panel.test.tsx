@@ -470,6 +470,15 @@ describe("an answer flips its row at once (optimistic)", () => {
     await act(async () => { answer({ ok: true }); });
   });
 
+  it("moves the panel's lead with the flip, before the action answers", async () => {
+    let answer!: (r: { ok: true }) => void;
+    const d = deps(withResult(2, 2), { cut: vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; })) });
+    await mount(d);
+    fireEvent.click(within(screen.getAllByRole("article")[0]).getByRole("button", { name: copy.cut }));
+    await waitFor(() => expect(screen.getByText(copy.leadPart(1, 0, 2, 1), { exact: false })).toBeTruthy());
+    await act(async () => { answer({ ok: true }); });
+  });
+
   it("rolls a refused Cut back to its row, with the refusal", async () => {
     let answer!: (r: { ok: false; message: string }) => void;
     const d = deps(withResult(1, 1), { cut: vi.fn(() => new Promise<{ ok: false; message: string }>((r) => { answer = r; })) });
