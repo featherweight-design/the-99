@@ -24,6 +24,20 @@
 export const MODEL_OWNER_DAILY_ALLOWANCE = 10;
 export const MODEL_FRIEND_DAILY_ALLOWANCE = 5;
 
+/**
+ * The owner's daily limit, from `MODEL_OWNER_DAILY_ALLOWANCE` when it is set to a positive whole
+ * number. Anything else (unset, blank, zero, negative, fractional, or not a number) falls back to
+ * `MODEL_OWNER_DAILY_ALLOWANCE`. It exists so staging can give the owner room to test (Hugh,
+ * 2026-10-12) while production stays unset, at ten. It applies to the owner alone: a friend's
+ * five has no override.
+ */
+export function ownerDailyAllowanceFrom(raw: string | undefined): number {
+  const v = raw?.trim() ?? "";
+  if (!/^\d+$/.test(v)) return MODEL_OWNER_DAILY_ALLOWANCE;
+  const n = Number(v);
+  return Number.isSafeInteger(n) && n > 0 ? n : MODEL_OWNER_DAILY_ALLOWANCE;
+}
+
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /**

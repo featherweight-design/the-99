@@ -10,6 +10,7 @@ import {
   monthStartUtc,
   nextMonthStartUtc,
   OWNER_SHARE_USD,
+  ownerShareUsdFrom,
   countsAtWorstCase,
   unpricedWorstCaseMicro,
   spendRefusal,
@@ -95,6 +96,16 @@ describe("spendRefusal", () => {
     expect(spendRefusal({ appMonthMicro: share, ownerMonthMicro: null, callMicro: call })).toBeNull();
   });
 
+  it("holds the owner to an overridden share when one is passed", () => {
+    const wide = usdToMicro(25);
+    expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: share, callMicro: call, ownerShareMicro: wide })).toBeNull();
+    expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: wide - call + 1, callMicro: call, ownerShareMicro: wide })).toBe("ownerShare");
+  });
+
+  it("still pauses at the hard stop whatever the owner's share", () => {
+    expect(spendRefusal({ appMonthMicro: stop, ownerMonthMicro: 0, callMicro: call, ownerShareMicro: usdToMicro(25) })).toBe("paused");
+  });
+
   it("names the pause over the share when both apply", () => {
     expect(spendRefusal({ appMonthMicro: stop, ownerMonthMicro: share, callMicro: call })).toBe("paused");
   });
@@ -116,5 +127,25 @@ describe("crossedAlarms", () => {
   it("stays quiet below a line, and once past it", () => {
     expect(crossedAlarms(0, five - 1)).toEqual([]);
     expect(crossedAlarms(five, five + 1_000)).toEqual([]);
+  });
+});
+
+describe("ownerShareUsdFrom", () => {
+  it("falls back to the owner's five when unset or blank", () => {
+    expect(ownerShareUsdFrom(undefined)).toBe(OWNER_SHARE_USD);
+    expect(ownerShareUsdFrom("")).toBe(OWNER_SHARE_USD);
+    expect(ownerShareUsdFrom("  ")).toBe(OWNER_SHARE_USD);
+  });
+
+  it("takes a positive decimal number, trimmed", () => {
+    expect(ownerShareUsdFrom("25")).toBe(25);
+    expect(ownerShareUsdFrom(" 7.5 ")).toBe(7.5);
+    expect(ownerShareUsdFrom("0.01")).toBe(0.01);
+  });
+
+  it("falls back on anything else", () => {
+    for (const raw of ["0", "0.0", "-5", "1e3", "$25", "25usd", ".5", "5.", "abc", "Infinity", "NaN"]) {
+      expect(ownerShareUsdFrom(raw), raw).toBe(OWNER_SHARE_USD);
+    }
   });
 });

@@ -5,9 +5,9 @@ import { modelCallParts, modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
   MODEL_FRIEND_DAILY_ALLOWANCE,
-  MODEL_OWNER_DAILY_ALLOWANCE,
   RESERVATION_TTL_MS,
   allowanceFrom,
+  ownerDailyAllowanceFrom,
   type Allowance,
   type LedgerRow,
   type ModelFeature,
@@ -21,10 +21,12 @@ import {
   microToUsd,
   monthStartUtc,
   nextMonthStartUtc,
+  ownerShareUsdFrom,
   spendRefusal,
   unpricedWorstCaseMicro,
   type UnpricedCall,
   type SpendRefusal,
+  usdToMicro,
 } from "./spend-rule";
 
 /**
@@ -52,11 +54,21 @@ export class AllowanceSpentError extends Error {
 
 /**
  * The player's rolling-24-hour limit. THE ONE PLACE `MODEL_OWNER_USER_ID` is read (a Clerk user
- * id): that account gets the owner's ten, everyone else the friend's five. Unset or empty, no
- * account is the owner and everyone gets five — the limit fails closed.
+ * id): that account gets the owner's ten (or `MODEL_OWNER_DAILY_ALLOWANCE`, when it parses as a
+ * positive whole number), everyone else the friend's five. Unset or empty, no account is the owner
+ * and everyone gets five — the limit fails closed.
  */
 export function dailyLimitFor(userId: string): number {
-  return isOwner(userId) ? MODEL_OWNER_DAILY_ALLOWANCE : MODEL_FRIEND_DAILY_ALLOWANCE;
+  return isOwner(userId) ? ownerDailyAllowanceFrom(process.env.MODEL_OWNER_DAILY_ALLOWANCE) : MODEL_FRIEND_DAILY_ALLOWANCE;
+}
+
+/**
+ * The owner's monthly testing share in micro-dollars: `MODEL_OWNER_MONTHLY_USD` when it parses,
+ * otherwise `OWNER_SHARE_USD` (`ownerShareUsdFrom`). Only ever compared against the owner's own
+ * spend, so it moves nothing for a friend.
+ */
+export function ownerShareMicro(): number {
+  return usdToMicro(ownerShareUsdFrom(process.env.MODEL_OWNER_MONTHLY_USD));
 }
 
 function isOwner(userId: string): boolean {
@@ -145,6 +157,7 @@ export async function readAllowance(userId: string, now: Date = new Date(), feat
   const refusal = spendRefusal({
     appMonthMicro: spend.app,
     ownerMonthMicro: isOwner(userId) ? spend.user : null,
+    ownerShareMicro: ownerShareMicro(),
     callMicro: callMicroFor(feature),
   });
   if (refusal === "paused") return { ...allowance, paused: { until: nextMonthStartUtc(now) } };
@@ -200,6 +213,7 @@ export async function reserveModelCall(
   const refusal = spendRefusal({
     appMonthMicro: spend.app,
     ownerMonthMicro: isOwner(userId) ? spend.user : null,
+    ownerShareMicro: ownerShareMicro(),
     callMicro: featureWorstCaseMicroUsd(feature, model),
   });
   if (refusal) return { refused: refusal };

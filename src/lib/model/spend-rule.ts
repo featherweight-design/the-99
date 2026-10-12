@@ -30,6 +30,20 @@ export const ALARM_PCTS = [50, 80] as const;
 /** The owner's own month-to-date ceiling, so their testing cannot eat the friends' budget. */
 export const OWNER_SHARE_USD = 5;
 
+/**
+ * The owner's monthly share in dollars, from `MODEL_OWNER_MONTHLY_USD` when it is set to a
+ * positive decimal number (`25`, `7.5`). Anything else (unset, blank, zero, negative, exponent
+ * forms, or not a number) falls back to `OWNER_SHARE_USD`. It exists for staging testing (Hugh,
+ * 2026-10-12); production stays unset, at five. `HARD_STOP_USD` still applies to every call, so a
+ * share above it can never let the app spend past the stop.
+ */
+export function ownerShareUsdFrom(raw: string | undefined): number {
+  const v = raw?.trim() ?? "";
+  if (!/^\d+(\.\d+)?$/.test(v)) return OWNER_SHARE_USD;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : OWNER_SHARE_USD;
+}
+
 export const MICRO = 1_000_000;
 export const usdToMicro = (usd: number): number => Math.round(usd * MICRO);
 export const microToUsd = (micro: number): number => micro / MICRO;
@@ -81,9 +95,12 @@ export function spendRefusal(args: {
   appMonthMicro: number;
   ownerMonthMicro: number | null;
   callMicro: number;
+  /** The owner's share in micro-dollars; `OWNER_SHARE_USD` when omitted. */
+  ownerShareMicro?: number;
 }): SpendRefusal | null {
   if (args.appMonthMicro + args.callMicro > usdToMicro(HARD_STOP_USD)) return "paused";
-  if (args.ownerMonthMicro !== null && args.ownerMonthMicro + args.callMicro > usdToMicro(OWNER_SHARE_USD)) {
+  const share = args.ownerShareMicro ?? usdToMicro(OWNER_SHARE_USD);
+  if (args.ownerMonthMicro !== null && args.ownerMonthMicro + args.callMicro > share) {
     return "ownerShare";
   }
   return null;
