@@ -79,8 +79,11 @@ export function GotItConfirm({ deckId, card, ...rest }: DeckConfirmProps) {
  * line (cart PR 6). Everything a press decides (printing, finish, count, the press id, the stale
  * re-base) lives here once.
  */
+/** What a confirm's caller can read of the form: the stepper's count. */
+export type GotItFormState = { quantity: number };
+
 export function GotItConfirmForm<F>({
-  oracleId, price, initialNeed, listQuantity, write, needLine, staleLine, children, footer,
+  oracleId, price, initialNeed, listQuantity, write, needLine, staleLine, children, footer, decision,
   cardName, newestAsOf, onClose, onDone, onPendingChange, returnFocusRef,
 }: {
   oracleId: string;
@@ -96,10 +99,18 @@ export function GotItConfirmForm<F>({
   needLine?: (need: number) => ReactNode;
   /** The stale banner's body for a need still owed and for none; the deck's own by default. */
   staleLine?: { owed: (need: number) => string; done: string };
-  /** Drawn after the card's name: the cart's deck list, or its chooser. */
-  children?: ReactNode;
-  /** Drawn under the stepper: the cart's lock-7 sentence. */
-  footer?: ReactNode;
+  /**
+   * Drawn after the card's name: the cart's deck list, or its chooser. A function reads the
+   * stepper's count.
+   */
+  children?: ReactNode | ((form: GotItFormState) => ReactNode);
+  /** Drawn under the stepper: the cart's lock-7 sentence, and the chooser's undo. */
+  footer?: ReactNode | ((form: GotItFormState) => ReactNode);
+  /**
+   * Anything else the caller's write depends on (the cart's S1b pick). A change is a new decision,
+   * so a retry after it mints a new press id rather than replaying the old one.
+   */
+  decision?: unknown;
   /** The name the row prints. */
   cardName: string;
   /** The price table's newest `as_of`, which decides whether the row's figure is live. */
@@ -170,6 +181,11 @@ export function GotItConfirmForm<F>({
   function changed() {
     pressId.current = null;
   }
+  useEffect(() => {
+    pressId.current = null;
+  }, [decision]);
+
+  const form: GotItFormState = { quantity: qty };
 
   function pick(p: PrintingChoice) {
     if (pending) return;
@@ -278,7 +294,7 @@ export function GotItConfirmForm<F>({
           <h3 id={titleId} className="m-0 font-display text-[19px] font-bold leading-[1.25] text-[color:var(--fg)] md:text-[21px]">{c.title}</h3>
           <span id={nameId} className="text-[15px] leading-[1.4] text-[color:var(--fg-body)]">{cardName}</span>
         </div>
-        {children}
+        {typeof children === "function" ? children(form) : children}
 
         {notice === "stale" || notice === "staleRemoved" ? (
           <div ref={bannerRef} role="status" tabIndex={-1} className={BANNER}>
@@ -400,7 +416,7 @@ export function GotItConfirmForm<F>({
                   {spare > 0 ? <span className="text-[color:var(--fg-muted)]">{` · ${c.spare(spare)}`}</span> : null}
                 </span>
               </div>
-              {footer}
+              {typeof footer === "function" ? footer(form) : footer}
             </div>
           </div>
         </div>

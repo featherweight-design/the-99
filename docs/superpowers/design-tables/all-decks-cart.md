@@ -110,12 +110,15 @@ Committed from the R1 handoff with Hugh's 2026-10-11 rulings applied (READINESS-
 | stepper preset | the line's quantity, capped at `MARK_BOUGHT_MAX` | same |
 | need line | `confirm.need` replaces `gotItCopy.confirm.need` | same |
 | read again | `confirm.readAgain`, 12 `--fg-muted`, under the stepper | same |
-| write | one press, one id, every deck on the line (gap G2) | same |
+| write | one press, one id, every deck on the line (gap G2); with the chooser, the pick goes with it (`pickDeckId`) | same |
+| chooser (S1b) | the stepper below the number of decks on the line: the list becomes the shipped `ContestedCardRow` over the line's decks in the claim model's queue order, supply = the stepper's count, every deck claiming hard (brews included, lock 9); its strings are `cardAssignmentsCopy.contested`'s (`headingOwned`, `cap`, `gets` / `buys`, `a11y*`). A tap writes nothing: it previews, and the press writes it. Back at full count the list returns and no pick is sent | same |
+| chooser footer | with a pick: `confirm.undo(deck)` then a `confirm.backToDefault` text button (12 `--accent`, h 44), above `confirm.readAgain` | same |
+| chooser fallback | the claimants' read fails or returns nothing: the plain list stays, and the default order decides | same |
 
 ## Change: GotItReceipt on a cart press
 
 | Property | Value |
 |---|---|
 | placement | the cart's toast slot: desktop bottom-right 22, w 380; phone above the tab bar, over the foot of the list |
-| body | `receipt.covered` / `still` / `stillMany`, from the roll-up read after the write |
+| body | `receipt.covered` / `still` / `stillMany`, from the roll-up read after the write. `covered(names, true)` adds `, as you picked` when the press sent a pick and the read covers that deck (S4); a read that covers other decks says only what it says (lock 7) |
 | actions | History · Undo, as shipped |
