@@ -14,7 +14,14 @@
 // is given, and `--clean` removes exactly what it wrote.
 //
 //   pnpm seed:summary <userId>            # prints the URL to photograph
+//   pnpm seed:summary <userId> --added-copy  # also writes US1 to US4, the version-4 receipts
 //   pnpm seed:summary <userId> --clean
+//
+// `--added-copy` (plan `plan-added-copy-2026-10-12`): four more confirmed receipts, each a version-4
+// payload with `went`, and the claims behind their lines so each Change opens a live chooser. US5
+// is US1 with Change pressed and a deck picked, which the inventory does; US6 (kept free) was ruled
+// out with Keep it free on 2026-10-12. Photographed only with `ADDED_COPY_ENABLED` and
+// `COLLECTION_EDIT_ENABLED` on: off, a version-4 receipt draws as version 3 by design.
 import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
@@ -30,6 +37,7 @@ const db = drizzle(pool);
 
 const userId = process.argv[2];
 const clean = process.argv.includes("--clean");
+const addedCopy = process.argv.includes("--added-copy");
 if (!userId) throw new Error("usage: pnpm seed:summary <userId> [--clean]");
 
 /**
@@ -49,16 +57,15 @@ const UPLOAD_ID = fixtureId("f1cef0");
 const DECK_A = fixtureId("dec001");
 const DECK_B = fixtureId("dec002");
 const FIXTURE_NAME = "Summary fixture";
+// The added-copy receipts, one per scene, and the two brews whose soft reads US3 draws.
+const US_UPLOADS = { us1: fixtureId("a5c001"), us2: fixtureId("a5c002"), us3: fixtureId("a5c003"), us4: fixtureId("a5c004") };
+const DECK_C = fixtureId("dec003");
+const DECK_D = fixtureId("dec004");
 
 async function main() {
   try {
     if (clean) {
-      await db.execute(sql`
-        delete from csv_uploads where id = ${UPLOAD_ID} and user_id = ${userId}
-      `);
-      await db.execute(sql`
-        delete from decks where id in (${DECK_A}, ${DECK_B}) and user_id = ${userId}
-      `);
+      await removeFixture();
       console.log("fixture removed");
       return;
     }
@@ -88,21 +95,16 @@ async function main() {
       select oracle_id, name from cards
       where type_line !~ '\\mBasic\\M' and type_line ~ 'Legendary Creature'
         and oracle_id <> ${contested.oracle_id}
-      order by oracle_id limit 3
+      order by oracle_id limit 7
     `);
-    if (cards.length < 3) throw new Error("catalog is empty — seed it first");
-    const [cleared, still, commander] = cards;
+    if (cards.length < 7) throw new Error("catalog is empty — seed it first");
+    const [cleared, still, commander, many, earlier, brews, brewOne] = cards;
 
     // Scoped to this user, both here and in --clean. The ids are fixed so a re-run replaces its
     // own fixture, but two accounts on one local database share those ids — an unscoped delete
     // would take the other account's receipt with it, which is not what "removes exactly what it
     // wrote" means.
-    await db.execute(sql`
-      delete from csv_uploads where id = ${UPLOAD_ID} and user_id = ${userId}
-    `);
-    await db.execute(sql`
-      delete from decks where id in (${DECK_A}, ${DECK_B}) and user_id = ${userId}
-    `);
+    await removeFixture();
 
     // Two committed decks that both list the contested card, so the live claim read finds real
     // contention. `since` is stated a month apart: the queue order IS the explanation of the
@@ -202,8 +204,117 @@ async function main() {
 
     console.log(`/collection/replace/summary/${UPLOAD_ID}`);
     console.log(`/decks/${DECK_A}/changes`);
+
+    if (addedCopy) await seedAddedCopy({ cleared, many, earlier, brews, brewOne, commander });
   } finally {
     await pool.end();
+  }
+}
+
+/** Scoped to this user: two accounts on one database share nothing here (see `fixtureId`). */
+async function removeFixture() {
+  await db.execute(sql`
+    delete from csv_uploads
+    where id in (${UPLOAD_ID}, ${US_UPLOADS.us1}, ${US_UPLOADS.us2}, ${US_UPLOADS.us3}, ${US_UPLOADS.us4})
+      and user_id = ${userId}
+  `);
+  await db.execute(sql`
+    delete from decks where id in (${DECK_A}, ${DECK_B}, ${DECK_C}, ${DECK_D}) and user_id = ${userId}
+  `);
+}
+
+type Card = { oracle_id: string; name: string };
+
+/**
+ * US1 to US4. The lines are FROZEN in each payload, as a real confirm writes them; the claims are
+ * written too, because Change opens a chooser read LIVE (`loadChooserCards`), and a card no deck
+ * claims draws its line with no Change at all.
+ */
+async function seedAddedCopy(c: {
+  cleared: Card; many: Card; earlier: Card; brews: Card; brewOne: Card; commander: Card;
+}) {
+  // The committed claims: the first deck lists `cleared`, `many` and `earlier`, the second `many`.
+  const claims: [string, Card][] = [[DECK_A, c.cleared], [DECK_A, c.many], [DECK_A, c.earlier], [DECK_B, c.many]];
+  for (const [deckId, card] of claims) {
+    await db.execute(sql`
+      insert into deck_version_cards (version_id, oracle_id, quantity, since)
+      select v.id, ${card.oracle_id}, 1, v.committed_at from deck_versions v where v.deck_id = ${deckId}
+      on conflict do nothing
+    `);
+    await db.execute(sql`
+      insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}, ${card.oracle_id}, 1)
+      on conflict do nothing
+    `);
+  }
+  // Two brews (no version): both read `brews`, the first alone reads `brewOne`.
+  for (const [deckId, name, listed] of [
+    [DECK_C, `${FIXTURE_NAME} brew one`, [c.brews, c.brewOne]],
+    [DECK_D, `${FIXTURE_NAME} brew two`, [c.brews]],
+  ] as const) {
+    await db.execute(sql`
+      insert into decks (id, user_id, name, commander_oracle_id)
+      values (${deckId}, ${userId}, ${name}, ${c.commander.oracle_id})
+    `);
+    for (const card of listed) {
+      await db.execute(sql`
+        insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}, ${card.oracle_id}, 1)
+      `);
+    }
+  }
+
+  const decks = {
+    [DECK_A]: `${FIXTURE_NAME} — first`, [DECK_B]: `${FIXTURE_NAME} — second`,
+    [DECK_C]: `${FIXTURE_NAME} brew one`, [DECK_D]: `${FIXTURE_NAME} brew two`,
+  };
+  const held = (deckId: string, picked = false) => ({ deckId, copies: 1, picked });
+  const went = (kind: "held" | "soft", ds: { deckId: string; copies: number; picked: boolean }[]) =>
+    ({ kind, decks: ds, copies: ds.length || 1, ownedBefore: 0 });
+  const receipt = (cleared: { deckId: string; card: Card }[], w: Record<string, ReturnType<typeof went>>) => ({
+    version: 4,
+    totalBefore: 2731,
+    totalAfter: 2731 + cleared.length,
+    arrived: cleared.length,
+    left: 0,
+    issues: { unmatched: 0, parseErrors: 0 },
+    nowShort: [],
+    cleared: cleared.map((r) => ({ deckId: r.deckId, oracleId: r.card.oracle_id, copies: 1 })),
+    still: [],
+    contested: [],
+    went: w,
+    names: { cards: Object.fromEntries(cleared.map((r) => [r.card.oracle_id, r.card.name])), decks },
+  });
+
+  const scenes: [keyof typeof US_UPLOADS, ReturnType<typeof receipt>][] = [
+    // US1: one held deck (L1).
+    ["us1", receipt([{ deckId: DECK_A, card: c.cleared }], { [c.cleared.oracle_id]: went("held", [held(DECK_A)]) })],
+    // US2: two decks one each (L2), and a pick the import filled (L3).
+    ["us2", receipt(
+      [{ deckId: DECK_A, card: c.many }, { deckId: DECK_B, card: c.many }, { deckId: DECK_A, card: c.earlier }],
+      {
+        [c.many.oracle_id]: went("held", [held(DECK_A), held(DECK_B)]),
+        [c.earlier.oracle_id]: went("held", [held(DECK_A, true)]),
+      },
+    )],
+    // US3: a loose copy two brews read (L6), and one only the first reads (L5).
+    ["us3", receipt(
+      [{ deckId: DECK_C, card: c.brews }, { deckId: DECK_D, card: c.brews }, { deckId: DECK_C, card: c.brewOne }],
+      {
+        [c.brews.oracle_id]: went("soft", [{ deckId: DECK_C, copies: 0, picked: false }, { deckId: DECK_D, copies: 0, picked: false }]),
+        [c.brewOne.oracle_id]: went("soft", [{ deckId: DECK_C, copies: 0, picked: false }]),
+      },
+    )],
+    // US4: nothing a deck needed arrived. The shipped empty receipt, no section.
+    ["us4", receipt([], {})],
+  ];
+  for (const [scene, payload] of scenes) {
+    await db.execute(sql`
+      insert into csv_uploads
+        (id, user_id, filename, row_count, unmatched_count, preview_payload, confirmed_at, summary_payload)
+      values (${US_UPLOADS[scene]}, ${userId}, ${`added-copy-${scene}.csv`}, 2736, 0,
+        ${JSON.stringify({ pendingItems: [], unmatched: [], parseErrors: [], skippedByDesignCount: 0 })}::jsonb,
+        now(), ${JSON.stringify(payload)}::jsonb)
+    `);
+    console.log(`${scene.toUpperCase()} /collection/replace/summary/${US_UPLOADS[scene]}`);
   }
 }
 
