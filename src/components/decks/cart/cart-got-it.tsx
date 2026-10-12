@@ -98,7 +98,7 @@ export function CartGotItProvider({
     () => ({
       get current() {
         const el = trigger.current;
-        // Buying the last line takes the dock away too: the empty page's way back is the last resort.
+        // Buying the last line takes the checkout away too: the empty page's way back is the last resort.
         return el?.isConnected
           ? el
           : document.querySelector<HTMLElement>("[data-cart-checkout]") ?? document.querySelector<HTMLElement>("[data-cart-empty-back]");
