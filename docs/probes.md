@@ -1876,6 +1876,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the reading panel (7d), and records a video of each press to `PROBE_VIDEO_DIR` when it is set.
   Run it against a dev server with `HELP_ME_CHOOSE_ENABLED=true` and `INTAKE_STUB_DELAY_MS=5000`;
   it writes reads, so `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging
-  and production), and it deletes the reads it made. Measured 2026-10-12 on a scratch copy of
+  and production by `neon.branch_id`), and it deletes the reads it made. The SERVER writes those
+  reads through its own `DATABASE_URL`, which the probe cannot read, so after the first press it
+  looks the read up in `PROBE_TARGET_URL` and stops when it is not there: a server pointed at
+  another database costs one read there, never a run's worth. That failure path was run. Measured 2026-10-12 on a scratch copy of
   staging's decks: with the old key restored it fails at both widths (the skeleton back for ~3.3s
   as the read settles), and passes on the fix.

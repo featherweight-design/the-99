@@ -146,12 +146,12 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.results.subPhone}
         />
         <div className={RESULTS_COLUMN}>
-          {/* NOT keyed on the server's state: a remount here would remount the results' Suspense, and a
-              settled read would flash its loading skeleton again. The scope adopts the new state in
-              place; the panel and the results list are keyed on it instead, below. */}
           {/* Keyed on the read: a new read (Try again) starts silent, while the refresh that draws
               this read settled keeps what it just announced. */}
           {words && <ReadAnnouncer key={p.readId ?? "unread"} />}
+          {/* NOT keyed on the server's state: a remount here would remount the results' Suspense, and a
+              settled read would flash its loading skeleton again. The scope adopts the new state in
+              place; the panel (above) and the results list (in `Results`) are keyed on it instead. */}
           <ReadScope initial={words ? phaseOf(served) : null}>
           <ReadAsBar
             chips={answerChips(p, labels)}

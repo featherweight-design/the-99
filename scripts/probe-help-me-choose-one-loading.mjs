@@ -68,12 +68,13 @@ function sample(scope) {
   return {
     skeleton: !!root?.querySelector("[data-testid='results-searching']"),
     list: !!root?.querySelector("[data-testid='order-line']"),
-    tag: root?.querySelector("[data-testid='read-tag']")?.textContent ?? null,
+    phase: root?.querySelector("[data-testid='read-panel']")?.dataset.phase ?? null,
     dim: root?.querySelector("[data-testid='results-dim']")?.dataset.reading === "true",
   };
 }
 
 const readIds = new Set();
+const SETTLED = new Set(["done", "nothing", "failed", "stopped"]);
 
 async function run() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
@@ -100,18 +101,23 @@ async function run() {
         let s;
         try { s = await page.evaluate(sample, PAGE); } catch { continue; } // a navigation in flight
         const last = timeline.at(-1);
-        if (!last || last.skeleton !== s.skeleton || last.list !== s.list || last.tag !== s.tag || last.dim !== s.dim) timeline.push({ ms: Date.now() - t0, ...s });
-        if (done === null && (s.tag === "done" || s.tag === "nothing fits") && s.list) done = Date.now();
+        if (!last || last.skeleton !== s.skeleton || last.list !== s.list || last.phase !== s.phase || last.dim !== s.dim) timeline.push({ ms: Date.now() - t0, ...s });
+        if (done === null && SETTLED.has(s.phase) && s.list) done = Date.now();
         if (done !== null && Date.now() - done > 2_500) break;
         await page.waitForTimeout(40);
       }
       const r = new URL(page.url()).searchParams.get("r");
       if (r) readIds.add(r.toLowerCase());
+      // The server writes the read through its own DATABASE_URL. Finding it here is what proves that
+      // is PROBE_TARGET_URL, the database the refusal above checked; a read missing here was written
+      // somewhere else, and the run stops before pressing again.
+      const [{ n }] = r ? await sql`select count(*)::int as n from intake_reads where id = ${r}::uuid` : [{ n: 0 }];
+      if (n !== 1) throw new Error(`read ${r ?? "(none)"} is not in PROBE_TARGET_URL: the server writes to another database.`);
       const at = (s) => `${s} @ ${width}`;
-      console.log(`  timeline @ ${width}: ${timeline.map((t) => `${t.ms}ms ${t.skeleton ? "SKELETON" : ""}${t.list ? "list" : ""}${t.dim ? "(dim)" : ""} ${t.tag ?? "-"}`).join(" | ")}`);
+      console.log(`  timeline @ ${width}: ${timeline.map((t) => `${t.ms}ms ${t.skeleton ? "SKELETON" : ""}${t.list ? "list" : ""}${t.dim ? "(dim)" : ""} ${t.phase ?? "-"}`).join(" | ")}`);
       const firstList = timeline.findIndex((t) => t.list);
       const back = firstList < 0 ? [] : timeline.slice(firstList).filter((t) => t.skeleton);
-      report(at("the read settled"), done !== null, `final tag ${timeline.at(-1)?.tag}`);
+      report(at("the read settled"), done !== null, `final phase ${timeline.at(-1)?.phase}`);
       report(at("the dimmed list was drawn under the reading panel"), timeline.some((t) => t.list && t.dim), "");
       report(at("the skeleton never returns once the list has drawn"), firstList >= 0 && back.length === 0,
         back.length ? `skeleton again at ${back.map((t) => `${t.ms}ms`).join(", ")}` : "no second skeleton");
