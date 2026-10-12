@@ -62,7 +62,8 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
   const decks = useMemo(() => scoped(data.decks, filter), [data.decks, filter]);
   const brews = data.decks.filter((d) => d.brew).length;
   const one = data.decks.length === 1;
-  const scope = one ? copy.filter.one : filter === "finished" ? copy.filter.scopeFinished(decks.length, brews) : copy.filter.scopeAll(decks.length, brews);
+  // `1 deck` is the All decks shorthand only: Finished only always counts what it kept, which can be none.
+  const scope = filter === "finished" ? copy.filter.scopeFinished(decks.length, brews) : one ? copy.filter.one : copy.filter.scopeAll(decks.length, brews);
   const rec = useMemo(() => recency(decks, now), [decks, now]);
   const spr = useMemo(() => spread(decks), [decks]);
   const top = fullestSlot(spr);

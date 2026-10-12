@@ -79,6 +79,15 @@ describe("LineupView: the filter", () => {
   });
 });
 
+describe("LineupView: one deck", () => {
+  it("says 1 deck under All decks, and counts what Finished only kept when the only deck is a brew", () => {
+    draw({ decks: [deck("Gishath", { brew: true })] });
+    expect(screen.getAllByText("1 deck").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(screen.getAllByText("0 finished decks · 1 brew left out").length).toBeGreaterThan(0);
+  });
+});
+
 describe("LineupView: recency", () => {
   it("draws a lane per played deck, newest first, with raw results and pod sizes, and every never-played deck", () => {
     draw();
