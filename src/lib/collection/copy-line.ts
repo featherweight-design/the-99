@@ -80,8 +80,12 @@ export function longSentence(d: Destination, card: string): string {
   if (d.kind === "picked") return l.goesToPicked(card, d.deck);
   if (d.kind === "soft") return d.brews.length === 1 ? l.freeForBrew(card, d.brews[0]) : l.freeForBrews(card, d.brews.length);
   const names = d.decks.map((x) => x.name);
-  if (d.decks.length === 1) return d.decks[0].picked ? l.goesToEarlier(card, names[0]) : l.goesTo(card, names[0]);
   const copies = d.decks.reduce((n, x) => n + x.copies, 0);
+  if (d.decks.length === 1) {
+    if (d.decks[0].picked) return l.goesToEarlier(card, names[0]);
+    // `which needs one` is a single copy's sentence: a deck that took more is told the count.
+    return copies === 1 ? l.goesTo(card, names[0]) : l.goesToManyUneven(card, copies, names);
+  }
   return d.decks.every((x) => x.copies === 1) ? l.goesToMany(card, copies, names) : l.goesToManyUneven(card, copies, names);
 }
 

@@ -91,6 +91,12 @@ describe("liveSentence", () => {
 });
 
 describe("longSentence (Add Cards)", () => {
+  it("states the count when one deck takes more than one copy, never `which needs one`", () => {
+    const s = longSentence({ kind: "held", decks: [{ name: "HD - Brago", copies: 2, picked: false }] }, "Sol Ring");
+    expect(s).toBe(copy.line.goesToManyUneven("Sol Ring", 2, ["HD - Brago"]));
+    expect(s).toBe("2 copies of Sol Ring go to HD - Brago");
+  });
+
   it("names the card, and counts the copies across several decks", () => {
     expect(longSentence({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring"))
       .toBe(copy.line.goesTo("Sol Ring", "HD - Brago"));

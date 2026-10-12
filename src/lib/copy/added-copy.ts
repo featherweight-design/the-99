@@ -23,7 +23,7 @@ export const addedCopyCopy = {
     goesTo: (card: string, deck: string) => `${card} goes to ${deck}, which needs one`,
     goesToMany: (card: string, copies: number, decks: string[]) =>
       `${n(copies)} copies of ${card} go to ${and(decks)}, one each`,
-    /** A deck took two: `one each` would be false (audit 8). Not in the handoff. */
+    /** A deck took two: `one each` would be false (audit 8), and so would one deck's `which needs one`. Not in the handoff. */
     goesToManyUneven: (card: string, copies: number, decks: string[]) => `${n(copies)} copies of ${card} go to ${and(decks)}`,
     goesToEarlier: (card: string, deck: string) => `${card} goes to ${deck}, which you picked earlier`,
     goesToPicked: (card: string, deck: string) => `${card} goes to ${deck}, as you picked`,
