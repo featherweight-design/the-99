@@ -61,13 +61,15 @@ describe("GAME_SUMMARY states an order summarizeGames could produce", () => {
 });
 
 describe("ADDED_COPY_ROWS says what an upload could", () => {
-  it("reads each row through the app's own placement, and draws a Change on each", async () => {
+  it("reads each row through the app's own placement, as the caption tells it", async () => {
     const { ADDED_COPY_ROWS } = await import("./fixtures");
     const { addedCopyCopy } = await import("../copy/added-copy");
+    // The Sol Ring bought for Brago goes to Gishath, which committed it first.
     expect(ADDED_COPY_ROWS.map((r) => r.sentence)).toEqual([
-      addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]),
+      addedCopyCopy.row.goesTo("HD - Gishath"),
       addedCopyCopy.row.freeForBrew("HD -Thorin"),
     ]);
+    // Each row carries a chooser, which is what draws its Change, with a deck to move the copy to.
     for (const r of ADDED_COPY_ROWS) expect(r.chooser.claimants.length).toBeGreaterThan(1);
   });
 });

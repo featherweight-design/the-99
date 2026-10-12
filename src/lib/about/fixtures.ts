@@ -2384,9 +2384,9 @@ export const ADDED_COPY_ROWS: {
     };
   };
   return [
-    card("about-sol-ring", "Sol Ring", 1, 2, [
-      claim("about-gishath", "HD - Gishath", 1), claim("about-brago", "HD - Brago", 2), claim("about-eldrazi", "HD - Eldrazi", 3),
-    ]),
+    // The caption's story: a Sol Ring bought for Brago, which Gishath (short one, and committed
+    // first) takes.
+    card("about-sol-ring", "Sol Ring", 0, 1, [claim("about-gishath", "HD - Gishath", 1), claim("about-brago", "HD - Brago", 2)]),
     card("about-arcane-signet", "Arcane Signet", 1, 1, [claim("about-gishath", "HD - Gishath", 1), claim("about-thorin", "HD -Thorin", null)]),
   ];
 })();
