@@ -5,27 +5,30 @@
 // one leaves the estimate and the measured cost priced differently, and the
 // measured figure is what the report's full-run extrapolation rests on.
 //
-// Per million tokens, BATCH rate (half of standard). Published rates as of
-// 2026-09-25.
+// Per million tokens, BATCH rate (half of standard). The rates are read from
+// `src/lib/model/prices.ts` (`batchRates`), the app's own table, since admin audit
+// finding 9: the admin's Card label runs price `card_label_batches` from the same
+// function, so the script and the admin cannot disagree about a run. Every caller of
+// this module runs under tsx or Vitest, which load the TypeScript import.
 //
 // `caches` is MEASURED, not assumed. Two identical calls per model:
 //   sonnet  pass 1 cacheWrite=1215, pass 2 cacheRead=1215  -> caching engages
 //   haiku   pass 1 cacheWrite=0,    pass 2 cacheRead=0     -> inert
 // The instruction block is ~1,285 estimated tokens (1,215 as billed), under Haiku's
 // minimum cacheable prompt length, so its `cache_control` does nothing there.
+import { batchRates } from "../../src/lib/model/prices.ts";
+
 /** @typedef {"haiku" | "sonnet" | "sonnet5"} ModelKey */
 
 /** @type {Record<ModelKey, {in:number,out:number,cacheWrite:number,cacheRead:number,caches:boolean}>} */
 export const PRICING = {
-  haiku: { in: 0.50, out: 2.50, cacheWrite: 0.625, cacheRead: 0.05, caches: false },
-  sonnet: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
-  // Sonnet 5 at the rates `scripts/eval/lib/pricing.mts` publishes — $2/$10 per million
-  // standard, halved by the Batch API — and `card-labels-pricing.test.mts` holds the two
-  // together. They were 4.5's $3/$15 here until review caught it, which UNDERSTATED the
-  // cap: the reservation is computed from this row, so an opt-in run could be approved
-  // below its real ceiling. It also overstated the projection by exactly 3/2, every term
-  // scaling alike.
-  sonnet5: { in: 1.00, out: 5.00, cacheWrite: 1.25, cacheRead: 0.10, caches: true },
+  haiku: { ...batchRates("claude-haiku-4-5"), caches: false },
+  sonnet: { ...batchRates("claude-sonnet-4-5"), caches: true },
+  // Sonnet 5 at $2/$10 per million standard, halved by the Batch API, and
+  // `card-labels-pricing.test.mts` holds it to the eval harness's table. It was 4.5's
+  // $3/$15 here until review caught it, which UNDERSTATED the cap: the reservation is
+  // computed from this row, so an opt-in run could be approved below its real ceiling.
+  sonnet5: { ...batchRates("claude-sonnet-5"), caches: true },
 };
 
 /**
