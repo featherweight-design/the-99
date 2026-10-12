@@ -25,6 +25,7 @@ const EXEMPT: Record<string, string> = {
     "opens in a new tab, so this page and its warning stay where they are",
   "components/decks/deck-card-overflow.tsx :: `/decks/${deckId}/import`": KEPT,
   "components/decks/deck-card.tsx :: `/decks/${deck.id}`": KEPT,
+  "components/decks/lineup/deck-link.tsx :: `/decks/${id}`": KEPT,
   "components/decks/deck-card.tsx :: noticesHref(deck.id)": KEPT,
   "components/decks/first-commit-offer.tsx :: `/decks/${deckId}/changes?commit=1`": KEPT,
   "components/decks/pending-banner.tsx :: commitHref(deckId)": KEPT,
