@@ -9,7 +9,9 @@
  *
  * `--control` re-asks the REFERENCE model (Sonnet 4.5) itself, by batch, on the sample already in <out.json>: the
  * self-repeat that says how much of a candidate's miss is run-to-run noise. The request is exactly the labeler's,
- * with no override.
+ * with no override. The budget guard counts every model already in <out.json> and reserves each reply at
+ * `max_tokens` twice over, so a control on a file holding earlier spend needs `--cap` well above 1 (it ran at 4;
+ * measured spend was $0.58).
  *
  * STAGING is read-only (`connectStaging`); nothing is written to any database. Every reply is priced
  * as it lands and the run refuses a request whose worst case could cross `--cap`, counting what the
@@ -31,7 +33,7 @@ import type { Job } from "../../src/lib/labels/types";
 
 const args = process.argv.slice(2);
 const out = args.find((a) => !a.startsWith("--") && !/^\d/.test(a));
-if (!out) throw new Error("usage: labels-tiering.mts <out.json> [--cap N] [--per-stratum N] [--batch N]");
+if (!out) throw new Error("usage: labels-tiering.mts <out.json> [--cap N] [--per-stratum N] [--batch N] [--control]");
 const flag = (name: string, d: number) => {
   const i = args.indexOf(`--${name}`);
   if (i < 0) return d;
@@ -245,7 +247,9 @@ for (const model of MODELS) {
     console.log(`  ${space} recall ${pct(t.tp, t.tp + t.fn)}  precision ${pct(t.tp, t.tp + t.fp)}`);
   }
   console.log(`  jobs the parser rejected: ${m.rejected.length}`);
-  console.log(`  per 1,000 cards: standard $${((m.usd / Math.max(1, asked.length)) * 1000).toFixed(2)}, batch $${((m.usd / Math.max(1, asked.length)) * 500).toFixed(2)}`);
+  // `m.usd` is the price actually billed: real-time for a candidate, batch for the control.
+  const perThousand = (m.usd / Math.max(1, asked.length)) * 1000;
+  console.log(CONTROL ? `  per 1,000 cards, as billed (batch): $${perThousand.toFixed(2)}` : `  per 1,000 cards: standard $${perThousand.toFixed(2)}, batch $${(perThousand / 2).toFixed(2)}`);
   writeFileSync(`${out.replace(/\.json$/, "")}-${model}-diffs.json`, JSON.stringify(diffs, null, 1));
 }
 process.exit(0);
