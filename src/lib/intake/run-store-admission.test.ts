@@ -62,9 +62,10 @@ describe("withReadAdmission", () => {
     expect(conn.released).toEqual([undefined]);
   });
 
-  it("destroys a connection whose commit failed, and reports the failure", async () => {
+  it("keeps the work's result when the commit of its lock-only transaction fails, and destroys the connection", async () => {
+    // The reservation `run` made is committed elsewhere; throwing here would strand it unscheduled.
     conn.failCommit = true;
-    await expect(withReadAdmission("user_1", async () => 1)).rejects.toThrow("commit failed");
+    expect(await withReadAdmission("user_1", async () => 42)).toBe(42);
     expect(conn.released).toEqual([true]);
   });
 

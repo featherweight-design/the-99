@@ -181,9 +181,16 @@ export async function withReadAdmission<T>(userId: string, run: () => Promise<T>
       await rollback().catch(() => {});
       throw err;
     }
-    // A commit that fails is reported, never swallowed.
-    await client.query("commit");
-    clean = true;
+    // This transaction owns only the lock; what `run` did (the reservation) is already committed on
+    // the app's pool. So a commit that fails does not discard that result, or the press would error
+    // out before it scheduled the read it reserved and strand it: the connection is destroyed, which
+    // releases the lock, and the result is returned.
+    try {
+      await client.query("commit");
+      clean = true;
+    } catch {
+      // `clean` stays false.
+    }
     return result;
   } finally {
     client.release(clean ? undefined : true);
