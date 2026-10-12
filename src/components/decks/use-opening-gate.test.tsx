@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { holdsOpening, isOpening, OPENING_CEILING_MS, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
+import { deckAnalyzed, holdsOpening, isOpening, OPENING_CEILING_MS, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -181,5 +181,17 @@ describe("what the opening waits on", () => {
   it("never gates a tab that is not shown", () => {
     const { result } = renderHook(() => useOpenOnce(true, "d:1", false));
     expect(result.current).toBe(false);
+  });
+});
+
+describe("deckAnalyzed", () => {
+  it("is false only when the stored read answered that there is none and nothing is on screen", () => {
+    expect(deckAnalyzed({ storedPermits: null, hasReading: false, storedUnknown: false })).toBe(false);
+    expect(deckAnalyzed({ storedPermits: [2, 3], hasReading: false, storedUnknown: false })).toBe(true);
+    expect(deckAnalyzed({ storedPermits: null, hasReading: true, storedUnknown: false })).toBe(true);
+  });
+
+  it("keeps the hold when the stored read failed: a failure is not proof of no analysis", () => {
+    expect(deckAnalyzed({ storedPermits: null, hasReading: false, storedUnknown: true })).toBe(true);
   });
 });

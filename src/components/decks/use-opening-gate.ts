@@ -44,6 +44,20 @@ export function isOpening({
  * loader never appears. The tools below it (the hub's tiles, Proposed cuts, Mana Balance) fill in
  * as their own reads land, in states they already draw.
  */
+/**
+ * Whether the deck counts as ANALYZED for the opening: a stored reading the page read, one already
+ * on screen, or a stored read that FAILED. A failure says nothing either way, so it keeps #1025's
+ * hold: taken for "never analyzed", a peek that then finds a reading would swap the empty state out
+ * from under the reader.
+ */
+export function deckAnalyzed({ storedPermits, hasReading, storedUnknown }: {
+  storedPermits: readonly unknown[] | null;
+  hasReading: boolean;
+  storedUnknown: boolean;
+}): boolean {
+  return storedPermits !== null || hasReading || storedUnknown;
+}
+
 export function holdsOpening({
   analyzed,
   peekPending,
