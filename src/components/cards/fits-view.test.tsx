@@ -20,7 +20,10 @@ const actions = vi.hoisted(() => ({
 const readActions = vi.hoisted(() => ({ readFitsReadAction: vi.fn(), pressFitsReadAction: vi.fn() }));
 vi.mock("../../lib/swaps/actions", () => actions);
 vi.mock("../../lib/swaps/fits-read-actions", () => readActions);
-vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
+  useLinkStatus: () => ({ pending: false }),
+}));
 
 const { FitsView } = await import("./fits-view");
 

@@ -21,6 +21,7 @@ const EXEMPT: Record<string, string> = {
   "components/cards/card-modal.tsx :: `/decks/${deck.id}`": KEPT,
   "components/cards/fits-picker.tsx :: `/decks/${deck.id}`": KEPT,
   "components/cards/fits-picker.tsx :: `/decks/${h.id}`": KEPT,
+  "components/cards/read-row.tsx :: `/decks/${deckId}`": KEPT,
   "components/collection/short-deck-warning.tsx :: `/decks/${row.deckId}`":
     "opens in a new tab, so this page and its warning stay where they are",
   "components/decks/deck-card-overflow.tsx :: `/decks/${deckId}/import`": KEPT,
