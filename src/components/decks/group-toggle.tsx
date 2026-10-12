@@ -310,9 +310,9 @@ export function GroupToggle({
             {deckStatsCopy.segment.provenance}
           </span>
         )}
-        {notesOpen && notes && (
+        {notesOpen && notes && notes.count > 0 && (
           <span className="basis-full font-mono text-[10.5px] text-[color:var(--fg-faint)] md:basis-auto md:ml-auto">
-            {notes.count > 0 ? deckNotesCopy.head.provenance(String(notes.count)) : deckNotesCopy.head.provenanceEmpty}
+            {deckNotesCopy.head.provenance(String(notes.count))}
           </span>
         )}
         {!panelOpen && (

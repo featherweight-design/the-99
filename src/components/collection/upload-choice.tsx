@@ -143,7 +143,7 @@ export function UploadChoice({
   };
 
   return (
-    <section className="flex flex-col md:min-h-[calc(100vh-140px)]">
+    <section className="flex flex-1 flex-col">
       <div className="flex-1 p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px_20px]">
         <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
           {c.step(2, 4)} · {filename} · {rows.toLocaleString("en-US")} rows

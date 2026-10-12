@@ -84,7 +84,7 @@ export function ReviewScreen({
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
-    <section className={embedded ? "flex flex-col" : "flex flex-col min-h-[calc(100vh-140px)]"}>
+    <section className={embedded ? "flex flex-col" : "flex flex-1 flex-col"}>
       {/* Mobile page header — "Review import" and the filename (first-run redesign D11, 5b).
           The ‹ is gone: Cancel in the confirm bar is the phone's exit now. Embedded in first
           run's step-1 card (5a) there is no header at all; the card's own title and its

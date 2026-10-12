@@ -76,12 +76,9 @@ export function EditCopiesFigureBody() {
 }
 
 export function UploadChoiceFigureBody() {
-  // The choice is a whole page (`min-h` of the viewport at desktop); a figure is a plate.
-  return (
-    <div className="[&_section]:!min-h-0">
-      <UploadChoice {...UPLOAD_CHOICE} picked="replace" onPick={noop} onContinue={noop} onCancel={noop} />
-    </div>
-  );
+  // The page's choice fills the screen by growing into its route's flex column (`flex-1`); a
+  // figure's plate is no flex column, so here it is drawn at its own height.
+  return <UploadChoice {...UPLOAD_CHOICE} picked="replace" onPick={noop} onContinue={noop} onCancel={noop} />;
 }
 
 export function RemoveCardFigureBody() {

@@ -16,7 +16,10 @@ export default async function ReplacePage() {
   const userId = await requireUserId();
   const stats = await getCollectionStats(userId);
   return (
-    <section>
+    // A flex column that takes `main`'s height, so a step that fills the screen (the choice,
+    // whose action bar sits at the foot) can grow into it with `flex-1` rather than guessing the
+    // chrome's height. A step drawn shorter than the screen is unchanged.
+    <section className="flex flex-1 flex-col">
       {/* THE HEADING BELONGS TO THE STEP, at both widths, so `ReplaceFlow` draws it. On the
           phone the review has its own `Review import` row and no chevron (first-run redesign
           D11, 5b), so a page-level row above it would be a second header. On desktop, this page

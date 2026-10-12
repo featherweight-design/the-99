@@ -7,6 +7,7 @@ import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { summarisePrices } from "../../lib/decks/price";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
+import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { cardCopies } from "../../lib/decks/grouping";
 
 const provenance: ProvenanceForm = { behind: false, when: "Monday" };
@@ -274,5 +275,17 @@ describe("GroupToggle's Stats segment", () => {
     const { container } = render(<GroupToggle {...props} filter="all" />);
     expect(container.querySelector("[data-toolbar-group]")).toBeNull();
     expect(container.querySelector("[data-toolbar-divider]")).toBeNull();
+  });
+});
+
+// Bug batch 2026-10-12: with no notes the open Notes view carries no provenance line (the
+// `yours only · on this deck, not a version` line is gone); with notes it still counts them.
+describe("GroupToggle's Notes provenance line", () => {
+  it("draws nothing at zero open notes, and `N open · newest first` above it", () => {
+    const onChange = vi.fn();
+    const { container, rerender } = render(<GroupToggle {...props} filter="all" notes={{ open: true, count: 0, onChange }} />);
+    expect(container.textContent).not.toMatch(/newest first|yours only|not a version/);
+    rerender(<GroupToggle {...props} filter="all" notes={{ open: true, count: 3, onChange }} />);
+    expect(screen.getByText(deckNotesCopy.head.provenance("3"))).toBeInTheDocument();
   });
 });
