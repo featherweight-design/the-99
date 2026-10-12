@@ -60,6 +60,7 @@ import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
 import { DeckPanelContext } from "./deck-panel";
+import { EmptyDeckNotes } from "./notes/empty-deck-notes";
 import type { DeckPanel } from "./group-toggle";
 import type { DeckNotesView } from "../../lib/decks/notes-types";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
@@ -1839,6 +1840,13 @@ export function BuilderShell({
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
+              notesEnabled ? (
+                <DeckPanelContext.Provider value={deckPanel}>
+                  <EmptyDeckNotes
+                    deckId={deck.id}
+                    notes={notesData}
+                    deckCards={[deck.commander, ...(deck.partner ? [deck.partner] : [])].map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null }))}
+                  >
               <>
               {/* §Empty Builder Mark + empty state (§Empty Builder Mark section).
                  Branches on deck.filled: a deck reached by deletion congratulates
@@ -1984,6 +1992,155 @@ export function BuilderShell({
                 <TokensGroup />
               </HoverPreviewProvider>
               </>
+                  </EmptyDeckNotes>
+                </DeckPanelContext.Provider>
+              ) : (
+              <>
+              {/* §Empty Builder Mark + empty state (§Empty Builder Mark section).
+                 Branches on deck.filled: a deck reached by deletion congratulates
+                 the sweep; one that was never built welcomes the player. */}
+              <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
+                {/* §Mark container (mobile). Each breakpoint keeps its own
+                    card-mark geometry; the quiet crown sits below both. */}
+                <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">
+                  <div
+                    className="relative flex-none"
+                    style={{ width: 96, height: 104 }}
+                    aria-hidden
+                  >
+                    {/* Back card: tilted left */}
+                    <div
+                      className="absolute rounded-[8px]"
+                      style={{
+                        left: "50%",
+                        top: "50%",
+                        width: 48,
+                        height: 68,
+                        background: "var(--surface-raised)",
+                        border: "1.5px solid var(--border-strong)",
+                        transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
+                      }}
+                    />
+                    {/* Middle card: upright */}
+                    <div
+                      className="absolute rounded-[8px]"
+                      style={{
+                        left: "50%",
+                        top: "50%",
+                        width: 48,
+                        height: 68,
+                        background: "var(--elevated)",
+                        border: "1.5px solid var(--border-dashed)",
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    />
+                    {/* Front card: tilted right, accent-outlined, "99" */}
+                    <div
+                      className="absolute rounded-[8px] flex items-center justify-center"
+                      style={{
+                        left: "50%",
+                        top: "50%",
+                        width: 48,
+                        height: 68,
+                        background: "color-mix(in srgb, var(--accent) 24%, var(--bg))",
+                        border: "1.5px solid var(--accent)",
+                        transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
+                      }}
+                    >
+                      {/* §Front card — "99" numeral */}
+                      <span
+                        className="font-display font-extrabold text-[18px]"
+                        style={{ color: "var(--accent)" }}
+                      >
+                        99
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
+                <div className="hidden md:flex mb-[22px] items-end justify-center gap-[16px]">
+                  <div
+                    className="overflow-hidden flex-none"
+                    style={{ width: 104, height: 112 }}
+                    aria-hidden
+                  >
+                    {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
+                    <CardFan
+                      variant="decks-desktop"
+                      className="origin-top-left scale-[0.867]"
+                    />
+                  </div>
+                </div>
+
+                <Crown tone="quiet" className="mb-[14px]" />
+
+                {deck.filled ? (
+                  /* §Swept-empty branch: deck was filled then cleared by sweep */
+                  <>
+                    {/* §Swept-empty heading */}
+                    <h2
+                      className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {recommendationsCopy.sweptEmpty.heading}
+                    </h2>
+
+                    {/* §Swept-empty body */}
+                    <p
+                      className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      {recommendationsCopy.sweptEmpty.body(commanderShortName)}
+                    </p>
+
+                    {/* §Swept-empty CTA — links into Consider */}
+                    <button
+                      type="button"
+                      onClick={() => setView("consider")}
+                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent hover:text-accent-hover active:text-accent-mid"
+                    >
+                      {recommendationsCopy.sweptEmpty.cta}
+                    </button>
+                  </>
+                ) : (
+                  /* §First-run empty branch: deck was never filled */
+                  <>
+                    {/* §Empty state heading */}
+                    <h2
+                      className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {addPanelCopy.builderEmpty.heading}
+                    </h2>
+
+                    {/* §Empty state body. One string at both widths now that both
+                        point at the same two entrances. */}
+                    <p
+                      className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      {addPanelCopy.builderEmpty.caption(commanderShortName)}
+                    </p>
+
+                    {/* §Empty state role hint, now at both widths — mobile spent
+                        that vertical budget on the deleted CTA. */}
+                    <p
+                      className="font-mono text-[11px] mt-[20px]"
+                      style={{ color: "var(--fg-faint)" }}
+                    >
+                      {addPanelCopy.builderEmpty.roleHint}
+                    </p>
+                  </>
+                )}
+              </section>
+              {/* A commander makes tokens whether or not the list holds a card yet, so the group is drawn here
+                  too, with its own preview provider (the decklist's is not mounted on this branch). */}
+              <HoverPreviewProvider className="px-[16px] pb-[12px] md:px-[26px]">
+                <TokensGroup />
+              </HoverPreviewProvider>
+              </>
+              )
             ) : (
               /* Task 8: Decklist body */
               /* The provider wraps the list from out here rather than from
