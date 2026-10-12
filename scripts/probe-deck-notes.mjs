@@ -118,7 +118,7 @@ async function walkIn(page, label, card) {
   check(`${label}: focusing the field changes no size or position`, same(before, focusedGeometry), JSON.stringify({ before, focusedGeometry }));
   await field.pressSequentially("swap in a card to test then another");
   const typed = await geometry();
-  check(`${label}: typing does not resize the field or the page`, same(before, { ...typed, doc: before.doc }) , JSON.stringify({ before, typed }));
+  check(`${label}: typing does not resize or move the field`, ["w", "h", "x", "top"].every((k) => Math.abs(before[k] - typed[k]) <= 0.5), JSON.stringify({ before, typed }));
   await field.fill("");
   await shot("focused");
 

@@ -236,7 +236,7 @@ export function NoteField({
         </div>
         <div className="flex items-center justify-end gap-[8px]">
           {/* Always drawn, at a fixed desktop width (Hugh, 2026-10-12): drawn only on focus it widened this
-              column and shrank the field beside it, and a count growing from `9 / 1000` to `1000 / 1000` would
+              column and shrank the field beside it, and a count growing from `9 / 140` to `140 / 140` would
               have done the same as the player typed. */}
           <span
             className={`mr-auto font-mono text-[10px] tabular-nums md:order-2 md:mr-0 md:ml-[4px] md:w-[68px] md:text-right ${count >= NOTE_WARN_AT ? "text-[color:var(--warning)]" : "text-[color:var(--fg-locked)]"}`}
