@@ -47,6 +47,10 @@ const check = (label: string, ok: boolean, detail: string) => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${label} — ${detail}`);
 };
 
+/** JSON with sorted keys: a jsonb column hands keys back in its own order, not the writer's. */
+const canonical = (v: unknown): string => JSON.stringify(v, (_k, x) =>
+  x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x);
+
 const one = async <T>(text: string, params: unknown[] = []) =>
   (await pool.query(text, params)).rows[0] as T;
 
@@ -74,10 +78,10 @@ async function main() {
     throw new Error(`refusing branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch`);
   }
   const picked = (await pool.query(
-    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 7",
+    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 8",
   )).rows as { oracle_id: string; name: string }[];
-  if (picked.length < 7) throw new Error("the catalog holds fewer than seven cards");
-  const [A, B, C, CMD1, CMD2, D, E] = picked.map((p) => p.oracle_id);
+  if (picked.length < 8) throw new Error("the catalog holds fewer than eight cards");
+  const [A, B, C, CMD1, CMD2, D, E, F] = picked.map((p) => p.oracle_id);
   console.log(`branch ${branch} · fixture ${USER}`);
 
   const deck = async (name: string, commander: string, cards: string[], commit: boolean, owner = USER) => {
@@ -292,6 +296,128 @@ async function main() {
     const deckEntryDecks = deckEntry.status === "preview" ? deckEntry.decks.map((d) => d.deckId).sort() : [`(${deckEntry.status})`];
     check("and the cart's exemption does nothing for a deck's own entry",
       JSON.stringify(deckEntryDecks) === JSON.stringify(all), JSON.stringify(deckEntryDecks));
+
+    // ---- Undo drops only a pick the press made (added copy PR 2) ---------------------------------
+    // Two brews list F, so a revert shorts no committed deck and no confirmation intervenes.
+    const brewX = await deck("probe undo X", CMD1, [F], false);
+    const brewY = await deck("probe undo Y", CMD2, [F], false);
+    const xy = [brewX, brewY];
+    const reservedF = async (deckId: string) => Number((await one<{ n: number }>(
+      "select count(*)::int as n from card_assignments where user_id = $1 and oracle_id = $2 and deck_id = $3", [USER, F, deckId],
+    )).n);
+    const buyF = (expected: number, entryId: string) => applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: F, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + 1, expected, condition: null }] },
+      { id: entryId, source: cartSource(xy), receipt: { oracleId: F, deckIds: [], owesFor: xy }, requireMember: { deckIds: xy, oracleId: F }, assign: { oracleId: F, deckId: brewY } },
+    );
+    const e1 = randomUUID();
+    const made = await buyF(0, e1);
+    check("a pick on a deck with no reservation reports that the press created it",
+      made.status === "applied" && made.assigned?.created === true && await reservedF(brewY) === 1,
+      `${made.status}; created ${made.status === "applied" ? JSON.stringify(made.assigned) : "-"}; reserved ${await reservedF(brewY)}`);
+    const undone = await applyCollectionChange(USER, { kind: "revert", entryId: e1, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID() });
+    check("Undo with that pick drops the reservation in the same revert",
+      undone.status === "applied" && await reservedF(brewY) === 0, `${undone.status}; reserved ${await reservedF(brewY)}`);
+
+    // The same deck picked again since (another tab cleared the press's pick and made a new one):
+    // the undo names the press's row by its instant, so the newer pick survives.
+    const e1b = randomUUID();
+    const madeAgain = await buyF(0, e1b);
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query("insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, now() + interval '1 second')", [USER, F, brewY]);
+    const undoneB = await applyCollectionChange(USER, { kind: "revert", entryId: e1b, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID() });
+    check("Undo leaves a newer pick of the same deck, made since the press",
+      madeAgain.status === "applied" && undoneB.status === "applied" && await reservedF(brewY) === 1,
+      `${madeAgain.status}/${undoneB.status}; reserved ${await reservedF(brewY)}`);
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+
+    await pool.query("insert into card_assignments (user_id, oracle_id, deck_id) values ($1, $2, $3)", [USER, F, brewY]);
+    const e2 = randomUUID();
+    const kept = await buyF(0, e2);
+    check("a pick on a deck that already holds the reservation reports it did not create one",
+      kept.status === "applied" && kept.assigned?.created === false,
+      `${kept.status}; created ${kept.status === "applied" ? JSON.stringify(kept.assigned) : "-"}`);
+    // The cart sends no undoPlacement for it, so the older reservation survives the undo.
+    const undone2 = await applyCollectionChange(USER, { kind: "revert", entryId: e2 }, { id: randomUUID() });
+    check("and Undo without a placement leaves the reservation that predates the purchase",
+      undone2.status === "applied" && await reservedF(brewY) === 1, `${undone2.status}; reserved ${await reservedF(brewY)}`);
+
+    // ---- A pick that MOVES a reservation: Undo puts the displaced one back, as it stood --------
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query(
+      "insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, '2026-01-02 03:04:05.123456')",
+      [USER, F, brewX],
+    );
+    const stampX = async () => (await one<{ at: string | null }>(
+      "select max(created_at)::text as at from card_assignments where user_id = $1 and oracle_id = $2 and deck_id = $3", [USER, F, brewX],
+    )).at;
+    const heldNow = async () => Number((await one<{ n: number }>(
+      "select coalesce(sum(quantity), 0)::int as n from collection_items where user_id = $1 and oracle_id = $2", [USER, F],
+    )).n);
+    const e3 = randomUUID();
+    const moved = await buyF(await heldNow(), e3);
+    const movedPlaced = moved.status === "applied" ? moved.entry.rows.find((r) => r.oracleId === F)?.placed : undefined;
+    check("a pick that moves another deck's reservation reports and records the one it displaced",
+      moved.status === "applied" && moved.assigned?.created === true && moved.assigned.displaced?.deckId === brewX
+        && movedPlaced?.deckId === brewY && movedPlaced.displaced?.deckId === brewX
+        && await reservedF(brewX) === 0 && await reservedF(brewY) === 1,
+      `${moved.status}; ${moved.status === "applied" ? JSON.stringify(moved.assigned) : "-"}; placed ${JSON.stringify(movedPlaced)}`);
+    const retried = await buyF(0, e3);
+    const retriedPlaced = retried.status === "alreadyApplied" ? retried.entry.rows.find((r) => r.oracleId === F)?.placed : undefined;
+    check("a retry of that press reads the same record off the entry",
+      retried.status === "alreadyApplied" && canonical(retriedPlaced) === canonical(movedPlaced),
+      `${retried.status}; placed ${JSON.stringify(retriedPlaced)}`);
+    const forgedRestore = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewY, copies: 1 } } },
+      { id: randomUUID(), dryRun: true },
+    );
+    check("a restore the entry did not record puts nothing back (dry run)",
+      forgedRestore.status === "preview" && await reservedF(brewX) === 0, `${forgedRestore.status}; X reserved ${await reservedF(brewX)}`);
+    const undone3 = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
+      { id: randomUUID() },
+    );
+    check("Undo drops the moved pick and puts the displaced reservation back, at its own instant",
+      undone3.status === "applied" && await reservedF(brewY) === 0 && await reservedF(brewX) === 1
+        && await stampX() === "2026-01-02 03:04:05.123456",
+      `${undone3.status}; Y ${await reservedF(brewY)}; X ${await reservedF(brewX)} at ${await stampX()}`);
+
+    // ---- An older reservation the one-per-card rule predates does not block the restore --------
+    const brewZ = await deck("probe undo Z", CMD2, [F], false);
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query(
+      "insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, '2026-01-02 03:04:05.123456'), ($1, $2, $4, '2026-01-03 03:04:05')",
+      [USER, F, brewX, brewZ],
+    );
+    const e4 = randomUUID();
+    const moved4 = await buyF(await heldNow(), e4);
+    const undone4 = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e4, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
+      { id: randomUUID() },
+    );
+    check("Undo puts the moved reservation back beside an older one on another deck",
+      moved4.status === "applied" && undone4.status === "applied"
+        && await reservedF(brewX) === 1 && await reservedF(brewZ) === 1 && await reservedF(brewY) === 0,
+      `${moved4.status}/${undone4.status}; X ${await reservedF(brewX)} Z ${await reservedF(brewZ)} Y ${await reservedF(brewY)}`);
+
+    // ---- A deck that stopped claiming the card since the press gets no reservation back ---------
+    await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
+    await pool.query(
+      "insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, '2026-01-02 03:04:05.123456')",
+      [USER, F, brewX],
+    );
+    const e5 = randomUUID();
+    const moved5 = await buyF(await heldNow(), e5);
+    // X prints the card now: a proxied card is not claimed.
+    await pool.query("insert into deck_proxies (deck_id, oracle_id) values ($1, $2)", [brewX, F]);
+    const undone5 = await applyCollectionChange(
+      USER, { kind: "revert", entryId: e5, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
+      { id: randomUUID() },
+    );
+    check("Undo puts nothing back on a deck that no longer claims the card",
+      moved5.status === "applied" && undone5.status === "applied" && await reservedF(brewX) === 0 && await reservedF(brewY) === 0,
+      `${moved5.status}/${undone5.status}; X ${await reservedF(brewX)} Y ${await reservedF(brewY)}`);
+    await pool.query("delete from deck_proxies where deck_id = $1", [brewX]);
   } finally {
     await pool.query("delete from collection_history where user_id = $1", [USER]);
     await pool.query("delete from collection_items where user_id = $1", [USER]);

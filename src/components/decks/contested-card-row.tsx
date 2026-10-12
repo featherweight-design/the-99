@@ -146,6 +146,9 @@ export function ContestedCardRow({
   chooser,
   addedCopy = false,
   onCard,
+  onWrite,
+  onPending,
+  onUnknown,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -175,6 +178,24 @@ export function ContestedCardRow({
    * the write settled and the live read found no card (the last copy went in another tab).
    */
   onCard?: (card: ContestedCard | null) => void;
+  /**
+   * A write that landed, in the order they settle: whether it left a pick on `deckId`. The write is
+   * a toggle (a press writes a pick, moves the one standing, or clears it), so `picked` is read off
+   * the card it read back, and only without one is it taken from the press. Every landed write is
+   * reported, a superseded one included: it changed the stored pick whether or not it is drawn.
+   */
+  onWrite?: (deckId: string, picked: boolean, createdAt?: string) => void;
+  /**
+   * Each write as it starts (true) and as it settles (false), one call each, so a caller counting
+   * them across row instances (a chooser closed and reopened) knows when none is out. A caller whose
+   * own action depends on where the pick ends up (the receipt's Undo) holds until then.
+   */
+  onPending?: (pending: boolean) => void;
+  /**
+   * A write that threw: it may have committed, and nothing says which pick it left. A caller whose
+   * own action depends on the pick (the receipt's Undo) holds until a later write lands.
+   */
+  onUnknown?: () => void;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -275,6 +296,7 @@ export function ContestedCardRow({
     // one option is ever checked. Seniority allocates every other copy.
     setPicked(wasChosen ? new Set() : new Set([deckId]));
     const mine = ++tap.current;
+    onPending?.(true);
     startTransition(async () => {
       // `finally`, not a trailing statement: a thrown action — a dropped connection, an expired
       // session — exits this callback, and the optimistic accent would then stand
@@ -301,6 +323,7 @@ export function ContestedCardRow({
         : null;
       // Including when the live read came back null, which the action's own type allows: the
       // `finally` below is what makes that case, and a thrown one, stand down too.
+      if (result.ok) onWrite?.(deckId, fresh ? (fresh.claimants.find((c) => c.deckId === deckId)?.granted ?? 0) > 0 : !wasChosen, result.createdAt);
       // A superseded tap's answer is DISCARDED rather than drawn: the player has since named a
       // different deck, and its own write — already queued behind this one — is the truth now.
       if (mine !== tap.current) return;
@@ -346,6 +369,7 @@ export function ContestedCardRow({
         // it owns each name a reason the server gave, and inventing a fourth for "we do not know"
         // would tell the player something the server never said. What matters is that the
         // optimistic state does not outlive the attempt, which the `finally` guarantees.
+        onUnknown?.();
       } finally {
         // THE OPTIMISTIC SET ALWAYS STANDS DOWN — but only for the LATEST tap. Authorship is read
         // from data; this state exists only for the window before there is any, and a throw
@@ -357,6 +381,7 @@ export function ContestedCardRow({
         // the assertions are written — three spellings of it hung on the harness rather than on
         // the assertion. The sibling guard above IS covered, by the superseded-answer case.
         if (mine === tap.current) setPicked(null);
+        onPending?.(false);
       }
     });
   };

@@ -262,7 +262,7 @@ describe("the S1b chooser", () => {
 
   it("sends the pick with the purchase, and drops it at full count", async () => {
     readCartChooser.mockResolvedValue(contested);
-    markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [{ deckId: G, deckName: "HD - Gishath" }, { deckId: T, deckName: "HD -Thorin" }], still: [{ deckId: K, deckName: "HD - Kratos", need: 1 }] } } });
+    markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", pickCreated: true, receipt: { covered: [{ deckId: G, deckName: "HD - Gishath" }, { deckId: T, deckName: "HD -Thorin" }], still: [{ deckId: K, deckName: "HD - Kratos", need: 1 }] } } });
     await open();
     fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
     const group = await screen.findByRole("radiogroup", { name: CHOOSER });
@@ -282,6 +282,34 @@ describe("the S1b chooser", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
     expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ deckIds: [G, K, T], quantity: 2, pickDeckId: T }));
     await waitFor(() => expect(screen.getByText(copy.receipt.covered(["HD - Gishath", "HD -Thorin"], true), { exact: false })).toBeTruthy());
+    // Undo takes the pick back with the copy (decision 5): its check and its save both name it.
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    expect(previewRevert).toHaveBeenCalledWith("e1", [G, K, T], { oracleId: ORACLE, deckId: T });
+  });
+
+  it("puts back the reservation a moved pick displaced, in the same Undo", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ applied: {
+      id: "e1", pickCreated: true, pickDisplaced: { deckId: G, copies: 1 },
+      receipt: { covered: [{ deckId: T, deckName: "HD -Thorin" }], still: [] },
+    } });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    fireEvent.click(within(await screen.findByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    await act(async () => { fireEvent.click(await screen.findByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    expect(previewRevert).toHaveBeenCalledWith("e1", [G, K, T], { oracleId: ORACLE, deckId: T, restore: { deckId: G, copies: 1 } });
+  });
+
+  it("drops no pick on Undo when the press found the reservation already made", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", pickCreated: false, receipt: { covered: [{ deckId: T, deckName: "HD -Thorin" }], still: [] } } });
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    fireEvent.click(within(await screen.findByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    await act(async () => { fireEvent.click(await screen.findByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    expect(previewRevert).toHaveBeenCalledWith("e1", [G, K, T]);
   });
 
   it("sends no pick when the count comes back up to the decks", async () => {

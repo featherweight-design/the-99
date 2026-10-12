@@ -11,14 +11,15 @@
 // with somebody else's id.
 
 import { requireUserId } from "../../lib/auth";
-import { assignCopyFor, type AssignRefusal } from "../../lib/decks/assign";
+import { assignCopyFor, type AssignRefusal, type AssignReport } from "../../lib/decks/assign";
 import { loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 
 export type { AssignRefusal };
 
 export type AssignResult =
-  | { ok: true; card: ContestedCard | null }
+  /** `createdAt`: the reservation this press wrote, exactly, when it wrote one (an undo names it). */
+  | { ok: true; card: ContestedCard | null; createdAt?: string }
   | { ok: false; cause: AssignRefusal; card: ContestedCard | null };
 
 /**
@@ -27,7 +28,8 @@ export type AssignResult =
  */
 export async function assignCopy(oracleId: string, deckId: string): Promise<AssignResult> {
   const userId = await requireUserId();
-  const cause = await assignCopyFor(userId, oracleId, deckId);
+  const report: AssignReport = { created: false };
+  const cause = await assignCopyFor(userId, oracleId, deckId, report);
 
   // A DECK THAT IS NOT THIS PLAYER'S WROTE NOTHING, so nothing is invalidated and nothing is read
   // back. Falling through would let anyone post a valid deck id belonging to somebody else and
@@ -45,5 +47,6 @@ export async function assignCopy(oracleId: string, deckId: string): Promise<Assi
   // The row's fresh state, read after the write: the page is about to redraw it, and a refusal
   // without it would leave the player looking at exactly the state that lost.
   const card = await loadContestedCard(oracleId, userId).catch(() => null);
-  return cause ? { ok: false, cause, card } : { ok: true, card };
+  if (cause) return { ok: false, cause, card };
+  return { ok: true, card, ...(report.created && report.createdAt ? { createdAt: report.createdAt } : {}) };
 }

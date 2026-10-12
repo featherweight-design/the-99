@@ -5,6 +5,7 @@ const assign = vi.hoisted(() => vi.fn());
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: assign }));
 import { CopyLine } from "./copy-line";
 import { addedCopyCopy as copy } from "../../lib/copy/added-copy";
+import { longParts } from "../../lib/collection/copy-line";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 
@@ -24,6 +25,14 @@ const line = (chooser?: ContestedCard) => (
     <CopyLine cardName="Sol Ring" sentence={copy.row.goesTo("HD - Brago")} chooser={chooser} />
   </ul>
 );
+
+/** The line form's sentence element, by its whole text (it is cut into runs at the names). */
+const sentence = (text: string) => screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === text && el.querySelector("[data-em]") !== null);
+/** Each emphasized run: its kind, its text, and whether it is bold; every one is `--fg`. */
+const emphasis = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>("[data-em]")].map((s) => {
+  expect(s.style.color).toBe("var(--fg)");
+  return [s.dataset.em, s.textContent, s.className.includes("font-semibold")];
+});
 
 describe("CopyLine", () => {
   it("says where the copy went, with Change", () => {
@@ -119,6 +128,46 @@ describe("CopyLine", () => {
     expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
     expect(document.activeElement).toBe(screen.getByText("Sol Ring"));
+  });
+
+  it("in Add Cards' form names the card, and redraws in the long form after a pick", async () => {
+    assign.mockResolvedValueOnce({ ok: true, card: card(1) });
+    render(
+      <ul>
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} parts={longParts({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring")} chooser={card()} />
+      </ul>,
+    );
+    // The card `--fg` 600 and the deck `--fg`, inside the `--fg-body` sentence (design table).
+    const frozen = sentence(copy.line.goesTo("Sol Ring", "HD - Brago"));
+    expect(emphasis(frozen)).toEqual([["card", "Sol Ring", true], ["deck", "HD - Brago", false]]);
+    fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
+    fireEvent.click(screen.getByText("HD -Thorin"));
+    await waitFor(() => expect(sentence(copy.line.goesToPicked("Sol Ring", "HD -Thorin"))).toBeTruthy());
+    expect(emphasis(sentence(copy.line.goesToPicked("Sol Ring", "HD -Thorin"))))
+      .toEqual([["card", "Sol Ring", true], ["deck", "HD -Thorin", false]]);
+  });
+
+  it("in Add Cards' form, Done on the terminal chooser leaves focus on the line, not the body", async () => {
+    assign.mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
+    render(
+      <ul>
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} parts={longParts({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring")} chooser={card()} />
+      </ul>,
+    );
+    const change = screen.getByRole("button", { name: copy.changeAria("Sol Ring") });
+    fireEvent.click(change);
+    fireEvent.click(screen.getByText("HD -Thorin"));
+    const refusal = cardAssignmentsCopy.contested.refusedNoSupply("HD - Brago", 1, "HD -Thorin");
+    await waitFor(() => expect(screen.getAllByText(refusal).some((el) => el.tagName === "P")).toBe(true));
+    change.focus();
+    fireEvent.click(change);
+    expect(screen.queryByRole("button")).toBeNull();
+    // The sentence the line keeps (empty now: nothing is claimed about a copy that is gone).
+    const li = screen.getByRole("listitem");
+    expect(document.activeElement).not.toBe(document.body);
+    expect(li.contains(document.activeElement)).toBe(true);
+    // And it still names its card for a screen reader.
+    expect(document.activeElement?.textContent).toBe("Sol Ring");
   });
 
   it("draws no Change when there is no chooser to open", () => {

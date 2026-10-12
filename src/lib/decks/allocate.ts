@@ -1,4 +1,4 @@
-import type { ContestedClaimant } from "../collection/summary-read";
+import type { ContestedCard, ContestedClaimant } from "../collection/summary-read";
 import type { Availability } from "./availability";
 
 /**
@@ -68,4 +68,27 @@ export function allocateClaims(a: Pick<Availability, "owned" | "claims">): Conte
       || (x.since ?? Infinity) - (y.since ?? Infinity)
       || x.deckId.localeCompare(y.deckId));
   return allocate(a.owned, claimants);
+}
+
+/**
+ * The shape both readers build, so the summary's rows and a redrawn row cannot differ.
+ *
+ * `arrived` and `ownedBefore` come from the FROZEN receipt when there is one — they are facts
+ * about an import, not about now — and are nought for a row read outside that context.
+ */
+export function buildContestedCard(
+  oracleId: string,
+  cardName: string,
+  a: Pick<Availability, "owned" | "claims">,
+  frozen: { arrived: number; ownedBefore: number; fromImport: boolean },
+): ContestedCard {
+  return {
+    oracleId,
+    cardName,
+    arrived: frozen.arrived,
+    ownedBefore: frozen.ownedBefore,
+    fromImport: frozen.fromImport,
+    owned: a.owned,
+    claimants: allocateClaims(a),
+  };
 }

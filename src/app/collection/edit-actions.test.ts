@@ -89,6 +89,31 @@ describe("addToCollection", () => {
     expect(stub.warm).toHaveBeenCalledWith("user_1");
   });
 
+  it("asks the write where the copies went, and says, only with ADDED_COPY_ENABLED on", async () => {
+    catalogHolds();
+    const after = { owned: 2, hard: 1, soft: 0, free: 1, claims: [{ id: "d1", name: "HD - Brago", quantity: 1, mature: true, pending: false, commander: false, since: 1 }] };
+    stub.apply.mockResolvedValue({
+      status: "applied",
+      entry: { id: ACTION, rows: [{ oracleId: ORACLE, name: "Sol Ring" }] },
+      raised: { [ORACLE]: { after, brought: 2, reservations: [] } },
+    });
+    try {
+      process.env.ADDED_COPY_ENABLED = "true";
+      const out = await addToCollection(ACTION, [line]);
+      expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, placements: true });
+      expect(out).toMatchObject({ applied: { id: ACTION, placed: [{
+        oracleId: ORACLE, cardName: "Sol Ring",
+        went: { kind: "held", decks: [{ deckId: "d1", copies: 1, picked: false }], copies: 2, ownedBefore: 0 },
+      }] } });
+      delete process.env.ADDED_COPY_ENABLED;
+      stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION, rows: [] } });
+      expect(await addToCollection(ACTION, [line])).toEqual({ applied: { id: ACTION } });
+      expect(stub.apply.mock.calls[1][2]).toEqual({ id: ACTION });
+    } finally {
+      delete process.env.ADDED_COPY_ENABLED;
+    }
+  });
+
   it("settleCollectionWrite invalidates inside the action, and is refused with the switch off", async () => {
     await settleCollectionWrite();
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");

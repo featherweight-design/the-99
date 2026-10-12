@@ -7,9 +7,10 @@ import {
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
-import { assignCopyIn, lockCardClaims, type AssignRefusal } from "../decks/assign";
+import { assignCopyIn, lockCardClaims, type AssignRefusal, type AssignReport } from "../decks/assign";
 import { cartSourceDecks, regrant } from "../decks/mark-bought";
 import { proxiedMembership } from "../decks/proxies";
+import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
@@ -94,7 +95,62 @@ export type CollectionChange =
        * only for a cart entry, and only for the decks that entry recorded (`cartSource`).
        */
       ignoreDeckIds?: string[];
+      /**
+       * Where an added copy goes (`undoPlacement`): the pick the purchase made, or that Change made
+       * on its receipt, dropped in the same transaction, so Undo takes the copy back AND the
+       * reservation it was given to. Honoured only for a card the entry itself wrote
+       * (`placementToUndo`), and only the reservation on `deckId`: an undo names the pick it drops,
+       * and never clears a card's other reservations. `restore` is the
+       * other deck's reservation that pick MOVED (A to B): put back as it stood, so Undo leaves the
+       * card's reservations as they were before the press. Honoured only when the entry itself
+       * recorded that displacement (`restoreToUndo`).
+       */
+      undoPlacement?: UndoPlacement;
     };
+
+/**
+ * `createdAt` names the pick exactly (the receipt's Change heard it from `assignCopy`); a cart pick's
+ * comes from the entry's own record instead. A pick made since, even on the same deck, is never it.
+ */
+export type UndoPlacement = { oracleId: string; deckId: string; createdAt?: string; restore?: { deckId: string; copies: number } };
+
+/**
+ * The pick an undo may drop: only one on a card the reverted entry wrote, only the named deck's, and
+ * only the reservation row the press made, by its exact `created_at`: the entry's own record when the
+ * entry made that pick, else the one the undo names. An undo naming any other card, no deck, or no
+ * instant drops nothing, so a revert can never clear an unrelated reservation, nor a newer pick of
+ * the same deck made since.
+ */
+export function placementToUndo(
+  undo: UndoPlacement | undefined,
+  entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[],
+): { oracleId: string; deckId: string; createdAt: string } | null {
+  if (!undo?.deckId) return null;
+  const row = entryRows.find((r) => r.oracleId === undo.oracleId);
+  if (!row) return null;
+  const own = row.placed?.deckId === undo.deckId ? row.placed.createdAt : undefined;
+  const createdAt = own ?? undo.createdAt;
+  if (!createdAt) return null;
+  return { oracleId: undo.oracleId, deckId: undo.deckId, createdAt };
+}
+
+/**
+ * The reservation an undo may put back: only the one the reverted entry's OWN press displaced, as
+ * the entry recorded it (`HistoryRow.placed`), and only when the undo also drops the pick that
+ * displaced it. A restore naming any other deck or count, or an entry that recorded no move, puts
+ * back nothing, so a revert can never be used to write a reservation the press did not take away.
+ */
+export function restoreToUndo(
+  undo: UndoPlacement | undefined,
+  entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[],
+): { deckId: string; copies: number; createdAt: string } | null {
+  if (!undo?.restore || !undo.deckId) return null;
+  const placed = entryRows.find((r) => r.oracleId === undo.oracleId && r.placed)?.placed;
+  const was = placed?.displaced;
+  if (!placed || placed.deckId !== undo.deckId || !was) return null;
+  if (was.deckId !== undo.restore.deckId || was.copies !== undo.restore.copies) return null;
+  return was;
+}
 
 export type ChangeOptions = {
   /** The caller's idempotency id, minted once per action and reused on every retry. */
@@ -151,6 +207,20 @@ export type ChangeOptions = {
    * get. The card's claim lock is taken before any deck row, the order a pick takes them in.
    */
   assign?: { oracleId: string; deckId: string };
+  /**
+   * Where an added copy goes, for Add Cards: every card this write RAISED, read in ONE
+   * `loadAvailability` after the rows, inside this transaction, with each card's reservations
+   * oldest first (the claim model's order), so the caller can say where each copy went
+   * (`arrivalPlacement`) and build the chooser Change opens with no second read.
+   */
+  placements?: boolean;
+};
+
+/** One raised card as the write saw it: the claims after, the copies it added, and its reservations. */
+export type RaisedCard = {
+  after: Availability;
+  brought: number;
+  reservations: { deckId: string; copies: number }[];
 };
 
 export type ReceiptSnapshots = {
@@ -198,6 +268,13 @@ export type ChangeResult =
       short: ShortDeck[];
       /** With `opts.receipt` alone. */
       receipt?: ReceiptSnapshots;
+      /** With `opts.placements`: each raised card a deck claims, by oracle id. */
+      raised?: Record<string, RaisedCard>;
+      /**
+       * With `opts.assign`: whether this write created the reservation, or found it already made,
+       * and the other deck's reservation a move displaced.
+       */
+      assigned?: AssignReport;
     }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
@@ -627,6 +704,43 @@ export async function applyCollectionChange(
         if (change.ignoreDeckIds !== undefined && listed) {
           for (const id of change.ignoreDeckIds) if (listed.includes(id)) ignoredDecks.add(id);
         }
+        // THE PICK GOES WITH THE COPY, before the deck check reads its "before": it drops the pick
+        // this press made (a cart pick it created, or a Change on the receipt), so a reservation
+        // left standing cannot hand the next copy to the deck this press chose. A cart pick that
+        // MOVED an older reservation (A to B) puts A back as it stood, from the entry's own record;
+        // a Change on the receipt records nothing, so its move drops B and A stays gone. Under the
+        // card's claim lock, which every reservation write takes.
+        const drop = placementToUndo(change.undoPlacement, row.rows);
+        if (drop) {
+          await lockCardClaims(tx, userId, drop.oracleId);
+          const dropped = await tx.delete(cardAssignments).where(and(
+            eq(cardAssignments.userId, userId),
+            eq(cardAssignments.oracleId, drop.oracleId),
+            eq(cardAssignments.deckId, drop.deckId),
+            sql`${cardAssignments.createdAt} = ${drop.createdAt}::timestamp`,
+          )).returning({ deckId: cardAssignments.deckId });
+          const restore = dropped.length > 0 ? restoreToUndo(change.undoPlacement, row.rows) : null;
+          // Only once the press's own pick went, never over a row the restored deck already holds,
+          // and only for a deck the player still has. Another deck's reservation does not block it:
+          // a card can carry older reservations than the one-per-card rule, and the press moved only
+          // the oldest. Under that deck's row lock (after the card's, the order every reservation
+          // write takes), and swept by the deck's own prune: a deck that has since stopped claiming
+          // the card (a commit without it, a proxy) gets no reservation back.
+          if (restore) {
+            await tx.execute(sql`select id from decks where id = ${restore.deckId} and user_id = ${userId} for update`);
+            await tx.execute(sql`
+              insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
+              select ${userId}, ${drop.oracleId}, d.id, ${restore.copies}, ${restore.createdAt}::timestamp
+              from decks d
+              where d.id = ${restore.deckId} and d.user_id = ${userId}
+                and not exists (
+                  select 1 from card_assignments a
+                  where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId} and a.deck_id = ${restore.deckId}
+                )
+            `);
+            await pruneOrphanAssignments(tx, restore.deckId);
+          }
+        }
       }
 
       const named: CollectionItemIdentity[] =
@@ -734,9 +848,20 @@ export async function applyCollectionChange(
       } else {
         await writeRows(tx, userId, plan);
       }
+      const assigned: AssignReport = { created: false };
       if (opts.assign && !opts.dryRun) {
-        const refused = await assignCopyIn(tx, userId, opts.assign.oracleId, opts.assign.deckId, "set");
+        const refused = await assignCopyIn(tx, userId, opts.assign.oracleId, opts.assign.deckId, "set", assigned);
         if (refused) throw new Refused({ status: "assignRefused", reason: refused });
+        // On the entry itself, so a retry answers as this request does and the undo knows what the
+        // press moved (`restoreToUndo`). Only a reservation this press wrote.
+        const card = assigned.created ? rows.find((r) => r.oracleId === opts.assign!.oracleId) : undefined;
+        if (card) {
+          card.placed = {
+            deckId: opts.assign.deckId,
+            ...(assigned.createdAt ? { createdAt: assigned.createdAt } : {}),
+            ...(assigned.displaced ? { displaced: assigned.displaced } : {}),
+          };
+        }
       }
       // The tokens this UPLOAD read, and the marker that they were read, in the same transaction as the
       // rows: a failure rolls the whole confirm back. Only an upload (it carries an id) records tokens;
@@ -781,12 +906,46 @@ export async function applyCollectionChange(
         short,
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
+        ...(opts.placements ? { raised: await raisedCards(tx, userId, plan) } : {}),
+        ...(opts.assign ? { assigned } : {}),
       };
     });
   } catch (error) {
     if (error instanceof Refused) return error.result;
     throw error;
   }
+}
+
+/**
+ * Every card `plan` raised, read after the write in one claim-model read, with its reservations in
+ * the model's order. A card no deck claims is left out: it went nowhere.
+ */
+async function raisedCards(tx: Tx, userId: string, plan: Planned[]): Promise<Record<string, RaisedCard>> {
+  const brought = new Map<string, number>();
+  for (const p of plan) {
+    const d = qty(p.after) - qty(p.before);
+    if (d > 0) brought.set(p.oracleId, (brought.get(p.oracleId) ?? 0) + d);
+  }
+  if (brought.size === 0) return {};
+  const ids = [...brought.keys()].sort();
+  // UNDER EVERY RAISED CARD'S CLAIM LOCK, which every reservation write takes first, so a pick in
+  // another tab cannot land between the allocation read and the reservation read below and pair one
+  // with the other's order. Sorted, so two writes locking overlapping cards take them in one order.
+  for (const id of ids) await lockCardClaims(tx, userId, id);
+  const availability = await loadAvailability(userId, { oracleIds: ids }, tx);
+  const reservations = new Map<string, { deckId: string; copies: number }[]>();
+  for (const r of await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+    .from(cardAssignments)
+    .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, ids)))
+    .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
+    reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
+  }
+  const out: Record<string, RaisedCard> = {};
+  for (const [oracleId, after] of availability) {
+    if (after.claims.length === 0) continue;
+    out[oracleId] = { after, brought: brought.get(oracleId) ?? 0, reservations: reservations.get(oracleId) ?? [] };
+  }
+  return out;
 }
 
 /** Rows written in one statement each way: deletes for a zero, one upsert for the rest. */

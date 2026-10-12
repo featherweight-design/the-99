@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import type { PrintingChoice, CatalogCardResult } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { AddCardsSheet, type AddCardsSheetProps } from "./add-cards-sheet";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
+import type { ContestedCard } from "../../lib/collection/summary-read";
 
 const copy = collectionEditCopy.add;
 const OID = "11111111-1111-4111-8111-111111111111";
@@ -16,6 +18,7 @@ vi.mock("../../app/collection/edit-actions", () => ({
   loadPrintingChoices: (...a: unknown[]) => choices(...a),
   addToCollection: (...a: unknown[]) => add(...a),
 }));
+vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("next/link", () => ({
   // A press runs `onNavigate` as the real Link does on a client navigation, and goes nowhere.
   default: ({ href, children, onNavigate, ...rest }: React.ComponentProps<"a"> & { href: string; onNavigate?: () => void }) => (
@@ -192,6 +195,43 @@ describe("AddCardsSheet (add)", () => {
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.click(link);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("says where the copy went after the save, with Change, when the save says (where an added copy goes)", async () => {
+    const chooser: ContestedCard = {
+      oracleId: OID, cardName: "Sol Ring", arrived: 1, ownedBefore: 5, fromImport: true, owned: 6,
+      claimants: [{ deckId: "d1", deckName: "HD - Brago", quantity: 1, commanderCopies: 0, granted: 0, since: 1, versionNumber: 1, allocated: 1 }],
+    };
+    add.mockResolvedValue({ applied: { id: "0b7e6c3a-1d2f-4a55-9a41-5f1c2d3e4f50", placed: [{
+      oracleId: OID, cardName: "Sol Ring", chooser,
+      went: { kind: "held", decks: [{ deckId: "d1", copies: 1, picked: false }], copies: 1, ownedBefore: 5 },
+    }] } });
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByText(addedCopyCopy.line.head(1));
+    const said = addedCopyCopy.line.goesTo("Sol Ring", "HD - Brago");
+    expect(screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === said && el.querySelector("[data-em]") !== null)).toBeTruthy();
+    const change = screen.getByRole("button", { name: addedCopyCopy.changeAria("Sol Ring") });
+    fireEvent.click(change);
+    expect(screen.getByRole("radiogroup")).toBeTruthy();
+    expect(change.textContent).toBe(addedCopyCopy.done);
+  });
+
+  it("draws no block when the save says nothing of where the copies went (the switch off)", async () => {
+    add.mockResolvedValue({ applied: { id: "0b7e6c3a-1d2f-4a55-9a41-5f1c2d3e4f50" } });
+    mount();
+    await find("sol ring", [card()]);
+    await pickFirst();
+    fireEvent.click((await screen.findAllByRole("radio"))[0]);
+    await waitFor(() => expect(field()).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: copy.save(1) }));
+    await screen.findByRole("link", { name: copy.seeInHistory });
+    expect(screen.queryByText(addedCopyCopy.line.head(1))).toBeNull();
+    expect(screen.queryByText(addedCopyCopy.line.nobodyOne("Sol Ring"))).toBeNull();
   });
 
   it("starts a fresh action id for Add more", async () => {

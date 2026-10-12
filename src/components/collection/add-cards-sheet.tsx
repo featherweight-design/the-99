@@ -24,6 +24,10 @@ import { identityGradient } from "../../lib/collection/gradients";
 import type { CatalogCardResult, PrintingChoice } from "../../lib/collection/catalog-read";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PendingReporter } from "../shell/pending-reporter";
+import { whereItWent, type AddedPlacement } from "../../lib/collection/add-placements";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
+import { CopyLine } from "../decks/copy-line";
 import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
 import { SearchField } from "../ui/text-field";
@@ -89,7 +93,8 @@ function AddMode({
   const attempt = useRef<{ id: string; payload: string } | null>(null);
   const [lines, setLines] = useState<AddLineState[]>([]);
   const [phase, setPhase] = useState<Phase>("editing");
-  const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string } | null>(null);
+  // `went`: what the block is built from, so its foot can follow each row's Change (`whereItWent`).
+  const [saved, setSaved] = useState<{ copies: number; cards: number; entryId: string; went: WentInputs | null } | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [loadingCard, setLoadingCard] = useState<string | null>(null);
@@ -254,7 +259,9 @@ function AddMode({
       const out = await addToCollection(attempt.current.id, payload);
       if ("applied" in out) {
         const s = summarize(lines);
-        setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id });
+        // Where each copy went, when the save said (`ADDED_COPY_ENABLED`): absent, nothing is drawn.
+        const placed = out.applied.placed;
+        setSaved({ copies: s.copies, cards: s.lines, entryId: out.applied.id, went: placed ? { lines, placed } : null });
         setPhase("saved");
         setAnnounce(copy.announceSaved(s.copies));
         onSaved?.(s.copies);
@@ -354,6 +361,7 @@ function AddMode({
                   {copy.countsAfter(baseline, baseline + saved.copies)}
                 </p>
               )}
+              {saved.went ? <WhereItWentBlock {...saved.went} /> : null}
               {/* B8: the entry this save wrote, one tap away. The sheet closes on the way, since
                   the head that hosts it stays mounted across the route change. */}
               <Link
@@ -549,5 +557,52 @@ function ResultRow({
       </span>
       {active && <span aria-hidden className="text-[11px] text-[color:var(--fg-muted)]">{collectionEditCopy.add.resultAdd}</span>}
     </li>
+  );
+}
+
+/** What the `Where it went` block is built from: the save's lines and where the write put them. */
+type WentInputs = { lines: Parameters<typeof whereItWent>[0]; placed: AddedPlacement[] };
+
+/**
+ * Where an added copy goes, in the saved state (design table, CopyLine): after the counts, before
+ * History. A row per card a deck took or read, each with Change; the cards no deck needed in one
+ * faint foot line.
+ */
+function WhereItWentBlock({ lines, placed }: WentInputs) {
+  // Each row's last Change read-back, by card, so the foot says what is free now.
+  const [live, setLive] = useState<Record<string, ContestedCard | null>>({});
+  const went = whereItWent(lines, placed, live);
+  if (went.rows.length === 0 && !went.foot) return null;
+  return (
+    <div className="w-full">
+      {went.rows.length > 0 ? (
+        <>
+          <p className="m-0 pb-[6px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
+            {addedCopyCopy.line.head(went.rows.length)}
+          </p>
+          <ul className="m-0 list-none p-0">
+            {went.rows.map((r) => (
+              <CopyLine
+                key={r.oracleId}
+                form="line"
+                cardName={r.cardName}
+                sentence={r.sentence}
+                parts={r.parts}
+                chooser={r.chooser}
+                onLive={(card) => setLive((m) => ({ ...m, [r.oracleId]: card }))}
+              />
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {went.foot ? (
+        <p
+          className="m-0 pt-[9px] font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)]"
+          style={went.rows.length > 0 ? { borderTop: "1px solid var(--border)" } : undefined}
+        >
+          {went.foot}
+        </p>
+      ) : null}
+    </div>
   );
 }

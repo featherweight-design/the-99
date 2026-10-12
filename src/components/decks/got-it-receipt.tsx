@@ -9,14 +9,18 @@
 // short (call B: the source deck is passed as `ignoreDeckId`, on this undo only), then in flight,
 // then done or failed. A failed undo withdraws Undo and points to History (the UndoRow rule).
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { previewRevert, revertCollectionEntry } from "../../app/collection/history-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { Finish } from "../../lib/collection/key";
-import type { ShortDeck } from "../../lib/collection/write";
+import type { ShortDeck, UndoPlacement } from "../../lib/collection/write";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
+import type { ContestedCard } from "../../lib/collection/summary-read";
+import { liveDestination, liveTook, longSentence } from "../../lib/collection/copy-line";
+import { CopyChooserDialog } from "./copy-chooser-dialog";
 import type { ReceiptFacts } from "../../lib/decks/mark-bought";
 import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -35,13 +39,65 @@ export type GotItWritten<F = ReceiptFacts> = {
   finish: Finish;
 };
 
-/** The receipt's sentence after the detail line: who took the copy, or what is still needed. */
-export function receiptBody(facts: ReceiptFacts | null): string | null {
-  if (!facts || facts.stillNeeds <= 0) return null;
+/**
+ * The receipt's sentence after the detail line: who took the copy, or what is still needed.
+ *
+ * With `went` (where an added copy goes, `ADDED_COPY_ENABLED`) it is never silent: a copy this deck
+ * took says so (`self`), a loose copy this brew reads says so and names the other brews reading it
+ * (`softSelf`), and a copy no deck needed is free (`nobody`). Without it, the shipped rule: nothing
+ * once the deck needs no more.
+ */
+export function receiptBody(facts: ReceiptFacts | null, sourceDeckId?: string): string | null {
+  if (!facts) return null;
   const took = facts.tookCopy;
-  if (took.length === 1) return c.claimed(took[0].deckName, facts.stillNeeds);
-  if (took.length > 1) return c.claimedMany(took.length, facts.stillNeeds);
-  return c.partial(facts.stillNeeds);
+  if (facts.stillNeeds > 0) {
+    if (took.length === 1) return c.claimed(took[0].deckName, facts.stillNeeds);
+    if (took.length > 1) return c.claimedMany(took.length, facts.stillNeeds);
+    return c.partial(facts.stillNeeds);
+  }
+  const went = facts.went;
+  if (!went) return null;
+  if (went.held.some((h) => h.deckId === sourceDeckId)) return c.self;
+  if (went.soft.some((b) => b.deckId === sourceDeckId)) {
+    return c.softSelf(went.soft.filter((b) => b.deckId !== sourceDeckId).map((b) => b.deckName));
+  }
+  if (placedNowhere(facts)) return c.nobody;
+  return null;
+}
+
+/**
+ * The body after a Change, from the card the chooser's last write read back, in the purchase's own
+ * forms: this deck holds the copy (`self`), this brew reads it loose (`softSelf`), no deck takes or
+ * reads it (`nobody`), or the Add Cards sentence for where it went instead. A clear can leave the
+ * copy anywhere seniority puts it, so the purchase-time body is never kept. `changePick` is the
+ * pick the Change's own writes left standing: a sole pick is `as you picked` only when it is that
+ * one, and `which you picked earlier` when it predates the purchase. A null read-back is terminal
+ * (the copy is gone, in another tab): no body, since no shipped sentence says where a copy that is
+ * no longer there went.
+ */
+export function bodyAfterChange(
+  live: ContestedCard | null, cardName: string, sourceDeckId: string, changePick: string | null,
+): string | null {
+  if (live === null) return null;
+  const { decks, brews } = liveTook(live);
+  if (decks.some((d) => d.deckId === sourceDeckId)) return c.self;
+  if (brews.some((b) => b.deckId === sourceDeckId)) return c.softSelf(brews.filter((b) => b.deckId !== sourceDeckId).map((b) => b.name));
+  const d = liveDestination(live);
+  if (!d) return c.nobody;
+  const earlier = d.kind === "picked" && decks[0].deckId !== changePick;
+  const said = earlier ? addedCopyCopy.line.goesToEarlier(cardName, d.deck) : longSentence(d, cardName);
+  // Every receipt body is a sentence that ends in a period; the Add Cards line it borrows does not.
+  return `${said}.`;
+}
+
+/** No deck took or read the copy: the one body with no Change (IG4). */
+function placedNowhere(facts: ReceiptFacts): boolean {
+  return !!facts.went && facts.went.held.length === 0 && facts.went.soft.length === 0;
+}
+
+/** Whether the receipt offers Change: a chooser to open, and a copy some deck took or read. */
+export function receiptChangeable(facts: ReceiptFacts | null): boolean {
+  return !!facts?.chooser && !placedNowhere(facts);
 }
 
 type Phase =
@@ -72,6 +128,7 @@ export type GotItUndoHost = {
 
 export function GotItReceipt({
   deckId, oracleId, cardName, written, body: bodyOverride, placement = "deck", host, failed = false, onExpire,
+  undoPlacement,
 }: {
   /**
    * The decks the undo leaves out of its deck check (call B): the deck the copy was bought for, or
@@ -90,6 +147,11 @@ export function GotItReceipt({
   /** Drawn straight in the failed form: an undo that failed after its toast was replaced. */
   failed?: boolean;
   onExpire: () => void;
+  /**
+   * The pick the press itself made (the cart's chooser): Undo drops it with the copy, and puts
+   * back `restore`, the reservation that pick moved off another deck.
+   */
+  undoPlacement?: UndoPlacement;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
@@ -102,8 +164,46 @@ export function GotItReceipt({
   const stage = useRef<"idle" | "warning" | "network">("idle");
   const mounted = useRef(true);
   const router = useRouter();
+  // Change (where an added copy goes): the chooser open over the toast, and the card its last
+  // write read back. `undefined` is before any write; null is a write that settled with no card to
+  // read back (the copy went, in another tab), which is terminal, as on CopyLine. `last` is the
+  // last card read back, which the open chooser keeps drawing to show its refusal.
+  const [choosing, setChoosing] = useState(false);
+  const [live, setLive] = useState<ContestedCard | null | undefined>(undefined);
+  const [last, setLast] = useState<ContestedCard | undefined>(undefined);
+  const onCard = useCallback((card: ContestedCard | null) => {
+    setLive(card);
+    if (card) setLast(card);
+  }, []);
+  // The pick the Change's own landed writes left standing, which Undo drops with the copy. Set by a
+  // write that leaves a pick, cleared by one that clears it: there is one authored pick per card,
+  // so a clear leaves none. Never inferred from the purchase-time card, which cannot tell a pick
+  // the Change made from one it cleared and made again.
+  // A Change write that threw may have left a pick nobody recorded: Undo holds until a later write
+  // lands and says where the pick stands. History still reverts the purchase meanwhile.
+  const [unknown, setUnknown] = useState(false);
+  const onUnknown = useCallback(() => setUnknown(true), []);
+  // `createdAt` names the reservation exactly, so Undo drops that row and never a newer pick of the deck.
+  const [changePick, setChangePick] = useState<{ deckId: string; createdAt?: string } | null>(null);
+  const onWrite = useCallback((deck: string, picked: boolean, createdAt?: string) => {
+    setChangePick((was) => picked ? { deckId: deck, createdAt: createdAt ?? (was?.deckId === deck ? was.createdAt : undefined) } : null);
+    setUnknown(false);
+  }, []);
+  // A Change write still out, chooser open or closed: Undo holds until it settles, or it would go
+  // without the pick that write is about to leave standing.
+  // Counted here, not by the row: closing the chooser and opening it again mounts a fresh row, and
+  // the first one's writes can still be out.
+  const [changing, setChanging] = useState(false);
+  const writesOut = useRef(0);
+  const onPending = useCallback((pending: boolean) => {
+    writesOut.current += pending ? 1 : -1;
+    setChanging(writesOut.current > 0);
+  }, []);
+  const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
-  const inFlight = busy || phase.k === "warning";
+  const held = busy || changing || unknown;
+  // The toast's clock holds while the chooser is open, as it does for an undo (design table: open).
+  const inFlight = held || phase.k === "warning" || choosing;
   const { restart } = useToastClock(ref, !hover && !focus && !inFlight, onExpire);
 
   // A warning closes with its toast; a request out is still the host's, and ends when it settles.
@@ -115,7 +215,26 @@ export function GotItReceipt({
     };
   }, [host, oracleId]);
 
-  const body = bodyOverride !== undefined ? bodyOverride : receiptBody(written.facts as ReceiptFacts | null);
+  const facts = written.facts as ReceiptFacts | null;
+  const sourceDeckId = typeof deckId === "string" ? deckId : null;
+  const purchased = receiptBody(facts, sourceDeckId ?? undefined);
+  // Change belongs to a deck's receipt (the cart writes its own body), and only where a chooser came
+  // back with the write and some deck took or read the copy.
+  const chooser = bodyOverride === undefined && sourceDeckId && receiptChangeable(facts) ? facts!.chooser! : null;
+  const body = bodyOverride !== undefined
+    ? bodyOverride
+    : live !== undefined && chooser && sourceDeckId ? bodyAfterChange(live, cardName, sourceDeckId, changePick?.deckId ?? null) : purchased;
+  // The pick Undo drops with the copy: the press's own (the cart's), else the one the Change's
+  // writes left standing (it still stands after the copy went).
+  const dropPick = undoPlacement ?? (changePick ? { oracleId, ...changePick } : undefined);
+  // Sent only when there is one, so an undo with no pick asks exactly what it always asked.
+  const picks = dropPick ? [dropPick] as const : [] as const;
+  const closeChooser = useCallback(() => {
+    setChoosing(false);
+    restart();
+    // Change goes with a copy that is gone, so focus falls to Undo then.
+    requestAnimationFrame(() => (changeRef.current ?? undoRef.current)?.focus());
+  }, [restart]);
 
   // The check asked for a warning, but the toast that would show it has gone: nothing was written.
   function abandon() {
@@ -136,7 +255,7 @@ export function GotItReceipt({
   // an invalidation error can follow a write that landed. The entry is read back first.
   async function reconcile() {
     try {
-      const p = await previewRevert(written.entryId, deckId);
+      const p = await previewRevert(written.entryId, deckId, ...picks);
       if ("alreadyReverted" in p) return done(true);
       fail();
     } catch {
@@ -149,7 +268,7 @@ export function GotItReceipt({
     setPhase({ k: "undoing" });
     actionId.current ??= crypto.randomUUID();
     try {
-      const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId);
+      const out = await revertCollectionEntry(written.entryId, actionId.current, expected, confirmShort, deckId, ...picks);
       if ("reverted" in out) return done(false);
       if ("alreadyReverted" in out) return done(true);
       if ("wouldShort" in out) {
@@ -178,7 +297,7 @@ export function GotItReceipt({
     host.start(oracleId);
     setPhase({ k: "checking" });
     try {
-      const p = await previewRevert(written.entryId, deckId);
+      const p = await previewRevert(written.entryId, deckId, ...picks);
       if ("alreadyReverted" in p) return done(true);
       if (!("rows" in p)) return fail();
       if (p.decks.length > 0) {
@@ -284,13 +403,32 @@ export function GotItReceipt({
     );
   }
   return (
+    <>
     <ToastFrame
       frameRef={ref}
       placement={placement}
       onHold={hold}
       title={added}
       detail={detail}
-      body={body}
+      body={chooser && body && !busy ? (
+        <>
+          {body}
+          <button
+            ref={changeRef}
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={choosing}
+            aria-label={c.changeAria(cardName)}
+            onClick={() => setChoosing(true)}
+            // 32 tall, with the phone's 44 hit area reached through 6px of padding top and bottom,
+            // taken back by an equal negative margin so the body line does not grow (design table).
+            // Border-box: the 44 minimum INCLUDES that padding, so the phone's is 44 and md's 32.
+            className="ml-[6px] -my-[6px] inline-flex min-h-[44px] md:min-h-[32px] cursor-pointer items-center border-0 bg-transparent px-0 py-[6px] text-[12.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2 md:my-0 md:py-0"
+          >
+            {c.change}
+          </button>
+        </>
+      ) : body}
       actions={
         <>
           {/* History steps aside while the undo is checked or written (C3). */}
@@ -305,16 +443,31 @@ export function GotItReceipt({
             type="button"
             aria-label={busy ? undefined : c.undoAria(cardName)}
             // Not the native attribute: the button keeps focus while it reads Checking or Undoing.
-            aria-disabled={busy || undefined}
-            aria-busy={busy || undefined}
-            onClick={() => { if (!busy) void check(); }}
-            className={`${btn} font-semibold ${busy ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
+            aria-disabled={held || undefined}
+            aria-busy={held || undefined}
+            onClick={() => { if (!held) void check(); }}
+            className={`${btn} font-semibold ${held ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent)]"}`}
           >
             {phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}
           </button>
         </>
       }
     />
+    {choosing && chooser && sourceDeckId ? (
+      <CopyChooserDialog
+        // After a null read-back the open chooser keeps the last card it drew, to show its refusal;
+        // it never falls back to the purchase-time card, whose options could only be refused.
+        card={live === null ? (last ?? chooser) : (live ?? chooser)}
+        cardName={cardName}
+        thisDeckId={sourceDeckId}
+        onCard={onCard}
+        onWrite={onWrite}
+        onPending={onPending}
+        onUnknown={onUnknown}
+        onClose={closeChooser}
+      />
+    ) : null}
+    </>
   );
 }
 

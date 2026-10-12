@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveSentence, wentSentence } from "./copy-line";
+import { liveSentence, longParts, longSentence, wentSentence } from "./copy-line";
 import { addedCopyCopy as copy } from "../copy/added-copy";
 import type { WentRow } from "./arrivals";
 import type { ContestedCard } from "./summary-read";
@@ -87,5 +87,49 @@ describe("liveSentence", () => {
 
   it("has nothing to say when no deck holds or reads the new copy", () => {
     expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1)]))).toBeNull();
+  });
+});
+
+describe("longSentence (Add Cards)", () => {
+  it("states the count when one deck takes more than one copy, never `which needs one`", () => {
+    const s = longSentence({ kind: "held", decks: [{ name: "HD - Brago", copies: 2, picked: false }] }, "Sol Ring");
+    expect(s).toBe(copy.line.goesToManyUneven("Sol Ring", 2, ["HD - Brago"]));
+    expect(s).toBe("2 copies of Sol Ring go to HD - Brago");
+  });
+
+  it("names the card, and counts the copies across several decks", () => {
+    expect(longSentence({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring"))
+      .toBe(copy.line.goesTo("Sol Ring", "HD - Brago"));
+    expect(longSentence({ kind: "held", decks: [{ name: "A", copies: 1, picked: false }, { name: "B", copies: 1, picked: false }] }, "Sol Ring"))
+      .toBe(copy.line.goesToMany("Sol Ring", 2, ["A", "B"]));
+    expect(longSentence({ kind: "held", decks: [{ name: "A", copies: 2, picked: false }, { name: "B", copies: 1, picked: false }] }, "Sol Ring"))
+      .toBe(copy.line.goesToManyUneven("Sol Ring", 3, ["A", "B"]));
+    expect(longSentence({ kind: "held", decks: [{ name: "HD -Thorin", copies: 1, picked: true }] }, "Sol Ring"))
+      .toBe(copy.line.goesToEarlier("Sol Ring", "HD -Thorin"));
+    expect(longSentence({ kind: "picked", deck: "HD -Thorin" }, "Sol Ring")).toBe(copy.line.goesToPicked("Sol Ring", "HD -Thorin"));
+    expect(longSentence({ kind: "soft", brews: ["HD -Thorin"] }, "Sol Ring")).toBe(copy.line.freeForBrew("Sol Ring", "HD -Thorin"));
+    expect(longSentence({ kind: "soft", brews: ["A", "B", "C"] }, "Sol Ring")).toBe(copy.line.freeForBrews("Sol Ring", 3));
+  });
+});
+
+describe("longParts", () => {
+  const held = (...names: string[]) => ({ kind: "held" as const, decks: names.map((name) => ({ name, copies: 1, picked: false })) });
+  it("cuts the long form at the card and each deck, in order, and says the long form", () => {
+    const parts = longParts(held("HD - Brago", "HD - Eldrazi"), "Sol Ring");
+    expect(parts).toEqual([
+      { text: "2 copies of " }, { text: "Sol Ring", em: "card" }, { text: " go to " },
+      { text: "HD - Brago", em: "deck" }, { text: " and " }, { text: "HD - Eldrazi", em: "deck" }, { text: ", one each" },
+    ]);
+    expect(parts.map((p) => p.text).join("")).toBe(longSentence(held("HD - Brago", "HD - Eldrazi"), "Sol Ring"));
+  });
+
+  it("marks names by where the copy puts them, never by matching words in the sentence", () => {
+    // A deck named like a word the sentence says, and a deck named like the card.
+    expect(longParts(held("copies", "Sol Ring"), "Sol Ring")).toEqual([
+      { text: "2 copies of " }, { text: "Sol Ring", em: "card" }, { text: " go to " },
+      { text: "copies", em: "deck" }, { text: " and " }, { text: "Sol Ring", em: "deck" }, { text: ", one each" },
+    ]);
+    expect(longParts(held("HD - Brago", "HD - Brago Two"), "Sol Ring").filter((p) => p.em === "deck").map((p) => p.text))
+      .toEqual(["HD - Brago", "HD - Brago Two"]);
   });
 });

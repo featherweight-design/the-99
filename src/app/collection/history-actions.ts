@@ -7,7 +7,7 @@ import {
 } from "../../lib/collection/history";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { collectionItemKey, type CollectionItemIdentity } from "../../lib/collection/key";
-import { applyCollectionChange, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
+import { applyCollectionChange, parseShortDecks, type ShortDeck, type UndoPlacement } from "../../lib/collection/write";
 import type { HistoryRow } from "../../db/schema";
 import { isUuid } from "../../lib/uuid";
 import { randomUUID } from "node:crypto";
@@ -80,6 +80,38 @@ function ignoredDecks(value: string | string[] | undefined): { ignoreDeckId?: st
   return { ignoreDeckId: value.toLowerCase() };
 }
 
+/** The undo's pick, checked: ids only, lowercased as Postgres returns them. Anything else throws. */
+function placementOf(value: unknown): { undoPlacement?: UndoPlacement } {
+  if (value === undefined || value === null) return {};
+  if (typeof value !== "object" || Array.isArray(value)) throw new Error("bad undo placement");
+  const { oracleId, deckId, createdAt, restore } = value as { oracleId?: unknown; deckId?: unknown; createdAt?: unknown; restore?: unknown };
+  if (typeof oracleId !== "string" || !isUuid(oracleId)) throw new Error("bad undo placement");
+  // The deck is required: an undo drops the one pick it names, never every reservation of the card.
+  if (typeof deckId !== "string" || !isUuid(deckId)) throw new Error("bad undo placement");
+  // The pick's exact instant, as Postgres printed it: compared by the write, never parsed here.
+  if (createdAt !== undefined && (typeof createdAt !== "string" || !/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d{1,6})?$/.test(createdAt))) {
+    throw new Error("bad undo placement");
+  }
+  let back: { deckId: string; copies: number } | undefined;
+  if (restore !== undefined && restore !== null) {
+    // A restore only beside the pick it undoes: the write checks both against the entry's record.
+    if (typeof restore !== "object" || Array.isArray(restore)) throw new Error("bad undo placement");
+    const r = restore as { deckId?: unknown; copies?: unknown };
+    if (typeof r.deckId !== "string" || !isUuid(r.deckId) || !Number.isInteger(r.copies) || (r.copies as number) < 1) {
+      throw new Error("bad undo placement");
+    }
+    back = { deckId: r.deckId.toLowerCase(), copies: r.copies as number };
+  }
+  return {
+    undoPlacement: {
+      oracleId: oracleId.toLowerCase(),
+      deckId: deckId.toLowerCase(),
+      ...(typeof createdAt === "string" ? { createdAt } : {}),
+      ...(back ? { restore: back } : {}),
+    },
+  };
+}
+
 /**
  * What reverting `entryId` would do now, answered by a dry run of the revert itself, so the
  * confirmation and the save are one computation.
@@ -87,10 +119,12 @@ function ignoredDecks(value: string | string[] | undefined): { ignoreDeckId?: st
 export async function previewRevert(
   entryId: string,
   ignoreDeckId?: string | string[],
+  /** The pick this undo also drops (see `revertCollectionEntry`), so the preview's deck check is the save's. */
+  undoPlacement?: UndoPlacement,
 ): Promise<RevertPreview | RevertRefusal> {
   const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
-  const ignore = ignoredDecks(ignoreDeckId);
+  const ignore = { ...ignoredDecks(ignoreDeckId), ...placementOf(undoPlacement) };
   const entry = await getHistoryEntry(userId, entryId);
   if (!entry) return { notFound: true };
   const result = await applyCollectionChange(
@@ -140,11 +174,17 @@ export async function revertCollectionEntry(
    * all-decks cart it is every deck the line listed, honoured only for the decks that cart entry recorded.
    */
   ignoreDeckId?: string | string[],
+  /**
+   * Where an added copy goes: the pick the press made (a cart pick) or that Change made on the
+   * receipt, dropped in the revert's own transaction, so Undo takes the copy and its reservation
+   * back together. Honoured only for a card the entry wrote.
+   */
+  undoPlacement?: UndoPlacement,
 ): Promise<{ reverted: { id: string } } | RevertRefusal> {
   const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
   if (!isUuid(actionId)) throw new Error("bad action id");
-  const ignore = ignoredDecks(ignoreDeckId);
+  const ignore = { ...ignoredDecks(ignoreDeckId), ...placementOf(undoPlacement) };
   const result = await applyCollectionChange(
     userId,
     { kind: "revert", entryId, expected: parseExpected(expected), ...ignore },
