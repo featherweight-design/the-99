@@ -1,0 +1,159 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { FitsReadReply } from "./fits-read";
+import { inputs } from "./fits-read.fixture";
+import type { FitsReadLoad } from "./fits-read-load";
+import type { FitsReadRow } from "./fits-read-state";
+
+vi.mock("../../db", () => ({ db: {} }));
+const store = vi.hoisted(() => ({
+  rows: [] as FitsReadRow[],
+  started: { kind: "started", readId: "read-1", callId: "call-1" } as { kind: string; readId?: string; callId?: string },
+  finished: [] as unknown[],
+  reaped: 0,
+}));
+vi.mock("./fits-read-store", async (orig) => ({
+  ...(await orig<typeof import("./fits-read-store")>()),
+  reapFitsReads: vi.fn(async () => { store.reaped += 1; return 0; }),
+  readFitsReadRows: vi.fn(async () => store.rows),
+  startFitsRead: vi.fn(async () => store.started),
+  finishFitsRead: vi.fn(async (_h: unknown, write: unknown) => { store.finished.push(write); return true; }),
+}));
+vi.mock("../model/allowance", () => ({
+  readAllowance: vi.fn(async () => ({ used: 0, limit: 3, reopensAt: null, nextAt: null })),
+}));
+
+const { pressFitsRead, readFitsRead } = await import("./fits-read-run");
+const { candidateHashes } = await import("./fits-read-store");
+const { startFitsRead } = await import("./fits-read-store");
+
+const NOW = new Date(Date.UTC(2026, 9, 12, 7));
+const MODEL = "claude-haiku-5-5";
+
+function deps(reply: FitsReadReply | { fail: "upstream_busy" | "timeout" | "upstream_rejected" } | "throw", inp = inputs()) {
+  const call = vi.fn(async () => {
+    if (reply === "throw") throw new Error("boom");
+    if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
+    return { ok: true as const, value: reply, usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+  });
+  return {
+    call,
+    d: {
+      load: async () => ({ fits: {} as FitsReadLoad["fits"], inputs: inp, planOf: new Map() }) as FitsReadLoad,
+      model: () => MODEL,
+      call,
+      now: () => NOW,
+    },
+  };
+}
+
+const good = (deck: string, cut = "C2") => ({ deck, sentence: "Every loyalty turn adds a body for {C1} to double.", cut, cites: [] });
+
+beforeEach(() => {
+  store.rows = [];
+  store.started = { kind: "started", readId: "read-1", callId: "call-1" };
+  store.finished = [];
+  vi.mocked(startFitsRead).mockClear();
+});
+
+describe("pressFitsRead: refusals that cost nothing", () => {
+  it("no candidate draws no press (lock 8)", async () => {
+    const { d, call } = deps({ picks: [] }, inputs([]));
+    expect(await pressFitsRead("u", "card", d)).toEqual({ ok: false, reason: "noCandidates" });
+    expect(startFitsRead).not.toHaveBeenCalled();
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("a stored read that is still current is not asked again, a no fit included (handoff §6, R2 3)", async () => {
+    const hashes = candidateHashes(inputs(), MODEL);
+    store.rows = [{ id: "r", status: "done", outcome: "noFit", errorClass: null, refunded: true, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [] }];
+    const { d, call } = deps({ picks: [] });
+    expect(await pressFitsRead("u", "card", d)).toEqual({ ok: false, reason: "current" });
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("a run in flight is returned as it stands, never charged twice (lock 5)", async () => {
+    store.rows = [{ id: "p", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [] }];
+    const { d, call } = deps({ picks: [] });
+    const r = await pressFitsRead("u", "card", d);
+    expect(r.ok && r.panel.view.pending?.readId).toBe("p");
+    expect(startFitsRead).not.toHaveBeenCalled();
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("a double press that loses the race to the pending row is shown the run, never asks", async () => {
+    store.started = { kind: "in_flight" };
+    const { d, call } = deps({ picks: [] });
+    expect((await pressFitsRead("u", "card", d)).ok).toBe(true);
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("passes the allowance refusal through", async () => {
+    store.started = { kind: "allowance" };
+    const { d } = deps({ picks: [] });
+    expect(await pressFitsRead("u", "card", d)).toEqual({ ok: false, reason: "allowance" });
+  });
+});
+
+describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
+  it("spends a read that held up, stored with its picks", async () => {
+    const { d } = deps({ picks: [good("D1"), good("D2", "C7")] });
+    expect((await pressFitsRead("u", "card", d)).ok).toBe(true);
+    expect(store.finished).toEqual([expect.objectContaining({ status: "done", outcome: "picks", refunded: false, returned: 2 })]);
+  });
+
+  it("refunds a thin read: under a third of the decks named held up", async () => {
+    const bad = { deck: "D9", sentence: "Nothing.", cut: null, cites: [] };
+    const { d } = deps({ picks: [good("D1"), bad, bad, bad] });
+    await pressFitsRead("u", "card", d);
+    expect(store.finished).toEqual([expect.objectContaining({ status: "done", outcome: "picks", refunded: true, returned: 4 })]);
+  });
+
+  it("refunds and stores a no fit", async () => {
+    const { d } = deps({ picks: [] });
+    await pressFitsRead("u", "card", d);
+    expect(store.finished).toEqual([expect.objectContaining({ status: "done", outcome: "noFit", refunded: true })]);
+  });
+
+  it("fails, never stores as a no fit, a read whose every deck failed validation (F5)", async () => {
+    const { d } = deps({ picks: [{ deck: "D9", sentence: "Nothing.", cut: null, cites: [] }] });
+    await pressFitsRead("u", "card", d);
+    expect(store.finished).toEqual([expect.objectContaining({ status: "failed", errorClass: "ungrounded", returned: 1 })]);
+  });
+
+  it("fails a model error, a rejection stored as busy", async () => {
+    const { d } = deps({ fail: "upstream_rejected" });
+    await pressFitsRead("u", "card", d);
+    expect(store.finished).toEqual([{ status: "failed", errorClass: "upstream_busy" }]);
+  });
+
+  it("fails and refunds a throw, then rethrows it", async () => {
+    const { d } = deps("throw");
+    await expect(pressFitsRead("u", "card", d)).rejects.toThrow("boom");
+    expect(store.finished).toEqual([{ status: "failed", errorClass: "upstream_busy" }]);
+  });
+
+  it("reaps an abandoned run before reading or pressing", async () => {
+    const before = store.reaped;
+    const { d } = deps({ picks: [] });
+    await readFitsRead("u", "card", d);
+    await pressFitsRead("u", "card", d);
+    expect(store.reaped - before).toBe(2);
+  });
+});
+
+describe("candidateHashes", () => {
+  it("moves only for the deck whose inputs moved", () => {
+    const a = candidateHashes(inputs(), MODEL);
+    const inp = inputs();
+    const moved = { ...inp, decks: inp.decks.map((x) => (x.deckId === "deck-kratos" ? { ...x, lockedIds: [...x.lockedIds, "z"] } : x)) };
+    const b = candidateHashes(moved, MODEL);
+    expect(b["deck-goblins"]).toBe(a["deck-goblins"]);
+    expect(b["deck-kratos"]).not.toBe(a["deck-kratos"]);
+  });
+  it("moves for every deck when the model does", () => {
+    const a = candidateHashes(inputs(), MODEL);
+    const b = candidateHashes(inputs(), "claude-sonnet-5-5");
+    expect(Object.keys(a).every((k) => a[k] !== b[k])).toBe(true);
+  });
+});
