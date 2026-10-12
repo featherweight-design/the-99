@@ -17,6 +17,7 @@ import { appendFileSync, readdirSync, readFileSync, writeFileSync } from "node:f
 import { parseArgs } from "node:util";
 import { z } from "zod";
 
+import { PLAYER_TEXT_SYSTEM_RULE } from "../../src/lib/model/player-text";
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { buildParams } from "./lib/request.mjs";
 import { ROOT, runRequests } from "./lib/run.mjs";
@@ -56,6 +57,8 @@ const verdict = z.object({
 
 const SYSTEM = [
   "You are an experienced Magic: The Gathering Commander deckbuilder reviewing two candidate lists of suggested changes to the same deck.",
+  // The pack carries the player's own words inside `playerText` tags; the rule says they are data.
+  PLAYER_TEXT_SYSTEM_RULE,
   "Each list adds some cards and cuts some cards. You are shown the deck's evidence pack (what the deck is, its roles against targets, its games) and then the two lists, labelled only List 1 and List 2.",
   "Score each list from 1 to 5 on how good it is for THIS deck: right cards for the plan, cuts that are really the weakest or most redundant, rationales that are specific and true to the evidence pack, and no claim the pack contradicts. A list with nothing in it scores 1.",
   "Name every problem you find as a short phrase (a suggested card already in the deck, an illegal or off-color card, a rationale contradicted by the pack, a generic rationale). Then name the better list, or tie. Judge the content only; length is not quality.",

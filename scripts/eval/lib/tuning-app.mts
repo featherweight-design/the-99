@@ -37,30 +37,17 @@ export async function openTuning() {
   const deckRows = (await db.execute(sql`select id, user_id, name from decks order by id`)).rows as {
     id: string; user_id: string; name: string;
   }[];
-  // Staging holds two accounts with the SAME twenty "HD" decks (2026-10-12: equal decks, versions and
-  // collections), so the run takes the first by id and refuses unless every HD account holds the same
-  // deck names, which makes the choice immaterial. The deck rows below are narrowed to that account.
+  // Staging holds two accounts with the same twenty "HD" decks. They are NOT interchangeable (measured
+  // 2026-10-12: Elves differs in its owned-only setting and card list, Zombies in its budget cap), so the
+  // account is named: `TUNING_EVAL_USER_ID`, else the first by user id, which is deterministic and is what
+  // every arm of the model-tiering eval used. The deck rows below are narrowed to that account.
   const hd = deckRows.filter((d) => d.name.startsWith("HD"));
   const users = [...new Set(hd.map((d) => d.user_id))].sort();
-  // Everything `prepare` reads per account must match, not only the names: the deck names, how many
-  // versions and games they hold, and the collection's size and content. A fingerprint that differs
-  // means the choice is NOT immaterial, and the run refuses.
-  const fingerprintOf = async (u: string) => {
-    const r = (await db.execute(sql`
-      select
-        (select string_agg(d.name || ':' || (select count(*) from deck_versions v where v.deck_id = d.id)
-                                   || ':' || (select count(*) from deck_games g where g.deck_id = d.id), '|' order by d.name)
-           from decks d where d.user_id = ${u} and d.name like 'HD%') as decks,
-        (select count(*) || ':' || coalesce(md5(string_agg(oracle_id::text || ':' || q::text, ',' order by oracle_id)), '')
-           from (select oracle_id, sum(quantity) as q from collection_items where user_id = ${u} group by oracle_id) c) as collection
-    `)).rows[0] as { decks: string; collection: string };
-    return `${r.decks}#${r.collection}`;
-  };
-  const prints = await Promise.all(users.map(fingerprintOf));
-  if (users.length === 0 || prints.some((p) => p !== prints[0])) {
-    throw new Error(`eval: the "HD" decks are not one account's, or the ${users.length} accounts holding them differ in versions, games or collection`);
-  }
-  const userId = users[0];
+  const named = process.env.TUNING_EVAL_USER_ID;
+  if (named !== undefined && !users.includes(named)) throw new Error(`eval: TUNING_EVAL_USER_ID names no account that holds an "HD" deck`);
+  if (users.length === 0) throw new Error(`eval: no "HD" decks on staging`);
+  const userId = named ?? users[0];
+  console.error(`eval: tuning account ...${userId.slice(-6)} (${users.length} accounts hold HD decks)`);
   for (let i = deckRows.length - 1; i >= 0; i--) if (deckRows[i].user_id !== userId) deckRows.splice(i, 1);
 
   /** The pack and messages for each deck, by the app's own path. `overlay[i]` replaces deck i's

@@ -4,7 +4,10 @@
  * Model tiering, 2026-10-12: the app's `claude-sonnet-5` against `claude-sonnet-5-5` and
  * `claude-haiku-5-5`, so a model is the only thing that differs.
  *
- *   pnpm eval:tuning-model-arms --arm sonnet-medium|sonnet55-medium|haiku55-medium [--dry-run]
+ *   pnpm eval:tuning-model-arms --arm sonnet-medium|sonnet55-medium|haiku55-medium [--part 1|2] [--ledger ledger-model-switch] [--label x] [--dry-run]
+ *
+ * The guard sums every request's WORST case, which for twelve answers on a Sonnet is over the cap, so the two Sonnet
+ * arms are run as `--part 1` then `--part 2` (six decks each); Haiku fits whole. `--label` names a second sample.
  *
  * Hard cap $2 for the whole arm set, on ITS OWN ledger (`ledger-model-tiering-tuning.jsonl`): the
  * guard sums each request's worst case before anything is sent, so one arm per invocation, all
