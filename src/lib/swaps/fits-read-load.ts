@@ -57,17 +57,32 @@ export function leadingThemes(list: readonly { oracleId: string }[], labels: Rea
   return [...n].map(([kind, count]) => ({ kind, n: count })).sort((a, b) => b.n - a.n || a.kind.localeCompare(b.kind)).slice(0, top);
 }
 
-/** The candidates still open on the rows the prompt carries: the deck exists and its list does not hold the card. */
+/**
+ * The candidates still open on the rows the prompt carries: `loadFits`' open predicate re-applied.
+ * The deck exists, its list does not hold the card, the card does not lead it, and the card's colors
+ * sit inside its commanders' identity.
+ */
 export function stillOpen<C extends { id: string }>(
-  listed: readonly C[], decks: readonly { id: string }[], lists: readonly { deck_id: string; oracle_id: string }[], oracleId: string,
+  listed: readonly C[],
+  decks: readonly { id: string; commander_oracle_id: string; partner_oracle_id: string | null }[],
+  lists: readonly { deck_id: string; oracle_id: string }[],
+  card: { oracleId: string; colorIdentity: readonly string[] },
+  identityOf: ReadonlyMap<string, readonly string[]>,
 ): C[] {
-  const holding = new Set(lists.filter((r) => r.oracle_id === oracleId).map((r) => r.deck_id));
-  const present = new Set(decks.map((d) => d.id));
-  return listed.filter((c) => present.has(c.id) && !holding.has(c.id));
+  const holding = new Set(lists.filter((r) => r.oracle_id === card.oracleId).map((r) => r.deck_id));
+  const byId = new Map(decks.map((d) => [d.id, d]));
+  return listed.filter((c) => {
+    const d = byId.get(c.id);
+    if (!d || holding.has(c.id)) return false;
+    const leaders = d.partner_oracle_id ? [d.commander_oracle_id, d.partner_oracle_id] : [d.commander_oracle_id];
+    if (leaders.includes(card.oracleId)) return false;
+    const identity = new Set(leaders.flatMap((id) => identityOf.get(id) ?? []));
+    return card.colorIdentity.every((x) => identity.has(x));
+  });
 }
 
 type DeckRow = { id: string; commander_oracle_id: string; partner_oracle_id: string | null };
-type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null };
+type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null; color_identity: string[] | null };
 type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null };
 
 export async function loadFitsReadInputs(userId: string, oracleId: string, opts: { allDecks?: boolean } = {}): Promise<FitsReadLoad | null> {
@@ -84,7 +99,7 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
 
   const [cardRows, listRows, synopses, locks, inclusion] = await Promise.all([
     db.execute<CardRow>(sql`
-      select oracle_id, name, type_line, oracle_text, keywords from cards
+      select oracle_id, name, type_line, oracle_text, keywords, color_identity from cards
       where oracle_id = any(${sql.param([oracleId, ...commanderIds])}::uuid[])`).then((r) => r.rows),
     deckIds.length === 0 ? [] as ListRow[] : db.execute<ListRow>(sql`
       select dc.deck_id, dc.oracle_id, c.name, c.type_line, c.oracle_text, c.keywords
@@ -98,7 +113,8 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
   // `loadFits` and the reads above are separate instants. The candidates are re-checked against the
   // lists the prompt carries, so the open set holds for what the model reads: a deck that came to
   // hold the card, or was deleted, in between is not a candidate.
-  const candidates = stillOpen(listed, deckRows, listRows, oracleId);
+  const identityOf = new Map(cardRows.map((c) => [c.oracle_id, c.color_identity ?? []]));
+  const candidates = stillOpen(listed, deckRows, listRows, { oracleId, colorIdentity: identityOf.get(oracleId) ?? [] }, identityOf);
   const candidateIds = new Set(candidates.map((c) => c.id));
   const cardOf = new Map(cardRows.map((c) => [c.oracle_id, c]));
   const subjectRow = cardOf.get(oracleId);
