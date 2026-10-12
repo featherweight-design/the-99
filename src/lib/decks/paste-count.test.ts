@@ -17,6 +17,13 @@ describe("deckPasteCardCount", () => {
     expect(deckPasteCardCount(text)).toBe(6);
   });
 
+  it("keeps a sideboard's own type groups in the sideboard", () => {
+    const text = ["Deck", "1 Sol Ring", "Sideboard", "Creatures (2)", "1 Llanowar Elves", "1 Elvish Mystic", "Lands (1)", "1 Forest"].join("\n");
+    expect(deckPasteCardCount(text)).toBe(1);
+    // A board header still moves it: `Deck` after the sideboard opens the main list again.
+    expect(deckPasteCardCount(`${text}\nDeck\n2 Island`)).toBe(3);
+  });
+
   it("counts a plain list as it always has, and nothing for an empty box", () => {
     expect(deckPasteCardCount("3 Sol Ring\nCultivate")).toBe(4);
     expect(deckPasteCardCount("  \n")).toBe(0);

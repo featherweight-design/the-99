@@ -10,7 +10,9 @@ export type SectionKind = "sideboard" | "maybeboard" | null;
 // Section markers the exporters emit, on a line of their own. Moxfield writes
 // "SIDEBOARD:", Archidekt "Sideboard:", and both bare-word forms occur. `section` is the board a
 // header opens that a deck does not import (Commander has no sideboard); null opens one it does.
-export const SECTION_MARKERS: { re: RegExp; section: SectionKind }[] = [
+// `keep` marks a header that names a group INSIDE whichever board is open (a type header), so it
+// changes no board: `Sideboard` then `Creatures (2)` is still the sideboard.
+export const SECTION_MARKERS: { re: RegExp; section: SectionKind; keep?: true }[] = [
   { re: /^side ?board$/i, section: "sideboard" },
   { re: /^maybe ?board$/i, section: "maybeboard" },
   { re: /^considering$/i, section: "maybeboard" },
@@ -20,6 +22,7 @@ export const SECTION_MARKERS: { re: RegExp; section: SectionKind }[] = [
   {
     re: /^(creatures?|instants?|sorcer(?:y|ies)|artifacts?|enchantments?|planeswalkers?|lands?|battles?|other)$/i,
     section: null,
+    keep: true,
   },
 ];
 
@@ -39,7 +42,7 @@ export function normalizeHeader(trimmed: string): string {
 }
 
 /** The marker a trimmed line is, or null for a line that is not a header. */
-export function sectionHeaderOf(trimmed: string): { section: SectionKind } | null {
+export function sectionHeaderOf(trimmed: string): { section: SectionKind; keep?: true } | null {
   const bare = normalizeHeader(trimmed);
   return SECTION_MARKERS.find((m) => m.re.test(bare)) ?? null;
 }

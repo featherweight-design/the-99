@@ -239,7 +239,8 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
     // A marker only counts on a line of its own — "1 Sideboard Shenanigans" is a card.
     const marker = SECTION_MARKERS.find((m) => m.re.test(normalizeHeader(trimmed)));
     if (marker) {
-      excludedSection = marker.section;
+      // A type header groups cards inside the board already open; only a board header moves it.
+      if (!marker.keep) excludedSection = marker.section;
       lines.push({ text: "", isCommander: false });
       continue;
     }

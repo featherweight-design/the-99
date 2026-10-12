@@ -23,7 +23,8 @@ export function deckPasteCardCount(text: string): number {
   for (const line of text.split(/\r?\n/)) {
     const header = sectionHeaderOf(line.trim());
     if (header) {
-      excluded = header.section;
+      // A type header groups cards inside the board already open; only a board header moves it.
+      if (!header.keep) excluded = header.section;
       continue;
     }
     if (!excluded) kept.push(line);
