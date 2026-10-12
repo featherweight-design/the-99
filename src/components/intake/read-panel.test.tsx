@@ -160,6 +160,17 @@ describe("Stop", () => {
     expect(router.refresh).toHaveBeenCalled();
   });
 
+  it("says nothing and refreshes nothing when the visit ended while the stop was out", async () => {
+    let resolve: (v: boolean) => void = () => {};
+    const stop = vi.fn(() => new Promise<boolean>((r) => { resolve = r; }));
+    const { unmount } = draw({ kind: "pending", phase: "shortlist" }, { d: deps({ stop }) });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Stop" })); });
+    router.refresh.mockClear();
+    unmount();
+    await act(async () => { resolve(true); });
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
   it("keeps reading when the stop did not take: the read settled first, and the poll will say so", async () => {
     const stop = vi.fn().mockResolvedValue(false);
     draw({ kind: "pending", phase: "shortlist" }, { d: deps({ stop }) });

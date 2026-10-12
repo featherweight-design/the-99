@@ -173,6 +173,8 @@ export function ReadPanel({
     if (!readId || stopping) return;
     setStopping(true);
     const took = await deps.stop(readId).catch(() => false);
+    // Left while the request was out: this visit is gone, and the next one is not its to tell.
+    if (!live.current) return;
     // Not taken: the read settled first, or the request failed. The poll reports the first; the
     // player can press Stop again for the second.
     if (!took) { setStopping(false); return; }
