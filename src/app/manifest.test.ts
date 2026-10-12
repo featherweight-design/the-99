@@ -35,6 +35,8 @@ describe("the web app manifest", () => {
       expect(`${w}x${h}`, icon.src).toBe(icon.sizes);
     }
     expect(m.icons?.some((i) => i.purpose === "maskable" && i.sizes === "512x512")).toBe(true);
-    expect(m.icons?.some((i) => i.purpose === "any" && i.sizes === "192x192")).toBe(true);
+    for (const size of ["192x192", "512x512"]) {
+      expect(m.icons?.some((i) => i.purpose === "any" && i.sizes === size), `an "any" icon at ${size}`).toBe(true);
+    }
   });
 });
