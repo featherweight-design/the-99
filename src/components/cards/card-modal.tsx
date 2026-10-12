@@ -2591,7 +2591,8 @@ export function CardModal({
                   pinned. The hairline is load-bearing: it separates the link from
                   the printings disclosure so it never reads as "buy this
                   printing". Above md: the link lives in the pinned nav row. */}
-              {footer ? null : (
+              {/* Nothing to hold (an unpriced token, with no Fits door) draws no hairline either. */}
+              {footer || (!buyUrl && !onFindDeck) ? null : (
                 <div
                   className="md:hidden flex flex-col mt-[14px]"
                   style={{ borderTop: "1px solid var(--border)" }}

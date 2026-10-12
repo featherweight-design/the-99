@@ -66,5 +66,7 @@ describe("a token's card details", () => {
     mount(false);
     expect(screen.queryByTestId("modal-price-desktop")).toBeNull();
     expect(screen.queryByRole("link", { name: /Mana Pool/ })).toBeNull();
+    // Nor the phone link-out's hairline strip, which would hold nothing.
+    expect(document.querySelector('div.md\\:hidden.mt-\\[14px\\]')).toBeNull();
   });
 });
