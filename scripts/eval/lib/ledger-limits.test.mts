@@ -24,6 +24,8 @@ describe("eval ledger limits, one source", () => {
     ["cuts-blind.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.hardCapUsd;\nconst ASK_AT_USD = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.askAtUsd;/],
     ["intake-read.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-help-me-choose\.jsonl"\]\.hardCapUsd;/],
     ["fits-read.mts", /const CAP_USD = LEDGER_LIMITS\["ledger-find-a-deck\.jsonl"\]\.hardCapUsd;/],
+    ["cuts-plan.mts", /const LEDGER_CUTS_CAP = LEDGER_LIMITS\["ledger-cuts\.jsonl"\]\.hardCapUsd;/],
+    ["../probe-tuning-owned.mts", /const TUNING_CAP = LEDGER_LIMITS\["ledger-tuning-lists\.jsonl"\]\.hardCapUsd;/],
   ])("%s reads its limits from the table", (file, wiring) => {
     const s = source(file);
     expect(s).toMatch(wiring);

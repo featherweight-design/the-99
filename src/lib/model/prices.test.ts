@@ -5,7 +5,7 @@ import { SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
 import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
-import { costMicroUsd, FEATURE_CALLS, featureWorstCaseMicroUsd, RATES, worstCaseMicroUsd } from "./prices";
+import { costMicroUsd, FEATURE_CALLS, featureWorstCaseMicroUsd, RATES, worstCaseMicroUsd, batchRates, batchCostMicroUsd } from "./prices";
 
 const usage = (inputTokens: number, outputTokens: number, cacheReadTokens = 0, cacheWriteTokens = 0) =>
   ({ inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens });
@@ -106,5 +106,21 @@ describe("FEATURE_CALLS", () => {
   it("prices a reservation at the model it recorded, falling back to the feature's", () => {
     expect(featureWorstCaseMicroUsd("tuning", "claude-opus-5")).toBe(2 * (12_000 * 5 + TUNING_MAX_TOKENS * 25));
     expect(featureWorstCaseMicroUsd("tuning", null)).toBe(featureWorstCaseMicroUsd("tuning"));
+  });
+});
+
+describe("batch pricing", () => {
+  it("prices a dated snapshot id, as the label job stores it, on its base model's card", () => {
+    expect(batchRates("claude-haiku-4-5-20251001")).toEqual(batchRates("claude-haiku-4-5"));
+    const t = { inTokens: 1_000_000, outTokens: 1_000_000, cacheWriteTokens: 0, cacheReadTokens: 0 };
+    expect(batchCostMicroUsd("claude-haiku-4-5-20251001", t)).toBe(batchCostMicroUsd("claude-haiku-4-5", t));
+  });
+
+  it("refuses a model with a rate step, whose summed batch meters no one card can price", () => {
+    expect(() => batchRates("claude-haiku-5-5")).toThrow(/rate step/);
+  });
+
+  it("still refuses a model it has no rate for", () => {
+    expect(() => batchRates("claude-unknown-1")).toThrow(/no rate/);
   });
 });

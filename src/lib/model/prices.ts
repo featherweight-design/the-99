@@ -66,9 +66,23 @@ export type BatchRates = { in: number; out: number; cacheWrite: number; cacheRea
 // Rounded to a millionth of a dollar, so a product like 3 x 0.1 x 0.5 reads 0.15 and not 0.15000000000000002.
 const exact = (x: number) => Math.round(x * 1e6) / 1e6;
 
+/**
+ * The rate card a stored model id names. A dated snapshot id (`claude-haiku-4-5-20251001`, as the
+ * label job stores it on `card_label_batches.model`) is priced as its base model.
+ */
+export function batchRateCard(model: string): (typeof RATES)[string] | undefined {
+  return RATES[model] ?? RATES[model.replace(/-\d{8}$/, "")];
+}
+
+/**
+ * Batch rates for a model with ONE rate card. A model whose price steps up past a prompt length
+ * (an `above` row) is refused: batch meters are summed across requests, so no single card can be
+ * chosen for them, and the lower one would understate every long request.
+ */
 export function batchRates(model: string): BatchRates {
-  const r = RATES[model];
+  const r = batchRateCard(model);
   if (!r) throw new Error(`prices: no rate for model ${model}`);
+  if (r.above) throw new Error(`prices: ${model} has a rate step past ${r.above.promptTokens} prompt tokens, so summed batch meters cannot be priced`);
   return {
     in: exact(r.input * BATCH_DISCOUNT),
     out: exact(r.output * BATCH_DISCOUNT),
