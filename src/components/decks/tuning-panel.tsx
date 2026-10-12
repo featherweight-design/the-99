@@ -415,7 +415,8 @@ export function TuningPanel({
     deps.read(deckId, leftReview.current ? null : reviewRunId).then(
       (next) => {
         if (!live) return;
-        if (next && freshEachVisit) {
+        // A reopened past run is not the deck's state on arrival: an ordinary read records the baseline.
+        if (next && freshEachVisit && !next.review) {
           setBaseline(visitBaseline(deckId, "suggested", {
             okKey: okKeyOf(next.lastOkAt),
             // A pending run is drawn as running whatever the baseline says, and what it settles

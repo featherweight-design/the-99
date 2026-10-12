@@ -136,7 +136,8 @@ export function CutsPanelView({
     const mine = ++asked.current;
     try {
       const next = await deps.read(deckId, leftReview.current ? null : reviewRunId);
-      if (next && freshEachVisit && mounted.current && baselineDeck.current !== deckId) {
+      // A reopened past run is not the deck's state on arrival: an ordinary read records the baseline.
+      if (next && !next.review && freshEachVisit && mounted.current && baselineDeck.current !== deckId) {
         baselineDeck.current = deckId;
         setBaseline(visitBaseline(deckId, "cuts", {
           okKey: okKeyOf(next.lastOkAt),

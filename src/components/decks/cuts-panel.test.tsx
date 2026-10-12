@@ -445,6 +445,13 @@ describe("a past run History reopened (re-review)", () => {
     expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
   });
 
+  it("records no visit baseline from the reopened run: the next ordinary read does", async () => {
+    resetDeckVisitForTests();
+    noteDeckRoute(`/decks/${D1}`);
+    await mountReview(deps(reviewed()));
+    expect(visitBaseline(D1, "cuts", { okKey: "ordinary", runId: null }).okKey).toBe("ordinary");
+  });
+
   it("still shows a reopened run on a deck now at 100", async () => {
     await mountReview(deps(reviewed({ over: 0, total: 100 })));
     expect(screen.getAllByRole("article")).toHaveLength(1);

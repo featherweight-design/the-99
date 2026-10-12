@@ -1738,6 +1738,11 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
     }
   });
 
+  it("records no visit baseline from the reopened run: the next ordinary read does", async () => {
+    await drawReview(deps([reviewed]));
+    expect(visitBaseline(D1, "suggested", { okKey: "ordinary", runId: null }).okKey).toBe("ordinary");
+  });
+
   it("draws a swap the deck has moved past as no longer applying", async () => {
     await drawReview(deps([{ ...reviewed, items: [{ ...item, applies: false, cutInDeck: false }] }]));
     expect(screen.getByText(deckTuningCopy.card.noLongerApplies)).toBeInTheDocument();
