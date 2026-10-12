@@ -44,7 +44,9 @@ describe("PreconSuggestion", () => {
   it("names two precons in one strip, a Link each, and ✕ dismisses both (K15)", () => {
     render(<PreconSuggestion deckId="d1" deckName="HD" suggestions={[eldrazi, counter]} />);
     expect(screen.getByText("Looks like this started as one of two precons")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Link" })).toHaveLength(2);
+    // Each `Link` names its precon to a screen reader.
+    expect(screen.getByRole("button", { name: "Link Eldrazi Unbound" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Link Counter Intelligence" })).toBeInTheDocument();
     expect(screen.getByText("EOC · Aug 2025 · led by Kilo, Apogee Mind · 64 of its 91 cards are in this deck")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Dismiss/ }));
     expect(screen.queryByText(/Looks like/)).toBeNull();

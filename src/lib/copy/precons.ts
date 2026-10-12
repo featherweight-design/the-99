@@ -148,6 +148,8 @@ export const preconsCopy = {
       ledBy: (commander: string) => `led by ${commander}`,
       link: "Link it",
       linkOne: "Link",
+      // Two rows each carry a `Link`: the spoken name says which precon it links.
+      linkOneAria: (precon: string) => `Link ${precon}`,
       dismissAria: (precon: string) => `Dismiss the suggestion that this started as ${precon}`,
       dismissAriaTwo: (a: string, b: string) => `Dismiss the suggestion that this started as ${a} or ${b}`,
     },

@@ -84,7 +84,7 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
                   {copy.rowMeta(m.setCode, preconMonth(m.releaseDate), m.sameCommanders ? copy.sameClause : copy.ledBy(m.commanders.join(" + ")), m.shared, m.of)}
                 </span>
               </div>
-              <button type="button" onClick={() => setConfirming(m)} className={LINK}>{copy.linkOne}</button>
+              <button type="button" onClick={() => setConfirming(m)} aria-label={copy.linkOneAria(m.name)} className={LINK}>{copy.linkOne}</button>
             </div>
           ))}
         </div>
