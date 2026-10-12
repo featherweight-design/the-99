@@ -224,6 +224,17 @@ function RestDivider({ owned }: { owned: boolean }) {
 const SKELETON_NAME = ["58%", "53%", "48%", "43%", "38%"];
 
 /**
+ * The loading state stood in for the list while the read the form started is pending: the same
+ * skeleton, and the pool the free search counted, which the read's step 1 names ("Scanning the N
+ * commanders"). The rows themselves are not drawn (`page.tsx`, `holdList`).
+ */
+export function HeldResults({ total, by }: { total: number; by?: string }) {
+  const reportPool = useReportPool();
+  useEffect(() => { reportPool(total); }, [reportPool, total]);
+  return <ResultsSkeleton by={by} />;
+}
+
+/**
  * Searching (5c): the order line's heading and five still rows. No shimmer (STATES invariant).
  * `by` names what orders the results; the route's loading screen has no labels to name it with
  * (they come from the database), so it passes none and the line arrives with the page.

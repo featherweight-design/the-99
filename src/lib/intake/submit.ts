@@ -67,8 +67,12 @@ export function submitTarget(p: ChooseParams, index: PhraseIndex | null): string
  * it started one. NOTHING IS MATCHED (ruling 2): the words never become answers, so no card, no
  * *Not used* and no marks. A card a stale address carries is dropped (F1: the form has no card).
  */
-/** How the player arrived, when the panel says so: a stored answer (7m), or another read running. */
-export type Arrival = "repeat" | "busy";
+/**
+ * How the player arrived, when the page says so: a stored answer (7m), another read running, or the
+ * form's own submit that started the read (`form`), after which the player has not seen the free
+ * list and the page does not draw it while the read is pending.
+ */
+export type Arrival = "repeat" | "busy" | "form";
 
 export function resultsTarget(p: ChooseParams, readId: string | null, arrival: Arrival | null = null): string {
   const target = `${CHOOSE_PATH}${serializeChooseParams({
@@ -82,6 +86,7 @@ export function resultsTarget(p: ChooseParams, readId: string | null, arrival: A
   })}`;
   if (arrival === "repeat" && readId) return `${target}&${REPEAT_PARAM}=1`;
   if (arrival === "busy" && !readId) return `${target}&${BUSY_PARAM}=1`;
+  if (arrival === "form" && readId) return `${target}&${FORM_PARAM}=1`;
   return target;
 }
 
@@ -104,3 +109,12 @@ export const BUSY_PARAM = "rb";
 export function formTarget(p: ChooseParams): string {
   return `${CHOOSE_PATH}${serializeChooseParams({ ...p, card: null, notUsed: [], deeper: [], readId: null, results: false })}`;
 }
+
+/**
+ * Marks a results address the form's own submit started a read for. The player came straight from
+ * the form, so the free list was never on screen, and while the read is pending the page draws the
+ * results' loading state rather than a list that is replaced moments later. A read started from the
+ * results (a retry) carries no mark: the player was already looking at the free list, which stays
+ * under the reading panel. Outside `ChooseParams` for the same reasons as `REPEAT_PARAM`.
+ */
+export const FORM_PARAM = "rf";

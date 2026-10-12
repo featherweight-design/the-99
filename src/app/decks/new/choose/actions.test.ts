@@ -61,6 +61,18 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     expect(to).toContain("w=scary+horrors");
   });
 
+  it("marks a read started from the form, and leaves a retry from the results unmarked (entry path)", async () => {
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    expect(await landed("?w=scary")).toContain("rf=1");
+    const retried = async (query: string, from?: string) => {
+      try { await submitChoose(query, from as "results"); } catch (e) { return String((e as Error).message).replace("REDIRECT ", ""); }
+      return null;
+    };
+    expect(await retried("?w=scary", "results")).not.toContain("rf=");
+    // Anything else a caller sends is the form.
+    expect(await retried("?w=scary", "bogus")).toContain("rf=1");
+  });
+
   it("lands a repeat on its stored read, and a refusal (no credit, paused, in flight) on the free results", async () => {
     stub.begin.mockResolvedValue({ kind: "read", readId: "old", result: { picks: [], pool: 1, weighed: 0 }, repeat: true });
     expect(await landed("?w=scary")).toContain("r=old");

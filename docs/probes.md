@@ -1897,17 +1897,28 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (both adds land, the deck holds 101).
 
 - `pnpm probe:help-me-choose-one-loading` presses Help me choose's credit press in a real browser at
-  1300x900 and 390x844, samples the page every 40ms until the read panel reads done, and fails when
-  the results' loading skeleton returns after the list has drawn. That second skeleton is what a
-  settled read used to show: `ReadScope` was keyed on the server's state, so the refresh that found
-  the read settled remounted the results' Suspense. It also checks the dimmed list was drawn under
-  the reading panel (7d), and records a video of each press to `PROBE_VIDEO_DIR` when it is set.
+  1300x900 and 390x844, down BOTH entry paths, sampling the page every 40ms.
+  **From the form** the free list was never on screen, so while the read is pending the results'
+  loading state stands in for it: the probe fails when the list draws while the panel reads, when
+  step 1 never names the commanders it scans (the held state still reports the pool), or when
+  the loading state is dimmed (Hugh, 2026-10-12: a list replaced moments later "felt buggy"). The
+  form's submit marks its address `rf=1` (`FORM_PARAM`); a hand-written mark changes only that.
+  **From the results** (Stop, then Try again, which submits from the results with no mark) the free
+  list stays, dimmed, under the reading panel with Stop (7d). On both paths, once the list has drawn
+  the results' skeleton may not return: `ReadScope` was once keyed on the server's state, so the
+  refresh that found the read settled remounted the results' Suspense (measured 2026-10-12 on a
+  scratch copy of staging's decks: with that key restored the skeleton came back for ~3.3s as the
+  read settled). The retry's new `r` is part of the Suspense key, so its list can give way to the
+  skeleton for a moment before the dimmed list draws; the probe prints that as a note and does not
+  fail it. It records a video of each press to `PROBE_VIDEO_DIR` when it is set.
   Run it against a dev server with `HELP_ME_CHOOSE_ENABLED=true` and `INTAKE_STUB_DELAY_MS=5000`;
-  it writes reads, so `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging
-  and production by `neon.branch_id`), and it deletes the reads it made. The SERVER writes those
-  reads through its own `DATABASE_URL`, which the probe cannot read, so before anything is pressed
-  it writes a marker deck to `PROBE_TARGET_URL` and requires the server to draw it: a server on any
-  other database draws nothing and the run stops having written nothing there. That failure path
-  was run. Measured 2026-10-12 on a scratch copy of
-  staging's decks: with the old key restored it fails at both widths (the skeleton back for ~3.3s
-  as the read settles), and passes on the fix.
+  it writes reads (two settled and one stopped per width, the stopped one refunded), so
+  `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging and production by
+  `neon.branch_id`), and it deletes the reads it made. A killed run leaves its reads behind. The
+  SERVER writes those reads through its own `DATABASE_URL`, which the probe cannot read, so before
+  anything is pressed it writes a marker deck to `PROBE_TARGET_URL` and requires the server to draw
+  it: a server on any other database draws nothing and the run stops having written nothing there.
+  That failure path was run. The entry-path checks were measured 2026-10-12 on local-dev: with the
+  hold switched off the form path's no-list and not-dimmed checks fail at both widths (the dimmed
+  list draws ~3s into the read), with the pool report removed the step-1 check fails at both, and
+  every check passes on the change.

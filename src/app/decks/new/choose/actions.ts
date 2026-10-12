@@ -22,12 +22,14 @@ import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store
  *
  * - Words over the cap are REFUSED, never trimmed: a read of half the words is not the ask.
  * - An empty box makes no reservation and lands on the free results.
+ * - `from` is where the press was made: the form (the default, and anything else a caller sends) or
+ *   the results' own retry, which changes only what the page draws while the read is pending.
  * - Otherwise the read is begun: its inputs read and its credit reserved before the redirect, its
  *   two calls run after the response (`after`), and the results attach to it by `r`. A repeat lands
  *   on the stored read, charged nothing. No credit left, the app paused, the owner's share used, or
  *   a read already running: the free results, with the words kept and unread (7l, 7n).
  */
-export async function submitChoose(query: string): Promise<{ kind: "refused" }> {
+export async function submitChoose(query: string, from: "form" | "results" = "form"): Promise<{ kind: "refused" }> {
   const userId = await requireUserId();
   if (!helpMeChooseEnabled()) throw new Error("not found");
   // A bound on what a caller may send, far past any real form: 800 words percent-encoded as three
@@ -48,7 +50,9 @@ export async function submitChoose(query: string): Promise<{ kind: "refused" }> 
   const begun = await beginTheRead(userId, { readId: randomUUID(), words, filters: answersOf(p) });
   if (begun.kind === "started") {
     after(begun.finish);
-    redirect(resultsTarget(p, begun.readId));
+    // From the form the free list was never seen, so the page holds its loading state until the read
+    // settles; from the results (a retry) the list is already on screen and stays under the panel.
+    redirect(resultsTarget(p, begun.readId, from === "results" ? null : "form"));
   }
   // A repeat lands on the stored read, marked so its line says no credit was used (7m).
   if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(p, begun.readId, "repeat"));
