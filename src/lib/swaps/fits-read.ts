@@ -10,6 +10,8 @@ import type { CutsPack, CutsPackCard } from "../tuning/cuts-evidence";
 import type { CutsResponse } from "../tuning/cuts-schema";
 import type { FitDeck, FitsRead } from "./fits";
 
+export * from "./fits-read-limits";
+
 /**
  * FIND A DECK, WITH A READ (brief `docs/superpowers/design-briefs/2026-10-11-find-a-deck-read.md`).
  * Pure: who the candidates are, the prompt in both layouts, the reply's shape, and the validator.
@@ -36,7 +38,6 @@ export const FITS_READ_TOP = 5;
 export const FITS_READ_SENTENCE_MAX_CHARS = 240;
 /** The prompt asks for less than the validator allows, as Help me choose's does: replies run long. */
 const SENTENCE_ASK_CHARS = FITS_READ_SENTENCE_MAX_CHARS - 40;
-export const FITS_READ_MAX_TOKENS = 8_000;
 
 /** The closed list a cite's job comes from: every label kind, role and theme space alike. */
 export const FITS_READ_JOBS = [...new Set<string>([...ROLES, ...THEMES])] as [string, ...string[]];

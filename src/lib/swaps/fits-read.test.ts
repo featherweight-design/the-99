@@ -7,42 +7,7 @@ import {
 import { leadingThemes, planText } from "./fits-read-load";
 import type { FitDeck, FitsRead } from "./fits";
 import type { Job } from "../labels/types";
-
-const id = (n: number) => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
-const SUBJECT = id(1);
-const KRENKO = id(10);
-const KRATOS = id(20);
-
-const card = (n: number, name: string, kinds: string[] = ["tokens"]) => ({ oracleId: id(n), name, typeLine: "Creature — Goblin", kinds });
-
-function deck(deckId: string, commander: string, commanderId: string, list: ReturnType<typeof card>[], extra: Partial<FitsDeckBlock> = {}): FitsDeckBlock {
-  return {
-    deckId,
-    commanders: [{ oracleId: commanderId, name: commander, typeLine: "Legendary Creature", oracleText: "Make goblins.", kinds: ["tokens"] }],
-    plan: { source: "v2", text: "Go wide with goblins, then swing with haste." },
-    themes: [],
-    list,
-    keyCardIds: [],
-    lockedIds: [],
-    ...extra,
-  };
-}
-
-const goblins = deck("deck-goblins", "Krenko, Mob Boss", KRENKO, [
-  card(11, "Goblin Instigator"), card(12, "Skirk Prospector", ["sacOutlet"]), card(13, "Beastmaster Ascension", ["pump"]), card(14, "Mountain", []),
-], { keyCardIds: [id(13)], lockedIds: [id(14)] });
-const kratos = deck("deck-kratos", "Kratos, God of War", KRATOS, [card(21, "Guttersnipe", ["spellslinger", "drain"]), card(22, "Lightning Greaves", ["protection"])]);
-const omnath = deck("deck-omnath", "Omnath", id(30), [card(31, "Rampant Growth", ["ramp"])], { plan: null, themes: [{ kind: "landfall", n: 9 }] });
-
-const subject = { oracleId: SUBJECT, name: "Ajani Unrelenting", typeLine: "Legendary Planeswalker — Ajani", oracleText: "+1: Create a token.", kinds: ["tokens", "draw"] };
-
-function inputs(candidates = ["deck-goblins", "deck-kratos"]): FitsReadInputs {
-  return {
-    card: subject,
-    decks: [goblins, kratos, omnath],
-    candidates: candidates.map((deckId) => ({ deckId, need: { role: "draw", have: 2, target: 5 }, inclusion: null })),
-  };
-}
+import { id, SUBJECT, KRENKO, KRATOS, card, deck, goblins, kratos, omnath, subject, inputs } from "./fits-read.fixture";
 
 const pick = (over: Partial<FitsReadReply["picks"][number]> = {}): FitsReadReply["picks"][number] => ({
   deck: "D1", sentence: "Every loyalty turn adds a body for {C1} to double.", cut: "C3", cites: [{ key: "C1", job: "tokens" }], ...over,

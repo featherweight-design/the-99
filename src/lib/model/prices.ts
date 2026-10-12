@@ -2,6 +2,7 @@ import { INTAKE_MAX_TOKENS, INTAKE_MODEL, READ_JUDGE_MAX_TOKENS, READ_JUDGE_MODE
 import { SYNOPSIS_MAX_TOKENS_V8 } from "../synopsis/limits";
 import { SYNOPSIS_MODEL } from "../synopsis/model";
 import { STUB_MODEL } from "../synopsis/stub";
+import { FITS_READ_INPUT_CEILING, FITS_READ_MAX_TOKENS, FITS_READ_MODEL } from "../swaps/fits-read-limits";
 import { TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
 import type { ModelFeature } from "./allowance-rule";
 import type { ModelUsage } from "./client";
@@ -130,6 +131,10 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // request with type, mana value and card text was 15,266 input tokens, and the largest reply 4,049
   // output tokens against the 8,000 ceiling.
   proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
+  // Find a deck read (eval 2026-10-12, `docs/superpowers/eval/metrics-find-a-deck-read.md`): one
+  // call. MEASURED 63,360 input tokens at most (21 candidate decks) and 4,257 output; priced at the
+  // ceiling the action refuses above, so a reservation never under-prices a read.
+  fits_read: { model: FITS_READ_MODEL, inputCeilingTokens: FITS_READ_INPUT_CEILING, maxTokens: FITS_READ_MAX_TOKENS, callsPerWrite: 1 },
 };
 
 /**
