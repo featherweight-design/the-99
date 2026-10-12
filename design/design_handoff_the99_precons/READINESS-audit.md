@@ -299,6 +299,17 @@ as the R1/R2 audit already noted.
     Design's statement and is carried as such. The three notes it names (no header line, the basics note
     dropped, the v0 note full width) are drawn.
 
+## R3 errata (Design's files, for the next round; not edited here)
+
+Raised in review round 1 (Copilot, 2026-10-11). The handoff is Design's record, so these are corrections the
+build follows, not edits to the drawing.
+
+| File | Says | Build follows |
+|---|---|---|
+| `Precons Link.dc.html` (K12, the v0 note) | `…as the box sells it, It’s history only` (comma) | `precons-link · copy strings.ts` `originBody`, which ends the sentence at `sells it.`. Frame mismatch: the copy strings win, and `/copy-review` words the line (finding 8). |
+| `README.md` (R3 status line) | G-R3-1 and G-R3-2 "still open for Hugh" | Both are decided here (findings 3 and 4); Hugh can overrule either. |
+| `design-tables/precons.md` §K (Suggestion strip row) and HANDOFF §2 | radius 10, `--border-strong`, inset 22 / 16 | The shipped `ArrivalStrip` band (`src/components/decks/arrival-strip.tsx:34-35`: `--surface-rail`, `border-bottom`, full width), per finding 5 and R1/R2 finding 3. Here the shipped component wins over the table. |
+
 ## Decisions made here (only one answer defensible)
 
 - `since: 14` and no `ABOUT_VERSION` bump (finding 1).
