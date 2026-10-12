@@ -5,7 +5,7 @@
 //     loading state stands in for it (no list, not dimmed), and the list draws once the read settles.
 //     Hugh, 2026-10-12: a list replaced moments later "felt buggy".
 //  2. FROM THE RESULTS. A stopped read leaves the free list up; Try again reads from there, and the
-//     list stays, dimmed, under the reading panel with Stop (7d).
+//     list stays, dimmed, under the reading panel with Stop (7d), with no loading state in between.
 //
 // On both, the skeleton may not return once the list has drawn: Hugh once saw loading, the dimmed
 // list, loading AGAIN, then the results, because the settled read remounted the results' Suspense.
@@ -195,14 +195,12 @@ async function run() {
       report(at("results: the retry read settled"), retry.done !== null, `final phase ${retry.timeline.at(-1)?.phase}`);
       report(at("results: the dimmed free list stays under the reading panel (7d)"), rereading.some((t) => t.list && t.dim), "");
       report(at("results: Stop is offered while it reads"), rereading.some((t) => t.stop), "");
-      // The retry's address carries a new `r`, which is part of the results' Suspense key
-      // (`queryString`), so the list can give way to the loading state for a moment before it draws
-      // dimmed under the panel. This change does not touch that key; the moment is reported, not failed.
-      const dimAt = retry.timeline.findIndex((t) => t.list && t.dim);
-      const flash = dimAt < 0 ? [] : retry.timeline.slice(0, dimAt).filter((t) => t.skeleton);
-      if (flash.length > 0) console.log(`  note @ ${width}: the retry showed the loading state at ${flash.map((t) => `${t.ms}ms`).join(", ")} before the dimmed list drew`);
-      report(at("results: once the dimmed list is drawn the skeleton never returns"),
-        dimAt >= 0 && retry.timeline.slice(dimAt).every((t) => !t.skeleton), "");
+      // The retry's address carries a new `r`, which is not part of the results' Suspense key: the free
+      // list the player is looking at must not give way to the loading state, even for a moment (Hugh,
+      // 2026-10-12: no sudden visual jumps).
+      const flash = retry.timeline.filter((t) => t.skeleton);
+      report(at("results: the free list never gives way to the loading state"), flash.length === 0,
+        flash.length ? `loading state at ${flash.map((t) => `${t.ms}ms`).join(", ")}` : "no loading state");
       await context.close();
       if (VIDEO) console.log(`  video @ ${width}: ${await page.video()?.path()}`);
     }

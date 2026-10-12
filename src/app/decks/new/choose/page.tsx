@@ -130,6 +130,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     />
   ) : null;
   const queryString = serializeChooseParams(p).slice(1);
+  // What the Suspense is keyed on: the answers, not the read. A retry's address carries a new `r`
+  // but asks for the same commanders, and a new key would swap the list the player is looking at
+  // for the loading state. A change of answers changes this, and starts the loading state as ever.
+  const resultsKey = serializeChooseParams({ ...p, readId: null }).slice(1);
   // The form's own submit started this read: the free list was never on screen, and an inaccurate
   // list replaced moments later reads as a bug. While the read is pending the results' loading
   // state stands in for it; a settled read (or a stopped or failed one) draws the list as ever.
@@ -166,7 +170,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
             startOverHref={CHOOSE_PATH}
           />
           <DimWhileReading hold={holdList}>
-          <Suspense key={queryString} fallback={<ResultsSkeleton by={by} />}>
+          <Suspense key={resultsKey} fallback={<ResultsSkeleton by={by} />}>
             <Results
               userId={userId}
               params={p}

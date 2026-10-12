@@ -1908,9 +1908,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the results' skeleton may not return: `ReadScope` was once keyed on the server's state, so the
   refresh that found the read settled remounted the results' Suspense (measured 2026-10-12 on a
   scratch copy of staging's decks: with that key restored the skeleton came back for ~3.3s as the
-  read settled). The retry's new `r` is part of the Suspense key, so its list can give way to the
-  skeleton for a moment before the dimmed list draws; the probe prints that as a note and does not
-  fail it. It records a video of each press to `PROBE_VIDEO_DIR` when it is set.
+  read settled). The retry's new `r` is not part of the results' Suspense key (`resultsKey`), so its free list
+  must never give way to the loading state, even for a moment: the probe fails on any skeleton sample
+  in the retry's timeline (Hugh, 2026-10-12: no sudden visual jumps). It records a video of each press to `PROBE_VIDEO_DIR` when it is set.
   Run it against a dev server with `HELP_ME_CHOOSE_ENABLED=true` and `INTAKE_STUB_DELAY_MS=5000`;
   it writes reads (two settled and one stopped per width, the stopped one refunded), so
   `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging and production by
