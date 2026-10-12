@@ -26,8 +26,10 @@ const FEEDERS: Record<string, string> = {
   "components/decks/deck-card-tile.tsx": "lib/decks/read.ts",
   "components/decks/suggestion-tile.tsx": "lib/decks/suggestions-read.ts",
   "components/decks/cuts-panel.tsx": "lib/decks/cuts-read.ts",
-  // The shared name trigger: a caller passes `preview` with the art its own loader resolved (lean-line, receipt).
+  // The shared name trigger itself draws the box; each CALLER that passes `preview` is a surface of its own:
   "components/cards/card-detail-provider.tsx": "",
+  "components/decks/lean-line.tsx": "lib/decks/read.ts",
+  "components/decks/receipt-modal.tsx": "lib/decks/read.ts",
   "components/decks/suggestion-card.tsx": "lib/decks/tuning-read.ts",
   "components/decks/suggestion-line.tsx": "lib/decks/tuning-read.ts",
   "components/decks/mana-improve-door.tsx": "app/decks/mana-actions.ts",
@@ -49,10 +51,28 @@ function walk(dir: string): string[] {
   });
 }
 
-/** Files that IMPORT `usePreviewRow` as a binding: a comment naming it is not a hover surface. */
+/** True when some `CardDetailTrigger` in the file hands `preview`: an opt-in call site of the shared trigger. */
+function passesPreview(src: string): boolean {
+  const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(file) === "CardDetailTrigger"
+      && node.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText(file) === "preview")) found = true;
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
+/**
+ * Files that draw a hover preview: IMPORT `usePreviewRow` as a binding (a comment naming it is not a surface), or pass
+ * `preview` to the shared trigger. The second is how a name or a plate previews, and each such call site hands the
+ * trigger an `imageUri` its own loader chose, so each is a surface to feed-check like any other.
+ */
 export function hoverSurfaces(files: Record<string, string>): string[] {
   return Object.entries(files)
-    .filter(([path, src]) => !/\.test\.tsx?$/.test(path) && /import\s*\{[^}]*\busePreviewRow\b[^}]*\}\s*from/.test(src))
+    .filter(([path, src]) => !/\.test\.tsx?$/.test(path)
+      && (/import\s*\{[^}]*\busePreviewRow\b[^}]*\}\s*from/.test(src) || passesPreview(src)))
     .map(([path]) => path)
     .sort();
 }
@@ -76,6 +96,13 @@ export function callsAnyOf(src: string, names: ReadonlySet<string>): boolean {
 export const usesResolver = (src: string) => callsAnyOf(src, RESOLVERS);
 
 describe("the hover-art guard's own failure paths", () => {
+  it("finds a component that passes `preview` to the shared trigger, so its art source gets checked too", () => {
+    expect(hoverSurfaces({
+      "components/a.tsx": `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const A = () => <CardDetailTrigger oracleId="x" name="X" imageUri="u" preview>X</CardDetailTrigger>;`,
+      "components/b.tsx": `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const B = () => <CardDetailTrigger oracleId="x" name="X">X</CardDetailTrigger>;`,
+    })).toEqual(["components/a.tsx"]);
+  });
+
   it("finds a component that imports usePreviewRow and ignores one that only mentions it", () => {
     expect(hoverSurfaces({
       "components/a.tsx": `import { usePreviewRow } from "./hover-preview";`,
