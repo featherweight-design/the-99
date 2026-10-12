@@ -1,13 +1,13 @@
 # Model tiering for Suggested changes and Proposed cuts (2026-10-12)
 
-Two tools, three models: today's `claude-sonnet-5` (effort medium, the `TUNING_MODEL` and `TUNING_EFFORT` both tools use), `claude-sonnet-5-5` and `claude-haiku-5-5`, the last two at the same effort. Real-time prices throughout (what the app pays), staging read-only, nothing in `src/` changed. Harness: `pnpm eval:tuning-model-arms` (Suggested changes) and `pnpm eval:cuts-model --model … --text --realtime` (Proposed cuts). Ledgers: `ledger-model-tiering-tuning.jsonl` ($0.67 of $2) and `ledger-model-tiering-cuts.jsonl` ($1.36 of $2).
+Two tools, three models: today's `claude-sonnet-5` (effort medium, the `TUNING_MODEL` and `TUNING_EFFORT` both tools use), `claude-sonnet-5-5` and `claude-haiku-5-5`, the last two at the same effort. Real-time prices throughout (what the app pays), staging read-only, nothing in `src/` changed. Harness: `pnpm eval:tuning-model-arms` (Suggested changes) and `pnpm eval:cuts-model --model … --text --realtime` (Proposed cuts). Ledgers: `ledger-model-tiering-tuning.jsonl` ($0.67 of $2) and `ledger-model-tiering-cuts.jsonl` ($1.55 of $2, which includes one $0.081 line that is an estimate, see below).
 
 ## Read this first: what this does and does not show
 
 - **Suggested changes has no gold.** Nobody has marked which suggestions are right for these decks, so "accuracy" here is *contract survival* (did the reply pass the app's own checks: legal, in the pool, citations that hold) plus how many suggestions came back. It cannot say whether a rationale is good. The verbatim lines below are there for Hugh to judge that himself.
 - **Proposed cuts has gold:** the cuts Hugh actually made (the same ground truth as `metrics-cuts-model.md`). Recall is judged against chance (a model picking at random from the pool).
-- **Sonnet 5.5 on Proposed cuts was not measured.** My first run of it was killed when the run's spend guard refused the next chunk (its results were lost, about $0.08 booked as an estimate), and the script now refuses further asks on that ledger. The Proposed cuts row for Sonnet 5.5 is empty on purpose.
-- One sample per deck for Suggested changes (12 decks), three trials per deck for Proposed cuts (5 decks, 15 trials). Small samples; differences of a few points are noise.
+- **Sonnet 5.5 on Proposed cuts has one trial per deck, not three.** My first run of it was killed by me when the run's spend cap check refused the next chunk; its results were lost and the ledger carries a $0.081 line that is my estimate of that run, not a measured figure. After Hugh's go-ahead via the orchestrator I re-ran it at one trial for each of the five decks (5 answers, $0.186). Five trials against fifteen: treat its recall as an indication only.
+- One sample per deck for Suggested changes (12 decks), three trials per deck for Proposed cuts on Sonnet 5 and Haiku 5.5 (5 decks, 15 trials) and one for Sonnet 5.5 (5 trials). Small samples; differences of a few points are noise.
 
 ## Results
 
@@ -30,20 +30,20 @@ Total spend $0.67 (Sonnet 5 $0.39, Sonnet 5.5 $0.25, Haiku 5.5 $0.02), 36 answer
 
 | | Sonnet 5 (today) | Sonnet 5.5 | Haiku 5.5 |
 |---|---|---|---|
-| Cuts of Hugh's found | 27 of 174 (16%) | not measured | 29 of 174 (17%) |
-| Against chance | 21.7 expected, 1.25x | not measured | 24.0 expected, 1.21x |
-| Suggestions kept of asked | 132 of 141 (94%) | not measured | 150 of 156 (96%) |
-| **Cost per trial (real time, retries included)** | **$0.0825** | not measured | **$0.0031** |
-| Latency p50 / p95 (per answer, retries included) | 44.9 s / 63.5 s | not measured | 17.3 s / 23.0 s |
-| Errors / retries | 1 trial never answered (Counter Intelligence trial 2 ran to the 12,000-token ceiling and returned nothing); 4 retried requests | not measured | 0 / 0 |
+| Cuts of Hugh's found | 27 of 174 (16%); 1.8 a trial | 11 of 58 (19%); 2.2 a trial (5 trials only) | 29 of 174 (17%); 1.9 a trial |
+| Against chance | 21.7 expected, 1.25x | 8.0 expected, 1.38x | 24.0 expected, 1.21x |
+| Suggestions kept of asked | 132 of 141 (94%) | 51 of 52 (98%) | 150 of 156 (96%) |
+| **Cost per trial (real time, retries included)** | **$0.0825** | **$0.0371** | **$0.0031** |
+| Latency p50 / p95 (per trial, a retry added to its trial) | 42.8 s / 115.7 s (longest 122 s) | 9.2 s / 10.1 s | 17.3 s / 23.0 s |
+| Errors / retries | 1 trial never answered (Counter Intelligence trial 2 hit the 6,000-token output ceiling on its first request and again on its retry, and returned nothing); 4 retried requests | 0 / 0 | 0 / 0 |
 
-Per deck (hits of Hugh's cuts, over the three trials): Aang 11 of 57 on both models; Counter Intelligence 3 of 51 (Sonnet 5, including the unanswered trial) against 7 of 51 (Haiku); Prismari 10 of 45 on both; Gods 3 of 18 against 1 of 18; Wizards 0 of 3 on both. Sonnet 5 spent $1.24 on 19 requests, Haiku $0.047 on 15. For reference the earlier no-card-text Sonnet 5 round found 35 of 174 (20%, 1.26x chance, batch prices, `metrics-cuts-model.md`): every arm here sits near chance.
+Per deck (hits of Hugh's cuts, over the three trials): Aang 11 of 57 on both models; Counter Intelligence 3 of 51 (Sonnet 5, including the unanswered trial) against 7 of 51 (Haiku); Prismari 10 of 45 on both; Gods 3 of 18 against 1 of 18; Wizards 0 of 3 on both. Sonnet 5.5, one trial each: Aang 4 of 19, Counter Intelligence 5 of 17, Prismari 1 of 15, Gods 1 of 6, Wizards 0 of 1. Sonnet 5 spent $1.24 on 19 requests, Sonnet 5.5 $0.19 on 5, Haiku $0.047 on 15. For reference the earlier no-card-text Sonnet 5 round found 35 of 174 (20%, 1.26x chance, batch prices, `metrics-cuts-model.md`): every arm here sits near chance.
 
 ## Recommendation per tool
 
-**Proposed cuts: Haiku 5.5, if Hugh wants to move.** It found as many of Hugh's cuts as Sonnet 5 (29 against 27 of 174; the difference is noise), kept slightly more of what it asked, never failed to answer, took 17 s instead of 45 s and cost 1/27 as much ($0.0031 against $0.0825 a trial). The honest caveat is that cuts recall is poor on every model, so the choice is between two equally weak rankers and the cheaper one wins; Sonnet 5.5 would be a third weak ranker I could not afford to test under the cap.
+**Proposed cuts: Haiku 5.5, if Hugh wants to move.** It found as many of Hugh's cuts as Sonnet 5 (29 against 27 of 174; the difference is noise), kept slightly more of what it asked, never failed to answer, took 17 s instead of a median 43 s (Sonnet 5 had three trials past 100 s, the longest 122 s) and cost 1/27 as much ($0.0031 against $0.0825 a trial). The honest caveat is that cuts recall is poor on every model, so the choice is between equally weak rankers and the cheaper one wins. Sonnet 5.5 (five trials, 2.2 cuts found a trial against 1.8 and 1.9) is not distinguishable from either on this sample; it is the middle choice on cost ($0.037 a trial, half of Sonnet 5) and the fastest (9 s), if Hugh wants to stay in the Sonnet family.
 
-**Suggested changes: Sonnet 5.5 is the cautious move; Haiku 5.5 is the cheap one, and it changes the product.** Sonnet 5.5 kept 92% (against 90%), answers about three times faster (median 8 s against 25 s) and costs about a third less ($0.021 against $0.033), but returns fewer suggestions (5.9 a deck against 8.4) and once returned nothing legal. Haiku 5.5 costs 1/19 as much and passes the contract most reliably, but offers only 2.8 suggestions a deck (Aang 2, Goblins 2, Elves 2, Brago 2, Yuriko 2). That is a thinner feature, not the same feature cheaper. Whether the thinner lists are worse is a judgement of rationales, which the lines below let Hugh make.
+**Suggested changes: Sonnet 5.5 is the cautious move; Haiku 5.5 is the cheap one, and it changes the product.** Sonnet 5.5 kept 92% (against 90%), answers about three times faster (median 8 s against 25 s) and costs about a third less ($0.021 against $0.033), but returns fewer suggestions (5.9 a deck against 8.4) and once returned nothing legal. Haiku 5.5 costs 1/19 as much and passes the contract as often as Sonnet 5 (12 of 12) and drops the fewest, but offers only 2.8 suggestions a deck (six decks got 2: Aang, Goblins, Elves, Brago, Yuriko and Gods). That is a thinner feature, not the same feature cheaper. Whether the thinner lists are worse is a judgement of rationales, which the lines below let Hugh make.
 
 If Hugh decides on cost alone: Haiku 5.5 for Proposed cuts, Sonnet 5.5 for Suggested changes. If he wants no loss of Suggested changes breadth, keep Sonnet 5 there.
 
