@@ -561,7 +561,6 @@ export function TuningPanel({
     if (preparingRun.current !== null) return;
     const mine = ++token.current;
     preparingRun.current = mine;
-    if (review) { leftReview.current = true; review.leave?.(); }
     try {
       setRefused(null);
       // A limit edited moments ago still has a pending or in-flight save — flush and wait for it
@@ -617,6 +616,9 @@ export function TuningPanel({
   // flush or re-read, not what it shows now.
   async function pressRun(mine: number, anyway: boolean, notes: string) {
     if (token.current !== mine) return;
+    // Leaving a reopened past run only once a new run really starts: a preflight that refuses leaves
+    // the reader on the run, its note and its way back intact.
+    if (review && !leftReview.current) { leftReview.current = true; review.leave?.(); }
     const runId = crypto.randomUUID();
     ownRun.current = runId;
     setTicked(new Set());
@@ -1092,7 +1094,7 @@ export function TuningPanel({
           <>
             <button
               type="button"
-              onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null || priorResult))}
+              onClick={() => (blocked ? undefined : void press(unchangedShown || failure !== null || priorResult || reviewing))}
               aria-disabled={blocked || undefined}
               className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${blocked ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"}`}
             >

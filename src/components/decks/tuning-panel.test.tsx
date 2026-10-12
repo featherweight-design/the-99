@@ -1744,6 +1744,27 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
     expect(screen.queryByRole("button", { name: deckTuningCopy.card.apply })).toBeNull();
   });
 
+  it("a press refused before any run starts (an unsaved limit) stays on the reopened run", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => ({ ok: false as const, message: "Nope." }));
+      const d = deps([reviewed]);
+      const leave = await drawReview(d);
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: copy.again }));
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByText(deckDescriptionCopy.limits.refused)).toBeInTheDocument();
+      expect(leave).not.toHaveBeenCalled();
+      expect(d.run).not.toHaveBeenCalled();
+      expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("a new run pressed from it leaves the review: the hub is told, and the panel reads its newest run", async () => {
     const d = deps([reviewed, { ...results, review: null }]);
     const leave = await drawReview(d);

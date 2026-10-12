@@ -531,6 +531,20 @@ describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
     expect(document.querySelector("[data-review-note]")).toBeNull();
   });
 
+  it("shows a run in flight in History's own view when its tool is inert now (cuts on a deck back at 100)", async () => {
+    readPast.mockClear();
+    readPast.mockResolvedValue({ kind: "cutsDeeper", at, outcome: "running", readVersion: null, moved: null, lines: [] });
+    const running: HistoryRow = { id: "run:77777777-7777-4777-8777-777777777777", tool: "cuts", tier: "deeper", outcome: "running", at, summary: { kind: "none" } };
+    readHistoryPage.mockResolvedValue({ rows: [running], nextCursor: null });
+    render(<TuningHub deckId="d" drawn tools={[tools[0], { tool: "cuts", panel: <Probe tool="cuts" />, over: 0, total: 100 }, tools[2]]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(document.querySelector("[data-history-row]")).not.toBeNull());
+    fireEvent.click(document.querySelector("[data-history-row]")!);
+    await waitFor(() => expect(readPast).toHaveBeenCalledWith("d", running.id));
+    expect(probe()).toBeUndefined();
+  });
+
   it("drops the run when the tool is opened any other way", async () => {
     await openHistory();
     fireEvent.click(row(`run:${RUN}`));

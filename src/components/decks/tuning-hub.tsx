@@ -299,6 +299,9 @@ export function TuningHub({
     const spec = tools.find((t) => t.tool === row.tool);
     if (press.kind === "past" || !spec || ("panel" in spec && spec.panel === null)) { setPast(row); return; }
     // A run still in flight is the tool's own newest run: the tool as any opening shows it, no note.
+    // A tool that is inert now (Proposed cuts on a deck back at 100) draws nothing for a run in flight
+    // or a count: History's own view shows it instead, as it does a run with nothing to load.
+    if (press.kind === "live" && views.find((v) => v.tool === row.tool)?.inert) { setPast(row); return; }
     if (press.kind === "live" && !press.counted) { open(row.tool, { focus: true }); return; }
     setPast(null);
     setReturnRow(null);
