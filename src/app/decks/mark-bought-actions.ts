@@ -259,7 +259,8 @@ export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown):
     throw new Error("bad chooser input");
   }
   const deckIds = new Set((rawDeckIds as string[]).map((d) => d.toLowerCase()));
-  const card = await loadContestedCard(rawOracleId.toLowerCase(), userId);
+  // Unowned as zero: the commonest cart line is a card no copy of which is on the shelf yet.
+  const card = await loadContestedCard(rawOracleId.toLowerCase(), userId, { unownedAsZero: true });
   if (!card) return null;
   const claimants = card.claimants.filter((c) => deckIds.has(c.deckId.toLowerCase()));
   // Every deck on the line or none: a deck billed for the card that the claim model does not list

@@ -358,7 +358,16 @@ const claimModel = (userId: string) => sql`
  */
 export async function loadAvailability(
   userId: string,
-  opts?: { oracleIds?: string[]; excludeDeckId?: string },
+  opts?: {
+    oracleIds?: string[];
+    excludeDeckId?: string;
+    /**
+     * With `oracleIds`: a named card the collection holds no copy of reads as owning 0, claims
+     * and all, instead of being absent. For a caller asking who wants a card about to be bought
+     * (the cart's S1b chooser). Off, the query is the one every other reader runs.
+     */
+    unownedAsZero?: boolean;
+  },
   tx?: Tx,
 ): Promise<Map<string, Availability>> {
   // Both narrowings are null-guarded in SQL rather than by string-building the
@@ -654,7 +663,14 @@ ${lockedClaim}            -- Whether free COUNTS this claim, which is the same q
           end
       )::int as free,
       c.claims
-    from owned o
+    from ${opts?.unownedAsZero && opts.oracleIds
+      ? sql`(
+          select oracle_id, owned from owned
+          union all
+          select x.oracle_id, 0 from unnest(${only}::uuid[]) as x(oracle_id)
+          where not exists (select 1 from owned w where w.oracle_id = x.oracle_id)
+        ) o`
+      : sql`owned o`}
     left join claims c on c.oracle_id = o.oracle_id
     left join own_claims oc on oc.oracle_id = o.oracle_id
     left join senior_hard sh on sh.oracle_id = o.oracle_id

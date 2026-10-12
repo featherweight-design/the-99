@@ -247,7 +247,7 @@ describe("readCartChooser", () => {
   it("narrows the claimants to the line's decks, in the model's queue order", async () => {
     state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(C), claimant(B), claimant(A)] };
     const card = await readCartChooser(CARD.toUpperCase(), [A.toUpperCase(), B]);
-    expect(state.contestedArgs).toEqual([CARD, "user_1"]);
+    expect(state.contestedArgs).toEqual([CARD, "user_1", { unownedAsZero: true }]);
     expect(card?.claimants.map((c) => c.deckId)).toEqual([B, A]);
   });
 
