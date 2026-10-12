@@ -79,7 +79,9 @@ export function RunningBand({ title, elapsed }: { title: string; elapsed: string
 }
 
 /** P7: failed. The credit came back; Try again carries the same segment, outlined. */
-export function FailedBand({ blocked, spent, standing, onRetry }: { blocked: boolean; spent: boolean; standing: string; onRetry: () => void }) {
+export function FailedBand({ blocked, spent, closed = false, standing, onRetry }: {
+  blocked: boolean; spent: boolean; closed?: boolean; standing: string; onRetry: () => void;
+}) {
   return (
     <Band testId="read-band-failed">
       <p className="m-0 flex items-center gap-[8px] text-[13.5px] font-semibold text-[color:var(--fg)]">
@@ -88,7 +90,16 @@ export function FailedBand({ blocked, spent, standing, onRetry }: { blocked: boo
       </p>
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{copy.failedBody}</p>
       <div className="flex">
-        <CreditButton label={copy.retry} credit={copy.credit} filled={false} blocked={blocked} spent={spent} onPress={onRetry} />
+        <CreditButton
+          label={copy.retry}
+          credit={copy.credit}
+          filled={false}
+          blocked={blocked}
+          spent={spent || closed}
+          onPress={onRetry}
+          // Paused, no credit is out: the press is named alone, never as `No credits left`.
+          ariaLabel={closed && !spent ? copy.retry : undefined}
+        />
       </div>
       <Standing line={standing} />
     </Band>

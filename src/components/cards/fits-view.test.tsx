@@ -193,6 +193,13 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getAllByTestId("fits-row").map((x) => x.querySelector("a")?.textContent)).toEqual(["Kratos"]);
   });
 
+  it("a current read still reopens once every candidate has taken the card, its rows settled", async () => {
+    await draw(panel({ candidates: 0 }, { stored: stored({ resolved: ["d-gob"] }) }), list({ fits: [], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    const row = screen.getByTestId("read-row");
+    expect(row).toHaveTextContent("Goblins");
+    expect(within(row).getByRole("button", { name: r.addOnlyAria(card.name, "Goblins") })).toBeDisabled();
+  });
+
   it("with no free copy left, both actions read to buy (P3b)", async () => {
     await draw(panel({}, { stored: stored() }), list({ free: 0 }));
     const row = screen.getByTestId("read-row");

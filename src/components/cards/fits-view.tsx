@@ -117,7 +117,8 @@ export function FitsView({
     const stored = p.view.stored;
     const failed = p.view.failed !== null;
     setPressFailed(failed);
-    if (stored && stored.readId !== before && !failed) {
+    // Announced only when it is drawn: a read that settled after its decks moved comes back out of date.
+    if (stored && stored.readId !== before && !failed && stored.current) {
       setFresh(stored.readId);
       setAnnounced(stored.outcome === "noFit" ? read.announceNoFit : read.announceReady(stored.picks.length));
     } else if (failed) setAnnounced(read.announceFailed);
@@ -238,14 +239,16 @@ export function FitsView({
   const noList = list.read !== null && list.shown.length === 0;
   const oneDeck = candidates === 1 ? list.shown[0]?.name ?? null : null;
   const showsBand = panel !== null && candidates > 0 && !noList;
-  const result = showsBand && running === null && !failed && current?.outcome === "picks" ? current : null;
+  // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
+  // and the read still reopens with its rows settled.
+  const result = panel !== null && running === null && !failed && current?.outcome === "picks" ? current : null;
   const noFit = showsBand && running === null && !failed && current?.outcome === "noFit" ? current : null;
   const isFresh = (s: { readId: string }) => s.readId === fresh;
 
   let band = null;
   if (showsBand) {
     if (running !== null) band = <RunningBand title={read.running(candidates, name)} elapsed={clock(now - running)} />;
-    else if (failed) band = <FailedBand blocked={blocked} spent={spent || closed} standing={standing} onRetry={() => void press()} />;
+    else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
       band = <NoFitBox
         body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}

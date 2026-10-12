@@ -78,12 +78,12 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | swapInAria | “Swap {card} into {deck}, cutting {cut}” |
 | swappedAria | “{card} is in {deck} and {cut} is out. Press to put {cut} back.” |
 | swapRefused | “We couldn’t make that swap. The deck is unchanged.” |
-| undoRefused | “We couldn’t undo that swap. The deck is unchanged.” |
+| undoRefused | “We couldn’t undo that. The deck is unchanged.” (shipped, /copy-review: it serves both undos) |
 | announceReady | “The read found {n} decks.” · one: “The read found one deck.” |
 | announceSwapped | “Swapped. {card} is in the draft and {cut} is out.” |
 | announceUndone | “Swap undone. {cut} is back and {card} is out.” |
 | thin | “Only one deck held up, so the credit came back.” · “Only {kept} decks held up, so the credit came back.” |
-| thinSub | “The other decks it named didn’t check out against their lists” (+ “ · {standing}”) |
+| thinSub | “The other decks it named didn’t check out” (+ “ · {standing}”) (shipped, /copy-review: READINESS-audit F10) |
 | noFitHead | “None of these decks is a real fit” |
 | noFitBody | “The read went through the {n} decks that can take {card} and found none whose plan it really helps. The credit came back.” |
 | noFitBodyOne | “The read went through {deck}, the one deck that can take {card}, and found it isn’t a real fit. The credit came back.” |
@@ -104,10 +104,10 @@ New, in `findADeckReadCopy` (to land as `swapToolsCopy.fits.read`):
 | added (R2) | “Added” · to buy: “Added, to buy” |
 | addOnlyAria (R2) | “Add {card} to {deck} without cutting anything” |
 | addedAria (R2) | “{card} is in the {deck} draft, with nothing cut. Press to take it out.” |
-| addedNote (R2) | “In the draft, which is now at 100. Cut a card of your choice from {deck}.” |
+| addedNote (R2) | “In the draft with nothing cut. Pick a card to cut from {deck} when you’re ready.” (shipped: a draft is not always at 99 before the add) |
 | cutNoteAdded (R2) | “still in · cut it or anything else” |
 | noFitBodyStored (R2) | “The read went through the {n} decks that can take {card} and found none whose plan it really helps.” |
-| noFitFootNow (R2) | “read just now · kept until your decks change, so there’s nothing to press again” |
+| noFitFootNow (R2) | “read just now · kept until your decks change” (shipped, /copy-review: the second clause restated the first) |
 | noFitFootStored (R2) | “read {when} · kept until your decks change” |
 | noFitChanged (R2) | “{deck} has changed since this read on {when}, so it’s worth asking again.” |
 | creditsLink (R2) | “What uses credits?” (links to About `credits`) |
