@@ -206,7 +206,7 @@ export default async function DeckBuilderPage({
   // (see `readStoredPermits`), and a failed read draws no chip, which is what an unread deck draws
   // anyway.
   const storedPermits = analysisTabEnabled()
-    ? perf.timed("storedPermits", () => readStoredPermits(id, userId)).catch(() => null)
+    ? perf.timed("storedPermits", () => readStoredPermits(id, userId)).catch(() => undefined)
     : Promise.resolve(null);
   // The header's notice tag, read WITH the page so it paints with the header rather than arriving
   // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
@@ -460,7 +460,10 @@ export default async function DeckBuilderPage({
   // Read once per request rather than at each use, so the tab and the
   // arrival view cannot disagree about which layout this deployment is drawing.
   const analysisEnabled = analysisTabEnabled();
-  const storedBracket = await storedPermits;
+  // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
+  // deck that was never analyzed (`holdsOpening`'s `analyzed`).
+  const storedRead = await storedPermits;
+  const storedBracket = storedRead ?? null;
   const notices = await initialNotices;
   // Started in stage A; see `swapTools` there.
   const shoppingLimit = await shoppingLimitRead;
@@ -583,6 +586,7 @@ export default async function DeckBuilderPage({
       // Help me choose: the credit lines name it only where the feature is drawn.
       deeperLooks={helpMeChooseEnabled()}
       storedPermits={storedBracket}
+      storedPermitsUnknown={storedRead === undefined}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
       // deployment that does not draw it lands on the decklist rather than on an unselected
       // row above an empty panel — the same rule `versions` already has for a brew.

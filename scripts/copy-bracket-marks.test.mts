@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 
-import { EXPECTED as FILES, SOURCE, TARGET as DIR, strip } from "./lib/bracket-marks.mjs";
+import { bracketMarksCss, CSS_TARGET, EXPECTED as FILES, SOURCE, TARGET as DIR, strip } from "./lib/bracket-marks.mjs";
 
 // The COPIES, asserted rather than the copier. What matters is that `public/brackets/` holds ten
 // drawable marks — a script that runs cleanly over an empty source would satisfy any test of the
@@ -51,5 +51,25 @@ describe("the bracket marks in public/", () => {
   it("gives every mark its own art", () => {
     const bodies = FILES.map((f) => readFileSync(`${DIR}/${f}`, "utf8").replace(/\s+/g, ""));
     expect(new Set(bodies).size).toBe(FILES.length);
+  });
+});
+
+// The marks draw from a stylesheet of inline art (`src/app/bracket-marks.css`), so a mask never
+// waits on a fetch: a fetched mask paints its numeral disc alone until the file lands, a square.
+describe("the bracket marks' stylesheet", () => {
+  it("is the build of the committed files (run `pnpm assets:brackets`)", () => {
+    expect(readFileSync(CSS_TARGET, "utf8")).toBe(bracketMarksCss((file) => readFileSync(`${DIR}/${file}`, "utf8")));
+  });
+
+  it("carries a rule per file, the full form with its numeral disc and the chip without", () => {
+    const css = readFileSync(CSS_TARGET, "utf8");
+    for (const file of FILES) {
+      const key = file.slice(0, -".svg".length);
+      const rule = css.split("\n").find((l) => l.startsWith(`.bracket-art[data-art="${key}"]`));
+      expect(rule, key).toBeDefined();
+      expect(rule).toContain("data:image/svg+xml,");
+      expect(rule!.includes("radial-gradient"), key).toBe(!key.endsWith("-chip"));
+    }
+    expect(css).not.toMatch(/url\(["']?\/brackets/);
   });
 });

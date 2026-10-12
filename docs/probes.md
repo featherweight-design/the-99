@@ -76,21 +76,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   at `local-dev` or a scratch branch, **never production**.
 
 - `pnpm probe:tab-opening` times the Analysis tab's opening loader at 1300 and 390 (see the script
-  header). **Six checks FAIL on `main` as of 2026-10-11, and are not a regression.** Run on a
-  clean `origin/main` (`cecd606db`) and on the parent of #1440 (`769f3be2f`), both against
-  `local-dev`: the same six fail, identically, at both widths. Three checks times two widths:
+  header). Every check passes again since 2026-10-11, at both widths, against `local-dev`. Two
+  changes got it there:
 
-  - `analyzed: nothing else drawn beside it` (5 frames with more). The check compares the
-    tabpanel's text with the loader's, and since #1025 the panel also holds the tab's body mounted
-    behind the loader, so the text is never the loader's alone.
-  - `unanalyzed: no loader` and `unanalyzed: the empty state at once` (loader drawn about 180ms,
-    empty state at about 2.4s against a 140ms bar). #1025 made `holdsOpening` wait for the whole
-    tab to be able to paint, for an unanalyzed deck as well. #911 wrote these two checks for the
-    earlier design, where an unanalyzed deck drew its empty state at once.
-
-  The probe predates #1025 and was never rewritten for it. Updating it means deciding what an
-  unanalyzed deck should show while the opening is held, which is a design question rather than a
-  probe edit, so it is left failing and recorded here instead of loosened.
+  - **An unanalyzed deck draws its empty state at once and never the loader** (Hugh, 2026-10-11).
+    #1025 had made `holdsOpening` wait for the whole tab to paint for every deck, so a deck never
+    analyzed showed the loader for about 180ms and its empty state at about 2.4s. The hold is now
+    only for a deck with a reading to load (`analyzed`: a stored reading or one on screen); the
+    hub's tiles below the empty state fill in as their own reads land.
+  - **`analyzed: nothing else drawn beside it` reads what PAINTS, not the text.** Since #1025 the
+    tab's body is mounted behind the loader, hidden, so the panel's text is never the loader's
+    alone; the check now looks for a text leaf outside the loader that is drawn and larger than
+    the 1px live region. With both visibility filters removed it fails again with the 5 frames
+    the old check reported, so it still sees a body that leaks.
 
 - `pnpm tsx scripts/probe-tuning-owned.mts <deck id>` runs Suggested changes on a real STAGING deck,
   READ-ONLY and PAID (about $0.03 a call): the pack the app builds (owned shortlist included), one

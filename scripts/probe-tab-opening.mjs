@@ -13,9 +13,10 @@
 //
 // WHAT IT PROVES, per width:
 //  - An analyzed deck: the empty state is NEVER drawn; the loader is drawn, no sooner than the
-//    150ms delay, and (on a second, quick answer of 260ms) held at least 400ms; while it is drawn the tabpanel holds nothing else (no
-//    mix) and is `aria-busy`; the header's bracket chip stays drawn throughout.
-//  - An unanalyzed deck: the empty state is drawn at once (inside the delay) and the loader never.
+//    150ms delay, and (on a second, quick answer of 260ms) held at least 400ms; while it is drawn the tabpanel draws nothing else (no
+//    mix; the body is mounted behind it, hidden, since #1025) and is `aria-busy`; the header's bracket chip stays drawn throughout.
+//  - An unanalyzed deck: the empty state is drawn at once (inside the delay) and the loader never
+//    (Hugh, 2026-10-11: the hold is only for a deck with a reading to load).
 //
 // It makes no writes. It needs one account deck with a `deck_profiles` row and one without, and
 // FAILS when either is missing rather than passing over nothing. Needs a server with
@@ -127,8 +128,13 @@ async function openAndRecord(page, deckId) {
         empty: drawn(panel?.querySelector('[data-testid="analysis-empty"]')),
         loader: loader?.getAttribute("data-opening-loader") ?? null,
         busy: panel?.getAttribute("aria-busy") === "true",
-        // While the loader is up the panel holds nothing else: its text is the loader's alone.
-        extra: !!loader && (panel.textContent ?? "").trim() !== (loader.textContent ?? "").trim(),
+        // While the loader is up nothing else is DRAWN in the panel. Since #1025 the tab's body is
+        // mounted behind the loader (hidden), so its text is in the DOM; what counts is a leaf with
+        // text that paints, outside the loader. A 1px box is the screen reader's live region.
+        extra: !!loader && [...panel.querySelectorAll("*")].some((el) =>
+          !loader.contains(el) && !el.contains(loader) && el.childElementCount === 0
+          && (el.textContent ?? "").trim() !== "" && drawn(el)
+          && el.getBoundingClientRect().width > 1 && el.getBoundingClientRect().height > 1),
         chip,
         // Each mark's painted opacity, while the loader is drawn.
         ops: loader?.getAttribute("data-opening-loader") === "drawn"

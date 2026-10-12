@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { markAsset, markForm } from "./mark-size";
+import { markArt, markAsset, markForm } from "./mark-size";
 import type { Bracket } from "./types";
 
 const ALL: Bracket[] = [1, 2, 3, 4, 5];
@@ -57,5 +57,13 @@ describe("markAsset", () => {
       expect(new Set(paths).size).toBe(ALL.length);
       expect(paths.every((p) => p !== null)).toBe(true);
     }
+  });
+});
+
+describe("markArt", () => {
+  it("names the stylesheet rule a mark draws from: the asset's file name, or null below 20px", () => {
+    expect(markArt(1, 36)).toBe("bracket-1-exhibition");
+    expect(markArt(2, 22)).toBe("bracket-2-core-chip");
+    expect(markArt(5, 16)).toBeNull();
   });
 });

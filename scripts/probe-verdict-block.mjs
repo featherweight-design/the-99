@@ -196,6 +196,7 @@ async function walk(page, label, markPx, viewportWidth) {
       images: el.querySelectorAll("img").length,
       artInk: artStyle?.backgroundColor ?? null,
       maskImage: artStyle ? artStyle.maskImage || artStyle.webkitMaskImage : null,
+      art: el.querySelector("[data-testid=bracket-mark-art]")?.dataset.art ?? null,
       maskComposite: artStyle ? artStyle.maskComposite || artStyle.webkitMaskComposite : null,
       numeralText: numeral?.textContent ?? null,
       numeralFamily: numeralStyle?.fontFamily ?? null,
@@ -226,9 +227,9 @@ async function walk(page, label, markPx, viewportWidth) {
     ink.length === 3 && !black,
     `painted ${mark.artInk}`);
 
-  report(`${label}px · the mask names the rank's own file`,
-    /bracket-\d-[a-z]+\.svg/.test(mark.maskImage ?? ""),
-    (mark.maskImage ?? "none").slice(0, 120));
+  report(`${label}px · the mask is the rank's own art`,
+    new RegExp(`^bracket-${mark.bracket}-[a-z]+(-chip)?$`).test(mark.art ?? ""),
+    mark.art ?? "no art key");
 
   // THE SUBTRACTION. Without the second layer the file's own serif numeral survives in the mask
   // and sits UNDER the Cinzel one in the same ink — a doubled digit, worse than either alone.
@@ -245,17 +246,14 @@ async function walk(page, label, markPx, viewportWidth) {
   report(`${label}px · and that face is actually loaded`, mark.cinzelLoaded === true,
     mark.cinzelLoaded ? "Cinzel is loaded" : "no loaded Cinzel face — the numeral draws in the fallback");
 
-  // ── The file is SERVED ──────────────────────────────────────────────────────────────────
-  const asset = (mark.maskImage ?? "").match(/\/brackets\/[a-z0-9-]+\.svg/)?.[0];
-  if (asset) {
-    const res = await page.request.get(`${BASE}${asset}`);
-    const body = res.ok() ? await res.text() : "";
-    report(`${label}px · ${asset} is served`,
-      res.ok() && body.includes("<svg"),
-      `${res.status()}, ${body.length} bytes`);
-  } else {
-    report(`${label}px · a mask url to fetch`, false, "no /brackets/ url in the computed mask");
-  }
+  // ── The art is INLINE ───────────────────────────────────────────────────────────────────
+  // A fetched mask paints its numeral disc alone until the file lands, a filled square on a cold
+  // load (Hugh, 2026-10-11), so the art rides in the stylesheet as data and is never fetched.
+  const data = (mark.maskImage ?? "").match(/data:image\/svg\+xml,([^")]+)/)?.[1];
+  const svg = data ? decodeURIComponent(data) : "";
+  report(`${label}px · the art is inline data, drawable`,
+    svg.includes("<svg") && svg.includes("<path"),
+    data ? `${svg.length} chars` : (mark.maskImage ?? "none").slice(0, 80));
 
   // ── The contrast ground, measured rather than inherited ─────────────────────────────────
   const numeralInk = rgb(mark.numeralInk ?? "");

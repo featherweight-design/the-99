@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* The bracket marks' art, inline, so a mark is drawn with the first paint (BracketMark). */
+@import "./bracket-marks.css";
 
 /* Tailwind reads every file under the project for class candidates. scripts/ draws no UI, but its
    tests hold class STRINGS as fixtures (border-collision.test.mts quotes `[&[data-x="a"]]:border-r`

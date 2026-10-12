@@ -25,7 +25,7 @@ import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
 import { OVERVIEW_HOLD_MS, useDeckSynopsis } from "./synopsis-state";
 import { shownReading, useDeckProfile } from "./use-deck-profile";
-import { holdsOpening, isOpening, useOpenOnce, useOpeningGate } from "./use-opening-gate";
+import { deckAnalyzed, holdsOpening, isOpening, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
@@ -232,6 +232,9 @@ interface BuilderShellProps {
   openNoticesOnArrival?: boolean;
   /** The stored analysis's permitted range, for the header's bracket chip; null when unread. */
   storedPermits?: Bracket[] | null;
+  /** The stored analysis could not be read, so `storedPermits`' null says nothing about whether
+   *  the deck was ever analyzed: the tab's opening then holds as it does for an analyzed deck. */
+  storedPermitsUnknown?: boolean;
   /** `NEVER_CUT_ENABLED` (`src/lib/decks/never-cut-flag.ts`): whether the rows draw the lock and
    *  the toolbar offers Lock cards. Off, nothing of the lock is drawn or pressable. */
   neverCut?: boolean;
@@ -296,6 +299,7 @@ export function BuilderShell({
   initialNotices = null,
   openNoticesOnArrival = false,
   storedPermits = null,
+  storedPermitsUnknown = false,
   neverCut = false,
   deeperLooks = false,
   tuningEnabled = false,
@@ -496,7 +500,8 @@ export function BuilderShell({
     [deck.id],
   );
   const holding = holdsOpening({
-    peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled }),
+    analyzed: deckAnalyzed({ storedPermits, hasReading: reading !== null, storedUnknown: storedPermitsUnknown }),
+    peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: !analysisEnabled || synopsis.settled,
     hasReading: reading !== null,
     suggestionsSettled: tuningHubEnabled || tuningSettled === visitKey,

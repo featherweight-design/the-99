@@ -24,13 +24,16 @@ export function isOpening({
   kind,
   storedPermits,
   peekSettled,
+  storedUnknown = false,
 }: {
   shown: boolean;
   kind: string;
   storedPermits: readonly unknown[] | null;
   peekSettled: boolean;
+  /** The page's stored read FAILED: there may be a reading to fetch, so the peek is waited on. */
+  storedUnknown?: boolean;
 }): boolean {
-  return shown && kind === "idle" && storedPermits !== null && !peekSettled;
+  return shown && kind === "idle" && (storedPermits !== null || storedUnknown) && !peekSettled;
 }
 
 /**
@@ -38,23 +41,47 @@ export function isOpening({
  * everything the tab paints on its first frame. The overview's first read (which also prices the
  * credit notes beside Analyze) and, over a reading, Suggested changes' first read with its credit
  * line. Before, each arrived on its own clock and the tab painted in pieces.
+ *
+ * ONLY FOR A DECK WITH A READING TO LOAD (Hugh, 2026-10-11). A deck that has never been analyzed
+ * has nothing to open: its empty state, the Analyze offer, is the answer, drawn at once, and the
+ * loader never appears. The tools below it (the hub's tiles, Proposed cuts, Mana Balance) fill in
+ * as their own reads land, in states they already draw.
  */
+/**
+ * Whether the deck counts as ANALYZED for the opening: a stored reading the page read, one already
+ * on screen, or a stored read that FAILED. A failure says nothing either way, so it keeps #1025's
+ * hold: taken for "never analyzed", a peek that then finds a reading would swap the empty state out
+ * from under the reader.
+ */
+export function deckAnalyzed({ storedPermits, hasReading, storedUnknown }: {
+  storedPermits: readonly unknown[] | null;
+  hasReading: boolean;
+  storedUnknown: boolean;
+}): boolean {
+  return storedPermits !== null || hasReading || storedUnknown;
+}
+
 export function holdsOpening({
+  analyzed,
   peekPending,
   overviewSettled,
   hasReading,
   suggestionsSettled,
   cutsSettled = true,
 }: {
+  /** The deck has a reading: one stored, or one already on screen. False draws the tab at once. */
+  analyzed: boolean;
   /** `isOpening`'s answer: a stored reading still being fetched. */
   peekPending: boolean;
   overviewSettled: boolean;
   hasReading: boolean;
   suggestionsSettled: boolean;
-  /** Proposed cuts' first read, when the tool is on. It needs no reading (an overfull deck has
-   *  none), so it is held on its own and not behind `hasReading`. True when the tool is off. */
+  /** Proposed cuts' first read, when the tool is on. It needs no reading drawn, so it is held
+   *  on its own and not behind `hasReading`, but like every hold only for an `analyzed` deck: a
+   *  deck never analyzed opens at once and the tool fills in. True when the tool is off. */
   cutsSettled?: boolean;
 }): boolean {
+  if (!analyzed) return false;
   return peekPending || !overviewSettled || (hasReading && !suggestionsSettled) || !cutsSettled;
 }
 

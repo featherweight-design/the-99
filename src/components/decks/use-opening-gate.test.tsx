@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { holdsOpening, isOpening, OPENING_CEILING_MS, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
+import { deckAnalyzed, holdsOpening, isOpening, OPENING_CEILING_MS, OPENING_DELAY_MS, OPENING_HOLD_MS, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -108,16 +108,21 @@ describe("isOpening", () => {
 // Hugh's staging walk, 2026-09-25: the opening waits on everything the tab paints, not on the
 // stored reading alone, and once a visit has opened nothing brings the loader back.
 describe("what the opening waits on", () => {
-  const all = { peekPending: false, overviewSettled: true, hasReading: true, suggestionsSettled: true };
+  const all = { analyzed: true, peekPending: false, overviewSettled: true, hasReading: true, suggestionsSettled: true };
 
   it("lets go only once the reading, the overview and Suggested changes have all answered", () => {
     expect(holdsOpening(all)).toBe(false);
     expect(holdsOpening({ ...all, peekPending: true })).toBe(true);
     expect(holdsOpening({ ...all, overviewSettled: false })).toBe(true);
-    // Proposed cuts holds the opening with no reading at all (an overfull deck has none).
+    // Proposed cuts holds an analyzed deck's opening even with no reading drawn on screen.
     expect(holdsOpening({ ...all, hasReading: false, cutsSettled: false })).toBe(true);
     expect(holdsOpening({ ...all, hasReading: false, cutsSettled: true })).toBe(false);
     expect(holdsOpening({ ...all, suggestionsSettled: false })).toBe(true);
+  });
+
+  // Hugh, 2026-10-11: a deck never analyzed has nothing to open, so its empty state draws at once.
+  it("holds nothing for a deck that has never been analyzed, whatever else is still out", () => {
+    expect(holdsOpening({ analyzed: false, peekPending: false, overviewSettled: false, hasReading: false, suggestionsSettled: false, cutsSettled: false })).toBe(false);
   });
 
   it("does not wait on Suggested changes where there is no reading, since none is drawn", () => {
@@ -176,5 +181,26 @@ describe("what the opening waits on", () => {
   it("never gates a tab that is not shown", () => {
     const { result } = renderHook(() => useOpenOnce(true, "d:1", false));
     expect(result.current).toBe(false);
+  });
+});
+
+describe("deckAnalyzed", () => {
+  it("is false only when the stored read answered that there is none and nothing is on screen", () => {
+    expect(deckAnalyzed({ storedPermits: null, hasReading: false, storedUnknown: false })).toBe(false);
+    expect(deckAnalyzed({ storedPermits: [2, 3], hasReading: false, storedUnknown: false })).toBe(true);
+    expect(deckAnalyzed({ storedPermits: null, hasReading: true, storedUnknown: false })).toBe(true);
+  });
+
+  it("keeps the hold when the stored read failed: a failure is not proof of no analysis", () => {
+    expect(deckAnalyzed({ storedPermits: null, hasReading: false, storedUnknown: true })).toBe(true);
+  });
+});
+
+describe("isOpening after a failed stored read", () => {
+  it("waits on the peek, since a reading may yet be found", () => {
+    const failed = { shown: true, kind: "idle", storedPermits: null, peekSettled: false };
+    expect(isOpening(failed)).toBe(false);
+    expect(isOpening({ ...failed, storedUnknown: true })).toBe(true);
+    expect(isOpening({ ...failed, storedUnknown: true, peekSettled: true })).toBe(false);
   });
 });
