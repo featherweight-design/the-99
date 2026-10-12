@@ -278,6 +278,18 @@ function helm(version: Before | null): string | null {
   return copy.commanderPair(version.commanderName, version.partnerName);
 }
 
+
+/** The rail's cache key for one version's diff. A v1's diff depends on what it is diffed against
+ *  (v0, or nothing), so a link that changes on this page (unlink, then link another precon) names
+ *  a different entry, and the rail keys the open panel on it so the panel remounts. */
+export function diffCacheKey(
+  version: { id: string },
+  previous: { id: string } | null,
+  origin: { fileName: string } | null,
+): string {
+  return previous !== null ? version.id : `${version.id}@${origin?.fileName ?? ""}`;
+}
+
 /**
  * What a version changed, drawn in place under its rail row.
  *
@@ -315,12 +327,13 @@ export function VersionDiff({
 }) {
   const before: Before | null = previous ?? origin;
   const initial = before === null;
+  const key = diffCacheKey(version, previous, origin);
   // `"unavailable"` is a third state, not an empty payload: two empty lists are a
   // real answer for a version that moved no cards, and rendering a refused or
   // failed read as that answer claims something about the version the app does not
   // know.
   const [diff, setDiff] = useState<VersionDiffPayload | "unavailable" | null>(
-    initial ? { in: [], out: [], newestAsOf: null } : cache.get(version.id) ?? null,
+    initial ? { in: [], out: [], newestAsOf: null } : cache.get(key) ?? null,
   );
   // Phone only, and it decides which column is on screen rather than which one is
   // drawn twice.
@@ -339,7 +352,7 @@ export function VersionDiff({
     // that retry.
     getVersionDiff(deckId, version.id)
       .then((result) => {
-        if (result !== null) cache.set(version.id, result);
+        if (result !== null) cache.set(key, result);
         if (live) setDiff(result ?? "unavailable");
       })
       .catch(() => {

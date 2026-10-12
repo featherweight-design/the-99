@@ -238,6 +238,19 @@ function mountLinked(versions: VersionSummary[]) {
 const originRow = () => document.querySelector<HTMLElement>("[data-origin-row]")!;
 
 describe("VersionRail with v0", () => {
+  // v1's diff depends on its v0: a relink on this page (unlink, then another precon) must read v1
+  // again, open or not, rather than serve the old precon's rows under the new one's name.
+  it("reads v1's diff again when the deck is relinked to another precon", async () => {
+    getVersionDiff.mockClear();
+    const v1 = [version({ number: 1 })];
+    const { rerender } = render(<VersionRail deckId="deck_1" deckName="HD - Eldrazi" versions={v1} origin={ORIGIN} />);
+    fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
+    await waitFor(() => expect(getVersionDiff).toHaveBeenCalledTimes(1));
+    const other = { ...ORIGIN, fileName: "Other_C21", name: "Other Deck" };
+    rerender(<VersionRail deckId="deck_1" deckName="HD - Eldrazi" versions={v1} origin={other} />);
+    await waitFor(() => expect(getVersionDiff).toHaveBeenCalledTimes(2));
+  });
+
   // v0 is the precon's list, not a version the reader committed: three commits read three.
   it("counts committed versions only in the panel's heading", () => {
     mountLinked(THREE);

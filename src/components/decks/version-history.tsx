@@ -29,7 +29,7 @@ import type { VersionSummary } from "../../lib/decks/versions";
 import type { DeckOrigin } from "../../lib/precons/origin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { UnlinkDialog } from "./precons/precon-link-dialogs";
-import { VersionDiff, type VersionDiffPayload } from "./version-diff";
+import { diffCacheKey, VersionDiff, type VersionDiffPayload } from "./version-diff";
 
 const copy = deckVersioningCopy.history;
 
@@ -421,6 +421,7 @@ export function VersionRail({
               />
               {open && (
                 <VersionDiff
+                  key={diffCacheKey(version, previous, origin)}
                   deckId={deckId}
                   version={version}
                   previous={previous}
