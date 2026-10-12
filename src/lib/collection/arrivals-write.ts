@@ -16,7 +16,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, csvUploads, collectionItems, decks } from "../../db/schema";
+import { cardAssignments, cards, csvUploads, collectionItems, decks } from "../../db/schema";
 import {
   arrivalPlacement, buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
 } from "./arrivals";
@@ -146,8 +146,24 @@ export async function writeArrivalsReceipt(args: {
   let placements: Record<string, Placement> | undefined;
   if (args.addedCopy ?? addedCopyEnabled()) {
     placements = {};
+    // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`), the
+    // one `regrant` needs to say which reservation the smaller supply covered.
+    const reservations = new Map<string, { deckId: string; copies: number }[]>();
+    if (availability.size > 0) {
+      for (const r of await db
+        .select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+        .from(cardAssignments)
+        .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, [...availability.keys()])))
+        .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
+        reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
+      }
+    }
     for (const [oracleId, a] of availability) {
-      placements[oracleId] = arrivalPlacement(a, (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0));
+      placements[oracleId] = arrivalPlacement(
+        a,
+        (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0),
+        reservations.get(oracleId) ?? [],
+      );
     }
   }
 

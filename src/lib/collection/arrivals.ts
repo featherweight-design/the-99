@@ -325,12 +325,17 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
  * allocation over the copies held before, with the player's reservations granted as the claim
  * model would have granted them out of that smaller supply (`regrant`). So a pick this import
  * filled reads as `which you picked earlier`, not as seniority.
+ *
+ * `reservations` are this card's `card_assignments` rows OLDEST FIRST, `(created_at, deck_id)`:
+ * the claim model's own order, which decides which of two reservations a smaller supply covers.
+ * Never the claims' order, which is by deck name.
  */
-export function arrivalPlacement(after: Pick<Availability, "owned" | "claims">, brought: number): Placement {
-  const grants = after.claims
-    .filter((c) => (c.granted ?? 0) > 0)
-    .map((c) => ({ deckId: c.id, copies: c.granted ?? 0 }));
-  return placementsOf(regrant({ ...after, owned: Math.max(after.owned - brought, 0) }, grants), after);
+export function arrivalPlacement(
+  after: Pick<Availability, "owned" | "claims">,
+  brought: number,
+  reservations: readonly { deckId: string; copies: number }[],
+): Placement {
+  return placementsOf(regrant({ ...after, owned: Math.max(after.owned - brought, 0) }, reservations), after);
 }
 
 /** One card's placement, as the receipt freezes it. A deck that holds a copy wins over a soft read. */

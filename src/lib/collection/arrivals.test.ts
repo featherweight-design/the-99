@@ -390,19 +390,28 @@ describe("arrivalPlacement", () => {
 
   it("gives the import's copy to the deck seniority now covers", () => {
     const after = { owned: 2, claims: [claim("a", 1), claim("b", 2)] };
-    expect(arrivalPlacement(after, 1).held).toEqual([{ deckId: "b", deckName: "deck b", copies: 1, picked: false }]);
+    expect(arrivalPlacement(after, 1, []).held).toEqual([{ deckId: "b", deckName: "deck b", copies: 1, picked: false }]);
   });
 
   it("reads a reservation the import filled as a pick made earlier", () => {
     // No copy before: the player had picked the junior deck, which the claim model could not grant
     // until a copy arrived. The grant outranks seniority, so the senior deck still buys it.
     const after = { owned: 1, claims: [claim("a", 1), claim("b", 2, 1)] };
-    expect(arrivalPlacement(after, 1).held).toEqual([{ deckId: "b", deckName: "deck b", copies: 1, picked: true }]);
+    expect(arrivalPlacement(after, 1, [{ deckId: "b", copies: 1 }]).held).toEqual([{ deckId: "b", deckName: "deck b", copies: 1, picked: true }]);
   });
 
   it("reads a pick the collection already covered as no news", () => {
     // Two copies before: the pick was granted already, and the third copy goes nowhere.
     const after = { owned: 3, claims: [claim("a", 1), claim("b", 2, 1)] };
-    expect(arrivalPlacement(after, 1)).toEqual({ held: [], soft: [], unplaced: 1 });
+    expect(arrivalPlacement(after, 1, [{ deckId: "b", copies: 1 }])).toEqual({ held: [], soft: [], unplaced: 1 });
+  });
+
+  it("covers the OLDEST reservation from the smaller supply, whatever the decks are called", () => {
+    // Two reservations, both granted now that two copies are owned. Before the import there was
+    // one copy, and it went to `z`, reserved first; `a` sorts first by name and is the one the
+    // import filled.
+    const after = { owned: 2, claims: [claim("a", 1, 1), claim("z", 2, 1)] };
+    expect(arrivalPlacement(after, 1, [{ deckId: "z", copies: 1 }, { deckId: "a", copies: 1 }]).held)
+      .toEqual([{ deckId: "a", deckName: "deck a", copies: 1, picked: true }]);
   });
 });
