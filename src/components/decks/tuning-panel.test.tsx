@@ -1732,6 +1732,8 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
       await drawReview(deps([{ ...reviewed, run: { ...okRun, id: "r9", status, errorClass: status === "failed" ? "upstream_busy" : null } }]));
       expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
       expect(screen.queryByText(copy.loadingHeading)).toBeNull();
+      // Not the newer run's failure: the press stays Suggest again, never Try again.
+      expect(screen.queryByRole("button", { name: deckTuningCopy.failure.retry })).toBeNull();
       cleanup();
     }
   });
