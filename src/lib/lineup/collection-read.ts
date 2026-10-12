@@ -15,6 +15,7 @@ import { cards, collectionItems, commanderPairSupport, commanderPairSupportCards
 import { isBasicLand } from "../decks/grouping";
 import { summarisePrices, type PricedCard } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import { chainArt } from "../cards/chain-art";
 import { canonicalPair } from "../edhrec/pair-order";
 import type { LineupCollection } from "./types";
 
@@ -26,11 +27,11 @@ type Head = { deckId: string; commander: string; partner: string | null };
 
 export async function readCollection(userId: string, needs: readonly Need[], heads: readonly Head[], brews: ReadonlySet<string>): Promise<{ collection: LineupCollection; asOf: Date | null }> {
   const owned = (await db
-    .select({ oracleId: collectionItems.oracleId, name: cards.name, typeLine: cards.typeLine, copies: sql<number>`sum(${collectionItems.quantity})::int` })
+    .select({ oracleId: collectionItems.oracleId, name: cards.name, typeLine: cards.typeLine, imageUri: cards.imageUri, copies: sql<number>`sum(${collectionItems.quantity})::int` })
     .from(collectionItems)
     .innerJoin(cards, eq(cards.oracleId, collectionItems.oracleId))
     .where(eq(collectionItems.userId, userId))
-    .groupBy(collectionItems.oracleId, cards.name, cards.typeLine))
+    .groupBy(collectionItems.oracleId, cards.name, cards.typeLine, cards.imageUri))
     .filter((r) => r.copies > 0 && !isBasicLand(r.typeLine));
   const ids = owned.map((r) => r.oracleId);
   const singles = heads.filter((h) => !h.partner);
@@ -87,6 +88,9 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
   for (const r of single) for (const h of singles) if (h.commander === r.commander) add(r.oracleId, h.deckId, r.inclusion);
   for (const r of pair) for (const p of pairs) if (p.commanderOracleId === r.a && p.partnerOracleId === r.b) add(r.oracleId, p.deckId, r.inclusion);
 
+  const wanted = owned.filter((r) => hits.has(r.oracleId));
+  // Each wanted name previews the printing card details opens: the one the player owns (the chain, at the draw).
+  const art = await chainArt(userId, null, wanted.map((r) => r.oracleId));
   return {
     asOf: read.newestAsOf,
     collection: {
@@ -95,9 +99,10 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
       valueCents: summarisePrices(owned.map((r) => priced(r.oracleId, r.copies)), read.newestAsOf).totalCents,
       all: scope(needAll),
       finished: scope(needFinished),
-      wanted: owned.filter((r) => hits.has(r.oracleId)).map((r) => ({
+      wanted: wanted.map((r) => ({
         oracleId: r.oracleId,
         name: r.name,
+        imageUri: art.get(r.oracleId) ?? r.imageUri,
         owned: r.copies,
         wants: wantsByCard.get(r.oracleId) ?? [],
         hits: hits.get(r.oracleId)!,

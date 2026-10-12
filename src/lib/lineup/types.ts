@@ -58,7 +58,7 @@ export type LineupCollection = {
   all: { inDeckCopies: number; inDeckCents: number };
   finished: { inDeckCopies: number; inDeckCents: number };
   /** Owned cards a deck's commander list carries at 20% or more: what each deck wants, and its share. */
-  wanted: { oracleId: string; name: string; owned: number; wants: { deckId: string; n: number }[]; hits: { deckId: string; pct: number }[] }[];
+  wanted: { oracleId: string; name: string; imageUri: string | null; owned: number; wants: { deckId: string; n: number }[]; hits: { deckId: string; pct: number }[] }[];
 };
 
 export type LineupData = {

@@ -10,6 +10,7 @@ import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { collectionScope, CUTS, wantedRows, WANTED_ROWS } from "../../../lib/lineup/collection";
 import type { LineupCollection, LineupDeck, LineupFilter } from "../../../lib/lineup/types";
 import { CardDetailTrigger } from "../../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../hover-preview";
 import { DeckName } from "./deck-link";
 import { DeckSelect } from "./deck-select";
 import { CHIP_OFF, CHIP_ON } from "./worth-card";
@@ -65,13 +66,13 @@ export function CollectionBody({ c, decks, filter, age }: {
             <button key={p} type="button" aria-pressed={cut === p} onClick={() => setCut(p)} className={cut === p ? CHIP_ON : CHIP_OFF}>{copy.cut(p, at(p).length)}</button>
           ))}
         </div>
-        <div className="flex flex-col">
+        <HoverPreviewProvider className="flex flex-col">
           {shown.length === 0 ? <span className="py-[9px] text-[12.5px] text-[color:var(--fg-body)]">{copy.none}</span> : null}
           {shown.slice(0, chosen ? shown.length : WANTED_ROWS).map((r) => {
             const d = byId.get(r.deckId)!;
             return (
               <div key={r.oracleId} data-stats-wanted={r.oracleId} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-[12px] gap-y-[3px] border-b border-b-[color:var(--border)] py-[9px]">
-                <CardDetailTrigger oracleId={r.oracleId} name={r.name} className="cursor-pointer p-0 text-left text-[13.5px] text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--fg-faint)] underline-offset-[3px]">{r.name}</CardDetailTrigger>
+                <CardDetailTrigger oracleId={r.oracleId} name={r.name} imageUri={r.imageUri} preview className="cursor-pointer p-0 text-left text-[13.5px] text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--fg-faint)] underline-offset-[3px]">{r.name}</CardDetailTrigger>
                 <span className="text-right font-mono text-[11px] text-[color:var(--fg)]">{copy.wantShare(r.pct)} <span className="text-[color:var(--fg-faint)]">{copy.wantBasis(d.basis)}</span></span>
                 <span className="col-span-2 flex flex-wrap items-center gap-x-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                   {copy.wantCopies(r.idle)} ·<DeckName id={d.id} name={d.name} identity={d.identity} small />
@@ -79,7 +80,7 @@ export function CollectionBody({ c, decks, filter, age }: {
               </div>
             );
           })}
-        </div>
+        </HoverPreviewProvider>
         {!chosen && shown.length > WANTED_ROWS ? <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.more(shown.length - WANTED_ROWS)}</span> : null}
       </div>
       <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(age)}</span>

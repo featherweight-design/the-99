@@ -289,9 +289,9 @@ describe("LineupView: your collection, put to work", () => {
       all: { inDeckCopies: 40, inDeckCents: 21_000 },
       finished: { inDeckCopies: 30, inDeckCents: 15_000 },
       wanted: [
-        { oracleId: "boots", name: "Swiftfoot Boots", owned: 2, wants: [], hits: [{ deckId: "gishath", pct: 58 }, { deckId: "tovolar", pct: 25 }] },
-        { oracleId: "beast", name: "Beast Within", owned: 1, wants: [], hits: [{ deckId: "tovolar", pct: 47 }] },
-        { oracleId: "path", name: "Path to Exile", owned: 1, wants: [], hits: [{ deckId: "scrappy", pct: 22 }] },
+        { oracleId: "boots", name: "Swiftfoot Boots", imageUri: null, owned: 2, wants: [], hits: [{ deckId: "gishath", pct: 58 }, { deckId: "tovolar", pct: 25 }] },
+        { oracleId: "beast", name: "Beast Within", imageUri: null, owned: 1, wants: [], hits: [{ deckId: "tovolar", pct: 47 }] },
+        { oracleId: "path", name: "Path to Exile", imageUri: null, owned: 1, wants: [], hits: [{ deckId: "scrappy", pct: 22 }] },
       ],
     },
   };

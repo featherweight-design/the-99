@@ -58,6 +58,7 @@ const FEEDERS: Record<string, string> = {
   // `lib/precons/open-read.ts` and the page's `viewPrintings`), not the owned-printing chain, by design.
   "components/decks/read-only-card-tile.tsx": "",
   "components/decks/lineup/shared-card.tsx": "lib/lineup/load.ts",
+  "components/decks/lineup/collection-card.tsx": "lib/lineup/collection-read.ts",
 };
 
 function walk(dir: string): string[] {

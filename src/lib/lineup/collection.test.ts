@@ -8,18 +8,18 @@ const C: LineupCollection = {
   finished: { inDeckCopies: 30, inDeckCents: 30_000 },
   wanted: [
     // Two copies, one in deck a: one idle. Gishath's decks run it at 58%, a's at 30%.
-    { oracleId: "boots", name: "Swiftfoot Boots", owned: 2, wants: [{ deckId: "a", n: 1 }], hits: [{ deckId: "g", pct: 58 }, { deckId: "a", pct: 30 }] },
+    { oracleId: "boots", name: "Swiftfoot Boots", imageUri: null, owned: 2, wants: [{ deckId: "a", n: 1 }], hits: [{ deckId: "g", pct: 58 }, { deckId: "a", pct: 30 }] },
     // Every copy in a deck: not idle.
-    { oracleId: "sol", name: "Sol Ring", owned: 1, wants: [{ deckId: "g", n: 1 }], hits: [{ deckId: "g", pct: 90 }] },
-    { oracleId: "beast", name: "Beast Within", owned: 1, wants: [], hits: [{ deckId: "b", pct: 47 }] },
+    { oracleId: "sol", name: "Sol Ring", imageUri: null, owned: 1, wants: [{ deckId: "g", n: 1 }], hits: [{ deckId: "g", pct: 90 }] },
+    { oracleId: "beast", name: "Beast Within", imageUri: null, owned: 1, wants: [], hits: [{ deckId: "b", pct: 47 }] },
   ],
 };
 
 describe("wantedRows", () => {
   it("lists idle owned copies once, at the best share among the decks in scope, most first", () => {
     expect(wantedRows(C, new Set(["a", "g", "b"]), null)).toEqual([
-      { oracleId: "boots", name: "Swiftfoot Boots", pct: 58, deckId: "g", idle: 1 },
-      { oracleId: "beast", name: "Beast Within", pct: 47, deckId: "b", idle: 1 },
+      { oracleId: "boots", name: "Swiftfoot Boots", imageUri: null, pct: 58, deckId: "g", idle: 1 },
+      { oracleId: "beast", name: "Beast Within", imageUri: null, pct: 47, deckId: "b", idle: 1 },
     ]);
   });
 

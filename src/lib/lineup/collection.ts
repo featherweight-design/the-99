@@ -4,7 +4,7 @@
 import { byName } from "./figures";
 import type { LineupCollection, LineupFilter } from "./types";
 
-export type WantedRow = { oracleId: string; name: string; pct: number; deckId: string; idle: number };
+export type WantedRow = { oracleId: string; name: string; imageUri: string | null; pct: number; deckId: string; idle: number };
 
 export const WANTED_ROWS = 5;
 export const CUTS = [40, 20] as const;
@@ -22,7 +22,7 @@ export function wantedRows(c: LineupCollection, inScope: ReadonlySet<string>, de
     const hits = w.hits.filter((h) => inScope.has(h.deckId) && (deckId === null || h.deckId === deckId));
     if (hits.length === 0) return [];
     const best = hits.reduce((a, h) => (h.pct > a.pct ? h : a));
-    return [{ oracleId: w.oracleId, name: w.name, pct: best.pct, deckId: best.deckId, idle }];
+    return [{ oracleId: w.oracleId, name: w.name, imageUri: w.imageUri, pct: best.pct, deckId: best.deckId, idle }];
   }).sort((a, b) => b.pct - a.pct || byName(a.name, b.name));
 }
 
