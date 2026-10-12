@@ -36,6 +36,14 @@ import { PendingReporter } from "../shell/pending-reporter";
  * them whole is what lets that page both read the answers and send *Back to results* to the very
  * screen the press came from (`handOffFrom`).
  */
+/**
+ * Whether a reason can be drawn: every deck it names resolves to a name. A reason naming a deck
+ * deleted since draws no line at all, since dropping only the name would leave a hole in it.
+ */
+export function reasonDrawable(reason: readonly ReasonPart[] | undefined, deckNames: Readonly<Record<string, string>>): boolean {
+  return !!reason && reason.length > 0 && reason.every((part) => "text" in part || deckNames[part.deck] !== undefined);
+}
+
 export function handOffHref(oracleId: string, p: ChooseParams): string {
   const rest = serializeChooseParams({ ...p, results: true }).slice(1);
   return `/decks/new?${new URLSearchParams({ commander: oracleId }).toString()}&${rest}`;
@@ -78,10 +86,7 @@ export function ChooseRow({
   deckNames?: Readonly<Record<string, string>>;
 }) {
   const href = handOffHref(row.oracleId, params);
-  // A reason naming a deck that no longer resolves (deleted since) is drawn not at all: dropping only
-  // the name would leave a sentence with a hole in it ("Unlike , it ...").
-  const whole = row.reason?.every((part) => "text" in part || deckNames[part.deck] !== undefined) ?? false;
-  const reason = row.reason && row.reason.length > 0 && whole ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
+  const reason = row.reason && reasonDrawable(row.reason, deckNames) ? <Reason parts={row.reason} deckNames={deckNames} /> : null;
   const own = (
     <OwnershipLine
       mark={row.mark}

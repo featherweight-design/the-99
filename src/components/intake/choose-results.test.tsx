@@ -69,8 +69,17 @@ describe("the results under a read (the read addendum R1)", () => {
     expect(moreRows.mock.calls.at(-1)![0]).toBe("t=dinosaurs&v=results&r=abc");
   });
 
+  it("promises a line for each pick only when every pick draws one", () => {
+    // The first pick's reason names DECK, which this reader no longer has: its row draws no line.
+    draw(picked(14, 3), "done", [], {});
+    expect(document.body.textContent).toContain("The read’s three picks lead, closest first. The rest follow");
+    cleanup();
+    draw(picked(14, 3), "done", [], { [DECK]: "Omnath" });
+    expect(document.body.textContent).toContain("The read’s three picks lead, closest first, each with a line on why.");
+  });
+
   it("counts the read's own picks in the head, and names the rest's order as it is", () => {
-    draw(picked(14, 3, "fit"), "done", [], {});
+    draw(picked(14, 3, "fit"), "done", [], { [DECK]: "Omnath" });
     expect(document.body.textContent).toContain("The read’s three picks lead, closest first, each with a line on why. The rest follow in your answers’ order.");
   });
 

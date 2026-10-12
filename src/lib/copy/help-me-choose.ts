@@ -239,9 +239,12 @@ export const helpMeChooseCopy = {
     handOff: (name: string) => `Start a deck with ${name}`, // eng: the row's press, spoken
     // The read's order (the read addendum R1).
     byWords: "Ordered by what you wrote",
-    /** `picks`: how many the read chose; `owned`: whether the rest are in the owned order. */
-    byWordsSub: (picks: number, owned: boolean) =>
-      `${picks === 1 ? "The read’s one pick leads, with a line on why." : `The read’s ${numberWord(picks)} picks lead, closest first, each with a line on why.`} ${owned ? "The rest follow, ordered by cards you already have." : "The rest follow in your answers’ order."}`,
+    /**
+     * `picks`: how many the read chose; `owned`: whether the rest are in the owned order; `lines`:
+     * whether every pick draws its line (one naming a deck deleted since draws none).
+     */
+    byWordsSub: (picks: number, owned: boolean, lines = true) =>
+      `${picks === 1 ? `The read’s one pick leads${lines ? ", with a line on why" : ""}.` : `The read’s ${numberWord(picks)} picks lead, closest first${lines ? ", each with a line on why" : ""}.`} ${owned ? "The rest follow, ordered by cards you already have." : "The rest follow in your answers’ order."}`,
     pendingSub: "What you wrote isn’t in this order yet. These are your answers’ results, and they stay until the read is done.",
     notReadSub: "Commanders your answers allow, owned or not, whose decks run the most cards you already have.",
     restHead: "The rest of your results",

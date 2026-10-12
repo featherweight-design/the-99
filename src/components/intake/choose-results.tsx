@@ -15,7 +15,7 @@ import type { ChooseParams } from "../../lib/intake/params";
 import { figures, narrowOptions, orderLine, type Labels } from "../../lib/intake/present";
 import type { ResultRow, ResultsPage } from "../../lib/intake/rows";
 import { TOO_NARROW_BELOW } from "../../lib/intake/vocabulary";
-import { ChooseRow, type Trial } from "./choose-row";
+import { ChooseRow, reasonDrawable, type Trial } from "./choose-row";
 import { useReadPhase, useReportPool } from "./read-panel";
 import { NarrowNote } from "./narrow-note";
 
@@ -100,7 +100,15 @@ export function ChooseResults({
   // The read's order (the read addendum R1): its picks lead once it is done; while it runs, and
   // when it was never read into this order, the free order's own title says what orders the rows.
   const line =
-    read === "done" ? { title: copy.results.byWords, sub: copy.results.byWordsSub(page.rows.filter((r) => r.reason).length, page.order === "owned") }
+    read === "done" ? {
+      title: copy.results.byWords,
+      sub: copy.results.byWordsSub(
+        page.rows.filter((r) => r.reason).length,
+        page.order === "owned",
+        // The same check the row draws by, so the head never promises a line a row leaves out.
+        page.rows.every((r) => !r.reason || reasonDrawable(r.reason, deckNames ?? {})),
+      ),
+    }
     : read === "reading" ? { title: free.title, sub: copy.results.pendingSub }
     : read !== null && page.order === "owned" ? { title: free.title, sub: copy.results.notReadSub }
     : free;
