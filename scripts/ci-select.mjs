@@ -14,8 +14,20 @@ const lines = (s) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 const event = process.env.GITHUB_EVENT_NAME ?? "";
 const base = process.env.CI_BASE_REF || "origin/main";
 // Tests the vitest config includes; keep in step with `include` in vitest.config.ts.
-const allTests = lines(sh("git", ["ls-files", "src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.mts"]));
+const allTests = lines(sh("git", ["ls-files", ":(glob)src/**/*.test.ts", ":(glob)src/**/*.test.tsx", ":(glob)scripts/**/*.test.mts"]));
 if (allTests.length < 100) throw new Error(`found only ${allTests.length} test files; the pathspec is wrong`);
+
+// The pathspec above restates vitest's `include`. Vitest's own listing is the authority, so a drift
+// (it once skipped files directly under src/ and scripts/) fails here instead of silently shrinking a selection.
+{
+  const all = spawnSync("npx", ["vitest", "list", "--filesOnly"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (all.status !== 0) throw new Error(`vitest list failed (${all.status}): ${all.stderr || all.stdout}`);
+  const listed = lines(all.stdout).sort();
+  if (JSON.stringify(listed) !== JSON.stringify([...allTests].sort())) {
+    const missing = listed.filter((f) => !allTests.includes(f));
+    throw new Error(`pathspec and vitest disagree on the test files; vitest lists ${missing.length} we do not: ${missing.slice(0, 5).join(", ")}`);
+  }
+}
 
 let changed = [];
 let related = [];

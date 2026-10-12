@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # `labeled` so adding `ci:full` re-runs with the full suite forced.
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
 
@@ -45,6 +47,7 @@ jobs:
       - name: Select tests
         env:
           CI_BASE_REF: origin/${{ github.base_ref || 'main' }}
+          CI_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') && '1' || '' }}
         run: node scripts/ci-select.mjs
 
   # Static checks and the build. Tests run in their own sharded job so the slowest step of the old
