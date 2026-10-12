@@ -14,7 +14,7 @@ import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { creditLine } from "../ui/credit-line-matcher";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
-  applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(),
+  applySuggestion: vi.fn(), dismissSuggestion: vi.fn(),
   readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(),
   saveDeckLimits: vi.fn(async () => ({ ok: true })), undoSuggestion: vi.fn(),
 }));
@@ -61,7 +61,6 @@ function deps(states: TuningState[], over: Partial<TuningDeps> = {}): TuningDeps
   return {
     read: vi.fn(async () => (queue.length > 1 ? queue.shift()! : queue[0])),
     run: vi.fn(ok),
-    cancel: vi.fn(ok),
     card: { apply: ok, undo: ok, reject: ok, restore: ok },
     ...over,
   };
@@ -252,7 +251,7 @@ describe("TuningPanel", () => {
     }
   });
 
-  it("grows a mono long-wait line past 20 seconds, with Stop still offered", async () => {
+  it("grows a mono long-wait line past 20 seconds, and offers no Stop", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const run = vi.fn(() => new Promise<{ ok: true }>(() => {}));
@@ -264,7 +263,7 @@ describe("TuningPanel", () => {
         await vi.advanceTimersByTimeAsync(20_000);
       });
       expect(screen.getByText(deckDescriptionCopy.manifest.writingLong)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: copy.stop })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /stop/i })).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -292,40 +291,6 @@ describe("TuningPanel", () => {
     expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
   });
 
-  // Pre-open review round 4 (previously missed): the re-entry guard set at the start of a press
-  // stayed held until `pressRun` itself settled — up to the model's own timeout — even after
-  // Stop had already cancelled that run and reset the visible state. A second Suggest press
-  // during that window silently did nothing.
-  it("releases the re-entry guard on Stop, letting Suggest start a new run while the first request is still unresolved", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    // This panel's own press stamps its run with `crypto.randomUUID()` — fixed here so Stop's
-    // own read (by that id) matches the fixture below.
-    const randomUUID = vi.spyOn(crypto, "randomUUID").mockReturnValue("r2" as unknown as ReturnType<typeof crypto.randomUUID>);
-    try {
-      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
-      // The run itself never settles — the thing Stop cannot abort.
-      const run = vi.fn(() => new Promise<never>(() => {}));
-      const d = deps([fresh, pending, cancelled], { run });
-      await draw(d);
-      await press(copy.suggest);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(0);
-      });
-      expect(run).toHaveBeenCalledTimes(1);
-      await press(copy.stop);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
-      });
-      expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
-      await press(copy.suggest);
-      expect(run).toHaveBeenCalledTimes(2);
-    } finally {
-      randomUUID.mockRestore();
-      vi.useRealTimers();
-    }
-  });
-
   // Copilot review, previously missed: a run already pending when the panel opens (a reload, or
   // another tab) must still animate the checklist — reconstructed from the run's own
   // `createdAt`, since the stagger otherwise only ever starts inside `pressRun`.
@@ -337,57 +302,17 @@ describe("TuningPanel", () => {
     expect(document.querySelector('[data-kind="writing"][data-active]')).not.toBeNull();
   });
 
-  it("offers Stop only while a run is pending, and Stop cancels the pending run", async () => {
+  it("draws no Stop button while a run is pending", async () => {
     const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-    const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
-    const d = deps([pending, cancelled]);
-    await draw(d);
-    expect(screen.getByRole("button", { name: copy.stop })).toBeInTheDocument();
-    await press(copy.stop);
-    expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
-    expect(screen.queryByRole("button", { name: copy.stop })).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.stopped);
+    await draw(deps([pending]));
+    expect(screen.getByText(copy.reading)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /stop/i })).toBeNull();
   });
 
-  it("tries the cancel again while the same run is still pending", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    try {
-      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
-      const cancel = vi.fn()
-        .mockRejectedValueOnce(new Error("network"))
-        .mockResolvedValue({ ok: true });
-      const d = deps([pending, pending, cancelled], { cancel });
-      await draw(d);
-      await press(copy.stop);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
-      });
-      expect(cancel).toHaveBeenCalledTimes(2);
-      expect(screen.getByRole("status")).toHaveTextContent(deckTuningCopy.announce.stopped);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("never cancels a different run that became current after the watched one", async () => {
-    const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-    const other: TuningState = { ...fresh, run: { ...okRun, id: "r3", status: "pending" } };
-    const d = deps([pending, other]);
-    await draw(d);
-    await press(copy.stop);
-    expect(d.cancel).toHaveBeenCalledTimes(1);
-    expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
-    expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
-  });
-
-  it("claims no stop when the run settled before the cancel reached it", async () => {
-    const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-    const d = deps([pending, { ...results, run: { ...okRun, id: "r2" } }]);
-    await draw(d);
-    await press(copy.stop);
-    expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
-    expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
+  it("draws an old cancelled run as it always did: no failure, and the press offered", async () => {
+    await draw(deps([{ ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } }]));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: copy.suggest })).toBeInTheDocument();
   });
 
   it("renders an interrupted run with its own copy, and no suggestions", async () => {
@@ -612,97 +537,6 @@ describe("TuningPanel", () => {
     expect(screen.getByText(creditLine(creditsCopy.spent(5, back)))).toBeInTheDocument();
   });
 
-  it("cancels the run its own press started, by the id it gave it, and never another tab's", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    try {
-      // Another tab won the deck's one pending slot: every read shows its run, never this press's.
-      const theirs: TuningState = { ...fresh, run: { ...okRun, id: "r3", status: "pending" } };
-      const d = deps([fresh, theirs], { run: vi.fn(() => new Promise<never>(() => {})) });
-      await draw(d);
-      await press(copy.suggest);
-      const mine = (d.run as ReturnType<typeof vi.fn>).mock.calls[0][1].runId as string;
-      await press(copy.stop);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
-      });
-      expect(d.cancel).toHaveBeenCalledWith("d1", mine);
-      expect(d.cancel).not.toHaveBeenCalledWith("d1", "r3");
-      expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.stopped);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  // Copilot review: `staggerTimer`/`longWaitTimer` are shared refs. Stop lets a NEW press start
-  // while the first press's own `deps.run` is still unresolved; if that first run's promise
-  // settles LATE, after the second press has its own stagger running, it must not reach in and
-  // clear the SECOND press's live timers.
-  it("does not let a superseded run's late settle clear a newer press's own stagger", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const randomUUID = vi.spyOn(crypto, "randomUUID").mockReturnValue("r2" as unknown as ReturnType<typeof crypto.randomUUID>);
-    try {
-      let resolveFirst!: (v: { ok: true }) => void;
-      const run = vi.fn()
-        .mockImplementationOnce(() => new Promise<{ ok: true }>((resolve) => { resolveFirst = resolve; }))
-        .mockImplementationOnce(() => new Promise<{ ok: true }>(() => {}));
-      const pending: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "pending" } };
-      const cancelled: TuningState = { ...fresh, run: { ...okRun, id: "r2", status: "cancelled" } };
-      const d = deps([fresh, pending, cancelled], { run });
-      await draw(d);
-      await press(copy.suggest);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(0);
-      });
-      expect(run).toHaveBeenCalledTimes(1);
-      await press(copy.stop);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000);
-      });
-      expect(d.cancel).toHaveBeenCalledWith("d1", "r2");
-      await press(copy.suggest);
-      expect(run).toHaveBeenCalledTimes(2);
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(350);
-      });
-      const total = runSteps(facts, "go wide").length;
-      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(1);
-      // The first press's run settles now — late, and over a run this panel already stopped.
-      await act(async () => {
-        resolveFirst({ ok: true });
-        await Promise.resolve();
-        await Promise.resolve();
-      });
-      // The second press's own stagger is still running: it ticks further rows afterward.
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync((total - 1) * 350);
-      });
-      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
-    } finally {
-      randomUUID.mockRestore();
-      vi.useRealTimers();
-    }
-  });
-
-  it("lets a Stop pressed during the closing read own the panel", async () => {
-    let release: (s: TuningState) => void = () => {};
-    const reads = [
-      async () => fresh,
-      () => new Promise<TuningState>((r) => { release = r; }),
-      async () => fresh,
-    ];
-    let n = 0;
-    const d = deps([fresh], { read: vi.fn(() => reads[Math.min(n++, reads.length - 1)]()) });
-    await draw(d);
-    await press(copy.suggest);
-    // The run answered; its closing read is still in flight when Stop lands.
-    await press(copy.stop);
-    await act(async () => {
-      release(results);
-    });
-    expect(screen.queryByText("Rhystic Study")).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).not.toHaveTextContent(deckTuningCopy.announce.ready(1));
-  });
-
   it("retries a failed run over a kept set as an explicit anyway", async () => {
     const d = deps([{ ...results, run: { ...okRun, id: "r2", status: "failed", errorClass: "timeout" } }, results]);
     await draw(d);
@@ -717,7 +551,7 @@ describe("TuningPanel", () => {
     });
     await draw(d);
     await press(copy.suggest);
-    expect(screen.queryByRole("button", { name: copy.stop })).toBeNull();
+    expect(screen.queryByRole("button", { name: /stop/i })).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent(deckTuningCopy.run.refused);
   });
 

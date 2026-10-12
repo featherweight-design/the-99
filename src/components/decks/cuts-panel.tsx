@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
-  cancelProposedCuts,
   cutProposed,
   keepProposedCut,
   readCutsPanel,
@@ -48,7 +47,6 @@ export type CutsDeps = {
   /** `runId`: a past run History reopened (re-review), read in place of the newest. */
   read: (deckId: string, runId?: string | null) => Promise<CutsPanel | null>;
   run: (deckId: string, opts?: { runId?: string }) => Promise<DeckMutationResult>;
-  cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
   /** `review`: pressed on a reopened past run, so the server re-checks the card, not the run. */
   cut: (itemId: string, review?: boolean) => Promise<DeckMutationResult>;
   undo: (itemId: string, review?: boolean) => Promise<DeckMutationResult>;
@@ -57,14 +55,12 @@ export type CutsDeps = {
 };
 
 const SERVER: CutsDeps = {
-  read: readCutsPanel, run: runProposedCuts, cancel: cancelProposedCuts,
+  read: readCutsPanel, run: runProposedCuts,
   cut: cutProposed, undo: undoProposedCut, keep: keepProposedCut, restore: restoreProposedCut,
 };
 
 const copy = deckCutsCopy.panel;
 const WATCH_MS = 3000;
-const STOP_TRIES = 5;
-const STOP_WAIT_MS = 300;
 /** The counting frame appears only after this, so a fast read never flashes it. */
 const COUNTING_DELAY_MS = 400;
 
@@ -117,14 +113,8 @@ export function CutsPanelView({
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // Each press takes a token, so a superseded press's late answer is never drawn.
   const token = useRef(0);
-  const ownRun = useRef<string | null>(null);
-  // The run request this panel's own press made, and whether it has answered: Stop waits on it, because
-  // the server reads the deck and builds the prompt BEFORE it inserts the pending row Stop cancels.
-  // Stop is mid-flight: a second press must not enter it, and a new Look deeper waits for it.
-  const [stopping, setStopping] = useState(false);
-  const stopGuard = useRef(false);
-  const inflight = useRef<{ promise: Promise<unknown>; done: boolean } | null>(null);
   const settledRef = useRef(onSettled);
   useEffect(() => { settledRef.current = onSettled; }, [onSettled]);
 
@@ -241,11 +231,10 @@ export function CutsPanelView({
         : creditsCopy.standing(left, panel.allowance.limit, panel.allowance.nextAt);
 
   async function press() {
-    if (running || blocked || stopGuard.current) return;
+    if (running || blocked) return;
     const mine = ++token.current;
     if (review) { leftReview.current = true; review.leave?.(); }
     const runId = crypto.randomUUID();
-    ownRun.current = runId;
     setPressing(true);
     setStartedAt(Date.now());
     setNow(Date.now());
@@ -254,16 +243,12 @@ export function CutsPanelView({
     const request = deps.run(deckId, { runId }).catch(
       (): DeckMutationResult => ({ ok: false, message: deckCutsCopy.run.refused }),
     );
-    const flight = { promise: request, done: false };
-    inflight.current = flight;
-    void request.then(() => { flight.done = true; });
     const result = await request;
     // The action returns once the run is reserved; the server finishes it after the response. Read
     // until it settles (each read also redraws the panel's running state).
     // A panel left behind stops polling; the run is the server's and finishes regardless.
     const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current }) : null;
     if (token.current !== mine) return;
-    ownRun.current = null;
     const next = waited ?? await reread();
     if (token.current !== mine) return;
     setPressing(false);
@@ -279,55 +264,6 @@ export function CutsPanelView({
           : copy.announce.failed,
     );
     headingRef.current?.focus();
-  }
-
-  async function stop() {
-    if (stopGuard.current) return;
-    stopGuard.current = true;
-    setStopping(true);
-    try {
-      await stopRun();
-    } finally {
-      stopGuard.current = false;
-      setStopping(false);
-    }
-  }
-
-  async function stopRun() {
-    token.current += 1;
-    const own = ownRun.current;
-    ownRun.current = null;
-    const flight = own !== null ? inflight.current : null;
-    const target = own ?? pendingId;
-    let cancelled = false;
-    // A run this panel started may not have its pending row yet, so the cancel is retried until the
-    // row exists and is cancelled, or the request itself has answered (the credit is then spent, and
-    // the result is drawn). A run begun elsewhere is only looked for a few times.
-    for (let attempt = 0; target !== null; attempt += 1) {
-      await deps.cancel(deckId, target).catch(() => null);
-      const after = await deps.read(deckId).catch(() => null);
-      const seen = after?.run?.id === target ? after.run : null;
-      cancelled = seen?.status === "cancelled";
-      if (cancelled || (seen !== null && seen.status !== "pending") || (seen === null && own === null)) break;
-      if (flight ? flight.done : attempt >= STOP_TRIES - 1) break;
-      await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
-    }
-    if (flight && !cancelled) await flight.promise;
-    setPressing(false);
-    const next = await reread();
-    if (cancelled) {
-      setAnnounced(copy.announce.stopped);
-    } else if (own !== null && next?.run?.id === own && next.run.status !== "pending") {
-      // Stop lost the race: the run had already settled, and its own press stood down when Stop
-      // began. So say what `press` would have, and move focus to the heading.
-      const ran = next.run;
-      setAnnounced(
-        ran.status === "ok" ? copy.announce.ready(next.items.length)
-          : ran.status === "failed" && ran.errorClass === "ungrounded" ? copy.announce.refused
-            : copy.announce.failed,
-      );
-      headingRef.current?.focus();
-    }
   }
 
   /** Resolves true only when THIS re-read is the one drawn: a newer read asked meanwhile (another
@@ -382,13 +318,9 @@ export function CutsPanelView({
                 <div>
                   <p className="text-[13.5px] font-semibold" style={{ color: "var(--fg)" }}>{copy.deeper.pending}</p>
                   <p className="mt-[3px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-                    {`${copy.deeper.pendingRead} · ${clock(now - (startedAt ?? (run ? run.createdAt.getTime() : now)))} · ${copy.deeper.stopNote}`}
+                    {`${copy.deeper.pendingRead} · ${clock(now - (startedAt ?? (run ? run.createdAt.getTime() : now)))}`}
                   </p>
                 </div>
-                <button type="button" onClick={() => void stop()} disabled={stopping}
-                  className="h-[44px] rounded-[8px] px-[14px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:py-[10px] transition-colors">
-                  {copy.deeper.stop}
-                </button>
               </div>
             </Band>
           ) : failed && !refusedRun ? (

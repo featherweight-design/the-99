@@ -116,8 +116,6 @@ export const deckCutsCopy = {
       pending: "Looking deeper\u2026",
       pendingLead: (n: number) => `Naming ${numberWord(n)} ${n === 1 ? "cut" : "cuts"} from the count below. You can keep editing the deck while it reads.`,
       pendingRead: "reading the count and your description",
-      stop: "Stop",
-      stopNote: "stopping gives the credit back",
       resultHead: (n: number) => `${cap(numberWord(n))} to cut`,
       resultRead: "named by a deeper look \u00b7 read the count below and your description",
       /** After a capped run: how many are still over once these are dealt with. Placeholder owed to /copy-review. */
@@ -148,7 +146,6 @@ export const deckCutsCopy = {
       ready: (n: number) => `${numberWord(n)} ${n === 1 ? "cut" : "cuts"} named.`,
       refused: "The deeper look named nothing. Your credit is back.",
       failed: "The deeper look didn\u2019t finish. Your credit is back.",
-      stopped: "Stopped. Your credit is back.",
       cut: (name: string) => `Cut ${name}.`,
       undone: (name: string) => `Put ${name} back.`,
       kept: "Kept.",

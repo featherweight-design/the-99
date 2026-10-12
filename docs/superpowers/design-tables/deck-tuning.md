@@ -739,6 +739,8 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 
 ### Secondary button — `Stop` (state 3 only)
 
+> **Removed 2026-10-12** (Hugh): Suggested changes no longer draws Stop. The server finishes every run in `after()` and the panel polls, so a read always runs to its end. The rows below are kept as the record of what shipped.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | height | 44 | padding `11px 18px` |
@@ -1202,7 +1204,7 @@ Design drew four. The merged spec defines five; `interrupted` is undrawn and tak
 | Tuning panel (S4) | 1 · Below threshold | `games < PATTERN_MIN` | Heading; body = what it needs + what the games already lean toward with denominator (`cards in hand, 2 of 2`) + sub-line; manifest absent; primary `Suggest changes` disabled, no error; note `one more game — 2 of 3` | game count, `PATTERN_MIN`, leading axis + marked count |
 | Tuning panel (S4) | 2 · Ready | `games >= PATTERN_MIN`, no run yet, or immediately after a `Stop` | Heading; body = briefing with the strongest Fix in `--warning`, then the manifest with every row unchecked; primary `Suggest changes`; note `takes a few seconds · nothing changes until you say so` | game count, strongest axis + `{marked} of {count}`, manifest row data (games/notes/cards/collection, + intent if set) |
 | Tuning panel (S4) | 3 · Generating | A run is in flight | Panel border becomes `1px --accent`; body = preamble + the same manifest rows ticking as each read completes; primary `Reading…` non-interactive + neutral `Stop`; note `3 of 4 read` | per-read completion events, done count, total count |
-| Tuning panel (S4) | (transition) Stop | `Stop` pressed during state 3 | Returns to state 2 with the manifest unchecked; no error, no tag; announcement `Stopped. Nothing was changed.` | — |
+| Tuning panel (S4) | (transition) Stop, removed 2026-10-12 | `Stop` pressed during state 3 | Returns to state 2 with the manifest unchecked; no error, no tag; announcement `Stopped. Nothing was changed.` | — |
 | Tuning panel (S4) | 4 · Results | Run returned ≥ 1 usable (validated) suggestion | Heading; collapsed manifest as one mono line; results sentence; the suggestion cards; primary `Suggest again`; note `{open} of {total} still open · these stay until you replace them` | manifest parts for the collapsed line, suggestion list, open/applied/dismissed counts |
 | Tuning panel (S4) | 5 · Nothing has changed | Run returned the same set, or nothing new | Ordinary ink, no `--danger` anywhere; collapsed manifest line; sentence; the reason in exactly three countable rows (games / weakest axis / this deck is for); tail line; primary `Suggest again anyway`; note `{open} of {total} from {when} still open` | last-run date, games read + total, weakest axis + `{marked} of {count}`, intent-changed flag, previous suggestion count |
 | Tuning panel (S4) | 6a · Unavailable | Provider unreachable | `--danger` tag `unavailable` beside the heading; one plain sentence; mono line stating what survived (games, note, list, nothing charged); primary `Try again`; note `or come back later: the button will be here` (em dash set as a colon, 2026-09-13 sweep) | game count for the kept line |
@@ -1259,7 +1261,7 @@ Re-exports (imported from `game-log.ts`, redefined nowhere): `PATTERN_MIN`, `axi
 | `readyNote` | — (static) |
 | `generating` | — (static) |
 | `generatingCta` | — (static) |
-| `stop` | — (static) |
+| `stop` | — (static); removed 2026-10-12 |
 | `results` | `(n: string, total: string)` |
 | `resultsOne` | `(total: string)` |
 | `again` | — (static) |
@@ -1370,7 +1372,7 @@ Re-exports (imported from `game-log.ts`, redefined nowhere): `PATTERN_MIN`, `axi
 | `ready` | `(n: string)` |
 | `readyOne` | — (static) |
 | `unchanged` | — (static) |
-| `stopped` | — (static) |
+| `stopped` | — (static); removed 2026-10-12 |
 | `failed` | `(sentence: string)` |
 | `applied` | `(name: string, have: string, total: string, status: string)` |
 | `undone` | `(name: string, have: string, total: string, status: string)` |

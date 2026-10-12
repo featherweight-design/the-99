@@ -1821,7 +1821,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the undo snapshot, that Undo restores exactly and refuses over a moved deck, that a card locked
   after the run is refused at Cut and the commander is refused, the re-offer rule (a cut from a
   result re-chains the run's fingerprint; an unchained edit leaves it stale), that a second cuts
-  run on a deck is refused and Stop refunds. It also proves History's re-review: a run named by
+  run on a deck is refused and a failed run refunds (it proved Stop's refund until Stop was
+  removed, 2026-10-12). It also proves History's re-review: a run named by
   id is read with its own cuts while a newer ok run stands, never for another reader; each cut
   reads `inDeck` and `locked` live; in review a cut over a moved list is taken and undone, while a
   locked card and a card that has left are still refused, and a review Undo whose card has since

@@ -1,5 +1,5 @@
 // A tuning run's durability contract, proved against a real Postgres by calling the real
-// writers: `startRun`, `finishRun`, `persistRun`, `cancelRun`, `readTuningState`, the four
+// writers: `startRun`, `finishRun`, `persistRun`, `readTuningState`, the four
 // verdicts and `saveIntent`.
 //
 // Every rule here is a fact about what a transaction wrote: whether a guard held, whether a
@@ -14,7 +14,8 @@
 //      still records its bill on the unit, by the id `startRun` handed back. Looking the unit up
 //      through the run row instead fails "1b · and still records what it billed on the unit",
 //      once per outcome path (finishRun's and persistRun's, each mutated on its own).
-//   2  the player pressed Stop: a late failure writes nothing
+//   2  the run is written under the id the panel chose (it was Stop's case until Stop was
+//      removed on 2026-10-12)
 //   3  a second run on one deck is refused, and the loser holds no unit
 //   4  two decks race for one player's last unit, and exactly one wins
 //   5  apply refuses when the deck has moved, and changes nothing
@@ -60,7 +61,7 @@ import { buildEvidencePack } from "../src/lib/tuning/evidence";
 import { buildPrompt } from "../src/lib/tuning/prompt";
 import { validateSuggestions } from "../src/lib/tuning/validate";
 import { gateReason } from "../src/lib/tuning/gate";
-import { cancelRun, finishRun, persistRun, saveIntent, startRun } from "../src/lib/tuning/run-store";
+import { finishRun, persistRun, saveIntent, startRun } from "../src/lib/tuning/run-store";
 import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import type { ValidatedSuggestion } from "../src/lib/tuning/validate";
 import type { TuningResponse } from "../src/lib/tuning/response-schema";
@@ -229,24 +230,16 @@ async function run() {
     }
   }
 
-  // 2 · The player pressed Stop. The panel names its run, so Stop cancels that id and no other;
-  // a Stop that beats the row writes nothing, and the row then lands under the named id.
+  // 2 · The panel names its run, and the row lands under that id, so the panel waits on that run
+  // and no other (`await-run.ts`). Stop, which cancelled it, was removed on 2026-10-12.
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
     const chosen = randomUUID();
-    check("2 · a Stop before the row exists finds nothing", await cancelRun(chosen, deck, u), false);
     const started = await startRun(u, deck, "fp", null, { runId: chosen });
     if (started.kind !== "started") return fail("case 2 start", started.kind);
     check("2 · the run is written under the id the panel chose", started.runId, chosen);
-    check("2 · the Stop lands", await cancelRun(started.runId, deck, u), true);
-    const wrote = await finishRun(started, { status: "failed", errorClass: "timeout" }, lateBill);
-    check("2 · a late failure after the Stop reports superseded", wrote, false);
-    check("2 · and still records what it billed on the unit", await unitMeters(started.runId),
-      { output_tokens: 500, cost: "7000" });
-    check("2 · cancelled survives, unit refunded",
-      await runRow(started.runId), { status: "cancelled", error_class: null, unit: "refunded" });
-    check("2 · a second Stop finds nothing to stop", await cancelRun(started.runId, deck, u), false);
+    check("2 · and reads pending until it settles", (await runRow(started.runId))?.status ?? null, "pending");
   }
 
   // 3 · A second run on one deck, both sequentially and started together.

@@ -35,7 +35,7 @@ import { intentTooLong, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
-import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
+import { finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
 import { chooseRefusal, sizeLists, type ValidationReport } from "../../lib/tuning/validate";
 import { resolveAnswer } from "../../lib/tuning/answer";
@@ -184,8 +184,8 @@ export async function runTuning(
   const userId = await requireUserId();
   if (!tuningEnabled() || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
-  // The panel names its run so its Stop can cancel that run and no other. Anything but a uuid is
-  // refused rather than dropped: a Stop keyed on an id the row does not carry could never land.
+  // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
+  // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
   const requested = typeof opts === "object" && opts !== null ? opts.runId : undefined;
   if (requested !== undefined && (typeof requested !== "string" || !isUuid(requested))) {
     return { ok: false, message: deckTuningCopy.run.refused };
@@ -231,7 +231,7 @@ export async function runTuning(
   const run = { runId: started.runId, callId: started.callId };
   // What the call was billed for, once it returned. Every outcome write after that records it: a
   // failed one, since a refund still burned the tokens, and a late one that finds the run already
-  // Stopped or reaped, since the call billed all the same (`run-store.ts`, `recordLate`).
+  // reaped, since the call billed all the same (`run-store.ts`, `recordLate`).
   let billed: Billed | undefined;
   const fail = async (
     errorClass: Parameters<typeof finishRun>[1]["errorClass"],
@@ -316,14 +316,6 @@ export async function runTuning(
     }
   };
   after(work);
-  return { ok: true };
-}
-
-/** Stop: the run the panel was watching, by id, so a late press cannot cancel the next one. */
-export async function cancelTuningRun(deckId: string, runId: string): Promise<DeckMutationResult> {
-  const userId = await requireUserId();
-  if (!tuningEnabled() || !isUuid(deckId) || !isUuid(runId)) return { ok: true };
-  if (await cancelRun(runId, deckId, userId)) revalidateDeck(deckId);
   return { ok: true };
 }
 

@@ -3,14 +3,14 @@
 // (`startCutsRun`, `persistCutsRun`), so the probe costs nothing.
 //
 // What only a database can answer, and a component test with a mocked read cannot:
-//   readCutsState: the newest run, the newest OK run and ITS items as one instant; a failed or
-//     stopped re-run leaves the last ok run's cuts standing; the allowance is this feature's own.
+//   readCutsState: the newest run, the newest OK run and ITS items as one instant; a failed
+//     re-run leaves the last ok run's cuts standing; the allowance is this feature's own.
 //   A cut writes the list: one copy out, the verdict and the undo snapshot with it; Undo puts the
 //     row back exactly, and refuses over a deck that has moved.
 //   A cut is refused when the card was locked while the run ran, and when it is the commander.
 //   THE RE-OFFER RULE: a cut made from a result re-chains the run's fingerprint, so the result is
 //     still current; an edit that is not one of its cuts is not chained, so it is stale.
-//   A second cuts run on one deck is refused, and a Stop refunds.
+//   A second cuts run on one deck is refused, and a failed run refunds.
 //
 // It clones a real over-100 deck (the first one it finds, or PROBE_CUTS_DECK) under a per-run
 // `user_id` and deletes the clone and its rows in a `finally`. Point it at `local-dev` or a scratch
@@ -28,7 +28,7 @@ process.env.ANALYSIS_TAB_ENABLED = "true";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const { readCutsState, readProposedCuts } = await import("../src/lib/decks/cuts-read");
-const { cancelCutsRun, finishCutsRun, persistCutsRun, startCutsRun } = await import("../src/lib/tuning/cuts-run-store");
+const { finishCutsRun, persistCutsRun, startCutsRun } = await import("../src/lib/tuning/cuts-run-store");
 const { cutItem, setCutKept, undoCutItem } = await import("../src/lib/tuning/cuts-verdicts");
 
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -69,13 +69,13 @@ try {
   const never = await readCutsState(deckId, USER);
   check("never run: no run, no items, no last ok", [never.run, never.items.length, never.lastOkFingerprint], [null, 0, null]);
 
-  // Stop refunds; a second run is refused while one is pending.
+  // A second run is refused while one is pending; a failed run refunds.
   const s1 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
   check("the first run starts", s1.kind, "started");
   const s2 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
   check("a second cuts run on one deck is refused", s2.kind, "in_flight");
   if (s1.kind === "started") {
-    check("Stop cancels the run", await cancelCutsRun(s1.runId, deckId, USER), true);
+    check("a failed run settles", await finishCutsRun(s1, { status: "failed", errorClass: "upstream_busy" }), true);
     check("and refunds its unit", (await q(`select status from model_calls where id = $1`, [s1.callId]))[0].status, "refunded");
   }
 
