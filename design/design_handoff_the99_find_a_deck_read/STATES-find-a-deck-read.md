@@ -16,7 +16,7 @@ Every frame is drawn at 900 (the 820 × 620 dialog) and 390 (the sheet from 0). 
 | P2 | view | running | band in `--accent` border: dot, `Reading {n} decks for {card}`, `{runningSub} · 0:12`, three still skeleton rows, `runningKeep`; free list open and live below. No Stop |
 | P2a | (no frame) | double press / reopened mid-run | the run in flight is shown (lock 5), never a second charge; the clock counts from the run’s start |
 | P2b | (no frame) | reader went back to details mid-run | under the door, mono `reading your decks…`; returning shows P2 or the result |
-| P2c | (no frame) | an Add from the free list mid-run | the add lands; when the read arrives, that deck reads as changed (P10) |
+| P2c | (no frame) | an Add from the free list mid-run | the add lands; when the read arrives, that deck is resolved, not changed: its row draws added (P3h), never P10 (READINESS-audit F2) |
 | P3 | view | result, 3–5 rows | `Where it helps most` · `read just now · {shown} of {n} decks`; rows: deck, commander · plan source, sentence with card marks, CUT line, `Swap in`; foot `Used a credit · {standing}`; the free list folded |
 | P3-act | every read row (R2) | the two actions | `Swap in` (accent outline) and `Add only` (quiet outline); select/unselect; pressing one disables the other on that row |
 | P3a | P3 row 1 | a row swapped in | button filled `Swapped in` (aria-pressed), row border `--accent`, cut struck, cut note `cutNoteSwapped`; head copies `×1 · none free` |

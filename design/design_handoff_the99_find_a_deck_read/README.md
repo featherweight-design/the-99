@@ -43,7 +43,7 @@ The three plan sources are on the rows: Goblins and Gishath read `plan from its 
 ### 1 · The view inside card details (ruling 2)
 - **Desktop:** the 322 art column stays and only the right pane changes. The card stays in sight while the reader decides where it goes, so the picker’s plate retires and the view head carries the identity and copies line.
 - **Phone:** the view takes the sheet from 0. The art band and the details stay mounted, `inert`, with their scroll kept.
-- **The way back:** `← {card}` is a pill top-left in the view head. ✕ stays where it is and closes the dialog. Escape and hardware Back go one layer: view → details, with focus on the door. Prev/Next and the footer hide in the view, so it never pages to another card.
+- **The way back (R2):** `← {card}` sits in the ✕’s slot, top-right, and there is no ✕ in the view; closing from the view is Escape twice, or the scrim on desktop. Escape and hardware Back go one layer: view → details, with focus on the door. Prev/Next and the footer hide in the view, so it never pages to another card.
 - **Motion:** 180ms, the sheet-snap curve, 16px slide + fade. A plain swap under reduced motion.
 - **Unchanged:** Stand-ins keeps the stacked geometry. A card opened from inside the view still stacks over the dialog, with its pill reading `← Find a deck for it`.
 - This reverses stacked-sheets call 7 for this picker only.
@@ -56,7 +56,7 @@ The three plan sources are on the rows: Goblins and Gishath read `plan from its 
 
 ### 3 · Loading
 The band turns `--accent` and names what it’s doing (`Reading 11 decks for Ajani Unrelenting`, `each deck’s plan and list, against the card’s text · 0:12`). Three still skeleton rows hold the read’s place, so nothing jumps when it lands.
-- **The free list stays visible and live:** it’s free and true. An Add made during the read just shows that deck as changed when the read lands.
+- **The free list stays visible and live:** it’s free and true. An Add made during the read resolves that deck: it now holds the card, so it reopens as added, never as changed (READINESS-audit F2).
 - **No Stop.** The credit is refunded on every bad outcome anyway, and the run outlives the view (lock 5). Back in details mid-run, the door carries `reading your decks…`.
 
 ### 4 · The result row (Open 3 and 5)
@@ -66,7 +66,7 @@ Each row has:
 - one sentence, with the deck’s own cards as card-open marks (the Overview’s dotted `--accent`)
 - the cut on its own line under a rule, so the sentence stays about the plan
 
-The row has one action, **Swap in**, which is `takeStandInAction` with the read’s cut. Every deck is full, so a plain Add would put it at 100.
+The row has two actions (R2): **Swap in**, which is `takeStandInAction` with the read’s cut, and **Add only**, today’s add with nothing cut, which puts the deck at 100 and says so. Pressing one disables the other on that row.
 - **Select/unselect, never a tick:** pressed, it fills `--accent` and reads `Swapped in` (`aria-pressed`), and the cut is struck. Pressed again, the swap is undone.
 - **Last copy:** once it’s spoken for, the other rows read `Swap in to buy`.
 - The free rows keep today’s Add and Add to buy.
