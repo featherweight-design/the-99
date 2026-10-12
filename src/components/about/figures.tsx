@@ -81,6 +81,7 @@ import { statusBarStyle } from "../../lib/decks/status-style";
 import type { StatusPill } from "../../lib/decks/status";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { allDecksCartCopy } from "../../lib/copy/all-decks-cart";
+import { formatCents } from "../../lib/decks/price";
 import { FitBar } from "../commanders/fit-bar";
 import {
   Specimen,
@@ -1063,10 +1064,10 @@ function AllDecksCartFigure({ width }: { width: AboutWidth }) {
     <Specimen
       label="all-decks-cart"
       width={width}
-      // The owned fact is the figure's alone: the keys dropped it because the line shows it, and the
-      // figure is hidden from assistive technology, so it is spoken here.
+      // The owned fact and the line's price are the figure's alone: the keys leave them to the line,
+      // and the figure is hidden from assistive technology, so they are spoken here.
       spokenAs={`${CART_LINE.name}. ${CART_LINE.copies} · ${CART_LINE.selectedRows
-        .map((r) => ALL_DECKS_CART_LINE.deckNames.get(r.deckId) ?? "").join(", ")}. ${allDecksCartCopy.list.owned(CART_LINE.owned)}`}
+        .map((r) => ALL_DECKS_CART_LINE.deckNames.get(r.deckId) ?? "").join(", ")}. ${allDecksCartCopy.list.owned(CART_LINE.owned)}. ${formatCents(CART_LINE.cents)}`}
     >
       <AllDecksCartFigureBody />
     </Specimen>
