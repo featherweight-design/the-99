@@ -206,6 +206,11 @@ describe("helpAddColor: a trade can cut a card that is not a basic", () => {
     ]);
   });
 
+  it("gives a nonland staple the named nonland cards before a named land, whatever the run's order", () => {
+    const h = help(rows(), "G", [], [staple("Elfhat", ["G"]), staple("Signet", ["G", "U"])], undefined, { namedCuts: ["wolfrun", "weak"] });
+    expect(h.trades.map((t) => t.out.name)).toEqual(["Weak", "Wolfrun"]);
+  });
+
   it("never names a locked card, a card the deck no longer holds, or a basic as a named cut", () => {
     const h = help(rows(), "G", ["weak"], [staple("Elfhat", ["G"])], undefined, { namedCuts: ["weak", "gone", "island"] });
     expect(h.trades[0].out).toEqual({ id: "wolfrun", name: "Wolfrun", kind: "offPlanLand" });

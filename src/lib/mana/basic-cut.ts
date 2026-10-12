@@ -1,7 +1,7 @@
 /**
  * When a land may leave a deck (Hugh, 2026-10-12): only when the deck has lands to spare AND no color
- * the land makes is left short. One rule for every engine that cuts a land: Improve my mana's trade
- * and lane 92's basic-land cut both call this, so the two can never disagree about what a deck can spare.
+ * the land makes is left short. Written as the one rule for every engine that cuts a land: Improve my
+ * mana's trade calls it, and the basic-land cut (lane 92) is to call it rather than restate it.
  *
  * "Lands to spare" is the land count against the deck's land target (Mix's land cell, measured, else the
  * flat fallback). A land replaced by another land leaves the count where it was, so only the color half

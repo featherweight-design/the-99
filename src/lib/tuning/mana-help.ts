@@ -13,8 +13,9 @@
 // it nothing to spare.
 //
 // WHAT A TRADE CUTS (Hugh, 2026-10-12). Per staple, the first FAIR card of three tiers:
-//   1. a cut the deck's own tuning already named (Proposed cuts, then Suggested changes), in the run's order;
-//      a land staple takes only a land, so a trade never moves the land count up by itself;
+//   1. a cut the deck's own tuning already named (Proposed cuts, then Suggested changes), in the run's order,
+//      except that a nonland staple takes every named nonland card before a named land (like for like first),
+//      and a land staple takes only a land, so a trade never moves the land count up by itself;
 //   2. an off-plan land: a nonbasic land that makes none of the commander's colors, rarest in the
 //      commander's decks first;
 //   3. a basic, of the color with the most slack over its Needed AFTER this staple's own sources (ties: more
@@ -70,7 +71,8 @@ export type TradeMove = {
 /** What a trade may cut besides a basic, and the land target it answers to. Read by the loader. */
 export type TradeInputs = {
   /** Cards the deck's own tuning named as cuts and the player has not ruled on: the newest ok Proposed cuts
-   *  run's, then the newest ok Suggested changes run's, each in the run's order. */
+   *  run's, then the newest ok Suggested changes run's, each in the run's order. The trade takes them in that
+   *  order within a kind: a nonland staple takes the named nonland cards before the named lands. */
   namedCuts: readonly string[];
   /** Each land row's oracle text, by id. */
   landText: ReadonlyMap<string, string | null>;
