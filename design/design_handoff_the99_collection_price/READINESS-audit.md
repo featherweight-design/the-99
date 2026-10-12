@@ -36,7 +36,11 @@ Heights are unchanged. The figure takes a slot inside lines that already exist.
 ## Copy
 US English throughout. No select/unselect strings arise. No em dashes in the copy file. `ManaPool` (spoken, `copy/price.ts:74`) against `Mana Pool` (`collection-browse.ts:40`): both ship today; to `/copy-review`. `Prices didn't load, so this is A–Z.` uses an en dash, as the shipped `A–Z`.
 
-## Questions for Hugh (product phrasing)
+## Answered by Hugh (2026-10-12)
+1. **Mixed printings:** the highest-priced owned copy drives both the sort and the figure, chosen from prior art. The wording (`max` or `up to`) is left to `/copy-review`.
+2. **Phone tile:** rarity hides while sorting by price. This reverses the 2026-09-23 ruling and is noted for revisit on feedback.
+
+## Questions for Hugh (product phrasing), now answered above
 1. A card whose copies are in different printings shows `$27.00 max`. Is `max` the right word for a reader, or would "top copy" or "from"-style read better? (Placeholder; `/copy-review` can resolve it.)
 2. On the 3-up phone tile the rarity drops while the price shows, which reverses your 2026-09-23 ruling that the phone tile shows rarity. Design drew it that way to keep one line; do you accept losing rarity on that one sort?
 
