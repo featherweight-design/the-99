@@ -112,10 +112,12 @@ function Table({ head, right, grid, rows, label }: { head: string[]; right: numb
 
 function ByModel({ d }: { d: CostDetail }) {
   const total = d.modelsTotal;
-  const rows: { key: string; label: string; micro: number; sub: string; parts: { micro: number; ink: string }[] }[] = d.models.map((m) => ({
+  const rows: { key: string; label: string; micro: number; fig: string; sub: string; parts: { micro: number; ink: string }[] }[] = d.models.map((m) => ({
     key: m.model,
     label: m.model,
     micro: m.micro,
+    // Nothing priced at an unpriceable model is unknown, not $0; a partial figure says so.
+    fig: m.unpriced && m.micro === 0 ? copy.unpriced : m.incomplete ? copy.soFar(usd(m.micro)) : usd(m.micro),
     sub: [
       m.calls > 0 ? copy.modelSub.calls(m.calls, m.features.map(featureName).join(", ")) : null,
       m.batches > 0 ? copy.modelSub.batches(m.batches) : null,
@@ -126,7 +128,7 @@ function ByModel({ d }: { d: CostDetail }) {
   }));
   if (d.series.evals > 0) {
     const ledgers = d.ledgers.filter((l) => l.settledMicro + l.pendingMicro > 0).length;
-    rows.push({ key: "evals", label: copy.evalsUnsplit, micro: d.series.evals, sub: copy.modelSub.evals(ledgers), parts: [{ micro: d.series.evals, ink: INK.evals }] });
+    rows.push({ key: "evals", label: copy.evalsUnsplit, micro: d.series.evals, fig: usd(d.series.evals), sub: copy.modelSub.evals(ledgers), parts: [{ micro: d.series.evals, ink: INK.evals }] });
   }
   return (
     <div className={CARD}>
@@ -134,7 +136,7 @@ function ByModel({ d }: { d: CostDetail }) {
         <div key={r.key} className={ROW} data-model={r.key}>
           <div className="flex flex-wrap items-baseline gap-[10px]">
             <span className="min-w-0 flex-1 font-mono text-[13px] text-[color:var(--fg)]">{r.label}</span>
-            <span className="font-mono text-[13px] text-[color:var(--fg)]">{usd(r.micro)}</span>
+            <span className="font-mono text-[13px] text-[color:var(--fg)]">{r.fig}</span>
             <span className="w-[44px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{share(r.micro, total)}</span>
           </div>
           <div aria-hidden className="mt-[4px] flex h-[10px] gap-[2px] overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]">

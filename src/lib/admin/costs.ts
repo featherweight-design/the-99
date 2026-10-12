@@ -34,11 +34,14 @@ import {
 // qualified so the emitted SQL says what it reads.
 const col = (name: string) => sql`${modelCalls}.${sql.identifier(name)}`;
 
+/** The database, or one transaction's view of it: every figure on the page is read in one. */
+type Reader = Pick<typeof db, "select">;
+
 /** Runs and dollars per UTC day and origin. Every status counts as a run; dollars are what was recorded. */
-export function dayRowsQuery(start: Date, end: Date) {
+export function dayRowsQuery(start: Date, end: Date, x: Reader = db) {
   const day = sql<number>`extract(day from ${col("created_at")})::int`;
   const origin = sql<string>`${col("origin")}`;
-  return db
+  return x
     .select({
       day,
       origin,
@@ -55,11 +58,11 @@ export function dayRowsQuery(start: Date, end: Date) {
  * dollars, in one pass over the two months. Filters, not a `where` on origin: the previous month
  * counts every origin.
  */
-export function monthFiguresQuery(previousStart: Date, start: Date, end: Date, ownerId: string | null) {
+export function monthFiguresQuery(previousStart: Date, start: Date, end: Date, ownerId: string | null, x: Reader = db) {
   const inMonth = sql`${col("created_at")} >= ${start}`;
   const before = sql`${col("created_at")} < ${start}`;
   const player = sql`${col("origin")} = 'player'`;
-  return db
+  return x
     .select({
       playerAccounts: sql<number>`(count(distinct ${col("user_id")}) filter (where ${inMonth} and ${player}))::int`,
       ownerMicro: sql<string>`coalesce(sum(${col("cost_micro_usd")}) filter (where ${inMonth} and ${player} and ${col("user_id")} = ${ownerId ?? ""}), 0)`,
@@ -71,8 +74,8 @@ export function monthFiguresQuery(previousStart: Date, start: Date, end: Date, o
 }
 
 /** The month's runs, one row each: the detail aggregates them (`costDetail`), at a personal app's scale. */
-export function callRowsQuery(start: Date, end: Date) {
-  return db
+export function callRowsQuery(start: Date, end: Date, x: Reader = db) {
+  return x
     .select({
       id: sql<string>`${col("id")}`,
       userId: sql<string>`${col("user_id")}`,
@@ -89,8 +92,8 @@ export function callRowsQuery(start: Date, end: Date) {
 }
 
 /** The provider calls under the month's runs. A part belongs to its run's month, not its own stamp. */
-export function partRowsQuery(start: Date, end: Date) {
-  return db
+export function partRowsQuery(start: Date, end: Date, x: Reader = db) {
+  return x
     .select({
       callId: modelCallParts.callId,
       step: modelCallParts.step,
@@ -109,11 +112,11 @@ const lcol = (name: string) => sql`${cardLabelBatches}.${sql.identifier(name)}`;
  * The month's label chunks by run and model (admin audit finding 9: group by `run_id`). Tokens are
  * summed over the chunks that have collected; dollars are computed from them, never stored.
  */
-export function labelRunsQuery(start: Date, end: Date) {
+export function labelRunsQuery(start: Date, end: Date, x: Reader = db) {
   const runId = sql<string>`${lcol("run_id")}`;
   const model = sql<string>`${lcol("model")}`;
   const sum = (name: string) => sql<string>`coalesce(sum(${lcol(name)}), 0)`;
-  return db
+  return x
     .select({
       runId,
       model,
@@ -157,16 +160,26 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
   const end = monthStart(shiftMonth(month, 1));
   const ownerId = modelOwnerUserId();
   const current = sameMonth(month, monthOf(now));
-  const [days, [figures], settingRows, allowance, callRows, partRows, labelRows] = await Promise.all([
-    dayRowsQuery(start, end),
-    monthFiguresQuery(monthStart(shiftMonth(month, -1)), start, end, ownerId),
-    db.select().from(adminSettings),
-    // The pause is the allowance's own verdict, with no feature named: no press at all fits.
+  // Every figure from ONE instant: the summary's day rows and the detail's call rows split the same
+  // spend two ways (labels against rewrites), so a row committing between two separate reads would
+  // land in one and not the other, and could drive a segment negative.
+  const read = db.transaction(
+    (tx) => Promise.all([
+      dayRowsQuery(start, end, tx),
+      monthFiguresQuery(monthStart(shiftMonth(month, -1)), start, end, ownerId, tx),
+      tx.select().from(adminSettings),
+      callRowsQuery(start, end, tx),
+      partRowsQuery(start, end, tx),
+      labelRunsQuery(start, end, tx),
+    ]),
+    { isolationLevel: "repeatable read", accessMode: "read only" },
+  );
+  // The pause is the allowance's own verdict, with no feature named: no press at all fits.
+  const [[days, [figures], settingRows, callRows, partRows, labelRows], allowance] = await Promise.all([
+    read,
     current ? readAllowance(adminId, now) : null,
-    callRowsQuery(start, end),
-    partRowsQuery(start, end),
-    labelRunsQuery(start, end),
   ]);
+  const paused = !!allowance?.paused;
 
   const detail = costDetail({
     calls: callRows.map((c): CallRow => ({
@@ -210,7 +223,7 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
       settingRows.map((r) => ({ key: r.key as SettingKey, month: r.month, micro: r.valueMicroUsd, asOf: r.asOf, note: r.note, by: r.updatedBy })),
       month,
     ),
-    paused: !!allowance?.paused,
+    paused,
     outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro, labelsIncomplete: detail.labelsIncomplete },
   };
   return { summary: costSummary(rows, month, now), detail };

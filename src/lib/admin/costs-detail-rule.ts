@@ -104,6 +104,8 @@ export type ModelRow = {
   segs: Omit<Series, "evals">;
   /** A label run at this model has chunks still collecting, or could not be priced: the figure is so far. */
   incomplete: boolean;
+  /** A label run at this model could not be batch-priced at all: its dollars are unknown, not $0. */
+  unpriced: boolean;
 };
 
 export type FeatureRow = {
@@ -203,7 +205,7 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   const models = new Map<string, ModelRow>();
   const modelRow = (model: string) => {
     let m = models.get(model);
-    if (!m) models.set(model, (m = { model, composite: isComposite(model), micro: 0, calls: 0, batches: 0, features: [], segs: { player: 0, rewrites: 0, labels: 0 }, incomplete: false }));
+    if (!m) models.set(model, (m = { model, composite: isComposite(model), micro: 0, calls: 0, batches: 0, features: [], segs: { player: 0, rewrites: 0, labels: 0 }, incomplete: false, unpriced: false }));
     return m;
   };
   for (const { call, steps } of calls) {
@@ -234,6 +236,7 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
     m.batches += r.batches;
     m.segs.labels += micro;
     if (partial) m.incomplete = true;
+    if (priced === null) m.unpriced = true;
     batchMicro += micro;
     const run = runsById.get(r.runId);
     if (run) {

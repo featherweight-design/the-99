@@ -9,7 +9,18 @@ const empty = (): unknown =>
     get: (_t, key) => (key === "then" ? (resolve: (v: unknown) => void) => resolve([]) : empty),
     apply: () => empty(),
   });
-vi.mock("../../db", () => ({ db: empty() }));
+// One transaction's view is the same empty database.
+const reads = vi.hoisted(() => ({ outside: 0, options: [] as unknown[] }));
+vi.mock("../../db", () => ({
+  db: new Proxy(empty() as object, {
+    get: (t, key) => {
+      if (key === "transaction") return (fn: (tx: unknown) => unknown, options: unknown) => (reads.options.push(options), fn(empty()));
+      // A figure read on the pool rather than the transaction's view.
+      if (key === "select") reads.outside++;
+      return Reflect.get(t, key);
+    },
+  }),
+}));
 vi.mock("../model/allowance", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../model/allowance")>()),
   modelOwnerUserId: () => "user_owner",
@@ -39,6 +50,14 @@ describe("loadCosts", () => {
     delete process.env.MODEL_OWNER_MONTHLY_USD;
     const { summary: s } = await loadCosts(OCT, "user_admin", NOW);
     expect(s.ownerShareMicro).toBe(5_000_000);
+  });
+
+  it("reads every figure inside one repeatable-read, read-only transaction", async () => {
+    reads.outside = 0;
+    reads.options.length = 0;
+    await loadCosts(OCT, "user_admin", NOW);
+    expect(reads.options).toEqual([{ isolationLevel: "repeatable read", accessMode: "read only" }]);
+    expect(reads.outside).toBe(0);
   });
 
   it("hands the view the committed eval ledgers, and their month in the system figure", async () => {

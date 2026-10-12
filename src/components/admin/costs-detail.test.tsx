@@ -88,6 +88,7 @@ describe("CostsDetail, a month with runs", () => {
     const labels = screen.getByRole("table", { name: "Card label runs" });
     expect(within(labels).getAllByText("$59.48 so far")).toHaveLength(2);
     expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent("label runs still collecting or not priced");
+    expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent("$59.48 so far");
     // The caps hold system spend too: the ceiling and the account figures read so far as well.
     expect(screen.getByText("$59.53 so far · not set")).toBeInTheDocument();
     expect(screen.getByText("$59.65 so far · not set")).toBeInTheDocument();
@@ -118,6 +119,13 @@ describe("CostsDetail, a month with runs", () => {
     const { container } = draw({ calls });
     const metas = [...container.querySelectorAll(".md\\:hidden span.font-mono")].map((el) => el.textContent ?? "");
     expect(metas.some((m) => m.endsWith(" a run, p90 —"))).toBe(true);
+  });
+
+  it("reads an unpriceable model's spend as not priced in By model, never $0", () => {
+    const { container } = draw({ calls, labelRuns: [{ ...labelRun, model: "claude-haiku-5-5" }] });
+    const row = container.querySelector('[data-model="claude-haiku-5-5"]') as HTMLElement;
+    expect(row).toHaveTextContent("not priced");
+    expect(row).not.toHaveTextContent("$0.00");
   });
 
   it("counts credits in the singular and the plural", () => {
