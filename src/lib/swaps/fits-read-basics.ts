@@ -27,6 +27,10 @@ import { requirement, total } from "../tuning/mana-help";
  * deck's only Forest would also take green from every such searcher, and the re-read here would not
  * see it. Refusing that copy keeps every simulated figure true; a deck with one copy has no basic of
  * that type to spare anyway.
+ *
+ * ONLY THE FIVE COLORED BASICS. Mana Balance reads W U B R G and no Needed for `{C}`, so Wastes would
+ * pass on the land count alone, however many colorless pips the deck holds; Improve my mana's
+ * `basicColorOf` takes the same five. A basic making anything but exactly one of them is refused.
  */
 
 const isBasic = (typeLine: string) => isLandFace(typeLine) && /\bBasic\b/.test(typeLine);
@@ -42,7 +46,9 @@ export function fairBasicCuts(args: {
   const { rows, nameOf, identity, landTarget, subjectIsLand } = args;
   const read = (r: readonly ManaSupplyCardRow[]) => readManaBalance({ rows: r, nameOf, tapped: NO_TAPPED_LANDS, identity });
   const before = read(rows);
-  return rows.filter((r) => r.quantity > 1 && isBasic(r.typeLine)).flatMap((r) => {
+  const coloredBasic = (r: ManaSupplyCardRow) =>
+    isBasic(r.typeLine) && r.produces?.length === 1 && (BALANCE_COLORS as readonly string[]).includes(r.produces[0]);
+  return rows.filter((r) => r.quantity > 1 && coloredBasic(r)).flatMap((r) => {
     const after = read(rows.map((x) => (x.id === r.id ? { ...x, quantity: x.quantity - 1 } : x)));
     const colors = BALANCE_COLORS.filter((c) => identity.includes(c) && (r.produces ?? []).includes(c))
       .map((c) => ({ sourcesAfter: total(after, c), needed: requirement(before, c) }));
