@@ -12,16 +12,35 @@
 // Needs a running server (`PROBE_BASE`, default http://localhost:3000) signed in as
 // E2E_AUDIT_USER_EMAIL, and two of that account's decks: OPTIMISTIC_CUTS_DECK with an ok deeper
 // Proposed cuts run in History, and OPTIMISTIC_SUGGESTED_DECK with an ok Suggested changes run.
-// It WRITES (one cut and its undo), so point it at local-dev or a scratch branch, never staging.
+// It WRITES (one cut and its undo), so it FAILS CLOSED: the server must be on this machine, and the
+// database the worktree's .env names (the one that server reads) must not report the production or
+// staging Neon branch, by `neon.branch_id`. The cut is undone in a `finally`.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { Pool } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 
 import { requireEnv } from "./lib/env.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, OPTIMISTIC_CUTS_DECK: CUTS, OPTIMISTIC_SUGGESTED_DECK: SUGGESTED } =
-  requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "OPTIMISTIC_CUTS_DECK", "OPTIMISTIC_SUGGESTED_DECK"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, OPTIMISTIC_CUTS_DECK: CUTS, OPTIMISTIC_SUGGESTED_DECK: SUGGESTED, DATABASE_URL } =
+  requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "OPTIMISTIC_CUTS_DECK", "OPTIMISTIC_SUGGESTED_DECK", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+
+// Production and staging: never written by a probe (AGENTS.md).
+const FORBIDDEN = new Set(["br-noisy-violet-a6vw4ess", "br-polished-pond-a6e63y0b"]);
+if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) {
+  console.error(`refusing: PROBE_BASE must be a server on this machine, got ${BASE}`);
+  process.exit(2);
+}
+{
+  const pool = new Pool({ connectionString: DATABASE_URL });
+  const branch = (await pool.query("select current_setting('neon.branch_id', true) as b")).rows[0]?.b ?? null;
+  await pool.end();
+  if (!branch || FORBIDDEN.has(branch)) {
+    console.error(`refusing: the database .env names reports branch ${branch ?? "unknown"}, which this probe never writes`);
+    process.exit(2);
+  }
+}
 let failures = 0;
 const check = (label, ok, detail) => {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} - ${JSON.stringify(detail)}`);
@@ -81,16 +100,28 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
   await article.waitFor({ timeout: 30_000 });
   const name = await article.getAttribute("aria-label");
   const gate = await holdActions(page);
-  await article.getByRole("button", { name: "Cut", exact: true }).click();
-  await gate.caught();
   const cutRow = onPage(page, "[data-testid='answered-cut']").filter({ hasText: name });
-  check(`${w.label} cuts: the row reads cut while its action is still unanswered`, (await cutRow.count()) === 1 && gate.count() >= 1, { held: gate.count() });
-  await gate.release();
-  await page.waitForTimeout(2500);
-  check(`${w.label} cuts: once answered it stays cut`, (await cutRow.count()) === 1, null);
-  await cutRow.getByRole("button", { name: "Undo" }).click();
-  await onPage(page, "article").filter({ hasText: name }).first().waitFor({ timeout: 30_000 });
-  check(`${w.label} cuts: Undo puts the card back`, true, name);
+  let undone = false;
+  try {
+    await article.getByRole("button", { name: "Cut", exact: true }).click();
+    await gate.caught();
+    check(`${w.label} cuts: the row reads cut while its action is still unanswered`, (await cutRow.count()) === 1 && gate.count() >= 1, { held: gate.count() });
+    await gate.release();
+    await page.waitForTimeout(2500);
+    check(`${w.label} cuts: once answered it stays cut`, (await cutRow.count()) === 1, null);
+    await cutRow.getByRole("button", { name: "Undo" }).click();
+    await onPage(page, "article").filter({ hasText: name }).first().waitFor({ timeout: 30_000 });
+    undone = true;
+    check(`${w.label} cuts: Undo puts the card back`, true, name);
+  } finally {
+    // Whatever failed above, the deck is left as it was found: an answered cut is undone.
+    if (!undone) {
+      await gate.release().catch(() => {});
+      await page.waitForTimeout(2500);
+      if ((await cutRow.count()) > 0) await cutRow.getByRole("button", { name: "Undo" }).click().catch(() => {});
+      await page.waitForTimeout(2500);
+    }
+  }
 
   // Suggested changes: Reject flips while held; a failed action rolls back with its refusal.
   await openFromHistory(page, SUGGESTED, "1 credit");

@@ -1847,8 +1847,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Suggested changes run reads `rejected`, and a FAILED action rolls it back with its refusal. Needs a
   running server signed in as `E2E_AUDIT_USER_EMAIL`, and `OPTIMISTIC_CUTS_DECK` /
   `OPTIMISTIC_SUGGESTED_DECK`, two of that account's decks with an ok deeper Proposed cuts run and an
-  ok Suggested changes run in History. It writes one cut and its undo: local-dev or a scratch
-  branch only, never staging.
+  ok Suggested changes run in History. It writes one cut and undoes it in a `finally`, and it FAILS CLOSED:
+  `PROBE_BASE` must be a server on this machine, and the database the worktree's `.env` names must not
+  report the production or staging branch by `neon.branch_id` (exit 2 before signing in).
 
 - `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
   running server (`PROBE_BASE`, `next start` preferred; `PROBE_WIDTH=390` runs one width,
