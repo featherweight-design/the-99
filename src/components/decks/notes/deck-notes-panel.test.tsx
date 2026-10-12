@@ -127,7 +127,7 @@ describe("adding", () => {
     type(field, "try [[sol");
     expect(await screen.findByRole("option", { name: /Sol Ring/ })).toBeTruthy();
     key(field, "Enter");
-    expect(field.value).toBe("try [[Sol Ring]] ");
+    expect(field.value).toBe("try [[\u2060Sol Ring]] ");
     click(screen.getByRole("button", { name: "Add" }));
     expect(stub.addNote).toHaveBeenCalledWith(DECK, `try ${formatTag(SOL, "Sol Ring")}`);
   });
@@ -254,7 +254,7 @@ describe("a row", () => {
     mount(view([note("a", body, { drawn: [{ kind: "text", text: "try " }, { kind: "tag", oracleId: SOL, name: "Sol Ring", held: true, resolved: true, imageUri: null }] })]));
     click(screen.getByRole("button", { name: "Edit this note" }));
     const field = screen.getByRole("combobox", { name: "Edit this note" }) as HTMLInputElement;
-    expect(field.value).toBe("try [[Sol Ring]]");
+    expect(field.value).toBe("try [[\u2060Sol Ring]]");
     expect(screen.getByText(/the date stays 2 Oct/)).toBeTruthy();
     type(field, " today");
     click(screen.getByRole("button", { name: "Save" }));

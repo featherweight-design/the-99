@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fieldCount, insertOpenTag, insertPick, openTagAt, prunePicked, serialize, toField, withPick } from "./notes-field";
+import { fieldCount, insertOpenTag, insertPick, openTagAt, serialize, toField } from "./notes-field";
 import { formatTag } from "./notes-body";
 
 const ID = "6d0a5f7e-1111-4222-8333-444455556666";
@@ -19,8 +19,8 @@ describe("notes field", () => {
 
   it("replaces the open tag with a finished one and a trailing space", () => {
     expect(insertPick("try [[tha and more", 4, 9, "Thassa's Oracle")).toEqual({
-      text: "try [[Thassa's Oracle]]  and more",
-      caret: 4 + "[[Thassa's Oracle]] ".length,
+      text: "try [[\u2060Thassa's Oracle]]  and more",
+      caret: 4 + "[[\u2060Thassa's Oracle]] ".length,
     });
   });
 
@@ -30,36 +30,38 @@ describe("notes field", () => {
 
   describe("serialize", () => {
     it("stores a picked name as a tag and leaves a hand-typed one plain", () => {
-      const picked = new Map([["Sol Ring", { id: ID, n: 1 }]]);
-      expect(serialize("a [[Sol Ring]] b [[Mana Crypt]]", picked)).toBe(`a ${formatTag(ID, "Sol Ring")} b [[Mana Crypt]]`);
+      const picked = new Map([["Sol Ring", ID]]);
+      expect(serialize("a [[\u2060Sol Ring]] b [[Mana Crypt]]", picked)).toBe(`a ${formatTag(ID, "Sol Ring")} b [[Mana Crypt]]`);
     });
   });
 
-  describe("one occurrence per pick", () => {
+  describe("only the picked occurrence is a tag", () => {
+    const picked = new Map([["Sol Ring", ID]]);
     it("does not turn a hand-typed [[Name]] into a tag once its picked one is gone", () => {
-      const picked = withPick(new Map(), "Sol Ring", ID);
-      // The player deleted the picked tag and typed the brackets by hand.
-      expect(serialize("[[Sol Ring]]", prunePicked("x", picked))).toBe("[[Sol Ring]]");
+      expect(serialize("[[Sol Ring]]", picked)).toBe("[[Sol Ring]]");
     });
-    it("converts only as many occurrences as were picked", () => {
-      const picked = withPick(new Map(), "Sol Ring", ID);
-      expect(serialize("[[Sol Ring]] and [[Sol Ring]]", picked)).toBe(`${formatTag(ID, "Sol Ring")} and [[Sol Ring]]`);
-      expect(fieldCount("[[Sol Ring]][[Sol Ring]]", picked)).toBe("Sol Ring".length + "[[Sol Ring]]".length);
+    it("tags the picked occurrence, wherever it sits beside a hand-typed one", () => {
+      const first = "[[Sol Ring]] then [[\u2060Sol Ring]]";
+      expect(serialize(first, picked)).toBe(`[[Sol Ring]] then ${formatTag(ID, "Sol Ring")}`);
+      const second = "[[\u2060Sol Ring]] then [[Sol Ring]]";
+      expect(serialize(second, picked)).toBe(`${formatTag(ID, "Sol Ring")} then [[Sol Ring]]`);
     });
-    it("keeps a count at the occurrences the text still holds", () => {
-      const twice = withPick(withPick(new Map(), "Sol Ring", ID), "Sol Ring", ID);
-      expect(prunePicked("[[Sol Ring]]", twice).get("Sol Ring")?.n).toBe(1);
+    it("marks a pick and a loaded tag, and never counts the mark", () => {
+      const pick = insertPick("a [[sol", 2, 7, "Sol Ring");
+      expect(pick.text).toBe("a [[\u2060Sol Ring]] ");
+      expect(fieldCount(pick.text, picked)).toBe("a Sol Ring ".length);
+      const { text } = toField(`${formatTag(ID, "Sol Ring")} ${formatTag(ID, "Sol Ring")}`);
+      expect(serialize(text, picked)).toBe(`${formatTag(ID, "Sol Ring")} ${formatTag(ID, "Sol Ring")}`);
     });
-    it("counts the same name from an edit load twice", () => {
-      const { picked } = toField(`${formatTag(ID, "Sol Ring")} ${formatTag(ID, "Sol Ring")}`);
-      expect(picked.get("Sol Ring")?.n).toBe(2);
+    it("drops a mark whose name the map does not hold, so no invisible character is stored", () => {
+      expect(serialize("[[\u2060Mana Crypt]]", picked)).toBe("[[Mana Crypt]]");
     });
   });
 
   describe("fieldCount", () => {
     it("counts a picked tag as its name and a plain [[x]] as typed", () => {
-      const picked = new Map([["Sol Ring", { id: ID, n: 1 }]]);
-      expect(fieldCount("[[Sol Ring]]", picked)).toBe("Sol Ring".length);
+      const picked = new Map([["Sol Ring", ID]]);
+      expect(fieldCount("[[\u2060Sol Ring]]", picked)).toBe("Sol Ring".length);
       expect(fieldCount("[[Mana Crypt]]", picked)).toBe("[[Mana Crypt]]".length);
     });
     it("counts code points", () => {
@@ -70,7 +72,7 @@ describe("notes field", () => {
   it("loads a stored body for edit and round-trips it", () => {
     const body = `try ${formatTag(ID, "Sol Ring")} soon`;
     const { text, picked } = toField(body);
-    expect(text).toBe("try [[Sol Ring]] soon");
+    expect(text).toBe("try [[\u2060Sol Ring]] soon");
     expect(serialize(text, picked)).toBe(body);
   });
 });

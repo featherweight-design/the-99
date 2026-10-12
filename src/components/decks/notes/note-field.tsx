@@ -4,7 +4,7 @@ import { AFFIX_FOCUS, AFFIX_INPUT } from "../../ui/text-field";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { searchNoteCards } from "../../../app/decks/notes-actions";
 import { deckNotesCopy, NOTE_MAX, NOTE_WARN_AT } from "../../../lib/copy/deck-notes";
-import { fieldCount, insertOpenTag, insertPick, openTagAt, prunePicked, withPick, type Picked } from "../../../lib/decks/notes-field";
+import { fieldCount, insertOpenTag, insertPick, openTagAt, type Picked } from "../../../lib/decks/notes-field";
 import { PRIMARY } from "../../ui/button";
 import { InfoTip } from "../../ui/info-tip";
 
@@ -114,7 +114,7 @@ export function NoteField({
 
   const place = (text: string, at: number, nextPicked: Picked = picked) => {
     if (overCap(text, nextPicked)) return;
-    onChange(text, prunePicked(text, nextPicked));
+    onChange(text, nextPicked);
     setCaret(at);
     setDismissed(false);
     setActive(0);
@@ -127,7 +127,7 @@ export function NoteField({
   const pick = (o: Option) => {
     if (!tag) return;
     const next = insertPick(value, tag.start, caret, o.name);
-    place(next.text, next.caret, withPick(picked, o.name.replace(/[\[\]|]/g, "").trim(), o.oracleId));
+    place(next.text, next.caret, new Map(picked).set(o.name.replace(/[\[\]|]/g, "").trim(), o.oracleId));
   };
 
   const sync = () => setCaret(input.current?.selectionStart ?? 0);
@@ -181,7 +181,7 @@ export function NoteField({
               const text = e.target.value.replace(/\s+/g, " ");
               // The cap is on RENDERED text, so a longer paste is refused whole rather than cut mid-tag.
               if (overCap(text, picked)) return;
-              onChange(text, prunePicked(text, picked));
+              onChange(text, picked);
               setCaret(e.target.selectionStart ?? text.length);
               setDismissed(false);
               setActive(0);
