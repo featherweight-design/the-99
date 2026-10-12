@@ -10,6 +10,7 @@ export const tokensCopy = {
     label: "Tokens",
     /** Header note (desktop) / sub-line (phone). Says once that tokens aren't the deck. */
     note: (makers: number) => `not in the 99 · from ${cards(makers)}`,
+    noteFailed: "not in the 99",
     failed: "Tokens couldn’t be read just now.",
   },
 

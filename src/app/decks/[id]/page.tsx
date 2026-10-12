@@ -61,6 +61,9 @@ import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
+import { deckTokensEnabled } from "../../../lib/decks/tokens-flag";
+import { loadDeckTokens } from "../../../lib/tokens/read";
+import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
 import { GotItProvider } from "../../../components/decks/got-it";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
@@ -218,6 +221,9 @@ export default async function DeckBuilderPage({
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.
   const swapTools = swapToolsEnabled();
+  // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
+  // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
+  const tokensRead = deckTokensEnabled() ? early(perf.timed("deckTokens", () => loadDeckTokens(id, userId))) : null;
   const shoppingLimitRead = swapTools
     ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
     : Promise.resolve(null);
@@ -599,7 +605,9 @@ export default async function DeckBuilderPage({
     />
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
-  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{shell}</DeckPageSwitches>;
+  const deckTokens = tokensRead ? await tokensRead : null;
+  const withTokens = deckTokens ? <DeckTokensProvider deckId={id} read={deckTokens}>{shell}</DeckTokensProvider> : shell;
+  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{withTokens}</DeckPageSwitches>;
   // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
   // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
   const bought = shoppingMarkBoughtEnabled() ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;

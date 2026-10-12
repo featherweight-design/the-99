@@ -25,7 +25,7 @@ const fact = (scryfallId: string): TokenPriceFact => ({
 });
 
 const base = (over: Partial<DeckTokenInputs> = {}): DeckTokenInputs => ({
-  links: [{ tokenOracleId: A, makerOracleId: M1, makerName: "Zed" }],
+  links: [{ tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: null }],
   tokens: [tok(A, "Goblin")],
   held: new Map(), read: true, joined: new Set(), printings: [], prices: new Map(), newestPriceAsOf: null,
   ...over,
@@ -54,7 +54,7 @@ describe("assembleDeckTokens", () => {
 
   it("shows rules text only for tokens that share a face inside the deck", () => {
     const r = ok(assembleDeckTokens(base({
-      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed" })),
+      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed", makerImageUri: null })),
       tokens: [tok(A, "Goblin"), tok(B, "Goblin"), tok(C, "Goblin", { power: "2", toughness: "2" })],
     })));
     const byId = new Map(r.tokens.map((t) => [t.oracleId, t.oracleText]));
@@ -66,10 +66,10 @@ describe("assembleDeckTokens", () => {
   it("lists each maker once, A to Z, and counts distinct makers across tokens", () => {
     const r = ok(assembleDeckTokens(base({
       links: [
-        { tokenOracleId: A, makerOracleId: M1, makerName: "Zed" },
-        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha" },
-        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha" },
-        { tokenOracleId: B, makerOracleId: M2, makerName: "alpha" },
+        { tokenOracleId: A, makerOracleId: M1, makerName: "Zed", makerImageUri: null },
+        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha", makerImageUri: null },
+        { tokenOracleId: A, makerOracleId: M2, makerName: "alpha", makerImageUri: null },
+        { tokenOracleId: B, makerOracleId: M2, makerName: "alpha", makerImageUri: null },
       ],
       tokens: [tok(A, "Goblin"), tok(B, "Treasure", { colors: [] })],
     })));
@@ -97,7 +97,7 @@ describe("assembleDeckTokens", () => {
 
   it("orders rows by name, then colors, then id", () => {
     const r = ok(assembleDeckTokens(base({
-      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed" })),
+      links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed", makerImageUri: null })),
       tokens: [tok(C, "Treasure", { colors: [] }), tok(B, "goblin", { colors: ["G"] }), tok(A, "Goblin", { colors: ["R"] })],
     })));
     // B (green) sorts before A (red) although A has the lower id: only the colors rule gives this order.

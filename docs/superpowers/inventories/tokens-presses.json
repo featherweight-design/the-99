@@ -1,0 +1,66 @@
+{
+  "feature": "Tokens for my deck (PR 4b): pressing the two controls",
+  "note": "Run AFTER tokens.json, against the same data: each row presses once, at one width, because a press changes the account. Re-seed Monk (no hand mark) and Food (joined on Aang) to run it again.",
+  "out": "contact-sheets/tokens-presses",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 900,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "aang-have-one",
+      "label": "/decks/[id]: I have one pressed on Monk (marked by hand, no Add to Shopping) (phone only: a press changes the account, so each press row runs once)",
+      "view": "src/components/decks/tokens-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "#deck-tokens-heading",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Mark the Monk token",
+          "settle": 1500
+        },
+        {
+          "scroll": "bottom"
+        }
+      ],
+      "widths": [
+        "phone"
+      ]
+    },
+    {
+      "id": "aang-leave",
+      "label": "/decks/[id]: Food taken off Shopping by pressing its control (desktop only, for the same reason)",
+      "view": "src/components/decks/tokens-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "#deck-tokens-heading",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Take the Food token off",
+          "settle": 1500
+        },
+        {
+          "scroll": "bottom"
+        }
+      ],
+      "widths": [
+        "desktop"
+      ]
+    }
+  ]
+}

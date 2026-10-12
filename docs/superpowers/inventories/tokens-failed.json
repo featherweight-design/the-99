@@ -1,0 +1,35 @@
+{
+  "feature": "Tokens for my deck (PR 4b): a failed read",
+  "note": "Run with the join table renamed away on the scratch branch, so the loader's read throws: the group says so in its own words and the rest of the page stands.",
+  "out": "contact-sheets/tokens-failed",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 900,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "aang-failed",
+      "label": "/decks/[id] Your deck: the Tokens group when its read failed (no count)",
+      "view": "src/components/decks/tokens-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "#deck-tokens-heading",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "#deck-tokens-heading"
+        }
+      ]
+    }
+  ]
+}

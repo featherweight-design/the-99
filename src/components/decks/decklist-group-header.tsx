@@ -8,7 +8,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 
 interface DecklistGroupHeaderProps {
   label: string;
-  count: number;
+  /** Null draws no count at all: a group whose read failed has no honest figure to give. */
+  count: number | null;
   /** The unresolved group draws its count in --warning; every other group is faint. */
   countColor?: string;
   /** Right-aligned on desktop only (e.g. "37 recommended"). */
@@ -67,7 +68,7 @@ export function DecklistGroupHeader({
           <h3
             id={headingId}
             tabIndex={focusable ? -1 : undefined}
-            aria-label={`${label} · ${count}`}
+            aria-label={count === null ? label : `${label} · ${count}`}
             className={labelClass}
             style={{ color: labelColor }}
           >
@@ -87,7 +88,7 @@ export function DecklistGroupHeader({
           >
             {gapClause}
           </span>
-        ) : (
+        ) : count === null ? null : (
           <span
             className="font-mono text-[10px] md:text-[11px]"
             style={{ color: countColor }}
