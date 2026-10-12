@@ -123,8 +123,16 @@ export function canReuse(cached: PreconFeed | null, key: string, now: Date): boo
 export function parseFeed(raw: unknown): PreconFeed | null {
   const f = raw as Partial<PreconFeed>;
   if (!str(f?.indexKey) || !str(f?.fetchedAt) || !Array.isArray(f?.decks)) return null;
+  const id = (v: unknown) => v === null || str(v);
   for (const d of f.decks) {
     if (!str(d?.fileName) || !str(d?.name) || !str(d?.code) || !str(d?.releaseDate) || !Array.isArray(d?.cards)) return null;
+    // Every card too: a cached file is reused straight into the artifact, so a malformed one must
+    // read as no cache (and a refetch), never reach the ingest.
+    for (const c of d.cards as unknown[]) {
+      const x = c as Partial<FeedCard>;
+      if (!id(x?.oracleId) || !id(x?.scryfallId) || typeof x?.commander !== "boolean"
+        || typeof x?.count !== "number" || !Number.isInteger(x.count) || x.count < 1) return null;
+    }
   }
   return f as PreconFeed;
 }

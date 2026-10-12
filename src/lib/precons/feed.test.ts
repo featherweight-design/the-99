@@ -85,6 +85,11 @@ describe("parseFeed", () => {
     const ok = { indexKey: "k", fetchedAt: "t", decks: [{ fileName: "A", name: "A", code: "X", releaseDate: "d", cards: [] }] };
     expect(parseFeed(ok)).toBe(ok);
     expect(parseFeed({ ...ok, decks: [{ fileName: "A" }] })).toBeNull();
+    const withCards = (cards: unknown[]) => ({ ...ok, decks: [{ ...ok.decks[0], cards }] });
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 2, commander: false }]))).not.toBeNull();
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 0, commander: false }]))).toBeNull();
+    expect(parseFeed(withCards([{ oracleId: 7, scryfallId: null, count: 1, commander: false }]))).toBeNull();
+    expect(parseFeed(withCards([{ oracleId: "o", scryfallId: null, count: 1 }]))).toBeNull();
     expect(parseFeed(null)).toBeNull();
   });
 });
