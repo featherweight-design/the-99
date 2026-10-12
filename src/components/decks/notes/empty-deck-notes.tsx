@@ -16,8 +16,10 @@ import type { DeckCardOption } from "./note-field";
  * (`useDeckPanel`), as on the list.
  */
 export function EmptyDeckNotes({
-  deckId, notes, deckCards, children,
+  enabled, deckId, notes, deckCards, children,
 }: {
+  /** `DECK_NOTES_ENABLED`: off draws the empty state alone, as before notes existed. */
+  enabled: boolean;
   deckId: string;
   notes: DeckNotesView | null;
   /** The commanders: the picker's "In this deck" group, since the deck holds nothing else. */
@@ -26,6 +28,7 @@ export function EmptyDeckNotes({
   children: ReactNode;
 }) {
   const [panel, choose] = useDeckPanel();
+  if (!enabled) return <>{children}</>;
   const open = panel === "notes";
   return (
     <>
