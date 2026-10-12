@@ -18,6 +18,7 @@
  * from `loadPrices`, the same read the buy tag uses.
  */
 import { sql } from "drizzle-orm";
+import { chainArt } from "../cards/chain-art";
 
 import { db } from "../../db";
 import { loadAvailability } from "../decks/availability-query";
@@ -216,10 +217,16 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
       : new Map<string, LabelJob[]>(),
   ]);
 
+  // The sheet's hover preview draws these, and card details opens the deck's pick or the owned printing:
+  // the same chain (`chainArt`), for the original and for the stand-ins the player owns. An unowned
+  // stand-in keeps the catalog art it was read with.
+  const art = await chainArt(userId, deckId, [cutOracleId, ...ownedIds]);
+  const draw = (card: CardRow): CardRow => ({ ...card, imageUri: art.get(card.oracleId) ?? card.imageUri });
+  const drawnOriginal = draw(original);
   const pool: Candidate[] = candidates.map((r) => {
     const a = availability.get(r.oracle_id);
     return {
-      ...toCard(r),
+      ...draw(toCard(r)),
       inclusion: r.inclusion === null ? null : Number(r.inclusion),
       synergy: r.synergy === null ? null : Number(r.synergy),
       isUniversal: staples.has(r.oracle_id),
@@ -230,9 +237,9 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   });
 
   return {
-    ...rankStandIns(original, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP,
+    ...rankStandIns(drawnOriginal, pool, priced, (w) => creatureTypes.has(w), full ? null : STAND_IN_GROUP_CAP,
       lens(creatureTypes, noncreatureSubtypes), labels),
-    original,
+    original: drawnOriginal,
     commanders,
     newestAsOf: priced.newestAsOf,
   };

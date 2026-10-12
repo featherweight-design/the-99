@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, lt, max, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { chainArt } from "../cards/chain-art";
 import { readCollectionGeneration } from "../recs/store";
 import {
   cards,
@@ -383,7 +384,12 @@ async function readItems(
         })
       : new Map<string, Availability>(),
   ]);
+  // The hover preview draws these, and card details opens the deck's pick or the owned printing: the same
+  // chain, not the catalog's arbitrary one (`chainArt`).
+  const art = await chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]));
   const items = rows.rows.map((r): TuningItem => {
+    const addArt = art.get(r.add_oracle_id ?? "") ?? r.add_image_uri;
+    const cutArt = art.get(r.cut_oracle_id ?? "") ?? r.cut_image_uri;
     const shared = {
       id: r.id,
       rationale: r.rationale,
@@ -403,8 +409,8 @@ async function readItems(
         addTypeLine: r.add_type_line ?? "",
         cutOracleId: r.cut_oracle_id,
         cutName: r.cut_name ?? "",
-        addImageUri: r.add_image_uri,
-        cutImageUri: r.cut_image_uri,
+        addImageUri: addArt,
+        cutImageUri: cutArt,
         owned: r.owned_quantity > 0,
         ownedQuantity: r.owned_quantity,
         availability: r.owned_quantity > 0 ? claims.get(r.add_oracle_id) ?? null : null,
@@ -423,7 +429,7 @@ async function readItems(
       cardOracleId: id,
       cardName: (add ? r.add_name : r.cut_name) ?? "",
       cardTypeLine: add ? r.add_type_line ?? "" : "",
-      cardImageUri: add ? r.add_image_uri : r.cut_image_uri,
+      cardImageUri: add ? addArt : cutArt,
       owned: add && r.owned_quantity > 0,
       ownedQuantity: add ? r.owned_quantity : 0,
       availability: add && r.owned_quantity > 0 ? claims.get(id) ?? null : null,
