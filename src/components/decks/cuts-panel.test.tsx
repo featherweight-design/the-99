@@ -7,7 +7,8 @@ import { MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { CutsPanelView, type CutsDeps } from "./cuts-panel";
 
-vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
+const detail = vi.hoisted(() => ({ open: vi.fn() }));
+vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: detail.open }), useCardIntent: () => ({}) }));
 vi.mock("../../app/decks/cuts-actions", () => ({
   cancelProposedCuts: vi.fn(), cutProposed: vi.fn(), keepProposedCut: vi.fn(), readCutsPanel: vi.fn(),
   restoreProposedCut: vi.fn(), runProposedCuts: vi.fn(), undoProposedCut: vi.fn(),
@@ -142,6 +143,17 @@ describe("CutsPanelView", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.showAgain }));
     await waitFor(() => expect(d.restore).toHaveBeenCalledWith("i2"));
     expect(screen.getByText(copy.facts.dividerPart)).toBeTruthy();
+  });
+
+  it("an answered row's name opens card details, as a pending row's does", async () => {
+    const p = withResult(2, 2);
+    p.items = [item(1, { verdict: "accepted" }), item(2, { verdict: "dismissed" })];
+    await mount(deps(p));
+    for (const answered of ["answered-cut", "answered-kept"]) {
+      const row = screen.getByTestId(answered);
+      fireEvent.click(within(row).getByRole("button", { name: /Card [12]/ }));
+    }
+    expect(detail.open).toHaveBeenCalledTimes(2);
   });
 
   it("re-offer: a result for a list that has since moved is not shown, and the offer is back", async () => {

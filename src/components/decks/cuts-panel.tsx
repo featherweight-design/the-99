@@ -22,6 +22,7 @@ import { cutChips, type Chip, type CountRow } from "../../lib/tuning/cuts-count"
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
+import { usePreviewRow } from "./hover-preview";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -560,6 +561,10 @@ function CutRow({ item, panel, deps, items, onSettled }: {
   const [busy, setBusy] = useState<string | null>(null);
   const { open } = useCardDetail();
   const intent = useCardIntent(item.cutOracleId);
+  // Hover and press on the same card, answered or not (Hugh, 2026-10-12): every row that names a card has both.
+  const previewHandlers = usePreviewRow(item.cutImageUri);
+  const openCard = (event: React.MouseEvent<HTMLElement>) =>
+    open(item.cutOracleId, items.map((i) => ({ oracleId: i.cutOracleId, name: i.cutName, imageUri: i.cutImageUri })), undefined, { opener: event.currentTarget });
 
   async function answer(kind: "cut" | "undo" | "keep" | "restore") {
     setBusy(kind);
@@ -586,6 +591,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
       <div>
         <div
           data-testid={done ? "answered-cut" : "answered-kept"}
+          {...previewHandlers}
           className="flex flex-wrap items-center gap-[9px] rounded-[9px] px-[12px] py-[9px]"
           style={{ background: done ? "var(--surface)" : "var(--surface-sunken)", border: `1px solid ${done ? "var(--success)" : "var(--border)"}` }}
         >
@@ -595,9 +601,10 @@ function CutRow({ item, panel, deps, items, onSettled }: {
           <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: done ? "var(--success)" : "var(--fg-locked)" }}>
             {done ? copy.cutDone : copy.kept}
           </span>
-          <span className={`min-w-0 text-[13px] ${done ? "line-through [text-decoration-color:var(--fg-locked)]" : ""}`} style={{ color: done ? "var(--fg-body)" : "var(--fg-faint)" }}>
+          <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
+            className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${done ? "line-through [text-decoration-color:var(--fg-locked)] text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
             {item.cutName}
-          </span>
+          </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer(done ? "undo" : "restore")}
             className="ml-auto min-h-[32px] rounded-[7px] px-[11px] py-[6px] text-[12px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]">
             {done ? copy.undo : copy.showAgain}
@@ -608,10 +615,8 @@ function CutRow({ item, panel, deps, items, onSettled }: {
   }
 
   const chips: Chip[] = cutChips(item.evidence, item.reason, panel.chips);
-  const openCard = (event: React.MouseEvent<HTMLElement>) =>
-    open(item.cutOracleId, items.map((i) => ({ oracleId: i.cutOracleId, name: i.cutName, imageUri: i.cutImageUri })), undefined, { opener: event.currentTarget });
   return (
-    <article aria-label={item.cutName} className="flex flex-col gap-[9px] rounded-[9px] px-[12px] py-[11px]"
+    <article aria-label={item.cutName} {...previewHandlers} className="flex flex-col gap-[9px] rounded-[9px] px-[12px] py-[11px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
       <div className="flex flex-col gap-[9px] md:flex-row md:items-center md:justify-between md:gap-[12px]">
         <span className="flex min-w-0 items-center gap-[10px]">

@@ -286,6 +286,29 @@ async function run() {
       }
     }
 
+    if (deck !== null) {
+      // 2b · THE DECK'S CARD VIEW and 2c · THE CONSIDER TAB, which had no preview at all: every card row has a
+      // preview and a press that opens card details (Hugh, 2026-10-12).
+      await page.goto(`${BASE}${deck}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(3_000);
+      const cardView = onPage(page, 'button[aria-label="Card view"], button:has-text("Card view")').first();
+      if ((await cardView.count()) === 0) {
+        report("card view · its toggle", false, "not on the page — NOT a pass");
+      } else {
+        await cardView.click();
+        await page.waitForTimeout(1_000);
+        await measure(page, "card view", onPage(page, "ul.grid > li"));
+      }
+      const consider = page.getByRole("tab", { name: /cards to consider/i });
+      if ((await consider.count()) === 0) {
+        report("consider · its tab", false, "not on the page — NOT a pass");
+      } else {
+        await consider.click();
+        await page.waitForTimeout(1_500);
+        await measure(page, "consider", onPage(page, '[data-testid="suggestion-tile"]'));
+      }
+    }
+
     // 3 · THE REVIEW PAGE, both columns. Desktop draws them side by side, so
     // one locator reaches the adds and the cuts alike.
     const changes = await findChangesDeck(page);

@@ -766,7 +766,9 @@ export function Decklist({
           notes={notes}
           {...lockProps}
         />
-        <DeckNotesPanel deckId={deckId} notes={notesData ?? NO_NOTES} deckCards={noteCards} />
+        <HoverPreviewProvider>
+          <DeckNotesPanel deckId={deckId} notes={notesData ?? NO_NOTES} deckCards={noteCards} />
+        </HoverPreviewProvider>
       </div>
     );
   }

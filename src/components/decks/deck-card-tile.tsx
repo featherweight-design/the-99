@@ -54,6 +54,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useLockCards } from "./lock-cards";
 import { LockMark } from "./lock-mark";
 import { deckRowTag } from "../../lib/decks/row-tag";
+import { usePreviewRow } from "./hover-preview";
 
 /** Radius, plate and art shape — everything the undo tile shares with the live
  *  one, so a removed card leaves a hole exactly its own size. */
@@ -75,6 +76,8 @@ export function DeckCardTile({
   spent?: boolean;
 }) {
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
+  // The same hover preview the list row draws, borrowed from the decklist's provider.
+  const previewHandlers = usePreviewRow(card.imageUri);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
   const reportRemoveFailure = useReportRemoveFailure();
@@ -183,7 +186,7 @@ export function DeckCardTile({
   if (spent) return <UndoTile deckId={deckId} card={card} />;
 
   return (
-    <li className="flex flex-col">
+    <li className="flex flex-col" {...previewHandlers}>
       <div
         /* THE WHOLE LEFT EDGE, art included. It was on the caption, on call B's
            reasoning that the shell's border already carries over-committed and
