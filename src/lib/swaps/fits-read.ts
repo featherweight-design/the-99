@@ -4,7 +4,7 @@ import { FIGURES, RANKS, SCORE_WORDS } from "../intake/the-read";
 import { ROLES, THEMES } from "../labels/types";
 import { keywordClaims } from "../synopsis/claims";
 import { normalizeName, type FactCard } from "../synopsis/facts";
-import { quotesPlayerText } from "../tuning/quote-match";
+import { isPartOf } from "../tuning/quote-match";
 import { validateCuts } from "../tuning/cuts-validate";
 import type { CutsPack, CutsPackCard } from "../tuning/cuts-evidence";
 import type { CutsResponse } from "../tuning/cuts-schema";
@@ -412,7 +412,7 @@ export function validFitsRead(args: {
     }
     // 4. Every quote is a true quote of this deck's stored plan.
     const quotes = parts.flatMap((x) => ("quote" in x ? [x.quote] : []));
-    for (const q of quotes) if (!quotesPlayerText(deck.plan?.text ?? null, q)) return "falseQuote";
+    for (const q of quotes) if (!isPartOf(deck.plan?.text ?? null, q)) return "falseQuote";
     // 5. At least one of this deck's cards (its commander included) by key, or a plan quote.
     const citesDeck = parts.some((x) => "card" in x && ownDeck.has(x.card));
     if (!citesDeck && quotes.length === 0) return "noCitation";

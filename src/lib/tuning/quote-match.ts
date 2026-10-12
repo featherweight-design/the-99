@@ -8,8 +8,18 @@
  */
 export function quotesPlayerText(source: string | null, value: string): boolean {
   if (source === null) return false;
-  const part = value.trim().replace(/^["“]|["”]$/g, "").trim();
   if (value.includes(source)) return true;
+  return isPartOf(source, value);
+}
+
+/**
+ * Whether `value` is whole words OF `source`, and nothing more: the half of `quotesPlayerText` a
+ * caller uses when its value is the quote's body alone. There a body that wraps the whole source in
+ * words of its own is not a quote of it (Find a deck read, lock 3).
+ */
+export function isPartOf(source: string | null, value: string): boolean {
+  if (source === null) return false;
+  const part = value.trim().replace(/^["“]|["”]$/g, "").trim();
   if (!/[A-Za-z]{2,}/.test(part)) return false;
   return new RegExp(`(?<![\\w'])${escapeRegExp(part)}(?![\\w'])`).test(source);
 }

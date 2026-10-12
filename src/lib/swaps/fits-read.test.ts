@@ -178,6 +178,8 @@ describe("validFitsRead", () => {
     expect(run([pick({ sentence: "It helps the deck \"go wide with goblins\" through {C1}." })]).drops).toEqual({ falseQuote: 1 });
     expect(run([pick({ sentence: "It helps the deck \"Go wide with goblins\"." })]).drops).toEqual({});
     expect(run([pick({ sentence: "It helps the deck “swing with haste” turn after turn." })]).drops).toEqual({});
+    // A quote that wraps the whole plan in words of its own is not in the plan.
+    expect(run([pick({ sentence: "It helps the deck \"Go wide with goblins, then swing with haste. and draw cards\"." })]).drops).toEqual({ falseQuote: 1 });
   });
 
   it("4: a deck with no plan has nothing to quote", () => {
