@@ -99,4 +99,11 @@ describe("LinkPreconRow", () => {
     fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "wilhelt" } });
     expect(within(dialog).getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Select Undead Unleashed"]);
   });
+
+  it("says a search matched nothing, rather than drawing an empty list", () => {
+    const dialog = open();
+    fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "zzz" } });
+    expect(within(dialog).queryAllByRole("radio")).toHaveLength(0);
+    expect(within(dialog).getByText("No precon matches “zzz”")).toBeInTheDocument();
+  });
 });

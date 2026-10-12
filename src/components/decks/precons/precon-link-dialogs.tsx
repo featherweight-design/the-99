@@ -169,7 +169,7 @@ const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCas
  * selection and what linking does, or asking for one with the button disabled (K6n). Linking from
  * here is one step: the picker is the confirm.
  */
-export function LinkPicker({ title, lead, searchLabel, label, figSub, items, none, foot, footNone, submit, onLink, onDismiss }: {
+export function LinkPicker({ title, lead, searchLabel, label, figSub, items, none, noMatch, foot, footNone, submit, onLink, onDismiss }: {
   title: string;
   lead: string;
   searchLabel: string;
@@ -177,6 +177,8 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
   figSub: string;
   items: PickItem[];
   none: string;
+  /** A search that matched nothing, told apart from a list that is empty. */
+  noMatch: (q: string) => string;
   foot: string;
   footNone: string;
   submit: (name: string) => string;
@@ -206,7 +208,9 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
       />
       <div className="flex flex-col gap-[8px]">
         <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{label}</span>
-        {items.length === 0 && <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{none}</p>}
+        {items.length === 0
+          ? <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{none}</p>
+          : shown.length === 0 && <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{noMatch(q.trim())}</p>}
         <div role="radiogroup" aria-label={label} className="flex flex-col gap-[6px]">
           {shown.map((item) => {
             const on = item.id === selected;
@@ -288,6 +292,7 @@ export function LinkPreconRow({ deckId, deckName, picker }: { deckId: string; de
             search: [m.name, m.setCode, ...m.commanders].join(" "),
           }))}
           none={c.none}
+          noMatch={preconsCopy.none.head}
           foot={c.foot}
           footNone={c.footNone}
           submit={c.submit}
