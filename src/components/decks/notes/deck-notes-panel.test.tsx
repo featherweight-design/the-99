@@ -176,6 +176,45 @@ describe("the freshest view wins", () => {
   });
 });
 
+describe("the add field's guards", () => {
+  it("does not submit whitespace on Enter, as the Add button does not either", () => {
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" });
+    type(field, "   ");
+    key(field, "Enter");
+    expect(stub.addNote).not.toHaveBeenCalled();
+  });
+
+  it("does not submit an unfinished [[query on Enter while the picker is open", () => {
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" });
+    type(field, "[[zzq");
+    key(field, "Enter");
+    expect(stub.addNote).not.toHaveBeenCalled();
+  });
+
+  it("refuses the [[ ]] button when it would take the field past the cap", () => {
+    mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    type(field, "x".repeat(138));
+    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    expect(field.value).toBe("x".repeat(138));
+  });
+});
+
+describe("writes run one at a time", () => {
+  it("starts the second write only after the first has answered", async () => {
+    let release!: (v: unknown) => void;
+    stub.setNoteDone.mockImplementationOnce(() => new Promise((r) => { release = r; }));
+    mount(view([note("a", "first"), note("b", "second")]));
+    click(screen.getByRole("checkbox", { name: "Done: first" }));
+    click(screen.getByRole("checkbox", { name: "Done: second" }));
+    expect(stub.setNoteDone).toHaveBeenCalledTimes(1);
+    release({ ok: true, notes: null });
+    await waitFor(() => expect(stub.setNoteDone).toHaveBeenCalledTimes(2));
+  });
+});
+
 describe("a row", () => {
   it("selects with the box named for its text, and unselects a done one", async () => {
     mount(view([note("a", "water the plants")], [note("b", "all done", { doneAt: "2026-10-09T12:00:00.000Z" })]));
@@ -183,7 +222,9 @@ describe("a row", () => {
     expect(stub.setNoteDone).toHaveBeenCalledWith(DECK, "a", true);
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     click(screen.getByRole("checkbox", { name: "Done: all done" }));
-    expect(stub.setNoteDone).toHaveBeenCalledWith(DECK, "b", false);
+    // The panel runs its writes one at a time, so the second waits for the first to answer.
+    await waitFor(() => expect(stub.setNoteDone).toHaveBeenCalledWith(DECK, "b", false));
+    expect(stub.setNoteDone.mock.calls.map((c) => c[1])).toEqual(["a", "b"]);
   });
 
   it("shows a refused select under the row and leaves the box as it was", async () => {
@@ -229,5 +270,16 @@ describe("a row", () => {
     click(screen.getByRole("button", { name: "Delete this note" }));
     click(screen.getByRole("button", { name: "Delete" }));
     expect(stub.deleteNote).toHaveBeenCalledWith(DECK, "a");
+  });
+
+  it("hands focus back to the control that opened the confirm when Keep it closes it", async () => {
+    mount(view([note("a", "doomed")]));
+    const opener = screen.getByRole("button", { name: "Delete this note" });
+    click(opener);
+    const pane = screen.getByText("Delete this note?").closest("div")!.parentElement!;
+    click(within(pane).getByRole("button", { name: "Keep it" }));
+    // jsdom has no media query, so the phone's More button is the one that answers; either is a real opener.
+    const more = screen.getByRole("button", { name: "More for this note" });
+    await waitFor(() => expect([opener, more]).toContain(document.activeElement));
   });
 });

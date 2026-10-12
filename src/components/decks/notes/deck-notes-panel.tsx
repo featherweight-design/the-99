@@ -46,6 +46,18 @@ export function DeckNotesPanel({
   const [showAllDone, setShowAllDone] = useState(false);
   const [announce, setAnnounce] = useState("");
   const inFlight = useRef(false);
+  // Every write this panel makes goes down ONE queue. Two writes in flight at once each answer with the notes
+  // as THEY read them, and a read that began first can finish last, so the panel would show a state that
+  // undoes the other write. One at a time, each answer follows the write before it.
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const queued = useRef(0);
+  const enqueue = <T,>(fn: () => Promise<T>): Promise<T> => {
+    // Starts at once when nothing is ahead of it; waits its turn otherwise.
+    const next = queued.current === 0 ? fn() : chain.current.then(fn, fn);
+    queued.current += 1;
+    chain.current = next.then(() => undefined, () => undefined).then(() => { queued.current -= 1; });
+    return next;
+  };
 
   const submit = async () => {
     if (inFlight.current) return;
@@ -54,7 +66,7 @@ export function DeckNotesPanel({
     setError(null);
     try {
       // Trimmed on save (A4): a pick leaves a trailing space.
-      const r = await addNote(deckId, serialize(text, picked).trim());
+      const r = await enqueue(() => addNote(deckId, serialize(text, picked).trim()));
       adopt(r);
       if (r.ok) {
         setText("");
@@ -96,7 +108,7 @@ export function DeckNotesPanel({
     <p role="status" aria-live="polite" className="sr-only">{announce}</p>
   );
   const row = (n: DeckNotesView["open"][number]) => (
-    <NoteRow key={n.id} note={n} deckId={deckId} deckCards={deckCards} onAnnounce={setAnnounce} onResult={adopt} />
+    <NoteRow key={n.id} note={n} deckId={deckId} deckCards={deckCards} onAnnounce={setAnnounce} onResult={adopt} enqueue={enqueue} />
   );
 
   if (total === 0) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsDesktop } from "../../ui/use-is-desktop";
 import { useEffect, useRef, useState } from "react";
 import { deleteNote, editNote, setNoteDone } from "../../../app/decks/notes-actions";
 import { deckNotesCopy } from "../../../lib/copy/deck-notes";
@@ -24,7 +25,7 @@ export function formatNoteDate(iso: string, now: Date = new Date()): string {
  * shipped `MutationError` on a refusal and leaves the row as it was.
  */
 export function NoteRow({
-  note, deckId, deckCards, onAnnounce, onResult,
+  note, deckId, deckCards, onAnnounce, onResult, enqueue,
 }: {
   note: NoteView;
   deckId: string;
@@ -32,6 +33,8 @@ export function NoteRow({
   onAnnounce: (message: string) => void;
   /** The fresh notes a successful write answered with, for the panel to show. */
   onResult: (result: NotesResult) => void;
+  /** The panel's write queue: one write at a time, so each answer follows the write before it. */
+  enqueue: <T,>(fn: () => Promise<T>) => Promise<T>;
 }) {
   const done = note.doneAt !== null;
   const [editing, setEditing] = useState(false);
@@ -43,11 +46,21 @@ export function NoteRow({
   const [picked, setPicked] = useState<Picked>(new Map());
   const inFlight = useRef(false);
   const confirmPane = useRef<HTMLDivElement>(null);
+  const deleteButton = useRef<HTMLButtonElement>(null);
+  const moreButton = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  const desktop = useIsDesktop();
   // The confirm opens under the row, which on a phone can be behind the fixed tab bar and the sticky add
   // bar. Bring it fully into view, clear of both (the bottom margin is their height plus a little air).
   useEffect(() => {
     if (confirming) confirmPane.current?.scrollIntoView?.({ block: "nearest" });
-  }, [confirming]);
+    else if (restoreFocus.current) {
+      // Keep went away with its subtree while it held focus: hand it back to what opened the confirm. On a
+      // phone the menu item that opened it is gone too, so the More button stands in.
+      restoreFocus.current = false;
+      (desktop ? deleteButton : moreButton).current?.focus();
+    }
+  }, [confirming, desktop]);
   const plain = note.drawn.map((s) => (s.kind === "text" ? s.text : s.name)).join("");
 
   const run = async (fn: () => Promise<NotesResult>, ok: () => void) => {
@@ -56,7 +69,7 @@ export function NoteRow({
     setBusy(true);
     setError(null);
     try {
-      const r = await fn();
+      const r = await enqueue(fn);
       onResult(r);
       if (r.ok) ok();
       else setError(r.message);
@@ -139,9 +152,10 @@ export function NoteRow({
         </span>
         <span className="hidden flex-none gap-[2px] md:flex">
           <button type="button" aria-label={deckNotesCopy.row.edit} onClick={startEdit} className="h-[28px] w-[28px] cursor-pointer border-0 bg-transparent text-[14px] text-[color:var(--fg-locked)]">{"✎"}</button>
-          <button type="button" aria-label={deckNotesCopy.row.delete} onClick={() => { setConfirming(true); setError(null); }} className="h-[28px] w-[28px] cursor-pointer border-0 bg-transparent text-[16px] text-[color:var(--fg-locked)]">{"×"}</button>
+          <button ref={deleteButton} type="button" aria-label={deckNotesCopy.row.delete} onClick={() => { setConfirming(true); setError(null); }} className="h-[28px] w-[28px] cursor-pointer border-0 bg-transparent text-[16px] text-[color:var(--fg-locked)]">{"×"}</button>
         </span>
         <button
+          ref={moreButton}
           type="button"
           aria-label={deckNotesCopy.row.more}
           aria-expanded={menu}
@@ -169,7 +183,7 @@ export function NoteRow({
             pendingLabel={deckNotesCopy.confirm.deleting}
             pending={busy}
             error={error}
-            onCancel={() => { setConfirming(false); setError(null); }}
+            onCancel={() => { restoreFocus.current = true; setConfirming(false); setError(null); }}
             onConfirm={() => run(() => deleteNote(deckId, note.id), () => { setConfirming(false); onAnnounce(deckNotesCopy.announce.deleted); })}
           />
         </div>
