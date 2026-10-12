@@ -64,13 +64,14 @@ export function FoldCard({ id, title, denom, summary, open, onToggle, children }
         // Named by the title, and by the summary while folded (the table's a11y rule): the denominator is
         // read in the card, not as part of the control's name.
         aria-labelledby={open ? `stats-${id}-title` : `stats-${id}-title stats-${id}-summary`}
+        aria-describedby={`stats-${id}-denom`}
         onClick={onToggle}
         className={`flex min-h-[52px] w-full items-center gap-[10px] py-[6px] text-left md:min-h-[46px] ${open ? "border-b border-b-[color:var(--border)]" : ""}`}
       >
         <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <span className="flex flex-wrap items-baseline gap-x-[10px]">
             <span id={`stats-${id}-title`} className="font-display text-[16px] font-normal text-[color:var(--fg)] md:text-[17px]">{title}</span>
-            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span>
+            <span id={`stats-${id}-denom`} className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span>
           </span>
           {open ? null : <span id={`stats-${id}-summary`} data-stats-summary className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{summary}</span>}
         </span>

@@ -366,7 +366,11 @@ export function DecksView({
           chooseView("stats");
           setHeldStats(data);
           setView("stats");
-          mirrorUrl(url);
+          // Rebuilt from the URL as it stands now: Tiles stayed live while the read ran, and a shelf, search
+          // or sort chosen meanwhile is the reader's newer word.
+          const now = new URLSearchParams(window.location.search);
+          now.set("view", "stats");
+          mirrorUrl(`${path}?${now}`);
         })
         .catch(() => {})
         .finally(() => { if (mounted.current) setStatsPending(false); });

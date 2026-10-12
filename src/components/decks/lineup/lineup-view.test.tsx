@@ -35,6 +35,8 @@ describe("LineupView: folding", () => {
     expect(card("recency").querySelector("[data-stats-summary]")).toBeNull();
     // The head is named by its title, and by the summary while folded; never by the denominator.
     expect(screen.getByRole("button", { name: "When each deck last played" })).toBe(head("recency"));
+    expect(head("recency").getAttribute("aria-describedby")).toBe("stats-recency-denom");
+    expect(document.getElementById("stats-recency-denom")?.textContent).toBe("2 of 4 played");
     expect(screen.getByRole("button", { name: "Brackets and colors bracket 1–2 holds 1 · 1 not analyzed" })).toBe(head("spread"));
   });
 
@@ -100,6 +102,13 @@ describe("LineupView: recency", () => {
     const never = card("recency").querySelector("[data-stats-never]") as HTMLElement;
     expect(within(never).getAllByRole("link").map((a) => a.textContent)).toEqual(["Eldrazi", "Gishath"]);
     expect(within(never).getByRole("link", { name: "Eldrazi" }).getAttribute("href")).toBe("/decks/eldrazi");
+  });
+
+  it("steps a second game on the same date right, so both beads show", () => {
+    draw({ ...DATA, decks: [deck("Two", { games: [game("2026-10-01", "win"), game("2026-10-01", "loss")] }), deck("x", { games: [game("2026-09-01")] })] });
+    const beads = card("recency").querySelectorAll('[data-stats-lane="two"] [data-result-bead]');
+    expect(beads.length).toBe(2);
+    expect(card("recency").querySelectorAll('[data-stats-lane="two"] [data-bead-step]').length).toBe(1);
   });
 
   it("says no games are logged when none are, with every deck under Never played", () => {

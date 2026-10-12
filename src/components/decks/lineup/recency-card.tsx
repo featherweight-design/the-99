@@ -56,13 +56,18 @@ export function RecencyBody({ r, total }: { r: Recency; total: number }) {
                   <span className="absolute top-0 right-0 bottom-0 w-[1px] bg-[var(--border-strong)]" />
                   <span className="absolute right-0 left-0 top-[14px] h-[1px] bg-[var(--border-strong)]" />
                   <span className="absolute right-0 top-[13px] h-[3px] rounded-[2px] bg-[color:color-mix(in_oklab,var(--fg-muted)_45%,transparent)]" style={{ left: pct(lane.lastAt) }} />
-                  {lane.beads.map((b, i) => (
+                  {lane.beads.map((b, i) => {
+                    // Games on one date share a position; each later one steps right by a bead, so every
+                    // game is seen and the first still sits on its date.
+                    const same = lane.beads.slice(0, i).filter((x) => x.at === b.at).length;
+                    return (
                     // The bead's own loss fill is transparent; on a lane it sits over the baseline, so it gets the
                     // card's ground under it (`--surface-sunken`, the table's loss fill).
-                    <span key={i} className="absolute top-[15px] -translate-x-1/2 -translate-y-1/2 rounded-[4px] bg-[var(--surface-sunken)]" style={{ left: pct(b.at) }}>
+                    <span key={i} data-bead-step={same || undefined} className="absolute top-[15px] -translate-x-1/2 -translate-y-1/2 rounded-[4px] bg-[var(--surface-sunken)]" style={{ left: same ? `calc(${pct(b.at)} + ${same * 17}px)` : pct(b.at) }}>
                       <Bead result={b.result} className="h-[14px] w-[14px] rounded-[4px] text-[9px] md:h-[16px] md:w-[16px]" />
                     </span>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="flex flex-col items-end gap-[1px] [grid-area:f]">
                   <span className="whitespace-nowrap font-mono text-[11.5px] text-[color:var(--fg)]">{copy.ago(lane.ago)}</span>
