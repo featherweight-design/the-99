@@ -285,7 +285,7 @@ export function GameLogForm({
             ? `px-[18px] py-[10px] text-[13.5px] font-semibold ${PRIMARY}`
             : "md:min-h-0 md:h-[32px] px-[16px] md:px-[14px] py-[10px] md:py-0 " +
               "text-[14px] md:text-[12.5px] font-medium bg-transparent " +
-              "border border-border-strong text-fg hover:border-accent hover:text-accent-hover")
+              "border border-border-strong text-fg hover:border-accent hover:text-accent-hover transition-colors")
         }
       >
         {ctaLabel ?? gameLogCopy.form.open}

@@ -1372,7 +1372,7 @@ function CandidateRow({
             // fill that lights under the pointer would promise it can.
             + (inert
               ? ""
-              : " md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)]"),
+              : " md:hover:bg-[color:var(--elevated-hover)] md:hover:[--row-bg:var(--elevated-hover)] transition-colors"),
       ].join(" ")}
       {...previewHandlers}
       style={{

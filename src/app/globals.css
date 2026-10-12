@@ -435,6 +435,9 @@
  * `bg-bg`, `text-fg`, `border-border-strong`, `font-display`, etc.
  * ------------------------------------------------------------------ */
 @theme inline {
+  /* Every `transition*` utility's length and curve when it names none (see Motion below). */
+  --default-transition-duration: var(--motion-quick);
+  --default-transition-timing-function: var(--motion-ease);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
@@ -513,10 +516,16 @@ html { --tabbar-h: 74px; }
    arrives gently rather than snapping into place. The three parts are tokens so a surface that
    animates something other than `.anim-gentle-in` (a `transition`, its own keyframes) reads the
    same beat, length and curve rather than restating them. Reduced motion: `.anim-gentle-in` is
-   in the block below, and anything reading these tokens owes the same decision. */
+   in the block below, and anything reading these tokens owes the same decision.
+
+   Hover and press feedback answer the pointer, so they take no beat (Hugh, 2026-10-12: menus,
+   popovers and press feedback open with no delay, eased only) and a shorter length,
+   `--motion-quick`. It is every Tailwind `transition*` utility's default (the `@theme` block),
+   so a hover color eases on the same curve wherever it is drawn. */
 html {
   --motion-delay: 100ms;
   --motion-duration: 320ms;
+  --motion-quick: 200ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
 }
 
@@ -746,9 +755,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   animation: breathe 5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
   will-change: transform;
 }
-.anim-sheet-in { animation: filter-sheet-in 0.18s ease-out both; }
+/* These six were never timed by a handoff (their comments say so), so they take the shared curve
+   at their own short lengths and no beat: each answers a press or lands content in place. */
+.anim-sheet-in { animation: filter-sheet-in 0.18s var(--motion-ease) both; }
 /* A line the Add cards sheet folded a duplicate into: its edge pulses once (240ms). */
-.anim-line-pulse { animation: line-pulse 240ms ease-out both; }
+.anim-line-pulse { animation: line-pulse 240ms var(--motion-ease) both; }
 .anim-menu-in { animation: menu-in 0.12s ease-out both; }
 .anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
 /* A card opened from a sheet, on the phone (stacked sheets R1, motion): it rises the whole height
@@ -764,14 +775,14 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 @media (min-width: 48rem) {
   .anim-stack-rise { animation: none; }
 }
-.anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
-.anim-quickadd-in { animation: quickadd-in 0.14s ease-out both; }
+.anim-backdrop-in { animation: backdrop-in 0.18s var(--motion-ease) both; }
+.anim-quickadd-in { animation: quickadd-in 0.14s var(--motion-ease) both; }
 /* A new overview replacing the held one in place (addendum_overview_loading, 1c): 150ms, and
    instant under reduced motion. */
-.anim-overview-in { animation: backdrop-in 0.15s ease-out both; }
+.anim-overview-in { animation: backdrop-in 0.15s var(--motion-ease) both; }
 /* I got it's held slot, and the row an undo brings back (handoff C9): one 150ms opacity crossfade
    in the row's own shell, so no height moves; a swap under reduced motion. */
-.anim-slot-in { animation: backdrop-in 0.15s ease-out both; }
+.anim-slot-in { animation: backdrop-in 0.15s var(--motion-ease) both; }
 /* `both`, so the first frame is the 0% state rather than a full-size card for one
    frame before the animation takes it. The blur underneath is set at its final value
    on the first frame and never animated: at 10px it is invisible in motion and

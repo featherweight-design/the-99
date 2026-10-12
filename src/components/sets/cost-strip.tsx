@@ -195,7 +195,7 @@ export function CostStrip({
         // right-pinned button sat apart from everything it acts on; right from `md`.
         className="md:ml-auto inline-flex min-h-[44px] md:min-h-[32px] items-center rounded-[8px]
                    px-[14px] text-[13px] bg-[color:var(--fg)] text-[color:var(--bg)]
-                   hover:opacity-90"
+                   hover:opacity-90 transition-opacity"
       >
         {sendCapped ? setPageCopy.cost.sendCapped(sending) : setPageCopy.cost.send(sending)}
       </a>

@@ -616,7 +616,7 @@ export function DeckCard({
                 tabIndex={-1}
                 aria-hidden="true"
                 data-cart-link
-                className="relative z-10 no-underline hover:underline hover:decoration-[color:var(--accent)]"
+                className="relative z-10 no-underline hover:underline hover:decoration-[color:var(--accent)] transition-colors"
               >
                 {detail.text}
                 <PendingReporter href="/decks/shopping" />

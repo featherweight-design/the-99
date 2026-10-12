@@ -84,8 +84,8 @@ export function RoleCounterCell({
     "pt-[7px] px-[2px] pb-[6px] md:px-[14px] md:py-[11px] text-center md:text-left " +
     `bg-surface-sunken border ${borderClass}`;
   const interactive =
-    " cursor-pointer hover:bg-elevated-hover hover:border-border-strong " +
-    "active:bg-bg active:border-accent-shadow";
+    " cursor-pointer hover:bg-elevated-hover hover:border-border-strong transition-colors " +
+    "active:bg-bg active:border-accent-shadow transition-colors";
 
   const face = (
     <>

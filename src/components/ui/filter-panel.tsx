@@ -606,7 +606,7 @@ export function FilterPanel({
           // The keyboard-active row never also takes the hover fill (§Keyboard-
           // active: "Hover fill — none, never combined"). The class is withheld
           // rather than overridden, so nothing rests on generated-CSS order.
-          !option.disabled && !isActive ? "md:hover:bg-[color:var(--surface-raised)]" : "",
+          !option.disabled && !isActive ? "md:hover:bg-[color:var(--surface-raised)] transition-colors" : "",
           isActive
             ? "rounded-[6px] outline outline-2 -outline-offset-2 outline-[color:var(--accent)]"
             : "",

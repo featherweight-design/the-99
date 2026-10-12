@@ -265,7 +265,7 @@ function Ask({
             type="button"
             onClick={() => onChoose(b)}
             style={{ "--chip-ink": bracketInk(b) } as CSSProperties}
-            className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[color:color-mix(in_oklab,var(--chip-ink)_45%,var(--border))] bg-[color:var(--surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:h-[36px] md:flex-none md:justify-start md:rounded-[9px] md:pl-2 md:pr-[13px] md:hover:border-[color:var(--chip-ink)] md:hover:bg-[color:var(--elevated)]"
+            className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[color:color-mix(in_oklab,var(--chip-ink)_45%,var(--border))] bg-[color:var(--surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] md:h-[36px] md:flex-none md:justify-start md:rounded-[9px] md:pl-2 md:pr-[13px] md:hover:border-[color:var(--chip-ink)] md:hover:bg-[color:var(--elevated)] transition-colors"
           >
             {/* 26px full on the phone, 22px chip on desktop: two forms, two files, so one per width. */}
             <span className="flex md:hidden"><BracketMark bracket={b} px={26} /></span>

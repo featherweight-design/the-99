@@ -523,7 +523,7 @@ export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolea
       // Below the tab bar, the menu backdrop and the modals, which all sit at
       // 40 or above. The lock's note is fixed inside it, so it inherits the
       // same rank over page content.
-      // Touch (`hover: none`): the 88px labelled rail, `h-dvh` so the account
+      // Touch (`hover: none transition-colors`): the 88px labelled rail, `h-dvh` so the account
       // control is measured against the visible viewport (audit V-E4), and the
       // short rule's 10px padding (V1).
       className="hidden md:flex md:flex-col items-center w-[var(--rail-w)] shrink-0 h-screen touch:h-dvh sticky top-0 z-30 py-[14px] touch-short:py-[10px]"

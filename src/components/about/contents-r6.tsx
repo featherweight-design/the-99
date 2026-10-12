@@ -181,7 +181,7 @@ function Field({
               aria-label={copy.clear}
               onClick={() => setQuery("")}
               className={
-                "flex flex-none items-center justify-center rounded-[6px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] " +
+                "flex flex-none items-center justify-center rounded-[6px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors " +
                 (tall ? "h-[32px] w-[32px]" : "h-[22px] w-[22px]")
               }
             >

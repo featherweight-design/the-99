@@ -345,7 +345,7 @@ function PulledFrom({ deck }: { deck: { sourceDeckId: string; sourceDeckName: st
   return (
     <Link
       href={`/decks/${deck.sourceDeckId}`}
-      className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)] underline-offset-2 hover:underline"
+      className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)] underline-offset-2 hover:underline transition-colors"
     >
       {deckVersioningCopy.review.pulledFrom(deck.sourceDeckName)}
     </Link>

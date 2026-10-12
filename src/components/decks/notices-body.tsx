@@ -239,7 +239,7 @@ function Foot({ foot }: { foot: Exclude<NoticesFoot, { kind: "none" }> }) {
         <button
           type="button"
           onClick={foot.onPress}
-          className="inline-flex min-h-[44px] flex-none items-center gap-[8px] font-mono text-[11px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+          className="inline-flex min-h-[44px] flex-none items-center gap-[8px] font-mono text-[11px] text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
         >
           <span className="border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)]">{copy.sheet.foot.toTab}</span>
           <span aria-hidden="true">→</span>

@@ -263,7 +263,7 @@ export function StandInRow({ row, newestAsOf, take, siblings }: { row: SheetRow;
             <button
               type="button"
               onClick={take.refused.onClose}
-              className="min-h-[44px] px-[10px] rounded-[8px] text-[13px] md:min-h-[30px] md:px-[6px] md:py-[4px] md:rounded-[7px] md:text-[12px] leading-none font-medium bg-transparent border-0 cursor-pointer text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]"
+              className="min-h-[44px] px-[10px] rounded-[8px] text-[13px] md:min-h-[30px] md:px-[6px] md:py-[4px] md:rounded-[7px] md:text-[12px] leading-none font-medium bg-transparent border-0 cursor-pointer text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors"
             >
               {copy.refused.close}
             </button>

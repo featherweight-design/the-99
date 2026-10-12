@@ -63,7 +63,7 @@ export function ViewToggle<T extends string>({
         // real value still resolves to one segment within the same render.
         const activeClasses =
           "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] [box-shadow:inset_0_0_0_1px_var(--border-strong)]";
-        const inactiveClasses = "bg-transparent text-[color:var(--fg-faint)] md:hover:text-[color:var(--fg-body)]";
+        const inactiveClasses = "bg-transparent text-[color:var(--fg-faint)] md:hover:text-[color:var(--fg-body)] transition-colors";
         // Tailwind's scanner reads the raw source text for class-like tokens — it cannot see a
         // `variant:` prefix assembled at runtime (`prefixEach`), so the unresolved paint below is
         // spelled out literally rather than composed, with every property the `md:` step flips

@@ -41,7 +41,7 @@ export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy 
       onClick={onToggle}
       className={
         twMerge(
-          "flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer",
+          "flex items-center gap-[8px] w-full min-h-[44px] md:min-h-[34px] pl-[43px] pr-0 py-0 bg-transparent text-left text-[12.5px] font-medium text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] cursor-pointer transition-colors",
           className,
         )
         // twMerge's conflict resolution drops `border-b-[color:...]` when it sits alongside a bare

@@ -331,7 +331,7 @@ function ColorStep({ order, evidence, firstRowRef, onPick, onClose }: {
           type="button"
           aria-label={copy.step.close}
           onClick={onClose}
-          className="inline-flex size-[44px] cursor-pointer items-center justify-end font-sans text-[13px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] md:size-[32px]"
+          className="inline-flex size-[44px] cursor-pointer items-center justify-end font-sans text-[13px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] md:size-[32px] transition-colors"
         >
           ✕
         </button>
@@ -356,7 +356,7 @@ function ColorStep({ order, evidence, firstRowRef, onPick, onClose }: {
               data-mana-step-row={entry.color}
               onClick={() => onPick(entry.color)}
               onKeyDown={(ev) => onKey(ev, i)}
-              className="grid min-h-[56px] cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[12px] gap-y-[2px] rounded-[9px] border border-[color:var(--border-strong)] bg-[var(--surface-sunken)] px-[12px] py-[8px] text-left hover:border-[color:var(--fg-faint)] md:min-h-[44px] md:grid-cols-[18px_120px_minmax(0,1fr)_auto] md:px-[12px] md:py-[8px]"
+              className="grid min-h-[56px] cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-[12px] gap-y-[2px] rounded-[9px] border border-[color:var(--border-strong)] bg-[var(--surface-sunken)] px-[12px] py-[8px] text-left hover:border-[color:var(--fg-faint)] md:min-h-[44px] md:grid-cols-[18px_120px_minmax(0,1fr)_auto] md:px-[12px] md:py-[8px] transition-colors"
             >
               <span aria-hidden className="row-span-2 size-[18px] rounded-full border border-[color:var(--fg-faint)] md:row-span-1" />
               <span className="flex items-center gap-[8px]">
@@ -555,7 +555,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
               target="_blank"
               rel="noopener noreferrer"
               aria-label={copy.help.buyAria(staple.name)}
-              className="text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+              className="text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
             >
               {copy.help.buyLink}
             </a>}
@@ -589,7 +589,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
             onClick={() => onApply(trade)}
             aria-disabled={busy !== null || undefined}
             disabled={busy !== null}
-            className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)]"
+            className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
           >
             {busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.out.name)}
           </button>

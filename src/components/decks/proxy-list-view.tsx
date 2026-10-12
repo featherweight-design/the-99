@@ -192,7 +192,7 @@ export function ProxyListView({
                           key={deck.id}
                           href={`/decks/${deck.id}`}
                           aria-label={proxyCopy.row.deckAria(deck.name)}
-                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+                          className="relative z-[1] truncate text-[color:var(--fg-muted)] underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current transition-colors"
                         >
                           {deck.name}
                         </Link>

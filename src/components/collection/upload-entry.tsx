@@ -248,7 +248,7 @@ export function UploadEntry({
             "md:flex md:items-center md:gap-[28px] md:text-left",
             dragOver
               ? "bg-[color:var(--surface-inset)] [border:1.5px_dashed_var(--accent)]"
-              : "bg-[color:var(--surface-sunken)] [border:1.5px_dashed_var(--border-dashed)] hover:bg-[color:var(--surface-inset)] hover:[border:1.5px_dashed_var(--accent)]",
+              : "bg-[color:var(--surface-sunken)] [border:1.5px_dashed_var(--border-dashed)] hover:bg-[color:var(--surface-inset)] hover:[border:1.5px_dashed_var(--accent)] transition-colors",
           ].join(" ")}
         >
           {fileInput}

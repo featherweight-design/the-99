@@ -658,17 +658,17 @@ function CutRow({ item, panel, deps, items, onSettled }: {
           <span aria-hidden className="h-[31px] w-[22px] flex-none rounded-[3px] bg-cover bg-center [border:1px_solid_var(--border-strong)]"
             style={item.cutImageUri ? { backgroundImage: cssUrl(item.cutImageUri) } : undefined} />
           <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
-            className="min-w-0 text-left text-[13px] font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]">
+            className="min-w-0 text-left text-[13px] font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] transition-colors">
             {item.cutName}
           </button>
         </span>
         <span className="flex gap-[8px] md:flex-none md:gap-[7px]">
           <button type="button" disabled={busy !== null} onClick={() => void answer("cut")}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px]">
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[6px] md:text-[12.5px] transition-colors">
             {copy.cut}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer("keep")}
-            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:flex-none md:rounded-[7px] md:px-[12px] md:py-[6px] md:text-[12.5px]">
+            className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] md:h-auto md:flex-none md:rounded-[7px] md:px-[12px] md:py-[6px] md:text-[12.5px] transition-colors">
             {copy.keep}
           </button>
         </span>

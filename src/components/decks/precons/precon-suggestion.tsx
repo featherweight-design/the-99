@@ -19,7 +19,7 @@ const LINK =
   + "border-[color:var(--accent)] bg-transparent px-[14px] font-sans text-[13.5px] font-semibold text-[color:var(--accent)] md:h-[36px]";
 const CLOSE =
   "flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 "
-  + "text-[13px] text-[color:var(--fg-muted)] md:hover:text-[color:var(--accent)]";
+  + "text-[13px] text-[color:var(--fg-muted)] md:hover:text-[color:var(--accent)] transition-colors";
 
 export function PreconSuggestion({ deckId, deckName, suggestions }: {
   deckId: string;

@@ -129,7 +129,7 @@ function RollupBands({
       onClick={onShowShopping}
       aria-label={recommendationsCopy.shopping.summaryLinkAria(String(overCommitted))}
       className="font-mono text-[11.5px] bg-transparent border-0 p-0 text-left cursor-pointer
-        text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+        text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
     >
       {recommendationsCopy.shopping.summaryLink}
     </button>

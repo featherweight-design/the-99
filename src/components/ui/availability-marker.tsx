@@ -573,7 +573,7 @@ export function AvailabilityMarker({
             aria-label={availabilityCopy.collection.detailDeckLinkAria(text.deck.name)}
             className={twMerge(
               "truncate min-w-[6ch] -ml-[6px] underline underline-offset-2",
-              "decoration-[color:var(--border-strong)] hover:decoration-current",
+              "decoration-[color:var(--border-strong)] hover:decoration-current transition-colors",
               colour,
             )}
             data-deck-name=""

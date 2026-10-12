@@ -14,7 +14,7 @@ import { Emphasised } from "./emphasis";
 import { PendingReporter } from "../shell/pending-reporter";
 
 const CORRECTION =
-  "font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline";
+  "font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline transition-colors";
 
 /**
  * `href` is the correction for the one cause this lane cannot undo in place:

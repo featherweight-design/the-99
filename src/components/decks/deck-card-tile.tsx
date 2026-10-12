@@ -524,7 +524,7 @@ export function DeckCardTile({
                 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100
                 md:group-hover:text-[color:var(--fg-body)]
                 active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-                cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors"
               aria-label={
                 card.quantity > 1
                   ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)

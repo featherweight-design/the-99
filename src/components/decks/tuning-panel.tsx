@@ -1091,7 +1091,7 @@ export function TuningPanel({
               <button
                 type="button"
                 onClick={() => void stop()}
-                className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-auto md:flex-none md:px-[14px] md:py-[10px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)]"
+                className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-auto md:flex-none md:px-[14px] md:py-[10px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors"
               >
                 {copy.stop}
               </button>

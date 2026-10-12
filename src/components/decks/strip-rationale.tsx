@@ -97,7 +97,7 @@ export function StripRationale({ mix }: { mix: RecommendedMix }) {
               setOpen(false);
               triggerRef.current?.focus();
             }}
-            className="font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer"
+            className="font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer transition-colors"
           >
             {addPanelCopy.strip.rationaleClose}
           </button>
