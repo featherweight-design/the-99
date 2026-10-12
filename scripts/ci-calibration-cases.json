@@ -1,0 +1,19 @@
+[
+  { "path": "src/lib/uuid.ts", "why": "a low-level util many tests import" },
+  { "path": "src/app/globals.css", "why": "read by 14 tests, imported by none" },
+  { "path": "drizzle/0077_card_label_batches_prompt_version.sql", "why": "a migration read as text" },
+  { "path": "src/lib/edhrec/__fixtures__/muldrotha.json", "why": "a fixture read by a parser test" },
+  { "path": "public/mana/w.svg", "why": "an asset the sprite test rebuilds from" },
+  { "path": "src/app/decks/[id]/page.tsx", "why": "parsed as an AST by the boundary tests" },
+  { "path": "scripts/lib/env.mjs", "why": "scanned by the env convention guard" },
+  { "path": "src/db/schema.ts", "why": "imported widely, read by constraint guards" },
+  { "path": "src/components/about/how-rows.tsx", "why": "read as text by its own test" },
+  { "path": "src/app/decks/actions.ts", "why": "read as text by the locks guard" },
+  { "path": "src/app/favicon.ico", "why": "a binary read by the icon test" },
+  { "path": ".github/workflows/card-labels.yml", "why": "a workflow a test executes steps from" },
+  { "path": "src/proxy.ts", "why": "a top-level src file with a test beside it" },
+  { "path": "src/lib/copy/about.version.json", "why": "a version pin" },
+  { "path": "docs/superpowers/eval/ledger-overview-accuracy.jsonl", "why": "a ledger read from docs" },
+  { "path": "scripts/label-cards-collect.mts", "why": "a script a src test reads as text" },
+  { "path": "src/components/ui/chevron.tsx", "why": "an ordinary component with a test importing it" }
+]

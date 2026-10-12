@@ -1,0 +1,90 @@
+# One-time (and re-runnable) calibration of the CI test selector. For each file in
+# scripts/ci-calibration-cases.json: break it, ask the selector what it would run, run the WHOLE
+# suite, and fail the case when a test went red that the selector did not choose. Dispatch-only:
+# every case is a full suite run (about 27 runner-minutes), so 17 cases are roughly 460 minutes.
+# Plan: boards/plan-ci-affected-tests-2026-10-12.md.
+name: CI selector calibration
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Run just the cases whose path contains this text (empty = all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-calibration
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      cases: ${{ steps.cases.outputs.cases }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: cases
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          cases=$(node -e '
+            const all = JSON.parse(require("fs").readFileSync("scripts/ci-calibration-cases.json", "utf8"));
+            const only = process.env.ONLY || "";
+            const picked = all.filter((c) => c.path.includes(only)).map((c) => c.path);
+            if (picked.length === 0) { console.error("no case matches"); process.exit(1); }
+            console.log(JSON.stringify(picked));
+          ')
+          echo "cases=$cases" >> "$GITHUB_OUTPUT"
+
+  case:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      # A full suite each; keep clear of the CI runners the PRs are queueing for.
+      max-parallel: 2
+      matrix:
+        file: ${{ fromJSON(needs.plan.outputs.cases) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Break the file and commit it
+        env:
+          FILE: ${{ matrix.file }}
+        run: |
+          git config user.name calibration
+          git config user.email calibration@example.invalid
+          node scripts/ci-calibrate.mjs mutate "$FILE"
+          git commit -qam "calibration: break $FILE"
+
+      - name: Ask the selector
+        env:
+          GITHUB_EVENT_NAME: pull_request
+          CI_BASE_REF: HEAD~1
+        run: node scripts/ci-select.mjs
+
+      - name: Run the whole suite
+        run: pnpm exec vitest run --passWithNoTests --reporter=json --outputFile=calibration-results.json || true
+
+      - name: Compare
+        env:
+          FILE: ${{ matrix.file }}
+        run: node scripts/ci-calibrate.mjs compare ci-selection.txt calibration-results.json "$FILE"
