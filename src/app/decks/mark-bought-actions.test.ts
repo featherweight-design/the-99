@@ -259,6 +259,11 @@ describe("readCartChooser", () => {
     expect(await readCartChooser(CARD, [A])).toBeNull();
   });
 
+  it("answers null when the claim model misses one of the line's decks, so the list stays whole", async () => {
+    state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(A)] };
+    expect(await readCartChooser(CARD, [A, B])).toBeNull();
+  });
+
   it("refuses malformed input", async () => {
     for (const bad of [[], ["nope"], "x", [A, 3]]) {
       await expect(readCartChooser(CARD, bad)).rejects.toThrow();

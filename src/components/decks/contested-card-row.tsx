@@ -156,6 +156,8 @@ export function ContestedCardRow({
     onPick: (deckId: string | null) => void;
     /** The announcement for a cleared pick: the caller's default order, which may not be commit order. */
     cleared: (holder: string) => string;
+    /** The caller's write is in flight: a tap does nothing until it settles. */
+    disabled?: boolean;
   };
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
@@ -217,6 +219,7 @@ export function ContestedCardRow({
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosenIds.has(deckId);
     if (chooser) {
+      if (chooser.disabled) return;
       // Nothing to write: the caller holds the pick and sends it with the purchase. Announced from
       // the same preview the marks draw, since there is no server answer to wait for.
       const next = wasChosen ? null : deckId;

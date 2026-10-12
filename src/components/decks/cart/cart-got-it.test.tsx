@@ -239,6 +239,19 @@ describe("the S1b chooser", () => {
     expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ quantity: 3, pickDeckId: null }));
   });
 
+  it("holds the pick while the press is in flight", async () => {
+    readCartChooser.mockResolvedValue(contested);
+    markBoughtForDecks.mockReturnValue(new Promise(() => {}));
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.fewer }));
+    const radios = () => within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio");
+    fireEvent.click(radios()[2]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    fireEvent.click(radios()[0]);
+    expect(radios().map((o) => o.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
+    expect((screen.getByRole("button", { name: copy.confirm.backToDefault }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("keeps the plain list when the claimants cannot be read", async () => {
     readCartChooser.mockRejectedValue(new Error("down"));
     await open();

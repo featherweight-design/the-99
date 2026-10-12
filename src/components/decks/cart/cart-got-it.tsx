@@ -238,13 +238,16 @@ function CartConfirm({
       }}
       needLine={(need) => copy.confirm.need(need, deckIds.length)}
       staleLine={{ owed: copy.confirm.staleBody, done: copy.confirm.staleBodyDone }}
-      footer={({ quantity }: GotItFormState) => (
+      footer={({ quantity, pending }: GotItFormState) => (
         <>
           {choosing(quantity) && picked ? (
             <p className="m-0 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
               {copy.confirm.undo(deckNames.get(picked) ?? "")}{" "}
               <button
                 type="button"
+                // A pick moved mid-press would mint a new press id, and a retry after a lost answer
+                // could then record the purchase twice: the decision holds until the press settles.
+                disabled={pending}
                 onClick={() => {
                   setPicked(null);
                   setAnnounce(copy.confirm.cleared(firstListed, line.name));
@@ -265,7 +268,7 @@ function CartConfirm({
       decision={picked}
       onDone={(written) => onDone(written, sent.current)}
     >
-      {({ quantity }: GotItFormState) => (
+      {({ quantity, pending }: GotItFormState) => (
       <div className="flex flex-col gap-[8px]">
         <span className={MONO_LABEL}>{copy.confirm.forDecks(deckIds.length)}</span>
         {choosing(quantity) && chooserCard ? (
@@ -274,6 +277,7 @@ function CartConfirm({
             line={line}
             quantity={quantity}
             picked={picked}
+            disabled={pending}
             onPick={setPicked}
           />
         ) : (
@@ -308,12 +312,14 @@ function CartConfirm({
  * names what it says (lock 7). Memoized, because the row adopts a new card as a fresh payload.
  */
 function CartChooser({
-  base, line, quantity, picked, onPick,
+  base, line, quantity, picked, disabled, onPick,
 }: {
   base: ContestedCard;
   line: SelectedLine;
   quantity: number;
   picked: string | null;
+  /** A press is in flight: the pick holds until it settles. */
+  disabled: boolean;
   onPick: (deckId: string | null) => void;
 }) {
   const card = useMemo<ContestedCard>(() => {
@@ -332,7 +338,7 @@ function CartChooser({
   return (
     <ContestedCardRow
       card={card}
-      chooser={{ picked, onPick, cleared: (holder) => copy.confirm.cleared(holder, card.cardName) }}
+      chooser={{ picked, onPick, disabled, cleared: (holder) => copy.confirm.cleared(holder, card.cardName) }}
     />
   );
 }

@@ -248,7 +248,7 @@ export async function markBoughtForDecks(
  * The S1b chooser's read (cart PR 6b): the card's claimants, narrowed to the cart line's decks in
  * the claim model's own queue order, for the confirm to preview who gets the copies being bought.
  * Read-only: the pick it previews is written by `markBoughtForDecks`, with the purchase. Null when
- * either switch is off or the card has no claim to read, and the confirm then lists the decks as
+ * either switch is off, or the claim model does not list every one of the line's decks, and the confirm then lists the decks as
  * it does at full count.
  */
 export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown): Promise<ContestedCard | null> {
@@ -262,5 +262,8 @@ export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown):
   const card = await loadContestedCard(rawOracleId.toLowerCase(), userId);
   if (!card) return null;
   const claimants = card.claimants.filter((c) => deckIds.has(c.deckId.toLowerCase()));
-  return claimants.length > 0 ? { ...card, claimants } : null;
+  // Every deck on the line or none: a deck billed for the card that the claim model does not list
+  // (a card only in a committed deck's draft) would otherwise vanish from the confirm, and the plain
+  // list is the honest fallback.
+  return claimants.length === deckIds.size ? { ...card, claimants } : null;
 }

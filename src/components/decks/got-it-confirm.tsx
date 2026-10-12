@@ -79,8 +79,8 @@ export function GotItConfirm({ deckId, card, ...rest }: DeckConfirmProps) {
  * line (cart PR 6). Everything a press decides (printing, finish, count, the press id, the stale
  * re-base) lives here once.
  */
-/** What a confirm's caller can read of the form: the stepper's count. */
-export type GotItFormState = { quantity: number };
+/** What a confirm's caller can read of the form: the stepper's count, and whether a press is in flight. */
+export type GotItFormState = { quantity: number; pending: boolean };
 
 export function GotItConfirmForm<F>({
   oracleId, price, initialNeed, listQuantity, write, needLine, staleLine, children, footer, decision,
@@ -185,7 +185,7 @@ export function GotItConfirmForm<F>({
     pressId.current = null;
   }, [decision]);
 
-  const form: GotItFormState = { quantity: qty };
+  const form: GotItFormState = { quantity: qty, pending };
 
   function pick(p: PrintingChoice) {
     if (pending) return;
