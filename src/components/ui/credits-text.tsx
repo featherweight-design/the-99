@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 
 import { CREDITS_HREF, creditsCopy } from "../../lib/copy/credits";
+import { PendingReporter } from "../shell/pending-reporter";
 
 /**
  * A credit line as text, with `What uses credits?` drawn as a link to the About `credits` entry
@@ -26,6 +27,7 @@ export function CreditsText({ text }: { text: string }) {
               className="text-[color:var(--accent)] underline decoration-[color:var(--accent-shadow)] underline-offset-2"
             >
               {creditsCopy.link}
+              <PendingReporter href={CREDITS_HREF} />
             </Link>
           ) : null}
         </Fragment>
