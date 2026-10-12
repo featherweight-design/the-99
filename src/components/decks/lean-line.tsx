@@ -72,6 +72,8 @@ export function LeanLine({
               oracleId={(i === 1 ? a : b).oracleId}
               name={part}
               siblings={siblings}
+              imageUri={art.get((i === 1 ? a : b).oracleId)?.imageUri ?? null}
+              preview
               className="inline border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--fg)] text-[length:inherit] leading-[inherit]"
             >
               {part}

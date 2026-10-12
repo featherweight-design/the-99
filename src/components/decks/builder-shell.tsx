@@ -1834,6 +1834,7 @@ export function BuilderShell({
                 />
               </div>
             ) : view === "consider" ? (
+              <HoverPreviewProvider>
               <ConsiderPanel
               mix={mix}
                 deckId={deck.id}
@@ -1850,6 +1851,7 @@ export function BuilderShell({
                 newestAsOf={newestAsOf}
                 provenance={provenance}
               />
+              </HoverPreviewProvider>
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (

@@ -310,6 +310,8 @@ export function ReceiptTile({
       oracleId={card.oracleId}
       name={name}
       siblings={siblings}
+      imageUri={drawn?.imageUri ?? null}
+      preview
       testId="receipt-tile"
       // The grid's tiles are the 760 receipt's (3a); the combo body's fixed plates are unchanged.
       className={"flex w-full flex-col items-stretch text-left " + (width ? "gap-[5px] md:gap-[6px]" : "gap-[6px] md:gap-[7px]")}
@@ -376,6 +378,8 @@ export function ComboBody({
                     oracleId={combo.cards[i].oracleId}
                     name={n}
                     siblings={siblings}
+                    imageUri={art.get(combo.cards[i].oracleId)?.imageUri ?? null}
+                    preview
                     className="inline cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left"
                   >
                     {n}

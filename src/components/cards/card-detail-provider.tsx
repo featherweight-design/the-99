@@ -319,7 +319,7 @@ function preloadCardArt(imageUri: string) {
 }
 
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, preview = false, children,
 }: {
   oracleId: string;
   name: string;
@@ -358,15 +358,24 @@ export function CardDetailTrigger({
    * image nothing draws.
    */
   imageUri?: string | null;
+  /**
+   * Draw the hover preview of `imageUri` from the surrounding `HoverPreviewProvider`. For a trigger that IS the
+   * card's row (a name in a sentence, a plate): every card row has both a preview and a press (Hugh,
+   * 2026-10-12). Off by default, because a trigger inside a row that already previews would close the row's own
+   * preview on leaving the name. A no-op with no provider, or with no `imageUri`.
+   */
+  preview?: boolean;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
   const intent = useCardIntent(oracleId, imageUri);
+  const hover = usePreviewRow(preview ? imageUri : null);
   const pending = pendingOracleId === oracleId;
   return (
     <button
       type="button"
       {...intent}
+      {...(preview ? hover : {})}
       data-testid={testId}
       // The trigger names itself: Safari focuses no button on a click, so the dialog's own capture
       // of the focused element finds <body> there, and focus could never come back to this control.
@@ -417,6 +426,7 @@ function deckPickFor(
 }
 const NOOP = () => {};
 import { STACK_DROP_MS } from "./card-modal";
+import { usePreviewRow } from "../decks/hover-preview";
 export { STACK_DROP_MS };
 
 type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
