@@ -164,20 +164,22 @@ export function ConfirmLinkDialog({ deckId, deckName, match, onDismiss }: {
 }
 
 /** K8 / K13: `Unlink` beside the open precon's built sentence, and its confirm. */
-export function UnlinkPrecon({ deckId, deckName, preconName }: { deckId: string; deckName: string; preconName: string }) {
+export function UnlinkPrecon({ deckId, deckName, fileName, preconName }: {
+  deckId: string; deckName: string; fileName: string; preconName: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <GhostButton type="button" onClick={() => setOpen(true)} className="h-[32px] flex-none rounded-[7px] px-[11px] text-[12.5px]">
         {copy.unlink.entry}
       </GhostButton>
-      {open && <UnlinkDialog deckId={deckId} deckName={deckName} preconName={preconName} onDismiss={() => setOpen(false)} />}
+      {open && <UnlinkDialog deckId={deckId} deckName={deckName} fileName={fileName} preconName={preconName} onDismiss={() => setOpen(false)} />}
     </>
   );
 }
 
-function UnlinkDialog({ deckId, deckName, preconName, onDismiss }: {
-  deckId: string; deckName: string; preconName: string; onDismiss: () => void;
+function UnlinkDialog({ deckId, deckName, fileName, preconName, onDismiss }: {
+  deckId: string; deckName: string; fileName: string; preconName: string; onDismiss: () => void;
 }) {
   const c = copy.unlink;
   const { pending, failed, run } = useLinkWrite(onDismiss);
@@ -191,7 +193,7 @@ function UnlinkDialog({ deckId, deckName, preconName, onDismiss }: {
       <Actions
         pending={pending}
         onDismiss={onDismiss}
-        submit={() => run(() => unlinkPrecon(deckId))}
+        submit={() => run(() => unlinkPrecon(deckId, fileName))}
         submitLabel={pending ? c.pending : c.submit}
       />
     </Shell>

@@ -159,7 +159,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
             {linked.map((b) => (
               <div key={b.deckId} className="flex items-center justify-between gap-[10px]">
                 <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.link.linked.preconSentence(b.deckName, b.shared, row.of)}</p>
-                <UnlinkPrecon deckId={b.deckId} deckName={b.deckName} preconName={row.name} />
+                <UnlinkPrecon deckId={b.deckId} deckName={b.deckName} fileName={row.fileName} preconName={row.name} />
               </div>
             ))}
             {precon.hasCollection && row.built.filter((b) => !b.linked).map((b) => (

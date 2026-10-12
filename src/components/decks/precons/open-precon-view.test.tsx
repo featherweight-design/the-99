@@ -207,7 +207,7 @@ describe("OpenPreconView", () => {
     expect(within(dialog).getByText("v0 leaves · v1 is first again")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Unlink" }));
     await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("That didn’t unlink. Try again."));
-    expect(linkActions.unlinkPrecon).toHaveBeenCalledWith("a");
+    expect(linkActions.unlinkPrecon).toHaveBeenCalledWith("a", "EldraziUnbound_CMM");
   });
 
   it("links a deck from the picker, most shared first, naming one linked elsewhere (K7)", async () => {
