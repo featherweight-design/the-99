@@ -148,6 +148,21 @@ export function shortlistRequest(args: { words: string; filters: ReadFilters; ca
  * `READ_SHORTLIST_SIZE`. A key outside the pool (another color, a commander they have built, one
  * the list never held) is dropped whatever the model meant by it.
  */
+/**
+ * The commanders a reply may name once the request marked a card required: only those whose decks run it,
+ * which are the keys the request listed under it. Held in code and not left to the model following the rule.
+ * No required card, the pool as it was.
+ */
+export function allowedKeys(pool: ReadonlySet<number>, cards: readonly ReadCard[]): ReadonlySet<number> {
+  let allowed = pool;
+  for (const c of cards) {
+    if (!c.required) continue;
+    const runs = new Set(c.runBy);
+    allowed = new Set([...allowed].filter((k) => runs.has(k)));
+  }
+  return allowed;
+}
+
 export function validShortlist(reply: ShortlistReply, pool: ReadonlySet<number>): number[] {
   const out: number[] = [];
   for (const k of reply.keys) {

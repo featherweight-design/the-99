@@ -15,7 +15,7 @@ import { loadIntakeCatalog, loadSearchFacts } from "./search";
 import { intakeLive, STUB_MODEL, stubDelayMs, stubMode } from "./stub";
 import {
   judgeRequest, judgeSchema, JUDGE_SYSTEM, readFingerprint, shortlistRequest, shortlistSchema, shortlistSystem,
-  validJudgement, validShortlist, type JudgeCandidate, type JudgeReply, type ReadCard, type ReadDeck, type ReadFilters,
+  allowedKeys, validJudgement, validShortlist, type JudgeCandidate, type JudgeReply, type ReadCard, type ReadDeck, type ReadFilters,
   type ShortlistReply, type TheReadResult,
 } from "./the-read";
 import type { EdhrecTag } from "../edhrec/parse";
@@ -287,7 +287,7 @@ async function finishTheRead(
     });
     bill(deps.shortlistModel, first, "shortlist", READ_SHORTLIST_EFFORT);
     if (!first.ok) return failed(first);
-    const shortlist = validShortlist(first.value, facts.pool);
+    const shortlist = validShortlist(first.value, allowedKeys(facts.pool, facts.cards));
     if (shortlist.length === 0) return nothing(0);
 
     // Step 2, the judgement, in whatever is left of the whole deadline.

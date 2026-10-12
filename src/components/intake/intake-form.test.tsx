@@ -247,6 +247,15 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       expect(await screen.findByText("No card by that name.")).toBeTruthy();
     });
 
+    it("lets Tab leave the box at the three-tag limit instead of holding it for a pick that does nothing", async () => {
+      render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: [1, 2, 3].map((n) => `[[c0ffee00-0000-4000-8000-00000000000${n}|Card ${n}]]`).join(" ") }} />);
+      type(`${(screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement).value} [[Rhy`);
+      await screen.findByRole("option", { name: /Rhystic Study/ });
+      const notPrevented = fireEvent.keyDown(screen.getByLabelText(/Anything else\?/), { key: "Tab" });
+      expect(notPrevented).toBe(true);
+      expect(screen.queryByRole("option")).toBeNull();
+    });
+
     it("keeps a name typed without picking it as plain text", () => {
       push.mockClear();
       render(<IntakeForm themes={[]} initial={emptyParams()} />);

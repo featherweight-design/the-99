@@ -67,6 +67,15 @@ describe("runTheRead", () => {
     expect(vi.mocked(d.judge).mock.calls[0][0].user).not.toContain("3|Gamma");
   });
 
+  it("keeps a required card in code: a pick whose decks do not run it is never shown, whatever the model returns", async () => {
+    const d = deps(ok({ keys: [2, 1] }), ok({ picks: [{ key: 1, reason: "Draws cards." }] }));
+    const required = [{ name: "Rhystic Study", oracleText: "Draw.", runBy: [1], required: true }];
+    await runTheRead("u", input, d, inputs({ cards: required }));
+    const judged = vi.mocked(d.judge).mock.calls[0][0].user;
+    expect(judged).toContain("1|Alpha");
+    expect(judged).not.toContain("2|Beta");
+  });
+
   it("finds nothing, refunded, when the shortlist holds no key in the pool, and never calls the judgement", async () => {
     const d = deps(ok({ keys: [3] }), ok({ picks: [] }));
     const empty = { picks: [], pool: 2, weighed: 0 };

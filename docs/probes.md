@@ -1992,8 +1992,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and pressing Find commanders sends the picked card as `[[<oracle id>|Name]]` in the server action's
   request, which the probe ABORTS in the browser, so no read runs and no credit is spent. It writes the
   account's About row through `clearAboutSheet` and nothing else; run it against a dev server with
-  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. Measured 2026-10-12 on local-dev: all eleven checks pass.
-  At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
+  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. Measured 2026-10-12 on local-dev:   At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
   short, and requires the list to end above the dock's top (the list is held to that room and scrolls
   inside it; `listMax` in `intake-form.tsx`). Without that hold the list is its 220px height and runs
   under the dock there.
+  A 300px window checks the same clearance with almost no room. The list opening ABOVE the box (`listAbove`)
+  needs the box to sit lower than the room over it, which the picker's own scroll to the top prevents on a page
+  that can scroll, so this probe does not reach it; it is covered by reading the geometry.
+  Measured 2026-10-12 on local-dev: all twelve checks pass.

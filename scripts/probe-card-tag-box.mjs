@@ -160,6 +160,32 @@ try {
       });
       report(`${vp.label} in a ${room.windowH}px window the list ends above the dock`, room.dockTop !== null && room.listBottom <= room.dockTop, JSON.stringify(room));
       await short.close();
+
+      // Barely any room under the box: it opens ABOVE the box instead, held to the room there.
+      const tiny = await browser.newContext({ viewport: { width: vp.width, height: 300 } });
+      const p3 = await tiny.newPage();
+      const uid3 = await signIn(p3);
+      await clearAboutSheet(p3, uid3);
+      await p3.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
+      const box3 = onPage(p3, "textarea");
+      await box3.waitFor({ timeout: 60_000 });
+      // Scroll so the box sits low in the 300px window, with the dock under it.
+      await box3.evaluate((n) => { const r = n.getBoundingClientRect(); window.scrollBy(0, r.top - 150); });
+      await box3.click();
+      await p3.keyboard.type(`a deck around [[${QUERY}`);
+      await onPageRole(p3, "option", /Rhystic Study/).first().waitFor({ timeout: 10_000 });
+      await p3.waitForTimeout(1500);
+      const flip = await onPageRole(p3, "listbox").evaluate((ul) => {
+        const l = ul.getBoundingClientRect();
+        const t = document.querySelector("main textarea").getBoundingClientRect();
+        const dockEl = document.querySelector('[data-testid="choose-dock"]');
+        const dock = dockEl ? dockEl.getBoundingClientRect() : null;
+        return { listTop: Math.round(l.top), listBottom: Math.round(l.bottom), boxTop: Math.round(t.top), boxBottom: Math.round(t.bottom), dockTop: dock ? Math.round(dock.top) : null };
+      });
+      const clear = flip.listBottom <= flip.boxTop && flip.listTop >= 0;
+      const below = flip.dockTop !== null && flip.listTop >= flip.boxBottom && flip.listBottom <= flip.dockTop;
+      report(`${vp.label} in a 300px window the list clears the box and the dock (above it, or below within the room)`, clear || below, JSON.stringify(flip));
+      await tiny.close();
     }
   }
 } finally {

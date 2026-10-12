@@ -136,11 +136,13 @@ export function IntakeForm({
     onChange: (text, next) => setField({ text, tags: next }),
   });
   // The list is held to the room between the box and whatever ends the screen below it (the phone's fixed
-  // dock, else the window), and scrolls inside that, so it never runs under the dock or off the screen
-  // however short the window or the keyboard leaves it. null: not measured yet.
+  // dock, else the window) and scrolls inside that, so it never runs under the dock or off the screen. When that
+  // room is under TAG_LIST_MIN and there is more over the box, it opens above the box, held to that room instead.
+  // null: not measured yet.
   const [listMax, setListMax] = useState<number | null>(null);
+  const [listAbove, setListAbove] = useState(false);
   useEffect(() => {
-    if (!picker.open) { setListMax(null); return; }
+    if (!picker.open) { setListMax(null); setListAbove(false); return; }
     const place = () => {
       const el = wordsRef.current;
       if (!el) return;
@@ -148,7 +150,12 @@ export function IntakeForm({
       const dock = dockRef.current;
       const dockShown = dock !== null && getComputedStyle(dock).display !== "none";
       const floor = dockShown ? dock.getBoundingClientRect().top : (window.visualViewport?.height ?? window.innerHeight);
-      setListMax(Math.max(TAG_LIST_MIN, Math.floor(floor - rect.bottom - 12)));
+      const below = Math.floor(floor - rect.bottom - 12);
+      const above = Math.floor(rect.top - 12);
+      // Too little room under the box and more over it: the list opens above, held to that room.
+      const flip = below < TAG_LIST_MIN && above > below;
+      setListAbove(flip);
+      setListMax(Math.max(0, flip ? above : below));
     };
     place();
     // The picker eases the box to the top of the screen a beat after it opens; measure again once that has settled.
@@ -350,7 +357,7 @@ export function IntakeForm({
                 written && closed === null ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
               ].join(" ")}
             />
-            {picker.open && <CardTagList {...picker.list} maxHeightPx={listMax ?? undefined} />}
+            {picker.open && <CardTagList {...picker.list} maxHeightPx={listMax ?? undefined} placement={listAbove ? "above" : "below"} />}
           </div>
         </Field>
 

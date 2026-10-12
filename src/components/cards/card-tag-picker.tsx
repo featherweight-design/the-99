@@ -127,10 +127,11 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     });
   };
 
+  const atTagLimit = () => maxTags !== undefined && taggedCount(value, picked) >= maxTags;
   const pick = (opt: Option) => {
     if (!tag) return;
     // Tags held now: the marked `[[Name]]` the picked map still names.
-    if (maxTags !== undefined && taggedCount(value, picked) >= maxTags) return;
+    if (atTagLimit()) { setDismissed(true); return; }
     const next = insertPick(value, tag.start, caret, opt.name);
     place(next.text, next.caret, new Map(picked).set(opt.name.replace(/[\[\]|]/g, "").trim(), opt.oracleId));
   };
@@ -147,6 +148,8 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     if (open && options.length > 0) {
       if (e.key === "ArrowDown") { e.preventDefault(); setActive((activeIndex + 1) % options.length); return "handled"; }
       if (e.key === "ArrowUp") { e.preventDefault(); setActive((activeIndex - 1 + options.length) % options.length); return "handled"; }
+      // At the tag limit a pick does nothing, so Tab must not be held back: it closes the list and moves on.
+      if (e.key === "Tab" && atTagLimit()) { setDismissed(true); return null; }
       if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); pick(options[activeIndex]); return "handled"; }
     }
     if (e.key === "Escape" && open) { e.preventDefault(); setDismissed(true); return "escape-closed"; }
@@ -189,9 +192,9 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   };
 }
 
-/** The dropdown, under its container's field. `maxHeightPx` holds it to the room the caller measured (it scrolls inside). */
+/** The dropdown, under its container's field, or above it when `placement` says there is no room below. `maxHeightPx` holds it to the room the caller measured (it scrolls inside). */
 export function CardTagList({
-  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx,
+  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx, placement = "below",
 }: {
   id: string;
   listId: string;
@@ -204,6 +207,7 @@ export function CardTagList({
   scoped: boolean;
   pick: (o: Option) => void;
   maxHeightPx?: number;
+  placement?: "below" | "above";
 }): ReactNode {
   const p = deckNotesCopy.picker;
   return (
@@ -211,7 +215,7 @@ export function CardTagList({
       id={listId}
       role="listbox"
       aria-label={p.listAria}
-      className={`absolute left-0 z-20 w-full overflow-y-auto rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] shadow-lg max-h-[220px] md:w-[440px] md:max-h-none top-full mt-[4px]`}
+      className={`absolute left-0 z-20 w-full overflow-y-auto rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] shadow-lg max-h-[220px] md:w-[440px] md:max-h-none ${placement === "above" ? "bottom-full mb-[4px]" : "top-full mt-[4px]"}`}
       style={maxHeightPx === undefined ? undefined : { maxHeight: maxHeightPx }}
     >
       {query.length === 0 ? (
