@@ -318,6 +318,19 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.queryByTestId("read-row")).toBeNull();
   });
 
+  it("a row whose own Swap in moved its deck into the holders stays, swapped (P10b keeps what took the card)", async () => {
+    await draw(panel({}, { stored: stored() }));
+    actions.swapFromReadAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: true, cutLeft: 0 });
+    actions.loadFitsAction.mockResolvedValue(list({
+      free: 0, fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }],
+    }));
+    const row = screen.getByTestId("read-row");
+    fireEvent.click(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") }));
+    await settle();
+    expect(screen.getByTestId("read-row")).toBeInTheDocument();
+    expect(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toBeEnabled();
+  });
+
   it("a row read from an older overview, or none, says so and points at the deck page (P3f)", async () => {
     const pick = stored().picks[0];
     await draw(panel({}, { stored: stored({ picks: [{ ...pick, planSource: "none" }] }) }));
