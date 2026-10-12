@@ -26,6 +26,24 @@ export async function tokenTablesExist(): Promise<boolean> {
 }
 
 /**
+ * Whether token PRICES can be written: the catalog tables AND `token_printing_prices`. The price table
+ * arrives in a later migration than the catalog's, so a database can be migrated far enough for the
+ * catalog step and not for this one; the price ingest asks this, not `tokenTablesExist`, or it would
+ * find token printings and then insert into a table that is not there and roll back the card prices.
+ */
+export async function tokenPriceTablesExist(): Promise<boolean> {
+  if (!(await tokenTablesExist())) return false;
+  const { rows } = await db.execute<{ ok: boolean }>(sql`select to_regclass('public.token_printing_prices') is not null as ok`);
+  return rows[0]?.ok === true;
+}
+
+/** How many token printings this database holds: whether a token catalog has been published here. */
+export async function countTokenPrintings(): Promise<number> {
+  const { rows } = await db.execute<{ n: number }>(sql`select count(*)::int as n from token_printings`);
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
  * Publishes a built catalog in ONE transaction, or refuses under a floor and leaves every
  * previous row standing. Tokens and their printings are UPSERTED and never deleted (an ownership
  * row will reference them); `card_tokens` is an exact replace, because a link Scryfall withdrew

@@ -212,6 +212,42 @@ export const tokenPrintings = pgTable("token_printings", {
   index("token_printings_token_idx").on(t.tokenOracleId),
 ]);
 
+/**
+ * Mana Pool's price for each TOKEN printing, from the same singles feed and the same run as
+ * `printing_prices` (plan `2026-10-11-tokens-for-my-deck.md`, PR 2). A table of its own rather than
+ * a relaxed foreign key on `printing_prices`: every reader of that table assumes a card printing,
+ * and the change that cannot surprise any of them is the one that touches none of them.
+ *
+ * Everything `printing_prices` documents holds here, unchanged: the feed omits out-of-stock
+ * printings, the ingest upserts and never deletes, a row behind the newest `as_of` is a last-known
+ * price and not a live one, and a null `price_cents` beside a set foil price is stocked in foil only.
+ */
+export const tokenPrintingPrices = pgTable("token_printing_prices", {
+  scryfallId: uuid("scryfall_id").primaryKey(),
+  priceCents: integer("price_cents"),
+  priceCentsNm: integer("price_cents_nm"),
+  priceCentsFoil: integer("price_cents_foil"),
+  priceCentsEtched: integer("price_cents_etched"),
+  availableQuantity: integer("available_quantity").notNull(),
+  buyUrl: text("buy_url"),
+  asOf: timestamp("as_of").notNull(),
+  /**
+   * Mana Pool's OWN name, set code and collector number for the product this row prices, as the
+   * feed gives them. A token link names these, not Scryfall's: 42% of priced token printings differ
+   * (a double-faced token card is `Soldier // Eldrazi`, number `1-17`, under the single token's
+   * Scryfall id), and a line that does not match the product is not placed exactly.
+   */
+  productName: text("product_name"),
+  productSet: text("product_set"),
+  productNumber: text("product_number"),
+}, (t) => [
+  // Named by hand: the generated name (`token_printing_prices_scryfall_id_token_printings_scryfall_id_fk`)
+  // is 64 bytes and Postgres keeps 63, so the constraint would be stored under a name the schema
+  // does not say (`scripts/lib/constraints.test.mts`).
+  foreignKey({ name: "token_prices_printing_fk", columns: [t.scryfallId], foreignColumns: [tokenPrintings.scryfallId] })
+    .onDelete("cascade"),
+]);
+
 /** Which card makes which token: `all_parts` entries with `component: "token"`, nothing else. */
 export const cardTokens = pgTable("card_tokens", {
   cardOracleId: uuid("card_oracle_id").notNull().references(() => cards.oracleId, { onDelete: "cascade" }),

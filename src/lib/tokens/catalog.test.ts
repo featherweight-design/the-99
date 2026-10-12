@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   classifyTokenEntry,
   TOKEN_FLOORS,
+  TOKEN_IDENTITY_SHARE,
+  TOKEN_PRICE_FLOOR,
+  tokenPriceFloorFailure,
   TokenCatalogBuilder,
   tokenFloorFailure,
   tokenPartIds,
@@ -180,5 +183,25 @@ describe("tokenFloorFailure", () => {
     const msg = tokenFloorFailure({ ...ok, tokens: 1, links: 1 })!;
     expect(msg).toContain("1 tokens");
     expect(msg).toContain("1 card-to-token links");
+  });
+});
+
+describe("tokenPriceFloorFailure", () => {
+  it("passes a run that priced the tokens it should", () => {
+    expect(tokenPriceFloorFailure(2919, 3163)).toBeNull();
+    expect(tokenPriceFloorFailure(TOKEN_PRICE_FLOOR, 3163)).toBeNull();
+  });
+  it("refuses a populated catalog that matched almost nothing, zero included", () => {
+    expect(tokenPriceFloorFailure(0, 3163)).toMatch(/not written: 0 feed rows/);
+    expect(tokenPriceFloorFailure(TOKEN_PRICE_FLOOR - 1, 3163)).toMatch(/not written/);
+  });
+  it("refuses a run whose matched rows lost Mana Pool's product identity", () => {
+    expect(tokenPriceFloorFailure(2919, 3163, 0)).toMatch(/only 0 of 2919 matched feed rows carry/);
+    expect(tokenPriceFloorFailure(2919, 3163, Math.floor(2919 * TOKEN_IDENTITY_SHARE) - 1)).toMatch(/not written/);
+    expect(tokenPriceFloorFailure(2919, 3163, Math.ceil(2919 * TOKEN_IDENTITY_SHARE))).toBeNull();
+  });
+  it("does not refuse a catalog that has not been filled", () => {
+    expect(tokenPriceFloorFailure(0, 0)).toBeNull();
+    expect(tokenPriceFloorFailure(0, TOKEN_FLOORS.tokenPrintings - 1)).toBeNull();
   });
 });

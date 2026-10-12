@@ -27,6 +27,39 @@ describe("manapoolDeckText", () => {
   });
 });
 
+describe("a token line that names its printing", () => {
+  const treasure = { name: "Treasure", quantity: 2, printing: { setCode: "tla", collectorNumber: "9" } };
+
+  it("writes `<qty> <name> [SET] <number>` with the set upper-cased", () => {
+    expect(manapoolDeckText([treasure])).toBe("2 Treasure [TLA] 9");
+  });
+
+  it("mixes with name-only card lines in one list, leaving the card lines byte-identical", () => {
+    const text = manapoolDeckText([{ name: "Sol Ring", quantity: 1 }, treasure, { name: "Forest", quantity: 7 }]);
+    expect(text).toBe("1 Sol Ring\n2 Treasure [TLA] 9\n7 Forest");
+  });
+
+  it("keeps a collector number that is not a plain integer whole", () => {
+    expect(manapoolDeckText([{ name: "Spirit", quantity: 1, printing: { setCode: "tmm2", collectorNumber: "12a" } }]))
+      .toBe("1 Spirit [TMM2] 12a");
+    expect(manapoolDeckText([{ name: "Spirit", quantity: 1, printing: { setCode: "sld", collectorNumber: "★" } }]))
+      .toBe("1 Spirit [SLD] ★");
+  });
+
+  it("survives the url round trip, a double-faced name included", () => {
+    const lines = [{ name: "Punchcard // Punchcard", quantity: 1, printing: { setCode: "x", collectorNumber: "3" } }, treasure];
+    expect(decodeDeckParam(manapoolAddDeckUrl(lines)!)).toBe("1 Punchcard // Punchcard [X] 3\n2 Treasure [TLA] 9");
+  });
+
+  it("splits by length like any other line and never splits one across parts", () => {
+    const lines = Array.from({ length: 40 }, (_, i) => ({ name: `Token ${i}`, quantity: 1, printing: { setCode: "tla", collectorNumber: String(i) } }));
+    const parts = manapoolAddDeckUrls(lines, 400);
+    expect(parts.length).toBeGreaterThan(1);
+    expect(parts.reduce((n, p) => n + p.lineCount, 0)).toBe(40);
+    expect(parts.map((p) => decodeDeckParam(p.href)).join("\n").split("\n")).toEqual(lines.map((l) => `1 ${l.name} [TLA] ${l.printing.collectorNumber}`));
+  });
+});
+
 describe("manapoolAddDeckUrl", () => {
   it("reproduces the documented example byte for byte", () => {
     const url = manapoolAddDeckUrl([

@@ -65,6 +65,31 @@ describe("parseManapoolPayload", () => {
     expect(row.availableQuantity).toBe(7);
   });
 
+  it("carries Mana Pool's own name, set and number onto the row that wins a collapse", () => {
+    // The live shape (2026-10-11): a double-faced token card is listed under the single token's
+    // Scryfall id, as `Soldier // Eldrazi` / `1-17`, beside the single. The winner's identity is the
+    // one a link must name, so it travels with the price it belongs to.
+    const row = (name: string, number: unknown, price: number) => ({
+      scryfall_id: ID, name, set_code: "TDSK", number, available_quantity: 5, price_cents: price, url: "u",
+    });
+    const feed = parseManapoolPayload({
+      meta: { as_of: "2026-10-11T21:36:01.926Z" },
+      data: [row("Spirit // Gremlin", "8-11", 30), row("Spirit", "8", 15), row("Spirit // Manifest", "8-18", 40)],
+    });
+    expect(feed.rows).toHaveLength(1);
+    expect(feed.rows[0]).toMatchObject({ productName: "Spirit", productSet: "TDSK", productNumber: "8", priceCents: 15 });
+  });
+
+  it("reads a numeric collector number as the same string, and leaves absent fields null", () => {
+    const feed = parseManapoolPayload({
+      meta: { as_of: "2026-10-11T21:36:01.926Z" },
+      data: [{ scryfall_id: ID, name: "Spirit", set_code: "TDSK", number: 8, available_quantity: 1, price_cents: 15 },
+             { scryfall_id: "71dc8556-a658-40e1-8a93-6a62af208a29", available_quantity: 1, price_cents: 15 }],
+    });
+    expect(feed.rows[0].productNumber).toBe("8");
+    expect(feed.rows[1]).toMatchObject({ productName: null, productSet: null, productNumber: null });
+  });
+
   it("carries the payload as_of onto every row", () => {
     const feed = parseManapoolPayload(fixture);
     for (const row of feed.rows) {
