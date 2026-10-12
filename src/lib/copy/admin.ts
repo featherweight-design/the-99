@@ -117,8 +117,8 @@ export const adminCopy = {
     effortUnknown: "not recorded",
     callsRow: "Model calls",
     runsCell: (n: number) => plural(n, "run", "runs"),
-    featureMeta: (model: string, effort: string, runs: number, perRun: string, p90: string | null) =>
-      `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run${p90 ? `, p90 ${p90}` : ""}`,
+    featureMeta: (model: string, effort: string, runs: number, perRun: string, p90: string) =>
+      `${model} · ${effort} · ${plural(runs, "run", "runs")} · ${perRun} a run, p90 ${p90}`,
     byFeatureNote: "Effort is recorded per call from the parts table on. An earlier run reads not recorded rather than a guess.",
     refunds: "Refunds",
     refundsMeta: (v: string, pct: number) => `${v} · ${pct}% of model calls`,

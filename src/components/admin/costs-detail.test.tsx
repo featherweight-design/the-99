@@ -114,6 +114,12 @@ describe("CostsDetail, a month with runs", () => {
     expect(screen.queryByText(onProduction)).toBeNull();
   });
 
+  it("gives the phone card the same p90 as the desktop cell, a dash under five runs", () => {
+    const { container } = draw({ calls });
+    const metas = [...container.querySelectorAll(".md\\:hidden span.font-mono")].map((el) => el.textContent ?? "");
+    expect(metas.some((m) => m.endsWith(" a run, p90 —"))).toBe(true);
+  });
+
   it("counts credits in the singular and the plural", () => {
     const { container } = draw({ calls: [call({ userId: "user_one" }), call({ userId: "user_two" }), call({ userId: "user_two" })] });
     const metas = [...container.querySelectorAll(".md\\:hidden span.font-mono")].map((el) => el.textContent);

@@ -186,7 +186,7 @@ function ByFeature({ d }: { d: CostDetail }) {
       cells: [title, shortModel(f.model), effort, f.runs, usd(f.meanMicro), p90 ?? "—", usd(f.micro)],
       title,
       fig: usd(f.micro),
-      meta: copy.featureMeta(shortModel(f.model), effort, f.runs, usd(f.meanMicro), p90),
+      meta: copy.featureMeta(shortModel(f.model), effort, f.runs, usd(f.meanMicro), p90 ?? "—"),
     };
   });
   rows.push({ cells: [copy.callsRow, "", "", copy.runsCell(d.runs), "", "", usd(d.callsMicro)], foot: true, title: copy.callsRow, fig: usd(d.callsMicro), meta: copy.runsCell(d.runs) });
