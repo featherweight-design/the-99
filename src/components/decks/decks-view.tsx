@@ -36,6 +36,7 @@ import {
 import type { StatusPill } from "../../lib/decks/status";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
+import { CartEntry } from "./cart/cart-entry";
 import {
   DECK_SORT_KEY,
   DEFAULT_DECK_SORT,
@@ -94,6 +95,11 @@ export type DecksViewProps = {
    */
   folders: DeckFolderWithCount[];
   shopping: ShoppingRollup;
+  /**
+   * `ALL_DECKS_CART_ENABLED`, read on the server. On, the cart's entry line draws above the
+   * shelves whenever a deck is missing cards, and each To buy tile's figure links into the cart.
+   */
+  cartEnabled?: boolean;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;
   /** Copies owned, not distinct names — the second half of `buildableFrom`. */
@@ -172,6 +178,7 @@ export function DecksView({
   decks: serverDecks,
   folders: serverFolders,
   shopping,
+  cartEnabled = false,
   buildable,
   cards,
   now: nowIso,
@@ -802,6 +809,14 @@ export function DecksView({
         <ImportDeckButton />
       </div>
 
+      {/* The entry row (A1): a row of cells so a second line can share it. Absent when no deck is
+          missing a card (A1-0) or the switch is off, and the page is then exactly as it was. */}
+      {cartEnabled && shopping.byDeck.size > 0 ? (
+        <div className="flex gap-[10px] px-[16px] pt-[14px] pb-[10px] sm:px-[22px] sm:pt-[16px] sm:pb-[16px]">
+          <CartEntry total={shopping.total} deckCount={shopping.byDeck.size} />
+        </div>
+      ) : null}
+
       {zero ? (
         <DecksZero buildable={buildable} cards={cards} />
       ) : (
@@ -1165,6 +1180,7 @@ export function DecksView({
                   <DeckCard
                     deck={deck}
                     shopping={shopping.byDeck.get(deck.id)}
+                    cartLink={cartEnabled}
                     now={now}
                     folders={folders}
                     onCreateFolder={() => {

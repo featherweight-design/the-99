@@ -78,7 +78,7 @@ Committed from the R1 handoff with Hugh's 2026-10-11 rulings applied (READINESS-
 | header | Consider's shelf header: min-h 52, the box (as DeckSelect), name 14 / 500, figure mono 11, chevron | same |
 | fold | folded, except the `?deck=` deck | same |
 | rows | indent 28, as CartLine without the decks line; `list.also` mono 10.5 `--fg-muted` for other selected decks; tag figure = this deck's copy | same |
-| foot | mono 10.5 `--fg-faint`, the rest as a count | same |
+| foot | none: every row is listed, so there is no rest to count. The canvas's `N more for this deck` truncates its fixture, and no cap is specified (PR 4 design review) | same |
 
 ## Component: CartCheckout
 

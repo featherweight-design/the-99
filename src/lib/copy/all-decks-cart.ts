@@ -12,6 +12,19 @@ const decks = (x: number) => (x === 1 ? "1 deck" : `${n(x)} decks`);
 export const allDecksCartCopy = {
   title: "Shopping for all decks",
 
+  /** The way in, on `/decks` (A1): a cell that a later row can share. */
+  entry: {
+    label: "Shopping for all decks",
+    figure: (copiesN: number, cost: string, deckN: number) => `${n(copiesN)} to buy · ${cost} · ${decks(deckN)}`,
+    figureNoPrice: (copiesN: number, deckN: number) => `${n(copiesN)} to buy · ${decks(deckN)}`,
+  },
+
+  view: {
+    label: "View",
+    byCard: "By card",
+    byDeck: "By deck",
+  },
+
   page: {
     back: "Decks",
     sub: (short: number, total: number) =>
@@ -35,6 +48,9 @@ export const allDecksCartCopy = {
   },
 
   list: {
+    headByDeck: (deckN: number, copiesN: number) => `${decks(deckN)} · ${copies(copiesN)} · largest first`,
+    /** A card in a deck's group that other selected decks need too. */
+    also: (names: string[]) => `also ${names.join(", ")}`,
     headByCard: (lines: number) => `${n(lines)} ${lines === 1 ? "card" : "cards"} · commanders first, then most decks`,
     /** The list scroller's name on a phone, where it is a focusable box of its own. */
     regionAria: "Cards in this cart",

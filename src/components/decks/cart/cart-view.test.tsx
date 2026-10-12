@@ -114,6 +114,28 @@ describe("CartView", () => {
     expect(screen.getByText(priceCopy.strip.pricedClause(3, 4))).toBeTruthy();
   });
 
+  it("never calls a line sold out while a copy on it is live at $0.00, and draws no $0.00", () => {
+    const zero = cart();
+    zero.lines[1].rows = [
+      { deckId: "gishath", quantity: 1, cents: 0, state: "priced", commander: false, held: 0, finish: null },
+      { deckId: "kratos", quantity: 1, cents: null, state: "soldOut", commander: false, held: 0, finish: null },
+    ];
+    render(<CartView cart={zero} provenance={provenance} />);
+    const sol = list().getAllByRole("listitem").find((li) => li.textContent?.includes("Sol Ring"))!;
+    expect(sol.textContent).not.toMatch(/sold out/i);
+    expect(sol.textContent).not.toContain("$0.00");
+  });
+
+  it("says ManaPool priced a cart whose live copies sum to $0.00, and draws no figure", () => {
+    const zero = cart();
+    zero.lines = zero.lines.map((l) => ({ ...l, rows: l.rows.map((r) => ({ ...r, cents: 0 })) }));
+    zero.decks = zero.decks.map((d) => ({ ...d, cents: 0, pricedCopies: d.copies }));
+    render(<CartView cart={zero} provenance={provenance} />);
+    expect(screen.queryByText(/\$0\.00/)).toBeNull();
+    expect(screen.queryByText(new RegExp(priceCopy.strip.provenanceUnpriced))).toBeNull();
+    expect(screen.getByText(new RegExp(priceCopy.strip.provenance))).toBeTruthy();
+  });
+
   it("tags a line whose every priced copy is foil-only as a foil figure, as the deck's own row does", () => {
     const foil = cart();
     foil.lines[2].rows = [{ deckId: "gishath", quantity: 1, cents: 90, state: "foilOnly", commander: false, held: 0, finish: "foil" }];
@@ -162,5 +184,80 @@ describe("CartView", () => {
     const links = screen.getAllByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) });
     expect(links.length).toBeGreaterThan(1);
     expect(links[0].textContent).toContain(copy.checkout.part(1, links.length, 1));
+  });
+});
+
+describe("CartView by deck (A5)", () => {
+  it("switches to one group per deck, largest first, every group folded", () => {
+    render(<CartView cart={cart()} provenance={provenance} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.view.byDeck }));
+    expect(screen.getByRole("button", { name: copy.view.byDeck }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(copy.list.headByDeck(3, 4))).toBeTruthy();
+    const groups = screen.getAllByRole("region", { name: /HD - / });
+    expect(groups.map((g) => g.getAttribute("aria-labelledby") && g.textContent?.match(/HD - [A-Za-z]+/)?.[0])).toEqual(["HD - Gishath", "HD - Omnath", "HD - Kratos"]);
+    expect(screen.queryByText("Sol Ring")).toBeNull();
+  });
+
+  it("opens the ?deck= group on arrival, its cards at that deck's own figure, with the others named", () => {
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.getByText("Sol Ring")).toBeTruthy();
+    expect(screen.getByText(copy.list.also(["HD - Kratos"]))).toBeTruthy();
+    expect(screen.getByText("Command Tower")).toBeTruthy();
+    // Kratos's group stays folded.
+    expect(screen.getAllByText("Sol Ring")).toHaveLength(1);
+  });
+
+  it("counts another line deck's copies as elsewhere, from the open deck's vantage", () => {
+    // Kratos holds 3 Rats and buys 2 more; Gishath holds none. All 3 owned are in another deck.
+    const rats = cart();
+    rats.lines[1] = {
+      oracleId: "rats", name: "Relentless Rats", commander: false, owned: 3, heldElsewhere: 0,
+      rows: [
+        { deckId: "gishath", quantity: 1, cents: 50, state: "priced", commander: false, held: 0, finish: null },
+        { deckId: "kratos", quantity: 2, cents: 100, state: "priced", commander: false, held: 3, finish: null },
+      ],
+    };
+    render(<CartView cart={rats} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.getByText(copy.list.owned(3))).toBeTruthy();
+  });
+
+  it("draws a group whose copies sum to $0.00 without a figure, as DeckSelect does", () => {
+    const free = cart();
+    free.decks[0] = { ...free.decks[0], cents: 0, pricedCopies: free.decks[0].copies };
+    render(<CartView cart={free} provenance={provenance} initialView="deck" />);
+    expect(screen.queryByText(copy.selections.figure(free.decks[0].copies, "$0.00"))).toBeNull();
+  });
+
+  it("keeps every parameter it does not own when the view changes, and drops the one-time ?deck=", () => {
+    window.history.replaceState(null, "", "/?deck=gishath&utm=x");
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    fireEvent.click(screen.getByRole("button", { name: copy.view.byCard }));
+    expect(window.location.search).toBe("?utm=x");
+    fireEvent.click(screen.getByRole("button", { name: copy.view.byDeck }));
+    expect(window.location.search).toBe("?utm=x&view=deck");
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("opens the ?deck= group on a one-deck cart too, with no switch", () => {
+    const one = cart({ decks: cart().decks.slice(0, 1) });
+    render(<CartView cart={one} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    expect(screen.queryByRole("button", { name: copy.view.byDeck })).toBeNull();
+    expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(1);
+    expect(screen.getByText("Command Tower")).toBeTruthy();
+  });
+
+  it("folds everything, without an error, when ?deck= names a deck not on the cart (A5-t)", () => {
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="00000000-0000-0000-0000-000000000000" />);
+    expect(screen.queryByText("Sol Ring")).toBeNull();
+    expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(3);
+  });
+
+  it("keeps an unselected deck's group folded and its toggle off", () => {
+    render(<CartView cart={cart()} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
+    const gishath = screen.getAllByRole("checkbox", { name: copy.selections.aria("HD - Gishath", true) })[0];
+    fireEvent.click(gishath);
+    expect(screen.queryByText("Command Tower")).toBeNull();
+    const toggle = screen.getAllByRole("button", { expanded: false }).find((b) => b.textContent?.includes("HD - Gishath"))!;
+    expect(toggle.hasAttribute("disabled")).toBe(true);
   });
 });

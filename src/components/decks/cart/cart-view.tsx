@@ -12,11 +12,44 @@ import type { ProvenanceForm } from "../../../lib/decks/price";
 import { cartTotal, checkoutLinks, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import { CartCheckout } from "./cart-checkout";
 import { CartLine } from "./cart-line";
+import { CartDeckGroup } from "./cart-deck-group";
 import { DeckSelect } from "./deck-select";
+import { ViewSwitch, type CartViewMode } from "./view-switch";
+import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 
-export function CartView({ cart, provenance }: { cart: CartPayload; provenance: ProvenanceForm | null }) {
+export function CartView({
+  cart,
+  provenance,
+  initialView = "card",
+  focusDeckId = null,
+}: {
+  cart: CartPayload;
+  provenance: ProvenanceForm | null;
+  /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. */
+  initialView?: CartViewMode;
+  /** `?deck=<id>` (A5): that deck's group starts open. Unselected or absent, everything folds (A5-t). */
+  focusDeckId?: string | null;
+}) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(cart.decks.map((d) => d.id)));
+  const [view, setView] = useState<CartViewMode>(initialView);
+  const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(focusDeckId ? [focusDeckId] : []));
+  const chooseView = (next: CartViewMode) => {
+    setView(next);
+    // Mirrored, not routed: the payload already holds both views. Dropping `?deck=` too, which
+    // was a one-time focus for arrival. Every parameter this view does not own is read back off
+    // the live URL and kept; the default view is an absence.
+    const live = new URLSearchParams(window.location.search);
+    live.delete("deck");
+    if (next === "deck") live.set("view", "deck"); else live.delete("view");
+    const query = live.toString();
+    mirrorUrl(query ? `${window.location.pathname}?${query}` : window.location.pathname);
+  };
+  const fold = (id: string) => setOpen((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
 
@@ -32,6 +65,25 @@ export function CartView({ cart, provenance }: { cart: CartPayload; provenance: 
   const total = cartTotal(cart.decks, selected);
   const links = useMemo(() => checkoutLinks(cart.lines, selected), [cart.lines, selected]);
   const deckCount = cart.decks.filter((d) => selected.has(d.id)).length;
+  // An explicit `?view=deck` or `?deck=` arrival is honoured with one deck too; only the switch
+  // hides there (E1), since both views list the same cards.
+  const byDeck = view === "deck";
+  // Each deck's lines for its group: its own commander first, then A to Z.
+  const groupLines = useMemo(() => {
+    const out = new Map<string, typeof cart.lines>();
+    for (const line of cart.lines) {
+      for (const r of line.rows) {
+        const list = out.get(r.deckId) ?? [];
+        list.push(line);
+        out.set(r.deckId, list);
+      }
+    }
+    for (const [deckId, list] of out) {
+      const isCmd = (l: (typeof list)[number]) => l.rows.some((r) => r.deckId === deckId && r.commander);
+      list.sort((a, b) => Number(isCmd(b)) - Number(isCmd(a)) || a.name.localeCompare(b.name));
+    }
+    return out;
+  }, [cart]);
   const brews = cart.decks.some((d) => d.brew && selected.has(d.id));
 
   const toggle = (id: string) => setSelected((prev) => {
@@ -97,8 +149,14 @@ export function CartView({ cart, provenance }: { cart: CartPayload; provenance: 
             </div>
           ) : (
             <>
+              {/* The switch has nothing to switch between with one deck (E1). */}
+              {cart.decks.length >= 2 ? (
+                <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
+                  <ViewSwitch view={view} onView={chooseView} />
+                </div>
+              ) : null}
               <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
-                {copy.list.headByCard(lines.length)}
+                {byDeck ? copy.list.headByDeck(deckCount, total.copies) : copy.list.headByCard(lines.length)}
               </h2>
               {/* P1: on a phone the list is its own scroll box so the checkout stays docked under
                   it. Focusable and named, so a keyboard reader can scroll it. */}
@@ -106,13 +164,32 @@ export function CartView({ cart, provenance }: { cart: CartPayload; provenance: 
                 tabIndex={0}
                 role="region"
                 aria-label={copy.list.regionAria}
-                className="max-h-[460px] overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] md:max-h-none md:overflow-visible md:border-b-0"
+                className="-mx-[13px] max-h-[460px] overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] px-[13px] md:mx-0 md:max-h-none md:overflow-visible md:border-b-0 md:px-0"
               >
-                <ul className="m-0 list-none p-0">
-                  {lines.map((line) => (
-                    <CartLine key={line.oracleId} line={line} deckNames={deckNames} newestAsOf={newestAsOf} />
-                  ))}
-                </ul>
+                {byDeck ? (
+                  // Largest first, in the selections' own order; an unselected deck keeps its place.
+                  cart.decks.map((d) => (
+                    <CartDeckGroup
+                      key={d.id}
+                      deck={d}
+                      lines={groupLines.get(d.id) ?? []}
+                      on={selected.has(d.id)}
+                      open={open.has(d.id)}
+                      priced={cart.priced}
+                      deckNames={deckNames}
+                      selected={selected}
+                      newestAsOf={newestAsOf}
+                      onToggle={() => toggle(d.id)}
+                      onFold={() => fold(d.id)}
+                    />
+                  ))
+                ) : (
+                  <ul className="m-0 list-none p-0">
+                    {lines.map((line) => (
+                      <CartLine key={line.oracleId} line={line} deckNames={deckNames} newestAsOf={newestAsOf} />
+                    ))}
+                  </ul>
+                )}
                 <div
                   aria-hidden
                   className="pointer-events-none sticky bottom-0 -mt-[36px] h-[36px] md:hidden"

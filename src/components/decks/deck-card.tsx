@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { countStatus, type StatusPill } from "../../lib/decks/status";
@@ -74,7 +75,7 @@ function detailFor(
   deck: DeckListItem,
   shopping: DeckShopping | undefined,
   now: Date,
-): { text: string; color: string } | null {
+): { text: string; color: string; cart?: true } | null {
   const c = refreshCopy.decks;
   const figureFor = countStatusFor(deck, shopping);
   // THE CHANGE FIGURE OUTRANKS THE COUNT FIGURES while a draft is open. Mid-edit
@@ -134,8 +135,11 @@ function detailFor(
   ) {
     return { text: proxyCopy.deckCard.line(deck.proxiedCount), color: "var(--fg-faint)" };
   }
-  return statusDetail === null
-    ? null
+  if (statusDetail === null) return null;
+  // The To buy roll-up is the one figure the all-decks cart can open on this deck (Q8). Only here:
+  // the pending-changes figure above outranks it, as it outranks every count figure (gap G1a).
+  return figureFor === "To buy"
+    ? { text: statusDetail, color: DETAIL_COLOR[deck.statusPill], cart: true }
     : { text: statusDetail, color: DETAIL_COLOR[deck.statusPill] };
 }
 
@@ -209,6 +213,8 @@ interface DeckCardProps {
   deck: DeckListItem;
   /** Absent when the deck's cards are all owned — absent, never a zeroed row. */
   shopping: DeckShopping | undefined;
+  /** `ALL_DECKS_CART_ENABLED`: the To buy figure links into the all-decks cart on this deck. */
+  cartLink?: boolean;
   /**
    * A prop for the same reason `formatWhen` takes one: the page is a server
    * component, it reads the clock once, and every tile on it must agree.
@@ -264,7 +270,7 @@ interface DeckCardProps {
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -600,7 +606,21 @@ export function DeckCard({
             className="min-w-0 flex-1 truncate text-[11px] sm:text-[10.5px]"
             style={detail ? { color: detail.color } : undefined}
           >
-            {detail?.text}
+            {detail?.cart && cartLink ? (
+              // A second link over the tile's cover link, F19's pattern: the To buy figure opens the
+              // all-decks cart on this deck. Out of the tab order and the tree, since the cover link
+              // is the tile's one target and already speaks the figure.
+              <Link
+                href={`/decks/shopping?deck=${deck.id}`}
+                tabIndex={-1}
+                aria-hidden="true"
+                data-cart-link
+                className="relative z-10 no-underline hover:underline hover:decoration-[color:var(--accent)]"
+              >
+                {detail.text}
+                <PendingReporter href="/decks/shopping" />
+              </Link>
+            ) : detail?.text}
           </span>
           {hasLastPlayed && (
             <span className="flex-none text-right text-[10.5px]" style={{ color: "var(--fg-faint)" }}>

@@ -109,6 +109,25 @@ describe("DeckCard", () => {
     expect(screen.getByText("2 days ago")).toBeInTheDocument();
   });
 
+  // All-decks cart (Q8): the To buy figure links into the cart on this deck, beside the cover link.
+  it("links the To buy figure into the cart on this deck when the cart is on", () => {
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} cartLink />,
+    );
+    const link = document.querySelector("[data-cart-link]")!;
+    expect(link.getAttribute("href")).toBe(`/decks/shopping?deck=${deck().id}`);
+    expect(link.textContent).toContain("3 to buy · $18.40");
+    expect(link.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("draws the figure as plain text with the cart off", () => {
+    render(
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+    );
+    expect(document.querySelector("[data-cart-link]")).toBeNull();
+    expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
+  });
+
   // #364. A pair's commanders take two of the hundred, so a finished pair deck
   // is 98 of 98 — a tile reading 98 / 99 would tell its owner the deck is one
   // card short, and its progress bar would stop just shy of full forever.

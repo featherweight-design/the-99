@@ -10,6 +10,7 @@ import { allDecksCartCopy } from "../../../lib/copy/all-decks-cart";
 import { allDecksCartEnabled } from "../../../lib/decks/all-decks-cart-flag";
 import { loadCart } from "../../../lib/decks/cart-read";
 import { provenanceForm } from "../../../lib/decks/price";
+import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
@@ -19,8 +20,17 @@ async function readNow() {
   return new Date();
 }
 
-export default async function AllDecksShoppingPage() {
+export default async function AllDecksShoppingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string | string[]; deck?: string | string[] }>;
+}) {
   if (!allDecksCartEnabled()) notFound();
+  const params = await searchParams;
+  // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
+  // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.
+  const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
+  const initialView = params.view === "deck" || deck ? "deck" : "card";
   const userId = await requireUserId();
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
@@ -32,5 +42,5 @@ export default async function AllDecksShoppingPage() {
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
   const provenance = newest ? provenanceForm(newest, await readNow()) : null;
-  return <CartView cart={cart} provenance={provenance} />;
+  return <CartView cart={cart} provenance={provenance} initialView={initialView} focusDeckId={deck} />;
 }
