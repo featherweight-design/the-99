@@ -490,8 +490,10 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
   it("draws Change 32 tall, with the phone's 44 hit area through padding the margin takes back", () => {
     draw(written({ facts: facts() }));
     const cls = change().className;
-    for (const k of ["min-h-[32px]", "py-[6px]", "-my-[6px]", "md:py-0", "md:my-0"]) expect(cls).toContain(k);
-    expect(cls).not.toContain("min-h-[44px]");
+    const classes = cls.split(" ");
+    // Border-box: a min-height counts the padding, so the phone's 44 is the minimum itself.
+    for (const k of ["min-h-[44px]", "md:min-h-[32px]", "py-[6px]", "-my-[6px]", "md:py-0", "md:my-0"]) expect(classes).toContain(k);
+    expect(classes).not.toContain("min-h-[32px]");
   });
 
   it("drops no pick on an Undo when Change was never pressed", async () => {
