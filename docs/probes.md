@@ -158,9 +158,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   with BOTH calls billed on the one ledger row, each priced on its own model; the row names its
   phase while the shortlist runs (F2); a repeat answers from the store and reserves nothing; a read
   that finds nothing refunds and still records its cost; a Stop during the shortlist refunds,
-  never calls the judgement, and lands the shortlist's late bill. Needs migration 0090 on the
-  target; refuses staging and production by `neon.branch_id`. Its failure path was run: a settle
-  that spent on an empty result fails it.
+  never calls the judgement, and lands the shortlist's late bill.
+  **Admission (hardening):** eight concurrent `beginTheRead` presses by one player read the pool
+  ONCE (a counted loader, held 500ms so the presses overlap), admit one and answer the other seven
+  `in_flight`, reserve one credit, and a press after them, while the read runs, is refused without
+  reading the pool; a player whose five credits are spent is refused `allowance` with the pool
+  never read and no read or reservation written; and a press that fails in the pool read does not
+  keep the admission (the next press is admitted); and a credit held by a read the process died under
+  (pending, seven minutes old: past the reaper's cutoff, inside the reservation's ten) is reaped by the gate, not held against the press. Needs migration 0090 on the target; refuses
+  staging and production by `neon.branch_id`. Its failure paths were run: a settle that spent on an
+  empty result fails it; with the admission removed the burst reads the pool 8 times, and with the
+  credit gate removed the spent player's press reads it once before the reservation refuses, and with
+  the reap removed the stranded credit refuses the press.
 - `pnpm probe:synopsis` proves the deck synopsis's writes and reads against a real Postgres
   (sub-project 6) by calling the real `writeSynopsisFor`, `retrySynopsisFor`, `readSynopsisState`,
   `readVersionSynopsis` and `pinSynopsisToVersion`. Every rule those apply to what they READ is

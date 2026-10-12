@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const store = vi.hoisted(() => ({
   hasRunningRead: vi.fn(async () => false),
+  // The admission lock, as a test sets it: held by another press ("busy"), or free (runs the press).
+  withReadAdmission: vi.fn(async (_userId: string, run: () => Promise<unknown>) => run()),
+  reapAbandonedReads: vi.fn(async () => 0),
   startRead: vi.fn(),
   setReadPhase: vi.fn(),
   settleTheRead: vi.fn(),
 }));
 vi.mock("./run-store", () => store);
+const allowance = vi.hoisted(() => ({ read: vi.fn() }));
+vi.mock("../model/allowance", () => ({ readAllowance: allowance.read }));
+const OPEN = { used: 1, limit: 5, nextAt: null, reopensAt: null };
 vi.mock("./search", () => ({ loadIntakeCatalog: vi.fn(), loadSearchFacts: vi.fn() }));
 const load = vi.hoisted(() => ({ collectionDigest: vi.fn(), loadReadCards: vi.fn(), loadReadDecks: vi.fn() }));
 vi.mock("./the-read-load", () => load);
@@ -34,6 +40,10 @@ const deps = (shortlist: ModelOutcome<ShortlistReply>, judge: ModelOutcome<Judge
 const input = { readId: "r", words: "scary horrors", filters: { colors: [], match: "contains" as const, themes: [], budgetDollars: null, bracket: null } };
 
 beforeEach(() => {
+  allowance.read.mockReset().mockResolvedValue(OPEN);
+  store.withReadAdmission.mockReset().mockImplementation(async (_userId: string, run: () => Promise<unknown>) => run());
+  store.reapAbandonedReads.mockReset().mockResolvedValue(0);
+  store.hasRunningRead.mockReset().mockResolvedValue(false);
   store.startRead.mockReset().mockResolvedValue({ kind: "started", readId: "r", callId: "c" });
   store.setReadPhase.mockReset().mockResolvedValue(true);
   store.settleTheRead.mockReset().mockResolvedValue(true);
@@ -153,6 +163,99 @@ describe("runTheRead", () => {
     expect(await beginTheRead("u", input, d)).toEqual({ kind: "in_flight" });
     expect(load.loadReadDecks).not.toHaveBeenCalled();
     expect(store.startRead).not.toHaveBeenCalled();
+  });
+
+  describe("before the pool is read (hardening)", () => {
+    // A loader the test can count: the pool read is whatever it stands for.
+    const counted = () => {
+      const loader = vi.fn(async () => inputs());
+      return loader;
+    };
+
+    it("reads no pool for a player whose allowance is closed, whichever way it is closed", async () => {
+      for (const [closed, kind] of [
+        [{ ...OPEN, used: 5 }, "allowance"],
+        [{ ...OPEN, paused: { until: new Date() } }, "paused"],
+        [{ ...OPEN, ownerShare: true }, "ownerShare"],
+        // The reservation's own order: paused, then the owner's share, then spent.
+        [{ ...OPEN, used: 9, paused: { until: new Date() }, ownerShare: true }, "paused"],
+      ] as const) {
+        allowance.read.mockResolvedValueOnce(closed);
+        const loader = counted();
+        store.startRead.mockClear();
+        expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader), kind).toEqual({ kind });
+        expect(loader).not.toHaveBeenCalled();
+        expect(store.startRead).not.toHaveBeenCalled();
+      }
+    });
+
+    it("reaps an abandoned read before refusing a spent allowance, and goes on if that freed the credit", async () => {
+      allowance.read.mockResolvedValueOnce({ ...OPEN, used: 5 }).mockResolvedValueOnce(OPEN);
+      store.reapAbandonedReads.mockResolvedValueOnce(1);
+      const loader = counted();
+      expect((await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).kind).toBe("started");
+      expect(store.reapAbandonedReads).toHaveBeenCalledWith("u", expect.any(Date));
+      expect(loader).toHaveBeenCalledTimes(1);
+    });
+
+    it("still refuses when the reaped read did not free the credit, and reaps nothing for an open allowance", async () => {
+      allowance.read.mockResolvedValueOnce({ ...OPEN, used: 5 }).mockResolvedValueOnce({ ...OPEN, used: 5 });
+      store.reapAbandonedReads.mockResolvedValueOnce(1);
+      const loader = counted();
+      expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).toEqual({ kind: "allowance" });
+      expect(loader).not.toHaveBeenCalled();
+      store.reapAbandonedReads.mockClear();
+      await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), counted());
+      expect(store.reapAbandonedReads).not.toHaveBeenCalled();
+    });
+
+    it("looks for a running read again inside the admission, before loading anything", async () => {
+      // Clear at the door, running by the time the admission is held: another press reserved and let go between.
+      store.hasRunningRead.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      const loader = counted();
+      store.startRead.mockClear();
+      expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).toEqual({ kind: "in_flight" });
+      expect(loader).not.toHaveBeenCalled();
+      expect(store.startRead).not.toHaveBeenCalled();
+    });
+
+    it("lets a player with a credit through, and reads the pool once", async () => {
+      const loader = counted();
+      const out = await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader);
+      expect(out.kind).toBe("started");
+      expect(loader).toHaveBeenCalledTimes(1);
+      expect(allowance.read).toHaveBeenCalledWith("u", expect.any(Date), "intake");
+    });
+
+    it("leaves the decision to the reservation when the allowance cannot be read", async () => {
+      allowance.read.mockRejectedValueOnce(new Error("ledger down"));
+      const loader = counted();
+      expect((await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).kind).toBe("started");
+      expect(loader).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses as in flight, reading no pool, when another press of the player's holds the admission", async () => {
+      store.withReadAdmission.mockResolvedValueOnce("busy");
+      const loader = counted();
+      store.startRead.mockClear();
+      expect(await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader)).toEqual({ kind: "in_flight" });
+      expect(loader).not.toHaveBeenCalled();
+      expect(store.startRead).not.toHaveBeenCalled();
+    });
+
+    it("takes the admission for the player, and runs the pool read and the reservation inside it", async () => {
+      const order: string[] = [];
+      store.withReadAdmission.mockImplementationOnce(async (userId: string, run: () => Promise<unknown>) => {
+        order.push(`admit:${userId}`);
+        const out = await run();
+        order.push("release");
+        return out;
+      });
+      const loader = vi.fn(async () => { order.push("load"); return inputs(); });
+      store.startRead.mockImplementationOnce(async () => { order.push("reserve"); return { kind: "started", readId: "r", callId: "c" }; });
+      await beginTheRead("u", input, deps(ok({ keys: [] }), ok({ picks: [] })), loader);
+      expect(order).toEqual(["admit:u", "load", "reserve", "release"]);
+    });
   });
 
   it("reserves under the fingerprint and the joined model", async () => {

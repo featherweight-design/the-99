@@ -1,4 +1,5 @@
 
+import { Pool } from "@neondatabase/serverless";
 import { and, desc, eq, gte, lt, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
@@ -123,6 +124,86 @@ async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: s
   // answer, whatever its hash, so it is never offered back.
   if (!row?.result) return null;
   return { id: row.id, useful: row.status === "ok", result: row.result as TheReadResult };
+}
+
+/**
+ * ONE PRESS PER PLAYER AT A TIME, from the pool read to the reservation. `run` is the press's
+ * expensive first half (the inputs, then `startRead`); this runs it only if no other press of the
+ * player's is in it, and answers `busy` at once, reading nothing, if one is. Without it a scripted
+ * burst of presses each loads the whole pool before the one-pending index refuses all but one at
+ * the reservation, so the burst costs N pool reads for one read.
+ *
+ * A transaction-scoped TRY lock on a dedicated connection, as `withCatalogIngestLock` holds its
+ * lock (never a session lock: the Neon pooler runs in transaction mode). The connection comes from
+ * the admission's OWN pool, NOT the app's shared one: `run` needs the shared pool's connections for
+ * the pool read and the reservation, and a lock held on one of those would let ten players pressing
+ * at once (the shared pool's size, with no connection timeout) each hold a connection while waiting
+ * for another. The admission pool is bounded (`ADMISSION_POOL_MAX`) and kept on `globalThis` like
+ * the app's, so a burst queues for a connection instead of opening one per press, and a holder
+ * never waits on this pool, so the queue always drains. A press that waits longer than
+ * `ADMISSION_WAIT_MS` for a connection fails with the pool's error rather than waiting on.
+ * The transaction commits when `run` returns, so the hold is the pool read and the reservation,
+ * never the two model calls, which run after. The key is the admission's own: `startRead` takes
+ * its own locks inside `run`, and nothing in `run` waits on this one, so the nesting cannot
+ * deadlock. A press that throws rolls back and releases the lock.
+ *
+ * THE LOCK ALONE DOES NOT SAY NO ONE IS READING: a press that arrives after another has reserved
+ * and released finds the lock free. `run` re-checks `hasRunningRead` inside it, which is what
+ * refuses that press before it loads anything.
+ */
+const ADMISSION_POOL_MAX = 5;
+const ADMISSION_WAIT_MS = 15_000;
+const admissionShared = globalThis as typeof globalThis & { __the99AdmissionPool?: Pool };
+function admissionPool(): Pool {
+  admissionShared.__the99AdmissionPool ??= new Pool({
+    connectionString: process.env.DATABASE_URL, max: ADMISSION_POOL_MAX, connectionTimeoutMillis: ADMISSION_WAIT_MS,
+  });
+  return admissionShared.__the99AdmissionPool;
+}
+export async function withReadAdmission<T>(userId: string, run: () => Promise<T>): Promise<T | "busy"> {
+  const client = await admissionPool().connect();
+  // A connection goes back to the pool only once its transaction has been committed or rolled back
+  // cleanly. Anything else (a failed BEGIN, a failed lock query, a failed rollback or commit) leaves
+  // it open or aborted, and `release` does not reset that: it is destroyed instead.
+  let clean = false;
+  const rollback = async () => { await client.query("rollback"); clean = true; };
+  try {
+    await client.query("begin");
+    const { rows } = await client.query("select pg_try_advisory_xact_lock(hashtextextended($1, 0)) as got", [`intake-admit:${userId}`]);
+    if ((rows[0] as { got: boolean } | undefined)?.got !== true) {
+      await rollback();
+      return "busy";
+    }
+    let result: T;
+    try {
+      result = await run();
+    } catch (err) {
+      await rollback().catch(() => {});
+      throw err;
+    }
+    // This transaction owns only the lock; what `run` did (the reservation) is already committed on
+    // the app's pool. So a commit that fails does not discard that result, or the press would error
+    // out before it scheduled the read it reserved and strand it: the connection is destroyed, which
+    // releases the lock, and the result is returned.
+    try {
+      await client.query("commit");
+      clean = true;
+    } catch {
+      // `clean` stays false.
+    }
+    return result;
+  } finally {
+    client.release(clean ? undefined : true);
+  }
+}
+
+/**
+ * Fails and refunds this player's pending reads past the reaper's cutoff, in a transaction of its
+ * own. The credit gate calls it before refusing a spent allowance: an abandoned read still holds its
+ * unit until something reaps it, and `startRead` would have reaped it before reserving.
+ */
+export async function reapAbandonedReads(userId: string, now: Date = new Date()): Promise<number> {
+  return db.transaction((tx) => reapReads(tx, userId, now));
 }
 
 /**

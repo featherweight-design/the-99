@@ -140,10 +140,69 @@ async function main() {
     check("the outcome is stopped, and the judgement never ran", [stopped.kind, judged], ["stopped", false]);
     check("the read is cancelled, its unit refunded, its phase cleared", [stopRow.status, stopRow.unit, stopRow.phase], ["cancelled", "refunded", null]);
     check("the shortlist's late bill landed", (stopRow.cost ?? 0) > 0, true);
+
+    // ---- hardening: nothing is read for a press that cannot be served -------------------------
+    const { beginTheRead } = await import("../src/lib/intake/the-read-run");
+    const SPENT = `${USER}-spent`;
+    // A loader the probe can count and slow, so presses overlap inside the pool read.
+    const counted = (fingerprint: string, holdMs = 0) => {
+      const loader = Object.assign(async () => { loader.calls += 1; if (holdMs) await new Promise((r) => setTimeout(r, holdMs)); return inputs(fingerprint); }, { calls: 0 });
+      return loader;
+    };
+    const begin = (user: string, loader: ReturnType<typeof counted>, d = deps(pick)) =>
+      beginTheRead(user, { readId: randomUUID(), words: "scary horrors", filters }, d, loader);
+
+    console.log("\n5. A burst of presses by one player reads the pool once");
+    const burstLoader = counted("fp-burst", 500);
+    const unitsBefore = await units();
+    const burst = await Promise.all(Array.from({ length: 8 }, () => begin(USER, burstLoader)));
+    const kinds = burst.map((b) => b.kind).sort();
+    check("exactly one press was admitted; the other seven were told a read is in flight", kinds, ["in_flight", "in_flight", "in_flight", "in_flight", "in_flight", "in_flight", "in_flight", "started"]);
+    check("the pool was read ONCE for the eight presses", burstLoader.calls, 1);
+    check("one credit was reserved", (await units()) - unitsBefore, 1);
+    // The admission is released once the winner has reserved: a later press meets the pending read.
+    const lateLoader = counted("fp-late");
+    check("a press after it, while the read runs, is refused without reading the pool", [(await begin(USER, lateLoader)).kind, lateLoader.calls], ["in_flight", 0]);
+    const winner = burst.find((b) => b.kind === "started");
+    if (winner && winner.kind === "started") await winner.finish();
+    check("the admitted read settled", (await readRow(winner && winner.kind === "started" ? winner.readId : "")).status, "ok");
+
+    console.log("\n6. A player with no credit left reads no pool");
+    for (let i = 0; i < 5; i++) {
+      await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${SPENT}, 'intake', 'stub', 'player', 'spent')`);
+    }
+    const spentLoader = counted("fp-spent");
+    const spentUnits = Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${SPENT}`)).rows[0] as { n: number }).n);
+    check("the press is refused for the allowance, and the pool was never read", [(await begin(SPENT, spentLoader)).kind, spentLoader.calls], ["allowance", 0]);
+    check("and no read or reservation was written", [
+      Number(((await fixture.execute(sql`select count(*)::int as n from intake_reads where user_id = ${SPENT}`)).rows[0] as { n: number }).n),
+      Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${SPENT}`)).rows[0] as { n: number }).n),
+    ], [0, spentUnits]);
+
+    console.log("\n7. A press that fails in the pool read does not keep the admission");
+    const failing = Object.assign(async () => { failing.calls += 1; throw new Error("pool read failed"); }, { calls: 0 });
+    // Settle the earlier reads first: only a pending read may refuse a press now.
+    const failedPress = await begin(USER, failing as never).then(() => "returned", (e: Error) => e.message);
+    check("the failure reaches the caller", failedPress, "pool read failed");
+    const afterFail = counted("fp-after-fail");
+    check("the next press is admitted and reads the pool", [(await begin(USER, afterFail)).kind, afterFail.calls], ["started", 1]);
+
+    console.log("\n8. A credit held by an abandoned read does not refuse the press that would reap it");
+    const STRANDED = `${USER}-stranded`;
+    for (let i = 0; i < 4; i++) {
+      await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${STRANDED}, 'intake', 'stub', 'player', 'spent')`);
+    }
+    // The fifth credit is reserved by a read whose process died seven minutes ago: past the reaper's five-minute cutoff and inside the reservation's ten, so its credit still counts.
+    const [held] = (await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status, created_at) values (${STRANDED}, 'intake', 'stub', 'player', 'reserved', now() - interval '7 minutes') returning id`)).rows as { id: string }[];
+    await fixture.execute(sql`insert into intake_reads (user_id, words_hash, model, model_call_id, status, created_at) values (${STRANDED}, 'stranded', 'stub', ${held.id}, 'pending', now() - interval '7 minutes')`);
+    const strandedLoader = counted("fp-stranded");
+    const strandedPress = await begin(STRANDED, strandedLoader);
+    check("the abandoned read is reaped and the press is admitted, reading the pool once", [strandedPress.kind, strandedLoader.calls], ["started", 1]);
+    check("the abandoned read failed as interrupted, its credit refunded", (await fixture.execute(sql`select r.status, r.error_class, m.status as unit from intake_reads r join model_calls m on m.id = r.model_call_id where r.words_hash = 'stranded' and r.user_id = ${STRANDED}`)).rows[0], { status: "failed", error_class: "interrupted", unit: "refunded" });
   } finally {
-    await fixture.execute(sql`delete from intake_read_stops where user_id = ${USER}`);
-    await fixture.execute(sql`delete from intake_reads where user_id = ${USER}`);
-    await fixture.execute(sql`delete from model_calls where user_id = ${USER}`);
+    await fixture.execute(sql`delete from intake_read_stops where user_id like ${`${USER}%`}`);
+    await fixture.execute(sql`delete from intake_reads where user_id like ${`${USER}%`}`);
+    await fixture.execute(sql`delete from model_calls where user_id like ${`${USER}%`}`);
     await pool.end();
   }
   console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
