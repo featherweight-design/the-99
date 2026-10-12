@@ -180,7 +180,7 @@ export async function startRead(
   await db.transaction((tx) => reapReads(tx, userId, now));
   try {
     const handle = await db.transaction(async (tx): Promise<ReadHandle | "stopped"> => {
-      // An ask already read is offered once: its chips come back and no unit is reserved.
+      // An ask already read is offered once: its stored result comes back and no unit is reserved.
       await lockAsks(tx, userId);
       // A Stop that beat this start to the database (`cancelRead` left its id): nothing is
       // reserved, so nothing is spent. The stop has done its work and is consumed, in this

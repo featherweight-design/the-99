@@ -12,11 +12,11 @@
 /** The synopsis stub's name: one string the ledger prices at nothing (`UNBILLED_MODELS`). */
 export { STUB_MODEL } from "../synopsis/stub";
 
-export type StubMode = "mapped" | "wider" | "nothing" | "malformed" | "busy" | "timeout";
+export type StubMode = "mapped" | "nothing" | "malformed" | "busy" | "timeout";
 
 export function stubMode(env: Record<string, string | undefined> = process.env): StubMode {
   const mode = env.INTAKE_STUB;
-  return mode === "wider" || mode === "nothing" || mode === "malformed" || mode === "busy" || mode === "timeout" ? mode : "mapped";
+  return mode === "nothing" || mode === "malformed" || mode === "busy" || mode === "timeout" ? mode : "mapped";
 }
 
 /** How long the stub holds a reply (`INTAKE_STUB_DELAY_MS`), capped well under the read's deadline. */

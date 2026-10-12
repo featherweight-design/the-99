@@ -101,7 +101,7 @@ describe("runTheRead", () => {
 
   it("answers a repeat from the store and calls nothing", async () => {
     const result = { picks: [{ oracleId: "a", reason: [{ text: "Fits." }] }], pool: 2, weighed: 1 };
-    store.startRead.mockResolvedValue({ kind: "stored", readId: "old", useful: true, result, read: { chips: [], notUsed: [], notUnderstood: [] } });
+    store.startRead.mockResolvedValue({ kind: "stored", readId: "old", useful: true, result });
     const d = deps(ok({ keys: [] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "read", readId: "old", result, repeat: true });
     expect(d.shortlist).not.toHaveBeenCalled();

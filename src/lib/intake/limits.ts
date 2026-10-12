@@ -1,8 +1,8 @@
 /**
- * The deeper read's fixed numbers, in one place. Pure and client-safe: `src/lib/model/prices.ts`
+ * The read's fixed numbers, in one place. Pure and client-safe: `src/lib/model/prices.ts`
  * prices every reservation from these, and the form (PR 5) caps its field with the words limit.
  *
- * The model, effort and output room are Hugh's ruling (plan, "The deeper read", 2026-09-25):
+ * The model, effort and output room are Hugh's ruling (plan, 2026-09-25):
  * Sonnet 5 at low effort with the synopsis's 3,000 tokens, the one precedent measured at low.
  * Sonnet 5's adaptive thinking counts inside `max_tokens`, so the room is not cut below that.
  */

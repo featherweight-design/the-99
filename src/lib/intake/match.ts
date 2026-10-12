@@ -11,7 +11,7 @@ import { singularForms } from "../edhrec/tag-kinds";
  *  - a dollar figure (`$200`, `200 dollars`, `150 bucks`) as the budget;
  *  - `bracket N` for N from 1 to 5.
  * Every other word is either a STOP WORD, which is dropped silently, or LEFTOVER, which the player
- * is shown and may hand to Look deeper. A word is never guessed at.
+ * is shown. A word is never guessed at.
  *
  * THE LONGEST PHRASE WINS, scanning left to right, so `Doubling Season` is a card and not the theme
  * `Seasons`-anything. When one phrase names both a theme and a card, the theme wins: the intake asks
@@ -76,7 +76,7 @@ export type PhraseIndex = {
 /**
  * Engineering owns these (plan, PR 2). Function words, and the words a player uses to talk ABOUT a
  * deck rather than to say what it is. They carry no answer, so an intake of nothing but these has
- * no leftover and offers no deeper read.
+ * no leftover.
  */
 export const STOP_WORDS: ReadonlySet<string> = new Set([
   "a", "an", "the", "and", "or", "but", "of", "in", "on", "at", "to", "for", "with", "without", "from",

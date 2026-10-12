@@ -6,7 +6,7 @@ import type { Chip } from "./match";
 import type { Answers, Bracket, Pool, ThemeJoin } from "./rank";
 import { READ_WORDS_MAX_CHARS } from "./limits";
 
-// The words box's limit is the deeper read's (`limits.ts`), so the URL, the submit and the read
+// The words box's limit is the read's (`limits.ts`), so the URL, the submit and the read
 // never disagree about how much of the words there is. Re-exported for the form.
 export { READ_WORDS_MAX_CHARS };
 

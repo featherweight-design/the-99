@@ -162,9 +162,8 @@ function answerName(a: AnswerKey, p: ChooseParams, labels: Labels): string {
 
 /**
  * The answers with one removed: a drop on the results, and what a chip's own drop does. A new set of
- * answers is a new ask, so it carries neither a deeper read (`r`) nor its marks (`d`): a read is
- * bound to the ask it answered, and removing the very answer it added would otherwise hash back
- * to that ask and draw its look as done over results it never produced.
+ * answers is a new ask, so it carries no read (`r`): a read is bound to the ask it answered, so a read
+ * `r` names must not be drawn over answers it never read.
  */
 export function without(p: ChooseParams, a: AnswerKey): ChooseParams {
   const q = { ...p, readId: null, deeper: [] };

@@ -4,7 +4,7 @@ import { cancelRead } from "../../../../../lib/intake/run-store";
 import { isUuid } from "../../../../../lib/uuid";
 
 /**
- * *Stop* for the deeper look (plan, PR 6). A route handler, not a Server Action: the client
+ * *Stop* for the read (plan, PR 6). A route handler, not a Server Action: the client
  * dispatches a page's Server Actions one at a time, so a Stop sent as one would wait behind the
  * very submit it means to stop, and arrive after the read had settled and been charged.
  *
