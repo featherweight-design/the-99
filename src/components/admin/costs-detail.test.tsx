@@ -121,6 +121,13 @@ describe("CostsDetail, a month with runs", () => {
   });
 });
 
+describe("CostsDetail, the split headline", () => {
+  it("never rounds a sliver of player spend away into 100% system", () => {
+    draw({ calls: [call({ micro: 2_000 }), call({ feature: "synopsis", origin: "system", userId: "system", micro: 998_000 })], ledgers: [] });
+    expect(screen.getByText("System is 99.8% of October.")).toBeInTheDocument();
+  });
+});
+
 describe("CostsDetail, the eval ledgers", () => {
   it("shows a pending entry beside settled, in warning ink (C8)", () => {
     draw({

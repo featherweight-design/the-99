@@ -99,7 +99,7 @@ export const adminCopy = {
       evals: (n: number) => `${plural(n, "ledger", "ledgers")}; each tests its own model`,
     },
     split: "Player against system",
-    splitLine: (pct: number, month: string) => `System is ${pct}% of ${month}.`,
+    splitLine: (pct: string, month: string) => `System is ${pct}% of ${month}.`,
     series: { player: "Player presses", labels: "Card labels", evals: "Evals", rewrites: "Free rewrites and prose" },
     byFeature: "By feature and model",
     byFeatureMeta: "per run is the month’s mean of its priced runs",

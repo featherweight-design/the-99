@@ -42,9 +42,12 @@ const usdLimit = (v: number) => (Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2
 const monthLabel = (m: MonthKey, month: "long" | "short") =>
   new Intl.DateTimeFormat("en-US", { month, ...(month === "long" ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(m.year, m.month, 1)));
 const share = (part: number, whole: number) => (whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : "0%");
+// A share as a reader can trust it: one place near either end, so a sliver never rounds to 0% or
+// 100% while the other side is still drawn.
 const pctOf = (part: number, whole: number) => {
   const p = (part / whole) * 100;
-  return p < 10 ? p.toFixed(1) : String(Math.round(p));
+  if (p === 0 || p === 100) return String(p);
+  return p < 10 || p > 90 ? p.toFixed(1) : String(Math.round(p));
 };
 const millions = (n: number) => `${(n / 1e6).toFixed(2)}M`;
 const featureName = (f: string) => copy.featureNames[f] ?? f;
@@ -154,7 +157,7 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
   const total = s.player.micro + sys.total;
   return (
     <div className={`${CARD} flex flex-col gap-[12px] p-[14px]`}>
-      <span className="text-[14px] text-[color:var(--fg)]">{copy.splitLine(total > 0 ? Math.round((sys.total / total) * 100) : 0, monthLabel(month, "long").split(" ")[0])}</span>
+      <span className="text-[14px] text-[color:var(--fg)]">{copy.splitLine(total > 0 ? pctOf(sys.total, total) : "0", monthLabel(month, "long").split(" ")[0])}</span>
       <div aria-hidden className="flex h-[14px] gap-[2px] overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]">
         <Segs parts={parts} scale={total || 1} min={0.8} />
       </div>
