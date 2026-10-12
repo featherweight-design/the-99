@@ -26,6 +26,7 @@ import { gateReason } from "../../lib/tuning/gate";
 import { isLine, type PairItem, type TuningState } from "../../lib/tuning/state";
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
+import { awaitRunSettled } from "./await-run";
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
@@ -681,6 +682,11 @@ export function TuningPanel({
       if (token.current === mine) setLongWait(true);
     }, LONG_WAIT_MS);
     const result = await running;
+    // The action returns once the run is reserved; the server finishes it after the response. Read
+    // until it settles, so the checklist keeps going and the result is drawn when it lands.
+    const waited = result.ok
+      ? await awaitRunSettled(() => deps.read(deckId, leftReview.current ? null : reviewRunId), runId, { aborted: () => token.current !== mine })
+      : null;
     // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
     // `longWaitTimer` are this component's shared refs, and `stop()` lets a new press start
     // while this press's own `deps.run` is still unresolved (pre-open review round 4, PR 2). If
@@ -702,7 +708,7 @@ export function TuningPanel({
     ownRun.current = null;
     // Token-checked AFTER the read too: a Stop pressed while this read is in flight owns the panel
     // from then on, and this press must not draw or announce over it.
-    const next = await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
+    const next = waited ?? await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
     if (token.current !== mine) return;
     if (next) {
       setState(next);
