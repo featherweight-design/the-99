@@ -70,7 +70,7 @@ describe("wrapped inputs show focus on their field", () => {
     const unwrapped: string[] = [];
     for (const path of files(ROOT)) {
       const rel = relative(ROOT, path);
-      if (rel === "ui/text-field.tsx" || ALLOWED[rel]) continue;
+      if (ALLOWED[rel]) continue;
       const source = readFileSync(path, "utf8");
       const tags = inputTags(source);
       if (tags.some(looseInner)) offenders.push(rel);
