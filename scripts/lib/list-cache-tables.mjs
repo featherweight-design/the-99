@@ -135,7 +135,9 @@ export function switchReaders(files = loaderFiles(), tables = schemaTables()) {
   const bindings = [...tables].filter(([, t]) => KEYED_BY_SWITCHES.has(t.name)).map(([binding]) => binding);
   const named = new RegExp(`\\b(${[...bindings, ...KEYED_BY_SWITCHES].join("|")})\\b`);
   return files.filter((file) => {
-    if (file === SWITCH_READER || file.startsWith("src/lib/switches/")) return false;
+    // The snapshot itself, and the one file allowed to call it. Nothing else in its directory is
+    // exempt: a helper placed beside it reads the tables as surely as a loader anywhere else.
+    if (file === SWITCH_READER || file === SWITCH_MODULE) return false;
     const source = readFileSync(file, "utf8");
     if (named.test(source.replace(/^\s*(\/\/|\*).*$/gm, ""))) return true;
     return importsOf(source).some((spec) => resolveImport(resolve(file), spec) === resolve(SWITCH_MODULE));

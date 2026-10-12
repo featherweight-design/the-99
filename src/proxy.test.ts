@@ -19,13 +19,25 @@ vi.mock("@clerk/nextjs/server", () => ({
     routes.some((r) => r === req.nextUrl.pathname || (r.includes("(") && false)),
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
-vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => process.env) }));
+const resolveSwitchEnv = vi.hoisted(() => vi.fn(async () => process.env));
+vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv }));
 // The sheet reads the whole seen state; its version half is the same mock, so every test that
 // sets a version sets both. No switched entry exists yet, so the ids are always empty here.
 vi.mock("./lib/about/read", () => ({
   aboutVersionSeen,
   aboutSeen: async (userId: string) => ({ version: await aboutVersionSeen(userId), ids: [] }),
 }));
+
+/**
+ * Let through untouched: no redirect and no cookie. Every request is forwarded with the client's
+ * sheet headers stripped, so a pass is a `next()` response rather than none at all.
+ */
+function expectPassed(res: NextResponse | undefined) {
+  expect(res?.status).toBe(200);
+  expect(res?.headers.get("location")).toBeNull();
+  expect(res?.headers.get("set-cookie")).toBeNull();
+  expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBeNull();
+}
 
 const proxy = (await import("./proxy")).default as unknown as (
   auth: unknown,
@@ -124,7 +136,7 @@ describe("a reader who is current", () => {
   it("costs no read at all once the cookie is in place", async () => {
     const { cookieValue } = await import("./lib/about/gate");
     const res = await proxy(auth, request("/decks", {}, cookieValue("user_1")));
-    expect(res).toBeUndefined();
+    expectPassed(res);
     expect(aboutVersionSeen).not.toHaveBeenCalled();
   });
 });
@@ -132,17 +144,17 @@ describe("a reader who is current", () => {
 describe("requests the gate keeps its hands off", () => {
   it("leaves a signed-out reader to Clerk", async () => {
     session.mockResolvedValue({ userId: null });
-    expect(await proxy(auth, request("/"))).toBeUndefined();
+    expectPassed(await proxy(auth, request("/")));
     expect(aboutVersionSeen).not.toHaveBeenCalled();
   });
 
   it("never redirects /about itself", async () => {
-    expect(await proxy(auth, request("/about"))).toBeUndefined();
+    expectPassed(await proxy(auth, request("/about")));
   });
 
   it("never redirects a prefetch", async () => {
     const res = await proxy(auth, request("/decks", { RSC: "1", "Next-Router-Prefetch": "1" }));
-    expect(res).toBeUndefined();
+    expectPassed(res);
   });
 
   it("redirects a client transition, which is how the reader actually moves", async () => {
@@ -153,7 +165,7 @@ describe("requests the gate keeps its hands off", () => {
   it("lets the reader through when the read fails", async () => {
     // The page is a reference; the app is the point.
     aboutVersionSeen.mockRejectedValue(new Error("no database"));
-    expect(await proxy(auth, request("/decks"))).toBeUndefined();
+    expectPassed(await proxy(auth, request("/decks")));
   });
 });
 
@@ -259,6 +271,11 @@ describe("with the sheet switch on", () => {
     expect(res?.cookies.get("about_sheet")).toBeUndefined();
   });
 
+  it("tells the shell the sheet is on for this reader, on requests it otherwise ignores too", async () => {
+    const res = await proxy(auth, request("/decks", { RSC: "1" }));
+    expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBe("1");
+  });
+
   it("strips a forged header from a signed-out request too, and reads nothing", async () => {
     session.mockResolvedValue({ userId: null });
     const res = await proxy(auth, request("/", { "x-about-sheet": "0" }));
@@ -266,5 +283,29 @@ describe("with the sheet switch on", () => {
     expect(overridden(res)).not.toContain("x-about-sheet");
     expect(res?.cookies.get("about_sheet")).toBeUndefined();
     expect(aboutVersionSeen).not.toHaveBeenCalled();
+    expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBeNull();
+  });
+});
+
+// The reader's RESOLVED switches decide, and the shell trusts only what the proxy forwards.
+describe("the sheet switch, per reader", () => {
+  afterEach(() => resolveSwitchEnv.mockImplementation(async () => process.env));
+
+  it("turns the sheet on for a reader an override switches it on for", async () => {
+    resolveSwitchEnv.mockImplementation(async () => ({ ...process.env, ABOUT_SHEET_ENABLED: "true" }));
+    aboutVersionSeen.mockResolvedValue(8);
+    const res = await proxy(auth, request("/decks"));
+    expect(res?.headers.get("location")).toBeNull();
+    expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBe("1");
+  });
+
+  it("strips a forged sheet-on header from a reader the sheet is off for", async () => {
+    aboutVersionSeen.mockResolvedValue(99);
+    const res = await proxy(auth, request("/decks", { "x-about-sheet-on": "1", "x-about-sheet": "0" }));
+    expect(res?.headers.get("x-middleware-request-x-about-sheet-on")).toBeNull();
+    const list = res?.headers.get("x-middleware-override-headers");
+    expect(list).not.toBeNull();
+    expect(list?.split(",")).not.toContain("x-about-sheet-on");
+    expect(list?.split(",")).not.toContain("x-about-sheet");
   });
 });

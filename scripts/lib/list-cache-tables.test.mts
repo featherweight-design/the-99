@@ -67,6 +67,17 @@ describe("listCacheProblems", () => {
 });
 
 describe("switchReaders", () => {
+  it("exempts the snapshot alone, not a helper placed beside it", () => {
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/switches/.reader-"));
+    const file = join(dir, "helper.ts");
+    writeFileSync(file, 'import { flagGroupMembers } from "../../../db/schema";\nexport const x = flagGroupMembers;\n');
+    try {
+      expect(switchReaders([file.slice(process.cwd().length + 1)])).toEqual([expect.stringMatching(/^KEYED/)]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("reports a loader on the pages' path that reads the overrides itself", () => {
     const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-reader-"));
     const file = join(dir, "loader.ts");
@@ -82,6 +93,7 @@ describe("switchReaders", () => {
       expect(switchReaders([rel])).toEqual([expect.stringMatching(/^KEYED/)]);
       writeFileSync(file, "// flag_overrides is read by page-cache alone\nexport const y = 1;\n");
       expect(switchReaders([rel])).toEqual([]);
+      expect(switchReaders(["src/lib/switches/snapshot.ts", "src/lib/switches/resolve.ts", "src/lib/switches/registry.ts"])).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true });
     }
