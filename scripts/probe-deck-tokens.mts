@@ -92,6 +92,33 @@ async function main() {
     await leaveToken(userId, AANG, food.oracleId);
     check("leaving takes it off", !(await get()).tokens.find((t) => t.name === "Food")!.joined);
 
+    // Owned means owned for every deck (plan lock 8): the press and an upload both clear EVERY deck's join.
+    const OMNATH = "dcf9a86d-f6ef-4c7c-a20c-a9807c7cdfbd";
+    const joinsOf = async (id: string) => Number((await db.execute<{ n: number }>(
+      sql`select count(*)::int as n from deck_token_joins where user_id = ${userId} and token_oracle_id = ${id}`)).rows[0].n);
+    await joinToken(userId, AANG, food.oracleId);
+    await db.execute(sql`insert into deck_token_joins (deck_id, token_oracle_id, user_id) values (${OMNATH}, ${food.oracleId}, ${userId}) on conflict do nothing`);
+    check("Food is joined on two decks", (await joinsOf(food.oracleId)) === 2);
+    await markOwnedOnDeck(userId, AANG, food.oracleId);
+    check("I have one takes it off EVERY deck's list", (await joinsOf(food.oracleId)) === 0);
+    await unmarkOwned(userId, AANG, food.oracleId);
+    check("unmarking restores no join", (await joinsOf(food.oracleId)) === 0);
+
+    await joinToken(userId, AANG, food.oracleId);
+    await db.execute(sql`insert into deck_token_joins (deck_id, token_oracle_id, user_id) values (${OMNATH}, ${food.oracleId}, ${userId}) on conflict do nothing`);
+    await db.transaction(async (tx) => { await writeUploadTokens(tx, userId, "00000000-0000-4000-8000-0000000000bb", "add", [{ tokenOracleId: food.oracleId, quantity: 1 }]); });
+    check("an upload that reads Food takes it off every deck's list", (await joinsOf(food.oracleId)) === 0);
+    check("and Food reads owned by upload", (await get()).tokens.find((t) => t.name === "Food")!.source === "upload");
+
+    // A joined token whose maker has left the deck stays joined, with no maker named (G9).
+    const stray = (await db.execute<{ oracle_id: string }>(sql`select oracle_id from tokens
+      where oracle_id <> all(${sql.param(first.tokens.map((t) => t.oracleId))}::uuid[]) order by oracle_id limit 1`)).rows[0].oracle_id;
+    await db.execute(sql`insert into deck_token_joins (deck_id, token_oracle_id, user_id) values (${AANG}, ${stray}, ${userId}) on conflict do nothing`);
+    const orphan = (await get()).tokens.find((t) => t.oracleId === stray);
+    check("a joined token no card of the deck makes stays, joined, with no maker", !!orphan && orphan.joined && orphan.makers.length === 0);
+    await leaveToken(userId, AANG, stray);
+    check("and leaves once it is taken off", !(await get()).tokens.some((t) => t.oracleId === stray));
+
 
   } finally {
     await clear();

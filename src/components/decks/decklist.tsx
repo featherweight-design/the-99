@@ -45,6 +45,7 @@ import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { TokensGroup } from "./tokens-group";
+import { TokensShoppingGroup } from "./tokens-shopping-group";
 import { DecklistRow } from "./decklist-row";
 import { HoverPreviewProvider } from "./hover-preview";
 import { useStoredView } from "../ui/use-stored-view";
@@ -974,6 +975,8 @@ export function Decklist({
             sweepPending={sweepPending}
             keepAllPending={keepAllPending}
             autoControls={autoControls}
+            priceSummary={priceSummary}
+            provenance={provenance}
             shoppingCards={shoppingList}
           shoppingOverCount={shoppingOverCount}
             sort={sort}
@@ -1017,6 +1020,10 @@ export function Decklist({
               </p>
             </div>
           )}
+          {/* A deck with nothing left to buy can still have tokens joined: they are the list. */}
+          <div className="px-[16px] pb-[4px] md:px-[26px]">
+            <TokensShoppingGroup />
+          </div>
         </div>
       );
     }
@@ -1166,6 +1173,9 @@ export function Decklist({
               </div>
             </div>
           ))}
+
+          {/* The tokens joined to this deck: last, and not the deck's (they move none of the figures above). */}
+          <TokensShoppingGroup />
 
           {/* Footer — above a 1px --border rule */}
           <div

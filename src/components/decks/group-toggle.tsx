@@ -19,6 +19,8 @@ import {
   DECK_GROUPING_LABELS,
 } from "../../lib/copy/deck-sort";
 import { PriceStrip } from "./price-strip";
+import { useDeckTokens } from "./deck-tokens-context";
+import { tokenShopping } from "../../lib/tokens/shopping";
 import { StandInLimit } from "./stand-in-limit";
 import { ShoppingKey } from "./shopping-key";
 import { deckStatsCopy } from "@/lib/copy/deck-stats";
@@ -170,6 +172,9 @@ export function GroupToggle({
   // Keep all's question replaces the bulk pair, and Lock cards stands down with it (addendum F3):
   // a mode that changes every row's ✕ has no business beside an unanswered question about them.
   const [keepAsking, setKeepAsking] = useState(false);
+  // The tokens joined to this deck, for the buy box alone: the pill, the counts and the status stay the cards'.
+  const deckTokens = useDeckTokens();
+  const joinedTokens = tokenShopping(deckTokens?.read);
   // Absent under Shopping rather than disabled, for the view well's reason: a shopping list is a
   // list of things to buy, and there is nothing on it to lock from here. A locked row keeps its
   // mark there; setting or clearing a lock happens only in the mode, in the All view.
@@ -511,7 +516,7 @@ export function GroupToggle({
           gap under the pills with nothing in it. The strip owns its own top
           margin so the decision and the space it occupies stay together. */}
       {!statsOpen && filter === "shopping" && priceSummary && (
-        <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} />
+        <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} tokens={joinedTokens} tokenProvenance={deckTokens?.provenance ?? null} tokenOwnProvenance={deckTokens?.ownProvenance ?? null} />
       )}
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then (it reads `none over`). */}

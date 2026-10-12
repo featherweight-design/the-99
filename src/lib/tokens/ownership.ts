@@ -1,6 +1,6 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { tokenOwnership, tokenReads } from "../../db/schema";
+import { deckTokenJoins, tokenOwnership, tokenReads } from "../../db/schema";
 
 /**
  * Token ownership (plan `2026-10-11-tokens-for-my-deck.md`, PR 3). Pure rules first, then the writes.
@@ -48,7 +48,8 @@ const BATCH = 500;
 export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> = db): Promise<boolean> {
   const { rows } = await runner.execute<{ ok: boolean }>(sql`
     select (to_regclass('public.token_ownership') is not null
-        and to_regclass('public.token_reads') is not null) as ok
+        and to_regclass('public.token_reads') is not null
+        and to_regclass('public.deck_token_joins') is not null) as ok
   `);
   return rows[0]?.ok === true;
 }
@@ -63,6 +64,10 @@ export async function tokenOwnershipTablesExist(runner: Pick<Runner, "execute"> 
  *   Add: the upload's holdings are added to the upload rows; a manual row the upload also read becomes
  *     an upload row of exactly what the upload read.
  *
+ * A token the upload read as HELD leaves every deck's Shopping list in the same transaction: owned means
+ * owned for every deck, and nothing restores a join if the token is unmarked later (plan PR 5, audit
+ * finding 8). The readers also draw a held token as not joined, so this is the write that agrees with them.
+ *
  * The read marker is written either way, including for an upload that held no token at all.
  */
 export async function writeUploadTokens(
@@ -72,6 +77,14 @@ export async function writeUploadTokens(
   mode: "replace" | "add",
   holdings: TokenHolding[],
 ): Promise<void> {
+  // Joins first, for every token read, before any ownership row is touched: the hand mark takes the join
+  // rows and then its ownership row (`markOwnedOnDeck`), so the two cannot each hold what the other waits for.
+  for (let i = 0; i < holdings.length; i += BATCH) {
+    await tx.delete(deckTokenJoins).where(and(
+      eq(deckTokenJoins.userId, userId),
+      inArray(deckTokenJoins.tokenOracleId, holdings.slice(i, i + BATCH).map((h) => h.tokenOracleId)),
+    ));
+  }
   if (mode === "replace") {
     await tx.delete(tokenOwnership).where(and(eq(tokenOwnership.userId, userId), eq(tokenOwnership.source, "upload")));
   }
@@ -110,8 +123,12 @@ export async function markTokenOwned(
 }
 
 /** Unmarks a HAND mark. An upload row is the upload's to change, so it is left standing. */
-export async function unmarkTokenOwned(userId: string, tokenOracleId: string): Promise<number> {
-  const gone = await db.delete(tokenOwnership)
+export async function unmarkTokenOwned(
+  userId: string,
+  tokenOracleId: string,
+  runner: Pick<typeof db, "delete"> = db,
+): Promise<number> {
+  const gone = await runner.delete(tokenOwnership)
     .where(and(
       eq(tokenOwnership.userId, userId),
       eq(tokenOwnership.tokenOracleId, tokenOracleId),

@@ -1,0 +1,114 @@
+{
+  "feature": "Tokens for my deck (PR 5): Shopping",
+  "note": "Run against a scratch branch of staging holding the audit account's pull:staging copy, DECK_TOKENS_ENABLED=true. TOKENS_AANG and TOKENS_OMNATH are deck ids of that account. Aang: every card owned, so the box is tokens alone (S1); the tokens joined are Food and Soldier. Omnath: 14 tokens possible, a few joined beside cards still to buy (S2). The press row is last because a press changes the account.",
+  "out": "contact-sheets/tokens-shopping",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 900,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "aang-shopping",
+      "label": "/decks/[id] Shopping: a complete deck, tokens only (the box says nothing is left for the deck)",
+      "view": "src/components/decks/tokens-shopping-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "omnath-shopping",
+      "label": "/decks/[id] Shopping: cards still to buy plus joined tokens (the split line, the link above the fold)",
+      "view": "src/components/decks/price-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_OMNATH}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "omnath-shopping-foot",
+      "label": "/decks/[id] Shopping: the Tokens group last, after the card groups",
+      "view": "src/components/decks/tokens-shopping-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_OMNATH}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 900
+        },
+        {
+          "scroll": "bottom"
+        }
+      ]
+    },
+    {
+      "id": "aang-all",
+      "label": "/decks/[id] All: the deck's pill and the Tokens group still say what they said",
+      "view": "src/components/decks/tokens-group.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "#deck-tokens-heading",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "#deck-tokens-heading"
+        }
+      ]
+    },
+    {
+      "id": "aang-buy-press",
+      "label": "/decks/[id] Shopping: the buy tag pressed on Soldier (held by hand, off the list) (phone only: a press changes the account)",
+      "view": "src/components/decks/tokens-shopping-group.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${TOKENS_AANG}",
+          "wait": "[role=tablist]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Shopping",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "Mark the Soldier token",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

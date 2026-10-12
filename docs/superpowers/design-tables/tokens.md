@@ -39,7 +39,7 @@ Source: `design/design_handoff_the99_tokens/` (R2, approved by Hugh 2026-10-11).
 | fact | `tokens.row.owned`, mono 10.5 `--fg-muted`, on upload-read tokens only; nothing otherwise | same |
 | I have one | text button, h 24 (44 phone), pad 0 8, 12 `--fg-muted`, underline `--border-dashed` offset 3. Held: `--accent` 500, no underline, `tokens.row.haveOn`. Desktop: before Add to Shopping; phone: second line, left | same |
 | Add to Shopping | h 32 (44 hit), pad 0 10, radius 6, 12 / 500. Rest: 1px `--border-strong`, `--fg-body`. Joined (`tokens.row.joined`): 1px `--accent`, 14% `--accent` wash, `--fg`. Pending 0.6 and not pressable | h 24 |
-| held | no Add to Shopping; pressing `I have one` on a joined token takes it off this deck's Shopping list | same |
+| held | no Add to Shopping; pressing `I have one` on a joined token takes it off EVERY deck's Shopping list (an upload that reads it does the same, and an unmark restores none) | same |
 | chevron | 36 x 44, down/up 12 `--fg-muted`; the whole main block is the toggle | 22 x 26 |
 | Copy | an ordinary row (type `Token`, `C` pip); owned, marked, joined and bought like any other | same |
 
@@ -61,7 +61,7 @@ Source: `design/design_handoff_the99_tokens/` (R2, approved by Hugh 2026-10-11).
 | order | toggle row, buy box, limit line, key, intro, groups (Tokens last) | same |
 | group | `Tokens`, pinned last, shopping-style header, clause `tokens.shopping.clause(n)` | same |
 | row | shipped Shopping row; sub-line `tokens.shopping.sub` mono 10 `--fg-faint` | set and number from md up |
-| tag | `BuyTag row`; pressing it marks the token owned and takes it off this deck's list in one save | same |
+| tag | `BuyTag row`; pressing it marks the token owned and takes it off every deck's list in one save. A joined token no card of the deck makes draws the tag as a plain price (not a button) with `from no card in this deck` under the sub-line; its `✕` is the only way off | same |
 | counts | excluded from `shoppingCount`, `summarisePrices`, `moneyStats`, the roll-up | same |
 | box | the link figure includes joined tokens only; split line `tokens.strip.split` | same |
 

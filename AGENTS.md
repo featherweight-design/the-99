@@ -414,11 +414,18 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
 - **A deck's tokens are read by `loadDeckTokens` and written by two actions** (`DECK_TOKENS_ENABLED`, staging on, production off;
   plan `2026-10-11-tokens-for-my-deck.md`, PR 4a). The makers are the deck's `deck_cards` UNION both commanders (a commander
   makes tokens too), joined through `card_tokens`; `assembleDeckTokens` is the pure half. **A held token is never drawn as joined**
-  whatever its `deck_token_joins` row says, so an upload that reads a token takes it off every deck's Shopping list without
-  writing there; `I have one` (`setTokenHeld`) records a hand mark and deletes THIS deck's join in one transaction. Rules text
+  whatever its `deck_token_joins` row says, and every write that makes a token held also deletes ALL of the player's joins for it, in
+  the same transaction: `I have one` and the Shopping row's buy tag (`setTokenHeld`), and an upload that reads it
+  (`writeUploadTokens`). Owned means owned for every deck, and unmarking restores no join. Rules text
   is attached only to a token sharing name, colors and P/T with another in the same deck. The loader never throws (a failed read is
   `failed`, drawn as the group's own line), and the actions revalidate the deck page and the cart, never Home or `/decks`: a token
   moves none of their figures. `pnpm probe:deck-tokens` proves the queries on a scratch branch (docs/probes.md).
+  **Shopping** (PR 5): a deck's joined tokens are the Tokens group LAST on its Shopping view (`TokensShoppingGroup`), and the buy
+  box (`PriceStrip`) takes them in: its figure is what the link buys, a split line keeps the cards' cost apart from the tokens',
+  and the link carries a line per token (`tokenShopping`, from the loader's own read). `summarisePrices`, `shoppingCount`, the
+  status and the roll-up stay the cards' alone (pinned in `decklist.test.tsx`). The buy tag on a token row is the shipped tag as a
+  button of its own: one press marks the token held, no confirm. A joined token whose maker has left the deck stays joined and
+  says `from no card in this deck`, with only its remove press (a hand mark on it could be unmarked from nowhere, since the unmark holds the same maker rule).
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

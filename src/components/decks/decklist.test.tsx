@@ -1684,11 +1684,41 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
     }
   });
 
-  it("is absent without the provider (the switch off), and on the Shopping filter", () => {
+  it("is absent without the provider (the switch off)", () => {
     renderDecklist([rampOwned], { filter: "all" });
     expect(screen.queryByRole("heading", { name: /Tokens/ })).toBeNull();
-    cleanup();
+  });
+
+  it("draws no JOINED-token group on the Shopping filter when nothing is joined, and the deck group is not repeated there", () => {
     renderDecklist([rampUnowned], { filter: "shopping", tokens: read });
     expect(screen.queryByRole("heading", { name: /Tokens/ })).toBeNull();
+    expect(screen.queryByText(/not in the deck’s count/)).toBeNull();
+  });
+
+  it("draws the joined tokens last on Shopping, after the card rows, and leaves the Shopping pill the cards'", () => {
+    const joined: DeckTokensRead = {
+      ...read,
+      tokens: read.status === "ok" ? read.tokens.map((t) => ({ ...t, joined: true })) : [],
+    };
+    renderDecklist([rampUnowned], { filter: "shopping" });
+    const pillWithout = screen.getByRole("button", { name: /^Shopping/ }).textContent;
+    cleanup();
+    renderDecklist([rampUnowned], { filter: "shopping", tokens: joined });
+    expect(screen.getByText("1 · not in the deck’s count")).toBeTruthy();
+    expect(screen.getByText("Food")).toBeTruthy();
+    const card = screen.getAllByText("Arcane Signet")[0];
+    expect(card.compareDocumentPosition(screen.getByText("Food")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // A token never moves the deck's own count.
+    expect(screen.getByRole("button", { name: /^Shopping/ }).textContent).toBe(pillWithout);
+  });
+
+  it("draws the joined tokens on a deck with no card left to buy", () => {
+    const joined: DeckTokensRead = {
+      ...read,
+      tokens: read.status === "ok" ? read.tokens.map((t) => ({ ...t, joined: true })) : [],
+    };
+    renderDecklist([rampOwned], { filter: "shopping", tokens: joined });
+    expect(screen.getByText("No cards to buy.")).toBeTruthy();
+    expect(screen.getByText("Food")).toBeTruthy();
   });
 });

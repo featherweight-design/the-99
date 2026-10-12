@@ -52,7 +52,7 @@ export async function setTokenJoined(deckId: string, tokenOracleId: string, join
   return { ok: true };
 }
 
-/** `I have one` (held) and its undo, for one token. Holding it takes it off this deck's Shopping list. */
+/** `I have one` (held) and its undo, for one token. Holding it takes it off EVERY deck's Shopping list (the player's joins for it all go in the same write). */
 export async function setTokenHeld(deckId: string, tokenOracleId: string, held: boolean): Promise<TokenActionResult> {
   const g = await guard(deckId, tokenOracleId, held);
   if (g.off) return { ok: false, reason: "off" };
