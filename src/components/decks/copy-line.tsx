@@ -55,7 +55,8 @@ export function CopyLine({
     if (c) setLast(c);
   };
   const toggle = () => {
-    // Closing the terminal chooser takes its button with it, so focus goes to the row's card.
+    // Closing the terminal chooser takes its button with it, so focus goes to the row's card (the
+    // line form's sentence).
     if (gone && open) name.current?.focus();
     setOpen((o) => !o);
   };
@@ -85,7 +86,8 @@ export function CopyLine({
     return (
       <li style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex min-h-[44px] items-center gap-[10px] py-[8px]">
-          <span className="min-w-0 flex-1 text-[13.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
+          {/* The terminal chooser's Done takes its button with it: focus comes here, as on the row's card. */}
+          <span ref={name} tabIndex={-1} className="min-w-0 flex-1 text-[13.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
             {parts.map((p, i) => (p.em
               ? <span key={i} data-em={p.em} className={p.em === "card" ? "font-semibold" : undefined} style={{ color: "var(--fg)" }}>{p.text}</span>
               : p.text))}

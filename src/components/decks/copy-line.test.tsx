@@ -146,6 +146,27 @@ describe("CopyLine", () => {
       .toEqual([["card", "Sol Ring", true], ["deck", "HD -Thorin", false]]);
   });
 
+  it("in Add Cards' form, Done on the terminal chooser leaves focus on the line, not the body", async () => {
+    assign.mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
+    render(
+      <ul>
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} decks={["HD - Brago"]} chooser={card()} />
+      </ul>,
+    );
+    const change = screen.getByRole("button", { name: copy.changeAria("Sol Ring") });
+    fireEvent.click(change);
+    fireEvent.click(screen.getByText("HD -Thorin"));
+    const refusal = cardAssignmentsCopy.contested.refusedNoSupply("HD - Brago", 1, "HD -Thorin");
+    await waitFor(() => expect(screen.getAllByText(refusal).some((el) => el.tagName === "P")).toBe(true));
+    change.focus();
+    fireEvent.click(change);
+    expect(screen.queryByRole("button")).toBeNull();
+    // The sentence the line keeps (empty now: nothing is claimed about a copy that is gone).
+    const li = screen.getByRole("listitem");
+    expect(document.activeElement).not.toBe(document.body);
+    expect(li.contains(document.activeElement)).toBe(true);
+  });
+
   it("draws no Change when there is no chooser to open", () => {
     render(line());
     expect(screen.queryByRole("button")).toBeNull();
