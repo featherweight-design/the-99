@@ -16,6 +16,7 @@ import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import type { PrintedInSet } from "../../../lib/sets/printed-in";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
+import { chainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabels } from "../../../lib/decks/consider-labels";
@@ -487,8 +488,13 @@ export default async function DeckBuilderPage({
   // Attached here for the same reason `withPrice` above attaches its figure:
   // the row component then reads a field rather than doing two map lookups per
   // render, and BuilderShell takes one list rather than a list plus two maps.
+  // The art an OWNED candidate is drawn with, so the hover preview shows the printing card details opens.
+  // `readSynergyCards` carries the catalog's one arbitrary printing per card; an unowned card has no other.
+  // Overlaid here, at the draw, rather than inside the cached loader `/commanders/[slug]` shares.
+  const ownedArt = await chainArt(userId, null, candidateCards.filter((c) => c.owned).map((c) => c.oracleId));
   const candidates: TopOffCandidateWithFacts[] = candidateCards.map((c) => ({
     ...c,
+    imageUri: ownedArt.get(c.oracleId) ?? c.imageUri,
     price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
     availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
     // The card-note facts, on the row rather than in a map beside it — same reason the two
