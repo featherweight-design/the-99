@@ -1,0 +1,204 @@
+{
+  "feature": "Tuning History re-review: a past run reopens in its own tool (Hugh, 2026-10-12)",
+  "note": "Run on a scratch branch of staging with HD - Zombies (REINJECT_ZOMBIES_DECK cbfb48c5-b085-4e60-889a-a861e9b39bd6: an older deeper Proposed cuts run, `11 of 11 named \u00b7 1 cut`, behind a newer one, and free counts) and HD - Gishath (REINJECT_GISHATH_DECK 904fdc61-e190-4ba5-8e34-2b18fa0584f2: Suggested changes runs and Mana Balance counts) re-owned to the audit account. Needs ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED and MANA_BALANCE_ENABLED 'true'. A run with nothing to load keeps the read-only view (tuning-hub.test, tuning-history.test).",
+  "rows": [
+    {
+      "id": "R1-cuts-deeper",
+      "label": "/decks/[id] History \u2192 an OLDER deeper look (a newer one stands): Proposed cuts opens with that run's cuts, each with its reason and Cut/Keep, the taken cut with Undo, under `From a run on \u2026`",
+      "view": "src/components/decks/cuts-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REINJECT_ZOMBIES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 600
+        },
+        {
+          "click": "[data-history-row^='run:']:has-text('11 of 11 named')",
+          "settle": 900
+        },
+        {
+          "wait": "#cuts-heading",
+          "settle": 900
+        },
+        {
+          "wait": "[data-review-note]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "R2-cuts-free",
+      "label": "/decks/[id] History \u2192 a free cuts count: Proposed cuts on the deck as it is now, under `Counted \u2026: N over \u2026`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REINJECT_ZOMBIES_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 600
+        },
+        {
+          "click": "[data-history-row^='count:']",
+          "settle": 900
+        },
+        {
+          "wait": "#cuts-heading",
+          "settle": 900
+        },
+        {
+          "wait": "[data-review-note]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "R3-suggested",
+      "label": "/decks/[id] History \u2192 a Suggested changes run: its set with Apply/Reject (or no longer applies), under `From a run on \u2026`",
+      "view": "src/components/decks/tuning-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REINJECT_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 600
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Suggested changes$",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row^='run:']",
+          "settle": 600
+        },
+        {
+          "click": "[data-history-row^='run:']",
+          "settle": 900
+        },
+        {
+          "wait": "#tuning-heading",
+          "settle": 1200
+        },
+        {
+          "wait": "[data-review-note]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "R4-mana",
+      "label": "/decks/[id] History \u2192 a Mana Balance count: Mana Balance on the deck as it is now, under `Counted \u2026: the Colors totals`",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REINJECT_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 600
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Mana Balance$",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row^='count:']",
+          "settle": 600
+        },
+        {
+          "click": "[data-history-row^='count:']",
+          "settle": 900
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 1200
+        },
+        {
+          "wait": "[data-review-note]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

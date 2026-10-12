@@ -298,7 +298,7 @@
     },
     {
       "id": "H3-history-past-run",
-      "label": "/decks/[id] History, the newest run opened read-only: `‹ History` (phone in the switch slot), the header meta, the dashed note, the answered lines and no write control. Needs a deck with at least one run; H4 (the list failing to load) is covered by tuning-history.test",
+      "label": "/decks/[id] History, the newest run opened again: since the re-review (2026-10-12) a run with lines reopens in its own tool under `From a run on …`, with `‹ History` (phone in the switch slot). A run with nothing to load keeps the read-only view, covered by tuning-history.test with H4 (the list failing to load)",
       "view": "src/components/decks/tuning-history.tsx",
       "steps": [
         {
@@ -328,7 +328,7 @@
           "settle": 900
         },
         {
-          "wait": "[data-past-run]",
+          "wait": "[data-review-note]",
           "settle": 700
         },
         {
