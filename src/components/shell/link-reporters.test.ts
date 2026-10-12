@@ -34,6 +34,8 @@ const EXEMPT: Record<string, string> = {
   "components/decks/review-changes.tsx :: `/decks/${deckId}`": KEPT,
   "components/decks/update-diff-row.tsx :: `/decks/${deck.sourceDeckId}`": KEPT,
   "components/home/resume-decks.tsx :: `/decks/${deck.id}`": KEPT,
+  "components/ui/intent-prefetch-link.tsx :: href":
+    "forwards its caller's children; each call site is swept as a Link with its own href",
   "components/intake/hand-off-answers.tsx :: changeHref": KEPT,
   "components/intake/help-me-choose-door.tsx :: CHOOSE_PATH": KEPT,
   "components/intake/help-me-choose-door.tsx :: qs ? `${CHOOSE_PATH}?${qs}` : CHOOSE_PATH": KEPT,
@@ -58,16 +60,29 @@ function sourceFiles(dir: string): string[] {
 
 function links(file: string): { href: string; reports: boolean }[] {
   const text = readFileSync(file, "utf8");
-  if (!/from ["']next\/link["']/.test(text)) return [];
+  if (!/from ["'](next\/link|[./@\w-]*intent-prefetch-link)["']/.test(text)) return [];
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const found: { href: string; reports: boolean }[] = [];
+  const imports = sf.statements.filter(ts.isImportDeclaration);
   // The tag is whatever name this file binds next/link's default export to, never the literal
   // `Link`: `import AppLink from "next/link"` is valid, and a literal match would skip its links.
-  const linkName = sf.statements
-    .filter(ts.isImportDeclaration)
+  // `IntentPrefetchLink` is a Link too (it renders one around its caller's children), so its call
+  // sites are swept like any other; the wrapper's own forwarding `<Link>` is exempt below.
+  const linkNames = new Set<string>();
+  const nextLink = imports
     .find((d) => ts.isStringLiteral(d.moduleSpecifier) && d.moduleSpecifier.text === "next/link")
     ?.importClause?.name?.getText(sf);
-  if (!linkName) return [];
+  if (nextLink) linkNames.add(nextLink);
+  for (const d of imports) {
+    if (!ts.isStringLiteral(d.moduleSpecifier) || !d.moduleSpecifier.text.endsWith("intent-prefetch-link")) continue;
+    const named = d.importClause?.namedBindings;
+    if (named && ts.isNamedImports(named)) {
+      for (const el of named.elements) {
+        if ((el.propertyName ?? el.name).getText(sf) === "IntentPrefetchLink") linkNames.add(el.name.getText(sf));
+      }
+    }
+  }
+  if (linkNames.size === 0) return [];
   const tagOf = (n: ts.JsxOpeningLikeElement) => n.tagName.getText(sf);
   const hrefOf = (n: ts.JsxOpeningLikeElement) => {
     const attr = n.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(sf) === "href");
@@ -85,9 +100,9 @@ function links(file: string): { href: string; reports: boolean }[] {
     return hit;
   };
   const visit = (n: ts.Node) => {
-    if (ts.isJsxElement(n) && tagOf(n.openingElement) === linkName) {
+    if (ts.isJsxElement(n) && linkNames.has(tagOf(n.openingElement))) {
       found.push({ href: hrefOf(n.openingElement), reports: hasReporter(n) });
-    } else if (ts.isJsxSelfClosingElement(n) && tagOf(n) === linkName) {
+    } else if (ts.isJsxSelfClosingElement(n) && linkNames.has(tagOf(n))) {
       found.push({ href: hrefOf(n), reports: false });
     }
     ts.forEachChild(n, visit);

@@ -1,0 +1,63 @@
+"use client";
+
+// A link to a DYNAMIC route that prefetches the whole page once a reader shows intent: a pointer
+// resting on it, keyboard focus, or the touchstart that precedes a tap (speed plan (b), 2026-10-12).
+//
+// A dynamic route's default prefetch stops at its loading boundary, so the first visit to a deck
+// waited on the full server render after the press. A full prefetch on intent starts that render
+// before the click. It is not the default for every link in view because each one is a full deck
+// render on the server; `eager` opts a single link in on sight, for the one a reader is most likely
+// to open.
+//
+// THROUGH `router.prefetch`, not by flipping Link's `prefetch` prop, which is Next's documented
+// hover pattern. The prop is a dependency of Link's ref callback, so flipping it unmounts the
+// anchor (cancelling its prefetch) and schedules the full one only when the IntersectionObserver
+// next reports, which a tap's back-to-back touchstart and click can beat. `router.prefetch`
+// schedules at once and leaves Link's own default prefetch and intent handling alone. Its `kind`
+// option is typed (`PrefetchOptions`) but not in the public docs, so it is set in this one place.
+//
+// The router is read from its context rather than `useRouter`, which throws outside an app router:
+// the About page draws deck tiles as specimens, and tests render them bare. With no router there is
+// nothing to prefetch into, and the link is a plain link.
+import Link from "next/link";
+import { AppRouterContext, type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { useContext, useEffect, useRef, type ComponentProps } from "react";
+
+type Props = ComponentProps<typeof Link> & { href: string; eager?: boolean };
+type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>;
+
+/** The full prefetch: the page's dynamic data too, not only its loading boundary. */
+const FULL = { kind: "full" } as unknown as PrefetchOptions;
+
+export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, onTouchStart, ...props }: Props) {
+  const router = useContext(AppRouterContext);
+  const done = useRef(false);
+  const prefetch = () => {
+    if (done.current || !router) return;
+    done.current = true;
+    router.prefetch(href, FULL);
+  };
+  useEffect(() => {
+    if (eager) prefetch();
+    // Once per mount: `prefetch` is idempotent through `done`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eager, href]);
+  return (
+    <Link
+      {...props}
+      href={href}
+      onPointerEnter={(e) => {
+        prefetch();
+        onPointerEnter?.(e);
+      }}
+      onFocus={(e) => {
+        prefetch();
+        onFocus?.(e);
+      }}
+      onTouchStart={(e) => {
+        prefetch();
+        onTouchStart?.(e);
+      }}
+    />
+  );
+}

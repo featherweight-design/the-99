@@ -677,6 +677,49 @@ async function one(browser, state, width, routes, sql) {
     }
   }
   await context.close();
+  // THE TILE PASS: a deck opened the way a reader opens it, from its tile, with the intent a reader
+  // gives first (a pointer resting on it at 1300, a tap at 390, whose touchstart precedes its click
+  // by nothing). `router.push` above starts no prefetch, so only this pass sees one that starts on
+  // intent. From `/decks` always, and from Home when the deck is one of its resume rows.
+  const deckRoute = routes.find((r) => r.label === "deck");
+  if (deckRoute) {
+    result.tile = {};
+    for (const from of ["/decks", "/"]) {
+      const context = await ctx();
+      const page = await context.newPage();
+      await throttle(await context.newCDPSession(page));
+      await page.goto(`${BASE}${from}`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+      await page.waitForLoadState("networkidle", { timeout: 60_000 }).catch(() => {});
+      const tile = onPage(page, `a[href="${deckRoute.path}"]`).filter({ visible: true }).first();
+      if ((await tile.count()) === 0) {
+        result.tile[from] = null;
+        await context.close();
+        continue;
+      }
+      // Timed from the click or the tap, which is when a reader starts waiting; the 300ms a pointer
+      // rests first is the head start a prefetch on intent gets.
+      let pressed;
+      if (width.isMobile) {
+        // Scrolled first, as the hover branch is: a tap scrolls an off-screen tile into view itself,
+        // and that is not the navigation being timed.
+        await tile.scrollIntoViewIfNeeded();
+        pressed = Date.now();
+        await tile.tap();
+      } else {
+        await tile.hover();
+        await page.waitForTimeout(300);
+        pressed = Date.now();
+        await tile.click();
+      }
+      await page.waitForURL((u) => u.pathname === deckRoute.path, { timeout: 60_000 });
+      const drew = await page.waitForFunction(() => {
+        const main = document.querySelector("main");
+        return main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40;
+      }, null, { timeout: 60_000, polling: 16 }).then(() => true, () => false);
+      result.tile[from] = drew ? Date.now() - pressed : null;
+      await context.close();
+    }
+  }
   return result;
 }
 
@@ -707,6 +750,7 @@ function table(runs, routes) {
     }
     lines.push(`\nImages a cold load asked for, and what landed: ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.imagesAsked)} / ${m((p) => p.routes[route.label]?.cold?.imageKb)}KB`).join(" · ")}.`);
     lines.push(`\nLoad event cold / warm (null: not within ${LOAD_CAP_MS / 1000}s): ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.loadEvent)} / ${m((p) => p.routes[route.label]?.warm?.loadEvent)}`).join(" · ")}.`);
+    if (routes.some((r) => r.label === "deck")) lines.push(`\nDeck from its tile, click or tap to content (a 300ms hover first at 1300, a bare tap at 390): from /decks ${m((p) => p.tile?.["/decks"])}ms, from Home ${m((p) => p.tile?.["/"])}ms (null: not a resume row there).`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
   }
   return lines.join("\n");
