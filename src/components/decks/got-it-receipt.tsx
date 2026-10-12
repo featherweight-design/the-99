@@ -65,15 +65,29 @@ export function receiptBody(facts: ReceiptFacts | null, sourceDeckId?: string): 
 }
 
 /**
- * The body after a Change, from the card the chooser's last write read back: the deck the player
- * gave the copy to (this deck reads `self`). With no pick standing, the body the purchase wrote.
+ * The pick a Change made: a deck granted a copy in the card a write read back that the
+ * purchase-time card did not grant. A reservation that predates the purchase is not one, however
+ * it reads back (a refused write reads back the older pick still standing).
+ */
+export function changeMadePick(live: ContestedCard, atPurchase: ContestedCard): ContestedCard["claimants"][number] | undefined {
+  const had = new Map(atPurchase.claimants.map((x) => [x.deckId, x.granted]));
+  return live.claimants.find((x) => x.granted > 0 && (had.get(x.deckId) ?? 0) === 0);
+}
+
+/**
+ * The body after a Change, from the card the chooser's last write read back: the deck the Change
+ * gave the copy to (this deck reads `self`). With no pick of the Change's standing, the body the
+ * purchase wrote. A null read-back is terminal (the copy is gone, in another tab): no body, since
+ * no shipped sentence says where a copy that is no longer there went.
  */
 export function bodyAfterChange(
-  live: ContestedCard, cardName: string, sourceDeckId: string, purchased: string | null,
+  live: ContestedCard | null, atPurchase: ContestedCard, cardName: string, sourceDeckId: string, purchased: string | null,
 ): string | null {
-  const picked = live.claimants.find((x) => x.granted > 0);
+  if (live === null) return null;
+  const picked = changeMadePick(live, atPurchase);
   if (!picked) return purchased;
-  return picked.deckId === sourceDeckId ? c.self : addedCopyCopy.line.goesToPicked(cardName, picked.deckName);
+  // Every receipt body is a sentence that ends in a period; the Add Cards line it borrows does not.
+  return picked.deckId === sourceDeckId ? c.self : `${addedCopyCopy.line.goesToPicked(cardName, picked.deckName)}.`;
 }
 
 /** No deck took or read the copy: the one body with no Change (IG4). */
@@ -148,9 +162,16 @@ export function GotItReceipt({
   const mounted = useRef(true);
   const router = useRouter();
   // Change (where an added copy goes): the chooser open over the toast, and the card its last
-  // write read back. Both are null until the player presses Change.
+  // write read back. `undefined` is before any write; null is a write that settled with no card to
+  // read back (the copy went, in another tab), which is terminal, as on CopyLine. `last` is the
+  // last card read back, which the open chooser keeps drawing to show its refusal.
   const [choosing, setChoosing] = useState(false);
-  const [live, setLive] = useState<ContestedCard | null>(null);
+  const [live, setLive] = useState<ContestedCard | null | undefined>(undefined);
+  const [last, setLast] = useState<ContestedCard | undefined>(undefined);
+  const onCard = useCallback((card: ContestedCard | null) => {
+    setLive(card);
+    if (card) setLast(card);
+  }, []);
   const changeRef = useRef<HTMLButtonElement>(null);
   const busy = phase.k === "checking" || phase.k === "undoing";
   // The toast's clock holds while the chooser is open, as it does for an undo (design table: open).
@@ -169,21 +190,24 @@ export function GotItReceipt({
   const facts = written.facts as ReceiptFacts | null;
   const sourceDeckId = typeof deckId === "string" ? deckId : null;
   const purchased = receiptBody(facts, sourceDeckId ?? undefined);
-  const body = bodyOverride !== undefined
-    ? bodyOverride
-    : live && sourceDeckId ? bodyAfterChange(live, cardName, sourceDeckId, purchased) : purchased;
   // Change belongs to a deck's receipt (the cart writes its own body), and only where a chooser came
   // back with the write and some deck took or read the copy.
   const chooser = bodyOverride === undefined && sourceDeckId && receiptChangeable(facts) ? facts!.chooser! : null;
-  // The pick Undo drops with the copy: the press's own (the cart's), else the one Change left standing.
-  const livePick = live?.claimants.find((x) => x.granted > 0)?.deckId;
+  const body = bodyOverride !== undefined
+    ? bodyOverride
+    : live !== undefined && chooser && sourceDeckId ? bodyAfterChange(live, chooser, cardName, sourceDeckId, purchased) : purchased;
+  // The pick Undo drops with the copy: the press's own (the cart's), else one a Change made and
+  // left standing, read off the last card read back (it still stands after the copy went).
+  const readBack = live === null ? last : live;
+  const livePick = readBack && chooser ? changeMadePick(readBack, chooser)?.deckId : undefined;
   const dropPick = undoPlacement ?? (livePick ? { oracleId, deckId: livePick } : undefined);
   // Sent only when there is one, so an undo with no pick asks exactly what it always asked.
   const picks = dropPick ? [dropPick] as const : [] as const;
   const closeChooser = useCallback(() => {
     setChoosing(false);
     restart();
-    requestAnimationFrame(() => changeRef.current?.focus());
+    // Change goes with a copy that is gone, so focus falls to Undo then.
+    requestAnimationFrame(() => (changeRef.current ?? undoRef.current)?.focus());
   }, [restart]);
 
   // The check asked for a warning, but the toast that would show it has gone: nothing was written.
@@ -370,8 +394,9 @@ export function GotItReceipt({
             aria-expanded={choosing}
             aria-label={c.changeAria(cardName)}
             onClick={() => setChoosing(true)}
-            // 32 tall from `md`, a 44 hit area on the phone through its padding (design table).
-            className="ml-[6px] inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[12.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2 md:min-h-[32px]"
+            // 32 tall, with the phone's 44 hit area reached through 6px of padding top and bottom,
+            // taken back by an equal negative margin so the body line does not grow (design table).
+            className="ml-[6px] -my-[6px] inline-flex min-h-[32px] cursor-pointer items-center border-0 bg-transparent px-0 py-[6px] text-[12.5px] font-semibold text-[color:var(--accent)] underline underline-offset-2 md:my-0 md:py-0"
           >
             {c.change}
           </button>
@@ -403,10 +428,12 @@ export function GotItReceipt({
     />
     {choosing && chooser && sourceDeckId ? (
       <CopyChooserDialog
-        card={live ?? chooser}
+        // After a null read-back the open chooser keeps the last card it drew, to show its refusal;
+        // it never falls back to the purchase-time card, whose options could only be refused.
+        card={live === null ? (last ?? chooser) : (live ?? chooser)}
         cardName={cardName}
         thisDeckId={sourceDeckId}
-        onCard={setLive}
+        onCard={onCard}
         onClose={closeChooser}
       />
     ) : null}

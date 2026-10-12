@@ -440,10 +440,58 @@ describe("where an added copy goes (ADDED_COPY_ENABLED)", () => {
     await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
     expect(assignCopy).toHaveBeenCalledWith(ORACLE, OTHER);
     fireEvent.click(screen.getByRole("button", { name: c.done }));
-    expect(toast().textContent).toContain(addedCopyCopy.line.goesToPicked(NAME, "HD - Brago"));
+    // The receipt's own sentence ends in a period, as every receipt body does.
+    expect(toast().textContent).toContain(`${addedCopyCopy.line.goesToPicked(NAME, "HD - Brago")}.`);
     await act(async () => fireEvent.click(undo()));
     expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
     expect(revertCollectionEntry).toHaveBeenCalledWith(ENTRY, expect.any(String), { k: 1 }, undefined, DECK, { oracleId: ORACLE, deckId: OTHER });
+  });
+
+  it("never counts a pick that predates the purchase as the Change's, after a refused write", async () => {
+    // Brago held a reservation before the purchase; a refused write reads it back unchanged.
+    const before = chooser(OTHER);
+    assignCopy.mockResolvedValue({ ok: false, cause: "no-supply-left", card: chooser(OTHER) });
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    draw(written({ facts: facts({ chooser: before }) }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Eldrazi")); });
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(toast().textContent).toContain(c.self);
+    expect(toast().textContent).not.toContain(addedCopyCopy.line.goesToPicked(NAME, "HD - Brago"));
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK);
+  });
+
+  it("treats a null read-back as terminal: the chooser keeps its last card, then the body and Change go", async () => {
+    assignCopy
+      .mockResolvedValueOnce({ ok: true, card: chooser(OTHER) })
+      .mockResolvedValueOnce({ ok: false, cause: "no-supply-left", card: null });
+    draw(written({ facts: facts() }));
+    fireEvent.click(change());
+    await act(async () => { fireEvent.click(screen.getByText("HD - Brago")); });
+    await act(async () => { fireEvent.click(screen.getByText("HD - Eldrazi")); });
+    // Still the last card read back (Brago picked), never the purchase-time card.
+    const dialog = screen.getByRole("dialog", { name: c.changeTitle });
+    expect(dialog.querySelector('[role="radio"][aria-checked="true"]')?.textContent).toContain("HD - Brago");
+    fireEvent.click(screen.getByRole("button", { name: c.done }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The copy is gone: no sentence claims where it went, and Change does not come back.
+    expect(toast().textContent).not.toContain(c.self);
+    expect(toast().textContent).not.toContain(addedCopyCopy.line.goesToPicked(NAME, "HD - Brago"));
+    expect(screen.queryByRole("button", { name: c.changeAria(NAME) })).toBeNull();
+    // The pick the Change made still stands after the copy went: Undo drops it.
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    await act(async () => fireEvent.click(undo()));
+    expect(previewRevert).toHaveBeenCalledWith(ENTRY, DECK, { oracleId: ORACLE, deckId: OTHER });
+  });
+
+  it("draws Change 32 tall, with the phone's 44 hit area through padding the margin takes back", () => {
+    draw(written({ facts: facts() }));
+    const cls = change().className;
+    for (const k of ["min-h-[32px]", "py-[6px]", "-my-[6px]", "md:py-0", "md:my-0"]) expect(cls).toContain(k);
+    expect(cls).not.toContain("min-h-[44px]");
   });
 
   it("drops no pick on an Undo when Change was never pressed", async () => {
