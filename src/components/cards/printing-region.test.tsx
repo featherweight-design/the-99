@@ -593,6 +593,14 @@ describe("PrintingRegion role=choose source=catalog", () => {
       focus.mockRestore();
     });
 
+    it("keeps the browser's own focus scroll when nothing is selected, since nothing is revealed", () => {
+      const focus = vi.spyOn(HTMLElement.prototype, "focus");
+      renderChoose({ layout: "row", autoFocus: true });
+      expect(focus).toHaveBeenCalled();
+      expect(focus).not.toHaveBeenCalledWith({ preventScroll: true });
+      focus.mockRestore();
+    });
+
     it("centers the selected tile on open and after a press, but not after an arrow key moved focus", () => {
       revealed.mockClear();
       const props = {

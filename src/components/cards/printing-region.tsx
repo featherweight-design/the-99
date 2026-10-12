@@ -190,12 +190,13 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   useEffect(() => {
     if (!autoFocus) return;
     const root = rootRef.current;
-    // A selected tile takes focus first (I got it: focus starts on the selected printing). Without
-    // the native scroll a focus makes: the reveal below brings the tile in, eased, and the two
-    // would otherwise fight.
-    (root?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')
-      ?? root?.querySelector<HTMLElement>("input")
-      ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus({ preventScroll: true });
+    // A selected tile takes focus first (I got it: focus starts on the selected printing), without
+    // the native scroll a focus makes: the reveal below brings that tile in, eased, and the two
+    // would otherwise fight. With no selected tile there is no reveal, so any other first focus
+    // keeps the browser's own scroll (Add cards opens its picker with nothing selected).
+    const selected = root?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]');
+    if (selected) selected.focus({ preventScroll: true });
+    else (root?.querySelector<HTMLElement>("input") ?? root?.querySelector<HTMLElement>('[role="radio"]'))?.focus();
   }, [autoFocus]);
   const [query, setQuery] = useState("");
   const [finish, setFinish] = useState<FinishFilter>("all");
