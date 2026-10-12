@@ -87,4 +87,13 @@ describe("BuilderShell: card details asks for the Tokens group", () => {
     act(() => { window.dispatchEvent(new Event(SHOW_DECK_TOKENS)); });
     expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
   });
+
+  it("brings a deck on another tab back to its list", async () => {
+    const { SHOW_DECK_TOKENS } = await import("./deck-tokens-landing");
+    draw(WITH_CARD, read);
+    fireEvent.click(screen.getByRole("tab", { name: /^Games/ }));
+    expect(screen.queryByRole("heading", { name: /^Tokens/ })).toBeNull();
+    act(() => { window.dispatchEvent(new Event(SHOW_DECK_TOKENS)); });
+    expect(screen.getByRole("heading", { name: /^Tokens/ })).toBeTruthy();
+  });
 });

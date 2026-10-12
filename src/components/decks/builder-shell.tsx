@@ -453,12 +453,16 @@ export function BuilderShell({
     },
     [setLockMode],
   );
-  // Card details' `Tokens ›` asks for the All view, where the Tokens group is drawn.
+  // Card details' `Tokens ›` asks for the deck's list at All, where the Tokens group is drawn: from Analysis, Consider or Games too.
   useEffect(() => {
-    const show = () => changeFilter("all");
+    const show = () => {
+      setView("deck");
+      deckPanel[1]("list");
+      changeFilter("all");
+    };
     window.addEventListener(SHOW_DECK_TOKENS, show);
     return () => window.removeEventListener(SHOW_DECK_TOKENS, show);
-  }, [changeFilter]);
+  }, [changeFilter, deckPanel]);
   // Keyed on the list the page DRAWS, the optimistic one, so an edit made in this visit retires the
   // reading on screen the moment the edit is drawn rather than when the server answers.
   const listKey = useMemo(
