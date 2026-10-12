@@ -112,6 +112,18 @@ export function isNewestAsk(anyCaseId: string, slot: VisitSlot, ask: number | nu
   return ask !== null && visit?.deckId === anyCaseId.toLowerCase() && visit.asks[slot] === ask;
 }
 
+/** The open visit to the deck, as an opaque token, or null with none: a press takes one, and its reply
+ *  settles only while `isVisit` still holds. Unlike `askInVisit`, it does not number requests, so two
+ *  concurrent presses in one visit both settle. */
+export function visitToken(anyCaseId: string): object | null {
+  return visit?.deckId === anyCaseId.toLowerCase() ? visit : null;
+}
+
+/** Whether `token` is still the open visit: false once the player left the deck, even if they came back. */
+export function isVisit(token: object | null): boolean {
+  return token !== null && token === visit;
+}
+
 export function resetDeckVisitForTests(): void {
   visit = null;
 }

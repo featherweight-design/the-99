@@ -1,5 +1,5 @@
 {
-  "id": "11420ba6-2949-4d40-82ae-a1c4cc0ca14c",
+  "id": "eff3dfbf-904c-4937-9fe4-23f18b739d0e",
   "prevId": "ddad246a-2276-4471-953f-945dacab2669",
   "version": "7",
   "dialect": "postgresql",
@@ -5590,6 +5590,27 @@
           "columns": [
             {
               "expression": "deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mana_trade_applies_user_created_idx": {
+          "name": "mana_trade_applies_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

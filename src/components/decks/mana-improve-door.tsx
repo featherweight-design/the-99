@@ -20,7 +20,7 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { PriceFact } from "../../lib/decks/price";
-import { askInVisit, isNewestAsk, setVisitValue, visitValue } from "../../lib/decks/visit";
+import { askInVisit, isNewestAsk, isVisit, setVisitValue, visitToken, visitValue } from "../../lib/decks/visit";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tuning/mana-balance";
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
@@ -153,10 +153,14 @@ export function ImproveDoor({
   /** Apply a trade offered for `color`: the server finds it again in a fresh read, so only the staple is named. */
   const applyTrade = async (color: BalanceColor, trade: TradeMove) => {
     const key = trade.staple.oracleId;
+    // The visit this press belongs to: a reply settling after the player left the deck (even if they came
+    // back) changes nothing here, since leaving discards every receipt.
+    const at = visitToken(deckId);
     setBusy(key);
     setRefused(null);
     const result = await trades.apply(deckId, color, key).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
     setBusy(null);
+    if (!isVisit(at)) return;
     if (!result.ok) {
       setRefused({ key, message: result.message });
       return;
@@ -166,10 +170,12 @@ export function ImproveDoor({
   };
 
   const undoTrade = async (a: Applied) => {
+    const at = visitToken(deckId);
     setBusy(a.applyId);
     setRefused(null);
     const result = await trades.undo(a.applyId).catch((): DeckMutationResult => ({ ok: false, message: deckTuningCopy.card.undoRefused }));
     setBusy(null);
+    if (!isVisit(at)) return;
     if (!result.ok) {
       setRefused({ key: a.applyId, message: result.message });
       return;

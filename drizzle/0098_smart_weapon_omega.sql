@@ -11,4 +11,5 @@ CREATE TABLE "mana_trade_applies" (
 ALTER TABLE "mana_trade_applies" ADD CONSTRAINT "mana_trade_applies_deck_id_decks_id_fk" FOREIGN KEY ("deck_id") REFERENCES "public"."decks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mana_trade_applies" ADD CONSTRAINT "mana_trade_applies_cut_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("cut_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mana_trade_applies" ADD CONSTRAINT "mana_trade_applies_add_oracle_id_cards_oracle_id_fk" FOREIGN KEY ("add_oracle_id") REFERENCES "public"."cards"("oracle_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "mana_trade_applies_deck_idx" ON "mana_trade_applies" USING btree ("deck_id");
+CREATE INDEX "mana_trade_applies_deck_idx" ON "mana_trade_applies" USING btree ("deck_id");--> statement-breakpoint
+CREATE INDEX "mana_trade_applies_user_created_idx" ON "mana_trade_applies" USING btree ("user_id","created_at");

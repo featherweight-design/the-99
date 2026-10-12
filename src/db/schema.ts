@@ -2347,7 +2347,11 @@ export const manaTradeApplies = pgTable("mana_trade_applies", {
   /** The two rows as the apply found them, so Undo puts back exactly that. */
   undoSnapshot: jsonb("undo_snapshot").$type<ApplySnapshot>().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (t) => [index("mana_trade_applies_deck_idx").on(t.deckId)]);
+}, (t) => [
+  index("mana_trade_applies_deck_idx").on(t.deckId),
+  // The retention delete each apply makes (`mana-trade.ts`): the player's rows older than a day.
+  index("mana_trade_applies_user_created_idx").on(t.userId, t.createdAt),
+]);
 
 /**
  * One FREE Tuning tool pass (tuning hub PR 2, History): what a tool counted for one version of the
