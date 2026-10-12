@@ -11,7 +11,12 @@ export type PartnerAbility =
   | { kind: "generic" }
   | { kind: "restricted"; label: string }
   | { kind: "with"; name: string }
-  | { kind: "friendsForever" };
+  | { kind: "friendsForever" }
+  // Doctor Who's pairing (CR 702.124): a card with Doctor's companion pairs with a legendary Time
+  // Lord Doctor creature that has no other creature types. The Doctor prints no ability at all,
+  // so that side is read off its type line.
+  | { kind: "doctorsCompanion" }
+  | { kind: "doctor" };
 
 // The ability is always its own line on a printed card, so anchoring to a line
 // start is what keeps "creature you control with partner" from matching.
@@ -23,9 +28,24 @@ const WITH = /^Partner with ([^(\n]+)/m;
 // `Partner (You can have two commanders...)`.
 const GENERIC = /^Partner\b/m;
 const FRIENDS_FOREVER = /^Friends forever\b/m;
+const DOCTORS_COMPANION = /^Doctor['’]s companion\b/m;
 
-export function partnerAbility(oracleText: string | null): PartnerAbility | null {
-  if (!oracleText) return null;
+/**
+ * A legendary creature whose creature types are exactly `Time Lord Doctor` ("Time Lord" is one
+ * subtype). A changeling, or a Doctor with another type, is not one (the 2023-10-13 rulings).
+ * The front face only: no double-faced Doctor exists, and the type line of a back face is not
+ * what the commander is.
+ */
+function isTheDoctor(typeLine: string | null): boolean {
+  if (!typeLine) return false;
+  const [types, subtypes] = typeLine.split(" // ")[0].split(/\s+[—-]\s+/);
+  if (subtypes === undefined) return false;
+  const words = types.split(/\s+/);
+  return words.includes("Legendary") && words.includes("Creature") && subtypes.trim() === "Time Lord Doctor";
+}
+
+export function partnerAbility(oracleText: string | null, typeLine: string | null): PartnerAbility | null {
+  if (!oracleText) return isTheDoctor(typeLine) ? { kind: "doctor" } : null;
 
   const withMatch = WITH.exec(oracleText);
   if (withMatch) return { kind: "with", name: withMatch[1].trim() };
@@ -35,6 +55,8 @@ export function partnerAbility(oracleText: string | null): PartnerAbility | null
 
   if (GENERIC.test(oracleText)) return { kind: "generic" };
   if (FRIENDS_FOREVER.test(oracleText)) return { kind: "friendsForever" };
+  if (DOCTORS_COMPANION.test(oracleText)) return { kind: "doctorsCompanion" };
+  if (isTheDoctor(typeLine)) return { kind: "doctor" };
 
   return null;
 }
@@ -62,6 +84,9 @@ export function canPair(a: PartnerSide, b: PartnerSide): boolean {
   if (x.kind === "with" && y.kind === "with") {
     return names(x.name, b.name) && names(y.name, a.name);
   }
+  // One of each: two companions, or two Doctors, do not pair.
+  if (x.kind === "doctorsCompanion" && y.kind === "doctor") return true;
+  if (x.kind === "doctor" && y.kind === "doctorsCompanion") return true;
   return false;
 }
 
@@ -75,5 +100,9 @@ export function partnerAbilityLabel(ability: PartnerAbility): string {
       return `Partner with ${ability.name}`;
     case "friendsForever":
       return "Friends forever";
+    case "doctorsCompanion":
+      return "Doctor’s companion";
+    case "doctor":
+      return "Time Lord Doctor";
   }
 }

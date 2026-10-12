@@ -226,7 +226,7 @@ async function main() {
     where c.commander_legal and c.type_line ilike 'Legendary Creature%' and c.oracle_text ilike '%Partner%'
     order by c.oracle_id
   `);
-  const generic = partnerRows.filter((r) => partnerAbility(r.oracle_text)?.kind === "generic"
+  const generic = partnerRows.filter((r) => partnerAbility(r.oracle_text, r.type_line)?.kind === "generic"
     && isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text, manaCost: r.mana_cost, layout: r.layout }));
   // Two halves of one identity, so either can replace the other without moving the pair's identity.
   const byIdentity = new Map<string, typeof generic>();

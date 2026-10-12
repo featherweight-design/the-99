@@ -71,8 +71,8 @@ export async function writeCommanderChange(
   }
   const [a, b] = incoming as NonNullable<(typeof incoming)[number]>[];
   if (b && !canPair(
-    { name: a.name, ability: partnerAbility(a.oracleText) },
-    { name: b.name, ability: partnerAbility(b.oracleText) },
+    { name: a.name, ability: partnerAbility(a.oracleText, a.typeLine) },
+    { name: b.name, ability: partnerAbility(b.oracleText, b.typeLine) },
   )) {
     return { ok: false, reason: "illegal" };
   }

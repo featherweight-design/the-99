@@ -25,6 +25,7 @@ const commanders = [
     colorIdentity: ["B", "G"],
     imageUri: null,
     oracleText: null,
+    typeLine: "Legendary Creature — Human",
     poolCount: 42,
   },
 ];
@@ -94,6 +95,7 @@ describe("CreatePicker — the partner list's empty state", () => {
       colorIdentity: ["W", "U"],
       imageUri: null,
       oracleText: "Partner (You can have two commanders if both have partner.)",
+      typeLine: "Legendary Creature — Human",
       poolCount: 3,
     },
     {
@@ -102,6 +104,7 @@ describe("CreatePicker — the partner list's empty state", () => {
       colorIdentity: ["R", "W"],
       imageUri: null,
       oracleText: "Partner (You can have two commanders if both have partner.)",
+      typeLine: "Legendary Creature — Human",
       poolCount: 2,
     },
   ];
@@ -124,6 +127,23 @@ describe("CreatePicker — the partner list's empty state", () => {
     // The slot's own caption says this too when the count is zero, so the
     // assertion is that it is said — not that it is said exactly once.
     expect(screen.getAllByText(/none of your commanders can pair/).length).toBeGreaterThan(0);
+  });
+
+  it("offers a Doctor's companion to a Time Lord Doctor, read off the Doctor's type line", () => {
+    const doctor = {
+      ...pairable[0], oracleId: "oracle-doctor", name: "The Tenth Doctor",
+      oracleText: "Allons-y! — Whenever The Tenth Doctor attacks, ...", typeLine: "Legendary Creature — Time Lord Doctor",
+    };
+    const rose = {
+      ...pairable[1], oracleId: "oracle-rose", name: "Rose Tyler",
+      oracleText: "Doctor's companion (You can have two commanders if the other is the Doctor.)", typeLine: "Legendary Creature — Human",
+    };
+    render(<CreatePicker legalCommanders={[doctor, rose, pairable[0]]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Tenth Doctor/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Add a partner/ })[0]);
+
+    expect(screen.getAllByRole("button", { name: /Rose Tyler/ }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("button", { name: /Ishai/ })).toHaveLength(0);
   });
 
   it("falls back to the ordinary no-match message when a query emptied the list", () => {
@@ -149,6 +169,7 @@ describe("CreatePicker — a renamed copy", () => {
       colorIdentity: ["R", "W"],
       imageUri: null,
       oracleText: null,
+      typeLine: "Legendary Creature — Human",
       poolCount: 12,
     },
   ];

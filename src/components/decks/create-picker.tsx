@@ -150,6 +150,7 @@ export function CreatePicker(props: CreatePickerProps) {
         {
           name: c.name,
           oracleText: c.oracleText,
+          typeLine: c.typeLine,
           sourceLine: "sourceLine" in c ? c.sourceLine : null,
         },
       ]),
@@ -196,7 +197,7 @@ export function CreatePicker(props: CreatePickerProps) {
   // re-filter the player's whole legal pool on every keystroke.
   const pairable = useMemo(() => {
     const source = selectedId ? sourceById.get(selectedId) : undefined;
-    const ability = partnerAbility(source?.oracleText ?? null);
+    const ability = partnerAbility(source?.oracleText ?? null, source?.typeLine ?? null);
     if (!source || !ability) return [];
     const primary = { name: source.name, ability };
     return rows.filter(
@@ -204,7 +205,10 @@ export function CreatePicker(props: CreatePickerProps) {
         r.oracleId !== selectedId &&
         canPair(primary, {
           name: r.name,
-          ability: partnerAbility(sourceById.get(r.oracleId)?.oracleText ?? null),
+          ability: (() => {
+            const s = sourceById.get(r.oracleId);
+            return partnerAbility(s?.oracleText ?? null, s?.typeLine ?? null);
+          })(),
         }),
     );
   }, [rows, selectedId, sourceById]);
@@ -229,7 +233,10 @@ export function CreatePicker(props: CreatePickerProps) {
   // State A is decided here and nowhere else, so the slot and the eyebrows that
   // appear with it can never disagree about whether a pair is possible.
   const primaryAbility = selected
-    ? partnerAbility(sourceById.get(selected.oracleId)?.oracleText ?? null)
+    ? partnerAbility(
+        sourceById.get(selected.oracleId)?.oracleText ?? null,
+        sourceById.get(selected.oracleId)?.typeLine ?? null,
+      )
     : null;
 
   const partnerRow = partnerId ? (rows.find((r) => r.oracleId === partnerId) ?? null) : null;

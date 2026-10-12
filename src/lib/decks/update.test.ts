@@ -188,7 +188,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({
         cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 7 }],
         legendaryCandidates: [
-          { oracleId: ATRAXA, name: "Atraxa, Praetors' Voice", sourceLine: 4, colorIdentity: ["W"], imageUri: null, oracleText: null },
+          { oracleId: ATRAXA, name: "Atraxa, Praetors' Voice", sourceLine: 4, colorIdentity: ["W"], imageUri: null, oracleText: null, typeLine: "Legendary Creature — Phyrexian Angel Horror" },
         ],
       }),
       deckCards: [],
