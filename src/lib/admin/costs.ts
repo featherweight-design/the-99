@@ -172,7 +172,9 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
       partRowsQuery(start, end, tx),
       labelRunsQuery(start, end, tx),
     ]),
-    { isolationLevel: "repeatable read", accessMode: "read only" },
+    // Repeatable read alone: no `accessMode: "read only"`, which leaks through the pooled Neon
+    // connection to the next transaction (`READ_SNAPSHOT`, `src/lib/decks/draft-state.ts`).
+    { isolationLevel: "repeatable read" },
   );
   // The pause is the allowance's own verdict, with no feature named: no press at all fits.
   const [[days, [figures], settingRows, callRows, partRows, labelRows], allowance] = await Promise.all([

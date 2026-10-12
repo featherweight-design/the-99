@@ -52,11 +52,11 @@ describe("loadCosts", () => {
     expect(s.ownerShareMicro).toBe(5_000_000);
   });
 
-  it("reads every figure inside one repeatable-read, read-only transaction", async () => {
+  it("reads every figure inside one repeatable-read transaction", async () => {
     reads.outside = 0;
     reads.options.length = 0;
     await loadCosts(OCT, "user_admin", NOW);
-    expect(reads.options).toEqual([{ isolationLevel: "repeatable read", accessMode: "read only" }]);
+    expect(reads.options).toEqual([{ isolationLevel: "repeatable read" }]);
     expect(reads.outside).toBe(0);
   });
 
