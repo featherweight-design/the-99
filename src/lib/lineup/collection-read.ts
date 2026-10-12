@@ -15,7 +15,7 @@ import { cards, collectionItems, commanderPairSupport, commanderPairSupportCards
 import { isBasicLand } from "../decks/grouping";
 import { summarisePrices, type PricedCard } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
-import { canonicalPair } from "../edhrec/pair";
+import { canonicalPair } from "../edhrec/pair-order";
 import type { LineupCollection } from "./types";
 
 /** The lowest cut the card offers; the reads keep nothing under it. */

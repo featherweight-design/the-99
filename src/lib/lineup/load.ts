@@ -101,8 +101,14 @@ type Built = { builds: Map<string, LineupBuild> | null; asOf: Date | null; share
 
 async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>): Promise<Built> {
   if (ids.length === 0) {
-    const { collection, asOf } = await readCollection(userId, [], [], brews);
-    return { builds: new Map(), asOf, shared: [], lists: [], collection };
+    try {
+      const { collection, asOf } = await readCollection(userId, [], [], brews);
+      return { builds: new Map(), asOf, shared: [], lists: [], collection };
+    } catch (error) {
+      recordSoftFailure();
+      console.warn("loadLineup: the collection could not be read", error);
+      return { builds: new Map(), asOf: null, shared: [], lists: [], collection: null };
+    }
   }
   let lists: Awaited<ReturnType<typeof readLists>>;
   let jobs: JobRowsByCard;
