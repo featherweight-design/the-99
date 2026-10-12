@@ -10,6 +10,7 @@ import { figuresOf, type CartDeck, type CartLine } from "../../../lib/decks/cart
 import { BuyTag } from "../buy-tag";
 import { lineFact } from "./cart-line";
 import { Chevron } from "../../ui/chevron";
+import { CardDetailTrigger } from "../../cards/card-detail-provider";
 
 export function CartDeckGroup({
   deck,
@@ -94,7 +95,15 @@ export function CartDeckGroup({
               <li key={line.oracleId} className="flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]">
                 <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                   <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px]">
-                    <span className="text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty]">{line.name}</span>
+                    <CardDetailTrigger
+                      oracleId={line.oracleId}
+                      name={line.name}
+                      imageUri={line.imageUri ?? null}
+                      preview
+                      className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
+                    >
+                      {line.name}
+                    </CardDetailTrigger>
                     {own.commander ? (
                       <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{copy.list.commander}</span>
                     ) : null}

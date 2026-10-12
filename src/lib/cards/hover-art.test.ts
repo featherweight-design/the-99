@@ -49,6 +49,7 @@ const FEEDERS: Record<string, string> = {
   "components/sets/set-cell.tsx": "",
   "components/decks/proxy-list-view.tsx": "lib/decks/proxy-list.ts",
   "components/decks/cart/cart-line.tsx": "lib/decks/cart-read.ts",
+  "components/decks/cart/cart-deck-group.tsx": "lib/decks/cart-read.ts",
   // Tokens are their own bug batch's, and precons their own lane's: named so the list stays complete, not checked.
   "components/decks/token-makers.tsx": "",
 };

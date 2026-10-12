@@ -21,6 +21,7 @@ import { ViewSwitch, type CartViewMode } from "./view-switch";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { HoverPreviewProvider } from "../hover-preview";
+import { CardDetailProvider } from "../../cards/card-detail-provider";
 
 /** By card: commanders first, then the cards most selected decks need, then A to Z (A2, A3). */
 function byCardOrder(a: SelectedLine, b: SelectedLine): number {
@@ -270,6 +271,7 @@ export function CartView({
                 aria-label={copy.list.regionAria}
                 className="-mx-[13px] min-h-[120px] flex-1 overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] px-[13px]"
               >
+                <CardDetailProvider>
                 <HoverPreviewProvider>
                 {byDeck ? (
                   // Largest first, in the selections' own order; an unselected deck keeps its place.
@@ -298,6 +300,7 @@ export function CartView({
                   />
                 )}
                 </HoverPreviewProvider>
+                </CardDetailProvider>
                 <div
                   aria-hidden
                   className="pointer-events-none sticky bottom-0 -mt-[36px] h-[36px]"

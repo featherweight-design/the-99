@@ -11,10 +11,19 @@ vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, r
 vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-// The line's name is a card-details trigger, which needs the provider the page mounts above it.
-vi.mock("../../cards/card-detail-provider", () => ({
-  CardDetailTrigger: ({ children, name }: { children: React.ReactNode; name: string }) => <button type="button" aria-label={name}>{children}</button>,
-}));
+// A card-details trigger needs the provider the cart view mounts around its list: this stand-in throws without one,
+// so a view that forgot the provider fails here instead of in the browser.
+vi.mock("../../cards/card-detail-provider", async () => {
+  const React = await import("react");
+  const Mounted = React.createContext(false);
+  return {
+    CardDetailProvider: ({ children }: { children: React.ReactNode }) => <Mounted.Provider value>{children}</Mounted.Provider>,
+    CardDetailTrigger: ({ children, name }: { children: React.ReactNode; name: string }) => {
+      if (!React.useContext(Mounted)) throw new Error("useCardDetail must be used inside a CardDetailProvider");
+      return <button type="button" aria-label={name}>{children}</button>;
+    },
+  };
+});
 
 const { CartView } = await import("./cart-view");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
