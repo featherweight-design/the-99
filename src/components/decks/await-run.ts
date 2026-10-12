@@ -27,5 +27,7 @@ export async function awaitRunSettled<S extends { run?: { id: string; status: st
     if (seen === null || seen.status !== "pending") return last;
     if (now() - startedAt >= maxMs) return last;
     await new Promise((r) => setTimeout(r, pollMs));
+    // Left during the wait: no read for a visit that has gone.
+    if (aborted()) return last;
   }
 }

@@ -257,7 +257,8 @@ export function CutsPanelView({
     const result = await request;
     // The action returns once the run is reserved; the server finishes it after the response. Read
     // until it settles (each read also redraws the panel's running state).
-    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine }) : null;
+    // A panel left behind stops polling; the run is the server's and finishes regardless.
+    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current }) : null;
     if (token.current !== mine) return;
     ownRun.current = null;
     const next = waited ?? await reread();

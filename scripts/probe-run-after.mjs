@@ -32,6 +32,13 @@ const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 const sql = neon(DATABASE_URL);
 
+// It writes runs and credit rows and clones a deck: refuse any database that is not a known scratch
+// or local-dev branch, by the branch the database itself reports, before anything else runs.
+const PRODUCTION = "br-noisy-violet-a6vw4ess";
+const STAGING = "br-polished-pond-a6e63y0b";
+const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
+if (!branch || branch === PRODUCTION || branch === STAGING) throw new Error(`refusing branch ${branch ?? "(unknown)"}`);
+
 let failures = 0;
 function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
@@ -91,7 +98,7 @@ async function openAnalysis(page, deckId, heading, tool) {
 }
 
 /** Press, close the page while the held call runs, and watch the run settle without it. */
-async function leg(browser, label, tool, hubTool, deckId, heading, button) {
+async function leg(browser, label, tool, hubTool, deckId, heading, button, made) {
   const known = new Set((await sql`select id from deck_suggestion_runs where deck_id = ${deckId} and tool = ${tool}`).map((r) => r.id));
   const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
   const page = await context.newPage();
@@ -104,6 +111,8 @@ async function leg(browser, label, tool, hubTool, deckId, heading, button) {
       .find((r) => !known.has(r.id)) ?? null;
     if (!run) await sleep(150);
   }
+  // Registered for cleanup the moment it is found, so a failure below still deletes it.
+  if (run) made.push(run);
   if (!report(`${label}: the press reserved a run`, run !== null && run.status === "pending", run ? `${run.id} ${run.status}` : "no new run row")) {
     await context.close();
     return null;
@@ -149,8 +158,7 @@ try {
     where d.id = any(${ids}::uuid[]) and not exists (select 1 from deck_suggestion_runs r where r.deck_id = d.id)
     order by d.id limit 1`)[0];
   if (report("a never-run analyzed deck for Suggested changes", !!tuning, tuning?.id ?? "none among the account's decks")) {
-    const run = await leg(browser, "Suggested changes", "suggested_changes", "suggested", tuning.id, "Suggested changes", /^Suggest/);
-    if (run) made.push(run);
+    await leg(browser, "Suggested changes", "suggested_changes", "suggested", tuning.id, "Suggested changes", /^Suggest/, made);
   }
   // Proposed cuts needs a deck over 100 cards: one is cloned under this account from any over-100
   // deck on the database (PROBE_CUTS_DECK names one), and the clone is deleted in the `finally`.
@@ -164,8 +172,7 @@ try {
     const select = cols.map((c) => (c === "id" ? "$1::uuid" : c === "user_id" ? "$2" : `"${c}"`)).join(", ");
     await sql.query(`insert into decks (${cols.map((c) => `"${c}"`).join(", ")}) select ${select} from decks where id = $3`, [cloneId, owner, source]);
     await sql.query(`insert into deck_cards (deck_id, oracle_id, quantity, auto) select $1, oracle_id, quantity, auto from deck_cards where deck_id = $2`, [cloneId, source]);
-    const run = await leg(browser, "Proposed cuts", "proposed_cuts", "deeper", cloneId, "Proposed cuts", /^Look deeper/);
-    if (run) made.push(run);
+    await leg(browser, "Proposed cuts", "proposed_cuts", "deeper", cloneId, "Proposed cuts", /^Look deeper/, made);
   }
 } catch (error) {
   console.error(error);

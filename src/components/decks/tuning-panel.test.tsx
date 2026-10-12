@@ -202,6 +202,26 @@ describe("TuningPanel", () => {
     }
   });
 
+  it("stops reading once the panel is left, while the run it started is still pending", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let seenRun = "";
+      const run = vi.fn(async (_id: string, o?: { runId?: string }) => { seenRun = o?.runId ?? ""; return { ok: true } as const; });
+      const pendingOf = (): TuningState => ({ ...fresh, run: { id: seenRun, status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } as never });
+      let n = 0;
+      const d = deps([fresh], { run, read: vi.fn(() => Promise.resolve(n++ === 0 ? fresh : pendingOf())) });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
+      cleanup();
+      const before = vi.mocked(d.read).mock.calls.length;
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(vi.mocked(d.read).mock.calls.length).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // H35, PR 3: the stagger ticks rows on its own timer, but `announced` must only ever move at
   // the run's start and its end — never once per tick, with or without reduced motion (this
   // suite runs with no media-query override, i.e. motion allowed).

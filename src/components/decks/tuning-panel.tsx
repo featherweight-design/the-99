@@ -234,6 +234,10 @@ export function TuningPanel({
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
+  // Leaving the panel ends this visit's press: its poll and its draws check the token, and a bump
+  // here supersedes them, so nothing is read or drawn for a panel no longer on screen. The run
+  // itself is the server's and finishes regardless.
+  useEffect(() => () => { token.current += 1; }, []);
   // The id this panel gave the run its press started, until that press settles. Stop cancels this
   // run and no other: the pending row a read turns up may be another tab's.
   const ownRun = useRef<string | null>(null);
