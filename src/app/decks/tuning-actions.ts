@@ -1,11 +1,11 @@
 "use server";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { db } from "../../db";
-import { cards, deckSuggestionItems, decks } from "../../db/schema";
+import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -35,12 +35,9 @@ import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
 import { cancelRun, finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
-import { nameResolver } from "../../lib/tuning/resolve-names";
-import { chooseRefusal, sizeLists, validateSuggestions, type ValidationReport } from "../../lib/tuning/validate";
-import { loadPrices } from "../../lib/decks/price-query";
-import { loadAvailability } from "../../lib/decks/availability-query";
-import { priceOf, priceState } from "../../lib/decks/price";
-import { printedIn } from "../../lib/sets/printed-in";
+import { chooseRefusal, sizeLists, type ValidationReport } from "../../lib/tuning/validate";
+import { resolveAnswer } from "../../lib/tuning/answer";
+import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
 
 /**
@@ -251,8 +248,22 @@ export async function runTuning(
       ]),
       readTuningContext(head),
     ]);
+    // "Owned only": the model is shown what the player owns that fits, since it cannot see ownership
+    // and otherwise guesses (Soldiers kept no add). When nothing fits the run asks for cards to BUY
+    // instead, under the same cap and sets, and says so (`ownedNone`); owned cards still come first
+    // whenever any fit.
+    const ownedCandidates = limits.ownedOnly
+      ? await loadOwnedCandidates({
+        userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
+        inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
+      })
+      : undefined;
+    const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
     const pack = buildEvidencePack({
-      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits, notes,
+      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), notes,
+      limits: ownedNone ? { ...limits, ownedOnly: false } : limits,
+      ownedCandidates: ownedNone ? undefined : ownedCandidates,
+      ownedNone,
     });
     const { system, user } = buildPrompt(pack);
     const outcome = await callModel({
@@ -264,66 +275,12 @@ export async function runTuning(
     // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
     if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-    const { additions, cuts } = outcome.value;
-    const askedCount = additions.length + cuts.length;
-    // One catalog read of every name the model returned; injected so validate.ts stays pure.
-    const names = [...new Set([...additions, ...cuts].map((l) => l.card))];
-    const nameRows = names.length === 0 ? [] : await db
-      .select({
-        oracleId: cards.oracleId,
-        name: cards.name,
-        colorIdentity: cards.colorIdentity,
-        commanderLegal: cards.commanderLegal,
-        // Decision 9's rule (`printedIn`, src/lib/sets/printed-in.ts): any printing in the
-        // selection, folding to `true` when the player set no Set limit at all.
-        printedInSelectedSets: sql<boolean>`${printedIn(cards.oracleId, limits.sets)}`,
-      })
-      .from(cards)
-      .where(inArray(cards.name, names));
-    // "Kept for this deck" (H35, PR 4a): the SAME two reads the buy tag and a fill's
-    // `pool: "sleeveable"` already use, scoped to the model's own named cards — the pack-time
-    // `owned` set above only covers cards already in the deck or in the skeleton's staples, never
-    // a genuinely new suggestion.
-    // Read only while a cap is active: review round 3 found that, unlike the ownership read
-    // alongside it, this figure is NEVER displayed either — the buy tag re-reads its own prices
-    // independently (`readItems`, tuning-read.ts) — so an inactive cap has no consumer to protect
-    // (round 1's own comment was wrong about that). A price-read failure must still never go
-    // silent while a cap IS active: swallowing it turns every candidate's price into null, and
-    // the validator deliberately exempts a null price from the cap (never dropped for a cap it
-    // cannot be checked against) — so a transient failure would silently disable the cap rather
-    // than refuse the run.
-    const suggestedIds = nameRows.map((r) => r.oracleId);
-    const [{ prices, newestAsOf }, suggestedOwned, availability] = await Promise.all([
-      limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds),
-      // Read only while the owned-only filter is active: unlike price, `owned` here is never
-      // displayed, only checked (`notOwned`), so an inactive filter has no consumer to protect.
-      // A failure would otherwise refund a paid, otherwise-valid answer over a read nothing needs.
-      nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, suggestedIds),
-      // SLEEVEABLE MEANS SLEEVEABLE (review round 6, same rule as `fill.ts`'s `pool:
-      // "sleeveable"`): a collection row is owned whether or not a copy is FREE. Without this, a
-      // card whose every copy is already claimed by another deck would pass "owned" and the
-      // reader's own client would strip the applied swap on arrival. Fails closed (no `.catch`)
-      // while the filter is active, same as the cap and the price read above it.
-      nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId }),
-    ]);
-    const rows = nameRows.map((r) => {
-      const fact = prices.get(r.oracleId) ?? null;
-      const state = priceState(fact, newestAsOf);
-      const avail = availability.get(r.oracleId);
-      return {
-        ...r,
-        priceCents: fact ? priceOf(fact, state) : null,
-        owned: suggestedOwned.has(r.oracleId) && (avail === undefined || avail.free > 0),
-      };
-    });
-    const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
-
-    const { kept, droppedCount, drops } = validateSuggestions({ response: outcome.value, pack, resolveName });
+    const { kept, droppedCount, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
     // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
     // whatever order the validator already gives — no new ranking pass, no retry, no second model
     // call. Fewer than 5 is shown as-is.
     const sized = sizeLists(kept, MAX_SUGGESTIONS);
-    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops };
+    const report: ValidationReport = { askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops, ...(ownedNone ? { ownedNone: true as const } : {}) };
     // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
     // that rather than `ungrounded`'s three causes. Refunded like every failure.
     if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {

@@ -16,6 +16,9 @@ const calls = vi.hoisted(() => ({ inputs: 0, started: 0, applied: 0, saved: 0, s
   // Review round 4: configurable so a test can prove the mocked reads actually flow into the
   // hard filters, not just that the validator's own unit tests apply them in isolation.
   priceRows: new Map<string, number>(), ownedIds: new Set<string>(), freeCopies: new Map<string, number>(),
+  // The owned shortlist `loadOwnedCandidates` returns for an owned-only run, and the arguments it got.
+  ownedCandidates: [{ oracleId: "own0", name: "Own 0", typeLine: "Artifact" }] as { oracleId: string; name: string; typeLine: string }[],
+  candidateArgs: undefined as unknown,
   // The ONE source of truth for limits: `tuningInputs` hands it to `runTuning`, which passes the
   // SAME value on to `buildEvidencePack` — so the mocked pack mirrors whatever was read in,
   // rather than risking two configs that could silently disagree with production's own flow.
@@ -87,7 +90,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   readTuningContext: async () => { calls.contextRead += 1; return { overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] }; },
   profileOfHead: async () => {
     if (!calls.reachModel) throw new Error("stop after the gate");
-    return { cards: [], skeleton: { staples: [] } };
+    return { cards: [], skeleton: { staples: [] }, commanderOracleIds: ["cmd"], colours: { identity: ["W"] } };
   },
   // Echoes its own `sized` argument back: the real 8-to-5 slice happens before this call, so
   // this must never reshape what reaches `persistRun`.
@@ -106,6 +109,9 @@ vi.mock("../../lib/tuning/run-store", () => ({
   cancelRun: async () => true,
 }));
 vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
+vi.mock("../../lib/tuning/owned-candidates", () => ({
+  loadOwnedCandidates: async (args: unknown) => { calls.candidateArgs = args; return calls.ownedCandidates; },
+}));
 vi.mock("../../lib/tuning/evidence", () => ({
   buildEvidencePack: (input: { limits: unknown }) => {
     calls.packInput = input;
@@ -170,6 +176,8 @@ beforeEach(() => {
   calls.priceRows = new Map();
   calls.ownedIds = new Set();
   calls.freeCopies = new Map();
+  calls.ownedCandidates = [{ oracleId: "own0", name: "Own 0", typeLine: "Artifact" }];
+  calls.candidateArgs = undefined;
   calls.limits = { capCents: null, sets: [], ownedOnly: false };
   calls.tuningEnabled = true;
 });
@@ -251,7 +259,7 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
   const ADDS = SIX.map((i) => LINE(`Add ${i}`));
   const CUTS = SIX.map((i) => LINE(`Cut ${i}`));
   type Flagged = { addOracleId: string | null; cutOracleId: string | null }[];
-  type Report = { askedCount: number; survivedCount: number; keptCount: number };
+  type Report = { askedCount: number; survivedCount: number; keptCount: number; drops: unknown[] };
   const persistedOnce = () => calls.persisted[0] as [unknown, Flagged, number, unknown, Report];
 
   beforeEach(() => {
@@ -347,6 +355,40 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
       askedCount: 12, survivedCount: 11, keptCount: 10, hadNotes: false,
       drops: [{ side: "add", position: 0, rule: "notOwned" }],
     });
+  });
+
+  // Owned-only shows the model what the player owns (Soldiers kept no add when it was left to guess).
+  it("hands an owned-only run its shortlist, and none to a run without the limit", async () => {
+    calls.limits = { capCents: 500, sets: ["mh3"], ownedOnly: true };
+    calls.ownedIds = new Set(SIX.map((i) => `add${i}`));
+    await runTuning(DECK, { anyway: true });
+    expect(calls.candidateArgs).toMatchObject({ userId: "user_1", commanderOracleIds: ["cmd"], colorIdentity: ["W"], limits: { capCents: 500, sets: ["mh3"] } });
+    expect(calls.packInput).toMatchObject({ ownedCandidates: calls.ownedCandidates, ownedNone: false });
+    expect((calls.packInput as { limits: { ownedOnly: boolean } }).limits.ownedOnly).toBe(true);
+
+    calls.candidateArgs = undefined;
+    calls.persisted = [];
+    calls.limits = { capCents: null, sets: [], ownedOnly: false };
+    await runTuning(DECK, { anyway: true });
+    expect(calls.candidateArgs).toBeUndefined();
+    expect((calls.packInput as { ownedCandidates?: unknown }).ownedCandidates).toBeUndefined();
+  });
+
+  // Hugh, 2026-10-11: nothing owned fits, so the adds are cards to buy, said plainly. Owned-only stops
+  // filtering (it would drop every buyable add as `notOwned`), the cap and sets still hold.
+  it("falls back to cards to buy when nothing the player owns fits, and says so", async () => {
+    calls.limits = { capCents: 300, sets: [], ownedOnly: true };
+    calls.ownedCandidates = [];
+    calls.ownedIds = new Set();
+    await runTuning(DECK, { anyway: true });
+    const input = calls.packInput as { limits: { ownedOnly: boolean; capCents: number | null }; ownedCandidates?: unknown; ownedNone: boolean };
+    expect(input.ownedNone).toBe(true);
+    expect(input.limits).toEqual({ capCents: 300, sets: [], ownedOnly: false });
+    expect(input.ownedCandidates).toBeUndefined();
+    const [, flagged, , , report] = persistedOnce();
+    expect(flagged).toHaveLength(10);
+    expect(report.drops).toEqual([]);
+    expect(report).toMatchObject({ ownedNone: true });
   });
 
   // Review round 6 (Low): the Set limit's own wiring was untested at the action level — the

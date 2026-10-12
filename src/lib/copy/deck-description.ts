@@ -92,6 +92,10 @@ export const deckDescriptionCopy = {
       `${name} costs more than this deck’s ${cap} a card, so it was not suggested. The rest of your notes are answered below.`,
     tooMany:
       "A run shows five additions and five cuts at most. Here are the ones that held up.",
+    // "Owned only" is set and nothing the player owns fits: the additions are cards to buy, each with
+    // its own buy tag and price. Hugh, 2026-10-11; owned cards come first whenever any fit.
+    ownedNone:
+      "Nothing in your collection fits these needs, so the additions are cards to buy.",
     nothingLeft:
       "Nothing in your notes could be done within this deck’s rules, so these suggestions come from the list alone.",
   },

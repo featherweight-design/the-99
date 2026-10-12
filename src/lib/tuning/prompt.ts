@@ -35,7 +35,7 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
   // deck with none sends today's prompt byte for byte (`prompt.test.ts` pins it). No PROMPT_VERSION
   // bump: the lock ids join the gate's fingerprint, which reopens a locked deck's gate alone.
   const base = pack.cards.some((c) => c.locked) ? SYSTEM.replace(COMMANDER_RULE, LOCKED_RULE) : SYSTEM;
-  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...limitsRules(pack.limits), ...RATIONALE_RULES].join("\n");
+  const system = [base, ...strategyRules(universalNames, !!pack.strategy), ...limitsRules(pack), ...RATIONALE_RULES].join("\n");
   const block = pack.strategy ? strategyBlock(pack.strategy) : null;
   return { system, user: block ? `${renderPack(pack)}\n\n${block}` : renderPack(pack) };
 }
@@ -70,13 +70,25 @@ function strategyRules(universal: string[], hasOverview: boolean): string[] {
  * so that deck's prompt stays byte for byte today's (no `PROMPT_VERSION` bump needed; a limit
  * change already reopens the gate through the fingerprint).
  */
-function limitsRules(limits: EvidencePack["limits"]): string[] {
+function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedNone">): string[] {
+  const { limits } = pack;
   const lines: string[] = [];
   if (limits.capCents !== null) lines.push(`Every suggested add must cost $${(limits.capCents / 100).toFixed(2)} or less.`);
   if (limits.sets.length > 0) lines.push(`Every suggested add must be printed in one of these sets: ${limits.sets.map((s) => s.toUpperCase()).join(", ")}.`);
-  if (limits.ownedOnly) lines.push("Every suggested add must be a card the player already owns.");
+  if (limits.ownedOnly) {
+    // The player's own rule, so it overrides `ownershipNotRanking` for the adds: the shortlist is
+    // what the rule selects from, shown so the model stops guessing at what the player owns.
+    lines.push(pack.ownedCandidates
+      ? `Every suggested add must be one of the cards listed under "${OWNED_HEADING}". Choose among them by what the deck needs.`
+      : "Every suggested add must be a card the player already owns.");
+  }
+  // Owned-only was set and the player owns nothing that fits: the adds are cards to buy, and the
+  // price cap and sets above still hold. The app tells the player so itself.
+  if (pack.ownedNone) lines.push("The player owns no card that fits this deck's needs. Suggest cards for them to buy instead.");
   return lines;
 }
+
+const OWNED_HEADING = "Cards the player owns that fit this deck";
 
 /** Each rationale is drawn above its citation chips, so it never restates their figures. */
 const RATIONALE_RULES = [
@@ -135,8 +147,13 @@ function renderPack(pack: EvidencePack): string {
 
   // "Kept for this deck" (H35, PR 4a): absent when nothing is set, so a deck with none sends
   // today's user message byte for byte.
-  const limitLines = limitsRules(pack.limits);
+  const limitLines = limitsRules(pack);
   if (limitLines.length > 0) lines.push("", "Limits set for this deck:", ...limitLines.map((l) => `- ${l}`));
+  if (pack.limits.ownedOnly && pack.ownedCandidates) {
+    lines.push("", `${OWNED_HEADING} (the ones most decks with this commander play first):`);
+    if (pack.ownedCandidates.length === 0) lines.push("- none");
+    for (const c of pack.ownedCandidates) lines.push(`- ${c.name} (${c.typeLine})`);
+  }
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."

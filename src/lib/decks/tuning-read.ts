@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, lt, max, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { readCollectionGeneration } from "../recs/store";
 import {
   cards,
   collectionItems,
@@ -74,7 +75,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
   }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
   const { head, readVersion, locked } = snapshot;
-  const [games, [deck], [upload]] = await Promise.all([
+  const [games, [deck], [upload], generation] = await Promise.all([
     listDeckGames(deckId, userId),
     db.select({
       intent: decks.intent,
@@ -87,6 +88,11 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     db.select({ confirmedAt: max(csvUploads.confirmedAt) })
       .from(csvUploads)
       .where(and(eq(csvUploads.userId, userId), isNotNull(csvUploads.confirmedAt))),
+    // The collection's generation token: it moves on EVERY write of any kind (an add, an edit, a revert,
+    // a bought mark, an upload), where `confirmedAt` above moves only on an upload, and an owned-only
+    // run's shortlist moves with every write. Migration-safe: a preview database without the ledger
+    // table gets the timestamp half alone.
+    readCollectionGeneration(db, userId),
   ]);
   if (!deck) return null;
   const intent = deck.intent;
@@ -100,6 +106,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     games,
     intent,
     collection: upload?.confirmedAt ? new Date(upload.confirmedAt).toISOString() : null,
+    collectionGeneration: generation,
     locks: locked,
     limits,
   });

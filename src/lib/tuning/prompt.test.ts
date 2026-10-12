@@ -152,6 +152,48 @@ describe("limits in the prompt", () => {
     expect(system).not.toContain("already owns");
   });
 
+  // Owned-only used to name the rule and show the model nothing it applied to, so it guessed and the
+  // validator dropped every guess (Soldiers, 2026-10-11).
+  describe("owned-only", () => {
+    const candidates = [
+      { oracleId: "a", name: "Lightning Greaves", typeLine: "Artifact — Equipment" },
+      { oracleId: "b", name: "Akroma's Will", typeLine: "Instant" },
+    ];
+    const owned = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true }, ownedCandidates: candidates };
+
+    it("lists what the player owns that fits, in the order given, and ties the adds to that list", () => {
+      const { system, user } = buildPrompt(owned);
+      expect(user).toContain("Cards the player owns that fit this deck (the ones most decks with this commander play first):\n"
+        + "- Lightning Greaves (Artifact — Equipment)\n- Akroma's Will (Instant)");
+      for (const text of [system, user]) {
+        expect(text).toContain('Every suggested add must be one of the cards listed under "Cards the player owns that fit this deck".');
+        expect(text).not.toContain("already owns");
+      }
+    });
+
+    it("carries no figure for a listed card: ownership picks the pool, the index only orders it", () => {
+      const { user } = buildPrompt(owned);
+      expect(user).not.toMatch(/Lightning Greaves[^\n]*(\d+ of \d+|\$)/);
+    });
+
+    it("keeps the old rule for an owned-only pack that was given no list, and sends no list when the limit is off", () => {
+      expect(buildPrompt({ ...owned, ownedCandidates: undefined }).user).toContain("Every suggested add must be a card the player already owns.");
+      const off = buildPrompt({ ...owned, limits: { capCents: null, sets: [], ownedOnly: false } });
+      expect(off.user).not.toContain("Cards the player owns");
+      expect(off.system).not.toContain("Cards the player owns");
+    });
+
+    it("asks for cards to buy when nothing the player owns fits, keeping the cap", () => {
+      const none = { ...pack, limits: { capCents: 300, sets: [], ownedOnly: false }, ownedNone: true };
+      const { system, user } = buildPrompt(none);
+      for (const text of [system, user]) {
+        expect(text).toContain("The player owns no card that fits this deck's needs. Suggest cards for them to buy instead.");
+        expect(text).toContain("Every suggested add must cost $3.00 or less.");
+        expect(text).not.toContain("Cards the player owns that fit");
+      }
+    });
+  });
+
   it("sends no limits section at all for a deck with none set, byte for byte today's prompt", () => {
     const { system, user } = buildPrompt(pack);
     expect(system).not.toContain("Limits set for this deck");

@@ -464,6 +464,20 @@ describe("TuningPanel", () => {
     expect(banner.className).not.toMatch(/\bhidden\b/);
   });
 
+  // Owned-only with nothing owned that fits: the additions are cards to buy, said before the lists
+  // (Hugh, 2026-10-11). The same note frame as tooMany, so it shows at both widths.
+  it("says nothing in the collection fit when the run fell back to cards to buy, and not otherwise", async () => {
+    const run = { ...okRun, validationReport: { askedCount: 8, survivedCount: 8, keptCount: 8, ownedNone: true as const } };
+    await draw(deps([{ ...results, run }]));
+    const banner = screen.getByTestId("analysis-banner");
+    expect(banner).toHaveAttribute("data-mode", "note");
+    expect(banner).toHaveTextContent(deckDescriptionCopy.refusal.ownedNone);
+    expect(banner.className).not.toMatch(/\bhidden\b/);
+    cleanup();
+    await draw(deps([{ ...results, run: { ...okRun, validationReport: { askedCount: 8, survivedCount: 8, keptCount: 8 } } }]));
+    expect(screen.queryByText(deckDescriptionCopy.refusal.ownedNone)).toBeNull();
+  });
+
   // H35, PR 4a, review round 4: "your limits" is read off the LIVE deck setting (`facts.limits`),
   // which only still describes the shown run while nothing has changed since it ran — exactly
   // what `state.stale` already tracks, since the tuning fingerprint includes limits.

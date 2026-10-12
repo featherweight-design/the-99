@@ -43,11 +43,27 @@ describe("tuningFingerprint", () => {
     expect(tuningFingerprint({ ...base, collection: "2026-09-23T10:00:00.000Z" })).not.toBe(at);
   });
 
+  // An owned-only answer depends on which cards the player owns, so ANY collection write reopens it
+  // (an add or an edit moves the generation token and leaves an upload's `confirmed_at` alone).
+  // A deck without the limit ignores it: its answer does not read the collection.
+  it("moves with the collection history for an owned-only deck and for no other", () => {
+    const owned = { ...base, limits: { ...base.limits, ownedOnly: true } };
+    expect(tuningFingerprint({ ...owned, collectionGeneration: "41|1700000000000" })).toBe("2c97933ea1b9220dee25c7a84ad769adb76a96bdc817f203dc0bf605c9d1c23e");
+    expect(tuningFingerprint({ ...owned, collectionGeneration: "42|1700000000000" })).not.toBe(tuningFingerprint({ ...owned, collectionGeneration: "41|1700000000000" }));
+    expect(tuningFingerprint({ ...base, collectionGeneration: "42|1700000000000" })).toBe(tuningFingerprint(base));
+  });
+
   it("changes with the cap, the set of sets and owned-only, but not the sets' order", () => {
     const at = tuningFingerprint(base);
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, capCents: 500 } })).not.toBe(at);
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3"] } })).not.toBe(at);
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true } })).not.toBe(at);
+    // Only an owned-only deck's hash carries the shortlist marker, so no other deck's gate reopens.
+    const ownedOnly = tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true } });
+    expect(ownedOnly).not.toBe(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: false } }));
+    // Pinned to the literal: `ownedOnly` itself is in the hash, so a comparison alone stays green with
+    // the marker removed. This moves once, deliberately, for owned-only decks.
+    expect(ownedOnly).toBe("ebd21e09ce15f8369d6df82d9012443881100b7d2170dafb3e1abc8f9dc6701a");
     const ordered = tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3", "lci"] } });
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["lci", "mh3"] } })).toBe(ordered);
   });
