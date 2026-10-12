@@ -289,8 +289,9 @@ export function FitsView({
   // The decks holding the card as the list was last read: a deck the read's row just swapped or added
   // into, or one another tab got to, leaves the free list and turns its read row's actions off.
   // Every row action waits on any write in flight, the folded list's included, and on a count the
-  // view no longer has: a re-read that failed after a write leaves the opening count spent.
-  const rowsLocked = busy || list.busy !== null || list.load.state === "failed";
+  // view does not have yet: the list's first read, a Try again in flight, or a re-read that failed
+  // after a write, which leaves the opening count spent.
+  const rowsLocked = busy || list.busy !== null || list.load.state !== "ready";
   const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
   const freeRows = list.shown.filter((r) => !heldNow.has(r.id) || list.noteFor(r.id) !== null);
   const freeList = list.read && freeRows.length > 0 ? (

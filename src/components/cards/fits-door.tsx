@@ -75,11 +75,12 @@ export function FitsDoor({
       <span className="[border-bottom:1px_solid_var(--accent-shadow)]">{copy.callout} →</span>
     </button>
   );
-  if (!reading) return door;
+  // One root whether or not a read is running: swapping the root when the note comes or goes would
+  // remount the button, and a reader focused on it would lose focus as the read settles.
   return (
-    <span className="inline-flex flex-col items-start gap-[2px]">
+    <span className="inline-flex flex-col items-start gap-[2px] self-start">
       {door}
-      <span data-testid="fits-door-reading" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{swapToolsCopy.fits.read.doorReading}</span>
+      {reading ? <span data-testid="fits-door-reading" className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{swapToolsCopy.fits.read.doorReading}</span> : null}
     </span>
   );
 }

@@ -190,8 +190,12 @@ describe("FitsView (Find a deck read, R2)", () => {
     await settle();
     expect(screen.queryByTestId("fits-copies")).toBeNull();
     for (const b of within(row).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
-    actions.loadFitsAction.mockResolvedValue(list());
+    // Try again in flight still has no count: the row's actions wait for it.
+    let again!: (v: unknown) => void;
+    actions.loadFitsAction.mockReturnValue(new Promise((res) => { again = res; }));
     fireEvent.click(screen.getByRole("button", { name: swapToolsCopy.sheet.retry }));
+    for (const b of within(row).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
+    await act(async () => again(list()));
     await settle();
     expect(screen.getByTestId("fits-copies")).toBeInTheDocument();
     expect(within(row).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toBeEnabled();
