@@ -36,7 +36,8 @@ function toDetail(c: OpenPreconCard): DeckDetailCard {
     printedCollectorNumber: c.printing ? c.printing.label.split(" ").slice(1).join(" ") : null,
     manaCost: c.manaCost ?? undefined,
     layout: c.layout,
-    imageUri: c.printing?.imageUri ?? c.imageUri,
+    // `preconArt`: the precon's printing where the catalog has it, as the thumbs and card details.
+    imageUri: c.imageUri,
   };
 }
 
@@ -83,14 +84,20 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
   const groups = groupByCardType(listed.map((c) => ({ ...c, cardTypeGroup: cardTypeGroup(c.typeLine) })));
   const siblings = [...commanders, ...groups.flatMap(([, g]) => g)].map((c) => c.oracleId);
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
-  // Card details open on the precon's own printing and offer no pick (O6): the provider's deck
-  // printings with no deck, as the review screen uses them.
+  // Card details view the precon's own printing on every open, paging included, owned or not
+  // (`viewPrintings`), and offer no pick (O6): the provider's deck printings with no deck.
   const printingPicks = Object.fromEntries(
     cards.flatMap((c) => (c.printing ? [[c.oracleId, { setCode: c.printing.setCode, collectorNumber: c.printing.collectorNumber }]] : [])),
   );
+  const viewPrintings = Object.fromEntries(
+    cards.flatMap((c) => (c.printing ? [[c.oracleId, {
+      setCode: c.printing.setCode, collectorNumber: c.printing.collectorNumber,
+      scryfallId: c.printing.scryfallId, imageUri: c.printing.imageUri,
+    }]] : [])),
+  );
 
   return (
-    <CardDetailProvider deckPrintingPicks={printingPicks}>
+    <CardDetailProvider deckPrintingPicks={printingPicks} viewPrintings={viewPrintings}>
       <div className="pb-[96px]">
         <header className="flex flex-col gap-[12px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] p-[12px_16px_14px] md:p-[16px_22px_18px]">
           <Link href={fromNew ? "/decks/precons?from=new" : "/decks/precons"} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">

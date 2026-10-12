@@ -8,7 +8,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db as pool } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { summarisePrecons, type PreconRow } from "./list";
-import { readReaderDecks, type Reader } from "./list-read";
+import { preconArt, readReaderDecks, type Reader } from "./list-read";
 
 export type OpenPreconCard = {
   oracleId: string;
@@ -42,27 +42,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
   if (head.twinOf !== null) return { kind: "twin", plainFileName: head.twinOf };
 
   const twin = await db.select({ fileName: precons.fileName, name: precons.name }).from(precons).where(eq(precons.twinOf, fileName));
-  const lines = await db
-    .select({
-      oracleId: preconCards.oracleId,
-      quantity: preconCards.quantity,
-      isCommander: preconCards.isCommander,
-      name: cards.name,
-      typeLine: cards.typeLine,
-      manaCost: cards.manaCost,
-      layout: cards.layout,
-      colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
-      scryfallId: printings.scryfallId,
-      setCode: printings.setCode,
-      collectorNumber: printings.collectorNumber,
-      printingImage: printings.imageUri,
-    })
-    .from(preconCards)
-    .innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))
-    .leftJoin(printings, eq(printings.scryfallId, preconCards.scryfallId))
-    .where(eq(preconCards.fileName, fileName))
-    .orderBy(preconCards.position);
+  const lines = await openPreconLines(db, fileName);
 
   const ids = [...new Set(lines.map((l) => l.oracleId))];
   // In sequence: a transaction is one connection, so these could not overlap anyway.
@@ -112,4 +92,30 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
         : null,
     })),
   };
+}
+
+/** One precon's cards in the feed's order, with the art `preconArt` resolves and the precon's own
+ *  printing; apart so a test can render its SQL. */
+export function openPreconLines(db: Reader, fileName: string) {
+  return db
+    .select({
+      oracleId: preconCards.oracleId,
+      quantity: preconCards.quantity,
+      isCommander: preconCards.isCommander,
+      name: cards.name,
+      typeLine: cards.typeLine,
+      manaCost: cards.manaCost,
+      layout: cards.layout,
+      colorIdentity: cards.colorIdentity,
+      imageUri: preconArt,
+      scryfallId: printings.scryfallId,
+      setCode: printings.setCode,
+      collectorNumber: printings.collectorNumber,
+      printingImage: printings.imageUri,
+    })
+    .from(preconCards)
+    .innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))
+    .leftJoin(printings, eq(printings.scryfallId, preconCards.scryfallId))
+    .where(eq(preconCards.fileName, fileName))
+    .orderBy(preconCards.position);
 }
