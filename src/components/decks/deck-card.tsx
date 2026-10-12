@@ -236,6 +236,8 @@ interface DeckCardProps {
   closeAfterCreate: { seq: number } | null;
   /** One of the first tiles in the grid: on a phone, prefetch the deck once it is on screen. */
   eager?: boolean;
+  /** Told when this tile's prefetch actually starts. */
+  onPrefetch?: () => void;
 }
 
 /**
@@ -273,7 +275,7 @@ interface DeckCardProps {
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, onPrefetch,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -640,6 +642,7 @@ export function DeckCard({
       <IntentPrefetchLink
         href={`/decks/${deck.id}`}
         eager={eager && "phone-in-view"}
+        onPrefetch={onPrefetch}
         className="absolute inset-0"
         aria-label={ariaLabel}
       />

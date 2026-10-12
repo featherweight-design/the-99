@@ -37,7 +37,12 @@ import Link from "next/link";
 import { AppRouterContext, type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { useCallback, useContext, useEffect, useRef, type ComponentProps } from "react";
 
-type Props = ComponentProps<typeof Link> & { href: string; eager?: boolean | "phone-in-view" };
+type Props = ComponentProps<typeof Link> & {
+  href: string;
+  eager?: boolean | "phone-in-view";
+  /** Called once, when this link's full prefetch actually starts. */
+  onPrefetch?: () => void;
+};
 type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>;
 
 /** Whether focus arrived from the keyboard rather than with a press. */
@@ -75,7 +80,7 @@ function onIdle(fn: () => void): () => void {
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
-export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
+export function IntentPrefetchLink({ eager = false, href, onPrefetch, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
   const router = useContext(AppRouterContext);
   const done = useRef(false);
   const anchor = useRef<HTMLAnchorElement | null>(null);
@@ -100,6 +105,7 @@ export function IntentPrefetchLink({ eager = false, href, onPointerEnter, onFocu
     if (done.current || !router) return;
     done.current = true;
     router.prefetch(href, FULL);
+    onPrefetch?.();
   };
   useEffect(() => {
     if (!eager || !router || done.current || savesData()) return;

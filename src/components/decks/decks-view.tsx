@@ -611,11 +611,17 @@ export function DecksView({
     () => filterDecks(narrowed, state.filters, now),
     [narrowed, state.filters, now],
   );
-  // The two tiles a phone prefetches, fixed for the visit at the list's first draw. Each is a full
-  // deck render on the server, so a sort, a filter or a shelf change must not promote two more: a
-  // visit costs at most these two. A tile that unmounts and returns asks again, and the router
-  // answers that from its own cache while the entry is fresh.
-  const [eagerIds] = useState(() => new Set(shown.slice(0, 2).map((d) => d.id)));
+  // A phone prefetches the first two tiles it shows, and a visit spends at most two prefetches:
+  // each is a full deck render on the server. The budget is spent when a prefetch STARTS, not when
+  // a tile is drawn, because the first draw is not the reader's order: a stored sort lands on the
+  // pass after hydration, and the default order's tiles are cancelled before they ever fire. Once
+  // two have started, a sort, filter or shelf change promotes no more; a spent tile that unmounts
+  // and returns asks again, and the router answers it from its cache while the entry is fresh.
+  const [prefetched, setPrefetched] = useState<ReadonlySet<string>>(() => new Set());
+  const spendPrefetch = useCallback(
+    (id: string) => setPrefetched((s) => (s.has(id) || s.size >= 2 ? s : new Set(s).add(id))),
+    [],
+  );
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
   // The cart line draws only with its switch on and some deck missing a card (A1-0).
@@ -1264,7 +1270,7 @@ export function DecksView({
           ) : (
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
               <DecksMarkKey decks={shown} />
-              {shown.map((deck) => (
+              {shown.map((deck, i) => (
                 // `sm:h-full` so the tile fills the GRID row rather than
                 // sitting at its own content height: a tile with no detail line
                 // is shorter than its neighbour with one, and three tiles in a
@@ -1281,8 +1287,9 @@ export function DecksView({
                 <li key={deck.id} className="sm:h-full flex-none">
                   <DeckCard
                     deck={deck}
-                    // The two a phone showed first: its likeliest next press, prefetched on sight.
-                    eager={eagerIds.has(deck.id)}
+                    // The two a phone shows first: its likeliest next press, prefetched on sight.
+                    eager={i < 2 && (prefetched.size < 2 || prefetched.has(deck.id))}
+                    onPrefetch={() => spendPrefetch(deck.id)}
                     shopping={shopping.byDeck.get(deck.id)}
                     cartLink={cartEnabled}
                     now={now}

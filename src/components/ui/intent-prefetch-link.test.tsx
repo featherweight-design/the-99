@@ -157,6 +157,15 @@ describe("IntentPrefetchLink eager on a phone, in view", () => {
     expect(prefetch).toHaveBeenCalledWith("/decks/d1", { kind: "full" });
   });
 
+  it("reports a prefetch only when it starts, and once", () => {
+    const started = vi.fn();
+    render(<IntentPrefetchLink href="/decks/d1" eager="phone-in-view" onPrefetch={started} />);
+    observed!([{ isIntersecting: true }]);
+    expect(started).not.toHaveBeenCalled();
+    idle!();
+    expect(started).toHaveBeenCalledTimes(1);
+  });
+
   it("drops a waiting prefetch once the tile is pressed", () => {
     tile();
     observed!([{ isIntersecting: true }]);
