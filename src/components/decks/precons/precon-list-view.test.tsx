@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 
-vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: vi.fn() }));
+// The real write, so the live query sees the address the view wrote, as it does in the app.
+vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (href: string) => window.history.replaceState(null, "", href) }));
 import { PreconListView } from "./precon-list-view";
 
 const row = (name: string, releaseDate: string, over: Partial<PreconRow> = {}): PreconRow => ({
@@ -17,8 +18,9 @@ const rows = [
 ];
 
 describe("PreconListView", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/decks/precons"));
   const view = (initial = { q: "", colours: [] as string[], order: null }) =>
-    render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} />);
+    render(<PreconListView rows={rows} hasCollection fromNew={false} initial={initial} query="" />);
 
   it("lists newest first under year heads, with the shared deck linked", () => {
     view();
@@ -54,10 +56,21 @@ describe("PreconListView", () => {
     expect(screen.getByText("Calling All Angels")).toBeInTheDocument();
   });
 
+  it("follows a navigation to another precons URL while it stays mounted", () => {
+    view();
+    expect(screen.getByText("Eldrazi Unbound")).toBeInTheDocument();
+    act(() => {
+      window.history.pushState(null, "", "/decks/precons?q=angels");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.queryByText("Eldrazi Unbound")).toBeNull();
+    expect(screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0]).toHaveValue("angels");
+  });
+
   it("names every shared deck, however many", () => {
     const three = [row("Eldrazi Unbound", "2023-08-04", { built: ["A", "B", "C"].map((n, i) =>
       ({ deckId: n, deckName: `Deck ${n}`, shared: 70 - i, sameCommanders: true })) })];
-    render(<PreconListView rows={three} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null }} />);
+    render(<PreconListView rows={three} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null }} query="" />);
     for (const n of ["A", "B", "C"]) expect(screen.getByRole("link", { name: `Deck ${n}` })).toBeInTheDocument();
   });
 

@@ -42,6 +42,7 @@ export default async function PreconsPage({ searchParams }: { searchParams: Prom
       hasCollection={list.hasCollection}
       fromNew={params.get("from") === "new"}
       initial={parsePreconParams(params)}
+      query={params.toString()}
     />
   );
 }

@@ -10,10 +10,11 @@ import { preconsCopy } from "../../../lib/copy/precons";
 import { colorNames } from "../../../lib/copy/color-labels";
 import { PIP_ORDER, type PipCode } from "../../../lib/copy/filter-chassis";
 import {
-  filterPrecons, groupByYear, isPreconOrder, orderPrecons, PRECON_ORDERS,
+  filterPrecons, groupByYear, isPreconOrder, orderPrecons, parsePreconParams, PRECON_ORDERS,
   type PreconOrder, type PreconRow as Row,
 } from "../../../lib/precons/list";
 import { mirrorUrl } from "../../../lib/url/mirror";
+import { useLiveQuery } from "../../../lib/commanders/live-query";
 import { ColourPips } from "../../ui/colour-pips";
 import { FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { useMinWidth } from "../../ui/use-min-width";
@@ -27,6 +28,8 @@ const copy = preconsCopy;
 export const PRECON_ORDER_KEY = "the99:precons:order";
 
 export type PreconListViewProps = {
+  /** The page's query string, as the server read it. */
+  query: string;
   /** From `parsePreconParams`. */
   rows: Row[];
   hasCollection: boolean;
@@ -36,7 +39,7 @@ export type PreconListViewProps = {
 
 const isOrder = (v: string): v is PreconOrder => isPreconOrder(v);
 
-export function PreconListView({ rows, hasCollection, fromNew, initial }: PreconListViewProps) {
+export function PreconListView({ rows, hasCollection, fromNew, initial, query }: PreconListViewProps) {
   // `md`, not the chassis's 1000: the table draws the wide form at 900, and this chassis holds
   // three controls where `/decks`' holds six.
   const wide = useMinWidth("(min-width: 768px)");
@@ -44,6 +47,19 @@ export function PreconListView({ rows, hasCollection, fromNew, initial }: Precon
   const [colours, setColours] = useState<string[]>(initial.colours);
   const [urlOrder, setUrlOrder] = useState<PreconOrder | null>(initial.order);
   const [storedOrder, storeOrder] = useStoredView(PRECON_ORDER_KEY, isOrder);
+
+  // The URL owns `q`, `colour` and `sort`. A navigation to another /decks/precons URL keeps this
+  // view mounted, so the live query is read on every render and a change re-parses all three,
+  // during render as `/decks` does, before the stale list can paint or be mirrored back.
+  const liveQuery = useLiveQuery(query);
+  const [seenQuery, setSeenQuery] = useState(liveQuery);
+  if (liveQuery !== seenQuery) {
+    const next = parsePreconParams(new URLSearchParams(liveQuery));
+    setSeenQuery(liveQuery);
+    setQ(next.q);
+    setColours(next.colours);
+    setUrlOrder(next.order);
+  }
   const order: PreconOrder = urlOrder ?? storedOrder ?? "newest";
 
   function mirror(next: { q: string; colours: string[]; order: PreconOrder }) {
@@ -52,8 +68,11 @@ export function PreconListView({ rows, hasCollection, fromNew, initial }: Precon
     if (next.q.trim()) live.set("q", next.q.trim());
     if (next.colours.length) live.set("colour", next.colours.join(","));
     if (next.order !== "newest") live.set("sort", next.order);
-    const query = live.toString();
-    mirrorUrl(query ? `?${query}` : window.location.pathname);
+    const written = live.toString();
+    // Seen before it is written, so this view's own write never reads back as a navigation (which
+    // would re-parse a search mid-word and drop its trailing space).
+    setSeenQuery(written);
+    mirrorUrl(written ? `?${written}` : window.location.pathname);
   }
 
   const onSearch = (next: string) => { setQ(next); mirror({ q: next, colours, order }); };
