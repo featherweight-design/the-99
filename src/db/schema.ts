@@ -2184,8 +2184,8 @@ export const modelCallParts = pgTable("model_call_parts", {
  * The admin's own figures (brief, locked rule 11): the caps that live outside the code. The account
  * cap is set in Anthropic's console and shared with another app, the system ceiling is a ruling, and
  * `elsewhere` is what this environment's ledger cannot see (the other environment, the other app),
- * entered by hand with the date it was read. One row per key; every change is also an
- * `admin_events` `setting_set` row.
+ * entered by hand with the date it was read. One row per key and UTC month (see `month`); every
+ * change is also an `admin_events` `setting_set` row naming that month.
  */
 export const adminSettings = pgTable("admin_settings", {
   key: text("key").notNull(),

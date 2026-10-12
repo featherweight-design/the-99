@@ -35,7 +35,8 @@ export function parseMonth(value: string | undefined, now: Date): MonthKey {
   const match = /^(\d{4})-(\d{2})$/.exec(value ?? "");
   if (!match) return current;
   const m = { year: Number(match[1]), month: Number(match[2]) - 1 };
-  if (m.month < 0 || m.month > 11) return current;
+  // `Date.UTC` reads years 0 to 99 as 1900 to 1999, and no model call predates the app anyway.
+  if (m.month < 0 || m.month > 11 || m.year < 2000) return current;
   return m.year * 12 + m.month > current.year * 12 + current.month ? current : m;
 }
 
@@ -206,7 +207,9 @@ export function startsAfter(setting: Setting | undefined, month: MonthKey): Mont
 
 /** A cap or a line: whole dollars bare (`$10`), anything else to the cent. */
 export function capUsd(dollars: number): string {
-  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+  if (Number.isInteger(dollars)) return `$${dollars}`;
+  // Cents unless that would misstate the cap (an env var can set a sub-cent share).
+  return Number.isInteger(Math.round(dollars * 1_000_000) / 10_000) ? `$${dollars.toFixed(2)}` : `$${Number(dollars.toFixed(6))}`;
 }
 
 /** A stored cap in micro-dollars, printed as a cap. */

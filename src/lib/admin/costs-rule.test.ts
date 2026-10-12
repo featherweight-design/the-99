@@ -185,3 +185,21 @@ describe("settingsForMonth: a setting belongs to its month", () => {
     expect(settingsForMonth(rows, nov).elsewhere_usd).toBeUndefined();
   });
 });
+
+describe("parseMonth and capUsd at their edges", () => {
+  const now = new Date("2026-10-12T12:00:00Z");
+
+  it("reads a year before 2000 as the current month, never as Date.UTC's 1900s", () => {
+    expect(parseMonth("0001-01", now)).toEqual({ year: 2026, month: 9 });
+    expect(parseMonth("1999-12", now)).toEqual({ year: 2026, month: 9 });
+    expect(parseMonth("2026-09", now)).toEqual({ year: 2026, month: 8 });
+  });
+
+  it("prints a cap to the cent, and a sub-cent cap exactly", () => {
+    expect(capUsd(10)).toBe("$10");
+    expect(capUsd(2.5)).toBe("$2.50");
+    expect(capUsd(12.34)).toBe("$12.34");
+    expect(capUsd(0.001)).toBe("$0.001");
+    expect(capUsd(1.2345)).toBe("$1.2345");
+  });
+});
