@@ -3,7 +3,7 @@ import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
-  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, modelCalls,
+  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, modelCalls,
 } from "./schema";
 
 describe("deck tuning schema", () => {
@@ -36,6 +36,17 @@ describe("deck tuning schema", () => {
     expect(tool?.default).toBe("suggested_changes");
     const callChecks = Object.fromEntries(getTableConfig(modelCalls).checks.map((c) => [c.name, render(c.value)]));
     expect(callChecks.model_calls_feature_check).toContain(`'proposed_cuts'`);
+    expect(callChecks.model_calls_feature_check).toContain(`'fits_read'`);
+  });
+
+  it("holds one pending Find a deck read per reader and card, and ties a read to its unit and card", () => {
+    const config = getTableConfig(fitsReads);
+    const pending = config.indexes.find((i) => i.config.name === "fits_reads_one_pending_idx");
+    expect(pending?.config.unique).toBe(true);
+    expect(pending?.config.columns.map((c) => ("name" in c ? c.name : ""))).toEqual(["user_id", "oracle_id"]);
+    expect(new PgDialect().sqlToQuery(pending!.config.where!).sql).toBe(`"fits_reads"."status" = 'pending'`);
+    const fks = config.foreignKeys.map((f) => { const r = f.reference(); return [r.columns[0].name, getTableName(r.foreignTable)]; });
+    expect(fks).toEqual(expect.arrayContaining([["model_call_id", "model_calls"], ["oracle_id", "cards"]]));
   });
 
   it("ties both of an item's card columns to the catalog, and a run to its allowance unit", () => {

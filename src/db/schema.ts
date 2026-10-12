@@ -13,6 +13,8 @@ import type { CheckedSynopsis } from "../lib/synopsis/types";
 import type { ToolCountSummary } from "../lib/tuning/history";
 import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
+import type { FitsDropReason } from "../lib/swaps/fits-read";
+import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -2130,7 +2132,7 @@ export const modelCalls = pgTable("model_calls", {
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
 }, (t) => [
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'labels', 'prose')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
@@ -2727,4 +2729,46 @@ export const preconCards = pgTable("precon_cards", {
   primaryKey({ columns: [t.fileName, t.position] }),
   check("precon_cards_quantity_check", sql`${t.quantity} > 0`),
   index("precon_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
+ * Find a deck read (brief `2026-10-11-find-a-deck-read.md`, locks 4 to 6): one row per press, for
+ * one reader and one card. The newest settled row is the card's stored read. It is shown again,
+ * free, only while every candidate deck's input hash still matches `candidate_hashes` and the set of
+ * candidates is the same set; otherwise it is out of date (lock 6, handoff §6). A no fit is stored
+ * like any read (handoff R2 3); a failure is stored too, refunded, and never shown as a result.
+ *
+ * `pending` is a run in flight, and the partial unique index makes a second one for the same reader
+ * and card impossible (lock 5): a double press is shown the run in flight and never charged twice.
+ * Every write is guarded on `status = 'pending'`, and the unit settles in the outcome's own
+ * transaction, as the Tuning runs do (`tuning/run-store.ts`).
+ */
+export const fitsReads = pgTable("fits_reads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+  status: text("status").notNull(),
+  /** `picks` or `noFit` on a `done` row; null while pending and on a failure. */
+  outcome: text("outcome"),
+  errorClass: text("error_class"),
+  /** Whether the unit came back: a failure, a no fit, or a thin read (lock 4). */
+  refunded: boolean("refunded").notNull().default(false),
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  model: text("model").notNull(),
+  promptVersion: integer("prompt_version").notNull(),
+  /** Every candidate deck the read was run over, to its input hash. Its keys are the candidate set. */
+  candidateHashes: jsonb("candidate_hashes").$type<Record<string, string>>().notNull(),
+  /** The decks that held up, in the read's order, each with the plan source it was read from.
+   *  Empty on a no fit. */
+  picks: jsonb("picks").$type<StoredFitsPick[]>().notNull().default(sql`'[]'::jsonb`),
+  /** How many decks the model named, and each drop by reason. */
+  returned: integer("returned"),
+  drops: jsonb("drops").$type<Partial<Record<FitsDropReason, number>>>(),
+}, (t) => [
+  check("fits_reads_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
+  check("fits_reads_outcome_check", sql`${t.outcome} is null or ${t.outcome} in ('picks', 'noFit')`),
+  uniqueIndex("fits_reads_one_pending_idx").on(t.userId, t.oracleId).where(sql`${t.status} = 'pending'`),
+  index("fits_reads_user_card_idx").on(t.userId, t.oracleId, t.createdAt),
 ]);

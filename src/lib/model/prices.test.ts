@@ -55,6 +55,13 @@ describe("FEATURE_CALLS", () => {
     expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
     // Measured, not provisional: the largest cuts request was 15,266 input tokens.
     expect(FEATURE_CALLS.proposed_cuts).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
+    // Measured 63,360 input tokens at most on the eval (21 candidates), 4,257 output. Two attempts at
+    // the ceiling sum past 100,000, so the higher card: 2 x (100,000 x $0.50 + 8,000 x $2.50) per million.
+    expect(FEATURE_CALLS.fits_read).toEqual({ model: "claude-haiku-5-5", inputCeilingTokens: 100_000, maxTokens: 8_000, callsPerWrite: 1 });
+    expect(featureWorstCaseMicroUsd("fits_read")).toBe(140_000);
+    // A retried read at the ceiling settles within it.
+    const retried = costMicroUsd("claude-haiku-5-5", { inputTokens: 200_000, outputTokens: 16_000, cacheReadTokens: 0, cacheWriteTokens: 0 });
+    expect(retried).toBeLessThanOrEqual(featureWorstCaseMicroUsd("fits_read"));
     expect(FEATURE_CALLS.synopsis).toEqual({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8, callsPerWrite: 2 });
     // $0.208 at today's Sonnet 5 and an 8,000-token ceiling; $0.832 for the synopsis, whose one
     // write can make two calls (the first answer and its repair) at Sonnet 5.5's 16,000-token

@@ -13,3 +13,13 @@
 export function swapToolsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.SWAP_TOOLS_ENABLED === "true";
 }
+
+/**
+ * Whether this deployment offers Find a deck's read (brief default 8): the press inside the picker,
+ * one credit, and the stored read. Server-side, read per request, OFF for anything but `'true'`.
+ * It needs the picker itself, so it is off whenever the swap tools are. Off, the picker is exactly
+ * today's (lock 7).
+ */
+export function findADeckReadEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.FIND_A_DECK_READ_ENABLED === "true" && swapToolsEnabled(env);
+}
