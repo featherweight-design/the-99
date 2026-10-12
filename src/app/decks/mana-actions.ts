@@ -103,7 +103,15 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   const [row] = await db.select({ summary: deckToolCounts.summary }).from(deckToolCounts)
     .where(helpReadWhere(countId, deckId, userId)).limit(1);
   if (!row || !isManaHelpSummary(row.summary)) return null;
-  const today = await helpFor(deckId, row.summary.color, userId);
+  // Today's help for that color. A color the commander's identity no longer holds offers nothing,
+  // so every stored trade is truly stale; a read that FAILED is not a re-check, so it returns null
+  // and the door draws its own failure state rather than calling every trade gone.
+  const deck = await getDeckDetail(deckId, userId);
+  if (!deck) return null;
+  const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
+  if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
+  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor);
+  if (!today) return null;
   return reviewHelp(row.summary.help, today);
 }
 

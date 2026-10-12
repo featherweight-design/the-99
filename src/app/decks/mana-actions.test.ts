@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
   writes: [] as unknown[][],
   revalidated: [] as unknown[][],
   helpRows: [] as unknown[],
+  helpFails: false,
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -26,7 +27,7 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => (state.helpFails ? null : { color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
 vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit: async () => state.helpRows }) }) }) } }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
   applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string) => {
@@ -223,6 +224,21 @@ describe("readManaHelpReview (History's re-review)", () => {
     state.helpRows = [{ summary: { color: "G", help: past } }];
     expect(await readManaHelpReview(DECK, "nope")).toBeNull();
     expect(await readManaHelpReview("nope", COUNT)).toBeNull();
+  });
+
+  it("is null when today's help cannot be read, rather than calling every trade gone", async () => {
+    state.helpRows = [{ summary: { color: "G", help: past } }];
+    state.helpFails = true;
+    try {
+      expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
+    } finally {
+      state.helpFails = false;
+    }
+  });
+
+  it("marks every trade stale when the color is outside the commander's identity now", async () => {
+    state.helpRows = [{ summary: { color: "R", help: { ...past, color: "R" } } }];
+    expect((await readManaHelpReview(DECK, COUNT))?.noLonger).toEqual(["s1", "s2"]);
   });
 
   it("is null with the switch off, for a valid id and a matching row", async () => {
