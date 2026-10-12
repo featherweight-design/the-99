@@ -504,7 +504,10 @@ function NavSlot({ href, name, active, pip, className, handlers, children }: Nav
   );
 }
 
-export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey }) {
+/** The admin door (admin STATES D1): a boolean from the server, and the environment it names. */
+export type AdminDoorProps = { adminDoor?: boolean; adminEnv?: string };
+
+export function NavRail({ locked, theme, adminDoor, adminEnv }: { locked: boolean; theme: ThemeKey } & AdminDoorProps) {
   const pathname = usePathname();
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
   // the collision the handoff's D1 warned of. Home, live in first run, gets the tag.
@@ -596,7 +599,7 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
       <div className="mt-auto shrink-0">
-        <AccountMenu panel="popover" theme={theme} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
       </div>
       {tag}
     </aside>
@@ -682,7 +685,7 @@ export function TabBar({ locked }: { locked: boolean }) {
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme }: { theme: ThemeKey }) {
+export function MobileHeader({ theme, adminDoor, adminEnv }: { theme: ThemeKey } & AdminDoorProps) {
   return (
     <header
       className="md:hidden flex items-center justify-between px-5 pt-5 pb-[14px]"
@@ -707,7 +710,7 @@ export function MobileHeader({ theme }: { theme: ThemeKey }) {
       </div>
 
       {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-      <AccountMenu panel="sheet" theme={theme} />
+      <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} />
     </header>
   );
 }

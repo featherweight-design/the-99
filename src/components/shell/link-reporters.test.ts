@@ -43,8 +43,8 @@ const EXEMPT: Record<string, string> = {
   "components/intake/read-as-bar.tsx :: startOverHref": KEPT,
   "components/intake/search-failed.tsx :: changeHref": KEPT,
   "components/ui/availability-marker.tsx :: `/decks/${text.deck.id}`": KEPT,
-  "components/shell/account-menu.tsx :: \"/about\"":
-    "the press closes the menu and unmounts the link, so AccountMenu reports the transition instead",
+  "components/shell/account-menu.tsx :: link.href":
+    "the press closes the menu and unmounts the link (About or Admin), so AccountMenu reports the transition instead",
 };
 
 function sourceFiles(dir: string): string[] {

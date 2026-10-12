@@ -1,0 +1,12 @@
+{
+  "feature": "Admin: the gate, the shell and the door (PR 2a), then each page as it ships",
+  "note": "Run against a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL set; without both, /admin is the app's 404 and every row fails, which is the gate working. The account menu's Admin row sits outside <main>, where every verb here is scoped, so account-menu.test.tsx covers the door. A signed-out /admin is checked by status (404, no redirect), not photographed.",
+  "rows": [
+    {
+      "id": "admin-costs-head",
+      "label": "/admin: the head (eyebrow, env chip, Costs title and sub, the tab strip)",
+      "view": "src/app/admin/layout.tsx",
+      "steps": [{ "goto": "/admin", "wait": "h1", "settle": 1500 }]
+    }
+  ]
+}
