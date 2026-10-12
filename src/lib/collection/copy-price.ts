@@ -56,28 +56,37 @@ export function cardPriceCode(
   let best: { cents: number; finish: Finish } | null = null;
   let cheapest: number | null = null;
   let soldOut = false;
-  let answered = false;
+  // A NO from the store: it never carried the printing, or carries it without this copy's finish.
+  // A live row with nothing in any price column is not one (`priceState` reads it `absent`, and
+  // `sets/cost.ts` calls it inconclusive), so it stays silent rather than saying `no stock`.
+  let neverStocked = false;
   for (const p of printings) {
     const finishes = FINISHES.filter((f) => (p.finishes[f] ?? 0) > 0);
     const read = priceFor(prices, p);
     if (read === null) continue;
-    answered = true;
-    if (read.fact === null) continue;
+    if (read.fact === null) {
+      neverStocked = true;
+      continue;
+    }
     const state = priceState(read.fact, prices.newestAsOf);
     if (state === "soldOut") {
       soldOut = true;
       continue;
     }
+    if (state === "absent") continue;
     for (const finish of finishes) {
       const cents = finishCents(read.fact, finish);
-      if (cents === null) continue;
+      if (cents === null) {
+        neverStocked = true;
+        continue;
+      }
       if (cheapest === null || cents < cheapest) cheapest = cents;
       if (best === null || cents > best.cents) best = { cents, finish };
     }
   }
   if (best !== null) return best.cents * 8 + ((cheapest ?? best.cents) < best.cents ? 4 : 0) + FINISH_CODE[best.finish];
-  if (!answered) return undefined;
-  return soldOut ? SOLD_OUT : NEVER_STOCKED;
+  if (soldOut) return SOLD_OUT;
+  return neverStocked ? NEVER_STOCKED : undefined;
 }
 
 /** The encoded price, read back. Null is silence. */

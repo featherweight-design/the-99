@@ -58,6 +58,11 @@ describe("cardPriceCode", () => {
     expect(readCardPrice(cardPriceCode([copy("d", "NIL", "4", { nonfoil: 1 })], prices))).toEqual({ none: "neverStocked" });
   });
 
+  it("stays silent for a live row with nothing in any price column, which is inconclusive", () => {
+    const blank = indexPriceRows([row("g", "BLK", "7", null, null, null)]);
+    expect(cardPriceCode([copy("g", "BLK", "7", { nonfoil: 1 })], blank)).toBeUndefined();
+  });
+
   it("gives a foil copy of a printing stocked in no foil no figure", () => {
     expect(readCardPrice(cardPriceCode([copy("b", "TWO", "2", { foil: 1 })], prices))).toEqual({ none: "neverStocked" });
   });
