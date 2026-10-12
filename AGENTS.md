@@ -598,6 +598,19 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   code review's eyes and not in Next's. All three of the check's failure paths were run
   against it before it was believed: a dropped route, a wrong `dynamic` flag, and a stale
   route that no longer reads the collection.
+- `pnpm check:db-pool` fails when the built server carries its own copy of the Neon driver's `Pool`.
+  Run it after `pnpm build`; CI does. `db.transaction` (drizzle-orm/neon-serverless) checks a
+  connection out of the pool only when `client instanceof Pool`, with `Pool` from ITS copy of
+  `@neondatabase/serverless`. Turbopack used to bundle a second copy for `src/db/index.ts`, so the
+  check was false and a "transaction" ran its `begin`, its statements and its `commit` on whatever
+  pooled connection was free: connections went back to the pool inside an open repeatable-read
+  snapshot, and later writes read a world that was seconds old (zero-row UPDATEs of rows committed
+  300ms earlier, "deck not found", `40001`). Measured on a production build, 12 concurrent
+  two-statement transactions kept one connection 2 or 3 times out of 12 before the fix and 12 of 12
+  after. `serverExternalPackages: ["@neondatabase/serverless"]` in `next.config.ts` is the fix; the
+  check reads the build, because nothing in source shows it. `tsx` scripts load one copy and were
+  never affected.
+
 - **Home and `/decks` cache their whole payload per reader, keyed on a stamp the DATABASE
   moves** (Performance PR 6). `user_data_stamps` holds one counter per reader, and every
   per-user table those two pages read carries the `user_data_touch` constraint trigger, which

@@ -72,6 +72,11 @@ jobs:
           DATABASE_URL: postgres://stub:stub@localhost/stub
         run: pnpm build
 
+      # A server chunk carrying its own copy of the Neon driver's Pool makes `db.transaction` run
+      # its statements on different connections. Only the built output shows it.
+      - name: One Neon driver copy
+        run: pnpm check:db-pool
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
