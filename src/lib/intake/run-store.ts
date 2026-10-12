@@ -134,11 +134,14 @@ async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: s
  * the reservation, so the burst costs N pool reads for one read.
  *
  * A transaction-scoped TRY lock on a dedicated connection, as `withCatalogIngestLock` holds its
- * lock (never a session lock: the Neon pooler runs in transaction mode). The connection is its own
- * one-connection pool, NOT the app's shared one: `run` needs the shared pool's connections for the
- * pool read and the reservation, and a lock held on one of those would let ten players pressing at
- * once (the shared pool's size, with no connection timeout) each hold a connection while waiting
- * for another. The cost is one websocket per press, against a press that reads the whole pool.
+ * lock (never a session lock: the Neon pooler runs in transaction mode). The connection comes from
+ * the admission's OWN pool, NOT the app's shared one: `run` needs the shared pool's connections for
+ * the pool read and the reservation, and a lock held on one of those would let ten players pressing
+ * at once (the shared pool's size, with no connection timeout) each hold a connection while waiting
+ * for another. The admission pool is bounded (`ADMISSION_POOL_MAX`) and kept on `globalThis` like
+ * the app's, so a burst queues for a connection instead of opening one per press, and a holder
+ * never waits on this pool, so the queue always drains. A press that waits longer than
+ * `ADMISSION_WAIT_MS` for a connection fails with the pool's error rather than waiting on.
  * The transaction commits when `run` returns, so the hold is the pool read and the reservation,
  * never the two model calls, which run after. The key is the admission's own: `startRead` takes
  * its own locks inside `run`, and nothing in `run` waits on this one, so the nesting cannot
@@ -148,29 +151,43 @@ async function storedRead(tx: Tx, userId: string, hash: string): Promise<{ id: s
  * and released finds the lock free. `run` re-checks `hasRunningRead` inside it, which is what
  * refuses that press before it loads anything.
  */
+const ADMISSION_POOL_MAX = 5;
+const ADMISSION_WAIT_MS = 15_000;
+const admissionShared = globalThis as typeof globalThis & { __the99AdmissionPool?: Pool };
+function admissionPool(): Pool {
+  admissionShared.__the99AdmissionPool ??= new Pool({
+    connectionString: process.env.DATABASE_URL, max: ADMISSION_POOL_MAX, connectionTimeoutMillis: ADMISSION_WAIT_MS,
+  });
+  return admissionShared.__the99AdmissionPool;
+}
 export async function withReadAdmission<T>(userId: string, run: () => Promise<T>): Promise<T | "busy"> {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
-  const client = await pool.connect();
+  const client = await admissionPool().connect();
+  // A connection whose commit failed is destroyed, not handed to the next press.
+  let broken = false;
   try {
     await client.query("begin");
     const { rows } = await client.query("select pg_try_advisory_xact_lock(hashtextextended($1, 0)) as got", [`intake-admit:${userId}`]);
     if ((rows[0] as { got: boolean } | undefined)?.got !== true) {
-      await client.query("rollback").catch(() => {});
+      await client.query("rollback").catch(() => { broken = true; });
       return "busy";
     }
     let result: T;
     try {
       result = await run();
     } catch (err) {
-      await client.query("rollback").catch(() => {});
+      await client.query("rollback").catch(() => { broken = true; });
       throw err;
     }
     // A commit that fails is reported, never swallowed.
-    await client.query("commit");
+    try {
+      await client.query("commit");
+    } catch (err) {
+      broken = true;
+      throw err;
+    }
     return result;
   } finally {
-    client.release();
-    await pool.end();
+    client.release(broken || undefined);
   }
 }
 
