@@ -80,6 +80,21 @@ async function holdActions(page) {
   };
 }
 
+/**
+ * Press Undo on the answered cut and wait for the ANSWER, not the flip: Undo is optimistic too, so
+ * the card is back on screen before its action has run. Done means the action's response arrived
+ * and the restored row's Cut is pressable again, which it is only once the re-read has landed.
+ */
+async function undoCut(page, cutRow, name) {
+  const answered = page.waitForResponse((r) => r.request().method() === "POST" && !!r.request().headers()["next-action"], { timeout: 60_000 });
+  await cutRow.getByRole("button", { name: "Undo" }).click();
+  await answered;
+  const cut = onPage(page, "article").filter({ hasText: name }).first().getByRole("button", { name: "Cut", exact: true });
+  await cut.waitFor({ timeout: 30_000 });
+  for (let i = 0; i < 300 && !(await cut.isEnabled()); i += 1) await page.waitForTimeout(100);
+  return cut.isEnabled();
+}
+
 async function openFromHistory(page, deckId, tier) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
   await onPageRole(page, "tab", /analysis/i).first().click();
@@ -109,17 +124,14 @@ for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width:
     await gate.release();
     await page.waitForTimeout(2500);
     check(`${w.label} cuts: once answered it stays cut`, (await cutRow.count()) === 1, null);
-    await cutRow.getByRole("button", { name: "Undo" }).click();
-    await onPage(page, "article").filter({ hasText: name }).first().waitFor({ timeout: 30_000 });
-    undone = true;
-    check(`${w.label} cuts: Undo puts the card back`, true, name);
+    undone = await undoCut(page, cutRow, name);
+    check(`${w.label} cuts: Undo puts the card back, once its action has answered`, undone, name);
   } finally {
     // Whatever failed above, the deck is left as it was found: an answered cut is undone.
     if (!undone) {
       await gate.release().catch(() => {});
       await page.waitForTimeout(2500);
-      if ((await cutRow.count()) > 0) await cutRow.getByRole("button", { name: "Undo" }).click().catch(() => {});
-      await page.waitForTimeout(2500);
+      if ((await cutRow.count()) > 0) await undoCut(page, cutRow, name).catch(() => {});
     }
   }
 

@@ -1,7 +1,15 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { useOptimisticVerdict, type RowVerdict } from "./use-optimistic-verdict";
+import type { ReactNode } from "react";
+
+import {
+  useOptimisticVerdict,
+  useVerdictOverrides,
+  useVerdictOverrideView,
+  VerdictOverridesProvider,
+  type RowVerdict,
+} from "./use-optimistic-verdict";
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -65,5 +73,27 @@ describe("useOptimisticVerdict", () => {
     act(() => { void result.current.press("accepted", () => new Promise(() => {})); });
     rerender({ server: "dismissed" });
     expect(result.current.verdict).toBe("dismissed");
+  });
+});
+
+describe("useVerdictOverrideView", () => {
+  it("lets a bulk control see a row's held answer, so it can stand down while that answer is in flight", async () => {
+    const answer = deferred<{ ok: true }>();
+    function Panel({ children }: { children: ReactNode }) {
+      const overrides = useVerdictOverrides();
+      return <VerdictOverridesProvider value={overrides.value}>{children}</VerdictOverridesProvider>;
+    }
+    const { result } = renderHook(
+      () => ({ row: useOptimisticVerdict("pending", "a"), view: useVerdictOverrideView() }),
+      { wrapper: Panel },
+    );
+    expect(result.current.view.anyFlipped).toBe(false);
+    let settled: Promise<unknown> = Promise.resolve();
+    act(() => { settled = result.current.row.press("accepted", () => answer.promise); });
+    expect(result.current.view.anyFlipped).toBe(true);
+    expect(result.current.view.verdictOf({ id: "a", verdict: "pending" })).toBe("accepted");
+    await act(async () => { answer.resolve({ ok: true }); await settled; });
+    act(() => result.current.row.release());
+    expect(result.current.view.anyFlipped).toBe(false);
   });
 });

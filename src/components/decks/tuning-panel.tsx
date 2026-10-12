@@ -1018,7 +1018,7 @@ export function TuningPanel({
   const noteLine = note ? `${note} · ${tail}` : tail;
 
   return (
-    <VerdictOverridesProvider value={overrides.report}>
+    <VerdictOverridesProvider value={overrides.value}>
     <section
       aria-labelledby="tuning-heading"
       aria-busy={reading || undefined}

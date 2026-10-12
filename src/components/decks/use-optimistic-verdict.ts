@@ -7,7 +7,7 @@
 // moves, never `useOptimistic`, whose value is dropped the moment the action's transition ends and
 // would snap the row back before the panel's re-read lands.
 
-import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
@@ -19,10 +19,22 @@ export type RowVerdict = "pending" | "accepted" | "dismissed";
  * the panel reads, for its counts only: a row is always handed the server's own verdict.
  */
 type Report = (id: string, verdict: RowVerdict | null) => void;
-const OverridesContext = createContext<Report | null>(null);
+type Overrides = { report: Report; map: ReadonlyMap<string, RowVerdict> };
+const OverridesContext = createContext<Overrides | null>(null);
 export const VerdictOverridesProvider = OverridesContext.Provider;
 
-/** For a panel: the report its rows call, and each item's verdict as its row draws it. */
+/** For a panel's other parts (a bulk control): each item's verdict as its row draws it, and whether
+ *  any row is mid-answer, so a bulk press never races a row's own. */
+export function useVerdictOverrideView() {
+  const ctx = useContext(OverridesContext);
+  const map = ctx?.map;
+  return {
+    verdictOf: (item: { id: string; verdict: RowVerdict }) => map?.get(item.id) ?? item.verdict,
+    anyFlipped: !!map && map.size > 0,
+  };
+}
+
+/** For a panel: the value its provider hands down, and each item's verdict as its row draws it. */
 export function useVerdictOverrides() {
   const [map, setMap] = useState<ReadonlyMap<string, RowVerdict>>(() => new Map());
   const report = useCallback<Report>((id, verdict) => {
@@ -35,7 +47,8 @@ export function useVerdictOverrides() {
     });
   }, []);
   const verdictOf = (item: { id: string; verdict: RowVerdict }) => map.get(item.id) ?? item.verdict;
-  return { report, verdictOf };
+  const value = useMemo<Overrides>(() => ({ report, map }), [report, map]);
+  return { report, verdictOf, value };
 }
 
 export function useOptimisticVerdict(server: RowVerdict, id?: string) {
@@ -70,7 +83,7 @@ export function useOptimisticVerdict(server: RowVerdict, id?: string) {
   const flipped = shown && server === shown.from ? shown.verdict : null;
   // Tell the panel, so its counts read this row as it is drawn; and forget it when the row goes.
   // Before paint, so the row and the panel's counts never show two answers in one frame.
-  const report = useContext(OverridesContext);
+  const report = useContext(OverridesContext)?.report;
   useLayoutEffect(() => {
     if (!id || !report) return;
     report(id, flipped);

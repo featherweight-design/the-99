@@ -8,6 +8,7 @@ import type { LineItem } from "../../lib/tuning/state";
 import { MutationError } from "./mutation-error";
 import type { CardActions } from "./suggestion-card";
 import { SuggestionLine } from "./suggestion-line";
+import { useVerdictOverrideView } from "./use-optimistic-verdict";
 
 /**
  * Suggested changes' two lists (sub-project 8; Design's B10/B10b): a head with the count, the
@@ -32,10 +33,13 @@ export function SuggestionLists({
 
   const additions = lines.filter((l) => l.side === "add");
   const cuts = lines.filter((l) => l.side === "cut");
-  const open = lines.filter((l) => l.verdict === "pending" && l.applies);
+  // Each line as its row draws it (a pressed line has already flipped), and Apply all held while
+  // any line's own answer is still in flight, so the two never race for one row.
+  const view = useVerdictOverrideView();
+  const open = lines.filter((l) => view.verdictOf(l) === "pending" && l.applies);
   const into = open.filter((l) => l.side === "add").length;
   const out = open.length - into;
-  const anyAnswered = lines.some((l) => l.verdict !== "pending");
+  const anyAnswered = lines.some((l) => view.verdictOf(l) !== "pending");
 
   async function applyAll() {
     setApplying(true);
@@ -79,7 +83,7 @@ export function SuggestionLists({
             <button
               type="button"
               onClick={applyAll}
-              disabled={applying}
+              disabled={applying || view.anyFlipped}
               className="flex min-h-[44px] items-center rounded-[7px] px-[13px] text-[12.5px] font-semibold text-[color:var(--accent)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:min-h-[32px] transition-colors"
             >
               {applying ? copy.applying : anyAnswered ? copy.applyRest : copy.applyAll}

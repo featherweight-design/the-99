@@ -346,7 +346,7 @@ export function CutsPanelView({
   const headline = over === 0 ? copy.done.head(panel.bodySize, cutCount) : copy.overLead(overWords(over), panel.bodySize);
 
   return (
-    <VerdictOverridesProvider value={overrides.report}>
+    <VerdictOverridesProvider value={overrides.value}>
     <section
       aria-labelledby="cuts-heading"
       aria-busy={running || undefined}
