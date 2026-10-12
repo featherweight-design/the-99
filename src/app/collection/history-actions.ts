@@ -13,6 +13,7 @@ import { isUuid } from "../../lib/uuid";
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { warmCommanderScores } from "../../lib/recs/warm";
+import { CART_DECKS_MAX } from "../../lib/decks/mark-bought";
 
 /**
  * The collection history and revert (collection foundation, sub-project 1, PR 3). Every action
@@ -72,7 +73,7 @@ const keyOf = (r: CollectionItemIdentity) => collectionItemKey(r);
 function ignoredDecks(value: string | string[] | undefined): { ignoreDeckId?: string; ignoreDeckIds?: string[] } {
   if (value === undefined) return {};
   if (Array.isArray(value)) {
-    if (value.length > 100 || !value.every((v) => typeof v === "string" && isUuid(v))) throw new Error("bad deck id");
+    if (value.length > CART_DECKS_MAX || !value.every((v) => typeof v === "string" && isUuid(v))) throw new Error("bad deck id");
     return { ignoreDeckIds: value.map((v) => v.toLowerCase()) };
   }
   if (!isUuid(value)) throw new Error("bad deck id");

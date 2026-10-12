@@ -14,7 +14,7 @@ import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import type { AssignRefusal } from "../../lib/decks/assign";
 import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
-  MARK_BOUGHT_MAX, cartReceiptFacts, cartSource, receiptFacts, type CartReceiptFacts, type ReceiptFacts,
+  CART_DECKS_MAX, MARK_BOUGHT_MAX, cartReceiptFacts, cartSource, receiptFacts, type CartReceiptFacts, type ReceiptFacts,
 } from "../../lib/decks/mark-bought";
 import { warmCommanderScores } from "../../lib/recs/warm";
 
@@ -123,13 +123,6 @@ export async function markBought(
   }
 }
 
-
-/**
- * The most decks one cart line can name: a bound on the request, far above any account's decks.
- * The write locks and checks them in one statement each and reads no deck on its own, so nothing
- * here grows a query per deck.
- */
-const CART_DECKS_MAX = 500;
 
 export type MarkBoughtForDecksOutcome =
   | { applied: { id: string; receipt: CartReceiptFacts | null } }

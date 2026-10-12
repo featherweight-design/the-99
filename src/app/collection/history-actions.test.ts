@@ -119,6 +119,11 @@ describe("revertCollectionEntry", () => {
     await revertCollectionEntry(ENTRY, ACTION, {}, [], [A.toUpperCase(), B]);
     expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY, expected: {}, ignoreDeckIds: [A, B] });
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], [A, "deck"])).rejects.toThrow("bad deck id");
+    // As many decks as a cart purchase may name: its undo is never refused for the line's size.
+    stub.apply.mockClear();
+    await revertCollectionEntry(ENTRY, ACTION, {}, [], Array.from({ length: 500 }, () => A));
+    expect(stub.apply).toHaveBeenCalledTimes(1);
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], Array.from({ length: 501 }, () => A))).rejects.toThrow("bad deck id");
   });
 
   it("refuses a malformed action id or preview before writing", async () => {

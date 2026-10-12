@@ -20,6 +20,13 @@ export function cartSourceDecks(source: string | null | undefined): string[] | n
   return source?.startsWith(CART_SOURCE) ? source.slice(CART_SOURCE.length).split(",").filter(Boolean) : null;
 }
 
+/**
+ * The most decks one cart line can name, for the purchase and for its undo alike: a bound on the
+ * request, far above any account's decks. The write locks and checks them in one statement each and
+ * reads no deck on its own, so nothing grows a query per deck.
+ */
+export const CART_DECKS_MAX = 500;
+
 /** The most copies one press records (call D). */
 export const MARK_BOUGHT_MAX = 20;
 
