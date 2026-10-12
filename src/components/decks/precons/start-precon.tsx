@@ -5,7 +5,8 @@
 // modal at 900 and a bottom sheet at 390: the commander, the name (prefilled, focused, selected),
 // three facts, and any card the start keeps that is not legal in Commander. Starting never commits.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { unstable_rethrow } from "next/navigation";
+import { startTransition, useEffect, useId, useRef, useState } from "react";
 import { createDeckFromPrecon } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { preconsCopy } from "../../../lib/copy/precons";
@@ -71,17 +72,23 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
   const pair = row.commanders.length === 2;
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
 
-  async function submit() {
+  function submit() {
     if (!valid || pending) return;
     setPending(true);
     setFailed(false);
-    try {
-      // Redirects to the new deck on success; a refusal or an outage throws.
-      await createDeckFromPrecon(row.fileName, trimmed);
-    } catch {
-      setFailed(true);
-      setPending(false);
-    }
+    // In a transition, as the picker's create is, so the router takes the redirect it rethrows.
+    startTransition(async () => {
+      try {
+        // Redirects to the new deck on success; a refusal or an outage throws.
+        await createDeckFromPrecon(row.fileName, trimmed);
+      } catch (err) {
+        // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
+        // every successful start would paint the failure for the frame the navigation takes.
+        unstable_rethrow(err);
+        setFailed(true);
+        setPending(false);
+      }
+    });
   }
 
   const fact = (k: string, v: string) => (

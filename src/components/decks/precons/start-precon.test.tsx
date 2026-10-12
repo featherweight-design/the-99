@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PreconRow } from "../../../lib/precons/list";
 
@@ -61,5 +61,34 @@ describe("StartPrecon", () => {
     open();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "   " } });
     expect(screen.getByRole("button", { name: "Start the deck" })).toBeDisabled();
+  });
+});
+
+// `createDeckFromPrecon` ends in `redirect()`, which throws. Caught as a failure, every successful
+// start painted "Couldn’t start the deck" for the frame the navigation took (as #337 on the picker).
+describe("StartPrecon, a redirecting action", () => {
+  const isRedirect = (v: unknown) =>
+    v instanceof Error && (v.message.startsWith("NEXT_REDIRECT") || String((v as { digest?: string }).digest).startsWith("NEXT_REDIRECT"));
+  const swallow = (e: ErrorEvent | PromiseRejectionEvent) => {
+    if (isRedirect("reason" in e ? e.reason : e.error)) e.preventDefault();
+  };
+  beforeAll(() => {
+    window.addEventListener("error", swallow);
+    window.addEventListener("unhandledrejection", swallow);
+  });
+  afterAll(() => {
+    window.removeEventListener("error", swallow);
+    window.removeEventListener("unhandledrejection", swallow);
+  });
+
+  it("is not a failure", async () => {
+    const { redirect } = await import("next/navigation");
+    action.mockImplementationOnce(async () => redirect("/decks/d1?from=precon"));
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start a deck from this" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
