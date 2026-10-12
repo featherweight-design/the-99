@@ -26,6 +26,25 @@ const decoded = (c: HTMLElement) => {
 afterEach(cleanup);
 
 describe("PriceStrip with tokens joined", () => {
+  it("dates the combined figure by the older of the cards' and the tokens' prices, and says when it is behind", () => {
+    const behind: ProvenanceForm = { behind: true, when: "3 September" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 27048, pricedCopies: 3, totalCopies: 3 }} provenance={fresh} shoppingCards={cards} tokens={tokens()} tokenProvenance={behind} />,
+    );
+    expect(container.textContent).toContain("3 September");
+    expect(container.textContent).not.toContain("Monday");
+    expect(container.textContent).toMatch(/behind/i);
+  });
+
+  it("keeps the cards' date when no token in the figure is priced", () => {
+    const behind: ProvenanceForm = { behind: true, when: "3 September" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 27048, pricedCopies: 3, totalCopies: 3 }} provenance={fresh} shoppingCards={cards} tokens={tokens({ priced: 0, cents: 0 })} tokenProvenance={behind} />,
+    );
+    expect(container.textContent).toContain("Monday");
+    expect(container.textContent).not.toContain("3 September");
+  });
+
   it("sums the deck's cards and the tokens in the one figure, and splits them beneath it", () => {
     const { container } = render(
       <PriceStrip summary={{ totalCents: 27048, pricedCopies: 3, totalCopies: 3 }} provenance={fresh} shoppingCards={cards} tokens={tokens()} />,

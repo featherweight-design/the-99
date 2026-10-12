@@ -651,5 +651,13 @@ export default async function DeckBuilderPage({
   ) : tooled;
   // The deck's tokens reach the decklist through a context, outermost so no wrap above has to know of them.
   const deckTokens = tokensRead ? await tokensRead : null;
-  return deckTokens ? <DeckTokensProvider deckId={id} read={deckTokens}>{page}</DeckTokensProvider> : page;
+  // The buy box's figure includes the tokens' prices, which can be older than the cards' (the token ingest
+  // refuses on its own floor), so its date is the older of the two.
+  const tokenNewest = deckTokens?.status === "ok" ? deckTokens.newestPriceAsOf : null;
+  const combinedAsOf = tokenNewest && priced?.newestAsOf && tokenNewest < priced.newestAsOf ? tokenNewest : null;
+  return deckTokens ? (
+    <DeckTokensProvider deckId={id} read={deckTokens} provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}>
+      {page}
+    </DeckTokensProvider>
+  ) : page;
 }

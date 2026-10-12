@@ -346,6 +346,7 @@ describe("the Tokens group on Shopping", () => {
   it("on Shopping offers only the remove press: a hand mark on it could not be undone", () => {
     shopping([token({ oracleId: "f1", makers: [], joined: true, name: "Food", price: priced(15) })]);
     expect(screen.queryByRole("button", { name: /Mark the Food token/ })).toBeNull();
+    expect(screen.getByText("from no card in this deck")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Take the Food token off Shopping/ })).toBeTruthy();
   });
 });

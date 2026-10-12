@@ -24,6 +24,7 @@ export function PriceStrip({
   provenance,
   shoppingCards,
   tokens = null,
+  tokenProvenance = null,
 }: {
   summary: PriceSummary;
   /** Null when the table is empty or the read failed — the strip renders nothing. */
@@ -40,8 +41,12 @@ export function PriceStrip({
    * figure keeps the two apart.
    */
   tokens?: TokenShopping | null;
+  /** The older of the cards' and the tokens' price dates, when the tokens' are the older. Dates the combined figure. */
+  tokenProvenance?: ProvenanceForm | null;
 }) {
   if (!provenance) return null;
+  // The figure includes priced tokens, so it is as old as the oldest price in it.
+  const dated = tokens && tokens.priced > 0 && tokenProvenance ? tokenProvenance : provenance;
 
   const tokenN = tokens?.rows.length ?? 0;
 
@@ -120,8 +125,8 @@ export function PriceStrip({
         <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
           {[
             showFigure ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced,
-            priceCopy.strip.lastChecked(provenance.when),
-            ...(provenance.behind ? [priceCopy.strip.behind] : []),
+            priceCopy.strip.lastChecked(dated.when),
+            ...(dated.behind ? [priceCopy.strip.behind] : []),
           ].join(" · ")}
         </p>
         {/* The 44px is the ROW's height, never the link's box — the link stays

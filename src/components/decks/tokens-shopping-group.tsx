@@ -27,6 +27,9 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
             <span className="md:hidden">{tokensCopy.shopping.sub(type, null)}</span>
             <span className="hidden md:inline">{tokensCopy.shopping.sub(type, code)}</span>
           </span>
+          {token.makers.length === 0 ? (
+            <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{tokensCopy.row.noMaker}</span>
+          ) : null}
         </span>
         {/* The shipped buy tag, as a button of its own: one press marks the token held and takes it off every
             deck's list in one write, with no confirm (Hugh, 2026-10-11). */}

@@ -190,7 +190,7 @@ the shipped tag and is pressable: one action marks the token owned (`source: man
 for it on EVERY deck in the same write, no confirm (built so in PR 5: owned means owned everywhere); an upload that reads a joined token as owned deletes the join in the upload's
 transaction (audit finding 8; unmark does not restore a join). `manapoolAddDeckUrl` sends token lines with set and
 number when PR 2's probe passed. A sold-out token draws `buy · sold out` and is left out of the sum (`pricedClause`).
-A joined token whose maker is gone stays joined, drawn `from no card in this deck` (G9).
+A joined token whose maker is gone stays joined, drawn `from no card in this deck` (G9), as a plain price with only its remove press: a hand mark on it could be unmarked from nowhere (built so in PR 5, review round 2).
 
 - Files (about 14): Shopping group + row, price strip / box figure, `group-toggle.tsx`, the press action + test, link
   builder + test, `read.ts` extension, copy, `check-copy-drift` quotations, inventory, contact sheet.
