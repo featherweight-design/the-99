@@ -40,6 +40,12 @@ describe("cardPriceCode", () => {
       .toEqual({ cents: 960, finish: "foil", mixed: true });
   });
 
+  it("draws no max when every priced copy costs the same, since none is cheaper", () => {
+    const same = indexPriceRows([row("e", "SAM", "5", 100, null, null), row("f", "SAM", "6", 100, null, null)]);
+    expect(readCardPrice(cardPriceCode([copy("e", "SAM", "5", { nonfoil: 1 }), copy("f", "SAM", "6", { nonfoil: 1 })], same)))
+      .toEqual({ cents: 100, finish: null, mixed: false });
+  });
+
   it("never sums copies", () => {
     expect(priceSortCents(cardPriceCode([copy("a", "ONE", "1", { nonfoil: 4 })], prices))).toBe(590);
   });

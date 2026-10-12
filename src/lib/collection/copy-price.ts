@@ -23,8 +23,9 @@
 //   absent          nothing reached us: no read, or no copy names a printing. Silent.
 //   -1              the store answered no, and a copy's printing was stocked once (sold out).
 //   -2              the store answered no, and has never carried the printing (or the finish).
-//   n >= 0          cents * 8 + (4 when more than one priced printing or finish is owned, so a
-//                   cheaper copy exists) + the top copy's finish (0 non-foil, 1 foil, 2 etched).
+//   n >= 0          cents * 8 + (4 when an owned printing or finish is priced below the top
+//                   one, so a cheaper copy exists) + the top copy's finish (0 non-foil, 1 foil,
+//                   2 etched). Two copies at the same price are not `max`: nothing is cheaper.
 
 import { priceFor, type PrintingPrices } from "../cards/price-lookup";
 import { priceState, type PriceFact } from "../decks/price";
@@ -52,7 +53,7 @@ export function cardPriceCode(
 ): number | undefined {
   if (!prices) return undefined;
   let best: { cents: number; finish: Finish } | null = null;
-  let priced = 0;
+  let cheapest: number | null = null;
   let soldOut = false;
   let answered = false;
   for (const p of printings) {
@@ -69,11 +70,11 @@ export function cardPriceCode(
     for (const finish of finishes) {
       const cents = finishCents(read.fact, finish);
       if (cents === null) continue;
-      priced += 1;
+      if (cheapest === null || cents < cheapest) cheapest = cents;
       if (best === null || cents > best.cents) best = { cents, finish };
     }
   }
-  if (best !== null) return best.cents * 8 + (priced > 1 ? 4 : 0) + FINISH_CODE[best.finish];
+  if (best !== null) return best.cents * 8 + ((cheapest ?? best.cents) < best.cents ? 4 : 0) + FINISH_CODE[best.finish];
   if (!answered) return undefined;
   return soldOut ? SOLD_OUT : NEVER_STOCKED;
 }

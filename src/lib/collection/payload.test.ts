@@ -33,7 +33,10 @@ describe("loadCollectionList", () => {
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
   });
 
-  it("caches a priced list until the catalog generation moves, which a price refresh does", async () => {
+  // What this pins is that the list is cached and that its key is the generation the cache layer
+  // hands it. That the real key carries `catalogGeneration()` is pinned in `user-lists.test.ts`, and
+  // that a price refresh moves it in `seed-prices.test.ts`.
+  it("caches a priced list, and misses once the catalog generation moves", async () => {
     loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
     await loadCollectionList("u");
     await loadCollectionList("u");
