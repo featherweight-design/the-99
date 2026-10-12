@@ -144,8 +144,10 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
       valueCents: money?.value.cents ?? 0,
     });
   }
-  const every = [...lists.list, ...lists.commanders];
-  const shared = sharedCards(every, availability, buys, new Set(lists.list.map((c) => c.deckId)));
+  // A deck with no card in its list plays nothing on Shared, its commanders included, so its denominator drops them too.
+  const bodied = new Set(lists.list.map((c) => c.deckId));
+  const every = [...lists.list, ...lists.commanders].filter((c) => bodied.has(c.deckId));
+  const shared = sharedCards(every, availability, buys, bodied);
   // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
   const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every };
