@@ -474,8 +474,8 @@ describe("loadCardDetail's round trips", () => {
   const catalogRow = { oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet", gameChanger: false };
 
   /** A fresh module over a db stub that counts what it is asked, plus the two side reads. */
-  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]> }) {
-    const asked = { select: 0, printings: 0, execute: 0, flags: 0, partners: 0 };
+  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown }) {
+    const asked = { select: 0, printings: 0, execute: 0, flags: 0, partners: 0, token: [] as string[] };
     vi.doMock("../../db", () => ({
       db: {
         select: () => {
@@ -500,6 +500,10 @@ describe("loadCardDetail's round trips", () => {
     vi.doMock("../combos/near-miss", () => ({
       loadCardComboPartners: async () => { asked.partners += 1; return []; },
     }));
+    // An id the card catalog does not hold is asked of the token loader (bug batch 2026-10-12).
+    vi.doMock("../tokens/detail", () => ({
+      loadTokenDetail: async (id: string) => { asked.token.push(id); return opts.token ?? null; },
+    }));
     vi.resetModules();
     const mod = await import("./card-detail");
     return { load: mod.loadCardDetail, asked };
@@ -508,6 +512,7 @@ describe("loadCardDetail's round trips", () => {
     vi.doUnmock("../../db");
     vi.doUnmock("../bracket/flags-read");
     vi.doUnmock("../combos/near-miss");
+    vi.doUnmock("../tokens/detail");
   };
   const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -520,9 +525,20 @@ describe("loadCardDetail's round trips", () => {
       expect(await load("user_1", "o-missing")).toBeNull();
       // Long enough for any read started behind the return to have reached its stub.
       for (let i = 0; i < 5; i += 1) await flush();
-      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0 });
+      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0, token: ["o-missing"] });
       expect(loadPrintingPrices).not.toHaveBeenCalled();
       expect(loadAvailability).not.toHaveBeenCalled();
+    } finally { done(); }
+  });
+
+  it("answers an id the card catalog does not hold with its token's details, and reads nothing else", async () => {
+    selectCollectionRows.mockResolvedValue([]);
+    const token = { kind: "token", oracleId: "t-1", name: "Goblin" };
+    const { load, asked } = await fresh({ catalog: [], token });
+    try {
+      expect(await load("user_1", "t-1")).toBe(token);
+      for (let i = 0; i < 5; i += 1) await flush();
+      expect(asked).toEqual({ select: 1, printings: 0, execute: 0, flags: 0, partners: 0, token: ["t-1"] });
     } finally { done(); }
   });
 

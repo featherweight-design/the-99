@@ -187,6 +187,8 @@ describe("the makers fold", () => {
     expect(art.tabIndex).toBe(-1);
     fireEvent.click(art);
     expect(stub.open.mock.calls[1][0]).toBe("t-goblin");
+    // The way back is the name, never the image the reader cannot reach.
+    expect(stub.open.mock.calls[1][3]).toMatchObject({ opener: name });
     expect(screen.queryAllByRole("button", { expanded: true })).toHaveLength(0);
   });
 

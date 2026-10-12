@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type MouseEvent } from "react";
+import { useRef, useState, useTransition, type MouseEvent } from "react";
 import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
 import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
@@ -92,11 +92,14 @@ export function TokenRow({
   // The token's image and name open its card details, as a card's do (bug batch 2026-10-12). Outside a
   // card provider (the About specimen) they stay plain.
   const detail = useCardDetailIfAny();
+  // Focus comes back to the NAME when the details close, whichever of the two opened them: the image
+  // is out of the tab order and the accessibility tree, so it is never a place to land.
+  const nameRef = useRef<HTMLButtonElement>(null);
   const openDetails = detail
     ? (e: MouseEvent<HTMLElement>) => {
         // The row's own press toggles the makers; this one is the card's.
         e.stopPropagation();
-        detail.open(token.oracleId, undefined, undefined, { opener: e.currentTarget });
+        detail.open(token.oracleId, undefined, undefined, { opener: nameRef.current ?? e.currentTarget });
       }
     : null;
   const toggleAria = tokensCopy.row.toggleAria(token.name, token.makers.length);
@@ -137,13 +140,25 @@ export function TokenRow({
             };
             // Out of the tab order, as the name beside it is the same press for a keyboard.
             return openDetails
-              ? <button type="button" tabIndex={-1} aria-hidden onClick={openDetails} {...art} className={`${art.className} cursor-pointer`} />
+              ? (
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-hidden
+                  // A pointer press must not focus it either: it is in no tree a reader can follow.
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={openDetails}
+                  {...art}
+                  className={`${art.className} cursor-pointer`}
+                />
+              )
               : <span aria-hidden {...art} />;
           })()}
           <span className="flex min-w-0 flex-col gap-[2px]">
             <span className="flex flex-wrap items-center gap-x-[8px] text-[13.5px] leading-[1.4] text-[color:var(--fg)]">
               {openDetails ? (
                 <button
+                  ref={nameRef}
                   type="button"
                   onClick={openDetails}
                   aria-describedby={`token-${token.oracleId}-face`}

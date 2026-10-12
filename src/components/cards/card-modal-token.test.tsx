@@ -59,6 +59,13 @@ describe("a token's card details", () => {
     expect(screen.queryByRole("link", { name: new RegExp(cardLinkOutCopy.card) })).toBeNull();
   });
 
+  it("marks a two-sided token's back as its printing's own, so the modal can turn it", () => {
+    const two = assembleTokenDetail({ ...TOKEN, layout: "double_faced_token" },
+      [{ ...PRINTINGS[1], backImageUri: "https://img/a-back.jpg" }], null, NEWEST);
+    expect(two.printings[0]).toMatchObject({ backImageUri: "https://img/a-back.jpg", hasOwnBack: true });
+    expect(assembleTokenDetail(TOKEN, PRINTINGS, null, NEWEST).printings[0].hasOwnBack).toBe(false);
+  });
+
   it("draws no price and no buy link when Mana Pool lists none, and pictures the first printing by set", () => {
     const card = assembleTokenDetail(TOKEN, PRINTINGS, null, NEWEST);
     expect(card.imageUri).toBe("https://img/a.jpg");

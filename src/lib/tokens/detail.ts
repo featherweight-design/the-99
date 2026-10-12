@@ -120,6 +120,9 @@ export function assembleTokenDetail(
         setCode: set, scryfallId: chosen.scryfallId, setName: null, collectorNumber: chosen.collectorNumber,
         releasedAt: null, quantity: 0, finishes: {}, imageUri: chosen.imageUri, backImageUri: chosen.backImageUri,
         flavorName: null,
+        // The back is this printing's own (a double-faced or reversible token), so the modal's turn
+        // and its zoom can show it; the token layouts are not two-faced by layout alone.
+        hasOwnBack: Boolean(chosen.backImageUri),
       }]
       : [],
     setCodes: set ? [set] : [],
