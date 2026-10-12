@@ -48,6 +48,7 @@ import { collectionChassisCopy } from "../../lib/copy/collection";
 import type { FilterChip } from "../ui/filter-chassis";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { useStoredView } from "../ui/use-stored-view";
 import { NoResults } from "./no-results";
 import { useCardDetail } from "../cards/card-detail-provider";
@@ -622,7 +623,7 @@ export function CollectionBrowser({
   }, [filters, sort, sortDirection, view, openOracleId, openInList]);
 
   return (
-    <>
+    <HoverPreviewProvider>
       <FilterBar
         colorOptions={colorOptions}
         shown={sorted.length}
@@ -705,6 +706,6 @@ export function CollectionBrowser({
       ) : (
         <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
       )}
-    </>
+    </HoverPreviewProvider>
   );
 }

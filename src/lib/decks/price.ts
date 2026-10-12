@@ -234,12 +234,12 @@ export function provenanceForm(newestAsOf: Date, now: Date): ProvenanceForm {
   return {
     behind,
     when: behind
-      ? newestAsOf.toLocaleDateString("en-GB", {
+      ? newestAsOf.toLocaleDateString("en-US", {
           day: "numeric",
           month: "long",
           timeZone: "UTC",
         })
-      : newestAsOf.toLocaleDateString("en-GB", {
+      : newestAsOf.toLocaleDateString("en-US", {
           weekday: "long",
           timeZone: "UTC",
         }),

@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useCardDetail, type Sibling } from "../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { useSearchParams } from "next/navigation";
 import { ColourControl } from "../commanders/rack/colour-control";
 import { FilterPanel } from "../ui/filter-panel";
@@ -1850,6 +1851,7 @@ function Section({
           keyword away. The 146px minimum is `image_uri_small`'s own width, and it produces
           the phone answer for free: at 390px there is nothing between two tracks at 174 and
           three at 112.67, so any minimum in that band gives two. */}
+      <HoverPreviewProvider>
       <div
         data-set-grid
         className="mt-[10px] grid gap-x-[10px] gap-y-[18px]"
@@ -1880,6 +1882,7 @@ function Section({
           />
         ))}
       </div>
+      </HoverPreviewProvider>
     </section>
   );
 }

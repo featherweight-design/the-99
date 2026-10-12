@@ -40,6 +40,8 @@ const FEEDERS: Record<string, string> = {
   "components/decks/synopsis-text.tsx": "lib/synopsis/read.ts",
   "components/decks/version-diff.tsx": "lib/decks/versions.ts",
   "components/decks/benchmark-ledger.tsx": "lib/decks/read.ts",
+  // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
+  "components/ui/preview-button.tsx": "",
   // Tokens are their own bug batch's, and precons their own lane's: named so the list stays complete, not checked.
   "components/decks/token-makers.tsx": "",
 };

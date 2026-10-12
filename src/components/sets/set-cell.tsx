@@ -24,6 +24,7 @@ import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PriceTag } from "../cards/price-tag";
 import type { Cell } from "../../lib/sets/completion";
+import { PreviewButton } from "../ui/preview-button";
 
 // The cell carries NO width or height literal, at any width (addendum R2 §27). The grid
 // track sets the width and `aspect-ratio: 63/88` sets the height, which makes the
@@ -93,7 +94,8 @@ export function SetCell({
     // The cell is the only target. No control sits inside it at any width — a checkbox on
     // 214 cells would be a second selection mechanism and a 16px control inside a ~150px
     // plate. Tapping opens the card modal, where the shipped printing picker already lives.
-    <button
+    <PreviewButton
+      imageUri={cell.imageUri}
       type="button"
       onClick={() => onOpen?.(cell.oracleId)}
       aria-label={label}
@@ -180,6 +182,6 @@ export function SetCell({
           <PriceTag fact={price} newestAsOf={newestAsOf} />
         </span>
       )}
-    </button>
+    </PreviewButton>
   );
 }

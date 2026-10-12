@@ -15,6 +15,7 @@ import { ACTION_SIZE, GhostButton, PrimaryButton } from "../ui/button";
 import { formatCents, priceOf, priceState, provenanceForm } from "../../lib/decks/price";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
+import { HoverPreviewProvider } from "./hover-preview";
 
 /** The two states that carry a real amount. `soldOut` does not: its figure is a
  *  last-known price for something nobody is selling. */
@@ -154,6 +155,7 @@ export function ProxyListView({
           </div>
 
           <CardDetailProvider>
+            <HoverPreviewProvider>
             <ul className="m-0 list-none p-0">
               {rows.map((row) => (
                 <li
@@ -169,6 +171,8 @@ export function ProxyListView({
                     <CardDetailTrigger
                       oracleId={row.oracleId}
                       name={row.name}
+                      imageUri={row.imageUri}
+                      preview
                       ariaLabel={proxyCopy.row.cardAria(row.name)}
                       className="text-[13px] block truncate text-left after:absolute after:inset-0 after:rounded-[10px] after:content-['']"
                     >
@@ -254,6 +258,7 @@ export function ProxyListView({
                 </li>
               ))}
             </ul>
+            </HoverPreviewProvider>
           </CardDetailProvider>
         </>
       )}

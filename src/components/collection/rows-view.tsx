@@ -22,6 +22,7 @@ import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
 import { PriceFigure, priceSpoken } from "./price-figure";
+import { PreviewButton } from "../ui/preview-button";
 
 const RARITY_DOT: Record<BrowseListCard["rarity"], string> = {
   common: "var(--fg-muted)", uncommon: "var(--fg-body)", rare: "var(--accent)", mythic: "var(--warning)",
@@ -70,8 +71,9 @@ export function RowsView({
         const pending = pendingOracleId === c.oracleId;
         const spokenPrice = showPrice ? priceSpoken(c.price) : null;
         return (
-        <button
+        <PreviewButton
           key={c.oracleId}
+          imageUri={c.imageUri}
           type="button"
           onClick={() => onOpen(c.oracleId)}
           // Never `disabled`, for the reason CardDetailTrigger states: disabling
@@ -221,7 +223,7 @@ export function RowsView({
 
           {/* SetRarityColumn: mobile set code + desktop type/set/rarity/chevron columns */}
           <SetRarityColumn card={c} showPrice={showPrice} />
-        </button>
+        </PreviewButton>
         );
       })}
 

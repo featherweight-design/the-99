@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadPrices } from "./price-query";
 import type { PriceFact } from "./price";
+import { chainArt } from "../cards/chain-art";
 
 /**
  * One printed card, and every deck printing it.
@@ -135,7 +136,11 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
   // the liveness and finish rules — live before stale, real non-foil stock
   // before foil-only at any price — that `priceState` then reads to tell
   // `priced` from `soldOut` from `foilOnly` from absent.
-  const prices = await loadPrices(rows.map((r) => r.oracle_id));
+  const [prices, ownedArt] = await Promise.all([
+    loadPrices(rows.map((r) => r.oracle_id)),
+    // The printing the player owns (the one card details opens) where they own one; the catalog's otherwise.
+    chainArt(userId, null, rows.map((r) => r.oracle_id)),
+  ]);
 
   return {
     newestAsOf: prices.newestAsOf,
@@ -145,7 +150,7 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     typeLine: r.type_line,
     manaCost: r.mana_cost,
     cmc: r.cmc,
-    imageUri: r.image_uri,
+    imageUri: ownedArt.get(r.oracle_id) ?? r.image_uri,
     setCode: r.set_code,
     rarity: r.rarity,
     decks: r.decks ?? [],
