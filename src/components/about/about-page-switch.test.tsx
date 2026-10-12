@@ -137,6 +137,8 @@ describe("notes, on the page", () => {
     expect(el.textContent).toContain("Laboratory Maniac");
     expect(el.textContent).toContain("Thassa’s Oracle");
     expect(el.textContent).toContain("2 Oct");
+    // Both of the row's date placements, as the real row has them: under the text on a phone, beside it from md.
+    expect([...el.querySelectorAll("span")].filter((n) => n.textContent === "2 Oct").map((n) => n.className.includes("md:hidden") ? "phone" : "wide")).toEqual(["phone", "wide"]);
     expect(within(el).getByRole("button", { name: /Laboratory Maniac/, hidden: true }).className).toContain("decoration-solid");
     expect(within(el).getByRole("button", { name: /Thassa’s Oracle/, hidden: true }).className).toContain("decoration-dashed");
   });

@@ -812,16 +812,19 @@ function DeckStatsFigure({ width }: { width: AboutWidth }) {
 }
 
 /** One note as the Notes view draws it: the select box, the text with two tags (solid for the card the deck
- *  holds, dashed for the one it does not), and the date. `NoteTags` itself, so the underlines are the
+ *  holds, dashed for the one it does not), and the date (under the text on a phone, beside it from `md`, as the row draws it). `NoteTags` itself, so the underlines are the
  *  panel's own; the row's buttons are left off, since a figure writes nothing. */
 function NotesFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="notes" width={width}>
       <CardDetailProvider fetchCard={async () => null}>
-        <div className="m-[12px] flex items-start gap-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[12px] py-[9px]">
-          <span aria-hidden className="mt-[1px] h-[18px] w-[18px] flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)]" />
-          <p className="m-0 min-w-0 flex-1 break-words text-[13.5px] leading-[1.5] text-[color:var(--fg)]"><NoteTags drawn={NOTE_ROW.drawn} /></p>
-          <span className="flex-none pt-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)]">{NOTE_ROW.date}</span>
+        <div className="m-[12px] flex items-start gap-[10px] rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[10px] py-[9px] md:px-[12px]">
+          <span aria-hidden className="mt-[1px] h-[22px] w-[22px] flex-none rounded-[5px] border border-solid border-[color:var(--border-strong)] md:h-[18px] md:w-[18px]" />
+          <div className="min-w-0 flex-1">
+            <p className="m-0 break-words text-[13.5px] leading-[1.5] text-[color:var(--fg)]"><NoteTags drawn={NOTE_ROW.drawn} /></p>
+            <span className="font-mono text-[10px] text-[color:var(--fg-locked)] md:hidden">{NOTE_ROW.date}</span>
+          </div>
+          <span className="hidden flex-none pt-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)] md:inline">{NOTE_ROW.date}</span>
         </div>
       </CardDetailProvider>
     </Specimen>
