@@ -312,7 +312,7 @@ describe("ImproveDoor: applying a trade", () => {
     const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };
     await openRed(read, trades);
     await act(async () => { fireEvent.click(tradeButton()); });
-    expect(trades.apply).toHaveBeenCalledWith(A, "R", "s1");
+    expect(trades.apply).toHaveBeenCalledWith(A, "R", "s1", "forest-id");
     const receipt = document.querySelector("[data-mana-applied]") as HTMLElement;
     expect(receipt.textContent).toContain("Forest");
     expect(receipt.textContent).toContain("Rockfall Vale");

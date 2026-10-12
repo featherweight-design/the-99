@@ -37,7 +37,7 @@ import { MutationError } from "./mutation-error";
 
 export type HelpRead = (deckId: string, color: string) => Promise<ManaHelp | null>;
 export type TradeActions = {
-  apply: (deckId: string, color: string, stapleOracleId: string) => Promise<ManaTradeResult>;
+  apply: (deckId: string, color: string, stapleOracleId: string, basicOutId: string) => Promise<ManaTradeResult>;
   undo: (applyId: string) => Promise<DeckMutationResult>;
 };
 
@@ -158,7 +158,7 @@ export function ImproveDoor({
     const at = visitToken(deckId);
     setBusy(key);
     setRefused(null);
-    const result = await trades.apply(deckId, color, key).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
+    const result = await trades.apply(deckId, color, key, trade.basicOutId).catch((): ManaTradeResult => ({ ok: false, message: deckTuningCopy.card.applyRefused }));
     setBusy(null);
     if (!isVisit(at)) return;
     if (!result.ok) {

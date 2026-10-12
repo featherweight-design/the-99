@@ -18,7 +18,6 @@ const state = vi.hoisted(() => ({
   undone: null as string | null,
   writes: [] as unknown[][],
   revalidated: [] as unknown[][],
-  order: [] as string[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -26,14 +25,10 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => { state.order.push("read"); return { color: c, staples: state.staples, trades: state.trades }; } }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c, staples: state.staples, trades: state.trades }) }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
-  // The real write runs `offered` under the deck lock; the mock runs it too, and writes only when it offers.
-  applyTrade: async (deckId: string, userId: string, offered: () => Promise<{ cutOracleId: string; addOracleId: string } | null>) => {
-    state.order.push("lock");
-    const trade = await offered();
-    if (!trade) return null;
-    state.writes.push(["apply", deckId, userId, trade.cutOracleId, trade.addOracleId]);
+  applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string) => {
+    state.writes.push(["apply", deckId, userId, trade.cutOracleId, trade.addOracleId, listKey]);
     return state.applied;
   },
   undoTrade: async (...args: unknown[]) => { state.writes.push(["undo", ...args]); return state.undone; },
@@ -153,45 +148,40 @@ describe("readManaHelpFor (the action)", () => {
 describe("applyManaTrade and undoManaTrade (the actions)", () => {
   const STAPLE = "33333333-3333-4333-8333-333333333333";
   const APPLY = "44444444-4444-4444-8444-444444444444";
+  const FOREST = "55555555-5555-4555-8555-555555555555";
   const reset = () => { state.trades = []; state.applied = null; state.undone = null; state.writes = []; state.revalidated = []; };
 
   it("applies the trade a fresh read offers, cutting the basic the SERVER found, and revalidates the deck", async () => {
     reset();
-    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId: STAPLE } }];
+    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: FOREST, staple: { oracleId: STAPLE } }];
     state.applied = APPLY;
-    expect(await applyManaTrade(DECK, "G", STAPLE)).toEqual({ ok: true, applyId: APPLY });
-    expect(state.writes).toEqual([["apply", DECK, "user_1", "forest-id", STAPLE]]);
+    expect(await applyManaTrade(DECK, "G", STAPLE, FOREST)).toEqual({ ok: true, applyId: APPLY });
+    // The key of the list the offer was read from, for the write to check again under the deck lock.
+    expect(state.writes).toEqual([["apply", DECK, "user_1", FOREST, STAPLE, "list-fp"]]);
     expect(state.revalidated).toEqual([[DECK, "user_1"]]);
   });
 
   it("refuses a staple the fresh read does not offer a trade for, writing nothing", async () => {
     reset();
     state.applied = APPLY;
-    const offered = (oracleId: string) => [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId } }];
+    const offered = (oracleId: string) => [{ kind: "trade", basicOut: "Forest", basicOutId: FOREST, staple: { oracleId } }];
     const refusal = { ok: false, message: deckTuningCopy.card.applyRefused };
     // Each case is refused by its own guard alone: the read offers a trade for exactly the staple named.
     state.trades = offered("other");
-    expect(await applyManaTrade(DECK, "G", STAPLE)).toEqual(refusal);
+    expect(await applyManaTrade(DECK, "G", STAPLE, FOREST)).toEqual(refusal);
     state.trades = offered("not-a-uuid");
-    expect(await applyManaTrade(DECK, "G", "not-a-uuid")).toEqual(refusal);
+    expect(await applyManaTrade(DECK, "G", "not-a-uuid", FOREST)).toEqual(refusal);
     state.trades = offered(STAPLE);
-    expect(await applyManaTrade(DECK, "R", STAPLE)).toEqual(refusal);
+    expect(await applyManaTrade(DECK, "R", STAPLE, FOREST)).toEqual(refusal);
+    // The press named a different basic than the fresh offer cuts: the trade made would not be the one read.
+    expect(await applyManaTrade(DECK, "G", STAPLE, APPLY)).toEqual(refusal);
     expect(state.writes).toEqual([]);
-  });
-
-  it("reads the offer only once the write holds the deck's lock, so an edit landing between cannot slip through", async () => {
-    reset();
-    state.order = [];
-    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId: STAPLE } }];
-    state.applied = APPLY;
-    await applyManaTrade(DECK, "G", STAPLE);
-    expect(state.order).toEqual(["lock", "read"]);
   });
 
   it("refuses when the write refuses, and revalidates nothing", async () => {
     reset();
-    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId: STAPLE } }];
-    expect((await applyManaTrade(DECK, "G", STAPLE)).ok).toBe(false);
+    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: FOREST, staple: { oracleId: STAPLE } }];
+    expect((await applyManaTrade(DECK, "G", STAPLE, FOREST)).ok).toBe(false);
     expect(state.revalidated).toEqual([]);
   });
 

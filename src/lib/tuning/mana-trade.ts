@@ -1,9 +1,10 @@
 import { and, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { decks, manaTradeApplies } from "../../db/schema";
+import { deckCards, decks, manaTradeApplies } from "../../db/schema";
 import { touchDeck } from "../decks/touch";
 import { applySwap, planSwap, restoreSwap } from "../swaps/draft-swap";
+import { listKeyOf } from "./list-key";
 
 /**
  * Improve my mana's trade, applied and undone, as transactions. SERVER-ONLY. The same list mutation
@@ -11,11 +12,13 @@ import { applySwap, planSwap, restoreSwap } from "../swaps/draft-swap";
  * one copy of the basic cut and one copy of the staple added at `auto: false`, and `touchDeck`. The
  * snapshot Undo reads is written before the deck changes, into `mana_trade_applies`.
  *
- * The apply takes the trade as a callback, `offered`, run only once the deck row is locked: every deck
- * write takes that lock first, so the read it makes sees the deck the write will change, and a trade
- * an edit landing meanwhile no longer offers (another color would now fall below what it needs) is
- * refused rather than written. Beyond that it checks what a write must: who owns the deck, and what
- * `planSwap` refuses (the basic gone or locked, the staple already held or no longer legal).
+ * The caller found the trade in a read made BEFORE the lock (a full read inside it would hold the lock,
+ * and a pooled connection, across many more pooled queries), and passes the key of the list that read
+ * saw. Under the lock the list is keyed again from this transaction (`listKeyOf`, the one definition):
+ * every deck write takes that lock first, so a key that still matches means the deck being written is
+ * the deck the offer was read from, and one that moved is refused rather than written. Beyond that it
+ * checks what a write must: who owns the deck, and what `planSwap` refuses (the basic gone or locked,
+ * the staple already held or no longer legal).
  */
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -28,21 +31,22 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  */
 export const TRADE_SNAPSHOT_RETENTION = "1 day";
 
-async function lockOwnedDeck(tx: Tx, deckId: string, userId: string): Promise<boolean> {
-  const [row] = await tx.select({ id: decks.id }).from(decks)
+async function lockOwnedDeck(tx: Tx, deckId: string, userId: string) {
+  const [row] = await tx.select({ commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId }).from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
     .for("update");
-  return !!row;
+  return row ?? null;
 }
 
 export type OfferedTrade = { cutOracleId: string; addOracleId: string };
 
 /** The apply's id, for its Undo, or null when it refused. */
-export async function applyTrade(deckId: string, userId: string, offered: () => Promise<OfferedTrade | null>): Promise<string | null> {
+export async function applyTrade(deckId: string, userId: string, trade: OfferedTrade, listKey: string): Promise<string | null> {
   return db.transaction(async (tx) => {
-    if (!(await lockOwnedDeck(tx, deckId, userId))) return null;
-    const trade = await offered();
-    if (!trade) return null;
+    const deck = await lockOwnedDeck(tx, deckId, userId);
+    if (!deck) return null;
+    const rows = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity }).from(deckCards).where(eq(deckCards.deckId, deckId));
+    if (listKeyOf({ ...deck, cards: rows }) !== listKey) return null;
     const { cutOracleId, addOracleId } = trade;
     const plan = await planSwap(tx, deckId, cutOracleId, addOracleId);
     if (!plan.ok) return null;
