@@ -90,10 +90,10 @@ const projection = () => selected.value[selected.value.length - 1];
 const groupKeys = () => grouped.value[grouped.value.length - 1];
 
 describe("readSynergyCards — the image column", () => {
-  // This reader serves two routes and only the deck page draws a preview, so the
-  // column is asked for rather than always carried: at about 94 characters a row
-  // it is 25KB on an average commander and 40KB at the widest, shipped across
-  // the RSC boundary to a panel that would never read it.
+  // This reader serves callers that draw a preview (the deck page, and the commander page's
+  // synergy rows) and callers that never would, so the column is asked for rather than always
+  // carried: at about 94 characters a row it is 25KB on an average commander and 40KB at the
+  // widest, shipped across the RSC boundary to a caller that would never read it.
   //
   // Asserted on the PROJECTION, because that is the only place the difference
   // exists — a shaped row carries `imageUri` either way, from the stub.

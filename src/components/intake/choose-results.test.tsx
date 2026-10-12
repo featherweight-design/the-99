@@ -220,3 +220,26 @@ describe("the results", () => {
     expect(trialFillRows).toHaveBeenLastCalledWith([a.oracleId], "t=dinosaurs&v=results");
   });
 });
+
+// The provider previews only where a pointer can hover; a row's art shows only if its owner mounted one.
+function hoverable() {
+  vi.useFakeTimers();
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+  });
+}
+
+describe("the results' hover preview", () => {
+  it("previews a row's own art when the pointer rests on its name", () => {
+    hoverable();
+    try {
+      const rows = [{ ...row(1), imageUri: "https://img.test/c1.jpg" }];
+      draw(page(1, { rows }));
+      const name = screen.getByRole("button", { name: /Commander 1/ });
+      fireEvent.mouseEnter(name, { clientX: 10, clientY: 10 });
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/c1.jpg");
+    } finally { vi.useRealTimers(); }
+  });
+});

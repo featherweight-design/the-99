@@ -18,6 +18,7 @@ import { TOO_NARROW_BELOW } from "../../lib/intake/vocabulary";
 import { ChooseRow, reasonDrawable, type Trial } from "./choose-row";
 import { useReadPhase, useReportPool } from "./read-panel";
 import { NarrowNote } from "./narrow-note";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 
 const BEST_FITS = 3;
 
@@ -161,7 +162,7 @@ export function ChooseResults({
     });
 
   return (
-    <div className="flex flex-col gap-[14px] md:gap-[18px]">
+    <HoverPreviewProvider className="flex flex-col gap-[14px] md:gap-[18px]">
       <div className="flex flex-col gap-[5px] max-w-[640px]">
         <h2 data-testid="order-line" className="m-0 font-display font-semibold text-[16px] md:text-[18px] [text-wrap:pretty] text-[color:var(--fg)]">
           {line.title}
@@ -205,7 +206,7 @@ export function ChooseResults({
           </span>
         </div>
       )}
-    </div>
+    </HoverPreviewProvider>
   );
 }
 
