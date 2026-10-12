@@ -2,7 +2,7 @@
 
 `design/design_handoff_the99_lineup/` · 2026-10-11
 
-**Status: R2, approved (LGTM, Hugh, 2026-10-12). Build from the R2 files.** R2 applies all of Hugh's R1 and R2 notes. It supersedes R1 where they differ, and every R1 call not named below stands. R1's files are kept for history only. Still open for Hugh, as `READINESS.md` lists: the switch's code name, the two proposal cards, and whether a folder should scope Stats.
+**Status: R2, approved (LGTM, Hugh, 2026-10-12). Build from the R2 files.** R2 applies all of Hugh's R1 and R2 notes. It supersedes R1 where they differ, and every R1 call not named below stands. R1's files are kept for history only. Hugh's open questions are closed: both former proposals ship, a folder never scopes Stats, and the code name stays `LINEUP_ENABLED` / `lineup` with no `ABOUT_VERSION` bump. The design table is at R2.
 
 | File | Holds |
 |---|---|
@@ -60,7 +60,7 @@
 6. **Decks that share the most is cut.**
    - **The replacement proposal:** **Jobs, deck by deck**, a 21 × 4 grid of real counts, shaded within each column, sortable, with the chosen deck outlined. Its gap is G3: labels in the cache key.
    - **Two ideas, not drawn:**
-     - Last changed against last played, from version dates. It needs a date per version, which the fixture doesn't carry.
+     - Last changed against last played, from version dates. The dates exist (`deck_versions.committed_at`), so this is drawable. It's left out because it sits close to ruling 6's excluded version evolution.
      - Where the to-buy money sits, deck by deck: the roll-up as a lineup Buy chart.
 
 ---
@@ -152,7 +152,7 @@
 
 ## About entry
 - **Placement:** `lineup`, chapter 04 · Playing and tuning, after `deck-stats`.
-- **Version and switch:** `since: 15`, behind `LINEUP_ENABLED` (a new `AboutSwitch` member). It batches into the cart's bump (14 → 15), as added-copy does. If v15 has already shipped to readers, it takes its own bump.
+- **Version and switch:** behind `LINEUP_ENABLED` (a new `AboutSwitch` member). No `ABOUT_VERSION` bump and no `since`: a switched entry is seen by id when its switch turns on (Hugh, 2026-10-12; audit finding 5).
 - **Template:** the §G per-entry template, at 760 and 390: `The 99 - About · Lineup Entry.dc.html`, with `about · lineup.ts`.
 - **Key lines:** they quote no fixture figure.
 - **Specimen:** the shared-cards row for Sol Ring, read-only.

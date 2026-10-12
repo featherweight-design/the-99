@@ -11,11 +11,13 @@
 - all six themes;
 - the thin states T1–T5.
 
-**Still open for Hugh, none of them blocking**
-1. **Switch name.** Keep `LINEUP_ENABLED`, or rename it to `DECKS_STATS_ENABLED`, which sits one letter from `DECK_STATS_ENABLED`.
-2. **Proposals.** Jobs, deck by deck and What each deck is worth are drawn and marked PROPOSAL. Ship them, or cut them.
-3. **Folders.** Should a shelf scope Stats? As drawn, the shelves leave in Stats.
+**Closed by Hugh (2026-10-12)**
+1. **Switch name.** It stays `LINEUP_ENABLED`, and `lineup` for every code-side name. Players see "Stats". No `ABOUT_VERSION` bump: the entry is gated on the switch.
+2. **Proposals.** Both ship: "What each deck is worth" and "Jobs, deck by deck". The build drops the badge and the dashed border, and the canvas is unchanged.
+3. **Folders.** A folder never scopes Stats. Stats is filtered only by All decks / Finished only, and the shelves leave.
 4. **Widths.** Drawn at 900 / 390. At 1300 it's the same column.
+
+**Design table: at R2** (`design-tables/lineup.md`), closing audit finding 3.
 
 **Needs engineering.** G1–G8 are in the README's R1 section. These are load-bearing:
 - **G3:** the label generation in the /decks cache key, for the strips' and the jobs grid's jobs.

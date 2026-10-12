@@ -2,8 +2,11 @@
 
 | Id | Scene (`Decks Stats.dc.html`) | What's new |
 |---|---|---|
+| P1 | `decks` | Restates R1 P1 as `Tiles · Stats` (Tiles selected), with the shelves / shelf trigger. Tile `…` menu: shipped items + `See it among your decks` |
+| L1 | `open` | Restates R1 L1 as `Tiles · Stats` (Stats selected), with `All decks · Finished only`, the scope line and `Expand all` / `Collapse all`. Shelves leave; a folder never scopes Stats |
+| — | `?view=stats`, switch off | As P0: tiles, and the param is ignored. `?view=lineup` is not a route |
 | S1 | `first` | First visit: `recency` open, the rest folded with summary lines. `Expand all` |
-| L2 | `open` | All open (replaces L1). Clustered pips throughout. The bracket chart in rows. Among: lines + rank. Jobs grid and What each deck is worth (proposals). Curve against lands is cut |
+| L2 | `open` | All open (replaces L1). Clustered pips throughout. The bracket chart in rows. Among: lines + rank. Jobs grid and What each deck is worth (both ship, Hugh 2026-10-12). Curve against lands is cut |
 | T5 | `partner` | Wanted by your commanders filtered to HD - Gods: the select shows its mark, chips `40% or more · 4` / `20% or more · 11`, and rows read the pair's own list |
 | F2 | `finished` | As F1, with R2 drawing |
 | fold | any card | Head press toggles it. Summary visible only when folded. Remembered per device. `Collapse all` when every card is open |

@@ -5,7 +5,7 @@ prompt Design was given (`boards/design-prompt-all-decks-stats.md`). Build sourc
 `The 99 - Decks Stats (R2).dc.html`, `Decks Stats.dc.html`, `decks-stats · copy strings.ts`,
 `about · lineup.ts`. Staging read-only (project `misty-rain-01681654`, branch `br-polished-pond-a6e63y0b`).
 
-## Verdict: ORANGE
+## Verdict: ORANGE (superseded: GREEN on re-audit, below)
 
 One blocking gap: the design table is R1 only, and R2 replaced or added most of the components it would
 specify (finding 3). Everything else is honored, answered, or an engineering call. The fix is a design-table
@@ -91,3 +91,50 @@ option (`READINESS.md`, open item 1).
 - **Hold 1300 to the 900 column** (finding 4).
 - G1–G10 as listed in the README. G3 (a label generation in the `/decks` cache key) gates the strips and the
   jobs grid.
+
+## Re-audit (2026-10-11, after Design's R2 table update)
+
+### Verdict: GREEN
+
+Finding 3 is closed: `design-tables/lineup.md` is now the R2 table. Hugh closed both product questions:
+both cards ship, and a folder never scopes Stats. The code name stays `LINEUP_ENABLED` / `lineup`.
+
+**Measured values checked against the frame component.** The sample was taken from
+`Decks Stats.dc.html`, the component `The 99 - Decks Stats (R2).dc.html` imports. Every sampled value
+matches.
+
+| Component | Values checked |
+|---|---|
+| Fold head and Shell | head min-h 52 / 46, pad 6 0, border-bottom when open. Shell pads 6 14 16 open and 6 14 folded. `▴` / `▾` |
+| Bracket rows | grid `56px 1fr 18px` / `88px 1fr 24px`, gap 10, min-h 30, dashed border on range rows. Not-analyzed row min-h 44, pad 9 0 4 |
+| Range mark and chip | `DIM_OPACITY` .65. Chip h 34 / 30 |
+| Decks per color | grid `24px 1fr 52px`. The chosen segment's inset is 2px `--accent` |
+| IdentityMark | pip offsets 4.6, 5.6 and 6.8. Halo radii 5.5 / 4.5 |
+| RecencyCard | `230px 1fr 150px` |
+| SharedCard | `190px 1fr 96px` |
+| AmongCard | `74px 1fr 72px` / `112px 1fr 110px`. The chosen dot's ring is 2px `--surface-sunken` |
+| WorthCard | `1fr 70px` / `250px 1fr 76px` |
+| JobsCard | `1fr repeat(4, 46px)` / `84px`, gap 3. Row min-h 32 / 28. Shading is `6 + t × 52`% |
+
+**Design's notes, checked**
+
+1. **Proposal styling.** The frames still draw the badge and the dashed brass border (`proposal(k)`
+   in the shell). The table names the standard Shell with no badge and records the mismatch, and the
+   table wins.
+2. **About entry.** `since` and the bump are gone from `about · lineup.ts` and the README, which matches
+   the switch-gated model. `isSeen` (`src/lib/about/visible.ts:98`) reads a switched entry by id
+   alone and never by `since`. However, `since: number` is a required field on `AboutEntry`
+   (`src/lib/copy/about.ts`), so the build sets `since: 14`, the current `ABOUT_VERSION`. This is the
+   `deck-stats` precedent (`since: 11` at its own time). It is an engineering detail, not a design
+   gap. The entry canvas still carries the old bump text, and the files win.
+3. **New STATES row.** `?view=stats` with the switch off is drawn as P0: the param is ignored, and
+   `?view=lineup` is not a route. P1 and L1 are restated as `Tiles · Stats`, which closes the STATES lag
+   named in finding 3.
+4. **Version dates.** README change 6 now cites `deck_versions.committed_at`, which closes finding 9.
+
+**Engineering notes, not gaps**
+- **Keep the About entry id `decks-stats`.** It renders as the `/about` anchor (`about-page.tsx:112`).
+  Renaming it to `lineup` would put "Lineup" in a player-visible URL fragment, against the R2
+  must-not.
+- G1–G10 stand as the build's tasks. G3 (a label generation in the `/decks` cache key) gates the strips
+  and the jobs grid.

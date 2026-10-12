@@ -1,12 +1,11 @@
 // Proposed entry for src/lib/copy/about.ts (aboutEntries), chapter '04', placed after
 // "Stats: the deck, drawn" (deck-stats). Placeholders until /copy-review.
-// R2: renamed from Lineup (Hugh, 2026-10-11). The switch keeps its code name, LINEUP_ENABLED, until Hugh rules.
-// Batches into the all-decks cart line's bump: ABOUT_VERSION 14 → 15, since 15.
+// R2: renamed from Lineup (Hugh, 2026-10-11). Code name stays LINEUP_ENABLED / lineup (Hugh, 2026-10-12).
+// No ABOUT_VERSION bump: a switched entry is seen by id when its switch turns on.
 
 export const decksStatsEntry = {
   id: "decks-stats",
   chapter: "04",
-  since: 15,
   switch: "LINEUP_ENABLED", // new AboutSwitch member (brief, "The About entry owed")
   title: "Stats: your decks, side by side",
   route: "/decks",
