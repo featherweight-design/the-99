@@ -4,6 +4,7 @@ import { useId } from "react";
 
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { WorkPulse } from "./work-pulse";
+import { CreditsText } from "../ui/credits-text";
 
 /**
  * The staleness banner (Analysis tab handoff, 2i and 2d): the ONE place staleness is said, drawn
@@ -101,9 +102,10 @@ export function AnalysisBanner(props:
           data-testid="press-note"
           className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[color:var(--fg-faint)] md:col-start-1 md:row-start-2 md:text-left md:text-[11px] md:[text-wrap:pretty]"
         >
-          {/* The button's description is the note's TEXT: a control inside it would be read as
-              part of the description, so the id sits on the words alone. */}
-          <span id={noteId}>{shownNote}</span>
+          {/* The button's description is the note's words, so the id sits on them alone and the
+              See which press stays outside it. A spent or paused line's `What uses credits?` link
+              does sit inside, and a description reads a link as its text, which is the line. */}
+          <span id={noteId}><CreditsText text={shownNote} /></span>
           {see ? (
             <>
               {" "}

@@ -362,6 +362,11 @@ disagreements there. The canvas's layout wins for layout.
 
 ## Widened credit strings (F9) — keys only
 
+> **Superseded (Hugh, 2026-10-12, link, never list).** Neither credit line names a feature any more. `spent` reads
+> "{n} of {total} left · reset at {time} · What uses credits?" and the pause's reason "The app has reached its monthly
+> limit. Nothing you did caused this. What uses credits?", the phrase a link to the About `credits` entry. The two
+> bullets below are the history.
+
 - `creditsCopy.spent` — its tail widens to name deeper looks. Ruled by Hugh (2026-09-25, /copy-review): "Suggestions,
   overviews and deeper looks share these credits." The canvas drew the list in the other order. The noun "overview" is Hugh's.
 - `PAUSED_REASON` (read by `creditsCopy.paused` and `creditsCopy.pausedReason`) — widened in the same order: "…monthly limit for suggestions, overviews and deeper looks."

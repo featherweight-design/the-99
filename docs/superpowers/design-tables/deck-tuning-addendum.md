@@ -210,7 +210,7 @@ Copy strings are recorded for identification only; copy content is `/copy-review
 | wrap | may wrap | may wrap | V2:496 |
 | never-run form | "Uses a credit. {n} of {total} left · reset at {time}." | same | V2:740 (ruling 2) |
 | again form | "Replaces these suggestions and uses a credit. {n} of {total} left · reset at {time}." (proposed, undrawn) | same | V2:755 + R:108 (ruling 2) |
-| spent form | "0 of {total} left · reset at {time}. Synopses and suggestions share these credits." | same | V2:741 |
+| spent form | "0 of {total} left · reset at {time} · What uses credits?" (the phrase links to About `credits`; Hugh, 2026-10-12, link, never list) | same | V2:741, superseded |
 | part-answered form | "{applied} of {total} applied · {rejected} rejected · {again form}" | same | V2:496, R:85 |
 | {time} | 12-hour (`2:20 PM`) | 12-hour | R3A note 2 |
 | all credits available | no "next one" time exists; not drawn | not drawn | spec §9.1 |

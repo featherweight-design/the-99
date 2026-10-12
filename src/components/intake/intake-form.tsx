@@ -29,6 +29,7 @@ import { ThemePicker } from "./theme-picker";
 import { closedBy, formLine, type Standing } from "../../lib/intake/standing";
 import { submitChoose } from "../../app/decks/new/choose/actions";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
+import { CreditsText } from "../ui/credits-text";
 
 /** What the budget box holds, as a whole-dollar answer: `$` and commas stripped, 1 to 100,000. */
 export function parseBudget(raw: string): number | null {
@@ -292,7 +293,7 @@ export function IntakeForm({
           <button {...pressProps} ref={deskPressRef} style={submitting && sent?.width ? { minWidth: sent.width } : undefined} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? lineDeskId : undefined} className={`${submitClass} h-[44px]`}>
             {press}
           </button>
-          {line && <p id={lineDeskId} className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
+          {line && <p id={lineDeskId} className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={line} /></p>}
         </div>
       </div>
 
@@ -304,7 +305,7 @@ export function IntakeForm({
         <button {...pressProps} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
           {press}
         </button>
-        {line && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
+        {line && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]"><CreditsText text={line} /></p>}
       </div>
     </form>
   );

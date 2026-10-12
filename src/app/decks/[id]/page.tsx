@@ -67,7 +67,6 @@ import { noticesEnabled } from "../../../lib/notices/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
-import { helpMeChooseEnabled } from "../../../lib/intake/flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
@@ -670,8 +669,6 @@ export default async function DeckBuilderPage({
       openNoticesOnArrival={showNotices && readNoticesArrival(query[NOTICES_PARAM])}
       // Locked (PR 4a): off, no lock control, mark or key entry draws, and the page is main's.
       neverCut={neverCutEnabled()}
-      // Help me choose: the credit lines name it only where the feature is drawn.
-      deeperLooks={helpMeChooseEnabled()}
       storedPermits={storedBracket}
       storedPermitsUnknown={storedRead === undefined}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a

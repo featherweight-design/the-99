@@ -27,6 +27,7 @@ import { phaseOf, type ReadPhase } from "../../lib/intake/read-phase";
 import type { TheReadState } from "../../lib/intake/run-store";
 import { useHydrated } from "../ui/hydrated-art";
 import { bareStanding, closedBy, standingLine, type Standing } from "../../lib/intake/standing";
+import { CreditsText } from "../ui/credits-text";
 
 
 /** What a settled read is announced as, by its phase. */
@@ -329,7 +330,7 @@ export function ReadPanel({
         ) : null}
         {line && (
           <p data-testid="read-line" className="m-0 font-mono text-[10px] md:text-[10.5px] leading-[1.5] [text-wrap:pretty] text-center md:text-right text-[color:var(--fg-faint)]">
-            {line}
+            <CreditsText text={line} />
           </p>
         )}
       </div>

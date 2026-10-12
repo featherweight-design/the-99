@@ -12,6 +12,7 @@ import { RefusedSlot } from "./synopsis-controls";
 import { CardName, SynopsisText } from "./synopsis-text";
 import { formatDeckDate } from "../../lib/decks/format";
 import { analyzedWhen } from "./verdict-block";
+import { CreditsText } from "../ui/credits-text";
 
 /**
  * The full overview, `ModalChrome`'s fourth body (`SYNOPSIS-modal.md`; the `Synopsis Sheet`
@@ -75,7 +76,7 @@ export function SynopsisModal({
                 {action?.line ? <> {action.line}</> : null}
               </p>
               {action?.note ? (
-                <p id={noteId} className="m-0 font-mono text-[9.5px] leading-[1.55] text-[var(--fg-faint)] md:text-[11px]">{action.note}</p>
+                <p id={noteId} className="m-0 font-mono text-[9.5px] leading-[1.55] text-[var(--fg-faint)] md:text-[11px]"><CreditsText text={action.note} /></p>
               ) : null}
             </div>
             {action ? (

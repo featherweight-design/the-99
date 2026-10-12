@@ -44,10 +44,9 @@ export function closedBy(s: Standing): Closed {
 export function standingLine(s: Standing): string {
   const next = s.nextAt ? new Date(s.nextAt) : null;
   switch (closedBy(s)) {
-    // Drawn only with the feature on, so its lines always name Help me choose.
-    case "paused": return creditsCopy.paused(new Date(s.paused!), true);
+    case "paused": return creditsCopy.paused(new Date(s.paused!));
     case "ownerShare": return creditsCopy.ownerShare(new Date(s.now));
-    case "spent": return creditsCopy.spent(s.limit, s.reopensAt ? new Date(s.reopensAt) : next, true);
+    case "spent": return creditsCopy.spent(s.limit, s.reopensAt ? new Date(s.reopensAt) : next);
     default: return creditsCopy.first(s.limit - s.used, s.limit, next);
   }
 }

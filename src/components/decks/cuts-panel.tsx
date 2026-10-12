@@ -26,6 +26,7 @@ import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
+import { CreditsText } from "../ui/credits-text";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -74,7 +75,6 @@ const clock = (ms: number) => {
 export function CutsPanelView({
   deckId,
   deps = SERVER,
-  deeperLooks = false,
   onSettled,
   revision,
   freshEachVisit = false,
@@ -85,7 +85,6 @@ export function CutsPanelView({
    *  prior is still reachable: inside the Tuning hub, beside History. Mounted on its own, the tool
    *  keeps showing its stored result, as it did before the hub. */
   freshEachVisit?: boolean;
-  deeperLooks?: boolean;
   onSettled?: () => void;
   /** Changes whenever an input of the count changes elsewhere on the page (the list, the intent, the
    *  declared bracket), so the panel reads again rather than showing a result for a list that has gone. */
@@ -230,11 +229,11 @@ export function CutsPanelView({
   const spent = panel.allowance.used >= panel.allowance.limit;
   const blocked = spent || !!panel.allowance.paused || panel.allowance.ownerShare === true || panel.allLocked;
   const standing = panel.allowance.paused
-    ? creditsCopy.paused(panel.allowance.paused.until, deeperLooks)
+    ? creditsCopy.paused(panel.allowance.paused.until)
     : panel.allowance.ownerShare
       ? creditsCopy.ownerShare(new Date())
       : spent
-        ? creditsCopy.spent(panel.allowance.limit, panel.allowance.reopensAt ?? panel.allowance.nextAt, deeperLooks)
+        ? creditsCopy.spent(panel.allowance.limit, panel.allowance.reopensAt ?? panel.allowance.nextAt)
         : creditsCopy.standing(left, panel.allowance.limit, panel.allowance.nextAt);
 
   async function press() {
@@ -444,7 +443,7 @@ function Offer({ panel, variant, blocked, standing, onPress }: {
       ) : (
         <CreditButton label={d.retry} filled={false} blocked={blocked} spent={spent} onPress={onPress} />
       )}
-      <p className="mt-[10px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{standing}</p>
+      <p className="mt-[10px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}><CreditsText text={standing} /></p>
     </div>
   );
 }
@@ -564,7 +563,7 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
         <p data-testid="cuts-more" className="mt-[10px] text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{d.resultMore(more)}</p>
       )}
       <p className="mt-[12px] font-mono text-[10.5px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        {`${d.resultFoot(items.length, hasRead ? asked : items.length)} · ${standing}`}
+        <CreditsText text={`${d.resultFoot(items.length, hasRead ? asked : items.length)} · ${standing}`} />
       </p>
     </div>
   );

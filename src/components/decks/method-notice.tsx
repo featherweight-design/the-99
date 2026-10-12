@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { CreditsText } from "../ui/credits-text";
 
 /**
  * The method-changed notice (addendum_method_notice, 2026-10-10): inside the Overview section,
@@ -68,7 +69,7 @@ export function MethodNotice({
         id={noteId}
         className="min-w-0 text-center font-mono text-[9.5px] leading-[1.55] text-[var(--fg-faint)] [grid-area:note] [text-wrap:pretty] md:text-left md:text-[11px]"
       >
-        {note}
+        <CreditsText text={note} />
       </span> : null}
     </div>
   );

@@ -149,6 +149,7 @@ import { ChangeCommanderProvider } from "../decks/change-commander-context";
 import { ChangeCommanderDoor } from "../decks/change-commander-door";
 import { CandidateGroupHeading, CandidateRow } from "../decks/change-commander-sheet";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
+import { CreditsText } from "../ui/credits-text";
 
 export function ImportFigureBody() {
   return (
@@ -933,7 +934,7 @@ export function CreditsFigureBody() {
             className="font-mono text-[9.5px] leading-[1.55] md:text-[11px]"
             style={{ color: "var(--fg-faint)" }}
           >
-            {line}
+            <CreditsText text={line} />
           </span>
         </div>
       ))}

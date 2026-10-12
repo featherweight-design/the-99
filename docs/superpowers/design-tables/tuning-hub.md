@@ -106,7 +106,7 @@
 
 ## Mana Balance — DeeperBand (offer)
 
-> **Superseded in part (Mana Balance feedback).** There is no separate cost tag. The cost is a segment inside the button: `[ Look deeper │ ◆ 1 credit ]`. The segment is mono 10.5 / 500 with a `1px` left rule in the button's border color, `0 12px` padding, and a 7px rotated-square `◆` in `currentColor`. The label half is `0 14px`, and the whole button is one control (`aria-label` "Look deeper. Uses 1 credit."). When spent, the segment is absent, the button takes `--fg-locked` on `--border-strong`, and the standing line reads `0 of 3 credits left · next one at {time}. Suggestions, overviews and deeper looks share these credits.` `Try again` after a failure carries the same segment. The same band is used on Proposed cuts (C2, C8, C9).
+> **Superseded in part (Mana Balance feedback).** There is no separate cost tag. The cost is a segment inside the button: `[ Look deeper │ ◆ 1 credit ]`. The segment is mono 10.5 / 500 with a `1px` left rule in the button's border color, `0 12px` padding, and a 7px rotated-square `◆` in `currentColor`. The label half is `0 14px`, and the whole button is one control (`aria-label` "Look deeper. Uses 1 credit."). When spent, the segment is absent, the button takes `--fg-locked` on `--border-strong`, and the standing line reads `0 of 3 left · reset at {time} · What uses credits?` (superseded again, Hugh 2026-10-12: the line links to About `credits` rather than listing what shares the credits) `Try again` after a failure carries the same segment. The same band is used on Proposed cuts (C2, C8, C9).
 
 | Property | Mobile | Desktop |
 |---|---|---|
@@ -118,7 +118,7 @@
 | cost tag | mono 10.5 `--fg-faint`, `1px solid --border-strong`, radius 999, `2px 9px` | same |
 | button | brass outline, 13 / 600, radius 8, 44 tall, flex 1 | 36 tall, padding `0 16px` |
 | credit line | mono 10.5 `--fg-faint`, `creditsCopy.first` | same |
-| spent | tag `0 left` `--warning`; button `--fg-locked` on `--border-strong`; `creditsCopy.spent(…, deeperLooks)` | same |
+| spent | tag `0 left` `--warning`; button `--fg-locked` on `--border-strong`; `creditsCopy.spent(total, next)` | same |
 
 ### DeeperBand — running / note
 - **Running:** border `1px solid var(--accent)`, `aria-busy`. The title has a 6px accent dot. Stop is a neutral ghost in the button's slot.

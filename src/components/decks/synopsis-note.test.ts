@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 
 import { synopsisState } from "./__fixtures__/synopsis";
 import { pressNote } from "./synopsis-note";
-import { creditsCopy } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
@@ -54,11 +53,9 @@ describe("pressNote", () => {
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze")!;
     expect(n.writes).toBe(false);
     // The press still reads the bracket; it is the APP that is paused, since the player has
-    // credits, so "waits for a credit" would be false. Then the cap's own reason, not restated.
-    expect(n.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit for suggestions and overviews. Nothing you did caused this.");
-    // With Help me choose on, the reason names its deeper looks too.
-    const on = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: { until } } }), "analyze", true)!;
-    expect(on.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit for suggestions, overviews and Help me choose. Nothing you did caused this.");
+    // credits, so "waits for a credit" would be false. Then the cap's own reason, not restated, and
+    // the link to what uses credits in place of a list.
+    expect(n.text).toBe("Reads the bracket only; the overview is paused until October 1. The app has reached its monthly limit. Nothing you did caused this. What uses credits?");
     expect(n.text).not.toMatch(/waits for a credit/);
     expect(n.text).not.toMatch(/uses a credit/i);
   });

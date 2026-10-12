@@ -3,6 +3,7 @@
 import { useId } from "react";
 
 import { synopsisCopy } from "../../lib/copy/synopsis";
+import { CreditsText } from "../ui/credits-text";
 
 // The overview's two controls, shared by the tab and the modal (`SYNOPSIS-modal.md`, Round 0
 // states 2 and 4).
@@ -38,7 +39,7 @@ export function Press({
       </button>
       {note ? (
         <p id={noteId} className="m-0 text-center font-mono text-[9.5px] leading-[1.55] text-[var(--fg-faint)] md:min-w-0 md:flex-[1_1_280px] md:text-left md:text-[11px]">
-          {note}
+          <CreditsText text={note} />
         </p>
       ) : null}
     </div>
