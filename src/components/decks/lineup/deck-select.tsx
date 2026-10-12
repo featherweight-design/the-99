@@ -16,7 +16,8 @@ export function DeckSelect({ decks, value, onChange, label }: { decks: readonly 
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 flex-1 appearance-none bg-transparent pr-[16px] text-[13.5px] text-[color:var(--fg)] outline-none"
+        // 16px below md: iOS Safari zooms the page on focusing a control under 16px.
+        className="min-w-0 flex-1 appearance-none bg-transparent pr-[16px] text-[16px] text-[color:var(--fg)] outline-none md:text-[13.5px]"
       >
         {decks.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
       </select>

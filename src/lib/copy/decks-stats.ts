@@ -100,7 +100,13 @@ export const decksStatsCopy = {
     money,
     /** `Mana Pool prices, 2h ago`: the newest price the values were read at. */
     caption: (age: string) => `Mana Pool prices, ${age}`,
-    age: (minutes: number) => (minutes < 60 ? `${Math.max(1, Math.round(minutes))}m ago` : minutes < 60 * 48 ? `${Math.round(minutes / 60)}h ago` : `${Math.round(minutes / 1440)}d ago`),
+    /** Rounded first, then the unit picked, so 59.6 minutes reads `1h ago` and 47.6 hours `2d ago`. */
+    age: (minutes: number) => {
+      const m = Math.max(1, Math.round(minutes));
+      if (m < 60) return `${m}m ago`;
+      const h = Math.round(minutes / 60);
+      return h < 48 ? `${h}h ago` : `${Math.round(minutes / 1440)}d ago`;
+    },
   },
   jobs: {
     title: "Jobs, deck by deck",
