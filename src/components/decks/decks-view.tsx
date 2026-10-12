@@ -341,7 +341,6 @@ export function DecksView({
     serverValue: lineup?.view ?? null,
   });
   const onView = (next: DecksViewName) => {
-    chooseView(next);
     const params = new URLSearchParams(window.location.search);
     if (next === "stats") params.set("view", "stats");
     else params.delete("view");
@@ -353,6 +352,8 @@ export function DecksView({
       readLineupStats()
         .then((data) => {
           if (!data) return;
+          // Remembered only once it is drawn, so a failed read never sends the next visit to Stats.
+          chooseView("stats");
           setHeldStats(data);
           setView("stats");
           mirrorUrl(url);
@@ -361,6 +362,7 @@ export function DecksView({
         .finally(() => setStatsPending(false));
       return;
     }
+    chooseView(next);
     setView(next);
     mirrorUrl(url);
   };

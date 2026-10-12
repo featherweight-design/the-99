@@ -69,6 +69,17 @@ describe("DecksView: Stats on /decks", () => {
     expect(read.stats).toHaveBeenCalledTimes(1);
   });
 
+  it("remembers nothing when the first read fails, so the next visit is not sent to Stats", async () => {
+    read.stats.mockRejectedValue(new Error("down"));
+    draw({ data: null, view: "tiles", foldServer: null });
+    fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
+    await waitFor(() => expect(read.stats).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(document.querySelector("[data-decks-stats]")).toBeNull();
+    expect(localStorage.getItem("the99:decks:view")).toBeNull();
+    expect(window.location.search).toBe("");
+  });
+
   it("draws Stats when the server drew it, from ?view=stats or the remembered choice", () => {
     draw({ data: STATS, view: "stats", foldServer: null });
     expect(screen.getByRole("tab", { name: "Stats" }).getAttribute("aria-selected")).toBe("true");
