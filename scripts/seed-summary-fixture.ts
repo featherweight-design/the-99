@@ -221,7 +221,12 @@ async function removeFixture() {
   await db.execute(sql`
     delete from decks where id in (${DECK_A}, ${DECK_B}, ${DECK_C}, ${DECK_D}) and user_id = ${userId}
   `);
+  await db.execute(sql`delete from collection_items where user_id = ${userId} and set_code = ${ARRIVED_SET}`);
 }
+
+/** The copies the added-copy receipts say arrived, written under a set code no real printing has,
+ *  so `--clean` removes exactly them and nothing the account owned before. */
+const ARRIVED_SET = "zz-added-copy-fixture";
 
 type Card = { oracle_id: string; name: string };
 
@@ -244,6 +249,14 @@ async function seedAddedCopy(c: {
     await db.execute(sql`
       insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}, ${card.oracle_id}, 1)
       on conflict do nothing
+    `);
+  }
+  // The copies themselves. Without them nothing claims the card, `loadChooserCards` reads nothing,
+  // and every line draws with no Change (the first run of this seeder did exactly that).
+  for (const [card, copies] of [[c.cleared, 1], [c.many, 2], [c.earlier, 1], [c.brews, 1], [c.brewOne, 1]] as const) {
+    await db.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number)
+      values (${userId}, ${card.oracle_id}, ${copies}, ${ARRIVED_SET}, '1')
     `);
   }
   // Two brews (no version): both read `brews`, the first alone reads `brewOne`.
