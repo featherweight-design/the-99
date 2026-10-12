@@ -109,6 +109,12 @@ async function phoneTip(page, panel, label, shot) {
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await page.waitForTimeout(400);
   check(`${label}: the tip stays open after the lift`, await tip.isVisible());
+  // The whole press, lift included (the compat mouse events), leaves the field focused, so the bars it hid stay hidden and nothing under the tip shifts.
+  const held = await page.evaluate(() => ({
+    focused: document.activeElement?.getAttribute("role") === "combobox",
+    barsHidden: [...document.querySelectorAll("[data-hide-on-note-focus]")].every((el) => getComputedStyle(el).display === "none"),
+  }));
+  check(`${label}: pressing the (i) keeps the field focused and the bars hidden`, held.focused && held.barsHidden, JSON.stringify(held));
   const m = await page.evaluate(() => {
     const t = document.querySelector('section[aria-label="Notes"] [role="tooltip"]').getBoundingClientRect();
     const f = document.querySelector('section[aria-label="Notes"] input[role="combobox"]').getBoundingClientRect();
