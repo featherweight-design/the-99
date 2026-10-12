@@ -220,6 +220,11 @@ describe("the S1b chooser", () => {
     // Back to first listed clears it; picking again restores it.
     fireEvent.click(screen.getByRole("button", { name: copy.confirm.backToDefault }));
     expect(screen.getByText(copy.confirm.cleared("HD - Gishath", "Sol Ring"))).toBeTruthy();
+    // A pick clears it, so a second way back is a fresh announcement.
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
+    expect(screen.queryByText(copy.confirm.cleared("HD - Gishath", "Sol Ring"))).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: copy.confirm.backToDefault }));
+    expect(screen.getByText(copy.confirm.cleared("HD - Gishath", "Sol Ring"))).toBeTruthy();
     expect(within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2].getAttribute("aria-checked")).toBe("false");
     fireEvent.click(within(screen.getByRole("radiogroup", { name: CHOOSER })).getAllByRole("radio")[2]);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });

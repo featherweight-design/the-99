@@ -285,7 +285,8 @@ function CartConfirm({
             quantity={quantity}
             picked={picked}
             disabled={pending}
-            onPick={setPicked}
+            // A pick clears the footer's announcement, so the next way back is announced again.
+            onPick={(next) => { setAnnounce(""); setPicked(next); }}
           />
         ) : (
         <ul className="m-0 flex list-none flex-col rounded-[9px] bg-[color:var(--surface-sunken)] px-[12px] py-[2px]">
