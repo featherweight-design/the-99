@@ -27,11 +27,13 @@ type Head = { deckId: string; commander: string; partner: string | null };
 
 export async function readCollection(userId: string, needs: readonly Need[], heads: readonly Head[], brews: ReadonlySet<string>): Promise<{ collection: LineupCollection; asOf: Date | null }> {
   const owned = (await db
-    .select({ oracleId: collectionItems.oracleId, name: cards.name, typeLine: cards.typeLine, imageUri: cards.imageUri, copies: sql<number>`sum(${collectionItems.quantity})::int` })
+    .select({ oracleId: collectionItems.oracleId, name: cards.name, typeLine: cards.typeLine, imageUri: cards.imageUri, copies: sql<string>`sum(${collectionItems.quantity})` })
     .from(collectionItems)
     .innerJoin(cards, eq(cards.oracleId, collectionItems.oracleId))
     .where(eq(collectionItems.userId, userId))
     .groupBy(collectionItems.oracleId, cards.name, cards.typeLine, cards.imageUri))
+    // A bigint, as catalog-read.ts reads it: each holding fits an integer, their sum across printings need not.
+    .map((r) => ({ ...r, copies: Number(r.copies) }))
     .filter((r) => r.copies > 0 && !isBasicLand(r.typeLine));
   const ids = owned.map((r) => r.oracleId);
   const singles = heads.filter((h) => !h.partner);
