@@ -54,7 +54,9 @@ export type LineupShared = {
 export type LineupCollection = {
   copies: number;
   cards: number;
+  /** The priced copies' value: with `pricedCopies` under `copies`, a part-total, and the card says so. */
   valueCents: number;
+  pricedCopies: number;
   all: { inDeckCopies: number; inDeckCents: number };
   finished: { inDeckCopies: number; inDeckCents: number };
   /** Owned cards a deck's commander list carries at 20% or more: what each deck wants, and its share. */

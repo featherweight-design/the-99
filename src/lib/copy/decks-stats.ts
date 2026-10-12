@@ -38,7 +38,9 @@ export const decksStatsCopy = {
     shared: (card: string, decks: number, owned: number, wanted: number) => `${card} in ${n(decks)} decks, you own ${n(owned)} · ${n(wanted)} wanted more than you own`,
     sharedOne: "needs two decks",
     sharedNone: "no card in two decks",
-    collection: (inDeck: number, copies: number, pctValue: number, wanted: number) => `${n(inDeck)} of ${n(copies)} copies in a deck · ${pctValue}% of the value · ${n(wanted)} wanted by your commanders`,
+    // With no copy priced there is no value to give a share of, so the clause goes.
+    collection: (inDeck: number, copies: number, pctValue: number | null, wanted: number) =>
+      `${n(inDeck)} of ${n(copies)} copies in a deck · ${pctValue === null ? "" : `${pctValue}% of the value · `}${n(wanted)} wanted by your commanders`,
     among: (deck: string, valueRank: string, rampRank: string) => `${deck} · ${valueRank} by value, ${rampRank} by ramp`,
     worth: (sum: number, top: number, med: number) => `${money(sum)} · most ${money(top)} · median ${money(med)}`,
     jobs: (ramp: readonly [number, number], draw: readonly [number, number], removal: readonly [number, number]) =>
@@ -157,6 +159,8 @@ export const decksStatsCopy = {
     more: (k: number) => `${n(k)} more`,
     none: "None at this share.",
     dollars: (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`,
-    caption: (age: string | null) => (age ? `Basics not counted · Mana Pool prices, ${age}` : "Basics not counted"),
+    // A part-total says so, in Money's words, so a value over some copies never reads as the whole collection's.
+    caption: (age: string | null, priced: number, copies: number) =>
+      ["Basics not counted", priced < copies ? `${n(priced)} of ${n(copies)} copies priced` : null, age ? `Mana Pool prices, ${age}` : null].filter(Boolean).join(" · "),
   },
 } as const;

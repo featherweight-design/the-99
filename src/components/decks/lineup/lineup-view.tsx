@@ -168,7 +168,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
               id="collection"
               title={copy.collection.title}
               denom={copy.collection.denom(c.copies, c.cards)}
-              summary={copy.summary.collection(sc.inDeckCopies, c.copies, sc.pctValue, wanted)}
+              summary={copy.summary.collection(sc.inDeckCopies, c.copies, c.pricedCopies > 0 ? sc.pctValue : null, wanted)}
               open={fold.open.has("collection")}
               onToggle={() => fold.toggle("collection")}
             >

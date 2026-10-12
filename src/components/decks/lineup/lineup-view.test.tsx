@@ -285,7 +285,7 @@ describe("LineupView: your collection, put to work", () => {
   const CO: LineupData = {
     ...DATA,
     collection: {
-      copies: 120, cards: 80, valueCents: 30_000,
+      copies: 120, cards: 80, valueCents: 30_000, pricedCopies: 120,
       all: { inDeckCopies: 40, inDeckCents: 21_000 },
       finished: { inDeckCopies: 30, inDeckCents: 15_000 },
       wanted: [
@@ -328,6 +328,18 @@ describe("LineupView: your collection, put to work", () => {
     fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "scrappy" } });
     fireEvent.click(head("collection"));
     expect(card("collection").textContent).toContain("1 wanted by your commanders");
+  });
+
+  it("says when only some copies are priced, and drops the value with none priced", () => {
+    const c = CO.collection!;
+    const { unmount } = draw({ ...CO, collection: { ...c, pricedCopies: 90 } }, "collection");
+    expect(within(card("collection")).getByText(/90 of 120 copies priced/)).toBeTruthy();
+    unmount();
+    draw({ ...CO, collection: { ...c, pricedCopies: 0, valueCents: 0, all: { ...c.all, inDeckCents: 0 }, finished: { ...c.finished, inDeckCents: 0 } } }, "collection");
+    expect(within(card("collection")).queryByText("VALUE IN A DECK")).toBeNull();
+    expect(within(card("collection")).queryByText(/of your value/)).toBeNull();
+    fireEvent.click(head("collection"));
+    expect(card("collection").textContent).not.toContain("of the value");
   });
 
   it("cuts on the share as read, so 39.6% is not 40% or more, and shows it as 39%", () => {

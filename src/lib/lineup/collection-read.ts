@@ -96,7 +96,7 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
     collection: {
       copies: owned.reduce((n, r) => n + r.copies, 0),
       cards: owned.length,
-      valueCents: summarisePrices(owned.map((r) => priced(r.oracleId, r.copies)), read.newestAsOf).totalCents,
+      ...(({ totalCents, pricedCopies }) => ({ valueCents: totalCents, pricedCopies }))(summarisePrices(owned.map((r) => priced(r.oracleId, r.copies)), read.newestAsOf)),
       all: scope(needAll),
       finished: scope(needFinished),
       wanted: wanted.map((r) => ({

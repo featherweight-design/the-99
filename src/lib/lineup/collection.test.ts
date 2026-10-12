@@ -3,7 +3,7 @@ import { collectionScope, wantedRows } from "./collection";
 import type { LineupCollection } from "./types";
 
 const C: LineupCollection = {
-  copies: 100, cards: 60, valueCents: 50_000,
+  copies: 100, cards: 60, valueCents: 50_000, pricedCopies: 100,
   all: { inDeckCopies: 34, inDeckCents: 35_000 },
   finished: { inDeckCopies: 30, inDeckCents: 30_000 },
   wanted: [

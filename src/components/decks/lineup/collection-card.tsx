@@ -58,9 +58,9 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
     <>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-[18px] md:grid-cols-2 md:gap-[28px]">
         <Field k1={copy.inDeck} v1={s.inDeckCopies.toLocaleString("en-US")} k2={copy.notInDeck} v2={(c.copies - s.inDeckCopies).toLocaleString("en-US")} on={Math.round(s.inDeckCopies / 10)} all={Math.round(c.copies / 10)} unit={copy.unitCopies} />
-        <Field k1={copy.valueIn} v1={copy.dollars(s.inDeckCents)} k2={copy.notInDeck} v2={copy.dollars(c.valueCents - s.inDeckCents)} on={Math.round(s.inDeckCents / 1000)} all={Math.round(c.valueCents / 1000)} unit={copy.unitValue} />
+        {c.pricedCopies > 0 ? <Field k1={copy.valueIn} v1={copy.dollars(s.inDeckCents)} k2={copy.notInDeck} v2={copy.dollars(c.valueCents - s.inDeckCents)} on={Math.round(s.inDeckCents / 1000)} all={Math.round(c.valueCents / 1000)} unit={copy.unitValue} /> : null}
       </div>
-      <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.fact(s.pctCopies, s.pctValue)}</span>
+      {c.pricedCopies > 0 ? <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.fact(s.pctCopies, s.pctValue)}</span> : null}
       <div className="flex flex-col gap-[8px] border-t border-t-[color:var(--border)] pt-[12px]">
         <span className="text-[14px] font-semibold text-[color:var(--fg)]">{copy.wantsHead}</span>
         <DeckSelect decks={decks} value={chosen ?? ""} onChange={(id) => onPick({ ...pick, deckId: id || null })} label={copy.selectAria} allLabel={copy.allDecks} />
@@ -86,7 +86,7 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
         </HoverPreviewProvider>
         {!chosen && shown.length > WANTED_ROWS ? <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.more(shown.length - WANTED_ROWS)}</span> : null}
       </div>
-      <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(age)}</span>
+      <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(age, c.pricedCopies, c.copies)}</span>
     </>
   );
 }
