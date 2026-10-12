@@ -1157,6 +1157,13 @@ describe("DecksView head row", () => {
     );
     expect(headRow().className).toContain("sm:grid-cols-2");
     expect(screen.getByRole("link", { name: /Commander precons/ })).toBeInTheDocument();
+    // The cart is the paired cell: its phone face is the short title.
+    expect(screen.getByRole("link", { name: /Shopping for all decks/ }).textContent).toContain("Shop all decks");
+  });
+
+  it("still draws the precons line for a reader with no decks (P3)", () => {
+    render(<DecksView decks={[]} folders={[]} shopping={SHOPPING} precons={{ summary: null }} buildable={9} cards={1284} now={NOW} />);
+    expect(screen.getByRole("link", { name: /Commander precons/ })).toBeInTheDocument();
   });
 
   it("keeps the cart's own full-width row with the precons switch off (P4)", () => {
