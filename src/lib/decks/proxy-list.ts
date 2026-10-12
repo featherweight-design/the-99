@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadPrices } from "./price-query";
 import type { PriceFact } from "./price";
-import { chainArt } from "../cards/chain-art";
+import { resolveOwnedPrintings } from "../collection/owned-printings";
 
 /**
  * One printed card, and every deck printing it.
@@ -139,7 +139,7 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
   const [prices, ownedArt] = await Promise.all([
     loadPrices(rows.map((r) => r.oracle_id)),
     // The printing the player owns (the one card details opens) where they own one; the catalog's otherwise.
-    chainArt(userId, null, rows.map((r) => r.oracle_id)),
+    resolveOwnedPrintings(userId, rows.map((r) => r.oracle_id)),
   ]);
 
   return {
@@ -150,9 +150,11 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     typeLine: r.type_line,
     manaCost: r.mana_cost,
     cmc: r.cmc,
-    imageUri: ownedArt.get(r.oracle_id) ?? r.image_uri,
-    setCode: r.set_code,
-    rarity: r.rarity,
+    // Art, set and rarity come from ONE printing: the owned one when the player has it (its rarity is not read, so
+    // the line names the set alone), else the catalog's newest.
+    imageUri: ownedArt.get(r.oracle_id)?.imageUri ?? r.image_uri,
+    setCode: ownedArt.get(r.oracle_id)?.setCode ?? r.set_code,
+    rarity: ownedArt.has(r.oracle_id) ? null : r.rarity,
     decks: r.decks ?? [],
     commander: r.commander,
     price: prices.prices.get(r.oracle_id) ?? null,

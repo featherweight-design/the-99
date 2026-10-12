@@ -15,6 +15,8 @@ vi.mock("./availability-query", () => ({
   ]),
   loadAvailability: vi.fn(async () => new Map()),
 }));
+const chainArt = vi.fn();
+vi.mock("../cards/chain-art", () => ({ chainArt: (...args: unknown[]) => chainArt(...args) }));
 const readBuyRowPrices = vi.fn();
 vi.mock("./shopping-rollup", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./shopping-rollup")>()),
@@ -32,9 +34,11 @@ beforeEach(() => {
       { id: "gishath", name: "HD - Gishath", commanderOracleId: "g", partnerOracleId: null, brew: true },
       { id: "kratos", name: "HD - Kratos", commanderOracleId: "k", partnerOracleId: null, brew: true },
     ],
-    [{ oracleId: "sol", name: "Sol Ring" }],
+    [{ oracleId: "sol", name: "Sol Ring", imageUri: "catalog-sol.jpg" }],
   );
   readBuyRowPrices.mockReset();
+  chainArt.mockReset();
+  chainArt.mockResolvedValue(new Map());
 });
 
 describe("loadCart", () => {
@@ -78,5 +82,25 @@ describe("loadCart", () => {
     const cart = await loadCart("user");
     expect(cart.priced).toBe(true);
     expect(cart.decks.map((d) => d.cents)).toEqual([150, 150]);
+  });
+
+  it("previews a line with the printing the player owns, and with the catalog's when they own none", async () => {
+    readBuyRowPrices.mockRejectedValue(new Error("price read failed"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    chainArt.mockResolvedValue(new Map([["sol", "owned-sol.jpg"]]));
+    expect((await loadCart("user")).lines[0].imageUri).toBe("owned-sol.jpg");
+    expect(chainArt).toHaveBeenCalledWith("user", null, ["sol"]);
+    selects.length = 0;
+    selects.push(
+      [{ total: 21 }],
+      [
+        { id: "gishath", name: "HD - Gishath", commanderOracleId: "g", partnerOracleId: null, brew: true },
+        { id: "kratos", name: "HD - Kratos", commanderOracleId: "k", partnerOracleId: null, brew: true },
+      ],
+      [{ oracleId: "sol", name: "Sol Ring", imageUri: "catalog-sol.jpg" }],
+    );
+    chainArt.mockResolvedValue(new Map());
+    expect((await loadCart("user")).lines[0].imageUri).toBe("catalog-sol.jpg");
+    spy.mockRestore();
   });
 });
