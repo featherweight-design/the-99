@@ -26,6 +26,46 @@ export function DeckSortMenu({
   sort: DeckSort;
   onChange: (next: DeckSort) => void;
 }) {
+  return (
+    <OrderMenu
+      value={sort}
+      order={DECK_SORT_ORDER}
+      labels={DECK_SORT_LABELS}
+      triggerLabel={refreshCopy.decks.sort}
+      heading={refreshCopy.filters.sortHeading}
+      onChange={onChange}
+    />
+  );
+}
+
+const TRIGGER_CHASSIS =
+  "flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px] min-[1000px]:w-auto min-[1000px]:px-[14px]";
+const TRIGGER_MD =
+  "flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] md:h-[32px] md:w-auto md:px-[14px]";
+
+/**
+ * The trigger and menu for any closed set of orders: `/decks`' sort, and the precon list's.
+ * `triggerLabel` words the trigger from the current option's label.
+ */
+export function OrderMenu<T extends string>({
+  value: sort,
+  order,
+  labels,
+  triggerLabel,
+  heading,
+  onChange,
+  wideFrom = "chassis",
+}: {
+  value: T;
+  order: readonly T[];
+  labels: Readonly<Record<T, string>>;
+  triggerLabel: (label: string) => string;
+  heading: string;
+  onChange: (next: T) => void;
+  /** Where the trigger widens to its labelled form: the chassis's 1000px, or `md` on a route whose
+   *  chassis goes wide there (the precon list). */
+  wideFrom?: "chassis" | "md";
+}) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -61,14 +101,14 @@ export function DeckSortMenu({
   // Opening lands on the order already in force rather than the first row, so
   // ↓ moves to the one the reader would choose next. `active` follows from the
   // option's own `onFocus`, which fires on this programmatic focus too.
-  const selectedIndex = DECK_SORT_ORDER.indexOf(sort);
+  const selectedIndex = order.indexOf(sort);
   useEffect(() => {
     if (!open) return;
     items.current[selectedIndex]?.focus();
   }, [open, selectedIndex]);
 
   function move(delta: number) {
-    const next = (active + delta + DECK_SORT_ORDER.length) % DECK_SORT_ORDER.length;
+    const next = (active + delta + order.length) % order.length;
     setActive(next);
     items.current[next]?.focus();
   }
@@ -79,7 +119,7 @@ export function DeckSortMenu({
     if (to === null) return;
     e.preventDefault();
     if (to === "first") return move(-active);
-    if (to === "last") return move(DECK_SORT_ORDER.length - 1 - active);
+    if (to === "last") return move(order.length - 1 - active);
     move(to);
   }
 
@@ -105,12 +145,12 @@ export function DeckSortMenu({
         // — three controls that cannot also carry "Sort · last played" without
         // wrapping, which decision 18 forbids outright — so compact draws the
         // glyph alone in a 44px square and wide draws the full label at 32px.
-        aria-label={refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
-        className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px] min-[1000px]:w-auto min-[1000px]:px-[14px]"
+        aria-label={triggerLabel(labels[sort])}
+        className={wideFrom === "md" ? TRIGGER_MD : TRIGGER_CHASSIS}
       >
-        <span aria-hidden className="min-[1000px]:hidden">⇅</span>
-        <span aria-hidden className="hidden min-[1000px]:inline">
-          {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+        <span aria-hidden className={wideFrom === "md" ? "md:hidden" : "min-[1000px]:hidden"}>⇅</span>
+        <span aria-hidden className={wideFrom === "md" ? "hidden md:inline" : "hidden min-[1000px]:inline"}>
+          {triggerLabel(labels[sort])}
         </span>
       </button>
 
@@ -118,10 +158,10 @@ export function DeckSortMenu({
         <div
           id={menuId}
           role="menu"
-          aria-label={refreshCopy.filters.sortHeading}
+          aria-label={heading}
           className="absolute right-0 top-full z-20 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)]"
         >
-          {DECK_SORT_ORDER.map((option, i) => (
+          {order.map((option, i) => (
             <button
               key={option}
               ref={(el) => {
@@ -146,7 +186,7 @@ export function DeckSortMenu({
                   : "bg-transparent text-[color:var(--fg)]"
               }`}
             >
-              {DECK_SORT_LABELS[option]}
+              {labels[option]}
             </button>
           ))}
         </div>

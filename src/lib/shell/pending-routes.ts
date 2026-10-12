@@ -44,6 +44,8 @@ export function pendingRouteFor(href: string): PendingRoute {
       if (second === "import") return { kind: "overlay", key: "decks" };
       // `/decks/shopping` (the all-decks cart) is a list route like `/decks`, not a deck id.
       if (second === "shopping") return { kind: "overlay", key: "decks" };
+      // `/decks/precons` and an open precon are list routes too, never a deck id.
+      if (second === "precons") return { kind: "overlay", key: "decks" };
       if (second === "new") return third === "choose" ? { kind: "kept", screen: "choose" } : { kind: "overlay", key: "deckNew" };
       if (third === "import") return { kind: "kept", screen: "deckUpdate" };
       return { kind: "kept", screen: "decks" };
