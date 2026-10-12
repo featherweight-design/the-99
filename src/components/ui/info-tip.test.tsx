@@ -49,6 +49,14 @@ describe("InfoTip", () => {
     expect(tip().hidden).toBe(false);
   });
 
+  it("closes a pinned tip on Escape wherever focus is", () => {
+    draw();
+    fireEvent.click(button());
+    expect(tip().hidden).toBe(false);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(tip().hidden).toBe(true);
+  });
+
   it("does not take focus from the field it sits in when pressed", () => {
     draw();
     expect(fireEvent.mouseDown(button())).toBe(false);

@@ -43,6 +43,14 @@ export function InfoTip({
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
   }, [pinned]);
+  // Esc closes an open tip wherever focus is: a press no longer moves focus to the button, so the button's own keydown
+  // would never see it.
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setPinned(false); setHover(false); setFocused(false); } };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [open]);
   return (
     <span
       ref={box}
@@ -73,7 +81,6 @@ export function InfoTip({
           // Keyboard focus only: a tap focuses a button too, and would then hold it open against the next tap.
           try { if (e.currentTarget.matches(":focus-visible")) setFocused(true); } catch { /* no :focus-visible */ }
         }}
-        onKeyDown={(e) => { if (e.key === "Escape") { setPinned(false); setHover(false); setFocused(false); } }}
         onBlur={() => { setPinned(false); setFocused(false); }}
         className={twMerge(
           "relative flex size-[18px] items-center justify-center rounded-full border border-[color:var(--fg-faint)] font-mono text-[10.5px] after:absolute after:-inset-[13px] after:content-[''] md:after:-inset-[5px]",
