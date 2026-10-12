@@ -126,7 +126,16 @@ export function clearedItems(
   return [...byCard].flatMap(([oracleId, rows]): ClearedItem[] => {
     const w = went[oracleId];
     const sentence = w && !contestedIds.has(oracleId) ? wentSentence(w, summary.names.decks) : null;
-    return sentence ? [{ kind: "line", oracleId, sentence }] : rows.map((row) => ({ kind: "row", row }));
+    if (!sentence || !w) return rows.map((row) => ({ kind: "row", row }));
+    // THE LINE SPEAKS FOR THE DECKS IT NAMES, and no others. Every L-state names one kind of
+    // destination (a holder, or the brews reading a loose copy), so a deck the sentence does not
+    // name (a brew whose soft read rose beside a committed holder, or a draft-shaped row) keeps its
+    // shipped row rather than losing its fact to a sentence about someone else.
+    const named = new Set(w.decks.map((d) => d.deckId));
+    return [
+      { kind: "line", oracleId, sentence },
+      ...rows.filter((row) => !named.has(row.deckId)).map((row): ClearedItem => ({ kind: "row", row })),
+    ];
   });
 }
 
@@ -168,7 +177,9 @@ export function ArrivalsSummary({
 
   const cleared = summary?.cleared ?? [];
   const clearedRows = clearedItems(summary, addedCopy, new Set(contested.map((c) => c.oracleId)));
-  const hasLine = clearedRows.some((r) => r.kind === "line");
+  // The note's tail offers Change, so it is said only when a drawn row carries one.
+  const clearedShown = showAllCleared ? clearedRows : clearedRows.slice(0, MONEY_LIMIT);
+  const hasChange = clearedShown.some((r) => r.kind === "line" && chooser[r.oracleId] !== undefined);
   const still = summary?.still ?? [];
   // What `Still to buy` is actually SHOWING — the rest sit behind `Show all`.
   const stillShown = showAllStill ? still : still.slice(0, MONEY_LIMIT);
@@ -254,10 +265,10 @@ export function ArrivalsSummary({
         <section className="mt-[26px]">
           <SectionHead
             label={copy.summary.sectionCleared(clearedRows.length)}
-            note={hasLine ? copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail : copy.summary.sectionClearedNote}
+            note={hasChange ? copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail : copy.summary.sectionClearedNote}
           />
           <ul className="list-none p-0 m-0">
-            {(showAllCleared ? clearedRows : clearedRows.slice(0, MONEY_LIMIT)).map((item) => (
+            {clearedShown.map((item) => (
               item.kind === "line" ? (
                 <CopyLine
                   key={item.oracleId}

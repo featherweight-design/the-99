@@ -267,6 +267,37 @@ describe("ArrivalsSummary — where an added copy goes", () => {
     expect(screen.queryByRole("button", { name: addedCopyCopy.changeAria("Brushland") })).toBeNull();
   });
 
+  it("keeps the shipped row for a deck the line does not name, so a brew's soft read is not lost", () => {
+    const BREW = "brew";
+    const s4 = summary({
+      version: 4,
+      cleared: [{ deckId: BRAGO, oracleId: SOL, copies: 1 }, { deckId: BREW, oracleId: SOL, copies: 1 }],
+      names: { cards: names.cards, decks: { ...names.decks, [BREW]: "HD - Kratos" } },
+      went: { [SOL]: { kind: "held", decks: [{ deckId: BRAGO, copies: 1, picked: false }], copies: 2, ownedBefore: 15 } },
+    });
+    render4(s4, true);
+    expect(screen.getByText(addedCopyCopy.row.goesTo("HD - Brago"))).toBeTruthy();
+    expect(screen.getByText("HD - Kratos")).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionCleared(2))).toBeTruthy();
+  });
+
+  it("offers Change in the note only when a drawn row has a chooser", () => {
+    render(
+      <ArrivalsSummary
+        summary={v4}
+        contested={[]}
+        preview={null}
+        filename="collection.csv"
+        stampDate="14 Sep 2026"
+        addedCopy
+        chooser={{}}
+      />,
+    );
+    expect(screen.getByText(addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]))).toBeTruthy();
+    expect(screen.getByText(copy.summary.sectionClearedNote)).toBeTruthy();
+    expect(screen.queryByText(copy.summary.sectionClearedNote + addedCopyCopy.summaryNoteTail)).toBeNull();
+  });
+
   it("draws a version-3 receipt per deck and card, with no line and no Change", () => {
     const v3: Summary = { ...v4, version: 3 };
     delete v3.went;

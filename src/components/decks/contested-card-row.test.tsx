@@ -804,6 +804,10 @@ describe("ContestedCardRow — where an added copy goes", () => {
     const thorin = screen.getByRole("radio", { name: copy.contested.a11yOption("HD - Thorin", addedCopyCopy.chooser.canUse) });
     const mark = thorin.querySelector("[aria-hidden]") as HTMLElement;
     expect(mark.style.background).toBe("transparent");
+    // Mono 11 at both widths, where the shipped outcomes are 10.5 on a phone.
+    const word = screen.getAllByText(addedCopyCopy.chooser.canUse)[0];
+    expect(word.className).toContain("text-[11px]");
+    expect(word.className).not.toContain("text-[10.5px]");
   });
 
   it("draws the shipped row with the switch off: no fold, and a brew's soft share still `gets it`", () => {
@@ -811,6 +815,9 @@ describe("ContestedCardRow — where an added copy goes", () => {
     expect(screen.queryByText(addedCopyCopy.chooser.canUse)).toBeNull();
     expect(screen.queryByRole("button", { name: addedCopyCopy.chooser.foldShow })).toBeNull();
     expect(screen.getAllByRole("radio")).toHaveLength(20);
+    for (const name of ["HD - Kratos", "HD - Gishath", "HD - Thorin"]) {
+      expect(screen.getByRole("radio", { name: copy.contested.a11yOption(name, copy.contested.gets) })).toBeTruthy();
+    }
   });
 
   it("says a brew the player gave the copy to `gets it`, never `can use it`", () => {

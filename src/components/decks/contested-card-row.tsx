@@ -620,7 +620,8 @@ export function ContestedCardRow({
                   </span>
                 ) : null}
                 <span
-                  className="font-mono text-[10.5px] md:text-[11px]"
+                  // `can use it` is mono 11 at both widths (the design table's soft outcome row).
+                  className={soft ? "font-mono text-[11px]" : "font-mono text-[10.5px] md:text-[11px]"}
                   style={{ color: soft ? "var(--fg-muted)" : c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}
                 >
                   {outcome}
