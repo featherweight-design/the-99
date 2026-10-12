@@ -24,7 +24,7 @@ vi.mock("../../db", () => {
   };
 });
 
-import { publishTokenCatalog } from "./publish";
+import { publishTokenCatalog, tokenPriceTablesExist } from "./publish";
 import { TOKEN_FLOORS, type TokenCatalog } from "./catalog";
 
 const empty: TokenCatalog = {
@@ -79,5 +79,26 @@ describe("publishTokenCatalog", () => {
     for (const table of ["tokens", "token_printings", "card_tokens"]) {
       expect(rec.batches.filter((b) => b.table === table).map((b) => b.n)).toEqual([1000, 1000, 500]);
     }
+  });
+});
+
+describe("tokenPriceTablesExist", () => {
+  beforeEach(() => { exec.mockReset(); });
+
+  it("is false in the window where the catalog tables are migrated and the price table is not", async () => {
+    // First answer: the three catalog tables exist. Second: token_printing_prices does not.
+    exec.mockResolvedValueOnce({ rows: [{ ok: true }] }).mockResolvedValueOnce({ rows: [{ ok: false }] });
+    expect(await tokenPriceTablesExist()).toBe(false);
+  });
+
+  it("is false without the catalog tables, and asks nothing further", async () => {
+    exec.mockResolvedValueOnce({ rows: [{ ok: false }] });
+    expect(await tokenPriceTablesExist()).toBe(false);
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+
+  it("is true only when all four tables exist", async () => {
+    exec.mockResolvedValueOnce({ rows: [{ ok: true }] }).mockResolvedValueOnce({ rows: [{ ok: true }] });
+    expect(await tokenPriceTablesExist()).toBe(true);
   });
 });

@@ -1815,3 +1815,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   fetched that day: all four figures and every per-deck count matched the brief, and the same join
   run in SQL on a scratch branch of staging after the ingest (migration applied, `seed-printings`
   run twice) gave the same 121 / 80 / 61 and Aang's Ally, Food, Monk and Soldier.
+
+- `pnpm probe:manapool-token-link` proves, in a real browser against the public `manapool.com/add-deck`
+  page, that ONE link can carry name-only card lines and token lines naming Mana Pool's own set and
+  number, and that each token lands on the product it names. It builds the lines exactly as the app
+  will (`TokenCatalogBuilder`, `compareTokenOffers`, `tokenManapoolLine`) from `CATALOG_FETCH_DIR=<dir>`,
+  loads the page, and reads `Any Printing: (n/m in stock)` and `Exact: (n/m in stock)` back. Clean means
+  every line placed, Any = Exact = the line count, and no `Card not found`; a CONTROL line naming a
+  printing that does not exist must pull Exact below Any, so the probe is shown able to fail. It reads a
+  public page and completes no cart. Measured 2026-10-11 (46 token lines: the brief's eight names, every
+  token under them, three double-faced): with SCRYFALL's set and number 44 of 48 were exact, and 8 of the
+  46 chosen printings name a Mana Pool number that is not Scryfall's; with Mana Pool's own, 48 of 48. It
+  also prints the length of an Omnath-sized cart (67 card lines and 14 token lines): 3,083 characters
+  against the 32,000 a link may be.

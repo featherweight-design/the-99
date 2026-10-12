@@ -7,6 +7,17 @@ export type PriceRow = {
   availableQuantity: number;
   buyUrl: string | null;
   asOf: Date;
+  /**
+   * Mana Pool's OWN identity for the product this row prices: its name, set code and collector
+   * number as the feed gives them. They are NOT Scryfall's, and for tokens they differ on 42% of
+   * priced token printings (1,221 of 2,918 on 2026-10-11): a double-faced token card is listed as
+   * `Soldier // Eldrazi`, number `1-17`, under the single token's Scryfall id. A link that names a
+   * token must use these, or its line does not match the product the price belongs to. Null when the
+   * feed omits them; only the token path reads them.
+   */
+  productName: string | null;
+  productSet: string | null;
+  productNumber: string | null;
 };
 
 export type ManapoolFeed = {
@@ -103,6 +114,11 @@ export function parseManapoolPayload(raw: unknown): ManapoolFeed {
       availableQuantity,
       buyUrl: strOrNull(e.url),
       asOf,
+      productName: strOrNull(e.name),
+      productSet: strOrNull(e.set_code),
+      // A number, a string or absent: the feed's collector numbers are strings like `1-17`, but a
+      // plain one could arrive as a JSON number, and `String` keeps both the same.
+      productNumber: typeof e.number === "number" ? String(e.number) : strOrNull(e.number),
     };
 
     const existing = byId.get(scryfallId);

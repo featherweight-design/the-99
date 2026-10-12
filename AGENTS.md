@@ -387,6 +387,14 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   cleanly when the tables do not exist yet, because production's migration applies in its next build and
   a refresh can reach it first. `pnpm check:scryfall` scans for a token printing and a card naming it,
   which the first-entry read cannot see.
+- **`pnpm db:seed:prices` also prices tokens** (`token_printing_prices`, plan `2026-10-11-tokens-for-my-deck.md`):
+  a feed row whose id is a `token_printings` id is written in the SAME transaction as the card rows, and the
+  step skips cleanly when the token tables do not exist yet. **A token's link line names Mana Pool's own
+  product, not Scryfall's printing**: the table stores the feed's `name`, `set_code` and `number`
+  (`product_*`) because they differ from Scryfall's on 42% of priced token printings (a double-faced token
+  card is `Soldier // Eldrazi`, `1-17`, under the single token's Scryfall id). `tokenManapoolLine`
+  (`src/lib/tokens/price.ts`) builds the line and drops a number Mana Pool cannot place exactly (`1★`) to
+  the name alone; `pnpm probe:manapool-token-link` is the proof, in a browser.
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

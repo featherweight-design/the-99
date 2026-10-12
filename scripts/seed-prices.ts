@@ -7,7 +7,7 @@ import { seedPrices } from "../src/lib/manapool/seed-prices";
 withCatalogIngestLock(process.env.DATABASE_URL!, () => seedPrices())
   .then((r) => {
     console.log(
-      `Priced ${r.upserted} printings as of ${r.asOf.toISOString()}; ` +
+      `Priced ${r.upserted} printings and ${r.tokenUpserted} token printings as of ${r.asOf.toISOString()}; ` +
       `collapsed ${r.collapsedDuplicates} surplus duplicate rows, ` +
       `skipped ${r.skippedOrphan} priced for printings not in our catalog.`,
     );

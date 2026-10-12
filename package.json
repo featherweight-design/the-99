@@ -39,6 +39,7 @@
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:tokens": "tsx scripts/probe-tokens.mts",
+    "probe:manapool-token-link": "tsx scripts/probe-manapool-token-link.mts",
     "probe:pair-index": "tsx scripts/probe-pair-index.ts",
     "probe:printed-in": "tsx scripts/probe-printed-in.ts",
     "probe:held-card": "tsx scripts/probe-held-card.ts",

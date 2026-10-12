@@ -111,24 +111,31 @@ distinct tokens, 61 names, every deck's token and making-card counts, and Aang's
 
 ### PR 2: Token prices and the link format (data + one probe, dark)
 
-`seed-prices.ts` keeps a feed row whose id is a `token_printings` id and writes `token_printing_prices`; the card
-path is untouched (the orphan rule gains a second allowed set, it does not relax). `check:manapool` gains "a token
-printing resolves". `manapoolDeckText` gains an optional per-line `printing: { set, number }` that writes
-`N Name [SET] number`; **no caller passes it yet**, so card lines are byte-identical. `pnpm probe:manapool-link`
-drives the add-deck page in a browser with name-only card lines and `[SET] number` token lines in ONE URL, checks
-that each line resolves to the intended item (a `Treasure` token against the real card named `Treasure`), and
-measures the longest URL a token-heavy cart (Omnath, 14 tokens) produces against the 32,000-character split the
-cart brief set.
+`seed-prices.ts` keeps a feed row whose id is a `token_printings` id and writes `token_printing_prices` in the same
+transaction as the card prices; the card path is untouched (the orphan rule gains a second allowed set, it does not
+relax) and the token step skips cleanly when the tables are absent. **Measured 2026-10-11, and it changed the design:
+Mana Pool's own set code and collector number for a token are NOT Scryfall's on 42% of priced token printings** (1,221 of
+2,918: a double-faced token card is listed as `Soldier // Eldrazi`, number `1-17`, under the single token's Scryfall id).
+A link line naming Scryfall's set and number was placed by name but not exactly on 4 of 48 probe lines. So the table also
+stores the feed's own `product_name`, `product_set` and `product_number`, and a token's link line names THOSE
+(`tokenManapoolLine`); a number outside letters, digits and hyphens (`1★`) is one the page cannot place exactly, so
+that line degrades to the name alone. `manapoolDeckText` gains an optional per-line `printing: { setCode,
+collectorNumber }` that writes `N Name [SET] number`; **no caller passes it yet**, so card lines are byte-identical.
+`pnpm probe:manapool-token-link` drives the real add-deck page in a browser with name-only card lines and token lines in
+ONE URL and reads `Any Printing` and `Exact` back; a control line naming a printing that does not exist must pull Exact
+below Any, so the probe can fail. The token price read is `loadTokenPrices` (the deck price rule over a token's
+printings; one printing both pictured and sent).
 
-- Files (about 8): `seed-prices.ts` + test, `schema.ts` + migration 0093, `links.ts` + test, `check-manapool` script,
-  `scripts/probe-manapool-link.mjs`, `tokenPrice` + test.
-- **No switch.** If the probe shows the mixed format fails, the sends copy and About key line 4 change through
-  `/copy-review` (audit finding 3) and PR 5 sends names only; no Design round.
+- `check:manapool` is NOT extended: whether a feed row is a token is knowable only against the Scryfall bulk, and the
+  ingest's own report (`Priced N printings and M token printings`) is where a collapse shows. Dropped from the earlier draft.
+- Files (about 14): `seed-prices.ts` + test, `schema.ts` + migration 0094, `parse.ts` (product identity), `links.ts` +
+  test, `src/lib/tokens/price.ts` + test, `scripts/probe-manapool-token-link.mts`, `docs/probes.md`, `AGENTS.md`.
+- **No switch.** Mixed lines work (measured), so PR 5 sends the lines `tokenManapoolLine` builds.
 - Risk: **a failed probe is a finding, not a blocker.** The probe reads the page; it never completes a cart.
 
 ### PR 3: Ownership (write side, dark)
 
-Migration 0094 (`token_ownership`, `token_reads`). Upload: `loadMatchInputs` also resolves uploaded ids against
+Migration 0095 (`token_ownership`, `token_reads`). Upload: `loadMatchInputs` also resolves uploaded ids against
 `token_printings`; `matchRows` returns `tokenRows` (token oracle id, quantity) beside `skipped`; the preview payload
 carries them; `replaceCollection` replaces ONLY `source = 'upload'` rows and upserts `token_reads` in its existing
 transaction, under the same upload-row lock, and the summary's `skippedByDesignCount` keeps its meaning (emblems and
@@ -148,7 +155,7 @@ local-dev only (it deletes the user's collection; never pointed elsewhere).
 ### PR 4: Tokens group on the deck page (read side, first UI; introduces the switch)
 
 `DECK_TOKENS_ENABLED` (server-side, exact `'true'`, `src/lib/decks/tokens-flag.ts`) and a member of `AboutSwitch`
-for the entry. Migration 0095 (`deck_token_joins`). Loader `loadDeckTokens(deckId, userId)` (`src/lib/tokens/read.ts`):
+for the entry. Migration 0096 (`deck_token_joins`). Loader `loadDeckTokens(deckId, userId)` (`src/lib/tokens/read.ts`):
 the deck's makers from `deck_cards` UNION the commanders (as `list_claims` does, G10), tokens via `card_tokens`,
 owned state from the pure rule, the pictured printing and price from `tokenPrice`, joins, and oracle text only for
 a colliding pair. Components: `TokensGroup` at the foot of Your deck under All (`DecklistGroupHeader` with its note),
@@ -190,9 +197,10 @@ A joined token whose maker is gone stays joined, drawn `from no card in this dec
 
 One line at the foot of the existing `In this deck` box: `Makes a Food token · In Shopping` and `Tokens ›`, only from
 a deck and only when the card makes a token (D1; no Makes block). The About entry from
-`about - tokens.ts`, written through `/prose-pass`, and **the `ABOUT_VERSION` bump to the next free number at merge
-time** (14 today; read it from `origin/main` when PR 6 is cut, since other lines also bump). The entry follows
-`DECK_TOKENS_ENABLED` through `AboutSwitch`, so a deployment with the switch off shows nothing. A multi-round line
+`about - tokens.ts`, written through `/prose-pass`. **No `ABOUT_VERSION` bump** (orchestrator, 2026-10-11, verified
+against the About rule): an entry behind a feature switch is announced when its switch flips, seen by id and not by
+version, so it is gated on `DECK_TOKENS_ENABLED` through `AboutSwitch` and the content hash is re-pinned. A
+deployment with the switch off shows nothing. A multi-round line
 batches its entries at the end of the launch (AGENTS.md), and this line is one launch: the entry is a named task here,
 not deferred. `about.test.ts` content hash is re-pinned deliberately. The `feature-acceptance` close-out walks the
 inventory below with the switch on, against a `pull:staging` copy.

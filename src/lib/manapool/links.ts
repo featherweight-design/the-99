@@ -10,8 +10,26 @@ export function manapoolCardUrl(name: string): string {
   return `${MANAPOOL_CARDS_URL}?q=${encodeURIComponent(name)}`;
 }
 
-export function manapoolDeckText(cards: { name: string; quantity: number }[]): string {
-  return cards.map((c) => `${c.quantity} ${c.name}`).join("\n");
+/**
+ * One line of a Mana Pool decklist. A CARD line is name and quantity only: the player picks the
+ * printing on Mana Pool. A TOKEN line may name its printing, because a token's name is not an
+ * identity (`Ninja`, `Spirit`, `Timeless Witness` and `Treasure` are each also a real card's name)
+ * and the printing is what says which object is meant. Mana Pool's own format is
+ * `4 Plains [M20] 261`; measured 2026-10-11 in a browser, one link may mix name-only lines and
+ * `[SET] number` lines, and a line it cannot place is shown as `Card not found`.
+ */
+export type ManapoolLine = {
+  name: string;
+  quantity: number;
+  printing?: { setCode: string; collectorNumber: string };
+};
+
+export function manapoolDeckText(cards: ManapoolLine[]): string {
+  return cards
+    .map((c) => (c.printing
+      ? `${c.quantity} ${c.name} [${c.printing.setCode.toUpperCase()}] ${c.printing.collectorNumber}`
+      : `${c.quantity} ${c.name}`))
+    .join("\n");
 }
 
 function base64Utf8(text: string): string {
@@ -22,7 +40,7 @@ function base64Utf8(text: string): string {
 }
 
 /** Null for an empty list — the link is absent, not disabled. */
-export function manapoolAddDeckUrl(cards: { name: string; quantity: number }[]): string | null {
+export function manapoolAddDeckUrl(cards: ManapoolLine[]): string | null {
   if (cards.length === 0) return null;
   return `${MANAPOOL_ADD_DECK_URL}?deck=${encodeURIComponent(base64Utf8(manapoolDeckText(cards)))}`;
 }
@@ -45,11 +63,11 @@ export const MANAPOOL_URL_MAX = 32_000;
  * this throws rather than emitting a URL Mana Pool would answer with a 414.
  */
 export function manapoolAddDeckUrls(
-  cards: { name: string; quantity: number }[],
+  cards: ManapoolLine[],
   max: number = MANAPOOL_URL_MAX,
 ): { href: string; lineCount: number }[] {
   const parts: { href: string; lineCount: number }[] = [];
-  let current: { name: string; quantity: number }[] = [];
+  let current: ManapoolLine[] = [];
   let currentUrl: string | null = null;
   for (const card of cards) {
     const trial = manapoolAddDeckUrl([...current, card])!;

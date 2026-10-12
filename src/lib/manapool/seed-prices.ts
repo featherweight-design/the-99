@@ -1,6 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { printingPrices, printings } from "../../db/schema";
+import { printingPrices, printings, tokenPrintingPrices, tokenPrintings } from "../../db/schema";
+import { tokenPriceTablesExist } from "../tokens/publish";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { fetchManapoolSingles } from "./client";
 import { parseManapoolPayload, type PriceRow } from "./parse";
@@ -10,6 +11,8 @@ const LOOKUP_CHUNK = 1000;
 
 export type SeedPricesResult = {
   upserted: number;
+  /** Rows written to `token_printing_prices`; 0 when the token tables do not exist yet. */
+  tokenUpserted: number;
   skippedOrphan: number;
   collapsedDuplicates: number;
   asOf: Date;
@@ -35,7 +38,29 @@ export function filterKnownPrintings(
 }
 
 /**
- * Refreshes `printing_prices` from ManaPool's singles feed.
+ * Splits feed rows three ways: a card printing, a token printing, or neither. A printing is one or
+ * the other (a token has no `cards` row, and a card is never a token printing), so the order of the
+ * two lookups is not a rule. Pure, for the same reason as `filterKnownPrintings`.
+ */
+export function partitionFeed(
+  rows: PriceRow[],
+  knownCards: Set<string>,
+  knownTokens: Set<string>,
+): { cardRows: PriceRow[]; tokenRows: PriceRow[]; skippedOrphan: number } {
+  const cardRows: PriceRow[] = [];
+  const tokenRows: PriceRow[] = [];
+  let skippedOrphan = 0;
+  for (const row of rows) {
+    if (knownCards.has(row.scryfallId)) cardRows.push(row);
+    else if (knownTokens.has(row.scryfallId)) tokenRows.push(row);
+    else skippedOrphan++;
+  }
+  return { cardRows, tokenRows, skippedOrphan };
+}
+
+/**
+ * Refreshes `printing_prices` from ManaPool's singles feed, and `token_printing_prices` from the
+ * same rows in the same transaction.
  *
  * Upserts rather than replacing wholesale: a truncate-then-reload leaves the
  * table empty for the length of the load, and rows for printings that vanish
@@ -70,7 +95,18 @@ export async function seedPrices(): Promise<SeedPricesResult> {
     );
   }
 
-  const { rows, skippedOrphan } = filterKnownPrintings(feed.rows, known);
+  // Token printings: the ids the feed carries that are not card printings. Skipped cleanly when the
+  // token tables do not exist, because the refresh can reach a database before its migration does.
+  const knownTokens = new Set<string>();
+  if (await tokenPriceTablesExist()) {
+    const rest = feedIds.filter((id) => !known.has(id));
+    for (let i = 0; i < rest.length; i += LOOKUP_CHUNK) {
+      const found = await db.select({ scryfallId: tokenPrintings.scryfallId }).from(tokenPrintings)
+        .where(inArray(tokenPrintings.scryfallId, rest.slice(i, i + LOOKUP_CHUNK)));
+      for (const p of found) knownTokens.add(p.scryfallId);
+    }
+  }
+  const { cardRows: rows, tokenRows, skippedOrphan } = partitionFeed(feed.rows, known, knownTokens);
 
   // One transaction across every batch. The staleness rule schema.ts documents
   // — a row is live when its `as_of` matches the newest in the table — only
@@ -79,6 +115,7 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   // every surviving row read as sold out. Batching stays: it is about statement
   // size, not durability, and 100k rows in one insert is not a statement to send.
   let upserted = 0;
+  let tokenUpserted = 0;
   await db.transaction(async (tx) => {
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       await tx.insert(printingPrices).values(rows.slice(i, i + BATCH_SIZE))
@@ -96,6 +133,27 @@ export async function seedPrices(): Promise<SeedPricesResult> {
         });
       upserted += Math.min(BATCH_SIZE, rows.length - i);
     }
+    // The same upsert on the token table, inside the same transaction: one feed run is one `as_of`,
+    // and a run that wrote the cards and not the tokens would leave every token reading as sold out.
+    for (let i = 0; i < tokenRows.length; i += BATCH_SIZE) {
+      await tx.insert(tokenPrintingPrices).values(tokenRows.slice(i, i + BATCH_SIZE))
+        .onConflictDoUpdate({
+          target: tokenPrintingPrices.scryfallId,
+          set: {
+            productName: sql`excluded.product_name`,
+            productSet: sql`excluded.product_set`,
+            productNumber: sql`excluded.product_number`,
+            priceCents: sql`excluded.price_cents`,
+            priceCentsNm: sql`excluded.price_cents_nm`,
+            priceCentsFoil: sql`excluded.price_cents_foil`,
+            priceCentsEtched: sql`excluded.price_cents_etched`,
+            availableQuantity: sql`excluded.available_quantity`,
+            buyUrl: sql`excluded.buy_url`,
+            asOf: sql`excluded.as_of`,
+          },
+        });
+      tokenUpserted += Math.min(BATCH_SIZE, tokenRows.length - i);
+    }
   });
   // Every cached list payload that draws a shopping cost priced it from this table, and the
   // catalog generation in their key is what retires them. After the commit, like every other
@@ -104,7 +162,7 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   await stampCatalogRefresh();
 
   return {
-    upserted, skippedOrphan,
+    upserted, tokenUpserted, skippedOrphan,
     collapsedDuplicates: feed.collapsedDuplicates,
     asOf: feed.asOf,
   };
