@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 
 // Which tiles opt into the phone prefetch. Each one is a full deck render on the server, so the
 // count is what bounds a /decks visit's cost: the first two tiles the list draws, and no others.
@@ -48,8 +48,19 @@ describe("DecksView: the tiles that prefetch on a phone", () => {
     expect(eagerTiles()).toEqual(["/decks/a", "/decks/b"]);
   });
 
-  it("follow the list when a filter changes what it draws", () => {
-    window.history.replaceState(null, "", "/decks?status=Draft");
-    expect(eagerTiles()).toEqual(["/decks/d"]);
+  it("stay the visit's first two when a filter changes the list, and never become more", () => {
+    const shopping = { byDeck: new Map(), total: { copies: 0, cents: 0, pricedCopies: 0 } };
+    const { rerender } = render(
+      <DecksView decks={DECKS} folders={[]} shopping={shopping} buildable={9} cards={1284} now={NOW} />,
+    );
+    const eager = () =>
+      [...document.querySelectorAll<HTMLAnchorElement>('a[data-eager="phone-in-view"]')].map((a) => a.getAttribute("href")!);
+    expect(eager()).toEqual(["/decks/a", "/decks/b"]);
+    // Within the same mounted visit, a list whose first two are other decks promotes neither.
+    act(() => window.history.replaceState(null, "", "/decks?status=Draft"));
+    rerender(<DecksView decks={DECKS} folders={[]} shopping={shopping} buildable={9} cards={1283} now={NOW} />);
+    const tiles = [...document.querySelectorAll<HTMLAnchorElement>("a[data-eager]")].map((a) => a.getAttribute("href"));
+    expect(tiles).toEqual(["/decks/d"]);
+    expect(eager()).toEqual([]);
   });
 });
