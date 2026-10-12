@@ -286,6 +286,30 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
   });
 
+  it("the offer counts the decks left after a free-list add, and a run keeps the count it started with", async () => {
+    await draw(panel());
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    fireEvent.click(within(screen.getAllByTestId("fits-row")[0]).getAllByRole("button").find((b) => b.textContent)!);
+    await settle();
+    expect(screen.getByTestId("read-band-offer")).toHaveTextContent(r.offerLeadOne("Kratos", card.name));
+  });
+
+  it("a run keeps the count it started with while the free list moves under it", async () => {
+    await draw(panel());
+    let resolve!: (v: unknown) => void;
+    readActions.pressFitsReadAction.mockReturnValue(new Promise((res) => { resolve = res; }));
+    fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    fireEvent.click(within(screen.getAllByTestId("fits-row")[0]).getAllByRole("button").find((b) => b.textContent)!);
+    await settle();
+    expect(actions.addFromFits).toHaveBeenCalled();
+    expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
+    await act(async () => resolve({ ok: true, panel: panel({}, { stored: stored() }) }));
+    await settle();
+  });
+
   it("an add to the last deck that could take the card takes the offer away (P1b)", async () => {
     await draw(panel({ candidates: 1 }), list({ fits: [list().fits[0]] }));
     expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();

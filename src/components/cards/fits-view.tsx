@@ -55,6 +55,8 @@ export function FitsView({
   const { name, freeNow, owned, countsKnown } = list;
   const [panel, setPanel] = useState<FitsReadPanel | null>(null);
   const [running, setRunning] = useState<number | null>(null);
+  // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
+  const [runCount, setRunCount] = useState<number | null>(null);
   const [pressFailed, setPressFailed] = useState(false);
   // The read this visit's press produced: its sub reads `just now` rather than a date.
   const [fresh, setFresh] = useState<string | null>(null);
@@ -85,6 +87,7 @@ export function FitsView({
     setPanel(p);
     const pending = p?.view.pending ?? null;
     setRunning(pending ? Date.parse(pending.startedAt) : null);
+    if (!pending) setRunCount(null);
   }, []);
 
   useEffect(() => {
@@ -129,6 +132,7 @@ export function FitsView({
     if (running !== null || !panel) return;
     const before = panel.view.stored?.readId ?? null;
     setRunning(Date.now());
+    setRunCount(candidates);
     setNow(Date.now());
     setPressFailed(false);
     setAnnounced(read.announceStarted);
@@ -237,11 +241,13 @@ export function FitsView({
   // and never draws as if it still held.
   const current = stored?.current ? stored : null;
   const failed = pressFailed || (panel?.view.failed != null && running === null);
-  const candidates = panel?.candidates ?? 0;
+  // Who can take the card is the list as last read, never the panel's opening count: an add from the
+  // free list leaves fewer decks to read. The panel's zero (no deck, or not Commander-legal) stands.
+  const candidates = !panel || panel.candidates === 0 ? 0 : list.read ? list.read.fits.length : panel.candidates;
   // The list as last read, never the rows it opened with: an add to the last deck that could take the
   // card leaves nothing to read for, and the offer goes (P1b).
   const noList = list.read !== null && list.read.fits.length === 0;
-  const oneDeck = candidates === 1 ? list.shown[0]?.name ?? null : null;
+  const oneDeck = candidates === 1 ? (list.read ?? panel?.fits)?.fits[0]?.name ?? null : null;
   const showsBand = panel !== null && candidates > 0 && !noList;
   // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
   // and the read still reopens with its rows settled.
@@ -251,7 +257,7 @@ export function FitsView({
 
   let band = null;
   if (showsBand) {
-    if (running !== null) band = <RunningBand title={read.running(candidates, name)} elapsed={clock(now - running)} />;
+    if (running !== null) band = <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} />;
     else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
       band = <NoFitBox
