@@ -207,6 +207,18 @@ describe("Enter elsewhere (C7)", () => {
   });
 });
 
+describe("the account cap row", () => {
+  it("shows the note saved with the cap, beside the elsewhere note", () => {
+    draw(rows([p(2, 1)], { settings: {
+      account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: "raised for the eval run" },
+      elsewhere_usd: { micro: usdToMicro(18.4), asOf: "2026-10-09", note: "console" },
+    } }));
+    const sub = screen.getByText(/^Mirrors Anthropic/);
+    expect(sub).toHaveTextContent("raised for the eval run");
+    expect(sub).toHaveTextContent("console");
+  });
+});
+
 describe("the settings dialog", () => {
   it("keeps what was typed when the save is refused", async () => {
     setAccountCap.mockResolvedValueOnce({ ok: false, error: "amount" });

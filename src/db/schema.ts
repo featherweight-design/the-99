@@ -2145,6 +2145,8 @@ export const modelCalls = pgTable("model_calls", {
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
+  // The admin's month reads, which filter on the month alone.
+  index("model_calls_created_idx").on(t.createdAt),
 ]);
 
 /**

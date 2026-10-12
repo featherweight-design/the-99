@@ -20,4 +20,5 @@ ALTER TABLE "admin_events" ADD CONSTRAINT "admin_events_fields_check" CHECK (cas
     when 'member_added' then "admin_events"."group_id" is not null and "admin_events"."user_id" is not null
     when 'member_removed' then "admin_events"."group_id" is not null and "admin_events"."user_id" is not null
     when 'setting_set' then "admin_events"."setting_key" is not null and "admin_events"."setting_month" is not null and "admin_events"."new_value" is not null
-  end);
+  end);--> statement-breakpoint
+CREATE INDEX "model_calls_created_idx" ON "model_calls" USING btree ("created_at");

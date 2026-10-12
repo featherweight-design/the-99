@@ -314,7 +314,7 @@ export function CostsView({ s, month, current }: { s: CostSummary; month: MonthK
             label={copy.capRows.account}
             here
             figure={cap ? copy.of(usd(accountTotal), capMicro(cap.micro)) : copy.notSet(usd(accountTotal))}
-            sub={copy.capSub.account + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf)) + note(elsewhere.note) : copy.capSub.noElsewhere)}
+            sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf)) + note(elsewhere.note) : copy.capSub.noElsewhere)}
             actions={<>
               <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />
               <SettingAction kind="cap" label={copy.changeCap} />

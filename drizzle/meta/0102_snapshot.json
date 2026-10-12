@@ -1,5 +1,5 @@
 {
-  "id": "492b99bb-cf9a-4c18-a4d6-ef9584aea5a5",
+  "id": "57ad7ddb-34b7-402c-9b11-79a1ab261904",
   "prevId": "3ab5d483-51be-43be-b793-6a39553d59d4",
   "version": "7",
   "dialect": "postgresql",
@@ -6283,6 +6283,21 @@
               "asc": true,
               "nulls": "last"
             },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "model_calls_created_idx": {
+          "name": "model_calls_created_idx",
+          "columns": [
             {
               "expression": "created_at",
               "isExpression": false,
