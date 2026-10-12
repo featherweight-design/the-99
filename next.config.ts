@@ -11,6 +11,12 @@ import type { NextConfig } from "next";
 // and the reader saw only a minified React error. It matches COLLECTION_FILE_MAX_BYTES
 // plus room for the multipart envelope, and stays under Vercel's 4.5 MB request cap.
 const nextConfig: NextConfig = {
+  // One copy of the Neon driver, loaded from node_modules. drizzle-orm's `db.transaction` only checks a
+  // connection out of the pool when `client instanceof Pool` against ITS copy of the driver; the server
+  // bundle used to carry a second copy, the check was false, and a "transaction" ran its begin, its
+  // statements and its commit on different pooled connections (a connection could go back to the pool
+  // inside an open snapshot). `pnpm check:db-pool` fails the build if a bundled copy comes back.
+  serverExternalPackages: ["@neondatabase/serverless"],
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
   },
