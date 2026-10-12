@@ -42,12 +42,18 @@ export async function loadPrintingPrices(oracleId: string): Promise<PrintingPric
  * one card details would build for it. All of a card's printings, not only the owned ones:
  * `priceFor` names a set-only or name-only holding by counting the catalog's printings of it.
  *
+ * It takes the ids rather than the user: the caller passes the cards of the collection snapshot it
+ * already read, so a card added between two reads can never ship without its price.
+ *
  * Measured on staging for the reference account (2,926 cards): 19,817 rows.
  */
-export async function loadOwnedPrintingPrices(userId: string): Promise<Map<string, PrintingPrices>> {
+export async function loadOwnedPrintingPrices(
+  oracleIds: readonly string[],
+): Promise<Map<string, PrintingPrices>> {
+  if (oracleIds.length === 0) return new Map();
   const result = await db.execute<PrintingPriceRow & { oracle_id: string }>(sql`
     with newest as (select max(as_of) as as_of from printing_prices),
-         owned as (select distinct oracle_id from collection_items where user_id = ${userId})
+         owned as (select distinct unnest(${sql.param([...oracleIds])}::uuid[]) as oracle_id)
     select o.oracle_id          as oracle_id,
            n.as_of              as newest_as_of,
            p.scryfall_id        as scryfall_id,

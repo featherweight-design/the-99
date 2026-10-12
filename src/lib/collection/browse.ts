@@ -1170,18 +1170,19 @@ export async function attachComboPartners(
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
   /** The price read, injected for tests, as `attachBracketFacts`' flags read is. */
-  readPrices?: (userId: string) => Promise<Map<string, PrintingPrices>>,
+  readPrices?: (oracleIds: readonly string[]) => Promise<Map<string, PrintingPrices>>,
 ): Promise<{ cards: BrowseListCard[]; pricesFailed: boolean }> {
-  // STARTED FIRST AND AWAITED LAST: it reads by user, not by card, so it overlaps the row read
-  // and both passes below, and it writes a field neither of them touches. A failure is reported
-  // rather than swallowed, because the page says so (F1) and the list must not be cached with it.
+  const aggregated = aggregateCollection(await selectCollectionRows(userId));
+  // STARTED BEFORE THE TWO PASSES AND AWAITED AFTER THEM, keyed on the cards of the snapshot just
+  // read rather than on the user: a second read of the collection could see a card this one does
+  // not, or miss one it has, and that card would ship silent and be cached so. A failure is
+  // reported rather than swallowed, because the page says so (F1) and the list must not be cached.
   const load = readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices;
-  const prices = load(userId).catch(() => {
+  const prices = load(aggregated.map((card) => card.oracleId)).catch(() => {
     // not a fallback: the failure is returned as `pricesFailed`, the page says so (F1), and
     // `loadCollectionList` throws such a list past the cache rather than storing it.
     return null;
   });
-  const aggregated = aggregateCollection(await selectCollectionRows(userId));
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip
