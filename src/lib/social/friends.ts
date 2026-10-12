@@ -191,9 +191,18 @@ export async function unfriend(viewerId: string, friendPublicId: unknown): Promi
     // Each leaves the pods the other owns. A pod's other members are untouched.
     for (const [owner, member] of [[viewerId, friendId], [friendId, viewerId]] as const) {
       const ownedBy = tx.select({ id: pods.id }).from(pods).where(eq(pods.ownerUserId, owner));
-      await tx.delete(podMembers).where(and(eq(podMembers.userId, member), inArray(podMembers.podId, ownedBy)));
-      // A member out of a pod shares nothing with it any more.
-      await tx.delete(podSpareShares).where(and(eq(podSpareShares.userId, member), inArray(podSpareShares.podId, ownedBy)));
+      const left = await tx
+        .delete(podMembers)
+        .where(and(eq(podMembers.userId, member), inArray(podMembers.podId, ownedBy)))
+        .returning({ podId: podMembers.podId });
+      // A member out of a pod shares nothing with it any more: exactly the pods just left, never a second
+      // reading of who owns what, which a hand-on between the two statements could move.
+      if (left.length > 0) {
+        await tx.delete(podSpareShares).where(and(
+          eq(podSpareShares.userId, member),
+          inArray(podSpareShares.podId, left.map((r) => r.podId)),
+        ));
+      }
     }
     return true;
   });

@@ -160,12 +160,59 @@ export function unrecordedCatches(files = loaderFiles()) {
 }
 
 /**
- * The third argument (the key) of every `cachePageForUser(...)` call in a source, comments stripped. A
- * `friendGeneration(` anywhere else in the page (a comment, an unused call, inside the loader) keys nothing.
- * Strings are skipped while balancing, so a `)` or `,` inside one does not end an argument.
+ * A source with its comments removed and every string literal emptied, so nothing quoted can pass for code.
+ * A template literal keeps its `${…}` interpolations, which are code. Regex literals are not recognised;
+ * the page sources this reads carry none in a cache key.
+ */
+export function codeOnly(text) {
+  let i = 0;
+  const scan = (inInterpolation) => {
+    let out = "";
+    let depth = 0;
+    while (i < text.length) {
+      const c = text[i];
+      if (c === "/" && text[i + 1] === "/") {
+        while (i < text.length && text[i] !== "\n") i++;
+      } else if (c === "/" && text[i + 1] === "*") {
+        const end = text.indexOf("*/", i + 2);
+        i = end === -1 ? text.length : end + 2;
+      } else if (c === '"' || c === "'") {
+        for (i++; i < text.length && text[i] !== c; i++) if (text[i] === "\\") i++;
+        i++;
+        out += c + c;
+      } else if (c === "`") {
+        out += "`";
+        for (i++; i < text.length && text[i] !== "`"; ) {
+          if (text[i] === "\\") i += 2;
+          else if (text[i] === "$" && text[i + 1] === "{") {
+            i += 2;
+            out += "${" + scan(true) + "}";
+          } else i++;
+        }
+        i++;
+        out += "`";
+      } else {
+        if (inInterpolation && c === "{") depth++;
+        if (inInterpolation && c === "}") {
+          if (depth === 0) { i++; return out; }
+          depth--;
+        }
+        out += c;
+        i++;
+      }
+    }
+    return out;
+  };
+  return scan(false);
+}
+
+/**
+ * The third argument (the key) of every `cachePageForUser(...)` call in a source, read from `codeOnly`, so
+ * a `friendGeneration(` in a comment or a string keys nothing, and neither does one elsewhere in the page
+ * (an unused call, or inside the loader).
  */
 export function cacheKeysOf(text) {
-  const src = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+  const src = codeOnly(text);
   const keys = [];
   const call = /\bcachePageForUser\s*(?:<[^>]*>)?\s*\(/g;
   for (let m; (m = call.exec(src)); ) {
@@ -173,9 +220,7 @@ export function cacheKeysOf(text) {
     let depth = 0, start = call.lastIndex, i = start;
     for (; i < src.length; i++) {
       const c = src[i];
-      if (c === '"' || c === "'" || c === "`") {
-        for (i++; i < src.length && src[i] !== c; i++) if (src[i] === "\\") i++;
-      } else if ("([{".includes(c)) depth++;
+      if ("([{".includes(c)) depth++;
       else if (")]}".includes(c)) {
         if (depth === 0) break;
         depth--;

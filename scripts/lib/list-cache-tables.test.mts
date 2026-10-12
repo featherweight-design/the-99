@@ -145,6 +145,8 @@ describe("socialKeyProblems", () => {
       "// friendGeneration(userId)\ncachePageForUser(userId, 'cart', [], load)",
       "const g = await friendGeneration(userId);\ncachePageForUser(userId, 'cart', [], load)",
       "cachePageForUser(userId, 'cart', [], async () => ({ value: await friendGeneration(userId) }))",
+      "cachePageForUser(userId, 'cart', [\"friendGeneration(\"], load)",
+      "cachePageForUser(userId, 'cart', [`friendGeneration(`], load)",
     ]) {
       expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
     }
@@ -153,6 +155,11 @@ describe("socialKeyProblems", () => {
   it("fails a page where one cache call carries it and another does not", () => {
     const src = "cachePageForUser(userId, 'a', [await friendGeneration(userId)], load)\ncachePageForUser(userId, 'b', [], load)";
     expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+  });
+
+  it("counts a friendGeneration inside a template interpolation, which is code", () => {
+    const src = "cachePageForUser(userId, 'cart', [`f:${await friendGeneration(userId)}`], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
   });
 
   it("reads the key past a string holding a comma or a paren", () => {
