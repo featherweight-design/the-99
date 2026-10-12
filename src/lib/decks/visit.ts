@@ -25,8 +25,10 @@ export type ToolBaseline = { okKey: string | null; runId: string | null };
 /** A tool result that is never stored server-side and must still last the visit. Opaque here; each owner
  *  decides what still holds. `mana-help` (Mana Balance's help) is checked against the list it was read for
  *  before it draws. `mana-trades` (the trades applied this visit) is drawn as it stands: each is a change
- *  already made, and its Undo is the check, refused over a deck that has moved since. */
-export type VisitSlot = "mana-help" | "mana-trades";
+ *  already made, and its Undo is the check, refused over a deck that has moved since. `mana-follow` is the
+ *  color whose help to read again when the list next moves, set by a trade or its Undo, whichever mount
+ *  of the door settled it, and consumed by the mount on screen. */
+export type VisitSlot = "mana-help" | "mana-trades" | "mana-follow";
 
 type Visit = {
   deckId: string;

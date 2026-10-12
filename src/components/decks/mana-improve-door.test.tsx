@@ -382,6 +382,22 @@ describe("ImproveDoor: applying a trade", () => {
     expect(document.querySelector("[data-mana-applied]")?.textContent).toContain("Rockfall Vale");
   });
 
+  it("re-reads the color in the mount on screen when the list moves after a replaced mount's trade", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = { apply: vi.fn(() => new Promise((r) => { land = r; })), undo: vi.fn() } as unknown as TradeActions;
+    const { unmount } = await openRed(read, trades);
+    act(() => { fireEvent.click(tradeButton()); });
+    unmount();
+    const view = render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades} />);
+    await act(async () => { land({ ok: true, applyId: "apply-1" }); });
+    const reads = read.mock.calls.length;
+    view.rerender(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r2" read={read} trades={trades} />);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(reads + 1));
+    expect(read).toHaveBeenLastCalledWith(A, "R");
+    expect(document.querySelector("[data-mana-help='R']")).not.toBeNull();
+  });
+
   it("keeps nothing from an apply that settles after the player left the deck and came back", async () => {
     const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
     let land!: (r: { ok: true; applyId: string }) => void;

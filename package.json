@@ -90,6 +90,7 @@
     "probe:sets": "node scripts/probe-sets.mjs",
     "probe:folders": "tsx scripts/probe-folders.ts",
     "probe:deck-notes-actions": "tsx scripts/probe-deck-notes-actions.ts",
+    "probe:mana-trade": "tsx scripts/probe-mana-trade.ts",
     "probe:folder-flash": "node scripts/probe-folder-flash.mjs",
     "probe:stats": "tsx scripts/probe-deck-stats.ts",
     "probe:deck-printings": "tsx scripts/probe-deck-printings.ts",

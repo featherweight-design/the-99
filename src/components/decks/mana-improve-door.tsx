@@ -105,9 +105,9 @@ export function ImproveDoor({
   const changeApplied = (change: (list: Applied[]) => Applied[]) => {
     setVisitValue(deckId, "mana-trades", change(visitValue<Applied[]>(deckId, "mana-trades") ?? []));
   };
-  // A trade or its Undo changes the list, and the list moving retires the result drawn; after our own change
-  // the result is read again for its color instead, so the reader sees what the trade did.
-  const follow = useRef<BalanceColor | null>(null);
+  // A trade or its Undo changes the list, and the list moving retires the result drawn; after the player's own
+  // change the result is read again for its color instead, so they see what the trade did. Kept in the visit
+  // (`mana-follow`), so the mount on screen reads it even when a mount since replaced made the change.
   const [busy, setBusy] = useState<string | null>(null);
   const [refused, setRefused] = useState<{ key: string; message: string } | null>(null);
 
@@ -170,7 +170,7 @@ export function ImproveDoor({
       setRefused({ key, message: result.message });
       return;
     }
-    follow.current = color;
+    setVisitValue(deckId, "mana-follow", color);
     changeApplied((list) => [...list, { applyId: result.applyId, color, basic: trade.basicOut, staple: trade.staple.name }]);
   };
 
@@ -185,7 +185,9 @@ export function ImproveDoor({
       setRefused({ key: a.applyId, message: result.message });
       return;
     }
-    follow.current = door.at === "result" ? door.color : null;
+    // Read the open result again, if the visit holds one (the store, not this mount's `door`, which a remount
+    // since may have replaced); with none open, the door stays as it is.
+    setVisitValue(deckId, "mana-follow", visitValue<Kept>(deckId, "mana-help")?.help.color);
     changeApplied((list) => list.filter((x) => x.applyId !== a.applyId));
   };
 
@@ -197,9 +199,10 @@ export function ImproveDoor({
   useEffect(() => {
     if (seenRevision.current === revision) return;
     seenRevision.current = revision;
-    const again = follow.current;
-    follow.current = null;
+    const again = visitValue<BalanceColor>(deckId, "mana-follow");
+    setVisitValue(deckId, "mana-follow", undefined);
     if (again) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the list moved (an external change): the re-read it asks for starts here
       reread(again);
       return;
     }
