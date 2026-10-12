@@ -46,7 +46,7 @@ function ByCardList({
   // Gone from the read, and bought for a deck still selected: the slot belongs to the selection
   // it was bought in, and unselecting those decks takes it out with every other line of theirs.
   const gone = [...(gotIt?.held.values() ?? [])].filter((h) =>
-    !read.has(h.line.oracleId) && h.line.selectedRows.some((r) => selected.has(r.deckId)));
+    !read.has(h.line.oracleId) && [...h.deckIds].some((d) => selected.has(d)));
   const rows = [
     ...lines.map((line) => ({ line, added: 0, held: false })),
     ...gone.map((h) => ({ line: h.line, added: h.added, held: true })),

@@ -66,6 +66,8 @@ export type GotItUndoHost = {
   end: (oracleId: string) => void;
   /** It failed after this toast was replaced: the provider brings this receipt back, failed. */
   failedAway: () => void;
+  /** The revert committed (or was already committed elsewhere): what the host counted for this entry no longer holds. */
+  undone?: (entryId: string) => void;
 };
 
 export function GotItReceipt({
@@ -201,6 +203,7 @@ export function GotItReceipt({
     if (refresh) router.refresh();
     stage.current = "idle";
     host.end(oracleId);
+    host.undone?.(written.entryId);
     restart();
     setPhase({ k: "undone" });
   }
