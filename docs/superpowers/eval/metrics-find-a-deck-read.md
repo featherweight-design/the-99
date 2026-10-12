@@ -5,7 +5,7 @@ Sonnet 5.5 and Haiku 5.5, both at effort medium, on Hugh's eleven eval cards aga
 The harness is `scripts/eval/fits-read.mts` (`pnpm eval:fits-read`), with its own ledger
 (`ledger-find-a-deck.jsonl`) and a $2 cap.
 
-**Status: run 2026-10-12.** Total spend was $1.85 of the $2 cap (ledger), the Haiku rerun included. The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm) and `answers/fits-read-2026-10-12-05-07-32-haiku.json` (the Haiku rerun). The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80 before the rerun, not ~$1.05.
+**Status: run 2026-10-12.** Total spend was $1.85 of the $2 cap (ledger), the Haiku rerun included. The answers are in `answers/fits-read-2026-10-12-04-45-09-sonnet.json`, `answers/fits-read-2026-10-12-04-46-50-haiku.json` `answers/fits-read-2026-10-12-04-43.json` (sonnet-warm) and `answers/fits-read-2026-10-12-05-07-32-haiku.json` (the Haiku rerun). `answers/fits-read-2026-10-12-04-42.json` is a first Haiku run on the same prompt ($0.045, 14 of 15 kept), made before the arm filenames were fixed; the 04:46 Haiku run is the one reported, so the two Haiku arms compare like for like with Sonnet's. The first Sonnet run's answers were overwritten by the warm run (a filename collision, now fixed), so Sonnet was run again. That second run is the one reported here, and it is why spend reached $1.80 before the rerun, not ~$1.05.
 
 ## Three cards, before and after (for Hugh)
 
@@ -72,7 +72,7 @@ cut, no figure drop, 0 of 14 stale. Its cost per press is unchanged ($0.0006 to 
 - **Validator** (`validFitsRead`). Each failure drops that deck and is counted by reason:
   - `unknownDeck`, `notCandidate`, `duplicateDeck`;
   - `cardOutsideDeck`, for a card named by key or outright;
-  - `cutCommander`, `cutSelf`, `cutKeyCard`, `cutLocked`, `cutNotInDeck`;
+  - `cutCommander`, `cutSelf`, `cutKeyCard`, `cutLocked`, `cutNotInDeck`, `cutBasicLand`;
   - `falseQuote`;
   - `noCitation`;
   - `figureOrScore`, `tooLong`, `malformed`;
@@ -232,12 +232,11 @@ the model.
 | Arm | Drops by reason |
 | --- | --- |
 | Haiku | figureOrScore 2, noCitation 1 |
-| Sonnet | figureOrScore 6, jobMismatch 3, falseQuote 1, noCitation 1 |
+| Sonnet | figureOrScore 5, jobMismatch 3, falseQuote 1, noCitation 1 |
 | Sonnet, warm | cardOutsideDeck 3 |
 
-- **Sonnet's `figureOrScore` drops (all three Ajani picks).** They write rules notation with digits ("+1/+1"). The
-  rule is the brief's (no figures in the line), so they are dropped. The prompt can say this more plainly; see the
-  proposed rerun.
+- **Sonnet's `figureOrScore` drops (all three Ajani picks, plus one each on Throes of Chaos and Barrowgoyf).** The Ajani lines write rules notation with digits ("+1/+1"). The
+  rule is the brief's (no figures in the line), so they are dropped. The rerun's prompt says this plainly.
 - **`jobMismatch` (all of Sonnet's Future Sight picks).** Each cites a job the card's labels do not carry.
 - **`cardOutsideDeck` (all three of Tangle Wire's picks, cached layout).** With every deck in the prompt, the model
   named cards from another deck. The validator caught every one, but this is a real cost of the cached layout.
@@ -248,7 +247,7 @@ The check: a picked deck counts as stale when its Overview names a **Key card** 
 commanders counted as run.
 
 The first runs used every card the Overview's prose names (`content.cards`), threats and weaknesses included, and
-left out the commanders. They reported 13 of 15 picks stale. Every name flagged under that rule was the deck's own
+left out the commanders. They reported most picks stale (13 of 14 on the first Haiku run, 10 of 12 on Sonnet, 11 of 13 on Haiku). Every name flagged under that rule was the deck's own
 commander, or a card the prose names as a threat. Corrected and recounted from the stored answers: **0 of 12
 Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key card it no longer runs.
 `fits-read-load.ts` now applies the corrected rule.
@@ -258,8 +257,8 @@ Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key
 - **Haiku**
   - **Kratos and Ajani, wrong.** It says Kratos "punishes" idle tokens so "the table takes damage". Kratos damages
     each player for their own creatures that did not attack, so idle tokens hurt their own controller.
-  - **Basic lands as cuts, twice.** Mountain (Omnath) and Forest (Gishath, Kwia on Scrappy Survivors) are a poor
-    cut: they change the mana. The validator allows them today.
+  - **Basic lands as cuts, three times.** Mountain (Omnath) and Forest (Gishath, and Kwia on Scrappy Survivors) are a
+    poor cut: they change the mana. The validator now refuses them (`cutBasicLand`), and the rerun cut none.
   - **Right:** the Wizards and Mind's Eye line (it draws on opponents' draws while holding counter mana), Time
     Stretch on Yuriko, Barrowgoyf on Sultai, Throes of Chaos retrace on Omnath.
 - **Sonnet**
@@ -278,7 +277,7 @@ Sonnet picks and 0 of 13 Haiku picks** land on a deck whose Overview names a Key
 
 **Haiku 5.5, per-press layout, at effort medium.** It costs $0.004 a press against Sonnet's $0.07 (up to $0.13 for
 a colorless card with 21 candidates). Its accuracy here matched Sonnet's (about two rules errors each), it kept more
-of its lines (13 of 16 against 12 of 22), and its 8 to 18 s fits behind a "Reading…" state. Sonnet's speed is the
+of its lines (13 of 16 against 12 of 22), and its 3 to 18 s (p50 7.8 s) fits behind a "Reading…" state. Sonnet's speed is the
 only edge it has, and the cached layout that would make it cheap brings its own failure (cards from other decks).
 
 **The single rerun** (approved, run on Haiku for $0.045):

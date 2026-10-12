@@ -209,7 +209,7 @@ export type FitsDropReason =
   | "unknownDeck" | "notCandidate" | "duplicateDeck"
   /** 2. A card key (sentence, cut or cite) that is not that deck's, its commander's or the card's. */
   | "cardOutsideDeck"
-  /** 3. The cut is the commander, the card itself, a Key card, a never-cut card, or not in the 99. */
+  /** 3. The cut is the commander, the card itself, a Key card, a never-cut card, a basic land, or not in the 99. */
   | "cutCommander" | "cutSelf" | "cutKeyCard" | "cutLocked" | "cutNotInDeck" | "cutBasicLand"
   /** 4. A quoted phrase that is not in the deck's stored plan. */
   | "falseQuote"
