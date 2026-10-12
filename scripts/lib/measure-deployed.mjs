@@ -58,13 +58,24 @@ export async function lookupUserId(secretKey, email, fetchImpl = fetch) {
 }
 
 /**
- * Every `[perf]` line in `vercel logs --json` output, with the request's timestamp. A line can sit
- * in the entry's `message` or in its `logs` array, as a string or as `{ message }`, depending on how
- * the runtime batched it; all four shapes are read, and anything else is skipped rather than thrown
- * on, because the log stream is shared with every other request the deployment served.
+ * The request id Vercel logs a request under: the last segment of its `x-vercel-id` response
+ * header (`sfo1::pdx1::pxmsz-1791830682642-bc0f83b831af` is logged as `pxmsz-…-bc0f83b831af`,
+ * checked against staging on 2026-10-12). Null when the header is absent.
+ */
+export function vercelRequestId(header) {
+  if (typeof header !== "string" || !header) return null;
+  return header.split("::").pop() || null;
+}
+
+/**
+ * Every `[perf]` line in `vercel logs --json` output, keyed by the id of the request that logged
+ * it. A line can sit in the entry's `message` or in its `logs` array, as a string or as
+ * `{ message }`, depending on how the runtime batched it; all four shapes are read, and anything
+ * else is skipped rather than thrown on, because the stream holds every request the deployment
+ * served.
  */
 export function perfLinesFromVercel(jsonl) {
-  const lines = [];
+  const byId = new Map();
   for (const raw of jsonl.split("\n")) {
     if (!raw.trim()) continue;
     let entry;
@@ -73,36 +84,30 @@ export function perfLinesFromVercel(jsonl) {
     } catch {
       continue;
     }
+    if (typeof entry.id !== "string") continue;
     const texts = [entry.message, ...(Array.isArray(entry.logs) ? entry.logs : [])]
       .map((l) => (typeof l === "string" ? l : l?.message))
       .filter((t) => typeof t === "string");
     for (const text of texts) {
       for (const line of text.split("\n")) {
-        if (line.startsWith("[perf] ")) lines.push({ at: Number(entry.timestamp), line: line.slice(7) });
+        if (!line.startsWith("[perf] ")) continue;
+        const lines = byId.get(entry.id) ?? [];
+        lines.push(line.slice(7));
+        byId.set(entry.id, lines);
       }
     }
   }
-  return lines.sort((a, b) => a.at - b.at);
+  return byId;
 }
 
 /**
- * The first `[perf]` line for `pattern` logged inside [from, to] (epoch milliseconds), or null. The
- * same rule as the local server log's: filtered by route PATTERN, because a page's prefetches and a
- * card press can log in the same window, and the first match is the measured request's. Vercel
- * stamps a request on ITS clock, so the window opens up to a second early for skew, but never
- * before `floor`, the end of the previous step: without it, a request the previous step made in
- * its last second would be read as this step's (a cached press, then the next cold one).
+ * The `[perf]` line for `pattern` that the request `id` logged, or null. Matched by REQUEST, never
+ * by time: the harness's clock and Vercel's are different clocks, and a time window either drops a
+ * request stamped early or takes a neighbour's (the sign-in load, a prefetch, the step before).
  */
-export function spansInWindow(lines, from, to, pattern, floor = -Infinity) {
-  const start = Math.max(from - 1000, floor);
-  const hit = lines.find((l) => l.at > start && l.at <= to && l.line.startsWith(`${pattern} `));
-  return hit ? hit.line : null;
-}
-
-/** Each deferred window's floor: the end of the window before it in time, or none for the first. */
-export function windowFloors(windows) {
-  const sorted = [...windows].sort((a, b) => a.from - b.from);
-  return new Map(sorted.map((w, i) => [w, i === 0 ? -Infinity : sorted[i - 1].to]));
+export function spansForRequest(byId, id, pattern) {
+  if (!id) return null;
+  return (byId.get(id) ?? []).find((l) => l.startsWith(`${pattern} `)) ?? null;
 }
 
 /** The read-only figure `pg_stat_statements` gives between two snapshots: no reset, no write. */

@@ -56,7 +56,8 @@
 //   - the deck is MEASURE_DECK_ID (no database lookup); About is settled by one signed-in document
 //     load, on which the proxy sets its own sheet cookie;
 //   - the `[perf]` spans come from Vercel's runtime logs of MEASURE_VERCEL_PROJECT (default
-//     the-99-staging, which needs PERF_TIMING=1 set), read after each run, by route pattern and window;
+//     the-99-staging, which needs PERF_TIMING=1 set), read after each run and matched to the measured
+//     request by its `x-vercel-id`, never by time;
 //   - MEASURE_PGSTAT_URL (staging only) gives database time as the delta between two
 //     `pg_stat_statements` snapshots around each warm load, never a reset. Other readers'
 //     statements in that window count too, so it is an upper bound.
@@ -93,9 +94,9 @@ import {
   lookupUserId,
   mintSignInToken,
   perfLinesFromVercel,
-  spansInWindow,
+  spansForRequest,
   statDelta,
-  windowFloors,
+  vercelRequestId,
 } from "./lib/measure-deployed.mjs";
 
 // MEASURE_DEPLOYED=1 measures a deployed app (staging only); the harness itself writes to no database:
@@ -243,7 +244,13 @@ async function capture(page) {
   });
   cdp.on("Network.responseReceived", (e) => {
     const r = reqs.get(e.requestId);
-    if (r) { r.headersAt = e.timestamp; r.cached = Boolean(e.response.fromDiskCache || e.response.fromMemoryCache); }
+    if (r) {
+      r.headersAt = e.timestamp;
+      r.cached = Boolean(e.response.fromDiskCache || e.response.fromMemoryCache);
+      // The id Vercel logs this request under, so a deployed run can read back ITS `[perf]` line.
+      const h = e.response.headers ?? {};
+      r.vercelId = vercelRequestId(h["x-vercel-id"] ?? h["X-Vercel-Id"]);
+    }
   });
   cdp.on("Network.dataReceived", (e) => { const r = reqs.get(e.requestId); if (r) r.decoded = (r.decoded ?? 0) + e.dataLength; });
   cdp.on("Network.loadingFinished", (e) => { const r = reqs.get(e.requestId); if (r) { r.end = e.timestamp; r.transferred = e.encodedDataLength; } });
@@ -266,6 +273,9 @@ function network(reqs, t0) {
     imageKb: Math.round(images.reduce((n, r) => n + (r.transferred ?? 0), 0) / 1024),
     docKb: doc ? kb(doc.transferred ?? 0) : null,
     jsKb: kb(scripts.reduce((n, r) => n + (r.transferred ?? 0), 0)),
+    docId: doc?.vercelId ?? null,
+    actionId: reqs.find((r) => r.url.startsWith(BASE) && r.method === "POST")?.vercelId ?? null,
+    prefetchId: reqs.find((r) => r.url.startsWith(BASE) && new URL(r.url).pathname === "/api/card-detail")?.vercelId ?? null,
     // The card-detail reads, kept apart: the press's own read is a server action (a POST to the
     // page), and a prefetch is `GET /api/card-detail`. A press can make either or both, so one
     // column for "the read" would time whichever happened to start first.
@@ -296,47 +306,42 @@ function serverSpans(from, pattern) {
 }
 const logSize = () => (SERVER_LOG ? statSync(SERVER_LOG).size : 0);
 
-/**
- * Where a load's spans start: a byte offset into the local log, or the clock in deployed mode.
- * Deployed spans cannot be read yet (Vercel's logs arrive after a delay), so `spansFor` returns the
- * window and `resolveDeployedSpans` fills it in once the run is over.
- */
-const mark = () => (DEPLOYED ? Date.now() : logSize());
-const spansFor = (from, pattern) =>
-  DEPLOYED ? { deferred: { from, to: Date.now(), pattern } } : serverSpans(from, pattern);
+/** Where a local load's spans start: a byte offset into the server log. */
+const mark = () => logSize();
 
-/** Replaces every deferred span window in `node` with the `[perf]` line Vercel logged in it. */
+/**
+ * A load's spans. Locally, `ref` is a byte offset into the server log and the line is read now.
+ * Deployed, `ref` is the request id Vercel logged the request under (`x-vercel-id`), and the line
+ * is read once the run ends, when Vercel's logs have caught up (`resolveDeployedSpans`).
+ */
+const spansFor = (ref, pattern) =>
+  DEPLOYED ? { deferred: { id: ref, pattern } } : serverSpans(ref, pattern);
+
+/** Replaces every deferred span in `node` with the `[perf]` line its own request logged. */
 async function resolveDeployedSpans(node, since) {
   if (!DEPLOYED) return;
   // Runtime logs reach the API some seconds after the request; 20s is generous.
   await new Promise((r) => setTimeout(r, 20_000));
-  let lines = [];
+  let byId = new Map();
   try {
     const out = execFileSync(
       "vercel",
       ["logs", "-p", VERCEL_PROJECT, "--environment", "production", "--no-branch",
-        "--since", new Date(since - 5_000).toISOString(), "-n", "5000", "-j"],
+        "--since", new Date(since - 60_000).toISOString(), "-n", "5000", "-j"],
       { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, cwd: os.tmpdir() },
     );
-    lines = perfLinesFromVercel(out);
+    byId = perfLinesFromVercel(out);
   } catch (error) {
     console.warn(`vercel logs failed, spans left null: ${error.message}`);
   }
-  const found = [];
-  const collect = (n) => {
+  const walk = (n) => {
     if (!n || typeof n !== "object") return;
     for (const [k, v] of Object.entries(n)) {
-      if (v && typeof v === "object" && v.deferred) found.push({ parent: n, key: k, ...v.deferred });
-      else collect(v);
+      if (v && typeof v === "object" && v.deferred) n[k] = spansForRequest(byId, v.deferred.id, v.deferred.pattern);
+      else walk(v);
     }
   };
-  collect(node);
-  // Two reads of one step (a press's action and its prefetch) share a window, so floors are per
-  // window, not per read.
-  const windows = [...new Map(found.map((f) => [`${f.from}:${f.to}`, { from: f.from, to: f.to }])).values()];
-  const floors = windowFloors(windows);
-  const floorOf = (f) => floors.get(windows.find((w) => w.from === f.from && w.to === f.to));
-  for (const f of found) f.parent[f.key] = spansInWindow(lines, f.from, f.to, f.pattern, floorOf(f));
+  walk(node);
 }
 
 /**
@@ -570,7 +575,10 @@ async function dbDelta(sql, run) {
 }
 
 /** Both card-detail reads' `[perf]` lines: the press's action and a prefetch's route, apart. */
-const cardSpans = (from) => ({ action: spansFor(from, "getCardDetail"), prefetch: spansFor(from, "/api/card-detail") });
+const cardSpans = (from, net) => ({
+  action: spansFor(DEPLOYED ? net.actionId : from, "getCardDetail"),
+  prefetch: spansFor(DEPLOYED ? net.prefetchId : from, "/api/card-detail"),
+});
 
 async function cardPress(page, cap, width) {
   const triggers = onPage(page, '[aria-label^="View details for "]').filter({ visible: true });
@@ -601,7 +609,7 @@ async function cardPress(page, cap, width) {
     await page.waitForTimeout(400);
     // The read logs its spans in `after()`, once it has answered; the 400ms above covers that.
     const net = network(cap.all(), 0);
-    out[key] = { dialog: dialogMs, art, action: net.actionMs, prefetch: net.prefetchMs, spans: cardSpans(from) };
+    out[key] = { dialog: dialogMs, art, action: net.actionMs, prefetch: net.prefetchMs, spans: cardSpans(from, net) };
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
   }
@@ -617,14 +625,14 @@ async function one(browser, state, width, routes, sql) {
     const page = await context.newPage();
     const cap = await capture(page);
     await cap.cdp.send("Network.clearBrowserCache");
-    // The cold load gets its own window too: it reads the same route pattern, so without one the
-    // warm window could take the cold request's line, and its spans are worth having anyway.
+    // The cold load's spans too: worth having, and locally its own log offset keeps the warm
+    // read from taking the cold request's line.
     const coldFrom = mark();
     const cold = await load(page, cap, `${BASE}${route.path}`);
-    const coldSpans = route.pattern ? spansFor(coldFrom, route.pattern) : null;
+    const coldSpans = route.pattern ? spansFor(DEPLOYED ? cold.docId : coldFrom, route.pattern) : null;
     const from = mark();
     const warm = await load(page, cap, `${BASE}${route.path}`);
-    const spans = route.pattern ? spansFor(from, route.pattern) : null;
+    const spans = route.pattern ? spansFor(DEPLOYED ? warm.docId : from, route.pattern) : null;
     const db = sql
       ? await (DEPLOYED ? dbDelta : dbExec)(sql, () => load(page, cap, `${BASE}${route.path}`))
       : null;

@@ -4,9 +4,9 @@ import {
   lookupUserId,
   mintSignInToken,
   perfLinesFromVercel,
-  spansInWindow,
+  spansForRequest,
   statDelta,
-  windowFloors,
+  vercelRequestId,
 } from "./measure-deployed.mjs";
 
 describe("assertDeployedBase", () => {
@@ -41,58 +41,37 @@ describe("mintSignInToken", () => {
 
 describe("perfLinesFromVercel", () => {
   const jsonl = [
-    JSON.stringify({ timestamp: 2000, requestPath: "/", logs: [{ message: "[perf] / total=310 home=200" }] }),
-    JSON.stringify({ timestamp: 1000, message: "[perf] /decks total=120" }),
-    JSON.stringify({ timestamp: 3000, logs: ["noise", "[perf] /decks/[id] total=900 a=1\nother"] }),
+    JSON.stringify({ id: "a-1-x", timestamp: 2000, logs: [{ message: "[perf] / total=310 home=200" }] }),
+    JSON.stringify({ id: "b-2-y", timestamp: 1000, message: "[perf] /decks total=120" }),
+    JSON.stringify({ id: "c-3-z", timestamp: 3000, logs: ["noise", "[perf] /decks/[id] total=900 a=1\nother"] }),
     "not json",
-    JSON.stringify({ timestamp: 4000, logs: [] }),
+    JSON.stringify({ timestamp: 4000, logs: ["[perf] / total=1"] }),
+    JSON.stringify({ id: "d-4-w", timestamp: 4000, logs: [] }),
   ].join("\n");
 
-  it("reads a line from the message and from both shapes of the logs array, oldest first", () => {
-    expect(perfLinesFromVercel(jsonl)).toEqual([
-      { at: 1000, line: "/decks total=120" },
-      { at: 2000, line: "/ total=310 home=200" },
-      { at: 3000, line: "/decks/[id] total=900 a=1" },
+  it("keys every line by the request that logged it, in all four shapes", () => {
+    const byId = perfLinesFromVercel(jsonl);
+    expect([...byId.entries()]).toEqual([
+      ["a-1-x", ["/ total=310 home=200"]],
+      ["b-2-y", ["/decks total=120"]],
+      ["c-3-z", ["/decks/[id] total=900 a=1"]],
     ]);
   });
 
-  it("takes the first line of the right pattern inside the window, and none outside it", () => {
-    const lines = perfLinesFromVercel(jsonl);
-    expect(spansInWindow(lines, 1500, 2500, "/")).toBe("/ total=310 home=200");
-    expect(spansInWindow(lines, 2500, 5000, "/decks")).toBeNull();
-    expect(spansInWindow(lines, 2500, 5000, "/decks/[id]")).toBe("/decks/[id] total=900 a=1");
-    expect(spansInWindow(lines, 9000, 9500, "/")).toBeNull();
+  it("finds a request's line by its id and pattern, and nothing for another request", () => {
+    const byId = perfLinesFromVercel(jsonl);
+    expect(spansForRequest(byId, "a-1-x", "/")).toBe("/ total=310 home=200");
+    expect(spansForRequest(byId, "a-1-x", "/decks")).toBeNull();
+    expect(spansForRequest(byId, "zzz", "/")).toBeNull();
+    expect(spansForRequest(byId, null, "/")).toBeNull();
   });
 });
 
-describe("window floors", () => {
-  it("never takes the previous step's line, even inside the skew second", () => {
-    // The warm press logs at 5000 and ends at 5400; the next cold press starts at 5500.
-    const lines = [
-      { at: 5000, line: "getCardDetail total=40" },
-      { at: 5700, line: "getCardDetail total=380" },
-    ];
-    const warm = { from: 4900, to: 5400 };
-    const cold = { from: 5500, to: 6200 };
-    const floors = windowFloors([cold, warm]);
-    expect(spansInWindow(lines, warm.from, warm.to, "getCardDetail", floors.get(warm))).toBe("getCardDetail total=40");
-    expect(spansInWindow(lines, cold.from, cold.to, "getCardDetail", floors.get(cold))).toBe("getCardDetail total=380");
-    // Without the floor the skew second reaches back to the warm press's line.
-    expect(spansInWindow(lines, cold.from, cold.to, "getCardDetail")).toBe("getCardDetail total=40");
-  });
-});
-
-describe("a cold load then a warm one, same pattern", () => {
-  it("gives each its own line", () => {
-    const lines = [
-      { at: 1200, line: "/ total=900" },
-      { at: 2300, line: "/ total=150" },
-    ];
-    const cold = { from: 1000, to: 2000 };
-    const warm = { from: 2050, to: 2600 };
-    const floors = windowFloors([warm, cold]);
-    expect(spansInWindow(lines, cold.from, cold.to, "/", floors.get(cold))).toBe("/ total=900");
-    expect(spansInWindow(lines, warm.from, warm.to, "/", floors.get(warm))).toBe("/ total=150");
+describe("vercelRequestId", () => {
+  it("is the header's last segment, the id the log entry carries", () => {
+    expect(vercelRequestId("sfo1::pdx1::pxmsz-1791830682642-bc0f83b831af")).toBe("pxmsz-1791830682642-bc0f83b831af");
+    expect(vercelRequestId(undefined)).toBeNull();
+    expect(vercelRequestId("")).toBeNull();
   });
 });
 
