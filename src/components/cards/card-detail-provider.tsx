@@ -232,6 +232,11 @@ export function useCardDetail(): CardDetailContextValue {
   return ctx;
 }
 
+/** The provider when there is one, else null: for a row also drawn as an About specimen, outside any. */
+export function useCardDetailIfAny(): CardDetailContextValue | null {
+  return useContext(CardDetailContext);
+}
+
 /**
  * How long a press waits on its card's prefetch before reading for itself: the warm route's p90,
  * MEASURED rather than chosen, rounded up to the next 10ms. Sixty prefetches of distinct cards on a `pull:staging` deck, 30 at
@@ -279,7 +284,17 @@ export const INTENT_DELAY_MS = 100;
  * would start the same useless read; `:focus-visible` is what tells keyboard focus apart.
  */
 export function useCardIntent(oracleId: string, art?: string | null) {
-  const { prefetch } = useCardDetail();
+  // Never null: `useCardDetail` throws outside a provider, so a prefetch is always there.
+  return useIntentWith(useCardDetail().prefetch, oracleId, art)!;
+}
+
+/** `useCardIntent` where there may be no provider (a row also drawn as an About specimen): no handlers then. */
+export function useCardIntentIfAny(oracleId: string, art?: string | null) {
+  const handlers = useIntentWith(useCardDetailIfAny()?.prefetch ?? null, oracleId, art);
+  return handlers ?? {};
+}
+
+function useIntentWith(prefetch: CardDetailContextValue["prefetch"] | null, oracleId: string, art?: string | null) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancel = useCallback(() => {
     if (timer.current !== null) clearTimeout(timer.current);
@@ -287,18 +302,20 @@ export function useCardIntent(oracleId: string, art?: string | null) {
   }, []);
   useEffect(() => cancel, [cancel]);
   return useMemo(
-    () => ({
-      onPointerEnter: (event: React.PointerEvent<HTMLElement>) => {
-        cancel();
-        // A finger resting on a card is a tap about to land, not intent ahead of one.
-        if (event.pointerType === "touch") return;
-        timer.current = setTimeout(() => { timer.current = null; prefetch(oracleId, art); }, INTENT_DELAY_MS);
-      },
-      onPointerLeave: cancel,
-      onFocus: (event: React.FocusEvent<HTMLElement>) => {
-        if (keyboardFocus(event.currentTarget)) prefetch(oracleId, art);
-      },
-    }),
+    () => (prefetch
+      ? {
+          onPointerEnter: (event: React.PointerEvent<HTMLElement>) => {
+            cancel();
+            // A finger resting on a card is a tap about to land, not intent ahead of one.
+            if (event.pointerType === "touch") return;
+            timer.current = setTimeout(() => { timer.current = null; prefetch(oracleId, art); }, INTENT_DELAY_MS);
+          },
+          onPointerLeave: cancel,
+          onFocus: (event: React.FocusEvent<HTMLElement>) => {
+            if (keyboardFocus(event.currentTarget)) prefetch(oracleId, art);
+          },
+        }
+      : null),
     [oracleId, art, prefetch, cancel],
   );
 }

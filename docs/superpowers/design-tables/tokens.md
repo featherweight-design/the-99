@@ -40,7 +40,7 @@ Source: `design/design_handoff_the99_tokens/` (R2, approved by Hugh 2026-10-11).
 | I have one | text button, h 24 (44 phone), pad 0 8, 12 `--fg-muted`, underline `--border-dashed` offset 3. Held: `--accent` 500, no underline, `tokens.row.haveOn`. Desktop: before Add to Shopping; phone: second line, left | same |
 | Add to Shopping | h 32 (44 hit), pad 0 10, radius 6, 12 / 500. Rest: 1px `--border-strong`, `--fg-body`. Joined (`tokens.row.joined`): 1px `--accent`, 14% `--accent` wash, `--fg`. Pending 0.6 and not pressable | h 24 |
 | held | no Add to Shopping; pressing `I have one` on a joined token takes it off EVERY deck's Shopping list (an upload that reads it does the same, and an unmark restores none) | same |
-| chevron | 36 x 44, down/up 12 `--fg-muted`; the whole main block is the toggle | 22 x 26 |
+| chevron | 36 x 44, down/up 13 `--fg-muted` (the app's one chevron size, 2026-10-12), the disclosure's control; a press elsewhere on the main block also toggles, except the thumb and the name, which open the token's card details (2026-10-12) | 22 x 26 |
 | Copy | an ordinary row (type `Token`, `C` pip); owned, marked, joined and bought like any other | same |
 
 ## Component: TokenMakers (opened row)

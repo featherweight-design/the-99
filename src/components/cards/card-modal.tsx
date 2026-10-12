@@ -1316,6 +1316,11 @@ export function CardModal({
     [card.printings],
   );
   const hasPicker = ownedPrintings.length > 1 && (deckPrinting === undefined || deckPrinting.save !== undefined);
+  // A token's details (`loadTokenDetail`) draw only what a token has: no rarity, identity or owned
+  // count, and a buy link only to the Mana Pool product its price is for (none when it lists none).
+  const isToken = card.kind === "token";
+  const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
+  const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
 
   /**
    * Closing unmounts the layer.
@@ -1537,6 +1542,8 @@ export function CardModal({
   // The base resolves off `preview`, so it names the printing actually on screen; the count
   // is of what the reader OWNS, so an injected row is art and not a holding.
   const caption = printingCaption(preview, ownedPrintings);
+  // A token whose printing read failed has no set to name, and so no meta block at all.
+  const tokenNoSet = card.kind === "token" && caption === "";
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.
@@ -2414,7 +2421,8 @@ export function CardModal({
                   {cardSheetCopy.printing(resolved.setCode, resolved.collectorNumber)}
                 </span>
               )}
-              <OwnedLine card={card} deckPage={deckPage} />
+              {/* A token has no owned count here (its holding is the deck row's own mark). */}
+              {isToken ? null : <OwnedLine card={card} deckPage={deckPage} />}
             </div>
 
             {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
@@ -2514,24 +2522,31 @@ export function CardModal({
                   promoted out of the grid into a full-width row below Rarity and Identity, so
                   the disclosure and its region are last in the column and the grid is not
                   pushed off-screen the moment you expand. */}
+              {tokenNoSet ? null : (
               <div
                 className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
                 style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
               >
                 {!hasPicker && (
                   // Set + collector number of the printing on screen (§Phase 5) — the art is a
-                  // specific printing now, so the caption names it.
-                  <MetaCell label="Set" value={caption} />
+                  // specific printing now, so the caption names it. A token's details draw this cell
+                  // alone, across the grid, since a token has no rarity, identity or owned count here.
+                  <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} />
                 )}
-                <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-                <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-                <MetaCell
-                  label="You own"
-                  value={`×${card.quantity}`}
-                  quantity
-                  span={hasPicker ? 2 : undefined}
-                />
+                {isToken ? null : (
+                  <>
+                    <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+                    <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+                    <MetaCell
+                      label="You own"
+                      value={`×${card.quantity}`}
+                      quantity
+                      span={hasPicker ? 2 : undefined}
+                    />
+                  </>
+                )}
               </div>
+              )}
 
               {hasPicker && (
                 <div className="md:hidden mt-[12px]">
@@ -2562,12 +2577,16 @@ export function CardModal({
                     expanded={expanded}
                     onClick={toggleExpanded}
                   />
-                ) : (
+                ) : tokenNoSet ? null : (
                   <MetaField label="Set" value={caption} />
                 )}
-                <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-                <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-                <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+                {isToken ? null : (
+                  <>
+                    <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+                    <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+                    <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+                  </>
+                )}
               </div>
 
               {hasPicker && <div className="hidden md:block">{renderRegion(REGION_DESKTOP)}</div>}
@@ -2576,14 +2595,17 @@ export function CardModal({
                   pinned. The hairline is load-bearing: it separates the link from
                   the printings disclosure so it never reads as "buy this
                   printing". Above md: the link lives in the pinned nav row. */}
-              {footer ? null : (
+              {/* Nothing to hold (an unpriced token, with no Fits door) draws no hairline either. */}
+              {footer || (!buyUrl && !onFindDeck) ? null : (
                 <div
                   className="md:hidden flex flex-col mt-[14px]"
                   style={{ borderTop: "1px solid var(--border)" }}
                 >
-                  <div className="flex items-center min-h-[44px]">
-                    <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
-                  </div>
+                  {buyUrl ? (
+                    <div className="flex items-center min-h-[44px]">
+                      <ExternalLink href={buyUrl} label={buyLabel} />
+                    </div>
+                  ) : null}
                   {onFindDeck ? (
                     <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="column" />
                   ) : null}
@@ -2593,9 +2615,10 @@ export function CardModal({
           </div>
 
 
-          {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
+          {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation. With nothing to hold (an unpriced
+              token opened alone) the row and its hairline are not drawn at all. */}
           <div
-            className="hidden md:flex items-center gap-[16px] flex-none mx-[32px] mb-[30px] pt-[20px]"
+            className={`${footer || onFindDeck || buyUrl || total > 1 ? "hidden md:flex" : "hidden"} items-center gap-[16px] flex-none mx-[32px] mb-[30px] pt-[20px]`}
             style={{ borderTop: "1px solid var(--border)" }}
           >
             {/* The link is first in the DOM because the focus trap follows DOM order
@@ -2604,10 +2627,10 @@ export function CardModal({
                 otherwise have taken it — but the order after it is still this one. */}
             {footer ? footer("row") : onFindDeck ? (
               <span className="flex flex-col gap-[8px] min-w-0">
-                <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+                {buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
                 <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} layout="row" />
               </span>
-            ) : <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />}
+            ) : buyUrl ? <ExternalLink href={buyUrl} label={buyLabel} /> : null}
             {/* One / two (handoff decision 6): a list of one drops the whole counter and
                 both dead controls, so the link beside it stands alone. */}
             {total > 1 ? (

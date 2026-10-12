@@ -946,7 +946,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Any printing counts, so one Treasure covers every deck.',
       'Uploading your Collection reads its tokens. “I have one” marks them by hand.',
-      'Open a token to see which cards make it.',
+      'Open a token to see which cards make it. Press its picture or name for its card details.',
       'On Shopping, tokens go to Mana Pool by set and number where it has one.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the

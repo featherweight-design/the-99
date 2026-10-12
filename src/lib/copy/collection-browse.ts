@@ -38,4 +38,6 @@ export const collectionBrowseCopy = {
  *  not the printing on screen — Mana Pool's grid shows them all. */
 export const cardLinkOutCopy = {
   card: "Buy any printing at Mana Pool",
+  /** A token's details: the link names the one Mana Pool product its price is for, not every printing. */
+  token: "Buy this token at Mana Pool",
 } as const;

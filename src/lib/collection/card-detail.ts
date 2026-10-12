@@ -388,7 +388,11 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // own join and never reads it, so a failed catalog read there costs nothing; only the branch
   // that needs it fails with it, exactly as it did when it was the only one reading it.
   const card = owned.length === 0 ? unwrap(await catalog)[0] : undefined;
-  if (owned.length === 0 && !card) return null;
+  // Not a card the catalog holds: perhaps a token, whose details the modal opens the same way (bug
+  // batch 2026-10-12). Asked here so the press, the prefetch and every re-read take one path.
+  // Imported here, as the database is above, so a module that imports this one for its types or
+  // helpers does not pull the client in.
+  if (owned.length === 0 && !card) return (await import("../tokens/detail")).loadTokenDetail(oracleId);
 
   // Stage 2. Each read fails on its own: every one is already caught (`pricesFor`,
   // `proxyingDecks`, `fitsGate`, the availability read) or settled here (the flags and the
