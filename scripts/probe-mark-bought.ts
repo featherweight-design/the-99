@@ -31,7 +31,6 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
 import { cartReceiptFacts, cartSource, receiptFacts } from "../src/lib/decks/mark-bought";
-import { loadDeckBuyRows } from "../src/lib/decks/availability-query";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -174,19 +173,15 @@ async function main() {
         USER,
         { kind: "edit", rows: [{ oracleId: D, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + quantity, expected, condition: null }] },
         {
-          id, source: cartSource(deckIds), receipt: { oracleId: D, deckIds: [] }, requireMember: { deckIds, oracleId: D },
+          id, source: cartSource(deckIds), receipt: { oracleId: D, deckIds: [], owesFor: deckIds }, requireMember: { deckIds, oracleId: D },
           ...(pick ? { assign: { oracleId: D, deckId: pick } } : {}),
         },
       ));
     const lineDecks = [cartSenior, cartJunior, cartBrew];
-    // What each line deck is still billed after a write: the roll-up the action reads.
-    const owesOf = async (deckIds: string[], card: string) => new Map(
-      (await loadDeckBuyRows(USER, deckIds)).filter((r) => r.oracleId === card).map((r) => [r.deckId, r.quantity]),
-    );
 
     const picked1 = await buyCart(lineDecks, 1, cartBrew);
     const facts = picked1.status === "applied" && picked1.receipt
-      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, lineDecks, await owesOf(lineDecks, D)) : null;
+      ? cartReceiptFacts(picked1.receipt.before, picked1.receipt.after, lineDecks, new Map(Object.entries(picked1.receipt.owes ?? {}))) : null;
     check("one copy for three decks, picked for the brew, lands as the brew's reservation",
       picked1.status === "applied" && JSON.stringify(await reservedFor()) === JSON.stringify([cartBrew]),
       `${JSON.stringify(picked1).slice(0, 120)}; reserved ${JSON.stringify(await reservedFor())}`);
@@ -211,15 +206,47 @@ async function main() {
       USER,
       { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 2, expected: 1, condition: null }] },
       {
-        id: randomUUID(), source: cartSource(pq), receipt: { oracleId: E, deckIds: [] },
+        id: randomUUID(), source: cartSource(pq), receipt: { oracleId: E, deckIds: [], owesFor: pq },
         requireMember: { deckIds: pq, oracleId: E }, assign: { oracleId: E, deckId: lineP },
       },
     );
     const pFacts = pickedP.status === "applied" && pickedP.receipt
-      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pq, await owesOf(pq, E)) : null;
+      ? cartReceiptFacts(pickedP.receipt.before, pickedP.receipt.after, pq, new Map(Object.entries(pickedP.receipt.owes ?? {}))) : null;
     check("a pick's receipt never names a deck off the line that held its copy all along",
       pFacts !== null && !pFacts.covered.some((d) => d.deckId === offSenior) && pFacts.covered.some((d) => d.deckId === lineP),
       JSON.stringify(pFacts));
+
+    // A pick whose deck already holds the reservation still needs supply to grant it. P keeps its
+    // reservation on E while the collection drops to nothing and two committed decks take E as
+    // their commander: one copy bought for P then has nothing reservable left, so the pick refuses
+    // and the purchase with it, rather than reporting a copy P will never get.
+    await applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 0, expected: 2, condition: null }] },
+      { id: randomUUID(), confirmShort: undefined },
+    ).then(async (r) => (r.status === "wouldShort"
+      ? applyCollectionChange(
+        USER,
+        { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 0, expected: 2, condition: null }] },
+        { id: randomUUID(), confirmShort: r.decks },
+      )
+      : r));
+    await deck("probe cart E commander 1", E, [], true);
+    await deck("probe cart E commander 2", E, [], true);
+    const ungrantable = await applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 1, expected: 0, condition: null }] },
+      {
+        id: randomUUID(), source: cartSource([lineP]), receipt: { oracleId: E, deckIds: [] },
+        requireMember: { deckIds: [lineP], oracleId: E }, assign: { oracleId: E, deckId: lineP },
+      },
+    );
+    const heldE = Number((await one<{ q: number } | null>(
+      "select coalesce(sum(quantity), 0)::int as q from collection_items where user_id = $1 and oracle_id = $2", [USER, E],
+    ))?.q ?? 0);
+    check("a pick its deck already holds still refuses when nothing is reservable, and nothing is written",
+      ungrantable.status === "assignRefused" && ungrantable.reason === "no-supply-left" && heldE === 0,
+      `${JSON.stringify(ungrantable).slice(0, 100)}; count ${heldE}`);
 
     // Made only now: a committed deck with D as its commander takes a copy no pick can give.
     const cartCommander = await deck("probe cart commander", D, [], true);

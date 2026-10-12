@@ -4,7 +4,7 @@ import {
   cardAssignments, cards, collectionHistory, collectionItems, commanderScores, csvUploads, decks,
   type HistoryRow, type HistoryRowState,
 } from "../../db/schema";
-import { loadAvailability } from "../decks/availability-query";
+import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 import { assignCopyIn, lockCardClaims, type AssignRefusal } from "../decks/assign";
@@ -130,7 +130,12 @@ export type ChangeOptions = {
    * the one its Shopping list draws, at one claim-model read per deck. The cart names none and reads
    * every deck off `after`'s allocation instead (`cartReceiptFacts`).
    */
-  receipt?: { oracleId: string; deckIds: string[] };
+  receipt?: {
+    oracleId: string;
+    deckIds: string[];
+    /** The cart's line decks: what the roll-up still bills each of them, read under this write's locks. */
+    owesFor?: string[];
+  };
   /**
    * Refuse with `notInDeck` unless every one of `deckIds` holds `oracleId` (body or commander),
    * checked INSIDE the transaction with the deck rows locked `for update`, the lock every deck edit
@@ -154,6 +159,11 @@ export type ReceiptSnapshots = {
   after: Availability | null;
   /** Keyed by each of `receipt.deckIds`. */
   afterFromDecks: Record<string, Availability | null>;
+  /**
+   * With `receipt.owesFor`: the copies of the card each of those decks is still billed (absent when
+   * none), from its live list, in this same transaction, so it describes the instant `after` does.
+   */
+  owes?: Record<string, number>;
 };
 
 export type ShortDeck = {
@@ -692,6 +702,13 @@ export async function applyCollectionChange(
           afterFromDecks: Object.fromEntries(await Promise.all(
             opts.receipt!.deckIds.map(async (id) => [id, await receiptOf(id)] as const),
           )),
+          ...(opts.receipt!.owesFor
+            ? {
+                owes: Object.fromEntries((await loadDeckBuyRows(userId, opts.receipt!.owesFor, tx))
+                  .filter((r) => r.oracleId === oracleId)
+                  .map((r) => [r.deckId, r.quantity])),
+              }
+            : {}),
         };
       };
       const receiptOf = async (excludeDeckId?: string) => opts.receipt

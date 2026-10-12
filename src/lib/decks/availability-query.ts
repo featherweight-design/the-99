@@ -719,12 +719,14 @@ export async function loadDeckBuyRows(
    * here saves pricing rows the caller will not read, not a scan.
    */
   deckIds?: string[],
+  /** Read inside a write's transaction, so what it bills is the write's own instant. */
+  tx?: Tx,
 ): Promise<DeckBuyRow[]> {
   if (deckIds && deckIds.length === 0) return [];
   // sql.param for the same reason it is used elsewhere in this file: a bare
   // array expands to a parenthesised parameter list, not to an array.
   const onlyDecks = sql.param(deckIds ?? null);
-  const rows = await db.execute<{
+  const rows = await (tx ?? db).execute<{
     deck_id: string;
     oracle_id: string;
     quantity: number;

@@ -101,9 +101,11 @@ export async function assignCopyIn(
   const ask = await reservableAsk(tx, userId, deckId, oracleId);
   if (typeof ask === "string") return ask;
 
-  // Already reserved for this deck: a pick's press takes it back, and a purchase's pick (`set`)
-  // leaves it standing. Nothing below applies — returning a copy can never be short of supply —
-  // and a cleared row is indistinguishable from one that was never written.
+  // Already reserved for this deck: a pick's press takes it back, and nothing below applies —
+  // returning a copy can never be short of supply — and a cleared row is indistinguishable from
+  // one that was never written. A purchase's pick (`set`) keeps the row, but only once the supply
+  // check below says the reservation is grantable: a row outlives a collection that shrank under
+  // it, and a pick the deck gets nothing from must refuse rather than report success.
   const [existing] = await tx.select({ deckId: cardAssignments.deckId })
     .from(cardAssignments)
     .where(and(
@@ -112,8 +114,7 @@ export async function assignCopyIn(
       eq(cardAssignments.deckId, deckId),
     ))
     .for("update");
-  if (existing) {
-    if (mode === "set") return null;
+  if (existing && mode === "toggle") {
     await tx.delete(cardAssignments).where(and(
       eq(cardAssignments.userId, userId),
       eq(cardAssignments.oracleId, oracleId),
@@ -157,6 +158,7 @@ export async function assignCopyIn(
   const taken = supply?.taken ?? 0;
 
   if (giveable <= 0) return "no-supply-left";
+  if (existing) return null;
 
   // ONE AUTHORED RESERVATION PER CARD. A pick always MOVES rather than adding, whatever the
   // supply — which is the handoff's own accessibility model stated as a rule about the data:
