@@ -117,7 +117,6 @@ export async function writeArrivalsReceipt(args: {
   addedCopy?: boolean;
 }): Promise<ArrivalsSummary> {
   const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
-  const buyAfter = await loadDeckBuyRows(userId);
 
   // Only the cards that GAINED copies. Contention is a question about arrivals, so the
   // claim read is narrowed to them — passing every oracle in the old and new collection
@@ -126,14 +125,23 @@ export async function writeArrivalsReceipt(args: {
   const arrivedIds = Object.keys(ownedAfter).filter(
     (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
   );
-  // ONE SNAPSHOT for the availability and the reservation rows: two READ COMMITTED statements
-  // would let a pick moved between them credit the arrived copy to a deck the availability never
-  // saw holding it. Repeatable read fixes both reads at the first statement.
+  // ONE SNAPSHOT for the money rows, the availability and the reservation rows, while the switch
+  // is on: separate READ COMMITTED statements would let a pick moved between them credit the
+  // arrived copy to a deck the availability never saw holding it, or keep A's "No longer to buy"
+  // row beside a line saying the copy went to B. Repeatable read fixes all three at the first
+  // statement. Off, the money rows are read as they always were.
   const addedCopyOn = args.addedCopy ?? addedCopyEnabled();
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
-  const read: { availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations } =
-    arrivedIds.length
-      ? await db.transaction(async (tx) => {
+  type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
+  const read: Read = !addedCopyOn
+    ? {
+      buyAfter: await loadDeckBuyRows(userId),
+      availability: arrivedIds.length ? await loadAvailability(userId, { oracleIds: arrivedIds }) : new Map(),
+      reservations: new Map(),
+    }
+    : await db.transaction(async (tx): Promise<Read> => {
+        const buyAfter = await loadDeckBuyRows(userId, undefined, tx);
+        if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
         const availability = await loadAvailability(userId, { oracleIds: arrivedIds }, tx);
         // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
         // the one `regrant` needs to say which reservation the smaller supply covered.
@@ -147,10 +155,9 @@ export async function writeArrivalsReceipt(args: {
             reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
           }
         }
-        return { availability, reservations };
-      }, { isolationLevel: "repeatable read" })
-      : { availability: new Map(), reservations: new Map() };
-  const { availability, reservations } = read;
+        return { buyAfter, availability, reservations };
+      }, { isolationLevel: "repeatable read" });
+  const { buyAfter, availability, reservations } = read;
   const claims: Record<string, ArrivedClaimState> = {};
   for (const [oracleId, a] of availability) {
     claims[oracleId] = {

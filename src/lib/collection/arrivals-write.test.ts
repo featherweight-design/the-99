@@ -16,6 +16,7 @@ const stub = vi.hoisted(() => {
     transaction: vi.fn(async (...args: [(t: unknown) => unknown, unknown?]) => args[0](tx)),
     dbSelect: vi.fn(() => chain([])),
     loadAvailability: vi.fn(),
+    loadDeckBuyRows: vi.fn(async () => []),
   };
 });
 
@@ -28,7 +29,7 @@ vi.mock("../../db", () => ({
 }));
 vi.mock("../decks/availability-query", () => ({
   loadAvailability: stub.loadAvailability,
-  loadDeckBuyRows: async () => [],
+  loadDeckBuyRows: stub.loadDeckBuyRows,
 }));
 
 import { writeArrivalsReceipt } from "./arrivals-write";
@@ -39,10 +40,11 @@ describe("writeArrivalsReceipt's claim read", () => {
     stub.tx.select.mockClear();
     stub.dbSelect.mockClear();
     stub.loadAvailability.mockReset();
+    stub.loadDeckBuyRows.mockClear();
     stub.loadAvailability.mockResolvedValue(new Map([["o1", { owned: 2, hard: 0, soft: 0, free: 2, claims: [] }]]));
   });
 
-  it("reads the availability and the reservations inside one repeatable-read transaction", async () => {
+  it("reads the money rows, the availability and the reservations inside one repeatable-read transaction", async () => {
     await writeArrivalsReceipt({
       userId: "u1", uploadId: "up1", ownedBefore: { o1: 1 }, ownedAfter: { o1: 2 }, buyBefore: [],
       unmatched: [], parseErrorCount: 0, addedCopy: true,
@@ -51,5 +53,7 @@ describe("writeArrivalsReceipt's claim read", () => {
     expect(stub.transaction.mock.calls[0][1]).toEqual({ isolationLevel: "repeatable read" });
     expect(stub.loadAvailability.mock.calls[0][2]).toBe(stub.tx);
     expect(stub.tx.select).toHaveBeenCalledTimes(1);
+    // The money rows too, or a pick between them keeps A's row beside a line saying B.
+    expect(stub.loadDeckBuyRows.mock.calls[0]).toEqual(["u1", undefined, stub.tx]);
   });
 });
