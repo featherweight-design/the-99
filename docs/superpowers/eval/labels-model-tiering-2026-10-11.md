@@ -68,7 +68,7 @@ Input was identical for both, 180,347 tokens; output was 47,020 (Haiku) and 44,1
 
 ## Limits of this result
 
-- **One run per candidate.** The control below re-asks Sonnet 4.5 once, so it sets a noise ceiling but not its spread.
+- **One run per candidate.** The control below re-asks Sonnet 4.5 once, so it gives one observed reference point for 4.5's self-agreement, not its spread or a proven ceiling.
 - **The reference is not truth.** Where a stored label is wrong, a candidate that disagrees scores a miss.
 - **Real time, not Batch, for the candidates.** Production uses the Batch API at half price; the candidates' batch rows above are the standard cost halved, not a batch run. Only the Sonnet 4.5 control was a real batch.
 - **Pricing.** `scripts/eval/lib/pricing.mts` already prices both models (Haiku 5.5 at the up-to-100K-token rate). The label prompts here are about 600 input tokens per card and about 9,000 per request, so the higher Haiku tier never applies and the repository holds no rate for it. `scripts/lib/card-labels-pricing.mjs` has no row for either model; it needs one, tied to the canonical table by `card-labels-pricing.test.mts`, only if a model is adopted.
