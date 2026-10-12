@@ -24,6 +24,7 @@ import { tokenShopping } from "../../lib/tokens/shopping";
 import { StandInLimit } from "./stand-in-limit";
 import { ShoppingKey } from "./shopping-key";
 import { deckStatsCopy } from "@/lib/copy/deck-stats";
+import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
@@ -38,7 +39,7 @@ export function isDeckView(value: string): value is DeckView {
   return value === "list" || value === "card";
 }
 
-export type DeckPanel = "list" | "stats";
+export type DeckPanel = "list" | "stats" | "notes";
 
 const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
   { value: "list", glyph: "≣", label: viewToggleCopy.deck.list },
@@ -111,6 +112,12 @@ type GroupToggleProps = {
    * aside, because the panel below is not a list.
    */
   stats?: { open: boolean; onChange: (open: boolean) => void };
+  /**
+   * `DECK_NOTES_ENABLED`: present adds a Notes segment after Stats (or after Shopping with Stats off:
+   * `All · Shopping | Notes`). `count` is the open notes, drawn in neutral mono and absent at zero.
+   * While `open`, every list tool steps aside, as for Stats.
+   */
+  notes?: { open: boolean; count: number; onChange: (open: boolean) => void };
 };
 
 /**
@@ -162,10 +169,14 @@ export function GroupToggle({
   onLockModeChange,
   lockedAutoCount = 0,
   stats,
+  notes,
 }: GroupToggleProps) {
   const statsOpen = stats?.open ?? false;
-  // The segment owns the selection while Stats is open, so neither list pill reads as chosen.
-  const shown = statsOpen ? null : filter;
+  const notesOpen = notes?.open ?? false;
+  // A panel is open: the list tools step aside and neither list pill reads as chosen.
+  const panelOpen = statsOpen || notesOpen;
+  // The segment owns the selection while a panel is open, so neither list pill reads as chosen.
+  const shown = panelOpen ? null : filter;
   // `md:` is the only breakpoint this row has ever used, and the panel's form
   // follows it: a labelled 44px pill at phone, the desktop popover above.
   const wide = useIsDesktop();
@@ -185,7 +196,7 @@ export function GroupToggle({
   // cards + view well; grouping + sort), built with `order` and full-width breaks instead of
   // relying on incidental wrapping. Cluster 3 turns into `contents` so its parts can be ordered
   // against the other clusters; from `md:` every `order` resets and the row reads as before.
-  const phoneRows = Boolean(stats);
+  const phoneRows = Boolean(stats || notes);
   const phoneRow2 = autoCount > 0 || lockAvailable || filter === "all";
   const actCluster = lockAvailable || Boolean(draftNote) || autoCount > 0 || keptCount > 0;
   return (
@@ -207,8 +218,8 @@ export function GroupToggle({
             said with the bone-on-elevated skin, never with a coloured ground.
             Accent does still tint a border — the Shopping pill mixes 30% of it
             into its idle ring below. */}
-        {stats ? (
-          /* DECK_STATS_ENABLED: One segmented group (handoff 2a): a single bordered container holding
+        {stats || notes ? (
+          /* DECK_STATS_ENABLED / DECK_NOTES_ENABLED: One segmented group (handoff 2a): a single bordered container holding
              All and Shopping, a hairline, then Stats. The selected segment is the filled raised pill;
              Shopping keeps its warm ink selected or not. Full width at phone with the segments
              sharing it (44px targets), content-width from `md:`. */
@@ -237,15 +248,29 @@ export function GroupToggle({
               </button>
             ))}
             <span aria-hidden data-toolbar-divider className="mx-[3px] my-[6px] w-px flex-none self-stretch bg-[color:var(--border-strong)]" />
-            <button
-              type="button"
-              aria-pressed={statsOpen}
-              aria-label={deckStatsCopy.segment.aria}
-              onClick={() => stats.onChange(true)}
-              className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
-            >
-              {deckStatsCopy.segment.stats}
-            </button>
+            {stats && (
+              <button
+                type="button"
+                aria-pressed={statsOpen}
+                aria-label={deckStatsCopy.segment.aria}
+                onClick={() => stats.onChange(true)}
+                className={`${SEGMENT_BASE} ${statsOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
+              >
+                {deckStatsCopy.segment.stats}
+              </button>
+            )}
+            {notes && (
+              <button
+                type="button"
+                aria-pressed={notesOpen}
+                aria-label={notes.count > 0 ? deckNotesCopy.head.segmentAria(String(notes.count)) : deckNotesCopy.head.segmentAriaNone}
+                onClick={() => notes.onChange(true)}
+                className={`${SEGMENT_BASE} ${notesOpen ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)]" : "font-medium text-[color:var(--fg-muted)]"}`}
+              >
+                {deckNotesCopy.head.segment}
+                {notes.count > 0 && <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">{notes.count}</span>}
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -285,7 +310,12 @@ export function GroupToggle({
             {deckStatsCopy.segment.provenance}
           </span>
         )}
-        {!statsOpen && (
+        {notesOpen && notes && (
+          <span className="basis-full font-mono text-[10.5px] text-[color:var(--fg-faint)] md:basis-auto md:ml-auto">
+            {notes.count > 0 ? deckNotesCopy.head.provenance(String(notes.count)) : deckNotesCopy.head.provenanceEmpty}
+          </span>
+        )}
+        {!panelOpen && (
         <>
 
         {/* Spacer: pushes the group pills right — from `md:` only. Below it the
@@ -515,14 +545,14 @@ export function GroupToggle({
           unreadable table, and a wrapper carrying the 10px gap would leave that
           gap under the pills with nothing in it. The strip owns its own top
           margin so the decision and the space it occupies stay together. */}
-      {!statsOpen && filter === "shopping" && priceSummary && (
+      {!panelOpen && filter === "shopping" && priceSummary && (
         <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} tokens={joinedTokens} tokenProvenance={deckTokens?.provenance ?? null} tokenOwnProvenance={deckTokens?.ownProvenance ?? null} />
       )}
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then (it reads `none over`). */}
-      {!statsOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
+      {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
       {/* I got it's key, a host of its own so it draws with the swap tools off (null with I got it off). */}
-      {!statsOpen && filter === "shopping" && <ShoppingKey shoppingCount={shoppingCount} />}
+      {!panelOpen && filter === "shopping" && <ShoppingKey shoppingCount={shoppingCount} />}
     </div>
   );
 }

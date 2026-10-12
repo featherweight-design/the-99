@@ -15,12 +15,20 @@ const stub = vi.hoisted(() => ({
   names: new Map<string, string>(),
   insert: "ok" as "ok" | "cap",
   namesThrow: false,
+  readThrows: false,
+  view: { open: [], done: [], readAt: 42 },
   found: true,
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => void stub.paths.push(p) }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
-vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK }) }));
+vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK, commanderOracleId: "c", partnerOracleId: null }) }));
+vi.mock("../../lib/decks/notes-read", () => ({
+  readDeckNotes: async () => {
+    if (stub.readThrows) throw new Error("db down");
+    return stub.view;
+  },
+}));
 vi.mock("../../lib/decks/notes-store", () => ({
   currentNames: async () => {
     if (stub.namesThrow) throw new Error("db down");
@@ -44,6 +52,7 @@ beforeEach(() => {
   stub.insert = "ok";
   stub.found = true;
   stub.namesThrow = false;
+  stub.readThrows = false;
 });
 
 describe("with the switch off", () => {
@@ -62,14 +71,21 @@ describe("addNote", () => {
   beforeEach(on);
 
   it("stores one folded line and revalidates the deck's surfaces", async () => {
-    expect(await addNote(DECK, "  try\n a second   sweeper ")).toEqual({ ok: true });
+    expect(await addNote(DECK, "  try\n a second   sweeper ")).toMatchObject({ ok: true });
     expect(stub.calls[0]).toEqual({ fn: "insertNote", args: [DECK, "user-1", "try a second sweeper"] });
     expect(stub.paths).toEqual([`/decks/${DECK}`, "/decks", "/decks/shopping", "/"]);
   });
 
+  it("answers with the notes as they stand after the write, and with null when that read fails (the write stands)", async () => {
+    expect(await addNote(DECK, "a")).toEqual({ ok: true, notes: stub.view });
+    stub.readThrows = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await addNote(DECK, "b")).toEqual({ ok: true, notes: null });
+  });
+
   it("refuses an empty note, a 141-character note and a non-string", async () => {
     for (const body of ["   ", "a".repeat(141), 7 as unknown as string]) expect((await addNote(DECK, body)).ok).toBe(false);
-    expect(await addNote(DECK, "a".repeat(140))).toEqual({ ok: true });
+    expect(await addNote(DECK, "a".repeat(140))).toMatchObject({ ok: true });
   });
 
   it("refuses a deck id that is not a uuid", async () => {
@@ -79,7 +95,7 @@ describe("addNote", () => {
 
   it("rewrites a tag's stored name to the catalog's and refuses a tag naming no card", async () => {
     stub.names = new Map([[ID, "Thassa's Oracle"]]);
-    expect(await addNote(DECK, `try [[${ID}|Whatever the client sent]]`)).toEqual({ ok: true });
+    expect(await addNote(DECK, `try [[${ID}|Whatever the client sent]]`)).toMatchObject({ ok: true });
     expect(stub.calls[0].args[2]).toBe(`try [[${ID}|Thassa's Oracle]]`);
 
     stub.names = new Map();
@@ -109,10 +125,10 @@ describe("the other writes", () => {
   beforeEach(on);
 
   it("edit, done and delete write through the store and revalidate", async () => {
-    expect(await editNote(DECK, NOTE, "changed")).toEqual({ ok: true });
-    expect(await setNoteDone(DECK, NOTE, true)).toEqual({ ok: true });
-    expect(await setNoteDone(DECK, NOTE, false)).toEqual({ ok: true });
-    expect(await deleteNote(DECK, NOTE)).toEqual({ ok: true });
+    expect(await editNote(DECK, NOTE, "changed")).toMatchObject({ ok: true });
+    expect(await setNoteDone(DECK, NOTE, true)).toMatchObject({ ok: true });
+    expect(await setNoteDone(DECK, NOTE, false)).toMatchObject({ ok: true });
+    expect(await deleteNote(DECK, NOTE)).toMatchObject({ ok: true });
     expect(stub.calls.map((c) => c.fn)).toEqual(["updateNoteBody", "setNoteDone", "setNoteDone", "removeNote"]);
     expect(stub.calls[1].args).toEqual([DECK, "user-1", NOTE, true]);
     expect(stub.calls[2].args).toEqual([DECK, "user-1", NOTE, false]);

@@ -60,6 +60,7 @@ import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView } from "../../lib/decks/builder-view";
 import { DeckPanelContext } from "./deck-panel";
 import type { DeckPanel } from "./group-toggle";
+import type { DeckNotesView } from "../../lib/decks/notes-types";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { GamesPanel } from "./games-panel";
 // Types only: `games.ts` reaches for the database, and a value import from a
@@ -230,6 +231,9 @@ interface BuilderShellProps {
   analysisEnabled?: boolean;
   /** `DECK_STATS_ENABLED`, read on the server. Off: the list control draws no Stats segment. */
   statsEnabled?: boolean;
+  /** `DECK_NOTES_ENABLED`, read on the server. Off: the list control draws no Notes segment. */
+  notesEnabled?: boolean;
+  notesData?: DeckNotesView | null;
   /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
    *  curve. The figures themselves are derived on the client from the optimistic list. Null when off. */
   statsData?: DeckStatsInput | null;
@@ -311,6 +315,8 @@ export function BuilderShell({
   initialView = "deck",
   analysisEnabled = false,
   statsEnabled = false,
+  notesEnabled = false,
+  notesData = null,
   statsData = null,
   noticesEnabled = false,
   initialNotices = null,
@@ -1977,6 +1983,8 @@ export function BuilderShell({
               <DeckPanelContext.Provider value={deckPanel}>
               <Decklist
               statsEnabled={statsEnabled}
+              notesEnabled={notesEnabled}
+              notesData={notesData}
               statsData={statsData}
               statsFocus={statsFocus}
               onStatsFocused={clearStatsFocus}
@@ -2052,6 +2060,7 @@ export function BuilderShell({
             {(isDesktop || !unresolvedExpanded) && (
               <div
                 data-testid="quick-add-dock"
+                data-hide-on-note-focus=""
                 className={[
                   "sticky bottom-[var(--tabbar-h)] md:bottom-0 z-20 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]",
                   // The top-off commit bar takes this slot at phone widths. Hidden

@@ -31,6 +31,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DeckStatsView } from "./deck-stats-view";
+import { DeckNotesPanel } from "./notes/deck-notes-panel";
+import { NO_NOTES, type DeckNotesView } from "../../lib/decks/notes-types";
 import { useDeckPanel } from "./deck-panel";
 import { DECK_VIEW_KEY, GroupToggle, isDeckView, type AutoControls } from "./group-toggle";
 import { deckCardComparator } from "../../lib/decks/sort-cards";
@@ -149,6 +151,9 @@ type DecklistProps = {
   /** `DECK_STATS_ENABLED`. Off: no Stats segment is drawn and nothing else changes. */
   statsEnabled?: boolean;
   statsData?: DeckStatsInput | null;
+  /** `DECK_NOTES_ENABLED`. Off: no Notes segment is drawn and nothing else changes. `notesData` is the deck's notes. */
+  notesEnabled?: boolean;
+  notesData?: DeckNotesView | null;
   /**
    * A request to open Deck stats at one card, from the benchmark ledger's Stats link (audit build
    * rule 6). `n` moves on every request, so the same card asked for twice scrolls twice.
@@ -336,6 +341,8 @@ export function Decklist({
   filled = false,
   statsEnabled = false,
   statsData = null,
+  notesEnabled = false,
+  notesData = null,
   statsFocus = null,
   onStatsFocused,
   games = NO_GAMES,
@@ -379,19 +386,23 @@ export function Decklist({
   // third segment of the All / Shopping control, so choosing either list segment returns here.
   const [panel, choosePanel] = useDeckPanel();
   const statsOpen = statsEnabled && panel === "stats";
+  const notesOpen = notesEnabled && panel === "notes";
   // I got it's held slots (call 8) last until the list is read again: a switch of tab or panel, or
   // leaving the deck, clears them; the action's revalidation does not.
   const gotIt = useGotIt();
   const clearHeld = gotIt?.clearHeld;
   const shoppingKeyDraws = gotIt !== null;
   const [slotsLeft, setSlotsLeft] = useState<ReadonlySet<string>>(NO_SLOTS_LEFT);
-  useEffect(() => () => clearHeld?.(), [filter, statsOpen, clearHeld]);
+  useEffect(() => () => clearHeld?.(), [filter, statsOpen, notesOpen, clearHeld]);
   const onFilterChange = (f: "all" | "shopping") => {
     choosePanel("list");
     onFilterChangeProp(f);
   };
   const stats = statsEnabled
     ? { open: statsOpen, onChange: (open: boolean) => choosePanel(open ? "stats" : "list") }
+    : undefined;
+  const notes = notesEnabled
+    ? { open: notesOpen, count: notesData?.open.length ?? 0, onChange: (open: boolean) => choosePanel(open ? "notes" : "list") }
     : undefined;
   const view = storedView ?? "list";
   // The ledger's Stats link: open the panel, then, once it is drawn, bring the card into view.
@@ -733,6 +744,33 @@ export function Decklist({
     .filter((c) => !spentOracleIds.has(c.oracleId))
     .map((c) => ({ oracleId: c.oracleId, name: printedNameOf(c), imageUri: c.imageUri }));
 
+  if (notesOpen) {
+    // The picker's "In this deck" group: this deck's cards and its commanders, by the name the deck draws.
+    const noteCards = [...cards.map((c) => ({ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null })),
+      ...[commander, partner].flatMap((c) => (c ? [{ oracleId: c.oracleId, name: c.name, typeLine: c.typeLine, imageUri: c.imageUri ?? null }] : []))];
+    return (
+      <div className="flex flex-col">
+        <GroupToggle
+          allCount={built}
+          shoppingCount={shoppingCount}
+          filter={filter}
+          grouping={grouping}
+          onFilterChange={onFilterChange}
+          onGroupingChange={onGroupingChange}
+          view={view}
+          onViewChange={chooseView}
+          shoppingCards={shoppingList}
+          sort={sort}
+          onSortChange={setSort}
+          stats={stats}
+          notes={notes}
+          {...lockProps}
+        />
+        <DeckNotesPanel deckId={deckId} notes={notesData ?? NO_NOTES} deckCards={noteCards} />
+      </div>
+    );
+  }
+
   if (statsOpen) {
     return (
       <div className="flex flex-col">
@@ -749,6 +787,7 @@ export function Decklist({
           sort={sort}
           onSortChange={setSort}
           stats={stats}
+          notes={notes}
           {...lockProps}
         />
         <DeckStatsView data={statsSlice} onShop={() => onFilterChange("shopping")} onLogGame={onLogGame} />
@@ -984,6 +1023,7 @@ export function Decklist({
             onSortAnnounce={onAnnounce}
             draftNote={draftNote}
             stats={stats}
+            notes={notes}
             {...lockProps}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
@@ -1079,6 +1119,7 @@ export function Decklist({
           onSortAnnounce={onAnnounce}
           draftNote={draftNote}
           stats={stats}
+          notes={notes}
             {...lockProps}
         />
 
@@ -1221,6 +1262,7 @@ export function Decklist({
         onSortAnnounce={onAnnounce}
         draftNote={draftNote}
         stats={stats}
+        notes={notes}
             {...lockProps}
       />
 

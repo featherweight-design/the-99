@@ -1046,3 +1046,9 @@ html {
      straddles the diagonal, and no one ink reads on both the muted grey and the bare card. */
   --result-win: #C9A54E;
 }
+
+/* Deck notes, phone only: while a note's field has focus the sticky add-card bar and the bottom tab bar step
+   aside so the field keeps the room above the keyboard. `note-field.tsx` sets and clears the attribute. */
+@media (max-width: 767px) {
+  html[data-note-focus] [data-hide-on-note-focus] { display: none; }
+}

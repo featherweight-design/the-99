@@ -50,6 +50,8 @@ import { labelRoleCountsEnabled } from "../../../lib/decks/label-counts-flag";
 import { roleCounterFor } from "../../../lib/decks/label-role-counts";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { deckStatsEnabled } from "../../../lib/decks/stats-flag";
+import { deckNotesEnabled } from "../../../lib/decks/notes-flag";
+import { readDeckNotes } from "../../../lib/decks/notes-read";
 import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
 import { settleLabelRead } from "../../../lib/decks/label-read-settle";
@@ -178,6 +180,11 @@ export default async function DeckBuilderPage({
       loadDeckSuggestions(id, userId),
     ))));
   // The move-card picker lists every other deck by name, as it always has.
+  // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
+  // route, and nothing cached holds a note). Behind its own switch: off reads nothing.
+  const notesRead = deckNotesEnabled()
+    ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null })) : null)))
+    : null;
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
   // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
@@ -602,6 +609,8 @@ export default async function DeckBuilderPage({
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
       statsEnabled={deckStatsEnabled()}
+      notesEnabled={deckNotesEnabled()}
+      notesData={notesRead ? await notesRead : null}
       statsData={deckStatsEnabled()
         ? {
             jobs: statsJobsRead ? await statsJobsRead : null,
