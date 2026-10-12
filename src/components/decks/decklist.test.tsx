@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckCommander } from "../../lib/decks/read";
 import type { DeckStatsInput } from "../../lib/decks/stats";
+import type { DeckNotesView } from "../../lib/decks/notes-types";
 import type { SwapReceipt } from "../../lib/swaps/context";
 import { useEffect } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -109,6 +110,8 @@ function renderDecklist(
     lockMode?: boolean;
     statsEnabled?: boolean;
     statsData?: DeckStatsInput | null;
+    notesEnabled?: boolean;
+    notesData?: DeckNotesView | null;
     statsFocus?: { card: "curve" | "jobs"; n: number } | null;
     onStatsFocused?: () => void;
     games?: { result: "win" | "loss" | "draw"; playedAt: Date; versionNumber: number | null }[];
@@ -182,6 +185,8 @@ function renderDecklist(
           lockMode={opts.lockMode}
           statsEnabled={opts.statsEnabled}
           statsData={opts.statsData}
+          notesEnabled={opts.notesEnabled}
+          notesData={opts.notesData}
           statsFocus={opts.statsFocus}
           onStatsFocused={opts.onStatsFocused}
           games={opts.games}
@@ -1450,6 +1455,37 @@ describe("the Stats panel", () => {
 
     expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
     expect(document.querySelector("[data-deck-stats]")).toBeNull();
+  });
+
+  describe("Notes (DECK_NOTES_ENABLED)", () => {
+    const noteOf = (id: string, text: string) => ({ id, body: text, drawn: [{ kind: "text" as const, text }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null });
+
+    it("draws no Notes segment with the switch off, and the toolbar is the old one", () => {
+      renderDecklist([rampOwned], { filter: "all" });
+      expect(screen.queryByRole("button", { name: /^Notes/ })).toBeNull();
+    });
+
+    it("draws All · Shopping | Notes with Stats off, counting open notes", () => {
+      renderDecklist([rampOwned], { filter: "all", notesEnabled: true, notesData: { open: [noteOf("a", "one"), noteOf("b", "two")], done: [], readAt: 1 } });
+      expect(screen.getByRole("button", { name: "Notes, 2 open" })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: deckStatsCopy.segment.aria })).toBeNull();
+    });
+
+    it("says none yet at zero and draws no count", () => {
+      renderDecklist([rampOwned], { filter: "all", notesEnabled: true, notesData: { open: [], done: [], readAt: 1 } });
+      expect(screen.getByRole("button", { name: "Notes, none yet" })).toBeTruthy();
+    });
+
+    it("sits beside Stats when both switches are on, and pressing it swaps the list for the panel", () => {
+      renderDecklist([rampOwned], { filter: "all", statsEnabled: true, statsData: { commanders: [] }, notesEnabled: true, notesData: { open: [noteOf("a", "water the plants")], done: [], readAt: 1 } });
+      expect(screen.getByRole("button", { name: deckStatsCopy.segment.aria })).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Notes, 1 open" }));
+      expect(screen.getByText("water the plants")).toBeTruthy();
+      expect(document.querySelector("[data-deck-stats]")).toBeNull();
+      // Choosing a list segment returns to the list.
+      fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+      expect(screen.queryByText("water the plants")).toBeNull();
+    });
   });
 
   it("opens on the list even when an earlier deck was left on Stats: the choice is not stored", () => {

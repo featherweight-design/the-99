@@ -645,6 +645,9 @@ export function TabBar({ locked }: { locked: boolean }) {
 
   return (
     <nav
+      // Hidden while a Deck note's field has focus on a phone (`html[data-note-focus]`, `note-field.tsx`):
+      // the keyboard is up and the field needs the room (Deck notes A1).
+      data-hide-on-note-focus=""
       // Held to --tabbar-h rather than sized by its contents: the bar is fixed,
       // so every surface that has to sit clear of it reserves that height by
       // hand, and an intrinsic height gives them nothing exact to reserve.

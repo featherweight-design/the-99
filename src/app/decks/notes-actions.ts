@@ -5,7 +5,7 @@ import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { deckSurfaces } from "../../lib/decks/revalidate";
-import { type DeckMutationResult } from "../../lib/decks/mutation-result";
+import { readDeckNotes, type NotesResult } from "../../lib/decks/notes-read";
 import { deckNotesEnabled } from "../../lib/decks/notes-flag";
 import { checkBody, tagIds, withCurrentNames } from "../../lib/decks/notes-body";
 import {
@@ -27,6 +27,20 @@ const surfaces = (deckId: string) => {
 };
 
 /**
+ * What a successful write answers with: the notes as they stand now, read here after the write. The panel
+ * shows these rather than waiting on the page's refresh, which can arrive after (or before) it and show the
+ * notes as they were. A failed read costs nothing: the write stands and the page payload carries them.
+ */
+async function fresh(deckId: string, userId: string, deck: { commanderOracleId: string; partnerOracleId: string | null }): Promise<NotesResult> {
+  surfaces(deckId);
+  const notes = await readDeckNotes(deckId, userId, deck).catch((err) => {
+    console.error("readDeckNotes after a write failed", err);
+    return null;
+  });
+  return { ok: true, notes };
+}
+
+/**
  * Check the text and make every tag honest: each tagged id must be a real card, and its stored name is
  * rewritten to the catalog's name at this moment (lock 2), so a client cannot store a name that is not the
  * card's. A tag naming no card refuses the whole note rather than storing a link that opens nothing.
@@ -43,12 +57,12 @@ async function prepareBody(raw: unknown): Promise<string | null> {
   return again.ok ? again.body : null;
 }
 
-export async function addNote(deckId: string, rawBody: string): Promise<DeckMutationResult> {
+export async function addNote(deckId: string, rawBody: string): Promise<NotesResult> {
   const refuse = { ok: false as const, message: deckNotesCopy.add.refused };
   if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
   if (!isUuid(deckId)) return refuse;
-  await requireDeck(deckId, userId);
+  const deck = await requireDeck(deckId, userId);
   try {
     const body = await prepareBody(rawBody);
     if (body === null) return refuse;
@@ -59,16 +73,15 @@ export async function addNote(deckId: string, rawBody: string): Promise<DeckMuta
     console.error("addNote failed", err);
     return refuse;
   }
-  surfaces(deckId);
-  return { ok: true };
+  return fresh(deckId, userId, deck);
 }
 
-export async function editNote(deckId: string, noteId: string, rawBody: string): Promise<DeckMutationResult> {
+export async function editNote(deckId: string, noteId: string, rawBody: string): Promise<NotesResult> {
   const refuse = { ok: false as const, message: deckNotesCopy.edit.refused };
   if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
-  await requireDeck(deckId, userId);
+  const deck = await requireDeck(deckId, userId);
   try {
     const body = await prepareBody(rawBody);
     if (body === null) return refuse;
@@ -77,41 +90,38 @@ export async function editNote(deckId: string, noteId: string, rawBody: string):
     console.error("editNote failed", err);
     return refuse;
   }
-  surfaces(deckId);
-  return { ok: true };
+  return fresh(deckId, userId, deck);
 }
 
 /** Select (`done: true`) or unselect a note. */
-export async function setNoteDone(deckId: string, noteId: string, done: boolean): Promise<DeckMutationResult> {
+export async function setNoteDone(deckId: string, noteId: string, done: boolean): Promise<NotesResult> {
   const refuse = { ok: false as const, message: done === true ? deckNotesCopy.row.doneRefused : deckNotesCopy.row.reopenRefused };
   if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(noteId) || typeof done !== "boolean") return refuse;
-  await requireDeck(deckId, userId);
+  const deck = await requireDeck(deckId, userId);
   try {
     if (!(await setDone(deckId, userId, noteId, done))) return refuse;
   } catch (err) {
     console.error("setNoteDone failed", err);
     return refuse;
   }
-  surfaces(deckId);
-  return { ok: true };
+  return fresh(deckId, userId, deck);
 }
 
-export async function deleteNote(deckId: string, noteId: string): Promise<DeckMutationResult> {
+export async function deleteNote(deckId: string, noteId: string): Promise<NotesResult> {
   const refuse = { ok: false as const, message: deckNotesCopy.confirm.refused };
   if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
-  await requireDeck(deckId, userId);
+  const deck = await requireDeck(deckId, userId);
   try {
     if (!(await removeNote(deckId, userId, noteId))) return refuse;
   } catch (err) {
     console.error("deleteNote failed", err);
     return refuse;
   }
-  surfaces(deckId);
-  return { ok: true };
+  return fresh(deckId, userId, deck);
 }
 
 /** The `[[` picker's "any card" lookup. Null when the switch is off or the search fails. */
