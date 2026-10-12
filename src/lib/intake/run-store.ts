@@ -132,7 +132,7 @@ export type TheReadState =
 export async function loadTheRead(readId: string, userId: string, now: Date = new Date()): Promise<TheReadState> {
   const [row] = await db.select({
     status: intakeReads.status, errorClass: intakeReads.errorClass, phase: intakeReads.phase,
-    result: intakeReads.result, createdAt: intakeReads.createdAt,
+    result: intakeReads.result, createdAt: intakeReads.createdAt, chips: intakeReads.chips,
   }).from(intakeReads).where(and(eq(intakeReads.id, readId), eq(intakeReads.userId, userId)));
   if (!row) return { kind: "none" };
   const result = (row.result ?? null) as TheReadResult | null;
@@ -147,6 +147,9 @@ export async function loadTheRead(readId: string, userId: string, now: Date = ne
     return { kind: "failed" };
   }
   if (row.status === "ok" && result) return { kind: "done", result };
+  // A read from the retired one-call engine carries `chips` and no `result`: it settled, and was
+  // charged, but has nothing this panel can draw. It reads as no read at all, never as failed.
+  if (!result && row.chips) return { kind: "none" };
   if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", result };
   if (row.status === "cancelled") return { kind: "stopped" };
   return { kind: "failed" };

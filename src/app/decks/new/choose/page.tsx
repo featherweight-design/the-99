@@ -147,7 +147,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
         <div className={RESULTS_COLUMN}>
           {/* Keyed on the server's state: a refresh that finds the read settled starts the panel and
               the results afresh, in the read's order. */}
-          {words && <ReadAnnouncer />}
+          {/* Keyed on the read: a new read (Try again) starts silent, while the refresh that draws
+              this read settled keeps what it just announced. */}
+          {words && <ReadAnnouncer key={p.readId ?? "unread"} />}
           <ReadScope key={served?.kind ?? "unread"} initial={words ? phaseOf(served) : null}>
           <ReadAsBar
             chips={answerChips(p, labels)}
