@@ -6,6 +6,7 @@ const assign = vi.hoisted(() => vi.fn());
 vi.mock("../../app/decks/assignment-actions", () => ({ assignCopy: assign }));
 import { ContestedCardRow } from "./contested-card-row";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 
 const AUG = Date.UTC(2026, 7, 2);
@@ -764,5 +765,68 @@ describe("ContestedCardRow — the chooser", () => {
         copy.contested.announcedPick("Elemental Dragons", "Brushland", "HD Avatar Aang"),
       );
     });
+  });
+});
+
+describe("ContestedCardRow — where an added copy goes", () => {
+  // The handoff's variant `one`: 17 committed decks each asking for one, 17 owned once the new
+  // copy arrived, and three brews behind them.
+  function staging(owned: number): ContestedCard {
+    const committed = Array.from({ length: 17 }, (_, i) => ({
+      deckId: `c${i}`, deckName: `HD - Deck ${i}`, quantity: 1, commanderCopies: 0, granted: 0,
+      since: AUG + i, versionNumber: 1, allocated: i < owned ? 1 : 0,
+    }));
+    const brews = ["Kratos", "Gishath", "Thorin"].map((name) => ({
+      deckId: name, deckName: `HD - ${name}`, quantity: 1, commanderCopies: 0, granted: 0,
+      since: null, versionNumber: null, brew: true, allocated: owned > 17 ? 1 : 0,
+    }));
+    return { ...card(), cardName: "Sol Ring", arrived: 1, ownedBefore: owned - 1, owned, claimants: [...committed, ...brews] };
+  }
+
+  it("folds the senior decks no pick can move into one row, and Show draws them", () => {
+    render(<ContestedCardRow card={staging(17)} addedCopy />);
+    expect(screen.getByText(addedCopyCopy.chooser.fold(16, null))).toBeTruthy();
+    expect(screen.queryByText("HD - Deck 0")).toBeNull();
+    // The junior-most holder is the one a pick moves, so it stays an option.
+    expect(screen.getByText("HD - Deck 16")).toBeTruthy();
+    expect(screen.getAllByRole("radio")).toHaveLength(4);
+    fireEvent.click(screen.getByRole("button", { name: addedCopyCopy.chooser.foldShow }));
+    expect(screen.getByText("HD - Deck 0")).toBeTruthy();
+    expect(screen.getAllByRole("radio")).toHaveLength(20);
+  });
+
+  it("says `can use it` for a brew reading a loose copy, with the note, and draws its mark hollow", () => {
+    render(<ContestedCardRow card={staging(18)} addedCopy />);
+    expect(screen.getAllByText(addedCopyCopy.chooser.canUse)).toHaveLength(3);
+    expect(screen.getByText(addedCopyCopy.chooser.brewNote(3))).toBeTruthy();
+    // Every holder is senior to the spare, so all 17 fold (the handoff's variant `brews`).
+    expect(screen.getByText(addedCopyCopy.chooser.fold(17, null))).toBeTruthy();
+    const thorin = screen.getByRole("radio", { name: copy.contested.a11yOption("HD - Thorin", addedCopyCopy.chooser.canUse) });
+    const mark = thorin.querySelector("[aria-hidden]") as HTMLElement;
+    expect(mark.style.background).toBe("transparent");
+  });
+
+  it("draws the shipped row with the switch off: no fold, and a brew's soft share still `gets it`", () => {
+    render(<ContestedCardRow card={staging(18)} />);
+    expect(screen.queryByText(addedCopyCopy.chooser.canUse)).toBeNull();
+    expect(screen.queryByRole("button", { name: addedCopyCopy.chooser.foldShow })).toBeNull();
+    expect(screen.getAllByRole("radio")).toHaveLength(20);
+  });
+
+  it("says a brew the player gave the copy to `gets it`, never `can use it`", () => {
+    const c = staging(18);
+    c.claimants[19] = { ...c.claimants[19], granted: 1 };
+    render(<ContestedCardRow card={c} addedCopy />);
+    expect(screen.getByRole("radio", { name: copy.contested.a11ySelected("HD - Thorin") })).toBeTruthy();
+    expect(screen.getAllByText(addedCopyCopy.chooser.canUse)).toHaveLength(2);
+  });
+
+  it("never folds a deck the player picked", () => {
+    const c = staging(17);
+    c.claimants[3] = { ...c.claimants[3], granted: 1 };
+    render(<ContestedCardRow card={c} addedCopy />);
+    expect(screen.queryByRole("button", { name: addedCopyCopy.chooser.foldShow })).toBeTruthy();
+    expect(screen.getByText(addedCopyCopy.chooser.fold(3, null))).toBeTruthy();
+    expect(screen.getByText("HD - Deck 3")).toBeTruthy();
   });
 });

@@ -17,7 +17,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { cardAssignmentsCopy as copy } from "../../lib/copy/card-assignments";
+import { addedCopyCopy } from "../../lib/copy/added-copy";
 import { previewAllocation } from "../../lib/decks/preview-allocation";
+import { foldCount } from "../../lib/decks/placements";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
@@ -141,6 +143,8 @@ export function ContestedCardRow({
    */
   describedBy,
   chooser,
+  addedCopy = false,
+  onCard,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -159,6 +163,14 @@ export function ContestedCardRow({
     /** The caller's write is in flight: a tap does nothing until it settles. */
     disabled?: boolean;
   };
+  /**
+   * Where an added copy goes (`ADDED_COPY_ENABLED`, read by the page): senior decks that keep their
+   * copies whatever the pick does fold into one `Show` row, and a brew reading a loose copy says
+   * `can use it` rather than `gets it`. Off, the row is exactly what it was.
+   */
+  addedCopy?: boolean;
+  /** The card a settled pick read back, for a surface that redraws its own line from it. */
+  onCard?: (card: ContestedCard) => void;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -178,6 +190,8 @@ export function ContestedCardRow({
   // already had one, which is a different deck and the wrong name to print.
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
   const [announce, setAnnounce] = useState("");
+  // The fold's `Show`, pressed: every folded claimant is drawn again, for this visit.
+  const [unfolded, setUnfolded] = useState(false);
   // WHICH TAP IS STILL THE CURRENT ONE. Next dispatches Server Actions one at a time per client
   // (`node_modules/next/dist/docs/01-app/02-guides/server-actions.md`, "Sequential dispatch on
   // the client"), so the WRITES cannot race or land out of order. The taps are not serialised
@@ -275,7 +289,10 @@ export function ContestedCardRow({
       // A superseded tap's answer is DISCARDED rather than drawn: the player has since named a
       // different deck, and its own write — already queued behind this one — is the truth now.
       if (mine !== tap.current) return;
-      if (fresh) setCard(fresh);
+      if (fresh) {
+        setCard(fresh);
+        onCard?.(fresh);
+      }
       // ANNOUNCED FROM THE SERVER'S OWN ALLOCATION, once there is one. The trade is the news —
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
       // announces a trade that may not have happened.
@@ -396,6 +413,17 @@ export function ContestedCardRow({
   // opposite of what the note says about it.
   const payer = claimants.find((c) => c.allocated < c.quantity)?.deckName ?? "";
   const words = surfaceWords(card.fromImport);
+  // THE FOLD (added copy, G7): committed decks at the head of the queue that keep their copies
+  // whatever this pick does. Read off the SERVER's claimants, never the preview: a pick cannot move
+  // them, so a tap must not unfold them either. Two or more, or there is nothing to save.
+  const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, inPlay, card.owned) : 0;
+  const folding = foldN >= 2 && !unfolded;
+  const foldedIds = new Set(folding ? card.claimants.slice(0, foldN).map((c) => c.deckId) : []);
+  const thisDeckName = card.claimants.find((c) => c.deckId === thisDeckId && !foldedIds.has(c.deckId))?.deckName ?? null;
+  // A brew reading a loose copy as its own: every brew reads the same copy, so `gets it` on three
+  // brews would claim three copies and `buys it` would be false. Only while the switch is on.
+  const canUse = (c: (typeof claimants)[number]) => addedCopy && c.brew === true && c.granted === 0 && c.allocated > 0;
+  const canUseCount = claimants.filter(canUse).length;
 
   return (
     <div
@@ -437,7 +465,29 @@ export function ContestedCardRow({
         aria-label={words.group(card.cardName, inPlay)}
         aria-describedby={describedBy}
       >
-        {claimants.map((c) => {
+        {folding ? (
+          // ONE ROW FOR THE DECKS NO PICK HERE CAN MOVE. Inside the group as a presentation row,
+          // not an option: it names who already has theirs, and `Show` draws them again.
+          <li
+            role="presentation"
+            className="flex items-center gap-[9px] py-[6px] px-[8px] min-h-[44px]"
+            style={{ borderRadius: 7, border: "1px dashed var(--border)" }}
+          >
+            <span aria-hidden className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>▸</span>
+            <span className="font-mono text-[11px] flex-1 min-w-0" style={{ color: "var(--fg-faint)" }}>
+              {addedCopyCopy.chooser.fold(foldN, thisDeckName)}
+            </span>
+            <button
+              type="button"
+              aria-expanded={false}
+              onClick={() => setUnfolded(true)}
+              className="text-[12.5px] min-h-[44px] px-[4px] flex-none text-[color:var(--accent)]"
+            >
+              {addedCopyCopy.chooser.foldShow}
+            </button>
+          </li>
+        ) : null}
+        {claimants.filter((c) => !foldedIds.has(c.deckId)).map((c) => {
           // `keeps it` rather than `gets it` for a commander: it had the card before the import,
           // so the arrival changed nothing for it. A folded claimant that ALSO took a spare copy
           // says both — `keeps it` alone would hide the second copy and contradict the heading,
@@ -453,12 +503,15 @@ export function ContestedCardRow({
           // The chooser's caller has a write in flight: every option is held, and says so, without
           // the dashed border that means nobody can ever choose it.
           const held = inert || chooser?.disabled === true;
-          const first = card.claimants.find((x) => !(nothingToChoose || x.commanderCopies >= x.quantity))?.deckId === c.deckId;
-          const outcome = c.commanderCopies > 0 && c.allocated > 0 && predates
-            ? (spareToThisDeck > 0
-                ? copy.contested.keepsAndGets(Math.min(c.commanderCopies, c.allocated), spareToThisDeck)
-                : copy.contested.keeps)
-            : c.allocated > 0 ? copy.contested.gets : copy.contested.buys;
+          const first = card.claimants.find((x) => !foldedIds.has(x.deckId) && !(nothingToChoose || x.commanderCopies >= x.quantity))?.deckId === c.deckId;
+          const soft = canUse(c);
+          const outcome = soft
+            ? addedCopyCopy.chooser.canUse
+            : c.commanderCopies > 0 && c.allocated > 0 && predates
+              ? (spareToThisDeck > 0
+                  ? copy.contested.keepsAndGets(Math.min(c.commanderCopies, c.allocated), spareToThisDeck)
+                  : copy.contested.keeps)
+              : c.allocated > 0 ? copy.contested.gets : copy.contested.buys;
           return (
             <li
               key={c.deckId}
@@ -492,7 +545,7 @@ export function ContestedCardRow({
                 if (step === 0) return;
                 e.preventDefault();
                 const reachable = card.claimants.filter(
-                  (x) => !(nothingToChoose || x.commanderCopies >= x.quantity),
+                  (x) => !foldedIds.has(x.deckId) && !(nothingToChoose || x.commanderCopies >= x.quantity),
                 );
                 const here = reachable.findIndex((x) => x.deckId === c.deckId);
                 const next = reachable[(here + step + reachable.length) % reachable.length];
@@ -525,7 +578,8 @@ export function ContestedCardRow({
             >
               <span className="flex items-center gap-[11px] md:gap-[11px] md:flex-1 min-w-0">
                 <AllocationMark
-                  allocated={c.allocated}
+                  // A soft share is drawn hollow: the brew reads the copy, it does not hold it.
+                  allocated={soft ? 0 : c.allocated}
                   // The GIVEABLE count, not the arrival count. Two copies can arrive with one
                   // consumed by a commander, leaving one that can actually be assigned — and a
                   // square mark there promises two decks can each have one.
@@ -567,7 +621,7 @@ export function ContestedCardRow({
                 ) : null}
                 <span
                   className="font-mono text-[10.5px] md:text-[11px]"
-                  style={{ color: c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}
+                  style={{ color: soft ? "var(--fg-muted)" : c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}
                 >
                   {outcome}
                 </span>
@@ -586,6 +640,13 @@ export function ContestedCardRow({
           {copy.contested.commanderNoteFolded(
             card.claimants.find((c) => c.commanderCopies > 0)?.deckName ?? "",
           )}
+        </p>
+      ) : null}
+
+      {/* Why every brew reads the same copy, once there are two of them reading it. */}
+      {canUseCount >= 2 && !nothingToChoose ? (
+        <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
+          {addedCopyCopy.chooser.brewNote(canUseCount)}
         </p>
       ) : null}
 

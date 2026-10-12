@@ -13,6 +13,7 @@ import { requireUserId } from "../../../../../lib/auth";
 import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
+import { addedCopyEnabled } from "../../../../../lib/collection/added-copy-flag";
 import { formatDeckDate } from "../../../../../lib/decks/format";
 import type { UploadPreview } from "../../../actions";
 
@@ -27,7 +28,10 @@ export default async function ImportSummaryPage({
   if (!isUuid(uploadId)) notFound();
   const userId = await requireUserId();
 
-  const view = await loadSummaryView(uploadId, userId);
+  // Read once, per request, and handed to both halves: the read loads each line's chooser and the
+  // receipt draws the line, so the two cannot disagree about whether the feature is on.
+  const addedCopy = addedCopyEnabled();
+  const view = await loadSummaryView(uploadId, userId, { addedCopy });
   if (!view) notFound();
   // An unconfirmed upload has no receipt to show and is not a page: the player is still in the
   // flow, or abandoned it.
@@ -44,6 +48,8 @@ export default async function ImportSummaryPage({
       <ArrivalsSummary
         summary={view.summary}
         contested={view.contested}
+        addedCopy={addedCopy}
+        chooser={view.chooser}
         preview={preview}
         filename={view.filename}
         // Through the app's own formatter, which owns both rules this stamp needs: en-US month
