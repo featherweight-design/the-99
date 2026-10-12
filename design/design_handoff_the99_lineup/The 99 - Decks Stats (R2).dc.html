@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --border:#1A1F2B; --border-strong:#2E3340; --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --accent:#5C86C9; --accent-hover:#6C95D8; --brass:#C9A54E;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46; --c:#7E8592; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0C0C10; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div style="font-family:'IBM Plex Sans',sans-serif;background:#0C0C10;color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:56px;width:max-content;">
+
+  <section id="C2" data-screen-label="C2 · R2 changes" style="max-width:1340px;display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">C2</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Stats on /decks · R2 · Hugh’s six notes · 2026-10-11</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:32px;margin:0;line-height:1.2;">Stats: your decks, side by side</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1040px;text-wrap:pretty;">R2 supersedes <a href="The%2099%20-%20Lineup%20(R1).dc.html">R1</a> where they differ. Every R1 call not named here stands. The frames below are live: press any card head to fold or unfold it, or use Expand all / Collapse all.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,640px));gap:14px 28px;">
+      <sc-for list="{{ calls }}" as="cl" hint-placeholder-count="6">
+        <div style="display:flex;gap:12px;border-top:1px solid var(--border-strong);padding-top:12px;">
+          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);padding-top:2px;">{{ cl.n }}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:14px;font-weight:600;color:var(--fg);">{{ cl.h }}</span><span style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ cl.t }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="2a" data-screen-label="2a · Color identity marks" style="display:flex;flex-direction:column;gap:14px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:6px;padding:3px 9px;">2a</span>
+      <span style="font-family:'Metamorphous',serif;font-size:20px;color:var(--fg);">Color identity: four marks</span>
+      <span style="font-size:13px;line-height:1.55;color:var(--fg-muted);max-width:900px;text-wrap:pretty;">The same seven decks, shown at the size each chart uses. A (clustered) is drawn in every frame below. Set the frame’s mark prop to see the others in place.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;">
+      <sc-for list="{{ marks }}" as="mk" hint-placeholder-count="3">
+        <div style="{{ mk.box }}">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);">{{ mk.id }}</span><span style="font-size:14px;font-weight:600;color:var(--fg);">{{ mk.name }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <sc-for list="{{ mk.rows }}" as="r" hint-placeholder-count="7">
+              <div style="display:flex;align-items:center;gap:8px;min-height:24px;">
+                <span style="{{ r.box }}"><sc-for list="{{ r.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span>
+                <span style="font-size:12.5px;color:var(--fg);">{{ r.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.id }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ mk.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="TH" data-screen-label="TH · Six themes" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;max-width:1340px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:6px;padding:3px 9px;">TH</span>
+      <span style="font-family:'Metamorphous',serif;font-size:20px;color:var(--fg);">Brackets and colors, in all six themes</span>
+      <span style="font-size:13px;line-height:1.55;color:var(--fg-muted);max-width:980px;text-wrap:pretty;">390, with HD - Eldrazi chosen. Bracket marks are the shipped art from public/brackets, drawn as a mask in the bracket ink with a Cinzel numeral, as BracketMark draws it. A range’s upper mark sits at 0.65. Mana symbols are public/mana. Bracket ink and mana are the same in every theme; only the chrome and display face change. Every frame on this page takes a theme prop.</span>
+    </div>
+    <div style="display:flex;gap:24px;align-items:flex-start;">
+      <sc-for list="{{ themes }}" as="th" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ th.label }}</span>
+          <div style="border:1px solid var(--border-strong);border-radius:6px;overflow:hidden;"><dc-import name="Decks Stats" scene="spreadOnly" phone="{{ true }}" theme="{{ th.key }}" hint-size="390px,900px"></dc-import></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+    <section id="{{ r.id }}" data-screen-label="{{ r.screen }}" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;max-width:1340px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:6px;padding:3px 9px;">{{ r.id }}</span>
+        <span style="font-family:'Metamorphous',serif;font-size:20px;color:var(--fg);">{{ r.title }}</span>
+        <span style="font-size:13px;line-height:1.55;color:var(--fg-muted);max-width:980px;text-wrap:pretty;">{{ r.note }}</span>
+      </div>
+      <div style="display:flex;gap:32px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">900</span>
+          <div style="border:1px solid var(--border-strong);border-radius:6px;overflow:hidden;"><dc-import name="Decks Stats" scene="{{ r.scene }}" stats-enabled="{{ r.on }}" hint-size="900px,900px"></dc-import></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">390</span>
+          <div style="border:1px solid var(--border-strong);border-radius:6px;overflow:hidden;"><dc-import name="Decks Stats" scene="{{ r.scene }}" phone="{{ true }}" stats-enabled="{{ r.on }}" hint-size="390px,844px"></dc-import></div>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const calls = [
+      { n: "R2·1", h: "Lineup is now Stats, everywhere", t: "/decks reads Tiles · Stats, the same word a deck page uses for its own Stats. The About entry is “Stats: your decks, side by side”, and the tile menu item is “See it among your decks”. ?view=stats. The switch keeps its code name, LINEUP_ENABLED, until Hugh says otherwise (README)." },
+      { n: "R2·2", h: "Color identity: clustered pips, not striped squares", t: "Each deck’s colors are mana-colored dots clustered tight, with a 1px outline that hugs the group. 1 and 2 sit in a row, 3 form a triangle, 4 a diamond and 5 a star, running clockwise from the top in WUBRG order. Colorless is one grey ring. The count reads as a shape before the hue does (2a). The bracket chart becomes rows, one per slot, so each deck carries its name beside its pips. Pressing a slot to learn its decks is gone. Squares stay only in Decks playing each color, where each row is one color." },
+      { n: "R2·3", h: "Every card folds", t: "The card head is the toggle: title, denominator and a chevron. Folded, it shows one mono summary line, e.g. “last game 6 days ago · won 2 of 7 · 15 never played”. On a first visit only the first card is open (S1). Open and folded are remembered per device. Expand all / Collapse all sits at the end of the filter row." },
+      { n: "R2·4", h: "This deck among yours, easier to read", t: "Dots that stacked into blobs become one thin line per deck, so ties overlap cleanly. The chosen deck is a larger accent dot with its own figure printed above it. The median is a taller line. The lowest and highest values sit at the two ends, so the scale reads without a legend. The right column is a rank (“11th of 21”, most first) over the median. Rows group into The build, Jobs and Value." },
+      { n: "R2·5", h: "Curve against lands is cut. Proposed instead: What each deck is worth", t: "Hugh found the scatter hard to read even with plain dots, so it’s gone. In its place: one bar per deck, most first, from each deck’s own value (its Money figure). The chosen deck is the accent bar, with a dashed median line, and the total sits in the head. Still a proposal." },
+      { n: "R2·7", h: "Wanted by your commanders gains a deck filter", t: "It’s the same select as This deck among yours, set to All decks by default. Choose a deck to see only the cards its commander would want, and the cut chips recount (40% or more · 4). For a partner deck, it reads the pair’s own list and says so (T5)." },
+      { n: "R2·6", h: "Decks that share the most is out. Proposed instead: Jobs, deck by deck", t: "A 21 × 4 grid (lands, ramp, card draw, removal) with real counts. Each cell is shaded within its own column, sorted by any column, with the chosen deck outlined. It answers “which of my decks does the most ramp” at a glance, which the strips answer one deck at a time. Other ideas, not drawn: when each deck was last changed against when it last played (version dates), and where the to-buy money sits, deck by deck." },
+    ];
+    const MANA = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)", C: "var(--c)" };
+    const INK = { W: "#2A2416", U: "#E8EEF6", B: "#1E1520", R: "#FBEDE6", G: "#EAF3E8", C: "#14151A" };
+    const M = "'IBM Plex Mono',monospace";
+    const mk = (kind, id) => {
+      const cs = id ? id.split("") : ["C"];
+      if (kind === "stripes") { const st = 100 / cs.length; return { box: { flex: "none", display: "inline-block", width: 14, height: 14, borderRadius: 3, background: `linear-gradient(90deg,${cs.map((c, i) => `${MANA[c]} ${i * st}% ${(i + 1) * st}%`).join(",")})`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)" }, pips: [] }; }
+      if (kind === "cluster") {
+        const z = 7, ro = 5.5, ri = 4.5, W = 26, k = cs.length, C = W / 2;
+        const P = { 1: [[0, 0]], 2: [[-4, 0], [4, 0]], 3: [[0, -4.6], [4, 2.3], [-4, 2.3]], 4: [[0, -5.6], [5.6, 0], [0, 5.6], [-5.6, 0]], 5: [0, 1, 2, 3, 4].map((i) => { const a = (-90 + i * 72) * Math.PI / 180; return [6.8 * Math.cos(a), 6.8 * Math.sin(a)]; }) }[k];
+        const ys = P.map((p) => p[1]); const oy = -(Math.min(...ys) + Math.max(...ys)) / 2;
+        const halos = k >= 3 ? [...P, [0, 0]] : P;
+        const disc = (x, y, r, bg) => ({ l: "", s: { position: "absolute", left: C + x - r, top: C + y + oy - r, width: r * 2, height: r * 2, borderRadius: "50%", background: bg } });
+        return { box: { flex: "none", position: "relative", display: "inline-block", width: W, height: W }, pips: [...halos.map(([x, y]) => disc(x, y, ro, "var(--border-dashed)")), ...halos.map(([x, y]) => disc(x, y, ri, "var(--bg)")), ...cs.map((c, i) => ({ l: "", s: { position: "absolute", left: C + P[i][0] - z / 2, top: C + P[i][1] + oy - z / 2, width: z, height: z, borderRadius: "50%", boxSizing: "border-box", ...(c === "C" ? { border: "1.5px solid var(--c)" } : { background: MANA[c], boxShadow: "inset 0 0 0 1px rgba(0,0,0,.3)" }) } }))] };
+      }
+      const sym = kind === "symbols", z = sym ? 15 : 9;
+      return {
+        box: { flex: "none", display: "inline-flex", alignItems: "center", gap: sym ? 1 : 2, ...(sym ? {} : { padding: "3px 4px", borderRadius: 999, background: "var(--bg)", boxShadow: "inset 0 0 0 1px var(--border-strong)" }) },
+        pips: cs.map((c) => ({ l: sym ? c : "", s: c === "C" ? { width: z, height: z, borderRadius: "50%", boxSizing: "border-box", border: "1.5px solid var(--c)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 8.5, fontWeight: 600, color: "var(--fg-muted)" } : { width: z, height: z, borderRadius: "50%", background: MANA[c], display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 8.5, fontWeight: 600, color: INK[c], boxShadow: "inset 0 0 0 1px rgba(0,0,0,.3)" } })),
+      };
+    };
+    const SAMPLE = [["HD - Eldrazi", ""], ["HD - Goblins", "R"], ["HD - Yuriko", "UB"], ["HD - Gishath", "WRG"], ["HD Tune - Sultai Arisen", "UBG"], ["HD - Omnath", "WURG"], ["HD - Avatar Aang", "WUBRG"]];
+    const marks = [
+      { id: "A", kind: "cluster", name: "Clustered pips · drawn", note: "Hugh’s R2 note. The count is a shape: 1 and 2 in a row, 3 a triangle, 4 a diamond (the bracket chip’s ◇), 5 a star. WUBRG runs clockwise from the top. A 1px outline hugs the group, so the shape itself is the frame. It sits in a fixed 26px box, so names line up whatever the colors." },
+      { id: "A·1", kind: "pips", name: "Pips in a row · R2", note: "Count first, then hue, at 8px. It costs width: five colors are 54px, so names don’t line up." },
+      { id: "B", kind: "symbols", name: "Mana symbols", note: "The letter makes it readable without color, which helps U and B on dark. It reads as a mana cost, and needs 15px to hold a letter." },
+      { id: "C", kind: "stripes", name: "Stripes · R1", note: "Fixed width. Past two colors the bands get too thin to tell apart, as Hugh noted." },
+    ].map((m) => ({ ...m, box: { background: "var(--surface-sunken)", border: m.kind === "cluster" ? "1px solid var(--accent)" : "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14 }, rows: SAMPLE.map(([name, id]) => ({ name, id: id || "colorless", ...mk(m.kind, id) })) }));
+    const rows = [
+      { id: "P1", title: "/decks with the switch on, Tiles", note: "Tiles · Stats leads the shelf row. The doors row is unchanged. The tile’s … menu gains See it among your decks.", scene: "decks", on: true },
+      { id: "S1", title: "Stats, first visit", note: "Only the first card is open. Every folded card shows its one summary line, so the page reads as an index before anything is unfolded.", scene: "first", on: true },
+      { id: "L2", title: "Stats, all open", note: "Every card unfolded, All decks. Sol Ring is open. Scrappy Survivors is chosen (played last) and is the accent across This deck among yours, the jobs grid and What each deck is worth.", scene: "open", on: true },
+      { id: "F2", title: "Finished only", note: "The brews leave every chart. Sol Ring reads 17 of 17. Owned and per-copy totals still count every copy. These figures are illustrative, as in R1.", scene: "finished", on: true },
+      { id: "T1", title: "Thin · one deck", note: "As R1, with pips and fold.", scene: "one", on: true },
+      { id: "T2", title: "Thin · no games logged", note: "As R1.", scene: "noGames", on: true },
+      { id: "T3", title: "Thin · no deck analyzed", note: "Every slot row reads none, and all 21 sit in the not-analyzed row with dashed chips.", scene: "noAnalysis", on: true },
+      { id: "T4", title: "Thin · a colorless deck", note: "HD - Eldrazi’s mark is one grey ring, and its chip says colorless. The strips are drawn for it.", scene: "colorless", on: true },
+      { id: "T5", title: "Thin · a partner deck", note: "HD - Gods (Kratos + Atreus): one chip with WUR pips. Wanted by your commanders is filtered to it, and reads the pair’s own list. The strips read its own figures. The four wanted cards are illustrative.", scene: "partner", on: true },
+      { id: "P0", title: "/decks, switch off", note: "As shipped.", scene: "decksOff", on: false },
+    ].map((r) => ({ ...r, screen: `${r.id} · ${r.title}` }));
+    const themes = [["amonkhet", "Amonkhet · Low Sun (default)"], ["kamigawa", "Kamigawa · Neon Rain"], ["ixalan", "Ixalan · Canopy"], ["phyrexia", "New Phyrexia · Oil Haze"], ["eldraine", "Eldraine · Witching Hour"], ["kaldheim", "Kaldheim · First Frost"]].map(([key, label]) => ({ key, label }));
+    return { calls, marks, rows, themes };
+  }
+}
+</script>
+</body>
+</html>
