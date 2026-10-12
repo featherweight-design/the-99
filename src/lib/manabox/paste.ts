@@ -1,4 +1,5 @@
 import type { CollectionRow, ParseError } from "./parse";
+import { sectionHeaderOf } from "./section-headers";
 
 /**
  * Parse a plain-text paste list.
@@ -50,6 +51,10 @@ export function parsePasteList(text: string): { rows: CollectionRow[]; errors: P
     const raw = lines[i];
     const trimmed = raw.trim();
     if (trimmed === "") continue;
+    // A section header (`Commander`, `Deck (99)`, `Creatures (30)`) names no card. Only the header
+    // line goes: what follows a `Sideboard` is the deck import's to exclude, and in a collection
+    // paste those copies are still owned.
+    if (sectionHeaderOf(trimmed)) continue;
 
     const m = /^([+-]?\d+)\s*[xX]?\s+(.+)$/.exec(trimmed);
     let quantity: number;

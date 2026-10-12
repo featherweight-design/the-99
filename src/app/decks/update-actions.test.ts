@@ -157,11 +157,12 @@ describe("updateDeckFromList input guards", () => {
   });
 
   // A section header resolved to the theme front of that name and was applied as a card.
-  // It is not one, so a list of headers alone matches nothing and changes nothing.
+  // It is not one: since bug batch 2026-10-12 a type header is skipped as a section header, so a
+  // list of headers alone has no lines at all and changes nothing.
   it("does not match a 'Lands' header to the theme front of that name", async () => {
     await expect(
       updateDeckFromList({ deckId: "deck-1", text: "Lands\nCreatures", source: "paste", keep: [] }),
-    ).rejects.toThrow(/matched/);
+    ).rejects.toThrow(/no lines/);
     expect(stub.state.transactions).toBe(0);
   });
 });

@@ -2185,6 +2185,8 @@ export function BuilderShell({
                 quantity: c.quantity,
                 setCode: c.printedSetCode ?? undefined,
                 collectorNumber: c.printedCollectorNumber ?? undefined,
+                // The deck view's own group, so the export's type sections are the ones it draws.
+                typeGroup: c.cardTypeGroup,
               }))}
               // The Shopping filter's own predicate, not a second `!owned` list.
               // The two diverged: this one carried the unowned basics the filter

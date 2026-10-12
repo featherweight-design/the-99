@@ -10,7 +10,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { importDeck, type ImportCommanderCandidate } from "../../app/decks/import-actions";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
-import { parsePasteList } from "../../lib/manabox/paste";
+import { deckPasteCardCount } from "../../lib/decks/paste-count";
 import { IMPORTED_PARAM, PRINTINGS_PARAM, arrivalPrintingsParam } from "../../lib/decks/arrival";
 import {
   DECK_IMPORT_FILE_MAX_BYTES,
@@ -94,10 +94,8 @@ export function ImportEntry({ compact = false }: { compact?: boolean } = {}) {
   const inFlight = useRef(false);
 
   const pasteCount = useMemo(
-    () =>
-      pasteText.trim()
-        ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
-        : 0,
+    // Read as the import reads it: no section header or sideboard line counts as a card.
+    () => deckPasteCardCount(pasteText),
     [pasteText],
   );
 

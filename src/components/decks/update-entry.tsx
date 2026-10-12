@@ -12,7 +12,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
-import { parsePasteList } from "../../lib/manabox/paste";
+import { deckPasteCardCount } from "../../lib/decks/paste-count";
 import { UPDATED_PARAM } from "../../lib/decks/arrival";
 import {
   previewDeckUpdate,
@@ -85,7 +85,8 @@ export function UpdateEntry({ deckId, deckName }: { deckId: string; deckName: st
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pasteCount = useMemo(
-    () => (pasteText.trim() ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0) : 0),
+    // Read as the import reads it: no section header or sideboard line counts as a card.
+    () => deckPasteCardCount(pasteText),
     [pasteText],
   );
 

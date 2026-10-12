@@ -228,7 +228,8 @@ export function deckCounts(
   };
 }
 
-const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [
+/** The deck view's type groups, in the order it draws them; the export writes its sections in it too. */
+export const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [
   "Creatures", "Instants", "Sorceries", "Artifacts", "Enchantments", "Planeswalkers", "Lands", "Other",
 ];
 
