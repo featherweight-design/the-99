@@ -101,7 +101,7 @@
     {
       "id": "l1-pair",
       "label": "/decks/precons (tiles, the R4 default)?q=frodo, a two-commander row (R4)",
-      "view": "src/components/decks/precons/precon-row.tsx",
+      "view": "src/components/decks/precons/precon-tile.tsx",
       "steps": [
         {
           "goto": "/decks/precons?q=frodo",

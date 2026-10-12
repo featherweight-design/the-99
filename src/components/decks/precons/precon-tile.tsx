@@ -43,8 +43,9 @@ function Art({ commander, eager }: { commander: PreconCommander; eager: boolean 
   );
 }
 
-/** T3e: both commanders' cards in the one box, staggered, each 66% wide, 5px corners (at least 3.1%
- *  of a 115px card at 390 and a 135px card at 900). The second is ringed where it overlaps. */
+/** T3e: both commanders' cards in the one box, staggered, each 66% wide, 5px corners. The grid holds a
+ *  tile between 178 and ~226px wide from `md` (174px at 390), so a card is at most ~149px and 5px clears
+ *  its 3.1% (4.6px). The second is ringed where it overlaps. */
 function PairArt({ commanders, eager }: { commanders: [PreconCommander, PreconCommander]; eager: boolean }) {
   const card = "absolute w-[66%] overflow-hidden rounded-[5px] bg-[color:var(--surface-sunken)]";
   return (
@@ -86,7 +87,10 @@ export function PreconTile({ row, href, eager = false }: {
           <PairArt commanders={[first, second]} eager={eager} />
         ) : first ? (
           <Art commander={first} eager={eager} />
-        ) : null}
+        ) : (
+          // A commander the catalog cannot place leaves the row with none: the plate, with no name.
+          <NoArt name="" />
+        )}
         <span className={INNER_EDGE} />
       </div>
 
@@ -100,7 +104,9 @@ export function PreconTile({ row, href, eager = false }: {
         name={
           <Link
             href={href}
-            aria-label={copy.aria(row.name, row.commanders.map((c) => c.name), row.owned, row.of)}
+            aria-label={row.commanders.length > 0
+              ? copy.aria(row.name, row.commanders.map((c) => c.name), row.owned, row.of)
+              : rowCopy.aria(row.name, row.owned, row.of)}
             className="text-[color:var(--fg)] no-underline after:absolute after:inset-0 after:rounded-[inherit] after:content-['']"
           >
             {row.name}

@@ -102,5 +102,9 @@ describe("CommanderThumb", () => {
   it("keeps the identity fallback when lazy art has no image", () => {
     const el = thumb(<CommanderThumb imageUri={null} colorIdentity={null} size="list" lazy />);
     expect(el.querySelector("img")).toBeNull();
+    // The unknown-identity stripes, exactly as the thumb draws them without `lazy`.
+    const plain = thumb(<CommanderThumb imageUri={null} colorIdentity={null} size="list" />);
+    expect(el.style.background).not.toBe("");
+    expect(el.style.background).toBe(plain.style.background);
   });
 });

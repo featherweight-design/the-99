@@ -56,4 +56,10 @@ describe("PreconTile", () => {
     expect(screen.getByTestId("tile-no-art")).toHaveTextContent("Silas Rennno art on file");
     expect(screen.getByRole("link", { name: /with Rograkh, Son of Rohgahh and Silas Renn\./ })).toBeInTheDocument();
   });
+
+  it("names a precon with no commander the catalog can place, and draws the plate", () => {
+    tile(row({ commanders: [] }));
+    expect(screen.getByRole("link", { name: "Eldrazi Unbound. You own 74 of 85 of its cards." })).toBeInTheDocument();
+    expect(screen.getByTestId("tile-no-art")).toHaveTextContent("no art on file");
+  });
 });
