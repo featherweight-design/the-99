@@ -22,6 +22,7 @@ import { analysisTabEnabled } from "../decks/analysis-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { noticesEnabled } from "../notices/flag";
 import { tuningEnabled } from "../tuning/flag";
+import { lineupEnabled } from "../decks/lineup-flag";
 import { listCacheEnabled } from "./list-cache-flag";
 import { cacheForUser } from "./user-lists";
 import { decodePlain, encodePlain } from "./plain";
@@ -34,7 +35,7 @@ import { userDataStamp } from "./user-data-stamp";
  * the same "deployment" and needs them spelled out.
  */
 function switches(): string {
-  return [analysisTabEnabled(), noticesEnabled(), changeCommanderEnabled(), neverCutEnabled(), tuningEnabled()]
+  return [analysisTabEnabled(), noticesEnabled(), changeCommanderEnabled(), neverCutEnabled(), tuningEnabled(), lineupEnabled()]
     .map((on) => (on ? "1" : "0")).join("");
 }
 

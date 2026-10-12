@@ -13,7 +13,7 @@ const BEAD: Record<GameResult, { bg: string; border: string; ink: string }> = {
   draw: { bg: "linear-gradient(135deg, var(--border-strong) 0 50%, transparent 50% 100%)", border: "var(--fg-muted)", ink: "var(--fg)" },
 };
 
-function Bead({ result, className }: { result: GameResult; className: string }) {
+export function Bead({ result, className }: { result: GameResult; className: string }) {
   const b = BEAD[result];
   return (
     <span
