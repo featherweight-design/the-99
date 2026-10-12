@@ -156,6 +156,20 @@ describe("the receipt's window", () => {
     expect(onExpire).toHaveBeenCalled();
   });
 
+  it("hands focus to the cart's checkout after an undo from the cart, where there is no Shopping filter", async () => {
+    previewRevert.mockResolvedValue(preview());
+    revertCollectionEntry.mockResolvedValue({ reverted: { id: "r1" } });
+    render(
+      <>
+        <div data-cart-checkout="" tabIndex={-1}>checkout</div>
+        <GotItReceipt deckId={[DECK]} oracleId={ORACLE} cardName={NAME} written={written()} placement="cart" host={hostMock()} onExpire={vi.fn()} />
+      </>,
+    );
+    act(() => undo().focus());
+    await act(async () => fireEvent.click(undo()));
+    expect(document.querySelector("[data-cart-checkout]")).toHaveFocus();
+  });
+
   it("entering the warning drops the hover hold: the frame unmounts with no pointerleave", async () => {
     previewRevert.mockResolvedValue(preview([atraxa]));
     const { onExpire } = draw();

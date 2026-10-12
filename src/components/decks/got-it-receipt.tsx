@@ -217,11 +217,15 @@ export function GotItReceipt({
   useEffect(() => {
     if (phase.k !== "undone" && phase.k !== "failed") return;
     if (ref.current?.contains(document.activeElement) || document.activeElement === document.body) {
-      document.querySelector<HTMLElement>("[data-shopping-filter]")?.focus();
+      // Where focus lands once the undo's control is gone: the deck's Shopping filter, or on the cart
+      // its checkout (the empty cart's way back when the undo emptied nothing back yet).
+      (placement === "cart"
+        ? document.querySelector<HTMLElement>("[data-cart-checkout]") ?? document.querySelector<HTMLElement>("[data-cart-empty-back]")
+        : document.querySelector<HTMLElement>("[data-shopping-filter]"))?.focus();
       // The control that had focus unmounted without a blur: the focus hold ends here, and only it.
       setFocus(false);
     }
-  }, [phase.k]);
+  }, [phase.k, placement]);
 
   const hold = (kind: "hover" | "focus", on: boolean) => (kind === "hover" ? setHover : setFocus)(on);
 
