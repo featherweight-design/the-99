@@ -212,6 +212,9 @@ export function CartGotItProvider({
           cardName={receipt.line.name}
           written={receipt.written}
           body={cartReceiptBody(receipt.written.facts, receipt.names, receipt.picked)}
+          // The pick the press wrote goes with the copy on Undo (decision 5): left standing, it would
+          // hand the next copy to the deck this purchase chose, after the purchase was taken back.
+          undoPlacement={receipt.picked ? { oracleId: receipt.line.oracleId, deckId: receipt.picked } : undefined}
           placement="cart"
           failed={receipt.failed}
           host={hostFor(receipt)}

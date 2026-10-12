@@ -3,7 +3,7 @@ import type { DeckClaim } from "../decks/availability";
 import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  committedShortfalls, countMoves, newlyShort, normalizeItems, planAdd, planEdit, planReplace,
+  committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, planAdd, planEdit, planReplace,
   planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 import { collectionEditEnabled } from "./edit-flag";
@@ -253,5 +253,14 @@ describe("warningCovers", () => {
     expect(warningCovers([d("x", 1)], [d("x", 2)])).toBe(false);
     expect(warningCovers([d("x", 1)], [d("x", 1, B)])).toBe(false);
     expect(warningCovers([], [d("x", 1)])).toBe(false);
+  });
+});
+
+describe("placementToUndo", () => {
+  it("drops the undo's pick only on a card the reverted entry wrote", () => {
+    const rows = [{ oracleId: A }];
+    expect(placementToUndo({ oracleId: A, deckId: "d" }, rows)).toEqual({ oracleId: A, deckId: "d" });
+    expect(placementToUndo({ oracleId: B, deckId: "d" }, rows)).toBeNull();
+    expect(placementToUndo(undefined, rows)).toBeNull();
   });
 });

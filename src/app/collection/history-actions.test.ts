@@ -126,6 +126,25 @@ describe("revertCollectionEntry", () => {
     await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], Array.from({ length: 501 }, () => A))).rejects.toThrow("bad deck id");
   });
 
+  it("passes the undo's pick to the write and its preview, lowercased, and refuses a malformed one", async () => {
+    stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+    const CARD = "77777777-7777-4777-8777-777777777777";
+    const DECK = "55555555-5555-4555-8555-555555555555";
+    await revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD.toUpperCase(), deckId: DECK.toUpperCase() });
+    expect(stub.apply.mock.calls[0][1]).toEqual({
+      kind: "revert", entryId: ENTRY, expected: {}, ignoreDeckId: DECK, undoPlacement: { oracleId: CARD, deckId: DECK },
+    });
+    stub.entry.mockResolvedValue({ rows: [] });
+    stub.apply.mockResolvedValue({ status: "preview", rows: [], decks: [] });
+    await previewRevert(ENTRY, DECK, { oracleId: CARD });
+    expect(stub.apply.mock.calls[1][1]).toEqual({
+      kind: "revert", entryId: ENTRY, ignoreDeckId: DECK, undoPlacement: { oracleId: CARD },
+    });
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: "card" })).rejects.toThrow("bad undo placement");
+    await expect(revertCollectionEntry(ENTRY, ACTION, {}, [], DECK, { oracleId: CARD, deckId: 7 } as never))
+      .rejects.toThrow("bad undo placement");
+  });
+
   it("refuses a malformed action id or preview before writing", async () => {
     await expect(revertCollectionEntry(ENTRY, "nope", {})).rejects.toThrow("bad action id");
     await expect(revertCollectionEntry(ENTRY, ACTION, { [KEY]: -1 })).rejects.toThrow("bad revert preview");

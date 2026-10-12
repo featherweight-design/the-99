@@ -282,6 +282,9 @@ describe("the S1b chooser", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
     expect(markBoughtForDecks).toHaveBeenCalledWith(ORACLE, expect.objectContaining({ deckIds: [G, K, T], quantity: 2, pickDeckId: T }));
     await waitFor(() => expect(screen.getByText(copy.receipt.covered(["HD - Gishath", "HD -Thorin"], true), { exact: false })).toBeTruthy());
+    // Undo takes the pick back with the copy (decision 5): its check and its save both name it.
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") })); });
+    expect(previewRevert).toHaveBeenCalledWith("e1", [G, K, T], { oracleId: ORACLE, deckId: T });
   });
 
   it("sends no pick when the count comes back up to the decks", async () => {

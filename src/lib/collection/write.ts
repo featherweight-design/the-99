@@ -94,7 +94,26 @@ export type CollectionChange =
        * only for a cart entry, and only for the decks that entry recorded (`cartSource`).
        */
       ignoreDeckIds?: string[];
+      /**
+       * Where an added copy goes (`undoPlacement`): the pick the purchase made, or that Change made
+       * on its receipt, dropped in the same transaction, so Undo takes the copy back AND the
+       * reservation it was given to. Honoured only for a card the entry itself wrote
+       * (`placementToUndo`); without `deckId`, every reservation of that card goes.
+       */
+      undoPlacement?: { oracleId: string; deckId?: string };
     };
+
+/**
+ * The pick an undo may drop: only one on a card the reverted entry wrote. An undo naming any
+ * other card drops nothing, so a revert can never be used to clear an unrelated reservation.
+ */
+export function placementToUndo(
+  undo: { oracleId: string; deckId?: string } | undefined,
+  entryRows: readonly { oracleId: string }[],
+): { oracleId: string; deckId?: string } | null {
+  if (!undo || !entryRows.some((r) => r.oracleId === undo.oracleId)) return null;
+  return undo;
+}
 
 export type ChangeOptions = {
   /** The caller's idempotency id, minted once per action and reused on every retry. */
@@ -626,6 +645,19 @@ export async function applyCollectionChange(
         const listed = cartSourceDecks(row.source);
         if (change.ignoreDeckIds !== undefined && listed) {
           for (const id of change.ignoreDeckIds) if (listed.includes(id)) ignoredDecks.add(id);
+        }
+        // THE PICK GOES WITH THE COPY, before the deck check reads its "before": the undo puts back
+        // the state before the press, and a pick left standing would hand a copy that is no longer
+        // there to the deck the press chose (a cart pick, or a Change on the receipt). Under the
+        // card's claim lock, which every reservation write takes.
+        const drop = placementToUndo(change.undoPlacement, row.rows);
+        if (drop) {
+          await lockCardClaims(tx, userId, drop.oracleId);
+          await tx.delete(cardAssignments).where(and(
+            eq(cardAssignments.userId, userId),
+            eq(cardAssignments.oracleId, drop.oracleId),
+            ...(drop.deckId ? [eq(cardAssignments.deckId, drop.deckId)] : []),
+          ));
         }
       }
 
