@@ -38,7 +38,7 @@ const when = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function FitsView({
-  card, onBack, onOpenCard, memory, setMemory, onReading,
+  card, onBack, onOpenCard, memory, setMemory, onReading, leaving = false,
 }: {
   card: BrowseCard;
   onBack: () => void;
@@ -48,6 +48,8 @@ export function FitsView({
   setMemory: (update: (m: FitsViewMemory) => FitsViewMemory) => void;
   /** A read for this card is running or not: the door under details says so (P2b). */
   onReading: (running: boolean) => void;
+  /** Going back to the details: the view plays its leave before it unmounts. */
+  leaving?: boolean;
 }) {
   const list = useFitsList(card);
   const { name, freeNow, owned, countsKnown } = list;
@@ -66,6 +68,11 @@ export function FitsView({
   // to the details still has to tell the door the read is done.
   const readingRef = useRef(onReading);
   useEffect(() => { readingRef.current = onReading; });
+  // A press made this visit settles after the view has gone and clears the door's note itself. A run
+  // only polled (reopened mid-run, P2a) stops being watched when the view goes, so the note goes too
+  // rather than standing over a run nothing is following.
+  const pressing = useRef(false);
+  useEffect(() => () => { if (!pressing.current) readingRef.current(false); }, []);
 
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);
@@ -120,8 +127,10 @@ export function FitsView({
     setNow(Date.now());
     setPressFailed(false);
     setAnnounced(read.announceStarted);
+    pressing.current = true;
     try {
       const res = await pressFitsReadAction(card.oracleId);
+      pressing.current = false;
       if (!(res.ok && res.panel.view.pending)) readingRef.current(false);
       if (res.ok) {
         if (res.panel.view.pending) adopt(res.panel);
@@ -135,6 +144,7 @@ export function FitsView({
       if (again) adopt(again);
       if (res.reason === "notFound" || res.reason === "noCandidates" || res.reason === "tooBig") setPressFailed(true);
     } catch {
+      pressing.current = false;
       readingRef.current(false);
       setRunning(null);
       setPressFailed(true);
@@ -206,7 +216,8 @@ export function FitsView({
   const allowance = panel?.allowance;
   const left = allowance ? Math.max(0, allowance.limit - allowance.used) : 0;
   const spent = allowance ? allowance.used >= allowance.limit : false;
-  const blocked = !allowance || spent || !!allowance.paused || allowance.ownerShare === true || running !== null;
+  const closed = !!allowance?.paused || allowance?.ownerShare === true;
+  const blocked = !allowance || spent || closed || running !== null;
   const standing = !allowance ? "" : allowance.paused
     ? creditsCopy.paused(allowance.paused.until)
     : allowance.ownerShare
@@ -230,7 +241,7 @@ export function FitsView({
   let band = null;
   if (showsBand) {
     if (running !== null) band = <RunningBand title={read.running(candidates, name)} elapsed={clock(now - running)} />;
-    else if (failed) band = <FailedBand blocked={blocked} spent={spent} standing={standing} onRetry={() => void press()} />;
+    else if (failed) band = <FailedBand blocked={blocked} spent={spent || closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
       band = <NoFitBox
         body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}
@@ -242,6 +253,7 @@ export function FitsView({
         cardName={name}
         blocked={blocked}
         spent={spent}
+        closed={closed}
         standing={standing}
         onPress={() => void press()}
       />;
@@ -263,8 +275,8 @@ export function FitsView({
   ) : null;
 
   return (
-    <div data-testid="fits-view" className="anim-view-in flex flex-col h-full min-h-0" style={{ background: "var(--surface-sunken)" }}>
-      <header className="flex-none px-[16px] pt-[12px] pb-[14px] md:px-[30px] md:pt-[22px] md:pb-[16px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
+    <div data-testid="fits-view" className={`${leaving ? "anim-view-out" : "anim-view-in"} relative flex flex-col h-full min-h-0 bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)]`}>
+      <header className="flex-none px-[16px] pt-[12px] pb-[14px] md:pl-[30px] md:pr-[22px] md:pt-[22px] md:pb-[16px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
         <div className="flex items-center justify-between gap-[12px] min-h-[44px]">
           <h2 ref={headingRef} tabIndex={-1} className="m-0 flex-none whitespace-nowrap font-display text-[19px] leading-[1.2] md:text-[22px] text-[color:var(--fg)] outline-none">
             {copy.pickerTitle}
@@ -390,6 +402,8 @@ export function FitsView({
 
         {list.holds.length > 0 && (!result || foldOpen) ? <FitsHolds holds={list.holds} /> : null}
       </div>
+      {/* Desktop: the body fades to the rail at its foot (design table, Body). */}
+      <div aria-hidden className="hidden md:block pointer-events-none absolute inset-x-0 bottom-0 h-[56px] bg-[linear-gradient(to_bottom,transparent,var(--surface-rail))]" />
       <p role="status" className="sr-only">{announced}</p>
     </div>
   );

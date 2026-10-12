@@ -457,6 +457,8 @@ type OpenAt = {
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
 /** A card a combo partner was opened FROM, put back when the partner closes. */
 const EMPTY_MEMORY: FitsViewMemory = {};
+/** Find a deck's view leaving, as `anim-view-out` runs it. */
+const VIEW_LEAVE_MS = 160;
 type TrailEntry = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; label?: string };
 /** A card lifted under a sheet, with its own partner trail for when it comes back. */
 type Held = TrailEntry & { opener: HTMLElement | null; trail: TrailEntry[] };
@@ -1025,6 +1027,24 @@ export function CardDetailProvider({
   const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks
     ? (c.fitsRead ? () => setFitsViewFor(c.oracleId) : () => setFitsFor(c))
     : null);
+  // Back to the details plays the view's leave first (`anim-view-out`, 160ms); reduced motion swaps.
+  const [fitsLeaving, setFitsLeaving] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveView = useCallback(() => {
+    if (leaveTimer.current) return;
+    const still = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (still) {
+      setFitsViewFor(null);
+      return;
+    }
+    setFitsLeaving(true);
+    leaveTimer.current = setTimeout(() => {
+      leaveTimer.current = null;
+      setFitsLeaving(false);
+      setFitsViewFor(null);
+    }, VIEW_LEAVE_MS);
+  }, []);
+  useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current); }, []);
   const markReading = useCallback((oracleId: string, on: boolean) => {
     setFitsReading((prev) => {
       if (prev.has(oracleId) === on) return prev;
@@ -1483,11 +1503,12 @@ export function CardDetailProvider({
           onFindDeck={sheetsBelow > 0 ? null : fitsDoor(card)}
           fitsReading={fitsReading.has(card.oracleId)}
           view={fitsViewFor === card.oracleId && sheetsBelow === 0 ? {
-            onBack: () => setFitsViewFor(null),
+            onBack: leaveView,
             node: (
               <FitsView
                 card={card}
-                onBack={() => setFitsViewFor(null)}
+                onBack={leaveView}
+                leaving={fitsLeaving}
                 onOpenCard={(id) => selectPartner(id, swapToolsCopy.fits.pickerTitle)}
                 memory={fitsMemory[card.oracleId] ?? EMPTY_MEMORY}
                 setMemory={(update) => setFitsMemory((all) => ({ ...all, [card.oracleId]: update(all[card.oracleId] ?? EMPTY_MEMORY) }))}

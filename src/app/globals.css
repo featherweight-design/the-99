@@ -951,6 +951,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   to { opacity: 1; transform: none; }
 }
 .anim-view-in { animation: view-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+/* Going back reverses it, faster and with no wait: the reader asked to leave. */
+.anim-view-out { animation: view-in 160ms var(--motion-ease) reverse both; }
 
 /* The phone card sheet's snap between the teaser and full (H23 PR 3, README R2 "Motion"), and the
    card band dimming to .35 under it, on the same 240ms. A drag marks the sheet `data-dragging`,
@@ -993,6 +995,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-grow-y,
   /* Find a deck's view swaps in place of the details pane. */
   .anim-view-in,
+  .anim-view-out,
   /* A card over a sheet swaps in and out in place (stacked sheets R1). */
   .anim-stack-rise,
   .anim-sheet-up {

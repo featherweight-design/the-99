@@ -28,8 +28,11 @@ const Standing = ({ line }: { line: string }) => (
 );
 
 /** P1, P1a, P1c, P8: the offer. Spent or paused, the press is off and its segment goes. */
-export function OfferBand({ lead, cardName, blocked, spent, standing, onPress }: {
-  lead: string; cardName: string; blocked: boolean; spent: boolean; standing: string; onPress: () => void;
+export function OfferBand({ lead, cardName, blocked, spent, closed = false, standing, onPress }: {
+  lead: string; cardName: string; blocked: boolean; spent: boolean;
+  /** Paused or the owner's share used: the press is off and its segment goes, as when spent. */
+  closed?: boolean;
+  standing: string; onPress: () => void;
 }) {
   return (
     <Band testId="read-band-offer">
@@ -40,7 +43,7 @@ export function OfferBand({ lead, cardName, blocked, spent, standing, onPress }:
           credit={copy.credit}
           filled
           blocked={blocked}
-          spent={spent}
+          spent={spent || closed}
           onPress={onPress}
           ariaLabel={spent ? copy.pressAriaSpent : copy.pressAria(cardName)}
         />
