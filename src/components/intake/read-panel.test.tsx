@@ -13,6 +13,7 @@ vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn(), th
 
 const { ReadAnnouncer, ReadPanel, ReadScope, DimWhileReading, useReportPool, useReadPhase } = await import("./read-panel");
 const { phaseOf } = await import("../../lib/intake/read-phase");
+const { HeldResults } = await import("./choose-results");
 const { emptyParams } = await import("../../lib/intake/params");
 import type { TheReadState } from "../../lib/intake/run-store";
 import type { ChooseParams } from "../../lib/intake/params";
@@ -215,6 +216,30 @@ describe("7e, 7f: stopped and failed", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Try again/ })); });
     const sent = new URLSearchParams(String(submit.mock.calls[0][0]).slice(1));
     expect([sent.get("w"), sent.get("t"), sent.get("c"), sent.get("r"), sent.get("v")]).toEqual(["something scary", "horrors", "b", null, null]);
+  });
+
+  it("names the pool in step 1 from the held loading state, which draws no rows (entry path)", async () => {
+    render(
+      <ReadScope initial="reading">
+        <ReadPanel readId={READ} served={{ kind: "pending", phase: "shortlist" }} standing={standing()} params={params} changeHref="/decks/new/choose" deps={deps() as never} />
+        <HeldResults total={1234} by="owned" />
+      </ReadScope>,
+    );
+    expect(screen.getByTestId("read-steps").textContent).toContain("Scanning the 1,234 commanders");
+    expect(screen.getByTestId("results-searching")).toBeTruthy();
+    expect(screen.queryByTestId("order-line")).toBeNull();
+  });
+
+  it("submits a retry from the results, so the page keeps the free list under the panel (entry path)", async () => {
+    const { submitChoose } = await import("../../app/decks/new/choose/actions");
+    vi.mocked(submitChoose).mockClear();
+    render(
+      <ReadScope initial="failed">
+        <ReadPanel readId={READ} served={{ kind: "failed" }} standing={standing()} params={params} changeHref="/decks/new/choose" />
+      </ReadScope>,
+    );
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Try again/ })); });
+    expect(vi.mocked(submitChoose).mock.calls[0][1]).toBe("results");
   });
 
   it("draws Try again with no pill when no credit is left", () => {

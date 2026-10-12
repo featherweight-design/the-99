@@ -10,7 +10,7 @@ import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { Suspense } from "react";
 
 import { CardDetailProvider } from "../../../../components/cards/card-detail-provider";
-import { ChooseResults, ResultsSkeleton } from "../../../../components/intake/choose-results";
+import { ChooseResults, HeldResults, ResultsSkeleton } from "../../../../components/intake/choose-results";
 import { ChooseHeader, RESULTS_COLUMN } from "../../../../components/intake/choose-header";
 import { IntakeForm } from "../../../../components/intake/intake-form";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
@@ -25,7 +25,7 @@ import { buysCard } from "../../../../lib/intake/buys-card";
 import { loadCardChip, loadResultsPage } from "../../../../lib/intake/rows";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
-import { BUSY_PARAM, CHOOSE_PATH, formTarget, REPEAT_PARAM } from "../../../../lib/intake/submit";
+import { BUSY_PARAM, CHOOSE_PATH, formTarget, FORM_PARAM, REPEAT_PARAM } from "../../../../lib/intake/submit";
 import { toStanding } from "../../../../lib/intake/standing";
 import { DimWhileReading, ReadAnnouncer, ReadPanel, ReadScope } from "../../../../components/intake/read-panel";
 import { phaseOf } from "../../../../lib/intake/read-phase";
@@ -130,6 +130,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     />
   ) : null;
   const queryString = serializeChooseParams(p).slice(1);
+  // The form's own submit started this read: the free list was never on screen, and an inaccurate
+  // list replaced moments later reads as a bug. While the read is pending the results' loading
+  // state stands in for it; a settled read (or a stopped or failed one) draws the list as ever.
+  const holdList = !!words && sp.get(FORM_PARAM) === "1" && served?.kind === "pending";
   const ranking = [...p.themes.map(labels.theme), ...(card ? [card.name] : [])];
   // Said as the order line will say it: any of with no card ranks by the best-fitting theme.
   const by = isAnyOf(p) && !card
@@ -161,7 +165,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
             changeHref={changeHref}
             startOverHref={CHOOSE_PATH}
           />
-          <DimWhileReading>
+          <DimWhileReading hold={holdList}>
           <Suspense key={queryString} fallback={<ResultsSkeleton by={by} />}>
             <Results
               userId={userId}
@@ -174,6 +178,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               changeHref={changeHref}
               picks={picks}
               deckNames={deckNames}
+              hold={holdList ? by : null}
             />
           </Suspense>
           </DimWhileReading>
@@ -195,6 +200,7 @@ async function Results({
   changeHref,
   picks,
   deckNames,
+  hold,
 }: {
   userId: string;
   params: ChooseParams;
@@ -205,6 +211,8 @@ async function Results({
   changeHref: string;
   picks: ReadPicks | null;
   deckNames: Record<string, string>;
+  /** Non-null while the form's read is pending: the order line to name, and no rows to draw. */
+  hold: string | null;
 }) {
   let page;
   try {
@@ -215,6 +223,8 @@ async function Results({
     console.error("help me choose: search failed", error);
     return <SearchFailed changeHref={changeHref} />;
   }
+  // The search still runs, for the pool the read's first step names; its rows wait for the read.
+  if (hold !== null) return <HeldResults total={page.total} by={hold} />;
   return (
     <ChooseResults
       // A settled read re-orders the list: a fresh list, mounted inside the Suspense that already

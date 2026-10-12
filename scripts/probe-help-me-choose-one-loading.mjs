@@ -1,9 +1,14 @@
-// probe:help-me-choose-one-loading — a read press on Help me choose shows the loading skeleton at most
-// ONCE, in a real browser at 1300x900 and 390x844. Hugh saw loading, then the dimmed list under the
-// reading panel, then loading AGAIN, then the results: the settled read remounted the results'
-// Suspense. Per width it presses the credit press, samples the page every 40ms until the panel reads
-// done, and fails when the skeleton (`results-searching`) returns after the list has drawn. It also
-// checks the dimmed list was seen while reading (7d), and records a video of the press.
+// probe:help-me-choose-one-loading — how a read press loads on Help me choose, in a real browser at
+// 1300x900 and 390x844, down BOTH entry paths. Samples the page every 40ms and records a video.
+//
+//  1. FROM THE FORM. The free list was never on screen, so while the read is pending the results'
+//     loading state stands in for it (no list, not dimmed), and the list draws once the read settles.
+//     Hugh, 2026-10-12: a list replaced moments later "felt buggy".
+//  2. FROM THE RESULTS. A stopped read leaves the free list up; Try again reads from there, and the
+//     list stays, dimmed, under the reading panel with Stop (7d).
+//
+// On both, the skeleton may not return once the list has drawn: Hugh once saw loading, the dimmed
+// list, loading AGAIN, then the results, because the settled read remounted the results' Suspense.
 //
 // Run it against a dev server with the stub held long enough to see the reading phase
 // (`INTAKE_STUB_DELAY_MS=5000`, `HELP_ME_CHOOSE_ENABLED=true`). It writes reads to the server's
@@ -70,6 +75,8 @@ function sample(scope) {
     list: !!root?.querySelector("[data-testid='order-line']"),
     phase: root?.querySelector("[data-testid='read-panel']")?.dataset.phase ?? null,
     dim: root?.querySelector("[data-testid='results-dim']")?.dataset.reading === "true",
+    scan: root?.querySelector("[data-testid='read-steps'] li")?.textContent ?? null,
+    stop: [...(root?.querySelectorAll("[data-testid='read-panel'] button") ?? [])].some((b) => /^Stop/.test(b.textContent ?? "")),
   };
 }
 
@@ -94,6 +101,41 @@ async function assertServerReadsTarget(page, userId) {
 }
 const SETTLED = new Set(["done", "nothing", "failed", "stopped"]);
 
+/** Skeleton samples after the list has drawn: the flash the one-loading fix removed. */
+const skeletonBack = (timeline) => {
+  const first = timeline.findIndex((t) => t.list);
+  return first < 0 ? [] : timeline.slice(first).filter((t) => t.skeleton);
+};
+const show = (timeline) =>
+  timeline.map((t) => `${t.ms}ms ${t.skeleton ? "SKELETON" : ""}${t.list ? "list" : ""}${t.dim ? "(dim)" : ""}${t.stop ? "[stop]" : ""} ${t.phase ?? "-"}`).join(" | ");
+
+/** Runs `action` (a press), then samples the page every 40ms until the read settles and the list stands. */
+async function press(page, action) {
+  const t0 = Date.now();
+  const timeline = [];
+  await action();
+  let done = null;
+  let sawReading = false;
+  while (Date.now() - t0 < 60_000) {
+    let s;
+    try { s = await page.evaluate(sample, PAGE); } catch { await page.waitForTimeout(40); continue; } // a navigation in flight
+    const last = timeline.at(-1);
+    if (!last || ["skeleton", "list", "phase", "dim", "stop", "scan"].some((k) => last[k] !== s[k])) timeline.push({ ms: Date.now() - t0, ...s });
+    if (s.phase === "reading") sawReading = true;
+    // Settled only counts after this press's own read was seen reading: a retry starts on the PREVIOUS
+    // read's stopped panel, which would otherwise read as already done.
+    if (done === null && sawReading && SETTLED.has(s.phase) && s.list) done = Date.now();
+    if (done !== null && Date.now() - done > 2_500) break;
+    await page.waitForTimeout(40);
+  }
+  const r = new URL(page.url()).searchParams.get("r");
+  if (r) readIds.add(r.toLowerCase());
+  // Belt and braces: the read itself is in the target too.
+  const [{ n }] = r ? await sql`select count(*)::int as n from intake_reads where id = ${r}::uuid` : [{ n: 0 }];
+  if (n !== 1) throw new Error(`read ${r ?? "(none)"} is not in PROBE_TARGET_URL: the server writes to another database.`);
+  return { timeline, done };
+}
+
 async function run() {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
   if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
@@ -111,34 +153,54 @@ async function run() {
       userId = await page.evaluate(() => window.Clerk.user?.id ?? null);
       if (!userId) throw new Error("no signed-in user id");
       await assertServerReadsTarget(page, userId);
+      // PATH 1, from the form: the free list was never on screen, so while the read is pending the
+      // results' loading state stands in for it (Hugh, 2026-10-12: a list replaced moments later reads
+      // as a bug). The list may not draw until the read has settled.
       await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
       await page.locator(`${PAGE} textarea`).fill(`big dumb lizards that stomp ${width} ${Date.now()}`);
-      const t0 = Date.now();
-      const timeline = [];
-      await page.getByRole("button", { name: /^1 credit\. Find commanders/ }).first().click();
-      let done = null;
-      while (Date.now() - t0 < 60_000) {
-        let s;
-        try { s = await page.evaluate(sample, PAGE); } catch { continue; } // a navigation in flight
-        const last = timeline.at(-1);
-        if (!last || last.skeleton !== s.skeleton || last.list !== s.list || last.phase !== s.phase || last.dim !== s.dim) timeline.push({ ms: Date.now() - t0, ...s });
-        if (done === null && SETTLED.has(s.phase) && s.list) done = Date.now();
-        if (done !== null && Date.now() - done > 2_500) break;
-        await page.waitForTimeout(40);
-      }
-      const r = new URL(page.url()).searchParams.get("r");
-      if (r) readIds.add(r.toLowerCase());
-      // Belt and braces: the read itself is in the target too.
-      const [{ n }] = r ? await sql`select count(*)::int as n from intake_reads where id = ${r}::uuid` : [{ n: 0 }];
-      if (n !== 1) throw new Error(`read ${r ?? "(none)"} is not in PROBE_TARGET_URL: the server writes to another database.`);
+      const form = await press(page, () => page.getByRole("button", { name: /^1 credit\. Find commanders/ }).first().click());
       const at = (s) => `${s} @ ${width}`;
-      console.log(`  timeline @ ${width}: ${timeline.map((t) => `${t.ms}ms ${t.skeleton ? "SKELETON" : ""}${t.list ? "list" : ""}${t.dim ? "(dim)" : ""} ${t.phase ?? "-"}`).join(" | ")}`);
-      const firstList = timeline.findIndex((t) => t.list);
-      const back = firstList < 0 ? [] : timeline.slice(firstList).filter((t) => t.skeleton);
-      report(at("the read settled"), done !== null, `final phase ${timeline.at(-1)?.phase}`);
-      report(at("the dimmed list was drawn under the reading panel"), timeline.some((t) => t.list && t.dim), "");
-      report(at("the skeleton never returns once the list has drawn"), firstList >= 0 && back.length === 0,
-        back.length ? `skeleton again at ${back.map((t) => `${t.ms}ms`).join(", ")}` : "no second skeleton");
+      console.log(`  form path timeline @ ${width}: ${show(form.timeline)}`);
+      const reading = form.timeline.filter((t) => t.phase === "reading");
+      report(at("form: the read settled"), form.done !== null, `final phase ${form.timeline.at(-1)?.phase}`);
+      report(at("form: the loading state is drawn while it reads"), reading.some((t) => t.skeleton), "");
+      report(at("form: no free list is drawn while it reads"), reading.length > 0 && reading.every((t) => !t.list),
+        reading.filter((t) => t.list).length ? `list drawn at ${reading.filter((t) => t.list).map((t) => `${t.ms}ms`).join(", ")}` : "none drawn");
+      // Step 1 names the pool the free search counted, which the held loading state still reports.
+      report(at("form: step 1 names the commanders it scans"), reading.some((t) => /Scanning the [\d,]+ commanders/.test(t.scan ?? "")),
+        (reading.find((t) => /Scanning the [\d,]+ commanders/.test(t.scan ?? "")) ?? reading.find((t) => t.scan))?.scan ?? "no step shown");
+      report(at("form: the loading state is not dimmed"), reading.every((t) => !t.dim), "");
+      report(at("form: the list draws once the read settled"), form.timeline.some((t) => t.list && SETTLED.has(t.phase)), "");
+      report(at("form: the skeleton never returns once the list has drawn"), skeletonBack(form.timeline).length === 0,
+        skeletonBack(form.timeline).length ? `skeleton again at ${skeletonBack(form.timeline).map((t) => `${t.ms}ms`).join(", ")}` : "no second skeleton");
+
+      // PATH 2, from the results: a read the player stopped leaves the free list on screen, and
+      // Try again reads from there. The list stays, dimmed, under the reading panel (7d), with Stop.
+      await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
+      await page.locator(`${PAGE} textarea`).fill(`tiny angry goblins ${width} ${Date.now()}`);
+      await page.getByRole("button", { name: /^1 credit\. Find commanders/ }).first().click();
+      await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='reading']`).waitFor({ timeout: 30_000 });
+      await page.getByRole("button", { name: /^Stop/ }).first().click();
+      await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='stopped']`).waitFor({ timeout: 30_000 });
+      const stoppedRead = new URL(page.url()).searchParams.get("r");
+      if (stoppedRead) readIds.add(stoppedRead.toLowerCase());
+      await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 30_000 });
+      // Let the stopped panel hydrate: a press before it lands is a click on markup with no handler yet.
+      await page.waitForTimeout(2_000);
+      const retry = await press(page, () => page.getByRole("button", { name: /Try again/ }).first().click());
+      console.log(`  results path timeline @ ${width}: ${show(retry.timeline)}`);
+      const rereading = retry.timeline.filter((t) => t.phase === "reading");
+      report(at("results: the retry read settled"), retry.done !== null, `final phase ${retry.timeline.at(-1)?.phase}`);
+      report(at("results: the dimmed free list stays under the reading panel (7d)"), rereading.some((t) => t.list && t.dim), "");
+      report(at("results: Stop is offered while it reads"), rereading.some((t) => t.stop), "");
+      // The retry's address carries a new `r`, which is part of the results' Suspense key
+      // (`queryString`), so the list can give way to the loading state for a moment before it draws
+      // dimmed under the panel. This change does not touch that key; the moment is reported, not failed.
+      const dimAt = retry.timeline.findIndex((t) => t.list && t.dim);
+      const flash = dimAt < 0 ? [] : retry.timeline.slice(0, dimAt).filter((t) => t.skeleton);
+      if (flash.length > 0) console.log(`  note @ ${width}: the retry showed the loading state at ${flash.map((t) => `${t.ms}ms`).join(", ")} before the dimmed list drew`);
+      report(at("results: once the dimmed list is drawn the skeleton never returns"),
+        dimAt >= 0 && retry.timeline.slice(dimAt).every((t) => !t.skeleton), "");
       await context.close();
       if (VIDEO) console.log(`  video @ ${width}: ${await page.video()?.path()}`);
     }

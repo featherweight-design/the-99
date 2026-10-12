@@ -97,8 +97,10 @@ export function useReportPool(): (n: number) => void {
 }
 
 /** Marks the results while the read runs; what dims is the rows themselves (`useReadPhase`). */
-export function DimWhileReading({ children }: { children: ReactNode }) {
-  const reading = useReadPhase() === "reading";
+export function DimWhileReading({ children, hold = false }: { children: ReactNode; hold?: boolean }) {
+  // `hold`: the page is drawing the results' loading state instead of the free list (the player came
+  // from the form), and a loading state is not dimmed.
+  const reading = useReadPhase() === "reading" && !hold;
   return <div data-testid="results-dim" data-reading={reading || undefined}>{children}</div>;
 }
 
@@ -111,7 +113,7 @@ type ReadPanelDeps = {
 };
 
 /** One object for the life of the module, so the poll's effect is not restarted by every render. */
-const DEPS: ReadPanelDeps = { state: (id) => theReadState(id), stop: (id) => postStop(id), submit: (q) => submitChoose(q) };
+const DEPS: ReadPanelDeps = { state: (id) => theReadState(id), stop: (id) => postStop(id), submit: (q) => submitChoose(q, "results") };
 
 export function ReadPanel({
   readId,

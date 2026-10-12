@@ -19,6 +19,8 @@ vi.mock("../../../../lib/intake/the-read-load", () => ({ loadReadDecks: stub.dec
 const { default: ChoosePage } = await import("./page");
 const { ReadPanel, ReadScope } = await import("../../../../components/intake/read-panel");
 const { ReadAsBar } = await import("../../../../components/intake/read-as-bar");
+const { DimWhileReading } = await import("../../../../components/intake/read-panel");
+const { Suspense } = await import("react");
 const { IntakeForm } = await import("../../../../components/intake/intake-form");
 
 /** The first element of `type` anywhere in a rendered tree, props included (the look is a prop). */
@@ -85,6 +87,37 @@ describe("the choose page", () => {
     stub.read.mockRejectedValue(new Error("db down"));
     const pending = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: R }) });
     expect(find(find(pending, ReadAsBar)!.props.offer, ReadPanel)!.props.served).toEqual({ kind: "pending", phase: null });
+  });
+
+  describe("the list while a read is pending (entry path)", () => {
+    const R = "0000cccc-0000-4000-8000-000000000002";
+    // Whether the search under the results' Suspense is told to hold its rows back for the loading state.
+    const held = (page: unknown) => (find(page, Suspense)!.props.children as { props: { hold: unknown } }).props.hold !== null;
+
+    it("holds the loading state, undimmed, when the form started the read", async () => {
+      stub.themes.mockResolvedValue([]);
+      stub.read.mockResolvedValue({ kind: "pending", phase: "shortlist" });
+      const page = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: R, rf: "1" }) });
+      expect(held(page)).toBe(true);
+      expect(find(page, DimWhileReading)!.props.hold).toBe(true);
+    });
+
+    it("keeps the dimmed free list under the panel when the read was started from the results", async () => {
+      stub.themes.mockResolvedValue([]);
+      stub.read.mockResolvedValue({ kind: "pending", phase: "shortlist" });
+      const page = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: R }) });
+      expect(held(page)).toBe(false);
+      expect(find(page, DimWhileReading)!.props.hold).toBe(false);
+    });
+
+    it("draws the list once the form's read is no longer pending", async () => {
+      stub.themes.mockResolvedValue([]);
+      for (const settled of [{ kind: "failed" }, { kind: "stopped" }, { kind: "nothing", result: null }, { kind: "done", result: { picks: [], pool: 3, weighed: 3 } }]) {
+        stub.read.mockResolvedValue(settled);
+        const page = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", r: R, rf: "1" }) });
+        expect(held(page), settled.kind).toBe(false);
+      }
+    });
   });
 
   it("reads the credit standing only after the read's state, which can reap and refund an abandoned read", async () => {
