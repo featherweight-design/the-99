@@ -121,6 +121,19 @@ describe("CopyLine", () => {
     expect(document.activeElement).toBe(screen.getByText("Sol Ring"));
   });
 
+  it("in Add Cards' form names the card, and redraws in the long form after a pick", async () => {
+    assign.mockResolvedValueOnce({ ok: true, card: card(1) });
+    render(
+      <ul>
+        <CopyLine form="line" cardName="Sol Ring" sentence={copy.line.goesTo("Sol Ring", "HD - Brago")} chooser={card()} />
+      </ul>,
+    );
+    expect(screen.getByText(copy.line.goesTo("Sol Ring", "HD - Brago"))).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: copy.changeAria("Sol Ring") }));
+    fireEvent.click(screen.getByText("HD -Thorin"));
+    await waitFor(() => expect(screen.getByText(copy.line.goesToPicked("Sol Ring", "HD -Thorin"))).toBeTruthy());
+  });
+
   it("draws no Change when there is no chooser to open", () => {
     render(line());
     expect(screen.queryByRole("button")).toBeNull();

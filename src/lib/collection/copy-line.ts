@@ -1,44 +1,42 @@
-// The line's sentence, in the summary's short form (plan `plan-added-copy-2026-10-12`). Pure, so
-// the words are tested apart from the row that draws them.
+// The line's sentence (plan `plan-added-copy-2026-10-12`). Pure, so the words are tested apart from
+// the row that draws them. ONE reading of where the copies went (`Destination`), said in two forms:
+// the summary's short form, whose card is the row's own first column, and Add Cards' long form,
+// which names the card itself.
 import { addedCopyCopy as copy } from "../copy/added-copy";
 import type { WentRow } from "./arrivals";
 import type { ContestedCard } from "./summary-read";
 
-/**
- * Where a card's copies went, as the receipt froze it. Null when there is nothing to say (no deck
- * took or read a copy, or a deck's frozen name is gone): the row then falls back to the shipped
- * per-deck rows rather than drawing a blank.
- */
-export function wentSentence(went: WentRow, deckNames: Record<string, string>): string | null {
+/** Where a card's new copies are: decks holding them, a deck the player picked, or brews reading one. */
+export type Destination =
+  | { kind: "held"; decks: { name: string; copies: number; picked: boolean }[] }
+  | { kind: "picked"; deck: string }
+  | { kind: "soft"; brews: string[] };
+
+/** As the write froze it. Null when no deck took or read a copy, or a deck's frozen name is gone. */
+export function wentDestination(went: WentRow, deckNames: Record<string, string>): Destination | null {
   const names = went.decks.map((d) => deckNames[d.deckId] ?? "");
   if (went.decks.length === 0 || names.some((name) => name === "")) return null;
-  if (went.kind === "soft") {
-    return names.length === 1 ? copy.row.freeForBrew(names[0]) : copy.row.freeForBrews(names.length);
-  }
+  if (went.kind === "soft") return { kind: "soft", brews: names };
   if (went.kind !== "held") return null;
-  if (names.length === 1) {
-    return went.decks[0].picked ? copy.row.goesToEarlier(names[0]) : copy.row.goesTo(names[0]);
-  }
-  return went.decks.every((d) => d.copies === 1) ? copy.row.goesToMany(names) : copy.row.goesToManyUneven(names);
+  return { kind: "held", decks: went.decks.map((d, i) => ({ name: names[i], copies: d.copies, picked: d.picked })) };
 }
 
 /**
- * The line after ANY chooser write, from the card that write read back (the design table's `live`
- * row): the frozen sentence is true only until the first write, and after a pick is cleared it can
- * name a pick that no longer exists.
+ * As the card the chooser's last write read back (the design table's `live` row): the frozen
+ * reading is true only until the first write, and after a pick is cleared it can name a pick that
+ * no longer exists.
  *
  * The new copies are the import's, capped at the live surplus over `ownedBefore`: `arrived` is
  * frozen and `owned` is live, so copies removed in another tab since are not named. A pick takes
  * new copies first, up to what the player gave it; the rest are where seniority puts them: the
  * spare first (copies no deck holds), then the junior-most committed holders. Every destination is
- * named, and `as you picked` only when the pick is the sole one. A spare that brews read is `is
- * free for`. Null when no deck holds or reads a new copy any more.
+ * named, and `picked` only when the pick is the sole one. A spare that brews read is soft. Null
+ * when no deck holds or reads a new copy any more.
  */
-export function liveSentence(card: ContestedCard): string | null {
+export function liveDestination(card: ContestedCard): Destination | null {
   let left = Math.min(card.arrived, Math.max(card.owned - card.ownedBefore, 0));
   const took = new Map<string, { name: string; copies: number; picked: boolean }>();
-  const picks = card.claimants.filter((c) => c.granted > 0);
-  for (const c of picks) {
+  for (const c of card.claimants.filter((x) => x.granted > 0)) {
     const t = Math.min(c.granted, left);
     if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t, picked: true });
     left -= t;
@@ -60,13 +58,41 @@ export function liveSentence(card: ContestedCard): string | null {
     fromQueue -= t;
   }
   const decks = card.claimants.flatMap((c) => took.get(c.deckId) ?? []);
-  if (decks.length === 1) return decks[0].picked ? copy.row.goesToPicked(decks[0].name) : copy.row.goesTo(decks[0].name);
-  if (decks.length > 1) {
-    const names = decks.map((d) => d.name);
-    return decks.every((d) => d.copies === 1) ? copy.row.goesToMany(names) : copy.row.goesToManyUneven(names);
-  }
-  const brews = card.claimants.filter((c) => c.brew && !(c.granted > 0) && c.allocated > 0);
-  if (brews.length === 1) return copy.row.freeForBrew(brews[0].deckName);
-  if (brews.length > 1) return copy.row.freeForBrews(brews.length);
-  return null;
+  if (decks.length === 1 && decks[0].picked) return { kind: "picked", deck: decks[0].name };
+  if (decks.length === 1) return { kind: "held", decks: [{ ...decks[0], picked: false }] };
+  if (decks.length > 1) return { kind: "held", decks: decks.map((d) => ({ ...d, picked: false })) };
+  const brews = card.claimants.filter((c) => c.brew && !(c.granted > 0) && c.allocated > 0).map((c) => c.deckName);
+  return brews.length > 0 ? { kind: "soft", brews } : null;
+}
+
+/** The summary's short form: the card is the row's first column. */
+export function shortSentence(d: Destination): string {
+  if (d.kind === "picked") return copy.row.goesToPicked(d.deck);
+  if (d.kind === "soft") return d.brews.length === 1 ? copy.row.freeForBrew(d.brews[0]) : copy.row.freeForBrews(d.brews.length);
+  const names = d.decks.map((x) => x.name);
+  if (d.decks.length === 1) return d.decks[0].picked ? copy.row.goesToEarlier(names[0]) : copy.row.goesTo(names[0]);
+  return d.decks.every((x) => x.copies === 1) ? copy.row.goesToMany(names) : copy.row.goesToManyUneven(names);
+}
+
+/** Add Cards' long form: the sentence names the card. */
+export function longSentence(d: Destination, card: string): string {
+  const l = copy.line;
+  if (d.kind === "picked") return l.goesToPicked(card, d.deck);
+  if (d.kind === "soft") return d.brews.length === 1 ? l.freeForBrew(card, d.brews[0]) : l.freeForBrews(card, d.brews.length);
+  const names = d.decks.map((x) => x.name);
+  if (d.decks.length === 1) return d.decks[0].picked ? l.goesToEarlier(card, names[0]) : l.goesTo(card, names[0]);
+  const copies = d.decks.reduce((n, x) => n + x.copies, 0);
+  return d.decks.every((x) => x.copies === 1) ? l.goesToMany(card, copies, names) : l.goesToManyUneven(card, copies, names);
+}
+
+/** The summary's frozen sentence, or null when there is nothing to say. */
+export function wentSentence(went: WentRow, deckNames: Record<string, string>): string | null {
+  const d = wentDestination(went, deckNames);
+  return d ? shortSentence(d) : null;
+}
+
+/** The summary's sentence after a chooser write, or null when no deck holds or reads a new copy. */
+export function liveSentence(card: ContestedCard): string | null {
+  const d = liveDestination(card);
+  return d ? shortSentence(d) : null;
 }

@@ -24,7 +24,8 @@ export function CopyChooserDialog({
   cardName: string;
   /** The deck the copy was bought for: tagged `this deck` in the chooser, never promoted. */
   thisDeckId: string;
-  onCard: (card: ContestedCard) => void;
+  /** The card a write read back; null when it settled with none (the last copy went elsewhere). */
+  onCard: (card: ContestedCard | null) => void;
   onClose: () => void;
 }) {
   const titleId = useId();

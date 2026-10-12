@@ -170,6 +170,20 @@ export type ChangeOptions = {
    * get. The card's claim lock is taken before any deck row, the order a pick takes them in.
    */
   assign?: { oracleId: string; deckId: string };
+  /**
+   * Where an added copy goes, for Add Cards: every card this write RAISED, read in ONE
+   * `loadAvailability` after the rows, inside this transaction, with each card's reservations
+   * oldest first (the claim model's order), so the caller can say where each copy went
+   * (`arrivalPlacement`) and build the chooser Change opens with no second read.
+   */
+  placements?: boolean;
+};
+
+/** One raised card as the write saw it: the claims after, the copies it added, and its reservations. */
+export type RaisedCard = {
+  after: Availability;
+  brought: number;
+  reservations: { deckId: string; copies: number }[];
 };
 
 export type ReceiptSnapshots = {
@@ -217,6 +231,8 @@ export type ChangeResult =
       short: ShortDeck[];
       /** With `opts.receipt` alone. */
       receipt?: ReceiptSnapshots;
+      /** With `opts.placements`: each raised card a deck claims, by oracle id. */
+      raised?: Record<string, RaisedCard>;
     }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
@@ -813,12 +829,41 @@ export async function applyCollectionChange(
         short,
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
+        ...(opts.placements ? { raised: await raisedCards(tx, userId, plan) } : {}),
       };
     });
   } catch (error) {
     if (error instanceof Refused) return error.result;
     throw error;
   }
+}
+
+/**
+ * Every card `plan` raised, read after the write in one claim-model read, with its reservations in
+ * the model's order. A card no deck claims is left out: it went nowhere.
+ */
+async function raisedCards(tx: Tx, userId: string, plan: Planned[]): Promise<Record<string, RaisedCard>> {
+  const brought = new Map<string, number>();
+  for (const p of plan) {
+    const d = qty(p.after) - qty(p.before);
+    if (d > 0) brought.set(p.oracleId, (brought.get(p.oracleId) ?? 0) + d);
+  }
+  if (brought.size === 0) return {};
+  const ids = [...brought.keys()];
+  const availability = await loadAvailability(userId, { oracleIds: ids }, tx);
+  const reservations = new Map<string, { deckId: string; copies: number }[]>();
+  for (const r of await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+    .from(cardAssignments)
+    .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, ids)))
+    .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
+    reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
+  }
+  const out: Record<string, RaisedCard> = {};
+  for (const [oracleId, after] of availability) {
+    if (after.claims.length === 0) continue;
+    out[oracleId] = { after, brought: brought.get(oracleId) ?? 0, reservations: reservations.get(oracleId) ?? [] };
+  }
+  return out;
 }
 
 /** Rows written in one statement each way: deletes for a zero, one upsert for the rest. */

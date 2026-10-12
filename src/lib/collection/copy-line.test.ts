@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveSentence, wentSentence } from "./copy-line";
+import { liveSentence, longSentence, wentSentence } from "./copy-line";
 import { addedCopyCopy as copy } from "../copy/added-copy";
 import type { WentRow } from "./arrivals";
 import type { ContestedCard } from "./summary-read";
@@ -87,5 +87,21 @@ describe("liveSentence", () => {
 
   it("has nothing to say when no deck holds or reads the new copy", () => {
     expect(liveSentence(card(2, 1, [committed("s", "HD - Senior", 1)]))).toBeNull();
+  });
+});
+
+describe("longSentence (Add Cards)", () => {
+  it("names the card, and counts the copies across several decks", () => {
+    expect(longSentence({ kind: "held", decks: [{ name: "HD - Brago", copies: 1, picked: false }] }, "Sol Ring"))
+      .toBe(copy.line.goesTo("Sol Ring", "HD - Brago"));
+    expect(longSentence({ kind: "held", decks: [{ name: "A", copies: 1, picked: false }, { name: "B", copies: 1, picked: false }] }, "Sol Ring"))
+      .toBe(copy.line.goesToMany("Sol Ring", 2, ["A", "B"]));
+    expect(longSentence({ kind: "held", decks: [{ name: "A", copies: 2, picked: false }, { name: "B", copies: 1, picked: false }] }, "Sol Ring"))
+      .toBe(copy.line.goesToManyUneven("Sol Ring", 3, ["A", "B"]));
+    expect(longSentence({ kind: "held", decks: [{ name: "HD -Thorin", copies: 1, picked: true }] }, "Sol Ring"))
+      .toBe(copy.line.goesToEarlier("Sol Ring", "HD -Thorin"));
+    expect(longSentence({ kind: "picked", deck: "HD -Thorin" }, "Sol Ring")).toBe(copy.line.goesToPicked("Sol Ring", "HD -Thorin"));
+    expect(longSentence({ kind: "soft", brews: ["HD -Thorin"] }, "Sol Ring")).toBe(copy.line.freeForBrew("Sol Ring", "HD -Thorin"));
+    expect(longSentence({ kind: "soft", brews: ["A", "B", "C"] }, "Sol Ring")).toBe(copy.line.freeForBrews("Sol Ring", 3));
   });
 });

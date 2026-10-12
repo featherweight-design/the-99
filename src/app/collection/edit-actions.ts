@@ -15,6 +15,8 @@ import {
 } from "../../lib/collection/write";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
+import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
+import { placedOf, type AddedPlacement } from "../../lib/collection/add-placements";
 
 /**
  * The Add cards sheet and its edit mode (collection screens plan, PR 1). Every action here exists
@@ -91,7 +93,13 @@ function settled(userId: string, result: ChangeResult): { applied: { id: string 
   return { applied: { id: result.entry.id } };
 }
 
-export type AddOutcome = { applied: { id: string } } | { missingCard: string[] };
+export type { AddedPlacement };
+
+export type AddOutcome =
+  /** `placed` only with `ADDED_COPY_ENABLED` on, in the order the write planned the cards. */
+  | { applied: { id: string; placed?: AddedPlacement[] } }
+  | { missingCard: string[] };
+
 
 /**
  * Adds the sheet's lines to the collection as one `add` entry. Adding never lowers a count, so
@@ -114,8 +122,15 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
     if (!printing || !printing.finishes.includes(l.finish)) throw new Error("not a catalog printing");
     return { ...l, scryfallId: printing.scryfallId, condition: null };
   });
-  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId });
+  const placements = addedCopyEnabled();
+  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, ...(placements ? { placements } : {}) });
   const done = settled(userId, result);
+  // Where each copy went, read inside the write. A retry that found the save applied has no read of
+  // its own (the first request's snapshot is gone), so it says nothing rather than guess.
+  if (done && result.status === "applied" && result.raised) {
+    const names = Object.fromEntries(result.entry.rows.map((r) => [r.oracleId, r.name]));
+    return { applied: { ...done.applied, placed: placedOf(result.raised, names) } };
+  }
   if (done) return done;
   if (result.status === "missingCard") return { missingCard: result.names };
   throw new Error(`collection add refused: ${result.status}`);

@@ -21,7 +21,7 @@ import { cards, csvUploads } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { withoutUndecided, type ArrivalsSummary } from "./arrivals";
 import { holdsCopy, type Availability } from "../decks/availability";
-import { allocateClaims } from "../decks/allocate";
+import { buildContestedCard } from "../decks/allocate";
 
 /** One committed deck's place in a contested card's queue. */
 export type ContestedClaimant = {
@@ -201,28 +201,9 @@ export async function loadChooserCards(
   });
 }
 
-/**
- * The shape both readers build, so the summary's rows and a redrawn row cannot differ.
- *
- * `arrived` and `ownedBefore` come from the FROZEN receipt when there is one — they are facts
- * about an import, not about now — and are nought for a row read outside that context.
- */
-export function buildContestedCard(
-  oracleId: string,
-  cardName: string,
-  a: Availability,
-  frozen: { arrived: number; ownedBefore: number; fromImport: boolean },
-): ContestedCard {
-  return {
-    oracleId,
-    cardName,
-    arrived: frozen.arrived,
-    ownedBefore: frozen.ownedBefore,
-    fromImport: frozen.fromImport,
-    owned: a.owned,
-    claimants: allocateClaims(a),
-  };
-}
+// The shape both readers build lives beside `allocateClaims`, pure, so a write's own snapshot can
+// build the chooser too (Add Cards, I got it) without importing a module that opens the database.
+export { buildContestedCard };
 
 export async function loadSummaryView(
   uploadId: string,
