@@ -100,7 +100,8 @@ export function ChooseResults({
   // The read's order (the read addendum R1): its picks lead once it is done; while it runs, and
   // when it was never read into this order, the free order's own title says what orders the rows.
   const line =
-    read === "done" ? {
+    // A done read whose picks the current answers no longer list leads with none: the free head.
+    read === "done" && page.rows.some((r) => r.reason) ? {
       title: copy.results.byWords,
       sub: copy.results.byWordsSub(
         page.rows.filter((r) => r.reason).length,

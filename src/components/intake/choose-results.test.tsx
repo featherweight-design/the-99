@@ -69,6 +69,12 @@ describe("the results under a read (the read addendum R1)", () => {
     expect(moreRows.mock.calls.at(-1)![0]).toBe("t=dinosaurs&v=results&r=abc");
   });
 
+  it("keeps the free head when none of the read's picks is in this list", () => {
+    draw(picked(14, 0), "done", [], {});
+    expect(screen.getByTestId("order-line").textContent).not.toBe("Ordered by what you wrote");
+    expect(document.body.textContent).not.toContain("zero picks");
+  });
+
   it("promises a line for each pick only when every pick draws one", () => {
     // The first pick's reason names DECK, which this reader no longer has: its row draws no line.
     draw(picked(14, 3), "done", [], {});
