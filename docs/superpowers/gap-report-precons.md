@@ -18,3 +18,24 @@ reachable.
 
 Confirm pass: gaps 2 and 3 checked on the contact sheet (`docs/superpowers/inventories/precons.json`)
 at both widths.
+
+## PR 3: an open precon, `/decks/precons/[fileName]`
+
+Verify pass against "Route: /decks/precons/[fileName]", "Change: DecklistRow `readOnly`" and
+"Component: BasicsLine", with O1 to O6 and V1, V2: 4 visual gaps, 2 state gaps.
+
+| # | Gap | Resolution |
+|---|---|---|
+| 1 | Commander thumbs 44 × 62 at both widths; the table says 46 × 64 (390) and 56 × 78 (900) | Fixed. `CommanderThumb` gains `open` and `openWide`; the header draws one below `md` and the other from `md`, because the box is inline. |
+| 2 | 32 / 40 between groups; the table says 16 / 20 | Fixed. The groups' own bottom margin is the spacing; the container's gap is gone. |
+| 3 | The basics line 24 to 28 below the Lands rows; the table says 4 | Fixed. `DecklistGroup` takes a `footer`, drawn under its rows inside its own spacing. |
+| 4 | Lands' figure left the basics out; O2 reads them in | Fixed. `footerCount` adds the basics line's copies to the group's figure without making them rows. |
+| 5 | O5: no empty-collection band above the own box | Fixed. `EmptyCollectionBand`, shared with the list's L2. |
+| 6 | O6: card details open on the reader's copy, not the precon's printing, and offer the printing picker | Partly. The page passes the precon's printings as `deckPrintingPicks` with no deck, so the picker is gone and a precon printing the reader holds opens as that printing. One they do not hold still opens on their own copy: the modal draws held printings only (`resolvedPrinting`), and drawing an unheld one is a change to the shared card details, not to this page. |
+
+Also from the pre-open pass: the back link named the list when the list had been opened from New
+deck (`open.backNew` was never drawn). Fixed.
+
+Confirm pass: 1 to 4 and 6 checked on the contact sheet (rows o2, v2, o6) at both widths. 5 (O5) is
+confirmed by `open-precon-view.test.tsx` only: the sheet's account holds a collection. O4 (an unmapped
+card) has no row because no precon on any branch has one today; its sentence is tested.

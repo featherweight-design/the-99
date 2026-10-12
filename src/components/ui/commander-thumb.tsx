@@ -20,7 +20,7 @@ import { commanderGradient } from "../../lib/collection/gradients";
  * two big card faces are exempt for the same reason from the other direction:
  * the player is meant to read the printing.
  */
-export type ThumbSize = "row" | "summary" | "result" | "list";
+export type ThumbSize = "row" | "summary" | "result" | "list" | "open" | "openWide";
 
 /** `[]` is COLORLESS — a real identity, and what `commanderGradient` answers with
     the colorless gradient both card faces draw. `null` is "we do not know", which
@@ -40,6 +40,10 @@ const BOX: Record<ThumbSize, { width: number; height: number; radius: string }> 
   result: { width: 40, height: 56, radius: "rounded-[5px]" },
   // The precon list's rows (its handoff's PreconRow): a long list of decklists, smaller again.
   list: { width: 34, height: 48, radius: "rounded-[4px]" },
+  // An open precon's header (its handoff's O1): 46/64 is 0.719 and 56/78 is 0.718. Two sizes,
+  // because the box is inline: the page draws one below md and the other from md.
+  open: { width: 46, height: 64, radius: "rounded-[6px]" },
+  openWide: { width: 56, height: 78, radius: "rounded-[6px]" },
 };
 
 /** The ring every commander's card art carries, at whatever size — the two thumb

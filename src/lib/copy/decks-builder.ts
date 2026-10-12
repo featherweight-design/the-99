@@ -312,6 +312,8 @@ export const addPanelCopy = {
     // card and the ✕'s aria carries the same count in prose, so a screen reader
     // that also read this glyph would say the number twice.
     quantity: (n: number) => `×${n}`,
+    // A read-only row (a precon's) has no ✕ to speak the count, so it says it here instead.
+    quantitySpoken: (n: number) => `${n} copies`,
     removeAria: (name: string) => `Remove ${name}`,
     // A stack of basics decrements rather than unmounting, so the phone label
     // says which of the two is about to happen.

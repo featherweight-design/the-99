@@ -62,6 +62,7 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/decks/new/choose", dynamic: false },
   { path: "/decks/shopping", dynamic: false },
   { path: "/decks/precons", dynamic: false },
+  { path: "/decks/precons/[fileName]", dynamic: true },
   { path: "/discover", dynamic: false },
 ];
 

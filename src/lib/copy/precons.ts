@@ -44,6 +44,37 @@ export const preconsCopy = {
     unmapped: (count: number) => `${plural(count, "card", "cards")} not in our catalog yet`,
     aria: (name: string, owned: number, of: number) => `${name}. You own ${n(owned)} of ${n(of)} of its cards.`,
   },
+  open: {
+    back: "‹ Commander precons",
+    backNew: "‹ New deck",
+    eyebrow: "Precon decklist · read-only",
+    meta: (ident: string, set: string, setName: string | null, date: string) =>
+      [ident, set, setName, date].filter(Boolean).join(" · "),
+    ownLead: "You own",
+    own: (owned: number, of: number) => `${n(owned)} of ${n(of)}`,
+    ownTail: "of its cards",
+    basics: (count: number) => `${plural(count, "basic land", "basic lands")} not counted`,
+    builtSame: (deck: string, shared: number, pair: boolean) =>
+      `Your deck ${deck} has the same ${pair ? "commanders" : "commander"} and ${n(shared)} of its cards.`,
+    builtAny: (deck: string, shared: number) => `Your deck ${deck} shares ${n(shared)} of its cards.`,
+    twin: (twin: string) => `Also sold as ${twin}, with the same list.`,
+    pair: (body: number, total: number) => `2 commanders and ${n(body)} cards · ${n(total)} in all`,
+    unmapped: (count: number, listed: number) =>
+      `${count === 1 ? "1 card in this precon isn’t" : `${n(count)} cards in this precon aren’t`} in our catalog yet, so ${n(listed)} are listed.`,
+    listNote: "By type, A–Z within each group · press a card for its details, hover for its art · each row shows the precon’s printing",
+    listNotePhone: "By type · press a card for its details",
+  },
+  group: {
+    commander: "Commander",
+    commanders: "Commanders",
+    own: (owned: number, of: number) => `you own ${n(owned)} of ${n(of)}`,
+    own1: "you own it",
+    own0of1: "you own 0 of 1",
+    ownBoth: "you own both",
+    ownNeither: "you own neither",
+    basics: (count: number) => `${plural(count, "basic", "basics")} not counted`,
+    basicTag: "basic · not counted",
+  },
   empty: {
     body: "Every count reads 0 until your collection is in.",
     action: "Upload your collection",

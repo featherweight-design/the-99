@@ -128,6 +128,12 @@ interface DecklistRowProps {
    * point is that the caller states it.
    */
   newestAsOf: Date | null;
+  /**
+   * A list the reader cannot edit (a precon's): no buy tag, no remove, no auto tag; the right slot
+   * carries the card's printing (`printedSetCode printedCollectorNumber`) instead. Card details on
+   * press and the hover preview stay.
+   */
+  readOnly?: boolean;
 }
 
 export function DecklistRow({
@@ -140,6 +146,7 @@ export function DecklistRow({
   shoppingFigure,
   inShopping = false,
   newestAsOf,
+  readOnly = false,
 }: DecklistRowProps) {
   const { open } = useCardDetail();
 
@@ -193,6 +200,13 @@ export function DecklistRow({
     >
       {addPanelCopy.row.quantity(card.quantity)}
     </span>
+  );
+  // With no ✕ (a read-only row), nothing else speaks the count, so the row says it once, through
+  // the name's description as the other row facts are, so a reader on the focused name hears it.
+  const quantityDescriptionId = useId();
+  const speaksQuantity = readOnly && card.quantity > 1;
+  const quantitySpoken = speaksQuantity && (
+    <span id={quantityDescriptionId} className="sr-only">{addPanelCopy.row.quantitySpoken(card.quantity)}</span>
   );
 
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
@@ -337,6 +351,7 @@ export function DecklistRow({
   const describedBy =
     [
       availabilityDescriptionId,
+      speaksQuantity ? quantityDescriptionId : null,
       // Right after the availability word (handoff copy, `mark.a11y`): which card, whether it is
       // owned, that it is locked, then what the deck has done with it.
       locked ? lockDescriptionId : null,
@@ -543,6 +558,7 @@ export function DecklistRow({
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
+              {quantitySpoken}
               {factMarks}
             </div>
             {/* The phone meta line, and the only things that ever ride it: the
@@ -605,6 +621,7 @@ export function DecklistRow({
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
+            {quantitySpoken}
             {factMarks}
             {overText ? (
               // A row with no meta line (a land with no EDHREC figure) still owes its `over $X` from
@@ -693,7 +710,13 @@ export function DecklistRow({
             (Hugh, 2026-09-26, from md; extended to the phone 2026-09-28, "particularly on mobile"):
             the name keeps the row's width, and the limit stays beside the price it is about. From
             lg it sits inline after the figure, so this copy is drawn only below that. */}
-        {pressable ? buyTag : overText ? (
+        {readOnly ? (
+          card.printedSetCode && card.printedCollectorNumber ? (
+            <span className="flex-none whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">
+              {card.printedSetCode.toUpperCase()} {card.printedCollectorNumber}
+            </span>
+          ) : null
+        ) : pressable ? buyTag : overText ? (
           <span className="flex flex-none flex-col items-end gap-[2px]">
             <span className="block lg:hidden font-mono text-[10px] leading-none whitespace-nowrap" style={{ color: "var(--warning)" }}>
               {overText}
@@ -704,7 +727,7 @@ export function DecklistRow({
 
         {/* Auto tag — one per stack. Not in Shopping (Hugh, 2026-09-28): where a card came from is
             nothing a buying trip needs, and that row is the busiest in the app. */}
-        {card.auto && !inShopping && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
+        {card.auto && !inShopping && !readOnly && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
 
         {/* The ledger is marking this pass. Additive to the card's own button
             name rather than a replacement for it: the row has no aria-label to
@@ -799,7 +822,7 @@ export function DecklistRow({
               <LockMark open={!locked} tone="mode" />
             </span>
           </button>
-        ) : commanderRow ? (
+        ) : readOnly ? null : commanderRow ? (
         /* A commander's row has no ✕ (H28): the commander is not a list card, and removing it is
             Change commander's job. The glyph is kept, invisible and out of the accessibility tree,
             so the buy tag stays in the column every other row's ✕ holds it in. */

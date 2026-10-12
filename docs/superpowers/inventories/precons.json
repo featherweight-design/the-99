@@ -1,48 +1,170 @@
 {
   "feature": "Commander precons (handoff design_handoff_the99_precons, R2)",
-  "note": "PR 2 rows: the /decks/precons list. The open precon joins in PR 3, the start in PR 4, the /decks line, the New deck door and the About entry in PR 5. Needs PRECONS_ENABLED=true, a database holding the precon tables, and an account with a collection and precon-built decks (a pull:staging copy of Hugh's).",
+  "note": "PR 2 rows: the /decks/precons list. PR 3 adds the open precon. The start in PR 4, the /decks line, the New deck door and the About entry in PR 5. Needs PRECONS_ENABLED=true, a database holding the precon tables, and an account with a collection and precon-built decks (a pull:staging copy of Hugh's).",
   "rows": [
     {
       "id": "l1",
       "label": "/decks/precons, newest first under year heads (L1), with shared-deck and twin lines",
       "view": "src/components/decks/precons/precon-list-view.tsx",
-      "steps": [{ "goto": "/decks/precons", "wait": "h1", "settle": 2000 }]
+      "steps": [
+        {
+          "goto": "/decks/precons",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
     },
     {
       "id": "l1-built",
       "label": "/decks/precons, a row naming the reader's deck (R2) and a twin (R3)",
       "view": "src/components/decks/precons/precon-row.tsx",
-      "steps": [{ "goto": "/decks/precons?q=eldrazi", "wait": "h1", "settle": 2000 }]
+      "steps": [
+        {
+          "goto": "/decks/precons?q=eldrazi",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
     },
     {
       "id": "l1n",
       "label": "/decks/precons?from=new, the back link reads New deck (L1n)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
-      "steps": [{ "goto": "/decks/precons?from=new", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/decks/precons?from=new",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "l1o",
       "label": "/decks/precons?sort=owned, most owned first, no year heads (L1o)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
-      "steps": [{ "goto": "/decks/precons?sort=owned", "wait": "h1", "settle": 2000 }]
+      "steps": [
+        {
+          "goto": "/decks/precons?sort=owned",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
     },
     {
       "id": "l1f",
       "label": "/decks/precons?colour=W,U, the colour filter and its chips (L1f)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
-      "steps": [{ "goto": "/decks/precons?colour=W,U", "wait": "h1", "settle": 2000 }]
+      "steps": [
+        {
+          "goto": "/decks/precons?colour=W,U",
+          "wait": "h1",
+          "settle": 2000
+        }
+      ]
     },
     {
       "id": "l3",
       "label": "/decks/precons?q=zzzz, no precon matches (L3)",
       "view": "src/components/decks/precons/precon-list-view.tsx",
-      "steps": [{ "goto": "/decks/precons?q=zzzz", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/decks/precons?q=zzzz",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
     },
     {
       "id": "l1-pair",
       "label": "/decks/precons?q=frodo, a two-commander row (R4)",
       "view": "src/components/decks/precons/precon-row.tsx",
-      "steps": [{ "goto": "/decks/precons?q=frodo", "wait": "h1", "settle": 1500 }]
+      "steps": [
+        {
+          "goto": "/decks/precons?q=frodo",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "o1",
+      "label": "/decks/precons/CounterIntelligence_EOC, fully owned with a shared deck under a swapped commander (O1)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/CounterIntelligence_EOC",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "o2",
+      "label": "/decks/precons/EldraziUnbound_CMM, partial, basics not counted (O2)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/EldraziUnbound_CMM",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "o3",
+      "label": "/decks/precons/WretchedRanks_FDC, mostly unowned (O3)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/WretchedRanks_FDC",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "v1",
+      "label": "/decks/precons/AvengersAssembleCollectorSEdition_MSC redirects to the plain edition, which names its twin (V1)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/AvengersAssembleCollectorSEdition_MSC",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "v2",
+      "label": "/decks/precons/FoodAndFellowship_LTC, two commanders (V2)",
+      "view": "src/components/decks/precons/open-precon-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/FoodAndFellowship_LTC",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "o6",
+      "label": "/decks/precons/EldraziUnbound_CMM, a row pressed: card details, no deck actions (O6)",
+      "view": "src/components/decks/decklist-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/precons/EldraziUnbound_CMM",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Sol Ring",
+          "settle": 1500
+        },
+        {
+          "wait": "[role=dialog]"
+        }
+      ]
     }
   ]
 }

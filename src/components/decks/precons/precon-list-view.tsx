@@ -23,6 +23,7 @@ import { SearchField } from "../deck-filter-column";
 import { OrderMenu } from "../deck-sort-menu";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { PreconRow } from "./precon-row";
+import { EmptyCollectionBand } from "./empty-collection-band";
 
 const copy = preconsCopy;
 export const PRECON_ORDER_KEY = "the99:precons:order";
@@ -161,10 +162,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query }:
       </div>
 
       {!hasCollection && (
-        <div className="mx-[16px] mt-[12px] flex flex-col gap-[8px] rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[12px_14px] md:mx-[22px]">
-          <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{copy.empty.body}</p>
-          <Link href="/collection/replace" className="font-sans text-[13px] font-medium text-[color:var(--fg)]">{copy.empty.action}<PendingReporter href="/collection/replace" /></Link>
-        </div>
+        <EmptyCollectionBand className="mx-[16px] mt-[12px] md:mx-[22px]" />
       )}
 
       {shown.length === 0 ? (

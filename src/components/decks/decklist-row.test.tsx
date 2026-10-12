@@ -1577,3 +1577,41 @@ describe("DecklistRow with I got it", () => {
     expect(screen.queryByRole("button", { name: tagName })).toBeNull();
   });
 });
+
+// A precon's list (its handoff's O2): a row the reader cannot edit. The same unowned auto card
+// draws a buy tag, an auto tag and a remove control in a deck, and none of them read-only.
+describe("DecklistRow readOnly", () => {
+  const precon = {
+    ...card, owned: false, auto: true, printedSetCode: "cmm", printedCollectorNumber: "712",
+  } as DeckDetailCard;
+
+  it("draws the printing in place of the buy tag, and no keep or remove control", () => {
+    renderRow(<DecklistRow deckId="" card={precon} readOnly newestAsOf={null} />);
+    expect(screen.getByText("CMM 712")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/buy/i);
+  });
+
+  it("is what removes them: the same card in a deck has all three", () => {
+    renderRow(<DecklistRow deckId="d1" card={precon} newestAsOf={null} />);
+    expect(screen.queryByText("CMM 712")).toBeNull();
+    expect(screen.getByRole("button", { name: /Keep Sol Ring in this deck/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") })).toBeInTheDocument();
+    expect(document.body.textContent).toMatch(/buy/i);
+  });
+});
+
+describe("DecklistRow readOnly count", () => {
+  it("speaks a multi-copy count, since no remove control does", () => {
+    renderRow(<DecklistRow deckId="" card={{ ...card, quantity: 3 }} readOnly newestAsOf={null} />);
+    // Through the focusable name's description, not only as text beside it.
+    const name = screen.getAllByRole("button", { name: /Sol Ring/ })[0];
+    expect(name).toHaveAccessibleDescription(expect.stringContaining(addPanelCopy.row.quantitySpoken(3)));
+  });
+
+  it("leaves it to the remove control in a deck", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 3 }} newestAsOf={null} />);
+    expect(screen.queryByText(addPanelCopy.row.quantitySpoken(3))).toBeNull();
+  });
+});

@@ -18,7 +18,7 @@ export type PreconList = {
 };
 
 /** `db`, or a transaction on it: the list's reads run in one snapshot. */
-type Reader = Pick<typeof db, "select" | "selectDistinct">;
+export type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
 export async function readPreconSources(q: Reader = db): Promise<PreconSource[]> {
   const heads = await q.select().from(precons);

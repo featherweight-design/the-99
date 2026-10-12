@@ -49,3 +49,18 @@ describe("DecklistGroup — the view well changes the unit only", () => {
     expect(screen.queryAllByRole("listitem")).toHaveLength(0);
   });
 });
+
+// A precon's Lands (its handoff's O2): the basics line sits under the rows and its copies are in
+// the group's figure, without becoming rows.
+describe("DecklistGroup — a footer", () => {
+  it("draws the footer under the rows and counts its copies", () => {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <DecklistGroup deckId="" readOnly label="Lands" cards={cards} newestAsOf={null}
+          footer={<p>Wastes ×15</p>} footerCount={15} />
+      </CardDetailProvider>,
+    );
+    expect(screen.getByText("Wastes ×15")).toBeInTheDocument();
+    expect(screen.getByText("17")).toBeInTheDocument();
+  });
+});

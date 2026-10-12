@@ -2,6 +2,7 @@
 // Server-pure (no "use client" directive).
 // §Decklist Group (design table).
 
+import type { ReactNode } from "react";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DeckCardTile } from "./deck-card-tile";
 import type { DeckView } from "./group-toggle";
@@ -43,6 +44,12 @@ interface DecklistGroupProps {
    * point is that the caller states it.
    */
   newestAsOf: Date | null;
+  /** Every row read-only (a precon's list): see `DecklistRow`'s `readOnly`. */
+  readOnly?: boolean;
+  /** Drawn under the rows, inside the group's own spacing (a precon's basic lands line). */
+  footer?: ReactNode;
+  /** Copies the footer lists and the count includes (that line's basics). */
+  footerCount?: number;
 }
 
 export function DecklistGroup({
@@ -55,13 +62,16 @@ export function DecklistGroup({
   note,
   noteColor,
   newestAsOf,
+  readOnly = false,
+  footer = null,
+  footerCount = 0,
 }: DecklistGroupProps) {
   // The count does not wait for the undo: a spent slot is a receipt, not a
   // pending state, and a group that held its figure would be lying about its
   // own size. Every standing receipt in this group is excluded, not just one.
   const count = cards.reduce(
     (sum, c) => sum + (spentOracleIds.has(c.oracleId) ? 0 : c.quantity),
-    0,
+    footerCount,
   );
   // Auto tally: how many cards in this group still carry the auto flag. Spent
   // cards are excluded for the same reason as the count — each spent slot is
@@ -124,10 +134,12 @@ export function DecklistGroup({
               spent={spentOracleIds.has(card.oracleId)}
               siblings={siblings}
               newestAsOf={newestAsOf}
+              readOnly={readOnly}
             />
           ))}
         </div>
       )}
+      {footer}
     </div>
   );
 }
