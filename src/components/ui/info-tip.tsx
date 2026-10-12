@@ -11,7 +11,7 @@ import { twMerge } from "tailwind-merge";
  *  phone width its `::after` band makes the hit area 44px. The tooltip positions against the nearest
  *  positioned ancestor, which each caller supplies. */
 export function InfoTip({
-  id, lines, label, className = "self-center", buttonClassName = "",
+  id, lines, label, className = "self-center", buttonClassName = "", phoneAbove = false,
 }: {
   id: string; lines: readonly string[]; label: string;
   /** The root's own classes. A caller that has to place the ⓘ itself passes `contents` here and puts the
@@ -19,6 +19,9 @@ export function InfoTip({
    *  size of the ⓘ (Deck notes: it was squeezed against the screen edge on a phone). */
   className?: string;
   buttonClassName?: string;
+  /** Open ABOVE the anchor at phone width. A caller whose anchor sits at the foot of the page (the Notes field, above
+   *  the tab bar and the keyboard) passes it, or the tip draws under the bar and is cut off. */
+  phoneAbove?: boolean;
 }) {
   // Three reasons to be open, kept apart: one flag would let the press that follows a hover close it again.
   const [hover, setHover] = useState(false);
@@ -26,6 +29,10 @@ export function InfoTip({
   const [focused, setFocused] = useState(false);
   const open = hover || pinned || focused;
   const box = useRef<HTMLSpanElement>(null);
+  // A touch or pen press opens on the press itself, not on the click that follows the lift: the click is the
+  // press plus whatever the finger takes to leave, and a popover opens with no delay. The click that follows a
+  // press already handled is skipped; a keyboard or assistive click has no press before it, so it still toggles.
+  const pressed = useRef(false);
   // A press anywhere else closes a pinned tip. The button's own blur is not enough: Safari does not focus a
   // button on a mouse press, so a pin made there would never blur.
   useEffect(() => {
@@ -46,7 +53,19 @@ export function InfoTip({
         aria-label={label}
         aria-expanded={open}
         aria-describedby={id}
-        onClick={() => setPinned((v) => !v)}
+        // The press must not move focus: a focused field the press blurs hands the page back its hidden bars
+        // (Notes), and the layout shifts under the tip it is about to open.
+        onMouseDown={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse") return;
+          pressed.current = true;
+          setPinned((v) => !v);
+        }}
+        onPointerCancel={() => { pressed.current = false; }}
+        onClick={() => {
+          if (pressed.current) { pressed.current = false; return; }
+          setPinned((v) => !v);
+        }}
         onFocus={(e) => {
           // Keyboard focus only: a tap focuses a button too, and would then hold it open against the next tap.
           try { if (e.currentTarget.matches(":focus-visible")) setFocused(true); } catch { /* no :focus-visible */ }
@@ -65,7 +84,7 @@ export function InfoTip({
         id={id}
         role="tooltip"
         hidden={!open}
-        className="absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden"
+        className={twMerge("absolute inset-x-0 top-[calc(100%+6px)] z-10 flex flex-col gap-[8px] rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[14px] py-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] md:right-auto md:w-[340px] [&[hidden]]:hidden", phoneAbove && "max-md:bottom-[calc(100%+6px)] max-md:top-auto")}
       >
         {lines.map((l) => <span key={l}>{l}</span>)}
       </span>

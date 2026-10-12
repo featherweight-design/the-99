@@ -196,6 +196,7 @@ export function NoteField({
             lines={deckNotesCopy.help.lines}
             label={deckNotesCopy.help.infoAria}
             className="contents"
+            phoneAbove
             buttonClassName="absolute right-[13px] top-1/2 -translate-y-1/2 md:right-[11px]"
           />
           {open && (
