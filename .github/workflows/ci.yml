@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+# A push to a PR supersedes the run before it, so cancel that one instead of queueing eight more jobs
+# behind it (measured: median queue 4s but p90 345s with several lanes pushing). Main never cancels:
+# every merge commit keeps its own full run (the group is keyed on the sha, because a group holds
+# only one pending run and would otherwise drop a middle push). The gate reads check-runs for the head sha only, so a
+# cancelled run on an older sha is never judged.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Static checks and the build. Tests run in their own sharded job so the slowest step of the old
   # single job (about 80% of its wall clock) no longer serialises behind everything else.
