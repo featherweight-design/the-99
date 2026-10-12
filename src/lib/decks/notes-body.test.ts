@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkBody, formatTag, oneLine, parseBody, renderedLength, tagIds, withCurrentNames } from "./notes-body";
+import { capBody, checkBody, formatTag, oneLine, parseBody, renderedLength, tagCount, tagIds, withCurrentNames } from "./notes-body";
 
 const ID = "6d0a5f7e-1111-4222-8333-444455556666";
 const ID2 = "7e1b6a8f-aaaa-4bbb-8ccc-ddddeeeeffff";
@@ -81,5 +81,24 @@ describe("plainText and capBody (boxes that are not notes)", () => {
     expect(renderedLength(capBody(body, 10))).toBe(3);
     expect(capBody(body, 10)).toBe("ab ");
     expect(capBody("abcdef", 4)).toBe("abcd");
+  });
+});
+
+describe("capBody with a UTF-16 measure and a tag limit", () => {
+  const id = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
+  const tag = (n: number, name: string) => `[[${id(n)}|${name}]]`;
+
+  it("counts an astral character as the two units the prompt boundary counts, by default as one", () => {
+    expect(capBody("😀😀😀", 2)).toBe("😀😀");
+    expect(capBody("😀😀😀", 2, { measure: (t) => t.length })).toBe("😀");
+  });
+
+  it("keeps the tags up to the limit and writes a later tag as its plain name", () => {
+    const body = `${tag(1, "A")} ${tag(2, "B")} ${tag(3, "C")}`;
+    expect(capBody(body, 100, { maxTags: 2 })).toBe(`${tag(1, "A")} ${tag(2, "B")} C`);
+  });
+
+  it("counts the tags a body holds", () => {
+    expect(tagCount(`x ${tag(1, "A")} y ${tag(2, "B")} [[Plain]]`)).toBe(2);
   });
 });

@@ -2,9 +2,9 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
-import { plainText } from "../../../../lib/decks/notes-body";
+import { plainText, tagCount } from "../../../../lib/decks/notes-body";
 import { resolveTaggedText } from "../../../../lib/cards/tagged-text";
-import { READ_WORDS_MAX_CHARS, READ_WORDS_URL_MAX } from "../../../../lib/intake/limits";
+import { READ_TAGS_MAX, READ_WORDS_MAX_CHARS, READ_WORDS_URL_MAX, wordsLength } from "../../../../lib/intake/limits";
 import { isUuid } from "../../../../lib/uuid";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
@@ -39,10 +39,10 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };
   const raw = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
   // The parser cuts `w` to the cap, so it is checked first, in the parser's own unit (UTF-16, as the
-  // box's `maxLength` counts) on what the words DRAW (a card tag counts as its name), and on the raw
-  // value's length for the ids a body carries: anything the parser would cut is refused.
+  // prompt boundary counts) on what the words DRAW (a card tag counts as its name), on the raw value's
+  // length for the ids a body carries, and on the tags: anything the parser would cut is refused.
   const rawWords = raw.get("w") ?? "";
-  if (rawWords.length > READ_WORDS_URL_MAX || plainText(rawWords).length > READ_WORDS_MAX_CHARS) return { kind: "refused" };
+  if (rawWords.length > READ_WORDS_URL_MAX || wordsLength(plainText(rawWords)) > READ_WORDS_MAX_CHARS || tagCount(rawWords) > READ_TAGS_MAX) return { kind: "refused" };
   const parsed = parseLiveParams(raw);
   // The cards tagged in the words, looked up: a tag is the catalog's name for its id, and an id the
   // catalog does not hold is plain words. The address keeps the canonical body.

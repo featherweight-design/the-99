@@ -7,7 +7,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
-import { fieldCount, insertOpenTag, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
+import { fieldCount, fieldText, insertOpenTag, taggedCount, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
 import { reveal } from "../../lib/ui/reveal";
 
@@ -33,6 +33,10 @@ export type CardTagPickerOptions = {
   deckCards?: readonly DeckCardOption[];
   /** The cap on the field's RENDERED text (a tag counts as its name). */
   max: number;
+  /** How the cap counts rendered text; the default is characters (code points). */
+  measure?: (text: string) => number;
+  /** The most tags the field may hold; a pick past it is not made. */
+  maxTags?: number;
   /** Applied to typed text before it is kept (Notes folds whitespace; a textarea keeps its lines). */
   normalize?: (text: string) => string;
   /** The element the picker is attached to. */
@@ -44,7 +48,8 @@ export type CardTagPickerOptions = {
  * `<CardTagList {...list} />` where the dropdown goes, and calls `insertTag()` from its `[[ ]]` button.
  */
 export function useCardTagPicker(o: CardTagPickerOptions) {
-  const { value, picked, onChange, search, deckCards, max, normalize, field } = o;
+  const { value, picked, onChange, search, deckCards, max, normalize, field, maxTags } = o;
+  const measure = o.measure;
   const id = useId();
   const [caret, setCaret] = useState(0);
   const [dismissed, setDismissed] = useState(false);
@@ -102,12 +107,13 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   const current = lookup && answer?.query === query ? answer : null;
   const remoteStatus: "idle" | "pending" | "ok" | "refused" = !lookup ? "idle" : current ? current.status : "pending";
   const options = [...local, ...(current?.status === "ok" ? current.rows : [])];
-  const count = fieldCount(value, picked);
+  const sizeOf = (text: string, p: Picked) => (measure ? measure(fieldText(text, p)) : fieldCount(text, p));
+  const count = sizeOf(value, picked);
   const activeIndex = Math.min(active, Math.max(0, options.length - 1));
 
   // The whole-change cap, shared by typing and by every insert: a change that leaves the field over the cap
   // and longer than it was is refused whole, so a pick or the `[[ ]]` button cannot strand an unsubmittable value.
-  const overCap = (text: string, next: Picked) => fieldCount(text, next) > max && fieldCount(text, next) > count;
+  const overCap = (text: string, next: Picked) => sizeOf(text, next) > max && sizeOf(text, next) > count;
 
   const place = (text: string, at: number, nextPicked: Picked = picked) => {
     if (overCap(text, nextPicked)) return;
@@ -123,6 +129,8 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
 
   const pick = (opt: Option) => {
     if (!tag) return;
+    // Tags held now: the marked `[[Name]]` the picked map still names.
+    if (maxTags !== undefined && taggedCount(value, picked) >= maxTags) return;
     const next = insertPick(value, tag.start, caret, opt.name);
     place(next.text, next.caret, new Map(picked).set(opt.name.replace(/[\[\]|]/g, "").trim(), opt.oracleId));
   };

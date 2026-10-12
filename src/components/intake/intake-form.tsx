@@ -17,6 +17,7 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { colorNames } from "../../lib/copy/color-labels";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
+import { READ_TAGS_MAX, wordsLength } from "../../lib/intake/limits";
 import { READ_WORDS_MAX_CHARS, serializeChooseParams, type ChooseParams } from "../../lib/intake/params";
 import type { Bracket, Pool } from "../../lib/intake/rank";
 import type { VocabularyTheme } from "../../lib/intake/vocabulary";
@@ -131,12 +132,12 @@ export function IntakeForm({
   // that would run under it opens above the box instead.
   const wordsRef = useRef<HTMLTextAreaElement>(null);
   const picker = useCardTagPicker({
-    value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, field: wordsRef,
+    value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef,
     onChange: (text, next) => setField({ text, tags: next }),
   });
   const [listAbove, setListAbove] = useState(false);
   useEffect(() => {
-    if (!picker.open) return;
+    if (!picker.open) { setListAbove(false); return; }
     const place = () => {
       const el = wordsRef.current;
       if (!el) return;
@@ -148,7 +149,9 @@ export function IntakeForm({
     place();
     // The picker eases the box to the top of the screen a beat after it opens; measure again once that has settled.
     const settled = setTimeout(place, 700);
-    return () => clearTimeout(settled);
+    // The phone's keyboard finishing its opening moves the visual viewport; measure again then.
+    window.visualViewport?.addEventListener("resize", place);
+    return () => { clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); };
   }, [picker.open, dockHeight]);
 
   const names = copy.intake.colorsJoin(colorNames(colors.map((c) => c.toUpperCase())));

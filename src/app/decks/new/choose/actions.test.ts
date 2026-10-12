@@ -80,10 +80,21 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     expect(decodeURIComponent(String(to).replace(/\+/g, " "))).toContain("[[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]");
   });
 
-  it("refuses words whose rendered text is over the cap even when the stored body fits the address bound", async () => {
-    const tag = "[[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]";
-    // 790 + a space + the 13-letter name is 804 as the box counts it; the tag's id and brackets are free.
-    expect(await submitChoose(`?w=${encodeURIComponent(`${"x".repeat(790)} ${tag}`)}`)).toEqual({ kind: "refused" });
+  it("takes a tagged body whose raw length is over the cap but whose drawn text is not", async () => {
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|Rhystic Study]]`;
+    // 740 + 3 x (space + 13-letter name) = 782 drawn; the three ids take it to 905 raw, over 800.
+    const w = `${"x".repeat(740)} ${tag(1)} ${tag(2)} ${tag(3)}`;
+    expect(w.length).toBeGreaterThan(800);
+    tags.resolve.mockResolvedValueOnce({ text: "a deck", body: w, tagged: [] });
+    await landed(`?w=${encodeURIComponent(w)}`);
+    expect(stub.begin).toHaveBeenCalled();
+  });
+
+  it("refuses a fourth tag, and drawn text over the cap even when the body is short", async () => {
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|A]]`;
+    expect(await submitChoose(`?w=${encodeURIComponent(`${tag(1)} ${tag(2)} ${tag(3)} ${tag(4)}`)}`)).toEqual({ kind: "refused" });
+    expect(await submitChoose(`?w=${encodeURIComponent(`${"x".repeat(790)} [[c0ffee00-0000-4000-8000-000000000001|Rhystic Study]]`)}`)).toEqual({ kind: "refused" });
     expect(stub.begin).not.toHaveBeenCalled();
   });
 
