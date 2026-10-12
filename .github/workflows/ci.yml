@@ -47,7 +47,6 @@ jobs:
       - name: Select tests
         env:
           CI_BASE_REF: origin/${{ github.base_ref || 'main' }}
-          CI_SELECT_BREAK: "1"
           CI_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') && '1' || '' }}
         run: node scripts/ci-select.mjs
 
