@@ -132,21 +132,25 @@ export function hasPress(src: string): boolean {
   return PRESS_BINDINGS.some((name) => importsBinding(src, name));
 }
 
-/** Draws a preview: calls `usePreviewRow`, or hands `preview` to a `CardDetailTrigger`. */
+/**
+ * Draws a preview: imports `usePreviewRow` (a row that previews as a whole), or EVERY `CardDetailTrigger` in the file
+ * hands `preview` (a name or a plate that is the row). One trigger without it leaves the file short, so a file
+ * cannot hide an unpreviewed name behind one that has it.
+ */
 export function hasHover(src: string): boolean {
   if (importsBinding(src, "usePreviewRow")) return true;
   const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  let found = false;
+  let triggers = 0;
+  let withPreview = 0;
   const visit = (node: ts.Node) => {
-    if (ts.isJsxAttribute(node) && node.name.getText(file) === "preview") {
-      const element = node.parent.parent;
-      const tag = ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element) ? element.tagName.getText(file) : "";
-      if (tag === "CardDetailTrigger") found = true;
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(file) === "CardDetailTrigger") {
+      triggers += 1;
+      if (node.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText(file) === "preview")) withPreview += 1;
     }
     ts.forEachChild(node, visit);
   };
   visit(file);
-  return found;
+  return triggers > 0 && withPreview === triggers;
 }
 
 /** Rows with one half and not the other, excluding the named exceptions. */
@@ -212,6 +216,11 @@ describe("the row guard's own failure paths", () => {
     expect(rowGaps({ "components/a.tsx": press }, new Set())).toEqual([{ path: "components/a.tsx", missing: "hover" }]);
     expect(rowGaps({ "components/a.tsx": both }, new Set())).toEqual([]);
     expect(rowGaps({ "components/a.tsx": hoverOnly }, new Set())).toEqual([{ path: "components/a.tsx", missing: "press" }]);
+  });
+
+  it("calls a file short when one trigger has `preview` and another does not", () => {
+    const mixed = `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const A = () => <p><CardDetailTrigger oracleId="a" name="A" preview>A</CardDetailTrigger><CardDetailTrigger oracleId="b" name="B">B</CardDetailTrigger></p>;`;
+    expect(rowGaps({ "components/a.tsx": mixed }, new Set())).toEqual([{ path: "components/a.tsx", missing: "hover" }]);
   });
 
   it("does not take a comment, a string or a different element's `preview` for a half", () => {

@@ -223,6 +223,8 @@ function ReasoningModal({
                 <CardDetailTrigger
                   oracleId={piece.oracleId}
                   name={art.get(piece.oracleId)?.name ?? piece.name}
+                  imageUri={art.get(piece.oracleId)?.imageUri ?? null}
+                  preview
                   siblings={siblings}
                   className="flex-none"
                 >
@@ -267,6 +269,8 @@ function ReasoningModal({
                             key={t.oracleId}
                             oracleId={t.oracleId}
                             name={art.get(t.oracleId)?.name ?? t.name}
+                            imageUri={art.get(t.oracleId)?.imageUri ?? null}
+                            preview
                             siblings={siblings}
                             className="text-left text-[11.5px] border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--fg-body)]"
                           >
