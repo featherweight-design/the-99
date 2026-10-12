@@ -2397,7 +2397,8 @@ export const PRECON_ROW: PreconRow = {
   setCode: "CMM",
   releaseDate: "2023-08-04",
   twinName: null,
-  commanders: [{ oracleId: "about-zhulodok", name: "Zhulodok, Void Gorger", imageUri: null, colorIdentity: [] }],
+  // The precon's own printing (CMM), so the tile specimen shows the card a reader meets on the list.
+  commanders: [{ oracleId: "about-zhulodok", name: "Zhulodok, Void Gorger", imageUri: "https://cards.scryfall.io/normal/front/a/0/a015461d-4214-4feb-8b04-519c537759eb.jpg?1783915492", colorIdentity: [] }],
   identity: [],
   owned: 74,
   of: 85,

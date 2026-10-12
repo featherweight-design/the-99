@@ -21,7 +21,7 @@ import { CurveCard } from "../decks/deck-stats-view";
 import { ManaEvidenceTable } from "../decks/mana-evidence";
 import { BenchmarksBlock } from "../decks/benchmarks-block";
 
-import { PreconRow } from "../decks/precons/precon-row";
+import { PreconTile } from "../decks/precons/precon-tile";
 import { TokenRow } from "../decks/token-row";
 import { NotesFigureBody } from "./notes-figure";
 import { BrowseFigureBody } from "./browse-figure";
@@ -820,13 +820,13 @@ function NotesFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-/** One precon row as the list draws it: the name and owned figure, the commander, the set, and
- *  the reader's deck that shares it. */
+/** One precon tile as the list draws it by default (R4, G-R4-3): the commander's card, the owned
+ *  figure, the name and set, and the reader's deck that shares it. */
 function PreconsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="precons" width={width}>
-      <ul className="m-0 list-none p-[12px]">
-        <PreconRow row={PRECON_ROW} href="/decks/precons" />
+      <ul className="m-0 grid w-[190px] list-none p-[12px]">
+        <PreconTile row={PRECON_ROW} href="/decks/precons" />
       </ul>
     </Specimen>
   );
