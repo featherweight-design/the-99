@@ -400,6 +400,17 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   the table's newest `as_of` unchanged and every old token price reading as live. The same refusal applies when
   fewer than `TOKEN_IDENTITY_SHARE` (90%) of the matched rows carry Mana Pool's name, set and number (100% did on
   2026-10-11): a renamed feed field would otherwise erase every stored product identity.
+- **Token ownership is recorded by the upload, in its own transaction** (`token_ownership`, `token_reads`; plan
+  `2026-10-11-tokens-for-my-deck.md`, PR 3). `matchRows` names the token a row is from `token_printings` (never from
+  a layout: emblems and art series are not tokens, and a token filed as a `reversible_card` is), the preview payload
+  carries the per-token sums, and `writeUploadTokens` runs inside `replaceCollection` AND the ledger's
+  `applyCollectionChange`, so a failing token write rolls the whole confirm back. **Three states, never two**:
+  owned (a row), not owned (no row, and the account has a `token_reads` row), not known (neither). Only a confirmed
+  upload writes the marker, including one that read an EMPTY list (a preview payload with no `tokens` at all, from before
+  tokens were read, writes nothing: `recordUploadTokens`); a hand mark (`I have one`) never does, or one mark
+  would turn every other token from unknown into not owned. Replace removes upload rows only; a hand mark an upload
+  also reads becomes an upload row. The review screen's `skipped by design` count still includes tokens: they are
+  not in `collection_items`.
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

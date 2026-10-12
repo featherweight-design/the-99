@@ -38,6 +38,18 @@ export type MatchIndexes = {
   /** `skipped_printings.scryfall_id` for the token layouts alone — tokens, emblems and art series (§9.1). */
   skippedScryfallIds?: Iterable<string>;
   /**
+   * `token_printings`, for the ids the upload carries: which TOKEN each one is (any printing of a
+   * token is that token). What is a token is decided by this table, never by a printing's layout:
+   * `skippedScryfallIds` also holds emblems and art-series cards, which are not tokens (ruling 4).
+   */
+  tokenPrintings?: { scryfallId: string; tokenOracleId: string }[];
+  /**
+   * True only when the token lookup really ran: the rows carried printing ids and this database holds a
+   * published token catalog. A paste carries no ids, and a catalog migrated but not yet filled has nothing
+   * to look up, and in both an empty `tokenRows` means "not looked", never "looked and found none".
+   */
+  tokensRead?: boolean;
+  /**
    * `printings.flavor_name`, one entry per printing carrying one (#467). Every printing of a
    * renamed card repeats the same flavor name, so repeats are expected; only two entries
    * disagreeing about the oracle id are an ambiguity.
@@ -49,6 +61,12 @@ export type MatchResult = {
   matched: { row: CollectionRow; oracleId: string }[];
   /** Rows excluded from the catalog by design — tokens and emblems, not import failures. */
   skipped: CollectionRow[];
+  /**
+   * The rows of `skipped` that are tokens, with the token each names. A token row is STILL in
+   * `skipped`: it never enters `collection_items`, and the count the review screen quotes keeps its
+   * meaning. This is what is kept besides.
+   */
+  tokenRows: { row: CollectionRow; tokenOracleId: string }[];
   unmatched: CollectionRow[];
 };
 
@@ -82,6 +100,7 @@ export function matchRows(
     if (!notCards.has(p.oracleId)) byScryfallId.set(p.scryfallId, p.oracleId);
   }
   const skippedIds = new Set(indexes.skippedScryfallIds ?? []);
+  const tokenByPrinting = new Map((indexes.tokenPrintings ?? []).map((t) => [t.scryfallId, t.tokenOracleId]));
 
   const byName = new Map<string, string>();
   for (const c of cards) {
@@ -111,16 +130,22 @@ export function matchRows(
 
   const matched: MatchResult["matched"] = [];
   const skipped: CollectionRow[] = [];
+  const tokenRows: MatchResult["tokenRows"] = [];
   const unmatched: CollectionRow[] = [];
   for (const row of rows) {
     const byId = row.scryfallId ? byScryfallId.get(row.scryfallId) : undefined;
     if (byId) { matched.push({ row, oracleId: byId }); continue; }
     // Checked before the name fallback: a known token id is definitively a token, and
     // importing it as a same-named real card would be worse than reporting it skipped.
+    // A TOKEN is decided by the token catalog, not by the skipped ledger's layout: a token Scryfall
+    // files as a `reversible_card` (`sld/1969`) is in the ledger under a layout the token filter
+    // does not read, and is still a token. It stays counted as skipped, and is kept as well.
+    const tokenOracleId = row.scryfallId ? tokenByPrinting.get(row.scryfallId) : undefined;
+    if (row.scryfallId && tokenOracleId) { skipped.push(row); tokenRows.push({ row, tokenOracleId }); continue; }
     if (row.scryfallId && skippedIds.has(row.scryfallId)) { skipped.push(row); continue; }
     const byNameId = byName.get(normalizeCardName(row.name));
     if (byNameId) matched.push({ row, oracleId: byNameId });
     else unmatched.push(row);
   }
-  return { matched, skipped, unmatched };
+  return { matched, skipped, tokenRows, unmatched };
 }

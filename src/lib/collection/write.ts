@@ -13,6 +13,7 @@ import { proxiedMembership } from "../decks/proxies";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
+import { recordUploadTokens, type TokenHolding } from "../tokens/ownership";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -64,9 +65,9 @@ export type CollectionChange =
    * The full new collection: an upload in Replace mode. With `uploadId`, that upload is stamped
    * confirmed in the same transaction, and a stamp already set returns `alreadyConfirmed`.
    */
-  | { kind: "replace"; items: PendingItem[]; uploadId?: string }
+  | { kind: "replace"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[] }
   /** Quantities added: an upload in Add mode (`uploadId`, stamped as above), or the Add cards sheet. */
-  | { kind: "add"; items: PendingItem[]; uploadId?: string }
+  | { kind: "add"; items: PendingItem[]; uploadId?: string; tokens?: TokenHolding[] }
   /**
    * Per-row new counts: card details, a row removed. `seen` is every holding of the card the
    * editor showed: a holding of that card the player has now and the editor never saw (another tab
@@ -736,6 +737,12 @@ export async function applyCollectionChange(
       if (opts.assign && !opts.dryRun) {
         const refused = await assignCopyIn(tx, userId, opts.assign.oracleId, opts.assign.deckId, "set");
         if (refused) throw new Refused({ status: "assignRefused", reason: refused });
+      }
+      // The tokens this UPLOAD read, and the marker that they were read, in the same transaction as the
+      // rows: a failure rolls the whole confirm back. Only an upload (it carries an id) records tokens;
+      // the Add cards sheet does not. An upload that read no token still writes the marker.
+      if (change.kind === "replace" || change.kind === "add") {
+        await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       }
 
       const moves = countMoves(rows);

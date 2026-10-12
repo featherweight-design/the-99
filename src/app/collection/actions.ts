@@ -13,6 +13,7 @@ import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../l
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
+import { aggregateTokenRows, type TokenHolding } from "../../lib/tokens/ownership";
 import {
   ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
 } from "../../lib/collection/arrivals-write";
@@ -69,10 +70,17 @@ async function buildPreview(args: {
   }
 
   const { catalog, indexes } = await loadMatchInputs(rows);
-  const { matched, skipped, unmatched } = matchRows(rows, catalog, indexes);
+  const { matched, skipped, tokenRows, unmatched } = matchRows(rows, catalog, indexes);
 
   const pendingItems = aggregatePendingItems(matched);
   const matchedCardCount = totalQuantity(pendingItems);
+  // The tokens this file holds, summed per token over its printings. Kept in the payload beside the
+  // cards so the confirm records them in its own transaction; nothing reads them back to the player yet.
+  // Absent when no lookup ran (a paste, or a token catalog not published yet): `[]` is reserved for a
+  // lookup that found none, because it is what writes the "read" marker at confirm.
+  const tokens = indexes.tokensRead
+    ? aggregateTokenRows(tokenRows.map((t) => ({ tokenOracleId: t.tokenOracleId, quantity: t.row.quantity })))
+    : undefined;
 
   const [{ count: currentCollectionCount }] = await db
     .select({ count: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })
@@ -98,6 +106,7 @@ async function buildPreview(args: {
       skippedByDesignCount: skipped.length,
       parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
       pendingItems,
+      tokens,
     },
   }).returning({ id: csvUploads.id });
 
@@ -254,6 +263,8 @@ export async function confirmUpload(
 
   const preview = upload.previewPayload as {
     pendingItems: PendingItem[];
+    /** Absent on an upload previewed before tokens were read: it records neither the tokens nor the marker. */
+    tokens?: TokenHolding[];
     unmatched?: { name: string; line: number }[];
     parseErrors?: { line: number; reason: string }[];
   };
@@ -291,7 +302,7 @@ export async function confirmUpload(
   if (ledger) {
     const result = await applyCollectionChange(
       userId,
-      { kind: mode, items: pendingItems, uploadId },
+      { kind: mode, items: pendingItems, uploadId, tokens: preview.tokens },
       {
         id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
         ownedCounts: true,
@@ -315,6 +326,7 @@ export async function confirmUpload(
     const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
       confirmUploadId: uploadId,
       onlyIfEmpty: opts.firstImport,
+      tokens: preview.tokens,
     });
     if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
     if (alreadyConfirmed) return;

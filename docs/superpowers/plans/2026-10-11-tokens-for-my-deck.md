@@ -135,22 +135,26 @@ printings; one printing both pictured and sent).
 
 ### PR 3: Ownership (write side, dark)
 
-Migration 0095 (`token_ownership`, `token_reads`). Upload: `loadMatchInputs` also resolves uploaded ids against
-`token_printings`; `matchRows` returns `tokenRows` (token oracle id, quantity) beside `skipped`; the preview payload
-carries them; `replaceCollection` replaces ONLY `source = 'upload'` rows and upserts `token_reads` in its existing
-transaction, under the same upload-row lock, and the summary's `skippedByDesignCount` keeps its meaning (emblems and
-art cards are still skipped by design). Manual: server actions `markTokenOwned` and `unmarkTokenOwned` (auth,
-uuid-guard, writes `source: 'manual'`, never writes `token_reads`). If an upload reads a token that was marked, it
-becomes an upload row (G2a). `COLLECTION_ROUTES` and `check:collection-routes` are extended in PR 4 when a route
-reads the table; PR 3 adds a unit test pinning the replace/transaction behavior and `probe:arrivals` cases on
-local-dev only (it deletes the user's collection; never pointed elsewhere).
+Migration 0095 (`token_ownership`, `token_reads`). Upload: `loadMatchInputs` resolves uploaded ids against
+`token_printings` (skipped cleanly when the token catalog is absent); `matchRows` returns `tokenRows` beside `skipped`
+(a token row is still counted skipped, so the review screen's count keeps its meaning, and a token Scryfall files as a
+`reversible_card` is recognised by the catalog, not the ledger's layout); the preview payload carries the per-token sums;
+`writeUploadTokens` runs inside BOTH confirm transactions (`replaceCollection`'s and the ledger's `applyCollectionChange`),
+after the upload stamp and the rows, so a failing token write rolls the whole confirm back. Replace removes only
+`source = 'upload'` rows; Add accumulates onto upload rows; a hand mark the upload also read becomes an upload row (G2a);
+the `token_reads` marker is written by every confirmed upload, including one with no token, and by nothing else.
+`markTokenOwned` / `unmarkTokenOwned` (library functions, `ownership.ts`) never write the marker and never touch an upload
+row. **The server actions that wrap them move to PR 4 with the controls that call them**: an action with no caller is
+surface with no use, and the switch that gates it does not exist until PR 4. Cache: `/decks/[id]` is already in
+`COLLECTION_ROUTES` (dynamic), so a confirm's `invalidateCollectionReaders` retires the deck page; the mark action in PR 4
+revalidates that route pattern itself. Home and `/decks` read no token table, so `check:list-cache` is unaffected.
 
-- Files (about 14): migration + schema, `match.ts` + test, `import.ts` + test, `actions.ts` (confirm), a
-  `src/lib/tokens/ownership.ts` + test, `src/app/decks/token-actions.ts` + test, `probe-arrivals`, `docs/probes.md`.
-- **Mutation checks:** drop the upload-only delete scope (a manual row vanishes), drop the `token_reads` write
-  (state stays unknown after a zero-token upload), mark writing the marker. Each must fail a test.
-- Risk: `replaceCollection` is a destructive path (clean-after-clean review). Tokens are the second table it writes;
-  a token failure must roll the whole confirm back, never leave the collection replaced without its marker.
+- Files (about 14): migration + snapshot + journal, `schema.ts`, `match.ts` + test, `import.ts`, `write.ts`,
+  `actions.ts`, `src/lib/tokens/ownership.ts` + test, `AGENTS.md`, this plan.
+- **Mutation checks:** drop the marker write, delete hand marks on Replace, make Add replace, read "not known" as "not owned"
+  (each fails a test). **Integration:** proved on a scratch branch of staging (deleted) through the real functions.
+- Risk: `replaceCollection` is a destructive path (clean-after-clean review). A token failure must roll the whole confirm
+  back; the scratch run proves a bad token leaves no cards written, the upload unconfirmed and the tokens untouched.
 
 ### PR 4: Tokens group on the deck page (read side, first UI; introduces the switch)
 

@@ -248,6 +248,43 @@ export const tokenPrintingPrices = pgTable("token_printing_prices", {
     .onDelete("cascade"),
 ]);
 
+/**
+ * The tokens a player holds (plan `2026-10-11-tokens-for-my-deck.md`, PR 3). Keyed by the token's own
+ * oracle id: any printing counts, and one Treasure on the shelf is owned in every deck that makes one.
+ * `collection_items` cannot hold a token (its `oracle_id` is a foreign key to `cards`), so this is the
+ * record, and it starts EMPTY: until a player's next upload, nothing here says they own none.
+ *
+ * Two sources, and they are not interchangeable. An `upload` row is what the last confirmed upload
+ * read; the next upload replaces them all (Replace) or adds to them (Add). A `manual` row is the
+ * player's own `I have one` (quantity 1) and an upload NEVER removes it, because a CSV may simply leave
+ * tokens out; only the player unmarks it. If an upload reads a token the player had marked, the row
+ * becomes an upload row and keeps no manual flag.
+ */
+export const tokenOwnership = pgTable("token_ownership", {
+  userId: text("user_id").notNull(),
+  tokenOracleId: uuid("token_oracle_id").notNull().references(() => tokens.oracleId),
+  quantity: integer("quantity").notNull(),
+  source: text("source", { enum: ["upload", "manual"] }).notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.tokenOracleId] }),
+  check("token_ownership_quantity_positive", sql`${t.quantity} > 0`),
+  check("token_ownership_source_check", sql`${t.source} in ('upload', 'manual')`),
+]);
+
+/**
+ * That a player's tokens have been READ: one row per account, written in the same transaction as every
+ * confirmed upload, INCLUDING one that read no token. It is what tells "not owned" from "not known": an
+ * empty `token_ownership` beside a row here means the upload was read and held no tokens, and beside no
+ * row it means nobody has looked. A manual mark never writes it, or one mark would turn every unmarked
+ * token on the account from "not known" into "not owned".
+ */
+export const tokenReads = pgTable("token_reads", {
+  userId: text("user_id").primaryKey(),
+  uploadId: uuid("upload_id"),
+  readAt: timestamp("read_at").notNull().defaultNow(),
+});
+
 /** Which card makes which token: `all_parts` entries with `component: "token"`, nothing else. */
 export const cardTokens = pgTable("card_tokens", {
   cardOracleId: uuid("card_oracle_id").notNull().references(() => cards.oracleId, { onDelete: "cascade" }),

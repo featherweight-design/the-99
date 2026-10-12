@@ -193,4 +193,48 @@ describe("matchRows and cardboard that is not a card", () => {
     });
     expect(matched).toEqual([]);
   });
+
+  describe("tokens", () => {
+    const TOKEN = "11111111-1111-4111-8111-111111111111";
+    it("names the token a row is, and still counts it skipped", () => {
+      const r = matchRows([row("Treasure", "tp-1")], catalog, {
+        skippedScryfallIds: ["tp-1"],
+        tokenPrintings: [{ scryfallId: "tp-1", tokenOracleId: TOKEN }],
+      });
+      expect(r.tokenRows).toEqual([{ row: expect.objectContaining({ scryfallId: "tp-1" }), tokenOracleId: TOKEN }]);
+      expect(r.skipped).toHaveLength(1);
+      expect(r.matched).toEqual([]);
+      expect(r.unmatched).toEqual([]);
+    });
+
+    it("recognises a token the skipped ledger files under a layout the token filter does not read", () => {
+      // `sld/1969`: in `skipped_printings` as `reversible_card`, so not in `skippedScryfallIds`.
+      const r = matchRows([row("Mechtitan", "tp-2")], catalog, {
+        skippedScryfallIds: [],
+        tokenPrintings: [{ scryfallId: "tp-2", tokenOracleId: TOKEN }],
+      });
+      expect(r.tokenRows).toHaveLength(1);
+      expect(r.skipped).toHaveLength(1);
+      expect(r.unmatched).toEqual([]);
+    });
+
+    it("does not call an emblem or an art card a token", () => {
+      const r = matchRows([row("Emblem", "em-1")], catalog, { skippedScryfallIds: ["em-1"], tokenPrintings: [] });
+      expect(r.tokenRows).toEqual([]);
+      expect(r.skipped).toHaveLength(1);
+    });
+
+    it("never takes a real card for a token, whatever the token index holds", () => {
+      const r = matchRows([row("Sol Ring", "s-1")], catalog, { tokenPrintings: [{ scryfallId: "other", tokenOracleId: TOKEN }] });
+      expect(r.tokenRows).toEqual([]);
+      expect(r.matched).toHaveLength(1);
+    });
+
+    it("keeps one entry per row, so two printings of a token are two rows for the caller to sum", () => {
+      const r = matchRows([row("Treasure", "tp-1"), row("Treasure", "tp-3")], catalog, {
+        tokenPrintings: [{ scryfallId: "tp-1", tokenOracleId: TOKEN }, { scryfallId: "tp-3", tokenOracleId: TOKEN }],
+      });
+      expect(r.tokenRows.map((t) => t.tokenOracleId)).toEqual([TOKEN, TOKEN]);
+    });
+  });
 });
