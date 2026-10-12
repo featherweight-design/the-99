@@ -153,6 +153,23 @@ try {
   const setup = await (await browser.newContext()).newPage();
   await signIn(setup);
   const ids = await accountDeckIds(setup);
+  // Proposed cuts needs a deck over 100 cards: one is cloned under this account from any over-100
+  // deck on the database (PROBE_CUTS_DECK names one), and the clone is deleted in the `finally`.
+  // The clone also proves the SERVER is on this branch before anything is pressed: it exists here
+  // and nowhere else, so a server started against another database cannot draw it.
+  const source = process.env.PROBE_CUTS_DECK
+    ?? (await sql`select d.id from decks d join deck_cards c on c.deck_id = d.id
+        group by d.id, d.partner_oracle_id having sum(c.quantity) + 1 + (d.partner_oracle_id is not null)::int > 100 limit 1`)[0]?.id;
+  if (!report("an over-100 deck to clone for Proposed cuts", !!source, source ?? "none on this database; set PROBE_CUTS_DECK")) throw new Error("no deck to clone");
+  const [{ user_id: owner }] = await sql`select user_id from decks where id = ${ids[0]}`;
+  cloneId = randomUUID();
+  const cols = (await sql.query(`select column_name from information_schema.columns where table_name = 'decks' order by ordinal_position`)).map((r) => r.column_name);
+  const select = cols.map((c) => (c === "id" ? "$1::uuid" : c === "user_id" ? "$2" : `"${c}"`)).join(", ");
+  await sql.query(`insert into decks (${cols.map((c) => `"${c}"`).join(", ")}) select ${select} from decks where id = $3`, [cloneId, owner, source]);
+  await sql.query(`insert into deck_cards (deck_id, oracle_id, quantity, auto) select $1, oracle_id, quantity, auto from deck_cards where deck_id = $2`, [cloneId, source]);
+  const served = await setup.goto(`${BASE}/decks/${cloneId}`, { waitUntil: "domcontentloaded" });
+  if (!report("the server draws the clone, so it writes to this database", served?.status() === 200, `status ${served?.status()}`)) throw new Error("the server is on another database");
+
   const tuning = (await sql`
     select d.id from decks d join deck_profiles p on p.deck_id = d.id
     where d.id = any(${ids}::uuid[]) and not exists (select 1 from deck_suggestion_runs r where r.deck_id = d.id)
@@ -160,20 +177,7 @@ try {
   if (report("a never-run analyzed deck for Suggested changes", !!tuning, tuning?.id ?? "none among the account's decks")) {
     await leg(browser, "Suggested changes", "suggested_changes", "suggested", tuning.id, "Suggested changes", /^Suggest/, made);
   }
-  // Proposed cuts needs a deck over 100 cards: one is cloned under this account from any over-100
-  // deck on the database (PROBE_CUTS_DECK names one), and the clone is deleted in the `finally`.
-  const source = process.env.PROBE_CUTS_DECK
-    ?? (await sql`select d.id from decks d join deck_cards c on c.deck_id = d.id
-        group by d.id, d.partner_oracle_id having sum(c.quantity) + 1 + (d.partner_oracle_id is not null)::int > 100 limit 1`)[0]?.id;
-  if (report("an over-100 deck to clone for Proposed cuts", !!source, source ?? "none on this database; set PROBE_CUTS_DECK")) {
-    const [{ user_id: owner }] = await sql`select user_id from decks where id = ${ids[0]}`;
-    cloneId = randomUUID();
-    const cols = (await sql.query(`select column_name from information_schema.columns where table_name = 'decks' order by ordinal_position`)).map((r) => r.column_name);
-    const select = cols.map((c) => (c === "id" ? "$1::uuid" : c === "user_id" ? "$2" : `"${c}"`)).join(", ");
-    await sql.query(`insert into decks (${cols.map((c) => `"${c}"`).join(", ")}) select ${select} from decks where id = $3`, [cloneId, owner, source]);
-    await sql.query(`insert into deck_cards (deck_id, oracle_id, quantity, auto) select $1, oracle_id, quantity, auto from deck_cards where deck_id = $2`, [cloneId, source]);
-    await leg(browser, "Proposed cuts", "proposed_cuts", "deeper", cloneId, "Proposed cuts", /^Look deeper/, made);
-  }
+  await leg(browser, "Proposed cuts", "proposed_cuts", "deeper", cloneId, "Proposed cuts", /^Look deeper/, made);
 } catch (error) {
   console.error(error);
   failures += 1;
