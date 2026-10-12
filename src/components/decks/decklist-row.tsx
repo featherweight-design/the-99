@@ -201,6 +201,10 @@ export function DecklistRow({
       {addPanelCopy.row.quantity(card.quantity)}
     </span>
   );
+  // With no ✕ (a read-only row), nothing else speaks the count, so the row says it once.
+  const quantitySpoken = readOnly && card.quantity > 1 && (
+    <span className="sr-only">{addPanelCopy.row.quantitySpoken(card.quantity)}</span>
+  );
 
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
   // name. shoppingFigure is only threaded for unowned deck cards shown in the
@@ -550,6 +554,7 @@ export function DecklistRow({
               </CardDetailTrigger>
               <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
+              {quantitySpoken}
               {factMarks}
             </div>
             {/* The phone meta line, and the only things that ever ride it: the
@@ -612,6 +617,7 @@ export function DecklistRow({
             </CardDetailTrigger>
             <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
+            {quantitySpoken}
             {factMarks}
             {overText ? (
               // A row with no meta line (a land with no EDHREC figure) still owes its `over $X` from

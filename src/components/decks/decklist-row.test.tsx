@@ -1601,3 +1601,15 @@ describe("DecklistRow readOnly", () => {
     expect(document.body.textContent).toMatch(/buy/i);
   });
 });
+
+describe("DecklistRow readOnly count", () => {
+  it("speaks a multi-copy count, since no remove control does", () => {
+    renderRow(<DecklistRow deckId="" card={{ ...card, quantity: 3 }} readOnly newestAsOf={null} />);
+    expect(screen.getByText(addPanelCopy.row.quantitySpoken(3))).toBeInTheDocument();
+  });
+
+  it("leaves it to the remove control in a deck", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 3 }} newestAsOf={null} />);
+    expect(screen.queryByText(addPanelCopy.row.quantitySpoken(3))).toBeNull();
+  });
+});

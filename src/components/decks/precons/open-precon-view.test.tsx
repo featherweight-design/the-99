@@ -49,6 +49,16 @@ describe("OpenPreconView", () => {
     expect(screen.getByText("you own 0 of 1")).toBeInTheDocument();
   });
 
+  it("counts a card listed under two printings once in its group's note", () => {
+    render(<OpenPreconView precon={precon({}, [
+      card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+      card("Sol Ring", { typeLine: "Artifact", owned: true }),
+      { ...card("Sol Ring", { typeLine: "Artifact", owned: true }), printing: null },
+      card("Mind Stone", { typeLine: "Artifact", owned: false }),
+    ])} fromNew={false} />);
+    expect(screen.getByText("you own 1 of 2")).toBeInTheDocument();
+  });
+
   it("lists the basics under Lands and counts them in its figure (O2)", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} />);
     const lands = screen.getAllByTestId("group").find((g) => g.querySelector("h2")?.textContent === "Lands")!;

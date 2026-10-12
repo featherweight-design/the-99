@@ -41,8 +41,9 @@ function toDetail(c: OpenPreconCard): DeckDetailCard {
 
 /** A group's note: how many of its distinct non-basic cards the reader owns. */
 function groupOwned(cards: OpenPreconCard[]) {
-  const counted = cards.filter((c) => !c.basic);
-  return { owned: counted.filter((c) => c.owned).length, of: counted.length };
+  // By oracle id: the feed lists a card once per printing, and two printings are one card.
+  const counted = new Map(cards.filter((c) => !c.basic).map((c) => [c.oracleId, c.owned]));
+  return { owned: [...counted.values()].filter(Boolean).length, of: counted.size };
 }
 
 function commanderNote(cards: OpenPreconCard[]) {
