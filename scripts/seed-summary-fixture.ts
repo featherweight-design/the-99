@@ -280,22 +280,28 @@ async function seedAddedCopy(c: {
     [DECK_C]: `${FIXTURE_NAME} brew one`, [DECK_D]: `${FIXTURE_NAME} brew two`,
   };
   const held = (deckId: string, picked = false) => ({ deckId, copies: 1, picked });
+  // The copies that ARRIVED, never the decks they reached: a held card's are the copies its decks
+  // hold, and a soft card is one loose copy however many brews read it.
   const went = (kind: "held" | "soft", ds: { deckId: string; copies: number; picked: boolean }[]) =>
-    ({ kind, decks: ds, copies: ds.length || 1, ownedBefore: 0 });
-  const receipt = (cleared: { deckId: string; card: Card }[], w: Record<string, ReturnType<typeof went>>) => ({
-    version: 4,
-    totalBefore: 2731,
-    totalAfter: 2731 + cleared.length,
-    arrived: cleared.length,
-    left: 0,
-    issues: { unmatched: 0, parseErrors: 0 },
-    nowShort: [],
-    cleared: cleared.map((r) => ({ deckId: r.deckId, oracleId: r.card.oracle_id, copies: 1 })),
-    still: [],
-    contested: [],
-    went: w,
-    names: { cards: Object.fromEntries(cleared.map((r) => [r.card.oracle_id, r.card.name])), decks },
-  });
+    ({ kind, decks: ds, copies: kind === "soft" ? 1 : ds.reduce((n, d) => n + d.copies, 0), ownedBefore: 0 });
+  const receipt = (cleared: { deckId: string; card: Card }[], w: Record<string, ReturnType<typeof went>>) => {
+    // From the per-card copies, not the cleared rows: two brews clearing one loose copy is one arrival.
+    const arrived = Object.values(w).reduce((n, g) => n + g.copies, 0);
+    return {
+      version: 4,
+      totalBefore: 2731,
+      totalAfter: 2731 + arrived,
+      arrived,
+      left: 0,
+      issues: { unmatched: 0, parseErrors: 0 },
+      nowShort: [],
+      cleared: cleared.map((r) => ({ deckId: r.deckId, oracleId: r.card.oracle_id, copies: 1 })),
+      still: [],
+      contested: [],
+      went: w,
+      names: { cards: Object.fromEntries(cleared.map((r) => [r.card.oracle_id, r.card.name])), decks },
+    };
+  };
 
   const scenes: [keyof typeof US_UPLOADS, ReturnType<typeof receipt>][] = [
     // US1: one held deck (L1).
