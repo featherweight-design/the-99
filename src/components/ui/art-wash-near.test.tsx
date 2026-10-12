@@ -29,6 +29,8 @@ beforeEach(() => {
   vi.stubGlobal("IntersectionObserver", FakeObserver);
   vi.stubGlobal("Image", function () {
     const img = new RealImage();
+    // jsdom loads nothing: the crop is still on its way when the layer arms.
+    Object.defineProperty(img, "complete", { value: false, configurable: true });
     probes.push(img);
     return img;
   });

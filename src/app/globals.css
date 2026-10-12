@@ -906,8 +906,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  /* `!important`: an art-wash layer sets its own opacity inline, which would otherwise win. */
-  [data-art="pending"] { opacity: 0 !important; }
+  /* `!important`: an art-wash layer sets its own opacity inline, which would otherwise win. The
+     doubled attribute outranks reduced transparency's fixed `.art-wash-art` opacity too, so a layer
+     still holds while pending there (it then appears at that opacity without the fade, since that
+     rule's `!important` also outranks the animation). */
+  [data-art="pending"][data-art] { opacity: 0 !important; }
   [data-art="in"] { animation: art-in var(--motion-duration) var(--motion-ease); }
 }
 

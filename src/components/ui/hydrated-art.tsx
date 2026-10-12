@@ -66,16 +66,19 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
 /**
  * How deferred art arrives (motion plan E4). `armArtArrival` marks `el` with `data-art="pending"`
  * while `image`'s bytes are on their way, `in` for the one fade when they land (or fail: a broken
- * image is not held behind a fade that never ends), and `done` when `image` was already decoded the
+ * image is not held behind a fade that never ends), and `done` when `image` had already settled the
  * moment its source was set, so cached art on a revisit is drawn at once rather than faded. The CSS
- * hides `pending` and plays `in` only under `prefers-reduced-motion: no-preference`. Written to the
+ * hides `pending` and plays `in` only under `prefers-reduced-motion: no-preference` (and an art-wash
+ * layer under reduced transparency, whose opacity is fixed, appears without the fade). Written to the
  * DOM from a layout effect rather than rendered: the server HTML carries no mark, so art is visible
  * without script, and the mark lands before the first paint that could show the source. Eager art
  * never takes it: it is the first viewport, the image a slow page paints first, and holding it at
  * opacity 0 would hold back the largest paint.
  */
 export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => void {
-  if (image.complete && image.naturalWidth > 0) {
+  // Complete when its source is set means settled already: drawn from the cache, or already broken,
+  // and a broken one would fire nothing more to release it.
+  if (image.complete) {
     el.dataset.art = "done";
     return () => {};
   }
