@@ -19,6 +19,16 @@ export function isAdmin(userId: string | null | undefined): boolean {
 }
 
 /**
+ * A route's own metadata for the admin, and nothing for anyone else. Next resolves metadata apart
+ * from the render, so a static `metadata` export would name the page (its title, its `robots`) on
+ * the 404 a stranger gets, where an unknown path carries only the root's (STATES must-not).
+ */
+export async function adminMetadata<T extends object>(meta: T): Promise<T | Record<string, never>> {
+  const { userId } = await auth();
+  return isAdmin(userId) ? meta : {};
+}
+
+/**
  * The admin and the environment it administers, or the app's own 404 for anyone else, signed out
  * included (STATES D3, D4). Never a refusal: nothing says `/admin` exists.
  */

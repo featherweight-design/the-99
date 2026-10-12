@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { AdminHead } from "../../components/admin/admin-head";
-import { requireAdmin } from "../../lib/admin/access";
+import { adminMetadata, requireAdmin } from "../../lib/admin/access";
 
-// No title that names the admin to a stranger: anyone else gets the app's 404 before this renders.
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+// Gated like the render: a stranger's 404 carries the root's metadata alone, as an unknown path's does.
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ robots: { index: false, follow: false } });
 
 /**
  * Every admin page: the gate, then the shared head (admin STATES D3). A `flex:1; min-height:0`

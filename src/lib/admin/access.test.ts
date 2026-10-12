@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-const { adminUserIds, isAdmin, requireAdmin } = await import("./access");
+const { adminMetadata, adminUserIds, isAdmin, requireAdmin } = await import("./access");
 const { adminEnvironment } = await import("./environment");
 
 const HUGH = "user_3GkZrrTwOJBdqUpq6GambP0BC8w";
@@ -78,5 +78,22 @@ describe("requireAdmin", () => {
     vi.stubEnv("ADMIN_ENV_LABEL", "preview");
     session.mockResolvedValueOnce({ userId: HUGH });
     await expect(requireAdmin()).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+});
+
+describe("adminMetadata", () => {
+  const meta = { title: "Costs", robots: { index: false, follow: false } };
+
+  it("gives the admin the route's own metadata", async () => {
+    session.mockResolvedValueOnce({ userId: HUGH });
+    await expect(adminMetadata(meta)).resolves.toEqual(meta);
+  });
+
+  it.each([
+    ["signed out", null],
+    ["a friend", "user_friend"],
+  ])("gives %s nothing, so their 404 carries only the root's, as an unknown path's does", async (_label, userId) => {
+    session.mockResolvedValueOnce({ userId });
+    await expect(adminMetadata(meta)).resolves.toEqual({});
   });
 });

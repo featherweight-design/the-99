@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { requireAdmin } from "../../lib/admin/access";
+import { adminMetadata, requireAdmin } from "../../lib/admin/access";
 
-export const metadata: Metadata = { title: "Costs" };
+export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Costs" });
 
 /**
  * `/admin` is Costs (the plan: Costs comes first). This PR ships the gate and the shell; the page's
