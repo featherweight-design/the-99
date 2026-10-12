@@ -18,6 +18,7 @@ describe("socialReadsIn", () => {
   it("finds a table named in raw SQL, pods included where SQL names a table", () => {
     expect(socialReadsIn("sql`select * from friend_links where user_id = ${id}`").map((f) => f.why)).toEqual(["names friend_links in SQL"]);
     expect(socialReadsIn('sql`select 1 from "pods" p`').map((f) => f.why)).toEqual(['names from "pods" in SQL']);
+    expect(socialReadsIn("sql`SELECT * FROM FRIEND_LINKS`").map((f) => f.why)).toEqual(["names FRIEND_LINKS in SQL"]);
   });
 
   it("does not read the word pods in copy, or a type-only import", () => {

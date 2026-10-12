@@ -12,7 +12,8 @@ import { join, relative, sep } from "node:path";
 export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites", "pods", "podMembers"];
 /** The tables' SQL names. `pods` is matched only where SQL would name a table, never as a word in copy. */
 const RAW = [
-  /\b(?:social_profiles|friend_links|friend_invites|pod_members)\b/,
+  // Case-insensitive: Postgres folds an unquoted identifier, so `FROM FRIEND_LINKS` names the same table.
+  /\b(?:social_profiles|friend_links|friend_invites|pod_members)\b/i,
   /\b(?:from|join|into|update|table)\s+"?pods\b"?/i,
 ];
 

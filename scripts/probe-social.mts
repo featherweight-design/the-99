@@ -6,7 +6,7 @@
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL`
 // reports, and never staging, production or local-dev. Run it on a scratch branch migrated to this PR's
-// migration, then delete the branch. Its three accounts are made-up ids, so it touches nobody's data, and
+// migration, then delete the branch. Its four accounts are made-up ids, so it touches nobody's data, and
 // it removes every row it wrote, in a finally.
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:social

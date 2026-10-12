@@ -7,7 +7,7 @@
  * No route or action calls these yet: the foundation ships dark behind `SOCIAL_FRIENDS_ENABLED`, and
  * the first UI PR wires them.
  */
-import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { friendInvites, friendLinks, podMembers, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
@@ -176,6 +176,15 @@ export async function unfriend(viewerId: string, friendPublicId: unknown): Promi
   return db.transaction(async (tx) => {
     const friendId = await resolveFriend(viewerId, friendPublicId, tx);
     if (friendId === null) return false;
+    // Lock every pod either side owns, in id order, BEFORE touching links or memberships: `addMember` and
+    // `leavePod` take the same pod lock, so an add cannot validate this friendship and insert after the
+    // delete below, and a leave cannot hand a pod to a member this transaction is removing.
+    await tx
+      .select({ id: pods.id })
+      .from(pods)
+      .where(inArray(pods.ownerUserId, [viewerId, friendId]))
+      .orderBy(asc(pods.id))
+      .for("update");
     for (const row of friendshipRows(viewerId, friendId)) {
       await tx.delete(friendLinks).where(and(eq(friendLinks.userId, row.userId), eq(friendLinks.friendUserId, row.friendUserId)));
     }

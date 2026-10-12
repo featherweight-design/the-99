@@ -66,19 +66,30 @@ export async function addMember(viewerId: string, podId: unknown, friendPublicId
   });
 }
 
-/** The owner removes a member, by `publicId`. Not themselves: an owner leaves through `leavePod`. */
+/**
+ * The owner removes a member, by `publicId`. Not themselves: an owner leaves through `leavePod`. The pod
+ * row is locked and its owner checked in the same transaction as the delete, the lock `leavePod` takes,
+ * so a removal cannot authorize on a stale owner while the pod is being handed on.
+ */
 export async function removeMember(viewerId: string, podId: unknown, memberPublicId: unknown): Promise<boolean> {
   if (!isId(podId) || !isId(memberPublicId)) return false;
-  const written = await db
-    .delete(podMembers)
-    .where(and(
-      eq(podMembers.podId, podId),
-      sql`${podMembers.podId} in (select id from ${pods} where owner_user_id = ${viewerId})`,
-      sql`${podMembers.userId} in (select user_id from ${socialProfiles} where public_id = ${memberPublicId})`,
-      sql`${podMembers.userId} <> ${viewerId}`,
-    ))
-    .returning({ userId: podMembers.userId });
-  return written.length > 0;
+  return db.transaction(async (tx) => {
+    const [pod] = await tx
+      .select({ id: pods.id })
+      .from(pods)
+      .where(and(eq(pods.id, podId), eq(pods.ownerUserId, viewerId)))
+      .for("update");
+    if (!pod) return false;
+    const written = await tx
+      .delete(podMembers)
+      .where(and(
+        eq(podMembers.podId, podId),
+        sql`${podMembers.userId} in (select user_id from ${socialProfiles} where public_id = ${memberPublicId})`,
+        sql`${podMembers.userId} <> ${viewerId}`,
+      ))
+      .returning({ userId: podMembers.userId });
+    return written.length > 0;
+  });
 }
 
 /**
