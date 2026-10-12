@@ -256,6 +256,19 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       expect(screen.queryByRole("option")).toBeNull();
     });
 
+    it("refuses a paste that would put a fourth tag in the box, since a copied tag keeps its mark", () => {
+      const three = [1, 2, 3].map((n) => `[[c0ffee00-0000-4000-8000-00000000000${n}|Card ${n}]]`).join(" ");
+      render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: three }} />);
+      const box = screen.getByLabelText(/Anything else\?/) as HTMLTextAreaElement;
+      const before = box.value;
+      // The paste carries the marked form of a tag the box already holds.
+      type(`${before} [[\u2060Card 1]]`);
+      expect(box.value).toBe(before);
+      // Editing down is still allowed.
+      type(before.replace("[[\u2060Card 3]]", "").trim());
+      expect(box.value).not.toContain("Card 3");
+    });
+
     it("keeps a name typed without picking it as plain text", () => {
       push.mockClear();
       render(<IntakeForm themes={[]} initial={emptyParams()} />);

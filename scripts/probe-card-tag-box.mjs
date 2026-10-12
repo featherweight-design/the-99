@@ -3,7 +3,7 @@
 //
 // 1. THE LIST OPENS FROM THE BOX. Typing `[[Rhys` shows the picker's listbox with a card to pick.
 // 2. THE LIST IS NEVER UNDER THE PHONE'S DOCK. The box is scrolled to the foot of the window, where
-//    the fixed dock sits; the list (below or flipped above) must not overlap the dock's box, and the
+//    the fixed dock sits; the list (always below the box, held to the room above the dock) must not overlap the dock's box, and the
 //    option painted at its centre must be the list's own, not the dock's.
 // 3. A PICKED CARD SUBMITS AS A TAG. Picking writes the name into the box; pressing Find commanders
 //    sends `[[<oracle id>|Name]]` in the server action's request. The request is ABORTED in the
@@ -173,7 +173,7 @@ try {
       report(`${vp.label} in a ${room.windowH}px window the list ends above the dock`, room.dockTop !== null && room.listBottom <= room.dockTop, JSON.stringify(room));
       await short.close();
 
-      // Barely any room under the box: it opens ABOVE the box instead, held to the room there.
+      // Barely any room under the box: the list still opens below it and keeps its floor, a row or two that scroll.
       const tiny = await browser.newContext({ viewport: { width: vp.width, height: 300 } });
       const p3 = await tiny.newPage();
       const uid3 = await signIn(p3);

@@ -128,8 +128,8 @@ export function IntakeForm({
     return () => observer.disconnect();
   }, []);
 
-  // The box takes the Notes `[[` card tag. On a phone the fixed dock covers the foot of the page, so a list
-  // that would run under it opens above the box instead.
+  // The box takes the Notes `[[` card tag. On a phone the fixed dock covers the foot of the page, so the list
+  // is held to the room above it (see `listMax`): it always opens below the box.
   const wordsRef = useRef<HTMLTextAreaElement>(null);
   const picker = useCardTagPicker({
     value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef,

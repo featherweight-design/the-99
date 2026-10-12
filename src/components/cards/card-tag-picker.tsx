@@ -113,7 +113,11 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
 
   // The whole-change cap, shared by typing and by every insert: a change that leaves the field over the cap
   // and longer than it was is refused whole, so a pick or the `[[ ]]` button cannot strand an unsubmittable value.
-  const overCap = (text: string, next: Picked) => sizeOf(text, next) > max && sizeOf(text, next) > count;
+  // Growth-only, like the length: typing or pasting may not take the field past the tag limit (a copied tag keeps its
+  // mark, so a paste can duplicate one), but a field already past it can still be edited down.
+  const tags = taggedCount(value, picked);
+  const overTags = (text: string, next: Picked) => maxTags !== undefined && taggedCount(text, next) > maxTags && taggedCount(text, next) > tags;
+  const overCap = (text: string, next: Picked) => (sizeOf(text, next) > max && sizeOf(text, next) > count) || overTags(text, next);
 
   const place = (text: string, at: number, nextPicked: Picked = picked) => {
     if (overCap(text, nextPicked)) return;
