@@ -6,7 +6,7 @@ import { LineupView } from "./lineup-view";
 
 const NOW = "2026-10-11T12:00:00.000Z";
 const game = (day: string, result: "win" | "loss" = "loss", podSize = 4) => ({ result, playedAt: `${day}T20:00:00.000Z`, podSize });
-const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name.toLowerCase(), name, identity: [], brew: false, bracket: null, games: [], ...over });
+const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name.toLowerCase(), name, identity: [], brew: false, bracket: null, games: [], build: null, ...over });
 const DATA: LineupData = {
   decks: [
     deck("Tovolar", { identity: ["R", "G"], bracket: { permits: [1, 2], answered: 2 }, games: [game("2026-09-12"), game("2026-07-17", "loss", 3)] }),
@@ -14,6 +14,7 @@ const DATA: LineupData = {
     deck("Gishath", { identity: ["W", "R", "G"], brew: true, bracket: { permits: [4], answered: null } }),
     deck("Eldrazi", { bracket: { permits: [3], answered: null } }),
   ],
+  pricesAsOf: null,
 };
 
 const draw = (data = DATA, foldServer: string | null = null) =>
@@ -83,7 +84,7 @@ describe("LineupView: the filter", () => {
 
 describe("LineupView: one deck", () => {
   it("says 1 deck under All decks, and counts what Finished only kept when the only deck is a brew", () => {
-    draw({ decks: [deck("Gishath", { brew: true })] });
+    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null });
     expect(screen.getAllByText("1 deck").length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
     expect(screen.getAllByText("0 finished decks · 1 brew left out").length).toBeGreaterThan(0);
@@ -112,7 +113,7 @@ describe("LineupView: recency", () => {
   });
 
   it("says no games are logged when none are, with every deck under Never played", () => {
-    draw({ decks: DATA.decks.map((d) => ({ ...d, games: [] })) });
+    draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, games: [] })) });
     expect(within(card("recency")).getByText("No games logged yet.")).toBeTruthy();
     expect(within(card("recency")).getByText("4 of 4")).toBeTruthy();
   });
@@ -148,5 +149,57 @@ describe("IdentityMark", () => {
     rerender(<IdentityMark identity={[]} />);
     expect([...container.querySelectorAll("[data-pip]")].map((p) => p.getAttribute("data-pip"))).toEqual(["C"]);
     expect(container.firstElementChild?.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("LineupView: among, jobs and worth", () => {
+  const b = (ramp: number, valueCents: number) => ({ manaValue: 3, lands: 36, ramp, draw: 10, removal: 8, valueCents });
+  const BUILT: LineupData = {
+    decks: [
+      deck("Tovolar", { games: [game("2026-09-12")], build: b(15, 11222) }),
+      deck("Scrappy", { games: [game("2026-10-05", "win")], build: b(18, 10964) }),
+      deck("Brago", { build: b(7, 17631) }),
+    ],
+    pricesAsOf: "2026-10-11T10:00:00.000Z",
+  };
+
+  it("compares the deck played most recently by default, with its rank, most first", () => {
+    draw(BUILT, "among,jobs,worth");
+    const ramp = card("among").querySelector('[data-stats-strip="ramp"]') as HTMLElement;
+    expect(within(ramp).getByText("1st of 3")).toBeTruthy();
+    expect(within(ramp).getByText("median 15")).toBeTruthy();
+    expect((within(card("among")).getByRole("combobox", { name: "Choose a deck" }) as HTMLSelectElement).value).toBe("scrappy");
+  });
+
+  it("follows the chosen deck in Among, Jobs and Worth", () => {
+    draw(BUILT, "among,jobs,worth");
+    fireEvent.change(within(card("among")).getByRole("combobox"), { target: { value: "brago" } });
+    expect(within(card("among").querySelector('[data-stats-strip="valueCents"]') as HTMLElement).getByText("1st of 3")).toBeTruthy();
+    expect(card("jobs").querySelector('[data-stats-job-row="brago"]')?.className).toContain("shadow-");
+    expect(within(card("worth")).getByRole("link", { name: "HD - Brago".replace("HD - ", "") }).className).toContain("text-[color:var(--accent)]");
+  });
+
+  it("sorts Jobs by a pressed column, most first, and says which", () => {
+    draw(BUILT, "jobs");
+    const order = () => [...card("jobs").querySelectorAll("[data-stats-job-row]")].map((r) => r.getAttribute("data-stats-job-row"));
+    expect(order()).toEqual(["scrappy", "tovolar", "brago"]);
+    expect(within(card("jobs")).getByRole("columnheader", { name: "Ramp ↓" }).getAttribute("aria-sort")).toBe("descending");
+    fireEvent.click(within(card("jobs")).getByRole("button", { name: "Lands" }));
+    expect(order()).toEqual(["brago", "scrappy", "tovolar"]);
+  });
+
+  it("draws each deck's value most first, or by name, with the summed total and the price age", () => {
+    draw(BUILT, "worth");
+    const order = () => [...card("worth").querySelectorAll("[data-stats-worth]")].map((r) => r.getAttribute("data-stats-worth"));
+    expect(order()).toEqual(["brago", "tovolar", "scrappy"]);
+    expect(within(card("worth")).getByText("$398.17")).toBeTruthy();
+    expect(within(card("worth")).getByText("Mana Pool prices, 2h ago")).toBeTruthy();
+    fireEvent.click(within(card("worth")).getByRole("button", { name: "By name" }));
+    expect(order()).toEqual(["brago", "scrappy", "tovolar"]);
+  });
+
+  it("draws none of the three with one deck (T1)", () => {
+    draw({ decks: [BUILT.decks[0]], pricesAsOf: null });
+    expect(["among", "jobs", "worth"].map((id) => card(id))).toEqual([null, null, null]);
   });
 });

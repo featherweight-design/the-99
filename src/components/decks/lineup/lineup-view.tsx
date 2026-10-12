@@ -7,9 +7,13 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
+import { defaultChosen, jobsGrid, strip, worth } from "../../../lib/lineup/among";
 import { fullestSlot, recency, scoped, spread } from "../../../lib/lineup/figures";
 import type { LineupData, LineupFilter } from "../../../lib/lineup/types";
+import { AmongBody } from "./among-card";
 import { FoldCard, useDecksStatsFold } from "./fold";
+import { JobsBody } from "./jobs-card";
+import { WorthBody } from "./worth-card";
 import { RecencyBody } from "./recency-card";
 import { SpreadBody } from "./spread-card";
 import { onSegmentKeys } from "./segment-keys";
@@ -67,6 +71,19 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
   const rec = useMemo(() => recency(decks, now), [decks, now]);
   const spr = useMemo(() => spread(decks), [decks]);
   const top = fullestSlot(spr);
+  // The deck This deck among yours compares, and that Worth and Jobs mark: the reader's pick while it is in
+  // scope, else the one played most recently (a brew picked, then left out by Finished only, falls back).
+  const [picked, setPicked] = useState<string | null>(null);
+  const chosen = decks.find((d) => d.id === picked) ?? defaultChosen(decks);
+  // The build cards compare decks, so they need two with figures (T1: one deck draws none of them).
+  const built = decks.filter((d) => d.build);
+  const comparing = built.length >= 2 && chosen?.build ? chosen : null;
+  const rank = (key: "valueCents" | "ramp") => {
+    const s = comparing ? strip(decks, comparing, key) : null;
+    return s ? copy.among.rank(s.chosen.rank, s.total, s.chosen.tied) : "";
+  };
+  const w = useMemo(() => worth(decks, "most"), [decks]);
+  const grid = useMemo(() => jobsGrid(decks, "ramp"), [decks]);
   const expand = (
     <button type="button" data-stats-expand onClick={() => fold.setAll(!fold.allOpen)} className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent)] md:min-h-[34px]">
       {fold.allOpen ? copy.fold.collapseAll : copy.fold.expandAll}
@@ -112,8 +129,42 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
           open={fold.open.has("spread")}
           onToggle={() => fold.toggle("spread")}
         >
-          <SpreadBody s={spr} decks={decks} />
+          <SpreadBody s={spr} decks={decks} chosenId={comparing?.id ?? null} />
         </FoldCard>
+        {comparing ? (
+          <>
+            <FoldCard
+              id="among"
+              title={copy.among.title}
+              denom={copy.among.denom(decks.length)}
+              summary={copy.summary.among(comparing.name, rank("valueCents"), rank("ramp"))}
+              open={fold.open.has("among")}
+              onToggle={() => fold.toggle("among")}
+            >
+              <AmongBody decks={decks} chosen={comparing} onChoose={setPicked} />
+            </FoldCard>
+            <FoldCard
+              id="jobs"
+              title={copy.jobs.title}
+              denom={copy.jobs.denom(built.length)}
+              summary={copy.summary.jobs(grid.range.ramp, grid.range.draw, grid.range.removal)}
+              open={fold.open.has("jobs")}
+              onToggle={() => fold.toggle("jobs")}
+            >
+              <JobsBody decks={decks} chosenId={comparing.id} />
+            </FoldCard>
+            <FoldCard
+              id="worth"
+              title={copy.worth.title}
+              denom={copy.worth.denom(w.rows.length)}
+              summary={copy.summary.worth(w.sumCents, w.maxCents, w.medianCents)}
+              open={fold.open.has("worth")}
+              onToggle={() => fold.toggle("worth")}
+            >
+              <WorthBody decks={decks} chosenId={comparing.id} pricesAsOf={data.pricesAsOf} now={now} />
+            </FoldCard>
+          </>
+        ) : null}
       </div>
     </div>
   );
