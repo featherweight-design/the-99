@@ -7,8 +7,9 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db as pool } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
-import { summarisePrecons, type PreconRow } from "./list";
+import { summarisePrecons, type PreconRow, type ReaderDeck } from "./list";
 import { preconArt, readReaderDecks, type Reader } from "./list-read";
+import { sharedCount } from "./shared";
 
 export type OpenPreconCard = {
   oracleId: string;
@@ -28,9 +29,29 @@ export type OpenPreconCard = {
   printing: { scryfallId: string; setCode: string; collectorNumber: string; label: string; imageUri: string | null; backImageUri: string | null } | null;
 };
 
+/** One of the reader's decks in the "Link a deck" picker (R3 K7). */
+export type PreconDeckChoice = {
+  deckId: string;
+  deckName: string;
+  /** The deck's commanders by name. */
+  commanders: string[];
+  shared: number;
+  sameCommanders: boolean;
+  /** The other precon this deck is linked to, by name: linking moves it here (lock 1). */
+  linkedElsewhere: string | null;
+};
+
 export type OpenPrecon =
   | { kind: "twin"; plainFileName: string }
-  | { kind: "precon"; row: PreconRow; setName: string | null; cards: OpenPreconCard[]; hasCollection: boolean };
+  | {
+    kind: "precon";
+    row: PreconRow;
+    setName: string | null;
+    cards: OpenPreconCard[];
+    hasCollection: boolean;
+    /** Every deck the reader could link here, most shared first; one already linked here is not. */
+    decks: PreconDeckChoice[];
+  };
 
 export async function loadOpenPrecon(userId: string, fileName: string): Promise<OpenPrecon | null> {
   // One snapshot, as the list's loader takes (and for its reason: the page caches what this
@@ -74,11 +95,18 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
     readerDecks,
   );
 
+  const precon = {
+    cards: new Set(lines.filter((l) => !basic(l.typeLine)).map((l) => l.oracleId)),
+    commanders: row.commanders.map((c) => c.oracleId),
+  };
+  const decks = await deckChoices(db, readerDecks.filter((d) => d.builtFrom !== fileName), precon);
+
   return {
     kind: "precon",
     row,
     setName: setRow[0]?.name ?? null,
     hasCollection: any.length > 0,
+    decks,
     cards: lines.map((l) => ({
       oracleId: l.oracleId,
       name: l.name,
@@ -96,6 +124,32 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
         : null,
     })),
   };
+}
+
+/** The picker's rows: each deck's overlap, its commanders' names and the precon it is linked to. */
+async function deckChoices(
+  db: Reader,
+  decks: readonly ReaderDeck[],
+  precon: { cards: ReadonlySet<string>; commanders: readonly string[] },
+): Promise<PreconDeckChoice[]> {
+  if (decks.length === 0) return [];
+  const commanderIds = [...new Set(decks.flatMap((d) => d.commanders))];
+  const linkedIds = [...new Set(decks.flatMap((d) => (d.builtFrom ? [d.builtFrom] : [])))];
+  const names = new Map((await db.select({ id: cards.oracleId, name: cards.name }).from(cards)
+    .where(inArray(cards.oracleId, commanderIds))).map((r) => [r.id, r.name]));
+  const linkedNames = new Map(linkedIds.length === 0 ? [] : (await db.select({ id: precons.fileName, name: precons.name })
+    .from(precons).where(inArray(precons.fileName, linkedIds))).map((r) => [r.id, r.name]));
+  const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  return decks
+    .map((d) => ({
+      deckId: d.id,
+      deckName: d.name,
+      commanders: d.commanders.map((id) => names.get(id) ?? ""),
+      ...sharedCount(precon, d),
+      // A link whose precon a later feed dropped names nothing, and the picker moves it silently.
+      linkedElsewhere: d.builtFrom ? linkedNames.get(d.builtFrom) ?? null : null,
+    }))
+    .sort((a, b) => b.shared - a.shared || byCodePoint(a.deckName.toLowerCase(), b.deckName.toLowerCase()));
 }
 
 /** One precon's cards in the feed's order, with the art `preconArt` resolves and the precon's own

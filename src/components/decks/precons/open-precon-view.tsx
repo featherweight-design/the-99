@@ -17,6 +17,7 @@ import { CommanderThumb } from "../../ui/commander-thumb";
 import { DecklistGroup } from "../decklist-group";
 import { HoverPreviewProvider } from "../hover-preview";
 import { StartPrecon } from "./start-precon";
+import { LinkDeckButton, UnlinkPrecon } from "./precon-link-dialogs";
 
 const copy = preconsCopy;
 type Loaded = Extract<OpenPrecon, { kind: "precon" }>;
@@ -85,6 +86,10 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
   const groups = groupByCardType(listed.map((c) => ({ ...c, cardTypeGroup: cardTypeGroup(c.typeLine) })));
   const siblings = [...commanders, ...groups.flatMap(([, g]) => g)].map((c) => c.oracleId);
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
+  const linked = row.built.filter((b) => b.linked);
+  const linkDeck = (className: string) => (
+    <LinkDeckButton fileName={row.fileName} preconName={row.name} of={row.of} decks={precon.decks} className={className} />
+  );
   // Card details view the precon's own printing on every open, paging included, owned or not
   // (`viewPrintings`), and offer no pick (O6): the provider's deck printings with no deck.
   const printingPicks = Object.fromEntries(
@@ -127,7 +132,16 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
                 {copy.open.meta(ident, row.setCode, precon.setName, preconDate(row.releaseDate))}
               </span>
             </div>
-            <StartPrecon row={row} cards={total} body={bodyCount} illegal={[...new Set(cards.filter((c) => !c.legal && !c.isCommander).map((c) => c.name))]} />
+            {/* R3 K7: a ghost beside Start at 900; docked beside it at 390, inside Start's dock. */}
+            {linkDeck("hidden h-[40px] flex-none rounded-[8px] px-[16px] text-[13px] md:inline-flex md:items-center")}
+            <StartPrecon
+              row={row}
+              cards={total}
+              body={bodyCount}
+              illegal={[...new Set(cards.filter((c) => !c.legal && !c.isCommander).map((c) => c.name))]}
+              dockSummary={linked[0] ? copy.link.linked.dock(row.name, linked[0].deckName) : undefined}
+              dockBeside={linkDeck("h-[48px] min-w-0 flex-1 rounded-[10px] px-[12px] text-[13px]")}
+            />
           </div>
 
           {!precon.hasCollection && <EmptyCollectionBand />}
@@ -136,12 +150,19 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
               {copy.open.ownLead}
               <span className="font-mono text-[15px] font-semibold text-[color:var(--fg)]">{copy.open.own(row.owned, row.of)}</span>
               {copy.open.ownTail}
-              {basicCopies > 0 && <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.basics(basicCopies)}</span>}
             </p>
             <div aria-hidden className="h-[3px] rounded-[2px] bg-[color:var(--border-strong)]">
               <div className="h-full rounded-[2px] bg-[color:var(--fg-muted)]" style={{ width: `${Math.round(share * 100)}%` }} />
             </div>
-            {precon.hasCollection && row.built.map((b) => (
+            {/* R3 K8, K16: a linked deck first, with Unlink beside it, whatever the collection; then
+                the decks that only share, in R2's words, which need a collection to be read (L2). */}
+            {linked.map((b) => (
+              <div key={b.deckId} className="flex items-center justify-between gap-[10px]">
+                <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.link.linked.preconSentence(b.deckName, b.shared, row.of)}</p>
+                <UnlinkPrecon deckId={b.deckId} deckName={b.deckName} preconName={row.name} />
+              </div>
+            ))}
+            {precon.hasCollection && row.built.filter((b) => !b.linked).map((b) => (
               <p key={b.deckId} className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
                 {b.sameCommanders ? copy.open.builtSame(b.deckName, b.shared, row.commanders.length === 2) : copy.open.builtAny(b.deckName, b.shared)}
               </p>

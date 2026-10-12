@@ -6,7 +6,7 @@
 // three facts, and any card the start keeps that is not legal in Commander. Starting never commits.
 
 import { unstable_rethrow } from "next/navigation";
-import { startTransition, useEffect, useId, useRef, useState } from "react";
+import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createDeckFromPrecon } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { preconsCopy } from "../../../lib/copy/precons";
@@ -26,11 +26,15 @@ export type StartPreconProps = {
   body: number;
   /** Names of cards the start keeps that are not legal in Commander. */
   illegal: string[];
+  /** The dock's summary when it names something else (a linked deck, R3 K8); else the counts. */
+  dockSummary?: string;
+  /** Docked beside Start at 390, Start the wider (R3 K7's `Link a deck`). */
+  dockBeside?: ReactNode;
 };
 
 export function StartPrecon(props: StartPreconProps) {
   const [open, setOpen] = useState(false);
-  const { row, cards } = props;
+  const { row, cards, dockSummary, dockBeside } = props;
   return (
     <>
       <PrimaryButton
@@ -41,10 +45,13 @@ export function StartPrecon(props: StartPreconProps) {
         {copy.button}
       </PrimaryButton>
       <div className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-20 flex flex-col gap-[8px] border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)] bg-[color:var(--bg)] p-[10px_16px_12px] md:hidden">
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.dock(row.name, cards, row.owned, row.of)}</span>
-        <PrimaryButton type="button" onClick={() => setOpen(true)} className="h-[48px] w-full rounded-[10px] text-[14px]">
-          {copy.button}
-        </PrimaryButton>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{dockSummary ?? copy.dock(row.name, cards, row.owned, row.of)}</span>
+        <div className="flex gap-[8px]">
+          <PrimaryButton type="button" onClick={() => setOpen(true)} className="h-[48px] min-w-0 flex-[2] rounded-[10px] text-[14px]">
+            {copy.button}
+          </PrimaryButton>
+          {dockBeside}
+        </div>
       </div>
       {open && <StartPreconDialog {...props} onDismiss={() => setOpen(false)} />}
     </>

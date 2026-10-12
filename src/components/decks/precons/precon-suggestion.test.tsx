@@ -23,6 +23,12 @@ describe("PreconSuggestion", () => {
     expect(screen.getByText("73 of its 85 cards are in this deck · same commander")).toBeInTheDocument();
   });
 
+  it("says commanders for a pair precon the deck kept both of", () => {
+    const pair = match("Food and Fellowship", 70, 84, true, { commanders: ["Frodo, Adventurous Hobbit", "Sam, Loyal Attendant"] });
+    render(<PreconSuggestion deckId="d2" deckName="Shire" suggestions={[pair]} />);
+    expect(screen.getByText("70 of its 84 cards are in this deck · same commanders")).toBeInTheDocument();
+  });
+
   it("says a swapped commander in the sentence and names the precon's (K2)", () => {
     render(<PreconSuggestion deckId="d1" deckName="Kilo" suggestions={[counter]} />);
     expect(screen.getByText("Looks like this started as Counter Intelligence, with a different commander.")).toBeInTheDocument();

@@ -13,7 +13,7 @@ const row = (name: string, releaseDate: string, over: Partial<PreconRow> = {}): 
 });
 
 const rows = [
-  row("Eldrazi Unbound", "2023-08-04", { built: [{ deckId: "d1", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }] }),
+  row("Eldrazi Unbound", "2023-08-04", { built: [{ deckId: "d1", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true, linked: false }] }),
   row("Calling All Angels", "2026-10-02", { identity: ["W"] }),
 ];
 
@@ -69,9 +69,23 @@ describe("PreconListView", () => {
 
   it("names every shared deck, however many", () => {
     const three = [row("Eldrazi Unbound", "2023-08-04", { built: ["A", "B", "C"].map((n, i) =>
-      ({ deckId: n, deckName: `Deck ${n}`, shared: 70 - i, sameCommanders: true })) })];
+      ({ deckId: n, deckName: `Deck ${n}`, shared: 70 - i, sameCommanders: true, linked: false })) })];
     render(<PreconListView rows={three} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null }} query="" />);
     for (const n of ["A", "B", "C"]) expect(screen.getByRole("link", { name: `Deck ${n}` })).toBeInTheDocument();
+  });
+
+  it("gives each deck its own line once one is linked, the linked one saying so (K9)", () => {
+    const linked = [row("Sultai Arisen", "2025-04-11", { built: [
+      { deckId: "s", deckName: "HD Tune - Sultai Arisen", shared: 71, sameCommanders: true, linked: true },
+      { deckId: "m", deckName: "HD Tune - Mutant Menace", shared: 52, sameCommanders: false, linked: false },
+    ] })];
+    render(<PreconListView rows={linked} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null }} query="" />);
+    const lines = ["HD Tune - Sultai Arisen", "HD Tune - Mutant Menace"]
+      .map((name) => screen.getByRole("link", { name }).parentElement!.textContent);
+    expect(lines).toEqual([
+      "your deck HD Tune - Sultai Arisen · built from this · 71 shared",
+      "your deck HD Tune - Mutant Menace · 52 shared",
+    ]);
   });
 
   it("draws a flat list, no year heads, in the most-owned order", () => {

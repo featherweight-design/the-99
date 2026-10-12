@@ -73,10 +73,14 @@ export async function readPreconSources(q: Reader = db): Promise<PreconSource[]>
   }));
 }
 
-/** Every deck the reader holds, as the shared rule reads it: commanders and every card in the list. */
+/** Every deck the reader holds, as the shared rule reads it: commanders and every card in the list,
+ *  and the precon it is linked to. */
 export async function readReaderDecks(userId: string, q: Reader = db): Promise<ReaderDeck[]> {
   const heads = await q
-    .select({ id: decks.id, name: decks.name, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+    .select({
+      id: decks.id, name: decks.name, commander: decks.commanderOracleId, partner: decks.partnerOracleId,
+      builtFrom: decks.builtFromPrecon,
+    })
     .from(decks)
     .where(eq(decks.userId, userId));
   if (heads.length === 0) return [];
@@ -94,7 +98,7 @@ export async function readReaderDecks(userId: string, q: Reader = db): Promise<R
     const commanders = h.partner ? [h.commander, h.partner] : [h.commander];
     const list = byDeck.get(h.id) ?? new Set<string>();
     for (const c of commanders) list.add(c);
-    return { id: h.id, name: h.name, commanders, cards: list };
+    return { id: h.id, name: h.name, commanders, cards: list, builtFrom: h.builtFrom };
   });
 }
 

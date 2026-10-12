@@ -54,6 +54,23 @@ describe("summarisePrecons", () => {
   });
 });
 
+describe("summarisePrecons: a linked deck (R3 K9)", () => {
+  it("lists a linked deck first, and lists it even when the shared rule does not hold", () => {
+    const decks = [
+      { id: "d1", name: "Same", commanders: ["A-cmd"], cards: new Set(["A-cmd", "sol-ring", "arcane-signet"]) },
+      // Shares 1 of 3 under another commander: under the rule, but linked.
+      { id: "d2", name: "Linked", commanders: ["x"], cards: new Set(["x", "sol-ring"]), builtFrom: "A" },
+      // Linked to another precon: says nothing here unless the rule holds.
+      { id: "d3", name: "Elsewhere", commanders: ["x"], cards: new Set(["x"]), builtFrom: "B" },
+    ];
+    const [row] = summarisePrecons([source("A")], new Set(), decks);
+    expect(row.built).toEqual([
+      { deckId: "d2", deckName: "Linked", shared: 1, sameCommanders: false, linked: true },
+      { deckId: "d1", deckName: "Same", shared: 3, sameCommanders: true, linked: false },
+    ]);
+  });
+});
+
 describe("filter, order, group", () => {
   const rows = summarisePrecons([
     source("Old", { releaseDate: "2016-11-11", setCode: "C16" }),
