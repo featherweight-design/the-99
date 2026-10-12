@@ -1,0 +1,1423 @@
+{
+  "at": "2026-10-12T06:18:13.032Z",
+  "promptVersion": 2,
+  "coverage": {
+    "none": 1,
+    "older": 1,
+    "v2": 20
+  },
+  "cards": [
+    {
+      "card": "Kavaron Skywarden",
+      "oracleId": "c1f1ba17-b5e8-4bb3-a767-befd52e2db72",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 10,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 11
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 9
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 5
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 5
+          },
+          "need": null
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 4
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 3
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 3
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 1
+          },
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Goldfury Strider",
+      "oracleId": "7534d0b3-4211-4add-8e8d-370c033518d3",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 10,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Tovolar",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 14
+          },
+          "need": null
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 7
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 3
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 2
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 2
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "pump",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Lavamancer's Skill",
+      "oracleId": "e7819a6d-a518-4400-8e30-2a528878fd8a",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 10,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 2,
+            "target": 3
+          }
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 6,
+            "target": 5
+          }
+        },
+        {
+          "deck": "HD - Goblins",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 16,
+            "target": 6
+          }
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 5,
+            "target": 6
+          }
+        },
+        {
+          "deck": "HD - Kratos",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 5,
+            "target": 4
+          }
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 2,
+            "target": 5
+          }
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 7,
+            "target": 4
+          }
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 5,
+            "target": 4
+          }
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 5,
+            "target": 4
+          }
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 5,
+            "target": 6
+          }
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": null,
+          "need": {
+            "role": "removal",
+            "have": 2,
+            "target": 3
+          }
+        }
+      ]
+    },
+    {
+      "card": "Cephalid Sage",
+      "oracleId": "29182a24-3bdb-4fd0-8a1d-a196340c0858",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 1
+      },
+      "free": [
+        {
+          "deck": "HD - Wizards",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 24
+          },
+          "need": {
+            "role": "draw",
+            "have": 19,
+            "target": 12
+          }
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 13,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 15
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 7
+          }
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 13
+          },
+          "need": {
+            "role": "draw",
+            "have": 12,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 10
+          }
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 10,
+            "target": 11
+          }
+        },
+        {
+          "deck": "Test - Landfall",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 12
+          },
+          "need": {
+            "role": "draw",
+            "have": 11,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 9
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 9
+          }
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 7,
+            "target": 8
+          }
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": {
+            "kind": "theme",
+            "theme": "draw",
+            "n": 8
+          },
+          "need": {
+            "role": "draw",
+            "have": 9,
+            "target": 7
+          }
+        }
+      ]
+    },
+    {
+      "card": "Daru Stinger",
+      "oracleId": "696bff10-4e46-48a7-b2af-13387b9d9da0",
+      "commanderLegal": true,
+      "candidates": 10,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 0
+      },
+      "free": [
+        {
+          "deck": "HD - Soldiers",
+          "reason": {
+            "kind": "theme",
+            "theme": {
+              "type": "Soldier"
+            },
+            "n": 25
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 11
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Blood Rites",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 10
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 9
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 5
+          },
+          "need": null
+        },
+        {
+          "deck": "HD -Thorin",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 4
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 3
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": {
+            "kind": "theme",
+            "theme": "counters",
+            "n": 2
+          },
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Cryotheory Adept",
+      "oracleId": "a9b3ee21-1af1-4e7e-8e48-d7c90d056f5c",
+      "commanderLegal": true,
+      "candidates": 11,
+      "planSources": {
+        "v2": 9,
+        "older": 1,
+        "none": 1
+      },
+      "free": [
+        {
+          "deck": "HD - Wizards",
+          "reason": {
+            "kind": "theme",
+            "theme": {
+              "type": "Wizard"
+            },
+            "n": 19
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Brago",
+          "reason": {
+            "kind": "theme",
+            "theme": {
+              "type": "Human"
+            },
+            "n": 14
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Prismari Artistry",
+          "reason": {
+            "kind": "theme",
+            "theme": {
+              "type": "Wizard"
+            },
+            "n": 8
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": {
+            "kind": "theme",
+            "theme": {
+              "type": "Human"
+            },
+            "n": 7
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Gods",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "Test - Landfall",
+          "reason": null,
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Airtight Alibi",
+      "oracleId": "cb666ea8-55e3-4e27-ae6d-806677dfc17a",
+      "commanderLegal": true,
+      "candidates": 9,
+      "planSources": {
+        "v2": 7,
+        "older": 1,
+        "none": 1
+      },
+      "free": [
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 10
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Gishath",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 6
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Tovolar",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 4
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Elves",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 3
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 3
+          },
+          "need": null
+        },
+        {
+          "deck": "Test - Landfall",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 2
+          },
+          "need": null
+        },
+        {
+          "deck": "HD - Omnath",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 1
+          },
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": {
+            "kind": "theme",
+            "theme": "protection",
+            "n": 1
+          },
+          "need": null
+        }
+      ]
+    },
+    {
+      "card": "Mind Swords",
+      "oracleId": "4af20f8c-2ba0-49d5-a64e-d3668cec30cd",
+      "commanderLegal": true,
+      "candidates": 7,
+      "planSources": {
+        "v2": 6,
+        "older": 0,
+        "none": 1
+      },
+      "free": [
+        {
+          "deck": "HD - Avatar Aang",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Yuriko",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD - Zombies",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Blood Rites",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "reason": null,
+          "need": null
+        },
+        {
+          "deck": "Test - Landfall",
+          "reason": null,
+          "need": null
+        }
+      ]
+    }
+  ],
+  "calls": [
+    {
+      "card": "Kavaron Skywarden",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 38680,
+      "reservedUsd": 0.015736,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 6450,
+      "usd": 0.00404,
+      "usage": {
+        "inputTokens": 35163,
+        "outputTokens": 1046,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D10",
+            "sentence": "Sacrifice outlets like {C668} make nonland permanents leave the battlefield during the turn, which turns on {C765}'s end step counter trigger alongside the Goblin token army.",
+            "cut": "C636",
+            "cites": [
+              {
+                "key": "C668",
+                "job": "sacOutlet"
+              },
+              {
+                "key": "C765",
+                "job": "counters"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Goblins",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Sacrifice outlets like [[Goblin Sledder]] make nonland permanents leave the battlefield during the turn, which turns on [[Kavaron Skywarden]]'s end step counter trigger alongside the Goblin token army.",
+          "cut": "Bloodlust Inciter",
+          "cites": [
+            {
+              "card": "Goblin Sledder",
+              "job": "sacOutlet"
+            },
+            {
+              "card": "Kavaron Skywarden",
+              "job": "counters"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 1,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Goldfury Strider",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 38673,
+      "reservedUsd": 0.015735,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 16221,
+      "usd": 0.005084,
+      "usage": {
+        "inputTokens": 35157,
+        "outputTokens": 3135,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D2",
+            "sentence": "{C765}'s trample matches {C78}, and as an artifact creature it helps the story: \"artifacts, legendaries and Sagas turn on the enduring story\".",
+            "cut": "C94",
+            "cites": [
+              {
+                "key": "C765",
+                "job": "evasion"
+              },
+              {
+                "key": "C78",
+                "job": "evasion"
+              }
+            ]
+          },
+          {
+            "deck": "D6",
+            "sentence": "{C765} is an artifact creature whose pump taps artifacts and creatures, so it fits the plan: \"Counters pile onto creatures and artifacts\" as Kilo proliferates.",
+            "cut": "C373",
+            "cites": [
+              {
+                "key": "C765",
+                "job": "pump"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD -Thorin",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "[[Goldfury Strider]]'s trample matches [[Thorin Oakenshield]], and as an artifact creature it helps the story: \"artifacts, legendaries and Sagas turn on the enduring story\".",
+          "cut": "Dwarven Mauler",
+          "cites": [
+            {
+              "card": "Goldfury Strider",
+              "job": "evasion"
+            },
+            {
+              "card": "Thorin Oakenshield",
+              "job": "evasion"
+            }
+          ]
+        },
+        {
+          "deck": "HD Tune - Counter Intelligence",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "[[Goldfury Strider]] is an artifact creature whose pump taps artifacts and creatures, so it fits the plan: \"Counters pile onto creatures and artifacts\" as Kilo proliferates.",
+          "cut": "Coretapper",
+          "cites": [
+            {
+              "card": "Goldfury Strider",
+              "job": "pump"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 2,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Lavamancer's Skill",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 38752,
+      "reservedUsd": 0.015751,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 17682,
+      "usd": 0.005346,
+      "usage": {
+        "inputTokens": 35229,
+        "outputTokens": 3646,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D11",
+            "sentence": "As an Aura that dresses a creature, {C765} feeds the plan: \"Attack with the dressed creature so Dogmeat, Ever Loyal makes Junk tokens for extra cards.\"",
+            "cut": "C699",
+            "cites": [
+              {
+                "key": "C765",
+                "job": "removal"
+              }
+            ]
+          },
+          {
+            "deck": "D4",
+            "sentence": "Enchanting {C236}, a Wizard, gives it a repeatable two-damage ping, so \"Proliferate and All Will Be One turn counters into damage.\" gains a direct damage outlet.",
+            "cut": "C223",
+            "cites": [
+              {
+                "key": "C236",
+                "job": "counters"
+              },
+              {
+                "key": "C765",
+                "job": "removal"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "As an Aura that dresses a creature, [[Lavamancer's Skill]] feeds the plan: \"Attack with the dressed creature so Dogmeat, Ever Loyal makes Junk tokens for extra cards.\"",
+          "cut": "Acquired Mutation",
+          "cites": [
+            {
+              "card": "Lavamancer's Skill",
+              "job": "removal"
+            }
+          ]
+        },
+        {
+          "deck": "HD - Gods",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Enchanting [[Flux Channeler]], a Wizard, gives it a repeatable two-damage ping, so \"Proliferate and All Will Be One turn counters into damage.\" gains a direct damage outlet.",
+          "cut": "Aggravated Assault",
+          "cites": [
+            {
+              "card": "Flux Channeler",
+              "job": "counters"
+            },
+            {
+              "card": "Lavamancer's Skill",
+              "job": "removal"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 2,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Cephalid Sage",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 37311,
+      "reservedUsd": 0.015463,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 7695,
+      "usd": 0.004072,
+      "usage": {
+        "inputTokens": 33919,
+        "outputTokens": 1359,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D11",
+            "sentence": "With {C673} milling on each attack and {C684} stocking the graveyard, {C724} reaches threshold and draws three then discards two as a looter.",
+            "cut": "C3",
+            "cites": [
+              {
+                "key": "C673",
+                "job": "mill"
+              },
+              {
+                "key": "C684",
+                "job": "mill"
+              },
+              {
+                "key": "C724",
+                "job": "etbDraw"
+              }
+            ]
+          },
+          {
+            "deck": "D10",
+            "sentence": "Milling from {C627} and {C656} keeps the graveyard past threshold, so {C724} draws three and discards two each time it enters.",
+            "cut": "C672",
+            "cites": [
+              {
+                "key": "C627",
+                "job": "mill"
+              },
+              {
+                "key": "C656",
+                "job": "mill"
+              },
+              {
+                "key": "C724",
+                "job": "etbDraw"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD Tune - Sultai Arisen",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "With [[Teval, the Balanced Scale]] milling on each attack and [[Forbidden Alchemy]] stocking the graveyard, [[Cephalid Sage]] reaches threshold and draws three then discards two as a looter.",
+          "cut": "Arcane Signet",
+          "cites": [
+            {
+              "card": "Teval, the Balanced Scale",
+              "job": "mill"
+            },
+            {
+              "card": "Forbidden Alchemy",
+              "job": "mill"
+            },
+            {
+              "card": "Cephalid Sage",
+              "job": "etbDraw"
+            }
+          ]
+        },
+        {
+          "deck": "HD Tune - Mutant Menace",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Milling from [[Court of Cunning]] and [[Ruin Crab]] keeps the graveyard past threshold, so [[Cephalid Sage]] draws three and discards two each time it enters.",
+          "cut": "Wishclaw Talisman",
+          "cites": [
+            {
+              "card": "Court of Cunning",
+              "job": "mill"
+            },
+            {
+              "card": "Ruin Crab",
+              "job": "mill"
+            },
+            {
+              "card": "Cephalid Sage",
+              "job": "etbDraw"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 2,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Daru Stinger",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 35249,
+      "reservedUsd": 0.01505,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 6204,
+      "usd": 0.003744,
+      "usage": {
+        "inputTokens": 32044,
+        "outputTokens": 1079,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "As a cheap Soldier, {C701} enters bigger off Soldiers revealed like {C18}, then its tap ability removes attackers and blockers that stall the swarm.",
+            "cut": "C13",
+            "cites": [
+              {
+                "key": "C701",
+                "job": "removal"
+              },
+              {
+                "key": "C18",
+                "job": "tribal"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Soldiers",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "As a cheap Soldier, [[Daru Stinger]] enters bigger off Soldiers revealed like [[Daru Warchief]], then its tap ability removes attackers and blockers that stall the swarm.",
+          "cut": "Chieftain en-Dal",
+          "cites": [
+            {
+              "card": "Daru Stinger",
+              "job": "removal"
+            },
+            {
+              "card": "Daru Warchief",
+              "job": "tribal"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 1,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Cryotheory Adept",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 37325,
+      "reservedUsd": 0.015465,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 7310,
+      "usd": 0.004076,
+      "usage": {
+        "inputTokens": 33931,
+        "outputTokens": 1365,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "Prowess on {C724} grows from every counter like {C14}, advancing the plan of Mono-blue Wizards that counter spells and dig with cheap instants.",
+            "cut": "C12",
+            "cites": [
+              {
+                "key": "C724",
+                "job": "pump"
+              },
+              {
+                "key": "C14",
+                "job": "counterspell"
+              }
+            ]
+          },
+          {
+            "deck": "D3",
+            "sentence": "This Izzet spells deck casts cheap instants and sorceries, and prowess on {C724} grows with each one cast before combat.",
+            "cut": "C154",
+            "cites": [
+              {
+                "key": "C724",
+                "job": "pump"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD - Wizards",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Prowess on [[Cryotheory Adept]] grows from every counter like [[Counterspell]], advancing the plan of Mono-blue Wizards that counter spells and dig with cheap instants.",
+          "cut": "Collective Restraint",
+          "cites": [
+            {
+              "card": "Cryotheory Adept",
+              "job": "pump"
+            },
+            {
+              "card": "Counterspell",
+              "job": "counterspell"
+            }
+          ]
+        }
+      ],
+      "drops": {
+        "noCitation": 1
+      },
+      "returned": 2,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Airtight Alibi",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 31588,
+      "reservedUsd": 0.014318,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 9560,
+      "usd": 0.003771,
+      "usage": {
+        "inputTokens": 28716,
+        "outputTokens": 1797,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": [
+          {
+            "deck": "D1",
+            "sentence": "Flash lets {C604} join the pile of Auras and Equipment onto one creature mid-combat, and its hexproof untap keeps the dressed attacker safe, as the plan's pile-and-attack line requires alongside {C88}.",
+            "cut": "C92",
+            "cites": [
+              {
+                "key": "C604",
+                "job": "pump"
+              },
+              {
+                "key": "C88",
+                "job": "protection"
+              }
+            ]
+          },
+          {
+            "deck": "D5",
+            "sentence": "Flash lets {C604} land on the biggest Elf mid-combat, giving it hexproof through the attack, which matches the plan's backed by pump and works like {C308} with extra protection.",
+            "cut": "C302",
+            "cites": [
+              {
+                "key": "C604",
+                "job": "protection"
+              },
+              {
+                "key": "C308",
+                "job": "pump"
+              }
+            ]
+          }
+        ]
+      },
+      "picks": [
+        {
+          "deck": "HD Tune - Scrappy Survivors",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Flash lets [[Airtight Alibi]] join the pile of Auras and Equipment onto one creature mid-combat, and its hexproof untap keeps the dressed attacker safe, as the plan's pile-and-attack line requires alongside [[Uril, the Miststalker]].",
+          "cut": "Wild Growth",
+          "cites": [
+            {
+              "card": "Airtight Alibi",
+              "job": "pump"
+            },
+            {
+              "card": "Uril, the Miststalker",
+              "job": "protection"
+            }
+          ]
+        },
+        {
+          "deck": "HD - Elves",
+          "plan": "v2",
+          "staleOverview": [],
+          "sentence": "Flash lets [[Airtight Alibi]] land on the biggest Elf mid-combat, giving it hexproof through the attack, which matches the plan's backed by pump and works like [[Blanchwood Armor]] with extra protection.",
+          "cut": "Accelerated Mutation",
+          "cites": [
+            {
+              "card": "Airtight Alibi",
+              "job": "protection"
+            },
+            {
+              "card": "Blanchwood Armor",
+              "job": "pump"
+            }
+          ]
+        }
+      ],
+      "drops": {},
+      "returned": 2,
+      "staleOverviewPicks": 0
+    },
+    {
+      "card": "Mind Swords",
+      "arm": "haiku",
+      "model": "claude-haiku-5-5",
+      "layout": "per-press",
+      "inputCeiling": 23940,
+      "reservedUsd": 0.012788,
+      "ok": true,
+      "stop": "end_turn",
+      "ms": 3422,
+      "usd": 0.002414,
+      "usage": {
+        "inputTokens": 21763,
+        "outputTokens": 475,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "raw": {
+        "picks": []
+      },
+      "picks": [],
+      "drops": {},
+      "returned": 0,
+      "staleOverviewPicks": 0
+    }
+  ],
+  "staleOverview": {
+    "picks": 0,
+    "of": 11
+  }
+}

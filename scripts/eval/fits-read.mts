@@ -41,6 +41,12 @@ const CARDS = [
   "Ajani Unrelenting", "Maddening Cacophony", "Maddening Hex", "Mind's Eye", "Molten Collapse", "Throes of Chaos",
   "Time Stretch", "Tangle Wire", "Kwia Vigorbloom", "Future Sight", "Barrowgoyf",
 ];
+/** The brief's eight niche cards (Finding 2: owned, in no deck, few index rows), the rest of lock 9's
+ *  corpus. Run with `--set niche`; the default set is Hugh's eleven. */
+const NICHE = [
+  "Kavaron Skywarden", "Goldfury Strider", "Lavamancer's Skill", "Cephalid Sage", "Daru Stinger", "Cryotheory Adept",
+  "Airtight Alibi", "Mind Swords",
+];
 /** The warm arm's three cards, back to back: the longest lists, where a cached prefix saves most. */
 const WARM_CARDS = ["Ajani Unrelenting", "Mind's Eye", "Tangle Wire"];
 const DEADLINE_MS = 180_000;
@@ -54,7 +60,7 @@ const ARMS: Arm[] = [
 ];
 
 const { values: args } = parseArgs({ options: {
-  only: { type: "string" }, arms: { type: "string" }, "dry-run": { type: "boolean", default: false },
+  only: { type: "string" }, arms: { type: "string" }, set: { type: "string" }, "dry-run": { type: "boolean", default: false },
   // A cap on this run alone, under the ledger's: the run stops before a call that could cross it.
   budget: { type: "string" },
 } });
@@ -93,8 +99,10 @@ const coverage = Object.fromEntries(coverageRows.map((r) => [r.plan, r.decks]));
 console.log(`coverage (newest passing Overview per deck): ${JSON.stringify(coverage)}`);
 
 // ---- cards -------------------------------------------------------------------------------------
-const wanted = CARDS.filter((n) => !only || only.includes(n));
-if (only) for (const n of only) if (!CARDS.includes(n)) throw new Error(`--only names a card outside the eval set: ${n}`);
+if (args.set !== undefined && args.set !== "hugh" && args.set !== "niche") throw new Error(`--set is hugh or niche, got ${args.set}`);
+const SET = args.set === "niche" ? NICHE : CARDS;
+const wanted = SET.filter((n) => !only || only.includes(n));
+if (only) for (const n of only) if (!SET.includes(n)) throw new Error(`--only names a card outside the eval set: ${n}`);
 const resolved = (await db.execute(sql`
   select oracle_id, name from cards where name = any(${sql.param(wanted)}::text[])`)).rows as { oracle_id: string; name: string }[];
 const idOf = new Map(resolved.map((r) => [r.name, r.oracle_id]));
