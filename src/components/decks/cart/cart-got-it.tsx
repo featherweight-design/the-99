@@ -62,10 +62,12 @@ export function cartReceiptBody(facts: CartReceiptFacts | null, deckNames: Reado
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
-/** The printing a cart line's confirm presets: the pick its decks share, else the first deck's. */
+/**
+ * The printing a cart line's confirm presets: the pick its decks share, else the first deck's,
+ * which is the first selected row's either way. A first deck with no printing presets nothing.
+ */
 function presetPrinting(line: SelectedLine): string | null {
-  const picks = line.selectedRows.map((r) => r.printing ?? null);
-  return picks.every((p) => p === picks[0]) ? picks[0] : picks.find((p) => p !== null) ?? null;
+  return line.selectedRows[0]?.printing ?? null;
 }
 
 export function CartGotItProvider({
@@ -173,9 +175,13 @@ function CartConfirm({
 }) {
   const deckIds = line.selectedRows.map((r) => r.deckId);
   // The figure the line drew, carrying the printing to preset: the confirm presets only a live one.
-  const fact = lineFact(line, newestAsOf);
-  const printing = presetPrinting(line);
-  const price = fact && printing ? { ...fact, printing: { scryfallId: printing } } : fact;
+  // Memoized on the opened line: the form re-reads its choices whenever `price` changes, and a
+  // fresh object every render would reset the player's printing on a stale or refused press.
+  const price = useMemo(() => {
+    const fact = lineFact(line, newestAsOf);
+    const printing = presetPrinting(line);
+    return fact && printing ? { ...fact, printing: { scryfallId: printing } } : fact;
+  }, [line, newestAsOf]);
   return (
     <GotItConfirmForm<CartReceiptFacts>
       oracleId={line.oracleId}
@@ -189,6 +195,7 @@ function CartConfirm({
         return "applied" in out ? out : "stale" in out ? out : { failed: true };
       }}
       needLine={(need) => copy.confirm.need(need, deckIds.length)}
+      staleLine={{ owed: copy.confirm.staleBody, done: copy.confirm.staleBodyDone }}
       footer={<p className="m-0 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.confirm.readAgain}</p>}
       onPendingChange={onPendingChange}
       returnFocusRef={returnFocusRef}

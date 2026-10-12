@@ -107,13 +107,20 @@ export function CartView({
   // The phone's toast sits above the checkout dock, whose height moves with its links.
   const dockRef = useRef<HTMLDivElement>(null);
   const [dockH, setDockH] = useState(0);
+  // Re-bound when the cart empties or fills: buying the last line removes the dock, and an undo
+  // brings a new one back without remounting the page.
+  const hasDock = cart.decks.length > 0;
   useEffect(() => {
     const el = dockRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el) {
+      setDockH(0);
+      return;
+    }
+    if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => setDockH(el.offsetHeight));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [hasDock]);
   // K1, once per visit: armed when the Mana Pool link is pressed, shown when the tab comes back,
   // and never again once dismissed. Held here, so nothing that remounts the list resets it.
   const [band, setBand] = useState<"off" | "armed" | "shown" | "dismissed">("off");

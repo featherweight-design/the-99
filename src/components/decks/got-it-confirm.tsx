@@ -79,7 +79,7 @@ export function GotItConfirm({ deckId, card, ...rest }: DeckConfirmProps) {
  * re-base) lives here once.
  */
 export function GotItConfirmForm<F>({
-  oracleId, price, initialNeed, listQuantity, write, needLine, children, footer,
+  oracleId, price, initialNeed, listQuantity, write, needLine, staleLine, children, footer,
   cardName, newestAsOf, onClose, onDone, onPendingChange, returnFocusRef,
 }: {
   oracleId: string;
@@ -93,6 +93,8 @@ export function GotItConfirmForm<F>({
   write: (input: GotItWriteInput) => Promise<GotItWriteResult<F>>;
   /** The line under the stepper; the deck's own by default (`gotItCopy.confirm.need`). */
   needLine?: (need: number) => ReactNode;
+  /** The stale banner's body for a need still owed and for none; the deck's own by default. */
+  staleLine?: { owed: (need: number) => string; done: string };
   /** Drawn after the card's name: the cart's deck list, or its chooser. */
   children?: ReactNode;
   /** Drawn under the stepper: the cart's lock-7 sentence. */
@@ -281,7 +283,9 @@ export function GotItConfirmForm<F>({
             <span aria-hidden style={{ color: "var(--warning)" }}>⚠</span>
             <span>
               <b className="font-semibold text-[color:var(--fg)]">{c.staleTitle}</b>{" "}
-              {notice === "staleRemoved" ? null : need > 0 ? c.staleBody(need) : c.staleBodyDone}
+              {notice === "staleRemoved"
+                ? null
+                : need > 0 ? (staleLine?.owed ?? c.staleBody)(need) : staleLine?.done ?? c.staleBodyDone}
             </span>
           </div>
         ) : null}

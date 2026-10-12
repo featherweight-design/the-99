@@ -99,4 +99,50 @@ describe("CartGotItProvider", () => {
     expect(await screen.findByText(gotItCopy.confirm.failedTitle)).toBeTruthy();
     expect(screen.getByText(copy.confirm.forDecks(2))).toBeTruthy();
   });
+
+  const second: PrintingChoice = { ...choice, scryfallId: "b0000000-0000-4000-8000-000000000000", collectorNumber: "401", owned: { nonfoil: 0 } };
+  const lineWith = (printings: (string | null)[]): SelectedLine => ({
+    ...line,
+    selectedRows: line.selectedRows.map((r, i) => ({ ...r, printing: printings[i] })),
+  });
+  function OpenerFor({ of }: { of: SelectedLine }) {
+    const gotIt = useCartGotIt()!;
+    return <button type="button" onClick={(e) => gotIt.open(of, e.currentTarget)}>open</button>;
+  }
+
+  it("presets the first deck's printing, and none when the first deck has none", async () => {
+    loadPrintingChoices.mockResolvedValue([choice, second]);
+    const { unmount } = render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><OpenerFor of={lineWith([second.scryfallId, choice.scryfallId])} /></CartGotItProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "open" }));
+    expect(await screen.findByRole("button", { name: gotItCopy.confirm.add(2) })).toBeTruthy();
+    expect(screen.getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true")?.textContent).toContain("#401");
+    unmount();
+    render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><OpenerFor of={lineWith([null, choice.scryfallId])} /></CartGotItProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "open" }));
+    // Once the choices have loaded, nothing is selected.
+    await waitFor(() => expect(screen.getAllByRole("radio")).toHaveLength(2));
+    expect(screen.getAllByRole("radio").some((r) => r.getAttribute("aria-checked") === "true")).toBe(false);
+  });
+
+  it("keeps the player's printing through a refused press", async () => {
+    loadPrintingChoices.mockResolvedValue([choice, second]);
+    markBoughtForDecks.mockResolvedValue({ refused: "notInDeck" });
+    render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><OpenerFor of={lineWith([choice.scryfallId, choice.scryfallId])} /></CartGotItProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "open" }));
+    await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
+    const pickSecond = screen.getAllByRole("radio").find((r) => r.textContent?.includes("#401"))!;
+    fireEvent.click(pickSecond);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: gotItCopy.confirm.add(2) })); });
+    await screen.findByText(gotItCopy.confirm.failedTitle);
+    expect(screen.getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true")?.textContent).toContain("#401");
+  });
+
+  it("says the cart, never the deck, when a copy landed elsewhere while it was open", async () => {
+    markBoughtForDecks.mockResolvedValue({ stale: [{ oracleId: ORACLE, setCode: "cmm", collectorNumber: "400", finish: "nonfoil", quantity: 18 }] });
+    render(<CartGotItProvider deckNames={names} newestAsOf={NEWEST}><Opener /></CartGotItProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "open" }));
+    const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
+    await act(async () => { fireEvent.click(add); });
+    expect(await screen.findByText(copy.confirm.staleBody(1), { exact: false })).toBeTruthy();
+  });
 });

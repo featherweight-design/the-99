@@ -103,24 +103,27 @@ export const allDecksCartCopy = {
   /** K1: once per visit, when the tab regains focus after the Mana Pool link was pressed. */
   back: {
     title: "Back from Mana Pool?",
-    body: "Press buy on each card you got, and it goes into your collection.",
+    body: "Press buy on each card you got to add it to your collection.",
     dismiss: "Dismiss",
   },
 
   /** I got it's confirm on a cart line. Title, printing, finish and Add are `gotItCopy.confirm`'s. */
   confirm: {
-    forDecks: (deckN: number) => `For ${decks(deckN)} on this cart`,
+    forDecks: (deckN: number) => `For ${decks(deckN)} in this cart`,
     needsEach: (q: number) => `needs ${n(q)}`,
     /** Replaces `gotItCopy.confirm.need` on a cart line. */
     need: (q: number, deckN: number) =>
       deckN > 1 && q === deckN ? `The cart needs ${n(q)}, one for each deck` : `The cart needs ${n(q)}`,
     /** Lock 7, said once. */
-    readAgain: "Which decks the copies cover is read again once they’re added.",
+    readAgain: "Which decks these cover is worked out once they’re added.",
+    /** The stale banner on a cart line: `gotItCopy.confirm.staleBody`, said of the cart. */
+    staleBody: (need: number) => `A copy was added somewhere else, so the cart needs ${n(need)} now. Nothing was added yet.`,
+    staleBodyDone: "A copy was added somewhere else, so the cart needs no more. Add anyway if this is a spare.",
   },
 
   /** I got it's receipt body on a cart press, from the read after the write (lock 7). */
   receipt: {
-    covered: (names: string[]) => `${and(names)} ${names.length === 1 ? "has its copy" : "have theirs"}.`,
+    covered: (names: string[]) => `${and(names)} ${names.length === 1 ? "is" : "are"} covered.`,
     asPicked: "as you picked",
     still: (deck: string, need: number) => `${deck} still needs ${n(need)}.`,
     stillMany: (deckN: number, need: number) => `${decks(deckN)} still need ${n(need)} between them.`,
