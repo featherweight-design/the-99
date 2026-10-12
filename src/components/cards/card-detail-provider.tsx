@@ -22,6 +22,7 @@
 // the rule that avoids it is: wait on the prefetch for a bounded time, and if it has not
 // answered, send the action and show ONLY the action's answer.
 
+import { landOnDeckTokens } from "../decks/deck-tokens-landing";
 import {
   createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
   type RefObject,
@@ -1401,6 +1402,7 @@ export function CardDetailProvider({
           deckPage={deckPage}
           deckName={deckName}
           deckHolds={(deckOracleIds ?? EMPTY_IDS).has(card.oracleId)}
+          onShowTokens={deckId && sheetsBelow === 0 && partnerOf === null ? () => { close(); landOnDeckTokens(); } : null}
           deckPrinting={deckPrintingFor(card.oracleId)}
           onProxyWrite={() => evict(card.oracleId)}
           openAtPrinting={openAtPrinting}

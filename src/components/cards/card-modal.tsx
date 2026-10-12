@@ -692,6 +692,7 @@ export function CardModal({
   deckName = null,
   deckPage = false,
   deckHolds = false,
+  onShowTokens = null,
   deckPrinting,
   onProxyWrite,
   onSelectCard,
@@ -792,6 +793,8 @@ export function CardModal({
    *  cards the deck does not hold — Consider, search — and the control refuses
    *  every one of them, so it must not be drawn for them. */
   deckHolds?: boolean;
+  /** Close to the deck and land on its Tokens group (`Tokens ›` in the deck box). Null where the sheet is stacked. */
+  onShowTokens?: (() => void) | null;
   /**
    * Deck printings: opened from a deck that holds this card, with the switch on. The picker then
    * picks for THAT deck: it starts from the deck's own pick, writes through `save`, and the art
@@ -2502,7 +2505,7 @@ export function CardModal({
                   proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
                   known={card.proxiedBy !== null && card.proxiedBy !== undefined}
                   onSaved={onProxyWrite}
-                  footer={<TokenCardLine oracleId={card.oracleId} onOpenTokens={onClose} />}
+                  footer={<TokenCardLine oracleId={card.oracleId} onShowTokens={onShowTokens} />}
                 />
               )}
 

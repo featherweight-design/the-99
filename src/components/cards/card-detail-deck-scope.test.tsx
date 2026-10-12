@@ -147,6 +147,32 @@ describe("the tokens line in the deck box", () => {
     expect(screen.queryByText(/Makes a/)).toBeNull();
   });
 
+  it("bolds each name whole when one token's name begins another's", async () => {
+    mountWithTokens(readOf([food({ oracleId: "z1", name: "Zombie" }), food({ oracleId: "z2", name: "Zombie Army" })]));
+    await openCard("open held");
+    const bold = [...document.querySelectorAll("b")].map((b) => b.textContent);
+    expect(bold).toEqual(["Zombie", "Zombie Army"]);
+  });
+
+  it("asks the deck for its All view and focuses the group when the link is pressed", async () => {
+    const heading = document.createElement("h3");
+    heading.id = "deck-tokens-heading"; heading.tabIndex = -1; heading.scrollIntoView = vi.fn();
+    document.body.append(heading);
+    const asked = vi.fn();
+    window.addEventListener("the99:show-deck-tokens", asked);
+    mountWithTokens(readOf([food()]));
+    await openCard("open held");
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame"] });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Show this deck’s tokens" })); });
+    await act(async () => { vi.advanceTimersByTime(100); });
+    vi.useRealTimers();
+    window.removeEventListener("the99:show-deck-tokens", asked);
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(heading.scrollIntoView).toHaveBeenCalled();
+    expect(document.activeElement).toBe(heading);
+    heading.remove();
+  });
+
   it("closes the sheet when the link is pressed", async () => {
     mountWithTokens(readOf([food()]));
     await openCard("open held");
