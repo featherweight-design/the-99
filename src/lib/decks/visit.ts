@@ -22,8 +22,10 @@ export type DeckTool = "suggested" | "cuts";
  *  running, and whatever it settles to happened during this visit. */
 export type ToolBaseline = { okKey: string | null; runId: string | null };
 
-/** A tool result that is never stored server-side and must still last the visit (Mana Balance's help:
- *  `mana-help`). Opaque here; its owner checks it still describes the deck before drawing it. */
+/** A tool result that is never stored server-side and must still last the visit. Opaque here; each owner
+ *  decides what still holds. `mana-help` (Mana Balance's help) is checked against the list it was read for
+ *  before it draws. `mana-trades` (the trades applied this visit) is drawn as it stands: each is a change
+ *  already made, and its Undo is the check, refused over a deck that has moved since. */
 export type VisitSlot = "mana-help" | "mana-trades";
 
 type Visit = {

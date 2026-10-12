@@ -158,11 +158,16 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
 
   it("refuses a staple the fresh read does not offer a trade for, writing nothing", async () => {
     reset();
-    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId: "other" } }];
     state.applied = APPLY;
-    expect(await applyManaTrade(DECK, "G", STAPLE)).toEqual({ ok: false, message: deckTuningCopy.card.applyRefused });
-    expect(await applyManaTrade(DECK, "G", "not-a-uuid")).toEqual({ ok: false, message: deckTuningCopy.card.applyRefused });
-    expect(await applyManaTrade(DECK, "R", STAPLE)).toEqual({ ok: false, message: deckTuningCopy.card.applyRefused });
+    const offered = (oracleId: string) => [{ kind: "trade", basicOut: "Forest", basicOutId: "forest-id", staple: { oracleId } }];
+    const refusal = { ok: false, message: deckTuningCopy.card.applyRefused };
+    // Each case is refused by its own guard alone: the read offers a trade for exactly the staple named.
+    state.trades = offered("other");
+    expect(await applyManaTrade(DECK, "G", STAPLE)).toEqual(refusal);
+    state.trades = offered("not-a-uuid");
+    expect(await applyManaTrade(DECK, "G", "not-a-uuid")).toEqual(refusal);
+    state.trades = offered(STAPLE);
+    expect(await applyManaTrade(DECK, "R", STAPLE)).toEqual(refusal);
     expect(state.writes).toEqual([]);
   });
 

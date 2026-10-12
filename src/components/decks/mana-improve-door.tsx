@@ -3,12 +3,15 @@
 // Mana Balance's one door to help (Tuning hub handoff R3b, design table `ImproveDoor`, `ColorStep`,
 // `HelpResult`; rulings 2026-10-11): `Improve my mana` opens a step listing the deck's colors
 // tightest first (the engine's `colorOrder`, never re-sorted here), nothing preselected, and the
-// player picks. A one-color deck skips the step. Help is read only on that press, and never
-// judges a color: each move says what it does to every color's count.
+// player picks. A one-color deck skips the step. Help is read on that press, and again after the
+// player's own trade or its Undo, and never judges a color: each move says what it does to every
+// color's count.
 //
 // The result lasts the whole visit to the deck (Hugh, 2026-10-11): across tab switches, other
 // tools and the deck's sub-pages, and gone once the player leaves the deck. It is kept in the
-// visit store (`lib/decks/visit.ts`), keyed on the list it was read for, so an edit retires it.
+// visit store (`lib/decks/visit.ts`), keyed on the list it was read for, so an edit retires it; an
+// edit that is the player's own trade or Undo re-reads that color instead. A trade applied from here
+// is kept there too, for its Undo, until the player leaves the deck.
 
 import { useEffect, useEffectEvent, useId, useRef, useState, type KeyboardEvent } from "react";
 
