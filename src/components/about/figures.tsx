@@ -25,7 +25,7 @@ import { PreconRow } from "../decks/precons/precon-row";
 import { TokenRow } from "../decks/token-row";
 import { NotesFigureBody } from "./notes-figure";
 import { BrowseFigureBody } from "./browse-figure";
-import { AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
+import { AddedCopyFigureBody, AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
 import { SetsColourFigure } from "./sets-colour-figure";
 import { ORDER_OPTIONS } from "../commanders/rack/order-options";
@@ -1113,6 +1113,15 @@ function AllDecksCartFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** `added-copy`: the upload summary's rows saying where two new copies went, each with Change. */
+function AddedCopyFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="added-copy" width={width}>
+      <AddedCopyFigureBody />
+    </Specimen>
+  );
+}
+
 /** `shopping-got-it`: two Shopping rows whose buy tag is the button, and the receipt one leaves. */
 function GotItFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1186,6 +1195,7 @@ export const FIGURES: Partial<
   "stand-ins": StandInsFigure,
   "shopping-got-it": GotItFigure,
   "all-decks-cart": AllDecksCartFigure,
+  "added-copy": AddedCopyFigure,
   "deck-import": DeckImportFigure,
   versions: VersionsFigure,
   export: ExportFigure,

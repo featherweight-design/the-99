@@ -59,3 +59,15 @@ describe("GAME_SUMMARY states an order summarizeGames could produce", () => {
     }
   });
 });
+
+describe("ADDED_COPY_ROWS says what an upload could", () => {
+  it("reads each row through the app's own placement, and draws a Change on each", async () => {
+    const { ADDED_COPY_ROWS } = await import("./fixtures");
+    const { addedCopyCopy } = await import("../copy/added-copy");
+    expect(ADDED_COPY_ROWS.map((r) => r.sentence)).toEqual([
+      addedCopyCopy.row.goesToMany(["HD - Brago", "HD - Eldrazi"]),
+      addedCopyCopy.row.freeForBrew("HD -Thorin"),
+    ]);
+    for (const r of ADDED_COPY_ROWS) expect(r.chooser.claimants.length).toBeGreaterThan(1);
+  });
+});

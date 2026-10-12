@@ -22,6 +22,7 @@ import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { preconsEnabled } from "../precons/flag";
+import { addedCopyEnabled } from "../collection/added-copy-flag";
 import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
@@ -52,6 +53,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   PRECONS_ENABLED: preconsEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
+  ADDED_COPY_ENABLED: addedCopyEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

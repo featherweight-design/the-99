@@ -16,6 +16,9 @@ import type { DeckToken } from "../tokens/read";
 import type { GameSummary } from "../decks/games";
 import type { DraftRow } from "../decks/draft-state";
 import type { DeckClaim } from "../decks/availability";
+import { allocateClaims } from "../decks/allocate";
+import { arrivalPlacement, wentOf } from "../collection/arrivals";
+import { wentSentence } from "../collection/copy-line";
 import type { OwnedLegalCommander } from "../decks/read";
 import { deckImportCopy } from "../copy/deck-import";
 import type { CommanderRowView } from "../../components/commanders/commander-row";
@@ -2357,6 +2360,37 @@ export const ALL_DECKS_CART_LINE: { line: import("../decks/cart").SelectedLine; 
     deckNames: new Map([["about-gishath", "HD - Gishath"], ["about-kratos", "HD - Kratos"], ["about-thorin", "HD -Thorin"]]),
   };
 })();
+/**
+ * `added-copy`: two rows of the upload summary's `No longer to buy`, each read the way the app reads
+ * it (`arrivalPlacement`, then `wentOf` and `wentSentence`), so the figure can only say what an
+ * upload could. Sol Ring: Gishath committed it first and already holds one, so two new copies go
+ * to Brago and Eldrazi, one each. Arcane Signet: Gishath holds the only copy, and the new one is
+ * spare, so the brew Thorin reads it as free. Each carries the chooser its Change opens.
+ */
+export const ADDED_COPY_ROWS: {
+  oracleId: string; cardName: string; sentence: string; chooser: import("../collection/summary-read").ContestedCard;
+}[] = (() => {
+  const claim = (id: string, name: string, since: number | null) =>
+    ({ id, name, quantity: 1, mature: since !== null, pending: false, commander: false, since, granted: 0 }) as DeckClaim;
+  const deckNames = { "about-gishath": "HD - Gishath", "about-brago": "HD - Brago", "about-eldrazi": "HD - Eldrazi", "about-thorin": "HD -Thorin" };
+  const card = (oracleId: string, cardName: string, ownedBefore: number, brought: number, claims: DeckClaim[]) => {
+    const after = { owned: ownedBefore + brought, claims };
+    const went = wentOf(arrivalPlacement(after, brought, []), brought, ownedBefore);
+    return {
+      oracleId,
+      cardName,
+      sentence: wentSentence(went, deckNames) ?? "",
+      chooser: { oracleId, cardName, arrived: brought, ownedBefore, fromImport: true, owned: after.owned, claimants: allocateClaims(after) },
+    };
+  };
+  return [
+    card("about-sol-ring", "Sol Ring", 1, 2, [
+      claim("about-gishath", "HD - Gishath", 1), claim("about-brago", "HD - Brago", 2), claim("about-eldrazi", "HD - Eldrazi", 3),
+    ]),
+    card("about-arcane-signet", "Arcane Signet", 1, 1, [claim("about-gishath", "HD - Gishath", 1), claim("about-thorin", "HD -Thorin", null)]),
+  ];
+})();
+
 /** The precons entry's row (handoff `about · precons.ts`): a Commander Masters precon, mostly
  *  owned, that one of the reader's decks shares. Zhulodok leads it, and the list is colorless. */
 export const PRECON_ROW: PreconRow = {
