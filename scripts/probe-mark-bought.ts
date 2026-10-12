@@ -47,6 +47,10 @@ const check = (label: string, ok: boolean, detail: string) => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${label} — ${detail}`);
 };
 
+/** JSON with sorted keys: a jsonb column hands keys back in its own order, not the writer's. */
+const canonical = (v: unknown): string => JSON.stringify(v, (_k, x) =>
+  x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x);
+
 const one = async <T>(text: string, params: unknown[] = []) =>
   (await pool.query(text, params)).rows[0] as T;
 
@@ -349,7 +353,7 @@ async function main() {
     const retried = await buyF(0, e3);
     const retriedPlaced = retried.status === "alreadyApplied" ? retried.entry.rows.find((r) => r.oracleId === F)?.placed : undefined;
     check("a retry of that press reads the same record off the entry",
-      retried.status === "alreadyApplied" && JSON.stringify(retriedPlaced) === JSON.stringify(movedPlaced),
+      retried.status === "alreadyApplied" && canonical(retriedPlaced) === canonical(movedPlaced),
       `${retried.status}; placed ${JSON.stringify(retriedPlaced)}`);
     const forgedRestore = await applyCollectionChange(
       USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewY, copies: 1 } } },
