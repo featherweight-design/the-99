@@ -15,10 +15,18 @@ describe("InfoTip", () => {
     fireEvent.pointerDown(button(), { pointerType: "touch" });
     expect(tip().hidden).toBe(false);
     // The click that ends the same press is the press already handled, not a second toggle.
-    fireEvent.click(button());
+    fireEvent.click(button(), { detail: 1 });
     expect(tip().hidden).toBe(false);
     fireEvent.pointerDown(button(), { pointerType: "touch" });
-    fireEvent.click(button());
+    fireEvent.click(button(), { detail: 1 });
+    expect(tip().hidden).toBe(true);
+  });
+
+  it("puts the tip back as it was when the browser takes the press for a scroll", () => {
+    draw();
+    fireEvent.pointerDown(button(), { pointerType: "touch" });
+    expect(tip().hidden).toBe(false);
+    fireEvent.pointerCancel(button(), { pointerType: "touch" });
     expect(tip().hidden).toBe(true);
   });
 
@@ -27,8 +35,18 @@ describe("InfoTip", () => {
     fireEvent.click(button());
     expect(tip().hidden).toBe(false);
     fireEvent.pointerDown(button(), { pointerType: "mouse" });
-    fireEvent.click(button());
+    fireEvent.click(button(), { detail: 1 });
     expect(tip().hidden).toBe(true);
+  });
+
+  it("still toggles on a keyboard click after a touch press that never clicked", () => {
+    draw();
+    fireEvent.pointerDown(button(), { pointerType: "touch" });
+    fireEvent.pointerUp(document.body, { pointerType: "touch" });
+    fireEvent.pointerDown(document.body, { pointerType: "mouse" });
+    expect(tip().hidden).toBe(true);
+    fireEvent.click(button());
+    expect(tip().hidden).toBe(false);
   });
 
   it("does not take focus from the field it sits in when pressed", () => {

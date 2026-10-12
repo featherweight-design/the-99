@@ -29,10 +29,12 @@ export function InfoTip({
   const [focused, setFocused] = useState(false);
   const open = hover || pinned || focused;
   const box = useRef<HTMLSpanElement>(null);
-  // A touch or pen press opens on the press itself, not on the click that follows the lift: the click is the
-  // press plus whatever the finger takes to leave, and a popover opens with no delay. The click that follows a
-  // press already handled is skipped; a keyboard or assistive click has no press before it, so it still toggles.
-  const pressed = useRef(false);
+  // A touch or pen press opens on the press itself, not on the click that follows the lift: a popover opens with
+  // no delay. The click that ends a touch or pen press is that press already handled; a keyboard or assistive
+  // click carries no press (`detail` 0) and a mouse click toggles as it always did. `before` is the pin the
+  // press found, put back if the browser takes the gesture for a scroll (`pointercancel`).
+  const touched = useRef(false);
+  const before = useRef(false);
   // A press anywhere else closes a pinned tip. The button's own blur is not enough: Safari does not focus a
   // button on a mouse press, so a pin made there would never blur.
   useEffect(() => {
@@ -57,13 +59,14 @@ export function InfoTip({
         // (Notes), and the layout shifts under the tip it is about to open.
         onMouseDown={(e) => e.preventDefault()}
         onPointerDown={(e) => {
-          if (e.pointerType === "mouse") return;
-          pressed.current = true;
-          setPinned((v) => !v);
+          touched.current = e.pointerType !== "mouse";
+          if (!touched.current) return;
+          before.current = pinned;
+          setPinned(!pinned);
         }}
-        onPointerCancel={() => { pressed.current = false; }}
-        onClick={() => {
-          if (pressed.current) { pressed.current = false; return; }
+        onPointerCancel={() => { if (touched.current) setPinned(before.current); }}
+        onClick={(e) => {
+          if (e.detail > 0 && touched.current) return;
           setPinned((v) => !v);
         }}
         onFocus={(e) => {

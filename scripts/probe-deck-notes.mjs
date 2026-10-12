@@ -114,12 +114,12 @@ async function phoneTip(page, panel, label, shot) {
     const f = document.querySelector('section[aria-label="Notes"] input[role="combobox"]').getBoundingClientRect();
     const bars = [...document.querySelectorAll("[data-hide-on-note-focus]")].filter((el) => getComputedStyle(el).display !== "none").map((el) => el.getBoundingClientRect());
     const hit = bars.some((b) => t.bottom > b.top && t.top < b.bottom && t.right > b.left && t.left < b.right);
-    return { top: t.top, bottom: t.bottom, left: t.left, right: t.right, fieldTop: f.top, vw: innerWidth, vh: innerHeight, hit, delay: window.__tip.shown - window.__tip.down };
+    return { top: t.top, bottom: t.bottom, left: t.left, right: t.right, fieldTop: f.top, vw: innerWidth, vh: innerHeight, hit, delay: window.__tip.down === null || window.__tip.shown === null ? null : window.__tip.shown - window.__tip.down };
   });
   check(`${label}: the tip sits above the field`, m.bottom <= m.fieldTop + 0.5, JSON.stringify(m));
   check(`${label}: the tip is fully on screen`, m.top >= 0 && m.left >= 0 && m.right <= m.vw + 0.5 && m.bottom <= m.vh, JSON.stringify(m));
   check(`${label}: the tip is not under a bar`, !m.hit, JSON.stringify(m));
-  check(`${label}: the tip opens on the press, not after the lift`, m.delay >= 0 && m.delay < 40, `${m.delay}ms`);
+  check(`${label}: the tip opens on the press, not after the lift`, Number.isFinite(m.delay) && m.delay >= 0 && m.delay < 40, `${m.delay}ms`);
   await shot("tip-phone");
   await page.keyboard.press("Escape");
   await page.mouse.click(5, 5);
@@ -153,7 +153,7 @@ async function walkIn(page, label, card) {
   check(`${label}: the count is drawn before the field has focus`, await counterShown());
   if (label === "1300") check("1300: the hint is drawn before the field has focus", await hintShown());
   const dock = page.getByTestId("quick-add-dock");
-  if (label !== "1300") check("390: the add-card bar is not drawn under Notes", !(await dock.isVisible()));
+  if (label !== "1300") check(`${label}: the add-card bar is not drawn under Notes`, !(await dock.isVisible()));
   await field.click();
   await page.waitForTimeout(300);
   const focusedGeometry = await geometry();
@@ -195,7 +195,7 @@ async function walkIn(page, label, card) {
   check(`${label}: the picker offers the deck's card first`, (await page.getByRole("option").first().textContent())?.includes(card) ?? false);
   if (label !== "1300") {
     const hidden = await page.evaluate(() => [...document.querySelectorAll("[data-hide-on-note-focus]")].every((el) => getComputedStyle(el).display === "none"));
-    check("390: the add bar and the tab bar step aside while the field has focus", hidden);
+    check(`${label}: the add bar and the tab bar step aside while the field has focus`, hidden);
   }
   await page.keyboard.press("Enter");
   await panel.getByRole("button", { name: "Add", exact: true }).click();
