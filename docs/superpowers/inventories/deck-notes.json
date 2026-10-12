@@ -1,0 +1,51 @@
+{
+  "feature": "Deck notes \u2014 the Notes panel on the deck page",
+  "note": "ONE ROUTE, `/decks/[id]`, reached by PRESSING the Notes segment of the deck's group toggle: the panel is component state, so a URL sweep cannot see it. Every row is read-only: a sheet that wrote a note would leave fixture data behind on whatever database it ran against, so the rows with notes in them (the list, Done, edit, delete, the cap) are walked by `probe:deck-notes` instead, which makes its own deck and deletes it. The empty deck is the precondition: `NOTES_DECK` must be a deck with no notes, and the empty-state row says so by failing its wait if it is not. The second row types `[[` and a letter to open the picker, which is the surface most likely to diverge between the phone (the field steps aside for the keyboard) and the desktop. No `shares` block: the panel is this feature's own surface and no other route draws it.",
+  "rows": [
+    {
+      "id": "empty",
+      "label": "/decks/[id] \u2014 Notes, empty: the field and the one-line pitch",
+      "steps": [
+        {
+          "goto": "/decks/${NOTES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "settle": 1200,
+          "name": "^Notes"
+        },
+        {
+          "scrollTo": "section[aria-label=\"Notes\"]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "picker",
+      "label": "/decks/[id] \u2014 Notes, the picker open on a tag in progress",
+      "steps": [
+        {
+          "goto": "/decks/${NOTES_DECK}",
+          "wait": "main, [role=main], h1",
+          "settle": 3500
+        },
+        {
+          "clickRole": "button",
+          "settle": 1200,
+          "name": "^Notes"
+        },
+        {
+          "fill": "input[role=\"combobox\"]",
+          "text": "swap in [[a",
+          "settle": 2500
+        },
+        {
+          "scrollTo": "[role=\"listbox\"]",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

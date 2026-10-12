@@ -1,5 +1,6 @@
 "use client";
 
+import { AFFIX_FOCUS, AFFIX_INPUT } from "../../ui/text-field";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { searchNoteCards } from "../../../app/decks/notes-actions";
 import { deckNotesCopy, NOTE_MAX, NOTE_WARN_AT } from "../../../lib/copy/deck-notes";
@@ -11,7 +12,8 @@ import { InfoTip } from "../../ui/info-tip";
 export type DeckCardOption = { oracleId: string; name: string; typeLine: string; imageUri: string | null };
 
 type Option = { oracleId: string; name: string; meta: string; group: "deck" | "any" };
-type Remote = { status: "idle" | "pending" | "ok" | "refused"; rows: Option[] };
+/** The picker lookup's answer for ONE query; any other query reads as pending, so no effect has to reset it. */
+type Answer = { query: string; status: "ok" | "refused"; rows: Option[] };
 
 const LOCAL_MAX = 6;
 const REMOTE_MIN_LETTERS = 2;
@@ -47,7 +49,7 @@ export function NoteField({
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [active, setActive] = useState(0);
-  const [remote, setRemote] = useState<Remote>({ status: "idle", rows: [] });
+  const [answer, setAnswer] = useState<Answer | null>(null);
   const seq = useRef(0);
   // A field that unmounts while focused (a saved edit, a switched panel) must not leave the bars hidden.
   useEffect(() => () => document.documentElement.removeAttribute("data-note-focus"), []);
@@ -67,19 +69,15 @@ export function NoteField({
   }, [open, query, deckCards]);
 
   useEffect(() => {
-    if (!open || query.length < REMOTE_MIN_LETTERS) {
-      // Same object when already idle: a fresh one every pass would re-render forever.
-      setRemote((r) => (r.status === "idle" ? r : { status: "idle", rows: [] }));
-      return;
-    }
+    if (!open || query.length < REMOTE_MIN_LETTERS) return;
     const mine = ++seq.current;
-    setRemote((r) => ({ status: "pending", rows: r.rows }));
     const timer = setTimeout(async () => {
       const hits = await searchNoteCards(query).catch(() => null);
       if (mine !== seq.current) return;
-      if (hits === null) return setRemote({ status: "refused", rows: [] });
+      if (hits === null) return setAnswer({ query, status: "refused", rows: [] });
       const held = new Set(deckCards.map((c) => c.oracleId));
-      setRemote({
+      setAnswer({
+        query,
         status: "ok",
         rows: hits
           .filter((h) => !held.has(h.oracleId))
@@ -100,7 +98,10 @@ export function NoteField({
     if (open) input.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
   }, [open]);
 
-  const options = [...local, ...(remote.status === "ok" ? remote.rows : [])];
+  const lookup = open && query.length >= REMOTE_MIN_LETTERS;
+  const current = lookup && answer?.query === query ? answer : null;
+  const remoteStatus = !lookup ? "idle" : current ? current.status : "pending";
+  const options = [...local, ...(current?.status === "ok" ? current.rows : [])];
   const count = fieldCount(value, picked);
   const showCounter = focused || value.length > 0;
   const activeIndex = Math.min(active, Math.max(0, options.length - 1));
@@ -151,7 +152,7 @@ export function NoteField({
   return (
     <div className="flex flex-col gap-[8px]">
       <div className={`flex ${phoneRow ? "flex-col md:flex-row" : "flex-row"} gap-[8px]`}>
-        <div className="relative min-w-0 flex-1">
+        <div className={`relative min-w-0 flex-1 rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] ${AFFIX_FOCUS}`}>
           <input
             ref={input}
             type="text"
@@ -180,7 +181,7 @@ export function NoteField({
             onKeyDown={onKeyDown}
             onKeyUp={sync}
             onClick={sync}
-            className="box-border h-[48px] w-full scroll-mt-[96px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] py-[11px] pl-[13px] pr-[44px] font-sans text-[16px] text-[color:var(--fg)] outline-none placeholder:text-[color:var(--fg-faint)] focus:border-[color:var(--accent)] md:h-[40px] md:py-[9px] md:pl-[12px] md:pr-[40px] md:text-[13.5px]"
+            className={`box-border h-[46px] w-full scroll-mt-[96px] rounded-[8px] py-[10px] pl-[12px] pr-[43px] font-sans text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:h-[38px] md:py-[8px] md:pl-[11px] md:pr-[39px] md:text-[13.5px] ${AFFIX_INPUT}`}
           />
           <span className="absolute right-[13px] top-1/2 -translate-y-1/2 md:right-[11px]">
             <InfoTip id={infoId} lines={deckNotesCopy.help.lines} label={deckNotesCopy.help.infoAria} />
@@ -214,8 +215,8 @@ export function NoteField({
                       </div>
                     </div>
                   ))}
-                  {query.length >= REMOTE_MIN_LETTERS && remote.status === "pending" && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deckNotesCopy.picker.searching}</p>}
-                  {remote.status === "refused" && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--warning)]">{deckNotesCopy.picker.refused}</p>}
+                  {remoteStatus === "pending" && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deckNotesCopy.picker.searching}</p>}
+                  {remoteStatus === "refused" && <p className="m-0 px-[12px] py-[6px] font-mono text-[10.5px] text-[color:var(--warning)]">{deckNotesCopy.picker.refused}</p>}
                 </>
               )}
               <p className="m-0 hidden px-[12px] pb-[4px] pt-[6px] font-mono text-[10px] text-[color:var(--fg-locked)] md:block">{deckNotesCopy.picker.keys}</p>
