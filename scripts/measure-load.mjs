@@ -700,6 +700,9 @@ async function one(browser, state, width, routes, sql) {
       // rests first is the head start a prefetch on intent gets.
       let pressed;
       if (width.isMobile) {
+        // Scrolled first, as the hover branch is: a tap scrolls an off-screen tile into view itself,
+        // and that is not the navigation being timed.
+        await tile.scrollIntoViewIfNeeded();
         pressed = Date.now();
         await tile.tap();
       } else {
