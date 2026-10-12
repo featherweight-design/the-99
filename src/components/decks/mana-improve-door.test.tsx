@@ -449,4 +449,38 @@ describe("ImproveDoor: a help read History reopened (re-review)", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.help.tradeApply("Forest") })); });
     expect(trades.apply).toHaveBeenCalledWith(A, "R", "s1", "Forest-id");
   });
+
+  it("leaves the review after the reader's own trade: the re-read is today's help", async () => {
+    const leave = vi.fn();
+    const live = vi.fn(async (_d: string, c: string) => helpFor(c as BalanceColor, { staples: [staple({ oracleId: "s9", name: "s9" })], trades: [tradeOf("s9", "Plains")] }));
+    const readReview = vi.fn(async () => past);
+    const trades = { apply: vi.fn(async () => ({ ok: true as const, applyId: "apply-1" })), undo: vi.fn() };
+    const tree = (revision: string) => (
+      <ReviewRunProvider value={{ tool: "mana", runId: COUNT, color: "R", leave }}>
+        <ImproveDoor deckId={A} balance={three} commander="Gishath" revision={revision} read={live} readReview={readReview} trades={trades} />
+      </ReviewRunProvider>
+    );
+    const view = render(tree("r1"));
+    const forest = await screen.findByRole("button", { name: copy.help.tradeApply("Forest") });
+    await act(async () => { fireEvent.click(forest); });
+    expect(leave).toHaveBeenCalledTimes(1);
+    // The trade moved the list: the door reads its color again, from today's help.
+    view.rerender(tree("r2"));
+    await screen.findByRole("button", { name: copy.help.tradeApply("Plains") });
+    expect(live).toHaveBeenCalledWith(A, "R");
+    expect(readReview).toHaveBeenCalledTimes(1);
+  });
+
+  it("never keeps the reopened help as the visit's: an ordinary open afterwards starts closed", async () => {
+    const view = render(
+      <ReviewRunProvider value={{ tool: "mana", runId: COUNT, color: "R" }}>
+        <ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={vi.fn()} readReview={vi.fn(async () => past)} />
+      </ReviewRunProvider>,
+    );
+    await screen.findByRole("button", { name: copy.help.tradeApply("Forest") });
+    view.unmount();
+    render(door(vi.fn()));
+    expect(screen.queryByRole("button", { name: copy.help.tradeApply("Forest") })).toBeNull();
+    expect(screen.getByRole("button", { name: copy.door.button }).getAttribute("aria-expanded")).toBe("false");
+  });
 });

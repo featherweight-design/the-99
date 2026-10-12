@@ -81,10 +81,13 @@ export function ImproveDoor({
   trades?: TradeActions;
 }) {
   // A help read History reopened: its color opens on that read's trades, each re-checked against
-  // today's help; any other color, and every re-read after a trade, reads as usual for the others.
+  // today's help, until the reader makes a trade here (`leftReview`): from then on, and for every
+  // other color throughout, the door reads today's help, as an ordinary open does.
   const review = useReviewRun("mana");
+  const leftReview = useRef(false);
   const reviewColor = review?.runId && review.color ? (review.color as BalanceColor) : null;
-  const read: HelpRead = (d, c) => (reviewColor !== null && c === reviewColor && review?.runId ? readReview(d, review.runId) : readLive(d, c));
+  const isReviewRead = (c: BalanceColor) => reviewColor !== null && c === reviewColor && !leftReview.current;
+  const read: HelpRead = (d, c) => (isReviewRead(c as BalanceColor) && review?.runId ? readReview(d, review.runId) : readLive(d, c));
   const order = balance.colorOrder;
   const evidence = new Map(balance.colors.map((c) => [c.color, c]));
   const [door, setDoor] = useState<Door>(() => {
@@ -160,7 +163,8 @@ export function ImproveDoor({
       setFocus("step");
       return;
     }
-    if (help && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
+    // A reopened past help is never kept as the visit's help: an ordinary open must read today's.
+    if (help && !help.noLonger && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
     if (!quiet) wantReveal.current = true;
     setDoor({ at: "result", color, help: help ? { kind: "ok", help } : { kind: "failed" } });
   };
@@ -180,6 +184,9 @@ export function ImproveDoor({
       setRefused({ key, message: result.message });
       return;
     }
+    // A trade made from a reopened past help leaves the review: the re-read it asks for is today's
+    // help, so the trade just made is not drawn as one that no longer applies.
+    if (review && !leftReview.current) { leftReview.current = true; review.leave?.(); }
     setVisitValue(deckId, "mana-follow", color);
     changeApplied((list) => [...list, { applyId: result.applyId, color, out: trade.out.name, staple: trade.staple.name }]);
   };

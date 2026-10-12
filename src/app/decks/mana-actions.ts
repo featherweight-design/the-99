@@ -13,7 +13,7 @@ import { reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
 import { isManaHelpSummary } from "../../lib/tuning/history";
 import { db } from "../../db";
 import { deckToolCounts } from "../../db/schema";
-import { and, eq } from "drizzle-orm";
+import { helpReadWhere } from "../../lib/tuning/mana-help-read";
 import { listKeyOf } from "../../lib/tuning/list-key";
 import { loadManaHelp } from "../../lib/tuning/mana-help-load";
 import { applyTrade, undoTrade } from "../../lib/tuning/mana-trade";
@@ -100,8 +100,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   const userId = await requireUserId();
   if (!manaBalanceEnabled() || !isUuid(deckId) || !isUuid(countId)) return null;
   const [row] = await db.select({ summary: deckToolCounts.summary }).from(deckToolCounts)
-    .where(and(eq(deckToolCounts.id, countId), eq(deckToolCounts.deckId, deckId), eq(deckToolCounts.userId, userId), eq(deckToolCounts.tool, "mana_help")))
-    .limit(1);
+    .where(helpReadWhere(countId, deckId, userId)).limit(1);
   if (!row || !isManaHelpSummary(row.summary)) return null;
   const today = await helpFor(deckId, row.summary.color, userId);
   return reviewHelp(row.summary.help, today);

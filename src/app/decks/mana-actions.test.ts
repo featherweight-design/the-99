@@ -214,12 +214,24 @@ describe("readManaHelpReview (History's re-review)", () => {
     expect(shown?.noLonger).toEqual(["s2"]);
   });
 
-  it("is null for an id that names no help read of this reader on this deck, a bad id, or the switch off", async () => {
+  it("is null for an id that names no help read (the reader, deck and tool filter is pinned in mana-help-read.test)", async () => {
     state.helpRows = [];
     expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
+  });
+
+  it("is null for a bad id, with a matching row there", async () => {
     state.helpRows = [{ summary: { color: "G", help: past } }];
     expect(await readManaHelpReview(DECK, "nope")).toBeNull();
+    expect(await readManaHelpReview("nope", COUNT)).toBeNull();
+  });
+
+  it("is null with the switch off, for a valid id and a matching row", async () => {
+    state.helpRows = [{ summary: { color: "G", help: past } }];
     state.enabled = false;
-    expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
+    try {
+      expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
+    } finally {
+      state.enabled = true;
+    }
   });
 });
