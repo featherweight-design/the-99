@@ -69,11 +69,19 @@ const ReadContext = createContext<Scope>({ phase: null, setPhase: () => {}, pool
 
 /**
  * Holds what the panel and the results share: the read's phase (the server's, then the panel's as
- * it polls or stops) and the pool count the results report. The page keys it on the server's state,
- * so a refresh that finds the read settled starts both afresh.
+ * it polls or stops) and the pool count the results report. It is NOT keyed: a refresh that finds
+ * the read settled hands it a new `initial`, which it adopts in place, so the results' Suspense
+ * stays mounted and no loading skeleton shows a second time.
  */
 export function ReadScope({ initial, children }: { initial: ReadPhase | null; children: ReactNode }) {
   const [phase, setPhase] = useState<ReadPhase | null>(initial);
+  // The server's state, adopted in place when a refresh brings a new one (adjusted during render,
+  // so no frame draws the old phase over the new results). The scope is not remounted for it.
+  const [served, setServed] = useState(initial);
+  if (initial !== served) {
+    setServed(initial);
+    setPhase(initial);
+  }
   const [pool, setPool] = useState<number | null>(null);
   return <ReadContext.Provider value={{ phase, setPhase, pool, setPool }}>{children}</ReadContext.Provider>;
 }
@@ -157,8 +165,9 @@ export function ReadPanel({
         return;
       }
       // Every settled read stays reading until the refresh lands: its order, its counts and the
-      // credit standing (a refund included) come from the server, and the scope, keyed on the
-      // server's state, remounts on them. The announcement outlives that remount (`ReadAnnouncer`).
+      // credit standing (a refund included) come from the server. The scope adopts the new state
+      // in place, and the panel, keyed on it, starts afresh; the announcement outlives that
+      // remount (`ReadAnnouncer`).
       announce(ANNOUNCED[phaseOf(s)] ?? "");
       router.refresh();
     };

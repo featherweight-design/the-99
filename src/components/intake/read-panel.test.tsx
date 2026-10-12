@@ -3,7 +3,7 @@
 // Try again (the same answers and words, submitted again). Never a *Read it* press, never a `0 left`.
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,7 +11,7 @@ const router = { push: vi.fn(), refresh: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn(), theReadState: vi.fn() }));
 
-const { ReadAnnouncer, ReadPanel, ReadScope, DimWhileReading, useReportPool } = await import("./read-panel");
+const { ReadAnnouncer, ReadPanel, ReadScope, DimWhileReading, useReportPool, useReadPhase } = await import("./read-panel");
 const { phaseOf } = await import("../../lib/intake/read-phase");
 const { emptyParams } = await import("../../lib/intake/params");
 import type { TheReadState } from "../../lib/intake/run-store";
@@ -348,5 +348,22 @@ describe("7l, 7n: unread", () => {
     draw(null, { over: { ownerShare: true } });
     expect(screen.getByTestId("read-line").textContent).toMatch(/testing share/);
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+describe("a settled read swaps in place", () => {
+  /** Mounts once per instance: a remount draws a new id, which is what showed the loading skeleton a second time. */
+  let mounts = 0;
+  function Probe() {
+    const [id] = useState(() => ++mounts);
+    return <p data-testid="probe">{`${id}:${useReadPhase()}`}</p>;
+  }
+
+  it("adopts the server's new phase without remounting what it wraps", () => {
+    mounts = 0;
+    const { rerender } = render(<ReadScope initial="reading"><Probe /></ReadScope>);
+    expect(screen.getByTestId("probe").textContent).toBe("1:reading");
+    rerender(<ReadScope initial="done"><Probe /></ReadScope>);
+    expect(screen.getByTestId("probe").textContent).toBe("1:done");
   });
 });

@@ -1867,3 +1867,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   in a `finally`: local-dev or a scratch branch, never production. Measured 2026-10-11 on local-dev: all
   checks pass, and with the row lock on the deck removed from `insertNote` the race check fails on every run
   (both adds land, the deck holds 101).
+
+- `pnpm probe:help-me-choose-one-loading` presses Help me choose's credit press in a real browser at
+  1300x900 and 390x844, samples the page every 40ms until the read panel reads done, and fails when
+  the results' loading skeleton returns after the list has drawn. That second skeleton is what a
+  settled read used to show: `ReadScope` was keyed on the server's state, so the refresh that found
+  the read settled remounted the results' Suspense. It also checks the dimmed list was drawn under
+  the reading panel (7d), and records a video of each press to `PROBE_VIDEO_DIR` when it is set.
+  Run it against a dev server with `HELP_ME_CHOOSE_ENABLED=true` and `INTAKE_STUB_DELAY_MS=5000`;
+  it writes reads, so `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging
+  and production by `neon.branch_id`), and it deletes the reads it made. The SERVER writes those
+  reads through its own `DATABASE_URL`, which the probe cannot read, so before anything is pressed
+  it writes a marker deck to `PROBE_TARGET_URL` and requires the server to draw it: a server on any
+  other database draws nothing and the run stops having written nothing there. That failure path
+  was run. Measured 2026-10-12 on a scratch copy of
+  staging's decks: with the old key restored it fails at both widths (the skeleton back for ~3.3s
+  as the read settles), and passes on the fix.

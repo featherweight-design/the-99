@@ -118,6 +118,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const changeHref = `${CHOOSE_PATH}${serializeChooseParams({ ...p, notUsed: [], readId: null, deeper: [], results: false })}`;
   const panel = words ? (
     <ReadPanel
+      key={served?.kind ?? "unread"}
       readId={p.readId}
       served={served}
       standing={allowance && toStanding(allowance, now)}
@@ -145,12 +146,13 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           subPhone={copy.results.subPhone}
         />
         <div className={RESULTS_COLUMN}>
-          {/* Keyed on the server's state: a refresh that finds the read settled starts the panel and
-              the results afresh, in the read's order. */}
           {/* Keyed on the read: a new read (Try again) starts silent, while the refresh that draws
               this read settled keeps what it just announced. */}
           {words && <ReadAnnouncer key={p.readId ?? "unread"} />}
-          <ReadScope key={served?.kind ?? "unread"} initial={words ? phaseOf(served) : null}>
+          {/* NOT keyed on the server's state: a remount here would remount the results' Suspense, and a
+              settled read would flash its loading skeleton again. The scope adopts the new state in
+              place; the panel (above) and the results list (in `Results`) are keyed on it instead. */}
+          <ReadScope initial={words ? phaseOf(served) : null}>
           <ReadAsBar
             chips={answerChips(p, labels)}
             words={words}
@@ -215,6 +217,9 @@ async function Results({
   }
   return (
     <ChooseResults
+      // A settled read re-orders the list: a fresh list, mounted inside the Suspense that already
+      // shows the old one, so the swap needs no loading skeleton.
+      key={picks ? "read" : "free"}
       page={page}
       params={params}
       themeLabels={themeLabels}
