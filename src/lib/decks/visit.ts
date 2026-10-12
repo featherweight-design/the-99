@@ -38,6 +38,15 @@ type Visit = {
 
 let visit: Visit | null = null;
 let askSeq = 0;
+const listeners = new Set<() => void>();
+const notify = () => { for (const l of listeners) l(); };
+
+/** Told whenever a value is kept or cleared, or the visit itself changes: for `useSyncExternalStore`, so
+ *  every mounted reader of a slot redraws when ANY mount's request settles into it. */
+export function subscribeVisit(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
 
 const DECK_ROUTE = /^\/decks\/([^/]+)(?:\/|$)/;
 
@@ -46,12 +55,18 @@ const DECK_ROUTE = /^\/decks\/([^/]+)(?:\/|$)/;
 export function noteDeckRoute(path: string | null): void {
   const id = path ? DECK_ROUTE.exec(path)?.[1] : undefined;
   if (!id || !isUuid(id)) {
-    visit = null;
+    if (visit) {
+      visit = null;
+      notify();
+    }
     return;
   }
   // Lowercase, as Postgres returns a uuid: an uppercase URL and the deck's own id name one deck.
   const deckId = id.toLowerCase();
-  if (visit?.deckId !== deckId) visit = { deckId, baselines: {}, values: {}, asks: {} };
+  if (visit?.deckId !== deckId) {
+    visit = { deckId, baselines: {}, values: {}, asks: {} };
+    notify();
+  }
 }
 
 /** A stored ok result's identity: its `lastOkAt` as epoch-ms, or null with none. */
@@ -95,6 +110,7 @@ export function setVisitValue(anyCaseId: string, slot: VisitSlot, value: unknown
   if (visit?.deckId !== anyCaseId.toLowerCase()) return;
   if (value === undefined) delete visit.values[slot];
   else visit.values[slot] = value;
+  notify();
 }
 
 /** Numbers a request for `slot` in this visit: the newest asked, across every mount of the tool
@@ -126,4 +142,5 @@ export function isVisit(token: object | null): boolean {
 
 export function resetDeckVisitForTests(): void {
   visit = null;
+  notify();
 }

@@ -369,6 +369,19 @@ describe("ImproveDoor: applying a trade", () => {
     expect(document.querySelectorAll("[data-mana-applied] li")).toHaveLength(2);
   });
 
+  it("draws the receipt in a remounted door when an apply from the replaced mount settles", async () => {
+    const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
+    let land!: (r: { ok: true; applyId: string }) => void;
+    const trades = { apply: vi.fn(() => new Promise((r) => { land = r; })), undo: vi.fn() };
+    const { unmount } = await openRed(read, trades as unknown as TradeActions);
+    act(() => { fireEvent.click(tradeButton()); });
+    unmount();
+    render(<ImproveDoor deckId={A} balance={three} commander="Gishath" revision="r1" read={read} trades={trades as unknown as TradeActions} />);
+    expect(document.querySelector("[data-mana-applied]")).toBeNull();
+    await act(async () => { land({ ok: true, applyId: "apply-1" }); });
+    expect(document.querySelector("[data-mana-applied]")?.textContent).toContain("Rockfall Vale");
+  });
+
   it("keeps nothing from an apply that settles after the player left the deck and came back", async () => {
     const read = vi.fn(async (_d: string, c: string) => withTrade(c as BalanceColor));
     let land!: (r: { ok: true; applyId: string }) => void;

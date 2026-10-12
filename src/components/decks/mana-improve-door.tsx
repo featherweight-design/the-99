@@ -13,14 +13,14 @@
 // edit that is the player's own trade or Undo re-reads that color instead. A trade applied from here
 // is kept there too, for its Undo, until the player leaves the deck.
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 
 import { applyManaTrade, readManaHelpFor, undoManaTrade, type ManaTradeResult } from "../../app/decks/mana-actions";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { PriceFact } from "../../lib/decks/price";
-import { askInVisit, isNewestAsk, isVisit, setVisitValue, visitToken, visitValue } from "../../lib/decks/visit";
+import { askInVisit, isNewestAsk, isVisit, setVisitValue, subscribeVisit, visitToken, visitValue } from "../../lib/decks/visit";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tuning/mana-balance";
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
@@ -44,6 +44,7 @@ export type TradeActions = {
 /** A trade applied this visit, kept for its Undo: the deck it changed outlives the help that offered it. */
 type Applied = { applyId: string; color: BalanceColor; basic: string; staple: string };
 const TRADES: TradeActions = { apply: applyManaTrade, undo: undoManaTrade };
+const NONE_APPLIED: Applied[] = [];
 
 /** What the visit keeps: the help drawn, and the list it was read for. */
 type Kept = { revision: string | undefined; help: ManaHelp };
@@ -92,13 +93,17 @@ export function ImproveDoor({
   const wantReveal = useRef(false);
   const setFocus = (target: "step" | "result" | "button") => { wantFocus.current = target; };
   const asked = useRef(0);
-  const [applied, setAppliedState] = useState<Applied[]>(() => visitValue<Applied[]>(deckId, "mana-trades") ?? []);
+  // Read from the visit store as it stands, and redrawn whenever it changes: a trade settling in a mount the
+  // hub has since replaced still reaches the door now on screen.
+  const applied = useSyncExternalStore(
+    subscribeVisit,
+    () => visitValue<Applied[]>(deckId, "mana-trades") ?? NONE_APPLIED,
+    () => NONE_APPLIED,
+  );
   // Each change is made to the store's current list, never to a render's copy, so two settling presses
   // cannot drop or revive each other's receipt.
   const changeApplied = (change: (list: Applied[]) => Applied[]) => {
-    const next = change(visitValue<Applied[]>(deckId, "mana-trades") ?? []);
-    setVisitValue(deckId, "mana-trades", next);
-    setAppliedState(next);
+    setVisitValue(deckId, "mana-trades", change(visitValue<Applied[]>(deckId, "mana-trades") ?? []));
   };
   // A trade or its Undo changes the list, and the list moving retires the result drawn; after our own change
   // the result is read again for its color instead, so the reader sees what the trade did.
