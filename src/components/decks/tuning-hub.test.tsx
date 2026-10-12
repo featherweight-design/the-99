@@ -147,6 +147,10 @@ describe("TuningHub opening a tool", () => {
     await screen.findByRole("heading", { name: "Proposed cuts" });
     const panel = () => document.getElementById("tuning-tool-panel")!;
     expect(panel().className.split(/\s+/)).toContain("anim-gentle-in");
+    // The opened tool's chrome arrives with it: the desktop tab row and the phone header.
+    expect(screen.getByRole("tablist").className.split(/\s+/)).toContain("anim-gentle-in");
+    const phoneHead = screen.getByRole("button", { name: copy.back }).parentElement!;
+    expect(phoneHead.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-gentle-in", "md:hidden"]));
     const first = panel();
     fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
     await screen.findByRole("heading", { name: "Suggested changes" });
