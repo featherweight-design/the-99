@@ -2147,11 +2147,13 @@ export const modelCalls = pgTable("model_calls", {
  * keeps its role as the allowance's reservation and the month's billed total. Written by
  * `recordModelUsage` in the same statement window that records the parent's meters, and only when
  * those were first recorded, so a retried or late write never adds a second set. Rows from before
- * this table have no parts: readers show them by feature, never split by guesswork.
+ * this table have no parts: readers show them by feature, never split by guesswork. A part is
+ * detail of its call and goes with it: deleting a `model_calls` row (every probe cleanup does)
+ * deletes its parts.
  */
 export const modelCallParts = pgTable("model_call_parts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  callId: uuid("call_id").notNull().references(() => modelCalls.id),
+  callId: uuid("call_id").notNull().references(() => modelCalls.id, { onDelete: "cascade" }),
   // Which call in the run: `write`, `repair`, `shortlist`, `judgement`, ... `call` when a
   // single-call feature names none.
   step: text("step").notNull(),

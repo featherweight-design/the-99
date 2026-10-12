@@ -55,6 +55,6 @@ CREATE TABLE "model_call_parts" (
 	CONSTRAINT "model_call_parts_effort_check" CHECK ("model_call_parts"."effort" is null or "model_call_parts"."effort" in ('low', 'medium', 'high'))
 );
 --> statement-breakpoint
-ALTER TABLE "model_call_parts" ADD CONSTRAINT "model_call_parts_call_id_model_calls_id_fk" FOREIGN KEY ("call_id") REFERENCES "public"."model_calls"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "model_call_parts" ADD CONSTRAINT "model_call_parts_call_id_model_calls_id_fk" FOREIGN KEY ("call_id") REFERENCES "public"."model_calls"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "admin_events_at_idx" ON "admin_events" USING btree ("at");--> statement-breakpoint
 CREATE INDEX "model_call_parts_call_idx" ON "model_call_parts" USING btree ("call_id");
