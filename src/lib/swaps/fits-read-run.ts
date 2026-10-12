@@ -120,5 +120,8 @@ export async function pressFitsRead(userId: string, oracleId: string, deps: Deps
     await finishFitsRead(started, { status: "failed", errorClass: "upstream_busy" }, billed, deps.now());
     throw err;
   }
-  return { ok: true, panel: await panelFor(userId, oracleId, load, model, deps.now()) };
+  // Re-read: a call can run for most of two minutes, and a deck edited meanwhile must show the
+  // stored read out of date, against today's free list, never as current.
+  const after = (await deps.load(userId, oracleId)) ?? load;
+  return { ok: true, panel: await panelFor(userId, oracleId, after, model, deps.now()) };
 }

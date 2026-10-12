@@ -7,7 +7,7 @@ import { fitsReads } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import { recordLate, RunSupersededError } from "../tuning/run-store";
-import { FITS_READ_PROMPT_VERSION, FITS_READ_REAP_MS, type FitsDropReason, type FitsPick, type FitsReadInputs } from "./fits-read";
+import { FITS_READ_PROMPT_VERSION, FITS_READ_REAP_MS, type FitsDropReason, type FitsPick, type FitsReadInputs, type ReadCardFacts } from "./fits-read";
 import type { FitsReadRow } from "./fits-read-state";
 
 /**
@@ -21,6 +21,9 @@ export type FitsReadHandle = { readId: string; callId: string };
 
 const sha = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 const sorted = (xs: readonly string[]) => [...xs].sort();
+/** Every fact the prompt shows or the validator checks about one card, so a catalog update moves it. */
+const facts = (c: ReadCardFacts) =>
+  [c.oracleId, c.name, c.typeLine, c.oracleText ?? null, sorted(c.keywords ?? []), sorted(c.kinds)] as const;
 
 /**
  * Each candidate deck's input hash (lock 6): everything the prompt carries about the deck and the
@@ -32,7 +35,7 @@ const sorted = (xs: readonly string[]) => [...xs].sort();
  * half moves for a new Overview, the rest for everything else.
  */
 export function candidateHashes(inputs: FitsReadInputs, model: string): Record<string, string> {
-  const card = { ...inputs.card, kinds: sorted(inputs.card.kinds) };
+  const card = facts(inputs.card);
   const blocks = new Map(inputs.decks.map((d) => [d.deckId, d]));
   const out: Record<string, string> = {};
   for (const c of inputs.candidates) {
@@ -41,9 +44,9 @@ export function candidateHashes(inputs: FitsReadInputs, model: string): Record<s
     const rest = sha([
       FITS_READ_PROMPT_VERSION, model, card, c.need, c.inclusion,
       d && {
-        commanders: d.commanders.map((x) => [x.oracleId, x.oracleText, sorted(x.kinds)]),
+        commanders: d.commanders.map(facts),
         themes: d.themes,
-        list: d.list.map((x) => [x.oracleId, sorted(x.kinds)]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+        list: d.list.map(facts).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
         lockedIds: sorted(d.lockedIds),
       },
     ]);

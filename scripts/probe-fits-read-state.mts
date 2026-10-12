@@ -46,6 +46,9 @@ const unitStatus = async (callId: string) =>
   (await db.execute<{ status: string }>(sql`select status from model_calls where id = ${callId}::uuid`)).rows[0]?.status;
 
 const readIds: string[] = [];
+/** The fixture reader and card the end-to-end step presses, and the rows that existed before it:
+ *  cleanup deletes every row for them that is not in this set, whatever the press threw. */
+let e2e: { user: string; card: string; before: Set<string> } | null = null;
 const { rows: [{ branch }] } = await db.execute<{ branch: string | null }>(sql`select current_setting('neon.branch_id', true) as branch`);
 if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
   throw new Error(`probe:fits-read-state refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
@@ -104,15 +107,22 @@ try {
     select c.oracle_id from cards c
     where c.name in ('Tangle Wire', 'Ajani Unrelenting', 'Throes of Chaos') and c.commander_legal
     order by c.name desc limit 1`);
+  const { rows: existing } = await db.execute<{ id: string }>(sql`
+    select id from fits_reads where user_id = ${FIXTURE} and oracle_id = ${pick.oracle_id}::uuid`);
+  e2e = { user: FIXTURE, card: pick.oracle_id, before: new Set(existing.map((r) => r.id)) };
   const before = await readFitsRead(FIXTURE, pick.oracle_id);
   if (!before || before.candidates === 0) throw new Error(`${FIXTURE} has no candidate deck for the end-to-end card`);
   const pressed = await pressFitsRead(FIXTURE, pick.oracle_id);
   if (!pressed.ok) throw new Error(`press refused: ${pressed.reason}`);
-  if (pressed.panel.view.stored) readIds.push(pressed.panel.view.stored.readId);
   check("a press on real decks stores the read as current", [pressed.panel.view.stored?.outcome, pressed.panel.view.stored?.current], ["picks", true]);
   check("with the stub's picks, each with a cut", pressed.panel.view.stored?.picks.every((p) => p.cut !== null), true);
   check("a second press is refused as current, reserving nothing", await pressFitsRead(FIXTURE, pick.oracle_id), { ok: false, reason: "current" });
 } finally {
+  if (e2e) {
+    const { rows } = await db.execute<{ id: string }>(sql`
+      select id from fits_reads where user_id = ${e2e.user} and oracle_id = ${e2e.card}::uuid`);
+    for (const r of rows) if (!e2e.before.has(r.id)) readIds.push(r.id);
+  }
   if (readIds.length > 0) {
     const { rows } = await db.execute<{ model_call_id: string }>(sql`
       delete from fits_reads where id = any(${sql.param(readIds)}::uuid[]) returning model_call_id`);

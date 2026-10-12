@@ -109,6 +109,23 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
     expect(store.finished).toEqual([expect.objectContaining({ status: "done", outcome: "picks", refunded: true, returned: 4 })]);
   });
 
+  it("re-reads after the call, so a deck edited meanwhile shows the stored read out of date", async () => {
+    const { d } = deps({ picks: [good("D1")] });
+    const later = inputs();
+    let loads = 0;
+    const edited = { ...later, decks: later.decks.map((x) => (x.deckId === "deck-goblins" ? { ...x, lockedIds: ["z"] } : x)) };
+    d.load = async () => ({ fits: {} as FitsReadLoad["fits"], inputs: (loads += 1) === 1 ? inputs() : edited, planOf: new Map() }) as FitsReadLoad;
+    // The store hands back the row the press wrote, with the hashes it was written under.
+    vi.mocked(startFitsRead).mockImplementationOnce(async (_u, _o, hashes) => {
+      store.rows = [{ id: "read-1", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [] }];
+      return { kind: "started", readId: "read-1", callId: "call-1" };
+    });
+    const r = await pressFitsRead("u", "card", d);
+    expect(loads).toBe(2);
+    expect(r.ok && r.panel.view.stored?.current).toBe(false);
+    expect(r.ok && r.panel.view.stored?.changed.map((c) => c.deckId)).toEqual(["deck-goblins"]);
+  });
+
   it("refunds and stores a no fit", async () => {
     const { d } = deps({ picks: [] });
     await pressFitsRead("u", "card", d);
@@ -151,6 +168,14 @@ describe("candidateHashes", () => {
     expect(b["deck-goblins"]).toBe(a["deck-goblins"]);
     expect(b["deck-kratos"]).not.toBe(a["deck-kratos"]);
   });
+  it("moves for a catalog update to a listed card's text or keywords", () => {
+    const a = candidateHashes(inputs(), MODEL);
+    const inp = inputs();
+    const b = candidateHashes({ ...inp, decks: inp.decks.map((x) => (x.deckId === "deck-goblins" ? { ...x, list: x.list.map((c, i) => (i === 0 ? { ...c, oracleText: "Errata." } : c)) } : x)) }, MODEL);
+    expect(b["deck-goblins"]).not.toBe(a["deck-goblins"]);
+    expect(b["deck-kratos"]).toBe(a["deck-kratos"]);
+  });
+
   it("moves only the plan's half for a new Overview", () => {
     const a = candidateHashes(inputs(), MODEL);
     const inp = inputs();
