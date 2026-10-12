@@ -79,7 +79,7 @@ export const tuningHubCopy = {
     outcome: { ok: "ok", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
     more: "Show 20 more",
     foot: "Kept for as long as the deck is. A free count is recorded once per version of the list.",
-    empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first, and opens again in its tool." },
+    empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first. Open one to see it again." },
     emptyFiltered: "No runs of this tool yet",
     back: "‹ History",
     pastMeta: (date: string, version: number, tier: string) => `${date} · version ${version} · ${tier}`,

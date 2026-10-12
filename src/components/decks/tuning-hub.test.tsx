@@ -476,7 +476,7 @@ describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
     render(<TuningHub deckId="d" drawn tools={tools} />);
     await waitFor(() => expect(read).toHaveBeenCalled());
     fireEvent.click(tile("history"));
-    await waitFor(() => expect(document.querySelectorAll("[data-history-row]")).toHaveLength(3));
+    await waitFor(() => expect(document.querySelectorAll("[data-history-row]")).toHaveLength(rows.length));
   };
   const row = (id: string) => document.querySelector(`[data-history-row="${id}"]`) as HTMLElement;
 
@@ -495,6 +495,18 @@ describe("TuningHub: History reopens a run in its own tool (re-review)", () => {
     fireEvent.click(row(`count:${COUNT}`));
     await waitFor(() => expect(probe()).toBe("today"));
     expect(screen.getByText(copy.history.review.counted(historyDate(at), summaryText(rows[1])))).toBeTruthy();
+  });
+
+  it("opens a run still in flight in its tool as any opening does, with no note", async () => {
+    rows.push({ id: "run:55555555-5555-4555-8555-555555555555", tool: "suggested", tier: "credit", outcome: "running", at, summary: { kind: "none" } });
+    try {
+      await openHistory();
+      fireEvent.click(row("run:55555555-5555-4555-8555-555555555555"));
+      await waitFor(() => expect(probe()).toBe("ordinary"));
+      expect(document.querySelector("[data-review-note]")).toBeNull();
+    } finally {
+      rows.pop();
+    }
   });
 
   it("keeps the read-only view for a run with nothing to load", async () => {

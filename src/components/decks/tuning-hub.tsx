@@ -295,6 +295,8 @@ export function TuningHub({
     if (row === null) { setPast(null); return; }
     const press = historyPress(row);
     if (press.kind === "past" || !tools.some((t) => t.tool === row.tool)) { setPast(row); return; }
+    // A run still in flight is the tool's own newest run: the tool as any opening shows it, no note.
+    if (press.kind === "live" && !press.counted) { open(row.tool, { focus: true }); return; }
     setPast(null);
     setReturnRow(null);
     setReview({ run: { tool: row.tool, runId: press.kind === "review" ? press.runId : null }, row, left: false });
