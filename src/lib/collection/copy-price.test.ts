@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { indexPriceRows, type PrintingPriceRow } from "../cards/price-lookup";
 import { cardPriceCode, priceSortCents, readCardPrice } from "./copy-price";
-import { sortCards, type BrowseListCard } from "./browse";
+import { attachPrices, sortCards, startPriceRead, type BrowseListCard } from "./browse";
 
 const NEWEST = "2026-10-12 09:00:00";
 const OLDER = "2026-10-05 09:00:00";
@@ -85,5 +85,37 @@ describe("sortCards by price", () => {
 
   it("reverses only the priced cards; the unpriced stay last, and ties stay A to Z", () => {
     expect(names("asc")).toEqual(["Mid", "Zed", "Alp", "Cat", "Bar", "Nos"]);
+  });
+});
+
+describe("the price seam in loadBrowseCards", () => {
+  const prices = indexPriceRows([row("a", "ONE", "1", 590, 960, null)]);
+
+  it("reads prices for exactly the snapshot's cards", async () => {
+    const seen: (readonly string[])[] = [];
+    const read = await startPriceRead([{ oracleId: "x" }, { oracleId: "y" }], async (ids) => {
+      seen.push(ids);
+      return new Map([["x", prices]]);
+    });
+    expect(seen).toEqual([["x", "y"]]);
+    expect(read?.get("x")).toBe(prices);
+  });
+
+  it("turns a failed read into null rather than throwing", async () => {
+    await expect(startPriceRead([{ oracleId: "x" }], async () => { throw new Error("down"); })).resolves.toBeNull();
+  });
+
+  it("writes each card's code onto the list card at its index, and nothing for silence", () => {
+    const source = [
+      { oracleId: "x", printings: [copy("a", "ONE", "1", { nonfoil: 1 })] },
+      { oracleId: "y", printings: [copy("a", "ONE", "1", { nonfoil: 1 })] },
+    ];
+    const listed = [{ oracleId: "x" }, { oracleId: "y" }] as BrowseListCard[];
+    attachPrices(source, listed, new Map([["x", prices]]));
+    expect(readCardPrice(listed[0].price)).toEqual({ cents: 590, finish: null, mixed: false });
+    expect("price" in listed[1]).toBe(false);
+    const failed = [{ oracleId: "x" }] as BrowseListCard[];
+    attachPrices(source.slice(0, 1), failed, null);
+    expect("price" in failed[0]).toBe(false);
   });
 });

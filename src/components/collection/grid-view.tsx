@@ -284,6 +284,10 @@ export function GridView({
                     {c.primarySetCode}
                     <span className="hidden md:inline"> · {c.rarity}</span>
                   </span>
+                  {/* The price clause, spoken LAST: the button's name is its text in order, and
+                      this sub-line follows the name line's spoken clauses. The figure above is
+                      aria-hidden. */}
+                  {spokenPrice ? <span className="sr-only">, {spokenPrice}</span> : null}
                 </span>
               ) : (
                 <>
@@ -334,8 +338,6 @@ export function GridView({
                 {c.comboPartner
                   ? `, ${comboClauseSpoken(c.comboPartner.name, "ownBoth")}`
                   : ""}
-                {/* The price, last and only while sorted by it; the drawn figure is aria-hidden. */}
-                {spokenPrice ? `, ${spokenPrice}` : ""}
               </span>
             }
           />

@@ -6,7 +6,7 @@ const stub = vi.hoisted(() => ({
   load: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
-vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: stub.load }));
+vi.mock("../../../lib/collection/payload", () => ({ loadCollectionListForFields: stub.load }));
 
 import { GET } from "./route";
 import type { BrowseListCard } from "../../../lib/collection/browse";

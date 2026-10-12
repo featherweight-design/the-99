@@ -17,6 +17,25 @@
 import { cacheForUser } from "../cache/user-lists";
 import { loadBrowseCards, type BrowseListCard } from "./browse";
 
+// THE FIELDS ROUTE MUST NOT REBUILD A FAILED LIST PER BATCH. A failed list is never stored under
+// the page's key, so without this every withheld-fields batch (200 cards each, ~15 for a large
+// collection) would rebuild the whole list and retry the failing price read. The failed list is
+// filed for the current minute instead, and the fields route reads that first: the outage costs at
+// most one rebuild a minute, while the page itself still asks again on every visit.
+//
+// ONE closure literal for the read and the write, because `unstable_cache` keys an entry on the
+// function's source text as well as its key parts: with `cards` it files them, without it it
+// throws, which stores nothing.
+class NoFailedList extends Error {}
+
+function failedList(userId: string, cards?: BrowseListCard[]): Promise<BrowseListCard[]> {
+  const minute = String(Math.floor(Date.now() / 60_000));
+  return cacheForUser(userId, ["browse-5-failed", minute], async () => {
+    if (!cards) throw new NoFailedList();
+    return cards;
+  });
+}
+
 class PricesUnread extends Error {
   constructor(readonly cards: BrowseListCard[]) {
     super("collection prices unread");
@@ -34,7 +53,18 @@ export async function loadCollectionList(userId: string): Promise<CollectionList
     });
     return { cards, pricesFailed: false };
   } catch (error) {
-    if (error instanceof PricesUnread) return { cards: error.cards, pricesFailed: true };
-    throw error;
+    if (!(error instanceof PricesUnread)) throw error;
+    await failedList(userId, error.cards);
+    return { cards: error.cards, pricesFailed: true };
+  }
+}
+
+/** The fields route's read: this minute's failed list when there is one, otherwise the page's. */
+export async function loadCollectionListForFields(userId: string): Promise<CollectionList> {
+  try {
+    return { cards: await failedList(userId), pricesFailed: true };
+  } catch (error) {
+    if (!(error instanceof NoFailedList)) throw error;
+    return loadCollectionList(userId);
   }
 }

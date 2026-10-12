@@ -1167,6 +1167,32 @@ export async function attachComboPartners(
   return cards;
 }
 
+/** The price read for the cards of one collection snapshot. Null when it failed. */
+export function startPriceRead(
+  snapshot: readonly Pick<BrowseCard, "oracleId">[],
+  load: (oracleIds: readonly string[]) => Promise<Map<string, PrintingPrices>>,
+): Promise<Map<string, PrintingPrices> | null> {
+  return load(snapshot.map((card) => card.oracleId)).catch(() => {
+    // not a fallback: the failure is returned as `pricesFailed`, the page says so (F1), and
+    // `loadCollectionList` throws such a list past the cache rather than storing it.
+    return null;
+  });
+}
+
+/** Writes each card's price code onto its list card, index for index. A failed read writes none. */
+export function attachPrices(
+  source: readonly { oracleId: string; printings: Parameters<typeof cardPriceCode>[0] }[],
+  listed: BrowseListCard[],
+  read: Map<string, PrintingPrices> | null,
+): void {
+  if (!read) return;
+  source.forEach((card, i) => {
+    // Set only when there is a figure or an answer: an absent key costs nothing on the wire.
+    const code = cardPriceCode(card.printings, read.get(card.oracleId));
+    if (code !== undefined) listed[i].price = code;
+  });
+}
+
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
   /** The price read, injected for tests, as `attachBracketFacts`' flags read is. */
@@ -1177,12 +1203,10 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   // read rather than on the user: a second read of the collection could see a card this one does
   // not, or miss one it has, and that card would ship silent and be cached so. A failure is
   // reported rather than swallowed, because the page says so (F1) and the list must not be cached.
-  const load = readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices;
-  const prices = load(aggregated.map((card) => card.oracleId)).catch(() => {
-    // not a fallback: the failure is returned as `pricesFailed`, the page says so (F1), and
-    // `loadCollectionList` throws such a list past the cache rather than storing it.
-    return null;
-  });
+  const prices = startPriceRead(
+    aggregated,
+    readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices,
+  );
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip
@@ -1190,13 +1214,7 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   const attached = await attachComboPartners(userId, await attachBracketFacts(aggregated));
   const read = await prices;
   const cards = toListCards(attached);
-  if (read) {
-    attached.forEach((card, i) => {
-      // Set only when there is a figure or an answer: an absent key costs nothing on the wire.
-      const code = cardPriceCode(card.printings, read.get(card.oracleId));
-      if (code !== undefined) cards[i].price = code;
-    });
-  }
+  attachPrices(attached, cards, read);
   return { cards, pricesFailed: read === null };
 });
 

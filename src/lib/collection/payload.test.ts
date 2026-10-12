@@ -16,7 +16,7 @@ vi.mock("../cache/user-lists", () => ({
 const loadBrowseCards = vi.fn();
 vi.mock("./browse", () => ({ loadBrowseCards: (...args: unknown[]) => loadBrowseCards(...args) }));
 
-const { loadCollectionList } = await import("./payload");
+const { loadCollectionList, loadCollectionListForFields } = await import("./payload");
 
 beforeEach(() => {
   store.clear();
@@ -49,5 +49,22 @@ describe("loadCollectionList", () => {
   it("rethrows any other failure", async () => {
     loadBrowseCards.mockRejectedValueOnce(new Error("db down"));
     await expect(loadCollectionList("u")).rejects.toThrow("db down");
+  });
+});
+
+describe("loadCollectionListForFields", () => {
+  it("reads this minute's failed list instead of rebuilding it per batch", async () => {
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a" }], pricesFailed: true });
+    await loadCollectionList("u");
+    expect(await loadCollectionListForFields("u")).toEqual({ cards: [{ oracleId: "a" }], pricesFailed: true });
+    expect(await loadCollectionListForFields("u")).toEqual({ cards: [{ oracleId: "a" }], pricesFailed: true });
+    expect(loadBrowseCards).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads the page's list when no read has failed", async () => {
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    expect(await loadCollectionListForFields("u")).toEqual({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    await loadCollectionListForFields("u");
+    expect(loadBrowseCards).toHaveBeenCalledTimes(1);
   });
 });
