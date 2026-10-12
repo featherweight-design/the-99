@@ -4,8 +4,8 @@
  * so the answer is read, never awaited: leaving the page leaves the run going, and this loop is
  * only the visit that stayed.
  *
- * Returns the last read. It gives up quietly at `maxMs` (past the model's own deadline and the
- * reaper's reach), with the run still pending in that read: the panel's watch for a pending run
+ * Returns the last read. It gives up quietly at `maxMs` (past the model's 110s deadline and
+ * short of the reaper's 5 minutes), with the run still pending in that read: the panel's watch for a pending run
  * then carries on, exactly as it does for a run begun in another tab. A read that fails or shows
  * the run gone ends the wait, since there is nothing left to wait for.
  */
