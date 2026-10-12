@@ -97,13 +97,18 @@ describe("spendRefusal", () => {
   });
 
   it("holds the owner to an overridden share when one is passed", () => {
-    const wide = usdToMicro(25);
-    expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: share, callMicro: call, ownerShareMicro: wide })).toBeNull();
-    expect(spendRefusal({ appMonthMicro: 0, ownerMonthMicro: wide - call + 1, callMicro: call, ownerShareMicro: wide })).toBe("ownerShare");
+    // Below the stop, and the app total equal to the owner's own: the state a lone owner reaches.
+    const wide = usdToMicro(15);
+    const at = (owner: number) => spendRefusal({ appMonthMicro: owner, ownerMonthMicro: owner, callMicro: call, ownerShareMicro: wide });
+    expect(at(share)).toBeNull();
+    expect(at(wide - call)).toBeNull();
+    expect(at(wide - call + 1)).toBe("ownerShare");
   });
 
-  it("still pauses at the hard stop whatever the owner's share", () => {
-    expect(spendRefusal({ appMonthMicro: stop, ownerMonthMicro: 0, callMicro: call, ownerShareMicro: usdToMicro(25) })).toBe("paused");
+  it("pauses at the hard stop before an owner share above it can refuse", () => {
+    const above = usdToMicro(25);
+    const owner = stop - call + 1;
+    expect(spendRefusal({ appMonthMicro: owner, ownerMonthMicro: owner, callMicro: call, ownerShareMicro: above })).toBe("paused");
   });
 
   it("names the pause over the share when both apply", () => {

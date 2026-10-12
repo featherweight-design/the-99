@@ -333,9 +333,12 @@ async function run() {
     const owner = newUser();
     const friend = newUser();
     process.env.MODEL_OWNER_USER_ID = owner;
+    // Pinned to the default share: an override at or above the $20 hard stop (staging's is $25)
+    // makes `ownerShare` unreachable, because the stop is checked first and wins.
+    const shareOverride = process.env.MODEL_OWNER_MONTHLY_USD;
+    delete process.env.MODEL_OWNER_MONTHLY_USD;
     const seeded: string[] = [];
     try {
-      // The share the app applies, so a `MODEL_OWNER_MONTHLY_USD` override in the environment moves both.
       seeded.push(await seed(owner, "spent", ownerShareMicro() - W));
       check("f · the owner reserves while one call still fits their share", kindOf(await reserve(owner)), "reserved");
       check("f · then the owner is refused ownerShare", kindOf(await reserve(owner)), "ownerShare");
@@ -344,6 +347,7 @@ async function run() {
       check("f · and reads no share", (await readAllowance(friend)).ownerShare, undefined);
     } finally {
       delete process.env.MODEL_OWNER_USER_ID;
+      if (shareOverride !== undefined) process.env.MODEL_OWNER_MONTHLY_USD = shareOverride;
       await unseed(seeded);
       await fixture.execute(sql`delete from model_calls where user_id in (${owner}, ${friend})`);
     }
