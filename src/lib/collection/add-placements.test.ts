@@ -31,7 +31,7 @@ describe("whereItWent", () => {
   });
 
   it("draws a row per card a deck took, in the sheet's order, in the long form", () => {
-    const out = whereItWent([{ oracleId: "x", name: "Arcane Signet" }, { oracleId: "sol", name: "Sol Ring" }], [placed("sol", "Sol Ring"), placed("x", "Arcane Signet")]);
+    const out = whereItWent([{ oracleId: "x", name: "Arcane Signet", quantity: 1 }, { oracleId: "sol", name: "Sol Ring", quantity: 1 }], [placed("sol", "Sol Ring"), placed("x", "Arcane Signet")]);
     expect(out.rows.map((r) => r.sentence)).toEqual([
       copy.line.goesTo("Arcane Signet", "HD - Brago"), copy.line.goesTo("Sol Ring", "HD - Brago"),
     ]);
@@ -40,18 +40,37 @@ describe("whereItWent", () => {
   });
 
   it("names a lone free card in the foot, counts the others under rows, and says `these` with no rows (L9)", () => {
-    expect(whereItWent([{ oracleId: "sol", name: "Sol Ring" }, { oracleId: "g", name: "Lightning Greaves" }], [placed("sol", "Sol Ring")]).foot)
+    expect(whereItWent([{ oracleId: "sol", name: "Sol Ring", quantity: 1 }, { oracleId: "g", name: "Lightning Greaves", quantity: 1 }], [placed("sol", "Sol Ring")]).foot)
       .toBe(copy.line.nobodyOne("Lightning Greaves"));
     expect(whereItWent(
-      [{ oracleId: "sol", name: "Sol Ring" }, { oracleId: "g", name: "Lightning Greaves" }, { oracleId: "h", name: "Swiftfoot Boots" }],
+      [{ oracleId: "sol", name: "Sol Ring", quantity: 1 }, { oracleId: "g", name: "Lightning Greaves", quantity: 1 }, { oracleId: "h", name: "Swiftfoot Boots", quantity: 1 }],
       [placed("sol", "Sol Ring")],
     ).foot).toBe(copy.line.nobodyRest(2));
-    expect(whereItWent([{ oracleId: "g", name: "Lightning Greaves" }, { oracleId: "h", name: "Swiftfoot Boots" }], []))
+    expect(whereItWent([{ oracleId: "g", name: "Lightning Greaves", quantity: 1 }, { oracleId: "h", name: "Swiftfoot Boots", quantity: 1 }], []))
       .toEqual({ rows: [], foot: copy.line.nobodyMany });
   });
 
+  it("accounts for every copy: the rest of a card a deck took fewer of, and each copy of a free line", () => {
+    // Three Sol Rings, one taken: the row, and the other two in the foot.
+    const solThree = [{ oracleId: "sol", name: "Sol Ring", quantity: 3 }];
+    const one = whereItWent(solThree, [placed("sol", "Sol Ring")]);
+    expect(one.rows.map((r) => r.sentence)).toEqual([copy.line.goesTo("Sol Ring", "HD - Brago")]);
+    expect(one.foot).toBe(copy.line.nobodyRest(2));
+    // A wholly free line of three beside a row is three copies, not one card.
+    expect(whereItWent(
+      [{ oracleId: "sol", name: "Sol Ring", quantity: 1 }, { oracleId: "g", name: "Lightning Greaves", quantity: 3 }, { oracleId: "h", name: "Swiftfoot Boots", quantity: 1 }],
+      [placed("sol", "Sol Ring")],
+    ).foot).toBe(copy.line.nobodyRest(4));
+    // A card's copies are summed over its lines.
+    expect(whereItWent([{ oracleId: "sol", name: "Sol Ring", quantity: 1 }, { oracleId: "sol", name: "Sol Ring", quantity: 2 }], [placed("sol", "Sol Ring")]).foot)
+      .toBe(copy.line.nobodyRest(2));
+    // One copy left over is named, since `the other 1` is not a sentence.
+    expect(whereItWent([{ oracleId: "sol", name: "Sol Ring", quantity: 2 }], [placed("sol", "Sol Ring")]).foot)
+      .toBe(copy.line.nobodyOne("Sol Ring"));
+  });
+
   it("counts a card listed twice once", () => {
-    expect(whereItWent([{ oracleId: "g", name: "Lightning Greaves" }, { oracleId: "g", name: "Lightning Greaves" }], []).foot)
+    expect(whereItWent([{ oracleId: "g", name: "Lightning Greaves", quantity: 1 }, { oracleId: "g", name: "Lightning Greaves", quantity: 1 }], []).foot)
       .toBe(copy.line.nobodyOne("Lightning Greaves"));
   });
 });

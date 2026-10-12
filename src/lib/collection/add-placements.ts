@@ -34,35 +34,48 @@ export function placedOf(raised: Record<string, RaisedCard>, names: Record<strin
 export type WhereItWent = {
   /** `decks`: the deck names the sentence prints, which the line draws in `--fg`. */
   rows: { oracleId: string; cardName: string; sentence: string; decks: string[]; chooser: ContestedCard }[];
-  /** The cards no deck needed (L9), said once under the rows; null when every card went somewhere. */
+  /** The copies no deck needed (L9), said once under the rows; null when every copy went somewhere. */
   foot: string | null;
 };
 
 /**
  * The block, in the sheet's own order (the list as the player built it). A card a deck took or read
- * gets a row in the long form; every other card is free, and the foot says so: by name when it is
- * the only one, as `the other N` under rows, and as `these` when no card went anywhere.
+ * gets a row in the long form. Every COPY is accounted for: a card's copies are summed over its
+ * lines, and the copies no deck took (all of a card with no row, the rest of a card whose decks
+ * took fewer than were added) are free, and the foot says so: by name when they are one card's and
+ * that card has no row, as `the other N` copies under rows, and as `these` when no card went
+ * anywhere. A brew's row already says its card is free, so a soft card leaves nothing for the foot.
  */
-export function whereItWent(lines: readonly { oracleId: string; name: string }[], placed: readonly AddedPlacement[]): WhereItWent {
+export function whereItWent(
+  lines: readonly { oracleId: string; name: string; quantity: number }[], placed: readonly AddedPlacement[],
+): WhereItWent {
   const byCard = new Map(placed.map((p) => [p.oracleId, p]));
+  const added = new Map<string, number>();
+  for (const l of lines) added.set(l.oracleId, (added.get(l.oracleId) ?? 0) + Math.max(l.quantity, 0));
   const seen = new Set<string>();
   const rows: WhereItWent["rows"] = [];
-  const free: string[] = [];
+  const free: { name: string; copies: number; whole: boolean }[] = [];
   for (const line of lines) {
     if (seen.has(line.oracleId)) continue;
     seen.add(line.oracleId);
+    const copies = added.get(line.oracleId) ?? 0;
     const p = byCard.get(line.oracleId);
     const names = Object.fromEntries((p?.chooser.claimants ?? []).map((c) => [c.deckId, c.deckName]));
     const d = p ? wentDestination(p.went, names) : null;
     const cardName = p?.cardName || line.name;
     if (p && d) {
       rows.push({ oracleId: line.oracleId, cardName, sentence: longSentence(d, cardName), decks: destinationDecks(d), chooser: p.chooser });
+      const took = p.went.kind === "held" ? p.went.decks.reduce((n, x) => n + x.copies, 0) : copies;
+      if (copies > took) free.push({ name: line.name, copies: copies - took, whole: false });
     }
-    else free.push(line.name);
+    else if (copies > 0) free.push({ name: line.name, copies, whole: true });
   }
   const line = addedCopyCopy.line;
-  const foot = free.length === 0 ? null
-    : free.length === 1 ? line.nobodyOne(free[0])
-      : rows.length > 0 ? line.nobodyRest(free.length) : line.nobodyMany;
+  const total = free.reduce((n, f) => n + f.copies, 0);
+  // One copy left over from a card with a row has no sentence of its own (`the other 1` is not
+  // English): it is named, as a lone free card is.
+  const foot = total === 0 ? null
+    : free.length === 1 && (free[0].whole || total === 1) ? line.nobodyOne(free[0].name)
+      : rows.length > 0 ? line.nobodyRest(total) : line.nobodyMany;
   return { rows, foot };
 }
