@@ -67,7 +67,8 @@ export async function readFitsRead(userId: string, oracleId: string, deps: Deps 
 async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date): Promise<FitsReadPanel> {
   const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read")]);
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
-  return { fits: load.fits, view: fitsReadView(rows, candidateHashes(load.inputs, model)), candidates: load.inputs.candidates.length, planSources, allowance };
+  const holding = new Set(load.fits.holds.map((h) => h.id));
+  return { fits: load.fits, view: fitsReadView(rows, candidateHashes(load.inputs, model), holding), candidates: load.inputs.candidates.length, planSources, allowance };
 }
 
 /**

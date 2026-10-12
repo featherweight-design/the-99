@@ -11,13 +11,20 @@ const row = (over: Partial<FitsReadRow>): FitsReadRow => ({
 describe("staleness", () => {
   it("names the decks whose inputs moved, and why: a new Overview alone, or anything else (G5)", () => {
     const was = { a: "p.1", b: "p.2" };
-    expect(staleness(was, { a: "p.1", b: "p.9" })).toEqual({ changed: [{ deckId: "b", reason: "deck" }], setChanged: false });
-    expect(staleness(was, { a: "p.1", b: "q.2" })).toEqual({ changed: [{ deckId: "b", reason: "overview" }], setChanged: false });
+    expect(staleness(was, { a: "p.1", b: "p.9" })).toEqual({ changed: [{ deckId: "b", reason: "deck" }], setChanged: false, resolved: [] });
+    expect(staleness(was, { a: "p.1", b: "q.2" })).toEqual({ changed: [{ deckId: "b", reason: "overview" }], setChanged: false, resolved: [] });
     expect(staleness(was, { a: "p.1", b: "q.9" }).changed).toEqual([{ deckId: "b", reason: "deck" }]);
   });
+  it("calls a deck that now holds the card resolved, neither a set change nor a stale row (F2)", () => {
+    const was = { a: "p.1", b: "p.2" };
+    // b took the card (a Swap in, an Add only, or the free list's Add): it left the candidates and its hash moved.
+    expect(staleness(was, { a: "p.1" }, new Set(["b"]))).toEqual({ changed: [], setChanged: false, resolved: ["b"] });
+    expect(staleness(was, { a: "p.1", b: "p.9" }, new Set(["b"]))).toEqual({ changed: [], setChanged: false, resolved: ["b"] });
+  });
+
   it("calls a deck joining or leaving the candidates a set change, and tags no row for it", () => {
-    expect(staleness({ a: "1", b: "2" }, { a: "1", b: "2", c: "3" })).toEqual({ changed: [], setChanged: true });
-    expect(staleness({ a: "1", b: "2" }, { a: "1" })).toEqual({ changed: [], setChanged: true });
+    expect(staleness({ a: "1", b: "2" }, { a: "1", b: "2", c: "3" })).toEqual({ changed: [], setChanged: true, resolved: [] });
+    expect(staleness({ a: "1", b: "2" }, { a: "1" })).toEqual({ changed: [], setChanged: true, resolved: [] });
   });
 });
 

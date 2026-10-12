@@ -39,7 +39,7 @@ function deps(reply: FitsReadReply | { fail: "upstream_busy" | "timeout" | "upst
   return {
     call,
     d: {
-      load: async () => ({ fits: {} as FitsReadLoad["fits"], inputs: inp, planOf: new Map() }) as FitsReadLoad,
+      load: async () => ({ fits: { holds: [] } as unknown as FitsReadLoad["fits"], inputs: inp, planOf: new Map() }) as FitsReadLoad,
       model: () => MODEL,
       call,
       now: () => NOW,
@@ -88,6 +88,15 @@ describe("pressFitsRead: refusals that cost nothing", () => {
     expect(call).not.toHaveBeenCalled();
   });
 
+  it("a prompt over the input ceiling is refused before any reservation or call", async () => {
+    const inp = inputs();
+    const huge = { ...inp, card: { ...inp.card, oracleText: "x".repeat(400_000) } };
+    const { d, call } = deps({ picks: [] }, huge);
+    expect(await pressFitsRead("u", "card", d)).toEqual({ ok: false, reason: "tooBig" });
+    expect(startFitsRead).not.toHaveBeenCalled();
+    expect(call).not.toHaveBeenCalled();
+  });
+
   it("a press that lost the race to a read now done over the same inputs is current, and never asks", async () => {
     store.started = { kind: "current" };
     const { d, call } = deps({ picks: [] });
@@ -121,7 +130,7 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
     const later = inputs();
     let loads = 0;
     const edited = { ...later, decks: later.decks.map((x) => (x.deckId === "deck-goblins" ? { ...x, lockedIds: ["z"] } : x)) };
-    d.load = async () => ({ fits: {} as FitsReadLoad["fits"], inputs: (loads += 1) === 1 ? inputs() : edited, planOf: new Map() }) as FitsReadLoad;
+    d.load = async () => ({ fits: { holds: [] } as unknown as FitsReadLoad["fits"], inputs: (loads += 1) === 1 ? inputs() : edited, planOf: new Map() }) as FitsReadLoad;
     // The store hands back the row the press wrote, with the hashes it was written under.
     vi.mocked(startFitsRead).mockImplementationOnce(async (_u, _o, hashes) => {
       store.rows = [{ id: "read-1", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [] }];

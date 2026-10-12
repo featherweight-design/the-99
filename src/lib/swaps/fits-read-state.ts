@@ -20,6 +20,9 @@ export type StoredFitsRead = {
   changed: { deckId: string; reason: "overview" | "deck" }[];
   /** A deck joined or left the candidates since the read (handoff P10a, P10b). */
   setChanged: boolean;
+  /** Candidates that now HOLD the card: the reader took it, through this read or the free list.
+   *  Resolved, not changed (handoff audit F2): neither a set change nor a stale row. */
+  resolved: string[];
   /** Shown again free, with no press, only when nothing above moved (lock 6). */
   current: boolean;
 };
@@ -34,18 +37,23 @@ export type FitsReadView = {
 };
 
 /** Which stored decks changed, and whether the candidate set moved, against the current hashes. */
-export function staleness(stored: Readonly<Record<string, string>>, current: Readonly<Record<string, string>>) {
+export function staleness(
+  stored: Readonly<Record<string, string>>,
+  current: Readonly<Record<string, string>>,
+  holding: ReadonlySet<string> = new Set(),
+) {
   const half = (h: string) => h.split(".");
-  const changed = Object.keys(stored).filter((id) => id in current && current[id] !== stored[id]).sort()
+  const resolved = Object.keys(stored).filter((id) => holding.has(id)).sort();
+  const changed = Object.keys(stored).filter((id) => !holding.has(id) && id in current && current[id] !== stored[id]).sort()
     .map((deckId) => {
       const [planWas, restWas] = half(stored[deckId]);
       const [planNow, restNow] = half(current[deckId]);
       return { deckId, reason: planWas !== planNow && restWas === restNow ? "overview" as const : "deck" as const };
     });
-  const a = Object.keys(stored);
-  const b = Object.keys(current);
+  const a = Object.keys(stored).filter((id) => !holding.has(id));
+  const b = Object.keys(current).filter((id) => !holding.has(id));
   const setChanged = a.length !== b.length || a.some((id) => !(id in current));
-  return { changed, setChanged };
+  return { changed, setChanged, resolved };
 }
 
 /**
@@ -71,13 +79,18 @@ export type FitsReadRow = {
 };
 
 /** The view from a reader's rows for one card, newest first, against the current candidate hashes. */
-export function fitsReadView(rows: readonly FitsReadRow[], current: Readonly<Record<string, string>>): FitsReadView {
+export function fitsReadView(
+  rows: readonly FitsReadRow[],
+  current: Readonly<Record<string, string>>,
+  /** The decks that hold the card now (`loadFits`' `holds`). */
+  holding: ReadonlySet<string> = new Set(),
+): FitsReadView {
   const pendingRow = rows.find((r) => r.status === "pending") ?? null;
   const doneRow = rows.find((r) => r.status === "done") ?? null;
   const newestSettled = rows.find((r) => r.status !== "pending") ?? null;
   let stored: StoredFitsRead | null = null;
   if (doneRow) {
-    const { changed, setChanged } = staleness(doneRow.candidateHashes, current);
+    const { changed, setChanged, resolved } = staleness(doneRow.candidateHashes, current, holding);
     stored = {
       readId: doneRow.id,
       outcome: doneRow.outcome === "noFit" ? "noFit" : "picks",
@@ -87,6 +100,7 @@ export function fitsReadView(rows: readonly FitsReadRow[], current: Readonly<Rec
       candidates: Object.keys(doneRow.candidateHashes).length,
       changed,
       setChanged,
+      resolved,
       current: changed.length === 0 && !setChanged,
     };
   }
