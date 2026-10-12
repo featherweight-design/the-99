@@ -74,8 +74,8 @@ async function main() {
     const clean = await read(browser, lines);
     console.log("clean :", clean);
     if (clean.notFound.length > 0) { console.error(`FAIL: ${clean.notFound.length} line(s) were not found: ${clean.notFound.join("; ")}`); failed = true; }
-    if (clean.any !== lines.length || clean.exact !== lines.length) {
-      console.error(`FAIL: expected Any = Exact = ${lines.length}, got Any ${clean.any}/${clean.anyOf}, Exact ${clean.exact}/${clean.exactOf}`);
+    if (clean.any !== lines.length || clean.exact !== lines.length || clean.anyOf !== lines.length || clean.exactOf !== lines.length) {
+      console.error(`FAIL: expected Any = Exact = ${lines.length} on both sides of n/m, got Any ${clean.any}/${clean.anyOf}, Exact ${clean.exact}/${clean.exactOf}`);
       failed = true;
       // Say WHICH lines: each one alone, so a printing Mana Pool does not recognise is named.
       for (const line of lines.filter((l) => l.printing)) {

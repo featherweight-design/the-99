@@ -394,7 +394,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`product_*`) because they differ from Scryfall's on 42% of priced token printings (a double-faced token
   card is `Soldier // Eldrazi`, `1-17`, under the single token's Scryfall id). `tokenManapoolLine`
   (`src/lib/tokens/price.ts`) builds the line and drops a number Mana Pool cannot place exactly (`1★`) to
-  the name alone; `pnpm probe:manapool-token-link` is the proof, in a browser.
+  the name alone; `pnpm probe:manapool-token-link` is the proof, in a browser. A run that prices fewer than
+  `TOKEN_PRICE_FLOOR` (1,400, half of the 2,919 measured) token printings against a POPULATED token catalog
+  writes the card prices, writes NO token prices and exits non-zero: a collapsed id match would otherwise leave
+  the table's newest `as_of` unchanged and every old token price reading as live.
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

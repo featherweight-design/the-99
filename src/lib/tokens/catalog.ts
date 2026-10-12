@@ -252,6 +252,25 @@ export const TOKEN_FLOORS = {
   resolvedShare: 0.9,
 } as const;
 
+/**
+ * The price ingest's floor: token printings priced in one feed run, HALF of the 2,919 the first run
+ * measured on 2026-10-11. Enforced only where a token catalog is published (at least
+ * `TOKEN_FLOORS.tokenPrintings` token printings), so a database whose catalog has not been filled
+ * yet is not refused for pricing nothing. Under it the token prices are not written and the run
+ * fails: an id or shape regression upstream would otherwise write zero token rows, leave the table's
+ * newest `as_of` unchanged, and let every old token price keep reading as live.
+ */
+export const TOKEN_PRICE_FLOOR = 1_400;
+
+/** Why the token prices of this run must not be written, or null when they may. Pure. */
+export function tokenPriceFloorFailure(priced: number, catalogTokenPrintings: number): string | null {
+  if (catalogTokenPrintings < TOKEN_FLOORS.tokenPrintings) return null;
+  if (priced >= TOKEN_PRICE_FLOOR) return null;
+  return `Token prices were not written: ${priced} feed rows matched a token printing (floor ${TOKEN_PRICE_FLOOR}, `
+    + `against ${catalogTokenPrintings} token printings in the catalog). That is an upstream id or shape change, not `
+    + "a market state; the previous token prices are untouched and the card prices of this run were written.";
+}
+
 /** Why this run must not publish, or null when it may. Pure so every floor has a test. */
 export function tokenFloorFailure(stats: TokenCatalogStats): string | null {
   const under: string[] = [];

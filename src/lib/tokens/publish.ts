@@ -37,6 +37,12 @@ export async function tokenPriceTablesExist(): Promise<boolean> {
   return rows[0]?.ok === true;
 }
 
+/** How many token printings this database holds: whether a token catalog has been published here. */
+export async function countTokenPrintings(): Promise<number> {
+  const { rows } = await db.execute<{ n: number }>(sql`select count(*)::int as n from token_printings`);
+  return Number(rows[0]?.n ?? 0);
+}
+
 /**
  * Publishes a built catalog in ONE transaction, or refuses under a floor and leaves every
  * previous row standing. Tokens and their printings are UPSERTED and never deleted (an ownership

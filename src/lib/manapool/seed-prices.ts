@@ -1,7 +1,8 @@
 import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { printingPrices, printings, tokenPrintingPrices, tokenPrintings } from "../../db/schema";
-import { tokenPriceTablesExist } from "../tokens/publish";
+import { countTokenPrintings, tokenPriceTablesExist } from "../tokens/publish";
+import { tokenPriceFloorFailure } from "../tokens/catalog";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { fetchManapoolSingles } from "./client";
 import { parseManapoolPayload, type PriceRow } from "./parse";
@@ -13,6 +14,8 @@ export type SeedPricesResult = {
   upserted: number;
   /** Rows written to `token_printing_prices`; 0 when the token tables do not exist yet. */
   tokenUpserted: number;
+  /** Why the token prices were NOT written (a floor), or null. The CLI exits non-zero on it. */
+  tokenRefusal: string | null;
   skippedOrphan: number;
   collapsedDuplicates: number;
   asOf: Date;
@@ -98,7 +101,9 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   // Token printings: the ids the feed carries that are not card printings. Skipped cleanly when the
   // token tables do not exist, because the refresh can reach a database before its migration does.
   const knownTokens = new Set<string>();
+  let tokenCatalogSize = 0;
   if (await tokenPriceTablesExist()) {
+    tokenCatalogSize = await countTokenPrintings();
     const rest = feedIds.filter((id) => !known.has(id));
     for (let i = 0; i < rest.length; i += LOOKUP_CHUNK) {
       const found = await db.select({ scryfallId: tokenPrintings.scryfallId }).from(tokenPrintings)
@@ -106,7 +111,12 @@ export async function seedPrices(): Promise<SeedPricesResult> {
       for (const p of found) knownTokens.add(p.scryfallId);
     }
   }
-  const { cardRows: rows, tokenRows, skippedOrphan } = partitionFeed(feed.rows, known, knownTokens);
+  const partitioned = partitionFeed(feed.rows, known, knownTokens);
+  const { cardRows: rows, skippedOrphan } = partitioned;
+  // A collapsed token match set is refused, not written: card prices still go in (they are not what
+  // broke) and the run reports the refusal for the CLI to exit on. See `tokenPriceFloorFailure`.
+  const tokenRefusal = tokenPriceFloorFailure(partitioned.tokenRows.length, tokenCatalogSize);
+  const tokenRows = tokenRefusal ? [] : partitioned.tokenRows;
 
   // One transaction across every batch. The staleness rule schema.ts documents
   // — a row is live when its `as_of` matches the newest in the table — only
@@ -162,7 +172,7 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   await stampCatalogRefresh();
 
   return {
-    upserted, tokenUpserted, skippedOrphan,
+    upserted, tokenUpserted, tokenRefusal, skippedOrphan,
     collapsedDuplicates: feed.collapsedDuplicates,
     asOf: feed.asOf,
   };

@@ -11,10 +11,13 @@ vi.mock("../cache/stamp-catalog", () => ({
   stampCatalogRefresh: vi.fn(async () => { stub.order.push("stamp"); }),
 }));
 
-vi.mock("../tokens/publish", () => ({ tokenPriceTablesExist: vi.fn(async () => false) }));
+vi.mock("../tokens/publish", () => ({
+  tokenPriceTablesExist: vi.fn(async () => false),
+  countTokenPrintings: vi.fn(async () => 0),
+}));
 
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
-import { tokenPriceTablesExist } from "../tokens/publish";
+import { countTokenPrintings, tokenPriceTablesExist } from "../tokens/publish";
 import { filterKnownPrintings, partitionFeed, seedPrices } from "./seed-prices";
 
 const row = (scryfallId: string) => ({
@@ -106,6 +109,40 @@ describe("seedPrices", () => {
     expect(written[1].set).toEqual(expect.arrayContaining(["productName", "productSet", "productNumber", "priceCents", "asOf"]));
     expect(written[0].set).not.toContain("productName");
     expect(stub.order).toEqual(["commit", "stamp"]);
+  });
+
+  it("refuses to write token prices when a populated token catalog matches almost none, and still writes the card prices", async () => {
+    vi.mocked(tokenPriceTablesExist).mockResolvedValueOnce(true);
+    vi.mocked(countTokenPrintings).mockResolvedValueOnce(3_163);
+    let lookups = 0;
+    stub.db.select = () => ({ from: () => ({ where: async () => (++lookups === 1 ? [{ scryfallId: "a" }] : [{ scryfallId: "t" }]) }) });
+    const parsed = await import("./parse");
+    vi.mocked(parsed.parseManapoolPayload).mockReturnValueOnce({ rows: [row("a"), row("t")], collapsedDuplicates: 0, asOf: new Date(0) });
+    const written: string[] = [];
+    stub.db.transaction = async (run: (tx: unknown) => Promise<void>) => {
+      await run({ insert: (t: object) => ({ values: () => ({ onConflictDoUpdate: async () => { written.push(getTableName(t as never)); } }) }) });
+      stub.order.push("commit");
+    };
+    const r = await seedPrices();
+    expect(r.tokenRefusal).toMatch(/Token prices were not written: 1 feed rows/);
+    expect(r.tokenUpserted).toBe(0);
+    expect(written).toEqual(["printing_prices"]);
+    expect(stub.order).toEqual(["commit", "stamp"]);
+  });
+
+  it("does not enforce the token floor on a database whose token catalog is not filled", async () => {
+    vi.mocked(tokenPriceTablesExist).mockResolvedValueOnce(true);
+    vi.mocked(countTokenPrintings).mockResolvedValueOnce(12);
+    let lookups = 0;
+    stub.db.select = () => ({ from: () => ({ where: async () => (++lookups === 1 ? [{ scryfallId: "a" }] : [{ scryfallId: "t" }]) }) });
+    const parsed = await import("./parse");
+    vi.mocked(parsed.parseManapoolPayload).mockReturnValueOnce({ rows: [row("a"), row("t")], collapsedDuplicates: 0, asOf: new Date(0) });
+    stub.db.transaction = async (run: (tx: unknown) => Promise<void>) => {
+      await run({ insert: () => ({ values: () => ({ onConflictDoUpdate: async () => {} }) }) });
+    };
+    const r = await seedPrices();
+    expect(r.tokenRefusal).toBeNull();
+    expect(r.tokenUpserted).toBe(1);
   });
 
   it("looks up no token printing and writes no token price while the token price table is absent", async () => {
