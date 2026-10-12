@@ -12,10 +12,10 @@ import { NoteRow } from "./note-row";
 import { NotesMark } from "./notes-mark";
 
 /**
- * The Notes view of Your deck (the third `DeckPanel` value). Top to bottom: the input, or the cap line at
- * 100 notes (open and done together); the open notes newest first, six and then `Show all N`; `Done (N)`,
- * closed by default on every visit. Empty is the Games tab's shape with the Notes mark. It reads from the
- * page's payload, so a write's revalidation redraws it; nothing here is optimistic.
+ * The Notes view of Your deck (the third `DeckPanel` value). One frame, empty or not: the Notes mark, its
+ * heading and its pitch; then the input, or the cap line at 100 notes (open and done together); the open
+ * notes newest first, six and then `Show all N`; `Done (N)`, closed by default on every visit. It reads from
+ * the page's payload, so a write's revalidation redraws it; nothing here is optimistic.
  */
 export function DeckNotesPanel({
   deckId, notes: fromPage, deckCards,

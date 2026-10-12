@@ -6,13 +6,15 @@
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| view order | cap line or input → open (newest first) → Show all → `Done (N)` closed | same |
+| view order | NotesMark + heading + pitch (always, as the empty state draws them; Hugh 2026-10-12) → cap line or input → open (newest first) → Show all → `Done (N)` closed | same: mark left, the rest in the right column |
 | add row | column, gap 8: field full width; then a row, `justify-content: flex-end`, gap 8: counter mono 10 (`order:-1; margin-right:auto`) · `[[ ]]` 56×48 · `Add` min-w 104 × 48 | row, gap 8: field (flex 1) · `[[ ]]` 44×40 · `Add` h 40 |
 | field | `position:relative`, pad 11 44 11 13 (room for the ⓘ) | pad 9 40 9 12 |
 | ⓘ | shipped `InfoTip`, right 13, vertically centred; `lines = deckNotesCopy.help.lines`; tooltip spans the field | right 11; tooltip 340 wide, aligned right |
 | `[[ ]]` | inserts `[[]]` at the caret, caret between, opens the picker (`help.insertAria` names it for a screen reader); lit `--elevated` / `--fg` while the caret is in an open tag | same |
 | NotesMark | two slips 64×48, back `--elevated` / 1.5px `--border-strong` at +10/+10, front accent-tinted / 1.5px `--accent`; three lines (box 6 + bar 2); no rotation | slips 100×74 at +16/+16; box 9 + bar 3 |
-| empty body | one paragraph (`deckNotesCopy.empty.body`); the tag paragraph is removed | same |
+| pitch | one paragraph (`deckNotesCopy.empty.body`), drawn above the input with notes or without; the tag paragraph is removed | same |
+| count and hint | the count (`n / 140`) is always drawn, at a fixed 68 wide on desktop so it never resizes the field; the `Enter adds` line is always drawn (desktop) | same |
+| phone add bar | the sticky add-card bar is not drawn while Your deck is on Shopping, Notes or Stats | the bar stays |
 
 ---
 
