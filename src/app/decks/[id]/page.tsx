@@ -16,6 +16,7 @@ import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import type { PrintedInSet } from "../../../lib/sets/printed-in";
 import { cacheForUser } from "../../../lib/cache/user-lists";
+import { recordSoftFailure } from "../../../lib/cache/soft-failure";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
@@ -149,7 +150,18 @@ export default async function DeckBuilderPage({
   // fatal in Node. The marking does not swallow anything: the promise itself still rejects for
   // the `Promise.all` that awaits it.
   const early = <T,>(p: Promise<T>): Promise<T> => { p.catch(() => {}); return p; };
-  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId)));
+  // ONE availability read for the page, from this deck's vantage over the whole collection.
+  // `getDeckDetail` (its own rows and commanders) and the candidate pool below both used to run
+  // the claim model separately, ~150ms each on staging, the second only after the detail had
+  // resolved; the model costs the same however few ids it is asked for. Reader-scoped by
+  // `userId`, so a stranger's deck id reads nothing but the reader's own collection.
+  const availabilityRead = early(
+    perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id })).catch(() => {
+      recordSoftFailure();
+      return null;
+    }),
+  );
+  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId, availabilityRead)));
   // The Jobs card's labels start the moment the detail resolves, beside every other read, and are
   // awaited only where the card is drawn.
   // One label read serves the Jobs card and the Mana colors card's non-land sources.
@@ -369,14 +381,15 @@ export default async function DeckBuilderPage({
   const allNegative = poolEmptiedByNegativeCut({ ranked, inDeckOracleIds });
 
   // Sequential, not part of the Promise.all above: the suggestion and candidate
-  // oracle ids come out of those calls, so there is nothing to price or to ask
-  // availability for until they resolve.
+  // oracle ids come out of those calls, so there is nothing to price until they
+  // resolve. Availability is the exception: the page's one read (`availabilityRead`)
+  // started with the request over the whole collection, so it waits on nothing here.
   //
-  // Each read is scoped to the half of the candidate list that can use it. Only
-  // an unowned row draws a BuyTag, so pricing an owned candidate buys nothing;
-  // and `loadAvailability` is driven by the collection, so an unowned oracle id
-  // can never come back from it. `excludeDeckId` is the deck being built, so its
-  // own claims do not count against its own candidates.
+  // The price read is scoped to the unowned half of the candidate list: only an unowned row draws a
+  // BuyTag, so pricing an owned candidate buys nothing. Availability is looked up for the owned
+  // half only (`loadAvailability` is driven by the collection, so an unowned id is never in it),
+  // and `excludeDeckId` is the deck being built, so its own claims do not count against its own
+  // candidates.
   //
   // The Consider tiles take their markers from this same read, rather than from
   // the cached suggestions payload: a claim is point-in-time — another deck of
@@ -425,9 +438,8 @@ export default async function DeckBuilderPage({
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
     ], await readHeldPricePicks(userId, [id]))).catch(() => null),
-    ownedIds.length > 0
-      ? perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedIds })).catch(() => null)
-      : null,
+    // The page's one read, started with the request (above); only `.get` is used on it.
+    ownedIds.length > 0 ? availabilityRead : null,
     // BOTH POOLS IN ONE READ, which is 8b widening the read 8a scoped to the candidates.
     //
     // `DeckSuggestion` now DECLARES `facts`, so the Add panel's tiles are forced to read it

@@ -376,7 +376,37 @@ export function deckDetailReads(deckId: string, userId: string) {
   };
 }
 
-export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
+/**
+ * `getDeckDetail`'s availability: the caller's shared read when it passed one (the deck page's,
+ * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
+ * to look up. Apart so a test can pin that a shared read stands in for the query.
+ */
+export function deckAvailabilityRead(
+  userId: string,
+  deckId: string,
+  ids: readonly string[],
+  shared: Promise<Map<string, Availability> | null> | undefined,
+  load: typeof loadAvailability = loadAvailability,
+): Promise<Map<string, Availability> | null> | null {
+  if (ids.length === 0) return null;
+  if (shared) return shared;
+  return load(userId, { excludeDeckId: deckId, oracleIds: [...ids] }).catch(() => {
+    recordSoftFailure();
+    return null;
+  });
+}
+
+export async function getDeckDetail(
+  deckId: string,
+  userId: string,
+  /**
+   * The deck page's own availability read, from this deck's vantage over the WHOLE collection,
+   * started with the request. Passed, it stands in for the read below, so the claim model runs
+   * once per page rather than twice (it is ~150ms on staging however few ids it is asked for).
+   * Only `.get` is used on it, so the cards it holds beyond this deck's change nothing.
+   */
+  sharedAvailability?: Promise<Map<string, Availability> | null>,
+): Promise<DeckDetail | null> {
   // TWO WAVES, not seven reads in a row. Each read below used to wait for the one before it, and
   // on a `pull:staging` copy that chain was ~410-440ms for a 96-card deck, most of it round trips.
   // Wave 1 needs nothing but the deck id and the reader, so it runs at once; wave 2 needs the ids
@@ -431,11 +461,13 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
   // Swallowed because the decklist is the deck — it has to render whether or not
   // the availability rollup succeeded. A null map leaves every row markerless,
   // which is the same rendering as a card with nothing competing for it.
-  // Narrowed to this deck's owned rows, the only cards that will ever be looked
-  // up in the map. Unscoped, this aggregated the player's whole collection on
-  // every deck-page load; unowned rows are excluded for the same reason the
-  // search action excludes them, which is that the rollup is driven by the
-  // collection and cannot return them.
+  // Its own read is narrowed to this deck's owned rows, the only cards ever looked up in the
+  // map; unowned rows are excluded because the rollup is driven by the collection and cannot
+  // return them. The deck page passes `sharedAvailability` instead: one read over the whole
+  // collection that the page's candidate pool uses too. That costs no more than the narrowed one,
+  // measured on staging for the reference deck (92 owned ids: 96-177ms; the whole collection,
+  // 2,920 cards: 100-200ms; five runs each), because the claim model is the same work either way
+  // and the narrowing only filters its output.
   //
   // The printed name and the art both come from the player's own copy, which this
   // route does not otherwise read: the deck query is oracle-level. One extra query
@@ -471,12 +503,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .map((r) => r.oracleId);
   const availabilityIds = [...new Set([...ownedIds, ...ownedCommanderIds])];
   const [availability, resolved, bracketFlags] = await Promise.all([
-    availabilityIds.length > 0
-      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: availabilityIds }).catch(() => {
-          recordSoftFailure();
-          return null;
-        })
-      : null,
+    deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
     resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),
