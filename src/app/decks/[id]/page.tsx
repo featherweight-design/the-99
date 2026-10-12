@@ -284,7 +284,7 @@ export default async function DeckBuilderPage({
   const [
     { suggestions, degraded, shoppingFigures, mix },
     allDecks,
-    ranked,
+    { ranked, ownedArt },
     games,
     fillPasses,
     draft,
@@ -300,10 +300,17 @@ export default async function DeckBuilderPage({
       // passing detail.cards as coveredOracleIds would apply the role-coverage exclusion to them,
       // which is a different exclusion with a different meaning.
       openSlots > 0
-        ? perf.timed("synergy", () => readDeckSynergy(
-            userId, detail.commander.oracleId, detail.partner?.oracleId ?? null,
-          ))
-        : [],
+        ? perf.timed("synergy", async () => {
+            const read = await readDeckSynergy(userId, detail.commander.oracleId, detail.partner?.oracleId ?? null);
+            // The art an OWNED candidate is drawn with, so the Top-off hover shows the printing card details
+            // opens. `readSynergyCards` carries the catalog's one arbitrary printing per card, and an unowned
+            // card has no other. Read here, inside the synergy read's own slot in the wave, so it overlaps the
+            // other five reads rather than following them; overlaid below at the draw, not in the cached
+            // loader `/commanders/[slug]` shares.
+            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.filter((c) => c.owned).map((c) => c.oracleId)));
+            return { ranked: read, ownedArt: art };
+          })
+        : { ranked: [], ownedArt: new Map<string, string>() },
       gamesRead,
       fillPassesRead,
       draftRead,
@@ -488,10 +495,6 @@ export default async function DeckBuilderPage({
   // Attached here for the same reason `withPrice` above attaches its figure:
   // the row component then reads a field rather than doing two map lookups per
   // render, and BuilderShell takes one list rather than a list plus two maps.
-  // The art an OWNED candidate is drawn with, so the hover preview shows the printing card details opens.
-  // `readSynergyCards` carries the catalog's one arbitrary printing per card; an unowned card has no other.
-  // Overlaid here, at the draw, rather than inside the cached loader `/commanders/[slug]` shares.
-  const ownedArt = await chainArt(userId, null, candidateCards.filter((c) => c.owned).map((c) => c.oracleId));
   const candidates: TopOffCandidateWithFacts[] = candidateCards.map((c) => ({
     ...c,
     imageUri: ownedArt.get(c.oracleId) ?? c.imageUri,

@@ -7,16 +7,18 @@
 // below with the module that feeds it its art, and that module must call a resolver that applies the
 // chain. A new hover surface fails until it is added here, which is the point: nobody has to remember.
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const ROOT = join(__dirname, "..", "..", "..");
-const SRC = join(ROOT, "src");
+// import.meta.url, not __dirname: Vitest runs tests as ESM.
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The calls that apply the chain, or read the printing a version recorded (the version diff's own rule). */
-export const RESOLVERS = [
-  "chainArt(", "resolveOwnedPrintings(", "resolveDeckOwnedPrintings(", "withOwnedCardArt(", "readRecordedPrintingArt(",
-];
+export const RESOLVERS = new Set([
+  "chainArt", "resolveOwnedPrintings", "resolveDeckOwnedPrintings", "withOwnedCardArt", "readRecordedPrintingArt",
+]);
 
 /** Components that draw a hover preview, mapped to the module whose read supplies the art they hand it. */
 const FEEDERS: Record<string, string> = {
@@ -50,8 +52,20 @@ export function hoverSurfaces(files: Record<string, string>): string[] {
     .sort();
 }
 
+/** A real call to a resolver: a comment or a string that names one makes none. */
 export function usesResolver(src: string): boolean {
-  return RESOLVERS.some((call) => src.includes(call));
+  const file = ts.createSourceFile("feeder.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
+      if (RESOLVERS.has(name)) found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
 }
 
 describe("the hover-art guard's own failure paths", () => {
@@ -67,6 +81,10 @@ describe("the hover-art guard's own failure paths", () => {
   it("calls a feeder that reads cards.image_uri with no resolver unresolved", () => {
     expect(usesResolver(`const rows = await db.select({ imageUri: cards.imageUri }).from(cards);`)).toBe(false);
     expect(usesResolver(`const art = await chainArt(userId, null, ids);`)).toBe(true);
+  });
+
+  it("does not take a comment or a string that names a resolver for a call to it", () => {
+    expect(usesResolver(`// call chainArt(userId, null, ids) here\nconst note = "resolveOwnedPrintings(";\nexport const x = 1;`)).toBe(false);
   });
 });
 
