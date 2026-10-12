@@ -286,6 +286,16 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
   });
 
+  it("an add to the last deck that could take the card takes the offer away (P1b)", async () => {
+    await draw(panel({ candidates: 1 }), list({ fits: [list().fits[0]] }));
+    expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    actions.loadFitsAction.mockResolvedValue(list({ free: 0, fits: [], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    fireEvent.click(within(screen.getByTestId("fits-row")).getAllByRole("button").find((b) => b.textContent)!);
+    await settle();
+    expect(screen.queryByTestId("read-band-offer")).toBeNull();
+  });
+
   it("draws no band when every deck holds the card (P1b)", async () => {
     await draw(panel({ candidates: 0 }), list({ fits: [], holds: [{ id: "d-a", name: "Atraxa", quantity: 1, commanders: [] }] }));
     expect(screen.queryByTestId("read-band-offer")).toBeNull();

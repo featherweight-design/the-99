@@ -238,7 +238,9 @@ export function FitsView({
   const current = stored?.current ? stored : null;
   const failed = pressFailed || (panel?.view.failed != null && running === null);
   const candidates = panel?.candidates ?? 0;
-  const noList = list.read !== null && list.shown.length === 0;
+  // The list as last read, never the rows it opened with: an add to the last deck that could take the
+  // card leaves nothing to read for, and the offer goes (P1b).
+  const noList = list.read !== null && list.read.fits.length === 0;
   const oneDeck = candidates === 1 ? list.shown[0]?.name ?? null : null;
   const showsBand = panel !== null && candidates > 0 && !noList;
   // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
