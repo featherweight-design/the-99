@@ -885,8 +885,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    only, never width or height, so nothing reflows while it grows; the bar's own width or height
    is its final size throughout. The baseline is the caller's `origin-*` utility (left for a bar
    read left to right, right for one that grows toward a centre axis, bottom for a column). One
-   plain grow, no stagger. A re-render keeps the element, so a filter or a re-sort never replays
-   it. Reduced motion: the bar is simply there, in the block below. */
+   plain grow, no stagger. It runs once per mount: a re-render or a re-sort keeps the element and
+   never replays it, while a row a filter removes and later brings back is a new mount and grows
+   again. Reduced motion: the bar is simply there, in the block below. */
 @keyframes grow-x {
   from { transform: scaleX(0); }
 }
