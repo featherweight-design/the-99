@@ -358,6 +358,9 @@ describe("a joined token whose maker left the deck", () => {
     // Not a button at all: nothing to unfold means no focusable control that does nothing.
     expect(screen.queryByRole("button", { name: /from no card in this deck/ })).toBeNull();
     expect(screen.queryByText(/made by 0 cards/)).toBeNull();
+    // Its hand mark would be refused both ways, so the row offers none; the Shopping toggle stays (it leaves).
+    expect(screen.queryByRole("button", { name: /as in your collection/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /off this deck’s Shopping list/ })).toBeTruthy();
   });
 
 });

@@ -163,7 +163,8 @@ export function TokenRow({
           {upload ? (
             <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{tokensCopy.row.owned}</span>
           ) : null}
-          {upload ? null : (
+          {/* An orphan (no card makes it) is refused by the hand mark both ways, so it offers neither. */}
+          {upload || !canOpen ? null : (
             <button
               type="button"
               disabled={pending}

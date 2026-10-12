@@ -39,10 +39,12 @@ export async function leaveToken(userId: string, deckId: string, tokenOracleId: 
 export async function markOwnedOnDeck(userId: string, deckId: string, tokenOracleId: string): Promise<TokenWrite> {
   if (!(await deckMakesToken(deckId, userId, tokenOracleId))) return "notThisDeck";
   await db.transaction(async (tx) => {
-    await markTokenOwned(userId, tokenOracleId, tx);
+    // Joins first, then the ownership row: the upload takes them in this order too (`writeUploadTokens`), so
+    // an upload and a press that meet on one token cannot each hold what the other waits for.
     await tx.delete(deckTokenJoins).where(and(
       eq(deckTokenJoins.tokenOracleId, tokenOracleId), eq(deckTokenJoins.userId, userId),
     ));
+    await markTokenOwned(userId, tokenOracleId, tx);
   });
   return "done";
 }
