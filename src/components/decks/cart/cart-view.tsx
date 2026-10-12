@@ -265,13 +265,15 @@ export function CartView({
               </h2>
               {/* The list is its own scroll box at both widths, filling what the page leaves, so the
                   controls above it stay put. Focusable and named, so a keyboard reader can scroll it. */}
+              {/* The provider sits OUTSIDE the scroll box: it draws the modal where it is mounted, and the dialog's
+                  scroll lock looks for a scrollable ancestor, so mounted inside it would let the cart scroll behind. */}
+              <CardDetailProvider>
               <div
                 tabIndex={0}
                 role="region"
                 aria-label={copy.list.regionAria}
                 className="-mx-[13px] min-h-[120px] flex-1 overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] px-[13px]"
               >
-                <CardDetailProvider>
                 <HoverPreviewProvider>
                 {byDeck ? (
                   // Largest first, in the selections' own order; an unselected deck keeps its place.
@@ -300,13 +302,13 @@ export function CartView({
                   />
                 )}
                 </HoverPreviewProvider>
-                </CardDetailProvider>
                 <div
                   aria-hidden
                   className="pointer-events-none sticky bottom-0 -mt-[36px] h-[36px]"
                   style={{ background: "linear-gradient(to bottom, transparent, var(--bg))" }}
                 />
               </div>
+              </CardDetailProvider>
             </>
           )}
         </section>

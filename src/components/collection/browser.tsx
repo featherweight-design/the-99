@@ -623,7 +623,7 @@ export function CollectionBrowser({
   }, [filters, sort, sortDirection, view, openOracleId, openInList]);
 
   return (
-    <HoverPreviewProvider>
+    <>
       <FilterBar
         colorOptions={colorOptions}
         shown={sorted.length}
@@ -669,6 +669,9 @@ export function CollectionBrowser({
         </p>
       ) : null}
 
+      {/* Wrapping only the cards: the provider is a `div`, and the page's section is a flex column whose
+          `flex-1` child is the list, so the wrapper takes over that sizing and the chassis above stays a direct child. */}
+      <HoverPreviewProvider className="flex flex-1 flex-col">
       {sorted.length === 0 ? (
         <NoResults
           query={filters.search}
@@ -706,6 +709,7 @@ export function CollectionBrowser({
       ) : (
         <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
       )}
-    </HoverPreviewProvider>
+      </HoverPreviewProvider>
+    </>
   );
 }
