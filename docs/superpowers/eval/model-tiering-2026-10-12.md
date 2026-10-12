@@ -1,6 +1,6 @@
 # Model tiering for Suggested changes and Proposed cuts (2026-10-12)
 
-Two tools, three models: today's `claude-sonnet-5` (effort medium, the `TUNING_MODEL` and `TUNING_EFFORT` both tools use), `claude-sonnet-5-5` and `claude-haiku-5-5`, the last two at the same effort. Real-time prices throughout (what the app pays), staging read-only, nothing in `src/` changed. Harness: `pnpm eval:tuning-model-arms` (Suggested changes) and `pnpm eval:cuts-model --model … --text --realtime` (Proposed cuts). Ledgers: `ledger-model-tiering-tuning.jsonl` ($0.67 of $2) and `ledger-model-tiering-cuts.jsonl` ($1.55 of $2, which includes one $0.081 line that is an estimate, see below).
+Two tools, three models: today's `claude-sonnet-5` (effort medium, the `TUNING_MODEL` and `TUNING_EFFORT` both tools use), `claude-sonnet-5-5` and `claude-haiku-5-5`, the last two at the same effort. Real-time prices throughout (what the app pays), staging read-only, no production model constant or behavior changed (the only `src/` change registers the two eval ledgers' limits). Harness: `pnpm eval:tuning-model-arms` (Suggested changes) and `pnpm eval:cuts-model --model … --text --realtime` (Proposed cuts). Ledgers: `ledger-model-tiering-tuning.jsonl` ($0.67 of $2) and `ledger-model-tiering-cuts.jsonl` ($1.55 of $2, which includes one $0.081 line that is an estimate, see below).
 
 ## Read this first: what this does and does not show
 

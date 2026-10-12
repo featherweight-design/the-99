@@ -42,9 +42,23 @@ export async function openTuning() {
   // deck names, which makes the choice immaterial. The deck rows below are narrowed to that account.
   const hd = deckRows.filter((d) => d.name.startsWith("HD"));
   const users = [...new Set(hd.map((d) => d.user_id))].sort();
-  const namesOf = (u: string) => hd.filter((d) => d.user_id === u).map((d) => d.name).sort().join("|");
-  if (users.length === 0 || users.some((u) => namesOf(u) !== namesOf(users[0]))) {
-    throw new Error(`eval: the "HD" decks are not one account's, or are held differently by ${users.length} accounts`);
+  // Everything `prepare` reads per account must match, not only the names: the deck names, how many
+  // versions and games they hold, and the collection's size and content. A fingerprint that differs
+  // means the choice is NOT immaterial, and the run refuses.
+  const fingerprintOf = async (u: string) => {
+    const r = (await db.execute(sql`
+      select
+        (select string_agg(d.name || ':' || (select count(*) from deck_versions v where v.deck_id = d.id)
+                                   || ':' || (select count(*) from deck_games g where g.deck_id = d.id), '|' order by d.name)
+           from decks d where d.user_id = ${u} and d.name like 'HD%') as decks,
+        (select count(*) || ':' || coalesce(md5(string_agg(oracle_id::text || ':' || q::text, ',' order by oracle_id)), '')
+           from (select oracle_id, sum(quantity) as q from collection_items where user_id = ${u} group by oracle_id) c) as collection
+    `)).rows[0] as { decks: string; collection: string };
+    return `${r.decks}#${r.collection}`;
+  };
+  const prints = await Promise.all(users.map(fingerprintOf));
+  if (users.length === 0 || prints.some((p) => p !== prints[0])) {
+    throw new Error(`eval: the "HD" decks are not one account's, or the ${users.length} accounts holding them differ in versions, games or collection`);
   }
   const userId = users[0];
   for (let i = deckRows.length - 1; i >= 0; i--) if (deckRows[i].user_id !== userId) deckRows.splice(i, 1);

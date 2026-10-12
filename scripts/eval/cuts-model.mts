@@ -60,6 +60,10 @@ const CAP_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].hardCapUsd;
 const ASK_AT_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].askAtUsd;
 // Model tiering (2026-10-12): `--ledger ledger-model-tiering-cuts` bounds an arm set on its own ledger and its own, lower limits.
 const ledgerName = `${args.ledger ?? "ledger-cuts"}.jsonl`;
+// A model other than the app's belongs only on the tiering ledger (and its $2 cap).
+const TIERING_LEDGER = "ledger-model-tiering-cuts.jsonl";
+const TIERING_MODELS = ["claude-sonnet-5-5", "claude-haiku-5-5"];
+if (args.model !== undefined && TIERING_MODELS.includes(args.model) && ledgerName !== TIERING_LEDGER) throw new Error(`--model ${args.model} needs --ledger ledger-model-tiering-cuts`);
 const LIMITS = ledgerName === "ledger-cuts.jsonl" ? { hardCapUsd: CAP_USD, askAtUsd: ASK_AT_USD } : ledgerLimits(ledgerName);
 if (!LIMITS || LIMITS.askAtUsd === null) throw new Error(`${ledgerName} has no limits in src/lib/eval/ledger-limits.ts`);
 const RUN_CAP_USD = LIMITS.hardCapUsd;

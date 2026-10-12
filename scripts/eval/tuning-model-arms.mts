@@ -82,7 +82,7 @@ for (const [customId, answer] of run.answers) {
   const scored = scoreOf.get(customId) ?? { outcome: "malformed" };
   appendFileSync(out, `${JSON.stringify({
     runId: run.runId, arm: cell.id, deck: app.nameOf.get(deck.deckId), deckId: deck.deckId,
-    ...commonRow(cell, answer, false, app.maxTokens), ...scored, reply: answer.value,
+    ...commonRow(cell, answer, true, app.maxTokens), ...scored, reply: answer.value,
   })}\n`);
 }
 writeFileSync(new URL("done", run.dir), "ok\n");
