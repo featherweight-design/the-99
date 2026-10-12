@@ -38,6 +38,9 @@ export const decksStatsCopy = {
     ago: (days: number) => (days === 0 ? "today" : days === 1 ? "1 day ago" : `${n(days)} days ago`),
     deckResult: (w: number, games: number, sizes: readonly number[]) => `won ${n(w)} of ${n(games)} · ${pods(sizes)}`,
     head: "LAST · RESULTS",
+    /** The lane's games for a screen reader, oldest first: the beads say this, and they are hidden. */
+    gamesAria: (games: readonly { result: "win" | "loss" | "draw"; date: string }[]) =>
+      games.map((g) => `${{ win: "won", loss: "lost", draw: "drew" }[g.result]} ${g.date}`).join(", "),
     never: "Never played",
     neverCount: (k: number, total: number) => `${n(k)} of ${n(total)}`,
     noGames: "No games logged yet.",

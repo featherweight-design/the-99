@@ -90,7 +90,7 @@ import type { LineupData } from "../../lib/lineup/types";
 import { DECKS_VIEW_COOKIE, type DecksView as DecksViewName } from "../ui/view-cookie";
 import { readLineupStats } from "../../app/decks/lineup-actions";
 import { LineupView } from "./lineup/lineup-view";
-import { StatsViewSwitch } from "./lineup/stats-view-switch";
+import { StatsViewSwitch, viewPanelId, viewTabId } from "./lineup/stats-view-switch";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -331,6 +331,11 @@ export function DecksView({
   const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : "tiles");
   const [heldStats, setHeldStats] = useState<LineupData | null>(lineup?.data ?? null);
   const [statsPending, setStatsPending] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   if (lineup?.data && lineup.data !== heldStats) {
     setHeldStats(lineup.data);
     // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
@@ -344,14 +349,19 @@ export function DecksView({
     const params = new URLSearchParams(window.location.search);
     if (next === "stats") params.set("view", "stats");
     else params.delete("view");
-    const url = params.size > 0 ? `?${params}` : window.location.pathname;
+    // A whole path, never a bare `?…`: a write that landed after the reader had moved on would otherwise
+    // resolve against wherever they went.
+    const path = window.location.pathname;
+    const url = params.size > 0 ? `${path}?${params}` : path;
     // Stats not read yet this visit: read it (the page's own cached read), then flip in place. A failed read
     // leaves Tiles drawn, and a second press asks again.
     if (next === "stats" && !heldStats) {
       setStatsPending(true);
       readLineupStats()
         .then((data) => {
-          if (!data) return;
+          // The reader may have left, or be leaving, while the read ran: then nothing is drawn, written or
+          // remembered. `mirrorUrl` refuses a write off its own page too; this keeps the preference honest.
+          if (!data || !mounted.current || window.location.pathname !== path) return;
           // Remembered only once it is drawn, so a failed read never sends the next visit to Stats.
           chooseView("stats");
           setHeldStats(data);
@@ -359,7 +369,7 @@ export function DecksView({
           mirrorUrl(url);
         })
         .catch(() => {})
-        .finally(() => setStatsPending(false));
+        .finally(() => { if (mounted.current) setStatsPending(false); });
       return;
     }
     chooseView(next);
@@ -931,6 +941,8 @@ export function DecksView({
             />
           )}
 
+          {/* With the Stats switch drawn, everything under the shelf row is the Tiles tab's panel. */}
+          <div {...(lineup ? { role: "tabpanel", id: viewPanelId("tiles"), "aria-labelledby": viewTabId("tiles") } : {})} className="flex min-h-0 flex-auto flex-col">
           <FilterChassis
             form={wide ? "wide" : "compact"}
             controls={
@@ -1286,6 +1298,7 @@ export function DecksView({
               ))}
             </ul>
           )}
+          </div>
           </>)}
 
         </div>

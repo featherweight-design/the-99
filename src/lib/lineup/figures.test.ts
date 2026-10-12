@@ -37,7 +37,7 @@ describe("recency", () => {
 
   it("puts the first game in scope at the left edge and today at the right, beads oldest first", () => {
     const r = recency(ds, NOW);
-    expect(r.lanes[1].beads[0]).toEqual({ result: "loss", at: 0 });
+    expect(r.lanes[1].beads[0]).toMatchObject({ result: "loss", at: 0 });
     // Jul 17 to Oct 5 is 80 days of the 86 to today.
     expect(r.lanes[0].beads[0].at).toBeCloseTo(80 / 86, 5);
     expect(r.lanes[0].lastAt).toBeCloseTo(80 / 86, 5);
@@ -47,6 +47,15 @@ describe("recency", () => {
   it("has no lanes and no axis with no games, and every deck is never played", () => {
     const r = recency([deck("a"), deck("b")], NOW);
     expect([r.lanes, r.axis, r.lastAgo, r.never.length]).toEqual([[], null, null, 2]);
+  });
+});
+
+describe("recency on a zero-day axis", () => {
+  it("puts games played today at the right edge, which is today", () => {
+    const r = recency([deck("a", { games: [game("2026-10-11", "win")] })], NOW);
+    expect(r.lanes[0].beads[0].at).toBe(1);
+    expect(r.lanes[0].lastAt).toBe(1);
+    expect(r.axis?.months).toEqual([]);
   });
 });
 

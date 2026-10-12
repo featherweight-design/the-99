@@ -57,6 +57,17 @@ describe("LineupView: folding", () => {
   });
 });
 
+describe("LineupView: keyboard", () => {
+  it("makes the filter one tab stop, and the arrows move the selection", () => {
+    draw(DATA, "recency,spread");
+    const [all, fin] = screen.getAllByRole("radio").slice(0, 2);
+    expect([all.tabIndex, fin.tabIndex]).toEqual([0, -1]);
+    fireEvent.keyDown(all, { key: "ArrowRight" });
+    expect(screen.getAllByRole("radio")[1].getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(screen.getAllByRole("radio")[1]);
+  });
+});
+
 describe("LineupView: the filter", () => {
   it("leaves brews out of every chart under Finished only, and says so", () => {
     draw(DATA, "recency,spread");
@@ -75,6 +86,8 @@ describe("LineupView: recency", () => {
     expect(lanes).toEqual(["scrappy", "tovolar"]);
     expect(within(card("recency")).getByText("won 1 of 3")).toBeTruthy();
     expect(within(card("recency")).getByText("won 0 of 2 · pods of 3–4")).toBeTruthy();
+    // The hidden beads, said: every game, oldest first.
+    expect(within(card("recency")).getByText("lost Jul 17, lost Sep 12")).toBeTruthy();
     const never = card("recency").querySelector("[data-stats-never]") as HTMLElement;
     expect(within(never).getAllByRole("link").map((a) => a.textContent)).toEqual(["Eldrazi", "Gishath"]);
     expect(within(never).getByRole("link", { name: "Eldrazi" }).getAttribute("href")).toBe("/decks/eldrazi");

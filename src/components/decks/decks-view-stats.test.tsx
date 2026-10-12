@@ -80,6 +80,18 @@ describe("DecksView: Stats on /decks", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("makes the switch one tab stop naming its panel, and an arrow moves to Stats", async () => {
+    read.stats.mockResolvedValue(STATS);
+    draw({ data: null, view: "tiles", foldServer: null });
+    const tiles = screen.getByRole("tab", { name: "Tiles" });
+    expect([tiles.tabIndex, screen.getByRole("tab", { name: "Stats" }).tabIndex]).toEqual([0, -1]);
+    expect(document.getElementById(tiles.getAttribute("aria-controls")!)?.getAttribute("role")).toBe("tabpanel");
+    fireEvent.keyDown(tiles, { key: "ArrowRight" });
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    const stats = screen.getByRole("tab", { name: "Stats" });
+    expect(document.getElementById(stats.getAttribute("aria-controls")!)?.getAttribute("role")).toBe("tabpanel");
+  });
+
   it("draws Stats when the server drew it, from ?view=stats or the remembered choice", () => {
     draw({ data: STATS, view: "stats", foldServer: null });
     expect(screen.getByRole("tab", { name: "Stats" }).getAttribute("aria-selected")).toBe("true");

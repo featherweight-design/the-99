@@ -12,20 +12,39 @@ import type { LineupData, LineupFilter } from "../../../lib/lineup/types";
 import { FoldCard, useDecksStatsFold } from "./fold";
 import { RecencyBody } from "./recency-card";
 import { SpreadBody } from "./spread-card";
-import { SEGMENT, SEGMENT_OFF, SEGMENT_ON } from "./stats-view-switch";
+import { onSegmentKeys } from "./segment-keys";
+import { SEGMENT, SEGMENT_OFF, SEGMENT_ON, viewPanelId, viewTabId } from "./stats-view-switch";
 
 const copy = decksStatsCopy;
 
+const FILTERS = ["all", "finished"] as const;
+
+/** One tab stop, arrows move the selection (the radiogroup contract). Drawn twice, for the two widths, so
+ *  each copy's ids carry its width. */
 function Filter({ filter, onFilter, phone }: { filter: LineupFilter; onFilter: (f: LineupFilter) => void; phone: boolean }) {
-  const seg = (f: LineupFilter, label: string) => (
-    <button type="button" role="radio" aria-checked={filter === f} data-stats-filter={f} onClick={() => onFilter(f)} className={`${SEGMENT} ${filter === f ? SEGMENT_ON : SEGMENT_OFF}`}>
-      {label}
-    </button>
-  );
+  const idOf = (f: LineupFilter) => `stats-filter-${phone ? "phone" : "wide"}-${f}`;
   return (
-    <div role="radiogroup" aria-label={copy.filter.aria} className={`gap-[2px] rounded-[9px] border border-[color:var(--border-strong)] p-[2px] ${phone ? "grid grid-cols-2" : "flex flex-none"}`}>
-      {seg("all", copy.filter.all)}
-      {seg("finished", copy.filter.finished)}
+    <div
+      role="radiogroup"
+      aria-label={copy.filter.aria}
+      onKeyDown={(e) => onSegmentKeys(e, FILTERS, idOf, onFilter)}
+      className={`gap-[2px] rounded-[9px] border border-[color:var(--border-strong)] p-[2px] ${phone ? "grid grid-cols-2" : "flex flex-none"}`}
+    >
+      {FILTERS.map((f) => (
+        <button
+          key={f}
+          type="button"
+          role="radio"
+          id={idOf(f)}
+          aria-checked={filter === f}
+          tabIndex={filter === f ? 0 : -1}
+          data-stats-filter={f}
+          onClick={() => onFilter(f)}
+          className={`${SEGMENT} ${filter === f ? SEGMENT_ON : SEGMENT_OFF}`}
+        >
+          {f === "all" ? copy.filter.all : copy.filter.finished}
+        </button>
+      ))}
     </div>
   );
 }
@@ -72,7 +91,7 @@ export function LineupView({ data, now, foldServer, viewSwitch }: {
         {scopeLine}
       </div>
 
-      <div className="flex flex-col gap-[10px] px-[16px] pt-[4px] pb-[20px] md:gap-[12px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:pt-[14px] md:pb-[28px]">
+      <div role="tabpanel" id={viewPanelId("stats")} aria-labelledby={viewTabId("stats")} className="flex flex-col gap-[10px] px-[16px] pt-[4px] pb-[20px] md:gap-[12px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:pt-[14px] md:pb-[28px]">
         {one ? <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.one}</p> : null}
         <FoldCard
           id="recency"

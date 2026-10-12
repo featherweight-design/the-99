@@ -11,6 +11,7 @@ import { Bead } from "../deck-stats-results";
 import { DeckName } from "./deck-link";
 
 const copy = decksStatsCopy.recency;
+const DAY = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const MONTH_YEAR = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 
 /** `Jul to Oct 2026`, from the axis's own two ends. */
@@ -66,6 +67,7 @@ export function RecencyBody({ r, total }: { r: Recency; total: number }) {
                 <div className="flex flex-col items-end gap-[1px] [grid-area:f]">
                   <span className="whitespace-nowrap font-mono text-[11.5px] text-[color:var(--fg)]">{copy.ago(lane.ago)}</span>
                   <span className="whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.deckResult(lane.wins, lane.games, lane.pods)}</span>
+                  <span className="sr-only">{copy.gamesAria(lane.beads.map((b) => ({ result: b.result, date: DAY.format(new Date(b.playedAt)) })))}</span>
                 </div>
               </div>
             ))}

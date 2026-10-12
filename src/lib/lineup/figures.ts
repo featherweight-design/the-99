@@ -39,7 +39,7 @@ export type RecencyLane = {
   /** Days from the deck's last game to today. */
   ago: number;
   /** Each game's position on the axis, 0 (the first game in scope) to 1 (today), oldest first. */
-  beads: { result: LineupGame["result"]; at: number }[];
+  beads: { result: LineupGame["result"]; at: number; playedAt: string }[];
   /** Where the line from the last game to today starts. */
   lastAt: number;
 };
@@ -67,14 +67,15 @@ export function recency(decks: readonly LineupDeck[], now: string): Recency {
 
   const start = Math.min(...all.map((g) => utcDay(g.playedAt)));
   const end = utcDay(now);
-  const span = Math.max(1, end - start);
-  const at = (iso: string) => Math.min(1, Math.max(0, (utcDay(iso) - start) / span));
+  const span = end - start;
+  // Every game in scope played today: a zero-day axis, where each sits at the right edge, which is today.
+  const at = (iso: string) => (span <= 0 ? 1 : Math.min(1, Math.max(0, (utcDay(iso) - start) / span)));
   const months: { label: string; at: number }[] = [];
   for (let d = new Date(start * DAY); ; ) {
     d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
     const day = utcDay(d);
     if (day >= end) break;
-    months.push({ label: MONTH.format(d), at: (day - start) / span });
+    months.push({ label: MONTH.format(d), at: span <= 0 ? 1 : (day - start) / span });
   }
   const newest = (d: LineupDeck) => Math.max(...d.games.map((g) => utcDay(g.playedAt)));
   const lanes = played
@@ -90,7 +91,7 @@ export function recency(decks: readonly LineupDeck[], now: string): Recency {
         games: r.played,
         pods: podSizes(deck.games),
         ago: daysAgo(last, now),
-        beads: oldestFirst.map((g) => ({ result: g.result, at: at(g.playedAt) })),
+        beads: oldestFirst.map((g) => ({ result: g.result, at: at(g.playedAt), playedAt: g.playedAt })),
         lastAt: at(last),
       };
     });
