@@ -188,7 +188,7 @@
     },
     {
       "id": "s2",
-      "label": "Start the deck: the new draft with the precon arrival strip (S2)",
+      "label": "Start the deck: the new draft with the precon arrival strip (S2) \u00b7 creates a draft deck on the account each run: capture it on a scratch branch, never a shared database",
       "view": "src/components/decks/arrival-strip.tsx",
       "steps": [
         {

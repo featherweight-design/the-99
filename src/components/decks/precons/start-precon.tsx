@@ -53,6 +53,7 @@ export function StartPrecon(props: StartPreconProps) {
 
 function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPreconProps & { onDismiss: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
+  const inFlight = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(row.name.slice(0, DECK_NAME_MAX));
   const [pending, setPending] = useState(false);
@@ -73,7 +74,10 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";
 
   function submit() {
-    if (!valid || pending) return;
+    // A ref, not the state: two presses inside one render both read `pending` false, and each
+    // would start a deck.
+    if (!valid || inFlight.current) return;
+    inFlight.current = true;
     setPending(true);
     setFailed(false);
     // In a transition, as the picker's create is, so the router takes the redirect it rethrows.
@@ -86,6 +90,7 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
         // every successful start would paint the failure for the frame the navigation takes.
         unstable_rethrow(err);
         setFailed(true);
+        inFlight.current = false;
         setPending(false);
       }
     });
