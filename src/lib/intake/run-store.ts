@@ -137,8 +137,11 @@ export async function loadTheRead(readId: string, userId: string, now: Date = ne
   if (!row) return { kind: "none" };
   const result = (row.result ?? null) as TheReadResult | null;
   if (row.status === "pending") {
-    // Past the reaper's cutoff nothing will settle it: it reads as failed, as the reaper will make it.
-    return row.createdAt < reapCutoff(now) ? { kind: "failed" } : { kind: "pending", phase: (row.phase ?? null) as "shortlist" | "judge" | null };
+    if (row.createdAt >= reapCutoff(now)) return { kind: "pending", phase: (row.phase ?? null) as "shortlist" | "judge" | null };
+    // Past the reaper's cutoff nothing will settle it. Reap it here, refunding its credit, before
+    // the panel says the credit came back: the allowance then agrees with what it is told.
+    await db.transaction((tx) => reapReads(tx, userId, now));
+    return { kind: "failed" };
   }
   if (row.status === "ok" && result) return { kind: "done", result };
   if (row.status === "failed" && row.errorClass === "nothing_valid") return { kind: "nothing", result };

@@ -96,6 +96,7 @@ export function stubTheReadDeps(env: Record<string, string | undefined> = proces
     judge: async (req) => {
       await hold();
       if (mode === "busy") return { ok: false, errorClass: "upstream_busy", usage: NO_USAGE };
+      if (mode === "malformed" || mode === "timeout") return { ok: false, errorClass: mode, usage: NO_USAGE };
       if (mode === "nothing") return { ok: true, value: { picks: [] }, usage: NO_USAGE };
       const keys = [...req.user.matchAll(/^(\d+)\|/gm)].slice(0, 3).map((m) => Number(m[1]));
       return { ok: true, value: { picks: keys.map((key) => ({ key, reason: "Its rules text builds the deck you described." })) }, usage: NO_USAGE };
