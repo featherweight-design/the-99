@@ -144,6 +144,7 @@ export const adminCopy = {
     labelMeta: (batches: number | null, tokens: string | null) =>
       [batches === null ? "manual collector" : plural(batches, "batch", "batches"), tokens ? `${tokens} tokens` : null].filter(Boolean).join(" · "),
     noLabelRuns: (month: string) => `No label runs in ${month}.`,
+    unpriced: "not priced",
     labelsOnStaging: "Card labels run on staging; production receives copies and calls no model for them.",
     evals: "Eval ledgers",
     evalsMeta: "committed in the repo; they move only with a merge",

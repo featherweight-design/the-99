@@ -92,6 +92,11 @@ describe("costDetail, by model", () => {
     const d = costDetail(rows({ labelRuns: [labelRun({ model: "claude-haiku-4-5-20251001", inTokens: 1_000_000, outTokens: 0 })] }), OCT);
     expect(d.labelRuns[0].micro).toBe(500_000);
   });
+
+  it("draws a run whose model cannot be priced from summed meters as unpriced, never as $0", () => {
+    const d = costDetail(rows({ labelRuns: [labelRun({ model: "claude-haiku-5-5" })] }), OCT);
+    expect(d.labelRuns[0]).toMatchObject({ unpriced: true, micro: 0 });
+  });
 });
 
 describe("costDetail, by feature", () => {

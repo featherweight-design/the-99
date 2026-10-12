@@ -114,7 +114,7 @@ export type FeatureRow = {
   p90Micro: number | null;
 };
 
-export type LabelRun = { runId: string | null; firstAt: Date; source: "batches" | "collector"; batches: number | null; tokens: { in: number; out: number } | null; micro: number };
+export type LabelRun = { runId: string | null; firstAt: Date; source: "batches" | "collector"; batches: number | null; tokens: { in: number; out: number } | null; micro: number; unpriced?: true };
 
 export type LedgerRow = {
   file: string;
@@ -174,6 +174,15 @@ const mean = (xs: readonly number[]) => (xs.length ? Math.round(xs.reduce((a, b)
 
 const RESERVED_FEATURES = Object.keys(FEATURE_CALLS) as ModelFeature[];
 
+/** A batch run's cost, or null when its model cannot be priced from summed meters. */
+function batchPrice(model: string, t: LabelRunRow): number | null {
+  try {
+    return batchCostMicroUsd(model, t);
+  } catch {
+    return null;
+  }
+}
+
 export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   const calls = providerCalls(rows.calls, rows.parts);
 
@@ -197,8 +206,10 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
   const runsById = new Map<string, LabelRun>();
   let batchMicro = 0;
   for (const r of rows.labelRuns) {
-    // A dated id (`claude-haiku-4-5-20251001`, as the label job submits Haiku) prices as its model.
-    const micro = r.collected > 0 ? batchCostMicroUsd(r.model.replace(/-\d{8}$/, ""), r) : 0;
+    // `batchCostMicroUsd` prices a dated id on its base card and refuses a model it cannot price
+    // from summed meters (no rate, or a rate step). Such a run is drawn as unpriced, never as $0.
+    const priced = r.collected === 0 ? 0 : batchPrice(r.model, r);
+    const micro = priced ?? 0;
     const m = modelRow(r.model);
     m.micro += micro;
     m.batches += r.batches;
@@ -208,10 +219,11 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
     if (run) {
       run.batches = (run.batches ?? 0) + r.batches;
       run.micro += micro;
+      if (priced === null) run.unpriced = true;
       if (r.firstAt < run.firstAt) run.firstAt = r.firstAt;
       if (r.collected > 0) run.tokens = { in: (run.tokens?.in ?? 0) + r.inTokens, out: (run.tokens?.out ?? 0) + r.outTokens };
     } else {
-      const fresh: LabelRun = { runId: r.runId, firstAt: r.firstAt, source: "batches", batches: r.batches, tokens: r.collected > 0 ? { in: r.inTokens, out: r.outTokens } : null, micro };
+      const fresh: LabelRun = { runId: r.runId, firstAt: r.firstAt, source: "batches", batches: r.batches, tokens: r.collected > 0 ? { in: r.inTokens, out: r.outTokens } : null, micro, ...(priced === null ? { unpriced: true as const } : {}) };
       runsById.set(r.runId, fresh);
       labelRuns.push(fresh);
     }

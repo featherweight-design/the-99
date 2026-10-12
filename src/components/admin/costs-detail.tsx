@@ -244,7 +244,8 @@ function LabelRuns({ d, month }: { d: CostDetail; month: MonthKey }) {
   const rows: Row[] = d.labelRuns.map((r) => {
     const title = `${fmtDay(r.firstAt)} · ${r.runId ?? copy.labelSource.collector}`;
     const tokens = r.tokens ? `${millions(r.tokens.in)} / ${millions(r.tokens.out)}` : null;
-    return { cells: [title, r.batches ?? "—", tokens ?? "—", usd(r.micro)], title, fig: usd(r.micro), meta: copy.labelMeta(r.batches, tokens) };
+    const fig = r.unpriced ? copy.unpriced : usd(r.micro);
+    return { cells: [title, r.batches ?? "—", tokens ?? "—", fig], title, fig, meta: copy.labelMeta(r.batches, tokens) };
   });
   const batches = d.labelRuns.reduce((n, r) => n + (r.batches ?? 0), 0);
   const micro = d.labelRuns.reduce((n, r) => n + r.micro, 0);
