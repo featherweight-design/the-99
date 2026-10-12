@@ -22,6 +22,7 @@ import {
   type ShelfCounts,
 } from "../../lib/decks/folder-view";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
+import { Chevron } from "../ui/chevron";
 
 export type ShelfSegment = { shelf: Shelf; label: string; count: number };
 
@@ -218,9 +219,7 @@ export function ShelfTrigger({
         <span className="font-mono text-[11px] font-normal text-[color:var(--fg-faint)]">
           {count}
         </span>
-        <span aria-hidden className="flex-none text-[color:var(--fg-faint)]">
-          ▾
-        </span>
+        <Chevron className="flex-none text-[color:var(--fg-faint)]" />
       </button>
       {/* `flex-none`, so the label yields before the action does. */}
       {menu && <span className="flex-none">{menu}</span>}

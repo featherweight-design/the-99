@@ -8,6 +8,7 @@ import { useId, useState } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { formatCents } from "../../../lib/decks/price";
 import type { CartDeck } from "../../../lib/decks/cart";
+import { Chevron } from "../../ui/chevron";
 
 export function DeckSelect({
   decks,
@@ -69,9 +70,9 @@ export function DeckSelect({
           tabIndex={-1}
           aria-hidden
           onClick={() => setOpen((v) => !v)}
-          className="flex h-[44px] w-[28px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:hidden"
+          className="flex h-[44px] w-[28px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden"
         >
-          {open ? "▴" : "▾"}
+          <Chevron open={open} />
         </button>
       </div>
       {/* The page is one screen tall (Hugh, 2026-10-11): an open phone list scrolls inside a cap, and

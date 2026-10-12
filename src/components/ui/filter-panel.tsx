@@ -34,6 +34,7 @@ import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
 import { SearchField } from "./text-field";
 import { useIsDesktop } from "./use-is-desktop";
+import { Chevron } from "./chevron";
 
 export type FilterPanelOption = {
   /**
@@ -1053,7 +1054,7 @@ export function FilterPanel({
             {selected.length}
           </span>
         )}
-        <span aria-hidden>{open ? "▴" : "▾"}</span>
+        <Chevron open={open} />
       </button>
 
       {open &&

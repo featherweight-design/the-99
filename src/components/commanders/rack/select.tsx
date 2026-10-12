@@ -11,6 +11,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { PENDING_OPACITY } from "../pending";
 import { PendingLabel, PendingMark } from "../../ui/pending-mark";
+import { Chevron } from "../../ui/chevron";
 
 export type RackOption<K extends string> = {
   key: K;
@@ -267,7 +268,7 @@ export function RackSelect<K extends string>({
               aria-hidden
               className="inline-flex w-[28px] justify-center text-[color:var(--accent)]"
             >
-              {pending ? <PendingMark /> : "▾"}
+              {pending ? <PendingMark /> : <Chevron />}
             </span>
           </>
         )}

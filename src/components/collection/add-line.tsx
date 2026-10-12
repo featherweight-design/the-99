@@ -13,6 +13,7 @@ import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PrintingRegion } from "../cards/printing-region";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
 import { twMerge } from "tailwind-merge";
+import { Chevron } from "../ui/chevron";
 
 const copy = collectionEditCopy.add;
 
@@ -107,7 +108,7 @@ export function AddLine(props: AddLineProps) {
               className="inline-flex h-[32px] cursor-pointer items-center gap-[6px] self-start rounded-[7px] border border-solid border-[color:var(--border-strong)] px-[10px] font-mono text-[11.5px] text-[color:var(--fg-body)] disabled:cursor-default md:h-[24px] md:rounded-[6px] md:px-[8px] md:text-[11px]"
             >
               {printingLabel(p)}
-              <span aria-hidden>{picking ? "▴" : "▾"}</span>
+              <Chevron open={picking} />
             </button>
           )}
         </div>

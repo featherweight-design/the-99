@@ -50,6 +50,7 @@ import { ProxyControl } from "../decks/proxy-control";
 import { TokenCardLine } from "../decks/token-card-line";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
+import { Chevron, CHEVRON_CLASS } from "../ui/chevron";
 
 const pickerCopy = printingPickerCopy.printing;
 
@@ -2448,7 +2449,7 @@ export function CardModal({
                         className="flex cursor-pointer items-center justify-center gap-[8px] border-0 border-r border-r-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                       >
                         {cardSheetCopy.expand}
-                        <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
+                        <Chevron open style={{ color: "var(--fg-faint)" }} />
                       </button>
                       <div data-testid="teaser-footer-action" className="flex items-center justify-center px-[12px]">{footer("teaserAction")}</div>
                     </div>
@@ -2460,7 +2461,7 @@ export function CardModal({
                     className="-mx-[20px] mt-auto flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] border-t border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                   >
                     {cardSheetCopy.expand}
-                    <span aria-hidden style={{ color: "var(--fg-faint)" }}>▴</span>
+                    <Chevron open style={{ color: "var(--fg-faint)" }} />
                   </button>
                 )}
               </div>
@@ -3049,7 +3050,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
   if (picked === null) {
     return (
       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent)" }}>
-        {pickerCopy.triggerCount(count)} {chevron}
+        {pickerCopy.triggerCount(count)} <span className={CHEVRON_CLASS}>{chevron}</span>
       </div>
     );
   }
@@ -3063,7 +3064,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
         {picked}
       </span>
       <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-        {pickerCopy.triggerPickedOf(count)} {chevron}
+        {pickerCopy.triggerPickedOf(count)} <span className={CHEVRON_CLASS}>{chevron}</span>
       </span>
     </div>
   );

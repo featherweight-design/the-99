@@ -21,6 +21,7 @@ import { howItWorksLinksCopy } from "../../lib/copy/how-it-works-links";
 import { GhostButton } from "../ui/button";
 import { SearchField } from "../ui/text-field";
 import { CURRENT_BAND, type RailChapter } from "./contents-rail";
+import { CHEVRON_CLASS } from "../ui/chevron";
 
 export type ContentsEntry = { id: string; title: string; isNew: boolean };
 export type ContentsChapter = RailChapter & { entries: ContentsEntry[] };
@@ -451,7 +452,7 @@ export function ContentsListR6({
                         </span>
                         <span
                           aria-hidden
-                          className={`text-[11px] text-[color:var(--fg-faint)] ${open ? "rotate-180" : ""}`}
+                          className={`${CHEVRON_CLASS} text-[color:var(--fg-faint)] ${open ? "rotate-180" : ""}`}
                         >
                           ▾
                         </span>
@@ -541,7 +542,7 @@ function AppendixListRow({
             className="flex min-h-[44px] min-w-[44px] flex-none items-center justify-end gap-[8px]"
           >
             <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{figure}</span>
-            <span aria-hidden className={`text-[11px] text-[color:var(--fg-faint)] ${open ? "rotate-180" : ""}`}>
+            <span aria-hidden className={`${CHEVRON_CLASS} text-[color:var(--fg-faint)] ${open ? "rotate-180" : ""}`}>
               ▾
             </span>
           </button>
