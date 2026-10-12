@@ -124,3 +124,17 @@
 | body | 12.5 / 1.55 `--fg-body` `precons.arrival.body(own, of, toBuy)` or `bodyAll` |
 | meta | mono 10.5 `--fg-faint` `precons.arrival.meta(set)` |
 | lifetime | until dismissed or the first commit, per deck |
+
+
+## K · Built-from link and v0 (R3 addendum)
+| Element | Token / value | Notes |
+|---|---|---|
+| Suggestion strip | `--surface-rail`, 1px `--border-strong`, radius 10, pad 11 4 11 14 | between header and tabs; 900 inset 22, 390 inset 16 |
+| Link it / Link | 1px `--accent` outline, radius 8, 36px (44 at 390), 13.5/600 `--accent` | the create door's CTA shape |
+| Versions foot row | 1px dashed `--border-dashed`, radius 9, no fill | sits where v0 lands |
+| v0 row | 1px dashed `--border-dashed`, transparent; number `--fg-faint`; note `--fg-body`; delta word `the box` `--fg-faint` | never accent rule / current |
+| v0 divider | mono 9.5 caps 0.14em `--fg-faint`, dashed rules either side | above v0 only when vN exist |
+| Against-v0 box | 1px dashed `--border-dashed`, radius 8, mono 10.5 `--fg-muted` / `--fg-faint` | above `todayNote` in v1's diff |
+| v0 panel note | `--surface-sunken`, 1px dashed `--border-dashed`, radius 9, full width | replaces InitialPanel's accent rule |
+| Picker rows | radio 22px, 2px `--accent` on / `--border-dashed` off; selected row 1px `--accent` on `--surface-rail` | 52px (56 at 390) |
+| Unlink / Link confirm | R2 start dialog chrome; primary `--btn` | never `--danger` |

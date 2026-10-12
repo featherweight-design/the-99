@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="kaldheim" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div id="C0" style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">PRECONS R3 · ADDENDUM · APPROVED</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Built-from link and v0</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief §Addendum, 2026-10-11 · approved 2026-10-12 with R1 notes applied · parent: Precons R2</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">The suggestion asks under the header. The answer lives in Versions, where the precon’s list sits under v1 as history.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">A deck links to one precon. The link adds a v0 to the bottom of Versions and changes nothing else: no card, printing, version or status moves. The suggestion is computed when the page is read and shows only while the deck is unlinked. Every share is a count, with no verdict word. Figures are the addendum’s fixtures. Deck names other than Hugh’s HD Tune decks, card lists and anything in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">‹ ›</span> are illustrative. All copy is a placeholder for /copy-review.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="9">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ c.where }}</span></div><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="16">
+    <section id="{{ sec.id }}" data-screen-label="{{ sec.id }} {{ sec.title }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Precons Link" scene="{{ sec.scene }}" hint-size="900px,760px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Precons Link" scene="{{ sec.scene }}" phone="{{ true }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      calls: [
+        { k: "Link on the deck", where: "K1 · K5 · K6", v: "Two doors. The suggestion's Link it, under the header, when the rule holds. Otherwise a dashed Built from a precon? row at the foot of Versions, in the place v0 will take. No standing header button: most decks were never a precon." },
+        { k: "Link on the precon", where: "K7", v: "Link a deck, a ghost button beside Start a deck from this (docked beside it at 390). It opens a picker of your decks, most shared first, with select / unselect radios. A deck linked elsewhere says so, and linking moves it." },
+        { k: "The suggestion", where: "K1 · K2 · K15", v: "Looks like this started as Eldrazi Unbound. One strip above the tabs, the arrival strip's shell: a count line, Link it, and ✕. A different commander is said in the sentence. Two matches list both, same commander first." },
+        { k: "Dismissal", where: "K1", v: "✕ hides it for that deck and that precon, remembered per browser like the deck sort, so nothing is stored. A different precon crossing the rule later can still suggest. Versions' foot row stays as the way back." },
+        { k: "Linked state", where: "K4 · K8 · K9", v: "The deck: Versions only, where v0 sits last. The header is unchanged. The precon: Your deck … was built from this, in the own box. The row: R2's shared line gains · built from this." },
+        { k: "Unlink", where: "K12 · K13", v: "From the v0 panel in Versions and from the precon's own box, never from the header. The confirm names what leaves (v0) and lists what doesn't (cards, printings, v1 to vN). Re-linking rebuilds v0 from the precon as it is then." },
+        { k: "v0 in Versions", where: "K10 · K12", v: "The last row, under a dashed from the precon divider. Dashed box, no fill, faint v0, the precon's name as its note, released rather than committed, and the box in the delta slot. It never gets the accent rule or current." },
+        { k: "v1 against v0", where: "K10 · K11", v: "VersionDiff unchanged, plus one dashed line: against v0 · Eldrazi Unbound, and kept as a count (73 of the precon's 85). A swapped commander comes through the shipped Kilo → ‹…› line. v1 is no longer initial." },
+        { k: "Q2 · linked brew", where: "K14", v: "Yes. A linked brew draws the Versions tab with v0 alone and one line: Not committed yet. Your first commit is v1. The deck stays a brew and Commit as v1 is offered as today." },
+      ],
+      sections: [
+        { id: "K1", title: "The suggestion, same commander", scene: "suggest", note: "HD - Eldrazi against Eldrazi Unbound, 86% (73 of 85), same commander. The strip sits between the header and the tabs, so every tab shows it until it’s answered. Link it opens K3. ✕ hides it for this deck and precon in this browser. The decklist below is untouched, and so is the header." },
+        { id: "K2", title: "The suggestion, different commander", scene: "suggestSwap", note: "HD Tune - Counter Intelligence against Counter Intelligence, 70% (64 of 91) with a swapped commander, so the any-commander arm of the rule fires (60% or more). The sentence says with a different commander and the meta line names the precon’s, so the player can tell why the match is weaker before they link." },
+        { id: "K3", title: "Link it, confirmed", scene: "linkConfirm", note: "The suggestion’s Link it is the one path that confirms, because the player hasn’t yet read what a link does. The facts say it in three rows: v0 is added before v1, the share, and v1 now diffing against v0. Link is the bone fill. The picker paths (K6, K7) carry the same sentence in their foot and link in one step." },
+        { id: "K4", title: "Linked, on the deck", scene: "linked", note: "The strip is gone; a linked deck shows no suggestion (lock 2). The header is unchanged: the link is read in Versions, where v0 sits last and names the precon. Pressing v0 (K12) opens the precon or unlinks." },
+        { id: "K5", title: "No suggestion, link from Versions", scene: "noSuggest", note: "HD - Zombies shares 13 of Wretched Ranks’ 67 (19%), under both arms of the rule, so nothing is suggested and the header draws nothing new. Versions ends in a dashed row, Built from a precon?, in the place v0 would take. v1 still reads initial." },
+        { id: "K6", title: "Picking the precon", scene: "pickPrecon", note: "From the Versions row. Search by name, commander or set, with the list ordered by how many of each precon’s cards are in this deck. A radio selects one row and pressing it again unselects it. The foot names the selection and what linking does, and the button names the precon. Search and order reuse the list’s (R2 L1)." },
+        { id: "K7", title: "Picking the deck, from the open precon", scene: "openPick", note: "Link a deck is a ghost button beside Start a deck from this at 900. At 390 the two share the dock, with Start the wider. The picker lists the player’s decks with the most shared first. A deck already linked to another precon says so, and linking here moves it; its old v0 goes and this precon’s takes its place (one link per deck, lock 1)." },
+        { id: "K8", title: "Linked, on the open precon", scene: "openLinked", note: "R2’s built sentence (O1) becomes Your deck HD - Eldrazi was built from this, plus 73 of its 85 cards are still in it, with Unlink beside it. The dock’s summary line names the deck." },
+        { id: "K9", title: "Linked, on the list rows", scene: "rows", note: "R2’s row line (R2, R6) gains one clause: your deck HD - Eldrazi · built from this · 73 shared. A deck that only shares keeps R2’s line. Two decks get two lines, the linked one first. The shared line now follows the addendum’s rule (40% with the same commander, 60% with any) or a link. HD - Zombies, at 13 of 67 and unlinked, gets none." },
+        { id: "K10", title: "v0 in Versions, and v1’s diff against it", scene: "v1diff", note: "The rail is still newest first, so v0 is last (lock 3), under a dashed from the precon divider. The v0 row has a dashed box, no fill, a faint number, the precon’s name as its note, and released Aug 2023 where versions say committed. Its delta slot reads the box. v1 now carries a delta (+14 / −13). Its diff gains one dashed line naming v0 and the share kept, as a count." },
+        { id: "K11", title: "v1 against v0, with a swapped commander", scene: "ciDiff", note: "Counter Intelligence, 64 of 91 kept. The shipped commander line (Kilo, Apogee Mind → ‹…›) appears because v0’s helm differs from v1’s, so nothing new is needed for the swap. v0’s commander is the precon’s." },
+        { id: "K12", title: "v0, opened", scene: "v0open", note: "Pressing v0 opens a note where a diff would be: what v0 is, and that the deck is sleeved as v4. Its border is dashed, not the accent rule InitialPanel uses, so it can’t read as current. It offers two actions: open the precon, and Unlink from this precon. v0 has no diff of its own, since there is nothing before it." },
+        { id: "K13", title: "Unlink, confirmed", scene: "unlink", note: "The confirm says v0 leaves the history and v1 goes back to having nothing before it. Unlink is the bone fill, not danger, because nothing the player made is lost (lock 5)." },
+        { id: "K14", title: "Open question 2: a linked brew gets a Versions tab", scene: "brewV0", note: "Wretched Ranks, started from the precon (PR 4 backfills the link), is still a brew. Design’s answer to Q2 is yes: the tab draws with v0 alone and one line, Not committed yet. Your first commit is v1, and it diffs against v0. The header’s Commit as v1 offer is unchanged. Without the tab, a linked brew would have nowhere to show or unlink its link." },
+        { id: "K15", title: "A deck that shares with two precons", scene: "suggestTwo", note: "HD Tune - Mutant Menace meets the rule twice: Mutant Menace with the same commander (41 of 85, 48%) and Sultai Arisen with a different one (52 of 85, 61%). One strip lists both, the same-commander match first and the rest by share. Each has its own Link, and ✕ dismisses both. Linking either ends the suggestion. The Sultai Arisen figure is illustrative." },
+        { id: "K16", title: "A precon that two decks share with", scene: "openTwo", note: "Sultai Arisen: HD Tune - Sultai Arisen is linked (71 of 85), and HD Tune - Mutant Menace shares 52. The linked deck is named first with Unlink, then the deck that only shares, in R2’s words. The same pair reads as two lines on the row in K9." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

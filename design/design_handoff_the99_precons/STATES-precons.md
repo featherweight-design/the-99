@@ -88,3 +88,38 @@ Every frame is drawn at 900 and 390. `scene` is the prop on `Precons.dc.html`. F
 - The count never includes basics without saying so, and never hides a card that didn't map.
 - Start never commits, and never assumes 99: the draft holds the feed's exact list.
 - No motion.
+
+
+---
+
+## R3 addendum · built-from link and v0 (K)
+Canvas `The 99 - Precons R3 · Built-from Link.dc.html`; frame `Precons Link.dc.html` (`scene`). Supersedes R2, R6, O1, S1b where they differ. Full rulings in `HANDOFF-R3 · built-from link.md`.
+
+| Id | Scene | What draws |
+|---|---|---|
+| K1 | `suggest` | strip between header and tabs: `Looks like this started as <Precon>.` · meta `N of its M cards are in this deck · same commander` · `Link it` · ✕ |
+| K1d | (no frame) | ✕ pressed: strip gone for this deck + precon, remembered per browser (`deckId+fileName`); Versions foot row unaffected |
+| K2 | `suggestSwap` | as K1, lead `…, with a different commander.`; meta names the precon's commander |
+| K3 | `linkConfirm` | dialog / sheet: precon card, 3 facts (v0 · Shared · v1), `Cancel` · `Link` |
+| K3p | (no frame) | pending / failed as R2 S1d / S1e: `Linking…`; failed line mono 11 `--danger` above the buttons |
+| K4 | `linked` | no strip; header unchanged; Versions shows v0 last, naming the precon |
+| K5 | `noSuggest` | rule not met (19%): header unchanged; Versions ends in dashed `Built from a precon?` row + `Link a precon`; v1 `initial` |
+| K6 | `pickPrecon` | sheet: search, `Shares the most with this deck`, radio rows (select / unselect) with `N of M · in this deck`, foot names selection + consequence, `Link <Precon>` |
+| K6n | (no frame) | nothing selected: foot `Select a precon to link.`; button disabled |
+| K7 | `openPick` | open precon: `Link a deck` ghost beside Start (docked beside it at 390); sheet of decks most shared first; a deck linked elsewhere carries `built from X · linking moves it here` |
+| K8 | `openLinked` | own box: `Your deck <D> was built from this. N of its M cards are still in it.` + `Unlink` |
+| K9 | `rows` | row line `your deck <D> · built from this · N shared`; one line per deck, linked first; shared line shown when the addendum's rule holds or linked |
+| K10 | `v1diff` | rail: vN current … v1 with delta; dashed divider `from the precon · before your first commit`; v0 dashed row, `the box`; v1's diff + dashed `against v0` box with `kept` count |
+| K11 | `ciDiff` | as K10; shipped commander line `<precon commander> → <deck commander>` |
+| K12 | `v0open` | v0 panel: full-width dashed note, `Open <Precon> ›`, `Unlink from this precon` |
+| K13 | `unlink` | dialog / sheet: what leaves (v0), 1 fact (History), `Cancel` · `Unlink` (bone) |
+| K14 | `brewV0` | linked brew: Versions tab drawn (count 1), `Not committed yet…` line, v0 alone, nothing current; `Commit as v1` as today |
+| K15 | `suggestTwo` | strip `…one of two precons`; a row + `Link` per precon, same commander first then by share; ✕ dismisses both |
+| K16 | `openTwo` | own box: linked deck sentence + `Unlink`, then `Your deck <D2> shares N of its cards.` |
+
+### K must-nots
+- Linking or unlinking never changes a card, printing, version, `since`, note, `committed_at`, status or claim.
+- v0 never gets `current`, the accent rule, the accent number, `--surface-rail` fill, `committed`, or a games tally. It is never first in the rail.
+- No verdict word or status colour on a share; shares are counts (`73 of 85`, `73 shared`).
+- Selection copy says select / unselect, never tick.
+- No suggestion on a linked deck. No link control or built-from line in the header.
