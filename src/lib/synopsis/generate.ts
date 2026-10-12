@@ -150,6 +150,22 @@ export function chargeFor(content: CheckedSynopsis | null): "spent" | "refunded"
   return content && outcomeOf(content.verdicts) === "survived" ? "spent" : "refunded";
 }
 
+/**
+ * A run's bills, one per provider call that reported usage: the write, then the repair when one
+ * was made. Undefined when neither reported, so the run settles with no meters.
+ */
+export function synopsisBills(
+  model: string,
+  effort: Billed["effort"],
+  write: ModelUsage | undefined,
+  repair?: ModelUsage,
+): Billed[] | undefined {
+  const bills: Billed[] = [];
+  if (write) bills.push({ model, usage: write, step: "write", effort });
+  if (repair) bills.push({ model, usage: repair, step: "repair", effort });
+  return bills.length > 0 ? bills : undefined;
+}
+
 /** Two replies' usage, for a write that made the repair call too. */
 export function sumUsage(a: ModelUsage | undefined, b: ModelUsage | undefined): ModelUsage | undefined {
   if (!a || !b) return a ?? b;
@@ -656,7 +672,7 @@ async function run(
   };
   try {
     const outcome = await call(prompt);
-    if (outcome.usage) billed = [{ model: modelName, usage: outcome.usage, step: "write", effort }];
+    billed = synopsisBills(modelName, effort, outcome.usage);
 
     if (!outcome.ok) {
       const settled = await finishRun(started, failedRunSet(outcome, billed), deps.now());
@@ -676,7 +692,7 @@ async function run(
       const failing = refusedSections(content);
       const repair = await call(repairPrompt(facts, content, failing, v2, outcome.value));
       usage = sumUsage(usage, repair.usage);
-      if (repair.usage) billed = [...(billed ?? []), { model: modelName, usage: repair.usage, step: "repair", effort }];
+      billed = synopsisBills(modelName, effort, outcome.usage, repair.usage);
       content = await applyRepair(content, repair, failing, facts, v2);
     }
     const charge = chargeFor(content);

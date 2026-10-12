@@ -248,9 +248,12 @@ export async function settleModelCall(
 /**
  * One provider call's bill. `step` names it within its run (`write`, `repair`, `shortlist`, ...;
  * `call` when absent) and `effort` is the reasoning effort the request asked for, null when it set
- * none: both land on the call's `model_call_parts` row, never on the parent.
+ * none: both land on the call's `model_call_parts` row, never on the parent. `noCall` marks a bill
+ * for a call that was never made (the read's empty shortlist pool): it settles the parent's cost at
+ * zero so the reservation stops counting at its worst case, and it writes no part, because a part
+ * is a provider call and there was none.
  */
-export type Billed = { model: string; usage: ModelUsage; step?: string; effort?: "low" | "medium" | "high" | null };
+export type Billed = { model: string; usage: ModelUsage; step?: string; effort?: "low" | "medium" | "high" | null; noCall?: true };
 
 /**
  * Several calls billed under one reservation (Help me choose's read: a shortlist and a judgement,
@@ -300,8 +303,9 @@ export async function recordModelUsage(tx: Tx, callId: string, billed: Billed | 
     .returning({ createdAt: modelCalls.createdAt, cost: modelCalls.costMicroUsd });
   // ONE PART PER PROVIDER CALL (admin brief, locked rule 13), written only when the parent's meters
   // were first recorded here: the same guard that keeps a retried or late write from counting twice.
-  if (row && parts.length > 0) {
-    await tx.insert(modelCallParts).values(parts.map((p) => ({
+  const calls = parts.filter((p) => !p.noCall);
+  if (row && calls.length > 0) {
+    await tx.insert(modelCallParts).values(calls.map((p) => ({
       callId,
       step: p.step ?? "call",
       model: p.model,

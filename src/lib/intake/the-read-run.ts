@@ -239,7 +239,8 @@ async function finishTheRead(
     if (facts.pool.size === 0) {
       // No call was made, so the ledger records a zero bill rather than none: a row with no cost
       // counts at its worst case until the reservation's TTL, as though a call were still billing.
-      billed.push({ model: deps.shortlistModel, usage: NO_USAGE, step: "shortlist", effort: null });
+      // `noCall`: it settles the cost and writes no part, since no provider call was made.
+      billed.push({ model: deps.shortlistModel, usage: NO_USAGE, step: "shortlist", effort: null, noCall: true });
       return nothing(0);
     }
     const first = await deps.shortlist({

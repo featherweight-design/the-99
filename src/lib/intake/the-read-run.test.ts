@@ -69,7 +69,7 @@ describe("runTheRead", () => {
     const d = deps(ok({ keys: [] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs({ pool: new Set() }))).toMatchObject({ kind: "nothing" });
     expect(d.shortlist).not.toHaveBeenCalled();
-    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "shortlist", effort: null }]);
+    expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "shortlist", effort: null, noCall: true }]);
   });
 
   it("gives the shortlist no more than what is left of the whole deadline", async () => {

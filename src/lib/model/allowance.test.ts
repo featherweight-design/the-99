@@ -135,6 +135,12 @@ describe("recordModelUsage writes one part per provider call (admin brief, rule 
     expect(inserted[0].rows).toEqual([expect.objectContaining({ step: "call", effort: null })]);
   });
 
+  it("writes no part for a bill marked noCall, while the parent's cost still settles", async () => {
+    const { tx, inserted } = fakeTx(true);
+    await recordModelUsage(tx, "call_4", [{ model: "claude-haiku-5-5", usage: usage(0), step: "shortlist", effort: null, noCall: true }]);
+    expect(inserted).toHaveLength(0);
+  });
+
   it("writes no parts when the parent's meters were already recorded, so a late or retried write counts once", async () => {
     const { tx, inserted } = fakeTx(false);
     await recordModelUsage(tx, "call_3", { model: "claude-sonnet-5", usage: usage(10), step: "write", effort: "low" });
