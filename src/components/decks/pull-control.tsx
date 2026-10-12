@@ -30,6 +30,7 @@ import { Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
+import { Chevron, CHEVRON_GAP_CLASS } from "../ui/chevron";
 
 const copy = deckVersioningCopy.review;
 const sourceCopy = copy.source;
@@ -433,7 +434,8 @@ function SourcePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={copy.pullManyA11y(card.name, claims.filter((c) => !c.commander && !c.locked).length)}
-        className={PULL_BUTTON}
+        // The chevron keeps the filter chassis trigger's gap from the label (bug batch 2026-10-12).
+        className={`${PULL_BUTTON} ${CHEVRON_GAP_CLASS}`}
         // Design state 8 extends to the trigger itself — found by Copilot's round-2 review: an
         // enabled trigger still visible above the popover could be pressed mid-pull, toggling
         // `open` closed and silently dropping a refusal the reader never saw.
@@ -451,7 +453,8 @@ function SourcePicker({
           returnFocusAfterPull.current = null;
         }}
       >
-        {copy.pull} <span aria-hidden="true">▾</span>
+        {copy.pull}
+        <Chevron />
       </button>
       {open && isDesktop && (
         <Popover ref={panelRef} at={at} titleId={titleId} onDismiss={close} returnFocusRef={returnFocusAfterPull}>

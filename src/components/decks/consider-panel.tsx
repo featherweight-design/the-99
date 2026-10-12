@@ -24,6 +24,7 @@ import type { NoteCounts } from "../../lib/bracket/card-note";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { SHELF_CAP } from "../../lib/decks/shelf-cap";
 import { useFoldedShelves } from "./use-folded-shelves";
+import { CHEVRON_CLASS } from "../ui/chevron";
 
 // Named once, in its own module, so the cap, the `Show all N` count, the server's
 // unowned append and the tests cannot drift apart (#391).
@@ -314,7 +315,7 @@ function ShelfSection({
           >
             <span
               aria-hidden
-              className={`inline-block transition-transform duration-150 ${folded ? "" : "rotate-90"}`}
+              className={`inline-block ${CHEVRON_CLASS} transition-transform duration-150 ${folded ? "" : "rotate-90"}`}
               style={{ color: "var(--fg-muted)" }}
             >
               ▸

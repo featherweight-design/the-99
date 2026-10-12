@@ -25,6 +25,7 @@ import { MutationError } from "./mutation-error";
 import { useDeleteOptimisticRow, useResolveOptimisticRow } from "./optimistic-deck";
 import { useCardSearch } from "./use-card-search";
 import { useDeckMutation } from "./use-deck-mutation";
+import { Chevron } from "../ui/chevron";
 
 const copy = deckImportCopy.resolve;
 
@@ -216,7 +217,7 @@ export function ResolutionExpander({
           onClick={onCollapse}
           className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)]"
         >
-          {copy.collapse} ▴
+          {copy.collapse} <Chevron open />
         </button>
       </div>
 

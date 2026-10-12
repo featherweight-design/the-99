@@ -9,6 +9,7 @@ import { formatCents } from "../../../lib/decks/price";
 import { figuresOf, type CartDeck, type CartLine } from "../../../lib/decks/cart";
 import { BuyTag } from "../buy-tag";
 import { lineFact } from "./cart-line";
+import { Chevron } from "../../ui/chevron";
 
 export function CartDeckGroup({
   deck,
@@ -68,8 +69,8 @@ export function CartDeckGroup({
                 ? copy.selections.figure(deck.copies, formatCents(deck.cents))
                 : copy.selections.figureNoPrice(deck.copies)}
             </span>
-            <span aria-hidden className="flex min-h-[44px] w-[28px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)]">
-              {expanded ? "▴" : "▾"}
+            <span aria-hidden className="flex min-h-[44px] w-[28px] flex-none items-center justify-center text-[color:var(--fg-muted)]">
+              <Chevron open={expanded} />
             </span>
           </button>
         </h3>

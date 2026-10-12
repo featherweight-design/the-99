@@ -20,6 +20,7 @@ import { gotItCopy } from "../../lib/copy/i-got-it";
 import { PendingReporter } from "../shell/pending-reporter";
 import { ReplaceIcon } from "./replace-icon";
 import { RevertConfirm } from "./revert-confirm";
+import { Chevron } from "../ui/chevron";
 
 const c = collectionEditCopy.history;
 
@@ -188,7 +189,7 @@ export function HistoryEntryItem({
         <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last">{timeLabel(e.createdAt)}</span>
         <span className="col-span-2 flex min-w-0 flex-col gap-[3px] md:col-span-1">
           <span className="truncate text-[14px]" style={{ color: reverted ? "var(--fg-muted)" : "var(--fg)" }}>
-            {title} <span aria-hidden className="text-[12px] text-[color:var(--fg-faint)]">{isOpen ? "▴" : "▾"}</span>
+            {title} <Chevron open={isOpen} className="text-[color:var(--fg-faint)]" />
           </span>
           <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)]">{c.figures(e.copiesUp, e.copiesDown, e.rowCount)}</span>
         </span>

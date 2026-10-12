@@ -23,6 +23,7 @@ import type { PriceFact } from "../../lib/decks/price";
 import { tradeShape, type TradeShape } from "../../lib/commander-change/pending";
 import { useChangeCommander } from "./change-commander-context";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
+import { Chevron } from "../ui/chevron";
 
 /** Each group's first screen, the swap sheet's own (Hugh's staging walk, 2026-09-25). */
 const GROUP_SHOWN = 5;
@@ -431,7 +432,7 @@ export function CandidateRow({
               <span style={{ borderBottom: "1px dotted var(--fg-faint)" }}>
                 {copy.sheet.figure(candidate.fit.n, candidate.fit.of, pair)}
               </span>
-              <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{open ? "▴" : "▾"}</span>
+              <Chevron open={open} style={{ color: "var(--fg-faint)" }} />
             </button>
             <GhostButton
               data-choose=""

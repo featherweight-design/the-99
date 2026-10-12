@@ -10,6 +10,7 @@ import { NoteField, type DeckCardOption } from "./note-field";
 import { formatPlayed } from "../../../lib/decks/format";
 import { NoteRow } from "./note-row";
 import { NotesMark } from "./notes-mark";
+import { CHEVRON_CLASS } from "../../ui/chevron";
 
 /**
  * The Notes view of Your deck (the third `DeckPanel` value). One frame, empty or not: the Notes mark, its
@@ -137,7 +138,7 @@ export function DeckNotesPanel({
             onClick={() => setDoneOpen((o) => !o)}
             className="min-h-[44px] cursor-pointer self-start border-0 bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-muted)] md:min-h-[32px]"
           >
-            {doneOpen ? "▾" : "▸"} {deckNotesCopy.done.toggle(String(notes.done.length))}
+            <span aria-hidden="true" className={CHEVRON_CLASS}>{doneOpen ? "▾" : "▸"}</span> {deckNotesCopy.done.toggle(String(notes.done.length))}
           </button>
           {doneOpen && <ul className="m-0 flex flex-col gap-[6px] p-0">{doneRows.map(row)}</ul>}
           {doneOpen && notes.done.length > NOTES_SHOWN && !showAllDone && (

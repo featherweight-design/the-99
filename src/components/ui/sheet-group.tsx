@@ -1,4 +1,5 @@
 import { twMerge } from "tailwind-merge";
+import { Chevron } from "./chevron";
 
 /**
  * A sheet's list group: the heading with its note at the right, and the toggle that expands the
@@ -51,7 +52,7 @@ export function SheetGroupToggle({ all, onToggle, label, fewer, className, busy 
       }
     >
       <span>{all ? fewer : label}</span>
-      <span aria-hidden="true" className="text-[10px]" style={{ color: "var(--fg-faint)" }}>{all ? "▴" : "▾"}</span>
+      <Chevron open={all} style={{ color: "var(--fg-faint)" }} />
     </button>
   );
 }

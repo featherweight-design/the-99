@@ -601,6 +601,18 @@ describe("PullControl — 2+ choosable sources", () => {
     expect(popover).not.toContain("px-[16px]");
   });
 
+  // Bug batch 2026-10-12: the 2+ source trigger keeps the filter chassis trigger's gap between
+  // `Pull it` and its chevron, and draws the shared chevron.
+  it("spaces the trigger's chevron from its label with the chassis gap", () => {
+    setViewport(true);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
+    const trigger = screen.getByRole("button", { name: MANY_NAME });
+    expect(trigger.className.split(/\s+/)).toContain("gap-[8px]");
+    const glyph = trigger.querySelector('[aria-hidden="true"]')!;
+    expect(glyph.textContent).toBe("▾");
+    expect(glyph.className).toContain("text-[13px]");
+  });
+
   // Found missing by Copilot's round-2 review: `Sheet` owns no focus trap or Escape handling of
   // its own — every caller wires `useDialogA11y` itself, and the mobile branch here did not.
   it("wires Escape to dismiss at phone width too", () => {

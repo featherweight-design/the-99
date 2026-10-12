@@ -320,7 +320,7 @@ export function TuningHub({
       {opened && openedView ? (
         <>
           {/* DESKTOP: an underline tab row, deliberately unlike the deck tabs' filled pills. */}
-          <div role="tablist" aria-label={copy.title} className="hidden gap-[22px] md:flex" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div role="tablist" aria-label={copy.title} className="anim-gentle-in hidden gap-[22px] md:flex" style={{ borderBottom: "1px solid var(--border)" }}>
             {[null, ...tools.map((t) => t.tool)].map((id, i) => {
               const active = id === opened.tool;
               const view = id ? views.find((v) => v.tool === id) : null;
@@ -356,7 +356,7 @@ export function TuningHub({
             })}
           </div>
           {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
-          <div className="flex items-center justify-between md:hidden">
+          <div className="anim-gentle-in flex items-center justify-between md:hidden">
             {opened.tool === "history" && past ? (
               <button type="button" data-history-back="" onClick={() => setPast(null)} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
                 {copy.history.back}
@@ -371,14 +371,16 @@ export function TuningHub({
               {copy.toolOf(tools.findIndex((t) => t.tool === opened.tool) + 1, tools.length)}
             </span>
           </div>
-          <div ref={toolRef} id="tuning-tool-panel" role="tabpanel" aria-labelledby={`tuning-tab-${opened.tool}`} data-tuning-tool={opened.tool}>
+          {/* Keyed on the tool, so a tab press arrives gently too, not only the first open. The tab
+              row above is not keyed: it stays put while the panel under it changes. */}
+          <div key={opened.tool} ref={toolRef} id="tuning-tool-panel" role="tabpanel" className="anim-gentle-in" aria-labelledby={`tuning-tab-${opened.tool}`} data-tuning-tool={opened.tool}>
             {opened.tool === "history" ? (
               <TuningHistory deckId={deckId} tools={historyTools} past={past} onOpenPast={setPast} />
             ) : baselineRead ? opened.panel : null}
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
+        <div className="anim-gentle-in grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">
           {/* A tile can sit below the fold, and the tool opens in its place starting at the tab row:
               bring the hub's top into view, as a shortcut does (Hugh, 2026-10-11), smoothly unless the
               reader asks for reduced motion (`reveal`). */}

@@ -14,6 +14,7 @@ import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { RoleCard } from "../../lib/recs/score";
 
 import { availabilityState } from "../../lib/decks/availability";
+import { Chevron } from "../ui/chevron";
 
 const { coverageSort: copy } = explainedCopy;
 
@@ -173,9 +174,7 @@ export function CoverageSortMenu({
         {COVERAGE_SORT_LABELS[sort]}
         {/* Desktop sits the caret against the label; at phone width the trigger
             is full-width, so it goes to the far edge instead. */}
-        <span aria-hidden className={isDesktop ? "text-[color:var(--accent)]" : "ml-auto text-[color:var(--accent)]"}>
-          ▾
-        </span>
+        <Chevron className={isDesktop ? "text-[color:var(--accent)]" : "ml-auto text-[color:var(--accent)]"} />
       </button>
 
       {open && (

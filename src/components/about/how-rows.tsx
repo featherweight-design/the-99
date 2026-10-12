@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { HowMethod } from "../../lib/copy/about";
 import type { HowRowCopy, HowRowLabels } from "../../lib/copy/how-it-works";
 import { MethodTags } from "../ui/method-tag";
+import { Chevron } from "../ui/chevron";
 
 type SubRow = { label: string; methods: readonly HowMethod[]; lines: string[] };
 
@@ -141,9 +142,9 @@ function HowRow({
             </span>
             <span
               aria-hidden="true"
-              className="flex h-[44px] w-[44px] flex-none items-center justify-end font-mono text-[11px] text-[color:var(--fg-faint)] min-[1000px]:h-auto min-[1000px]:w-[14px] min-[1000px]:text-[10px]"
+              className="flex h-[44px] w-[44px] flex-none items-center justify-end text-[color:var(--fg-faint)] min-[1000px]:h-auto min-[1000px]:w-[14px]"
             >
-              {open ? "▴" : "▾"}
+              <Chevron open={open} />
             </span>
           </button>
         </h3>

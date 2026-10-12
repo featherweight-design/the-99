@@ -11,6 +11,7 @@ import type { BalanceColor, ColorEvidence, LandEvidence, PatternEvidence } from 
 import { colorName, colorWord } from "../../lib/tuning/mana-view";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { PIP_STYLE } from "./mana-color-parts";
+import { CHEVRON_CLASS } from "../ui/chevron";
 
 /** Names a pattern row shows before `+N more`. */
 const NAMES_SHOWN = 3;
@@ -37,7 +38,7 @@ export function ManaSection({ id, label, clause, open, onToggle, tight = false, 
           onClick={onToggle}
           className="flex min-h-[52px] w-full cursor-pointer items-center gap-x-[8px] border-none bg-transparent p-0 text-left md:min-h-[44px] md:gap-x-[10px]"
         >
-          <span aria-hidden className={`inline-block text-[color:var(--fg-muted)] transition-transform duration-150 ${open ? "rotate-90" : ""}`}>▸</span>
+          <span aria-hidden className={`inline-block ${CHEVRON_CLASS} text-[color:var(--fg-muted)] transition-transform duration-150 ${open ? "rotate-90" : ""}`}>▸</span>
           <span className="flex flex-col gap-x-[10px] gap-y-[2px] md:flex-row md:items-baseline">
             <span className="font-sans text-[16px] font-semibold leading-[1.2] text-[color:var(--fg)] md:text-[17px]">{label}</span>
             <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)] md:text-[11px]">{clause}</span>
@@ -211,7 +212,7 @@ function FactRow({ label, figure, note, names }: { label: string; figure: string
       <span className="text-[13px] leading-[1.4] text-[color:var(--fg-body)]">{label}</span>
       <span className="text-right font-mono text-[13px] font-medium text-[color:var(--fg)]">{figure}</span>
       <span className="col-span-3 font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] md:col-span-1">{note}</span>
-      <span aria-hidden className="col-start-3 row-start-1 text-right font-mono text-[12px] text-[color:var(--fg-muted)] md:col-start-auto md:row-start-auto">
+      <span aria-hidden className={`col-start-3 row-start-1 text-right font-mono ${CHEVRON_CLASS} text-[color:var(--fg-muted)] md:col-start-auto md:row-start-auto`}>
         {discloses ? (open ? "⌃" : "›") : ""}
       </span>
     </>

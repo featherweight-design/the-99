@@ -10,6 +10,7 @@ import type { DeckToken } from "../../lib/tokens/read";
 import { spokenFullManaCost } from "../../lib/copy/card-surfaces";
 import { CostPips } from "../ui/cost-pips";
 import { TokenMakers } from "./token-makers";
+import { Chevron } from "../ui/chevron";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -153,8 +154,8 @@ export function TokenRow({
             </span>
           </span>
           {canOpen ? (
-            <span aria-hidden className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:hidden">
-              {open ? "▴" : "▾"}
+            <span aria-hidden className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:hidden">
+              <Chevron open={open} />
             </span>
           ) : null}
         </Summary>
@@ -210,9 +211,9 @@ export function TokenRow({
             tabIndex={-1}
             aria-hidden
             onClick={() => setOpen((v) => !v)}
-            className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:flex"
+            className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[color:var(--fg-muted)] md:flex"
           >
-            {open ? "▴" : "▾"}
+            <Chevron open={open} />
           </button>
         ) : null}
       </div>

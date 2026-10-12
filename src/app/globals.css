@@ -509,6 +509,17 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
    `parseThemeBlocks` reads only `:root` and `[data-theme]` blocks. */
 html { --tabbar-h: 74px; }
 
+/* Motion (Hugh, 2026-10-12): a transition waits a beat, then moves on ease-in-out, so a surface
+   arrives gently rather than snapping into place. The three parts are tokens so a surface that
+   animates something other than `.anim-gentle-in` (a `transition`, its own keyframes) reads the
+   same beat, length and curve rather than restating them. Reduced motion: `.anim-gentle-in` is
+   in the block below, and anything reading these tokens owes the same decision. */
+html {
+  --motion-delay: 100ms;
+  --motion-duration: 320ms;
+  --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
 /* The desktop rail's width (desktop nav labels handoff, R2): 62px beside a
    pointer, and 88px under `(hover: none)`, where every slot carries its label
    (72px slot + 2 × 7.5 + the 1px hairline). `main` is a flex sibling and measures
@@ -869,6 +880,16 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 .anim-phone-card-enter { animation: phone-card-enter 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 
+/* A surface arriving in place of another (the Tuning hub's tool replacing its tiles, and the tiles
+   coming back): a short fade and a 6px rise on the shared motion tokens. `both`, so it holds
+   transparent through the delay rather than showing, vanishing and fading back. Reduced motion:
+   it is simply there. */
+@keyframes gentle-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.anim-gentle-in { animation: gentle-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+
 /* The phone card sheet's snap between the teaser and full (H23 PR 3, README R2 "Motion"), and the
    card band dimming to .35 under it, on the same 240ms. A drag marks the sheet `data-dragging`,
    and it follows the finger with no transition at all. Here rather than as utilities because the
@@ -903,6 +924,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   .anim-carousel-prev,
   .anim-carousel-next,
   .anim-phone-card-enter,
+  /* The hub's tool and its tiles appear in place, opaque. */
+  .anim-gentle-in,
   /* A card over a sheet swaps in and out in place (stacked sheets R1). */
   .anim-stack-rise,
   .anim-sheet-up {

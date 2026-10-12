@@ -5,6 +5,7 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { orderModalPartners, summariseByState } from "../../lib/combos/modal-block";
 import { ComboGlyph } from "./combo-glyph";
+import { Chevron } from "../ui/chevron";
 
 const STATE_INK: Record<string, string> = {
   inDeck: "var(--success)",
@@ -122,13 +123,7 @@ export function ComboPartnersDetail({
               </span>
               )}
             </span>
-            <span
-              aria-hidden
-              className="flex-none font-mono text-[12px]"
-              style={{ color: "var(--fg-faint)" }}
-            >
-              ▾
-            </span>
+            <Chevron className="flex-none" style={{ color: "var(--fg-faint)" }} />
           </button>
         </h3>
         {/* THE `*` IS A SIBLING OF THE ROW, never nested inside it: a control inside a native

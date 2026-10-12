@@ -137,6 +137,26 @@ describe("TuningHub opening a tool", () => {
     expect(tile("mana").getAttribute("aria-label")).toBe(copy.tools.mana.name);
   });
 
+  // Bug batch 2026-10-12: the tool arrives on the shared gentle motion, and so do the tiles coming
+  // back; a tab press remounts the panel so the new tool arrives gently too.
+  it("draws the opened tool, and the tiles it returns to, on the shared gentle motion", async () => {
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
+    const grid = tile("cuts").parentElement!;
+    expect(grid.className.split(/\s+/)).toContain("anim-gentle-in");
+    fireEvent.click(tile("cuts"));
+    await screen.findByRole("heading", { name: "Proposed cuts" });
+    const panel = () => document.getElementById("tuning-tool-panel")!;
+    expect(panel().className.split(/\s+/)).toContain("anim-gentle-in");
+    // The opened tool's chrome arrives with it: the desktop tab row and the phone header.
+    expect(screen.getByRole("tablist").className.split(/\s+/)).toContain("anim-gentle-in");
+    const phoneHead = screen.getByRole("button", { name: copy.back }).parentElement!;
+    expect(phoneHead.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-gentle-in", "md:hidden"]));
+    const first = panel();
+    fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
+    await screen.findByRole("heading", { name: "Suggested changes" });
+    expect(panel()).not.toBe(first);
+  });
+
   it("opens a tool in place of the tiles, focuses its heading, and All tools returns to the landing", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
