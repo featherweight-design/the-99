@@ -2363,8 +2363,8 @@ export const ALL_DECKS_CART_LINE: { line: import("../decks/cart").SelectedLine; 
 /**
  * `added-copy`: two rows of the upload summary's `No longer to buy`, each read the way the app reads
  * it (`arrivalPlacement`, then `wentOf` and `wentSentence`), so the figure can only say what an
- * upload could. Sol Ring: Gishath committed it first and already holds one, so two new copies go
- * to Brago and Eldrazi, one each. Arcane Signet: Gishath holds the only copy, and the new one is
+ * upload could. Sol Ring: one new copy, bought for Brago, but Gishath was short one too and
+ * committed it first, so the copy goes to Gishath (the caption's story). Arcane Signet: Gishath holds the only copy, and the new one is
  * spare, so the brew Thorin reads it as free. Each carries the chooser its Change opens.
  */
 export const ADDED_COPY_ROWS: {
@@ -2384,8 +2384,6 @@ export const ADDED_COPY_ROWS: {
     };
   };
   return [
-    // The caption's story: a Sol Ring bought for Brago, which Gishath (short one, and committed
-    // first) takes.
     card("about-sol-ring", "Sol Ring", 0, 1, [claim("about-gishath", "HD - Gishath", 1), claim("about-brago", "HD - Brago", 2)]),
     card("about-arcane-signet", "Arcane Signet", 1, 1, [claim("about-gishath", "HD - Gishath", 1), claim("about-thorin", "HD -Thorin", null)]),
   ];
