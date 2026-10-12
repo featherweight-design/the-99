@@ -285,7 +285,7 @@ describe("LineupView: your collection, put to work", () => {
   const CO: LineupData = {
     ...DATA,
     collection: {
-      copies: 120, cards: 80, valueCents: 30_000, pricedCopies: 120,
+      copies: 120, cards: 80, valueCents: 30_000, pricedCopies: 120, asOf: null,
       all: { inDeckCopies: 40, inDeckCents: 21_000 },
       finished: { inDeckCopies: 30, inDeckCents: 15_000 },
       wanted: [
@@ -347,6 +347,12 @@ describe("LineupView: your collection, put to work", () => {
     draw({ ...CO, collection: { ...c, copies: 2_000_000, pricedCopies: 2_000_000 } }, "collection");
     expect(within(card("collection")).getByText("1 square = 10,000 copies")).toBeTruthy();
     expect(card("collection").querySelectorAll("[aria-hidden] > span").length).toBeLessThanOrEqual(1100);
+  });
+
+  it("dates its caption by its own price read, not the decks'", () => {
+    const c = CO.collection!;
+    draw({ ...CO, pricesAsOf: new Date(Date.parse(NOW) - 5 * 3_600_000).toISOString(), collection: { ...c, asOf: new Date(Date.parse(NOW) - 2 * 3_600_000).toISOString() } }, "collection");
+    expect(within(card("collection")).getByText("Basics not counted · Mana Pool prices, 2h ago")).toBeTruthy();
   });
 
   it("cuts on the share as read, so 39.6% is not 40% or more, and shows it as 39%", () => {

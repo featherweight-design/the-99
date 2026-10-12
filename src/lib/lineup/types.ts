@@ -57,6 +57,8 @@ export type LineupCollection = {
   /** The priced copies' value: with `pricedCopies` under `copies`, a part-total, and the card says so. */
   valueCents: number;
   pricedCopies: number;
+  /** The newest price this card's own read used, ISO, so its caption dates the figures it shows. */
+  asOf: string | null;
   all: { inDeckCopies: number; inDeckCents: number };
   finished: { inDeckCopies: number; inDeckCents: number };
   /** Owned cards a deck's commander list carries at 20% or more: what each deck wants, and its share. */

@@ -94,6 +94,7 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
   return {
     asOf: read.newestAsOf,
     collection: {
+      asOf: read.newestAsOf ? read.newestAsOf.toISOString() : null,
       copies: owned.reduce((n, r) => n + r.copies, 0),
       cards: owned.length,
       ...(({ totalCents, pricedCopies }) => ({ valueCents: totalCents, pricedCopies }))(summarisePrices(owned.map((r) => priced(r.oracleId, r.copies)), read.newestAsOf)),

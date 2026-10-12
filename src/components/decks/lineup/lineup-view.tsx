@@ -162,7 +162,8 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
           const inScope = new Set(decks.map((d) => d.id));
           const chosen = wantedPick.deckId && inScope.has(wantedPick.deckId) ? wantedPick.deckId : null;
           const wanted = wantedRows(c, inScope, chosen).filter((r) => r.pct >= wantedPick.cut).length;
-          const age = data.pricesAsOf ? copy.worth.age((Date.parse(now) - Date.parse(data.pricesAsOf)) / 60_000) : null;
+          // Dated by the collection's own price read, not the decks', which ran first.
+          const age = c.asOf ? copy.worth.age((Date.parse(now) - Date.parse(c.asOf)) / 60_000) : null;
           return (
             <FoldCard
               id="collection"
