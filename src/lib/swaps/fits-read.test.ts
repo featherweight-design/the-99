@@ -126,6 +126,16 @@ describe("validFitsRead", () => {
     expect(run([pick({ sentence: "{C9} makes a goblin for {C1}." })]).drops).toEqual({});
   });
 
+  it("2: a card of the deck's written outright, any case or as a possessive, is drawn as that card", () => {
+    const r = run([pick({ sentence: "Ajani unrelenting's tokens join Goblin Instigator's for {C1}." })]);
+    expect(r.drops).toEqual({});
+    expect(r.picks[0].parts).toEqual([
+      { card: SUBJECT }, { text: "'s tokens join " }, { card: id(11) }, { text: "'s for " }, { card: KRENKO }, { text: "." },
+    ]);
+    // Another deck's card is still refused, possessive or not.
+    expect(run([pick({ sentence: "With {C1} and Guttersnipe's drain." })]).drops).toEqual({ cardOutsideDeck: 1 });
+  });
+
   it("3: drops a cut that is the commander, the card, a Key card, a never-cut card", () => {
     expect(run([pick({ cut: "C1" })]).drops).toEqual({ cutCommander: 1 });
     expect(run([pick({ cut: "C9" })]).drops).toEqual({ cutSelf: 1 });

@@ -36,6 +36,24 @@ export async function liveLockedIds(tx: Runner, deckId: string): Promise<Readonl
   return new Set(result.rows.map((r) => r.oracle_id));
 }
 
+/** `liveLockedIds` for several decks in ONE statement: each deck's live locked cards. */
+export async function liveLockedIdsByDeck(tx: Runner, deckIds: readonly string[]): Promise<Map<string, ReadonlySet<string>>> {
+  const out = new Map<string, Set<string>>(deckIds.map((id) => [id, new Set<string>()]));
+  if (deckIds.length === 0) return out;
+  const result = await tx.execute<{ deck_id: string; oracle_id: string }>(sql`
+    select l.deck_id, l.oracle_id
+    from deck_locks l
+    where l.deck_id = any(${sql.param([...deckIds])}::uuid[])
+      and l.removed_at is null
+      and exists (
+        select 1 from deck_cards dc
+        where dc.deck_id = l.deck_id and dc.oracle_id = l.oracle_id
+      )
+  `);
+  for (const r of result.rows) out.get(r.deck_id)?.add(r.oracle_id);
+  return out;
+}
+
 /**
  * A predicate for a statement that deletes or decrements `deck_cards` rows: this row's card is NOT
  * locked in its deck. The sweeps put it inside their own write, after the deck row lock they

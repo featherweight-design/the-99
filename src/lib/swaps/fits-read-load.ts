@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { liveLockedIds } from "../decks/locks";
+import { liveLockedIdsByDeck } from "../decks/locks";
 import { readLabels } from "../labels/read";
 import type { Job } from "../labels/types";
-import { readShownSynopsis } from "../synopsis/generate";
+import { readShownSynopses } from "../synopsis/generate";
 import { SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../synopsis/limits";
 import { deckNameIndex, normalizeName } from "../synopsis/facts";
 import type { CheckedSynopsis } from "../synopsis/types";
@@ -91,8 +91,8 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
       from deck_cards dc join cards c on c.oracle_id = dc.oracle_id
       where dc.deck_id = any(${sql.param(deckIds)}::uuid[])
       order by dc.deck_id, c.name`).then((r) => r.rows),
-    Promise.all(deckIds.map((id) => readShownSynopsis(id, userId))),
-    Promise.all(deckIds.map((id) => liveLockedIds(db, id))),
+    readShownSynopses(deckIds, userId),
+    liveLockedIdsByDeck(db, deckIds),
     readInclusion(oracleId, loaded.filter((d) => listedIds.has(d.id))),
   ]);
   // `loadFits` and the reads above are separate instants. The candidates are re-checked against the
@@ -107,7 +107,6 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
 
   const planOf = new Map<string, { source: PlanSource; staleNames: string[] }>();
   const decks: FitsDeckBlock[] = loaded.filter((d) => opts.allDecks || candidateIds.has(d.id)).map((d) => {
-    const i = loaded.indexOf(d);
     // One row per card: a deck may hold a card on two rows (a printing each), which the prompt
     // lists once.
     const seen = new Set<string>();
@@ -117,7 +116,7 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
       const c = cardOf.get(id);
       return c ? [{ oracleId: id, name: c.name, typeLine: c.type_line, oracleText: c.oracle_text ?? "", kinds: kinds(labels.get(id)) }] : [];
     });
-    const shown = synopses[i];
+    const shown = synopses.get(d.id) ?? null;
     const text = shown ? planText(shown.content) : null;
     const source: PlanSource = !shown || !text ? "none" : V2_CONTRACTS.includes(shown.contractVersion) ? "v2" : "older";
     // Key cards as Proposed cuts resolves them (`buildCutsPack`): by name over this list, faces too.
@@ -138,7 +137,7 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
       themes: source === "none" ? leadingThemes(list, labels) : [],
       list,
       keyCardIds,
-      lockedIds: [...locks[i]].filter((id) => runs.has(id)),
+      lockedIds: [...(locks.get(d.id) ?? [])].filter((id) => runs.has(id)),
     };
   });
 
@@ -154,21 +153,29 @@ export async function loadFitsReadInputs(userId: string, oracleId: string, opts:
   };
 }
 
-/** How often decks with each candidate's commander (or pair) run the card, where the index records it. */
+/**
+ * How often decks with each candidate's commander (or pair) run the card, where the index records
+ * it. Two statements whatever the deck count: one over the single commanders, one over the pairs.
+ */
 async function readInclusion(oracleId: string, decks: readonly DeckRow[]): Promise<Map<string, number>> {
+  const singles = [...new Set(decks.filter((d) => d.partner_oracle_id === null).map((d) => d.commander_oracle_id))];
+  const pairKey = (a: string, b: string) => (a < b ? `${a}:${b}` : `${b}:${a}`);
+  const pairs = decks.flatMap((d) => (d.partner_oracle_id === null ? [] : [pairKey(d.commander_oracle_id, d.partner_oracle_id)]));
+  const [single, pair] = await Promise.all([
+    singles.length === 0 ? [] : db.execute<{ commander_oracle_id: string; inclusion: number | null }>(sql`
+      select commander_oracle_id, inclusion from commander_support_cards
+      where oracle_id = ${oracleId}::uuid and commander_oracle_id = any(${sql.param(singles)}::uuid[])`).then((r) => r.rows),
+    pairs.length === 0 ? [] : db.execute<{ commander_oracle_id: string; partner_oracle_id: string; inclusion: number | null }>(sql`
+      select commander_oracle_id, partner_oracle_id, inclusion from commander_pair_support_cards
+      where oracle_id = ${oracleId}::uuid
+        and (commander_oracle_id::text || ':' || partner_oracle_id::text) = any(${sql.param([...new Set(pairs)])}::text[])`).then((r) => r.rows),
+  ]);
+  const bySingle = new Map(single.flatMap((r) => (r.inclusion === null ? [] : [[r.commander_oracle_id, Number(r.inclusion)] as const])));
+  const byPair = new Map(pair.flatMap((r) => (r.inclusion === null ? [] : [[pairKey(r.commander_oracle_id, r.partner_oracle_id), Number(r.inclusion)] as const])));
   const out = new Map<string, number>();
-  await Promise.all(decks.map(async (d) => {
-    const { rows } = d.partner_oracle_id === null
-      ? await db.execute<{ inclusion: number | null }>(sql`
-          select inclusion from commander_support_cards
-          where commander_oracle_id = ${d.commander_oracle_id}::uuid and oracle_id = ${oracleId}::uuid`)
-      : await db.execute<{ inclusion: number | null }>(sql`
-          select inclusion from commander_pair_support_cards
-          where commander_oracle_id = least(${d.commander_oracle_id}::uuid, ${d.partner_oracle_id}::uuid)
-            and partner_oracle_id = greatest(${d.commander_oracle_id}::uuid, ${d.partner_oracle_id}::uuid)
-            and oracle_id = ${oracleId}::uuid`);
-    const v = rows[0]?.inclusion;
-    if (v !== null && v !== undefined) out.set(d.id, Number(v));
-  }));
+  for (const d of decks) {
+    const v = d.partner_oracle_id === null ? bySingle.get(d.commander_oracle_id) : byPair.get(pairKey(d.commander_oracle_id, d.partner_oracle_id));
+    if (v !== undefined) out.set(d.id, v);
+  }
   return out;
 }

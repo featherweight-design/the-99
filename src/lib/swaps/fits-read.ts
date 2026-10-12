@@ -269,9 +269,38 @@ function cutFailure(cutId: string, deck: FitsDeckBlock, subjectId: string, nameO
 }
 
 /** Whole-word, case-sensitive: whether `text` names `name` outright rather than by key. */
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** A card name as a whole word, any case; a possessive (`Barrowgoyf's`) still names it. */
+const nameSource = (name: string) => `(?<![\\p{L}\\p{N}'])${escapeRe(name)}(?![\\p{L}\\p{N}])`;
+
 function namesOutright(text: string, name: string): boolean {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(?<![\\p{L}\\p{N}'])${escaped}(?![\\p{L}\\p{N}'])`, "u").test(text);
+  return new RegExp(nameSource(name), "iu").test(text);
+}
+
+/**
+ * Turns every card of `names` written outright in a text part into a card part, longest name first,
+ * so the app draws it as it draws a key (lock 1: every card name in the line is the app's). A name
+ * the reply spelled out is the same card as its key, and leaving it as prose would draw a name the
+ * app did not.
+ */
+function tokenizeNames(parts: FitsSentencePart[], names: readonly { id: string; name: string }[]): FitsSentencePart[] {
+  if (names.length === 0) return parts;
+  const byLower = new Map(names.map((n) => [n.name.toLowerCase(), n.id]));
+  const re = new RegExp([...names].sort((a, b) => b.name.length - a.name.length).map((n) => nameSource(n.name)).join("|"), "giu");
+  return parts.flatMap((p): FitsSentencePart[] => {
+    if (!("text" in p)) return [p];
+    const out: FitsSentencePart[] = [];
+    let last = 0;
+    for (const m of p.text.matchAll(re)) {
+      const id = byLower.get(m[0].toLowerCase());
+      if (!id) continue;
+      if (m.index! > last) out.push({ text: p.text.slice(last, m.index) });
+      out.push({ card: id });
+      last = m.index! + m[0].length;
+    }
+    if (last < p.text.length) out.push({ text: p.text.slice(last) });
+    return out;
+  });
 }
 
 const BASICS = new Set(["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"]);
@@ -341,6 +370,8 @@ export function validFitsRead(args: {
     }
     const tail = text.slice(last);
     if (tail) parts.push(...splitQuotes(tail));
+    // A card of this deck's (or the card itself) written outright is drawn as the card.
+    parts.splice(0, parts.length, ...tokenizeNames(parts, shownNames.filter((s) => allowed.has(s.id))));
 
     const own = parts.flatMap((x) => ("text" in x ? [x.text] : [])).join(" ");
     // 6. A stray brace is a token the parse did not take; a figure or score word reads as a rank. A

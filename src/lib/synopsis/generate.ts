@@ -244,6 +244,33 @@ export async function readShownSynopsis(
 }
 
 /**
+ * `readShownSynopsis` for several decks in ONE statement, newest passing Overview per deck (no list
+ * preference: the caller has no list fingerprint to prefer). A deck with none is absent.
+ */
+export async function readShownSynopses(deckIds: readonly string[], userId: string): Promise<Map<string, SynopsisRow>> {
+  if (deckIds.length === 0) return new Map();
+  const rows = await db
+    .selectDistinctOn([deckSynopses.deckId], {
+      deckId: deckSynopses.deckId,
+      id: deckSynopses.id,
+      fingerprint: deckSynopses.fingerprint,
+      contractVersion: deckSynopses.contractVersion,
+      createdAt: deckSynopses.createdAt,
+      content: deckSynopses.content,
+      seenSeq: deckSynopses.seenSeq,
+    })
+    .from(deckSynopses)
+    .where(and(
+      inArray(deckSynopses.deckId, [...deckIds]),
+      eq(deckSynopses.userId, userId),
+      eq(deckSynopses.status, "done"),
+      sql`${deckSynopses.content} -> 'verdicts' @> '[{"status":"ok"}]'::jsonb`,
+    ))
+    .orderBy(deckSynopses.deckId, desc(deckSynopses.createdAt));
+  return new Map(rows.flatMap(({ deckId, ...row }) => (row.content ? [[deckId, row as SynopsisRow]] : [])));
+}
+
+/**
  * The fresh reading a write works from, with the list it describes. Null when there is none.
  *
  * ONE STORED ROW. `readStoredReading` answers from its own transaction, so the row's list is read
