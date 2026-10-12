@@ -5,7 +5,7 @@ import type { SQL } from "drizzle-orm";
 
 vi.mock("../../db", () => ({ db: {} }));
 
-import { aggregateTokenRows, tokenOwnershipState, writeUploadTokens } from "./ownership";
+import { aggregateTokenRows, recordUploadTokens, tokenOwnershipState, writeUploadTokens } from "./ownership";
 
 const T1 = "11111111-1111-4111-8111-111111111111";
 const T2 = "22222222-2222-4222-8222-222222222222";
@@ -112,5 +112,38 @@ describe("writeUploadTokens", () => {
     const holdings = Array.from({ length: 1_100 }, (_, i) => ({ tokenOracleId: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`, quantity: 1 }));
     await writeUploadTokens(tx, "u1", "up1", "replace", holdings);
     expect(log.filter((l) => l.op === "upsert" && l.table === "token_ownership").map((l) => l.rows!.length)).toEqual([500, 500, 100]);
+  });
+});
+
+describe("recordUploadTokens", () => {
+  const withTables = (ok: boolean) => {
+    const { tx, log } = recorder();
+    return { tx: { ...(tx as object), execute: async () => ({ rows: [{ ok }] }) } as never, log };
+  };
+
+  it("writes the holdings and the marker for an upload that read tokens", async () => {
+    const { tx, log } = withTables(true);
+    await recordUploadTokens(tx, "u1", "up1", "replace", [{ tokenOracleId: T1, quantity: 2 }]);
+    expect(log.some((l) => (l as { table?: string }).table === "token_reads")).toBe(true);
+  });
+
+  it("writes the marker for an upload that read an EMPTY list", async () => {
+    const { tx, log } = withTables(true);
+    await recordUploadTokens(tx, "u1", "up1", "add", []);
+    expect(log.some((l) => (l as { table?: string }).table === "token_reads")).toBe(true);
+  });
+
+  it("writes nothing when the confirm read no tokens at all (absent), the marker included", async () => {
+    const { tx, log } = withTables(true);
+    await recordUploadTokens(tx, "u1", "up1", "replace", undefined);
+    expect(log).toEqual([]);
+  });
+
+  it("writes nothing without an upload id, or where the tables do not exist yet", async () => {
+    const a = withTables(true);
+    await recordUploadTokens(a.tx, "u1", undefined, "add", [{ tokenOracleId: T1, quantity: 1 }]);
+    const b = withTables(false);
+    await recordUploadTokens(b.tx, "u1", "up1", "replace", []);
+    expect([...a.log, ...b.log]).toEqual([]);
   });
 });

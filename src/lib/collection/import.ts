@@ -4,7 +4,7 @@ import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings, tokenPrintings,
 } from "../../db/schema";
 import { tokenTablesExist } from "../tokens/publish";
-import { tokenOwnershipTablesExist, writeUploadTokens, type TokenHolding } from "../tokens/ownership";
+import { recordUploadTokens, type TokenHolding } from "../tokens/ownership";
 import { TOKEN_LAYOUTS } from "../cards/game-card";
 import type { CollectionRow } from "../manabox/parse";
 import type { CatalogCard, DetailedCatalogCard, MatchIndexes } from "./match";
@@ -208,9 +208,7 @@ export async function replaceCollection(
       // The tokens this upload read, and the marker that they were READ, in the same transaction as the
       // replace: a failure here rolls the whole confirm back. An upload with no token still writes the
       // marker. Only an upload (with an id) records tokens; the CLI seed path passes none.
-      if (opts.confirmUploadId && (await tokenOwnershipTablesExist(tx))) {
-        await writeUploadTokens(tx, userId, opts.confirmUploadId, "replace", opts.tokens ?? []);
-      }
+      await recordUploadTokens(tx, userId, opts.confirmUploadId, "replace", opts.tokens);
       // Every score component derives from the collection, so a replace invalidates all of them.
       await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
       for (let i = 0; i < values.length; i += INSERT_BATCH) {

@@ -116,3 +116,20 @@ export async function unmarkTokenOwned(userId: string, tokenOracleId: string): P
     .returning({ id: tokenOwnership.tokenOracleId });
   return gone.length;
 }
+
+/**
+ * The confirm transaction's token step, shared by `replaceCollection` and the ledger's write. `tokens`
+ * absent means this confirm never read any (a payload previewed before tokens were read, the seed CLI,
+ * the Add cards sheet): nothing is written, and above all not the marker, because a marker with no token
+ * behind it would turn every token from "not known" into "not owned". An empty list is a real read.
+ */
+export async function recordUploadTokens(
+  tx: Parameters<typeof writeUploadTokens>[0],
+  userId: string,
+  uploadId: string | undefined,
+  mode: "replace" | "add",
+  tokens: TokenHolding[] | undefined,
+): Promise<void> {
+  if (!uploadId || !tokens || !(await tokenOwnershipTablesExist(tx))) return;
+  await writeUploadTokens(tx, userId, uploadId, mode, tokens);
+}

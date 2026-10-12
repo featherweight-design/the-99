@@ -259,7 +259,7 @@ export async function confirmUpload(
 
   const preview = upload.previewPayload as {
     pendingItems: PendingItem[];
-    /** Absent on an upload previewed before tokens were read: it records the marker and no token. */
+    /** Absent on an upload previewed before tokens were read: it records neither the tokens nor the marker. */
     tokens?: TokenHolding[];
     unmatched?: { name: string; line: number }[];
     parseErrors?: { line: number; reason: string }[];
@@ -298,7 +298,7 @@ export async function confirmUpload(
   if (ledger) {
     const result = await applyCollectionChange(
       userId,
-      { kind: mode, items: pendingItems, uploadId, tokens: preview.tokens ?? [] },
+      { kind: mode, items: pendingItems, uploadId, tokens: preview.tokens },
       {
         id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
         ownedCounts: true,
@@ -322,7 +322,7 @@ export async function confirmUpload(
     const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
       confirmUploadId: uploadId,
       onlyIfEmpty: opts.firstImport,
-      tokens: preview.tokens ?? [],
+      tokens: preview.tokens,
     });
     if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
     if (alreadyConfirmed) return;

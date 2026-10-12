@@ -68,6 +68,17 @@ describe("confirmUpload", () => {
     expect(stub.receipt.mock.calls[0][0].ownedAfter).toEqual({ [A]: 1 });
   });
 
+  it("hands the tokens the preview carried to the write, on both paths, and none when it carried none", async () => {
+    const tokens = [{ tokenOracleId: "11111111-1111-4111-8111-111111111111", quantity: 2 }];
+    stub.upload = { ...stub.upload, previewPayload: { pendingItems: items, tokens } };
+    await confirmUpload(UPLOAD);
+    expect(stub.replace.mock.calls[0][2].tokens).toEqual(tokens);
+    stub.ledger = true;
+    stub.apply.mockResolvedValue(applied("upload_replace"));
+    await confirmUpload(UPLOAD);
+    expect(stub.apply.mock.calls[0][1].tokens).toEqual(tokens);
+  });
+
   it("refuses an Add with the switch off, before reading anything", async () => {
     await expect(confirmUpload(UPLOAD, { mode: "add" })).rejects.toThrow("collection editing on");
     expect(stub.replace).not.toHaveBeenCalled();
@@ -84,7 +95,7 @@ describe("confirmUpload", () => {
     stub.apply.mockResolvedValue(applied("upload_replace"));
     await confirmUpload(UPLOAD, { confirmShort: [deck, { junk: true } as never] });
     const [, change, opts] = stub.apply.mock.calls[0];
-    expect(change).toEqual({ kind: "replace", items, uploadId: UPLOAD, tokens: [] });
+    expect(change).toEqual({ kind: "replace", items, uploadId: UPLOAD, tokens: undefined });
     expect(opts.confirmShort).toEqual([deck]);
     expect(opts.ownedCounts).toBe(true);
     expect(stub.replace).not.toHaveBeenCalled();

@@ -13,7 +13,7 @@ import { proxiedMembership } from "../decks/proxies";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
-import { tokenOwnershipTablesExist, writeUploadTokens, type TokenHolding } from "../tokens/ownership";
+import { recordUploadTokens, type TokenHolding } from "../tokens/ownership";
 
 /**
  * THE COLLECTION WRITE PATH (collection foundation, plan `2026-10-09-collection-write-path.md`).
@@ -741,8 +741,8 @@ export async function applyCollectionChange(
       // The tokens this UPLOAD read, and the marker that they were read, in the same transaction as the
       // rows: a failure rolls the whole confirm back. Only an upload (it carries an id) records tokens;
       // the Add cards sheet does not. An upload that read no token still writes the marker.
-      if (uploadId && (change.kind === "replace" || change.kind === "add") && (await tokenOwnershipTablesExist(tx))) {
-        await writeUploadTokens(tx, userId, uploadId, change.kind, change.tokens ?? []);
+      if (change.kind === "replace" || change.kind === "add") {
+        await recordUploadTokens(tx, userId, uploadId, change.kind, change.tokens);
       }
 
       const moves = countMoves(rows);
