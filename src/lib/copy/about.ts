@@ -86,7 +86,8 @@ export type AboutSwitch =
   | 'MANA_BALANCE_ENABLED'
   | 'ALL_DECKS_CART_ENABLED'
   | 'PRECONS_ENABLED'
-  | 'DECK_NOTES_ENABLED';
+  | 'DECK_NOTES_ENABLED'
+  | 'ADDED_COPY_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -404,6 +405,28 @@ export const aboutEntries: readonly AboutEntry[] = [
     keySwitches: {
       'Back from Mana Pool, press “buy” on what came, and it goes into your Collection.': 'SHOPPING_MARK_BOUGHT_ENABLED',
     },
+    marksPending: true,
+    since: 14,
+  },
+  // Where an added copy goes (handoff `design_handoff_the99_added_copy`, `about · added copy.ts`,
+  // Keep it free removed: Hugh ruled it out 2026-10-12). No bump: `since` is the version current at
+  // merge, the deck-stats precedent. Caption through /prose-pass; the title to /copy-review.
+  {
+    id: 'added-copy',
+    chapter: '01',
+    title: 'Where a new copy goes',
+    route: '/collection',
+    opens: 'opens Add cards',
+    width: 'plate',
+    switch: 'ADDED_COPY_ENABLED',
+    caption:
+      'You buy a Sol Ring for your new Brago deck. But Gishath was short one too, and it committed the card first, so that’s where the copy goes. Fair, and easy to miss.\n\nNow every new copy tells you where it went, the moment you add it. Want it somewhere else? Change it, and it goes to the deck you pick.',
+    keys: [
+      'The upload summary, “Add cards” and “I got it” all say where it went.',
+      'A brew holds a copy only once you give it one.',
+      'Press “Change” to see every deck that needs the card.',
+      '“Undo” on “I got it” takes back the copy and your pick.',
+    ],
     marksPending: true,
     since: 14,
   },

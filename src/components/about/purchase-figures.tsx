@@ -11,7 +11,8 @@ import { DecklistRow } from "../decks/decklist-row";
 import { GotItProvider } from "../decks/got-it";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { CartLine } from "../decks/cart/cart-line";
-import { ALL_DECKS_CART_LINE, DECK_PRINTING, GOT_IT_RECEIPT, GOT_IT_ROWS, PRICES } from "../../lib/about/fixtures";
+import { ADDED_COPY_ROWS, ALL_DECKS_CART_LINE, DECK_PRINTING, GOT_IT_RECEIPT, GOT_IT_ROWS, PRICES } from "../../lib/about/fixtures";
+import { CopyLine } from "../decks/copy-line";
 
 const NOOP = () => {};
 const r = gotItCopy.receipt;
@@ -76,6 +77,21 @@ export function AllDecksCartFigureBody() {
   return (
     <ul className="m-0 list-none rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] [&>li:first-child]:border-t-0">
       <CartLine line={ALL_DECKS_CART_LINE.line} deckNames={ALL_DECKS_CART_LINE.deckNames} newestAsOf={PRICES[0].fact.asOf} />
+    </ul>
+  );
+}
+
+/**
+ * `added-copy`: two rows of the upload summary's `No longer to buy`, through the shipped `CopyLine`
+ * in its row form, each with Change. The row form is the one on every build that carries the
+ * entry; Add Cards' and I got it's forms say the same thing in longer sentences.
+ */
+export function AddedCopyFigureBody() {
+  return (
+    <ul className="m-0 list-none p-0">
+      {ADDED_COPY_ROWS.map((r) => (
+        <CopyLine key={r.oracleId} cardName={r.cardName} sentence={r.sentence} chooser={r.chooser} />
+      ))}
     </ul>
   );
 }
