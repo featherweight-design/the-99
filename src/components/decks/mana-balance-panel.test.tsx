@@ -113,8 +113,8 @@ describe("ManaBalancePanel: the evidence", () => {
     expect(screen.getByText(copy.lead)).toBeTruthy();
     expect([...document.querySelectorAll("[data-mana-row]")].map((r) => r.getAttribute("data-mana-row"))).toEqual(["W", "U", "R", "G"]);
     const green = document.querySelector("[data-mana-row='G']") as HTMLElement;
-    // The commander's {G} is in the pips, and the figure without it sits underneath.
-    expect(green.textContent).toContain(copy.table.without(11, "Gishath"));
+    // The commander's {G} is in the pips, and no figure without it is drawn (Hugh, 2026-10-11: they still pay for the commander).
+    expect(green.textContent).not.toContain("without");
     expect(green.textContent).toContain(copy.table.neededFor("Archdruid", 1, "1CC"));
     // A color with a source and no pip is drawn, never hidden.
     const blue = document.querySelector("[data-mana-row='U']") as HTMLElement;

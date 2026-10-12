@@ -215,14 +215,11 @@ Where R3b and R3 disagree, R3b wins unless the row says otherwise; a conflict is
 | color | `var(--fg-body)`; `var(--fg-locked)` when 0 | same |
 | copy key | `table.share(n, pct)`; `0` when none | same |
 
-### Pips "without" line
-| Property | Phone | Desktop |
-|---|---|---|
-| font-family | mono | mono |
-| font-size | 10 | 10 |
-| color | `var(--fg-faint)` | `var(--fg-faint)` |
-| copy key | `table.without(n, commander)` | same |
-| conditional | DT / R3: only when the figure differs from the pip count. **[conflict]** R3b renders it whenever the color has pips (its fixture always differs). | same |
+### Pips "without" line (removed)
+Removed 2026-10-11 (Hugh, Tuning line close-out): a figure without the commander does not help the
+player, who still pays for the commander. Pips count the commander, and nothing is drawn under them.
+Measured before removal: counting the commander's own cost in Needed and in Improve my mana's order
+moves nothing on Gishath or Blood Rites (staging), so no headline figure changed with it.
 
 ### Sources cell
 | Property | Phone | Desktop |
@@ -652,7 +649,7 @@ Two instances: Hardest costs, then Lands.
 | grid | col 3 / row 1 | col 3 / row 1 |
 | justify-self | end | end |
 | text-align | right | right |
-| white-space | nowrap | nowrap |
+| white-space | wraps only at ` · ` (each half nowrap, the dot kept on the first line), 2026-10-11: `You have 28 · Needs at most 26` is about 216px at mono 12 and ran past the 200px column | same |
 | font-family / size | mono / 12 | mono / 12 |
 | color | `var(--fg)`; `No published figure` in `var(--fg-muted)` (DT R3a) | same |
 | copy key | `patterns.haveNeeds` · `patterns.haveNeedsAtMost` · `patterns.none` | same |
@@ -826,7 +823,7 @@ Two instances: Hardest costs, then Lands.
 | Explainer open | link press | accent-ruled panel: header (trigger + Hide), Needs and Source paragraphs with TCGplayer link (F1 desktop) |
 | Explainer closed via Hide | Hide press | returns to closed; focus to trigger |
 | One color | deck with one colored identity | one table row; Hardest costs has no chips (R3 M2) |
-| Color with sources, no pips | e.g. Gishath blue/black | pips `0` in `--fg-locked`, no pip bar, no without line; Needed `—` in `--fg-locked` + `no pips to cast` |
+| Color with sources, no pips | e.g. Gishath blue/black | pips `0` in `--fg-locked`, no pip bar; Needed `—` in `--fg-locked` + `no pips to cast` |
 | Long name list | pattern row with >3 names | 3 names + `+N more`; expanded shows all + `show fewer` |
 | Commander in a row | commander's cost matches a pattern | name + `commander` tag |
 | Figure kinds | per pattern | `You have N · Needs N` · `Needs at most N` · `No published figure` (`--fg-muted`) |

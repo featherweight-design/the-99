@@ -149,7 +149,7 @@ export function ManaBalancePanel({
         <ColorlessLine row={colorlessRow ?? { c: "C", pips: 0, lands: 0, other: 0, pipShare: 0, sourceShare: 0 }} share={false} />
       ) : (
         <div className="flex flex-col gap-[8px]">
-          <ManaEvidenceTable balance={balance} commander={commander} />
+          <ManaEvidenceTable balance={balance} />
           <NeedsExplainer />
         </div>
       )}

@@ -21,7 +21,9 @@ import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tun
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
 import type { StapleCandidate, StapleFact } from "../../lib/tuning/mana-staples";
 import { colorName, colorWord, type ClientManaBalance } from "../../lib/tuning/mana-view";
-import { useCardDetail } from "../cards/card-detail-provider";
+import { reveal } from "../../lib/ui/reveal";
+import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { usePreviewRow } from "./hover-preview";
 import { BuyTag } from "./buy-tag";
 import { ColorDisc, NeedsExplainer } from "./mana-evidence";
 import { FailureMark } from "./tuning-history";
@@ -68,6 +70,9 @@ export function ImproveDoor({
   // Where focus goes on the next door change, CONSUMED by the first one: a read landing later
   // re-renders the result and must not pull focus back from wherever the reader moved meanwhile.
   const wantFocus = useRef<"step" | "result" | "button" | null>(null);
+  // Set when a result lands: the result is brought into view smoothly then (`reveal`), not while it reads,
+  // when the page may still be too short to bring it up.
+  const wantReveal = useRef(false);
   const setFocus = (target: "step" | "result" | "button") => { wantFocus.current = target; };
   const asked = useRef(0);
 
@@ -82,11 +87,15 @@ export function ImproveDoor({
   }, [revision, deckId]);
 
   useEffect(() => {
+    if (wantReveal.current) {
+      wantReveal.current = false;
+      reveal(resultRef.current);
+    }
     const target = wantFocus.current;
     if (target === null) return;
     wantFocus.current = null;
     if (target === "step") firstRowRef.current?.focus();
-    else if (target === "result") resultRef.current?.focus();
+    else if (target === "result") resultRef.current?.focus({ preventScroll: true });
     else buttonRef.current?.focus();
   }, [door]);
 
@@ -114,6 +123,7 @@ export function ImproveDoor({
       return;
     }
     if (help && isNewestAsk(deckId, "mana-help", ask)) setVisitValue(deckId, "mana-help", { revision, help } satisfies Kept);
+    wantReveal.current = true;
     setDoor({ at: "result", color, help: help ? { kind: "ok", help } : { kind: "failed" } });
   };
 
@@ -275,7 +285,7 @@ function HelpResult({ color, state, evidence, commander, headRef, onChange, onRe
         <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]">
           <span className="flex items-center gap-[8px] self-center">
             <ColorDisc c={color} size={14} />
-            <h3 ref={headRef} tabIndex={-1} className="text-[13.5px] font-semibold text-[color:var(--fg)] outline-none">{copy.help.head(word)}</h3>
+            <h3 ref={headRef} tabIndex={-1} className="scroll-mt-[16px] text-[13.5px] font-semibold text-[color:var(--fg)] outline-none">{copy.help.head(word)}</h3>
           </span>
           {state.kind === "failed" ? null : <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{have}</span>}
         </div>
@@ -362,6 +372,9 @@ function None({ text }: { text: string }) {
 
 function StapleRow({ staple, siblings, trade, picked, commander }: { staple: StapleCandidate; siblings: string[]; trade: TradeMove | null; picked: BalanceColor; commander: string }) {
   const { open } = useCardDetail();
+  // The decklist's preview and intent prefetch, so a hover or a tap-and-hold acts as it does on a list row.
+  const preview = usePreviewRow(staple.imageUri);
+  const intent = useCardIntent(staple.oracleId, staple.imageUri);
   const owned = staple.free > 0;
   const rate = rateText(staple.fact, commander);
   return (
@@ -377,6 +390,8 @@ function StapleRow({ staple, siblings, trade, picked, commander }: { staple: Sta
         <button
           type="button"
           onClick={(e) => open(staple.oracleId, siblings, undefined, { opener: e.currentTarget, art: staple.imageUri ?? null })}
+          {...preview}
+          {...intent}
           className="cursor-pointer border-b border-dotted border-b-[color:var(--accent)] text-left text-[13px] font-semibold text-[color:var(--fg)]"
         >
           {staple.name}

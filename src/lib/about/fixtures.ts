@@ -39,6 +39,7 @@ import { MODEL_FRIEND_DAILY_ALLOWANCE } from "../model/allowance-rule";
 // Study` are cards a Commander player reads without stopping.
 
 import type { Availability } from "../decks/availability";
+import { NO_TAPPED_LANDS } from "../mana/lands-tapped";
 import { manaCurve, typeCurve, type CardType, type CurveCard, type DeckStatsSlice } from "../decks/stats";
 import { buildDeckProfile, type ProfileCardRow } from "../profile/build";
 import type { BracketPopulation } from "../profile/types";
@@ -2286,4 +2287,54 @@ export const DECK_PRINTING: {
     { setCode: "C21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23", quantity: 1, finishes: { nonfoil: 1 }, flavorName: null, imageUri: "https://cards.scryfall.io/normal/front/4/c/4cbc6901-6a4a-4d0a-83ea-7eefa3b35021.jpg?1783927506" },
   ],
   pick: { setCode: "SLD", collectorNumber: "910" },
+};
+
+/**
+ * Mana Balance's color table for the About entry (R3 M10): Gishath's figures from the handoff's
+ * evidence frames, shaped as the client read so the tool's own `ManaEvidenceTable` draws them.
+ * Only the fields the table reads carry meaning; patterns and lands are left empty.
+ */
+function manaColor(
+  color: import("../tuning/mana-balance").BalanceColor,
+  pips: [number, number],
+  needed: { pattern: string; requires: number; cards: string[] } | null,
+): import("../tuning/mana-balance").ColorEvidence {
+  return {
+    color,
+    pips: { withCommander: pips[0], withoutCommander: pips[1] },
+    pipShare: { withCommander: 0, withoutCommander: 0 },
+    sources: { lands: 0, nonland: 0, total: 0 },
+    patterns: [],
+    karstenHardest: needed?.requires ?? 0,
+    needed: needed
+      ? { ...needed, generic: 0, pips: 0, ratio: 1, copies: needed.cards.length, cards: needed.cards.map((name) => ({ name, copies: 1 })), basis: needed.cards.length >= 2 ? "shared" : "single" }
+      : null,
+  };
+}
+
+const MANA_ZERO = { lands: 0, nonland: 0 };
+export const MANA_BALANCE: { balance: import("../tuning/mana-view").ClientManaBalance } = {
+  balance: {
+    state: "ok",
+    colors: [
+      manaColor("W", [18, 17], { pattern: "2CC", requires: 26, cards: ["Lightmine Field"] }),
+      manaColor("U", [0, 0], null),
+      manaColor("B", [0, 0], null),
+      manaColor("R", [26, 25], { pattern: "CC", requires: 30, cards: ["Shatterskull Smashing"] }),
+      manaColor("G", [56, 55], { pattern: "1CC", requires: 28, cards: ["Runic Armasaur", "Thrashing Brontodon", "Topiary Stomper"] }),
+    ],
+    colorless: { demand: 0, supply: 0 },
+    unattributedNonland: 0,
+    lands: { count: 38, tapped: NO_TAPPED_LANDS, averageManaValue: 0, cheapRamp: 0, karstenLands: 0 },
+    supply: {
+      demand: { W: 18, U: 0, B: 0, R: 26, G: 56, C: 0 },
+      supply: { W: { lands: 18, nonland: 8 }, U: { lands: 0, nonland: 1 }, B: { lands: 0, nonland: 1 }, R: { lands: 19, nonland: 8 }, G: { lands: 20, nonland: 8 }, C: MANA_ZERO },
+      nonlandSources: 9,
+      unattributedNonland: 0,
+      lands: 38,
+      landSources: 38,
+    },
+    identity: ["W", "R", "G"],
+    colorOrder: [],
+  },
 };

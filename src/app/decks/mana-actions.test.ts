@@ -10,6 +10,9 @@ const state = vi.hoisted(() => ({
   balance: null as unknown,
   recorded: [] as unknown[],
   fingerprinted: null as unknown,
+  staples: [] as { oracleId: string; imageUri: string | null }[],
+  art: new Map<string, string>(),
+  artCalls: [] as unknown[][],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -17,7 +20,8 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c }) }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c, staples: state.staples }) }));
+vi.mock("../../lib/cards/chain-art", () => ({ chainArt: async (...args: unknown[]) => { state.artCalls.push(args); return state.art; } }));
 vi.mock("../../lib/tuning/tool-counts", () => ({ recordToolCount: async (row: unknown) => { state.recorded.push(row); } }));
 
 import { readManaBalance, readManaHelpFor } from "./mana-actions";
@@ -36,6 +40,7 @@ beforeEach(() => {
   state.recorded = [];
   state.balance = balance;
   state.deck = {
+    id: DECK,
     commander: { oracleId: "cmd", name: "Avatar Aang // Aang", colorIdentity: ["G"], manaCost: null },
     partner: null,
     cards: [
@@ -102,8 +107,19 @@ describe("readManaBalance with a partner", () => {
 
 describe("readManaHelpFor (the action)", () => {
   it("answers a color in the commander's identity, and records nothing for History", async () => {
-    expect(await readManaHelpFor(DECK, "G")).toEqual({ color: "G" });
+    expect(await readManaHelpFor(DECK, "G")).toEqual({ color: "G", staples: [] });
     expect(state.recorded).toEqual([]);
+  });
+
+  it("draws each staple with the printing the player's chain gives it, and the catalog's otherwise", async () => {
+    state.staples = [{ oracleId: "farmland", imageUri: "catalog-farmland" }, { oracleId: "unowned", imageUri: "catalog-unowned" }];
+    state.art = new Map([["farmland", "fra-399"]]);
+    const help = await readManaHelpFor(DECK, "G");
+    expect(help?.staples.map((s) => s.imageUri)).toEqual(["fra-399", "catalog-unowned"]);
+    // The deck's own chain: its pick first, then the player's owned printing.
+    expect(state.artCalls.at(-1)).toEqual(["user_1", DECK, ["farmland", "unowned"]]);
+    state.staples = [];
+    state.art = new Map();
   });
 
   it("refuses anything but one of the five, a color outside the identity, the switch off, or a bad id", async () => {

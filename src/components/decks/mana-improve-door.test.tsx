@@ -45,7 +45,11 @@ function door(read: (d: string, c: string) => Promise<ManaHelp | null>, deckId =
   return <ImproveDoor deckId={deckId} balance={balance} commander="Gishath" revision={revision} read={read} />;
 }
 
+// jsdom has no scrollIntoView, and a landed result is brought into view (`reveal`).
+const scroll = vi.fn();
 beforeEach(() => {
+  Element.prototype.scrollIntoView = scroll;
+  scroll.mockReset();
   resetDeckVisitForTests();
   noteDeckRoute(`/decks/${A}`);
   openCard.mockReset();
@@ -209,6 +213,19 @@ describe("ImproveDoor: review round 1", () => {
     await act(async () => { answer(helpFor("R")); });
     expect(document.activeElement).toBe(elsewhere);
     elsewhere.remove();
+  });
+
+  it("brings the result into view smoothly when it lands, not while it reads", async () => {
+    let answer!: (h: ManaHelp) => void;
+    render(door(() => new Promise<ManaHelp>((r) => { answer = r; })));
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    await waitFor(() => expect(document.activeElement?.tagName).toBe("H3"));
+    expect(scroll).not.toHaveBeenCalled();
+    await act(async () => { answer(helpFor("R")); });
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+    expect(scroll.mock.contexts[0]).toBe(document.activeElement);
   });
 
   it("keeps nothing from a read that lands after the player left the deck and came back", async () => {

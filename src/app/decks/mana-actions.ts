@@ -2,6 +2,7 @@
 
 import { requireUserId } from "../../lib/auth";
 import { shortCommanderName } from "../../lib/copy/decks-builder";
+import { chainArt } from "../../lib/cards/chain-art";
 import { getDeckDetail, type DeckDetail } from "../../lib/decks/read";
 import { listFingerprint } from "../../lib/profile/fingerprint";
 import { manaBalanceEnabled } from "../../lib/tuning/flag";
@@ -79,5 +80,10 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;
-  return loadManaHelp(deck, userId, color as BalanceColor);
+  const help = await loadManaHelp(deck, userId, color as BalanceColor);
+  if (!help) return null;
+  // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
+  // one the player owns, else the catalog's (`chainArt`, as Suggested changes and Proposed cuts do).
+  const art = await chainArt(userId, deck.id, help.staples.map((s) => s.oracleId));
+  return art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
 }

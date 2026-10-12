@@ -7,8 +7,8 @@ import { resolveDeckOwnedPrintings } from "../decks/printings";
  * player owns, and for a card they do not own nothing at all, so the caller keeps the catalog
  * representative it already holds (`cards.image_uri`).
  *
- * ONE RULE FOR A SURFACE THAT DRAWS A CARD WITHOUT OPENING IT: Suggested changes, Proposed cuts and the
- * stand-ins sheet call this. The Top-off shelves list only cards NOT in the deck, which have no deck pick, so
+ * ONE RULE FOR A SURFACE THAT DRAWS A CARD WITHOUT OPENING IT: Suggested changes, Proposed cuts, the
+ * stand-ins sheet and Improve my mana's staples call this. The Top-off shelves list only cards NOT in the deck, which have no deck pick, so
  * `resolveOwnedPrintings` is already their whole chain. `cards.image_uri` is oracle-level,
  * one arbitrary printing per card, so a hover preview that read it showed a different printing from the
  * card details the same row opens (Suggested changes, Hugh 2026-10-11). A loader that feeds a hover
