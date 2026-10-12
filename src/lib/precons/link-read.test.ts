@@ -1,24 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { linkHeadQuery, preconMatchQuery, toMatch } from "./link-read";
+import { linkHeadQuery, preconCatalogQuery, sharedCount, toMatch } from "./link-read";
 
-// The deck's cards are a correlated subquery inside a filter on the projection (AGENTS.md): its outer
-// reference must name `precon_cards`, never fall through to `deck_cards`' own oracle id.
-describe("preconMatchQuery", () => {
-  const { sql, params } = preconMatchQuery("deck-1", ["cmd-a", "cmd-b"]).toSQL();
+// The precons' own figures: nothing in them depends on a deck, which is what lets them be read once
+// per catalog generation.
+describe("preconCatalogQuery", () => {
+  const { sql } = preconCatalogQuery().toSQL();
 
-  it("compares the deck's card to the PRECON's card, qualified", () => {
-    expect(sql).toContain(`exists (select 1 from deck_cards dc where dc.deck_id = $`);
-    expect(sql).toMatch(/and dc\.oracle_id = "precon_cards"\."oracle_id"\)/);
-    expect(params).toEqual(expect.arrayContaining(["deck-1", "cmd-a", "cmd-b"]));
+  it("reads no deck at all", () => {
+    expect(sql).not.toContain("deck_cards");
+    expect(sql).not.toContain("decks");
   });
 
-  it("counts the commanders as held, and basics nowhere", () => {
-    expect(sql).toMatch(/or "precon_cards"\."oracle_id" in \(\$\d+, \$\d+\)/);
+  it("collects each precon's distinct non-basic cards, the set a deck's shared count is taken over", () => {
+    expect(sql).toContain(`array_agg(distinct "precon_cards"."oracle_id") filter (where "cards"."type_line" not like 'Basic%')`);
     expect(sql.match(/"cards"\."type_line" not like 'Basic%'/g)).toHaveLength(2);
   });
 
   it("reads plain precons only, one row each", () => {
     expect(sql).toContain(`where "precons"."twin_of" is null group by "precons"."file_name"`);
+  });
+});
+
+describe("sharedCount", () => {
+  it("counts the precon's cards the deck holds, commanders included by the caller", () => {
+    expect(sharedCount(["a", "b", "c"], new Set(["b", "c", "z"]))).toBe(2);
+    expect(sharedCount(null, new Set(["a"]))).toBe(0);
   });
 });
 
