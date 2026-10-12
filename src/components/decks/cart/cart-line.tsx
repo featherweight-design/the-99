@@ -8,6 +8,7 @@ import type { PriceFact } from "../../../lib/decks/price";
 import type { SelectedLine } from "../../../lib/decks/cart";
 import { BuyTag } from "../buy-tag";
 import { useCartGotIt } from "./cart-got-it";
+import { CardDetailTrigger } from "../../cards/card-detail-provider";
 
 /**
  * The line's figure as one fact for the shared tag: the priced copies' sum (audit finding 9), each
@@ -64,7 +65,15 @@ export function CartLine({
     <li className="flex items-start gap-[12px] border-t border-[color:var(--border)] py-[11px]">
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <div className="flex flex-wrap items-baseline gap-x-[8px] gap-y-[2px]">
-          <span className="text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty]">{line.name}</span>
+          <CardDetailTrigger
+            oracleId={line.oracleId}
+            name={line.name}
+            imageUri={line.imageUri ?? null}
+            preview
+            className="text-left text-[14px] leading-[1.4] text-[color:var(--fg)] [text-wrap:pretty] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]"
+          >
+            {line.name}
+          </CardDetailTrigger>
           {line.commander ? (
             <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
               {copy.list.commander}

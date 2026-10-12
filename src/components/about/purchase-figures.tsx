@@ -75,9 +75,12 @@ export function DeckPrintingFigureBody() {
 /** The cart's Sol Ring line: three decks, full names, the owned fact, the tag at the line's total. */
 export function AllDecksCartFigureBody() {
   return (
-    <ul className="m-0 list-none rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] [&>li:first-child]:border-t-0">
-      <CartLine line={ALL_DECKS_CART_LINE.line} deckNames={ALL_DECKS_CART_LINE.deckNames} newestAsOf={PRICES[0].fact.asOf} />
-    </ul>
+    // The line's name is a card-details trigger, so the specimen mounts the provider the cart page does.
+    <CardDetailProvider fetchCard={async () => null}>
+      <ul className="m-0 list-none rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[16px] [&>li:first-child]:border-t-0">
+        <CartLine line={ALL_DECKS_CART_LINE.line} deckNames={ALL_DECKS_CART_LINE.deckNames} newestAsOf={PRICES[0].fact.asOf} />
+      </ul>
+    </CardDetailProvider>
   );
 }
 

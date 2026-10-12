@@ -40,6 +40,16 @@ const FEEDERS: Record<string, string> = {
   "components/decks/synopsis-text.tsx": "lib/synopsis/read.ts",
   "components/decks/version-diff.tsx": "lib/decks/versions.ts",
   "components/decks/benchmark-ledger.tsx": "lib/decks/read.ts",
+  // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
+  "components/ui/preview-button.tsx": "",
+  // The collection's own rows and the set grid's cells ARE the printing they draw: the collection list resolves its
+  // art per owned printing (browse.ts), and a set cell is one catalog printing, so there is no feeder to chain.
+  "components/collection/rows-view.tsx": "",
+  "components/collection/grid-view.tsx": "",
+  "components/sets/set-cell.tsx": "",
+  "components/decks/proxy-list-view.tsx": "lib/decks/proxy-list.ts",
+  "components/decks/cart/cart-line.tsx": "lib/decks/cart-read.ts",
+  "components/decks/cart/cart-deck-group.tsx": "lib/decks/cart-read.ts",
   // Tokens are their own bug batch's, and precons their own lane's: named so the list stays complete, not checked.
   "components/decks/token-makers.tsx": "",
 };
@@ -72,7 +82,7 @@ function passesPreview(src: string): boolean {
 export function hoverSurfaces(files: Record<string, string>): string[] {
   return Object.entries(files)
     .filter(([path, src]) => !/\.test\.tsx?$/.test(path)
-      && (/import\s*\{[^}]*\busePreviewRow\b[^}]*\}\s*from/.test(src) || passesPreview(src)))
+      && (/import\s*\{[^}]*\b(?:usePreviewRow|PreviewButton)\b[^}]*\}\s*from/.test(src) || passesPreview(src)))
     .map(([path]) => path)
     .sort();
 }
@@ -198,7 +208,18 @@ const DEFINES_PRESS = new Set([
   "components/cards/card-detail-provider.tsx",
   "components/commanders/full-card-trigger.tsx",
   "components/decks/hover-preview.tsx",
+  "components/ui/preview-button.tsx",
 ]);
+
+/**
+ * Rows whose two halves live in two files: the OWNER opens card details (`useCardDetail`) and mounts the
+ * `HoverPreviewProvider`; each CHILD is the row or tile and draws the preview with `PreviewButton`, taking its press
+ * from the owner as `onOpen`. Each half is checked where it lives, so neither file passes on the other's word.
+ */
+const COMPOSED_ROWS: Record<string, string[]> = {
+  "components/collection/browser.tsx": ["components/collection/rows-view.tsx", "components/collection/grid-view.tsx"],
+  "components/sets/set-grid-view.tsx": ["components/sets/set-cell.tsx"],
+};
 
 /**
  * Rows still owed a half, each named so the list can only shrink: a surface shipping its half leaves it here
@@ -208,17 +229,14 @@ const DEFINES_PRESS = new Set([
  */
 const OWED = new Set<string>([
   "components/cards/fits-picker.tsx",
-  "components/collection/browser.tsx",
   "components/commanders/coverage-chip.tsx",
   "components/commanders/synergy-row.tsx",
   "components/decks/change-commander-sheet.tsx",
   "components/decks/mana-sections.tsx",
   "components/decks/notices-body.tsx",
-  "components/decks/proxy-list-view.tsx",
   "components/decks/upgrade-path.tsx",
   "components/intake/choose-row.tsx",
   "components/intake/read-as-bar.tsx",
-  "components/sets/set-grid-view.tsx",
 ]);
 
 /**
@@ -264,7 +282,18 @@ describe("every card row has a hover preview and a press that opens card details
   }
 
   it("has no row with one half and not the other, beyond the ones named as owed", () => {
-    expect(rowGaps(files, new Set([...OWED, ...NOT_A_ROW]))).toEqual([]);
+    const composed = new Set(Object.entries(COMPOSED_ROWS).flatMap(([owner, children]) => [owner, ...children]));
+    expect(rowGaps(files, new Set([...OWED, ...NOT_A_ROW, ...composed]))).toEqual([]);
+  });
+
+  it("composed rows: the owner mounts the provider and opens details, each child draws the preview", () => {
+    for (const [owner, children] of Object.entries(COMPOSED_ROWS)) {
+      expect(importsBinding(files[owner], "HoverPreviewProvider"), `${owner} mounts no provider`).toBe(true);
+      expect(hasPress(files[owner]), `${owner} opens no card details`).toBe(true);
+      for (const child of children) {
+        expect(importsBinding(files[child], "PreviewButton"), `${child} draws no preview`).toBe(true);
+      }
+    }
   });
 
   it("names only rows that still owe a half", () => {

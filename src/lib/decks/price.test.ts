@@ -147,7 +147,7 @@ describe("provenanceForm", () => {
   });
 
   it("switches to a date and gains the clause at the same threshold", () => {
-    expect(provenanceForm(NEWEST, at(11))).toEqual({ behind: true, when: "1 September" });
+    expect(provenanceForm(NEWEST, at(11))).toEqual({ behind: true, when: "September 1" });
   });
 });
 
