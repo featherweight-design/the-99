@@ -19,7 +19,7 @@ const DECK_SYNERGY_KEY = ["deck-synergy", "2"];
  * list on screen has no row for. So both go through here and are served the same entry.
  *
  * With images: the page's top-off list draws the hover preview. `/commanders/[slug]` shares
- * `readSynergyCards` and draws none, so it takes the reader's default instead.
+ * `readSynergyCards` and asks for images too, since its synergy rows preview their cards as well.
  */
 export function readDeckSynergy(userId: string, commanderOracleId: string, partnerOracleId: string | null) {
   return cacheForUser(
