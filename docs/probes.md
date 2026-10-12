@@ -1842,7 +1842,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   when a surface measured no card. The Suggested changes lines, Proposed cuts and stand-ins draw through
   `chainArt` and are covered by its unit tests; Suggested changes needs a paid run to appear in a
   browser, since its panel is fresh each visit. Measured 2026-10-11 on a scratch branch holding Hugh's
-  staging deck (Soldiers): hover equalled details on the decklist (Elite Scaleguard, Get Lost,
-  Intangible Virtue, Cosmogrand Zenith), on Review changes, on the Overview's card mentions, and on a
-  live Suggested changes run (Austere Command, Skullclamp, Marble Diamond, Topple, Coordinated Maneuver),
+  staging deck (Soldiers): the probe passed on the decklist (Elite Scaleguard, Get Lost, Intangible Virtue,
+  Cosmogrand Zenith) and on Review changes; the Overview's card mentions and a live Suggested changes run
+  were walked by hand the same way and agreed (Austere Command, Skullclamp, Marble Diamond, Topple, Coordinated Maneuver),
   and the 390 dialogs drew the same printings.

@@ -7,7 +7,9 @@ import { resolveDeckOwnedPrintings } from "../decks/printings";
  * player owns, and for a card they do not own nothing at all, so the caller keeps the catalog
  * representative it already holds (`cards.image_uri`).
  *
- * ONE RULE FOR EVERY SURFACE THAT DRAWS A CARD WITHOUT OPENING IT. `cards.image_uri` is oracle-level,
+ * ONE RULE FOR A SURFACE THAT DRAWS A CARD WITHOUT OPENING IT: Suggested changes, Proposed cuts and the
+ * stand-ins sheet call this; the Top-off shelves resolve through `resolveDeckOwnedPrintings` directly, which
+ * is the same chain. `cards.image_uri` is oracle-level,
  * one arbitrary printing per card, so a hover preview that read it showed a different printing from the
  * card details the same row opens (Suggested changes, Hugh 2026-10-11). A loader that feeds a hover
  * preview overlays this on the art it read, at the draw rather than inside a shared loader, the same
