@@ -1814,7 +1814,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `db:seed:printings` and `db:seed:prices` with `CATALOG_FETCH_DIR` set, `PROBE_USER_ID` the account owning the
   decks, then delete the branch. It checks Aang (four tokens, six makers, the commander counted) and Omnath (14,
   `Copy` among them), the three states, that an unrelated token is refused, that `I have one` takes the token
-  off this deck's list, and that a hand mark leaves every other token not known. Measured 2026-10-12 on a scratch
+  off this deck's list, and that a hand mark leaves every other token not known. Measured 2026-10-11 on a scratch
   branch of staging: all 17 checks passed.
 
 - `pnpm probe:tokens` reproduces the tokens brief's Fixtures

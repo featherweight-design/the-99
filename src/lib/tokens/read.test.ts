@@ -76,12 +76,17 @@ describe("assembleDeckTokens", () => {
   });
 
   it("pictures the priced printing, else the first by set and number, and reports how many exist", () => {
-    const ps = [printing("p2", A, "tbb", "10"), printing("p1", A, "tbb", "9"), printing("p0", A, "taa", "5")];
+    const ps = [printing("p2", A, "tbb", "10"), printing("p1", A, "tbb", "9"), printing("p0", A, "taa", "5"), printing("p9", A, "tcc", "10"), printing("p8", A, "tcc", "9")];
     const unpriced = ok(assembleDeckTokens(base({ printings: ps }))).tokens[0].picture!;
-    expect(unpriced).toMatchObject({ scryfallId: "p0", printings: 3 });
+    expect(unpriced).toMatchObject({ scryfallId: "p0", printings: 5 });
     const priced = ok(assembleDeckTokens(base({ printings: ps, prices: new Map([[A, fact("p2")]]) }))).tokens[0];
-    expect(priced.picture).toMatchObject({ scryfallId: "p2", printings: 3 });
+    expect(priced.picture).toMatchObject({ scryfallId: "p2", printings: 5 });
     expect(priced.price?.printing.scryfallId).toBe("p2");
+  });
+
+  it("compares collector numbers as numbers within a set (9 before 10)", () => {
+    const ps = [printing("p10", A, "tbb", "10"), printing("p9", A, "tbb", "9")];
+    expect(ok(assembleDeckTokens(base({ printings: ps }))).tokens[0].picture!.scryfallId).toBe("p9");
   });
 
   it("has no picture for a token with no printing row, rather than failing", () => {
@@ -91,9 +96,10 @@ describe("assembleDeckTokens", () => {
   it("orders rows by name, then colors, then id", () => {
     const r = ok(assembleDeckTokens(base({
       links: [A, B, C].map((t) => ({ tokenOracleId: t, makerOracleId: M1, makerName: "Zed" })),
-      tokens: [tok(C, "Treasure", { colors: [] }), tok(B, "goblin", { colors: ["R"] }), tok(A, "Goblin", { colors: ["G"] })],
+      tokens: [tok(C, "Treasure", { colors: [] }), tok(B, "goblin", { colors: ["G"] }), tok(A, "Goblin", { colors: ["R"] })],
     })));
-    expect(r.tokens.map((t) => t.oracleId)).toEqual([A, B, C]);
+    // B (green) sorts before A (red) although A has the lower id: only the colors rule gives this order.
+    expect(r.tokens.map((t) => t.oracleId)).toEqual([B, A, C]);
   });
 
   it("skips a token row no link reaches", () => {
