@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { NO_NOTES, type DeckNotesView } from "../../../lib/decks/notes-types";
 import { useDeckPanel } from "../deck-panel";
 import { GroupToggle } from "../group-toggle";
+import { HoverPreviewProvider } from "../hover-preview";
 import { DeckNotesPanel } from "./deck-notes-panel";
 import type { DeckCardOption } from "./note-field";
 
@@ -47,7 +48,11 @@ export function EmptyDeckNotes({
         onSortChange={() => {}}
         notes={{ open, count: notes?.open.length ?? 0, onChange: (next) => choose(next ? "notes" : "list") }}
       />
-      {open ? <DeckNotesPanel deckId={deckId} notes={notes ?? NO_NOTES} deckCards={deckCards} /> : children}
+      {open ? (
+        <HoverPreviewProvider>
+          <DeckNotesPanel deckId={deckId} notes={notes ?? NO_NOTES} deckCards={deckCards} />
+        </HoverPreviewProvider>
+      ) : children}
     </>
   );
 }
