@@ -35,6 +35,9 @@
  */
 
 import { normalizeCardName } from "./match";
+import { placementsOf, type Placement } from "../decks/placements";
+import { regrant } from "../decks/mark-bought";
+import type { Availability } from "../decks/availability";
 
 /** Copies held, per oracle id. */
 export type OwnedCounts = Record<string, number>;
@@ -91,6 +94,25 @@ export type ContestedRow = {
  */
 export type NowShortRow = { deckId: string; oracleId: string; short: number };
 
+/**
+ * Where one card's arrived copies went (version 4, plan `plan-added-copy-2026-10-12` G2), frozen
+ * like the rest of the receipt: the line says where the copies went AT the import. A Change after
+ * it redraws the row from the live chooser card, never from this.
+ *
+ * `held` when a deck holds a new copy (a committed deck by seniority, or any deck the player
+ * picked); `soft` when the copy is loose and the brews listed read it as theirs; `none` when no
+ * deck took one. Per card, not per (deck, card): three brews on one copy are one row.
+ */
+export type WentRow = {
+  kind: "held" | "soft" | "none";
+  /** Held: the decks that took copies, with how many and whether it was a pick. Soft: the brews. */
+  decks: { deckId: string; copies: number; picked: boolean }[];
+  /** Copies this import brought. */
+  copies: number;
+  /** Copies held before it: the chooser's `keeps it` reads it, as a contested row's does. */
+  ownedBefore: number;
+};
+
 export type ArrivalsSummary = {
   /**
    * Bumped when the shape changes, so a stored payload stays readable by a later build.
@@ -101,8 +123,11 @@ export type ArrivalsSummary = {
    *
    * 3 adds `nowShort`. A version-2 receipt has none, and the reader treats its absence as no deck
    * named, which is what it was written as: those receipts never said.
+   *
+   * 4 adds `went`, written only while `ADDED_COPY_ENABLED` is on. A version-2 or 3 receipt has
+   * none, and renders its `No longer to buy` rows per (deck, card) as it always did, with no Change.
    */
-  version: 2 | 3;
+  version: 2 | 3 | 4;
   totalBefore: number;
   totalAfter: number;
   /** Copies gained and lost across the whole collection, not per deck. */
@@ -114,6 +139,8 @@ export type ArrivalsSummary = {
   contested: ContestedRow[];
   /** Committed decks this upload left short. Absent on a version-2 receipt. */
   nowShort?: NowShortRow[];
+  /** Where each arrived card's copies went, per card. Version 4 only. */
+  went?: Record<string, WentRow>;
   /**
    * Frozen names for the rows above. A card renamed in the catalog later must not
    * rewrite a receipt, and a deck deleted later still has to render its own row.
@@ -134,6 +161,11 @@ export type ArrivalsInput = {
   parseErrorCount: number;
   cardNames: Record<string, string>;
   deckNames: Record<string, string>;
+  /**
+   * Who took each arrived card's copies (`placementsOf`), keyed by oracle id. Passed only while
+   * `ADDED_COPY_ENABLED` is on; absent, the receipt is a version 3, byte for byte.
+   */
+  placements?: Record<string, Placement>;
 };
 
 const key = (r: BuyRow) => `${r.deckId} ${r.oracleId}`;
@@ -255,8 +287,25 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
     if (card) cards[r.oracleId] = card;
   }
 
+  let went: Record<string, WentRow> | undefined;
+  if (input.placements) {
+    went = {};
+    for (const [oracleId, p] of Object.entries(input.placements)) {
+      const arrivedHere = (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0);
+      if (arrivedHere <= 0) continue;
+      const row = wentOf(p, arrivedHere, ownedBefore[oracleId] ?? 0);
+      went[oracleId] = row;
+      const card = input.cardNames[oracleId];
+      if (card) cards[oracleId] = card;
+      for (const d of row.decks) {
+        const deck = input.deckNames[d.deckId];
+        if (deck) decks[d.deckId] = deck;
+      }
+    }
+  }
+
   return {
-    version: 3,
+    version: went ? 4 : 3,
     totalBefore: total(ownedBefore),
     totalAfter: total(ownedAfter),
     arrived,
@@ -266,8 +315,38 @@ export function buildArrivalsSummary(input: ArrivalsInput): ArrivalsSummary {
     still,
     contested,
     nowShort: input.nowShort,
+    ...(went ? { went } : {}),
     names: { cards, decks },
   };
+}
+
+/**
+ * Who took the copies an import brought, from ONE read after it: the allocation now against the
+ * allocation over the copies held before, with the player's reservations granted as the claim
+ * model would have granted them out of that smaller supply (`regrant`). So a pick this import
+ * filled reads as `which you picked earlier`, not as seniority.
+ */
+export function arrivalPlacement(after: Pick<Availability, "owned" | "claims">, brought: number): Placement {
+  const grants = after.claims
+    .filter((c) => (c.granted ?? 0) > 0)
+    .map((c) => ({ deckId: c.id, copies: c.granted ?? 0 }));
+  return placementsOf(regrant({ ...after, owned: Math.max(after.owned - brought, 0) }, grants), after);
+}
+
+/** One card's placement, as the receipt freezes it. A deck that holds a copy wins over a soft read. */
+export function wentOf(p: Placement, copies: number, ownedBefore: number): WentRow {
+  if (p.held.length > 0) {
+    return {
+      kind: "held",
+      decks: p.held.map(({ deckId, copies: c, picked }) => ({ deckId, copies: c, picked })),
+      copies,
+      ownedBefore,
+    };
+  }
+  if (p.soft.length > 0) {
+    return { kind: "soft", decks: p.soft.map(({ deckId }) => ({ deckId, copies: 0, picked: false })), copies, ownedBefore };
+  }
+  return { kind: "none", decks: [], copies, ownedBefore };
 }
 
 /** Nothing about the decks moved. The receipt still renders — see STATES 6. */

@@ -18,11 +18,13 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, csvUploads, collectionItems, decks } from "../../db/schema";
 import {
-  buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
+  arrivalPlacement, buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
 } from "./arrivals";
 import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import { holdsCopy } from "../decks/availability";
+import type { Placement } from "../decks/placements";
+import { addedCopyEnabled } from "./added-copy-flag";
 
 /** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
 export async function deckNamesFor(userId: string): Promise<Record<string, string>> {
@@ -108,6 +110,11 @@ export async function writeArrivalsReceipt(args: {
   nowShort?: (NowShortRow & { deckName?: string; cardName?: string })[];
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
+  /**
+   * Write version 4's `went` (where each arrived card's copies went). Defaults to the switch, read
+   * per request; off, the receipt is the version 3 it always was.
+   */
+  addedCopy?: boolean;
 }): Promise<ArrivalsSummary> {
   const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
   const buyAfter = await loadDeckBuyRows(userId);
@@ -133,6 +140,15 @@ export async function writeArrivalsReceipt(args: {
       // note in `arrivals.ts`. The same test `isContested` reads, so the two agree.
       committedDecks: a.claims.filter(holdsCopy).length,
     };
+  }
+
+  // WHERE THE COPIES WENT, from the same read (`arrivalPlacement`). Only while the switch is on.
+  let placements: Record<string, Placement> | undefined;
+  if (args.addedCopy ?? addedCopyEnabled()) {
+    placements = {};
+    for (const [oracleId, a] of availability) {
+      placements[oracleId] = arrivalPlacement(a, (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0));
+    }
   }
 
   // Names for the rows the diff CAN EMIT, and nothing else: a card on a buy row either
@@ -166,6 +182,7 @@ export async function writeArrivalsReceipt(args: {
     parseErrorCount: args.parseErrorCount,
     cardNames: { ...(await cardNamesFor([...named])), ...shortCardNames },
     deckNames: { ...(await deckNamesFor(userId)), ...shortDeckNames },
+    placements,
   });
   await db.update(csvUploads).set({ summaryPayload: summary })
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));

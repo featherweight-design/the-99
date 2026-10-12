@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildArrivalsSummary, summaryIsEmpty, withoutUndecided, type ArrivalsInput } from "./arrivals";
+import { arrivalPlacement, buildArrivalsSummary, summaryIsEmpty, withoutUndecided, type ArrivalsInput } from "./arrivals";
+import type { Availability } from "../decks/availability";
 
 const CARD = "11111111-1111-1111-1111-111111111111";
 const OTHER = "22222222-2222-2222-2222-222222222222";
@@ -334,5 +335,74 @@ describe("arrivals — decks left short", () => {
   it("is not an empty receipt when it left a deck short", () => {
     const s = buildArrivalsSummary(input({ nowShort: [{ deckId: DECK_A, oracleId: CARD, short: 1 }] }));
     expect(summaryIsEmpty(s)).toBe(false);
+  });
+});
+
+describe("arrivals — where the copies went (version 4)", () => {
+  const held = { held: [{ deckId: DECK_B, deckName: "x", copies: 1, picked: false }], soft: [], unplaced: 0 };
+
+  it("stays a version 3 with no `went` when no placements are passed (the switch off)", () => {
+    const s = buildArrivalsSummary(input({ ownedBefore: { [CARD]: 1 }, ownedAfter: { [CARD]: 2 } }));
+    expect(s.version).toBe(3);
+    expect("went" in s).toBe(false);
+  });
+
+  it("records each arrived card's destination per card, with the copies and what it held before", () => {
+    const s = buildArrivalsSummary(input({
+      ownedBefore: { [CARD]: 1 },
+      ownedAfter: { [CARD]: 2 },
+      placements: { [CARD]: held },
+    }));
+    expect(s.version).toBe(4);
+    expect(s.went).toEqual({
+      [CARD]: { kind: "held", decks: [{ deckId: DECK_B, copies: 1, picked: false }], copies: 1, ownedBefore: 1 },
+    });
+    // The deck the line names is frozen with the rest, so a rename cannot rewrite the receipt.
+    expect(s.names.decks[DECK_B]).toBe("Elemental Dragons");
+    expect(s.names.cards[CARD]).toBe("Brushland");
+  });
+
+  it("calls a loose copy brews read `soft`, and a copy nobody took `none`", () => {
+    const s = buildArrivalsSummary(input({
+      ownedAfter: { [CARD]: 1, [OTHER]: 1 },
+      placements: {
+        [CARD]: { held: [], soft: [{ deckId: DECK_A, deckName: "x" }], unplaced: 1 },
+        [OTHER]: { held: [], soft: [], unplaced: 1 },
+      },
+    }));
+    expect(s.went?.[CARD]).toMatchObject({ kind: "soft", decks: [{ deckId: DECK_A, copies: 0, picked: false }] });
+    expect(s.went?.[OTHER]).toMatchObject({ kind: "none", decks: [] });
+  });
+
+  it("records nothing for a card that brought no copies", () => {
+    const s = buildArrivalsSummary(input({
+      ownedBefore: { [CARD]: 2 },
+      ownedAfter: { [CARD]: 2 },
+      placements: { [CARD]: held },
+    }));
+    expect(s.went).toEqual({});
+  });
+});
+
+describe("arrivalPlacement", () => {
+  const claim = (id: string, since: number | null, granted = 0, mature = true) =>
+    ({ id, name: `deck ${id}`, quantity: 1, mature, since, granted }) as Availability["claims"][number];
+
+  it("gives the import's copy to the deck seniority now covers", () => {
+    const after = { owned: 2, claims: [claim("a", 1), claim("b", 2)] };
+    expect(arrivalPlacement(after, 1).held).toEqual([{ deckId: "b", deckName: "deck b", copies: 1, picked: false }]);
+  });
+
+  it("reads a reservation the import filled as a pick made earlier", () => {
+    // No copy before: the player had picked the junior deck, which the claim model could not grant
+    // until a copy arrived. The grant outranks seniority, so the senior deck still buys it.
+    const after = { owned: 1, claims: [claim("a", 1), claim("b", 2, 1)] };
+    expect(arrivalPlacement(after, 1).held).toEqual([{ deckId: "b", deckName: "deck b", copies: 1, picked: true }]);
+  });
+
+  it("reads a pick the collection already covered as no news", () => {
+    // Two copies before: the pick was granted already, and the third copy goes nowhere.
+    const after = { owned: 3, claims: [claim("a", 1), claim("b", 2, 1)] };
+    expect(arrivalPlacement(after, 1)).toEqual({ held: [], soft: [], unplaced: 1 });
   });
 });
