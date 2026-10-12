@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
+import { CostsView } from "../../components/admin/costs-view";
 import { adminMetadata, requireAdmin } from "../../lib/admin/access";
+import { loadCosts } from "../../lib/admin/costs";
+import { monthOf, parseMonth } from "../../lib/admin/costs-rule";
 
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: "Costs" });
 
 /**
- * `/admin` is Costs (the plan: Costs comes first). This PR ships the gate and the shell; the page's
- * tiles, trend and caps arrive with the Costs core, so for now the head stands alone.
+ * `/admin` is Costs (the plan: Costs comes first). `?month=YYYY-MM` steps back through UTC months;
+ * anything else, or a month still to come, reads as the current one.
  */
-export default async function AdminCostsPage() {
-  await requireAdmin();
-  return null;
+export default async function AdminCostsPage({ searchParams }: { searchParams: Promise<{ month?: string | string[] }> }) {
+  const { userId } = await requireAdmin();
+  const now = new Date();
+  const raw = (await searchParams).month;
+  const month = parseMonth(Array.isArray(raw) ? raw[0] : raw, now);
+  const summary = await loadCosts(month, userId, now);
+  return <CostsView s={summary} month={month} current={monthOf(now)} />;
 }

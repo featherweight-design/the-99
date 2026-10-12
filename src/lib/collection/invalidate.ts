@@ -34,6 +34,10 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // answer costs one pointless revalidation of a static reference page. Making
   // it cleverer to spare that is the trade in the wrong direction.
   { path: "/about", dynamic: false },
+  // /admin is listed for the same reason as /about: it reads `model_calls` and the admin's own
+  // settings, and reaches `db/schema` (and from there `collectionItems`) by import. The cost is one
+  // pointless revalidation of a page only the admin opens.
+  { path: "/admin", dynamic: false },
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },

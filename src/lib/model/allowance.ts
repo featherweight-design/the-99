@@ -71,8 +71,13 @@ export function ownerShareMicro(): number {
   return usdToMicro(ownerShareUsdFrom(process.env.MODEL_OWNER_MONTHLY_USD));
 }
 
+/** The owner's Clerk id, or null when unset or empty. The admin's owner-share bar reads it too. */
+export function modelOwnerUserId(): string | null {
+  return process.env.MODEL_OWNER_USER_ID?.trim() || null;
+}
+
 function isOwner(userId: string): boolean {
-  const owner = process.env.MODEL_OWNER_USER_ID?.trim();
+  const owner = modelOwnerUserId();
   return !!owner && owner === userId;
 }
 
