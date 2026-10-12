@@ -58,7 +58,7 @@
 import { HISTORY_RETENTION_DAYS } from '../collection/retention';
 import { benchmarksAboutEntry } from './deck-benchmarks';
 
-export const ABOUT_VERSION = 14;
+export const ABOUT_VERSION = 15;
 
 export type AboutChapter = '01' | '02' | '03' | '04';
 export type AboutWidth = 'inset' | 'plate';
@@ -526,12 +526,12 @@ export const aboutEntries: readonly AboutEntry[] = [
     width: 'plate',
     switch: 'HELP_ME_CHOOSE_ENABLED',
     caption:
-      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nAnswer as much or as little as you like. Name a card in your own words and it becomes the card to build around.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
+      'Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.\n\nColors, themes, sets, a budget and a bracket narrow the list for free. Or describe the deck in your own words: how it should feel, or how it should differ from the decks you’ve built. That uses a credit, and up to ten picks come first, each with a line on why.\n\nPick a commander and your answers carry over to a new deck, ready to fill from your Collection.',
     keys: [
-      'Narrow by colors, themes, sets, budget or bracket. Themes and a named card set the order.',
-      'Each row shows whether you own the commander, how much of its 99 you own, and roughly what the rest costs.',
-      '“Look deeper” reads everything you wrote, and uses a credit to give you a more informed result.',
-      'Fewer than four fits? It suggests how to adjust your requirements.',
+      'Words in the “Anything else?” box are read against every commander your answers allow.',
+      'Your answers always hold, so no pick falls outside them.',
+      'Ask for something unlike your decks, and it compares their commanders and themes.',
+      'The rest of your results follow the picks, in the usual order.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
     // switch, and nothing bumps the version for it.
@@ -1166,12 +1166,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     // "You get five" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
     // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "friends only". The friend number went 3 to 5 on 2026-10-09 (a copy edit, no bump).
     caption:
-      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in “Help me choose”\n\nDetermining your deck’s bracket is free.',
+      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Help me choose” search where you fill in “Anything else?”\n\nDetermining your deck’s bracket is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
     // the Overview and Look deeper still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
     captionLineSwitches: {
       '- Each “Suggested changes” run': 'TUNING_ENABLED',
+      // The read spends only with Help me choose on; the bullet names it, so it follows that switch.
+      '- Each “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
     },
     keys: [
       'A run that comes back empty-handed, or that you stop, gives the credit back.',

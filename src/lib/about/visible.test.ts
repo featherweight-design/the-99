@@ -307,13 +307,35 @@ describe("the collection home epic's two entries (one bump, 14)", () => {
     expect(on[on.indexOf("export") + 1]).toBe("deck-printings");
   });
 
-  it("is one bump: both at the current version, so the sheet counts its own two", () => {
+  it("is one bump: both at version 14, so the sheet counted its own two", () => {
     for (const id of ["shopping-got-it", "deck-printings"]) {
       const entry = aboutEntries.find((e) => e.id === id)!;
-      expect(entry.since, id).toBe(ABOUT_VERSION);
+      expect(entry.since, id).toBe(14);
       expect(entry.chapter, id).toBe("03");
       expect(entry.width, id).toBe("plate");
     }
-    expect(ABOUT_VERSION).toBe(14);
+  });
+});
+
+describe("Help me choose's read (rework plan PR 5: the entry rewritten, version 15)", () => {
+  // A reader one version behind who never met the entry: production, where the switch is off.
+  const behind = seen(ABOUT_VERSION - 1);
+
+  it("shows a reader one version behind no sheet while the switch is off", () => {
+    expect(ABOUT_VERSION).toBe(15);
+    expect(unseenEntries(visibleEntries({} as NodeJS.ProcessEnv), behind)).toEqual([]);
+  });
+
+  it("shows exactly the Help me choose entry once the switch is on, never an empty sheet", () => {
+    const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    expect(unseenEntries(visibleEntries(on), behind).map((e) => e.id)).toEqual(["help-me-choose"]);
+  });
+
+  it("names the read's credit in the credits entry only with the switch on", () => {
+    const bullet = "- Each “Help me choose” search where you fill in “Anything else?”";
+    const credits = (env: Record<string, string>) =>
+      visibleEntries(env as unknown as NodeJS.ProcessEnv).find((e) => e.id === "credits")!.caption;
+    expect(credits({})).not.toContain(bullet);
+    expect(credits({ HELP_ME_CHOOSE_ENABLED: "true" })).toContain(bullet);
   });
 });
