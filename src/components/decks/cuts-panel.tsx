@@ -602,8 +602,7 @@ function CutRow({ item, panel, deps, items, onSettled }: {
             {done ? copy.cutDone : copy.kept}
           </span>
           <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
-            className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${done ? "line-through [text-decoration-color:var(--fg-locked)]" : ""}`}
-            style={{ color: done ? "var(--fg-body)" : "var(--fg-faint)" }}>
+            className={`min-w-0 text-left text-[13px] [border-bottom:1px_dotted_var(--border-strong)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid] ${done ? "line-through [text-decoration-color:var(--fg-locked)] text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}>
             {item.cutName}
           </button>
           <button type="button" disabled={busy !== null} onClick={() => void answer(done ? "undo" : "restore")}
