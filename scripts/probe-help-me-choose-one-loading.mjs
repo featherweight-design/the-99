@@ -179,11 +179,13 @@ async function run() {
       await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
       await page.locator(`${PAGE} textarea`).fill(`tiny angry goblins ${width} ${Date.now()}`);
       await page.getByRole("button", { name: /^1 credit\. Find commanders/ }).first().click();
+      // Track the read the moment its address names it, before any wait that can fail: the cleanup in
+      // `finally` can only delete a read it was told about.
+      await page.waitForURL(/[?&]r=/, { timeout: 30_000 });
+      readIds.add(new URL(page.url()).searchParams.get("r").toLowerCase());
       await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='reading']`).waitFor({ timeout: 30_000 });
       await page.getByRole("button", { name: /^Stop/ }).first().click();
       await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='stopped']`).waitFor({ timeout: 30_000 });
-      const stoppedRead = new URL(page.url()).searchParams.get("r");
-      if (stoppedRead) readIds.add(stoppedRead.toLowerCase());
       await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 30_000 });
       // Let the stopped panel hydrate: a press before it lands is a click on markup with no handler yet.
       await page.waitForTimeout(2_000);
