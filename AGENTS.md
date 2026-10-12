@@ -962,7 +962,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   nothing to any database: it signs in with a Clerk sign-in token minted from
   `THE_99_CLERK_SECRET_KEY_STAGING` for the account `THE_99_E2E_AUDIT_USER_EMAIL` names (a testing
   token works only on a development instance; that account holds a copy of Hugh's staging decks and
-  collection, made 2026-10-12), takes the deck as `MEASURE_DECK_ID`, clears About with the sheet cookie alone, reads the
+  collection, made 2026-10-12), takes the deck as `MEASURE_DECK_ID`, lets the proxy set its own About sheet cookie on one document load after sign-in, reads the
   `[perf]` lines from Vercel's runtime logs of `the-99-staging` (which needs `PERF_TIMING=1` there),
   and takes database time from `MEASURE_PGSTAT_URL` as the delta between two `pg_stat_statements`
   snapshots, never a reset (installed on staging 2026-10-12). `MEASURE_SERVER_LOG` and

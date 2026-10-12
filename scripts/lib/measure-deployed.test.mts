@@ -6,6 +6,7 @@ import {
   perfLinesFromVercel,
   spansInWindow,
   statDelta,
+  windowFloors,
 } from "./measure-deployed.mjs";
 
 describe("assertDeployedBase", () => {
@@ -61,6 +62,23 @@ describe("perfLinesFromVercel", () => {
     expect(spansInWindow(lines, 2500, 5000, "/decks")).toBeNull();
     expect(spansInWindow(lines, 2500, 5000, "/decks/[id]")).toBe("/decks/[id] total=900 a=1");
     expect(spansInWindow(lines, 9000, 9500, "/")).toBeNull();
+  });
+});
+
+describe("window floors", () => {
+  it("never takes the previous step's line, even inside the skew second", () => {
+    // The warm press logs at 5000 and ends at 5400; the next cold press starts at 5500.
+    const lines = [
+      { at: 5000, line: "getCardDetail total=40" },
+      { at: 5700, line: "getCardDetail total=380" },
+    ];
+    const warm = { from: 4900, to: 5400 };
+    const cold = { from: 5500, to: 6200 };
+    const floors = windowFloors([cold, warm]);
+    expect(spansInWindow(lines, warm.from, warm.to, "getCardDetail", floors.get(warm))).toBe("getCardDetail total=40");
+    expect(spansInWindow(lines, cold.from, cold.to, "getCardDetail", floors.get(cold))).toBe("getCardDetail total=380");
+    // Without the floor the skew second reaches back to the warm press's line.
+    expect(spansInWindow(lines, cold.from, cold.to, "getCardDetail")).toBe("getCardDetail total=40");
   });
 });
 

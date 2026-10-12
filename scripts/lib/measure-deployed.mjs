@@ -3,8 +3,10 @@
 // unit tested: which host it may sign in to, how a sign-in token is minted, and how the `[perf]`
 // lines the deployed function wrote are read back out of Vercel's runtime logs.
 //
-// Deployed mode WRITES NOTHING to any database. It never marks About entries seen (the measurement
-// account has seen them once, by hand, or the sheet cookie covers it), never resets
+// Deployed mode WRITES NOTHING to any database. It never marks About entries seen: one document
+// load after sign-in lets the proxy decide the sheet and set its own cookie, which every measured
+// context then carries (the proxy's value names the switched entries, so a hand-built one never
+// matches on staging). It never resets
 // `pg_stat_statements` (it reads deltas between snapshots instead), and reads no server log file.
 
 /** The one host deployed mode may sign in to. Production is ruled out (option C, the-99-d9). */
@@ -83,12 +85,21 @@ export function perfLinesFromVercel(jsonl) {
 /**
  * The first `[perf]` line for `pattern` logged inside [from, to] (epoch milliseconds), or null. The
  * same rule as the local server log's: filtered by route PATTERN, because a page's prefetches and a
- * card press can log in the same window, and the first match is the measured request's. A request
- * is stamped when Vercel received it, so the window opens a little before the navigation starts.
+ * card press can log in the same window, and the first match is the measured request's. Vercel
+ * stamps a request on ITS clock, so the window opens up to a second early for skew, but never
+ * before `floor`, the end of the previous step: without it, a request the previous step made in
+ * its last second would be read as this step's (a cached press, then the next cold one).
  */
-export function spansInWindow(lines, from, to, pattern) {
-  const hit = lines.find((l) => l.at >= from - 1000 && l.at <= to && l.line.startsWith(`${pattern} `));
+export function spansInWindow(lines, from, to, pattern, floor = -Infinity) {
+  const start = Math.max(from - 1000, floor);
+  const hit = lines.find((l) => l.at > start && l.at <= to && l.line.startsWith(`${pattern} `));
   return hit ? hit.line : null;
+}
+
+/** Each deferred window's floor: the end of the window before it in time, or none for the first. */
+export function windowFloors(windows) {
+  const sorted = [...windows].sort((a, b) => a.from - b.from);
+  return new Map(sorted.map((w, i) => [w, i === 0 ? -Infinity : sorted[i - 1].to]));
 }
 
 /** The read-only figure `pg_stat_statements` gives between two snapshots: no reset, no write. */

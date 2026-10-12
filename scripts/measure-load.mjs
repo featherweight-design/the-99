@@ -52,7 +52,8 @@
 //   - sign-in is a Clerk sign-in token minted with THE_99_CLERK_SECRET_KEY_STAGING for the account
 //     THE_99_E2E_AUDIT_USER_EMAIL names, redeemed on the app's origin; testing tokens exist only on a
 //     development instance;
-//   - the deck is MEASURE_DECK_ID (no database lookup), and About is cleared by the sheet cookie only;
+//   - the deck is MEASURE_DECK_ID (no database lookup); About is settled by one signed-in document
+//     load, on which the proxy sets its own sheet cookie;
 //   - the `[perf]` spans come from Vercel's runtime logs of MEASURE_VERCEL_PROJECT (default
 //     the-99-staging, which needs PERF_TIMING=1 set), read after each run, by route pattern and window;
 //   - MEASURE_PGSTAT_URL (staging only) gives database time as the delta between two
@@ -93,6 +94,7 @@ import {
   perfLinesFromVercel,
   spansInWindow,
   statDelta,
+  windowFloors,
 } from "./lib/measure-deployed.mjs";
 
 // MEASURE_DEPLOYED=1 measures a deployed app (staging only) and writes nothing to any database:
@@ -192,8 +194,10 @@ async function signInDeployed(browser) {
     return window.Clerk.user.id;
   }, ticket);
   if (userId !== expected) throw new Error(`Signed in as ${userId}, not the measurement account.`);
-  // The cookie alone, never `markEveryEntrySeen`: that is a database write.
-  await context.addCookies([sheetCookie(userId, page.url())]);
+  // One full document load, signed in, so the proxy decides the About sheet and sets its own
+  // cookie (keyed to the switched entries this deployment draws). Every measured context carries
+  // it through `storageState`. Never `markEveryEntrySeen`: that is a database write.
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 120_000 });
   const state = await context.storageState();
   await context.close();
   return { userId, state };
@@ -317,15 +321,21 @@ async function resolveDeployedSpans(node, since) {
   } catch (error) {
     console.warn(`vercel logs failed, spans left null: ${error.message}`);
   }
-  const walk = (n) => {
+  const found = [];
+  const collect = (n) => {
     if (!n || typeof n !== "object") return;
     for (const [k, v] of Object.entries(n)) {
-      if (v && typeof v === "object" && v.deferred) {
-        n[k] = spansInWindow(lines, v.deferred.from, v.deferred.to, v.deferred.pattern);
-      } else walk(v);
+      if (v && typeof v === "object" && v.deferred) found.push({ parent: n, key: k, ...v.deferred });
+      else collect(v);
     }
   };
-  walk(node);
+  collect(node);
+  // Two reads of one step (a press's action and its prefetch) share a window, so floors are per
+  // window, not per read.
+  const windows = [...new Map(found.map((f) => [`${f.from}:${f.to}`, { from: f.from, to: f.to }])).values()];
+  const floors = windowFloors(windows);
+  const floorOf = (f) => floors.get(windows.find((w) => w.from === f.from && w.to === f.to));
+  for (const f of found) f.parent[f.key] = spansInWindow(lines, f.from, f.to, f.pattern, floorOf(f));
 }
 
 /**
