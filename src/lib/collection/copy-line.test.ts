@@ -72,6 +72,13 @@ describe("liveSentence", () => {
       .toBe(copy.row.goesToMany(["HD - Brago", "HD -Thorin"]));
   });
 
+  it("counts a picked committed deck's queue share beside its grant, never a false `one each`", () => {
+    // Three new copies; senior A asks for two with a one-copy grant, B asks for one. Live: A=2, B=1.
+    const a = { ...committed("a", "HD - Brago", 2, 1), quantity: 2 };
+    expect(liveSentence(card(3, 3, [a, committed("b", "HD - Eldrazi", 1)])))
+      .toBe(copy.row.goesToManyUneven(["HD - Brago", "HD - Eldrazi"]));
+  });
+
   it("names only the copies still owned when another tab removed some since the import", () => {
     // Two arrived over one held before; one has since been removed, so one new copy is left.
     const c = { ...card(2, 2, [committed("s", "HD - Senior", 1), committed("a", "HD - Brago", 1)]), ownedBefore: 1 };

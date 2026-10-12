@@ -43,14 +43,20 @@ export function liveSentence(card: ContestedCard): string | null {
     if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t, picked: true });
     left -= t;
   }
-  const committed = card.claimants.filter((c) => !c.brew && !(c.granted > 0));
-  const held = [...committed, ...picks].reduce((n, c) => n + c.allocated, 0);
+  // EVERY committed deck is in the queue, a picked one included: what it holds beyond its grant
+  // is seniority's, and leaving it out names a deck one copy short (A=2 with a one-copy grant read
+  // as A=1). Its queue share merges with its picked one.
+  const committed = card.claimants.filter((c) => !c.brew);
+  const held = card.claimants.filter((c) => !c.brew || c.granted > 0).reduce((n, c) => n + c.allocated, 0);
   const spare = Math.max(card.owned - held, 0);
   let fromQueue = Math.max(left - spare, 0);
   for (const c of [...committed].reverse()) {
     if (fromQueue <= 0) break;
-    const t = Math.min(c.allocated, fromQueue);
-    if (t > 0) took.set(c.deckId, { name: c.deckName, copies: t, picked: false });
+    const t = Math.min(Math.max(c.allocated - c.granted, 0), fromQueue);
+    if (t > 0) {
+      const had = took.get(c.deckId);
+      took.set(c.deckId, had ? { ...had, copies: had.copies + t } : { name: c.deckName, copies: t, picked: false });
+    }
     fromQueue -= t;
   }
   const decks = card.claimants.flatMap((c) => took.get(c.deckId) ?? []);
