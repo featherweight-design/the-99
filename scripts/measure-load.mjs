@@ -317,31 +317,42 @@ const mark = () => logSize();
 const spansFor = (ref, pattern) =>
   DEPLOYED ? { deferred: { id: ref, pattern } } : serverSpans(ref, pattern);
 
-/** Replaces every deferred span in `node` with the `[perf]` line its own request logged. */
+/**
+ * Replaces every deferred span in `node` with the `[perf]` line its own request logged. One
+ * `vercel logs --request-id` call per request: a time-range fetch is truncated (it returned 50
+ * entries for a run of several minutes whatever `-n` asked, and 24 with a `perf` filter), so
+ * fetching by range silently drops most of a run's lines.
+ */
 async function resolveDeployedSpans(node, since) {
   if (!DEPLOYED) return;
-  // Runtime logs reach the API some seconds after the request; 20s is generous.
-  await new Promise((r) => setTimeout(r, 20_000));
-  let byId = new Map();
-  try {
-    const out = execFileSync(
-      "vercel",
-      ["logs", "-p", VERCEL_PROJECT, "--environment", "production", "--no-branch",
-        "--since", new Date(since - 60_000).toISOString(), "-n", "5000", "-j"],
-      { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, cwd: os.tmpdir() },
-    );
-    byId = perfLinesFromVercel(out);
-  } catch (error) {
-    console.warn(`vercel logs failed, spans left null: ${error.message}`);
-  }
-  const walk = (n) => {
+  const deferred = [];
+  const collect = (n) => {
     if (!n || typeof n !== "object") return;
     for (const [k, v] of Object.entries(n)) {
-      if (v && typeof v === "object" && v.deferred) n[k] = spansForRequest(byId, v.deferred.id, v.deferred.pattern);
-      else walk(v);
+      if (v && typeof v === "object" && v.deferred) deferred.push({ parent: n, key: k, ...v.deferred });
+      else collect(v);
     }
   };
-  walk(node);
+  collect(node);
+  // Runtime logs reach the API some seconds after the request; 20s is generous.
+  await new Promise((r) => setTimeout(r, 20_000));
+  const byId = new Map();
+  let failed = 0;
+  for (const id of new Set(deferred.map((d) => d.id).filter(Boolean))) {
+    try {
+      const out = execFileSync(
+        "vercel",
+        ["logs", "-p", VERCEL_PROJECT, "--environment", "production", "--no-branch",
+          "--since", new Date(since - 60_000).toISOString(), "--request-id", id, "-j"],
+        { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, cwd: os.tmpdir(), stdio: ["ignore", "pipe", "ignore"] },
+      );
+      for (const [k, lines] of perfLinesFromVercel(out)) byId.set(k, lines);
+    } catch {
+      failed += 1;
+    }
+  }
+  if (failed) console.warn(`vercel logs failed for ${failed} request(s); their spans are null`);
+  for (const d of deferred) d.parent[d.key] = spansForRequest(byId, d.id, d.pattern);
 }
 
 /**
