@@ -1166,14 +1166,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     // "You get five" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
     // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "friends only". The friend number went 3 to 5 on 2026-10-09 (a copy edit, no bump).
     caption:
-      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Help me choose” search where you fill in “Anything else?”\n\nDetermining your deck’s bracket is free.',
+      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each new “Help me choose” search where you fill in “Anything else?”\n\nDetermining your deck’s bracket is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
     // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
     captionLineSwitches: {
       '- Each “Suggested changes” run': 'TUNING_ENABLED',
       // The read spends only with Help me choose on; the bullet names it, so it follows that switch.
-      '- Each “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
+      '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
     },
     keys: [
       'A run that comes back empty-handed, or that you stop, gives the credit back.',

@@ -338,7 +338,7 @@ describe("Help me choose's read (rework plan PR 5: the entry rewritten, no bump)
   });
 
   it("names the read's credit in the credits entry only with the switch on", () => {
-    const bullet = "- Each “Help me choose” search where you fill in “Anything else?”";
+    const bullet = "- Each new “Help me choose” search where you fill in “Anything else?”";
     const credits = (env: Record<string, string>) =>
       visibleEntries(env as unknown as NodeJS.ProcessEnv).find((e) => e.id === "credits")!.caption;
     expect(credits({})).not.toContain(bullet);
