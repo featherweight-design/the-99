@@ -295,7 +295,7 @@ describe("ImproveDoor: absent", () => {
 });
 
 describe("ImproveDoor: applying a trade", () => {
-  const trade = { kind: "trade" as const, basicOut: "Forest", basicOutId: "forest-id", basicOutColor: "G" as BalanceColor, staple: staple({}), changes: [{ color: "R" as BalanceColor, before: 6, after: 7 }] };
+  const trade = { kind: "trade" as const, out: { id: "forest-id", name: "Forest", kind: "basic" as const }, staple: staple({}), changes: [{ color: "R" as BalanceColor, before: 6, after: 7 }] };
   const withTrade = (color: BalanceColor) => helpFor(color, { trades: [trade] });
   const tradeButton = () => screen.getByRole("button", { name: copy.help.tradeApply("Forest") });
 

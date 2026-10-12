@@ -342,7 +342,7 @@ Source: `docs/superpowers/design-briefs/2026-10-10-mana-balance-evidence.md`. Fr
 | swap row | `--surface-sunken`, `1px --border`, radius 9, `10px 12px`; `Up to {n} {Basic}s → {Basic}s` 13 `--fg`; changes mono 10.5 `--fg-muted`, picked color first, `{color} {before} → {after}` | same |
 | staple row | thumbnail 22 × 31 (dashed when not in the collection), name 13 / 600 dotted `--accent`, ownership: 7px `--success` dot + mono 10.5 `owned · {n} free`, or dashed dot + `to buy` + shipped BuyTag + `↗` (`manapoolCardUrl`); price absent when `priceCents` is null | same |
 | staple fact | mono 10.5 `--fg-faint`: how often, labelled by its kind (`in {p}% of {commander} decks` · `of this pairing's decks` · `{bucket} average`), then `adds` + 10px pip discs | same |
-| trade line | the R1 `CountedStrip` shape, tag `trade`: `1 {Basic} for it: {changes}`; else mono 10.5 `--fg-faint` `no basic trade for it` | same |
+| trade line | the R1 `CountedStrip` shape, tag `trade`: `1 {Card} for it: {changes}` (a basic, a land making none of the deck's colors, or a cut the deck's tuning named; 2026-10-12); else mono 10.5 `--fg-faint` `no trade for it` | same |
 | none rows | `1px dashed --border-dashed`, radius 9, 12.5 `--fg-faint`; no reason given | same |
 | how moves are picked | 18px ⓘ after the Swap basics head, tooltip on `--elevated` | same |
 | actions | **none** (open 3: information only this round) | same |

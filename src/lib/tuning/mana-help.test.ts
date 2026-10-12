@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ManaColor, ManaSupplyCardRow } from "../mana/supply";
-import { helpAddColor, type BasicCatalog } from "./mana-help";
+import { helpAddColor, type BasicCatalog, type TradeInputs } from "./mana-help";
 import type { StapleCandidate } from "./mana-staples";
 
 const basics: BasicCatalog = {
@@ -23,8 +23,11 @@ const staple = (name: string, produces: ManaColor[], over: Partial<StapleCandida
   priceCents: 15,
   ...over,
 });
-const help = (rows: ManaSupplyCardRow[], color: ManaColor, locked: string[] = [], candidates: StapleCandidate[] = [], identity: string[] = ["W", "U", "B", "R", "G"]) =>
-  helpAddColor(rows, (id) => id[0].toUpperCase() + id.slice(1), new Set(locked), basics, candidates, color as "G", identity);
+const land = (id: string, produces: ManaColor[], quantity = 1): ManaSupplyCardRow => ({ id, typeLine: "Land", manaCost: null, quantity, produces });
+/** No named cuts, no land text, and a land target every fixture is over, unless a test says otherwise. */
+const noInputs: TradeInputs = { namedCuts: [], landText: new Map(), inclusion: null, landTarget: 0 };
+const help = (rows: ManaSupplyCardRow[], color: ManaColor, locked: string[] = [], candidates: StapleCandidate[] = [], identity: string[] = ["W", "U", "B", "R", "G"], inputs: Partial<TradeInputs> = {}) =>
+  helpAddColor(rows, (id) => id[0].toUpperCase() + id.slice(1), new Set(locked), basics, candidates, color as "G", identity, { ...noInputs, ...inputs });
 
 // A one-pip green and a one-pip blue spell are pattern C: Karsten asks 19 sources of each (99-card column).
 // Ten Forests leave green under 19; twenty-five Islands put blue over it, with six to spare.
@@ -78,10 +81,10 @@ describe("helpAddColor: trades and staples", () => {
     const h = help(deck(), "G", [], [staple("Signet", ["G", "U"]), staple("Elfhat", ["G"])]);
     // Equal inclusion and both owned: alphabetical.
     expect(h.staples.map((s) => s.name)).toEqual(["Elfhat", "Signet"]);
-    expect(h.trades.map((t) => [t.staple.name, t.basicOut, t.basicOutColor, t.changes])).toEqual([
-      ["Elfhat", "Island", "U", [{ color: "U", before: 25, after: 24 }, { color: "G", before: 10, after: 11 }]],
+    expect(h.trades.map((t) => [t.staple.name, t.out, t.changes])).toEqual([
+      ["Elfhat", { id: "island", name: "Island", kind: "basic" }, [{ color: "U", before: 25, after: 24 }, { color: "G", before: 10, after: 11 }]],
       // The Signet makes blue too, so the Island it replaces costs blue nothing.
-      ["Signet", "Island", "U", [{ color: "G", before: 10, after: 11 }]],
+      ["Signet", { id: "island", name: "Island", kind: "basic" }, [{ color: "G", before: 10, after: 11 }]],
     ]);
   });
 
@@ -106,13 +109,13 @@ describe("helpAddColor: trades and staples", () => {
     const rows = [spell("g", "{G}"), spell("u", "{U}"), basic("forest", "Forest", 10, "G"), basic("island", "Island", 19, "U")];
     // Island 19 sits exactly at its figure: an Island out is a blue source lost, a green-blue rock in gives it back.
     expect(help(rows, "G", [], [staple("Elfhat", ["G"])]).trades).toEqual([]);
-    expect(help(rows, "G", [], [staple("Signet", ["G", "U"])]).trades).toMatchObject([{ basicOut: "Island", changes: [{ color: "G", before: 10, after: 11 }] }]);
+    expect(help(rows, "G", [], [staple("Signet", ["G", "U"])]).trades).toMatchObject([{ out: { name: "Island" }, changes: [{ color: "G", before: 10, after: 11 }] }]);
   });
 
   it("takes the basic from the color with the most cover when several could go", () => {
     // Island 25 holds 6 above blue's 19; Plains has no pips and no figure, 3 above nothing. Both are safe.
     const rows = [...deck(), basic("plains", "Plains", 3, "W")];
-    expect(help(rows, "G", [], [staple("Elfhat", ["G"])]).trades).toMatchObject([{ basicOut: "Island", basicOutColor: "U" }]);
+    expect(help(rows, "G", [], [staple("Elfhat", ["G"])]).trades).toMatchObject([{ out: { id: "island", kind: "basic" } }]);
   });
 
   it("puts an owned copy first", () => {
@@ -138,5 +141,106 @@ describe("helpAddColor: no verdict", () => {
   it("carries no field that calls any color short, fine or met", () => {
     const h = help(deck(), "G", [], [staple("Signet", ["G", "U"])]);
     expect(JSON.stringify(h)).not.toMatch(/short|"gap"|target|"met"|fine/i);
+  });
+});
+
+describe("helpAddColor: the guard reads the panel's Needed, not the single hardest card", () => {
+  it("trades an Island when blue's shared pattern is met, though one {U}{U}{U} card asks far more", () => {
+    // Two copies share pattern C (Needed 19); the lone UUU card's row is 36, which the old guard read.
+    const rows = [spell("u", "{U}", 2), spell("heavy", "{U}{U}{U}"), spell("g", "{G}"), basic("forest", "Forest", 10, "G"), basic("island", "Island", 25, "U")];
+    expect(help(rows, "G", [], [staple("Elfhat", ["G"])]).trades).toMatchObject([{ out: { id: "island" }, changes: [{ color: "U", before: 25, after: 24 }, { color: "G", before: 10, after: 11 }] }]);
+  });
+});
+
+describe("helpAddColor: which basic a trade cuts", () => {
+  // Blue's Needed is 19; white has no pips, so its Needed is 0.
+  const rows = () => [spell("g", "{G}"), spell("u", "{U}"), basic("forest", "Forest", 10, "G"), basic("island", "Island", 21, "U"), basic("plains", "Plains", 3, "W")];
+
+  it("takes the color with the most slack over its Needed AFTER the staple's own sources", () => {
+    // A green-only staple: Island out leaves blue 1 over, Plains out leaves white 2 over.
+    expect(help(rows(), "G", [], [staple("Elfhat", ["G"])]).trades[0].out.name).toBe("Plains");
+  });
+
+  it("breaks a tie on slack with the basic the deck holds more copies of", () => {
+    // A green-blue staple gives blue its source back: Island 2 over, Plains 2 over, and there are 21 Islands.
+    expect(help(rows(), "G", [], [staple("Signet", ["G", "U"])]).trades[0].out.name).toBe("Island");
+  });
+
+  it("breaks a tie on slack and copies in W U B R G order", () => {
+    const even = [spell("g", "{G}"), basic("forest", "Forest", 10, "G"), basic("swamp", "Swamp", 2, "B"), basic("plains", "Plains", 2, "W")];
+    expect(help(even, "G", [], [staple("Elfhat", ["G"])]).trades[0].out.name).toBe("Plains");
+  });
+
+  it("never cuts a basic of a color left short, even when the staple gives the source back", () => {
+    // Blue sits at 18 against 19: a green-blue rock for an Island costs blue nothing, and still leaves it short.
+    const short = [spell("g", "{G}"), spell("u", "{U}"), basic("forest", "Forest", 10, "G"), basic("island", "Island", 18, "U")];
+    expect(help(short, "G", [], [staple("Signet", ["G", "U"])]).trades).toEqual([]);
+  });
+
+  it("cuts no land for a nonland staple unless the deck is over its land target", () => {
+    const at = { landTarget: 35 }; // the fixture's 35 basics
+    expect(help(deck(), "G", [], [staple("Elfhat", ["G"])], undefined, at).trades).toEqual([]);
+    expect(help(deck(), "G", [], [staple("Elfhat", ["G"])], undefined, { landTarget: 34 }).trades).toHaveLength(1);
+  });
+
+  it("holds a land staple to no land target: a land for a land leaves the count where it was", () => {
+    const pool = staple("Pool", ["G", "U"], { typeLine: "Land" });
+    expect(help(deck(), "G", [], [pool], undefined, { landTarget: 40 }).trades).toMatchObject([{ out: { id: "island" } }]);
+  });
+});
+
+describe("helpAddColor: a trade can cut a card that is not a basic", () => {
+  const rows = () => [...deck(), spell("weak", "{3}"), spell("other", "{2}"), land("wolfrun", ["C"])];
+
+  it("cuts a card the deck's tuning already named first, for a nonland staple", () => {
+    const h = help(rows(), "G", [], [staple("Elfhat", ["G"])], undefined, { namedCuts: ["weak"] });
+    expect(h.trades).toEqual([{ kind: "trade", out: { id: "weak", name: "Weak", kind: "namedCut" }, staple: expect.objectContaining({ name: "Elfhat" }), changes: [{ color: "G", before: 10, after: 11 }] }]);
+  });
+
+  it("takes the named cuts in the order given, and each on one row only", () => {
+    const h = help(rows(), "G", [], [staple("Elfhat", ["G"]), staple("Signet", ["G", "U"]), staple("Talisman", ["G", "U"])], undefined, { namedCuts: ["other", "weak"] });
+    expect(h.trades.map((t) => [t.staple.name, t.out.name, t.out.kind])).toEqual([
+      ["Elfhat", "Other", "namedCut"],
+      ["Signet", "Weak", "namedCut"],
+      ["Talisman", "Wolfrun", "offPlanLand"],
+    ]);
+  });
+
+  it("gives a nonland staple the named nonland cards before a named land, whatever the run's order", () => {
+    const h = help(rows(), "G", [], [staple("Elfhat", ["G"]), staple("Signet", ["G", "U"])], undefined, { namedCuts: ["wolfrun", "weak"] });
+    expect(h.trades.map((t) => t.out.name)).toEqual(["Weak", "Wolfrun"]);
+  });
+
+  it("never names a locked card, a card the deck no longer holds, or a basic as a named cut", () => {
+    const h = help(rows(), "G", ["weak"], [staple("Elfhat", ["G"])], undefined, { namedCuts: ["weak", "gone", "island"] });
+    expect(h.trades[0].out).toEqual({ id: "wolfrun", name: "Wolfrun", kind: "offPlanLand" });
+  });
+
+  it("gives a land staple a land, never a named nonland cut", () => {
+    const pool = staple("Pool", ["G", "U"], { typeLine: "Land" });
+    expect(help(rows(), "G", [], [pool], undefined, { namedCuts: ["weak"] }).trades[0].out.id).toBe("wolfrun");
+    expect(help(rows(), "G", [], [pool], undefined, { namedCuts: ["weak", "wolfrun"] }).trades[0].out).toEqual({ id: "wolfrun", name: "Wolfrun", kind: "namedCut" });
+  });
+
+  it("cuts an off-plan land before a basic, the one fewest of the commander's decks run first", () => {
+    const lands = [...deck(), land("wolfrun", ["C"]), land("sunhome", ["C"])];
+    // Against name order, so the inclusion is what decides it.
+    const inclusion = new Map([["wolfrun", 13], ["sunhome", 22]]);
+    const h = help(lands, "G", [], [staple("Elfhat", ["G"]), staple("Signet", ["G", "U"]), staple("Talisman", ["G", "U"])], undefined, { inclusion });
+    expect(h.trades.map((t) => t.out.name)).toEqual(["Wolfrun", "Sunhome", "Island"]);
+  });
+
+  it("does not read a land that fixes another way as off plan", () => {
+    const fixers = [...deck(), land("orchard", []), land("barrens", ["C"]), land("wilds", ["C"]), land("dual", ["G", "U"]), spell("rites", "{2}{G}")];
+    const landText = new Map([
+      ["orchard", "{T}: Add one mana of any color that a land an opponent controls could produce."],
+      ["barrens", "{T}: Add {C}.\nBasic landcycling {1}"],
+      ["wilds", "{T}, Sacrifice Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."],
+    ]);
+    expect(help(fixers, "G", [], [staple("Elfhat", ["G"])], undefined, { landText }).trades[0].out.kind).toBe("basic");
+  });
+
+  it("holds an off-plan land to the land target for a nonland staple", () => {
+    expect(help(rows(), "G", [], [staple("Elfhat", ["G"])], undefined, { landTarget: 36 }).trades).toEqual([]);
   });
 });

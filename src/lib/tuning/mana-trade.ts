@@ -9,7 +9,7 @@ import { listKeyOf } from "./list-key";
 /**
  * Improve my mana's trade, applied and undone, as transactions. SERVER-ONLY. The same list mutation
  * Suggested changes' Apply makes (`verdicts.ts`): the deck row locked first, `planSwap`'s refusals,
- * one copy of the basic cut and one copy of the staple added at `auto: false`, and `touchDeck`. The
+ * one copy of the card the trade names cut (a basic, an off-plan land or a named cut) and one copy of the staple added at `auto: false`, and `touchDeck`. The
  * snapshot Undo reads is written before the deck changes, into `mana_trade_applies`.
  *
  * The caller found the trade in a read made BEFORE the lock (a full read inside it would hold the lock,
@@ -17,7 +17,7 @@ import { listKeyOf } from "./list-key";
  * saw. Under the lock the list is keyed again from this transaction (`listKeyOf`, the one definition):
  * every deck write takes that lock first, so a key that still matches means the deck being written is
  * the deck the offer was read from, and one that moved is refused rather than written. Beyond that it
- * checks what a write must: who owns the deck, and what `planSwap` refuses (the basic gone or locked,
+ * checks what a write must: who owns the deck, and what `planSwap` refuses (the cut card gone or locked,
  * the staple already held or no longer legal).
  */
 

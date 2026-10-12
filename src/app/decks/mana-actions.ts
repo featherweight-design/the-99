@@ -97,23 +97,24 @@ async function helpFor(deckId: string, color: string, userId: string): Promise<(
 export type ManaTradeResult = { ok: true; applyId: string } | { ok: false; message: string };
 
 /**
- * Apply one of Improve my mana's trades: one copy of the basic out, one copy of the staple in, into the
- * deck's list, with Undo. A PUBLIC ENDPOINT, so the client names only the color and the staple, and the
- * trade is found in a fresh read of the help for that color: the basic it cuts is the server's, never the
- * caller's. `basicOutId` is the basic the press named, an untrusted PRECONDITION and never the authority:
- * a fresh offer that would cut a different basic is refused, so the trade made is the one the player read.
+ * Apply one of Improve my mana's trades: one copy of the card it names out (a basic, an off-plan land or a
+ * cut the deck's tuning named), one copy of the staple in, into the deck's list, with Undo. A PUBLIC
+ * ENDPOINT, so the client names only the color and the staple, and the trade is found in a fresh read of
+ * the help for that color: the card it cuts is the server's, never the caller's. `outId` is the card the
+ * press named, an untrusted PRECONDITION and never the authority: a fresh offer that would cut a different
+ * card is refused, so the trade made is the one the player read.
  * The read is made before the write and keyed on its list (`listKeyOf`); the write re-reads that key under
  * the deck lock and refuses when the list moved between, so a trade the deck being written no longer
  * offers is never made, and the lock is held only for the write.
  */
-export async function applyManaTrade(deckId: string, color: string, stapleOracleId: string, basicOutId: string): Promise<ManaTradeResult> {
+export async function applyManaTrade(deckId: string, color: string, stapleOracleId: string, outId: string): Promise<ManaTradeResult> {
   const refused = { ok: false as const, message: deckTuningCopy.card.applyRefused };
   const userId = await requireUserId();
-  if (!isUuid(stapleOracleId) || !isUuid(basicOutId)) return refused;
+  if (!isUuid(stapleOracleId) || !isUuid(outId)) return refused;
   const help = await helpFor(deckId, color, userId);
   const trade = help?.trades.find((t) => t.staple.oracleId === stapleOracleId);
-  if (!help || !trade || trade.basicOutId !== basicOutId) return refused;
-  const applyId = await applyTrade(help.deckId, userId, { cutOracleId: trade.basicOutId, addOracleId: trade.staple.oracleId }, help.listKey);
+  if (!help || !trade || trade.out.id !== outId) return refused;
+  const applyId = await applyTrade(help.deckId, userId, { cutOracleId: trade.out.id, addOracleId: trade.staple.oracleId }, help.listKey);
   if (!applyId) return refused;
   revalidateClaims(deckId, userId);
   return { ok: true, applyId };

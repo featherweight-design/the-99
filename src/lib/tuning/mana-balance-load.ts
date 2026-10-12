@@ -11,7 +11,14 @@ import type { ManaSupplyCardRow } from "../mana/supply";
 import { manaSupplyRows } from "../mana/supply-rows";
 import { readManaBalance, type ManaBalance } from "./mana-balance";
 
-export type ManaInputs = { rows: ManaSupplyCardRow[]; nameOf: (id: string) => string; tapped: TappedLands; identity: string[] };
+export type ManaInputs = {
+  rows: ManaSupplyCardRow[];
+  nameOf: (id: string) => string;
+  tapped: TappedLands;
+  identity: string[];
+  /** Each land's oracle text, by oracle id: what the tapped count read, kept for Improve my mana's off-plan land. */
+  landText: ReadonlyMap<string, string | null>;
+};
 
 /** The three reads the Colors card makes plus the text of each land for the tapped count, as the rows
  *  the engine counts. Null when a text read failed: the evidence would then state what the reads
@@ -36,7 +43,7 @@ export async function loadManaInputs(deck: Pick<DeckDetail, "cards" | "commander
   const tapped = tappedLands(deckLands.map((c) => ({ name: c.name, typeLine: c.typeLine, oracleText: text.get(c.oracleId) ?? null, quantity: c.quantity })));
 
   const names = new Map<string, string>([...deck.cards.map((c) => [c.oracleId, c.name] as const), ...commanders.map((c, i) => [`commander:${i}`, c.name] as const)]);
-  return { rows: manaSupplyRows(deck.cards, commanders, lands, sources, deckColors), nameOf: (id) => names.get(id) ?? id, tapped, identity: deckColors };
+  return { rows: manaSupplyRows(deck.cards, commanders, lands, sources, deckColors), nameOf: (id) => names.get(id) ?? id, tapped, identity: deckColors, landText: text };
 }
 
 /** Mana Balance's evidence for a deck. */

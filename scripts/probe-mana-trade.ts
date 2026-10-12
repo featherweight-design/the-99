@@ -85,6 +85,15 @@ async function main() {
     (await one<{ old: number; all: number }>(sql`select count(*) filter (where created_at < now() - interval '1 day')::int as old, count(*)::int as "all" from mana_trade_applies where user_id = ${USER}`)), { old: 0, all: 1 });
   await undoTrade(fresh!, USER);
   check("the deck ends as it began", await counts(), before);
+
+  // A trade can cut a card that is not a basic (a cut the deck's tuning named, an off-plan land): the same
+  // write, one copy of that card out and the staple in, and an Undo that puts the card back.
+  const other = (await one<{ oracle_id: string }>(sql`select oracle_id from cards where type_line = 'Land' and name = 'Kessig Wolf Run' limit 1`)).oracle_id;
+  await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck}::uuid, ${other}::uuid, 1)`);
+  const held = async () => (await list()).find((r) => r.oracleId === other)?.quantity ?? 0;
+  const nonBasic = await applyTrade(deck, USER, { cutOracleId: other, addOracleId: forest }, await key());
+  check("a non-basic card goes out the same way: its row gone, one Forest in", [typeof nonBasic, await held(), (await counts()).Forest], ["string", 0, before.Forest + 1]);
+  check("and its Undo puts it back", [await undoTrade(nonBasic!, USER), await held(), await counts()], [deck, 1, before]);
 }
 
 main()

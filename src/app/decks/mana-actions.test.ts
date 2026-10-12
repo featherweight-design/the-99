@@ -153,7 +153,7 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
 
   it("applies the trade a fresh read offers, cutting the basic the SERVER found, and revalidates the deck", async () => {
     reset();
-    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: FOREST, staple: { oracleId: STAPLE } }];
+    state.trades = [{ kind: "trade", out: { id: FOREST, name: "Forest", kind: "basic" }, staple: { oracleId: STAPLE } }];
     state.applied = APPLY;
     expect(await applyManaTrade(DECK, "G", STAPLE, FOREST)).toEqual({ ok: true, applyId: APPLY });
     // The key of the list the offer was read from, for the write to check again under the deck lock.
@@ -164,7 +164,7 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
   it("refuses a staple the fresh read does not offer a trade for, writing nothing", async () => {
     reset();
     state.applied = APPLY;
-    const offered = (oracleId: string) => [{ kind: "trade", basicOut: "Forest", basicOutId: FOREST, staple: { oracleId } }];
+    const offered = (oracleId: string) => [{ kind: "trade", out: { id: FOREST, name: "Forest", kind: "basic" }, staple: { oracleId } }];
     const refusal = { ok: false, message: deckTuningCopy.card.applyRefused };
     // Each case is refused by its own guard alone: the read offers a trade for exactly the staple named.
     state.trades = offered("other");
@@ -180,7 +180,7 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
 
   it("refuses when the write refuses, and revalidates nothing", async () => {
     reset();
-    state.trades = [{ kind: "trade", basicOut: "Forest", basicOutId: FOREST, staple: { oracleId: STAPLE } }];
+    state.trades = [{ kind: "trade", out: { id: FOREST, name: "Forest", kind: "basic" }, staple: { oracleId: STAPLE } }];
     expect((await applyManaTrade(DECK, "G", STAPLE, FOREST)).ok).toBe(false);
     expect(state.revalidated).toEqual([]);
   });
