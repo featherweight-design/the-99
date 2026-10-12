@@ -11,6 +11,10 @@ vi.mock("../../../app/decks/mark-bought-actions", () => ({ markBoughtForDecks, r
 vi.mock("../../../app/decks/assignment-actions", () => ({ assignCopy: vi.fn() }));
 vi.mock("../../../app/collection/history-actions", () => ({ previewRevert: vi.fn(), revertCollectionEntry: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// The line's name is a card-details trigger, which needs the provider the page mounts above it.
+vi.mock("../../cards/card-detail-provider", () => ({
+  CardDetailTrigger: ({ children, name }: { children: React.ReactNode; name: string }) => <button type="button" aria-label={name}>{children}</button>,
+}));
 
 const { CartView } = await import("./cart-view");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
