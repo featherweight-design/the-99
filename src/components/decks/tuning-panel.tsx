@@ -30,6 +30,7 @@ import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
 import { useReviewRun } from "./review-run";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
@@ -145,6 +146,8 @@ export function TuningPanel({
   const review = useReviewRun("suggested");
   const reviewRunId = review?.runId ?? null;
   const leftReview = useRef(false);
+  // The reopened run's read failed: said here, under the hub's note, rather than an empty panel.
+  const [reviewFailed, setReviewFailed] = useState(false);
   // What was already stored when this visit to the deck began (`lib/decks/visit`, Hugh
   // 2026-10-11): a set from a prior visit is not drawn, and lives only in History. Recorded by the
   // first read, so a run that finishes during the visit, or a remount within it, still shows.
@@ -428,9 +431,12 @@ export function TuningPanel({
         stateRef.current = next;
         settledRef.current?.();
       },
-      // A first read that fails draws nothing, as a deck with no reading does.
+      // A first read that fails draws nothing, as a deck with no reading does; a reopened run's
+      // read says it did not load, as History's own view did.
       () => {
-        if (live) settledRef.current?.();
+        if (!live) return;
+        if (reviewRunId !== null && !leftReview.current) setReviewFailed(true);
+        settledRef.current?.();
       },
     );
     return () => {
@@ -526,7 +532,15 @@ export function TuningPanel({
     };
   }, []);
 
-  if (state === null) return null;
+  if (state === null) {
+    return reviewFailed ? (
+      <section aria-labelledby="tuning-heading" className="rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]"
+        style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}>
+        <h2 id="tuning-heading" tabIndex={-1} className="font-display text-[17px] font-semibold outline-none md:text-[19px]" style={{ color: "var(--fg)" }}>{copy.heading}</h2>
+        <p className="mt-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>{tuningHubCopy.history.pastFailed}</p>
+      </section>
+    ) : null;
+  }
 
   // A prior visit's set, and a prior visit's failed run, are hidden: the panel opens on its offer.
   // A press made over a hidden set runs anew (Hugh, 2026-10-11: "I don't want to see prior

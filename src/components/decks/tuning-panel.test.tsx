@@ -10,6 +10,7 @@ import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/
 import type { LineItem, TuningItem, TuningState } from "../../lib/tuning/state";
 import { manifestRows, readSteps, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
 import { ReviewRunProvider } from "./review-run";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), cancelTuningRun: vi.fn(), dismissSuggestion: vi.fn(),
@@ -1736,6 +1737,12 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
       expect(screen.queryByRole("button", { name: deckTuningCopy.failure.retry })).toBeNull();
       cleanup();
     }
+  });
+
+  it("says the reopened run did not load when its read fails, under its own heading", async () => {
+    await drawReview(deps([], { read: vi.fn(async () => { throw new Error("down"); }) }));
+    expect(screen.getByRole("heading", { name: copy.heading })).toBeInTheDocument();
+    expect(screen.getByText(tuningHubCopy.history.pastFailed)).toBeInTheDocument();
   });
 
   it("records no visit baseline from the reopened run: the next ordinary read does", async () => {
