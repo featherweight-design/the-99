@@ -23,7 +23,7 @@ export function TokensGroup() {
   if (read.status === "failed") {
     return (
       <section aria-labelledby={HEADING} className="mt-[16px] md:mt-[20px]">
-        <DecklistGroupHeader label={tokensCopy.group.label} count={null} note={tokensCopy.group.noteFailed} headingId={HEADING} />
+        <DecklistGroupHeader label={tokensCopy.group.label} count={null} note={tokensCopy.group.noteFailed} headingId={HEADING} focusable />
         <p className="m-0 mb-[2px] font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{tokensCopy.group.noteFailed}</p>
         <p className="m-0 py-[10px] font-mono text-[11px] text-[color:var(--fg-locked)]">{tokensCopy.group.failed}</p>
       </section>
@@ -33,7 +33,7 @@ export function TokensGroup() {
   const note = tokensCopy.group.note(read.makerCount);
   return (
     <section aria-labelledby={HEADING} className="mt-[16px] md:mt-[20px]">
-      <DecklistGroupHeader label={tokensCopy.group.label} count={read.tokens.length} note={note} headingId={HEADING} />
+      <DecklistGroupHeader label={tokensCopy.group.label} count={read.tokens.length} note={note} headingId={HEADING} focusable />
       {/* The phone has no right-hand note: it reads as a sub-line under the label. */}
       <p className="m-0 mb-[8px] font-mono text-[10.5px] text-[color:var(--fg-locked)] md:hidden">{note}</p>
       {read.read ? null : (

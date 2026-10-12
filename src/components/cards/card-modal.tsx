@@ -47,6 +47,7 @@ import { SHEET, useCardSheetGestures } from "./card-sheet-gesture";
 import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
+import { TokenCardLine } from "../decks/token-card-line";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 
@@ -2501,6 +2502,7 @@ export function CardModal({
                   proxied={(card.proxiedBy ?? []).some((d) => d.id === deckId)}
                   known={card.proxiedBy !== null && card.proxiedBy !== undefined}
                   onSaved={onProxyWrite}
+                  footer={<TokenCardLine oracleId={card.oracleId} onOpenTokens={onClose} />}
                 />
               )}
 

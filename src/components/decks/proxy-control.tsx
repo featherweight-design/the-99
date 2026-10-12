@@ -27,6 +27,7 @@ export function ProxyControl({
   proxied,
   known = true,
   onSaved,
+  footer,
 }: {
   deckId: string;
   deckName: string;
@@ -52,6 +53,8 @@ export function ProxyControl({
    * is a cost paid by every test and every future caller.
    */
   onSaved?: () => void;
+  /** One more line at the foot of the box (the tokens line). Nothing when absent. */
+  footer?: React.ReactNode;
 }) {
   // Optimistic, and the tick IS the receipt — no spinner, no confirm, no undo
   // strip. Ruling 2 lands the toggle at once, and unmarking is one tap back.
@@ -167,6 +170,7 @@ export function ProxyControl({
       >
         {proxyCopy.control.note}
       </p>
+      {footer}
       {error && <MutationError message={error} />}
       <span className="sr-only" aria-live="polite">{announcement}</span>
     </div>

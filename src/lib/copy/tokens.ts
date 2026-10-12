@@ -62,6 +62,18 @@ export const tokensCopy = {
     removeAria: (name: string) => `Take the ${name} token off Shopping`,
   },
 
+  /** One line at the foot of card details' In this deck box (D1). No block of its own. */
+  details: {
+    line: (names: string[]) =>
+      names.length === 1
+        ? `Makes ${/^[aeiou]/i.test(names[0]) ? "an" : "a"} ${names[0]} token`
+        : `Makes ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]} tokens`,
+    inShopping: "In Shopping",
+    owned: "in your collection",
+    link: "Tokens ›",
+    linkAria: "Show this deck’s tokens",
+  },
+
   /** The buy box's own lines, where tokens are joined. */
   strip: {
     /** Under the figure: what the deck's cards cost and what the tokens cost, apart. Costs drop when unpriced. */

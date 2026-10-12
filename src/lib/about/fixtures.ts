@@ -12,6 +12,7 @@ import type { DeckListItem } from "../decks/read";
 import type { DeckFolderWithCount } from "../decks/folders";
 import type { ShelfCounts } from "../decks/folder-view";
 import type { PreconRow } from "../precons/list";
+import type { DeckToken } from "../tokens/read";
 import type { GameSummary } from "../decks/games";
 import type { DraftRow } from "../decks/draft-state";
 import type { DeckClaim } from "../decks/availability";
@@ -2368,4 +2369,22 @@ export const PRECON_ROW: PreconRow = {
   of: 85,
   unmapped: 0,
   built: [{ deckId: "about-eldrazi", deckName: "HD - Eldrazi", shared: 73, sameCommanders: true }],
+};
+
+/** The tokens entry's row (handoff `about - tokens.ts`): a Soldier no card of the reader's collection has
+ *  yet, on Shopping, made by one card. */
+export const TOKEN_SOLDIER: DeckToken = {
+  oracleId: "about-soldier",
+  name: "Soldier",
+  typeLine: "Token Creature — Soldier",
+  colors: ["R"],
+  power: "2",
+  toughness: "2",
+  oracleText: null,
+  makers: [{ oracleId: "about-firebender-ascension", name: "Firebender Ascension", imageUri: null }],
+  state: "not",
+  source: null,
+  joined: true,
+  picture: null,
+  price: null,
 };
