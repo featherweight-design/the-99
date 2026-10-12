@@ -64,7 +64,7 @@ async function main() {
     if (commanders.length === 2) {
       pairs++;
       const [a, b] = commanders;
-      const ok = canPair({ name: a.name, ability: partnerAbility(a.oracle_text) }, { name: b.name, ability: partnerAbility(b.oracle_text) });
+      const ok = canPair({ name: a.name, ability: partnerAbility(a.oracle_text, a.type_line) }, { name: b.name, ability: partnerAbility(b.oracle_text, b.type_line) });
       console.log(`PAIR ${label}: ${a.name} + ${b.name} ${ok ? "pairs" : "DOES NOT PAIR"}`);
       if (!ok) pairFails++;
     } else if (commanders.length > 2) {

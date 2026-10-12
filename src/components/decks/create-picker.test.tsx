@@ -129,6 +129,23 @@ describe("CreatePicker — the partner list's empty state", () => {
     expect(screen.getAllByText(/none of your commanders can pair/).length).toBeGreaterThan(0);
   });
 
+  it("offers a Doctor's companion to a Time Lord Doctor, read off the Doctor's type line", () => {
+    const doctor = {
+      ...pairable[0], oracleId: "oracle-doctor", name: "The Tenth Doctor",
+      oracleText: "Allons-y! — Whenever The Tenth Doctor attacks, ...", typeLine: "Legendary Creature — Time Lord Doctor",
+    };
+    const rose = {
+      ...pairable[1], oracleId: "oracle-rose", name: "Rose Tyler",
+      oracleText: "Doctor's companion (You can have two commanders if the other is the Doctor.)", typeLine: "Legendary Creature — Human",
+    };
+    render(<CreatePicker legalCommanders={[doctor, rose, pairable[0]]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Tenth Doctor/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Add a partner/ })[0]);
+
+    expect(screen.getAllByRole("button", { name: /Rose Tyler/ }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("button", { name: /Ishai/ })).toHaveLength(0);
+  });
+
   it("falls back to the ordinary no-match message when a query emptied the list", () => {
     enterPairingMode();
     fireEvent.change(screen.getAllByPlaceholderText("Search commanders…")[0], {

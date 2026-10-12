@@ -66,7 +66,16 @@ async function run(): Promise<void> {
   // A Doctor and a companion reach `legalPairs` only through the loader's SQL prefilter, which
   // reads the companion's text and the Doctor's TYPE LINE; dropping either predicate leaves no such
   // pair in the sweep, and nothing else here would notice.
-  const doctorPairs = loaded.pairs.filter((p) => new Set([kindOf(p.a), kindOf(p.b)]).size === 2
+  // Built pairs are unioned into the sweep, so one deck holding a Doctor and a companion would
+  // satisfy this on its own; only a pair no deck holds proves the prefilter reached it.
+  const builtKeys = new Set(
+    (await db.execute<{ a: string; b: string }>(sql`
+      select distinct least(commander_oracle_id, partner_oracle_id)::text as a,
+                      greatest(commander_oracle_id, partner_oracle_id)::text as b
+      from decks where partner_oracle_id is not null
+    `)).rows.map(pairKey),
+  );
+  const doctorPairs = loaded.pairs.filter((p) => !builtKeys.has(pairKey(p)) && new Set([kindOf(p.a), kindOf(p.b)]).size === 2
     && [kindOf(p.a), kindOf(p.b)].every((k) => k === "doctor" || k === "doctorsCompanion"));
   check("the sweep pairs Time Lord Doctors with Doctor's companions", doctorPairs.length > 0, `${doctorPairs.length} pairs`);
 
