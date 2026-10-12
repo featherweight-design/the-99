@@ -41,8 +41,12 @@ export function unstemImage(wire: string): string {
 }
 
 type WireAvailability = Omit<AvailabilitySummary, "claims"> & { claims: number[] };
-type WireCard = Omit<BrowseListCard, "availability" | CollectionDrawKey> &
-  Partial<Pick<BrowseListCard, CollectionDrawKey>> & { availability?: WireAvailability | null };
+type WireCard = Omit<BrowseListCard, "availability" | "price" | CollectionDrawKey> &
+  Partial<Pick<BrowseListCard, CollectionDrawKey>> & {
+    availability?: WireAvailability | null;
+    /** `price`, under one letter: it rides every card, and its key alone was ~12KB of the wire. */
+    p?: number;
+  };
 
 /**
  * The fields a card only DRAWS (list payload plan, PR 4): no filter, search or sort reads them, so
@@ -102,8 +106,9 @@ export function encodeCollection(
       // The list never carries an availability of its own (the page reads it alongside), so the
       // one on `card`, if a caller set it, is dropped rather than shipped twice.
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured to drop it
-      const { availability: _own, ...rest } = card;
+      const { availability: _own, price, ...rest } = card;
       const wire: WireCard = { ...rest, imageUri: card.imageUri === null ? null : stemImage(card.imageUri) };
+      if (price !== undefined) wire.p = price;
       const a = availability?.get(card.oracleId);
       if (a) {
         const { claims, ...figures } = a;
@@ -128,9 +133,10 @@ export function decodeCollection(wire: CollectionWire): CollectionRow[] {
   return wire.cards.map((card) => {
     // `imageUri` is on every whole card, null or not, and on no withheld one.
     const whole = Object.hasOwn(card, "imageUri");
-    const { imageUri, ...rest } = card;
+    const { imageUri, p, ...rest } = card;
     const list = {
       ...rest,
+      ...(p === undefined ? {} : { price: p }),
       ...(whole ? { imageUri: imageUri == null ? null : unstemImage(imageUri) } : { withheld: true as const }),
       availability: null,
     } as CollectionRow;

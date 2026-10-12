@@ -18,6 +18,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  */
 import type { PrintingPrices } from "../cards/price-lookup";
 import { factsFor } from "../bracket/facts";
+import { cardPriceCode, priceSortCents } from "./copy-price";
 import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import type { CardFact } from "../copy/card-mark";
@@ -280,6 +281,12 @@ export type BrowseListCard = Omit<
   /** What the markers read, and nothing a pull or a receipt reads: see `AvailabilitySummary`. */
   availability?: AvailabilitySummary | null;
   comboPartner?: { name: string };
+  /**
+   * What the card is worth, for the Price sort: one integer, encoded by `cardPriceCode`
+   * (`copy-price.ts`). On every card rather than only the drawn ones, because the sort runs in
+   * the browser over the whole list. Absent is silence, never zero.
+   */
+  price?: number;
 };
 
 /** Drops what only the modal reads, and rolls the printings up into set counts. */
@@ -336,7 +343,7 @@ export type BrowseFilters = {
   availability?: AvailabilityState[];
 };
 
-export type SortKey = "name" | "quantity" | "set" | "rarity" | "color";
+export type SortKey = "name" | "quantity" | "set" | "rarity" | "color" | "price";
 export type SortDirection = "asc" | "desc";
 
 export function cssUrl(uri: string): string {
@@ -922,6 +929,9 @@ const SORT_COMPARATORS: Record<SortKey, (a: BrowseListCard, b: BrowseListCard) =
   set: (a, b) => a.primarySetCode.localeCompare(b.primarySetCode),
   rarity: (a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity],
   color: (a, b) => colorSortKey(a.colorIdentity) - colorSortKey(b.colorIdentity),
+  // Only cards that both carry a figure reach here: `sortCards` puts every card without one
+  // last, in both directions, before the direction is applied.
+  price: (a, b) => (priceSortCents(a.price) ?? 0) - (priceSortCents(b.price) ?? 0),
 };
 
 /**
@@ -935,6 +945,7 @@ export const DEFAULT_SORT_DIRECTION: Record<SortKey, SortDirection> = {
   set: "asc",
   rarity: "asc",
   color: "asc",
+  price: "desc",
 };
 
 export function sortCards(
@@ -947,8 +958,19 @@ export function sortCards(
   // The name tiebreak stays A→Z in both directions. It is not part of what the
   // user asked to reverse, and flipping it would shuffle every equal-quantity
   // run on a direction change for no reason the user could name.
-  return [...list].sort((a, b) => sign * primary(a, b)
+  return [...list].sort((a, b) => unpricedLast(sort, a, b)
+    || sign * primary(a, b)
     || printedFaceName(a).localeCompare(printedFaceName(b), "en"));
+}
+
+/**
+ * The Price sort's one rule the direction does not reverse: a card with no figure (no stock, or
+ * nothing reached us) goes after every card with one, in BOTH directions, and those cards then
+ * order by name like any tie. A null is not a zero, so it is not the cheapest card either.
+ */
+function unpricedLast(sort: SortKey, a: BrowseListCard, b: BrowseListCard): number {
+  if (sort !== "price") return 0;
+  return Number(priceSortCents(a.price) === null) - Number(priceSortCents(b.price) === null);
 }
 
 /**
@@ -1145,15 +1167,55 @@ export async function attachComboPartners(
   return cards;
 }
 
+/** The price read for the cards of one collection snapshot. Null when it failed. */
+export function startPriceRead(
+  snapshot: readonly Pick<BrowseCard, "oracleId">[],
+  load: (oracleIds: readonly string[]) => Promise<Map<string, PrintingPrices>>,
+): Promise<Map<string, PrintingPrices> | null> {
+  return load(snapshot.map((card) => card.oracleId)).catch(() => {
+    // not a fallback: the failure is returned as `pricesFailed`, the page says so (F1), and
+    // `loadCollectionList` throws such a list past the cache rather than storing it.
+    return null;
+  });
+}
+
+/** Writes each card's price code onto its list card, index for index. A failed read writes none. */
+export function attachPrices(
+  source: readonly { oracleId: string; printings: Parameters<typeof cardPriceCode>[0] }[],
+  listed: BrowseListCard[],
+  read: Map<string, PrintingPrices> | null,
+): void {
+  if (!read) return;
+  source.forEach((card, i) => {
+    // Set only when there is a figure or an answer: an absent key costs nothing on the wire.
+    const code = cardPriceCode(card.printings, read.get(card.oracleId));
+    if (code !== undefined) listed[i].price = code;
+  });
+}
+
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
-): Promise<BrowseListCard[]> {
+  /** The price read, injected for tests, as `attachBracketFacts`' flags read is. */
+  readPrices?: (oracleIds: readonly string[]) => Promise<Map<string, PrintingPrices>>,
+): Promise<{ cards: BrowseListCard[]; pricesFailed: boolean }> {
   const aggregated = aggregateCollection(await selectCollectionRows(userId));
+  // STARTED BEFORE THE TWO PASSES AND AWAITED AFTER THEM, keyed on the cards of the snapshot just
+  // read rather than on the user: a second read of the collection could see a card this one does
+  // not, or miss one it has, and that card would ship silent and be cached so. A failure is
+  // reported rather than swallowed, because the page says so (F1) and the list must not be cached.
+  const prices = startPriceRead(
+    aggregated,
+    readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices,
+  );
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip
   // in any way this function can express.
-  return toListCards(await attachComboPartners(userId, await attachBracketFacts(aggregated)));
+  const attached = await attachComboPartners(userId, await attachBracketFacts(aggregated));
+  const read = await prices;
+  const cards = toListCards(attached);
+  attachPrices(attached, cards, read);
+  return { cards, pricesFailed: read === null };
 });
 
 /**

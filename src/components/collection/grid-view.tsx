@@ -13,6 +13,8 @@
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
+import { readCardPrice } from "../../lib/collection/copy-price";
+import { PriceFigure, priceSpoken } from "./price-figure";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { availabilityState } from "../../lib/decks/availability";
@@ -55,8 +57,14 @@ export function GridView({
   pendingOracleId = null,
   busy = false,
   mayBeHidden = false,
+  showPrice = false,
 }: {
   cards: BrowseListCard[];
+  /**
+   * Sorted by price: the figure leads the sub-line and is spoken last, and the phone tile drops
+   * the rarity to make room (Hugh, 2026-10-12). Decided by the sort, never by measurement.
+   */
+  showPrice?: boolean;
   totalCards: number;
   onShowMore: () => void;
   /**
@@ -95,6 +103,7 @@ export function GridView({
       <CollectionMarkKey className="col-span-full" />
       {cards.map((c, i) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
+        const spokenPrice = showPrice ? priceSpoken(c.price) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
         const border =
@@ -267,9 +276,24 @@ export function GridView({
                also shows the rarity on a phone, where the meta line had only had room for
                the set code. */
             nameSub={
-              <>
-                {c.primarySetCode} · {c.rarity}
-              </>
+              showPrice ? (
+                <span className="flex min-w-0">
+                  <PriceFigure code={c.price} className="font-semibold" noStockClassName="font-medium" />
+                  <span className="min-w-0 truncate">
+                    {readCardPrice(c.price) === null ? "" : "\u00a0· "}
+                    {c.primarySetCode}
+                    <span className="hidden md:inline"> · {c.rarity}</span>
+                  </span>
+                  {/* The price clause, spoken LAST: the button's name is its text in order, and
+                      this sub-line follows the name line's spoken clauses. The figure above is
+                      aria-hidden. */}
+                  {spokenPrice ? <span className="sr-only">, {spokenPrice}</span> : null}
+                </span>
+              ) : (
+                <>
+                  {c.primarySetCode} · {c.rarity}
+                </>
+              )
             }
             /* The name printed on the copy the player owns, front face only,
                single line and never clamped. This surface carries no `//` mark

@@ -9,7 +9,7 @@ import {
 describe("buildSortOptions", () => {
   it("lists every sort key with only the chosen one carrying a direction hint", () => {
     const options = buildSortOptions("quantity", "desc");
-    expect(options.map((o) => o.code)).toEqual(["name", "quantity", "set", "rarity", "color"]);
+    expect(options.map((o) => o.code)).toEqual(["name", "quantity", "set", "rarity", "color", "price"]);
     expect(options.filter((o) => o.hint !== undefined).map((o) => [o.code, o.hint])).toEqual([
       ["quantity", "Most"],
     ]);
@@ -56,5 +56,13 @@ describe("sortOrderLabel", () => {
   it("reads as the whole order, not just the key", () => {
     expect(sortOrderLabel("name", "asc")).toBe("Name · A–Z");
     expect(sortOrderLabel("rarity", "desc")).toBe("Rarity · Mythic first");
+  });
+});
+
+describe("the Price sort", () => {
+  it("opens highest first, and reverses to lowest first", () => {
+    expect(nextSortState({ sort: "name", direction: "asc" }, "price")).toEqual({ sort: "price", direction: "desc" });
+    expect(sortOrderLabel("price", "desc")).toBe("Price · Highest first");
+    expect(sortOrderLabel("price", "asc")).toBe("Price · Lowest first");
   });
 });

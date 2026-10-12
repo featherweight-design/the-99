@@ -280,3 +280,19 @@ describe("GridView when it may be hidden", () => {
     expect(loadings(container).every((l) => l === null)).toBe(true);
   });
 });
+
+// The price clause is the LAST thing the tile's name says while sorted by price: the name is the
+// button's text in order, and the set and rarity sub-line comes after the name line.
+describe("GridView price clause", () => {
+  it("speaks the price after the set and rarity, and only while sorted by price", () => {
+    const priced = { ...card, price: 2000 * 8 };
+    const { rerender } = render(
+      <GridView cards={[priced]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} showPrice />,
+    );
+    const name = screen.getByRole("button", { name: /Smothering Tithe/ }).textContent ?? "";
+    expect(name.endsWith("$20.00 at ManaPool")).toBe(true);
+    expect(name.indexOf("RVR")).toBeLessThan(name.indexOf("$20.00 at ManaPool"));
+    rerender(<GridView cards={[priced]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />);
+    expect(screen.getByRole("button", { name: /Smothering Tithe/ }).textContent).not.toContain("ManaPool");
+  });
+});

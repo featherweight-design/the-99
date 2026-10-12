@@ -4,6 +4,7 @@
 // (OWNED_PARAMS below, the authoritative list) via history.replaceState so
 // chips + view + open card deep-link (READINESS #6).
 
+import { collectionPriceCopy } from "../../lib/copy/collection-price";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -232,6 +233,7 @@ export function CollectionBrowser({
   served: servedProp,
   ownedSets,
   availabilityOk,
+  pricesFailed = false,
   viewHint = NO_VIEW_HINT,
 }: {
   /**
@@ -254,6 +256,11 @@ export function CollectionBrowser({
    * reason. No banner (Addendum 2, implementation notes).
    */
   availabilityOk: boolean;
+  /**
+   * The page's price read failed (F1). Price stays selectable and sorts every card as silent,
+   * which is A to Z, and one line under the result line says so while that sort is chosen.
+   */
+  pricesFailed?: boolean;
   /**
    * What the page read from the two view cookies (`ui/view-cookie`): the stored view choice and
    * whether the window was wide on a past visit. Hints for the SERVER render only; absent, the
@@ -655,7 +662,11 @@ export function CollectionBrowser({
         onSortChange={updateSort}
         onViewChange={chooseAndKeepView}
       />
-      
+      {pricesFailed && sort === "price" ? (
+        <p className="px-[12px] md:px-[34px] pt-[6px] md:pt-[10px] font-mono text-[11.5px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+          {collectionPriceCopy.readFailed}
+        </p>
+      ) : null}
 
       {sorted.length === 0 ? (
         <NoResults
@@ -683,16 +694,16 @@ export function CollectionBrowser({
         // (`mayBeHidden`), or a phone downloads a screen of art it never shows.
         <>
           <div className="hidden md:block">
-            <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} mayBeHidden />
+            <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} mayBeHidden />
           </div>
           <div className="md:hidden">
-            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
+            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
           </div>
         </>
       ) : resolvedView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} />
       )}
     </>
   );

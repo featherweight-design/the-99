@@ -26,12 +26,15 @@ export function CollectionClient({
   wire,
   ownedSets,
   availabilityOk,
+  pricesFailed = false,
   viewHint,
   collectionEdit = false,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
   availabilityOk: boolean;
+  /** The price read failed for the whole list (F1): Price still sorts, every card silent, A to Z. */
+  pricesFailed?: boolean;
   /** The page's two view-cookie hints. Absent reads as no hint, as `CollectionBrowser` reads it. */
   viewHint?: ViewHint;
   /** `COLLECTION_EDIT_ENABLED`: the card modal's receipt draws `Edit copies` (collection edit R2 §C). */
@@ -90,6 +93,7 @@ export function CollectionClient({
         served={cards}
         ownedSets={ownedSets}
         availabilityOk={availabilityOk}
+        pricesFailed={pricesFailed}
         viewHint={viewHint}
       />
     </CardDetailProvider>

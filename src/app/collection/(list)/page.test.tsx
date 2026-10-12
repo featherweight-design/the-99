@@ -9,7 +9,7 @@ vi.mock("../../../lib/collection/browse", async (orig) => ({
   ...(await orig<typeof import("../../../lib/collection/browse")>()),
   loadOwnedSetMeta: async () => [],
 }));
-vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => [] }));
+vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => ({ cards: [], pricesFailed: false }) }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => null }));
 vi.mock("../../../components/collection/add-cards-sheet", () => ({ AddCardsSheet: () => null }));
 vi.mock("../../../components/collection/collection-client", () => ({ CollectionClient: () => null }));

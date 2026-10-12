@@ -264,7 +264,7 @@ async function main() {
     let worstEntry = { bytes: 0, cards: 0 };
     let worstWire = { bytes: 0, gzip: 0, cards: 0 };
     for (const account of accounts) {
-      const list = await loadBrowseCards(account.user_id);
+      const { cards: list } = await loadBrowseCards(account.user_id);
       const availability = await loadAvailability(account.user_id);
       const entry = Buffer.byteLength(JSON.stringify(list));
       // The page's own cut, for a URL with no filter.

@@ -86,3 +86,23 @@ describe("pageWindowIds", () => {
     },
   );
 });
+
+describe("the Price sort's first window", () => {
+  it("ships the cards the browser draws first whole, and the price rides every card on the wire", () => {
+    // Priced from the bottom of the name order up, so the price window differs from the name one.
+    const cards = Array.from({ length: PAGE_SIZE + 40 }, (_, i) => card(i, i % 5 === 0 ? {} : { price: i * 8 }));
+    const p = params("sort=price");
+    expect(p.sort).toBe("price");
+    expect(p.direction).toBe("desc");
+    const keep = firstWindowIds(cards, p);
+    const drawnFirst = sortCards(filterCards(cards, p.filters), "price", "desc").slice(0, PAGE_SIZE).map((c) => c.oracleId);
+    expect([...keep].sort()).toEqual([...drawnFirst].sort());
+    expect(keep.has(`o${PAGE_SIZE + 39}`)).toBe(true);
+    // 192 priced cards fill the top of the window; the unpriced follow A to Z, so the first eight
+    // of them make it in and the rest do not.
+    expect(keep.has("o0")).toBe(true);
+    expect(keep.has("o40")).toBe(false);
+    const decoded = decodeCollection(encodeCollection(cards, null));
+    expect(decoded.map((c) => c.price)).toEqual(cards.map((c) => c.price));
+  });
+});

@@ -45,7 +45,7 @@ export default async function CollectionPage({
     stored: parseViewCookie(jar.get(COLLECTION_VIEW_COOKIE)?.value),
     wide: parseWideCookie(jar.get(COLLECTION_WIDE_COOKIE)?.value),
   };
-  const [stats, cards, ownedSets, availability] = await Promise.all([
+  const [stats, { cards, pricesFailed }, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -137,6 +137,7 @@ export default async function CollectionPage({
         wire={wire}
         ownedSets={ownedSets}
         availabilityOk={availability !== null}
+        pricesFailed={pricesFailed}
         viewHint={viewHint}
         collectionEdit={collectionEditEnabled()}
       />
