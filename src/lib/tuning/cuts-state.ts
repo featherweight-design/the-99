@@ -21,6 +21,11 @@ export type CutItem = {
   evidence: CutCite[];
   position: number;
   verdict: "pending" | "accepted" | "dismissed";
+  /** Read live: the card is still in the list and is not a commander. A cut whose card has left
+   *  can no longer be taken. Optional for fixtures that predate it; absent reads as true. */
+  inDeck?: boolean;
+  /** Read live: the card is locked now (Locked, never cut), so Cut would refuse it. */
+  locked?: boolean;
 };
 
 export type CutsRun = {
@@ -45,6 +50,10 @@ export type CutsState = {
   modelVersionMoved: boolean;
   /** The reader's shared model allowance, measured against this feature's own call. */
   allowance: Allowance;
+  /** A past run the reader opened from History (re-review): `items` are THAT run's, whatever newer
+   *  run exists, and Cut re-checks each card against the list as it stands. Absent or null for the
+   *  panel's ordinary newest-ok-run read. */
+  review?: { runId: string; at: Date } | null;
 };
 
 /**

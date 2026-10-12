@@ -27,6 +27,8 @@ const calls = vi.hoisted(() => ({
   rechained: [] as unknown[][],
   verdictCalls: [] as string[],
   state: undefined as unknown,
+  stateRunId: undefined as string | null | undefined,
+  verdictModes: [] as unknown[],
   fingerprints: ["fp0", "fp1"] as string[],
   recorded: [] as { listFingerprint: string; tool: string }[],
 }));
@@ -50,7 +52,7 @@ vi.mock("../../lib/decks/cuts-read", () => ({
     const withKeys = inputs ? { ...inputs, keyCards: calls.keyCards } : inputs;
     return withKeys && calls.fingerprints.length > 0 ? { ...withKeys, fingerprint: calls.fingerprints[Math.min(calls.inputsReads - 1, calls.fingerprints.length - 1)] } : withKeys;
   },
-  readCutsState: async () => calls.state,
+  readCutsState: async (_d: string, _u: string, _n?: Date, runId?: string | null) => { calls.stateRunId = runId; return calls.state; },
   reapCutsRuns: async () => { calls.reaped += 1; },
 }));
 vi.mock("../../lib/decks/tuning-read", () => ({ commanderName: async () => "Gishath", profileOfHead: async () => ({}) }));
@@ -71,8 +73,8 @@ vi.mock("../../lib/tuning/cuts-run-store", () => ({
   cancelCutsRun: async (...args: unknown[]) => { calls.cancelled.push(args); return true; },
 }));
 vi.mock("../../lib/tuning/cuts-verdicts", () => ({
-  cutItem: async () => { calls.verdictCalls.push("cut"); return calls.verdict; },
-  undoCutItem: async () => { calls.verdictCalls.push("undo"); return calls.verdict; },
+  cutItem: async (_i: string, _u: string, mode?: unknown) => { calls.verdictCalls.push("cut"); calls.verdictModes.push(mode); return calls.verdict; },
+  undoCutItem: async (_i: string, _u: string, mode?: unknown) => { calls.verdictCalls.push("undo"); calls.verdictModes.push(mode); return calls.verdict; },
   setCutKept: async (_i: string, _u: string, kept: boolean) => { calls.verdictCalls.push(kept ? "keep" : "restore"); return calls.verdict; },
 }));
 const USAGE = { inputTokens: 5_000, outputTokens: 1_200, cacheReadTokens: 0, cacheWriteTokens: 0 };
@@ -109,6 +111,8 @@ const inputsFor = (facts: CutFacts, over: object = {}) => ({
 });
 
 beforeEach(() => {
+  calls.stateRunId = undefined;
+  calls.verdictModes = [];
   calls.enabled = true;
   calls.planThrows = false;
   calls.inputs = inputsFor(factsFor());
@@ -362,6 +366,14 @@ describe("the cut verdicts", () => {
     expect(calls.verdictCalls).toEqual(["cut", "undo", "keep", "restore"]);
   });
 
+  it("a cut or an undo from History's re-review asks for review mode; an ordinary press, or a stray argument, never does", async () => {
+    await cutProposed(ITEM, true);
+    await undoProposedCut(ITEM, true);
+    await cutProposed(ITEM);
+    await cutProposed(ITEM, "yes" as unknown as boolean);
+    expect(calls.verdictModes).toEqual([{ review: true }, { review: true }, { review: false }, { review: false }]);
+  });
+
   it("a refusal says why in the copy", async () => {
     calls.verdict = { ok: false, reason: "cutLocked" };
     expect(await cutProposed(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.cutLocked });
@@ -386,6 +398,17 @@ describe("readCutsPanel", () => {
   const state = (lastOkFingerprint: string | null, moved = false) => ({
     run: null, items: [], itemsReport: { over: 6 }, lastOkFingerprint, lastOkAt: null, modelVersionMoved: moved,
     allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null },
+  });
+
+  it("reads the run History names by id, and the ordinary panel for anything that is not a uuid", async () => {
+    calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.state = state(null);
+    await readCutsPanel(DECK, RUN);
+    expect(calls.stateRunId).toBe(RUN);
+    await readCutsPanel(DECK, "run:nope");
+    expect(calls.stateRunId).toBeNull();
+    await readCutsPanel(DECK);
+    expect(calls.stateRunId).toBeNull();
   });
 
   it("records History's free row under the list's own fingerprint, not the tool's inputs", async () => {

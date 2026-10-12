@@ -10,6 +10,7 @@ import {
   commanderPairSupportCards,
   commanderSupport,
   commanderSupportCards,
+  deckCards,
   deckCutItems,
   decks,
   deckSuggestionRuns,
@@ -194,14 +195,14 @@ export async function reapCutsRuns(deckId: string, userId: string, now: Date = n
  * The panel's state for this tool. Reaps on the way past, then reads the newest run, the newest ok
  * run with its cuts, and the allowance measured against this feature's own call.
  */
-export async function readCutsState(deckId: string, userId: string, now: Date = new Date()): Promise<CutsState> {
+export async function readCutsState(deckId: string, userId: string, now: Date = new Date(), runId: string | null = null): Promise<CutsState> {
   await reapCutsRuns(deckId, userId, now);
 
   const runOf = cutsRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
   // The newest run, the newest ok run and its cuts are ONE instant: read apart, a run settling
   // between the statements would show a status that never sat beside those cuts.
-  const [{ newest, lastOk, rows }, allowance] = await Promise.all([
+  const [{ newest, lastOk, rows, reviewed }, allowance] = await Promise.all([
     db.transaction(async (tx) => {
       const [newest] = await tx.select({
         id: deckSuggestionRuns.id,
@@ -211,15 +212,19 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
         droppedCount: deckSuggestionRuns.droppedCount,
       }).from(deckSuggestionRuns).where(and(runOf, mine))
         .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
-      const [lastOk] = await tx.select({
+      const okRun = (id: string | null) => tx.select({
         id: deckSuggestionRuns.id,
         fingerprint: deckSuggestionRuns.inputFingerprint,
         createdAt: deckSuggestionRuns.createdAt,
         promptVersion: deckSuggestionRuns.promptVersion,
         profileVersion: deckSuggestionRuns.profileVersion,
         validationReport: deckSuggestionRuns.validationReport,
-      }).from(deckSuggestionRuns).where(and(runOf, mine, eq(deckSuggestionRuns.status, "ok")))
+      }).from(deckSuggestionRuns).where(okCutsRunWhere(deckId, userId, id))
         .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
+      // A run named by id (History's re-review) is read only when it is the reader's own ok run of
+      // this tool on this deck; anything else reads as the ordinary panel.
+      const [reviewed] = runId ? await okRun(runId) : [];
+      const [lastOk] = reviewed ? [reviewed] : await okRun(null);
       const rows = lastOk
         ? await tx.select({
             id: deckCutItems.id,
@@ -237,7 +242,20 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
             .where(eq(deckCutItems.runId, lastOk.id))
             .orderBy(deckCutItems.position)
         : [];
-      return { newest, lastOk, rows };
+      // Whether each cut can still be taken, read in the same instant: a card still in the list,
+      // not a commander, not locked. Cut re-checks all three under the deck lock.
+      // One after the other: a transaction is one connection.
+      const held = rows.length === 0 ? [] : await tx.select({ oracleId: deckCards.oracleId }).from(deckCards).where(eq(deckCards.deckId, deckId));
+      const [deck] = rows.length === 0 ? [] : await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId }).from(decks).where(eq(decks.id, deckId));
+      const locks: ReadonlySet<string> = rows.length > 0 && neverCutEnabled() ? await liveLockedIds(tx, deckId) : new Set();
+      const inList = new Set(held.map((h) => h.oracleId));
+      const commanders = new Set([deck?.commander, deck?.partner].filter((x): x is string => !!x));
+      const live = rows.map((r) => ({
+        ...r,
+        inDeck: inList.has(r.cutOracleId) && !commanders.has(r.cutOracleId),
+        locked: locks.has(r.cutOracleId),
+      }));
+      return { newest, lastOk, rows: live, reviewed: reviewed ?? null };
     }, { isolationLevel: "repeatable read" }),
     readAllowance(userId, now, "proposed_cuts"),
   ]);
@@ -257,5 +275,17 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
       ? lastOk.promptVersion !== CUTS_PROMPT_VERSION || lastOk.profileVersion !== PROFILE_VERSION
       : false,
     allowance,
+    review: reviewed ? { runId: reviewed.id, at: reviewed.createdAt } : null,
   };
+}
+
+/** The ok-run predicate: the newest ok run, or the one the reader named. Exported so its emitted
+ *  SQL is pinned: a named run is still the reader's own, on this deck, of this tool. */
+export function okCutsRunWhere(deckId: string, userId: string, runId: string | null) {
+  return and(
+    cutsRunsOfDeck(deckId),
+    eq(deckSuggestionRuns.userId, userId),
+    eq(deckSuggestionRuns.status, "ok"),
+    runId ? eq(deckSuggestionRuns.id, runId) : undefined,
+  );
 }

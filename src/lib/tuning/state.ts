@@ -143,4 +143,8 @@ export type TuningState = {
    *  lead. Nothing could be cut, so the run is refused before any credit is reserved. Absent or
    *  null otherwise, and always while `NEVER_CUT_ENABLED` is off. */
   allLocked?: string | null;
+  /** A past run the reader opened from History (re-review): `items` are THAT run's, whatever
+   *  newer run exists. Absent or null for the panel's ordinary newest-ok-run read. Each line's
+   *  `applies` is read live, so a swap the deck has moved past shows as no longer applying. */
+  review?: { runId: string; at: Date } | null;
 };
