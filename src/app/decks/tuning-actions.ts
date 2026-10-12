@@ -2,11 +2,13 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import { db } from "../../db";
 import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -240,72 +242,81 @@ export async function runTuning(
     return { ok: true } as const;
   };
 
-  try {
-    const profile = await profileOfHead(head);
-    const [owned, { overview, universal }] = await Promise.all([
-      readOwnedOracleIds(userId, [
-        ...profile.cards.map((c) => c.oracleId),
-        ...profile.skeleton.staples.map((s) => s.oracleId),
-      ]),
-      readTuningContext(head),
-    ]);
-    // "Owned only": the model is shown what the player owns that fits, since it cannot see ownership
-    // and otherwise guesses (Soldiers kept no add). When nothing fits the run asks for cards to BUY
-    // instead, under the same cap and sets, and says so (`ownedNone`); owned cards still come first
-    // whenever any fit.
-    const ownedCandidates = limits.ownedOnly
-      ? await loadOwnedCandidates({
-        userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
-        inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
-      })
-      : undefined;
-    const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
-    const pack = buildEvidencePack({
-      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), notes,
-      limits: ownedNone ? { ...limits, ownedOnly: false } : limits,
-      ownedCandidates: ownedNone ? undefined : ownedCandidates,
-      ownedNone,
-    });
-    const { system, user } = buildPrompt(pack);
-    const outcome = await callModel({
-      model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-      schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
-      effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
-    });
-    if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "suggest", effort: TUNING_EFFORT };
-    // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
-    if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
+  // The model call and everything that settles it run AFTER the response (`after()`), as the Help me
+  // choose read does: the request returns once the run holds its unit and its pending row, and the
+  // run finishes whether or not the player stays on the page. The panel reads the run until it settles.
+  const work = async (): Promise<unknown> => {
+    try {
+      const profile = await profileOfHead(head);
+      const [owned, { overview, universal }] = await Promise.all([
+        readOwnedOracleIds(userId, [
+          ...profile.cards.map((c) => c.oracleId),
+          ...profile.skeleton.staples.map((s) => s.oracleId),
+        ]),
+        readTuningContext(head),
+      ]);
+      // "Owned only": the model is shown what the player owns that fits, since it cannot see ownership
+      // and otherwise guesses (Soldiers kept no add). When nothing fits the run asks for cards to BUY
+      // instead, under the same cap and sets, and says so (`ownedNone`); owned cards still come first
+      // whenever any fit.
+      const ownedCandidates = limits.ownedOnly
+        ? await loadOwnedCandidates({
+          userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
+        })
+        : undefined;
+      const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
+      const pack = buildEvidencePack({
+        profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), notes,
+        limits: ownedNone ? { ...limits, ownedOnly: false } : limits,
+        ownedCandidates: ownedNone ? undefined : ownedCandidates,
+        ownedNone,
+      });
+      const { system, user } = buildPrompt(pack);
+      const outcome = (await heldStubOutcome()) ?? await callModel({
+        model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
+        schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
+        effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
+      });
+      if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "suggest", effort: TUNING_EFFORT };
+      // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
+      if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-    const { kept, droppedCount, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
-    // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
-    // whatever order the validator already gives — no new ranking pass, no retry, no second model
-    // call. Fewer than 5 is shown as-is.
-    const sized = sizeLists(kept, MAX_SUGGESTIONS);
-    // An answer too thin to charge for still shows what held up, and gives the credit back. Never an
-    // empty one: that is a failure below, refunded the same way, with no suggestions to show.
-    const refunded = sized.length > 0 && refundsCredit(sized.length, askedCount);
-    const report: ValidationReport = {
-      askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops,
-      ...(ownedNone ? { ownedNone: true as const } : {}),
-      ...(refunded ? { refunded: true as const } : {}),
-    };
-    // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
-    // that rather than `ungrounded`'s three causes. Refunded like every failure.
-    if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {
-      return await fail("locked_only", droppedCount, { ...report, refusal: chooseRefusal(drops, limits.capCents) });
-    }
-    if (sized.length === 0) {
-      return await fail("ungrounded", droppedCount, { ...report, refusal: chooseRefusal(drops, limits.capCents) });
-    }
+      const { kept, droppedCount, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
+      // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
+      // whatever order the validator already gives — no new ranking pass, no retry, no second model
+      // call. Fewer than 5 is shown as-is.
+      const sized = sizeLists(kept, MAX_SUGGESTIONS);
+      // An answer too thin to charge for still shows what held up, and gives the credit back. Never an
+      // empty one: that is a failure below, refunded the same way, with no suggestions to show.
+      const refunded = sized.length > 0 && refundsCredit(sized.length, askedCount);
+      const report: ValidationReport = {
+        askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops,
+        ...(ownedNone ? { ownedNone: true as const } : {}),
+        ...(refunded ? { refunded: true as const } : {}),
+      };
+      // F10: every suggestion cut a card the player locked. Its own class, so the empty result says
+      // that rather than `ungrounded`'s three causes. Refunded like every failure.
+      if (sized.length === 0 && drops.length > 0 && drops.every((d) => d.rule === "neverCut")) {
+        return await fail("locked_only", droppedCount, { ...report, refusal: chooseRefusal(drops, limits.capCents) });
+      }
+      if (sized.length === 0) {
+        return await fail("ungrounded", droppedCount, { ...report, refusal: chooseRefusal(drops, limits.capCents) });
+      }
 
-    // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
-    const flagged = await withBracketAfter(head, profile, declared, sized);
-    if (await persistRun(run, flagged, droppedCount, billed, report, refunded ? "refunded" : "spent")) revalidateDeck(deckId);
-    return { ok: true };
-  } catch (err) {
-    await fail("upstream_busy");
-    throw err;
-  }
+      // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
+      const flagged = await withBracketAfter(head, profile, declared, sized);
+      if (await persistRun(run, flagged, droppedCount, billed, report, refunded ? "refunded" : "spent")) revalidateDeck(deckId);
+      return undefined;
+    } catch (err) {
+      // Nobody is waiting on this request, so a throw is logged, not rethrown; the run is failed and refunded.
+      console.error(`[tuning] run ${run.runId} threw after its reservation`, err);
+      await fail("upstream_busy").catch(() => undefined);
+      return undefined;
+    }
+  };
+  after(work);
+  return { ok: true };
 }
 
 /** Stop: the run the panel was watching, by id, so a late press cannot cancel the next one. */

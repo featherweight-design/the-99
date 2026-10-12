@@ -78,6 +78,46 @@ describe("CutsPanelView", () => {
     await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
   });
 
+  it("reads again while the run it started is pending, and draws the cuts once it settles", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let seenRun = "";
+      const run = vi.fn(async (_id: string, o?: { runId?: string }) => { seenRun = o?.runId ?? ""; return { ok: true as const }; });
+      const pendingOf = () => panelOf({ run: { id: seenRun, status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
+      const reads = [() => panelOf(), () => pendingOf(), () => pendingOf(), () => withResult(3, 6, { run: { id: seenRun, status: "ok", errorClass: null, createdAt: new Date(), droppedCount: 0 } })];
+      let n = 0;
+      const d = deps(null, { run, read: vi.fn(async () => reads[Math.min(n++, reads.length - 1)]()) });
+      await mount(d);
+      fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+      expect(await screen.findByText("Card 1")).toBeTruthy();
+      expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops reading once the panel is left, while the run it started is still pending", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let seenRun = "";
+      const run = vi.fn(async (_id: string, o?: { runId?: string }) => { seenRun = o?.runId ?? ""; return { ok: true as const }; });
+      const pendingOf = () => panelOf({ run: { id: seenRun, status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
+      let n = 0;
+      const d = deps(null, { run, read: vi.fn(async () => (n++ === 0 ? panelOf() : pendingOf())) });
+      const view = render(<CutsPanelView deckId="d1" deps={d} />);
+      await screen.findByRole("heading", { name: copy.heading });
+      fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(4000); });
+      view.unmount();
+      const before = (d.read as ReturnType<typeof vi.fn>).mock.calls.length;
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect((d.read as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("disables the press, with no segment, when credits are used up", async () => {
     await mount(deps(panelOf({ allowance: { used: 3, limit: 3, reopensAt: null, nextAt: null } })));
     const b = screen.getByRole("button", { name: "Look deeper. No credits left." }) as HTMLButtonElement;

@@ -205,6 +205,7 @@
     "probe:edhrec-snapshot": "tsx scripts/probe-edhrec-snapshot.ts",
     "assets:brackets": "tsx scripts/copy-bracket-marks.mts",
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
+    "probe:run-after": "node scripts/probe-run-after.mjs",
     "probe:cuts-panel": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-panel.mts",
     "probe:tuning-optimistic": "node scripts/probe-tuning-optimistic.mjs",
     "probe:fits-read-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-fits-read-state.mts",

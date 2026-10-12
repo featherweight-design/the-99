@@ -23,6 +23,7 @@ import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import { cutChips, type Chip, type CountRow } from "../../lib/tuning/cuts-count";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { awaitRunSettled } from "./await-run";
 import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
 import { useReviewRun } from "./review-run";
@@ -257,9 +258,13 @@ export function CutsPanelView({
     inflight.current = flight;
     void request.then(() => { flight.done = true; });
     const result = await request;
+    // The action returns once the run is reserved; the server finishes it after the response. Read
+    // until it settles (each read also redraws the panel's running state).
+    // A panel left behind stops polling; the run is the server's and finishes regardless.
+    const waited = result.ok ? await awaitRunSettled(reread, runId, { aborted: () => token.current !== mine || !mounted.current }) : null;
     if (token.current !== mine) return;
     ownRun.current = null;
-    const next = await reread();
+    const next = waited ?? await reread();
     if (token.current !== mine) return;
     setPressing(false);
     if (!result.ok) {

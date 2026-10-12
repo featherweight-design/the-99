@@ -42,6 +42,10 @@ vi.mock("../../lib/tuning/tool-counts", async (importOriginal) => ({
 }));
 vi.mock("../../lib/tuning/flag", () => ({ proposedCutsEnabled: () => calls.enabled }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
+// `after()` runs the run's model call and settle once the response is sent: tests collect them and
+// wait for them where the real server would have finished them.
+const later = vi.hoisted(() => ({ queue: [] as (() => Promise<unknown>)[] }));
+vi.mock("next/server", () => ({ after: (fn: () => Promise<unknown>) => { later.queue.push(fn); } }));
 vi.mock("../../db", () => ({
   db: { select: () => ({ from: () => ({ where: async () => calls.textRows }) }) },
 }));
@@ -94,9 +98,16 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { cancelProposedCuts, cutProposed, keepProposedCut, readCutsPanel, restoreProposedCut, runProposedCuts, undoProposedCut } from "./cuts-actions";
+import { cancelProposedCuts, cutProposed, keepProposedCut, readCutsPanel, restoreProposedCut, runProposedCuts as runProposedCutsRequest, undoProposedCut } from "./cuts-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
+
+/** The request, then the work it handed to `after()`, as the server finishes them. */
+async function runProposedCuts(...args: Parameters<typeof runProposedCutsRequest>) {
+  const result = await runProposedCutsRequest(...args);
+  await Promise.all(later.queue.splice(0).map((f) => f()));
+  return result;
+}
 const RUN = "22222222-2222-4222-8222-222222222222";
 
 // 102 cards: two over. bear1 is off the commander's list, ramp0 is on it at 41 percent.
@@ -129,6 +140,7 @@ beforeEach(() => {
   calls.fingerprints = ["fp0", "fp1"];
   calls.cancelled = [];
   calls.modelCalls = [];
+  later.queue.length = 0;
   calls.modelOutcome = undefined;
   calls.modelThrows = false;
   calls.textRows = [];
@@ -318,9 +330,12 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     expect(billed).toEqual({ model: "claude-sonnet-5", usage: USAGE, step: "cuts", effort: "medium" });
   });
 
-  it("refunds and rethrows when something throws after the reservation", async () => {
+  it("refunds and logs, never throws, when something throws after the reservation", async () => {
     calls.modelThrows = true;
-    await expect(runProposedCuts(DECK)).rejects.toThrow("boom");
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(runProposedCuts(DECK)).resolves.toEqual({ ok: true });
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
     expect(calls.persisted).toHaveLength(0);
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
@@ -333,9 +348,22 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     calls.persistResult = true;
     const store = await import("../../lib/tuning/cuts-run-store");
     const spy = vi.spyOn(store, "persistCutsRun").mockRejectedValueOnce(new Error("db down"));
-    await expect(runProposedCuts(DECK)).rejects.toThrow("db down");
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(runProposedCuts(DECK)).resolves.toEqual({ ok: true });
+    log.mockRestore();
     spy.mockRestore();
     expect(calls.finished).toMatchObject([[{ runId: "run_1" }, { errorClass: "upstream_busy" }, { usage: USAGE }]]);
+  });
+});
+
+describe("runProposedCuts returns before the model is called", () => {
+  it("reserves the run and answers ok, leaving the call and its settle to after()", async () => {
+    await expect(runProposedCutsRequest(DECK)).resolves.toEqual({ ok: true });
+    expect(calls.modelCalls).toHaveLength(0);
+    expect(calls.finished).toEqual([]);
+    expect(later.queue).toHaveLength(1);
+    await Promise.all(later.queue.splice(0).map((f) => f()));
+    expect(calls.modelCalls).toHaveLength(1);
   });
 });
 

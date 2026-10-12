@@ -2,6 +2,7 @@
 
 import { inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { db } from "../../db";
 import { cards } from "../../db/schema";
@@ -34,6 +35,7 @@ import { proposedCutsEnabled } from "../../lib/tuning/flag";
 import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import type { Billed } from "../../lib/tuning/run-store";
 import { listFingerprint } from "../../lib/profile/fingerprint";
+import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -152,28 +154,37 @@ export async function runProposedCuts(
     return { ok: true } as const;
   };
 
-  try {
-    const outcome = await callModel({
-      model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-      schema: cutsResponseSchema(pack.ask), deadlineMs: MODEL_TIMEOUT_MS,
-      effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
-    });
-    if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "cuts", effort: TUNING_EFFORT };
-    // A rejection is stored as busy: the distinction is kept for the overview only, for now.
-    if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
+  // The call and its settle run AFTER the response (`after()`): the request returns once the run holds
+  // its unit and its pending row, and the run finishes whether or not the player stays. The panel
+  // reads the run until it settles.
+  const work = async (): Promise<unknown> => {
+    try {
+      const outcome = (await heldStubOutcome()) ?? await callModel({
+        model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
+        schema: cutsResponseSchema(pack.ask), deadlineMs: MODEL_TIMEOUT_MS,
+        effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
+      });
+      if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "cuts", effort: TUNING_EFFORT };
+      // A rejection is stored as busy: the distinction is kept for the overview only, for now.
+      if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-    const checked = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
-    const { kept } = checked;
-    const report: CutsReport = { ...checked.report, chips: cutCounts(facts, (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null, name).chips };
-    // Nothing survived the checks: refunded like every failure, and the report says why.
-    if (kept.length === 0) return await fail("ungrounded", report);
+      const checked = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+      const { kept } = checked;
+      const report: CutsReport = { ...checked.report, chips: cutCounts(facts, (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null, name).chips };
+      // Nothing survived the checks: refunded like every failure, and the report says why.
+      if (kept.length === 0) return await fail("ungrounded", report);
 
-    if (await persistCutsRun(run, kept, report, billed)) revalidateDeck(deckId);
-    return { ok: true };
-  } catch (err) {
-    await fail("upstream_busy");
-    throw err;
-  }
+      if (await persistCutsRun(run, kept, report, billed)) revalidateDeck(deckId);
+      return undefined;
+    } catch (err) {
+      // Nobody is waiting on this request, so a throw is logged, not rethrown; the run is failed and refunded.
+      console.error(`[cuts] run ${run.runId} threw after its reservation`, err);
+      await fail("upstream_busy").catch(() => undefined);
+      return undefined;
+    }
+  };
+  after(work);
+  return { ok: true };
 }
 
 /** Stop: the run the panel was watching, by id, so a late press cannot cancel the next one. */

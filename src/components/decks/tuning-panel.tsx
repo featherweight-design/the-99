@@ -26,6 +26,7 @@ import { gateReason } from "../../lib/tuning/gate";
 import { isLine, type PairItem, type TuningState } from "../../lib/tuning/state";
 import type { RefusalDetail } from "../../lib/tuning/validate";
 import type { PrintedInSet } from "../../lib/sets/printed-in";
+import { awaitRunSettled } from "./await-run";
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
@@ -236,6 +237,10 @@ export function TuningPanel({
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a run the reader stopped cannot land over what they did next.
   const token = useRef(0);
+  // Leaving the panel ends this visit's press: its poll and its draws check the token, and a bump
+  // here supersedes them, so nothing is read or drawn for a panel no longer on screen. The run
+  // itself is the server's and finishes regardless.
+  useEffect(() => () => { token.current += 1; }, []);
   // The id this panel gave the run its press started, until that press settles. Stop cancels this
   // run and no other: the pending row a read turns up may be another tab's.
   const ownRun = useRef<string | null>(null);
@@ -690,6 +695,11 @@ export function TuningPanel({
       if (token.current === mine) setLongWait(true);
     }, LONG_WAIT_MS);
     const result = await running;
+    // The action returns once the run is reserved; the server finishes it after the response. Read
+    // until it settles, so the checklist keeps going and the result is drawn when it lands.
+    const waited = result.ok
+      ? await awaitRunSettled(() => deps.read(deckId, leftReview.current ? null : reviewRunId), runId, { aborted: () => token.current !== mine })
+      : null;
     // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
     // `longWaitTimer` are this component's shared refs, and `stop()` lets a new press start
     // while this press's own `deps.run` is still unresolved (pre-open review round 4, PR 2). If
@@ -711,7 +721,7 @@ export function TuningPanel({
     ownRun.current = null;
     // Token-checked AFTER the read too: a Stop pressed while this read is in flight owns the panel
     // from then on, and this press must not draw or announce over it.
-    const next = await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
+    const next = waited ?? await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
     if (token.current !== mine) return;
     if (next) {
       setState(next);

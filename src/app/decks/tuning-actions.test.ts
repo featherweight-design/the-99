@@ -39,6 +39,10 @@ vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabled }));
 // `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
+// `after()` runs the run's model call and settle once the response is sent: tests collect them and
+// wait for them where the real server would have finished them.
+const later = vi.hoisted(() => ({ queue: [] as (() => Promise<unknown>)[] }));
+vi.mock("next/server", () => ({ after: (fn: () => Promise<unknown>) => { later.queue.push(fn); } }));
 vi.mock("../../db", () => ({
   db: {
     update: () => ({
@@ -146,13 +150,20 @@ import {
   applySuggestion,
   cancelTuningRun,
   readTuningPanel,
-  runTuning,
+  runTuning as runTuningRequest,
   saveDeckDescription,
   saveDeckHeader,
   saveDeckLimits,
 } from "./tuning-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
+
+/** The request, then the work it handed to `after()`, as the server finishes them. */
+async function runTuning(...args: Parameters<typeof runTuningRequest>) {
+  const result = await runTuningRequest(...args);
+  await Promise.all(later.queue.splice(0).map((f) => f()));
+  return result;
+}
 
 beforeEach(() => {
   calls.inputs = 0;
@@ -181,18 +192,42 @@ beforeEach(() => {
   calls.limits = { capCents: null, sets: [], ownedOnly: false };
   calls.tuningEnabled = true;
   calls.stateOpts = undefined;
+  later.queue.length = 0;
 });
 
 describe("runTuning after the call returned", () => {
-  it("settles a throw past the reply with the usage the reply billed", async () => {
+  it("settles a throw past the reply with the usage the reply billed, logging it rather than throwing", async () => {
     calls.startKind = "started";
     calls.reachModel = true;
-    await expect(runTuning(DECK, { anyway: true })).rejects.toThrow();
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(runTuning(DECK, { anyway: true })).resolves.toEqual({ ok: true });
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
       { model: "claude-sonnet-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "suggest", effort: "medium" },
     ]]);
+  });
+});
+
+describe("runTuning returns before the model is called", () => {
+  it("reserves the run and answers ok, leaving the call and its settle to after()", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    await expect(runTuningRequest(DECK, { anyway: true })).resolves.toEqual({ ok: true });
+    expect(calls.started).toBe(1);
+    expect(calls.modelRequest).toBeUndefined();
+    expect(calls.finished).toEqual([]);
+    expect(later.queue).toHaveLength(1);
+    await Promise.all(later.queue.splice(0).map((f) => f()));
+    expect(calls.modelRequest).toBeDefined();
+  });
+
+  it("schedules nothing when the run was refused before a unit was held", async () => {
+    calls.startKind = "allowance";
+    await runTuningRequest(DECK, { anyway: true });
+    expect(later.queue).toHaveLength(0);
   });
 });
 

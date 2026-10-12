@@ -154,12 +154,12 @@ describe("TuningPanel", () => {
     }
   });
 
-  it("ticks every remaining row at once when the result lands before the stagger finishes", async () => {
+  it("keeps the checklist going while the server finishes the run, then draws the result", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
-      // The run resolves almost immediately — well before the stagger's own pacing finishes —
-      // but the closing read is held, so the ticked-all-at-once frame is observable before the
-      // panel moves on to the results.
+      // The action answers at once (the run is reserved; the server finishes it after the response),
+      // so the closing read is what waits. Held, the rows stay mid-stagger rather than all ticking,
+      // since the result has not landed; released, the result is drawn.
       let releaseRead!: (s: TuningState) => void;
       const reads = [async () => fresh, () => new Promise<TuningState>((r) => { releaseRead = r; })];
       let n = 0;
@@ -172,11 +172,51 @@ describe("TuningPanel", () => {
         await Promise.resolve();
       });
       const total = runSteps(facts, "go wide").length;
-      expect(screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true")).toHaveLength(total);
+      const done = screen.getAllByTestId("manifest-row").filter((r) => r.dataset.kind === "read" && r.dataset.done === "true");
+      expect(done.length).toBeLessThan(total);
       await act(async () => {
         releaseRead(results);
       });
       expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reads again while the run it started is still pending, and draws it once it settles", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let seenRun = "";
+      const run = vi.fn(async (_id: string, o?: { runId?: string }) => { seenRun = o?.runId ?? ""; return { ok: true } as const; });
+      const pendingOf = (): TuningState => ({ ...fresh, run: { id: seenRun, status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } as never });
+      const reads = [() => Promise.resolve(fresh), () => Promise.resolve(pendingOf()), () => Promise.resolve(results)];
+      let n = 0;
+      const d = deps([fresh], { run, read: vi.fn(() => reads[Math.min(n++, reads.length - 1)]()) });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
+      expect(vi.mocked(d.read).mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(screen.getByText("Rhystic Study")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops reading once the panel is left, while the run it started is still pending", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let seenRun = "";
+      const run = vi.fn(async (_id: string, o?: { runId?: string }) => { seenRun = o?.runId ?? ""; return { ok: true } as const; });
+      const pendingOf = (): TuningState => ({ ...fresh, run: { id: seenRun, status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } as never });
+      let n = 0;
+      const d = deps([fresh], { run, read: vi.fn(() => Promise.resolve(n++ === 0 ? fresh : pendingOf())) });
+      await draw(d);
+      await press(copy.suggest);
+      await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
+      cleanup();
+      const before = vi.mocked(d.read).mock.calls.length;
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(vi.mocked(d.read).mock.calls.length).toBe(before);
     } finally {
       vi.useRealTimers();
     }

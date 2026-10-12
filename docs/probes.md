@@ -152,6 +152,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `neon.branch_id`. `PROBE_USER_ID=<clerk id> ... --seed` leaves eight `mn-probe-fixture-` decks (the eighth, `contract-8`, holds a contract-8 overview with its evidence, for the Based on contact sheet) for
   `docs/superpowers/inventories/method-notice.json`'s contact sheet and prints the ids it reads;
   `--unseed` removes them, and touches only those decks and the calls their overviews hold.
+- `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
+  cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
+  call is held, and watches the run settle on its own, refunded, and later than the close. The model
+  is the held stand-in in `src/lib/tuning/stub.ts`, so the server must be started with
+  `TUNING_STUB_DELAY_MS=8000` (and `TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `ANALYSIS_TAB_ENABLED`
+  true); the stub never exists in a production build and costs no call. The cuts leg clones an
+  over-100 deck under the account and deletes it; every run and unit it made is deleted in a
+  `finally`. Point it at `local-dev`. **It does not distinguish `after()` from an in-request run**:
+  with the call put back inside the action it still passes on a dev server (measured), so it proves
+  the property (a closed tab leaves the run going) and not the mechanism.
 - `pnpm probe:the-read` proves Help me choose's two-step read (rework plan PR 1) against a real
   Postgres by calling the real `runTheRead` and the run store, with injected models that spend
   nothing: a read with a pick is `ok`, stores its picks in `result`, clears its phase and spends,
