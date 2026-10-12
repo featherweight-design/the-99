@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  canReuse, commanderDeckEntries, deriveDeck, indexKey, parseFeed, PRECON_REUSE_MAX_AGE_MS,
+  canReuse, commanderDeckEntries, deriveDeck, fetchDeckListIndex, indexKey, parseFeed, PRECON_REUSE_MAX_AGE_MS, retryDelayMs,
   type IndexEntry, type PreconFeed,
 } from "./feed";
 
@@ -86,5 +86,53 @@ describe("parseFeed", () => {
     expect(parseFeed(ok)).toBe(ok);
     expect(parseFeed({ ...ok, decks: [{ fileName: "A" }] })).toBeNull();
     expect(parseFeed(null)).toBeNull();
+  });
+});
+
+describe("fetching with retries", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+  const reply = (status: number, body: unknown = {}, headers: Record<string, string> = {}) =>
+    new Response(JSON.stringify(body), { status, headers });
+
+  it("asks again after a 503 and a 429, then takes the answer", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(reply(503))
+      .mockResolvedValueOnce(reply(429, {}, { "retry-after": "1" }))
+      .mockResolvedValueOnce(reply(200, { data: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const got = fetchDeckListIndex();
+    await vi.runAllTimersAsync();
+    await expect(got).resolves.toEqual({ data: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("asks again after a network error", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("fetch failed")).mockResolvedValueOnce(reply(200, { ok: 1 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const got = fetchDeckListIndex();
+    await vi.runAllTimersAsync();
+    await expect(got).resolves.toEqual({ ok: 1 });
+  });
+
+  it("fails at once on a 404, and after three attempts on a 503", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply(404)));
+    await expect(fetchDeckListIndex()).rejects.toThrow(/404/);
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue(reply(503));
+    vi.stubGlobal("fetch", fetchMock);
+    const got = fetchDeckListIndex();
+    const settled = expect(got).rejects.toThrow(/503/);
+    await vi.runAllTimersAsync();
+    await settled;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("waits what Retry-After says, capped at a minute, and backs off otherwise", () => {
+    expect(retryDelayMs(1, "5")).toBe(5_000);
+    expect(retryDelayMs(1, "600")).toBe(60_000);
+    expect(retryDelayMs(1, null)).toBe(2_000);
+    expect(retryDelayMs(2, "soon")).toBe(4_000);
   });
 });

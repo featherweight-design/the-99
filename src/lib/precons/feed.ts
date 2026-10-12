@@ -129,10 +129,44 @@ export function parseFeed(raw: unknown): PreconFeed | null {
   return f as PreconFeed;
 }
 
+/** Attempts per file, and the wait before the second (doubled before the third). */
+export const FETCH_ATTEMPTS = 3;
+const RETRY_BASE_MS = 2_000;
+
+/** A status worth asking again: rate limited, or a server-side failure. */
+export const retryable = (status: number) => status === 429 || status >= 500;
+
+/**
+ * How long to wait before attempt `attempt + 1`: the server's `Retry-After` seconds when it gives
+ * them, capped at a minute, otherwise an exponential backoff.
+ */
+export function retryDelayMs(attempt: number, retryAfter: string | null): number {
+  const seconds = retryAfter === null ? NaN : Number(retryAfter);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds, 60) * 1000;
+  return RETRY_BASE_MS * 2 ** (attempt - 1);
+}
+
+/**
+ * One file, with bounded retries: the fetch reads ~200 files, and one timeout or 429 failing the
+ * whole run would also withhold the Scryfall and price files fetched beside them. A fresh timeout
+ * per attempt; a 4xx other than 429 fails at once, because asking again cannot change it.
+ */
 async function getJson(url: string, timeoutMs: number): Promise<unknown> {
-  const res = await fetch(url, { headers: MTGJSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) });
-  if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`);
-  return res.json();
+  for (let attempt = 1; ; attempt++) {
+    let wait: number;
+    try {
+      const res = await fetch(url, { headers: MTGJSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) });
+      if (res.ok) return await res.json();
+      if (!retryable(res.status) || attempt >= FETCH_ATTEMPTS) throw new Error(`${url}: ${res.status} ${res.statusText}`);
+      wait = retryDelayMs(attempt, res.headers.get("retry-after"));
+    } catch (error) {
+      // A network error or a timeout: retried like a 5xx. A status error thrown above is final.
+      if (error instanceof Error && error.message.startsWith(`${url}: `)) throw error;
+      if (attempt >= FETCH_ATTEMPTS) throw error;
+      wait = retryDelayMs(attempt, null);
+    }
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
 }
 
 export async function fetchDeckListIndex(): Promise<unknown> {

@@ -57,7 +57,6 @@ async function single(source: FetchSource, url: string, headers: Record<string, 
 // the cached derived file is a week old; otherwise the file a previous run cached is reused.
 // `PRECON_REUSE_FILE` names that cached file (the workflow restores it from the Actions cache).
 async function precons(): Promise<ManifestSource> {
-  const at = new Date().toISOString();
   const index = await download(MTGJSON_DECKLIST_URL, PRECON_INDEX_FILE, MTGJSON_HEADERS, 60_000);
   const entries = commanderDeckEntries(JSON.parse(readFileSync(fetchedPath(dir!, PRECON_INDEX_FILE), "utf8")));
   const key = indexKey(entries);
@@ -76,7 +75,10 @@ async function precons(): Promise<ManifestSource> {
     url: `${MTGJSON_BASE}/decks/{fileName}.json`,
     ...(await sha256File(fetchedPath(dir!, PRECON_FEED_FILE))),
   };
-  return { source: "precons", updatedAt: at, sha256: body.sha256, files: [index, body] };
+  // The deck files' own fetch time, not this run's: a reused file is as old as its bytes, so the
+  // rollback guard can never take a cached older feed for a newer one. A same-day reuse repeats the
+  // same date and hash, which `verify` passes as the no-op it is.
+  return { source: "precons", updatedAt: feed.fetchedAt, sha256: body.sha256, files: [index, body] };
 }
 
 async function main() {
