@@ -13,7 +13,7 @@
 // last edit, commit and logged game, and each row prints the act that won, so
 // the order states its own evidence.
 
-import Link from "next/link";
+import { IntentPrefetchLink } from "../ui/intent-prefetch-link";
 import { GhostButton } from "@/components/ui/button";
 import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -90,8 +90,8 @@ function touchedStamp(deck: DeckListItem, now: Date): string {
 }
 
 function ResumeRow(
-  { deck, copies, now, className }:
-  { deck: DeckListItem; copies: number | null; now: Date; className?: string },
+  { deck, copies, now, className, eager = false }:
+  { deck: DeckListItem; copies: number | null; now: Date; className?: string; eager?: boolean },
 ) {
   const stamp = touchedStamp(deck, now);
   const { partnerName } = deck;
@@ -114,8 +114,11 @@ function ResumeRow(
   // count alone.
   const clause = copies !== null && partnerName === null;
   return (
-    <Link
+    <IntentPrefetchLink
       href={`/decks/${deck.id}`}
+      // The deck touched last is prefetched on sight (speed plan (b)): it is the one most likely
+      // opened next, and the others wait for intent.
+      eager={eager}
       // The whole row is the target — no per-row button, because a button would
       // be a second way to do the one thing the row already does.
       // The height is stated, not a floor: the wash beside it is a hard 72px, so
@@ -300,7 +303,7 @@ function ResumeRow(
           </span>
         </span>
       </span>
-    </Link>
+    </IntentPrefetchLink>
   );
 }
 
@@ -362,9 +365,10 @@ export function ResumeDecks({
           line rather than four columns. A single column of four would push
           Commitments off the fold and leave the right rail long and empty. */}
       <div className="flex flex-col gap-[12px] min-[1180px]:flex-row min-[1180px]:flex-wrap">
-        {decks.map((deck) => (
+        {decks.map((deck, i) => (
           <ResumeRow
             key={deck.id}
+            eager={i === 0}
             deck={deck}
             copies={toBuyCopies(shopping, deck.id)}
             now={now}

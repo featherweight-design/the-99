@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IntentPrefetchLink } from "../ui/intent-prefetch-link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -634,7 +635,7 @@ export function DeckCard({
           and named with the same five things the tile shows, in the same order.
           It has no descendants of its own, so the presentation it covers is
           marked `aria-hidden` rather than left to be announced a second time. */}
-      <Link
+      <IntentPrefetchLink
         href={`/decks/${deck.id}`}
         className="absolute inset-0"
         aria-label={ariaLabel}
