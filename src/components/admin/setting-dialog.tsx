@@ -46,7 +46,7 @@ function SettingDialog({ kind, title, onClose }: { kind: SettingKind; title: str
 
   // The current UTC month, as the action reads it: a ceiling starts no earlier.
   const thisMonth = new Date().toISOString().slice(0, 7);
-  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "month" ? copy.badMonth : error === "failed" ? copy.saveFailed : null;
+  const message = error === "amount" ? copy.badAmount : error === "date" ? copy.badDate : error === "month" ? copy.badMonth : error === "note" ? copy.badNote : error === "failed" ? copy.saveFailed : null;
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center">
       <div

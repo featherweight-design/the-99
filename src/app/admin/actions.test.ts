@@ -144,6 +144,7 @@ describe("the settings writes", () => {
       actorId: "user_admin",
       kind: "setting_set",
       settingKey: "account_cap_usd",
+      settingMonth: thisMonth(),
       oldValue: "250.00",
       newValue: "100.00",
       note: "November cap",
@@ -167,10 +168,20 @@ describe("the settings writes", () => {
   it("stores a ceiling under the first day of the month it starts", async () => {
     await expect(actions.setSystemCeiling({ amount: "15", start: monthFrom(1), note: "from next month" })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ key: "system_ceiling_usd", month: monthFrom(1), valueMicroUsd: 15_000_000, asOf: `${monthFrom(1)}-01`, note: "from next month" });
-    expect(writes[1].values).toMatchObject({ settingKey: "system_ceiling_usd", newValue: "15.00" });
+    expect(writes[1].values).toMatchObject({ settingKey: "system_ceiling_usd", settingMonth: monthFrom(1), newValue: "15.00" });
     writes.length = 0;
     await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth() })).resolves.toEqual({ ok: true });
     expect(writes[0].values).toMatchObject({ asOf: `${thisMonth()}-01` });
+  });
+
+  it("refuses a note past 500 characters rather than cutting it short, writing nothing", async () => {
+    const long = "x".repeat(501);
+    await expect(actions.setAccountCap({ amount: "100", note: long })).resolves.toEqual({ ok: false, error: "note" });
+    await expect(actions.setSystemCeiling({ amount: "15", start: thisMonth(), note: long })).resolves.toEqual({ ok: false, error: "note" });
+    await expect(actions.setElsewhere({ amount: "18.40", asOf: new Date().toISOString().slice(0, 10), note: long })).resolves.toEqual({ ok: false, error: "note" });
+    expect(writes).toHaveLength(0);
+    await expect(actions.setAccountCap({ amount: "100", note: ` ${"x".repeat(500)} ` })).resolves.toEqual({ ok: true });
+    expect(writes[0].values).toMatchObject({ note: "x".repeat(500) });
   });
 
   it("says nothing changed when the transaction fails", async () => {

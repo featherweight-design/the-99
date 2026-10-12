@@ -2221,6 +2221,9 @@ export const adminEvents = pgTable("admin_events", {
   groupId: uuid("group_id"),
   userId: text("user_id"),
   settingKey: text("setting_key"),
+  // The month a `setting_set` wrote (`admin_settings` is keyed by key and month), so an event names
+  // the row it changed even after a later write to that row.
+  settingMonth: text("setting_month"),
   oldValue: text("old_value"),
   newValue: text("new_value"),
   note: text("note"),
@@ -2236,7 +2239,7 @@ export const adminEvents = pgTable("admin_events", {
     when 'group_described' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
     when 'member_added' then ${t.groupId} is not null and ${t.userId} is not null
     when 'member_removed' then ${t.groupId} is not null and ${t.userId} is not null
-    when 'setting_set' then ${t.settingKey} is not null and ${t.newValue} is not null
+    when 'setting_set' then ${t.settingKey} is not null and ${t.settingMonth} is not null and ${t.newValue} is not null
   end`),
   // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
   check("admin_events_scope_target_check", sql`${t.scope} is null

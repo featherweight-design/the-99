@@ -81,7 +81,8 @@ export const adminCopy = {
       today: (v: string) => `${v} today`,
       byEnd: (v: string, day: number, mon: string) => `${v} by ${day} ${mon}`,
       byDay: (v: string) => `By day · tallest ${v}`,
-      label: (month: string, v: string) => `Player presses in ${month}: ${v}.`,
+      label: (month: string, v: string, pace: string | null) =>
+        `Player presses in ${month}: ${v}${pace === null ? "." : `, on pace for ${pace} by month end.`}`,
     },
     empty: (month: string) => `No model calls in ${month}.`,
   },
@@ -96,6 +97,7 @@ export const adminCopy = {
     badAmount: "Enter dollars, like 18.40.",
     badDate: "Enter the date it was read.",
     badMonth: "Pick this month or a later one.",
+    badNote: "Keep the note to 500 characters.",
     saveFailed: "Didn’t save. Nothing changed.",
   },
 } as const;

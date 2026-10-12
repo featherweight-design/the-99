@@ -12,12 +12,14 @@ import { parseDollars, type SettingKey } from "../../lib/admin/costs-rule";
 // the app's 404 (STATES D4); `actions.test.ts` reads this file and fails on an export that does
 // not. Each write is ONE transaction: the setting, then its `setting_set` row in `admin_events`.
 
-export type SettingResult = { ok: true } | { ok: false; error: "amount" | "date" | "month" | "failed" };
+export type SettingResult = { ok: true } | { ok: false; error: "amount" | "date" | "month" | "note" | "failed" };
 
 const NOTE_MAX = 500;
 
-function noteOf(value: unknown): string | null {
-  const text = typeof value === "string" ? value.trim().slice(0, NOTE_MAX) : "";
+/** The trimmed note, null when empty, or `false` past the cap: refused, never cut short. */
+function noteOf(value: unknown): string | null | false {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (text.length > NOTE_MAX) return false;
   return text || null;
 }
 
@@ -64,6 +66,7 @@ async function writeSetting(actorId: string, key: SettingKey, micro: number, asO
         actorId,
         kind: "setting_set",
         settingKey: key,
+        settingMonth: month,
         oldValue: before ? dollars(before.valueMicroUsd) : null,
         newValue: dollars(micro),
         note,
@@ -85,7 +88,9 @@ export async function setElsewhere(input: { amount: unknown; asOf: unknown; note
   if (micro === null) return { ok: false, error: "amount" };
   const asOf = dayOf(input.asOf, now);
   if (!asOf) return { ok: false, error: "date" };
-  return writeSetting(userId, "elsewhere_usd", micro, asOf, noteOf(input.note));
+  const note = noteOf(input.note);
+  if (note === false) return { ok: false, error: "note" };
+  return writeSetting(userId, "elsewhere_usd", micro, asOf, note);
 }
 
 /** The Anthropic account's monthly cap, as set in Anthropic's console. */
@@ -93,7 +98,9 @@ export async function setAccountCap(input: { amount: unknown; note?: unknown }):
   const { userId } = await requireAdmin();
   const micro = typeof input?.amount === "string" ? parseDollars(input.amount) : null;
   if (micro === null) return { ok: false, error: "amount" };
-  return writeSetting(userId, "account_cap_usd", micro, todayUtc(new Date()), noteOf(input.note));
+  const note = noteOf(input.note);
+  if (note === false) return { ok: false, error: "note" };
+  return writeSetting(userId, "account_cap_usd", micro, todayUtc(new Date()), note);
 }
 
 /**
@@ -106,5 +113,7 @@ export async function setSystemCeiling(input: { amount: unknown; start: unknown;
   if (micro === null) return { ok: false, error: "amount" };
   const asOf = startOf(input.start, new Date());
   if (!asOf) return { ok: false, error: "month" };
-  return writeSetting(userId, "system_ceiling_usd", micro, asOf, noteOf(input.note));
+  const note = noteOf(input.note);
+  if (note === false) return { ok: false, error: "note" };
+  return writeSetting(userId, "system_ceiling_usd", micro, asOf, note);
 }

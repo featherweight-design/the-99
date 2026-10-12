@@ -276,6 +276,15 @@ describe("the pinned head and month bar", () => {
     vi.unstubAllGlobals();
   });
 
+  it("says the month-end projection to a screen reader in the current month, and only the total in a past one", () => {
+    const now = draw(rows([p(2, 1)]));
+    expect(screen.getByText("Player presses in October 2026: $1.000, on pace for $2.82 by month end.")).toBeInTheDocument();
+    now.unmount();
+    const SEP = { year: 2026, month: 8 };
+    draw(rows([p(2, 1)]), SEP);
+    expect(screen.getByText("Player presses in September 2026: $1.000.")).toBeInTheDocument();
+  });
+
   it("re-measures the head on a window resize where ResizeObserver does not exist", () => {
     vi.stubGlobal("ResizeObserver", undefined);
     let height = 173;

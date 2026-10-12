@@ -128,7 +128,7 @@ function Trend({ s, month }: { s: CostSummary; month: MonthKey }) {
   const endFigure = s.current ? s.playerPaceMicro ?? total : total;
   return (
     <div className="flex flex-col gap-[8px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] pb-[12px] pt-[14px]">
-      <p className="sr-only">{copy.trend.label(monthLong(month), usd(total))}</p>
+      <p className="sr-only">{copy.trend.label(monthLong(month), usd(total), s.current && s.playerPaceMicro !== null ? usd(s.playerPaceMicro) : null)}</p>
       <div aria-hidden className="flex flex-wrap justify-between gap-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
         <span>{copy.trend.scale(usd(max))}</span>
         <span className="inline-flex flex-wrap gap-[14px]">
