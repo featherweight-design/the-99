@@ -199,6 +199,64 @@
           "settle": 500
         }
       ]
+    },
+    {
+      "id": "R5-mana-help",
+      "label": "/decks/[id] History \u2192 an Improve my mana help read (`help for {color} \u00b7 N trades`): Mana Balance opens on that color's help with the trades it showed, under `From \u2026. Each trade is checked against the deck as it is now.`; a trade today's help no longer offers reads `no longer applies`. Needs one help read recorded first (open Improve my mana for a color on REINJECT_GISHATH_DECK).",
+      "view": "src/components/decks/mana-improve-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${REINJECT_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 600
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Mana Balance$",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]:has-text('help for')",
+          "settle": 600
+        },
+        {
+          "click": "[data-history-row]:has-text('help for')",
+          "settle": 900
+        },
+        {
+          "wait": "[data-review-note]",
+          "settle": 900
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 900
+        },
+        {
+          "wait": "[data-mana-swap], [data-mana-trade-stale], button:has-text('Trade')",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-review-note]",
+          "settle": 500
+        }
+      ]
     }
   ]
 }

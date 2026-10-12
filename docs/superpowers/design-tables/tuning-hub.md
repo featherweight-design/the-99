@@ -316,6 +316,8 @@ run in flight or a count on a tool that is inert now.
 | Property | Mobile | Desktop |
 |---|---|---|
 | note | the read-only note's frame (`1px dashed --border-dashed`, radius 9, `9px 12px`), 12.5 `--fg-muted`, above the tool | same, beside `‹ History` |
-| copy | `From a run on {date}. Each cut is checked against the deck as it is now.` (Proposed cuts), `From a run on {date}. Each change is checked against the deck as it is now.` (Suggested changes); a free count `Counted {date}: {summary}. Below is the deck as it is now.` | same |
+| copy | `From a run on {date}. Each cut is checked against the deck as it is now.` (Proposed cuts), `From a run on {date}. Each change is checked against the deck as it is now.` (Suggested changes), `From {date}. Each trade is checked against the deck as it is now.` (an Improve my mana help read, which opens Mana Balance on that color's help); a free count `Counted {date}: {summary}. Below is the deck as it is now.` | same |
 | back | `‹ History` in the switch slot | `‹ History` 12.5 / 500 `--fg-muted`, right of the note |
 | a cut or trade the deck has moved past | `no longer applies` (mono 9.5 uppercase `--fg-locked`) and the reason it cannot apply; no write control | same |
+| a help read's trade today's help no longer offers (same staple, same card out) | the staple row stays; its trade line becomes `no longer applies` (mono 9.5 uppercase `--fg-locked`) with no Apply | same |
+| History row for a help read | Mana, `free`, summary `help for {color} · N trades` | same |
