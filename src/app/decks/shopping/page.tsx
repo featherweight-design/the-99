@@ -28,7 +28,8 @@ export default async function AllDecksShoppingPage({
   if (!allDecksCartEnabled()) notFound();
   const params = await searchParams;
   // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
-  const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck : null;
+  // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.
+  const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
   const initialView = params.view === "deck" || deck ? "deck" : "card";
   const userId = await requireUserId();
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
