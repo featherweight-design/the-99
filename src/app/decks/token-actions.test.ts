@@ -63,9 +63,17 @@ describe("token actions", () => {
     expect(stub.unmark).toHaveBeenCalledWith("user_1", DECK, TOKEN);
   });
 
-  it("retire the deck page and the cart, never Home or the deck list", async () => {
+  it("retire the deck page and the cart on a join, never Home or the deck list", async () => {
     await setTokenJoined(DECK, TOKEN, true);
-    expect(stub.revalidate.mock.calls.map((c) => c[0])).toEqual([`/decks/${DECK}`, "/decks/shopping"]);
+    expect(stub.revalidate.mock.calls).toEqual([[`/decks/${DECK}`], ["/decks/shopping"]]);
+  });
+
+  it("retire EVERY deck page on a hand mark or unmark, because the mark is the account's", async () => {
+    await setTokenHeld(DECK, TOKEN, true);
+    expect(stub.revalidate.mock.calls).toEqual([[`/decks/${DECK}`], ["/decks/shopping"], ["/decks/[id]", "page"]]);
+    stub.revalidate.mockReset();
+    await setTokenHeld(DECK, TOKEN, false);
+    expect(stub.revalidate.mock.calls).toContainEqual(["/decks/[id]", "page"]);
   });
 
   it("report a token the deck does not make, and revalidate nothing", async () => {

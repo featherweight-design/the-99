@@ -15,9 +15,12 @@ export type TokenActionResult = { ok: true } | { ok: false; reason: "off" | "not
  * Invalidated BEFORE the reply, as `markBought` does, so the row the player pressed is current when
  * the press resolves.
  */
-function revalidateTokenSurfaces(deckId: string): void {
+function revalidateTokenSurfaces(deckId: string, accountWide: boolean): void {
   revalidatePath(`/decks/${deckId}`);
   revalidatePath("/decks/shopping");
+  // A hand mark is the ACCOUNT's, so every other deck that makes the token draws a different row now.
+  // `revalidatePath` does nothing for a dynamic route without its second argument.
+  if (accountWide) revalidatePath("/decks/[id]", "page");
 }
 
 async function guard(rawDeckId: unknown, rawTokenId: unknown, flag: unknown): Promise<
@@ -45,7 +48,7 @@ export async function setTokenJoined(deckId: string, tokenOracleId: string, join
   } else {
     await leaveToken(g.userId, g.deckId, g.tokenId);
   }
-  revalidateTokenSurfaces(g.deckId);
+  revalidateTokenSurfaces(g.deckId, false);
   return { ok: true };
 }
 
@@ -58,6 +61,6 @@ export async function setTokenHeld(deckId: string, tokenOracleId: string, held: 
   } else {
     if ((await unmarkOwned(g.userId, g.deckId, g.tokenId)) === "notThisDeck") return { ok: false, reason: "notThisDeck" };
   }
-  revalidateTokenSurfaces(g.deckId);
+  revalidateTokenSurfaces(g.deckId, true);
   return { ok: true };
 }
