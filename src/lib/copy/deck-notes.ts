@@ -22,7 +22,6 @@ export const deckNotesCopy = {
     segmentAria: (open: string) => `Notes, ${open} open`,
     segmentAriaNone: "Notes, none yet",
     provenance: (open: string) => `${open} open · newest first`,
-    provenanceEmpty: "yours only · on this deck, not a version",
   },
   empty: {
     heading: "The swap you meant to try.",

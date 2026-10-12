@@ -811,7 +811,9 @@ export function DecksView({
         </div>
       </header>
 
-      <div className="flex gap-[8px] px-[16px] pt-[12px] pb-0 sm:hidden">
+      {/* Two equal halves, the grid the head row below draws its pair in: as a flex row each
+          button took its label's width, so `Import a deck` stood wider than `New deck`. */}
+      <div className="grid grid-cols-2 gap-[8px] px-[16px] pt-[12px] pb-0 sm:hidden">
         <NewDeckButton />
         <ImportDeckButton />
       </div>

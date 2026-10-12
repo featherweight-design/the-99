@@ -547,7 +547,9 @@ function MobileSheet({
       style={covered ? { opacity: faded ? 0 : undefined, pointerEvents: "none" } : undefined}
     >
       <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>
-        {children}
+        {/* The other sheets' body inset (`filter-sheet.tsx`, `deck-filter-sheet.tsx`): the
+            shared body is drawn bare, because the popover pads its own box. */}
+        <div className="px-[16px] pt-[14px] pb-[16px]">{children}</div>
       </Sheet>
     </div>
   );
