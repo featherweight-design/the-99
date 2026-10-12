@@ -123,8 +123,12 @@ export async function markTokenOwned(
 }
 
 /** Unmarks a HAND mark. An upload row is the upload's to change, so it is left standing. */
-export async function unmarkTokenOwned(userId: string, tokenOracleId: string): Promise<number> {
-  const gone = await db.delete(tokenOwnership)
+export async function unmarkTokenOwned(
+  userId: string,
+  tokenOracleId: string,
+  runner: Pick<typeof db, "delete"> = db,
+): Promise<number> {
+  const gone = await runner.delete(tokenOwnership)
     .where(and(
       eq(tokenOwnership.userId, userId),
       eq(tokenOwnership.tokenOracleId, tokenOracleId),

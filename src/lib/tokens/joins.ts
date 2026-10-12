@@ -66,6 +66,14 @@ export async function markOwnedOnDeck(userId: string, deckId: string, tokenOracl
  */
 export async function unmarkOwned(userId: string, deckId: string, tokenOracleId: string): Promise<TokenWrite> {
   if (!(await deckMakesToken(deckId, userId, tokenOracleId))) return "notThisDeck";
-  await unmarkTokenOwned(userId, tokenOracleId);
+  // A join made before the account-wide rule (while the token was held) is still in the table, hidden by the
+  // readers: clear it with the mark, in the mark's own order, so an unmark never brings a token back onto a list.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+    await tx.delete(deckTokenJoins).where(and(
+      eq(deckTokenJoins.tokenOracleId, tokenOracleId), eq(deckTokenJoins.userId, userId),
+    ));
+    await unmarkTokenOwned(userId, tokenOracleId, tx);
+  });
   return "done";
 }
