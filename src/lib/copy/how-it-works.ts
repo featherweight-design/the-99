@@ -206,20 +206,22 @@ export const howItWorksRowsCopy = {
       verdict: "written",
       from:
         "A model writes the opening sentence of Why this commander, the Overview, Suggested " +
-        "changes and Look deeper.",
+        "changes and the line under each Help me choose pick.",
       how:
         "In the Overview and Suggested changes, the figures are the app’s own and the model only " +
-        "puts them into words. Look deeper turns what you write into the app’s own theme, card, " +
-        "budget and bracket choices, and never names a commander. Every answer is checked before " +
+        "puts them into words. Help me choose reads what you write against the commanders your " +
+        "answers allow, picks up to ten, and says why for each; your answers always hold, and a line " +
+        "never carries a number or a score. Every answer is checked before " +
         `you see it, and one that fails the check is dropped. Credits: the owner has ${MODEL_OWNER_DAILY_ALLOWANCE} and friends ` +
         `have ${MODEL_FRIEND_DAILY_ALLOWANCE} in any 24 hours, shared by the Overview, Suggested ` +
-        "changes and Look deeper. A credit is spent only when an answer arrives. The commander " +
+        "changes and Help me choose. A credit is spent only when an answer arrives. The commander " +
         "sentence costs you nothing.",
       refresh:
         `The commander sentence updates ${INDEX_CADENCE}. The Overview and Suggested changes are ` +
-        "written when you press for them, and the Overview stays until the list changes. Look " +
-        "deeper keeps its answer while your words, budget and bracket stay the same, and asks again when " +
-        "any of them changes.",
+        "written when you press for them, and the Overview stays until the list changes. Help me " +
+        "choose keeps its answer while your words, your answers, your Collection and your decks stay " +
+        "the same, and reads again when any of them changes, after the daily card update, or when the " +
+        `commander themes update ${INDEX_CADENCE}.`,
       exact: "Neither. It’s written, not measured.",
     },
   ] as const satisfies readonly HowRowCopy[],
