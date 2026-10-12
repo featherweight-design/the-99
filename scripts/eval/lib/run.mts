@@ -31,8 +31,11 @@ export function parseCell(spec: string, appModel: string): Cell {
     "sonnet-low": { model: appModel, effort: "low" },
     "sonnet-medium": { model: appModel, effort: "medium" },
     haiku: { model: "claude-haiku-4-5" },
+    // The model-tiering arms (2026-10-12): the same effort as the app's, one variable changed.
+    "sonnet55-medium": { model: "claude-sonnet-5-5", effort: "medium" },
+    "haiku55-medium": { model: "claude-haiku-5-5", effort: "medium" },
   };
-  const m = /^([a-z-]+)(\+cache)?(?:@max(\d+))?$/.exec(spec);
+  const m = /^([a-z0-9-]+)(\+cache)?(?:@max(\d+))?$/.exec(spec);
   const base = m && cells[m[1]];
   if (!m || !base) throw new Error(`eval: unknown cell ${spec}; known: ${Object.keys(cells).join(", ")}`);
   return { id: spec, ...base, cache: m[2] ? true : undefined, maxTokens: m[3] ? Number(m[3]) : undefined };

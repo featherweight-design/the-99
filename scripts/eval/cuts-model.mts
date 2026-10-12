@@ -50,14 +50,19 @@ const { values: args } = parseArgs({
     realtime: { type: "boolean", default: false },
     text: { type: "boolean", default: false },
     model: { type: "string" },
+    // Model tiering (2026-10-12): a separate ledger and a lower cap, so an arm set is bounded on its own.
+    ledger: { type: "string" },
+    cap: { type: "string" },
     label: { type: "string", default: "cuts-model" },
   },
 });
 
-const CAP_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].hardCapUsd;
-const ASK_AT_USD = LEDGER_LIMITS["ledger-cuts.jsonl"].askAtUsd;
+const BASE_LIMITS = LEDGER_LIMITS["ledger-cuts.jsonl"];
+const CAP_USD = args.cap === undefined ? BASE_LIMITS.hardCapUsd : Number(args.cap);
+if (!(CAP_USD > 0 && CAP_USD <= BASE_LIMITS.hardCapUsd)) throw new Error(`--cap must be above 0 and at most ${BASE_LIMITS.hardCapUsd}`);
+const ASK_AT_USD = CAP_USD * (BASE_LIMITS.askAtUsd / BASE_LIMITS.hardCapUsd);
 const MAX_TOKENS = 6_000;
-const LEDGER_CUTS = new URL("ledger-cuts.jsonl", ROOT).pathname;
+const LEDGER_CUTS = new URL(`${args.ledger ?? "ledger-cuts"}.jsonl`, ROOT).pathname;
 const trials = Number(args.trials);
 if (!Number.isInteger(trials) || trials < 1 || trials > 10) throw new Error("--trials must be 1 to 10");
 
@@ -78,10 +83,11 @@ const { inArray } = await import("drizzle-orm");
 
 // Only the app's model is offered: any other rate in `lib/pricing.mts` is assumed, and a cap
 // enforced on an assumed rate is not a cap. The Opus rows in the metrics doc ran when it was.
-const MODEL = TUNING_MODEL;
-if (args.model !== undefined && args.model !== TUNING_MODEL) {
-  throw new Error(`--model ${args.model} is disabled: only ${TUNING_MODEL} has a verified rate`);
-}
+// The app's model, and the two model-tiering arms: `lib/pricing.mts` carries their rates (checked
+// 2026-10-11 against the claude-api table), which is what a cap enforced on them rests on.
+const MODELS = [TUNING_MODEL, "claude-sonnet-5-5", "claude-haiku-5-5"];
+const MODEL = args.model ?? TUNING_MODEL;
+if (!MODELS.includes(MODEL)) throw new Error(`--model ${MODEL} is not one of ${MODELS.join(", ")}`);
 const EFFORT = "medium" as const;
 const norm = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
 

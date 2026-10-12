@@ -37,9 +37,17 @@ export async function openTuning() {
   const deckRows = (await db.execute(sql`select id, user_id, name from decks order by id`)).rows as {
     id: string; user_id: string; name: string;
   }[];
-  const users = [...new Set(deckRows.map((d) => d.user_id))];
-  if (users.length !== 1) throw new Error(`eval: expected one staging account, found ${users.length}`);
+  // Staging holds two accounts with the SAME twenty "HD" decks (2026-10-12: equal decks, versions and
+  // collections), so the run takes the first by id and refuses unless every HD account holds the same
+  // deck names, which makes the choice immaterial. The deck rows below are narrowed to that account.
+  const hd = deckRows.filter((d) => d.name.startsWith("HD"));
+  const users = [...new Set(hd.map((d) => d.user_id))].sort();
+  const namesOf = (u: string) => hd.filter((d) => d.user_id === u).map((d) => d.name).sort().join("|");
+  if (users.length === 0 || users.some((u) => namesOf(u) !== namesOf(users[0]))) {
+    throw new Error(`eval: the "HD" decks are not one account's, or are held differently by ${users.length} accounts`);
+  }
   const userId = users[0];
+  for (let i = deckRows.length - 1; i >= 0; i--) if (deckRows[i].user_id !== userId) deckRows.splice(i, 1);
 
   /** The pack and messages for each deck, by the app's own path. `overlay[i]` replaces deck i's
    *  intent and games in memory, before the pack is built. */
