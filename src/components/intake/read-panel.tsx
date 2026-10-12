@@ -74,6 +74,13 @@ const ReadContext = createContext<Scope>({ phase: null, setPhase: () => {}, pool
  */
 export function ReadScope({ initial, children }: { initial: ReadPhase | null; children: ReactNode }) {
   const [phase, setPhase] = useState<ReadPhase | null>(initial);
+  // The server's state, adopted in place when a refresh brings a new one (adjusted during render,
+  // so no frame draws the old phase over the new results). The scope is not remounted for it.
+  const [served, setServed] = useState(initial);
+  if (initial !== served) {
+    setServed(initial);
+    setPhase(initial);
+  }
   const [pool, setPool] = useState<number | null>(null);
   return <ReadContext.Provider value={{ phase, setPhase, pool, setPool }}>{children}</ReadContext.Provider>;
 }
