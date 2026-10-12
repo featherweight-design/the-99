@@ -180,8 +180,9 @@ async function run() {
       await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
       let ack = null;
       const form = await press(page, async () => {
-        ack = await page.evaluate(() => new Promise((resolve) => {
-          const btn = [...document.querySelectorAll("form button[type='submit']")].find((b) => b.getClientRects().length > 0);
+        ack = await page.evaluate((scope) => new Promise((resolve) => {
+          // Scoped to the page, not the document: the shell draws buttons of its own around <main>.
+          const btn = [...document.querySelector(scope).querySelectorAll("form button[type='submit']")].find((b) => b.getClientRects().length > 0);
           const before = btn.textContent;
           btn.focus();
           const rect0 = btn.getBoundingClientRect();
@@ -203,7 +204,7 @@ async function run() {
           obs.observe(btn, { attributes: true, childList: true, subtree: true, characterData: true });
           setTimeout(() => resolve(null), 4_000);
           btn.click();
-        }));
+        }), PAGE);
         // Unthrottle once the press has answered, so the rest of the run measures the page, not the profile.
         await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
         await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
