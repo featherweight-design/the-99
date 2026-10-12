@@ -44,8 +44,8 @@ function Art({ commander, eager }: { commander: PreconCommander; eager: boolean 
 }
 
 /** T3e: both commanders' cards in the one box, staggered, each 66% wide, 5px corners. The list's grid
- *  holds every tile under ~230px wide at any width (174px at 390), so a card is at most ~152px and 5px
- *  clears its 3.1% (4.7px). The second is ringed where it overlaps. */
+ *  draws no tile wider than ~241px (three tracks just under 792px; 174px at 390), so a card is at most
+ *  ~159px and 5px clears its 3.1% (4.9px). The second is ringed where it overlaps. */
 function PairArt({ commanders, eager }: { commanders: [PreconCommander, PreconCommander]; eager: boolean }) {
   const card = "absolute w-[66%] overflow-hidden rounded-[5px] bg-[color:var(--surface-sunken)]";
   return (
