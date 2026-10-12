@@ -51,7 +51,7 @@ export function PriceStrip({
   // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
   const dated = tokens && tokens.priced > 0
     ? (summary.pricedCopies === 0 ? tokenOwnProvenance : tokenProvenance) ?? provenance ?? tokenOwnProvenance
-    : provenance;
+    : provenance ?? (tokens ? tokenOwnProvenance : null);
   if (!dated) return null;
 
   const tokenN = tokens?.rows.length ?? 0;

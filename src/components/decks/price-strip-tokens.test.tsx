@@ -62,6 +62,14 @@ describe("PriceStrip with tokens joined", () => {
     expect(container.textContent).toContain("Tuesday");
   });
 
+  it("keeps an unpriced token list buyable, dated by the tokens' feed, when the cards' date is unreadable", () => {
+    const own: ProvenanceForm = { behind: false, when: "Tuesday" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={null} shoppingCards={[]} tokens={tokens({ priced: 0, cents: 0 })} tokenOwnProvenance={own} />,
+    );
+    expect(href(container)).not.toBe("");
+  });
+
   it("draws nothing when neither source can date it", () => {
     const { container } = render(
       <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={null} shoppingCards={[]} tokens={tokens()} />,
