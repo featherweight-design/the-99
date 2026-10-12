@@ -69,7 +69,10 @@ export function IntakeForm({
   // The desktop press keeps the width it had when pressed while it reads, so the credit line beside
   // it does not move when its words get shorter. The phone's press is full width and needs none.
   const deskPressRef = useRef<HTMLButtonElement>(null);
-  const [pressWidth, setPressWidth] = useState<number | null>(null);
+  // What was pressed, for as long as it is in flight: the box's width, and whether the press was
+  // paid. The box stays editable while a read loads, so the live `paid` can change under a request
+  // that is still reading the text it was sent with.
+  const [sent, setSent] = useState<{ width: number | null; paid: boolean } | null>(null);
   const wide = useIsDesktop();
   const [words, setWords] = useState(initial.words);
   const [colors, setColors] = useState<string[]>(initial.colors);
@@ -119,7 +122,7 @@ export function IntakeForm({
   const submit = () => {
     if (submitting || inFlightRef.current) return;
     inFlightRef.current = true;
-    setPressWidth(deskPressRef.current?.getBoundingClientRect().width ?? null);
+    setSent({ width: deskPressRef.current?.getBoundingClientRect().width ?? null, paid });
     const query = submitQuery({
       ...initial,
       words: words.trim(),
@@ -136,7 +139,7 @@ export function IntakeForm({
     // this form cannot send (its box is capped, and the address bound is far past the cap).
     // A return or a failure releases the press; a redirect leaves the page.
     startSubmit(async () => {
-      try { await submitChoose(query); } finally { inFlightRef.current = false; setPressWidth(null); }
+      try { await submitChoose(query); } finally { inFlightRef.current = false; setSent(null); }
     });
   };
 
@@ -151,20 +154,22 @@ export function IntakeForm({
   const line = written && standing && hydrated ? formLine(standing) : null;
   const caption = !written ? copy.intake.extra.caption : standing && closed !== null ? copy.intake.extra.captionSpent : copy.intake.extra.captionFilled;
 
+  // Paid or not as the press WAS when pressed, while its request is in flight.
+  const pressPaid = submitting && sent ? sent.paid : paid;
   // THE PRESS ANSWERS AT ONCE. The submit is a Server Action that loads the pool before it
   // redirects, which takes seconds on a slow connection; `submitting` is the transition's pending
   // flag and flips with the press, before the round trip. The press then reads as the results
-  // panel's does while it reads (hairlined, disabled, its credit pill kept), and names what is
-  // happening in the words the results already use, so the press and the screen it leads to agree.
-  // The same box either way (a 1px border in both, transparent when idle), so the press does not
-  // change size when it flips.
-  const shape = `inline-flex items-center justify-center gap-[10px] font-sans font-semibold rounded-[10px] text-[15px] whitespace-nowrap border border-solid ${paid ? "pl-[7px] pr-[23px]" : "px-[23px]"}`;
+  // panel's does while it reads (hairlined, greyed, its credit pill kept), and a paid press says
+  // Reading…, the panel's own word. An unpaid press keeps its words: they already say what it does,
+  // and a longer label would resize it. The same box either way (a 1px border in both, transparent
+  // when idle), so the press does not change size when it flips.
+  const shape = `inline-flex items-center justify-center gap-[10px] font-sans font-semibold rounded-[10px] text-[15px] whitespace-nowrap border border-solid ${pressPaid ? "pl-[7px] pr-[23px]" : "px-[23px]"}`;
   const submitClass = submitting
     ? `${shape} cursor-default bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-muted)]`
     : `${PRIMARY} ${shape} cursor-pointer border-transparent`;
   const press = (
     <>
-      {paid && (
+      {pressPaid && (
         <span
           aria-hidden
           className={`inline-flex items-center h-[32px] md:h-[30px] px-[10px] rounded-[7px] font-mono text-[11px] font-semibold ${
@@ -176,7 +181,7 @@ export function IntakeForm({
           {copy.read.cost}
         </span>
       )}
-      {submitting ? (paid ? copy.read.actionPending : copy.results.loadingHead) : copy.intake.submit}
+      {submitting && pressPaid ? copy.read.actionPending : copy.intake.submit}
     </>
   );
   // `aria-disabled`, not `disabled`: a disabled button drops the focus it was pressed with, and a
@@ -284,7 +289,7 @@ export function IntakeForm({
         {/* Desktop: the submit closes the panel, its credit line beside it. Never disabled: a
             blank submit searches. It greys only while a submit is in flight. */}
         <div className="hidden md:flex items-center gap-[18px] pt-[20px] border-0 border-t border-solid border-[color:var(--border)]">
-          <button {...pressProps} ref={deskPressRef} style={submitting && pressWidth ? { minWidth: pressWidth } : undefined} aria-label={paid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? lineDeskId : undefined} className={`${submitClass} h-[44px]`}>
+          <button {...pressProps} ref={deskPressRef} style={submitting && sent?.width ? { minWidth: sent.width } : undefined} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? lineDeskId : undefined} className={`${submitClass} h-[44px]`}>
             {press}
           </button>
           {line && <p id={lineDeskId} className="m-0 max-w-[380px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}
@@ -296,7 +301,7 @@ export function IntakeForm({
         data-testid="choose-dock"
         className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20 p-[10px_16px_12px] border-0 border-t border-solid border-[color:var(--border)] bg-[color:var(--bg)]"
       >
-        <button {...pressProps} aria-label={paid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
+        <button {...pressProps} aria-label={pressPaid ? (submitting ? `${copy.read.cost}. ${copy.read.actionPending}` : copy.read.pressAria) : undefined} aria-describedby={line ? linePhoneId : undefined} className={`${submitClass} w-full h-[48px]`}>
           {press}
         </button>
         {line && <p id={linePhoneId} className="m-0 mt-[6px] text-center font-mono text-[10px] leading-[1.5] text-[color:var(--fg-faint)]">{line}</p>}

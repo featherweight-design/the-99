@@ -107,7 +107,7 @@ const SLOW_4G = { offline: false, latency: 562.5, downloadThroughput: 180_000, u
  * How soon after the press its button must change. Slow 4G's latency alone is 562ms, so no server
  * answer can arrive before that: a change inside this bound is the press answering for itself.
  * Measured 2026-10-12 against `next dev` (React in development mode, the whole form re-rendering
- * under a 4x slower CPU): 119ms at 1300 and 128ms at 390. The bar is set where the dev build clears
+ * under a 4x slower CPU): 125ms at 1300 and 128ms at 390. The bar is set where the dev build clears
  * it and a button that waits for the server (several seconds) cannot; a production build has not
  * been measured.
  */
@@ -183,6 +183,7 @@ async function run() {
         ack = await page.evaluate(() => new Promise((resolve) => {
           const btn = [...document.querySelectorAll("form button[type='submit']")].find((b) => b.getClientRects().length > 0);
           const before = btn.textContent;
+          btn.focus();
           const rect0 = btn.getBoundingClientRect();
           const line0 = btn.nextElementSibling?.getBoundingClientRect().left ?? null;
           const t0 = performance.now();
@@ -195,6 +196,7 @@ async function run() {
             const line = btn.nextElementSibling?.getBoundingClientRect().left ?? null;
             resolve({
               ms: performance.now() - t0, text: btn.textContent, busy: btn.getAttribute("aria-disabled") === "true",
+              focused: document.activeElement === btn,
               dw: rect.width - rect0.width, dh: rect.height - rect0.height, dline: line === null || line0 === null ? 0 : line - line0,
             });
           });
@@ -211,10 +213,12 @@ async function run() {
       const reading = form.timeline.filter((t) => t.phase === "reading");
       report(at(`form: the press changes within ${PRESS_ACK_MS}ms on Slow 4G`), ack !== null && ack.ms <= PRESS_ACK_MS,
         ack ? `${ack.ms.toFixed(0)}ms, now "${ack.text}"${ack.busy ? ", greyed" : ""}` : "no change in 4s");
-      // The press keeps its box, the credit line beside it does not move, and it keeps the focus.
+      // The press keeps its box and the credit line beside it does not move.
       report(at("form: the pending press keeps its size and the line beside it stays put"),
         ack !== null && Math.abs(ack.dw) < 1 && Math.abs(ack.dh) < 1 && Math.abs(ack.dline) < 1,
         ack ? `width ${ack.dw.toFixed(1)}px, height ${ack.dh.toFixed(1)}px, line ${ack.dline.toFixed(1)}px` : "no press");
+      // And it keeps the focus: a disabled button would have dropped it to the body.
+      report(at("form: the pending press keeps the focus"), ack !== null && ack.focused, ack ? String(ack.focused) : "no press");
       report(at("form: the read settled"), form.done !== null, `final phase ${form.timeline.at(-1)?.phase}`);
       report(at("form: the loading state is drawn while it reads"), reading.some((t) => t.skeleton), "");
       report(at("form: no free list is drawn while it reads"), reading.length > 0 && reading.every((t) => !t.list),

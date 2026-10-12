@@ -180,14 +180,28 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       expect(push).toHaveBeenCalledTimes(1);
     });
 
-    it("names the free search on an unpaid press, in the results' own words", async () => {
+    it("greys an unpaid press without changing its words, so its box cannot grow", async () => {
       push.mockClear();
       slow();
       render(<IntakeForm themes={[]} initial={emptyParams()} standing={credit} />);
       await act(async () => { fireEvent.click(presses()[0]); });
-      const pending = screen.getAllByRole("button", { name: "Finding commanders…" });
+      const pending = screen.getAllByRole("button", { name: "Find commanders" });
       expect(pending).toHaveLength(2);
-      for (const press of pending) expect(press.getAttribute("aria-disabled")).toBe("true");
+      for (const press of pending) {
+        expect(press.getAttribute("aria-disabled")).toBe("true");
+        expect(press.getAttribute("aria-busy")).toBe("true");
+        expect(press.textContent).toBe("Find commanders");
+      }
+    });
+
+    it("keeps a paid press paid while its request is in flight, whatever the box now holds", async () => {
+      push.mockClear();
+      slow();
+      render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={credit} />);
+      await act(async () => { fireEvent.click(presses()[0]); });
+      // The box stays editable; clearing it must not turn the in-flight press into a free one.
+      fireEvent.change(box(), { target: { value: "" } });
+      for (const press of presses()) expect(press.textContent).toBe("1 creditReading…");
     });
   });
 

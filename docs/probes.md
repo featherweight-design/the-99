@@ -1911,9 +1911,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Action's round trip, which Slow 4G's 562ms latency makes the soonest any server answer can arrive
   (Hugh, 2026-10-12: the press had a delay with no sign anything was happening). It also checks the
   press keeps its width and height and the credit line beside it does not move (without the width
-  lock the line jumps 55px at 1300). It is greyed with
-  `aria-disabled`, not `disabled`, so it keeps the focus it was pressed with. Measured against
-  `next dev` 2026-10-12: 119ms at 1300 and 128ms at 390, to "1 credit Reading…"; a production build
+  lock the line jumps 55px at 1300), and that it keeps the focus it was pressed with, which is why it
+  is greyed with `aria-disabled` and not `disabled`. Measured against
+  `next dev` 2026-10-12: 125ms at 1300 and 128ms at 390, to "1 credit Reading…"; a production build
   has not been measured. With the pending press removed the check fails at both widths ("no change
   in 4s"); a class or attribute that moves for another reason does not count as an answer.
   **From the form** the free list was never on screen, so while the read is pending the results'
