@@ -12,7 +12,13 @@ import { decks, precons } from "../../db/schema";
 export type PreconArrival = { name: string; setCode: string; cards: number; unmapped: number; owned: number; of: number };
 
 export async function readPreconArrival(userId: string, deckId: string): Promise<PreconArrival | null> {
-  const [row] = await db
+  const [row] = await preconArrivalQuery(userId, deckId);
+  return row ?? null;
+}
+
+/** The read itself, apart so a test can render its SQL (the correlated subqueries must qualify). */
+export function preconArrivalQuery(userId: string, deckId: string) {
+  return db
     .select({
       name: precons.name,
       setCode: precons.setCode,
@@ -33,5 +39,4 @@ export async function readPreconArrival(userId: string, deckId: string): Promise
     .from(decks)
     .innerJoin(precons, eq(precons.fileName, decks.builtFromPrecon))
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  return row ?? null;
 }

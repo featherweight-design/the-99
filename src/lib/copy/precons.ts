@@ -105,13 +105,13 @@ export const preconsCopy = {
       printingsValue: "picked from the copies you hold",
     },
     illegal: (names: string[]) =>
-      `${names.length === 1 ? "1 card isn’t" : `${n(names.length)} cards aren’t`} legal in Commander: ${names.join(", ")}. It stays in, so the deck matches the box.`,
+      `${names.length === 1 ? "1 card isn’t" : `${n(names.length)} cards aren’t`} legal in Commander: ${names.join(", ")}. ${names.length === 1 ? "It stays" : "They stay"} in, so the deck matches the box.`,
     already: (deck: string) => `You already have ${deck} with this commander. This makes a second deck.`,
     cancel: "Cancel",
     submit: "Start the deck",
     pending: "Starting…",
     failed: "Couldn’t start the deck. Nothing was saved.",
-    nameInvalid: (max: number) => `Name must be 1–${max} characters.`,
+    nameInvalid: (max: number) => `Name must be 1–${max} characters, with no control characters.`,
   },
   arrival: {
     head: (name: string) => `Started from the ${name} precon`,

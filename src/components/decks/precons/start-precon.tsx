@@ -9,7 +9,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createDeckFromPrecon } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { preconsCopy } from "../../../lib/copy/precons";
-import { DECK_NAME_MAX } from "../../../lib/decks/deck-name";
+import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
 import { PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
@@ -65,7 +65,8 @@ function StartPreconDialog({ row, cards, body, illegal, onDismiss }: StartPrecon
   useEffect(() => { input.current?.select(); }, []);
 
   const trimmed = name.trim();
-  const valid = trimmed.length > 0 && trimmed.length <= DECK_NAME_MAX;
+  // The server action's own rule (`validateDeckName`), so a name it would refuse is never sent.
+  const valid = trimmed.length > 0 && trimmed.length <= DECK_NAME_MAX && !hasControlChars(trimmed);
   const already = row.built.find((b) => b.sameCommanders);
   const pair = row.commanders.length === 2;
   const ident = row.identity.length > 0 ? row.identity.join("") : "C";

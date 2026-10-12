@@ -8,6 +8,7 @@ import { loadCandidateFacts } from "../../../lib/profile/candidate-facts";
 import { loadCompletionPartners } from "../../../lib/combos/near-miss";
 import { comboFor, comboLookupIds } from "../../../lib/combos/attach";
 import { readPreconArrival } from "../../../lib/precons/arrival-read";
+import { preconsEnabled } from "../../../lib/precons/flag";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
@@ -567,7 +568,7 @@ export default async function DeckBuilderPage({
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
       // `?from=precon`: the one navigation "Start a deck from this" made. Left in the URL for the
       // same reason as `imported`; the strip's dismissal is the same per-deck flag.
-      preconArrival={arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) ? await readPreconArrival(userId, id) : null}
+      preconArrival={preconsEnabled() && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM]) ? await readPreconArrival(userId, id) : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
       // Left in the URL for the same reason. Its strip is dismissible too, but

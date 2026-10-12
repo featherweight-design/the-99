@@ -20,6 +20,12 @@ describe("what a claim change invalidates", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/decks/[id]", "page");
   });
 
+  it("invalidates both precon routes, which name the reader's decks", () => {
+    revalidateClaims("d1", "u1");
+    expect(revalidatePath).toHaveBeenCalledWith("/decks/precons");
+    expect(revalidatePath).toHaveBeenCalledWith("/decks/precons/[fileName]", "page");
+  });
+
   it("invalidates the proxy list", () => {
     revalidateClaims("d1", "u1");
     expect(revalidatePath).toHaveBeenCalledWith("/collection/proxies");

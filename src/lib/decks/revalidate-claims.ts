@@ -63,5 +63,9 @@ export function revalidateClaims(deckId: string, userId: string): void {
   // with the rest — it is here because it is a proxy fact rather than a claim
   // fact, and `claimSurfaces` is asserted by tests that predate this route.
   revalidatePath("/collection/proxies");
+  // Both precon routes draw the reader's decks that share a list (`built`, and the start dialog's
+  // "already have"), so a membership change moves them. Pattern form for the open precon: dynamic.
+  revalidatePath("/decks/precons");
+  revalidatePath("/decks/precons/[fileName]", "page");
   revalidateUserLists(userId);
 }

@@ -35,6 +35,18 @@ describe("StartPrecon", () => {
     expect(screen.queryByText(/as the precon lists them/)).toBeNull();
   });
 
+  it("refuses a name with a control character before sending it, as the server would", () => {
+    open();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Bad\u007fName" } });
+    expect(screen.getByRole("button", { name: "Start the deck" })).toBeDisabled();
+  });
+
+  it("speaks of several illegal cards in the plural", () => {
+    render(<StartPrecon row={row} cards={100} body={99} illegal={["Dockside Extortionist", "Trade Secrets"]} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Start a deck from this" })[0]);
+    expect(screen.getByText(/2 cards aren’t legal in Commander: Dockside Extortionist, Trade Secrets\. They stay in/)).toBeInTheDocument();
+  });
+
   it("starts the deck under the typed name, and keeps the dialog with the name on a failure", async () => {
     action.mockRejectedValueOnce(new Error("boom"));
     open();
