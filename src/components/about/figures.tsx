@@ -779,7 +779,6 @@ function SuggestedChangesFigure({ width }: { width: AboutWidth }) {
   );
 }
 
-/** Stats' curve card at plate width with Creature lit, drawn by the card itself from a fixture. */
 /**
  * Mana Balance's color table, drawn by the tool's own table from Gishath's figures (R3 M10): the table is
  * what the entry explains. The handoff draws it at the phone layout; the table switches on the viewport,
@@ -793,6 +792,7 @@ function ManaBalanceFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** Stats' curve card at plate width with Creature lit, drawn by the card itself from a fixture. */
 function DeckStatsFigure({ width }: { width: AboutWidth }) {
   return (
     <Specimen label="deck-stats" width={width}>

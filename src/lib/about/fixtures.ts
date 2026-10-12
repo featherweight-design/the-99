@@ -2307,7 +2307,7 @@ function manaColor(
     patterns: [],
     karstenHardest: needed?.requires ?? 0,
     needed: needed
-      ? { ...needed, generic: 0, pips: 0, ratio: 1, copies: needed.cards.length, cards: needed.cards.map((name) => ({ name, copies: 1 })), basis: "shared" }
+      ? { ...needed, generic: 0, pips: 0, ratio: 1, copies: needed.cards.length, cards: needed.cards.map((name) => ({ name, copies: 1 })), basis: needed.cards.length >= 2 ? "shared" : "single" }
       : null,
   };
 }
