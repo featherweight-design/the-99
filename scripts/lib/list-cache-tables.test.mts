@@ -150,6 +150,11 @@ describe("socialKeyProblems", () => {
     }
   });
 
+  it("fails a page where one cache call carries it and another does not", () => {
+    const src = "cachePageForUser(userId, 'a', [await friendGeneration(userId)], load)\ncachePageForUser(userId, 'b', [], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+  });
+
   it("reads the key past a string holding a comma or a paren", () => {
     const src = "cachePageForUser(userId, 'a,(b', [await friendGeneration(userId)], load)";
     expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);

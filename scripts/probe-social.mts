@@ -212,7 +212,9 @@ async function main() {
     const held = new Promise<void>((r) => { release = r; });
     let removed = () => {};
     const removing = new Promise<void>((r) => { removed = r; });
+    // The production lock order: the pod row FOR UPDATE first, as removeMember, leavePod and unfriend take it.
     const removal = db.transaction(async (tx) => {
+      await tx.execute(sql`select 1 from pods where id = ${night.id} for update`);
       await tx.execute(sql`delete from pod_members where pod_id = ${night.id} and user_id = ${B}`);
       await tx.execute(sql`delete from pod_spare_shares where pod_id = ${night.id} and user_id = ${B}`);
       removed();

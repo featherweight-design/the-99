@@ -209,7 +209,9 @@ export function socialKeyProblems(
       .map((f) => f.split("\\").join("/"))
       .filter((f) => f.includes("src/lib/social/") && !f.endsWith("src/lib/social/flag.ts"));
     if (social.length === 0) continue;
-    if (!cacheKeysOf(source(page)).some((key) => /\bfriendGeneration\s*\(/.test(key))) {
+    // EVERY key on the page: reachability is page-level, so it cannot say which call's loader reads a friend.
+    const keys = cacheKeysOf(source(page));
+    if (keys.length === 0 || !keys.every((key) => /\bfriendGeneration\s*\(/.test(key))) {
       out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
     }
   }

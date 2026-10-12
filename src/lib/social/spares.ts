@@ -56,6 +56,21 @@ export const CLAIM_MODELS_AT_ONCE = 4;
 export type FriendSpare = { oracleId: string; friend: { publicId: string; displayName: string }; spare: number };
 
 /**
+ * Each owner's claim model narrowed to `asked`, in owner order, at most CLAIM_MODELS_AT_ONCE at a time.
+ * Exported so `measure:friend-spares` times the shipped bound rather than restating it.
+ */
+export async function claimModelsFor(owners: readonly string[], asked: readonly string[]) {
+  const models: Awaited<ReturnType<typeof loadAvailability>>[] = new Array(owners.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, owners.length) }, async () => {
+    for (let i = next++; i < owners.length; i = next++) {
+      models[i] = await loadAvailability(owners[i], { oracleIds: [...asked] });
+    }
+  }));
+  return models;
+}
+
+/**
  * The spare copies the viewer's friends hold of the named cards (the viewer's demand: their decks' buy
  * rows, and their wishlist once it exists). One grant read, then the friend's own claim model per
  * granting friend, narrowed to the asked cards, then the grant read again. Ordered by card, then by friend name.
@@ -67,13 +82,7 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
   // One claim model per friend, at most CLAIM_MODELS_AT_ONCE side by side: measured at ~100ms each on a
   // staging copy (`measure:friend-spares`), so a handful of friends costs about one model, not their sum,
   // and a large pod queues behind the bound rather than taking the whole connection pool.
-  const models: Awaited<ReturnType<typeof loadAvailability>>[] = new Array(grantors.length);
-  let next = 0;
-  await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, grantors.length) }, async () => {
-    for (let i = next++; i < grantors.length; i = next++) {
-      models[i] = await loadAvailability(grantors[i].userId, { oracleIds: asked });
-    }
-  }));
+  const models = await claimModelsFor(grantors.map((g) => g.userId), asked);
   // The models are separate statements, so a grant revoked while they ran would otherwise still return
   // spares. Re-read the grants after: a friend counts only when the grant held both before and after the
   // reads, so nothing read once access ended is returned.
@@ -105,22 +114,28 @@ export async function shareSparesWith(viewerId: string, podId: unknown, on: bool
       .returning({ podId: podSpareShares.podId });
     return gone.length > 0;
   }
-  // The membership row is locked while the grant is written, so a removal (leave, remove, unfriend) racing
-  // this either waits and then deletes the committed grant, or wins and leaves nothing to insert from.
-  const written = await db.execute<{ pod_id: string }>(sql`
-    insert into ${podSpareShares} (user_id, pod_id)
-    select ${viewerId}, m.pod_id from ${podMembers} m where m.pod_id = ${podId} and m.user_id = ${viewerId}
-    for share of m
-    on conflict do nothing
-    returning pod_id
-  `);
-  if (written.rows.length > 0) return true;
-  // Already shared reads as success; not a member reads as failure.
-  const [member] = await db
-    .select({ podId: podMembers.podId })
-    .from(podMembers)
-    .where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
-  return member !== undefined;
+  // Locks in the order every removal takes them (leave, remove and unfriend lock the pod row FOR UPDATE,
+  // then delete the membership): the pod first (FOR KEY SHARE, which waits on their FOR UPDATE), then the membership row while the grant is written. A
+  // removal racing this either waits and then deletes the committed grant, or wins and leaves nothing to
+  // insert from. The opposite order (membership, then the pod through the foreign key) can deadlock.
+  return db.transaction(async (tx) => {
+    const pod = await tx.execute(sql`select 1 from ${pods} where id = ${podId} for key share`);
+    if (pod.rows.length === 0) return false;
+    const written = await tx.execute<{ pod_id: string }>(sql`
+      insert into ${podSpareShares} (user_id, pod_id)
+      select ${viewerId}, m.pod_id from ${podMembers} m where m.pod_id = ${podId} and m.user_id = ${viewerId}
+      for share of m
+      on conflict do nothing
+      returning pod_id
+    `);
+    if (written.rows.length > 0) return true;
+    // Already shared reads as success; not a member reads as failure.
+    const [member] = await tx
+      .select({ podId: podMembers.podId })
+      .from(podMembers)
+      .where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
+    return member !== undefined;
+  });
 }
 
 /** The pods the viewer shares spares with, among the pods they are still in. */
