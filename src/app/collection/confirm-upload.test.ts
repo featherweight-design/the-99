@@ -84,7 +84,7 @@ describe("confirmUpload", () => {
     stub.apply.mockResolvedValue(applied("upload_replace"));
     await confirmUpload(UPLOAD, { confirmShort: [deck, { junk: true } as never] });
     const [, change, opts] = stub.apply.mock.calls[0];
-    expect(change).toEqual({ kind: "replace", items, uploadId: UPLOAD });
+    expect(change).toEqual({ kind: "replace", items, uploadId: UPLOAD, tokens: [] });
     expect(opts.confirmShort).toEqual([deck]);
     expect(opts.ownedCounts).toBe(true);
     expect(stub.replace).not.toHaveBeenCalled();

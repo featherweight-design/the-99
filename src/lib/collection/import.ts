@@ -1,8 +1,10 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings,
+  cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings, tokenPrintings,
 } from "../../db/schema";
+import { tokenTablesExist } from "../tokens/publish";
+import { tokenOwnershipTablesExist, writeUploadTokens, type TokenHolding } from "../tokens/ownership";
 import { TOKEN_LAYOUTS } from "../cards/game-card";
 import type { CollectionRow } from "../manabox/parse";
 import type { CatalogCard, DetailedCatalogCard, MatchIndexes } from "./match";
@@ -104,11 +106,22 @@ export async function loadMatchInputs(
         inArray(skippedPrintings.layout, [...TOKEN_LAYOUTS]),
       )));
 
+  // Which of the uploaded ids are TOKEN printings, and of which token. Skipped when the token catalog
+  // is not in this database (a refresh can precede its migration), so an upload never fails for a
+  // feature that is dark: it simply reads no tokens.
+  const tokenRows = (await tokenTablesExist())
+    ? await chunkedLookup(ids, (chunk) =>
+      db.select({ scryfallId: tokenPrintings.scryfallId, tokenOracleId: tokenPrintings.tokenOracleId })
+        .from(tokenPrintings)
+        .where(inArray(tokenPrintings.scryfallId, chunk)))
+    : [];
+
   return {
     catalog,
     indexes: {
       printings: printingRows,
       skippedScryfallIds: skippedRows.map((r) => r.scryfallId),
+      tokenPrintings: tokenRows,
       flavorNames,
     },
   };
@@ -136,7 +149,7 @@ export async function loadMatchInputs(
 export async function replaceCollection(
   userId: string,
   items: PendingItem[],
-  opts: { confirmUploadId?: string; onlyIfEmpty?: boolean } = {},
+  opts: { confirmUploadId?: string; onlyIfEmpty?: boolean; tokens?: TokenHolding[] } = {},
 ): Promise<{ alreadyConfirmed: boolean; notEmpty: number | null }> {
   const values = toCollectionItemValues(userId, items);
   let alreadyConfirmed = false;
@@ -192,6 +205,12 @@ export async function replaceCollection(
         }
       }
       await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
+      // The tokens this upload read, and the marker that they were READ, in the same transaction as the
+      // replace: a failure here rolls the whole confirm back. An upload with no token still writes the
+      // marker. Only an upload (with an id) records tokens; the CLI seed path passes none.
+      if (opts.confirmUploadId && (await tokenOwnershipTablesExist(tx))) {
+        await writeUploadTokens(tx, userId, opts.confirmUploadId, "replace", opts.tokens ?? []);
+      }
       // Every score component derives from the collection, so a replace invalidates all of them.
       await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
       for (let i = 0; i < values.length; i += INSERT_BATCH) {
