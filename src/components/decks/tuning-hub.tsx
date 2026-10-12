@@ -519,11 +519,13 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
 }
 
 /**
- * What a tool draws while its first read is out: History's empty `aria-busy` placeholder (marked
- * `data-hub-pending` too), Mana Balance's counting status, and nothing at all for the tools whose
- * body waits on the hub's own read. A box drawing none of these, at some height, has its content.
+ * What a tool draws while its first read is out: History's empty placeholder (marked
+ * `data-hub-pending` too), Mana Balance's counting status, Proposed cuts' counting shell, all of them
+ * `aria-busy`, and nothing at all for the tools whose body waits on the hub's own read. A box
+ * drawing none of these, at some height, has its content. A tool busy for another reason at mount
+ * (a run in flight) holds to the cap and then shows.
  */
-const PENDING = '[data-hub-pending], [role="status"][aria-busy="true"], [aria-busy="true"]:empty';
+const PENDING = '[data-hub-pending], [aria-busy="true"]';
 /** How long a box holds for content before it shows anyway: a slow read must not leave it unseen. */
 const ARRIVAL_CAP_MS = 2500;
 
