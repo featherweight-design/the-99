@@ -479,6 +479,24 @@ describe("an answer flips its row at once (optimistic)", () => {
     await act(async () => { answer({ ok: true }); });
   });
 
+  it("keeps a row cut when its re-read is superseded by another row's answer", async () => {
+    const stale = withResult(2, 2);
+    const d = deps(stale);
+    await mount(d);
+    // From here every read waits, so the test decides which lands when.
+    const reads: Array<(p: CutsPanel) => void> = [];
+    vi.mocked(d.read).mockImplementation(() => new Promise<CutsPanel | null>((r) => { reads.push(r); }));
+    const [first, second] = screen.getAllByRole("article");
+    await act(async () => { fireEvent.click(within(first).getByRole("button", { name: copy.cut })); });
+    await waitFor(() => expect(reads).toHaveLength(1));
+    await act(async () => { fireEvent.click(within(second).getByRole("button", { name: copy.cut })); });
+    await waitFor(() => expect(reads).toHaveLength(2));
+    // The first row's read lands, out of date and discarded: the first row must still read as cut.
+    await act(async () => { reads[0](stale); });
+    expect(screen.getAllByTestId("answered-cut")).toHaveLength(2);
+    expect(screen.queryAllByRole("article")).toHaveLength(0);
+  });
+
   it("rolls a refused Cut back to its row, with the refusal", async () => {
     let answer!: (r: { ok: false; message: string }) => void;
     const d = deps(withResult(1, 1), { cut: vi.fn(() => new Promise<{ ok: false; message: string }>((r) => { answer = r; })) });

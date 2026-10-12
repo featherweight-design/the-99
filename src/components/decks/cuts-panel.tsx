@@ -325,12 +325,17 @@ export function CutsPanelView({
     }
   }
 
-  async function verdictSettled(announce: string, refusal?: string) {
+  /** Resolves true only when THIS re-read is the one drawn: a newer read asked meanwhile (another
+   *  row answered) discards it, and a row must then keep its flip until that newer read lands. */
+  async function verdictSettled(announce: string, refusal?: string): Promise<boolean> {
     setAnnounced(announce);
     // A refusal retires the result it was about, which unmounts the row that drew it: so the panel
     // keeps the reason itself, and the next press or answered verdict clears it.
     setRefused(refusal ?? null);
-    await reread();
+    // `reread` takes its ticket synchronously, so this is the one it will compare against.
+    const ticket = asked.current + 1;
+    const next = await reread();
+    return next !== null && ticket === asked.current;
   }
 
   // The lead: the over figure in --fg (never --warning), then what the state says next.
@@ -537,7 +542,7 @@ function CountLine({ row }: { row: CountRow }) {
 }
 
 function ResultBlock({ panel, deps, standing, onSettled }: {
-  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<void>;
+  panel: CutsPanel; deps: CutsDeps; standing: string; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
 }) {
   const { items, asked } = panel;
   const d = copy.deeper;
@@ -575,7 +580,7 @@ function ResultBlock({ panel, deps, standing, onSettled }: {
 }
 
 function CutRow({ item, panel, deps, items, onSettled }: {
-  item: CutItem; panel: CutsPanel; deps: CutsDeps; items: CutItem[]; onSettled: (announce: string, refusal?: string) => Promise<void>;
+  item: CutItem; panel: CutsPanel; deps: CutsDeps; items: CutItem[]; onSettled: (announce: string, refusal?: string) => Promise<boolean>;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const { open } = useCardDetail();
@@ -606,13 +611,14 @@ function CutRow({ item, panel, deps, items, onSettled }: {
       setBusy(null);
       return;
     }
-    await onSettled(
+    const landed = await onSettled(
       kind === "cut" ? copy.announce.cut(item.cutName)
         : kind === "undo" ? copy.announce.undone(item.cutName)
           : kind === "keep" ? copy.announce.kept : copy.announce.restored,
     );
-    // The re-read has landed: the row is now the server's.
-    optimistic.release();
+    // The re-read has landed: the row is now the server's. A read another row's answer superseded
+    // was discarded, so the flip holds until the newer read moves this row's server verdict.
+    if (landed) optimistic.release();
     setBusy(null);
   }
 
