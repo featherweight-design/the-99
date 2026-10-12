@@ -33,3 +33,15 @@ export async function chainArt(
   for (const [id, p] of printings) if (p.imageUri) art.set(id, p.imageUri);
   return art;
 }
+
+/**
+ * `rows` drawn with the chain's art where it has some, and with the art they arrived with where it has
+ * none (a card the player does not own). The overlay half of `chainArt`, named so the one place a
+ * surface applies the map is a function a test can break.
+ */
+export function withChainArt<T extends { oracleId: string; imageUri: string | null }>(
+  rows: readonly T[],
+  art: ReadonlyMap<string, string>,
+): T[] {
+  return rows.map((row) => ({ ...row, imageUri: art.get(row.oracleId) ?? row.imageUri }));
+}

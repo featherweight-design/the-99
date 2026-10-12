@@ -14,7 +14,7 @@ vi.mock("../decks/printings", () => ({
   resolveDeckOwnedPrintings: async (...args: unknown[]) => { calls.deckArgs = args; return calls.deck; },
 }));
 
-import { chainArt } from "./chain-art";
+import { chainArt, withChainArt } from "./chain-art";
 
 beforeEach(() => {
   calls.owned = new Map();
@@ -46,5 +46,17 @@ describe("chainArt", () => {
   it("reads nothing for no ids", async () => {
     expect(await chainArt("u", "d", [null])).toEqual(new Map());
     expect(calls.deckArgs).toBeUndefined();
+  });
+});
+
+describe("withChainArt", () => {
+  it("replaces the art of a card the chain knows and keeps the catalog art of one it does not", () => {
+    const rows = [
+      { oracleId: "a", imageUri: "catalog-a.jpg" },
+      { oracleId: "b", imageUri: "catalog-b.jpg" },
+      { oracleId: "c", imageUri: null },
+    ];
+    expect(withChainArt(rows, new Map([["a", "owned-a.jpg"], ["c", "owned-c.jpg"]])).map((r) => r.imageUri))
+      .toEqual(["owned-a.jpg", "catalog-b.jpg", "owned-c.jpg"]);
   });
 });

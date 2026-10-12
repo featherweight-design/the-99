@@ -16,7 +16,7 @@ import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import type { PrintedInSet } from "../../../lib/sets/printed-in";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
-import { chainArt } from "../../../lib/cards/chain-art";
+import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
 import { applyConsiderLabels, considerLabels } from "../../../lib/decks/consider-labels";
@@ -495,9 +495,8 @@ export default async function DeckBuilderPage({
   // Attached here for the same reason `withPrice` above attaches its figure:
   // the row component then reads a field rather than doing two map lookups per
   // render, and BuilderShell takes one list rather than a list plus two maps.
-  const candidates: TopOffCandidateWithFacts[] = candidateCards.map((c) => ({
+  const candidates: TopOffCandidateWithFacts[] = withChainArt(candidateCards, ownedArt).map((c) => ({
     ...c,
-    imageUri: ownedArt.get(c.oracleId) ?? c.imageUri,
     price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
     availability: c.owned ? (availability?.get(c.oracleId) ?? null) : null,
     // The card-note facts, on the row rather than in a map beside it — same reason the two

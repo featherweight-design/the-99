@@ -53,20 +53,22 @@ export function hoverSurfaces(files: Record<string, string>): string[] {
 }
 
 /** A real call to a resolver: a comment or a string that names one makes none. */
-export function usesResolver(src: string): boolean {
+export function callsAnyOf(src: string, names: ReadonlySet<string>): boolean {
   const file = ts.createSourceFile("feeder.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let found = false;
   const visit = (node: ts.Node) => {
     if (ts.isCallExpression(node)) {
       const callee = node.expression;
       const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
-      if (RESOLVERS.has(name)) found = true;
+      if (names.has(name)) found = true;
     }
     ts.forEachChild(node, visit);
   };
   visit(file);
   return found;
 }
+
+export const usesResolver = (src: string) => callsAnyOf(src, RESOLVERS);
 
 describe("the hover-art guard's own failure paths", () => {
   it("finds a component that imports usePreviewRow and ignores one that only mentions it", () => {
@@ -96,6 +98,12 @@ describe("every hover preview shows the printing card details opens", () => {
 
   it("names every component that draws a hover preview", () => {
     expect(hoverSurfaces(files)).toEqual(Object.keys(FEEDERS).sort());
+  });
+
+  // The Top-off candidates arrive from the cached synergy read with the catalog's printing; the page must
+  // APPLY the chain's map to them, not only read it (a read whose result is never used passes the check below).
+  it("the deck page applies the chain's art to the Top-off candidates it hands the list", () => {
+    expect(callsAnyOf(files["app/decks/[id]/page.tsx"], new Set(["withChainArt"]))).toBe(true);
   });
 
   for (const [component, feeder] of Object.entries(FEEDERS)) {
