@@ -19,7 +19,6 @@ vi.mock("../../db", () => {
     },
   };
 });
-vi.mock("./publish", () => ({ tokenTablesExist: async () => true, tokenPriceTablesExist: async () => true }));
 vi.mock("./price", () => ({ loadTokenPrices: () => reads.prices() }));
 
 const { loadTokenDetail } = await import("./detail");
@@ -31,6 +30,21 @@ describe("loadTokenDetail", () => {
     expect(card?.name).toBe("Goblin");
     expect(card?.oracleText).toBe("Haste");
     expect(card?.printings).toEqual([]);
+  });
+
+  it("keeps the price and the link when only the printings read fails", async () => {
+    reads.printings = async () => { throw new Error("down"); };
+    const asOf = new Date("2026-10-12T09:00:00Z");
+    reads.prices = async () => ({
+      prices: new Map([["t-1", { cents: 25, foilCents: null, etchedCents: null, asOf,
+        printing: { scryfallId: "p-1", setCode: "tm21", collectorNumber: "9", productName: "Goblin", productSet: "TM21", productNumber: "9" } }]]),
+      newestAsOf: asOf,
+    });
+    const card = await loadTokenDetail("t-1");
+    expect(card?.imageUri).toBeNull();
+    expect(card?.printings[0]).toMatchObject({ setCode: "TM21", collectorNumber: "9" });
+    expect(card?.prices?.catalogIds).toEqual(["p-1"]);
+    expect(card?.tokenBuyUrl).toContain("manapool.com");
   });
 
   it("keeps the token when its price read fails, with no price and no buy link", async () => {

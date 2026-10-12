@@ -5,7 +5,6 @@ import type { BrowseCard } from "../collection/browse";
 import { manapoolAddDeckUrl } from "../manapool/links";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
 import { tokenManapoolLine } from "./price-line";
-import { tokenPriceTablesExist, tokenTablesExist } from "./publish";
 
 /**
  * A token's card details (bug batch 2026-10-12, item 5, ruled by the orchestrator as Hugh's proxy):
@@ -19,8 +18,10 @@ import { tokenPriceTablesExist, tokenTablesExist } from "./publish";
  * press, the prefetch and every re-read take one path.
  */
 export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | null> {
+  // No schema probe first: every open and every prefetch would pay it as extra round trips ahead
+  // of the read. A database the token migration has not reached throws on the read itself, which
+  // the catches below turn into no token (and, for the price table alone, no price).
   try {
-    if (!(await tokenTablesExist())) return null;
     const [token] = await db
       .select({
         oracleId: tokens.oracleId, name: tokens.name, typeLine: tokens.typeLine, colors: tokens.colors,
@@ -44,7 +45,7 @@ export async function loadTokenDetail(oracleId: string): Promise<BrowseCard | nu
           console.error("[tokens] token detail printings failed", err instanceof Error ? err.message : err);
           return [] as TokenDetailPrinting[];
         }),
-      (async () => (await tokenPriceTablesExist()) ? loadTokenPrices([oracleId]) : { prices: new Map<string, TokenPriceFact>(), newestAsOf: null })()
+      loadTokenPrices([oracleId])
         .catch((err: unknown) => {
           console.error("[tokens] token detail price failed", err instanceof Error ? err.message : err);
           return { prices: new Map<string, TokenPriceFact>(), newestAsOf: null };
@@ -89,7 +90,12 @@ export function assembleTokenDetail(
   const chosen = (price && printings.find((p) => p.scryfallId === price.printing.scryfallId))
     ?? [...printings].sort((a, b) =>
       a.setCode.localeCompare(b.setCode) || a.collectorNumber.localeCompare(b.collectorNumber, "en", { numeric: true })
-      || a.scryfallId.localeCompare(b.scryfallId))[0];
+      || a.scryfallId.localeCompare(b.scryfallId))[0]
+    // The printings read failed and the price read did not: the price names its own printing, so the
+    // price, the set line and the link survive with no art.
+    ?? (price
+      ? { scryfallId: price.printing.scryfallId, setCode: price.printing.setCode, collectorNumber: price.printing.collectorNumber, imageUri: null, backImageUri: null }
+      : undefined);
   const set = chosen ? chosen.setCode.toUpperCase() : "";
   const shownPrice = price && chosen && price.printing.scryfallId === chosen.scryfallId ? price : null;
   return {
