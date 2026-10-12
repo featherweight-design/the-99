@@ -28,6 +28,27 @@ export const SHARED_ANY_COMMANDERS = 0.6;
 
 export type SharedMatch = { shared: number; sameCommanders: boolean };
 
+/** The counted overlap, whether or not the rule holds: what a linked deck's line says. */
+export function sharedCount(
+  precon: { cards: ReadonlySet<string>; commanders: readonly string[] },
+  deck: { cards: ReadonlySet<string>; commanders: readonly string[] },
+): SharedMatch {
+  let shared = 0;
+  for (const id of precon.cards) if (deck.cards.has(id)) shared++;
+  return { shared, sameCommanders: sameCommanders(precon.commanders, deck.commanders) };
+}
+
+export function sameCommanders(precon: readonly string[], deck: readonly string[]): boolean {
+  return precon.length === deck.length && precon.every((id) => deck.includes(id));
+}
+
+/** The rule itself, over figures already counted (the deck page counts them in SQL). */
+export function meetsSharedRule(shared: number, of: number, same: boolean): boolean {
+  if (of === 0) return false;
+  const share = shared / of;
+  return same ? share >= SHARED_SAME_COMMANDERS : share >= SHARED_ANY_COMMANDERS;
+}
+
 /**
  * `precon` is the precon's distinct non-basic oracle ids, commanders included; `deck` is every
  * oracle id the deck holds, commanders included. Null when the deck does not share the precon.
@@ -36,14 +57,6 @@ export function sharedWith(
   precon: { cards: ReadonlySet<string>; commanders: readonly string[] },
   deck: { cards: ReadonlySet<string>; commanders: readonly string[] },
 ): SharedMatch | null {
-  if (precon.cards.size === 0) return null;
-  let shared = 0;
-  for (const id of precon.cards) if (deck.cards.has(id)) shared++;
-  const share = shared / precon.cards.size;
-  const sameCommanders = precon.commanders.length === deck.commanders.length
-    && precon.commanders.every((id) => deck.commanders.includes(id));
-  if (sameCommanders ? share >= SHARED_SAME_COMMANDERS : share >= SHARED_ANY_COMMANDERS) {
-    return { shared, sameCommanders };
-  }
-  return null;
+  const match = sharedCount(precon, deck);
+  return meetsSharedRule(match.shared, precon.cards.size, match.sameCommanders) ? match : null;
 }

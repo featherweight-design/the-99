@@ -130,6 +130,64 @@ export const preconsCopy = {
       `${cardsIn(cards, unmapped)} You own every one. It’s a draft until you commit it.`,
     meta: (set: string) => `${set} · printings picked from the copies you hold`,
   },
+  // R3 addendum: the built-from link (`precons-link · copy strings.ts`, placeholders until
+  // /copy-review). No verdict word on any share; selection says select / unselect. Every card count
+  // is the precon's own, never a literal 100 (audit finding 6).
+  link: {
+    suggestion: {
+      lead: (precon: string) => `Looks like this started as ${precon}.`,
+      leadOtherCommander: (precon: string) => `Looks like this started as ${precon}, with a different commander.`,
+      metaSame: (shared: number, of: number) => `${n(shared)} of its ${n(of)} cards are in this deck · same commander`,
+      metaOther: (shared: number, of: number, commander: string) =>
+        `${n(shared)} of its ${n(of)} cards are in this deck · led by ${commander}`,
+      leadTwo: "Looks like this started as one of two precons",
+      metaTwo: "link the one it came from",
+      rowMeta: (set: string, released: string, commanderClause: string, shared: number, of: number) =>
+        `${set} · ${released} · ${commanderClause} · ${n(shared)} of its ${n(of)} cards are in this deck`,
+      sameClause: "same commander",
+      ledBy: (commander: string) => `led by ${commander}`,
+      link: "Link it",
+      linkOne: "Link",
+      // Two rows each carry a `Link`: the spoken name says which precon it links.
+      linkOneAria: (precon: string) => `Link ${precon}`,
+      dismissAria: (precon: string) => `Dismiss the suggestion that this started as ${precon}`,
+      dismissAriaTwo: (a: string, b: string) => `Dismiss the suggestion that this started as ${a} or ${b}`,
+    },
+    versionsRow: {
+      head: "Built from a precon?",
+      body: "Link it, and this history starts from the box as v0. Your cards don’t change.",
+      cta: "Link a precon",
+    },
+    confirm: {
+      title: (deck: string, precon: string) => `Link ${deck} to ${precon}`,
+      lead: "Its history gains a v0, the precon’s list, before v1. Nothing in the deck changes.",
+      factLabels: { v0: "v0", shared: "Shared", v1: "v1" },
+      facts: {
+        v0: (precon: string, cards: number) => `${precon} · ${n(cards)} cards · before v1`,
+        shared: (shared: number, of: number) => `${n(shared)} of its ${n(of)}`,
+        v1: "now diffs against v0",
+      },
+      cancel: "Cancel",
+      submit: "Link",
+      pending: "Linking…",
+      failed: "That didn’t link. Try again.",
+    },
+    pickPrecon: {
+      title: (deck: string) => `Which precon was ${deck} built from?`,
+      lead: "Link the precon you started from, and its list becomes v0, before v1.",
+      search: "Search by name, commander or set",
+      label: "Shares the most with this deck",
+      fig: (shared: number, of: number) => `${n(shared)} of ${n(of)}`,
+      figSub: "in this deck",
+      sameClause: "same commander",
+      foot: "Linking adds v0 before v1. Your cards don’t change.",
+      footNone: "Select a precon to link.",
+      none: "No precon shares a card with this deck.",
+      submit: (precon: string) => `Link ${precon}`,
+      selectAria: (name: string) => `Select ${name}`,
+      unselectAria: (name: string) => `Unselect ${name}`,
+    },
+  },
   empty: {
     body: "Every count reads 0 until your collection is in.",
     action: "Upload your collection",

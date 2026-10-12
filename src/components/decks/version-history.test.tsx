@@ -201,4 +201,11 @@ describe("VersionRail", () => {
     fireEvent.click(screen.getAllByRole("button", { expanded: false })[0]);
     expect(await screen.findAllByRole("button", { expanded: true })).toHaveLength(1);
   });
+
+  it("draws its foot after the last row, where v0 will land (precons R3 K5)", () => {
+    render(<VersionRail deckId="deck_1" versions={THREE} foot={<p>Built from a precon?</p>} />);
+    const foot = screen.getByText("Built from a precon?");
+    const rows = screen.getAllByRole("button", { expanded: false });
+    expect(rows[2].compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
