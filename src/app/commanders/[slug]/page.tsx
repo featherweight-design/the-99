@@ -104,11 +104,9 @@ export default async function CommanderDetailPage({
     readSynergyCards(userId, [commander.oracleId], coveredOracleIds, true),
     readCommanderProse(commander.oracleId),
   ]);
-  // The printing the player owns for the cards they own, which is the one card details opens.
-  const synergyCards = withChainArt(
-    synergyRead,
-    await chainArt(userId, null, synergyRead.filter((c) => c.owned).map((c) => c.oracleId)),
-  );
+  // The printing the player owns for the cards they own, which is the one card details opens. Started here and
+  // awaited in the batch below: it needs only the ids, so it rides beside the availability and price reads.
+  const synergyArt = chainArt(userId, null, synergyRead.filter((c) => c.owned).map((c) => c.oracleId));
 
   // ONE claim read for the whole page, off-decklist vantage — there is no
   // current deck here to exclude, so every figure is the unexcluded one — and
@@ -138,18 +136,20 @@ export default async function CommanderDetailPage({
   // ROLE COVERAGE DRAWS THE COPY THE READER OWNS (Hugh, 2026-10-05): its cards' neighbor plates drew
   // nothing while the card details drew the owned printing. One read over the role cards (all owned:
   // Role Coverage is built from the owned pool), beside the other two, carrying the art and the name
-  // printed on it together. The synergy panel is read without images, so it asks for none.
+  // printed on it together. The synergy rows' art is the separate read above (`synergyArt`); this one covers the role cards only.
   // Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
-  const [availability, { prices, newestAsOf }, ownedArt] = await Promise.all([
+  const [availability, { prices, newestAsOf }, ownedArt, synergyOwnedArt] = await Promise.all([
     loadAvailability(userId, {
-      oracleIds: [...new Set([...coveredOracleIds, ...synergyCards.map((c) => c.oracleId)])],
+      oracleIds: [...new Set([...coveredOracleIds, ...synergyRead.map((c) => c.oracleId)])],
     }).catch(() => new Map<string, Availability>()),
-    loadPrices(synergyCards.filter((c) => !c.owned).map((c) => c.oracleId)).catch(() => ({
+    loadPrices(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId)).catch(() => ({
       prices: new Map(),
       newestAsOf: null,
     })),
     resolveOwnedPrintings(userId, [...new Set(coveredOracleIds)]),
+    synergyArt,
   ]);
+  const synergyCards = withChainArt(synergyRead, synergyOwnedArt);
 
   const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
     ...c,

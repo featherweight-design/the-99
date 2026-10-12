@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { act, render, screen, within, fireEvent } from "@testing-library/react";
 import { SynergyPanel } from "./synergy-panel";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
@@ -198,5 +198,28 @@ describe("SynergyPanel", () => {
     const rows = screen.getAllByRole("listitem");
     fireEvent.click(within(rows[0]).getByRole("button", { name: /^Add / }));
     expect(onToggle).toHaveBeenCalledWith("id-creature-0");
+  });
+});
+
+// The provider previews only where a pointer can hover; a row's art shows only if its owner mounted one.
+function hoverable() {
+  vi.useFakeTimers();
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+  });
+}
+
+describe("SynergyPanel hover preview", () => {
+  it("previews the row's own art when the pointer rests on its name", () => {
+    hoverable();
+    try {
+      const cards = make(2).map((c) => ({ ...c, imageUri: `https://img.test/${c.oracleId}.jpg` }));
+      wrap(<SynergyPanel {...props} cards={cards} width="desktop" />);
+      const name = within(screen.getAllByRole("listitem")[0]).getAllByRole("button")[0];
+      fireEvent.mouseEnter(name, { clientX: 10, clientY: 10 });
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain(cards[0].imageUri);
+    } finally { vi.useRealTimers(); }
   });
 });
