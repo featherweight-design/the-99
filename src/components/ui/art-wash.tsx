@@ -335,7 +335,7 @@ export function ArtWash(props: ArtWashProps) {
         )}
         {artCropUri && props.deferArt ? (
           <NearViewportArt
-            uri={cssUrl(artCropUri)}
+            src={artCropUri}
             className="art-wash-art absolute inset-y-0 left-0"
             style={{
               ...reducible(p.sharpOpacity, true),

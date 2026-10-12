@@ -85,3 +85,40 @@ describe("HydratedImg", () => {
     expect(observed).toHaveLength(0);
   });
 });
+
+describe("deferred art's arrival", () => {
+  it("holds a deferred img pending until it loads, then fades it in once", () => {
+    const { container } = render(<HydratedImg src={SRC} alt="" />);
+    const img = container.querySelector("img")!;
+    // No mark before its source is asked for, and none in the server HTML: art shows without script.
+    expect(img.dataset.art).toBeUndefined();
+    expect(renderToString(<HydratedImg src={SRC} alt="" />)).not.toContain("data-art");
+    bringIntoView();
+    expect(img.dataset.art).toBe("pending");
+    act(() => void img.dispatchEvent(new Event("load")));
+    expect(img.dataset.art).toBe("in");
+  });
+
+  it("releases a broken image rather than hiding it behind a fade that never ends", () => {
+    const { container } = render(<HydratedImg src={SRC} alt="" />);
+    const img = container.querySelector("img")!;
+    bringIntoView();
+    act(() => void img.dispatchEvent(new Event("error")));
+    expect(img.dataset.art).toBe("in");
+  });
+
+  it("draws art already in the cache at once, with no fade", () => {
+    const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    const width = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(488);
+    const { container } = render(<HydratedImg src={SRC} alt="" />);
+    bringIntoView();
+    expect(container.querySelector("img")!.dataset.art).toBe("done");
+    complete.mockRestore();
+    width.mockRestore();
+  });
+
+  it("never marks eager art, which the first paint must not wait on", () => {
+    const { container } = render(<HydratedImg src={SRC} alt="" eager />);
+    expect(container.querySelector("img")!.dataset.art).toBeUndefined();
+  });
+});

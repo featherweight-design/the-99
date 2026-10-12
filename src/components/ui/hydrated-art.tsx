@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ImgHTMLAttributes, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ImgHTMLAttributes, type RefObject } from "react";
 
 /**
  * Card art that waits for the page to hydrate.
@@ -64,16 +64,50 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
 }
 
 /**
+ * How deferred art arrives (motion plan E4). `armArtArrival` marks `el` with `data-art="pending"`
+ * while `image`'s bytes are on their way, `in` for the one fade when they land (or fail: a broken
+ * image is not held behind a fade that never ends), and `done` when `image` was already decoded the
+ * moment its source was set, so cached art on a revisit is drawn at once rather than faded. The CSS
+ * hides `pending` and plays `in` only under `prefers-reduced-motion: no-preference`. Written to the
+ * DOM from a layout effect rather than rendered: the server HTML carries no mark, so art is visible
+ * without script, and the mark lands before the first paint that could show the source. Eager art
+ * never takes it: it is the first viewport, the image a slow page paints first, and holding it at
+ * opacity 0 would hold back the largest paint.
+ */
+export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => void {
+  if (image.complete && image.naturalWidth > 0) {
+    el.dataset.art = "done";
+    return () => {};
+  }
+  el.dataset.art = "pending";
+  const land = () => {
+    if (el.dataset.art === "pending") el.dataset.art = "in";
+  };
+  image.addEventListener("load", land);
+  image.addEventListener("error", land);
+  return () => {
+    image.removeEventListener("load", land);
+    image.removeEventListener("error", land);
+  };
+}
+
+/**
  * An <img> whose `src` and `srcSet` are withheld until the page has hydrated AND the img has come
  * within 600px of the viewport, unless `eager`, which asks for them in the server HTML. A `srcSet`
  * left on the element would let the browser pick and fetch a candidate with no `src` at all, past
  * both gates. Everything else passes through, so a surface keeps its own box: before its source arrives the img still takes its size,
- * and the ground behind it shows.
+ * and the ground behind it shows. A deferred img fades in when it loads (`armArtArrival`).
  */
 export function HydratedImg({ eager = false, src, srcSet, alt = "", ...rest }: ImgHTMLAttributes<HTMLImageElement> & { eager?: boolean }) {
   const ref = useRef<HTMLImageElement | null>(null);
   const near = useNearViewport(ref, !eager);
   const show = eager || near;
+  const fades = near && !eager && Boolean(src || srcSet);
+  useLayoutEffect(() => {
+    const img = ref.current;
+    if (!fades || !img) return;
+    return armArtArrival(img, img);
+  }, [fades]);
   // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image drawn at the size the surface gives it
   return <img ref={ref} alt={alt} src={show ? src : undefined} srcSet={show ? srcSet : undefined} {...rest} />;
 }
