@@ -97,6 +97,11 @@ export async function assignCopyIn(
   oracleId: string,
   deckId: string,
   mode: "toggle" | "set",
+  /**
+   * Filled in with whether THIS call wrote the deck's row. A `set` on a deck already reserved keeps
+   * the row it found, and an undo of the purchase must not delete a reservation it never made.
+   */
+  report?: { created: boolean },
 ): Promise<AssignRefusal | null> {
   const ask = await reservableAsk(tx, userId, deckId, oracleId);
   if (typeof ask === "string") return ask;
@@ -191,6 +196,7 @@ export async function assignCopyIn(
   }
 
   await tx.insert(cardAssignments).values({ userId, oracleId, deckId });
+  if (report) report.created = true;
   return null;
 }
 

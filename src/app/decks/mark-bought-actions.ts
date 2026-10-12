@@ -145,7 +145,11 @@ export async function markBought(
 
 
 export type MarkBoughtForDecksOutcome =
-  | { applied: { id: string; receipt: CartReceiptFacts | null } }
+  /**
+   * `pickCreated` (with a pick only): the press wrote the pick's reservation, rather than finding
+   * one already made, so its undo may drop it. False on a retry, whose first request's answer is gone.
+   */
+  | { applied: { id: string; receipt: CartReceiptFacts | null; pickCreated?: boolean } }
   /**
    * The holding moved since the confirm read it. `need` is what the line's decks are billed now, from
    * the roll-up: one copy landing elsewhere can clear several brews' rows, or none, so the cart's
@@ -248,6 +252,7 @@ export async function markBoughtForDecks(
         applied: {
           id: result.entry.id,
           receipt: snaps ? cartReceiptFacts(snaps.before, snaps.after, deckIds, new Map(Object.entries(snaps.owes ?? {}))) : null,
+          ...(pick ? { pickCreated: result.status === "applied" && result.assigned?.created === true } : {}),
         },
       };
     }

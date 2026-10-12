@@ -233,6 +233,8 @@ export type ChangeResult =
       receipt?: ReceiptSnapshots;
       /** With `opts.placements`: each raised card a deck claims, by oracle id. */
       raised?: Record<string, RaisedCard>;
+      /** With `opts.assign`: whether this write created the reservation, or found it already made. */
+      assigned?: { created: boolean };
     }
   /** Nothing would change. No entry is written. */
   | { status: "unchanged" }
@@ -662,9 +664,10 @@ export async function applyCollectionChange(
         if (change.ignoreDeckIds !== undefined && listed) {
           for (const id of change.ignoreDeckIds) if (listed.includes(id)) ignoredDecks.add(id);
         }
-        // THE PICK GOES WITH THE COPY, before the deck check reads its "before": the undo puts back
-        // the state before the press, and a pick left standing would hand a copy that is no longer
-        // there to the deck the press chose (a cart pick, or a Change on the receipt). Under the
+        // THE PICK GOES WITH THE COPY, before the deck check reads its "before": it drops the pick
+        // this press made (a cart pick it created, or a Change on the receipt), so a reservation
+        // left standing cannot hand the next copy to the deck this press chose. It restores nothing:
+        // a Change that MOVED an older reservation (A to B) drops B and A stays gone. Under the
         // card's claim lock, which every reservation write takes.
         const drop = placementToUndo(change.undoPlacement, row.rows);
         if (drop) {
@@ -782,8 +785,9 @@ export async function applyCollectionChange(
       } else {
         await writeRows(tx, userId, plan);
       }
+      const assigned = { created: false };
       if (opts.assign && !opts.dryRun) {
-        const refused = await assignCopyIn(tx, userId, opts.assign.oracleId, opts.assign.deckId, "set");
+        const refused = await assignCopyIn(tx, userId, opts.assign.oracleId, opts.assign.deckId, "set", assigned);
         if (refused) throw new Refused({ status: "assignRefused", reason: refused });
       }
       // The tokens this UPLOAD read, and the marker that they were read, in the same transaction as the
@@ -830,6 +834,7 @@ export async function applyCollectionChange(
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
         ...(opts.placements ? { raised: await raisedCards(tx, userId, plan) } : {}),
+        ...(opts.assign ? { assigned } : {}),
       };
     });
   } catch (error) {

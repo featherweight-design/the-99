@@ -26,6 +26,8 @@ type Receipt = {
   line: SelectedLine; written: Written; names: ReadonlyMap<string, string>; failed?: boolean;
   /** The deck the S1b chooser named on the press, if any: the receipt says `as you picked`. */
   picked: string | null;
+  /** The press wrote that pick's reservation (it did not find one already made): Undo may drop it. */
+  pickCreated?: boolean;
 };
 
 /**
@@ -148,7 +150,7 @@ export function CartGotItProvider({
     setPending(false);
     setTarget(null);
   }, []);
-  const done = useCallback((written: Written, picked: string | null) => {
+  const done = useCallback((written: Written, picked: string | null, pickCreated = false) => {
     const t = current.current;
     close();
     if (!t) return;
@@ -162,7 +164,7 @@ export function CartGotItProvider({
       });
       return new Map(h).set(id, summed(prev?.line ?? t.line, purchases));
     });
-    setReceipt({ line: t.line, written, names: t.names, picked });
+    setReceipt({ line: t.line, written, names: t.names, picked, pickCreated });
   }, [close]);
   const undoHost = useMemo(() => ({
     start: (id: string) => setUndoing((u) => (u.has(id) ? u : new Set(u).add(id))),
@@ -212,9 +214,10 @@ export function CartGotItProvider({
           cardName={receipt.line.name}
           written={receipt.written}
           body={cartReceiptBody(receipt.written.facts, receipt.names, receipt.picked)}
-          // The pick the press wrote goes with the copy on Undo (decision 5): left standing, it would
+          // The pick this press made goes with the copy on Undo (decision 5): left standing, it would
           // hand the next copy to the deck this purchase chose, after the purchase was taken back.
-          undoPlacement={receipt.picked ? { oracleId: receipt.line.oracleId, deckId: receipt.picked } : undefined}
+          // Only one the press CREATED: a reservation the deck already had is not this press's to drop.
+          undoPlacement={receipt.picked && receipt.pickCreated ? { oracleId: receipt.line.oracleId, deckId: receipt.picked } : undefined}
           placement="cart"
           failed={receipt.failed}
           host={hostFor(receipt)}
@@ -234,7 +237,7 @@ function CartConfirm({
   onPendingChange: (pending: boolean) => void;
   returnFocusRef: RefObject<HTMLElement | null>;
   onClose: () => void;
-  onDone: (written: Written, picked: string | null) => void;
+  onDone: (written: Written, picked: string | null, pickCreated?: boolean) => void;
 }) {
   const deckIds = line.selectedRows.map((r) => r.deckId);
   // S1b: the line's claimants, read once per confirm, for the chooser drawn when fewer copies are
@@ -256,6 +259,8 @@ function CartConfirm({
   const firstListed = chooserCard?.claimants.find((c) => line.selectedRows.some((r) => r.deckId === c.deckId && r.quantity > 0))?.deckName ?? "";
   // The pick the press sent, held for the receipt: the form reports only what was written.
   const sent = useRef<string | null>(null);
+  // Whether that pick's reservation was written by the press (and so is the press's to undo).
+  const created = useRef(false);
   // The figure the line drew, carrying the printing to preset: the confirm presets only a live one.
   // Memoized on the opened line: the form re-reads its choices whenever `price` changes, and a
   // fresh object every render would reset the player's printing on a stale or refused press.
@@ -276,6 +281,7 @@ function CartConfirm({
         const pickDeckId = choosing(input.quantity) ? picked : null;
         sent.current = pickDeckId;
         const out = await markBoughtForDecks(line.oracleId, { deckIds, pickDeckId, ...input });
+        created.current = "applied" in out && out.applied.pickCreated === true;
         // A stale answer means ownership moved: the chooser's claimants and shortfalls were read
         // before it, so the confirm falls back to the plain list, and the default order, rather
         // than preview a split that no longer holds.
@@ -315,7 +321,7 @@ function CartConfirm({
       returnFocusRef={returnFocusRef}
       onClose={onClose}
       decision={picked}
-      onDone={(written) => onDone(written, sent.current)}
+      onDone={(written) => onDone(written, sent.current, created.current)}
     >
       {({ quantity, pending }: GotItFormState) => (
       <div className="flex flex-col gap-[8px]">

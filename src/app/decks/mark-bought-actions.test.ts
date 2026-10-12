@@ -242,6 +242,16 @@ describe("markBoughtForDecks", () => {
     expect(opts.assign).toEqual({ oracleId: CARD, deckId: OTHER });
   });
 
+  it("says whether the press created the pick's reservation, so only a created one is undone", async () => {
+    state.result = { ...cartApplied(), assigned: { created: true } };
+    expect(await cartPress({ pickDeckId: OTHER })).toMatchObject({ applied: { pickCreated: true } });
+    state.result = { ...cartApplied(), assigned: { created: false } };
+    expect(await cartPress({ pickDeckId: OTHER })).toMatchObject({ applied: { pickCreated: false } });
+    // No pick, no field: the shipped answer is unchanged.
+    state.result = cartApplied();
+    expect("pickCreated" in ((await cartPress()) as { applied: object }).applied).toBe(false);
+  });
+
   it("answers a stale press with what the line's decks are billed now, from the roll-up", async () => {
     const current = [{ oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil" as const, quantity: 2 }];
     state.result = { status: "stale", current };
