@@ -51,6 +51,11 @@ describe("fairBasicCuts (Hugh, 2026-10-12: over the land target, and the color n
     expect(fair(20, 38, true)).toEqual([FOREST]);
   });
 
+  it("never cuts the last copy of a basic, whose loss a basic-land search would also feel", () => {
+    const one = [land(FOREST, "Forest", "G", 1), ...rows(0, 18).slice(1)];
+    expect(fairBasicCuts({ rows: one, nameOf, identity: ["R"], landTarget: 10, subjectIsLand: true })).toEqual([]);
+  });
+
   it("refuses a basic whose cut leaves its color under its Needed, even with lands to spare", () => {
     expect(fair(19, 30)).toEqual([]);
   });

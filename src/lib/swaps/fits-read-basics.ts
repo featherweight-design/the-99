@@ -21,6 +21,12 @@ import { requirement, total } from "../tuning/mana-help";
  * not counted as a source: a land or rock that gives the color back could only make more basics fair,
  * so leaving it out never lets an unfair cut through. A land coming in keeps the land count where it
  * was, so only the color half applies (`replacedByLand`).
+ *
+ * THE LAST COPY OF A BASIC NEVER GOES. A basic-land search (Cultivate, a fetch for "a basic land")
+ * makes the colors of the basics the deck plays, read at load (`loadSourceMana`), so cutting a
+ * deck's only Forest would also take green from every such searcher, and the re-read here would not
+ * see it. Refusing that copy keeps every simulated figure true; a deck with one copy has no basic of
+ * that type to spare anyway.
  */
 
 const isBasic = (typeLine: string) => isLandFace(typeLine) && /\bBasic\b/.test(typeLine);
@@ -36,7 +42,7 @@ export function fairBasicCuts(args: {
   const { rows, nameOf, identity, landTarget, subjectIsLand } = args;
   const read = (r: readonly ManaSupplyCardRow[]) => readManaBalance({ rows: r, nameOf, tapped: NO_TAPPED_LANDS, identity });
   const before = read(rows);
-  return rows.filter((r) => r.quantity > 0 && isBasic(r.typeLine)).flatMap((r) => {
+  return rows.filter((r) => r.quantity > 1 && isBasic(r.typeLine)).flatMap((r) => {
     const after = read(rows.map((x) => (x.id === r.id ? { ...x, quantity: x.quantity - 1 } : x)));
     const colors = BALANCE_COLORS.filter((c) => identity.includes(c) && (r.produces ?? []).includes(c))
       .map((c) => ({ sourcesAfter: total(after, c), needed: requirement(before, c) }));
@@ -78,6 +84,11 @@ export async function loadBasicCuts(
     const partner = d.partner_oracle_id ? leaderOf.get(d.partner_oracle_id) ?? null : null;
     const mix = mixes.get(mixKey({ commanderOracleId: d.commander_oracle_id, partnerOracleId: d.partner_oracle_id }));
     if (!commander || (d.partner_oracle_id && !partner) || !mix) return;
+    // No land to spare and no land coming in: no basic can be fair, so the deck's mana is not read at
+    // all. The count is Mana Balance's (`manaSupply`: copies of every land face), commanders included.
+    const lands = rows.reduce((n, r) => n + (isLandFace(r.type_line) ? r.quantity : 0), 0)
+      + [commander, partner].filter((c) => c && isLandFace(c.typeLine)).length;
+    if (!subjectIsLand && lands <= mix.cells.land.target) return;
     const deck: ManaDeck = {
       commander,
       partner,
