@@ -8,6 +8,7 @@ const conn = vi.hoisted(() => ({
   released: [] as unknown[],
   options: [] as unknown[],
   failCommit: false,
+  fail: "" as string,
 }));
 vi.mock("@neondatabase/serverless", () => ({
   Pool: class {
@@ -17,6 +18,7 @@ vi.mock("@neondatabase/serverless", () => ({
         query: async (text: string, values?: unknown[]) => {
           conn.queries.push({ text, values });
           if (text === "commit" && conn.failCommit) throw new Error("commit failed");
+          if (conn.fail && text.startsWith(conn.fail)) throw new Error(`${conn.fail} failed`);
           return { rows: text.includes("pg_try_advisory_xact_lock") ? [{ got: conn.got }] : [] };
         },
         release: (destroy?: unknown) => { conn.released.push(destroy); },
@@ -30,7 +32,7 @@ const { withReadAdmission } = await import("./run-store");
 const texts = () => conn.queries.map((q) => q.text.split(" ").slice(0, 2).join(" "));
 
 beforeEach(() => {
-  conn.queries = []; conn.got = true; conn.released = []; conn.failCommit = false;
+  conn.queries = []; conn.got = true; conn.released = []; conn.failCommit = false; conn.fail = "";
 });
 
 describe("withReadAdmission", () => {
@@ -63,6 +65,22 @@ describe("withReadAdmission", () => {
   it("destroys a connection whose commit failed, and reports the failure", async () => {
     conn.failCommit = true;
     await expect(withReadAdmission("user_1", async () => 1)).rejects.toThrow("commit failed");
+    expect(conn.released).toEqual([true]);
+  });
+
+  it("destroys a connection whose BEGIN, lock query or rollback failed, so an open or aborted transaction never returns to the pool", async () => {
+    for (const fail of ["begin", "select pg_try_advisory_xact_lock"]) {
+      conn.released = []; conn.fail = fail;
+      await expect(withReadAdmission("user_1", async () => 1)).rejects.toThrow(`${fail} failed`);
+      expect(conn.released, fail).toEqual([true]);
+    }
+    // A busy answer whose rollback fails is in doubt too; the answer still reaches the caller as the error.
+    conn.released = []; conn.fail = "rollback"; conn.got = false;
+    await expect(withReadAdmission("user_1", async () => 1)).rejects.toThrow("rollback failed");
+    expect(conn.released).toEqual([true]);
+    // Work that threw and then could not roll back: the work's error wins, the connection is destroyed.
+    conn.released = []; conn.got = true;
+    await expect(withReadAdmission("user_1", async () => { throw new Error("pool read failed"); })).rejects.toThrow("pool read failed");
     expect(conn.released).toEqual([true]);
   });
 

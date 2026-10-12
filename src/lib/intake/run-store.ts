@@ -162,32 +162,31 @@ function admissionPool(): Pool {
 }
 export async function withReadAdmission<T>(userId: string, run: () => Promise<T>): Promise<T | "busy"> {
   const client = await admissionPool().connect();
-  // A connection whose commit failed is destroyed, not handed to the next press.
-  let broken = false;
+  // A connection goes back to the pool only once its transaction has been committed or rolled back
+  // cleanly. Anything else (a failed BEGIN, a failed lock query, a failed rollback or commit) leaves
+  // it open or aborted, and `release` does not reset that: it is destroyed instead.
+  let clean = false;
+  const rollback = async () => { await client.query("rollback"); clean = true; };
   try {
     await client.query("begin");
     const { rows } = await client.query("select pg_try_advisory_xact_lock(hashtextextended($1, 0)) as got", [`intake-admit:${userId}`]);
     if ((rows[0] as { got: boolean } | undefined)?.got !== true) {
-      await client.query("rollback").catch(() => { broken = true; });
+      await rollback();
       return "busy";
     }
     let result: T;
     try {
       result = await run();
     } catch (err) {
-      await client.query("rollback").catch(() => { broken = true; });
+      await rollback().catch(() => {});
       throw err;
     }
     // A commit that fails is reported, never swallowed.
-    try {
-      await client.query("commit");
-    } catch (err) {
-      broken = true;
-      throw err;
-    }
+    await client.query("commit");
+    clean = true;
     return result;
   } finally {
-    client.release(broken || undefined);
+    client.release(clean ? undefined : true);
   }
 }
 
