@@ -23,7 +23,7 @@ export type OpenPreconCard = {
   basic: boolean;
   owned: boolean;
   /** The precon's printing, `SET number`, or null when the catalog lacks it. */
-  printing: { scryfallId: string; setCode: string; collectorNumber: string; label: string; imageUri: string | null } | null;
+  printing: { scryfallId: string; setCode: string; collectorNumber: string; label: string; imageUri: string | null; backImageUri: string | null } | null;
 };
 
 export type OpenPrecon =
@@ -88,7 +88,7 @@ async function readOpenPrecon(db: Reader, userId: string, fileName: string): Pro
       basic: basic(l.typeLine),
       owned: owned.has(l.oracleId),
       printing: l.scryfallId && l.setCode && l.collectorNumber
-        ? { scryfallId: l.scryfallId, setCode: l.setCode, collectorNumber: l.collectorNumber, label: `${l.setCode.toUpperCase()} ${l.collectorNumber}`, imageUri: l.printingImage }
+        ? { scryfallId: l.scryfallId, setCode: l.setCode, collectorNumber: l.collectorNumber, label: `${l.setCode.toUpperCase()} ${l.collectorNumber}`, imageUri: l.printingImage, backImageUri: l.printingBack }
         : null,
     })),
   };
@@ -112,6 +112,7 @@ export function openPreconLines(db: Reader, fileName: string) {
       setCode: printings.setCode,
       collectorNumber: printings.collectorNumber,
       printingImage: printings.imageUri,
+      printingBack: printings.backImageUri,
     })
     .from(preconCards)
     .innerJoin(cards, eq(cards.oracleId, preconCards.oracleId))

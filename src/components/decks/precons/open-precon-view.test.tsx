@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { OpenPrecon, OpenPreconCard } from "../../../lib/precons/open-read";
 
-const providerProps = vi.hoisted(() => ({ picks: null as unknown }));
+const providerProps = vi.hoisted(() => ({ picks: null as unknown, views: null as unknown }));
 vi.mock("../../cards/card-detail-provider", () => ({
-  CardDetailProvider: ({ children, deckPrintingPicks }: { children: React.ReactNode; deckPrintingPicks?: unknown }) => {
+  CardDetailProvider: ({ children, deckPrintingPicks, viewPrintings }: { children: React.ReactNode; deckPrintingPicks?: unknown; viewPrintings?: unknown }) => {
     providerProps.picks = deckPrintingPicks;
+    providerProps.views = viewPrintings;
     return children;
   },
   useCardDetail: () => ({ open: vi.fn() }),
@@ -21,7 +22,7 @@ import { OpenPreconView } from "./open-precon-view";
 
 const card = (name: string, over: Partial<OpenPreconCard> = {}): OpenPreconCard => ({
   oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1,
-  isCommander: false, basic: false, owned: true, printing: { scryfallId: `p-${name}`, setCode: "cmm", collectorNumber: "1", label: "CMM 1", imageUri: null }, ...over,
+  isCommander: false, basic: false, owned: true, printing: { scryfallId: `p-${name}`, setCode: "cmm", collectorNumber: "1", label: "CMM 1", imageUri: null, backImageUri: null }, ...over,
 });
 
 function precon(over: Partial<Extract<OpenPrecon, { kind: "precon" }>["row"]> = {}, cards = [
@@ -88,6 +89,14 @@ describe("OpenPreconView", () => {
   it("opens card details on the precon's own printing (O6)", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} />);
     expect(providerProps.picks).toMatchObject({ "Sol Ring": { setCode: "cmm", collectorNumber: "1" } });
+  });
+
+  it("views a two-faced card's precon printing on both faces", () => {
+    render(<OpenPreconView precon={precon({}, [
+      card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+      { ...card("Delver of Secrets", { layout: "transform" }), printing: { scryfallId: "s", setCode: "isd", collectorNumber: "51", label: "ISD 51", imageUri: "front.jpg", backImageUri: "back.jpg" } },
+    ])} fromNew={false} />);
+    expect(providerProps.views).toMatchObject({ "Delver of Secrets": { imageUri: "front.jpg", backImageUri: "back.jpg" } });
   });
 
   it("draws the empty-collection band above the own box only without a collection (O5)", () => {

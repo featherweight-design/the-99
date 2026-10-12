@@ -92,7 +92,7 @@ export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: b
   const viewPrintings = Object.fromEntries(
     cards.flatMap((c) => (c.printing ? [[c.oracleId, {
       setCode: c.printing.setCode, collectorNumber: c.printing.collectorNumber,
-      scryfallId: c.printing.scryfallId, imageUri: c.printing.imageUri,
+      scryfallId: c.printing.scryfallId, imageUri: c.printing.imageUri, backImageUri: c.printing.backImageUri,
     }]] : [])),
   );
 
