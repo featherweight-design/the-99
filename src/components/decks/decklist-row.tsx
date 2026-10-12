@@ -201,9 +201,12 @@ export function DecklistRow({
       {addPanelCopy.row.quantity(card.quantity)}
     </span>
   );
-  // With no ✕ (a read-only row), nothing else speaks the count, so the row says it once.
-  const quantitySpoken = readOnly && card.quantity > 1 && (
-    <span className="sr-only">{addPanelCopy.row.quantitySpoken(card.quantity)}</span>
+  // With no ✕ (a read-only row), nothing else speaks the count, so the row says it once, through
+  // the name's description as the other row facts are, so a reader on the focused name hears it.
+  const quantityDescriptionId = useId();
+  const speaksQuantity = readOnly && card.quantity > 1;
+  const quantitySpoken = speaksQuantity && (
+    <span id={quantityDescriptionId} className="sr-only">{addPanelCopy.row.quantitySpoken(card.quantity)}</span>
   );
 
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
@@ -348,6 +351,7 @@ export function DecklistRow({
   const describedBy =
     [
       availabilityDescriptionId,
+      speaksQuantity ? quantityDescriptionId : null,
       // Right after the availability word (handoff copy, `mark.a11y`): which card, whether it is
       // owned, that it is locked, then what the deck has done with it.
       locked ? lockDescriptionId : null,

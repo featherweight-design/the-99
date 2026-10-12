@@ -39,6 +39,20 @@ function toDetail(c: OpenPreconCard): DeckDetailCard {
   };
 }
 
+/**
+ * One entry per card. The feed lists a card once per printing (in practice, a precon's basics in
+ * several arts), so two rows share an oracle id: they are one card here, with their copies summed
+ * and the first printing named, and so one row, one React key and one card-details pick.
+ */
+function byCard(cards: OpenPreconCard[]): OpenPreconCard[] {
+  const merged = new Map<string, OpenPreconCard>();
+  for (const c of cards) {
+    const seen = merged.get(c.oracleId);
+    merged.set(c.oracleId, seen ? { ...seen, quantity: seen.quantity + c.quantity } : c);
+  }
+  return [...merged.values()];
+}
+
 /** A group's note: how many of its distinct non-basic cards the reader owns. */
 function groupOwned(cards: OpenPreconCard[]) {
   // By oracle id: the feed lists a card once per printing, and two printings are one card.
@@ -55,7 +69,8 @@ function commanderNote(cards: OpenPreconCard[]) {
 }
 
 export function OpenPreconView({ precon, fromNew }: { precon: Loaded; fromNew: boolean }) {
-  const { row, cards } = precon;
+  const { row } = precon;
+  const cards = byCard(precon.cards);
   const commanders = cards.filter((c) => c.isCommander);
   const body = cards.filter((c) => !c.isCommander);
   const basics = body.filter((c) => c.basic);

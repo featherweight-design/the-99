@@ -59,6 +59,17 @@ describe("OpenPreconView", () => {
     expect(screen.getByText("you own 1 of 2")).toBeInTheDocument();
   });
 
+  it("draws a card the feed lists under two printings once, with its copies summed", () => {
+    render(<OpenPreconView precon={precon({}, [
+      card("Zhulodok", { isCommander: true, typeLine: "Legendary Creature — Eldrazi" }),
+      card("Ruins", { typeLine: "Land" }),
+      card("Plains", { typeLine: "Basic Land — Plains", basic: true, quantity: 5 }),
+      { ...card("Plains", { typeLine: "Basic Land — Plains", basic: true, quantity: 4 }), printing: null },
+    ])} fromNew={false} />);
+    expect(screen.getByText("Plains ×9")).toBeInTheDocument();
+    expect(screen.queryByText("Plains ×5")).toBeNull();
+  });
+
   it("lists the basics under Lands and counts them in its figure (O2)", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} />);
     const lands = screen.getAllByTestId("group").find((g) => g.querySelector("h2")?.textContent === "Lands")!;
