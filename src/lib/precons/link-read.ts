@@ -1,7 +1,9 @@
 /**
  * The deck page's precon link read (R3 addendum): whether the deck is linked, and for an unlinked
- * deck every plain precon's overlap with it, counted in SQL so the page never reads every precon's
- * list. `link.ts` picks the suggestions and orders the picker from these counts.
+ * deck every plain precon's overlap with it. The precons' own figures, including each one's
+ * distinct non-basic card ids (~180 precons, ~100 ids each), are read once per catalog generation
+ * and held in this process's memo; the overlap is then counted in memory against the deck's own
+ * card ids. `link.ts` picks the suggestions and orders the picker from these counts.
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
