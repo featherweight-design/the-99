@@ -24,7 +24,7 @@ const get = (qs: string) => GET(new NextRequest(`http://localhost/api/collection
 beforeEach(() => {
   stub.userId = "user_1";
   stub.load.mockReset();
-  stub.load.mockResolvedValue([card(A), card(B)]);
+  stub.load.mockResolvedValue({ cards: [card(A), card(B)], pricesFailed: false });
 });
 
 describe("GET /api/collection-fields", () => {

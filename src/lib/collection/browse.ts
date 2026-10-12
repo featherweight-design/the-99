@@ -1176,7 +1176,11 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   // and both passes below, and it writes a field neither of them touches. A failure is reported
   // rather than swallowed, because the page says so (F1) and the list must not be cached with it.
   const load = readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices;
-  const prices = load(userId).catch(() => null);
+  const prices = load(userId).catch(() => {
+    // not a fallback: the failure is returned as `pricesFailed`, the page says so (F1), and
+    // `loadCollectionList` throws such a list past the cache rather than storing it.
+    return null;
+  });
   const aggregated = aggregateCollection(await selectCollectionRows(userId));
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
