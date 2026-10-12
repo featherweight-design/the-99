@@ -292,6 +292,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   dropped the card and a deck that is not the player's each refuse the whole press with nothing
   written, and the cart's undo (`ignoreDeckIds`) leaves out the line's decks only, only for a
   `shopping:cart` entry. Per-run user, cleaned up in a `finally`; refused on production and staging.
+  Since added copy PR 2 it also proves Undo drops only a pick the press made: a pick on a deck
+  with no reservation reports `assigned.created` and a revert carrying `undoPlacement` removes it in
+  the same transaction, while a pick on a deck that already held the reservation reports it did not
+  create one and the cart's undo, sending no placement, leaves that older reservation standing.
 - `pnpm probe:collection-write` proves the collection ledger's concurrency claims
   (`applyCollectionChange`, plan `2026-10-09-collection-write-path.md`) against a real Postgres:
   a double-submitted add applies once, two tabs editing one row with `expected` produce one

@@ -74,10 +74,10 @@ async function main() {
     throw new Error(`refusing branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch`);
   }
   const picked = (await pool.query(
-    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 7",
+    "select oracle_id, name from cards where type_line not like '%Basic%' order by oracle_id limit 8",
   )).rows as { oracle_id: string; name: string }[];
-  if (picked.length < 7) throw new Error("the catalog holds fewer than seven cards");
-  const [A, B, C, CMD1, CMD2, D, E] = picked.map((p) => p.oracle_id);
+  if (picked.length < 8) throw new Error("the catalog holds fewer than eight cards");
+  const [A, B, C, CMD1, CMD2, D, E, F] = picked.map((p) => p.oracle_id);
   console.log(`branch ${branch} · fixture ${USER}`);
 
   const deck = async (name: string, commander: string, cards: string[], commit: boolean, owner = USER) => {
@@ -292,6 +292,39 @@ async function main() {
     const deckEntryDecks = deckEntry.status === "preview" ? deckEntry.decks.map((d) => d.deckId).sort() : [`(${deckEntry.status})`];
     check("and the cart's exemption does nothing for a deck's own entry",
       JSON.stringify(deckEntryDecks) === JSON.stringify(all), JSON.stringify(deckEntryDecks));
+
+    // ---- Undo drops only a pick the press made (added copy PR 2) ---------------------------------
+    // Two brews list F, so a revert shorts no committed deck and no confirmation intervenes.
+    const brewX = await deck("probe undo X", CMD1, [F], false);
+    const brewY = await deck("probe undo Y", CMD2, [F], false);
+    const xy = [brewX, brewY];
+    const reservedF = async (deckId: string) => Number((await one<{ n: number }>(
+      "select count(*)::int as n from card_assignments where user_id = $1 and oracle_id = $2 and deck_id = $3", [USER, F, deckId],
+    )).n);
+    const buyF = (expected: number, entryId: string) => applyCollectionChange(
+      USER,
+      { kind: "edit", rows: [{ oracleId: F, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + 1, expected, condition: null }] },
+      { id: entryId, source: cartSource(xy), receipt: { oracleId: F, deckIds: [], owesFor: xy }, requireMember: { deckIds: xy, oracleId: F }, assign: { oracleId: F, deckId: brewY } },
+    );
+    const e1 = randomUUID();
+    const made = await buyF(0, e1);
+    check("a pick on a deck with no reservation reports that the press created it",
+      made.status === "applied" && made.assigned?.created === true && await reservedF(brewY) === 1,
+      `${made.status}; created ${made.status === "applied" ? JSON.stringify(made.assigned) : "-"}; reserved ${await reservedF(brewY)}`);
+    const undone = await applyCollectionChange(USER, { kind: "revert", entryId: e1, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID() });
+    check("Undo with that pick drops the reservation in the same revert",
+      undone.status === "applied" && await reservedF(brewY) === 0, `${undone.status}; reserved ${await reservedF(brewY)}`);
+
+    await pool.query("insert into card_assignments (user_id, oracle_id, deck_id) values ($1, $2, $3)", [USER, F, brewY]);
+    const e2 = randomUUID();
+    const kept = await buyF(0, e2);
+    check("a pick on a deck that already holds the reservation reports it did not create one",
+      kept.status === "applied" && kept.assigned?.created === false,
+      `${kept.status}; created ${kept.status === "applied" ? JSON.stringify(kept.assigned) : "-"}`);
+    // The cart sends no undoPlacement for it, so the older reservation survives the undo.
+    const undone2 = await applyCollectionChange(USER, { kind: "revert", entryId: e2 }, { id: randomUUID() });
+    check("and Undo without a placement leaves the reservation that predates the purchase",
+      undone2.status === "applied" && await reservedF(brewY) === 1, `${undone2.status}; reserved ${await reservedF(brewY)}`);
   } finally {
     await pool.query("delete from collection_history where user_id = $1", [USER]);
     await pool.query("delete from collection_items where user_id = $1", [USER]);
