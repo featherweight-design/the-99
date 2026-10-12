@@ -124,7 +124,6 @@ export const allDecksCartCopy = {
   /** I got it's receipt body on a cart press, from the read after the write (lock 7). */
   receipt: {
     covered: (names: string[]) => `${and(names)} ${names.length === 1 ? "is" : "are"} covered.`,
-    asPicked: "as you picked",
     still: (deck: string, need: number) => `${deck} still needs ${n(need)}.`,
     stillMany: (deckN: number, need: number) => `${decks(deckN)} still need ${n(need)} between them.`,
   },
