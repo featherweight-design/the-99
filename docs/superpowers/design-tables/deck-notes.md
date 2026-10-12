@@ -10,7 +10,7 @@
 | add row | column, gap 8: field full width; then a row, `justify-content: flex-end`, gap 8: counter mono 10 (`order:-1; margin-right:auto`) · `[[ ]]` 56×48 · `Add` min-w 104 × 48 | row, gap 8: field (flex 1) · `[[ ]]` 44×40 · `Add` h 40 |
 | field | `position:relative`, pad 11 44 11 13 (room for the ⓘ) | pad 9 40 9 12 |
 | ⓘ | shipped `InfoTip`, right 13, vertically centred; `lines = deckNotesCopy.help.lines`; tooltip spans the field | right 11; tooltip 340 wide, aligned right |
-| `[[ ]]` | inserts `[[]]` at the caret, caret between, opens the picker (`help.insertPrompt`); lit `--elevated` / `--fg` while the caret is in an open tag | same |
+| `[[ ]]` | inserts `[[]]` at the caret, caret between, opens the picker (`help.insertAria` names it for a screen reader); lit `--elevated` / `--fg` while the caret is in an open tag | same |
 | NotesMark | two slips 64×48, back `--elevated` / 1.5px `--border-strong` at +10/+10, front accent-tinted / 1.5px `--accent`; three lines (box 6 + bar 2); no rotation | slips 100×74 at +16/+16; box 9 + bar 3 |
 | empty body | one paragraph (`deckNotesCopy.empty.body`); the tag paragraph is removed | same |
 
@@ -23,7 +23,7 @@
 | Property | Mobile | Desktop |
 |---|---|---|
 | where | `GroupToggle`'s segment group, after Stats: `All · Shopping` \| `Stats · Notes` | same |
-| type | `DeckPanel` = `"list" \| "stats" \| "notes"`; `the99:deck-panel` stores it; gate `DECK_NOTES_ENABLED` | same |
+| type | `DeckPanel` = `"list" \| "stats" \| "notes"`; held for one visit to one deck and never stored (`deck-panel.ts`); gate `DECK_NOTES_ENABLED` | same |
 | cell | `SEGMENT_BASE` with `flex: 1 1 auto` and pad 6 10 (all four cells), min-h 44 | `SEGMENT_BASE`, flex none, pad 6 14 |
 | label + count | `Notes` + mono 11.5 `--fg-faint` open count; no count at zero; aria `deckNotesCopy.head.segmentAria(n)` / `.segmentAriaNone` | same |
 | selected | 600 `--fg` on `--elevated` | same |
@@ -156,8 +156,9 @@
 | role | `listbox`, field `aria-controls` + `aria-activedescendant` | same |
 | section head | mono 9.5 uppercase .14em `--fg-faint`, pad 8 12 4 | same |
 | sections | `In this deck` (local, from the first letter) · `Any card` (`searchCards` picker mode, from 2 letters, 150ms, deck matches removed) | same |
-| row | min-h 48, pad 4 12, gap 10; thumb 24×34; name 13.5 (match 600); meta mono 10 `--fg-faint` | min-h 42 |
-| limits | 4 visible, 5 per section | 5 per section |
+| row | min-h 48, pad 4 12, gap 10; name 13.5; meta mono 10 `--fg-faint` | min-h 42 |
+| row, not shipped | a 24×34 thumb and a 600-weight match in the name are not drawn: the lookup returns no art, and the first version reads without either. Open question for Design if wanted | same |
+| limits | 5 per section; the list scrolls inside `max-h` 220 | 5 per section |
 | active | `--elevated` | same |
 | footer | none | mono 10 `--fg-locked` `notes.picker.keys`, top 1px `--border` |
 

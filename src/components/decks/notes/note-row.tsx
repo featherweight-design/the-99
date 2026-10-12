@@ -10,9 +10,11 @@ import { MutationError } from "../mutation-error";
 import { NoteField, type DeckCardOption } from "./note-field";
 import { NoteTags } from "./note-tags";
 
-/** `2 Oct`: absolute and mono, in the player's own calendar. Never relative (the Must-nots). */
-export function formatNoteDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+/** `2 Oct`, or `2 Oct 2025` outside the current year: absolute and mono, in the player's own calendar. Never relative (the Must-nots). */
+export function formatNoteDate(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString("en-GB", sameYear ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
 }
 
 /**

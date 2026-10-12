@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsDesktop } from "../../ui/use-is-desktop";
 import { useRef, useState } from "react";
 import { addNote } from "../../../app/decks/notes-actions";
 import { deckNotesCopy, NOTES_PER_DECK, NOTES_SHOWN } from "../../../lib/copy/deck-notes";
@@ -37,6 +38,7 @@ export function DeckNotesPanel({
   const atCap = total >= NOTES_PER_DECK;
   const [text, setText] = useState("");
   const [picked, setPicked] = useState<Picked>(new Map());
+  const desktop = useIsDesktop();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllOpen, setShowAllOpen] = useState(false);
@@ -81,7 +83,7 @@ export function DeckNotesPanel({
       pending={busy}
       submitLabel={deckNotesCopy.add.add}
       pendingLabel={deckNotesCopy.add.adding}
-      placeholder={deckNotesCopy.add.placeholder}
+      placeholder={desktop ? deckNotesCopy.add.placeholder : deckNotesCopy.add.placeholderShort}
       ariaLabel={deckNotesCopy.add.label}
       onChange={(t, p) => { setText(t); setPicked(p); setError(null); }}
       onSubmit={submit}
@@ -100,7 +102,7 @@ export function DeckNotesPanel({
   if (total === 0) {
     return (
       <section aria-label={deckNotesCopy.head.segment} className="flex flex-col gap-[18px] px-[16px] pb-[24px] pt-[18px] md:mx-auto md:w-full md:max-w-[820px] md:flex-row md:gap-[30px] md:px-[28px] md:py-[18px]">
-        <div className="flex justify-center md:flex-none md:items-start"><NotesMark size={96} /></div>
+        <div className="flex justify-center md:flex-none md:items-start"><span className="md:hidden"><NotesMark size={64} /></span><span className="hidden md:block"><NotesMark size={100} /></span></div>
         <div className="flex min-w-0 flex-1 flex-col gap-[12px]">
           <h2 className="m-0 font-display text-[20px] text-[color:var(--fg)]">{deckNotesCopy.empty.heading}</h2>
           <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{deckNotesCopy.empty.body}</p>

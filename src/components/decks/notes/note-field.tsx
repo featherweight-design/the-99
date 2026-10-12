@@ -15,7 +15,8 @@ type Option = { oracleId: string; name: string; meta: string; group: "deck" | "a
 /** The picker lookup's answer for ONE query; any other query reads as pending, so no effect has to reset it. */
 type Answer = { query: string; status: "ok" | "refused"; rows: Option[] };
 
-const LOCAL_MAX = 6;
+/** The picker's two groups show five rows each (the design table's `limits`). */
+const GROUP_MAX = 5;
 const REMOTE_MIN_LETTERS = 2;
 const DEBOUNCE_MS = 150;
 
@@ -64,7 +65,7 @@ export function NoteField({
     return deckCards
       .filter((c) => c.name.toLowerCase().includes(q))
       .sort((a, b) => Number(b.name.toLowerCase().startsWith(q)) - Number(a.name.toLowerCase().startsWith(q)) || a.name.localeCompare(b.name))
-      .slice(0, LOCAL_MAX)
+      .slice(0, GROUP_MAX)
       .map((c) => ({ oracleId: c.oracleId, name: c.name, meta: c.typeLine, group: "deck" as const }));
   }, [open, query, deckCards]);
 
@@ -81,6 +82,7 @@ export function NoteField({
         status: "ok",
         rows: hits
           .filter((h) => !held.has(h.oracleId))
+          .slice(0, GROUP_MAX)
           .map((h) => ({
             oracleId: h.oracleId,
             name: h.name,

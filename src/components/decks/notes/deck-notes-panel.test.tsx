@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckNotesView, NoteView } from "../../../lib/decks/notes-types";
 import { formatTag } from "../../../lib/decks/notes-body";
+import { formatNoteDate } from "./note-row";
 
 const stub = vi.hoisted(() => ({
   addNote: vi.fn(),
@@ -53,11 +54,20 @@ describe("an empty deck", () => {
   });
 });
 
+describe("formatNoteDate", () => {
+  const now = new Date("2026-10-12T12:00:00.000Z");
+  it("names the year only outside the current one", () => {
+    expect(formatNoteDate("2026-10-02T12:00:00.000Z", now)).toBe("2 Oct");
+    expect(formatNoteDate("2025-10-02T12:00:00.000Z", now)).toBe("2 Oct 2025");
+  });
+});
+
 describe("the list", () => {
   it("shows six open notes in the order given, then Show all N", async () => {
     const open = Array.from({ length: 8 }, (_, i) => note(`n${i}`, `note ${i}`));
     mount(view(open));
     expect(screen.getAllByRole("checkbox")).toHaveLength(6);
+    expect(screen.getAllByText(/^note \d$/).map((el) => el.textContent)).toEqual(["note 0", "note 1", "note 2", "note 3", "note 4", "note 5"]);
     click(screen.getByRole("button", { name: "Show all 8" }));
     expect(screen.getAllByRole("checkbox")).toHaveLength(8);
   });
