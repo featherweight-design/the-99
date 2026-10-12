@@ -211,7 +211,7 @@ function brokenLine(item: TuningItem): string {
   return item.cutInDeck ? copy.addAlreadyIn(item.addName) : copy.cutGone(item.cutName);
 }
 
-function Arrow({ ink }: { ink: string }) {
+export function Arrow({ ink }: { ink: string }) {
   return <span aria-hidden className="font-mono" style={{ color: ink }}>{"→"}</span>;
 }
 
@@ -264,7 +264,8 @@ function Thumb({ item, side }: { item: TuningItem; side: "cut" | "add" }) {
   );
 }
 
-function AnsweredRow({
+/** A verdict receipt, shared with Improve my mana's applied trades, which take Undo the same way. */
+export function AnsweredRow({
   tone,
   pair,
   action,

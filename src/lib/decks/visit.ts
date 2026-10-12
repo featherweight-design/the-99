@@ -24,7 +24,7 @@ export type ToolBaseline = { okKey: string | null; runId: string | null };
 
 /** A tool result that is never stored server-side and must still last the visit (Mana Balance's help:
  *  `mana-help`). Opaque here; its owner checks it still describes the deck before drawing it. */
-export type VisitSlot = "mana-help";
+export type VisitSlot = "mana-help" | "mana-trades";
 
 type Visit = {
   deckId: string;

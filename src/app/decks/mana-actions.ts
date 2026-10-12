@@ -3,15 +3,19 @@
 import { requireUserId } from "../../lib/auth";
 import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { chainArt } from "../../lib/cards/chain-art";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { getDeckDetail, type DeckDetail } from "../../lib/decks/read";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { listFingerprint } from "../../lib/profile/fingerprint";
 import { manaBalanceEnabled } from "../../lib/tuning/flag";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { loadManaBalance } from "../../lib/tuning/mana-balance-load";
 import type { ManaHelp } from "../../lib/tuning/mana-help";
 import { loadManaHelp } from "../../lib/tuning/mana-help-load";
+import { applyTrade, undoTrade } from "../../lib/tuning/mana-trade";
 import { manaCountSummary, toClientBalance, type ManaPanelData } from "../../lib/tuning/mana-view";
 import { recordToolCount } from "../../lib/tuning/tool-counts";
+import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isUuid } from "../../lib/uuid";
 
 /** The list the count read, as `listFingerprint` keys a list: copies summed per card, so the key
@@ -75,15 +79,55 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
  */
 export async function readManaHelpFor(deckId: string, color: string): Promise<ManaHelp | null> {
   const userId = await requireUserId();
+  const read = await helpFor(deckId, color, userId);
+  if (!read) return null;
+  const { deckId: id, ...help } = read;
+  // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
+  // one the player owns, else the catalog's (`chainArt`, as Suggested changes and Proposed cuts do).
+  const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId));
+  return art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
+}
+
+/** Improve my mana for one of the reader's decks, read fresh: null on any refusal or failed read. */
+async function helpFor(deckId: string, color: string, userId: string): Promise<(ManaHelp & { deckId: string }) | null> {
   if (!manaBalanceEnabled() || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
   const deck = await getDeckDetail(deckId, userId);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;
   const help = await loadManaHelp(deck, userId, color as BalanceColor);
-  if (!help) return null;
-  // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
-  // one the player owns, else the catalog's (`chainArt`, as Suggested changes and Proposed cuts do).
-  const art = await chainArt(userId, deck.id, help.staples.map((s) => s.oracleId));
-  return art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
+  return help ? { ...help, deckId: deck.id } : null;
+}
+
+export type ManaTradeResult = { ok: true; applyId: string } | { ok: false; message: string };
+
+/**
+ * Apply one of Improve my mana's trades: one copy of the basic out, one copy of the staple in, into the
+ * deck's list, with Undo. A PUBLIC ENDPOINT, so the client names only the color and the staple, and the
+ * trade is found in a fresh read of the help for that color: the basic it cuts is the server's, never the
+ * caller's, and a trade the current deck no longer offers (another color would now drop below what it
+ * needs, or the staple went in another way) is refused.
+ */
+export async function applyManaTrade(deckId: string, color: string, stapleOracleId: string): Promise<ManaTradeResult> {
+  const refused = { ok: false as const, message: deckTuningCopy.card.applyRefused };
+  const userId = await requireUserId();
+  if (!isUuid(stapleOracleId)) return refused;
+  const help = await helpFor(deckId, color, userId);
+  const trade = help?.trades.find((t) => t.staple.oracleId === stapleOracleId);
+  if (!help || !trade) return refused;
+  const applyId = await applyTrade(help.deckId, userId, trade.basicOutId, trade.staple.oracleId);
+  if (!applyId) return refused;
+  revalidateClaims(help.deckId, userId);
+  return { ok: true, applyId };
+}
+
+/** Undo an applied trade: the deck exactly as the apply found it, refused over a deck that has moved since. */
+export async function undoManaTrade(applyId: string): Promise<DeckMutationResult> {
+  const refused = { ok: false as const, message: deckTuningCopy.card.undoRefused };
+  const userId = await requireUserId();
+  if (!manaBalanceEnabled() || !isUuid(applyId)) return refused;
+  const deckId = await undoTrade(applyId, userId);
+  if (!deckId) return refused;
+  revalidateClaims(deckId, userId);
+  return { ok: true };
 }
