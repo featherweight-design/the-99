@@ -44,6 +44,8 @@ export type CartLine = {
   oracleId: string;
   /** The oracle name: what the Mana Pool line carries, and what the line is merged by. */
   name: string;
+  /** The art the line previews with: the printing the player owns, else the catalog's. Drawn only, never merged on. */
+  imageUri?: string | null;
   /** Some deck on the line buys it as its unowned commander (H28). Per selection: `selectLine`. */
   commander: boolean;
   /**

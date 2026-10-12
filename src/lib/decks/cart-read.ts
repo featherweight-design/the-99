@@ -8,6 +8,7 @@ import type { CartDeck, CartLine, CartPayload } from "./cart";
 import { priceOf, priceState } from "./price";
 import { priceFor, type PriceRead } from "./price-query";
 import { readBuyRowPrices, rollupBuyRows } from "./shopping-rollup";
+import { chainArt } from "../cards/chain-art";
 
 /**
  * The all-decks cart's whole read: every row the roll-up bills, the decks they belong to, and
@@ -33,7 +34,7 @@ export async function loadCart(userId: string): Promise<CartPayload> {
   const oracleIds = [...new Set(rows.map((r) => r.oracleId))];
   // All four reads at once, and only the price read caught: a failure there degrades the cart to
   // its rows (T2), while a failure in any other read is the page's own error.
-  const [read, deckRows, cardRows, availability] = await Promise.all([
+  const [read, deckRows, cardRows, availability, ownedArt] = await Promise.all([
     readBuyRowPrices(userId, rows).catch((err): PriceRead | null => {
       // A fallback, so a cached page never stores it: the next visit reads the prices again.
       recordSoftFailure();
@@ -41,11 +42,13 @@ export async function loadCart(userId: string): Promise<CartPayload> {
       return null;
     }),
     cartDecksQuery(userId, deckIds),
-    db.select({ oracleId: cards.oracleId, name: cards.name })
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri })
       .from(cards)
       .where(inArray(cards.oracleId, oracleIds)),
     // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
     loadAvailability(userId, { oracleIds }),
+    // The printing card details opens for a line's card, so the preview shows it; the catalog's art otherwise.
+    chainArt(userId, null, oracleIds),
   ]);
 
   const ownership = new Map<string, Ownership>();
@@ -56,8 +59,11 @@ export async function loadCart(userId: string): Promise<CartPayload> {
     ownership.set(oracleId, { owned: a.owned, heldByDeck });
   }
 
+  const built = buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership);
+  const catalogArt = new Map(cardRows.map((c) => [c.oracleId, c.imageUri]));
   return {
-    ...buildCart(rows, read, deckRows, new Map(cardRows.map((c) => [c.oracleId, c.name])), ownership),
+    ...built,
+    lines: built.lines.map((l) => ({ ...l, imageUri: ownedArt.get(l.oracleId) ?? catalogArt.get(l.oracleId) ?? null })),
     totalDecks: total,
   };
 }
