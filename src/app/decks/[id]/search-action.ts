@@ -3,6 +3,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cardBracketFlags, cards, collectionItems } from "../../../db/schema";
+import { chainArt } from "../../../lib/cards/chain-art";
 import { nameSearch } from "../../../lib/cards/name-search";
 import { requireUserId } from "../../../lib/auth";
 import type { CardNoteFacts } from "../../../lib/bracket/card-note";
@@ -138,14 +139,18 @@ export async function searchCards(
   // Availability is decoration: a failure here must leave the search working, so
   // the read is swallowed and every row falls back to no marker.
   const ownedIds = rows.filter((r) => r.ownedQty > 0).map((r) => r.oracleId);
-  const availability =
+  const [availability, ownedArt] = await Promise.all([
     deckId && ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
-          () => null,
-        )
-      : null;
+      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => null)
+      : null,
+    // The art a row is drawn with: the printing the player owns (the deck's pick where it holds the card),
+    // the one card details opens, rather than the catalog's one arbitrary printing per card. An unowned
+    // card has no other, so it keeps `cards.image_uri`. Fail-soft inside `chainArt`.
+    chainArt(userId, deckId ?? null, ownedIds),
+  ]);
   return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,
+    imageUri: ownedArt.get(row.oracleId) ?? row.imageUri,
     facts: noteFacts({
       gameChanger: gameChanger ?? false,
       massLandDenial: massLandDenial ?? false,
