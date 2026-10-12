@@ -5,7 +5,7 @@
 ## R2 deltas (these win over the R1 rows below)
 | Property | Mobile | Desktop |
 |---|---|---|
-| page | `height: 100dvh` column: head and pinned `flex:none`; body `flex:1; min-height:0` | same |
+| page | `flex:1; min-height:0` column filling `ShellMain` (audit finding 14: never `100dvh`, the shell already reserves the header and tab bar); head and pinned `flex:none`; body `flex:1; min-height:0` | same |
 | pinned bar | pad 14 16 12, `--bg`; holds search + chips (Switches, Accounts) or the month bar (Costs) | pad 18 28 14 |
 | list pages body | `overflow:hidden`, pad 0 16 12; table box `flex:1; min-height:0; overflow-y:auto` | pad 0 28 18 |
 | other pages body | `overflow-y:auto` | same |
@@ -124,7 +124,7 @@
 |---|---|
 | model calls, by feature, refunds, per account | `model_calls` (status, origin, cost_micro_usd) |
 | model, effort, per call | `model_call_parts` from its build; earlier rows by feature, effort `not recorded` |
-| card labels | `card_label_batches` |
+| card labels | `card_label_batches` (workflow runs, staging only) plus `model_calls` `feature = 'labels'` (manual collector); disjoint, summed (audit findings 3, 8) |
 | evals | `docs/superpowers/eval/ledger*.jsonl`, bundled at build, netted as `spent()` |
 | caps in code | `spend-rule.ts`, `allowance-rule.ts`, `ledger.mts` constants, read-only |
 | account cap, system ceiling, elsewhere | the admin settings table (locked rule 11) |

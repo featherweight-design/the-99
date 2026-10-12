@@ -9,7 +9,7 @@ at `origin/main` a201f9048, and staging read-only (Neon `misty-rain-01681654`, b
 
 Every ruling and lock is honored, all nine open questions are answered, and every deliverable is
 drawn at 900 and 390. The findings below are engineering corrections (logic, data sources, fixture
-arithmetic, copy owed to /copy-review). None changes a layout, so none goes back to Design. Two
+arithmetic, copy owed to /copy-review). None changes a layout, so none goes back to Design. Three
 product questions for Hugh carry a recommended default and do not block the build.
 
 ## What was checked
@@ -129,6 +129,12 @@ care: finding 3 (where label spend lives) and finding 6 (the account universe).
     keeps rule 2's off-wins as a backstop, so it is compatible. The plan must carry the amendment, and
     the fixture changes (`friends` is no longer every non-owner). R1's Q1 answer and STATES F2, G1, G6
     and A5 describe disagreement and are superseded by the R2 deltas.
+14. **`100dvh` would overflow the shell.** `ShellMain` already sits under `MobileHeader` and reserves
+    the tab bar (`src/components/shell/shell.tsx:54-66`), and expects a route child to take the leftover
+    height with `flex-1`. *Resolved:* admin pages are `flex:1; min-height:0` columns inside `ShellMain`;
+    the design table and G2 are corrected.
+15. **The handoff's own files are updated to the audit** (found in review): READINESS G3 and G5, STATES
+    L1 and the design table's data sources now carry findings 1, 2, 3 and 8.
 
 ## Open questions: Design's answers
 
@@ -177,3 +183,4 @@ care: finding 3 (where label spend lives) and finding 6 (the account universe).
 - The Tuning hub tile's tools (G6) are confirmed: `hubTools` is Suggested changes, Mana Balance and
   Proposed cuts, drawn at two or more (`src/lib/tuning/flag.ts:48-63`).
 - One group per account is adopted as an amendment to locked rule 4 (finding 13).
+- Admin pages fill `ShellMain` with `flex:1`, not `100dvh` (finding 14).

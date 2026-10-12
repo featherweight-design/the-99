@@ -29,7 +29,7 @@ Every frame is drawn at 900 and 390. `scene` is the prop on `Admin.dc.html`. Fix
 ## Switches list (L)
 | Id | Scene | State | What draws |
 |---|---|---|---|
-| L1 | `flags` | default | search, chips `All 21` (selected) · `Overridden 4` · `Off for anyone 6` · `Model features 4`; Features (18) A–Z; Plumbing (3) |
+| L1 | `flags` | default | search, chips `All 24` (selected) · `Overridden ‹n›` · `Off for anyone ‹n›` · `Model features 5`; Features (21) A–Z; Plumbing (3). Counts come from the registry (audit findings 1, 2). Frame mismatch: the frame draws 21 / 18 / 4; the table wins |
 | L2 | (no frame) | chip selected | the rows that match; heads keep their counts; `None match` line + `Show all` when empty |
 | L3 | (no frame) | search | matches name or variable, case-insensitive; Plumbing head hides when it has no rows |
 | L4 | `flags` | kill switch row | env `off` in danger 600; resolved `Off` · `killed by the environment`; overrides `1 account, refused` |
