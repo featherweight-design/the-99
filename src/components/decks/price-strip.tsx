@@ -12,6 +12,8 @@
 // could drift from the phone's. It now reuses the phone's column exactly.
 
 import { priceCopy } from "../../lib/copy/price";
+import { tokensCopy } from "../../lib/copy/tokens";
+import type { TokenShopping } from "../../lib/tokens/shopping";
 import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
 import { formatCents, type PriceSummary, type ProvenanceForm } from "../../lib/decks/price";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
@@ -21,6 +23,7 @@ export function PriceStrip({
   summary,
   provenance,
   shoppingCards,
+  tokens = null,
 }: {
   summary: PriceSummary;
   /** Null when the table is empty or the read failed — the strip renders nothing. */
@@ -31,14 +34,23 @@ export function PriceStrip({
    * than derived so the strip stays a rendering of what is on screen.
    */
   shoppingCards: { name: string; quantity: number }[];
+  /**
+   * The tokens joined to this deck. The box's figure and link are what the link BUYS, so they take the tokens in;
+   * `summary` stays the cards alone (the pill, the status and the roll-up read it), and the split line under the
+   * figure keeps the two apart.
+   */
+  tokens?: TokenShopping | null;
 }) {
   if (!provenance) return null;
+
+  const tokenN = tokens?.rows.length ?? 0;
 
   // Nothing to shop for is not a total of nothing. Every line the strip renders
   // is a claim about a list, and a provenance line above an empty one dates a
   // list with nothing in it. The rule lives here rather than at the call site so
-  // it holds wherever the strip is mounted.
-  if (summary.totalCopies === 0) return null;
+  // it holds wherever the strip is mounted. A deck with nothing to buy but a joined token still has
+  // something to buy.
+  if (summary.totalCopies === 0 && tokenN === 0) return null;
 
   // Both figures drop rather than render as zero. No price at all is not
   // "$0.00", and a denominator that names nothing missing is a third copy of a
@@ -47,13 +59,16 @@ export function PriceStrip({
   // `0 of 8 priced` is the third case and also drops: a fraction whose numerator
   // is nothing is an arithmetic way of saying we have no prices, and line 2 now
   // says that in words. Before this pass it was what the strip rendered here.
-  const showFigure = summary.pricedCopies > 0;
-  const showClause = showFigure && summary.pricedCopies < summary.totalCopies;
+  const pricedCopies = summary.pricedCopies + (tokens?.priced ?? 0);
+  const totalCopies = summary.totalCopies + tokenN;
+  const totalCents = summary.totalCents + (tokens?.cents ?? 0);
+  const showFigure = pricedCopies > 0;
+  const showClause = showFigure && pricedCopies < totalCopies;
 
   // Derived on every render from the list on screen. Not memoised: the row ✕
   // has no sync to perform, so the basket, the total and this href move
   // together or the link buys a card the player just removed.
-  const buyHref = manapoolAddDeckUrl(shoppingCards);
+  const buyHref = manapoolAddDeckUrl([...shoppingCards, ...(tokens?.lines ?? [])]);
 
   return (
     // ONE LAYOUT, both widths (Hugh's ruling, #1222 follow-up): the figure
@@ -74,14 +89,25 @@ export function PriceStrip({
       {showFigure ? (
         <p className="m-0 flex items-baseline gap-[7px] font-mono">
           <span className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
-            {formatCents(summary.totalCents)}
+            {formatCents(totalCents)}
           </span>
           {showClause ? (
             <span className="text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
               <span aria-hidden="true">{"· "}</span>
-              {priceCopy.strip.pricedClause(summary.pricedCopies, summary.totalCopies)}
+              {priceCopy.strip.pricedClause(pricedCopies, totalCopies)}
             </span>
           ) : null}
+        </p>
+      ) : null}
+      {/* Where tokens are joined: the deck's own cost and the tokens' apart, under the figure that sums both. */}
+      {tokens ? (
+        <p className="m-0 font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>
+          {tokensCopy.strip.split(
+            summary.totalCopies,
+            summary.pricedCopies > 0 ? formatCents(summary.totalCents) : null,
+            tokenN,
+            tokens.priced > 0 ? formatCents(tokens.cents) : null,
+          )}
         </p>
       ) : null}
       {/* The provenance line and the buy link stay one flex child rather than
@@ -119,6 +145,12 @@ export function PriceStrip({
           <div className="mt-[9px] flex min-h-[44px] items-center">
             <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
           </div>
+        ) : null}
+        {/* What the link sends, said once: cards by name and quantity, tokens by set and number. */}
+        {buyHref && tokens ? (
+          <p className="m-0 pb-[10px] font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+            {tokensCopy.strip.sends(shoppingCards.length, tokens.lines.length)}
+          </p>
         ) : null}
       </div>
     </div>

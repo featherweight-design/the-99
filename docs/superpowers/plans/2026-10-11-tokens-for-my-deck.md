@@ -186,8 +186,8 @@ The deck's Shopping view gains the `Tokens` group, last, with the shipped Shoppi
 sub-line. The buy box figure is what the link buys: the split line keeps the deck's card figure and adds the token
 sum (`67 cards · $270.48 · 4 tokens · $0.70`, S2). **`summarisePrices`, `moneyStats`, `shoppingCount`, the status
 and the roll-up stay card-only**; the token sum is a separate figure added only in the box. The token's buy tag is
-the shipped tag and is pressable: one action marks the token owned (`source: manual`) and deletes that deck's join
-in the same write, no confirm; an upload that reads a joined token as owned deletes the join in the upload's
+the shipped tag and is pressable: one action marks the token owned (`source: manual`) and deletes the player's joins
+for it on EVERY deck in the same write, no confirm (built so in PR 5: owned means owned everywhere); an upload that reads a joined token as owned deletes the join in the upload's
 transaction (audit finding 8; unmark does not restore a join). `manapoolAddDeckUrl` sends token lines with set and
 number when PR 2's probe passed. A sold-out token draws `buy · sold out` and is left out of the sum (`pricedClause`).
 A joined token whose maker is gone stays joined, drawn `from no card in this deck` (G9).

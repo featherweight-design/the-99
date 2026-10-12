@@ -12,6 +12,7 @@ vi.mock("../cards/card-detail-provider", () => ({
 
 import { DeckTokensProvider } from "./deck-tokens-context";
 import { TokensGroup } from "./tokens-group";
+import { TokensShoppingGroup } from "./tokens-shopping-group";
 import { boxedOnDesktop, boxedOnPhone, makerColumns } from "./token-makers";
 import { printingLine } from "./token-row";
 import type { DeckToken, DeckTokensRead, TokenMaker } from "../../lib/tokens/read";
@@ -275,5 +276,79 @@ describe("the line that says what is sent", () => {
 
   it("draws no line for a token with no figure", () => {
     expect(printingLine(token(), NEWEST)).toBeNull();
+  });
+});
+
+describe("the Tokens group on Shopping", () => {
+  const NEWEST = new Date("2026-10-11");
+  const priced = (cents: number | null, asOf = NEWEST) => ({
+    cents, foilCents: null, etchedCents: null, asOf,
+    printing: { scryfallId: "p", setCode: "tla", collectorNumber: "8", productName: "Soldier", productSet: "tla", productNumber: "8" },
+  });
+  const shopping = (tokens: DeckToken[]) => render(
+    <DeckTokensProvider deckId={DECK} read={ok(tokens, { newestPriceAsOf: NEWEST })}><TokensShoppingGroup /></DeckTokensProvider>,
+  );
+  const soldier = token({
+    oracleId: "s1", name: "Soldier", typeLine: "Token Creature — Soldier", colors: ["W"], power: "1", toughness: "1",
+    joined: true, price: priced(15),
+    picture: { scryfallId: "p", setCode: "tla", collectorNumber: "8", imageUriSmall: null, artCropUri: null, printings: 5 },
+  });
+
+  it("draws nothing without the provider, and nothing when no token is joined", () => {
+    const { container } = render(<TokensShoppingGroup />);
+    expect(container.innerHTML).toBe("");
+    cleanup();
+    shopping([token({ joined: false })]);
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.queryByText(/not in the deck’s count/)).toBeNull();
+  });
+
+  it("heads only the JOINED tokens, with the clause that says they are not the deck's", () => {
+    shopping([soldier, token({ oracleId: "x", name: "Food", joined: false })]);
+    expect(screen.getByText("Tokens")).toBeTruthy();
+    expect(screen.getByText("1 · not in the deck’s count")).toBeTruthy();
+    expect(screen.getByText("Soldier")).toBeTruthy();
+    expect(screen.queryByText("Food")).toBeNull();
+  });
+
+  it("names the token as a token, with its type and P/T, and its printing from md up", () => {
+    shopping([soldier]);
+    expect(screen.getByText("token · Creature — Soldier · 1/1")).toBeTruthy();
+    expect(screen.getByText("token · Creature — Soldier · 1/1 · TLA 8")).toBeTruthy();
+  });
+
+  it("the buy tag press marks the token held in one write, with no confirm", async () => {
+    shopping([soldier]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Mark the Soldier token as in your collection" })); });
+    expect(stub.held).toHaveBeenCalledWith(DECK, "s1", true);
+    expect(stub.joined).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the ✕ takes it off Shopping and nothing else", async () => {
+    shopping([soldier]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Take the Soldier token off Shopping" })); });
+    expect(stub.joined).toHaveBeenCalledWith(DECK, "s1", false);
+    expect(stub.held).not.toHaveBeenCalled();
+  });
+
+  it("draws a sold-out token with the shipped sold-out tag, still pressable", () => {
+    shopping([{ ...soldier, price: priced(15, new Date("2026-09-01")) }]);
+    expect(screen.getByRole("button", { name: /Mark the Soldier token/ }).textContent).toContain("sold out");
+  });
+
+  it("says so when a press threw", async () => {
+    stub.held.mockRejectedValue(new Error("down"));
+    shopping([soldier]);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Mark the Soldier token/ })); });
+    expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.");
+  });
+});
+
+describe("a joined token whose maker left the deck", () => {
+  it("stays on the deck page, says it has no maker, and offers no fold", () => {
+    draw(ok([token({ makers: [], joined: true })]));
+    expect(screen.getByText("from no card in this deck")).toBeTruthy();
+    expect(screen.queryByRole("button", { expanded: false })).toBeNull();
   });
 });

@@ -119,6 +119,25 @@ describe("assembleDeckTokens", () => {
     expect(r.tokens[0].makers.map((m) => m.name)).toEqual(["Alpha", "Zed (Secret Lair)"]);
   });
 
+  it("keeps a joined token whose maker has left the deck, with no maker named; drops it once it is held or not joined", () => {
+    const orphan = tok(B, "Treasure", { colors: [] });
+    const withJoin = ok(assembleDeckTokens(base({ tokens: [tok(A, "Goblin"), orphan], joined: new Set([B]) })));
+    expect(new Set(withJoin.tokens.map((t) => t.oracleId))).toEqual(new Set([A, B]));
+    const row = withJoin.tokens.find((t) => t.oracleId === B)!;
+    expect(row).toMatchObject({ makers: [], joined: true });
+    // Held: it is owned, so it is not on a Shopping list and the deck does not make it.
+    const held = ok(assembleDeckTokens(base({ tokens: [tok(A, "Goblin"), orphan], joined: new Set([B]), held: new Map([[B, "manual"]]) })));
+    expect(held.tokens.map((t) => t.oracleId)).toEqual([A]);
+    // Not joined: a stray token row is still not this deck's.
+    const stray = ok(assembleDeckTokens(base({ tokens: [tok(A, "Goblin"), orphan] })));
+    expect(stray.tokens.map((t) => t.oracleId)).toEqual([A]);
+  });
+
+  it("is present for a deck whose only token is a joined orphan (no links at all)", () => {
+    const r = assembleDeckTokens(base({ links: [], tokens: [tok(B, "Treasure", { colors: [] })], joined: new Set([B]) }));
+    expect(r.status).toBe("ok");
+  });
+
   it("skips a token row no link reaches", () => {
     const r = ok(assembleDeckTokens(base({ tokens: [tok(A, "Goblin"), tok(B, "Stray")] })));
     expect(r.tokens.map((t) => t.oracleId)).toEqual([A]);
@@ -136,7 +155,7 @@ describe("userTokenStateQuery", () => {
     expect(q.sql).toContain("from token_reads");
     expect(q.sql).toContain("from deck_token_joins");
     expect(q.params).toContain("d1");
-    expect(q.params.filter((p) => p === "u1").length).toBe(3);
+    expect(q.params.filter((p) => p === "u1").length).toBe(4);
   });
 
   it("scopes every read to the player and the holdings to the deck's tokens", () => {

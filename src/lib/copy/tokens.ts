@@ -4,6 +4,7 @@
 
 const n = (x: number) => x.toLocaleString("en-US");
 const cards = (x: number) => (x === 1 ? "1 card" : `${n(x)} cards`);
+const tokens = (x: number) => (x === 1 ? "1 token" : `${n(x)} tokens`);
 
 export const tokensCopy = {
   group: {
@@ -35,6 +36,8 @@ export const tokensCopy = {
     joinAria: (name: string) => `Add the ${name} token to this deck’s Shopping list`,
     leaveAria: (name: string) => `Take the ${name} token off this deck’s Shopping list`,
     toggleAria: (name: string, count: number) => `${name} token, made by ${cards(count)}`,
+    /** A joined token whose maker has left the deck stays joined (G9) and says it has none. */
+    noMaker: "from no card in this deck",
     /** A press that did not land (the switch went off, or the deck stopped making the token). */
     refused: "We couldn’t save that. The token is unchanged.",
   },
@@ -50,5 +53,27 @@ export const tokensCopy = {
     /** Mana Pool cannot place the number exactly, so the link names the token alone. */
     sentByName: (cost: string, printings: number) =>
       `sent by name · ${cost} · cheapest of ${n(printings)} ${printings === 1 ? "printing" : "printings"}`,
+  },
+
+  /** The Tokens group on the deck's Shopping view. Never counted in the deck's own figures. */
+  shopping: {
+    clause: (count: number) => `${n(count)} · not in the deck’s count`,
+    sub: (typeLine: string, code: string | null) => (code ? `token · ${typeLine} · ${code}` : `token · ${typeLine}`),
+    removeAria: (name: string) => `Take the ${name} token off Shopping`,
+  },
+
+  /** The buy box's own lines, where tokens are joined. */
+  strip: {
+    /** Under the figure: what the deck's cards cost and what the tokens cost, apart. Costs drop when unpriced. */
+    split: (cardN: number, cardCost: string | null, tokenN: number, tokenCost: string | null) =>
+      cardN === 0
+        ? `${tokens(tokenN)} · nothing for the deck`
+        : [[cards(cardN), cardCost], [tokens(tokenN), tokenCost]]
+          .map((part) => part.filter(Boolean).join(" · "))
+          .join("  ·  "),
+    sends: (cardLines: number, tokenLines: number) =>
+      cardLines === 0
+        ? `Opens Mana Pool with ${n(tokenLines)} token ${tokenLines === 1 ? "line" : "lines"}, each with its set and number, so none can be read as a card.`
+        : `Opens Mana Pool with ${n(cardLines)} card lines and ${n(tokenLines)} token ${tokenLines === 1 ? "line" : "lines"}. Cards send names and quantities; tokens send set and number.`,
   },
 } as const;

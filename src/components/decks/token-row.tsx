@@ -51,20 +51,15 @@ export function printingLine(token: DeckToken, newestAsOf: Date | null): string 
 const CONTROL = "rounded-[6px] text-[12px] disabled:opacity-60";
 
 /**
- * One token of the deck: ownership as the dot and one fact, the two controls, and the cards that
- * make it folded behind the row. Never a verdict word, never a warning color on ownership.
+ * A token press: one write at a time, pending while it lands, and a refusal line for both a refusal and a
+ * throw (the session lapsed, the database threw), which say the same thing to the reader.
  */
-export function TokenRow({
-  deckId, token, newestAsOf,
-}: { deckId: string; token: DeckToken; newestAsOf: Date | null }) {
-  const [open, setOpen] = useState(false);
+export function useTokenPress() {
   const [refused, setRefused] = useState(false);
   const [pending, start] = useTransition();
-
   const press = (write: () => Promise<{ ok: boolean }>) => {
     setRefused(false);
     start(async () => {
-      // A refusal is a value; a rejection (the session lapsed, the database threw) says the same thing to the reader.
       try {
         const r = await write();
         if (!r.ok) setRefused(true);
@@ -73,11 +68,25 @@ export function TokenRow({
       }
     });
   };
+  return { press, pending, refused };
+}
+
+/**
+ * One token of the deck: ownership as the dot and one fact, the two controls, and the cards that
+ * make it folded behind the row. Never a verdict word, never a warning color on ownership.
+ */
+export function TokenRow({
+  deckId, token, newestAsOf,
+}: { deckId: string; token: DeckToken; newestAsOf: Date | null }) {
+  const [open, setOpen] = useState(false);
+  const { press, pending, refused } = useTokenPress();
 
   const upload = token.state === "owned" && token.source === "upload";
   const byHand = token.state === "owned" && token.source === "manual";
   const pt = tokenPT(token);
   const first = token.makers[0];
+  // A joined token whose maker has left the deck has nothing to unfold: it says so and draws no chevron.
+  const canOpen = token.makers.length > 0;
 
   return (
     <li
@@ -91,11 +100,11 @@ export function TokenRow({
       <div className="flex flex-wrap items-start md:flex-nowrap md:gap-[10px]">
         <button
           type="button"
-          aria-expanded={open}
+          aria-expanded={canOpen ? open : undefined}
           // Named by what it shows (the name, pips, type and makers), as any button is. The disclosure's own
           // sentence is its description, so the visible content is not replaced by it.
           aria-describedby={`token-${token.oracleId}-toggle`}
-          onClick={() => setOpen((v) => !v)}
+          onClick={canOpen ? () => setOpen((v) => !v) : undefined}
           className="flex min-w-0 items-start gap-[10px] text-left max-md:basis-full md:flex-1"
         >
           <span
@@ -131,15 +140,15 @@ export function TokenRow({
             {token.oracleText ? (
               <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">{token.oracleText}</span>
             ) : null}
-            {first ? (
-              <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-                {tokensCopy.row.from(first.name, token.makers.length)}
-              </span>
-            ) : null}
+            <span className="font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+              {first ? tokensCopy.row.from(first.name, token.makers.length) : tokensCopy.row.noMaker}
+            </span>
           </span>
-          <span aria-hidden className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:hidden">
-            {open ? "▴" : "▾"}
-          </span>
+          {canOpen ? (
+            <span aria-hidden className="ml-auto flex h-[44px] w-[36px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:hidden">
+              {open ? "▴" : "▾"}
+            </span>
+          ) : null}
         </button>
 
         <div className="order-3 flex basis-full items-center gap-[10px] pl-[56px] md:order-none md:basis-auto md:pl-0">
@@ -186,15 +195,17 @@ export function TokenRow({
           )}
         </div>
 
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden
-          onClick={() => setOpen((v) => !v)}
-          className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:flex"
-        >
-          {open ? "▴" : "▾"}
-        </button>
+        {canOpen ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden
+            onClick={() => setOpen((v) => !v)}
+            className="hidden h-[26px] w-[22px] flex-none items-center justify-center text-[12px] text-[color:var(--fg-muted)] md:flex"
+          >
+            {open ? "▴" : "▾"}
+          </button>
+        ) : null}
       </div>
 
       {refused ? (
@@ -203,7 +214,7 @@ export function TokenRow({
         </p>
       ) : null}
 
-      {open ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} /> : null}
+      {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} /> : null}
     </li>
   );
 }

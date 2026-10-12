@@ -31,16 +31,16 @@ export async function leaveToken(userId: string, deckId: string, tokenOracleId: 
 }
 
 /**
- * `I have one`: records the token as held by hand and takes it off THIS deck's Shopping list in the same
- * save (X4m). Other decks' joins stay: the readers leave a held token off Shopping everywhere (S4), so
- * unmarking it later puts it back where the player had asked for it.
+ * `I have one`, and the Shopping row's buy press: records the token as held by hand and takes it off EVERY
+ * deck's Shopping list in the same save. Owned means owned for every deck (plan lock 8), and an unmark later
+ * restores no join. The deck that pressed must make the token; the other decks' joins go with it.
  */
 export async function markOwnedOnDeck(userId: string, deckId: string, tokenOracleId: string): Promise<TokenWrite> {
   if (!(await deckMakesToken(deckId, userId, tokenOracleId))) return "notThisDeck";
   await db.transaction(async (tx) => {
     await markTokenOwned(userId, tokenOracleId, tx);
     await tx.delete(deckTokenJoins).where(and(
-      eq(deckTokenJoins.deckId, deckId), eq(deckTokenJoins.tokenOracleId, tokenOracleId), eq(deckTokenJoins.userId, userId),
+      eq(deckTokenJoins.tokenOracleId, tokenOracleId), eq(deckTokenJoins.userId, userId),
     ));
   });
   return "done";

@@ -94,7 +94,7 @@ export type DeckArt = { imageUri: string | null; name: string };
  * pictured) are tested without a database.
  */
 export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
-  if (i.links.length === 0 || i.tokens.length === 0) return { status: "absent" };
+  if (i.tokens.length === 0) return { status: "absent" };
 
   const makersOf = new Map<string, Map<string, TokenMaker>>();
   for (const l of i.links) {
@@ -114,8 +114,11 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
   const rows: DeckToken[] = [];
   for (const t of i.tokens) {
     const makers = makersOf.get(t.oracleId);
-    if (!makers) continue; // a token row no link reaches is not this deck's
     const { state, source } = tokenState(i.held.get(t.oracleId) ?? null, i.read);
+    // A token no card of this deck makes is the deck's only while it is JOINED and not held: the player put it
+    // on this deck's Shopping list, then its maker left the list (G9), and it stays there with no maker named.
+    // Any other token row no link reaches is not this deck's.
+    if (!makers && !(state !== "owned" && i.joined.has(t.oracleId))) continue;
     const price = i.prices.get(t.oracleId) ?? null;
     const all = printingsOf.get(t.oracleId) ?? [];
     const chosen = (price && all.find((p) => p.scryfallId === price.printing.scryfallId))
@@ -130,7 +133,7 @@ export function assembleDeckTokens(i: DeckTokenInputs): DeckTokensRead {
       power: t.power,
       toughness: t.toughness,
       oracleText: colliding.has(t.oracleId) ? t.oracleText : null,
-      makers: sortMakers([...makers.values()]),
+      makers: makers ? sortMakers([...makers.values()]) : [],
       state,
       source,
       joined: state !== "owned" && i.joined.has(t.oracleId),
@@ -176,7 +179,9 @@ export function userTokenStateQuery(deckId: string, userId: string, tokenIds: st
   if (!ownershipReady) return sql`select '[]'::jsonb as held, false as read, ${joined} as joined`;
   return sql`select
     (select coalesce(jsonb_agg(jsonb_build_object('id', o.token_oracle_id, 'source', o.source)), '[]'::jsonb)
-      from token_ownership o where o.user_id = ${userId} and o.token_oracle_id = any(${ids}::uuid[])) as held,
+      from token_ownership o where o.user_id = ${userId} and (o.token_oracle_id = any(${ids}::uuid[])
+        or o.token_oracle_id in (select j2.token_oracle_id from deck_token_joins j2
+          where j2.deck_id = ${deckId} and j2.user_id = ${userId}))) as held,
     exists (select 1 from token_reads r where r.user_id = ${userId}) as read,
     ${joined} as joined`;
 }
@@ -227,11 +232,15 @@ export async function loadDeckTokens(
     const makerIds = await deckMakerIds(deckId, userId);
     if (!makerIds) return { status: "absent" };
     const links = await linksFor(makerIds);
-    if (links.length === 0) return { status: "absent" };
-    const tokenIds = [...new Set(links.map((l) => l.tokenOracleId))];
+    const linkIds = [...new Set(links.map((l) => l.tokenOracleId))];
 
+    // The player's own state first, in its one statement: it names the tokens joined to this deck, and one of
+    // those may be made by no card of it any more, so the rows to read are the links' AND the joins'.
     const ownershipReady = await tokenOwnershipTablesExist();
-    const [tokenRows, printingRows, state, priced] = await Promise.all([
+    const state = await loadUserTokenState(deckId, userId, linkIds, ownershipReady);
+    const tokenIds = [...new Set([...linkIds, ...state.joined])];
+    if (tokenIds.length === 0) return { status: "absent" };
+    const [tokenRows, printingRows, priced] = await Promise.all([
       db.select({
         oracleId: tokens.oracleId, name: tokens.name, typeLine: tokens.typeLine, colors: tokens.colors,
         power: tokens.power, toughness: tokens.toughness, oracleText: tokens.oracleText,
@@ -241,7 +250,6 @@ export async function loadDeckTokens(
         setCode: tokenPrintings.setCode, collectorNumber: tokenPrintings.collectorNumber,
         imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
       }).from(tokenPrintings).where(inArray(tokenPrintings.tokenOracleId, tokenIds)),
-      loadUserTokenState(deckId, userId, tokenIds, ownershipReady),
       (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
     ]);
 
