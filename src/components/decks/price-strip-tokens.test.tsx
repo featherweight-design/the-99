@@ -45,6 +45,30 @@ describe("PriceStrip with tokens joined", () => {
     expect(container.textContent).not.toContain("Monday");
   });
 
+  it("still draws the tokens' figure and link when the card prices carry no provenance", () => {
+    const own: ProvenanceForm = { behind: false, when: "Tuesday" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={null} shoppingCards={[]} tokens={tokens()} tokenOwnProvenance={own} />,
+    );
+    expect(container.textContent).toContain("Tuesday");
+    expect(href(container)).not.toBe("");
+  });
+
+  it("dates a mixed figure by the tokens' own feed when the cards' date is unreadable and the tokens are not older", () => {
+    const own: ProvenanceForm = { behind: false, when: "Tuesday" };
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 27048, pricedCopies: 3, totalCopies: 3 }} provenance={null} shoppingCards={cards} tokens={tokens()} tokenOwnProvenance={own} />,
+    );
+    expect(container.textContent).toContain("Tuesday");
+  });
+
+  it("draws nothing when neither source can date it", () => {
+    const { container } = render(
+      <PriceStrip summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }} provenance={null} shoppingCards={[]} tokens={tokens()} />,
+    );
+    expect(container.textContent).toBe("");
+  });
+
   it("keeps the cards' date when no token in the figure is priced", () => {
     const behind: ProvenanceForm = { behind: true, when: "3 September" };
     const { container } = render(

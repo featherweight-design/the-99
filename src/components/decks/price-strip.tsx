@@ -47,11 +47,12 @@ export function PriceStrip({
   /** The tokens' own price date: what dates a figure the cards contribute no priced copy to. */
   tokenOwnProvenance?: ProvenanceForm | null;
 }) {
-  if (!provenance) return null;
-  // The figure includes priced tokens, so it is as old as the oldest price in it.
+  // The figure includes priced tokens, so it is as old as the oldest price in it. A deck whose card prices are
+  // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
   const dated = tokens && tokens.priced > 0
-    ? (summary.pricedCopies === 0 ? tokenOwnProvenance : tokenProvenance) ?? provenance
+    ? (summary.pricedCopies === 0 ? tokenOwnProvenance : tokenProvenance) ?? provenance ?? tokenOwnProvenance
     : provenance;
+  if (!dated) return null;
 
   const tokenN = tokens?.rows.length ?? 0;
 
