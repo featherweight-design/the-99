@@ -37,9 +37,18 @@ export async function openTuning() {
   const deckRows = (await db.execute(sql`select id, user_id, name from decks order by id`)).rows as {
     id: string; user_id: string; name: string;
   }[];
-  const users = [...new Set(deckRows.map((d) => d.user_id))];
-  if (users.length !== 1) throw new Error(`eval: expected one staging account, found ${users.length}`);
-  const userId = users[0];
+  // Staging holds two accounts with the same twenty "HD" decks. They are NOT interchangeable (measured
+  // 2026-10-12: Elves differs in its owned-only setting and card list, Zombies in its budget cap), so the
+  // account is named: `TUNING_EVAL_USER_ID`, else the first by user id, which is deterministic and is what
+  // every arm of the model-tiering eval used. The deck rows below are narrowed to that account.
+  const hd = deckRows.filter((d) => d.name.startsWith("HD"));
+  const users = [...new Set(hd.map((d) => d.user_id))].sort();
+  const named = process.env.TUNING_EVAL_USER_ID;
+  if (named !== undefined && !users.includes(named)) throw new Error(`eval: TUNING_EVAL_USER_ID names no account that holds an "HD" deck`);
+  if (users.length === 0) throw new Error(`eval: no "HD" decks on staging`);
+  const userId = named ?? users[0];
+  console.error(`eval: tuning account ...${userId.slice(-6)} (${users.length} accounts hold HD decks)`);
+  for (let i = deckRows.length - 1; i >= 0; i--) if (deckRows[i].user_id !== userId) deckRows.splice(i, 1);
 
   /** The pack and messages for each deck, by the app's own path. `overlay[i]` replaces deck i's
    *  intent and games in memory, before the pack is built. */

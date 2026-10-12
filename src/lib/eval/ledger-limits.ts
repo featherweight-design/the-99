@@ -19,6 +19,12 @@ export const LEDGER_LIMITS = {
   "ledger-tuning-lists.jsonl": { hardCapUsd: 3, askAtUsd: 2.5 },
   /** Cuts (`cuts-model.mts`, `cuts-blind.mts`). `cuts-plan.mts` keeps a per-task `--cap` of its own. */
   "ledger-cuts.jsonl": { hardCapUsd: 15, askAtUsd: 10 },
+  /** Model tiering (2026-10-12): Suggested changes on three models, $2 for the arm set (`tuning-model-arms.mts`). */
+  "ledger-model-tiering-tuning.jsonl": { hardCapUsd: 2, askAtUsd: 1.6 },
+  /** Model tiering: Proposed cuts on three models, $2 (`cuts-model.mts --ledger ledger-model-tiering-cuts`). */
+  "ledger-model-tiering-cuts.jsonl": { hardCapUsd: 2, askAtUsd: 1.6 },
+  /** Model switch follow-up (2026-10-12, Hugh's $1.50): the extra Proposed cuts trials, a second Suggested changes sample and the blind judge. */
+  "ledger-model-switch.jsonl": { hardCapUsd: 1.5, askAtUsd: 1.3 },
   /** Help me choose (`intake-read.mts`): a hard cap, no ask line. */
   "ledger-help-me-choose.jsonl": { hardCapUsd: 5, askAtUsd: null },
   /** Find a deck (`fits-read.mts`): a hard cap, no ask line. */

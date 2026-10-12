@@ -1,0 +1,37 @@
+[
+ {
+  "deck": "HD - Avatar Aang",
+  "sonnet5": 3,
+  "sonnet55": 2,
+  "order": "ba",
+  "winnerField": null
+ },
+ {
+  "deck": "HD - Eldrazi",
+  "sonnet5": 3,
+  "sonnet55": 1,
+  "order": "ba",
+  "winnerField": "list2"
+ },
+ {
+  "deck": "HD - Gishath",
+  "sonnet5": 2,
+  "sonnet55": 4,
+  "order": "ba",
+  "winnerField": null
+ },
+ {
+  "deck": "HD - Wizards",
+  "sonnet5": 3,
+  "sonnet55": 4,
+  "order": "ba",
+  "winnerField": null
+ },
+ {
+  "deck": "HD - Yuriko",
+  "sonnet5": 2,
+  "sonnet55": 3,
+  "order": "ba",
+  "winnerField": null
+ }
+]
