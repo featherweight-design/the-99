@@ -2145,6 +2145,8 @@ export const modelCalls = pgTable("model_calls", {
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
+  // The admin's month reads, which filter on the month alone.
+  index("model_calls_created_idx").on(t.createdAt),
 ]);
 
 /**
@@ -2182,11 +2184,15 @@ export const modelCallParts = pgTable("model_call_parts", {
  * The admin's own figures (brief, locked rule 11): the caps that live outside the code. The account
  * cap is set in Anthropic's console and shared with another app, the system ceiling is a ruling, and
  * `elsewhere` is what this environment's ledger cannot see (the other environment, the other app),
- * entered by hand with the date it was read. One row per key; every change is also an
- * `admin_events` `setting_set` row.
+ * entered by hand with the date it was read. One row per key and UTC month (see `month`); every
+ * change is also an `admin_events` `setting_set` row naming that month.
  */
 export const adminSettings = pgTable("admin_settings", {
-  key: text("key").primaryKey(),
+  key: text("key").notNull(),
+  // The UTC month (`YYYY-MM`) the value belongs to. A cap or a ceiling holds from its month until a
+  // later month's row; `elsewhere` is that month's figure alone. Keyed by month so a change never
+  // rewrites what an earlier month shows, and a ceiling set for a later month leaves this one's.
+  month: text("month").notNull(),
   valueMicroUsd: bigint("value_micro_usd", { mode: "number" }).notNull(),
   // The day the figure was read, for `elsewhere` (STATES C7); the write's own day otherwise.
   asOf: date("as_of", { mode: "string" }).notNull(),
@@ -2196,6 +2202,8 @@ export const adminSettings = pgTable("admin_settings", {
 }, (t) => [
   check("admin_settings_key_check", sql`${t.key} in ('account_cap_usd', 'system_ceiling_usd', 'elsewhere_usd')`),
   check("admin_settings_value_check", sql`${t.valueMicroUsd} >= 0`),
+  check("admin_settings_month_check", sql`${t.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  primaryKey({ columns: [t.key, t.month] }),
 ]);
 
 /**
@@ -2215,6 +2223,9 @@ export const adminEvents = pgTable("admin_events", {
   groupId: uuid("group_id"),
   userId: text("user_id"),
   settingKey: text("setting_key"),
+  // The month a `setting_set` wrote (`admin_settings` is keyed by key and month), so an event names
+  // the row it changed even after a later write to that row.
+  settingMonth: text("setting_month"),
   oldValue: text("old_value"),
   newValue: text("new_value"),
   note: text("note"),
@@ -2230,7 +2241,7 @@ export const adminEvents = pgTable("admin_events", {
     when 'group_described' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
     when 'member_added' then ${t.groupId} is not null and ${t.userId} is not null
     when 'member_removed' then ${t.groupId} is not null and ${t.userId} is not null
-    when 'setting_set' then ${t.settingKey} is not null and ${t.newValue} is not null
+    when 'setting_set' then ${t.settingKey} is not null and ${t.settingMonth} is not null and ${t.newValue} is not null
   end`),
   // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
   check("admin_events_scope_target_check", sql`${t.scope} is null

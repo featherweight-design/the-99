@@ -8,8 +8,10 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
 /**
  * Every admin page: the gate, then the shared head (admin STATES D3). A `flex:1; min-height:0`
  * column inside `ShellMain`, never `100dvh`: the shell already reserves the header and the tab
- * bar (READINESS-audit finding 14). The shell scrolls the document, so a page's pinned bar is
- * `sticky` at the top rather than a fixed-height box above a scrolling one.
+ * bar (READINESS-audit finding 14). The shell scrolls the document, so nothing here is a
+ * fixed-height box above a scrolling one: the head is `sticky` at the top, and a page's pinned bar
+ * (Costs' month bar) is `sticky` directly beneath it, at the `--admin-head-h` the head publishes
+ * from its own measured height (design table R2 delta `page`: the head and the pinned bar stay put).
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { env } = await requireAdmin();
