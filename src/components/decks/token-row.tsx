@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ElementType } from "react";
 import { setTokenHeld, setTokenJoined } from "../../app/decks/token-actions";
 import { cssUrl } from "../../lib/collection/browse";
 import { tokensCopy } from "../../lib/copy/tokens";
@@ -87,24 +87,32 @@ export function TokenRow({
   const first = token.makers[0];
   // A joined token whose maker has left the deck has nothing to unfold: it says so and draws no chevron.
   const canOpen = token.makers.length > 0;
+  // Nothing to unfold is not a button either: a focusable control that does nothing is a dead stop.
+  const Summary: ElementType = canOpen ? "button" : "div";
 
   return (
     <li
       className="list-none rounded-[7px] bg-[color:var(--surface-rail)] pb-[8px] pl-[8px] pr-[6px] pt-[10px] md:px-[9px] md:py-[8px]"
       data-token-state={token.state}
     >
-      <span id={`token-${token.oracleId}-toggle`} className="sr-only">
-        {tokensCopy.row.toggleAria(token.name, token.makers.length)}
-      </span>
+      {canOpen ? (
+        <span id={`token-${token.oracleId}-toggle`} className="sr-only">
+          {tokensCopy.row.toggleAria(token.name, token.makers.length)}
+        </span>
+      ) : null}
       <span id={`token-${token.oracleId}-face`} className="sr-only">{tokenFaceDescription(token)}</span>
       <div className="flex flex-wrap items-start md:flex-nowrap md:gap-[10px]">
-        <button
-          type="button"
-          aria-expanded={canOpen ? open : undefined}
-          // Named by what it shows (the name, pips, type and makers), as any button is. The disclosure's own
-          // sentence is its description, so the visible content is not replaced by it.
-          aria-describedby={`token-${token.oracleId}-toggle`}
-          onClick={canOpen ? () => setOpen((v) => !v) : undefined}
+        <Summary
+          {...(canOpen
+            ? {
+                type: "button" as const,
+                "aria-expanded": open,
+                // Named by what it shows (the name, pips, type and makers), as any button is. The disclosure's own
+                // sentence is its description, so the visible content is not replaced by it.
+                "aria-describedby": `token-${token.oracleId}-toggle`,
+                onClick: () => setOpen((v) => !v),
+              }
+            : {})}
           className="flex min-w-0 items-start gap-[10px] text-left max-md:basis-full md:flex-1"
         >
           <span
@@ -149,7 +157,7 @@ export function TokenRow({
               {open ? "▴" : "▾"}
             </span>
           ) : null}
-        </button>
+        </Summary>
 
         <div className="order-3 flex basis-full items-center gap-[10px] pl-[56px] md:order-none md:basis-auto md:pl-0">
           {upload ? (

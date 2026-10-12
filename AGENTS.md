@@ -425,7 +425,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   and the link carries a line per token (`tokenShopping`, from the loader's own read). `summarisePrices`, `shoppingCount`, the
   status and the roll-up stay the cards' alone (pinned in `decklist.test.tsx`). The buy tag on a token row is the shipped tag as a
   button of its own: one press marks the token held, no confirm. A joined token whose maker has left the deck stays joined and
-  says `from no card in this deck`.
+  says `from no card in this deck`, with only its remove press (a hand mark on it could be unmarked from nowhere, since the unmark holds the same maker rule).
 - **Each ingest stamps `catalog_refreshes`, and every cached list payload is keyed on it**
   (#705). That is how a refresh retires readers' caches: `revalidateUserLists` takes a user
   id and a weekly job has no list of readers, so the generation goes in the key instead and

@@ -343,6 +343,11 @@ describe("the Tokens group on Shopping", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Mark the Soldier token/ })); });
     expect(screen.getByRole("alert").textContent).toBe("We couldn’t save that. The token is unchanged.");
   });
+  it("on Shopping offers only the remove press: a hand mark on it could not be undone", () => {
+    shopping([token({ oracleId: "f1", makers: [], joined: true, name: "Food", price: priced(15) })]);
+    expect(screen.queryByRole("button", { name: /Mark the Food token/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Take the Food token off Shopping/ })).toBeTruthy();
+  });
 });
 
 describe("a joined token whose maker left the deck", () => {
@@ -350,5 +355,9 @@ describe("a joined token whose maker left the deck", () => {
     draw(ok([token({ makers: [], joined: true })]));
     expect(screen.getByText("from no card in this deck")).toBeTruthy();
     expect(screen.queryByRole("button", { expanded: false })).toBeNull();
+    // Not a button at all: nothing to unfold means no focusable control that does nothing.
+    expect(screen.queryByRole("button", { name: /from no card in this deck/ })).toBeNull();
+    expect(screen.queryByText(/made by 0 cards/)).toBeNull();
   });
+
 });

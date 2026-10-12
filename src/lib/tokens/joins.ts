@@ -16,16 +16,6 @@ async function deckMakesToken(deckId: string, userId: string, tokenOracleId: str
   return !!hit;
 }
 
-/** Whether this player's deck already has the token joined: a join outlives its maker (a card leaving the deck). */
-async function deckHoldsJoin(deckId: string, userId: string, tokenOracleId: string): Promise<boolean> {
-  const [hit] = await db.select({ id: deckTokenJoins.tokenOracleId }).from(deckTokenJoins)
-    .where(and(
-      eq(deckTokenJoins.deckId, deckId), eq(deckTokenJoins.tokenOracleId, tokenOracleId), eq(deckTokenJoins.userId, userId),
-    ))
-    .limit(1);
-  return !!hit;
-}
-
 /** Puts one of this deck's tokens on its Shopping list. A token the deck does not make is refused. */
 export async function joinToken(userId: string, deckId: string, tokenOracleId: string): Promise<TokenWrite> {
   if (!(await deckMakesToken(deckId, userId, tokenOracleId))) return "notThisDeck";
@@ -43,13 +33,11 @@ export async function leaveToken(userId: string, deckId: string, tokenOracleId: 
 /**
  * `I have one`, and the Shopping row's buy press: records the token as held by hand and takes it off EVERY
  * deck's Shopping list in the same save. Owned means owned for every deck (plan lock 8), and an unmark later
- * restores no join. The deck that pressed must make the token, or hold its join (a joined token whose maker
- * left still draws the buy press); the other decks' joins go with it.
+ * restores no join. The deck that pressed must make the token: a mark on a token no card makes could not be
+ * unmarked from anywhere (the unmark holds the same rule), so a joined orphan offers only its remove press.
  */
 export async function markOwnedOnDeck(userId: string, deckId: string, tokenOracleId: string): Promise<TokenWrite> {
-  if (!(await deckMakesToken(deckId, userId, tokenOracleId)) && !(await deckHoldsJoin(deckId, userId, tokenOracleId))) {
-    return "notThisDeck";
-  }
+  if (!(await deckMakesToken(deckId, userId, tokenOracleId))) return "notThisDeck";
   await db.transaction(async (tx) => {
     await markTokenOwned(userId, tokenOracleId, tx);
     await tx.delete(deckTokenJoins).where(and(

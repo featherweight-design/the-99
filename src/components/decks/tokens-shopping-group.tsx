@@ -30,16 +30,24 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
         </span>
         {/* The shipped buy tag, as a button of its own: one press marks the token held and takes it off every
             deck's list in one write, with no confirm (Hugh, 2026-10-11). */}
-        <button
-          type="button"
-          disabled={pending}
-          aria-busy={pending}
-          aria-label={tokensCopy.row.haveAria(token.name)}
-          onClick={() => press(() => setTokenHeld(deckId, token.oracleId, true))}
-          className="flex min-h-[44px] flex-none items-center border-0 bg-transparent p-0 disabled:opacity-60 md:min-h-0"
-        >
-          <BuyTag variant="row" price={token.price} newestAsOf={newestAsOf} reserveSlot />
-        </button>
+        {token.makers.length > 0 ? (
+          <button
+            type="button"
+            disabled={pending}
+            aria-busy={pending}
+            aria-label={tokensCopy.row.haveAria(token.name)}
+            onClick={() => press(() => setTokenHeld(deckId, token.oracleId, true))}
+            className="flex min-h-[44px] flex-none items-center border-0 bg-transparent p-0 disabled:opacity-60 md:min-h-0"
+          >
+            <BuyTag variant="row" price={token.price} newestAsOf={newestAsOf} reserveSlot />
+          </button>
+        ) : (
+          // No card of the deck makes it, so a hand mark could not be undone from anywhere: the tag is only a
+          // price here, and the remove press beside it is the way off the list.
+          <span className="flex min-h-[44px] flex-none items-center md:min-h-0">
+            <BuyTag variant="row" price={token.price} newestAsOf={newestAsOf} reserveSlot />
+          </span>
+        )}
         <button
           type="button"
           disabled={pending}

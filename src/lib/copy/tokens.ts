@@ -73,7 +73,7 @@ export const tokensCopy = {
           .join("  ·  "),
     sends: (cardLines: number, tokenLines: number) =>
       cardLines === 0
-        ? `Opens Mana Pool with ${n(tokenLines)} token ${tokenLines === 1 ? "line" : "lines"}, each with its set and number, so none can be read as a card.`
-        : `Opens Mana Pool with ${n(cardLines)} card lines and ${n(tokenLines)} token ${tokenLines === 1 ? "line" : "lines"}. Cards send names and quantities; tokens send set and number.`,
+        ? `Opens Mana Pool with ${n(tokenLines)} token ${tokenLines === 1 ? "line" : "lines"}, each with its set and number where Mana Pool has one.`
+        : `Opens Mana Pool with ${n(cardLines)} card ${cardLines === 1 ? "line" : "lines"} and ${n(tokenLines)} token ${tokenLines === 1 ? "line" : "lines"}. Cards send names and quantities; tokens send set and number where Mana Pool has one.`,
   },
 } as const;

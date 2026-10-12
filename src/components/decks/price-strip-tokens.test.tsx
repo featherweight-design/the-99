@@ -39,7 +39,7 @@ describe("PriceStrip with tokens joined", () => {
       <PriceStrip summary={{ totalCents: 100, pricedCopies: 3, totalCopies: 3 }} provenance={fresh} shoppingCards={cards} tokens={tokens()} />,
     );
     expect(decoded(container)).toBe("1 Sol Ring\n2 Cultivate\n1 Soldier // Eldrazi [TONC] 1-17\n1 Monk");
-    expect(container.textContent).toContain("Opens Mana Pool with 2 card lines and 2 token lines. Cards send names and quantities; tokens send set and number.");
+    expect(container.textContent).toContain("Opens Mana Pool with 2 card lines and 2 token lines. Cards send names and quantities; tokens send set and number where Mana Pool has one.");
   });
 
   it("still draws, for a deck with nothing left to buy but a joined token", () => {
