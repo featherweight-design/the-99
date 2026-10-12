@@ -11,7 +11,7 @@ import { ManaBalancePanel, manaOpenKey } from "./mana-balance-panel";
 
 const openCard = vi.fn();
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: openCard }), useCardIntent: () => ({}) }));
-vi.mock("../../app/decks/mana-actions", () => ({ readManaBalance: vi.fn() }));
+vi.mock("../../app/decks/mana-actions", () => ({ readManaBalance: vi.fn(), readManaHelpFor: vi.fn() }));
 
 const land = (id: string, quantity: number, produces: ManaColor[]): ManaSupplyCardRow => ({ id, typeLine: "Land", manaCost: null, quantity, produces });
 const spell = (id: string, manaCost: string, quantity = 1): ManaSupplyCardRow => ({ id, typeLine: "Creature", manaCost, quantity });

@@ -760,6 +760,176 @@
           "settle": 400
         }
       ]
+    },
+    {
+      "id": "M6-door-step",
+      "label": "Improve my mana opened (R3b F2b): the colors tightest first, nothing selected, What Needs means beside them",
+      "view": "src/components/decks/mana-improve-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='mana']",
+          "settle": 300
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Improve my mana",
+          "settle": 400
+        },
+        {
+          "wait": "[data-mana-step]",
+          "settle": 300
+        },
+        {
+          "scrollTo": "[data-mana-door]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "M6b-help-result",
+      "label": "Help for the tightest color (R3b F1/F1b): swaps, staples owned first, trades",
+      "view": "src/components/decks/mana-improve-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='mana']",
+          "settle": 300
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Improve my mana",
+          "settle": 400
+        },
+        {
+          "click": "[data-mana-step] [role=radio]",
+          "settle": 400
+        },
+        {
+          "wait": "[data-mana-help] section",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-mana-door]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "M6c-help-one-color",
+      "label": "Improve my mana on a one-color deck (R3a, Wizards): no step, help at once",
+      "view": "src/components/decks/mana-improve-door.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_ONE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='mana']",
+          "settle": 300
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 600
+        },
+        {
+          "clickRole": "button",
+          "name": "Improve my mana",
+          "settle": 400
+        },
+        {
+          "wait": "[data-mana-help] section",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-mana-door]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "M7-land-cell",
+      "label": "The land cell's balance mana → (balance → at 390)",
+      "view": "src/components/decks/role-counter-cell.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-shortcut='balance-mana']:visible",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "M7b-land-cell-pressed",
+      "label": "The land cell pressed: Analysis, Mana Balance open, its heading focused",
+      "view": "src/components/decks/builder-shell.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MANA_GISHATH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-shortcut='balance-mana']:visible",
+          "settle": 600
+        },
+        {
+          "wait": "[data-tuning-tool='mana']",
+          "settle": 400
+        },
+        {
+          "wait": "#mana-heading",
+          "settle": 600
+        }
+      ]
     }
   ]
 }

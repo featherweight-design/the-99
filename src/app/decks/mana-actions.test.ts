@@ -17,9 +17,10 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => ({ color: c }) }));
 vi.mock("../../lib/tuning/tool-counts", () => ({ recordToolCount: async (row: unknown) => { state.recorded.push(row); } }));
 
-import { readManaBalance } from "./mana-actions";
+import { readManaBalance, readManaHelpFor } from "./mana-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 const spell = (id: string, manaCost: string, quantity = 1): ManaSupplyCardRow => ({ id, typeLine: "Creature", manaCost, quantity });
@@ -96,5 +97,20 @@ describe("readManaBalance with a partner", () => {
     expect(data.commander).toBe("Avatar Aang and Thrasios");
     expect(data.commanders).toBe(2);
     expect(data.cards).toBe(36);
+  });
+});
+
+describe("readManaHelpFor (the action)", () => {
+  it("answers a color in the commander's identity, and records nothing for History", async () => {
+    expect(await readManaHelpFor(DECK, "G")).toEqual({ color: "G" });
+    expect(state.recorded).toEqual([]);
+  });
+
+  it("refuses anything but one of the five, a color outside the identity, the switch off, or a bad id", async () => {
+    for (const c of ["X", "C", "g", "", "__proto__"]) expect(await readManaHelpFor(DECK, c)).toBeNull();
+    expect(await readManaHelpFor(DECK, "R")).toBeNull();
+    expect(await readManaHelpFor("nope", "G")).toBeNull();
+    state.enabled = false;
+    expect(await readManaHelpFor(DECK, "G")).toBeNull();
   });
 });

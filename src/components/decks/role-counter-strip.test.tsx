@@ -12,6 +12,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { type MixRole, recommendedMix } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { RoleCounterCell } from "./role-counter-cell";
 
@@ -459,5 +460,33 @@ describe("role counter strip — counting by label", () => {
     fireEvent.click(screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }));
     expect(screen.queryByText(/no label|their text|its text/i)).toBeNull();
     expect(cellFor("ramp", 2)).not.toBeNull();
+  });
+});
+
+describe("the land cell's balance mana → (Tuning hub R3)", () => {
+  it("opens Mana Balance from a land cell with no shelf to offer, in both widths' words", () => {
+    const onBalanceMana = vi.fn();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("land")} onBalanceMana={onBalanceMana} />);
+    const cell = document.querySelector("[data-shortcut='balance-mana']") as HTMLElement;
+    expect(cell.tagName).toBe("BUTTON");
+    expect(cell.textContent).toContain(tuningHubCopy.shortcuts.balanceMana);
+    expect(cell.textContent).toContain(tuningHubCopy.shortcuts.balanceManaShort);
+    expect(cell.getAttribute("aria-label")).toBe(tuningHubCopy.shortcuts.balanceManaAria(TEST_MIX.cells.land.target, TEST_MIX.cells.land.target));
+    expect(cell.getAttribute("aria-label")).not.toMatch(/short/);
+    fireEvent.click(cell);
+    expect(onBalanceMana).toHaveBeenCalledTimes(1);
+    // The land cell only: no other role takes the action.
+    expect(document.querySelectorAll("[data-shortcut='balance-mana']").length).toBe(1);
+  });
+
+  it("gives the cell to consider → when the land count is under target with a shelf", () => {
+    const onBalanceMana = vi.fn();
+    render(<RoleCounterStrip mix={TEST_MIX} cards={[]} onSeeShelf={() => {}} rolesWithShelves={ALL_SHELVES} onBalanceMana={onBalanceMana} />);
+    expect(document.querySelector("[data-shortcut='balance-mana']")).toBeNull();
+  });
+
+  it("draws the dash when the cell has neither action", () => {
+    render(<RoleCounterCell label="Land" have={30} target={36} advisory={false} />);
+    expect(screen.getByRole("figure")).toBeTruthy();
   });
 });

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { isPriorResult, isPriorRun, noteDeckRoute, okKeyOf, resetDeckVisitForTests, visitBaseline } from "./visit";
+import { isPriorResult, isPriorRun, noteDeckRoute, okKeyOf, resetDeckVisitForTests, setVisitValue, visitBaseline, visitValue, askInVisit, isNewestAsk } from "./visit";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -100,5 +100,55 @@ describe("the identities", () => {
     expect(isPriorRun(first, "r1")).toBe(true);
     expect(isPriorRun(first, "r2")).toBe(false);
     expect(isPriorRun({ okKey: null, runId: null }, undefined)).toBe(false);
+  });
+});
+
+describe("a visit's kept values", () => {
+  const A = "11111111-1111-4111-8111-111111111111";
+  const B = "22222222-2222-4222-8222-222222222222";
+  beforeEach(() => resetDeckVisitForTests());
+
+  it("keeps a value across the deck's sub-pages, and drops it on leaving or on another deck", () => {
+    noteDeckRoute(`/decks/${A}`);
+    setVisitValue(A, "mana-help", { x: 1 });
+    noteDeckRoute(`/decks/${A}/changes`);
+    expect(visitValue(A, "mana-help")).toEqual({ x: 1 });
+    expect(visitValue(B, "mana-help")).toBeUndefined();
+    noteDeckRoute(`/decks/${B}`);
+    expect(visitValue(A, "mana-help")).toBeUndefined();
+    setVisitValue(B, "mana-help", { y: 2 });
+    noteDeckRoute("/collection");
+    expect(visitValue(B, "mana-help")).toBeUndefined();
+  });
+
+  it("clears a value set to undefined", () => {
+    noteDeckRoute(`/decks/${A}`);
+    setVisitValue(A, "mana-help", 1);
+    expect(visitValue(A, "mana-help")).toBe(1);
+    setVisitValue(A, "mana-help", undefined);
+    expect(visitValue(A, "mana-help")).toBeUndefined();
+  });
+});
+
+describe("a visit's request order", () => {
+  const A = "11111111-1111-4111-8111-111111111111";
+  beforeEach(() => resetDeckVisitForTests());
+
+  it("keeps only the newest ask, across mounts and across a leave and return", () => {
+    noteDeckRoute(`/decks/${A}`);
+    const first = askInVisit(A, "mana-help");
+    const second = askInVisit(A, "mana-help");
+    expect(isNewestAsk(A, "mana-help", first)).toBe(false);
+    expect(isNewestAsk(A, "mana-help", second)).toBe(true);
+    noteDeckRoute("/decks");
+    noteDeckRoute(`/decks/${A}`);
+    const again = askInVisit(A, "mana-help");
+    expect(isNewestAsk(A, "mana-help", second)).toBe(false);
+    expect(isNewestAsk(A, "mana-help", again)).toBe(true);
+  });
+
+  it("asks nothing with no visit open", () => {
+    expect(askInVisit(A, "mana-help")).toBeNull();
+    expect(isNewestAsk(A, "mana-help", null)).toBe(false);
   });
 });

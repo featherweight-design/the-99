@@ -3,7 +3,7 @@
 // Mana Balance (Tuning hub handoff R3b, the full view): the free count of a deck's colors, read
 // fresh on every open, with no button, no credit and no verdict. Order, top to bottom: title and
 // sub, lead, the evidence table, "What Needs means", Hardest costs and Lands (both folded until
-// opened, remembered per deck), and the citation. The Improve my mana door joins in PR 3b.
+// opened, remembered per deck), the Improve my mana door, and the citation.
 //
 // The read mirrors Proposed cuts' (`cuts-panel.tsx`): read on mount and again whenever `revision`
 // moves, only the newest-asked read drawn, a failed read its own state, and a counting frame that
@@ -18,6 +18,7 @@ import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import { colorRows } from "../../lib/mana/color-rows";
 import { defaultPatternColor, pippedColors, tappedTotal, type ManaPanelData } from "../../lib/tuning/mana-view";
 import { ColorlessLine, KarstenCitation, ManaEvidenceTable, NeedsExplainer } from "./mana-evidence";
+import { ImproveDoor, type HelpRead } from "./mana-improve-door";
 import { hardestClause, LandFacts, ManaSection, PatternRows } from "./mana-sections";
 import { FailureMark } from "./tuning-history";
 import { useStoredKeys } from "./use-folded-shelves";
@@ -35,12 +36,15 @@ const HEADING = "font-display text-[17px] font-semibold outline-none md:text-[19
 export function ManaBalancePanel({
   deckId,
   read = readManaBalance,
+  help,
   revision,
   onSettled,
 }: {
   deckId: string;
   /** The server action; injectable so every state is testable without a request. */
   read?: (deckId: string) => Promise<ManaPanelData | null>;
+  /** The help read, injectable for the same reason. */
+  help?: HelpRead;
   /** Changes whenever the list changes elsewhere on the page, so the count is read again. */
   revision?: string;
   /** Called once the first read has landed or failed (the tab's opening loader). */
@@ -166,6 +170,8 @@ export function ManaBalancePanel({
       >
         <LandFacts lands={balance.lands} cards={cards} commander={commander} commanders={commanders} />
       </ManaSection>
+
+      <ImproveDoor deckId={deckId} balance={balance} commander={commander} revision={revision} read={help} />
 
       <KarstenCitation landOnly={colorless} />
     </section>

@@ -47,6 +47,8 @@ type RoleCounterStripProps = {
   /** The deck's label rows when the strip counts by label (`LABEL_ROLE_COUNTS_ENABLED`); absent or
    *  null counts by `card.role`, exactly as before. */
   labelRows?: JobRowsByCard | null;
+  /** Opens Mana Balance from the land cell, when that cell has no shelf to offer. */
+  onBalanceMana?: () => void;
 } & (
   | { onSeeShelf: (role: MixRole) => void; rolesWithShelves: ReadonlySet<MixRole> }
   | { onSeeShelf?: never; rolesWithShelves?: never }
@@ -60,6 +62,7 @@ export function RoleCounterStrip({
   justFilled = false,
   wasCounts,
   labelRows,
+  onBalanceMana,
 }: RoleCounterStripProps) {
   const countRoles = roleCounterFor(labelRows);
   const counts = countRoles(cards);
@@ -135,6 +138,7 @@ export function RoleCounterStrip({
                 ? () => onSeeShelf(role)
                 : undefined
             }
+            onBalanceMana={role === "land" ? onBalanceMana : undefined}
           />
         ))}
       </div>

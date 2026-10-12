@@ -5,7 +5,10 @@ import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { getDeckDetail, type DeckDetail } from "../../lib/decks/read";
 import { listFingerprint } from "../../lib/profile/fingerprint";
 import { manaBalanceEnabled } from "../../lib/tuning/flag";
+import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { loadManaBalance } from "../../lib/tuning/mana-balance-load";
+import type { ManaHelp } from "../../lib/tuning/mana-help";
+import { loadManaHelp } from "../../lib/tuning/mana-help-load";
 import { manaCountSummary, toClientBalance, type ManaPanelData } from "../../lib/tuning/mana-view";
 import { recordToolCount } from "../../lib/tuning/tool-counts";
 import { isUuid } from "../../lib/uuid";
@@ -61,4 +64,20 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
     cards: deck.cards.reduce((a, c) => a + c.quantity, 0) + commanders.length,
     ids,
   };
+}
+
+/**
+ * "Improve my mana" for one color the player picked: basics that could swap to it and staples the
+ * commander's decks run, owned first. Free and asked for; never prefetched, never recorded in
+ * History. A PUBLIC ENDPOINT: any color outside the five, or outside the commander's identity, is
+ * refused. Null on a refusal or a failed read; the panel draws its help-failed state.
+ */
+export async function readManaHelpFor(deckId: string, color: string): Promise<ManaHelp | null> {
+  const userId = await requireUserId();
+  if (!manaBalanceEnabled() || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
+  const deck = await getDeckDetail(deckId, userId);
+  if (!deck) return null;
+  const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
+  if (!identity.includes(color)) return null;
+  return loadManaHelp(deck, userId, color as BalanceColor);
 }

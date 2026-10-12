@@ -22,9 +22,20 @@ export type DeckTool = "suggested" | "cuts";
  *  running, and whatever it settles to happened during this visit. */
 export type ToolBaseline = { okKey: string | null; runId: string | null };
 
-type Visit = { deckId: string; baselines: Partial<Record<DeckTool, ToolBaseline>> };
+/** A tool result that is never stored server-side and must still last the visit (Mana Balance's help:
+ *  `mana-help`). Opaque here; its owner checks it still describes the deck before drawing it. */
+export type VisitSlot = "mana-help";
+
+type Visit = {
+  deckId: string;
+  baselines: Partial<Record<DeckTool, ToolBaseline>>;
+  values: Partial<Record<VisitSlot, unknown>>;
+  /** Per slot, the newest request asked in this visit, across every mount of its tool. */
+  asks: Partial<Record<VisitSlot, number>>;
+};
 
 let visit: Visit | null = null;
+let askSeq = 0;
 
 const DECK_ROUTE = /^\/decks\/([^/]+)(?:\/|$)/;
 
@@ -38,7 +49,7 @@ export function noteDeckRoute(path: string | null): void {
   }
   // Lowercase, as Postgres returns a uuid: an uppercase URL and the deck's own id name one deck.
   const deckId = id.toLowerCase();
-  if (visit?.deckId !== deckId) visit = { deckId, baselines: {} };
+  if (visit?.deckId !== deckId) visit = { deckId, baselines: {}, values: {}, asks: {} };
 }
 
 /** A stored ok result's identity: its `lastOkAt` as epoch-ms, or null with none. */
@@ -69,6 +80,34 @@ export function isPriorResult(baseline: ToolBaseline | null, okKey: string | nul
 /** Whether the newest run is a prior visit's settled run (its failure is not this visit's). */
 export function isPriorRun(baseline: ToolBaseline | null, runId: string | null | undefined): boolean {
   return baseline !== null && baseline.runId !== null && runId === baseline.runId;
+}
+
+/** What this visit to the deck holds in `slot`, or undefined: nothing kept, or no visit open to it. */
+export function visitValue<T>(anyCaseId: string, slot: VisitSlot): T | undefined {
+  return visit?.deckId === anyCaseId.toLowerCase() ? (visit.values[slot] as T | undefined) : undefined;
+}
+
+/** Keeps `value` for the rest of this visit to the deck (undefined clears it). Like `visitBaseline`,
+ *  only within a visit `noteDeckRoute` opened: a reply landing after the player left keeps nothing. */
+export function setVisitValue(anyCaseId: string, slot: VisitSlot, value: unknown): void {
+  if (visit?.deckId !== anyCaseId.toLowerCase()) return;
+  if (value === undefined) delete visit.values[slot];
+  else visit.values[slot] = value;
+}
+
+/** Numbers a request for `slot` in this visit: the newest asked, across every mount of the tool
+ *  (a panel remounts on each tab or tool switch), so a slower reply from an earlier mount cannot
+ *  overwrite a newer one. Null with no visit open to the deck. */
+export function askInVisit(anyCaseId: string, slot: VisitSlot): number | null {
+  if (visit?.deckId !== anyCaseId.toLowerCase()) return null;
+  // Numbered across visits, never restarting, so an earlier visit's number is never a later one's.
+  visit.asks[slot] = ++askSeq;
+  return visit.asks[slot];
+}
+
+/** Whether `ask` is still the newest request for `slot` in the open visit to the deck. */
+export function isNewestAsk(anyCaseId: string, slot: VisitSlot, ask: number | null): boolean {
+  return ask !== null && visit?.deckId === anyCaseId.toLowerCase() && visit.asks[slot] === ask;
 }
 
 export function resetDeckVisitForTests(): void {

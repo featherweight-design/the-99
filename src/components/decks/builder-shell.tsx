@@ -20,6 +20,7 @@ import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
 import { CutsPanelView } from "./cuts-panel";
 import { ManaBalancePanel } from "./mana-balance-panel";
+import { hasColoredPip } from "../../lib/tuning/mana-view";
 import { TuningPanel } from "./tuning-panel";
 import { TuningHub, type HubRequest } from "./tuning-hub";
 import { pressNote } from "./synopsis-note";
@@ -1332,17 +1333,20 @@ export function BuilderShell({
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
   );
-  // Read fresh on every open, and again whenever the list moves: the count is of the list alone.
+  // Read fresh on every open, and again whenever the list, a commander or a lock moves: a locked
+  // basic never moves in its help, so a lock retires a kept help result too.
   const manaPanel = (
     <ManaBalancePanel
       key={deck.id}
       deckId={deck.id}
       // The commanders count too: their pips, their identity and the cards figure.
-      revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}`}
+      revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}|${[...lockedIds].sort().join(",")}`}
       // Mounted directly (Mana alone on), its first read holds the tab's opening, as Proposed cuts' does.
       onSettled={onManaSettled}
     />
   );
+  // The land cell offers Mana Balance only for a deck with a color to count (design table, R3).
+  const coloredPip = hasColoredPip(cards, [deck.commander, ...(deck.partner ? [deck.partner] : [])]);
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
       freshEachVisit={freshEachVisit}
@@ -1624,6 +1628,9 @@ export function BuilderShell({
               justFilled={deck.filled && autoCount > 0}
               wasCounts={wasCounts}
               labelRows={labelRows}
+              onBalanceMana={tuningHubEnabled && manaBalanceEnabled && coloredPip
+                ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
+                : undefined}
             />
 
             {/* No degraded banner here. The old one ("Synergy data offline")

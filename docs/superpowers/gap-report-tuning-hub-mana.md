@@ -72,8 +72,38 @@ with sources and no pips, long name list (`+N more`), commander in a row, the th
 no sources, failed. Contact sheet (scratch branch `scratch-tuning-hub`, 390 and 1300): M1, M2, M2b, M2c,
 M2d, M4 (Aang), M5 (Eldrazi), M8 (History filtered to Mana Balance), every cell reached.
 
-## Owed to PR 3b
+## PR 3b: the door, the help result and the land cell
 
-The door, the color step (tightest first, nothing preselected), the help result (kept for the whole visit
-to the deck through `lib/decks/visit.ts`, per Hugh's rule), `readManaHelpFor`, the land cell's
-`balance mana →`, and their inventory rows (M3, M3b, M4 one-color, M6 no-sources, M7, M7b).
+Property table `docs/superpowers/design-tables/mana-balance-help.md`. Agent 2 found 38 visual and 5 state
+gaps; 37 visual and all 5 state gaps were fixed (the button now hides while the step or result is open,
+the step carries What Needs means, a no-pips row puts its figure in the Have cell, the failed head drops
+its figure, the info button's open ring, and the spacing, rules and type the table names).
+
+### Approved deviations (3b)
+
+| # | Design | Shipped | Why |
+|---|---|---|---|
+| 11 | Land cell dash, phone ink `--border-dashed` | The shipped cell's own dash | The cell's met-or-no-action dash predates this PR and is unchanged by it. |
+| 12 | `help.how` "stays at or above what its tightest cost needs" | "no other color drops below what its hardest published cost needs, or loses a source while already below it" | Audit finding 4: the engine guards on the HARDEST published cost, which can exceed the table's Needed (Gishath red 30 vs 22). Copy changed, engine unchanged (/copy-review). |
+| 13 | `balanceManaAria`: `{color} is short` | `Land, N of M. Open Mana Balance.` | R3 retired every verdict. |
+| 14 | Swap row `Up to 1 Forests` | `1 Forest → Mountain` at one copy | Singular, as the copy file's literal `s` cannot say. |
+
+### Decisions (3b)
+
+- **The help result lasts the visit** (orchestrator, relaying Hugh's 2026-10-11 rule): kept in
+  `lib/decks/visit.ts`'s new `mana-help` slot, so a tool switch, a tab switch and the deck's sub-pages
+  keep it; leaving the deck or moving to another deck resets it. It is keyed on the list and the locks it
+  was read for, so an edit or a lock retires it in place. A press always reads anew.
+- **Thumbnails** read `cards.image_uri` in the staples loader (one column added to its select).
+- **Bucket label** for an identity fact: the condition's letters (`UW`) or `3-color` for `count:3`. A
+  commander or pair fact with no inclusion figure draws only `adds`.
+- **A staple owned but spoken for** (`free` 0) reads as to buy: the engine's own owned-first test.
+- **A color with pips and no published cost** in the step reads `no published figure` with `You have N`.
+- **The land cell** follows the design table's precedence: `consider →` (land count under target with a
+  shelf) wins, then `balance mana →` for a deck with a colored pip (`hasColoredPip`, tested equal to the
+  engine's `state !== "colorless"`), else the dash. It shows only while the hub draws.
+
+## Owed to the line close-out
+
+The About entry (batched to the Tuning line's close-out, per the plan) and `MANA_BALANCE_ENABLED` in
+`AboutSwitch`. The no-sources deck has no fixture; its state is covered by `mana-balance-panel.test`.
