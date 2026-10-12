@@ -15,6 +15,8 @@ import { cssUrl } from "../../lib/collection/browse";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { overCopy } from "../../lib/copy/decks-builder";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
 import { cutsAsk, MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
@@ -23,6 +25,7 @@ import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { usePreviewRow } from "./hover-preview";
+import { useReviewRun } from "./review-run";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -39,11 +42,13 @@ import { usePreviewRow } from "./hover-preview";
  * The server actions are injectable, so every state is testable without a request.
  */
 export type CutsDeps = {
-  read: (deckId: string) => Promise<CutsPanel | null>;
+  /** `runId`: a past run History reopened (re-review), read in place of the newest. */
+  read: (deckId: string, runId?: string | null) => Promise<CutsPanel | null>;
   run: (deckId: string, opts?: { runId?: string }) => Promise<DeckMutationResult>;
   cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
-  cut: (itemId: string) => Promise<DeckMutationResult>;
-  undo: (itemId: string) => Promise<DeckMutationResult>;
+  /** `review`: pressed on a reopened past run, so the server re-checks the card, not the run. */
+  cut: (itemId: string, review?: boolean) => Promise<DeckMutationResult>;
+  undo: (itemId: string, review?: boolean) => Promise<DeckMutationResult>;
   keep: (itemId: string) => Promise<DeckMutationResult>;
   restore: (itemId: string) => Promise<DeckMutationResult>;
 };
@@ -87,6 +92,11 @@ export function CutsPanelView({
   revision?: string;
 }) {
   const [panel, setPanel] = useState<CutsPanel | null>(null);
+  // A past run History reopened here: its cuts are read in place of the newest run's.
+  const review = useReviewRun("cuts");
+  const reviewRunId = review?.runId ?? null;
+  // Set by this panel's own Look deeper: from then on it reads its newest run, at once.
+  const leftReview = useRef(false);
   // What was already stored when this visit to the deck began (`lib/decks/visit`, Hugh
   // 2026-10-11): a prior visit's cuts are not drawn and live only in History, and Look deeper
   // over them runs anew. Recorded by the first read that lands, in the same render as its panel,
@@ -125,8 +135,9 @@ export function CutsPanelView({
   const reread = useCallback(async () => {
     const mine = ++asked.current;
     try {
-      const next = await deps.read(deckId);
-      if (next && freshEachVisit && mounted.current && baselineDeck.current !== deckId) {
+      const next = await deps.read(deckId, leftReview.current ? null : reviewRunId);
+      // A reopened past run is not the deck's state on arrival: an ordinary read records the baseline.
+      if (next && !next.review && freshEachVisit && mounted.current && baselineDeck.current !== deckId) {
         baselineDeck.current = deckId;
         setBaseline(visitBaseline(deckId, "cuts", {
           okKey: okKeyOf(next.lastOkAt),
@@ -145,7 +156,7 @@ export function CutsPanelView({
       if (mine === asked.current) { setLoadFailed(true); setPanel(null); }
       return null;
     }
-  }, [deps, deckId, freshEachVisit]);
+  }, [deps, deckId, freshEachVisit, reviewRunId]);
 
   // The first read; `onSettled` tells the tab its opening may finish.
   useEffect(() => {
@@ -165,7 +176,8 @@ export function CutsPanelView({
   }, [revision, reread]);
 
   // A run begun elsewhere (another tab, a reload mid-run) is re-read until it settles.
-  const pendingId = panel?.run?.status === "pending" ? panel.run.id : null;
+  // A reopened past run is drawn over a newer run's pending or failed state, never under it.
+  const pendingId = !panel?.review && panel?.run?.status === "pending" ? panel.run.id : null;
   useEffect(() => {
     if (pendingId === null) return;
     const id = setInterval(() => void reread(), WATCH_MS);
@@ -206,11 +218,13 @@ export function CutsPanelView({
   // A prior visit's result, and a prior visit's failed run, are hidden: the tool opens on its offer.
   const priorResult = isPriorResult(baseline, okKeyOf(panel.lastOkAt));
   const priorRun = isPriorRun(baseline, run?.id);
-  const resultShown = panel.resultCurrent && items.length > 0 && !priorResult;
+  // A reopened past run shows its cuts whatever the list has done since: each is re-checked.
+  const reviewing = !!panel.review;
+  const resultShown = reviewing ? items.length > 0 : panel.resultCurrent && items.length > 0 && !priorResult;
   // Back to 99: the cuts made from a result took the deck to the line, and it finishes in place.
-  if (over === 0 && !(resultShown && cutCount > 0)) return null;
+  if (over === 0 && !(resultShown && (cutCount > 0 || reviewing))) return null;
 
-  const failed = !running && !priorRun && run?.status === "failed";
+  const failed = !running && !priorRun && !panel.review && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";
   const left = Math.max(0, panel.allowance.limit - panel.allowance.used);
   const spent = panel.allowance.used >= panel.allowance.limit;
@@ -226,6 +240,7 @@ export function CutsPanelView({
   async function press() {
     if (running || blocked || stopGuard.current) return;
     const mine = ++token.current;
+    if (review) { leftReview.current = true; review.leave?.(); }
     const runId = crypto.randomUUID();
     ownRun.current = runId;
     setPressing(true);
@@ -568,7 +583,8 @@ function CutRow({ item, panel, deps, items, onSettled }: {
 
   async function answer(kind: "cut" | "undo" | "keep" | "restore") {
     setBusy(kind);
-    const result = await deps[kind](item.id).catch((): DeckMutationResult => ({ ok: false, message: copy.refusals.generic }));
+    const reviewing = !!panel.review;
+    const result = await (kind === "cut" || kind === "undo" ? deps[kind](item.id, reviewing) : deps[kind](item.id)).catch((): DeckMutationResult => ({ ok: false, message: copy.refusals.generic }));
     // Busy until the follow-up read has replaced this row: a second press in that gap would repeat
     // the verdict and overwrite the answer with a refusal.
     if (!result.ok) {
@@ -610,6 +626,24 @@ function CutRow({ item, panel, deps, items, onSettled }: {
             {done ? copy.undo : copy.showAgain}
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // A reopened past run's cut the deck has moved past: drawn, never offered (re-review).
+  if (panel.review && (item.inDeck === false || item.locked === true)) {
+    return (
+      <div
+        data-testid="answered-broken"
+        className="flex flex-wrap items-center gap-[9px] rounded-[9px] px-[12px] py-[9px]"
+        style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
+      >
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>
+          {deckTuningCopy.lists.noLongerApplies}
+        </span>
+        <span className="min-w-0 text-[13px]" style={{ color: "var(--fg-faint)" }}>
+          {item.inDeck === false ? deckTuningCopy.lists.cutGone(item.cutName) : lockedCardsCopy.tuning.cutLocked(item.cutName)}
+        </span>
       </div>
     );
   }

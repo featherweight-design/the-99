@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  afterKey, decodeCursor, encodeCursor, mergePage, parseHistoryId, pastCutChips, pastVerdict, runOutcome,
+  afterKey, decodeCursor, encodeCursor, historyPress, mergePage, parseHistoryId, pastCutChips, pastVerdict, runOutcome,
   shapeCount, shapeRun, type HistoryRow, type RunRecord,
 } from "./history";
 import { REAPER_CUTOFF_MS } from "./limits";
@@ -127,5 +127,40 @@ describe("pastCutChips", () => {
     expect(pastCutChips(cites, "r", { medianPct: 38, flagCounts: {}, declared: null })).toEqual(["EDHREC 14% · median 38%"]);
     expect(pastCutChips(cites, "r", null)).toEqual(["EDHREC 14%"]);
     expect(pastCutChips(null, "r", null)).toEqual([]);
+  });
+});
+
+describe("historyPress: where a History row's press goes", () => {
+  const RUN = "11111111-1111-4111-8111-111111111111";
+  const row = (over: Partial<HistoryRow>): HistoryRow => ({
+    id: `run:${RUN}`, tool: "cuts", tier: "deeper", outcome: "ok", at: "2026-10-12T16:31:55.438Z",
+    summary: { kind: "cutsDeeperOk", named: 11, asked: 11, cut: 1, kept: 0 }, ...over,
+  });
+
+  it("re-opens a paid run that named something in its own tool, by its run id", () => {
+    expect(historyPress(row({}))).toEqual({ kind: "review", runId: RUN });
+    expect(historyPress(row({ tool: "suggested", tier: "credit", summary: { kind: "suggestedOk", in: 2, out: 0, added: 0, cut: 0, rejected: 0 } })))
+      .toEqual({ kind: "review", runId: RUN });
+  });
+
+  it("opens a free count's tool on today's list: the count named no card", () => {
+    expect(historyPress(row({ id: `count:${RUN}`, tier: "free", summary: { kind: "cutsFree", over: 10, roles: [] } }))).toEqual({ kind: "live", counted: true });
+    expect(historyPress(row({ id: `count:${RUN}`, tool: "mana", tier: "free", summary: { kind: "manaFree", pips: 101, sources: 93 } }))).toEqual({ kind: "live", counted: true });
+  });
+
+  it("opens a run still in flight in its tool, which draws it running", () => {
+    expect(historyPress(row({ outcome: "running", summary: { kind: "none" } }))).toEqual({ kind: "live", counted: false });
+  });
+
+  it("keeps the past-run view for a run with nothing to load", () => {
+    for (const outcome of ["failed", "refused", "stopped"] as const) {
+      expect(historyPress(row({ outcome, summary: { kind: "none" } }))).toEqual({ kind: "past" });
+    }
+    expect(historyPress(row({ summary: { kind: "cutsDeeperOk", named: 0, asked: 3, cut: 0, kept: 0 } }))).toEqual({ kind: "past" });
+    expect(historyPress(row({ tool: "suggested", summary: { kind: "suggestedOk", in: 0, out: 0, added: 0, cut: 0, rejected: 0 } }))).toEqual({ kind: "past" });
+  });
+
+  it("keeps the past-run view for an id it did not write", () => {
+    expect(historyPress(row({ id: "run:nope" }))).toEqual({ kind: "past" });
   });
 });

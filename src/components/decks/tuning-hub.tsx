@@ -7,15 +7,16 @@
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
 import { reveal } from "../../lib/ui/reveal";
 import { visitBaseline } from "../../lib/decks/visit";
 import type { HubTileRun, HubTiles } from "../../lib/tuning/hub-tiles";
-import type { HistoryRow, HistoryTool } from "../../lib/tuning/history";
-import { TuningHistory } from "./tuning-history";
+import { historyPress, type HistoryRow, type HistoryTool } from "../../lib/tuning/history";
+import { ReviewRunProvider, type ReviewRun } from "./review-run";
+import { historyDate, summaryText, TuningHistory } from "./tuning-history";
 import { TuningToolMark, type TuningTool } from "./tuning-tool-mark";
 
 /** While a run is in flight the landing re-reads at the tools' own cadence. */
@@ -210,8 +211,17 @@ export function TuningHub({
   const [leftTool, setLeftTool] = useState<TuningTool | null>(null);
   // The past run History has open: the hub's, so the phone's switch slot can say `‹ History`.
   const [past, setPast] = useState<HistoryRow | null>(null);
+  // A run History reopened in its own tool (re-review, Hugh 2026-10-12): the tool reads it through
+  // `ReviewRunProvider`, and the hub draws the note above it. Any other opening drops it.
+  // `left`: the reader ran the tool again from the reopened run, so it reads as ordinary now.
+  const [review, setReview] = useState<{ run: ReviewRun; row: HistoryRow; left: boolean } | null>(null);
+  const leaveReview = useCallback(() => setReview((r) => (r ? { ...r, left: true } : r)), []);
+  // The History row to focus on the way back from a reviewed run.
+  const [returnRow, setReturnRow] = useState<string | null>(null);
   const open = useCallback((tool: TuningTool | null, how: { focus: boolean; scroll?: boolean } = { focus: true }) => {
     setPast(null);
+    setReview(null);
+    setReturnRow(null);
     if (tool === null) setLeftTool(openTool);
     setOpening((prev) => (tool === null ? null : { tool, focus: how.focus, scroll: how.scroll ?? false, seq: (prev?.seq ?? 0) + 1 }));
   }, [openTool]);
@@ -234,6 +244,7 @@ export function TuningHub({
   if (request && request.nonce !== answered) {
     setAnswered(request.nonce);
     if (tools.some((t) => t.tool === request.tool)) {
+      setReview(null);
       setOpening((prev) => ({ tool: request.tool, focus: true, scroll: true, seq: (prev?.seq ?? 0) + 1 }));
     }
   }
@@ -278,6 +289,32 @@ export function TuningHub({
     return () => cancelAnimationFrame(frame);
   }, [opening]);
 
+  // A History row's press: its tool with that run loaded, its tool on the deck as it is now (a free
+  // count, a run in flight), or the read-only past view for a run with nothing to load.
+  const openFromHistory = (row: HistoryRow | null) => {
+    if (row === null) { setPast(null); return; }
+    const press = historyPress(row);
+    // A tool with no panel to draw (Suggested changes before a reading) cannot take the run: History's
+    // read-only view shows its lines instead.
+    const spec = tools.find((t) => t.tool === row.tool);
+    if (press.kind === "past" || !spec || ("panel" in spec && spec.panel === null)) { setPast(row); return; }
+    // A run still in flight is the tool's own newest run: the tool as any opening shows it, no note.
+    // A tool that is inert now (Proposed cuts on a deck back at 100) draws nothing for a run in flight
+    // or a count: History's own view shows it instead, as it does a run with nothing to load.
+    if (press.kind === "live" && views.find((v) => v.tool === row.tool)?.inert) { setPast(row); return; }
+    if (press.kind === "live" && !press.counted) { open(row.tool, { focus: true }); return; }
+    setPast(null);
+    setReturnRow(null);
+    setReview({ run: { tool: row.tool, runId: press.kind === "review" ? press.runId : null }, row, left: false });
+    setOpening((prev) => ({ tool: row.tool, focus: true, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
+  };
+  const backToHistory = () => {
+    const from = review?.row.id ?? null;
+    setReview(null);
+    setPast(null);
+    setReturnRow(from);
+    setOpening((prev) => ({ tool: "history", focus: false, scroll: false, seq: (prev?.seq ?? 0) + 1 }));
+  };
   const views = tools.map((spec) => tileOf(spec, tiles, now));
   // History's chips: the run-making tools this hub draws.
   const historyTools = tools.flatMap((t): HistoryTool[] => (t.tool === "history" ? [] : [t.tool]));
@@ -285,6 +322,8 @@ export function TuningHub({
   // drawn at all (its switch is off) never opens.
   const opened = openTool ? tools.find((t) => t.tool === openTool) ?? null : null;
   const openedView = opened ? views.find((v) => v.tool === opened.tool)! : null;
+  const reviewed = review && opened?.tool === review.run.tool ? review : null;
+  const reviewing = reviewed && !reviewed.left ? reviewed : null;
 
   // The keys step over an inert tool's tab, as a press cannot open it either (it is disabled), so
   // focus never lands on a control that cannot take it.
@@ -357,8 +396,8 @@ export function TuningHub({
           </div>
           {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
           <div className="anim-gentle-in flex items-center justify-between md:hidden">
-            {opened.tool === "history" && past ? (
-              <button type="button" data-history-back="" onClick={() => setPast(null)} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
+            {(opened.tool === "history" && past) || reviewing ? (
+              <button type="button" data-history-back="" onClick={() => (reviewing ? backToHistory() : setPast(null))} className="flex h-[44px] items-center text-[13px] font-medium text-[var(--fg-muted)]">
                 {copy.history.back}
               </button>
             ) : (
@@ -375,8 +414,16 @@ export function TuningHub({
               row above is not keyed: it stays put while the panel under it changes. */}
           <div key={opened.tool} ref={toolRef} id="tuning-tool-panel" role="tabpanel" className="anim-gentle-in" aria-labelledby={`tuning-tab-${opened.tool}`} data-tuning-tool={opened.tool}>
             {opened.tool === "history" ? (
-              <TuningHistory deckId={deckId} tools={historyTools} past={past} onOpenPast={setPast} />
-            ) : baselineRead ? opened.panel : null}
+              <TuningHistory deckId={deckId} tools={historyTools} past={past} onOpenPast={openFromHistory} focusRow={returnRow} />
+            ) : baselineRead ? (
+              <>
+                {reviewing ? <ReviewNote row={reviewing.row} counted={reviewing.run.runId === null} onBack={backToHistory} /> : null}
+                {/* Keyed on the run, so a tool reopened on another run, or back on its own read, reads afresh. */}
+                <Fragment key={reviewed ? reviewed.row.id : "live"}>
+                  <ReviewRunProvider value={reviewing ? { ...reviewing.run, leave: leaveReview } : null}>{opened.panel}</ReviewRunProvider>
+                </Fragment>
+              </>
+            ) : null}
           </div>
         </>
       ) : (
@@ -388,6 +435,26 @@ export function TuningHub({
         </div>
       )}
     </section>
+  );
+}
+
+/** Above a tool History reopened: which run it is, and the way back to History (desktop; the phone's
+ *  is the switch slot). A free count's note keeps what it found, since the tool reads the deck now. */
+function ReviewNote({ row, counted, onBack }: { row: HistoryRow; counted: boolean; onBack: () => void }) {
+  const date = historyDate(row.at);
+  const r = copy.history.review;
+  const text = counted
+    ? r.counted(date, summaryText(row))
+    : row.tool === "cuts" ? r.note.cuts(date) : r.note.suggested(date);
+  return (
+    <div data-review-note={row.id} className="mb-[2px] flex flex-col gap-[6px] md:flex-row md:items-baseline md:justify-between md:gap-[14px]">
+      <p className="rounded-[9px] px-[12px] py-[9px] text-[12.5px] leading-[1.55] md:flex-1" style={{ color: "var(--fg-muted)", border: "1px dashed var(--border-dashed)" }}>
+        {text}
+      </p>
+      <button type="button" onClick={onBack} className="hidden flex-none text-[12.5px] font-medium text-[var(--fg-muted)] md:block">
+        {copy.history.back}
+      </button>
+    </div>
   );
 }
 

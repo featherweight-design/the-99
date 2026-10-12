@@ -138,15 +138,8 @@ describe("HistoryList", () => {
     await waitFor(() => expect(rowEls()).toHaveLength(5));
   });
 
-  it("opens a past run in place and comes back to the list with the same filter", async () => {
-    const past: PastRun = {
-      kind: "suggested", at: rows[3].at, outcome: "ok", readVersion: 3, moved: 8,
-      lines: [
-        { cut: "Rampant Growth", add: "Nature’s Lore", verdict: "applied", reason: "r1", cites: ["games 7"] },
-        { cut: "Wildgrowth Walker", add: "Ranging Raptors", verdict: "rejected", reason: "r2", cites: [] },
-        { cut: "Cultivate", add: "Farseek", verdict: "open", reason: "r3", cites: [] },
-      ],
-    };
+  it("opens a past run with nothing to load in place, and comes back to the list with the same filter", async () => {
+    const past: PastRun = { kind: "suggested", at: rows[3].at, outcome: "failed", readVersion: 3, moved: 8, lines: [] };
     readPast.mockResolvedValue(past);
     render(<Host />);
     await waitFor(() => expect(rowEls()).toHaveLength(5));
@@ -154,7 +147,7 @@ describe("HistoryList", () => {
     fireEvent.click(within(screen.getByRole("radiogroup")).getAllByRole("radio")[1]);
     await waitFor(() => expect(rowEls()).toHaveLength(3));
     fireEvent.click(rowEls()[1]);
-    await waitFor(() => expect(document.querySelectorAll("[data-past-line]")).toHaveLength(3));
+    await waitFor(() => expect(screen.getByText(copy.summary.failed)).toBeTruthy());
     expect(readPast).toHaveBeenCalledWith("d", `run:${U(4)}`);
     expect(screen.getByText(copy.pastNote(8))).toBeTruthy();
     expect(screen.getByText(copy.pastMeta(historyDate(rows[3].at), 3, copy.tier.credit))).toBeTruthy();
@@ -192,38 +185,43 @@ describe("PastRun", () => {
     expect(screen.queryByText(copy.summary.running.suggested)).toBeNull();
   });
 
-  it("draws its lines in the answered tones and carries no write control", async () => {
+  it("says an ok run that named nothing returned nothing, and carries no write control", async () => {
+    readPast.mockResolvedValue({ kind: "cutsDeeper", at: rows[1].at, outcome: "ok", readVersion: null, moved: null, lines: [] });
+    render(<PastRunView deckId="d" row={rows[1]} onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByText(copy.pastNothing)).toBeTruthy());
+    expect(screen.getByText(copy.pastNoteUncounted)).toBeTruthy();
+    expect(screen.getAllByRole("button").filter((b) => b.textContent !== copy.back)).toEqual([]);
+  });
+
+  it("draws a past run's lines with their reasons open and no write control, when it lands here", async () => {
     readPast.mockResolvedValue({
       kind: "cutsDeeper", at: rows[1].at, outcome: "ok", readVersion: null, moved: null,
-      lines: [
-        { cut: "Cultivate", reason: "Ramp runs 4 over.", verdict: "applied", cites: ["ROLE ramp 14 · rec 10"] },
-        { cut: "Farseek", reason: "Low inclusion.", verdict: "rejected", cites: [] },
-        { cut: "Explore", reason: "Cheap.", verdict: "open", cites: [] },
-      ],
+      lines: [{ cut: "Cultivate", reason: "Ramp runs 4 over.", verdict: "applied", cites: ["ROLE ramp 14 · rec 10"] }, { cut: "Explore", reason: "Cheap.", verdict: "open", cites: [] }],
     });
-    render(<Host />);
+    render(<PastRunView deckId="d" row={rows[1]} onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByText("Ramp runs 4 over.")).toBeTruthy());
+    expect(screen.getByText("Cheap.")).toBeTruthy();
+    expect(screen.getByText("ROLE ramp 14 · rec 10")).toBeTruthy();
+    expect(screen.getAllByRole("button").filter((b) => b.textContent !== copy.back)).toEqual([]);
+  });
+
+  it("focuses History's heading when the row is not in the list it came back to", async () => {
+    render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow="run:99999999-9999-4999-8999-999999999999" />);
     await waitFor(() => expect(rowEls()).toHaveLength(5));
-    fireEvent.click(rowEls()[1]);
-    await waitFor(() => expect(document.querySelectorAll("[data-past-line]")).toHaveLength(3));
-    const lines = [...document.querySelectorAll("[data-past-line]")] as HTMLElement[];
-    expect(lines.map((l) => l.getAttribute("data-past-line"))).toEqual(["applied", "rejected", "open"]);
-    expect(lines[0].className).toContain("border-[var(--success)]");
-    expect(lines[2].className).toContain("border-dashed");
-    expect(lines.map((l) => l.textContent)).toEqual([
-      expect.stringContaining(copy.verdict.cut), expect.stringContaining(copy.verdict.kept), expect.stringContaining(copy.leftOpen),
-    ]);
-    // No version and no count to say: the note reads without a figure.
-    expect(screen.getByText(copy.pastNoteUncounted)).toBeTruthy();
-    // Nothing writes: every button is the way back or a line opening to its reason.
-    const writes = screen.getAllByRole("button").filter((b) => !b.hasAttribute("aria-expanded") && b.textContent !== copy.back);
-    expect(writes).toEqual([]);
-    for (const w of ["Apply", "Cut", "Keep", "Reject", "Undo", "Show it again"]) {
-      expect(screen.queryByRole("button", { name: w })).toBeNull();
-    }
-    fireEvent.click(within(lines[0]).getByRole("button"));
-    expect(within(lines[0]).getByText("Ramp runs 4 over.")).toBeTruthy();
-    // Its chips, as they read that day.
-    expect(within(lines[0]).getByText("ROLE ramp 14 · rec 10")).toBeTruthy();
+    await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
+  });
+
+  it("focuses History's heading when the list it came back to failed to arrive", async () => {
+    readPage.mockRejectedValueOnce(new Error("down"));
+    render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow={rows[2].id} />);
+    await waitFor(() => expect(screen.getByText(copy.retry)).toBeTruthy());
+    await waitFor(() => expect(document.activeElement?.id).toBe("history-heading"));
+  });
+
+  it("focuses the row the reader came back from, once the list has drawn it", async () => {
+    render(<TuningHistory deckId="d" tools={["suggested", "mana", "cuts"]} past={null} onOpenPast={() => {}} focusRow={rows[2].id} />);
+    await waitFor(() => expect(rowEls()).toHaveLength(5));
+    await waitFor(() => expect(document.activeElement?.getAttribute("data-history-row")).toBe(rows[2].id));
   });
 });
 

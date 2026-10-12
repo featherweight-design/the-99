@@ -2,15 +2,17 @@
 
 // The Tuning hub's History (tuning hub handoff R2, canvas C H1 to H4b; design table `HistoryRow`,
 // `PastRun`, `Failure mark`): every run of every tool on this deck, newest first, a chip per tool,
-// and a row opening that run again read-only. Lives inside the hub, which owns the open past run
+// and a row reopening that run (in its own tool, or read-only when it has nothing to load). Lives in the hub, which owns the open past run
 // so its phone header can carry `‹ History` in the switch slot (H3b).
 
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub-actions";
+import { deckCutsCopy } from "../../lib/copy/deck-cuts";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { afterKey } from "../../lib/tuning/history";
-import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun, PastVerdict } from "../../lib/tuning/history";
+import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun } from "../../lib/tuning/history";
 import { TuningToolMark } from "./tuning-tool-mark";
 
 const copy = tuningHubCopy.history;
@@ -88,6 +90,7 @@ export function TuningHistory({
   tools,
   past,
   onOpenPast,
+  focusRow = null,
 }: {
   deckId: string;
   /** The tools this hub draws: a chip is offered only for a tool the reader can open. */
@@ -95,6 +98,8 @@ export function TuningHistory({
   /** The past run open, owned by the hub so its phone header can say `‹ History`. */
   past: HistoryRow | null;
   onOpenPast: (row: HistoryRow | null) => void;
+  /** The row to focus once the list lands: the one whose run the reader just came back from. */
+  focusRow?: string | null;
 }) {
   const [filter, setFilter] = useState<HistoryTool | null>(null);
   const [state, setState] = useState<ListState>({ kind: "loading" });
@@ -181,6 +186,19 @@ export function TuningHistory({
     if (past !== null || lastOpened.current === null) return;
     listRef.current?.querySelector<HTMLElement>(`[data-history-row="${CSS.escape(lastOpened.current)}"]`)?.focus();
   }, [past]);
+
+  // Back from a run History reopened in its tool: that row, once the list has drawn it.
+  const focused = useRef(false);
+  useEffect(() => {
+    // Settled either way: a list that failed to arrive has no row, and focus goes to the heading.
+    if (focused.current || !focusRow || state.kind === "loading") return;
+    focused.current = true;
+    // The list comes back on All, first page: a row from a filter or a later page may not be in it,
+    // and focus then lands on History's heading rather than nowhere.
+    const target = listRef.current?.querySelector<HTMLElement>(`[data-history-row="${CSS.escape(focusRow)}"]`)
+      ?? document.getElementById("history-heading");
+    target?.focus();
+  }, [focusRow, state.kind]);
 
   if (past) return <PastRunView deckId={deckId} row={past} onBack={() => onOpenPast(null)} />;
 
@@ -380,18 +398,12 @@ function LoadFailed({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-// --- A past run, opened read-only (H3 / H3b) ------------------------------------------------
+// --- A past run with nothing to load, opened read-only (H3 / H3b) ----------------------------
 
-const TONE: Record<PastVerdict, { row: string; label: string; arrow: string }> = {
-  applied: { row: "border-[var(--success)] bg-[var(--surface)]", label: "var(--success)", arrow: "var(--success)" },
-  rejected: { row: "border-[var(--border)] bg-[var(--surface-sunken)]", label: "var(--fg-locked)", arrow: "var(--fg-faint)" },
-  open: { row: "border-dashed border-[var(--border-dashed)] bg-[var(--surface-sunken)]", label: "var(--fg-faint)", arrow: "var(--fg-faint)" },
-};
-
-function verdictLabel(kind: "suggested" | "cuts", v: PastVerdict): string {
-  if (v === "open") return copy.leftOpen;
-  if (kind === "cuts") return v === "applied" ? copy.verdict.cut : copy.verdict.kept;
-  return v === "applied" ? copy.verdict.applied : copy.verdict.rejected;
+/** An answered line's label, in the words its own tool uses for that verdict. */
+function pastVerdictLabel(kind: "suggested" | "cutsDeeper", v: "applied" | "rejected"): string {
+  if (kind === "cutsDeeper") return v === "applied" ? deckCutsCopy.panel.cutDone : deckCutsCopy.panel.kept;
+  return v === "applied" ? deckTuningCopy.card.applied : deckTuningCopy.card.rejected;
 }
 
 export function PastRunView({ deckId, row, onBack }: { deckId: string; row: HistoryRow; onBack: () => void }) {
@@ -448,57 +460,25 @@ export function PastRunView({ deckId, row, onBack }: { deckId: string; row: Hist
           {loaded.outcome === "ok" ? copy.pastNothing : summaryText({ ...row, outcome: loaded.outcome })}
         </p>
       ) : (
-        <>
-          <div className="flex flex-col gap-[6px]">
-            {loaded.kind === "suggested"
-              ? loaded.lines.map((l, i) => (
-                  <PastLine key={i} verdict={l.verdict} label={verdictLabel("suggested", l.verdict)} reason={l.reason} cites={l.cites}>
-                    {(arrow) => (
-                      <>
-                        {l.cut ? <span>{l.cut}</span> : null}
-                        {l.cut && l.add ? <span className="font-mono" style={{ color: arrow }}> → </span> : null}
-                        {l.add ? <b className="font-semibold" style={{ color: "var(--fg)" }}>{l.add}</b> : null}
-                      </>
-                    )}
-                  </PastLine>
-                ))
-              : loaded.lines.map((l, i) => (
-                  <PastLine key={i} verdict={l.verdict} label={verdictLabel("cuts", l.verdict)} reason={l.reason} cites={l.cites}>
-                    {() => <b className="font-semibold" style={{ color: "var(--fg)" }}>{l.cut}</b>}
-                  </PastLine>
-                ))}
-          </div>
-          <p className="border-t border-t-[color:var(--border)] pt-[10px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
-            {loaded.kind === "suggested" ? copy.pastFoot.suggested : copy.pastFoot.cuts}
-          </p>
-        </>
+        // A run with lines reopens in its own tool (`historyPress`). It lands here only when that tool
+        // has nothing to draw, so each line shows its reason open, with no write control.
+        <ul className="flex flex-col gap-[6px]">
+          {loaded.lines.map((l, i) => (
+            <li key={i} data-past-line={l.verdict} className="flex flex-col gap-[4px] rounded-[9px] border border-[var(--border)] bg-[var(--surface)] px-[12px] py-[9px]">
+              <span className="flex flex-wrap items-baseline gap-[9px] text-[12.5px]" style={{ color: "var(--fg-body)" }}>
+                {l.verdict === "open" ? null : (
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-locked)" }}>{pastVerdictLabel(loaded.kind, l.verdict)}</span>
+                )}
+                {"add" in l ? (
+                  <span>{[l.cut, l.add].filter(Boolean).join(" → ")}</span>
+                ) : <b className="font-semibold" style={{ color: "var(--fg)" }}>{l.cut}</b>}
+              </span>
+              <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)", textWrap: "pretty" }}>{l.reason}</p>
+              {l.cites.length ? <p className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{l.cites.join(" · ")}</p> : null}
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
-  );
-}
-
-/** One answered line of a past run. It opens to its reason, as it read that day; nothing else. */
-function PastLine({ verdict, label, reason, cites, children }: {
-  verdict: PastVerdict;
-  label: string;
-  reason: string;
-  cites: string[];
-  children: (arrow: string) => ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  const tone = TONE[verdict];
-  return (
-    <div data-past-line={verdict} className={`flex flex-col gap-[6px] rounded-[9px] border px-[12px] py-[9px] ${tone.row}`}>
-      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex flex-wrap items-center gap-[9px] bg-transparent text-left">
-        <span className="w-[74px] flex-none font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: tone.label }}>{label}</span>
-        <span className="min-w-0 text-[12.5px]" style={{ color: "var(--fg-body)" }}>{children(tone.arrow)}</span>
-      </button>
-      {open ? (
-        <div className="flex flex-col gap-[4px] md:pl-[83px]">
-          <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)", textWrap: "pretty" }}>{reason}</p>
-          {cites.length ? <p className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{cites.join(" · ")}</p> : null}
-        </div>
-      ) : null}
     </div>
   );
 }

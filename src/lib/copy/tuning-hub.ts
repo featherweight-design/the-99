@@ -79,7 +79,7 @@ export const tuningHubCopy = {
     outcome: { ok: "ok", refused: "refused", failed: "failed", stopped: "stopped", running: "running" },
     more: "Show 20 more",
     foot: "Kept for as long as the deck is. A free count is recorded once per version of the list.",
-    empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first, and opens again read-only." },
+    empty: { head: "No runs yet", body: "Every run of every Tuning tool on this deck lands here, newest first. Open one to see it again." },
     emptyFiltered: "No runs of this tool yet",
     back: "‹ History",
     pastMeta: (date: string, version: number, tier: string) => `${date} · version ${version} · ${tier}`,
@@ -88,11 +88,13 @@ export const tuningHubCopy = {
     pastNote: (n: number) => `A past run, read-only. The list has changed by ${n} cards since; nothing here can be applied now.`,
     /** Engineering: the note when the list has not moved, or the version it read is gone. */
     pastNoteUncounted: "A past run, read-only. Nothing here can be applied now.",
-    leftOpen: "left open",
-    /** Engineering: the other verdict labels on a past run's lines. */
-    verdict: { applied: "applied", rejected: "rejected", cut: "cut", kept: "kept" },
-    /** Canvas H3 foot (drawn, no key), and engineering's Proposed cuts form of it. */
-    pastFoot: { suggested: "Each swap opens to its full reason and citations, as it read that day.", cuts: "Each cut opens to its full reason, as it read that day." },
+    /** Engineering (re-review, Hugh 2026-10-12): the note above a tool History reopened. A paid
+     *  run's lines are re-checked one by one; a free count named no card, so its tool reads the
+     *  deck as it is now and the note keeps what the count found. /copy-review, 2026-10-12. */
+    review: {
+      note: { cuts: (date: string) => `From a run on ${date}. Each cut is checked against the deck as it is now.`, suggested: (date: string) => `From a run on ${date}. Each change is checked against the deck as it is now.` },
+      counted: (date: string, summary: string) => `Counted ${date}: ${summary}. Below is the deck as it is now.`,
+    },
     /** Engineering: a past run that returned no lines, and a free count's own body. */
     pastNothing: "This run returned nothing to change.",
     loadFailed: { tag: "Couldn’t load", body: "This deck’s history didn’t load. The runs are kept; only the list failed to arrive." },

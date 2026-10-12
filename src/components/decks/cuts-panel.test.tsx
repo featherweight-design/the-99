@@ -6,6 +6,9 @@ import { noteDeckRoute, resetDeckVisitForTests, visitBaseline } from "../../lib/
 import { MAX_CUTS_PER_RUN } from "../../lib/tuning/cuts-ask";
 import type { CutItem, CutsPanel } from "../../lib/tuning/cuts-state";
 import { CutsPanelView, type CutsDeps } from "./cuts-panel";
+import { ReviewRunProvider } from "./review-run";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 const detail = vi.hoisted(() => ({ open: vi.fn() }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: detail.open }), useCardIntent: () => ({}) }));
@@ -118,7 +121,7 @@ describe("CutsPanelView", () => {
     await mount(d);
     const first = screen.getAllByRole("article")[0];
     fireEvent.click(within(first).getByRole("button", { name: copy.cut }));
-    await waitFor(() => expect(d.cut).toHaveBeenCalledWith("i1"));
+    await waitFor(() => expect(d.cut).toHaveBeenCalledWith("i1", false));
     await waitFor(() => expect(d.read).toHaveBeenCalledTimes(2));
     fireEvent.click(within(screen.getAllByRole("article")[1]).getByRole("button", { name: copy.keep }));
     await waitFor(() => expect(d.keep).toHaveBeenCalledWith("i2"));
@@ -139,7 +142,7 @@ describe("CutsPanelView", () => {
     await mount(d);
     expect(screen.getByTestId("answered-cut")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.undo }));
-    await waitFor(() => expect(d.undo).toHaveBeenCalledWith("i1"));
+    await waitFor(() => expect(d.undo).toHaveBeenCalledWith("i1", false));
     fireEvent.click(screen.getByRole("button", { name: copy.showAgain }));
     await waitFor(() => expect(d.restore).toHaveBeenCalledWith("i2"));
     expect(screen.getByText(copy.facts.dividerPart)).toBeTruthy();
@@ -373,5 +376,84 @@ describe("CutsPanelView: a visit to the deck", () => {
     await mountOn(deps(newResult));
     expect(screen.queryAllByRole("article")).toHaveLength(0);
     expect(screen.getByRole("button", { name: offer })).toBeTruthy();
+  });
+});
+
+describe("a past run History reopened (re-review)", () => {
+  const RUN = "33333333-3333-4333-8333-333333333333";
+  const D1 = "11111111-1111-4111-8111-111111111111";
+  const reviewed = (extra: Partial<CutsPanel> = {}) => withResult(3, 3, {
+    // The deck has moved since: the ordinary gate would hide this result.
+    resultCurrent: false,
+    review: { runId: RUN, at: new Date("2026-10-01T12:00:00Z") },
+    items: [item(1), item(2, { inDeck: false }), item(3, { locked: true })],
+    ...extra,
+  });
+  const mountReview = async (d: CutsDeps, leave = vi.fn()) => {
+    render(
+      <ReviewRunProvider value={{ tool: "cuts", runId: RUN, leave }}>
+        <CutsPanelView deckId={D1} deps={d} freshEachVisit />
+      </ReviewRunProvider>,
+    );
+    await screen.findByRole("heading", { name: copy.heading });
+    return leave;
+  };
+
+  it("reads the named run, and draws its cuts although the list has moved", async () => {
+    const d = deps(reviewed());
+    await mountReview(d);
+    expect(d.read).toHaveBeenCalledWith(D1, RUN);
+    expect(screen.getAllByRole("article").map((a) => a.getAttribute("aria-label"))).toEqual(["Card 1"]);
+    expect(screen.getByText("Reason 1.")).toBeTruthy();
+  });
+
+  it("draws a cut the deck has moved past as no longer applying, with no Cut to press", async () => {
+    await mountReview(deps(reviewed()));
+    const broken = screen.getAllByTestId("answered-broken");
+    expect(broken.map((b) => b.textContent)).toEqual([
+      expect.stringContaining(deckTuningCopy.lists.cutGone("Card 2")),
+      expect.stringContaining(lockedCardsCopy.tuning.cutLocked("Card 3")),
+    ]);
+    for (const b of broken) expect(within(b).queryByRole("button")).toBeNull();
+  });
+
+  it("asks the server to re-check a Cut and an Undo card by card", async () => {
+    const d = deps(reviewed({ items: [item(1), item(4, { verdict: "accepted" })] }));
+    await mountReview(d);
+    fireEvent.click(within(screen.getByRole("article", { name: "Card 1" })).getByRole("button", { name: copy.cut }));
+    await waitFor(() => expect(d.cut).toHaveBeenCalledWith("i1", true));
+    fireEvent.click(await screen.findByRole("button", { name: copy.undo }));
+    await waitFor(() => expect(d.undo).toHaveBeenCalledWith("i4", true));
+  });
+
+  it("an ordinary read never asks for review mode", async () => {
+    const d = deps(withResult(1, 1));
+    await mount(d);
+    expect(d.read).toHaveBeenCalledWith("d1", null);
+    fireEvent.click(within(screen.getByRole("article", { name: "Card 1" })).getByRole("button", { name: copy.cut }));
+    await waitFor(() => expect(d.cut).toHaveBeenCalledWith("i1", false));
+  });
+
+  it("draws the reopened run over a newer run that is pending or failed, with no Stop", async () => {
+    const newer = (status: "pending" | "failed") => reviewed({ run: { id: "r9", status, errorClass: status === "failed" ? "upstream_busy" : null, createdAt: new Date(), droppedCount: 0 } });
+    await mountReview(deps(newer("pending")));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: copy.deeper.stop })).toBeNull();
+    cleanup();
+    await mountReview(deps(newer("failed")));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
+  });
+
+  it("records no visit baseline from the reopened run: the next ordinary read does", async () => {
+    resetDeckVisitForTests();
+    noteDeckRoute(`/decks/${D1}`);
+    await mountReview(deps(reviewed()));
+    expect(visitBaseline(D1, "cuts", { okKey: "ordinary", runId: null }).okKey).toBe("ordinary");
+  });
+
+  it("still shows a reopened run on a deck now at 100", async () => {
+    await mountReview(deps(reviewed({ over: 0, total: 100 })));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 });
