@@ -1,4 +1,4 @@
-import { SWITCHES, type SwitchName } from "./registry";
+import { SWITCHES, type SwitchKind, type SwitchName } from "./registry";
 
 /**
  * One reader's switches, resolved from the environment and the admin's overrides (brief, locked
@@ -36,23 +36,50 @@ export type SwitchSnapshot = {
 
 export const KILL = "off";
 
+/**
+ * Where a switch's value came from, for one reader: the rung of the ladder that decided it.
+ * `env` means no override applied and the environment's own value stands.
+ */
+export type SwitchSource =
+  | { kind: "kill" }
+  | { kind: "account" }
+  | { kind: "group"; groupId: string }
+  | { kind: "app" }
+  | { kind: "env" };
+
+export type SwitchDecision = { value: OverrideValue | null; source: SwitchSource };
+
+/**
+ * One switch for one reader: the override that decides it, or `env` with no value when none does.
+ * `resolveEnv` is a map over this, so the admin's ladder, its counts and Check an account decide by
+ * the same rule every request does.
+ */
+export function decide(
+  name: SwitchName,
+  kind: SwitchKind,
+  base: NodeJS.ProcessEnv,
+  snapshot: SwitchSnapshot | null,
+  userId: string | null,
+): SwitchDecision {
+  if (base[name] === KILL) return { value: null, source: { kind: "kill" } };
+  const rows = snapshot ? snapshot.overrides.filter((o) => o.switchName === name) : [];
+  const app = rows.find((o) => o.scope === "app")?.value;
+  if (kind !== "plumbing" && userId) {
+    const own = rows.find((o) => o.scope === "user" && o.userId === userId)?.value;
+    if (own) return { value: own, source: { kind: "account" } };
+    const group = snapshot?.groupOf.get(userId) ?? null;
+    const groups = group ? rows.filter((o) => o.scope === "group" && o.groupId === group).map((o) => o.value) : [];
+    if (group && groups.length > 0) return { value: groups.includes("off") ? "off" : "on", source: { kind: "group", groupId: group } };
+  }
+  if (app) return { value: app, source: { kind: "app" } };
+  return { value: null, source: { kind: "env" } };
+}
+
 export function resolveEnv(base: NodeJS.ProcessEnv, snapshot: SwitchSnapshot | null, userId: string | null): NodeJS.ProcessEnv {
   if (!snapshot || snapshot.overrides.length === 0) return base;
-  const group = userId ? snapshot.groupOf.get(userId) ?? null : null;
   const out: NodeJS.ProcessEnv = { ...base };
   for (const { name, kind } of SWITCHES) {
-    if (base[name] === KILL) continue;
-    const rows = snapshot.overrides.filter((o) => o.switchName === name);
-    if (rows.length === 0) continue;
-    const app = rows.find((o) => o.scope === "app")?.value;
-    let value: OverrideValue | undefined;
-    if (kind === "plumbing") value = app;
-    else {
-      const own = userId ? rows.find((o) => o.scope === "user" && o.userId === userId)?.value : undefined;
-      const groups = group ? rows.filter((o) => o.scope === "group" && o.groupId === group).map((o) => o.value) : [];
-      const fromGroup = groups.length === 0 ? undefined : groups.includes("off") ? "off" : "on";
-      value = own ?? fromGroup ?? app;
-    }
+    const { value } = decide(name, kind, base, snapshot, userId);
     if (value) out[name] = value === "on" ? "true" : "false";
   }
   return out;

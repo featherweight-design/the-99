@@ -10,11 +10,11 @@ import { adminCopy } from "../../lib/copy/admin";
 /**
  * The page head every admin page shares (design table, Page head): eyebrow and environment chip,
  * the page's title and sub, and the tab strip. The plan orders the tabs Costs, Switches, Groups,
- * Accounts, Models; a tab is listed once its page ships, so no tab leads to a 404. Costs is the
- * only page so far.
+ * Accounts, Models; a tab is listed once its page ships, so no tab leads to a 404.
  */
 export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
+  { key: "switches", href: "/admin/switches", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
 ] as const;
 
 function tabFor(pathname: string) {
@@ -30,12 +30,16 @@ function tabFor(pathname: string) {
  */
 export const ADMIN_HEAD_HEIGHT_VAR = "--admin-head-h";
 
-function usePublishedHeight(ref: RefObject<HTMLElement | null>) {
+/**
+ * Publishes an element's measured height on the root as `name`, so a sticky element below it can sit
+ * beneath it. Removed on unmount.
+ */
+export function usePublishedHeight(ref: RefObject<HTMLElement | null>, name: string) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const root = document.documentElement;
-    const publish = () => root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${el.getBoundingClientRect().height}px`);
+    const publish = () => root.style.setProperty(name, `${el.getBoundingClientRect().height}px`);
     publish();
     // Guarded, as `about-sheet.tsx` guards it: without the API the head re-measures on a window
     // resize instead, since a narrower window can wrap the sub to another line.
@@ -45,15 +49,15 @@ function usePublishedHeight(ref: RefObject<HTMLElement | null>) {
     return () => {
       observer?.disconnect();
       window.removeEventListener("resize", publish);
-      root.style.removeProperty(ADMIN_HEAD_HEIGHT_VAR);
+      root.style.removeProperty(name);
     };
-  }, [ref]);
+  }, [ref, name]);
 }
 
 export function AdminHead({ env }: { env: AdminEnv }) {
   const current = tabFor(usePathname() ?? "/admin");
   const ref = useRef<HTMLElement>(null);
-  usePublishedHeight(ref);
+  usePublishedHeight(ref, ADMIN_HEAD_HEIGHT_VAR);
   return (
     // Pinned (design table R2 delta `page`): the shell scrolls the document, so the head is sticky
     // at the top over the page's content, and a page's own pinned bar sits beneath it.

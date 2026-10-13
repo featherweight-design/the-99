@@ -9,6 +9,8 @@
 // Figures are passed in already formatted (`usd`, `capUsd` in `lib/admin/costs-rule.ts`), so no
 // dollar value or cap is spelled in this file: the caps come from `spend-rule.ts`.
 
+import type { SwitchName } from "../switches/registry";
+
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export const adminCopy = {
@@ -182,4 +184,83 @@ export const adminCopy = {
     unknown: "The page lost touch with the server, so it may have saved. Check the figure above before saving again.",
     saveFailed: "Didn’t save. Nothing changed.",
   },
+
+  // From the handoff's `accounts` keys: what the Switches list (and, in PR 9, Accounts) says when the
+  // account list is the stored ids because Clerk could not be read (STATES A3).
+  accounts: { clerkDown: "Names didn’t load from Clerk." },
+
+  // The Switches list (admin STATES L1 to L6), from the handoff's `switches` keys. The Overrides
+  // cell, the App-wide cell and the phone's meta line take the canvas's own shapes (`flagRow` in
+  // `Admin R2.dc.html`).
+  switches: {
+    title: "Switches",
+    sub: "Env var first, then overrides: account beats group beats app-wide. Changes land within 30 seconds.",
+    search: "Search by name or variable",
+    chips: { all: "All", overridden: "Overridden", offForAnyone: "Off for anyone", model: "Model features" },
+    chipsLabel: "Show",
+    heads: { features: "Features", plumbing: "Plumbing", plumbingNote: "app-wide only, not features a friend tries" },
+    cols: { name: "Switch", env: "Env var", app: "App-wide", overrides: "Overrides", resolved: "Resolved" },
+    resolved: { on: "On", off: "Off", mixed: "Mixed", count: (n: number, total: number) => `${n} of ${total} on` },
+    app: { notSet: "Not set", on: "On", off: "Off" },
+    envUnset: "unset",
+    overrides: {
+      none: "None",
+      groups: (n: number) => plural(n, "group", "groups"),
+      accounts: (n: number) => plural(n, "account", "accounts"),
+      refused: "refused",
+      ignored: "ignored",
+    },
+    overridesUnread: "Overrides didn’t load. Every row shows the env var alone.",
+    killed: "env var is off",
+    parentOff: (parent: string) => `${parent} is off`,
+    tagModel: "model",
+    tagNeeds: (parent: string) => `needs ${parent}`,
+    metaEnv: (env: string) => `env ${env}`,
+    metaApp: (app: string) => `app-wide ${app.toLowerCase()}`,
+    metaNoOverrides: "no overrides",
+    footnote: (total: number, env: string) => `Resolved counts the ${total} accounts on ${env}. Signed out gets the app-wide result.`,
+    noneMatch: "None match.",
+    showAll: "Show all",
+  },
 } as const;
+
+/**
+ * Each switch's name and one plain line (admin STATES L1; READINESS G9). The canvas drew 21 of them
+ * (`n:` and `d:` in `Admin R2.dc.html`); the rest, and the canvas lines the code has since moved
+ * past, are new here and owed to /copy-review. A parent's line names what needs it; a child's tag
+ * already does.
+ */
+export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
+  ABOUT_SHEET_ENABLED: { label: "About sheet", description: "The What’s new sheet. While off, a redirect to About instead." },
+  ADDED_COPY_ENABLED: { label: "Added copy", description: "An added copy says where it went, with Change to move it." },
+  ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
+  ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
+  CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
+  COLLECTION_EDIT_ENABLED: { label: "Collection edit", description: "Change card counts in the collection. Added copy and Mark bought need it." },
+  DECK_BENCHMARKS_ENABLED: { label: "Deck benchmarks", description: "A deck measured against similar decks." },
+  DECK_NOTES_ENABLED: { label: "Deck notes", description: "Notes on a deck, in Your deck." },
+  DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
+  DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
+  DECK_TOKENS_ENABLED: { label: "Deck tokens", description: "The tokens a deck makes, on the deck and in Shopping." },
+  FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit read inside Find a deck for it." },
+  HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
+  HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },
+  LABEL_ROLE_COUNTS_ENABLED: { label: "Label role counts", description: "Role counts from card labels instead of the classifier, in decks and recommendations." },
+  LABEL_SURFACES_ENABLED: { label: "Label surfaces", description: "Card labels drawn on cards and lists." },
+  LINEUP_ENABLED: { label: "Lineup", description: "The Stats view on /decks, across every deck." },
+  LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
+  MANA_BALANCE_ENABLED: { label: "Mana Balance", description: "Mana Balance in the Tuning hub. Makes no model call." },
+  NEVER_CUT_ENABLED: { label: "Never cut", description: "Mark cards a suggestion may not cut." },
+  NOTICES_ENABLED: { label: "Notices", description: "Notices on a deck." },
+  OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
+  PRECONS_ENABLED: { label: "Precons", description: "Browse Commander precons and start a deck from one." },
+  PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },
+  RATE_LIMIT_ENABLED: { label: "Request counting", description: "Counts each player’s requests and logs what a limit would refuse. Refuses nothing." },
+  SHOPPING_MARK_BOUGHT_ENABLED: { label: "Mark bought", description: "Mark a shopping line bought and add it to the collection." },
+  SOCIAL_FRIENDS_ENABLED: { label: "Friends", description: "Friends, invites and pods. Opponents needs it." },
+  SOCIAL_GAMES_ENABLED: { label: "Opponents", description: "Opponents in the game log." },
+  SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
+  STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
+  SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },
+  TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
+};
