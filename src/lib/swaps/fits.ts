@@ -11,9 +11,10 @@
 // the card, the catalog's creature types (memoized), their mixes (once per distinct commander pair),
 // the card's availability and the universal staples; then the full-rule combo read, only for a deck
 // holding one of those pieces.
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { cards as cardsTable } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
 import { loadAvailability } from "../decks/availability-query";
 import { loadMixesForCommanders, mixKey } from "../decks/deck-mix";
@@ -256,8 +257,8 @@ async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): 
   const ids = [...new Set(combos.map((r) => r.with.oracleId))];
   const [owned, catalog] = await Promise.all([
     chainArt(userId, null, ids),
-    db.execute<{ oracle_id: string; image_uri: string | null }>(sql`select oracle_id, image_uri from cards where oracle_id = any(${ids}::uuid[])`)
-      .then((res) => new Map(res.rows.map((x) => [x.oracle_id, x.image_uri] as const)))
+    db.select({ oracleId: cardsTable.oracleId, imageUri: cardsTable.imageUri }).from(cardsTable).where(inArray(cardsTable.oracleId, ids))
+      .then((rows) => new Map(rows.map((x) => [x.oracleId, x.imageUri] as const)))
       .catch(() => new Map<string, string | null>()),
   ]);
   for (const r of combos) r.with.imageUri = owned.get(r.with.oracleId) ?? catalog.get(r.with.oracleId) ?? null;

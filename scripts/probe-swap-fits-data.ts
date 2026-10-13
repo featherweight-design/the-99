@@ -228,7 +228,10 @@ async function main() {
     const holder = await makeDeck(USER, "E combo", legend.oracle_id, null, [combo.held]);
     const read = await loadFits(USER, combo.want);
     const row = read?.fits.find((d) => d.id === holder);
-    check("combo: the deck holding the other piece reads `Completes a combo with` it", row?.reason, { kind: "combo", with: { oracleId: combo.held, name: combo.name } });
+    // The piece previews the printing card details open for it: this fixture user owns none of it, so the catalog's art
+    // (`withPartnerArt`). Asserted as the whole payload, not as its shape, so a dropped overlay fails here.
+    const [piece] = await rows<{ image_uri: string | null }>(sql`select image_uri from cards where oracle_id = ${combo.held}::uuid`);
+    check("combo: the deck holding the other piece reads `Completes a combo with` it, with its art", row?.reason, { kind: "combo", with: { oracleId: combo.held, name: combo.name, imageUri: piece?.image_uri ?? null } });
     check("combo: and it leads the list", read?.fits[0]?.id, holder);
 
     // The partner's name comes from the list Find a deck already read (`knownNames`), never a second

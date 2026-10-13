@@ -136,6 +136,10 @@ async function run() {
     seen?.groups.map((g) => [g.group, g.items.map((i) => (i.kind === "data" ? i.seq : -1))]),
     [["gameChangers", [gc]], ["twoCardCombos", [combo]]]);
   check("2 · both unread", seen && { count: seen.dataCount, unread: seen.dataUnread }, { count: 2, unread: 2 });
+  // Every card a notice names previews art: this fixture user owns no copies, so it is the catalog's (`chainArt` named ids only).
+  const named = [...new Set((seen?.groups ?? []).flatMap((g) => g.items.flatMap((i) => (i.kind === "data" ? i.cards : [i.card]))).map((c) => c.oracleId))];
+  const catalogArt = new Map((await rows<{ oracle_id: string; image_uri: string | null }>(sql`select oracle_id, image_uri from cards where oracle_id in (${sql.join(named.map((id) => sql`${id}::uuid`), sql`, `)})`)).map((r) => [r.oracle_id, r.image_uri] as const));
+  check("2 · every named card carries the art the catalog holds", (seen?.groups ?? []).flatMap((g) => g.items.flatMap((i) => (i.kind === "data" ? i.cards : [i.card]))).map((c) => [c.oracleId, c.imageUri]).sort(), named.map((id) => [id, catalogArt.get(id) ?? null]).sort());
   await agree("unread 2");
 
   // 3 · A card added AFTER the analysis is the dirty flag's to report, not this read's.
