@@ -1,6 +1,7 @@
 import { connectStaging } from "./staging.mjs";
 import { splitDecks } from "./split.mjs";
 import { applyVariant, type TuningVariant } from "../variants/tuning.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 /**
  * Deck tuning as the app runs it, opened once against staging, read-only. The runner and the
@@ -55,7 +56,7 @@ export async function openTuning() {
   async function prepare(ids: readonly string[], variant: TuningVariant, overlay: readonly OverlayDeck[] | null) {
     const out: { deckId: string; pack: EvidencePack; system: string; user: string }[] = [];
     for (const [i, deckId] of ids.entries()) {
-      const inputs = await tuningInputs(deckId, userId);
+      const inputs = await tuningInputs(deckId, userId, process.env);
       if (!inputs) throw new Error(`eval: deck ${deckId} not readable`);
       const profile = await loadDeckProfileFromHead(inputs.head);
       const owned = await readOwnedOracleIds(userId, [

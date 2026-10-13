@@ -21,6 +21,7 @@
 //   pnpm probe:help-me-choose-fill
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 requireEnv(["DATABASE_URL"]);
 
@@ -60,7 +61,7 @@ async function main() {
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
   const all = [...new Set([...ids(plain), ...ids(budgeted)])];
-  const [prices, availability] = await Promise.all([loadPrices(all), loadAvailability(USER, { oracleIds: all })]);
+  const [prices, availability] = await Promise.all([loadPrices(all), loadAvailability(USER, { oracleIds: all, env: process.env })]);
   const owned = new Set((await rows<{ oracle_id: string }>(sql`
     select distinct oracle_id from collection_items where user_id = ${USER}`)).map((r) => r.oracle_id));
   // The Shopping list's rule, read here rather than through the gate: a basic is never bought; a

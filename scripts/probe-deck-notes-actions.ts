@@ -16,6 +16,7 @@ import { formatTag } from "../src/lib/decks/notes-body";
 import { NOTES_PER_DECK } from "../src/lib/copy/deck-notes";
 import { sqlstate } from "../src/lib/db-error";
 import { PRODUCTION_BRANCH_ID, STAGING_BRANCH_ID } from "./lib/spend-target";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -53,14 +54,14 @@ async function main() {
 
   // ---- add, read, edit, done, delete ----
   check("an add answers ok", await insertNote(deck, USER, "try a second sweeper"), "ok");
-  let view = await readDeckNotes(deck, USER, d);
+  let view = await readDeckNotes(deck, USER, d, process.env);
   check("it reads back as one open note", [view.open.length, view.done.length], [1, 0]);
   const note = view.open[0];
   const fresh = await one<{ u: string | null }>(sql`select updated_at::text as u from deck_notes where id = ${note.id}::uuid`);
   check("a new note is open and has recorded no edit", [note.doneAt, fresh.u], [null, null]);
 
   check("an edit answers true", await updateNoteBody(deck, USER, note.id, "try two sweepers"), true);
-  view = await readDeckNotes(deck, USER, d);
+  view = await readDeckNotes(deck, USER, d, process.env);
   check("an edit changes the body and not the creation date", [view.open[0].body, view.open[0].createdAt], ["try two sweepers", note.createdAt]);
   const edited = await one<{ u: string | null }>(sql`select updated_at::text as u from deck_notes where id = ${note.id}::uuid`);
   check("an edit stamps updated_at", edited.u !== null, true);
@@ -70,18 +71,18 @@ async function main() {
   check("another player cannot select it", await setNoteDone(deck, OTHER, note.id, true), false);
   check("another player cannot delete it", await removeNote(deck, OTHER, note.id), false);
   check("the note's id on another deck matches nothing", await removeNote(other, USER, note.id), false);
-  check("the note is untouched", (await readDeckNotes(deck, USER, d)).open[0].body, "try two sweepers");
+  check("the note is untouched", (await readDeckNotes(deck, USER, d, process.env)).open[0].body, "try two sweepers");
 
   // ---- select and unselect ----
   check("select answers true", await setNoteDone(deck, USER, note.id, true), true);
-  view = await readDeckNotes(deck, USER, d);
+  view = await readDeckNotes(deck, USER, d, process.env);
   const firstDone = view.done[0]?.doneAt;
   await new Promise((r) => setTimeout(r, 20));
   check("selecting a note already done answers true", await setNoteDone(deck, USER, note.id, true), true);
-  check("and does not move its done date", (await readDeckNotes(deck, USER, d)).done[0]?.doneAt, firstDone);
+  check("and does not move its done date", (await readDeckNotes(deck, USER, d, process.env)).done[0]?.doneAt, firstDone);
   check("a selected note moves to done with its own date", [view.open.length, view.done.length, view.done[0].doneAt !== null], [0, 1, true]);
   check("unselect answers true", await setNoteDone(deck, USER, note.id, false), true);
-  view = await readDeckNotes(deck, USER, d);
+  view = await readDeckNotes(deck, USER, d, process.env);
   check("an unselected note is open again with no done date", [view.open.length, view.open[0].doneAt], [1, null]);
 
   check("delete answers true", await removeNote(deck, USER, note.id), true);
@@ -93,7 +94,7 @@ async function main() {
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck}::uuid, ${held}::uuid, 1)`);
   const ghost = "00000000-0000-4000-8000-000000000000";
   await insertNote(deck, USER, `${formatTag(held, "stale")} ${formatTag(notHeld, "x")} ${formatTag(ghost, "Gone Card")} ${formatTag(commander, "c")}`);
-  const tags = (await readDeckNotes(deck, USER, d)).open[0].drawn.filter((s) => s.kind === "tag") as { held: boolean; resolved: boolean; name: string }[];
+  const tags = (await readDeckNotes(deck, USER, d, process.env)).open[0].drawn.filter((s) => s.kind === "tag") as { held: boolean; resolved: boolean; name: string }[];
   check("a held card draws solid, a not-held one dashed, a commander solid", tags.map((t) => t.held), [true, false, false, true]);
   check("an unresolvable id keeps its stored name and says so", [tags[2].resolved, tags[2].name], [false, "Gone Card"]);
   check("a resolved tag draws the catalog's current name, not the stored one", tags[0].name !== "stale", true);

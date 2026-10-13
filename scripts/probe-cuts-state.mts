@@ -21,6 +21,7 @@
 import { requireEnv } from "./lib/env.mjs";
 import { Pool } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 process.env.NEVER_CUT_ENABLED = "true";
 process.env.PROPOSED_CUTS_ENABLED = "true";
@@ -59,14 +60,14 @@ async function clone(onId: (id: string) => void): Promise<string> {
 let deckId = "";
 try {
   await clone((id) => { deckId = id; });
-  const inputs = (await readProposedCuts(deckId, USER))!;
+  const inputs = (await readProposedCuts(deckId, USER, process.env))!;
   check("the clone is over 100", inputs.facts.over > 0, true);
   const picks = inputs.facts.cards.slice(0, 3);
   const cuts = picks.map((c, i) => ({ oracleId: c.oracleId, name: c.name, reason: `Reason ${i}.`, cites: [{ kind: "offList" as const }], position: i }));
   const report = { askedCount: 3, survivedCount: 3, keptCount: 3, over: inputs.facts.over, drops: [] };
 
   // A fresh deck reads as never run.
-  const never = await readCutsState(deckId, USER);
+  const never = await readCutsState(deckId, USER, undefined, undefined, process.env);
   check("never run: no run, no items, no last ok", [never.run, never.items.length, never.lastOkFingerprint], [null, 0, null]);
 
   // A second run is refused while one is pending; a failed run refunds.
@@ -83,7 +84,7 @@ try {
   const s3 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
   if (s3.kind !== "started") throw new Error(`start refused: ${s3.kind}`);
   check("persist writes the run and its items", await persistCutsRun(s3, cuts, report), true);
-  const ok = await readCutsState(deckId, USER);
+  const ok = await readCutsState(deckId, USER, undefined, undefined, process.env);
   check("readCutsState: newest run is the ok run", ok.run?.status, "ok");
   check("readCutsState: its items, in position order", ok.items.map((i) => i.position), [0, 1, 2]);
   check("readCutsState: every cut is a card in the deck, none the commander",
@@ -94,7 +95,7 @@ try {
   // A failed re-run leaves the last ok run's cuts on screen.
   const s4 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
   if (s4.kind === "started") await finishCutsRun(s4, { status: "failed", errorClass: "upstream_busy" });
-  const after = await readCutsState(deckId, USER);
+  const after = await readCutsState(deckId, USER, undefined, undefined, process.env);
   check("a failed re-run: newest run failed, last ok cuts stand", [after.run?.status, after.items.length], ["failed", 3]);
 
   // Cut: one copy out, verdict and snapshot written with it.
@@ -108,19 +109,19 @@ try {
 
   // THE RE-OFFER RULE. A cut moves the run's fingerprint in its own transaction, so the result is
   // still current; an edit that is not one of its cuts moves the deck and not the run, so it is stale.
-  const now = (await readProposedCuts(deckId, USER))!;
+  const now = (await readProposedCuts(deckId, USER, process.env))!;
   check("the cut moved the deck's fingerprint", now.fingerprint !== inputs.fingerprint, true);
-  check("and the run's fingerprint followed it, so the result is current", (await readCutsState(deckId, USER)).lastOkFingerprint, now.fingerprint);
+  check("and the run's fingerprint followed it, so the result is current", (await readCutsState(deckId, USER, undefined, undefined, process.env)).lastOkFingerprint, now.fingerprint);
 
   // Undo puts the row back exactly, and refuses over a deck that has moved.
   check("undo succeeds over the deck the cut left", (await undoCutItem(itemIds[0], USER)).ok, true);
-  check("undo chained the run back to the list it was made against", (await readCutsState(deckId, USER)).lastOkFingerprint, inputs.fingerprint);
+  check("undo chained the run back to the list it was made against", (await readCutsState(deckId, USER, undefined, undefined, process.env)).lastOkFingerprint, inputs.fingerprint);
   check("undo restored the quantity", (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[0].oracleId]))[0].quantity, before);
   await cutItem(itemIds[0], USER);
-  const afterCut = (await readProposedCuts(deckId, USER))!.fingerprint;
+  const afterCut = (await readProposedCuts(deckId, USER, process.env))!.fingerprint;
   await q(`insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false) on conflict (deck_id, oracle_id) do update set quantity = deck_cards.quantity + 1`, [deckId, picks[0].oracleId]);
-  const edited = (await readProposedCuts(deckId, USER))!.fingerprint;
-  check("an edit that is not a cut moves the deck and not the run: the result is stale", [edited !== afterCut, (await readCutsState(deckId, USER)).lastOkFingerprint === edited], [true, false]);
+  const edited = (await readProposedCuts(deckId, USER, process.env))!.fingerprint;
+  check("an edit that is not a cut moves the deck and not the run: the result is stale", [edited !== afterCut, (await readCutsState(deckId, USER, undefined, undefined, process.env)).lastOkFingerprint === edited], [true, false]);
   const moved = await undoCutItem(itemIds[0], USER);
   check("undo over a moved deck refuses", moved.ok ? "ok" : moved.reason, "moved");
 
@@ -138,10 +139,10 @@ try {
   // History's re-review: the same run named by id. The list has moved, so the run's fingerprint is
   // not compared, and every check on the card itself still is.
   const runId = s3.runId;
-  const rv = await readCutsState(deckId, USER, new Date(), runId);
+  const rv = await readCutsState(deckId, USER, new Date(), runId, process.env);
   check("review: the named run is read, with its own cuts", [rv.review?.runId, rv.items.length], [runId, 3]);
   check("review: a cut locked since reads locked, the others not", rv.items.map((i) => i.locked), [false, true, false]);
-  check("review: another reader's id reads as the ordinary panel", (await readCutsState(deckId, `${USER}-other`, new Date(), runId)).review ?? null, null);
+  check("review: another reader's id reads as the ordinary panel", (await readCutsState(deckId, `${USER}-other`, new Date(), runId, process.env)).review ?? null, null);
   const qty2 = async () => (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]))[0]?.quantity ?? 0;
   const before2 = await qty2();
   const reviewCut = await cutItem(itemIds[2], USER, { review: true });
@@ -161,7 +162,7 @@ try {
   const lockedReview = await cutItem(itemIds[1], USER, { review: true });
   check("review: a locked card is still refused", lockedReview.ok ? "ok" : lockedReview.reason, "cutLocked");
   await q(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]);
-  check("review: a cut whose card has left reads as not in the deck", (await readCutsState(deckId, USER, new Date(), runId)).items[2]?.inDeck, false);
+  check("review: a cut whose card has left reads as not in the deck", (await readCutsState(deckId, USER, new Date(), runId, process.env)).items[2]?.inDeck, false);
   const goneReview = await cutItem(itemIds[2], USER, { review: true });
   check("review: and is refused, writing nothing", goneReview.ok ? "ok" : goneReview.reason, "cutGone");
   await q(`insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, $3, false)`, [deckId, picks[2].oracleId, before2]);
@@ -179,9 +180,9 @@ try {
     const id = (await q(`select i.id from deck_cut_items i where i.run_id = $1`, [run2.runId]))[0].id;
     const c = await cutItem(id, USER);
     check("the commander is refused", c.ok ? "ok" : c.reason, "cutGone");
-    const older = await readCutsState(deckId, USER, new Date(), runId);
-    check("review: an older run is read by id while a newer ok run stands", [older.review?.runId, older.items.length, (await readCutsState(deckId, USER)).items.length], [runId, 3, 1]);
-    check("review: the commander row of a run reads as not in the deck", (await readCutsState(deckId, USER)).items[0]?.inDeck, false);
+    const older = await readCutsState(deckId, USER, new Date(), runId, process.env);
+    check("review: an older run is read by id while a newer ok run stands", [older.review?.runId, older.items.length, (await readCutsState(deckId, USER, undefined, undefined, process.env)).items.length], [runId, 3, 1]);
+    check("review: the commander row of a run reads as not in the deck", (await readCutsState(deckId, USER, undefined, undefined, process.env)).items[0]?.inDeck, false);
   }
 } finally {
   if (deckId) {

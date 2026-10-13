@@ -15,7 +15,7 @@
 // a destructuring read (`const { FOO } = process.env`; a REST element, `const { ...e } = process.env`, is a
 // copy and is a finding). A PARAMETER DEFAULT (`env = process.env`, or `{ env = process.env }` destructured
 // in a parameter, a component's prop) is not a finding either, but is held to DEFAULTS_PENDING so no new
-// one lands while admin PRs 7b to 7d remove them; a binding default in a VARIABLE
+// one lands while admin PRs 7b-2 to 7d remove them (7b emptied `src/lib/decks`); a binding default in a VARIABLE
 // (`const { env = process.env } = opts`) is a finding.
 //
 // Every listed occurrence is pinned by a FINGERPRINT, never a line number or a per-file total:
@@ -54,9 +54,8 @@ export const ALLOWED = [
  */
 /** @type {ListEntry[]} */
 export const PENDING = [
-  { path: "src/lib/decks/availability-query.ts", uses: { "loadAvailability:fallback": 1 }, pr: "7b", reason: "`opts?.env ?? process.env`, the claim model's optional env" },
-  { path: "src/lib/tuning/cuts-run-store.ts", uses: { "startCutsRun:fallback:assertSomeCardOpen": 1 }, pr: "7b", reason: "`opts.env ?? process.env` into `assertSomeCardOpen`" },
-  { path: "src/lib/tuning/run-store.ts", uses: { "startRun:fallback:assertSomeCardOpen": 1 }, pr: "7b", reason: "`opts.env ?? process.env` into `assertSomeCardOpen`" },
+  { path: "src/lib/tuning/cuts-run-store.ts", uses: { "startCutsRun:fallback:assertSomeCardOpen": 1 }, pr: "7b-2", reason: "`opts.env ?? process.env` into `assertSomeCardOpen`" },
+  { path: "src/lib/tuning/run-store.ts", uses: { "startRun:fallback:assertSomeCardOpen": 1 }, pr: "7b-2", reason: "`opts.env ?? process.env` into `assertSomeCardOpen`" },
   {
     path: "src/lib/profile/stored.ts",
     uses: { "REQUEST_DEPS:argument:requestProfileDeps": 1, "storedBasisMoved:argument:roleBasisFromEnv": 1, "computeAndStoreProfile:fallback:noticesEnabled": 1, "computeAndStoreProfile:fallback:roleBasisFromEnv": 1 },
@@ -68,8 +67,8 @@ export const PENDING = [
 /**
  * Parameter defaults of `process.env` (`env = process.env`, or `{ env = process.env }` destructured in a
  * parameter), pinned per file by fingerprint (`<scope>:default:<name>`) with a count each, the same way as
- * PENDING: a new default fails, and a removed one fails until its entry shrinks. Admin PRs 7b, 7c and 7d each
- * empty their own entries; `keep` names a default that reads the environment on purpose, with its reason.
+ * PENDING: a new default fails, and a removed one fails until its entry shrinks. Admin PRs 7b-2, 7c and 7d each
+ * empty their own entries (7b emptied `src/lib/decks`'); `keep` names a default that reads the environment on purpose, with its reason.
  * Seeded from the tree at admin PR 7a.
  */
 /** @type {Record<string, { pr: string, reason?: string, uses: Record<string, number> }>} */
@@ -83,22 +82,11 @@ export const DEFAULTS_PENDING = {
   "src/lib/commander-change/draft-rows.ts": { pr: "7c", uses: { "loadCommanderRows:default:env": 1 } },
   "src/lib/commander-change/mix-key.ts": { pr: "7c", uses: { "commanderKeyParts:default:env": 1 } },
   "src/lib/commanders/rankings.ts": { pr: "7d", uses: { "commanderRankingsKey:default:env": 1, "loadCommanderRankings:default:env": 1 } },
-  "src/lib/decks/availability-query.ts": { pr: "7b", uses: { "loadDeckBuyRows:default:env": 1 } },
-  "src/lib/decks/cart-read.ts": { pr: "7b", uses: { "loadCart:default:env": 1 } },
-  "src/lib/decks/cuts-read.ts": { pr: "7b", uses: { "readProposedCuts:default:env": 1, "readCutsState:default:env": 1 } },
-  "src/lib/decks/draft-state.ts": { pr: "7b", uses: { "loadDraftState:default:env": 1, "loadDraftRows:default:env": 1 } },
   "src/lib/decks/label-counts-flag.ts": {
     pr: "keep",
     reason: "`envForPageBasis`'s `environment`: it reads the ENVIRONMENT's kill switch (`off`) on purpose, which no resolved env carries",
     uses: { "envForPageBasis:default:environment": 1 },
   },
-  "src/lib/decks/notes-read.ts": { pr: "7b", uses: { "readDeckNotes:default:env": 1 } },
-  "src/lib/decks/printings.ts": { pr: "7b", uses: { "resolveDeckOwnedPrintings:default:env": 1, "readDeckOwnedPrintings:default:env": 1, "resolveCommanderPrintingsByDeck:default:env": 1, "readHeldPricePicks:default:env": 1, "readModalPicks:default:env": 1 } },
-  "src/lib/decks/read.ts": { pr: "7b", uses: { "getDeckDetail:default:env": 1, "deckPendingSql:default:env": 1 } },
-  "src/lib/decks/shopping-rollup.ts": { pr: "7b", uses: { "loadShoppingRollup:default:env": 1, "readBuyRowPrices:default:env": 1 } },
-  "src/lib/decks/suggestions-read.ts": { pr: "7b", uses: { "resolveSuggestionBasis:default:env": 1, "loadDeckSuggestions:default:env": 1 } },
-  "src/lib/decks/tuning-read.ts": { pr: "7b", uses: { "tuningInputs:default:env": 1, "profileOfHead:default:env": 1, "withBracketAfter:default:env": 1, "readTuningState:default:env": 1 } },
-  "src/lib/decks/versions.ts": { pr: "7b", uses: { "commitVersion:default:env": 1, "loadVersionDiff:default:env": 1 } },
   "src/lib/discovery/list.ts": { pr: "7d", uses: { "discoveryKey:default:env": 1, "loadDiscoveryPool:default:env": 1, "loadDiscovery:default:env": 1, "loadDiscoveryWithIds:default:env": 1 } },
   "src/lib/discovery/payload.ts": { pr: "7d", uses: { "loadDiscoveryPayload:default:env": 1 } },
   "src/lib/discovery/resolve-slug.ts": { pr: "7d", uses: { "resolveCommanderSlug:default:env": 1 } },
@@ -127,13 +115,13 @@ export const DEFAULTS_PENDING = {
   "src/lib/synopsis/generate.ts": { pr: "7d", uses: { "factsFor:default:env": 1, "startRun:default:env": 1, "writeSynopsisFor:default:env": 1, "retrySynopsisFor:default:env": 1 } },
   "src/lib/synopsis/read.ts": { pr: "7d", uses: { "readSynopsisState:default:env": 1, "readVersionSynopsis:default:env": 1 } },
   "src/lib/synopsis/stub.ts": { pr: "7d", uses: { "stubMode:default:env": 1, "stubDelayMs:default:env": 1, "stubDelay:default:env": 1, "synopsisLive:default:env": 1 } },
-  "src/lib/tuning/cuts-verdicts.ts": { pr: "7b", uses: { "cutItem:default:env": 1, "undoCutItem:default:env": 1 } },
-  "src/lib/tuning/mana-help-load.ts": { pr: "7b", uses: { "loadManaHelp:default:env": 1 } },
-  "src/lib/tuning/mana-staples.ts": { pr: "7b", uses: { "loadManaStaples:default:env": 1 } },
-  "src/lib/tuning/mana-trade.ts": { pr: "7b", uses: { "applyTrade:default:env": 1, "undoTrade:default:env": 1 } },
-  "src/lib/tuning/run-store.ts": { pr: "7b", uses: { "assertSomeCardOpen:default:env": 1 } },
-  "src/lib/tuning/stub.ts": { pr: "7b", uses: { "tuningStubDelayMs:default:env": 1, "heldStubOutcome:default:env": 1 } },
-  "src/lib/tuning/verdicts.ts": { pr: "7b", uses: { "applyItem:default:env": 1, "undoItem:default:env": 1 } },
+  "src/lib/tuning/cuts-verdicts.ts": { pr: "7b-2", uses: { "cutItem:default:env": 1, "undoCutItem:default:env": 1 } },
+  "src/lib/tuning/mana-help-load.ts": { pr: "7b-2", uses: { "loadManaHelp:default:env": 1 } },
+  "src/lib/tuning/mana-staples.ts": { pr: "7b-2", uses: { "loadManaStaples:default:env": 1 } },
+  "src/lib/tuning/mana-trade.ts": { pr: "7b-2", uses: { "applyTrade:default:env": 1, "undoTrade:default:env": 1 } },
+  "src/lib/tuning/run-store.ts": { pr: "7b-2", uses: { "assertSomeCardOpen:default:env": 1 } },
+  "src/lib/tuning/stub.ts": { pr: "7b-2", uses: { "tuningStubDelayMs:default:env": 1, "heldStubOutcome:default:env": 1 } },
+  "src/lib/tuning/verdicts.ts": { pr: "7b-2", uses: { "applyItem:default:env": 1, "undoItem:default:env": 1 } },
 };
 
 const EXEMPT = (path) => path.startsWith("src/lib/switches/");
@@ -158,7 +146,7 @@ function bindingOwner(node) {
 
 /**
  * What one occurrence of `process.env` does: `read` (only reads the environment), `default` (a parameter
- * default, held per file by DEFAULTS_PENDING until admin PRs 7b to 7d remove them), or `handoff` (the
+ * default, held per file by DEFAULTS_PENDING until admin PRs 7b-2 to 7d remove them), or `handoff` (the
  * object travels on, a finding).
  */
 function classify(node) {

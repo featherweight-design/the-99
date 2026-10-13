@@ -217,10 +217,10 @@ export type ChangeOptions = {
   /**
    * The reader's resolved switches (`requestSwitchEnv`), which every claim read inside the write
    * takes: the claim model's `locked` key (NEVER_CUT_ENABLED) and its pending clause
-   * (CHANGE_COMMANDER_ENABLED). Absent (a probe or a script, outside a request), the environment
-   * decides; admin PR 7 makes it required.
+   * (CHANGE_COMMANDER_ENABLED). Required (admin PR 7b): a probe or a script, outside a request, passes
+   * `process.env` itself.
    */
-  env?: NodeJS.ProcessEnv;
+  env: NodeJS.ProcessEnv;
 };
 
 /** One raised card as the write saw it: the claims after, the copies it added, and its reservations. */
@@ -927,7 +927,7 @@ export async function applyCollectionChange(
  * Every card `plan` raised, read after the write in one claim-model read, with its reservations in
  * the model's order. A card no deck claims is left out: it went nowhere.
  */
-async function raisedCards(tx: Tx, userId: string, plan: Planned[], env: NodeJS.ProcessEnv | undefined): Promise<Record<string, RaisedCard>> {
+async function raisedCards(tx: Tx, userId: string, plan: Planned[], env: NodeJS.ProcessEnv): Promise<Record<string, RaisedCard>> {
   const brought = new Map<string, number>();
   for (const p of plan) {
     const d = qty(p.after) - qty(p.before);

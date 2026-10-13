@@ -25,6 +25,7 @@ import { buysCard } from "../src/lib/intake/buys-card";
 import { loadFillGate } from "../src/lib/intake/fill-facts";
 import { loadPrices } from "../src/lib/discovery/price";
 import { commitVersion } from "../src/lib/decks/versions";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -80,6 +81,7 @@ async function main() {
       commanderIds: [newCmd],
       answers: { budgetCents: card.cents, bracket: null, cardOracleId: card.id },
       candidates: [{ oracleId: cheaper.id, owned: false, typeLine: "Artifact" } as never],
+      env: process.env,
     });
     if (!gate) throw new Error("no gate for a budget");
     return !gate.admits({ oracleId: cheaper.id, owned: false, typeLine: "Artifact" } as never);
@@ -104,7 +106,7 @@ async function main() {
       values (${USER}, 'Probe Holder', ${holderCmd}) returning id
     `);
     await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${card.id}, 1)`);
-    await commitVersion(deck.id, null);
+    await commitVersion(deck.id, null, undefined, undefined, process.env);
 
     const held = await loadCardChip(USER, card.id);
     check("held: chip still reads owned", held?.owned, true);

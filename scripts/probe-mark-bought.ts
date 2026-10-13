@@ -31,6 +31,7 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
 import { cartReceiptFacts, cartSource, receiptFacts } from "../src/lib/decks/mark-bought";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -62,7 +63,7 @@ const buy = (deckId: string, oracleId: string, collectorNumber: string, expected
       kind: "edit",
       rows: [{ oracleId, setCode: "prb", collectorNumber, finish: "nonfoil", quantity: expected + quantity, expected, condition: null }],
     },
-    { id: randomUUID(), source: `shopping:${deckId}`, receipt: { oracleId, deckIds: [deckId] } },
+    { id: randomUUID(), source: `shopping:${deckId}`, receipt: { oracleId, deckIds: [deckId] }, env: process.env },
   );
 
 const factsOf = (r: ChangeResult, deckId: string) => {
@@ -90,7 +91,7 @@ async function main() {
       [owner, name, commander],
     );
     for (const c of cards) await pool.query("insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)", [id, c]);
-    if (commit) await commitVersion(id, null);
+    if (commit) await commitVersion(id, null, undefined, undefined, process.env);
     return id;
   };
 
@@ -133,7 +134,7 @@ async function main() {
     const gone = await applyCollectionChange(
       USER,
       { kind: "edit", rows: [{ oracleId: C, setCode: "prb", collectorNumber: "1", finish: "nonfoil", quantity: owned + 1, expected: owned, condition: null }] },
-      { id: randomUUID(), source: `shopping:${brew}`, requireMember: { deckIds: [brew], oracleId: C } },
+      { id: randomUUID(), source: `shopping:${brew}`, requireMember: { deckIds: [brew], oracleId: C }, env: process.env },
     );
     const after = Number((await one<{ q: number } | undefined>(
       "select quantity as q from collection_items where user_id = $1 and oracle_id = $2", [USER, C],
@@ -148,10 +149,10 @@ async function main() {
     await applyCollectionChange(
       USER,
       { kind: "edit", rows: [{ oracleId: B, setCode: "prb", collectorNumber: "1", finish: "nonfoil", quantity: 2, expected: 1, condition: null }] },
-      { id: bought, source: `shopping:${junior}` },
+      { id: bought, source: `shopping:${junior}`, env: process.env },
     );
     const preview = async (ignoreDeckId?: string) => {
-      const r = await applyCollectionChange(USER, { kind: "revert", entryId: bought, ignoreDeckId }, { id: randomUUID(), dryRun: true });
+      const r = await applyCollectionChange(USER, { kind: "revert", entryId: bought, ignoreDeckId }, { id: randomUUID(), dryRun: true, env: process.env });
       return r.status === "preview" ? r.decks.map((d) => d.deckId).sort() : [`(${r.status})`];
     };
     const all = await preview();
@@ -179,6 +180,7 @@ async function main() {
         {
           id, source: cartSource(deckIds), receipt: { oracleId: D, deckIds: [], owesFor: deckIds }, requireMember: { deckIds, oracleId: D },
           ...(pick ? { assign: { oracleId: D, deckId: pick } } : {}),
+          env: process.env,
         },
       ));
     const lineDecks = [cartSenior, cartJunior, cartBrew];
@@ -203,7 +205,7 @@ async function main() {
     await applyCollectionChange(
       USER,
       { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 1, expected: 0, condition: null }] },
-      { id: randomUUID() },
+      { id: randomUUID(), env: process.env },
     );
     const pq = [lineP, lineQ];
     const pickedP = await applyCollectionChange(
@@ -212,6 +214,7 @@ async function main() {
       {
         id: randomUUID(), source: cartSource(pq), receipt: { oracleId: E, deckIds: [], owesFor: pq },
         requireMember: { deckIds: pq, oracleId: E }, assign: { oracleId: E, deckId: lineP },
+        env: process.env,
       },
     );
     const pFacts = pickedP.status === "applied" && pickedP.receipt
@@ -227,12 +230,12 @@ async function main() {
     await applyCollectionChange(
       USER,
       { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 0, expected: 2, condition: null }] },
-      { id: randomUUID(), confirmShort: undefined },
+      { id: randomUUID(), confirmShort: undefined, env: process.env },
     ).then(async (r) => (r.status === "wouldShort"
       ? applyCollectionChange(
         USER,
         { kind: "edit", rows: [{ oracleId: E, setCode: "prb", collectorNumber: "8", finish: "nonfoil", quantity: 0, expected: 2, condition: null }] },
-        { id: randomUUID(), confirmShort: r.decks },
+        { id: randomUUID(), confirmShort: r.decks, env: process.env },
       )
       : r));
     await deck("probe cart E commander 1", E, [], true);
@@ -243,6 +246,7 @@ async function main() {
       {
         id: randomUUID(), source: cartSource([lineP]), receipt: { oracleId: E, deckIds: [] },
         requireMember: { deckIds: [lineP], oracleId: E }, assign: { oracleId: E, deckId: lineP },
+        env: process.env,
       },
     );
     const heldE = Number((await one<{ q: number } | null>(
@@ -273,7 +277,7 @@ async function main() {
     const cartBought = randomUUID();
     await buyCart([cartSenior, cartJunior], 3, null, cartBought);
     const cartPreview = async (ignore: { ignoreDeckId?: string; ignoreDeckIds?: string[] }) => {
-      const r = await applyCollectionChange(USER, { kind: "revert", entryId: cartBought, ...ignore }, { id: randomUUID(), dryRun: true });
+      const r = await applyCollectionChange(USER, { kind: "revert", entryId: cartBought, ...ignore }, { id: randomUUID(), dryRun: true, env: process.env });
       return r.status === "preview" ? r.decks.map((d) => d.deckId).sort() : [`(${r.status})`];
     };
     const cartAll = await cartPreview({});
@@ -291,7 +295,7 @@ async function main() {
     check("a single deck's exemption does nothing for a cart entry",
       JSON.stringify(oneDeck) === JSON.stringify(cartAll), JSON.stringify(oneDeck));
     const deckEntry = await applyCollectionChange(
-      USER, { kind: "revert", entryId: bought, ignoreDeckIds: [junior] }, { id: randomUUID(), dryRun: true },
+      USER, { kind: "revert", entryId: bought, ignoreDeckIds: [junior] }, { id: randomUUID(), dryRun: true, env: process.env },
     );
     const deckEntryDecks = deckEntry.status === "preview" ? deckEntry.decks.map((d) => d.deckId).sort() : [`(${deckEntry.status})`];
     check("and the cart's exemption does nothing for a deck's own entry",
@@ -308,14 +312,14 @@ async function main() {
     const buyF = (expected: number, entryId: string) => applyCollectionChange(
       USER,
       { kind: "edit", rows: [{ oracleId: F, setCode: "prb", collectorNumber: "9", finish: "nonfoil", quantity: expected + 1, expected, condition: null }] },
-      { id: entryId, source: cartSource(xy), receipt: { oracleId: F, deckIds: [], owesFor: xy }, requireMember: { deckIds: xy, oracleId: F }, assign: { oracleId: F, deckId: brewY } },
+      { id: entryId, source: cartSource(xy), receipt: { oracleId: F, deckIds: [], owesFor: xy }, requireMember: { deckIds: xy, oracleId: F }, assign: { oracleId: F, deckId: brewY }, env: process.env },
     );
     const e1 = randomUUID();
     const made = await buyF(0, e1);
     check("a pick on a deck with no reservation reports that the press created it",
       made.status === "applied" && made.assigned?.created === true && await reservedF(brewY) === 1,
       `${made.status}; created ${made.status === "applied" ? JSON.stringify(made.assigned) : "-"}; reserved ${await reservedF(brewY)}`);
-    const undone = await applyCollectionChange(USER, { kind: "revert", entryId: e1, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID() });
+    const undone = await applyCollectionChange(USER, { kind: "revert", entryId: e1, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID(), env: process.env });
     check("Undo with that pick drops the reservation in the same revert",
       undone.status === "applied" && await reservedF(brewY) === 0, `${undone.status}; reserved ${await reservedF(brewY)}`);
 
@@ -325,7 +329,7 @@ async function main() {
     const madeAgain = await buyF(0, e1b);
     await pool.query("delete from card_assignments where user_id = $1 and oracle_id = $2", [USER, F]);
     await pool.query("insert into card_assignments (user_id, oracle_id, deck_id, created_at) values ($1, $2, $3, now() + interval '1 second')", [USER, F, brewY]);
-    const undoneB = await applyCollectionChange(USER, { kind: "revert", entryId: e1b, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID() });
+    const undoneB = await applyCollectionChange(USER, { kind: "revert", entryId: e1b, undoPlacement: { oracleId: F, deckId: brewY } }, { id: randomUUID(), env: process.env });
     check("Undo leaves a newer pick of the same deck, made since the press",
       madeAgain.status === "applied" && undoneB.status === "applied" && await reservedF(brewY) === 1,
       `${madeAgain.status}/${undoneB.status}; reserved ${await reservedF(brewY)}`);
@@ -338,7 +342,7 @@ async function main() {
       kept.status === "applied" && kept.assigned?.created === false,
       `${kept.status}; created ${kept.status === "applied" ? JSON.stringify(kept.assigned) : "-"}`);
     // The cart sends no undoPlacement for it, so the older reservation survives the undo.
-    const undone2 = await applyCollectionChange(USER, { kind: "revert", entryId: e2 }, { id: randomUUID() });
+    const undone2 = await applyCollectionChange(USER, { kind: "revert", entryId: e2 }, { id: randomUUID(), env: process.env });
     check("and Undo without a placement leaves the reservation that predates the purchase",
       undone2.status === "applied" && await reservedF(brewY) === 1, `${undone2.status}; reserved ${await reservedF(brewY)}`);
 
@@ -369,13 +373,13 @@ async function main() {
       `${retried.status}; placed ${JSON.stringify(retriedPlaced)}`);
     const forgedRestore = await applyCollectionChange(
       USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewY, copies: 1 } } },
-      { id: randomUUID(), dryRun: true },
+      { id: randomUUID(), dryRun: true, env: process.env },
     );
     check("a restore the entry did not record puts nothing back (dry run)",
       forgedRestore.status === "preview" && await reservedF(brewX) === 0, `${forgedRestore.status}; X reserved ${await reservedF(brewX)}`);
     const undone3 = await applyCollectionChange(
       USER, { kind: "revert", entryId: e3, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
-      { id: randomUUID() },
+      { id: randomUUID(), env: process.env },
     );
     check("Undo drops the moved pick and puts the displaced reservation back, at its own instant",
       undone3.status === "applied" && await reservedF(brewY) === 0 && await reservedF(brewX) === 1
@@ -393,7 +397,7 @@ async function main() {
     const moved4 = await buyF(await heldNow(), e4);
     const undone4 = await applyCollectionChange(
       USER, { kind: "revert", entryId: e4, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
-      { id: randomUUID() },
+      { id: randomUUID(), env: process.env },
     );
     check("Undo puts the moved reservation back beside an older one on another deck",
       moved4.status === "applied" && undone4.status === "applied"
@@ -412,7 +416,7 @@ async function main() {
     await pool.query("insert into deck_proxies (deck_id, oracle_id) values ($1, $2)", [brewX, F]);
     const undone5 = await applyCollectionChange(
       USER, { kind: "revert", entryId: e5, undoPlacement: { oracleId: F, deckId: brewY, restore: { deckId: brewX, copies: 1 } } },
-      { id: randomUUID() },
+      { id: randomUUID(), env: process.env },
     );
     check("Undo puts nothing back on a deck that no longer claims the card",
       moved5.status === "applied" && undone5.status === "applied" && await reservedF(brewX) === 0 && await reservedF(brewY) === 0,

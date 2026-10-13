@@ -32,6 +32,7 @@ import { tablesRead } from "./lib/list-cache-tables.mjs";
 import { replaceCollection } from "../src/lib/collection/import";
 import { commitVersion } from "../src/lib/decks/versions";
 import type { PendingItem } from "../src/lib/collection/pending";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -126,7 +127,7 @@ async function main() {
       await replaceCollection(USER, items);
       replaceMs.push(performance.now() - t);
       t = performance.now();
-      await commitVersion(deck.id, null);
+      await commitVersion(deck.id, null, undefined, undefined, process.env);
       commitMs.push(performance.now() - t);
     }
     console.log(`TIME  collection replace (${items.length} rows): median ${median(replaceMs).toFixed(0)}ms of ${replaceMs.map((x) => x.toFixed(0)).join(", ")}`);

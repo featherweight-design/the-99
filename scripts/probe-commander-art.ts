@@ -40,6 +40,7 @@ import {
   listOwnedLegalCommanders,
 } from "../src/lib/decks/read";
 import { DEFAULT_DECK_SORT } from "../src/lib/decks/sort";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -174,7 +175,7 @@ async function run() {
     const unownedId = await makeDeck("probe unowned", unowned.oracle_id, null);
 
     // ONE. The deck page hands back the copy in the box, front and crop.
-    const detail = await getDeckDetail(pairId, USER);
+    const detail = await getDeckDetail(pairId, USER, undefined, process.env);
     check("deck page: commander front is the owned printing's",
       detail?.commander.imageUri, commander.printing_image);
     check("deck page: commander crop is the owned printing's",
@@ -190,7 +191,7 @@ async function run() {
       detail?.partner?.artCropUri, partner.card_crop);
 
     // TWO. The grid, through its own query, and only where the caller asks for it.
-    const list = await listDecksWithStats(USER, DEFAULT_DECK_SORT, { includeCommanderArt: true });
+    const list = await listDecksWithStats(USER, DEFAULT_DECK_SORT, { includeCommanderArt: true, env: process.env });
     const pairTile = list.find((d) => d.id === pairId);
     check("deck tile: commander front is the owned printing's",
       pairTile?.commanderImageUri, commander.printing_image);
@@ -199,7 +200,7 @@ async function run() {
 
     // THREE. The fallback, on a commander the player does not own at all. This is the
     // rendering that shipped before any of this, and it has to be exactly unchanged.
-    const unownedDetail = await getDeckDetail(unownedId, USER);
+    const unownedDetail = await getDeckDetail(unownedId, USER, undefined, process.env);
     check("deck page: an unowned commander keeps the oracle front",
       unownedDetail?.commander.imageUri, unowned.image_uri);
     check("deck page: an unowned commander keeps the oracle crop",
@@ -214,7 +215,7 @@ async function run() {
     // a deck-name list and draws no commander art, so it must not pay the aggregation —
     // and a default that silently resolved anyway would make the option a lie that costs
     // a query per deck on every builder load.
-    const names = await listDecksWithStats(USER, DEFAULT_DECK_SORT);
+    const names = await listDecksWithStats(USER, DEFAULT_DECK_SORT, { env: process.env });
     const namesPair = names.find((d) => d.id === pairId);
     check("names-only caller: commander front stays oracle-level",
       namesPair?.commanderImageUri, commander.card_image);

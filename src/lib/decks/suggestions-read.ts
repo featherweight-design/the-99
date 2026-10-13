@@ -162,8 +162,8 @@ export async function resolveSuggestionBasis(
   partner: { oracleId: string; colorIdentity?: string[] | null } | null,
   hasPartner: boolean,
   available: readonly { oracleId: string }[],
-  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<{ mix: RecommendedMix; roleSets: Awaited<ReturnType<typeof loadPoolRoleBasis>>["roleSets"] }> {
   const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available, labelRoleCountsEnabled(env));
   let mix = recommendedMix(null, hasPartner, roleBasis);
@@ -192,7 +192,7 @@ export async function loadDeckSuggestions(
   deckId: string,
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`). A caller that caches this payload keys it on them. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<DeckSuggestionsPayload> {
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));

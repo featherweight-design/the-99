@@ -441,8 +441,8 @@ async function readDraft(
   };
 }
 
-/** `env` is the reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-export async function loadDraftState(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<DraftState> {
+/** `env` is the reader's resolved switches (`requestSwitchEnv`). */
+export async function loadDraftState(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<DraftState> {
   return (await readDraft(deckId, userId, false, env)).state;
 }
 
@@ -558,7 +558,7 @@ function returnsFromCommand(state: DraftState, oracleId: string, added: boolean)
  * it. `quantity` on each row is the DELTA, which is what the row's figure means
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
-export async function loadDraftRows(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<DraftRows> {
+export async function loadDraftRows(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<DraftRows> {
   const read = await readDraft(deckId, userId, true, env);
   const { state } = read;
 

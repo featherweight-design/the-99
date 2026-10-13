@@ -26,6 +26,7 @@ import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
 import { db as realDb } from "../src/db";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -78,6 +79,7 @@ const claimants = async (oracleId: string, vantage: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [oracleId],
     excludeDeckId: vantage,
+    env: process.env,
   });
   return availability.get(oracleId)?.claims.length ?? null;
 };
@@ -86,6 +88,7 @@ const free = async (oracleId: string, deckId: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [oracleId],
     excludeDeckId: deckId,
+    env: process.env,
   });
   return availability.get(oracleId)?.free ?? null;
 };
@@ -93,7 +96,7 @@ const free = async (oracleId: string, deckId: string) => {
 // What this deck is told to buy, in copies, for one card. The buy rows are a
 // different query from the claim model and this is the only reader of it here.
 const buyCopies = async (deckId: string, oracleId: string) => {
-  const rows = await loadDeckBuyRows(USER, [deckId]);
+  const rows = await loadDeckBuyRows(USER, [deckId], undefined, process.env);
   return rows.filter((r) => r.deckId === deckId && r.oracleId === oracleId)
     .reduce((n, r) => n + r.quantity, 0);
 };
@@ -277,7 +280,7 @@ try {
   `);
 
   const tile = async (deckId: string, withStats: boolean) => {
-    const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats });
+    const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats, env: process.env });
     return decks.find((d) => d.id === deckId);
   };
 

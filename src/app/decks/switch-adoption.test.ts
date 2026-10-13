@@ -71,33 +71,21 @@ describe("an action reads the reader's resolved switches", () => {
  */
 
 /**
- * Admin PR 6e: the claim model (`availability-query`) decides NEVER_CUT_ENABLED's `locked` key and
- * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
- * environment until admin PR 7b makes it required, so a caller that omits it compiles and reads the
- * environment alone. Every call to `loadAvailability` must name `env` in its options object, and every call
- * to `loadDeckBuyRows` must pass its fourth argument (and `loadCart`, which starts both, its second),
- * everywhere in `src`. Admin PR 6f-1 converted the deck, commander, discovery, tuning, lineup, swap and social
- * readers; 6f-2 the collection's writes and contested-card reads, the new-deck search and Fits your decks, and
- * emptied the list of modules left to convert, so there is no exemption.
+ * Admin PR 6e to 6f-2 held every call to the claim model (`availability-query`) and the wrappers that start
+ * it to naming its `env`, because each still defaulted to the environment. Since admin PR 7b their `env` is
+ * REQUIRED (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`', `loadCart`'s, `listDecksWithStats`'
+ * `opts.env` and `loadShoppingRollup`'s), so leaving it out no longer compiles and they are off this list;
+ * handing one `process.env` is `pnpm check:switch-reads`' to catch.
  */
 
 /**
  * The readers whose DEFAULTED env decides a switch, and where each takes it: in an options object (`opts`,
- * which must name `env`) or as a positional argument (`at`, which must be present). Most are the claim
- * model and the wrappers that start it (NEVER_CUT_ENABLED's `locked` key, CHANGE_COMMANDER_ENABLED's pending
- * clause); `chainArt` decides DECK_PRINTINGS_ENABLED, the deck's printing picks. A reader deeper than these
- * that takes a defaulted env is not scanned: admin PRs 7b to 7d make `env` required, which catches that whole class
- * at compile time. `listDecksWithStats` is a reader by way of its
- * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
- * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).
- * `loadShoppingRollup` hands its third argument to `loadDeckBuyRows` the same way (round 2).
+ * which must name `env`) or as a positional argument (`at`, which must be present). `chainArt` decides
+ * DECK_PRINTINGS_ENABLED, the deck's printing picks, and its `env` defaults until admin PR 7d makes it
+ * required. A reader deeper than this that takes a defaulted env is not scanned: admin PRs 7b-2 to 7d make
+ * `env` required, which catches that whole class at compile time.
  */
 const CLAIM_ENV = {
-  loadAvailability: { opts: 1 },
-  loadDeckBuyRows: { at: 3 },
-  loadCart: { at: 1 },
-  listDecksWithStats: { opts: 2 },
-  loadShoppingRollup: { at: 2 },
   chainArt: { at: 3 },
 } as const satisfies Record<string, { opts: number } | { at: number }>;
 const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
@@ -143,7 +131,8 @@ async function claimCalls(path: string, code: string): Promise<{ call: string; e
     if (reader && ts.isCallExpression(node)) {
       const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
       const call = `${path}:${line}: ${node.expression.getText(file)} (${reader})`;
-      const where: { opts: number } | { at: number } = CLAIM_ENV[reader];
+      // Widened, so the options-object form stays checked while the list holds positional readers alone.
+      const where = CLAIM_ENV[reader] as { opts: number } | { at: number };
       if ("opts" in where) {
         const opts = node.arguments[where.opts];
         const env = !!opts && ts.isObjectLiteralExpression(opts) && opts.properties.some((p) =>
@@ -162,31 +151,19 @@ async function claimCalls(path: string, code: string): Promise<{ call: string; e
 describe("every claim read is handed the reader's env (admin PR 6e)", () => {
   it("finds a call that omits the env (the scan's own failure path)", async () => {
     const code = [
-      "loadAvailability(u);",
-      "loadAvailability(u, { oracleIds });",
-      "loadAvailability(u, { oracleIds, env });",
-      "loadAvailability(u, { env: opts.env }, tx);",
-      "loadDeckBuyRows(u, ids);",
-      "loadDeckBuyRows(u, ids, undefined, env);",
-      "loadCart(u);",
-      "loadCart(u, keyed);",
-      // Under another name: an injectable parameter by default and by type, a const alias, a property.
-      "function f(load = loadAvailability) { load(u, { oracleIds }); }",
-      "function g(read: typeof loadDeckBuyRows) { read(u, ids); read(u, ids, tx, env); }",
-      "const bill = loadCart; bill(u);",
-      "deps.loadAvailability(u, { env });",
-      // The deck list hands its own opts.env to the seniority read.
-      "listDecksWithStats(u, \"name\");",
-      "listDecksWithStats(u, \"name\", { includeProxyStats: true });",
-      "listDecksWithStats(u, \"name\", { env });",
-      "loadShoppingRollup(u, ids);",
-      "loadShoppingRollup(u, undefined, env);",
       // The art chain's printing picks (DECK_PRINTINGS_ENABLED).
       "chainArt(u, deckId, ids);",
       "chainArt(u, null, ids, env);",
+      // Under another name: an injectable parameter by default and by type, a const alias, a property.
+      "function f(art = chainArt) { art(u, deckId, ids); }",
+      "function g(read: typeof chainArt) { read(u, deckId, ids); read(u, deckId, ids, env); }",
+      "const draw = chainArt; draw(u, deckId, ids);",
+      "deps.chainArt(u, deckId, ids, env);",
+      // A reader whose env is required now is not scanned: the compiler holds it.
+      "loadAvailability(u, { oracleIds });",
     ].join("\n");
     expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
-      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true, false, true],
+      [false, true, false, false, true, false, true],
     );
   });
 
@@ -198,8 +175,8 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
       return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
     });
     const all = (await Promise.all(walk("src").map((path) => claimCalls(path, readFileSync(path, "utf8"))))).flat();
-    // A scan that found nothing would pass over everything: the deck page, Home and the pull all read claims.
-    expect(all.filter((c) => c.env).length).toBeGreaterThan(20);
+    // A scan that found nothing would pass over everything: the cart, the deck page and the lineup all draw art.
+    expect(all.filter((c) => c.env).length).toBeGreaterThan(10);
     expect(all.filter((c) => !c.env).map((c) => c.call)).toEqual([]);
   });
 });

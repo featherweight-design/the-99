@@ -32,6 +32,7 @@ import {
 } from "../src/lib/decks/draft-state";
 import { computeRoleCounts } from "../src/lib/decks/mix";
 import { restoreDraftFromVersion } from "../src/lib/decks/versions";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -143,7 +144,7 @@ try {
   // 1. A BREW. No version, so there is nothing for a draft to be pending
   //    against — not an empty change list, an absent one.
   await put(deck.id, card.kept, 1);
-  const brew = await loadDraftState(deck.id, USER);
+  const brew = await loadDraftState(deck.id, USER, process.env);
   check("a brew has no version", brew.version, null);
   check("a brew has nothing pending", hasChanges(brew), false);
 
@@ -162,7 +163,7 @@ try {
   // 2. THE SNAPSHOT PAIRING. The version and the deck's rows are read under one
   //    `repeatable read` transaction, so a draft identical to its version has
   //    nothing pending — not every card in v1 listed as an add.
-  const clean = await loadDraftState(deck.id, USER);
+  const clean = await loadDraftState(deck.id, USER, process.env);
   check("a committed deck reads its own version", clean.version?.number, 1);
   check("an untouched draft is clean", changeCount(clean), 0);
 
@@ -173,7 +174,7 @@ try {
   //    is the money: it is never asked about, it buckets free, and nothing
   //    quotes a price for it.
   await put(deck.id, card.basic, 12);
-  const basicsOnly = await loadDraftState(deck.id, USER);
+  const basicsOnly = await loadDraftState(deck.id, USER, process.env);
   check("a basics-only edit is a change", changeCount(basicsOnly), 1);
   check("…and names the card", basicsOnly.names.get(card.basic) !== undefined, true);
   check("…with the pair it moved between",
@@ -189,7 +190,7 @@ try {
   await fixture.execute(sql`
     delete from deck_cards where deck_id = ${deck.id} and oracle_id = ${card.cut}
   `);
-  const state = await loadDraftState(deck.id, USER);
+  const state = await loadDraftState(deck.id, USER, process.env);
   //    Three adds: the two cards, and the twelve Islands still sitting in the
   //    draft from step 3. A basic alongside other changes is a row like the rest.
   check("the adds are named", state.adds.length, 3);
@@ -214,7 +215,7 @@ try {
 
   // 6. THE ROWS. Driven by the state's own two lists so the drawn rows cannot
   //    drift out of step with the counts, and `quantity` is the DELTA.
-  const { rows } = await loadDraftRows(deck.id, USER);
+  const { rows } = await loadDraftRows(deck.id, USER, process.env);
   check("an in row per add", rows.in.length, 3);
   check("an out row per cut", rows.out.length, 1);
   check("the out row is the cut card", rows.out[0]?.oracleId, card.cut);

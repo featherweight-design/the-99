@@ -40,8 +40,8 @@ export async function loadFillGate(args: {
   placedIds?: readonly string[];
   excludeDeckId?: string;
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
-   *  pending clause; the environment alone when omitted. */
-  env?: NodeJS.ProcessEnv;
+   *  pending clause. */
+  env: NodeJS.ProcessEnv;
 }): Promise<FillGate | undefined> {
   const { answers } = args;
   if (answers.budgetCents === null && (answers.bracket === null || answers.bracket >= 4)) return undefined;

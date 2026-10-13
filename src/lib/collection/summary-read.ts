@@ -164,11 +164,11 @@ export async function loadContestedCard(
   /**
    * `unownedAsZero`: read a card the collection holds no copy of as owning 0 (the cart's chooser).
    * `env`: the reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
-   * pending clause; the environment alone when omitted (admin PR 7 makes it required).
+   * pending clause.
    */
-  opts?: { unownedAsZero?: boolean; env?: NodeJS.ProcessEnv },
+  opts: { unownedAsZero?: boolean; env: NodeJS.ProcessEnv },
 ): Promise<ContestedCard | null> {
-  const availability = await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: opts?.unownedAsZero, env: opts?.env });
+  const availability = await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: opts.unownedAsZero, env: opts.env });
   const a = availability.get(oracleId);
   if (!a) return null;
   const [name] = await db.select({ name: cards.name }).from(cards)
@@ -227,10 +227,9 @@ export async function loadSummaryView(
   /**
    * `addedCopy`: read the chooser behind each version-4 row's Change (the switch, from the page).
    * `env`: the reader's resolved switches (`requestSwitchEnv`), which every claim read below takes for
-   * the claim model's `locked` key and pending clause; the environment alone when omitted (admin PR 7
-   * makes it required).
+   * the claim model's `locked` key and pending clause.
    */
-  opts: { addedCopy?: boolean; env?: NodeJS.ProcessEnv } = {},
+  opts: { addedCopy?: boolean; env: NodeJS.ProcessEnv },
 ): Promise<SummaryView | null> {
   // Projected, not `select()`. `preview_payload` carries every aggregated row of the import —
   // thousands of them on a real collection — and this route reads none of it. The issues line's
@@ -308,7 +307,7 @@ async function chooserFor(
   summary: ArrivalsSummary,
   contested: ContestedCard[],
   userId: string,
-  env: NodeJS.ProcessEnv | undefined,
+  env: NodeJS.ProcessEnv,
 ): Promise<Record<string, ContestedCard>> {
   const drawn = new Set(contested.map((c) => c.oracleId));
   const frozen: Record<string, { arrived: number; ownedBefore: number }> = {};
