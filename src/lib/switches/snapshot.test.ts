@@ -52,7 +52,18 @@ describe("switchSnapshot", () => {
     expect(SNAPSHOT_SQL).not.toContain(";");
   });
 
-  it("hands the resolver the rows in the shape it reads", async () => {
+  // The mock below hands back rows already shaped, so the SQL's own keys are pinned here: a renamed key
+  // would leave every row failing `isSwitchName`, or no group override ever matching, and every reader
+  // would silently get the environment alone.
+  it("names each field the resolver reads, from the column that holds it", () => {
+    const pairs = [
+      `'switchName', o."switch"`, `'scope', o.scope`, `'groupId', o.group_id`, `'userId', o.user_id`, `'value', o.value`,
+      `'userId', m.user_id`, `'groupId', m.group_id`,
+    ];
+    for (const pair of pairs) expect(SNAPSHOT_SQL).toContain(pair);
+  });
+
+  it("hands the resolver what the statement returns", async () => {
     reads.rows = [{ switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: "g1", userId: null, value: "on" }];
     reads.members = [{ userId: "u1", groupId: "g1" }];
     const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
