@@ -62,6 +62,7 @@
     "probe:help-me-choose-search": "tsx scripts/probe-help-me-choose-search.ts",
     "probe:help-me-choose-fill": "tsx scripts/probe-help-me-choose-fill.ts",
     "probe:help-me-choose-plumbing": "tsx scripts/probe-help-me-choose-plumbing.ts",
+    "probe:intake-settle": "tsx scripts/probe-intake-settle.ts",
     "probe:help-me-choose-screens": "node scripts/probe-help-me-choose-screens.mjs",
     "probe:help-me-choose-one-loading": "node scripts/probe-help-me-choose-one-loading.mjs",
     "probe:card-tag-box": "node scripts/probe-card-tag-box.mjs",

@@ -63,6 +63,17 @@ export function counts(row: LedgerRow, now: Date): boolean {
   return false;
 }
 
+/**
+ * Why a call was refunded, as `model_calls.refund_reason` stores it: `failed` (the call itself failed),
+ * `nothing_valid` (it answered, and nothing in the answer survived validation), `late_success` (a success
+ * came back after its reservation had gone stale and is not charged, `settleModelCall`) or `reaped` (the
+ * reaper took it as abandoned). Only the paths that know their cause name one: Help me choose names
+ * `failed` and `nothing_valid`, every reaper `reaped`, and `settleModelCall` itself `late_success` for every
+ * feature. Tuning, fits and synopsis refund for mixed causes (a thin answer, a partly valid one) that
+ * these labels would misstate, so theirs stay null.
+ */
+export type RefundReason = "failed" | "nothing_valid" | "late_success" | "reaped";
+
 export type ModelFeature = "tuning" | "synopsis" | "intake" | "proposed_cuts" | "fits_read";
 
 export type Allowance = {

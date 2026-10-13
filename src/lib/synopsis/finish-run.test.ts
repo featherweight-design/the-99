@@ -37,7 +37,7 @@ describe("finishRun: a failed call's class and status on the row", () => {
     const written = await finishRun({ runId: "run", callId: "call" }, failedRunSet({ ok: false, errorClass: "upstream_rejected", status: 404 }, undefined));
     expect(written).toBe(true);
     expect(sets).toEqual([expect.objectContaining({ status: "done", outcome: "upstream_rejected", errorStatus: 404, content: null })]);
-    expect(settleModelCall).toHaveBeenCalledWith(tx, "call", "refunded", undefined, expect.any(Date));
+    expect(settleModelCall).toHaveBeenCalledWith(tx, "call", "refunded", undefined, expect.any(Date), null);
   });
 
   it("stores a null status for a failure that carried none", async () => {

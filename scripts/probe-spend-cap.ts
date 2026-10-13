@@ -107,7 +107,7 @@ const reserve = (userId: string) =>
   db.transaction((tx) => reserveModelCall(tx, userId, "tuning", TUNING_MODEL));
 const kindOf = (r: { id: string } | { refused: string }) => ("refused" in r ? r.refused : "reserved");
 const settle = (id: string, to: "spent" | "refunded", usage?: ModelUsage) =>
-  db.transaction((tx) => settleModelCall(tx, id, to, usage ? { model: TUNING_MODEL, usage } : undefined));
+  db.transaction((tx) => settleModelCall(tx, id, to, usage ? { model: TUNING_MODEL, usage } : undefined, new Date(), null));
 
 /** Refund every reservation a user still holds, so it stops counting toward the month. */
 const refundAll = (userId: string) => fixture.execute(sql`

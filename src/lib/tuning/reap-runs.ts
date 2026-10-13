@@ -25,6 +25,6 @@ export async function reapReaderRuns(deckId: string, userId: string, now: Date =
       .set({ status: "failed", errorClass: "interrupted" })
       .where(reapableReaderRuns(deckId, userId, now))
       .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
+    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
   });
 }
