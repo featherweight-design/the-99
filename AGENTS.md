@@ -724,10 +724,14 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   longer compiles; `fooEnabled(process.env)` still does, so `pnpm check:switch-reads` (`scripts/lib/switch-reads.mjs`,
   in CI and inside `pnpm test`) fails any code under `src/` that hands the `process.env` OBJECT on (an argument, a
   spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/switches/`, tests, an `ALLOWED`
-  list (a file, a count and a reason a reviewer can check) and a `PENDING` list of the fallbacks 7b and 7d remove.
+  list (a file, its approved uses and a reason a reviewer can check) and a `PENDING` list of the fallbacks 7b and 7d
+  remove. Each approved use is pinned by a FINGERPRINT with a count, never a line or a per-file total:
+  `<enclosing function, method or module const>:<use>` (`loadAvailability:fallback`,
+  `REQUEST_DEPS:argument:requestProfileDeps`), so swapping an approved use for a new one elsewhere in the file fails,
+  and so does a listed fingerprint that is gone.
   A member read and a destructuring read are not findings (a rest element, `{ ...e } = process.env`, is a copy and
   is one). A parameter default (`env = process.env`, destructured in a parameter included) is not a finding but is
-  held per file at an exact count in `DEFAULTS_PENDING`, so a new one fails and 7b to 7d each shrink it; a binding
+  pinned the same way in `DEFAULTS_PENDING` (`<scope>:default:<param>`), so a new one fails and 7b to 7d each shrink it; a binding
   default in a variable (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached
   through anything but `process.env` itself, or an env built by hand from member reads.
 

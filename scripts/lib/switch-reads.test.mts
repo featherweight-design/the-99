@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ALLOWED, DEFAULTS_PENDING, PENDING, envDefaultsIn, switchReadFindings, switchReadsIn } from "./switch-reads.mjs";
+import { ALLOWED, DEFAULTS_PENDING, PENDING, envDefaultsIn, occurrences, switchReadFindings, switchReadsIn } from "./switch-reads.mjs";
 
 const lines = (src: string, path = "x.ts") => switchReadsIn(path, src).map((f) => f.line);
 
@@ -68,14 +68,43 @@ describe("envDefaultsIn", () => {
   });
 });
 
+describe("fingerprints", () => {
+  const prints = (src: string, path = "x.ts") => occurrences(path, src).filter((o) => o.fingerprint).map((o) => o.fingerprint);
+
+  it("name the enclosing function and the use, never a line", () => {
+    expect(prints("export function load(opts) {\n  const env = opts?.env ?? process.env;\n}")).toEqual(["load:fallback"]);
+    expect(prints("async function start(opts) {\n  await db.transaction(async (tx) => {\n    await check(tx, opts.env ?? process.env);\n  });\n}"))
+      .toEqual(["start:fallback:check"]);
+    expect(prints("const DEPS = deps(process.env);")).toEqual(["DEPS:argument:deps"]);
+    expect(prints("export const f = (x) => fooEnabled(process.env);")).toEqual(["f:argument:fooEnabled"]);
+    expect(prints("export default middleware(async (auth) => { const env = u ? a : process.env; });")).toEqual(["middleware():fallback"]);
+    expect(prints("class A { m() { return { ...process.env }; } }")).toEqual(["m:spread"]);
+    expect(prints("load(u, { env: process.env });")).toEqual(["<module>:property:env"]);
+  });
+
+  it("name a default by its function and parameter", () => {
+    expect(prints("export function a(u, env: NodeJS.ProcessEnv = process.env) {}")).toEqual(["a:default:env"]);
+    expect(prints("export function P({ env = process.env }: Props) {}")).toEqual(["P:default:env"]);
+  });
+
+  it("stay the same when lines move", () => {
+    const one = prints("export function a(o) { return fooEnabled(o.env ?? process.env); }");
+    const two = prints("// a header\n\n\nexport function a(o) {\n\n  return fooEnabled(o.env ?? process.env);\n}");
+    expect(two).toEqual(one);
+  });
+});
+
 describe("the lists", () => {
   it("give every entry a reason, and never list one file twice", () => {
-    for (const entry of [...ALLOWED, ...PENDING]) expect(entry.reason.length, entry.path).toBeGreaterThan(20);
+    for (const entry of [...ALLOWED, ...PENDING]) {
+      expect(entry.reason.length, entry.path).toBeGreaterThan(20);
+      expect(Object.keys(entry.uses).length, entry.path).toBeGreaterThan(0);
+    }
     for (const entry of PENDING) expect(["7b", "7c", "7d"]).toContain(entry.pr);
     const paths = [...ALLOWED, ...PENDING].map((e) => e.path);
     expect(new Set(paths).size).toBe(paths.length);
-    for (const [path, entry] of Object.entries(DEFAULTS_PENDING) as [string, { count: number; pr: string; reason?: string }][]) {
-      expect(entry.count, path).toBeGreaterThan(0);
+    for (const [path, entry] of Object.entries(DEFAULTS_PENDING)) {
+      expect(Object.values(entry.uses).every((n) => n > 0) && Object.keys(entry.uses).length > 0, path).toBe(true);
       expect(["7b", "7c", "7d", "keep"], path).toContain(entry.pr);
       if (entry.pr === "keep") expect(entry.reason?.length ?? 0, path).toBeGreaterThan(20);
     }
@@ -108,21 +137,42 @@ describe("a fixture tree", () => {
       "src/app/ok.ts": "export const on = fooEnabled(env);\n",
       "src/lib/switches/resolve.ts": "export const base = { ...process.env };\n",
       "src/app/bad.test.ts": "fooEnabled(process.env);\n",
-      "src/app/listed.ts": "a(process.env);\nb(process.env);\n",
+      "src/app/listed.ts": "export function f() { a(process.env); a(process.env); }\n",
       "src/app/kept.ts": "a(process.env);\n",
     });
     try {
-      const allowed = [{ path: "src/app/kept.ts", count: 1, reason: "a reason long enough to read" }];
-      const pending = [
-        { path: "src/app/listed.ts", count: 1, pr: "7d", reason: "a reason long enough to read" },
-        { path: "src/app/converted.ts", count: 1, pr: "7b", reason: "a reason long enough to read" },
+      const allowed = [{ path: "src/app/kept.ts", uses: { "<module>:argument:a": 1 }, reason: "a reason long enough to read" }];
+      const pending: { path: string; uses: Record<string, number>; pr: string; reason: string }[] = [
+        { path: "src/app/listed.ts", uses: { "f:argument:a": 1 }, pr: "7d", reason: "a reason long enough to read" },
+        { path: "src/app/converted.ts", uses: { "g:fallback": 1 }, pr: "7b", reason: "a reason long enough to read" },
       ];
       const { files, findings, drift } = await switchReadFindings(root, { allowed, pending, defaults: {} });
       expect(files).toBe(4);
       expect(findings.map((f) => `${f.path}:${f.line}`)).toEqual(["src/app/bad.ts:1"]);
-      expect(drift.map((d) => `${d.path} ${d.expected}->${d.found}`).sort()).toEqual([
-        "src/app/converted.ts 1->0",
-        "src/app/listed.ts 1->2",
+      expect(drift.map((d) => `${d.path} ${d.fingerprint} ${d.expected}->${d.found}`).sort()).toEqual([
+        "src/app/converted.ts g:fallback 1->0",
+        "src/app/listed.ts f:argument:a 1->2",
+      ]);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
+  it("reports a swap: one approved use removed and a new one added in another function, the file's total unchanged", async () => {
+    const root = tree({
+      "src/lib/swapped.ts": "export function approved(o) { return o.env; }\nexport function newcomer(o) { return fooEnabled(o.env ?? process.env); }\n",
+      "src/lib/defaults.ts": "export function kept(env = process.env) {}\nexport function added(u, env = process.env) {}\n",
+    });
+    try {
+      const pending = [{ path: "src/lib/swapped.ts", uses: { "approved:fallback:fooEnabled": 1 }, pr: "7b", reason: "a reason long enough to read" }];
+      const defaults = { "src/lib/defaults.ts": { pr: "7c", uses: { "kept:default:env": 1, "removed:default:env": 1 } } };
+      const { findings, drift } = await switchReadFindings(root, { allowed: [], pending, defaults });
+      expect(findings).toEqual([]);
+      expect(drift.map((d) => `${d.path} ${d.fingerprint} ${d.expected}->${d.found}`).sort()).toEqual([
+        "src/lib/defaults.ts added:default:env 0->1",
+        "src/lib/defaults.ts removed:default:env 1->0",
+        "src/lib/swapped.ts approved:fallback:fooEnabled 1->0",
+        "src/lib/swapped.ts newcomer:fallback:fooEnabled 0->1",
       ]);
     } finally {
       rmSync(root, { recursive: true });
@@ -138,14 +188,14 @@ describe("a fixture tree", () => {
     });
     try {
       const defaults = {
-        "src/lib/listed.ts": { count: 1, pr: "7b" },
-        "src/lib/shrunk.ts": { count: 1, pr: "7c" },
-        "src/lib/exact.ts": { count: 1, pr: "7d" },
+        "src/lib/listed.ts": { pr: "7b", uses: { "f:default:env": 1 } },
+        "src/lib/shrunk.ts": { pr: "7c", uses: { "f:default:env": 1 } },
+        "src/lib/exact.ts": { pr: "7d", uses: { "f:default:env": 1 } },
       };
       const { findings, drift } = await switchReadFindings(root, { allowed: [], pending: [], defaults });
       expect(findings).toEqual([]);
       expect(drift.map((d) => `${d.path} ${d.expected}->${d.found}`).sort()).toEqual([
-        "src/lib/listed.ts 1->2",
+        "src/lib/listed.ts 0->1",
         "src/lib/new.ts 0->1",
         "src/lib/shrunk.ts 1->0",
       ]);
