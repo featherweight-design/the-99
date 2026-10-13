@@ -1112,39 +1112,12 @@ export function SetGridView(props: SetGridViewProps) {
               aria-label={setFilterCopy.search.ariaLabel(name)}
               autoComplete="off"
               spellCheck={false}
-              trailing={
-                /* The field's own scoped clear, which the chip line deliberately does not
-                   duplicate: a query draws no chip, and at one active control there is no
-                   `Clear all filters` either — so without this the only way out of a search
-                   was to select the text and delete it. Always rendered and hidden by
-                   `visibility` rather than unmounted, so its 22px does not reflow the input
-                   as the last character goes. */
-                <button
-                  type="button"
-                  onClick={clearQuery}
-                  aria-label={setFilterCopy.search.clear}
-                  // TRIMMED, like every other reading of this value — serialisation,
-                  // matching, the result line. Typing only spaces left the grid unfiltered
-                  // under an enabled, focusable clear for a query that filtered nothing.
-                  // The DRAFT, not the applied query: the × belongs to the text in the
-                  // box, and reading the applied value left it hidden for the 150ms after
-                  // the first character — the moment a reader is most likely to reach for
-                  // it, and a control that appears late is worse than one that never does.
-                  aria-hidden={!isQueryActive(draft) || undefined}
-                  tabIndex={isQueryActive(draft) ? 0 : -1}
-                  className="flex-none rounded-full flex items-center justify-center
-                             bg-[color:var(--border)] text-[color:var(--fg-muted)]"
-                  style={{
-                    // 24px, the minimum target size. On a phone this is the only escape
-                    // when the search is the sole active control — the chip line shows no
-                    // Clear at one control — so it cannot be the smallest thing on screen.
-                    width: 24, height: 24, fontSize: 12,
-                    visibility: isQueryActive(draft) ? "visible" : "hidden",
-                  }}
-                >
-                  ×
-                </button>
-              }
+              // The field's own scoped clear, which the chip line deliberately does not duplicate: a
+              // query draws no chip, and at one active control there is no `Clear all filters` either.
+              // It reads the DRAFT (the text in the box, not the applied query), so it is there from the
+              // first character; `clearQuery` also kills the pending debounce.
+              clearLabel={setFilterCopy.search.clear}
+              onClear={clearQuery}
             />
           </div>
 

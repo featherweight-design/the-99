@@ -97,6 +97,7 @@
     "diff:claim-model": "tsx scripts/diff-claim-model.mts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",
     "probe:locks": "tsx scripts/probe-locks.ts",
+    "probe:search-clear": "node scripts/probe-search-clear.mjs",
     "probe:sets": "node scripts/probe-sets.mjs",
     "probe:folders": "tsx scripts/probe-folders.ts",
     "probe:deck-notes-actions": "tsx scripts/probe-deck-notes-actions.ts",

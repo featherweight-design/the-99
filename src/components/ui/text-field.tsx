@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { twMerge } from "tailwind-merge";
+import { searchFieldCopy } from "../../lib/copy/search-field";
 import { SearchIcon } from "./search-icon";
 
 // Shared text-entry primitives, sibling to button.tsx.
@@ -72,6 +74,15 @@ type SearchFieldProps = TextFieldProps & {
    * there would be a second vocabulary in a row that already has one.
    */
   leading?: React.ReactNode;
+  /**
+   * The field's ONE clear control. Given, a ✕ sits inside the box, always mounted and merely hidden while
+   * the field is empty, so it never reflows the input. One press clears: the press is kept from taking focus
+   * off the input (Safari blurs on a button tap, and a blur can move the ✕ out from under the finger before
+   * the click lands), then focus goes back to the field. The caller owns the value, so it owns the clear.
+   */
+  onClear?: () => void;
+  /** The ✕'s accessible name, when "Clear search" is not specific enough. */
+  clearLabel?: string;
 };
 
 /**
@@ -90,10 +101,17 @@ export function SearchField({
   containerClassName,
   leading,
   trailing,
+  onClear,
+  clearLabel = searchFieldCopy.clear,
   type = "search",
+  ref: callerRef,
   ...rest
 }: SearchFieldProps) {
   dropStyle(rest);
+  const input = useRef<HTMLInputElement | null>(null);
+  // Hidden by value, not by the caller: an uncontrolled field has no value to read and gets no ✕.
+  // Blank text (spaces only) reads as an empty box, so it earns no ✕ either.
+  const filled = typeof rest.value === "string" && rest.value.trim() !== "";
   return (
     <label
       // A styling hook only — lets a page target "this field or its own trailing
@@ -124,8 +142,32 @@ export function SearchField({
             "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
           className,
         )}
+        ref={(el) => {
+          input.current = el;
+          if (typeof callerRef === "function") callerRef(el);
+          else if (callerRef) callerRef.current = el;
+        }}
         {...rest}
       />
+      {onClear && (
+        <button
+          type="button"
+          aria-label={clearLabel}
+          // Out of the tab order and the accessibility tree while there is nothing to clear.
+          tabIndex={filled ? 0 : -1}
+          aria-hidden={filled ? undefined : true}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            onClear();
+            input.current?.focus();
+          }}
+          // `visibility` rather than unmounting, so the box is held and the input never reflows.
+          style={{ visibility: filled ? "visible" : "hidden" }}
+          className="flex h-[24px] w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[color:var(--border)] p-0 text-[12px] leading-none text-[color:var(--fg-faint)]"
+        >
+          ✕
+        </button>
+      )}
       {trailing}
     </label>
   );

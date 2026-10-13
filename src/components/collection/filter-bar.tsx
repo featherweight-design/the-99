@@ -491,28 +491,9 @@ export function FilterBar({
             placeholder={collectionChassisCopy.searchPlaceholder.compact}
             aria-label="Search your cards"
             ref={searchRef}
-            // Readiness E4: the rack's own clear button and copy key — this
-            // field had no clear control before the pinned head.
-            trailing={
-              filters.search !== "" ? (
-                <button
-                  type="button"
-                  aria-label={filterCopy.search.clear}
-                  // A tap on a <button> blurs the input in Safari, and blur shows the view well again
-                  // (globals.css), which narrows this row and moves the ✕ out from under the finger
-                  // before the click lands: the first tap only re-laid the bar out. Refusing the
-                  // mousedown keeps focus in the field, so one tap clears and the keyboard stays up.
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    onFiltersChange({ ...filters, search: "" });
-                    searchRef.current?.focus();
-                  }}
-                  className="flex h-[24px] w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[color:var(--border)] p-0 text-[12px] leading-none text-[color:var(--fg-faint)]"
-                >
-                  ✕
-                </button>
-              ) : null
-            }
+            // Readiness E4: the field's own clear, the rack's copy key.
+            clearLabel={filterCopy.search.clear}
+            onClear={() => onFiltersChange({ ...filters, search: "" })}
           />
           <div data-collection-view-well className="flex-none">
             <ViewToggle options={COLLECTION_VIEWS} value={view} onChange={onViewChange} compact />

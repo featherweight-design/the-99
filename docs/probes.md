@@ -14,6 +14,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   started, checked first with `ps -o pid=,comm= -p <pid>`.
 
 ---
+- `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
+  mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
+  held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a
+  search box). Surfaces: the commanders rack at both widths and /collection's compact field on the phone. It exists
+  because the defect it guards (Safari blurs the field on a button tap, a sibling reappears, and the ✕ moves out from
+  under the finger so the first tap does nothing) needs an engine: `text-field.test.tsx` pins the mechanism and
+  jsdom cannot press. Run against the mutation (the mousedown guard and the refocus removed) it fails five checks,
+  including the collection ✕ moving 337 to 233 px.
 - `pnpm probe:catalog-copy` proves the harness and `db:copy:combos` against TWO SCRATCH branches
   cut from staging (`PROBE_COPY_SOURCE_URL`/`_BRANCH`, `PROBE_COPY_TARGET_URL`/`_BRANCH`; it
   refuses production, staging and local-dev by id). Every refusal is a fact about what two

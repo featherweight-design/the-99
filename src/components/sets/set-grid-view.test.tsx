@@ -2015,8 +2015,8 @@ describe("SetGridView — row 2 under a query alone", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" })], []);
     const clear = screen.getByRole("button", { name: "Clear the search" });
-    expect(clear.style.width).toBe("24px");
-    expect(clear.style.height).toBe("24px");
+    expect(clear.className).toContain("h-[24px]");
+    expect(clear.className).toContain("w-[24px]");
   });
 });
 

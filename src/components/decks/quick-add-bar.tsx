@@ -210,22 +210,8 @@ export function QuickAddBar({
             setQuery(e.target.value);
           }}
           onKeyDown={handleKeyDown}
-          trailing={
-            query.length > 0 ? (
-              <button
-                type="button"
-                tabIndex={-1}
-                // Focus never leaves the field, and a pointer press on a
-                // <button> would take it without this.
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setQuery("")}
-                aria-label={addPanelCopy.quickAdd.clear}
-                className="flex-none w-[20px] h-[20px] rounded-full text-[10px] cursor-pointer bg-[color:var(--elevated)] text-[color:var(--fg-faint)] border-none"
-              >
-                ✕
-              </button>
-            ) : null
-          }
+          clearLabel={addPanelCopy.quickAdd.clear}
+          onClear={() => setQuery("")}
         />
 
         <label
