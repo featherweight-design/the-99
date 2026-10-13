@@ -651,9 +651,12 @@ describe("FitsView (Find a deck read, R2)", () => {
       readActions.pressFitsReadAction.mockReturnValue(new Promise(() => {}));
       fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
       await settle();
-      readActions.readFitsReadAction.mockReturnValue(new Promise(() => {}));
+      // Back in before the server has the run's row: the panel it answers predates the press, so the run stands.
+      readActions.readFitsReadAction.mockResolvedValue(panel());
       fireEvent.click(screen.getByRole("button", { name: "trip" }));
       fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
+      await settle();
       expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
       expect(screen.queryByTestId("read-band-offer")).toBeNull();
     });

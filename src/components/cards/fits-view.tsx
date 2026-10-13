@@ -42,6 +42,9 @@ export type FitsViewMemory = {
   /** When the read running now started, as this visit saw it: a return draws the run at once, even one this
    *  visit pressed before the server's panel knew of it. */
   runStart?: number | null;
+  /** The panel as it stood when this visit pressed: a read that still shows exactly that (no pending row
+   *  yet, the same stored read, the same failure) predates the press and confirms nothing about it. */
+  runFrom?: { stored: string | null; failedAt: string | null } | null;
   /** What the view last drew: a return (a card opened over it, then Back) draws this at once, with no
    *  entrance, and reads both again behind it, keeping it on screen until the new reads land. */
   snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null };
@@ -128,6 +131,16 @@ export function FitsView({
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);
 
+  // Read through a ref by the callbacks below, which outlive the render that made them (the poll, a press).
+  const memoryRef = useRef(memory);
+  useEffect(() => { memoryRef.current = memory; });
+  /** The panel predates this visit's press: no pending row yet, and nothing has settled since. */
+  const predatesPress = (p: FitsReadPanel) => {
+    const from = memoryRef.current.runFrom;
+    return !!from && !p.view.pending
+      && (p.view.stored?.readId ?? null) === from.stored && (p.view.failed?.at ?? null) === from.failedAt;
+  };
+
   const adopt = useCallback((p: FitsReadPanel | null) => {
     setPanel(p);
     const pending = p?.view.pending ?? null;
@@ -138,7 +151,12 @@ export function FitsView({
     let live = true;
     readFitsReadAction(card.oracleId)
       // A read that comes back empty keeps what is drawn: a return's snapshot stays rather than blanking.
-      .then((p) => { if (live && p) adopt(p); })
+      // A panel from before this visit's own press, still in flight, is drawn but does not end the run.
+      .then((p) => {
+        if (!live || !p) return;
+        if (predatesPress(p)) setPanel(p);
+        else adopt(p);
+      })
       .catch(() => {})
       .finally(() => { if (live) setPanelRead(true); });
     return () => { live = false; };
@@ -152,11 +170,11 @@ export function FitsView({
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, [running]);
-  const polling = running !== null && panel?.view.pending != null;
+  const polling = running !== null && (panel?.view.pending != null || memory.runFrom != null);
   useEffect(() => {
     if (!polling) return;
     const t = setInterval(() => {
-      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending) settle(p, null); }).catch(() => {});
+      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending && !predatesPress(p)) settle(p, null); }).catch(() => {});
     }, POLL_MS);
     return () => clearInterval(t);
     // `settle` reads only setters and the card.
@@ -168,7 +186,7 @@ export function FitsView({
     const stored = p.view.stored;
     const failed = p.view.failed !== null;
     setPressFailed(failed);
-    setMemory((m) => (m.runCount == null ? m : { ...m, runCount: null }));
+    setMemory((m) => (m.runCount == null && m.runFrom == null ? m : { ...m, runCount: null, runFrom: null }));
     // Announced only when it is drawn: a read that settled after its decks moved comes back out of date.
     if (stored && stored.readId !== before && !failed && stored.current) {
       setFresh(stored.readId);
@@ -181,7 +199,9 @@ export function FitsView({
     if (running !== null || !panel) return;
     const before = panel.view.stored?.readId ?? null;
     setRunning(Date.now());
-    setMemory((m) => ({ ...m, runCount: candidates }));
+    const from = { stored: before, failedAt: panel.view.failed?.at ?? null };
+    setMemory((m) => ({ ...m, runCount: candidates, runFrom: from }));
+    memoryRef.current = { ...memoryRef.current, runFrom: from };
     setNow(Date.now());
     setPressFailed(false);
     setAnnounced(read.announceStarted);
@@ -191,10 +211,14 @@ export function FitsView({
       pressing.current = false;
       if (!(res.ok && res.panel.view.pending) || !mounted.current) readingRef.current(false);
       if (res.ok) {
-        if (res.panel.view.pending) adopt(res.panel);
-        else settle(res.panel, before);
+        if (res.panel.view.pending) {
+          // The server has the run now: its pending row is what a return or the poll follows from here.
+          setMemory((m) => ({ ...m, runFrom: null }));
+          adopt(res.panel);
+        } else settle(res.panel, before);
         return;
       }
+      setMemory((m) => ({ ...m, runFrom: null }));
       setRunning(null);
       // A refusal costs nothing: the panel is read again so the band says why (a current read, no
       // credit, the pause) rather than a failure the reader did not have.
@@ -207,6 +231,7 @@ export function FitsView({
     } catch {
       pressing.current = false;
       readingRef.current(false);
+      setMemory((m) => ({ ...m, runFrom: null }));
       setRunning(null);
       setPressFailed(true);
       setAnnounced(read.announceFailed);

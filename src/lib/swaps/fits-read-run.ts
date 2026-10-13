@@ -34,7 +34,8 @@ export type FitsReadPanel = {
    *  page, the reader's owned copy else the catalog's (`chainArt`, as the free list's combo pieces do). */
   images: Record<string, string | null>;
   /** Each picked deck's commanders, by oracle id, so the row's commander line names cards a reader can
-   *  hover and open. A deck no longer among the inputs (it took the card) has none, and draws names only. */
+   *  hover and open: from the inputs for a candidate, and from the deck itself for one that has since taken
+   *  the card (no longer a candidate, its row kept as resolved). */
   commanderIds: Record<string, string[]>;
   allowance: Allowance;
 };
