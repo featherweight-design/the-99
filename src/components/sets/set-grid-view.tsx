@@ -1686,7 +1686,6 @@ export function SetGridView(props: SetGridViewProps) {
             cells={shownBase}
             priceFor={priceFor}
             newest={newest}
-            showPrice={effective.sort === "price"}
             siblings={siblingIds}
             setCode={code.toUpperCase()}
             onOpenCard={open}
@@ -1700,7 +1699,6 @@ export function SetGridView(props: SetGridViewProps) {
               cells={shownExtras}
               priceFor={priceFor}
               newest={newest}
-              showPrice={effective.sort === "price"}
               siblings={siblingIds}
               setCode={code.toUpperCase()}
               onOpenCard={open}
@@ -1799,7 +1797,7 @@ function OwnershipToggles({
 }
 
 function Section({
-  id, title, ratio, cells, priceFor, newest, showPrice, siblings, setCode, onOpenCard,
+  id, title, ratio, cells, priceFor, newest, siblings, setCode, onOpenCard,
 }: {
   id?: string;
   title: string;
@@ -1808,7 +1806,6 @@ function Section({
   priceFor: Map<string, PriceFact>;
   newest: Date | null;
   /** Sorted by price: owned cells draw their figure too. */
-  showPrice: boolean;
   siblings: readonly Sibling[];
   /** Uppercase, because BrowsePrinting.setCode is and the match is exact (browse.ts:398). */
   setCode: string;
@@ -1844,7 +1841,6 @@ function Section({
             cell={c}
             price={priceFor.get(c.scryfallId) ?? null}
             newestAsOf={newest}
-            showPrice={showPrice}
             // The cell IS a printing, so the modal is told which one. Uppercased because
             // BrowsePrinting.setCode is uppercase and the match is exact (browse.ts:398).
             onOpen={(oracleId) => onOpenCard(oracleId, siblings, {

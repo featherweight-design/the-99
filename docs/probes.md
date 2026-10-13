@@ -22,6 +22,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   under the finger so the first tap does nothing) needs an engine: `text-field.test.tsx` pins the mechanism and
   jsdom cannot press. Run against the mutation (the mousedown guard and the refocus removed) it fails, including
   /collection's phone ✕ moving 337 to 233 px.
+- `pnpm probe:set-owned-price` reads the cells a set page drew (the first of the reader's own sets that holds an owned
+  card, at both widths, in the default Number order) and fails when an owned cell's accessible name carries no price,
+  which is how the figure's absence shows (the name and the visible figure are built from the same read). It exists
+  because #1669 drew an owned cell's price only under Sort by cost, so on the default order the missing cells had a
+  price tag and the owned ones none (Hugh, 2026-10-13, bug batch D item 1). With the owned figure gated off again it
+  fails 14 of 14 owned cells on /collection/sets/msh at both widths.
 - `pnpm probe:catalog-copy` proves the harness and `db:copy:combos` against TWO SCRATCH branches
   cut from staging (`PROBE_COPY_SOURCE_URL`/`_BRANCH`, `PROBE_COPY_TARGET_URL`/`_BRANCH`; it
   refuses production, staging and local-dev by id). Every refusal is a fact about what two

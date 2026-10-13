@@ -38,7 +38,6 @@ export function SetCell({
   cell,
   price = null,
   newestAsOf,
-  showPrice = false,
   onOpen,
 }: {
   cell: Cell;
@@ -58,12 +57,6 @@ export function SetCell({
    * point is that the caller states it.
    */
   newestAsOf: Date | null;
-  /**
-   * The grid is sorted by price: an owned cell then shows its printing priced by `/collection`'s
-   * rule (`copiesPriceCode`: the copy's own finish, the dearest when several), as plain text
-   * rather than a tag, because the tag is a carrier of missing.
-   */
-  showPrice?: boolean;
   onOpen?: (oracleId: string) => void;
 }) {
   const num = cell.collectorNumber;
@@ -94,7 +87,10 @@ export function SetCell({
   // The base name carries the amount, and the foil/etched qualifier carries it again —
   // "$5.00 … Available in foil only, $5.00". The qualifier says both, so the base drops it.
   const foilQualified = !cell.owned && cents !== null && state === "foilOnly";
-  const ownedCode = cell.owned && showPrice ? ownedPriceCode(cell, price, newestAsOf) : undefined;
+  // An owned cell shows its printing priced by `/collection`'s rule (`copiesPriceCode`: the copy's own finish,
+  // the dearest when several), in every sort (Hugh, 2026-10-13), as plain text rather than a tag: the tag is a
+  // carrier of missing.
+  const ownedCode = cell.owned ? ownedPriceCode(cell, price, newestAsOf) : undefined;
   const ownedSpoken = priceSpoken(ownedCode);
   const label = [
     setPageCopy.cell.aria(cell.name, num, cell.owned, foilQualified ? undefined : money),
