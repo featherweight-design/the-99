@@ -21,6 +21,7 @@ const G = "0b6f2c1e-3c1a-4d55-9a3e-1f2d3c4b5a69";
 const dialect = new PgDialect();
 const log: string[] = [];
 let overrides: OverrideRow[] = [];
+let members: { userId: string; groupId: string }[] = [];
 let current: { value: string; note: string | null } | null = null;
 let groupExists = true;
 let failOn: RegExp | null = null;
@@ -32,7 +33,7 @@ const tx = {
     if (failOn?.test(text)) throw new Error("boom");
     if (text.includes("pg_advisory_xact_lock")) return { rows: [] };
     if (text.startsWith("select id from flag_groups")) return { rows: groupExists ? [{ id: G }] : [] };
-    if (text.includes("json_agg")) return { rows: [{ overrides, members: [] }] };
+    if (text.includes("json_agg")) return { rows: [{ overrides, members }] };
     if (text.startsWith("select value, note from flag_overrides")) return { rows: current ? [current] : [] };
     if (text.includes("from model_calls")) return { rows: [] };
     return { rows: [] };
@@ -61,6 +62,7 @@ beforeEach(() => {
   log.length = 0;
   order.length = 0;
   overrides = [];
+  members = [];
   current = null;
   groupExists = true;
   failOn = null;
@@ -141,6 +143,15 @@ describe("writeOverride", () => {
     log.length = 0;
     current = null;
     expect(await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", targetUserId: "u1", value: "on", confirmed: 1 }, down)).toEqual({ ok: true });
+  });
+
+  it("counts a group member the fallback list misses while Clerk is down", async () => {
+    env = { HELP_ME_CHOOSE_ENABLED: "true" };
+    members = [{ userId: "u9", groupId: G }];
+    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
+    const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null }], clerk: "down" as const }) };
+    const r = await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: G, value: "on" }, down);
+    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["u9"] } });
   });
 
   it("says nothing changed when the transaction throws, and clears no memo", async () => {

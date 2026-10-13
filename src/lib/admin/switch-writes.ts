@@ -100,8 +100,11 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
   // With Clerk down the list is the stored ids alone, so an account that never pressed is missing
   // from it. One unlisted account (no row of its own, no group) stands for every such account: a
   // write that raises model access for it is refused rather than counted short.
+  // Every account the overrides and memberships name joins it too, so a group member who never
+  // pressed is counted and confirmed, not missed.
   const ids = accounts.map((a) => a.id);
-  const rise = riseOf(before, applyWrite(before, w), clerkDown ? [...ids, UNLISTED] : ids);
+  const named = before.overrides.flatMap((o) => (o.userId ? [o.userId] : [])).concat([...before.groupOf.keys()]);
+  const rise = riseOf(before, applyWrite(before, w), clerkDown ? [...new Set([...ids, ...named]), UNLISTED] : ids);
   if (rise.accounts.includes(UNLISTED)) throw new Abort({ ok: false, error: "accounts" });
   if (rise.accounts.length > 0 && w.confirmed !== rise.accounts.length) {
     throw new Abort({ ok: false, error: "confirm", preview: await preview(tx, rise, accounts) });
