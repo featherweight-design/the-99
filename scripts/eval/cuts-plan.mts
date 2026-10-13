@@ -129,11 +129,20 @@ for (const d of want) {
   let head: Parameters<typeof loadDeckProfileFromHead>[0];
   let hughCutIds: string[];
   let addedN: number;
+  let liveSnap: { intent: string | null; locked: string[] } | undefined;
   if (d.mode === "live") {
     // The app's own head read, minus `readProposedCuts`'s `unstable_cache` (a script has no incremental cache).
-    const live = await db.transaction((tx) => readProfileHead(tx, d.id, deck.userId));
-    if (!live) throw new Error(`deck ${d.name}: the app's own head read found nothing`);
-    head = live;
+    // Head, intent and locks in one repeatable-read transaction, as `readProposedCuts` reads them, so a concurrent
+    // edit cannot produce a prompt the app could never have built.
+    const snap = await db.transaction(async (tx) => {
+      const h = await readProfileHead(tx, d.id, deck.userId);
+      if (!h) return null;
+      const [row] = await tx.select({ intent: schema.decks.intent }).from(schema.decks).where(eq(schema.decks.id, d.id));
+      return { head: h, intent: row?.intent ?? null, locked: neverCutEnabled() ? [...(await liveLockedIds(tx, d.id))] : [] };
+    }, { isolationLevel: "repeatable read" });
+    if (!snap) throw new Error(`deck ${d.name}: the app's own head read found nothing`);
+    head = snap.head;
+    liveSnap = snap;
     hughCutIds = [];
     addedN = 0;
   } else if (d.mode === "versions") {
@@ -167,8 +176,9 @@ for (const d of want) {
     };
     hughCutIds = committed.rows.filter((r) => !inDraft.has(r.oracleId)).map((r) => r.oracleId);
   }
-  const locked = neverCutEnabled() ? [...(await liveLockedIds(db, d.id))] : [];
-  const intent = deck.intent?.trim() ? deck.intent : null;
+  const locked = liveSnap ? liveSnap.locked : neverCutEnabled() ? [...(await liveLockedIds(db, d.id))] : [];
+  const rawIntent = liveSnap ? liveSnap.intent : deck.intent;
+  const intent = rawIntent?.trim() ? rawIntent : null;
   const [profile, support] = await Promise.all([loadDeckProfileFromHead(head), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
   const facts = cutFacts({ profile, locked: new Set(locked), support, declaredBracket: (head.declaredBracket ?? null) as 1 | 2 | 3 | 4 | 5 | null });
   if (facts.over === 0) throw new Error(`deck ${d.name}: the rebuilt list is not over 100`);

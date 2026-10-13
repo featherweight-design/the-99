@@ -183,7 +183,9 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // MEASURED 2026-10-10 (`pnpm eval:cuts-model --text`, dry run, five staging decks): the largest
   // request with type, mana value and card text was 15,266 input tokens, and the largest reply 4,049
   // output tokens against the 8,000 ceiling.
-  proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 },
+  // TWO calls since 2026-10-13: a press that leaves no card to cut asks once more (`runProposedCuts`), and the
+  // second ask can cost a whole call, so a reservation for one would let the pair outrun what the spend cap admitted.
+  proposed_cuts: { model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 2 },
   // Find a deck read (eval 2026-10-12, `docs/superpowers/eval/metrics-find-a-deck-read.md`): one
   // call. MEASURED 63,360 input tokens at most on the eval (21 candidates) and 4,257 output; the
   // press refuses a prompt over `FITS_READ_INPUT_CEILING`, so this prices the worst it can settle at.
