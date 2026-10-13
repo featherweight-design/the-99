@@ -256,12 +256,16 @@ export function FitsStapleNote({ name, role }: { name: string; role: string }) {
  * the read again (after a swap from the read, say), so the copies come from the server's count.
  */
 /** What a list drew last, kept by its owner so a return draws it at once (Find a deck's view, a round trip). */
-export type FitsListSnapshot = { read: FitsRead; rows: FitDeck[] };
+export type FitsListSnapshot = {
+  read: FitsRead; rows: FitDeck[];
+  /** This visit's Add stamps and the decks an add found already holding the card, so a return keeps both. */
+  added: { deckId: string; note: string }[]; heldAlready: string[];
+};
 
 export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null = null) {
   // A snapshot draws at once and is read again behind it: what is on screen stays until the new read lands.
   const [load, setLoad] = useState<Load>(() => (initial ? { state: "ready", read: initial.read } : { state: "loading" }));
-  const [added, setAdded] = useState<Added[]>([]);
+  const [added, setAdded] = useState<Added[]>(() => initial?.added ?? []);
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   // One mutation at a time across the list and anything drawn beside it (the read's rows share it).
@@ -277,7 +281,7 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
   // The rows as the picker opened: an add re-reads the counts, never the order.
   const [rows, setRows] = useState<FitDeck[] | null>(() => initial?.rows ?? null);
   // Decks an add found already holding the card: they leave the list for `already holds it`.
-  const [heldAlready, setHeldAlready] = useState<string[]>([]);
+  const [heldAlready, setHeldAlready] = useState<string[]>(() => initial?.heldAlready ?? []);
 
   // Every read of the list is numbered, and only the newest one asked lands: a slow read from before
   // a write must never replace what a later read says about the copies left or the decks holding it.
@@ -356,7 +360,7 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
     return readList();
   }, [readList]);
 
-  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, opened: rows, holds, role, retry, refresh, claim, release };
+  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, opened: rows, added, heldAlready, holds, role, retry, refresh, claim, release };
 }
 
 export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {

@@ -620,6 +620,35 @@ describe("FitsView (Find a deck read, R2)", () => {
       expect(screen.getByTestId("fits-fold")).toBeInTheDocument();
     });
 
+    it("a return keeps the fold as the reader left it", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored() }));
+      render(<Trip />);
+      await settle();
+      fireEvent.click(screen.getByTestId("fits-fold"));
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+      await settle();
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+    });
+
+    it("a pick naming a card the panel has no name for is left out, never drawn under another card's name", async () => {
+      const pick = stored().picks[0];
+      await draw(panel({}, { stored: stored({ picks: [{ ...pick, parts: [{ card: "o-gone" }, { text: " helps." }] }] }) }));
+      expect(screen.queryByTestId("read-row")).toBeNull();
+    });
+
     it("a read made this visit still reads just now on a return", async () => {
       function Trip() {
         const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });

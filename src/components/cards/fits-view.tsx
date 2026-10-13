@@ -47,7 +47,7 @@ export type FitsViewMemory = {
   runFrom?: { stored: string | null; failedAt: string | null } | null;
   /** What the view last drew: a return (a card opened over it, then Back) draws this at once, with no
    *  entrance, and reads both again behind it, keeping it on screen until the new reads land. */
-  snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null; fresh: string | null };
+  snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null; fresh: string | null; foldOpen: boolean };
 };
 
 /** How often a read in flight is asked after while the view waits on it (lock 5: one run, polled). */
@@ -100,7 +100,7 @@ export function FitsView({
   // The read this visit's press produced: its sub reads `just now` rather than a date.
   const [fresh, setFresh] = useState<string | null>(() => restored?.fresh ?? null);
   const [now, setNow] = useState(() => Date.now());
-  const [foldOpen, setFoldOpen] = useState(false);
+  const [foldOpen, setFoldOpen] = useState(() => restored?.foldOpen ?? false);
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<{ deckId: string; kind: "swap" | "add" | "undo" } | null>(null);
   const [announced, setAnnounced] = useState("");
@@ -122,11 +122,11 @@ export function FitsView({
   // What the view draws, kept for a return. Written as it changes, so the provider holds the latest.
   useEffect(() => {
     if (!panel) return;
-    const snap = list.read && list.opened ? { read: list.read, rows: list.opened } : null;
-    setMemory((m) => ({ ...m, snapshot: { panel, list: snap, fresh } }));
+    const snap = list.read && list.opened ? { read: list.read, rows: list.opened, added: list.added, heldAlready: list.heldAlready } : null;
+    setMemory((m) => ({ ...m, snapshot: { panel, list: snap, fresh, foldOpen } }));
     // `setMemory` is the provider's updater, rebuilt each render; the snapshot moves only with these.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panel, list.read, list.opened, fresh]);
+  }, [panel, list.read, list.opened, list.added, list.heldAlready, fresh, foldOpen]);
 
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);
@@ -375,7 +375,12 @@ export function FitsView({
   // resolved, whether before this visit, through the free list, or through the row's own press.
   const fitsNow = list.read ?? panel?.fits ?? null;
   const keptIds = new Set([...(fitsNow?.fits ?? []), ...(fitsNow?.holds ?? [])].map((d) => d.id));
-  const rowsShown = result?.picks.filter((p) => keptIds.has(p.deckId) || result.resolved.includes(p.deckId) || !!actOf(p.deckId)) ?? [];
+  // A pick naming a card the panel has no name for (its catalog read failed) is left out rather than drawn
+  // under another card's name, which would open the wrong card.
+  const named = (id: string) => id === card.oracleId || id in (panel?.names ?? {});
+  const nameable = (p: NonNullable<typeof result>["picks"][number]) =>
+    (p.cut === null || named(p.cut)) && p.parts.every((part) => !("card" in part) || named(part.card));
+  const rowsShown = result?.picks.filter((p) => nameable(p) && (keptIds.has(p.deckId) || result.resolved.includes(p.deckId) || !!actOf(p.deckId))) ?? [];
   const staleText = !stale ? null
     : stale.setChanged ? read.staleSet(when(stale.at))
     : stale.changed.length > 1 ? read.staleMany(stale.changed.length, when(stale.at))
