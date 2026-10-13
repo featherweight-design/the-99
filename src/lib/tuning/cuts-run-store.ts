@@ -20,7 +20,7 @@ import {
 import type { ValidationReport } from "./validate";
 
 /**
- * Proposed cuts' run writes, the same four as `run-store.ts` for the same reasons (read its header:
+ * Proposed cuts' run writes, the same three as `run-store.ts` (start, finish, persist) for the same reasons (read its header:
  * every write is guarded on `status = 'pending'`, the unit settles in the outcome's own
  * transaction, a failure refunds it). SERVER-ONLY: it imports the database.
  *
