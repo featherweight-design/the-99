@@ -2,7 +2,9 @@
  * The phone card sheet's gestures (H23 carousel R2, `design/design_handoff_the99_card_carousel`
  * README "R2: phone, card first" and STATES §R2). Two surfaces move under a finger: the card BAND
  * (y 0 to the teaser's top), whose horizontal drag pages, and the SHEET, whose vertical drag moves
- * it between its two snaps. A vertical drag on the band moves the sheet too.
+ * it between its snaps. A vertical drag on the band moves the sheet too. Three snaps since
+ * 2026-10-13 (Hugh): full, the teaser, and MIN below the teaser, where the shelf shrinks to its
+ * title row and the card grows to fill the band; a swipe down from the teaser reaches it.
  *
  * The math is pure and exported so it is tested as math; the hook below only reads pointers and
  * writes the two inline styles a drag needs, so a drag never re-renders the modal it sits in.
@@ -36,12 +38,16 @@ export const SWIPE = {
   velocityWindowMs: 100,
 } as const;
 
-/** The sheet's two snaps (README R2 "States"): full at y 64, teaser a fixed 280 tall. */
+/** The sheet's snaps (README R2 "States"): full at y 64, teaser a fixed 280 tall, and min, the
+    shelf at its title row alone (Hugh, 2026-10-13): 72 tall, the grip included. */
 export const SHEET = {
   fullTop: 64,
   teaserHeight: 280,
+  minHeight: 72,
   flickPxPerMs: 0.5,
 } as const;
+
+export type SheetSnap = "full" | "teaser" | "min";
 
 export type Axis = "x" | "y";
 export type Sample = { t: number; x: number; y: number };
@@ -95,16 +101,37 @@ export function velocity(samples: readonly Sample[], windowMs: number = SWIPE.ve
   return { vx: (last.x - first.x) / dt, vy: (last.y - first.y) / dt };
 }
 
-/** The sheet follows the finger between its two snaps and never past either. */
-export function clampSheetTop(top: number, fullTop: number, teaserTop: number): number {
-  return Math.min(Math.max(top, fullTop), teaserTop);
+/** The sheet follows the finger between its highest and lowest snaps and never past either.
+    `lowestTop` is the min snap's top where there is one, else the teaser's. */
+export function clampSheetTop(top: number, fullTop: number, lowestTop: number): number {
+  return Math.min(Math.max(top, fullTop), lowestTop);
 }
 
-/** Two snaps, nothing between (STATES h2): the flick's direction wins, else the nearer snap. */
-export function sheetSnap(top: number, vy: number, fullTop: number, teaserTop: number): "full" | "teaser" {
-  if (vy <= -SHEET.flickPxPerMs) return "full";
-  if (vy >= SHEET.flickPxPerMs) return "teaser";
-  return top - fullTop < teaserTop - top ? "full" : "teaser";
+/**
+ * Where a released sheet settles. A flick moves one snap in its direction from where the sheet
+ * was let go; otherwise the nearer snap wins. Without `minTop` there are two snaps, nothing
+ * between (STATES h2).
+ */
+export function sheetSnap(
+  top: number,
+  vy: number,
+  fullTop: number,
+  teaserTop: number,
+  minTop?: number,
+  /** The drag began at min, which moves one snap up at most: to the teaser, never past it. */
+  fromMin = false,
+): SheetSnap {
+  const snaps: [SheetSnap, number][] = fromMin ? [["teaser", teaserTop]] : [["full", fullTop], ["teaser", teaserTop]];
+  if (minTop !== undefined && minTop > teaserTop) snaps.push(["min", minTop]);
+  if (vy <= -SHEET.flickPxPerMs) {
+    const above = snaps.filter(([, t]) => t < top);
+    return (above.length ? above[above.length - 1] : snaps[0])[0];
+  }
+  if (vy >= SHEET.flickPxPerMs) {
+    const below = snaps.filter(([, t]) => t > top);
+    return (below.length ? below[0] : snaps[snaps.length - 1])[0];
+  }
+  return snaps.reduce((best, s) => (Math.abs(s[1] - top) < Math.abs(best[1] - top) ? s : best))[0];
 }
 
 type Drag = {
@@ -120,6 +147,10 @@ type Drag = {
   width: number;
   startTop: number;
   teaserTop: number;
+  /** The min snap's top, or undefined where there is none to reach. */
+  minTop: number | undefined;
+  /** The drag began at min: it reaches the teaser at most, as one from full reaches it at least. */
+  fromMin: boolean;
   bandX: number;
   sheetTop: number;
   /** A pull down the full sheet's body from its top, which the body's own scroll would take. */
@@ -131,13 +162,17 @@ export type CardSheetGestureOptions = {
   sheetRef: RefObject<HTMLElement | null>;
   /** The sheet is at its full snap. Paging is withheld there (STATES h3). */
   full: boolean;
+  /** The sheet is at its min snap: a tap on the band or the shelf returns it to the teaser. */
+  min?: boolean;
+  /** False where there is no min snap to reach (a screen too short for a teaser has none). */
+  canMinimize?: boolean;
   /** The teaser's own height, so its top is known at a drag's start. */
   teaserHeight: number;
   canPrev: boolean;
   canNext: boolean;
   /** A committed page, with the band's offset at release so the next card can enter from it. */
   onPage: (dir: "prev" | "next", offset: number) => void;
-  onSnap: (to: "full" | "teaser") => void;
+  onSnap: (to: SheetSnap) => void;
   /** The full sheet's scrolling body: a downward drag from its top returns to the teaser. */
   bodyRef?: RefObject<HTMLElement | null>;
   /** False where there is no teaser to return to (a screen too short for one). */
@@ -214,7 +249,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     drag.current = null;
     detach.current?.();
     detach.current = null;
-    const { bandRef, sheetRef, canPrev, canNext, onPage, onSnap, full } = opts.current;
+    const { bandRef, sheetRef, canPrev, canNext, onPage, onSnap, full, min = false } = opts.current;
     const band = bandRef.current;
     const sheet = sheetRef.current;
     // The release itself is a sample. Touch sends no move while a finger rests, so without it a
@@ -254,17 +289,23 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       // The release, not the last move, is where the sheet was let go.
       if (!cancelled) {
         const dy = (d.samples[d.samples.length - 1]?.y ?? d.start.y) - d.start.y;
-        d.sheetTop = clampSheetTop(d.startTop + dy, SHEET.fullTop, d.teaserTop);
+        d.sheetTop = clampSheetTop(d.startTop + dy, d.fromMin ? d.teaserTop : SHEET.fullTop, d.minTop ?? d.teaserTop);
       }
-      const to = cancelled ? (full ? "full" : "teaser") : sheetSnap(d.sheetTop, vy, SHEET.fullTop, d.teaserTop);
+      const to = cancelled
+        ? full ? "full" : opts.current.min ? "min" : "teaser"
+        : sheetSnap(d.sheetTop, vy, SHEET.fullTop, d.teaserTop, d.minTop, d.fromMin);
       sheet.style.removeProperty("--sheet-drag-top");
       delete sheet.dataset.dragging;
       onSnap(to);
       return;
     }
-    // A tap on the card in the full state returns to the teaser (README R2 "Zoom"). Not a tap on a
-    // control in the band: turning a two-faced card must not also drop the sheet.
-    if (d.axis === null && !cancelled && d.source === "band" && full && !d.onControl) onSnap("teaser");
+    // A tap on the card in the full state returns to the teaser (README R2 "Zoom"), and so does a
+    // tap on the card or the shelf at the min snap. Not a tap on a control: turning a two-faced
+    // card must not also move the sheet, and the grip's own press is its click.
+    if (d.axis === null && !cancelled && !d.onControl) {
+      if (d.source === "band" && full) onSnap("teaser");
+      else if (min) onSnap("teaser");
+    }
   }, []);
 
   const move = useCallback((e: PointerEvent) => {
@@ -310,7 +351,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     }
     const sheet = sheetRef.current;
     if (!sheet) return;
-    d.sheetTop = clampSheetTop(d.startTop + dy, SHEET.fullTop, d.teaserTop);
+    d.sheetTop = clampSheetTop(d.startTop + dy, d.fromMin ? d.teaserTop : SHEET.fullTop, d.minTop ?? d.teaserTop);
     sheet.style.setProperty("--sheet-drag-top", `${d.sheetTop}px`);
   }, []);
 
@@ -319,7 +360,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       if (drag.current || opts.current.disabled) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       if (startsAtSystemEdge(e.clientX, window.innerWidth)) return;
-      const { sheetRef, bodyRef, full, teaserHeight, canCollapse = true } = opts.current;
+      const { sheetRef, bodyRef, full, min = false, teaserHeight, canCollapse = true, canMinimize = false } = opts.current;
       // In the full state the sheet's body scrolls natively, and the grip moves the sheet. The one
       // exception is a drag DOWN from the body's top, where a scroll has nowhere to go: that pulls
       // the sheet back to the teaser, as the grip does (Hugh, 2026-10-04). Armed here only when the
@@ -336,10 +377,13 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       // `||`, not `??`: an element with no layout reports 0, which is no height to snap within.
       const height = sheet?.parentElement?.clientHeight || window.innerHeight;
       const teaserTop = height - teaserHeight;
-      const startTop = full ? SHEET.fullTop : teaserTop;
+      // Min is one step below the teaser: a drag from the full sheet stops at the teaser, as shipped.
+      const minTop = canMinimize && !full ? height - SHEET.minHeight : undefined;
+      const startTop = full ? SHEET.fullTop : min && minTop !== undefined ? minTop : teaserTop;
       drag.current = {
         pointerId: e.pointerId,
         source,
+        // The grip is a button too, so a tap on it is its own click and never also a tap here.
         onControl: e.target instanceof Element && e.target.closest("button, a") !== null,
         start: { x: e.clientX, y: e.clientY },
         samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }],
@@ -348,6 +392,8 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         width: sheet?.parentElement?.clientWidth || window.innerWidth,
         startTop,
         teaserTop,
+        minTop,
+        fromMin: min && minTop !== undefined,
         bandX: 0,
         sheetTop: startTop,
         pull,

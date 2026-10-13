@@ -759,6 +759,9 @@ export function CardDetailProvider({
   // led to enters from the spot the reader let go of rather than from its resting peek. Zero for
   // every page that was not a swipe. Set inside `load`, beside `enterFrom`, for the same reason.
   const [enterOffset, setEnterOffset] = useState(0);
+  // The phone sheet's min snap, carried from card to card while the reader pages (Hugh, 2026-10-13:
+  // paging still works there). A fresh open and a close drop it: every open starts at the teaser.
+  const [minimized, setMinimized] = useState(false);
   // The oracle id the IN-FLIGHT paging read is for, set and cleared by `load` itself (its
   // `page` argument) rather than by the handler that calls it. Two reasons it lives there and
   // not beside `setEnterFrom` in the handler: `load` resolves asynchronously, so the render
@@ -1104,6 +1107,7 @@ export function CardDetailProvider({
       openerRef.current = opts?.opener ?? null;
       // A fresh open is a new card, not a step from one: no way back to an earlier partner chain.
       trailRef.current = [];
+      setMinimized(false);
       setTrail([]);
       pendingPartner.current = null;
       // An open landing while a card drops replaces it rather than waiting for it to leave.
@@ -1125,7 +1129,7 @@ export function CardDetailProvider({
       // still the current one.
       void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false });
     },
-    [load],
+    [load, setMinimized],
   );
 
   // Fits your decks (swap tools PR 5b): the card the picker is open for, stacked over that card. The
@@ -1188,6 +1192,7 @@ export function CardDetailProvider({
     setPendingOracleId(null);
     setFailed(false);
     setDoor(false);
+    setMinimized(false);
     // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
     // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
     // nothing held (the picker's own card going) takes the picker with it.
@@ -1199,7 +1204,7 @@ export function CardDetailProvider({
     trailRef.current = [];
     setTrail([]);
     pendingPartner.current = null;
-  }, [show, setFitsFor]);
+  }, [show, setFitsFor, setMinimized]);
 
   // One step back along the live slot's partner trail: the card the partner was opened from, exactly
   // as it was. False when there is nowhere to step back to.
@@ -1669,6 +1674,10 @@ export function CardDetailProvider({
           nextSibling={nextSibling}
           enterFrom={enterFrom}
           enterOffset={enterOffset}
+          // Only a page carries the min snap (Prev, Next, a peek, a swipe): `enterFrom` is set for
+          // those alone. A step back to a partner or any other remount opens at the teaser.
+          startMinimized={minimized && enterFrom !== null}
+          onMinimizedChange={setMinimized}
         />
       ) : null}
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
@@ -1735,6 +1744,10 @@ export function CardDetailProvider({
           nextSibling={nextSibling}
           enterFrom={enterFrom}
           enterOffset={enterOffset}
+          // Only a page carries the min snap (Prev, Next, a peek, a swipe): `enterFrom` is set for
+          // those alone. A step back to a partner or any other remount opens at the teaser.
+          startMinimized={minimized && enterFrom !== null}
+          onMinimizedChange={setMinimized}
         />
       ) : null}
       {editing ? (

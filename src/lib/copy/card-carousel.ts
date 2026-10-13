@@ -39,6 +39,8 @@ export const cardSheetCopy = {
   expand: "All details",
   /** The grip, as a button toggling between the teaser and the full sheet. */
   grabberAria: (expanded: boolean) => (expanded ? "Show less" : "Show all details"),
+  /** The grip at the min snap, where a press brings the shelf back up to the teaser. */
+  grabberAriaMinimized: "Show details",
   /** The teaser's `set · number` (README R2 "Teaser"): the printing on screen, as data. */
   printing: (setCode: string, collectorNumber: string) => `${setCode.toUpperCase()} · ${collectorNumber}`,
   /**

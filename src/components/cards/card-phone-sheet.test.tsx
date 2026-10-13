@@ -381,3 +381,110 @@ describe("gestures", () => {
     expect(onNextPeek).toHaveBeenCalledTimes(1);
   });
 });
+
+// THE MIN SNAP (Hugh, 2026-10-13): a swipe down on the card from the teaser shrinks the shelf to its
+// title row and grows the card; a swipe up, or a tap on the card or the shelf, brings the teaser
+// back; paging still works there.
+describe("the sheet's min snap", () => {
+  const minimize = () => drag(screen.getByTestId("card-band"), [200, 300], [200, 760]);
+
+  it("is reached by a swipe down the card from the teaser", () => {
+    const onMinimizedChange = vi.fn();
+    mount({ onMinimizedChange });
+    minimize();
+    expect(sheet()).toHaveAttribute("data-sheet", "min");
+    expect(screen.getByTestId("card-band")).toHaveAttribute("data-snap", "min");
+    expect(onMinimizedChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it("grows the card past the teaser's 320 cap, to the band less a 16px gutter each side", () => {
+    mount();
+    const art = () => screen.getByTestId("modal-art-mobile").parentElement as HTMLElement;
+    expect(art().style.getPropertyValue("--card-w")).toContain("320px");
+    minimize();
+    expect(art().style.getPropertyValue("--card-w")).toContain("100cqw - 32px");
+    expect(art().style.getPropertyValue("--card-w")).not.toContain("320px");
+  });
+
+  it("returns to the teaser on a tap on the card", () => {
+    const onMinimizedChange = vi.fn();
+    mount({ onMinimizedChange });
+    minimize();
+    drag(screen.getByTestId("card-band"), [200, 300], [200, 302]);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+    expect(onMinimizedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("returns to the teaser on a tap on the shelf", () => {
+    mount();
+    minimize();
+    drag(sheet(), [200, 720], [200, 721]);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  // A drag far past the teaser: the finger cannot take the sheet above it from min (the flick case,
+  // which jsdom cannot time, is `sheetSnap`'s own test).
+  it("returns to the teaser on a swipe up, not past it to full", () => {
+    mount();
+    minimize();
+    drag(screen.getByTestId("card-band"), [200, 700], [200, 40]);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  it("returns to the teaser from the grip, which names what its press does", async () => {
+    mount();
+    minimize();
+    // The drag's own click is swallowed until the next task (the gesture's suppressClick); a real
+    // tap on the grip comes later than that.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const minGrip = screen.getByRole("button", { name: cardSheetCopy.grabberAriaMinimized });
+    fireEvent.click(minGrip);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  it("returns to the teaser on Escape, rather than closing", () => {
+    const { onClose } = mount();
+    minimize();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+
+  it("still pages on a horizontal swipe", () => {
+    const onNext = vi.fn();
+    mount({ position: 2, total: 3, onPrev: vi.fn(), onNext });
+    minimize();
+    drag(screen.getByTestId("card-band"), [700, 300], [250, 305]);
+    expect(onNext).toHaveBeenCalledTimes(1);
+  });
+
+  // Out of sight is not enough: the clipped teaser below the shelf must be out of reach too.
+  it("puts the teaser below the min shelf out of reach", () => {
+    mount();
+    expect(screen.getByRole("button", { name: cardSheetCopy.expand }).closest("[inert]")).toBeNull();
+    minimize();
+    expect(screen.getByText(cardSheetCopy.expand).closest("[inert]")).not.toBeNull();
+  });
+
+  // A remount that is not a page opens at the teaser and says so, so the provider stops carrying a
+  // min the reader can no longer see into the next page.
+  it("reports the snap it mounted at", () => {
+    const onMinimizedChange = vi.fn();
+    mount({ onMinimizedChange });
+    expect(onMinimizedChange).toHaveBeenCalledWith(false);
+  });
+
+  // Paging remounts the modal per card, so the provider hands the next card the snap it left.
+  it("opens at min when the card before it was left there", () => {
+    mount({ startMinimized: true });
+    expect(sheet()).toHaveAttribute("data-sheet", "min");
+  });
+
+  // A drag from the full sheet stops at the teaser, as shipped: min is one step below the teaser.
+  it("is not reached from the full sheet in one drag", () => {
+    mount();
+    fireEvent.click(grip());
+    drag(screen.getByTestId("card-band"), [200, 100], [200, 760]);
+    expect(sheet()).toHaveAttribute("data-sheet", "teaser");
+  });
+});

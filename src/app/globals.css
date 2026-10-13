@@ -1018,6 +1018,17 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .sheet-snap { transition: top 240ms cubic-bezier(0.2, 0.7, 0.2, 1); }
 .sheet-snap[data-dragging] { transition: none; }
 .band-dim { transition: opacity 240ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+/* The min snap (Hugh, 2026-10-13): the shelf shrinks to its title row and the card grows to fill
+   the band. A move to or from it is gentle, on the motion rule's beat and ease-in-out, where
+   teaser to full keeps its 240ms snap above. The card's growth rides the same tokens. */
+.sheet-snap.sheet-gentle { transition: top var(--motion-duration) var(--motion-ease) var(--motion-delay); }
+.sheet-snap.sheet-gentle[data-dragging] { transition: none; }
+.card-grow {
+  transition:
+    width var(--motion-duration) var(--motion-ease) var(--motion-delay),
+    left var(--motion-duration) var(--motion-ease) var(--motion-delay),
+    top var(--motion-duration) var(--motion-ease) var(--motion-delay);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
@@ -1071,7 +1082,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   /* The sheet snaps and the band dims in a single frame; a drag still tracks the finger, because
      direct manipulation is not animation (README R2 "Motion"). */
   .sheet-snap,
-  .band-dim { transition: none; }
+  .sheet-snap.sheet-gentle,
+  .band-dim,
+  .card-grow { transition: none; }
 
   /* Reading, still: the ring holds at full ink, and only the heading says it is reading. */
   .anim-at-wave { animation: none; opacity: 1; }

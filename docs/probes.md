@@ -2217,3 +2217,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   refuses any other host) and `PROBE_DECK_ID`, a deck the probe account owns. It writes only the probe
   account's About row, restores it, and refuses a `DATABASE_URL` reporting the production or staging
   branch. Dropping the list from the phone header's door fails it at 390 and leaves 1300 green.
+
+- `pnpm probe:card-sheet-min` proves the phone card sheet's min snap (Hugh, 2026-10-13) at 390. It opens a
+  card from the deck page's list and swipes down on the card from the teaser. The sheet must reach min
+  (the shelf 72 tall, its title in view), and the card must grow to the band's width less 16px each side
+  without leaving the band. A horizontal swipe must still page, with the next card opening at min, and a
+  tap on the card must restore the teaser and the card's teaser size. At 1300 the desktop draws no phone
+  band. `PROBE_BASE` (a local server; it refuses any other host) and `PROBE_DECK_ID`, a deck of two or
+  more cards. It writes only the probe account's About row, restores it, and refuses a `DATABASE_URL`
+  reporting the production or staging branch.

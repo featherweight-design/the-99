@@ -149,3 +149,48 @@ describe("the sheet's two snaps", () => {
     expect(sheetSnap(64 + 20, 0.49, 64, teaserTop)).toBe("full");
   });
 });
+
+// The min snap (Hugh, 2026-10-13): below the teaser, the shelf at its title row alone.
+describe("the sheet's min snap", () => {
+  const height = 844;
+  const teaserTop = height - SHEET.teaserHeight;
+  const minTop = height - SHEET.minHeight;
+
+  it("is the title row and its grip, 72 tall", () => {
+    expect(SHEET.minHeight).toBe(72);
+  });
+
+  it("lets the finger take the sheet down to it, and no further", () => {
+    expect(clampSheetTop(820, SHEET.fullTop, minTop)).toBe(minTop);
+    expect(clampSheetTop(700, SHEET.fullTop, minTop)).toBe(700);
+  });
+
+  it("settles a slow release on the nearest of the three", () => {
+    const lower = (teaserTop + minTop) / 2;
+    expect(sheetSnap(lower + 1, 0, SHEET.fullTop, teaserTop, minTop)).toBe("min");
+    expect(sheetSnap(lower - 1, 0, SHEET.fullTop, teaserTop, minTop)).toBe("teaser");
+    expect(sheetSnap(SHEET.fullTop + 10, 0, SHEET.fullTop, teaserTop, minTop)).toBe("full");
+  });
+
+  // A flick moves one snap from where the sheet was let go, never two.
+  it("flicks down from the teaser to min, and up from min to the teaser", () => {
+    expect(sheetSnap(teaserTop + 20, 0.5, SHEET.fullTop, teaserTop, minTop)).toBe("min");
+    expect(sheetSnap(minTop - 20, -0.5, SHEET.fullTop, teaserTop, minTop)).toBe("teaser");
+  });
+
+  // The mirror of full stopping at the teaser: a drag from min reaches the teaser at most, however
+  // hard or far it is flicked up (pre-open pass: at 844 tall a 220px flick passed the teaser to full).
+  it("flicks up from min to the teaser, never past it to full", () => {
+    expect(sheetSnap(teaserTop - 12, -0.9, SHEET.fullTop, teaserTop, minTop, true)).toBe("teaser");
+    expect(sheetSnap(SHEET.fullTop + 10, 0, SHEET.fullTop, teaserTop, minTop, true)).toBe("teaser");
+  });
+
+  it("flicks down from full to the teaser, not past it", () => {
+    expect(sheetSnap(SHEET.fullTop + 20, 0.5, SHEET.fullTop, teaserTop, minTop)).toBe("teaser");
+  });
+
+  it("is two snaps, as shipped, where there is no min to reach", () => {
+    expect(sheetSnap(teaserTop + 20, 0.5, SHEET.fullTop, teaserTop)).toBe("teaser");
+    expect(sheetSnap(teaserTop - 20, -0.5, SHEET.fullTop, teaserTop)).toBe("full");
+  });
+});
