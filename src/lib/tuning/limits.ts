@@ -1,4 +1,4 @@
-import { countCharacters } from "../copy/deck-tuning";
+import { countCharacters } from "../text/count-characters";
 import { deckDescriptionCopy } from "../copy/deck-description";
 
 /**

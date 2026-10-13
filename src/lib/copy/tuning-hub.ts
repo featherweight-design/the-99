@@ -5,6 +5,7 @@
 // words AI, model or LLM: tier 2 is "a deeper look". Engineering additions are marked.
 
 import { deckStatsCopy } from "./deck-stats";
+import { tuningHubShortcutsCopy } from "./tuning-hub-shortcuts";
 
 export const tuningHubCopy = {
   title: "Tuning",
@@ -57,14 +58,8 @@ export const tuningHubCopy = {
   runningWords: { suggested: "reading your deck", deeper: "looking deeper" },
   /** The tile's accessible name: tool, then its status. */
   tileLabel: (name: string, status: string) => (status ? `${name}, ${status}` : name),
-  shortcuts: {
-    proposedCuts: "Proposed cuts →",
-    balanceMana: "balance mana →",
-    balanceManaShort: "balance →",
-    /** Reworded by /copy-review: R3 retired the handoff's `{color} is short`, so the name says what
-     *  the press does and never judges a color. */
-    balanceManaAria: (have: number, target: number) => `Land, ${have} of ${target}. Open Mana Balance.`,
-  },
+  // The shortcuts live in `tuning-hub-shortcuts.ts`, which the deck spine imports without this module.
+  shortcuts: tuningHubShortcutsCopy,
   /** History (handoff `history` block, canvas C H1 to H4b). Engineering additions are marked. */
   history: {
     sub: "every run of every tool · newest first",

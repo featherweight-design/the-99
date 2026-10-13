@@ -15,7 +15,8 @@ import {
 import { creditsCopy } from "../../lib/copy/credits";
 import { numberWord } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { countCharacters } from "../../lib/text/count-characters";
 import { axisCopy } from "../../lib/copy/game-log";
 import { formatCents } from "../../lib/decks/price";
 import { isPriorResult, isPriorRun, okKeyOf, visitBaseline, type ToolBaseline } from "../../lib/decks/visit";
