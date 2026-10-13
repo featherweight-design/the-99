@@ -40,6 +40,7 @@
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:commander-art-press": "node scripts/probe-commander-art-press.mjs",
+    "probe:card-sheet-min": "node scripts/probe-card-sheet-min.mjs",
     "probe:deck-hero-wash": "node scripts/probe-deck-hero-wash.mjs",
     "probe:commander-carousel": "node scripts/probe-commander-carousel.mjs",
     "probe:tokens": "tsx scripts/probe-tokens.mts",

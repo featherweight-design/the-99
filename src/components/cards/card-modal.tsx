@@ -43,7 +43,7 @@ import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
-import { SHEET, useCardSheetGestures } from "./card-sheet-gesture";
+import { SHEET, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
 import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
@@ -636,12 +636,13 @@ const PhonePeek = React.forwardRef<
       inert={covered}
       onClick={onPress}
       aria-label={cardCarouselCopy.neighborAria(direction, sibling.name)}
-      className="absolute rounded-[11px] cursor-pointer border-0 p-0"
+      className="card-grow absolute rounded-[11px] cursor-pointer border-0 p-0"
       style={{
         left,
         // (447 - 330) / 2 at the drawn size: the gap between the two heights, halved, as a share
-        // of the card's width (88/63 x 0.2625 / 2).
-        top: "calc(64px + var(--card-w) * 0.18333)",
+        // of the card's width (88/63 x 0.2625 / 2). From the card's own top, which the min snap
+        // moves down to centre the grown card.
+        top: "calc(var(--card-top) + var(--card-w) * 0.18333)",
         width: "calc(var(--card-w) * 0.7375)",
         aspectRatio: "63/88",
         opacity: 0.5,
@@ -678,6 +679,8 @@ export function CardModal({
   nextSibling = null,
   enterFrom = null,
   enterOffset = 0,
+  startMinimized = false,
+  onMinimizedChange,
   onArtChange,
   openAtPrinting = null,
   deckId = null,
@@ -847,6 +850,11 @@ export function CardModal({
   /** Where the phone's card band stood when the swipe that led here committed, in px (0 for any
    *  other page). Captured once at construction, like `enterFrom`. */
   enterOffset?: number;
+  /** The phone's sheet opens at its min snap: the reader minimized it on the card before this one
+   *  and paged here. Captured once at construction, like `enterOffset`. */
+  startMinimized?: boolean;
+  /** Told whenever the phone's sheet reaches or leaves its min snap, so paging can carry it. */
+  onMinimizedChange?: (minimized: boolean) => void;
   /**
    * Called when the art pick is written, so a caller holding a copy of this card can
    * drop it. The write changes what the card says about itself, and a stale copy would
@@ -939,7 +947,16 @@ export function CardModal({
    * per card gives by construction, or the full details column. Set only by the phone's own
    * controls and gestures; everything else reads `sheetOpen`, which is false at desktop widths.
    */
-  const [sheetFull, setSheetFull] = useState(false);
+  const [snap, setSnapState] = useState<SheetSnap>(startMinimized ? "min" : "teaser");
+  // Whether the sheet's last move reached or left the min snap: those moves are gentle (the motion
+  // rule's beat and ease-in-out), and teaser to full keeps its shipped 240ms snap.
+  const [gentle, setGentle] = useState(false);
+  const sheetFull = snap === "full";
+  const setSnap = (next: SheetSnap) => {
+    setGentle(next === "min" || snap === "min");
+    setSnapState(next);
+    if ((next === "min") !== (snap === "min")) onMinimizedChange?.(next === "min");
+  };
 
   // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
   // (README R2 "States"), plus the stand-ins door's strip at the sheet's head where a card carries
@@ -964,6 +981,10 @@ export function CardModal({
   // must not leave the desktop's keys answering to a sheet nobody can see. And a cramped sheet
   // has no teaser to step down to, so its Escape closes.
   const sheetOpen = narrow && sheetFull && !cramped;
+  // THE MIN SNAP (Hugh, 2026-10-13): the shelf shrinks to its title row and the card grows to fill
+  // the band, much like the retired zoom. Phone width only, and never where the teaser itself is
+  // not offered.
+  const min = narrow && snap === "min" && !cramped;
   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
   // 240ms rise reverses it rather than snapping the card to the top first (#1268). The rise class
   // stays on, still running, and this animation, being script-made, composites over it.
@@ -1380,9 +1401,10 @@ export function CardModal({
       view.onBack();
       return;
     }
-    // The phone's sheet (README R2 "Escape": full, then teaser, then close).
-    if (sheetOpen) {
-      setSheetFull(false);
+    // The phone's sheet (README R2 "Escape": full, then teaser, then close). The min snap steps
+    // up to the teaser too, as a tap on it does.
+    if (sheetOpen || min) {
+      setSnap("teaser");
       return;
     }
     // In the phone's teaser the printing region is out of sight with the rest of the full
@@ -1402,7 +1424,8 @@ export function CardModal({
         return;
       }
     }
-  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, zoomed, view]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `setSnap` reads `snap`, which `min` and `sheetOpen` track
+  }, [closeZoom, locked, expanded, narrow, onClose, sheetOpen, min, zoomed, view]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape, { initialFocusRef, returnFocusRef });
@@ -1412,11 +1435,13 @@ export function CardModal({
     bandRef,
     sheetRef,
     full,
+    min,
+    canMinimize: !cramped,
     teaserHeight,
     canPrev: onPrev !== null && !viewOpen,
     canNext: onNext !== null && !viewOpen,
     onPage: (dir, offset) => (dir === "next" ? onNext?.(offset) : onPrev?.(offset)),
-    onSnap: (to) => setSheetFull(to === "full"),
+    onSnap: setSnap,
     bodyRef: sheetBodyRef,
     // Every card that has a teaser, stacked or not: since stacked sheets R1 a card opened from a sheet
     // draws at the unstacked geometry, so the old stacked exception (a squeezed card, grip-only) left
@@ -2050,14 +2075,24 @@ export function CardModal({
           inert={zoomed || viewOpen}
           data-testid="card-band"
           onPointerDown={narrow ? gestures.onBandPointerDown : undefined}
+          data-snap={min ? "min" : full ? "full" : "teaser"}
           className="md:hidden band-dim absolute inset-x-0 top-0 z-[1] touch-none [container-type:size]"
-          style={{ height: `calc(100% - ${teaserHeight}px)`, opacity: full ? 0.35 : 1 }}
+          style={{ height: `calc(100% - ${min ? SHEET.minHeight : teaserHeight}px)`, opacity: full ? 0.35 : 1 }}
         >
           <div
             className="absolute inset-0"
             // Card width = min(320px, (100dvh - 85px - 280px) x 0.7159) (README R2 "Sizing"): 85 is
-            // the 64 above the card and 21 below it, and the band already ends at the teaser.
-            style={{ "--card-w": "min(320px, calc((100cqh - 85px) * 0.7159))" } as React.CSSProperties}
+            // the 64 above the card and 21 below it, and the band already ends at the teaser. At the
+            // min snap the band runs to the shelf and the 320 cap lifts to the band's width less a
+            // 16px gutter each side (Hugh, 2026-10-13).
+            style={{
+              "--card-w": min
+                ? "min(calc(100cqw - 32px), calc((100cqh - 85px) * 0.7159))"
+                : "min(320px, calc((100cqh - 85px) * 0.7159))",
+              // At the min snap the grown card sits in the middle of the band, never above y 64.
+              // The peeks read it too, so they stay level with the card.
+              "--card-top": min ? "max(64px, calc((100cqh - var(--card-w) * 88 / 63) / 2))" : "64px",
+            } as React.CSSProperties}
           >
             {narrow && prevSibling && onPrevPeek ? (
               <PhonePeek ref={prevPhonePeekRef} sibling={prevSibling} direction="previous" onPress={onPrevPeek} covered={full} />
@@ -2068,9 +2103,9 @@ export function CardModal({
               // cannot see. The band itself stays live for the tap that returns to the teaser.
               inert={full}
               data-testid="modal-art-mobile"
-              className={"absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
+              className={"card-grow absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
               style={{
-                top: 64,
+                top: "var(--card-top)",
                 left: "calc(50% - var(--card-w) / 2)",
                 width: "var(--card-w)",
                 aspectRatio: "63/88",
@@ -2267,7 +2302,7 @@ export function CardModal({
           ref={sheetRef}
           inert={zoomed || viewOpen}
           data-testid="card-sheet"
-          data-sheet={full ? "full" : "teaser"}
+          data-sheet={min ? "min" : full ? "full" : "teaser"}
           // The phone's alone: on the desktop this column is a column, and a drag-select in its
           // text must stay a drag-select.
           onPointerDown={narrow ? gestures.onSheetPointerDown : undefined}
@@ -2277,12 +2312,17 @@ export function CardModal({
             + " max-md:rounded-t-[18px] max-md:border-t max-md:border-[color:var(--border-strong)] max-md:bg-[color:var(--surface-rail)]"
             + " max-md:shadow-[0_-14px_34px_rgba(0,0,0,0.45)]"
             + " sheet-snap"
+            + (gentle ? " sheet-gentle" : "")
             // The teaser does not scroll, so a vertical drag anywhere on it is the sheet's; it fills
             // to the 34px home inset. The full sheet's body scrolls; its grip drags it, and so does
             // a pull down from the body's top, where a scroll has nowhere to go.
             + (full ? "" : " max-md:touch-none max-md:pb-[34px]")
           }
-          style={{ "--sheet-top": full ? `${SHEET.fullTop}px` : `calc(100% - ${teaserHeight}px)` } as React.CSSProperties}
+          style={{
+            "--sheet-top": full
+              ? `${SHEET.fullTop}px`
+              : `calc(100% - ${min ? SHEET.minHeight : teaserHeight}px)`,
+          } as React.CSSProperties}
         >
           {/* THE GRIP (plan PR 3, engineering call 2026-10-03): a native button, so Enter and
               Space work and a reader who cannot drag has the toggle `All details` gives. Its
@@ -2292,8 +2332,9 @@ export function CardModal({
               ref={gripRef}
               type="button"
               data-sheet-grip=""
-              onClick={() => setSheetFull((f) => !f)}
-              aria-label={cardSheetCopy.grabberAria(sheetFull)}
+              // At the min snap the grip is the shelf's way back up, as a tap anywhere on it is.
+              onClick={() => setSnap(min ? "teaser" : sheetFull ? "teaser" : "full")}
+              aria-label={min ? cardSheetCopy.grabberAriaMinimized : cardSheetCopy.grabberAria(sheetFull)}
               // The ring draws INSIDE the grip: the sheet clips everything outside its own box, so
               // the default 2px offset left a reader one stray line under the grip.
               className="md:hidden flex h-[22px] w-full flex-none cursor-grab touch-none items-center justify-center rounded-t-[18px] border-0 bg-transparent p-0 focus-visible:-outline-offset-2"
@@ -2303,7 +2344,8 @@ export function CardModal({
           )}
           {/* The stand-ins door (swap tools), which sat under the retired art header: at the
               sheet's head, at both snaps, with the teaser grown by its 44px to hold it. */}
-          {doorStrip !== null ? <div ref={doorRef} className="md:hidden flex-none">{doorStrip}</div> : null}
+          {/* Not at the min snap, whose shelf is the title row alone. */}
+          {doorStrip !== null ? <div ref={doorRef} className={(min ? "hidden" : "md:hidden") + " flex-none"}>{doorStrip}</div> : null}
           {/* Desktop close button — §Desktop: Close Button. Over a sheet that names itself it
               becomes the way back to that sheet, in the same slot and on the same plate. */}
           {back ? (
@@ -2463,7 +2505,7 @@ export function CardModal({
                     <div className="-mx-[20px] grid min-h-[44px] flex-none grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] border-t border-[color:var(--border)]">
                       <button
                         type="button"
-                        onClick={() => setSheetFull(true)}
+                        onClick={() => setSnap("full")}
                         className="flex cursor-pointer items-center justify-center gap-[8px] border-0 border-r border-r-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                       >
                         {cardSheetCopy.expand}
@@ -2475,7 +2517,7 @@ export function CardModal({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setSheetFull(true)}
+                    onClick={() => setSnap("full")}
                     className="-mx-[20px] mt-auto flex min-h-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] border-t border-[color:var(--border)] bg-transparent p-0 text-[13.5px] text-[color:var(--fg-body)] focus-visible:-outline-offset-2"
                   >
                     {cardSheetCopy.expand}
