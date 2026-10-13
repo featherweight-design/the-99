@@ -1006,7 +1006,7 @@ export const deckGameAxes = pgTable("deck_game_axes", {
  * reached through `game_id`, and go with the game by cascade.
  *
  * A seat is a friend (`friend_user_id`, with their display name SNAPSHOT in `friend_name_then`), a friend's
- * deck (`friend_deck_id`, whose name and commanders are snapshot too), or anyone at all: a commander from
+ * deck (`friend_deck_id`, whose name and commanders are snapshotted too), or anyone at all: a commander from
  * the catalog and an optional `label` the player typed. The snapshot is what every read draws, so the
  * record stays true after the friend renames, rebuilds or deletes the deck, unfriends, or deletes their
  * account; the live links only group seats, are never sent to a client, and go null when the friend's

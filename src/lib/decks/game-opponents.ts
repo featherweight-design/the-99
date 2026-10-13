@@ -2,7 +2,7 @@
  * Opponents in the game log (social scope §4, Feature C; Hugh's ruling Q15): the read the history row and
  * the matchup panel draw from. The write path (`logGame`'s shape check, the catalog check and the seats
  * written in the game's transaction) lands beside it in the next PR; a friend's facts are resolved and
- * snapshot in `src/lib/social/`, the one place a friend's rows are read. Everything here is the owner's own.
+ * snapshotted in `src/lib/social/`, the one place a friend's rows are read. Everything here is the owner's own.
  *
  * Every read draws the SNAPSHOT (the friend's name and the deck's name and commanders as they were when the
  * game was logged), never a friend's live rows, so this read has no cross-user cache dependency. The live
