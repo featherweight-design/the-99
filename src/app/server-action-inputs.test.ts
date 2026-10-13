@@ -16,10 +16,13 @@ function sources(dir: string): string[] {
   });
 }
 
-/** Each exported function's name and parameter list, read up to the parameters' closing paren. */
+/**
+ * Each exported function's name and parameter list, read up to the parameters' closing paren: a
+ * function declaration, or a function expression or arrow bound to an exported `const`.
+ */
 function exportedParams(src: string): { name: string; params: string }[] {
   const out: { name: string; params: string }[] = [];
-  const re = /^export\s+(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\(/gm;
+  const re = /^export\s+(?:(?:async\s+)?function\s+(\w+)|const\s+(\w+)\s*(?::[^=]+)?=\s*(?:async\s+)?(?:function\s*\w*)?)\s*(?:<[^>]*>)?\s*\(/gm;
   for (let m = re.exec(src); m; m = re.exec(src)) {
     let depth = 1;
     let i = re.lastIndex;
@@ -27,7 +30,7 @@ function exportedParams(src: string): { name: string; params: string }[] {
       if (src[i] === "(") depth++;
       else if (src[i] === ")") depth--;
     }
-    out.push({ name: m[1], params: src.slice(re.lastIndex, i - 1) });
+    out.push({ name: m[1] ?? m[2], params: src.slice(re.lastIndex, i - 1) });
   }
   return out;
 }
@@ -40,8 +43,16 @@ function trustedInputs(params: string): string[] {
 
 describe("a Server Action never takes the reader's identity or switches as an argument", () => {
   it("finds them in a parameter and in an options field, across lines", () => {
-    const src = `export async function a(\n  userId: string,\n  o: { env?: NodeJS.ProcessEnv },\n) {}\nexport function b(x: string) {}`;
-    expect(exportedParams(src).map((f) => [f.name, trustedInputs(f.params)])).toEqual([["a", ["userId", "env"]], ["b", []]]);
+    const src = [
+      "export async function a(\n  userId: string,\n  o: { env?: NodeJS.ProcessEnv },\n) {}",
+      "export function b(x: string) {}",
+      "export const c = async (env: NodeJS.ProcessEnv) => env;",
+      "export const d = (deckId: string, userId: string) => deckId + userId;",
+      "export const e = async function (o: { userId: string }) { return o; };",
+    ].join("\n");
+    expect(exportedParams(src).map((f) => [f.name, trustedInputs(f.params)])).toEqual([
+      ["a", ["userId", "env"]], ["b", []], ["c", ["env"]], ["d", ["userId"]], ["e", ["userId"]],
+    ]);
   });
 
   it("holds across every \"use server\" module", () => {
