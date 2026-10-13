@@ -88,19 +88,24 @@ describe("perfRead", () => {
     expect(log).not.toHaveBeenCalled();
   });
 
-  it("logs the label, the milliseconds and the pool's idle and open connections before the read", async () => {
+  it("logs the label, the milliseconds and the connections the pool opened while the read ran", async () => {
     vi.stubEnv("PERF_TIMING", "1");
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    (globalThis as { __the99Pool?: unknown }).__the99Pool = { idleCount: 0, totalCount: 0 };
-    expect(await perfRead("shell.collectionStats", async () => 5)).toBe(5);
+    const { EventEmitter } = await import("node:events");
+    const pool = new EventEmitter();
+    (globalThis as { __the99Pool?: unknown }).__the99Pool = pool;
+    pool.emit("connect"); // before the read: not counted
+    expect(await perfRead("shell.collectionStats", async () => { pool.emit("connect"); return 5; })).toBe(5);
+    pool.emit("connect"); // after it settled: not counted
     expect(log).toHaveBeenCalledTimes(1);
-    expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read shell\.collectionStats=\d+ pool=0\/0$/);
+    expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read shell\.collectionStats=\d+ opened=1$/);
+    expect(pool.listenerCount("connect")).toBe(0);
   });
 
   it("logs a failed read too, and still rejects", async () => {
     vi.stubEnv("PERF_TIMING", "1");
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     await expect(perfRead("x", async () => { throw new Error("down"); })).rejects.toThrow("down");
-    expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read x=\d+ pool=none$/);
+    expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read x=\d+ opened=none$/);
   });
 });
