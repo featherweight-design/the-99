@@ -762,6 +762,20 @@ async function one(browser, state, width, routes, sql) {
     for (const route of [...routes.filter((r) => r.path !== "/"), routes.find((r) => r.path === "/")].filter(Boolean)) {
       // Armed first, then stamped by the push itself.
       const path = route.path.split("?")[0];
+      // A push to the page already showing would stamp that page's own content in the next frame and
+      // read ~0ms with nothing navigated, which is every revisit when one route is measured. Leave it
+      // first, untimed.
+      if ((await page.evaluate(() => location.pathname)) === path) {
+        const away = path === "/" ? "/decks" : "/";
+        await page.evaluate(NAV_PROBE, { path: away, at: null });
+        const awayEpoch = await page.evaluate((u) => {
+          window.__nav.at = performance.now();
+          window.next.router.push(u);
+          return performance.timeOrigin + window.__nav.at;
+        }, away);
+        await navDrew(page, away, awayEpoch);
+        await page.waitForLoadState("networkidle").catch(() => {});
+      }
       await page.evaluate(NAV_PROBE, { path, at: null });
       const pressedEpoch = await page.evaluate((u) => {
         window.__nav.at = performance.now();
