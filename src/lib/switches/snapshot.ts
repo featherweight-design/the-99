@@ -1,5 +1,4 @@
-import { db } from "../../db";
-import { flagGroupMembers, flagOverrides } from "../../db/schema";
+import { neon } from "@neondatabase/serverless";
 import { isSwitchName } from "./registry";
 import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
 
@@ -18,25 +17,33 @@ export const SNAPSHOT_TTL_MS = 30_000;
 
 let memo: { at: number; snapshot: Promise<SwitchSnapshot | null>; settled: boolean } | null = null;
 
+/**
+ * Both tables in ONE statement, so one snapshot: an admin moving an account between groups and
+ * changing an override commits both at once, and two separate reads could pair one's old rows with
+ * the other's new ones, a combination that never existed, and hold it for the whole window. One
+ * statement is one snapshot without a transaction, and over Neon's HTTP driver it is one HTTPS round
+ * trip: the proxy pays it on every memo miss, and the transaction it replaced (begin, two selects and
+ * commit over the websocket pool) measured 153ms at p50 and 174ms at p95 on staging (2026-10-13).
+ * `snapshot.test.ts` pins this shape.
+ */
+export const SNAPSHOT_SQL = `select
+  coalesce((select json_agg(json_build_object(
+    'switchName', o."switch", 'scope', o.scope, 'groupId', o.group_id, 'userId', o.user_id, 'value', o.value
+  )) from flag_overrides o), '[]'::json) as overrides,
+  coalesce((select json_agg(json_build_object(
+    'userId', m.user_id, 'groupId', m.group_id
+  )) from flag_group_members m), '[]'::json) as members`;
+
+let http: ReturnType<typeof neon> | null = null;
+
 async function readSnapshot(): Promise<SwitchSnapshot | null> {
   try {
-    // One snapshot of both tables: an admin moving an account between groups and changing an
-    // override commits both at once, and two separate reads could pair one's old rows with the
-    // other's new ones, a combination that never existed, and hold it for the whole window.
-    const [rows, members] = await db.transaction((tx) => Promise.all([
-      tx.select({
-        switchName: flagOverrides.switchName,
-        scope: flagOverrides.scope,
-        groupId: flagOverrides.groupId,
-        userId: flagOverrides.userId,
-        value: flagOverrides.value,
-      }).from(flagOverrides),
-      tx.select({ userId: flagGroupMembers.userId, groupId: flagGroupMembers.groupId }).from(flagGroupMembers),
-    // Repeatable read alone: no `accessMode: "read only"`, which leaks through the pooled Neon
-    // connection to the next transaction (`READ_SNAPSHOT`, `src/lib/decks/draft-state.ts`).
-    ]), { isolationLevel: "repeatable read" });
-    const overrides = rows.filter((r) => isSwitchName(r.switchName)) as OverrideRow[];
-    return { overrides, groupOf: new Map(members.map((m) => [m.userId, m.groupId])) };
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL is not set");
+    http ??= neon(url);
+    const [row] = (await http.query(SNAPSHOT_SQL)) as { overrides: OverrideRow[]; members: { userId: string; groupId: string }[] }[];
+    const overrides = row.overrides.filter((r) => isSwitchName(r.switchName));
+    return { overrides, groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
   } catch (error) {
     // not a fallback: a cached page keys on the switches this resolves to, so a page drawn from the
     // environment alone is stored under the environment's bits and is true for them.

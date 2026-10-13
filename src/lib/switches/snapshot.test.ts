@@ -1,36 +1,34 @@
 // The overrides are read once per 30 seconds per instance, and a failed read is never held.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const reads = vi.hoisted(() => ({ n: 0, fail: false, rows: [] as unknown[], members: [] as unknown[] }));
-const select = () => ({
-  from: (table: unknown) => {
-    reads.n++;
-    if (reads.fail) return Promise.reject(new Error("down"));
-    return Promise.resolve(String((table as { [k: symbol]: unknown })[Symbol.for("drizzle:Name")]) === "flag_group_members" ? reads.members : reads.rows);
-  },
-});
-const transactions = vi.hoisted(() => [] as unknown[]);
-vi.mock("../../db", () => ({
-  db: {
-    // Only a transaction's view can read: both tables come from one snapshot.
-    transaction: (fn: (tx: unknown) => unknown, options: unknown) => (transactions.push(options), fn({ select })),
-  },
+// The HTTP driver's query function: every call is one statement, and `reads.n` counts them.
+const reads = vi.hoisted(() => ({ n: 0, fail: false, rows: [] as unknown[], members: [] as unknown[], texts: [] as string[] }));
+vi.mock("@neondatabase/serverless", () => ({
+  neon: () => ({
+    query: (text: string) => {
+      reads.n++;
+      reads.texts.push(text);
+      if (reads.fail) return Promise.reject(new Error("down"));
+      return Promise.resolve([{ overrides: reads.rows, members: reads.members }]);
+    },
+  }),
 }));
+process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
-const { clearSwitchSnapshot, resolveSwitchEnv, switchSnapshot, switchSnapshotState, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const { clearSwitchSnapshot, resolveSwitchEnv, switchSnapshot, switchSnapshotState, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
     clearSwitchSnapshot();
-    Object.assign(reads, { n: 0, fail: false, rows: [], members: [] });
+    Object.assign(reads, { n: 0, fail: false, rows: [], members: [], texts: [] });
   });
 
   it("reads once and serves the window from memory", async () => {
     await switchSnapshot(1_000);
     await switchSnapshot(1_000 + SNAPSHOT_TTL_MS - 1);
-    expect(reads.n).toBe(2); // the overrides and the memberships, once
+    expect(reads.n).toBe(1); // the overrides and the memberships, in one statement, once
     await switchSnapshot(1_000 + SNAPSHOT_TTL_MS);
-    expect(reads.n).toBe(4);
+    expect(reads.n).toBe(2);
   });
 
   it("reports a read as a miss, pending while another's is in flight, and a hit once settled", async () => {
@@ -43,18 +41,29 @@ describe("switchSnapshot", () => {
     expect(switchSnapshotState(1_000 + SNAPSHOT_TTL_MS)).toBe("miss");
   });
 
-  it("reads both tables from one repeatable-read snapshot", async () => {
-    transactions.length = 0;
+  // Two reads could pair one table's old rows with the other's new ones, a combination that never
+  // existed (an account moved between groups as its override changed). One statement is one snapshot.
+  it("reads both tables in ONE statement, so one snapshot", async () => {
     await switchSnapshot(1_000);
-    expect(transactions).toEqual([{ isolationLevel: "repeatable read" }]);
-    expect(reads.n).toBe(2);
+    expect(reads.texts).toEqual([SNAPSHOT_SQL]);
+    expect(SNAPSHOT_SQL).toMatch(/\bfrom flag_overrides\b/);
+    expect(SNAPSHOT_SQL).toMatch(/\bfrom flag_group_members\b/);
+    expect(SNAPSHOT_SQL.trim().toLowerCase().startsWith("select")).toBe(true);
+    expect(SNAPSHOT_SQL).not.toContain(";");
+  });
+
+  it("hands the resolver the rows in the shape it reads", async () => {
+    reads.rows = [{ switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: "g1", userId: null, value: "on" }];
+    reads.members = [{ userId: "u1", groupId: "g1" }];
+    const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
+    expect(env.DECK_NOTES_ENABLED).toBe("true");
   });
 
   it("reads again at once after an admin write clears it", async () => {
     await switchSnapshot(1_000);
     clearSwitchSnapshot();
     await switchSnapshot(1_001);
-    expect(reads.n).toBe(4);
+    expect(reads.n).toBe(2);
   });
 
   it("serves the environment alone when the read fails, and asks again next time", async () => {
@@ -64,7 +73,7 @@ describe("switchSnapshot", () => {
     await Promise.resolve();
     reads.fail = false;
     await switchSnapshot(1_001);
-    expect(reads.n).toBe(4);
+    expect(reads.n).toBe(2);
   });
 
   it("drops a row naming a switch this build does not know", async () => {
