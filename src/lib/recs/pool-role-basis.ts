@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { readLabelRoleSets } from "../labels/read";
 import { roleSetFingerprint } from "../labels/role-sets";
 import type { RoleBasis } from "../profile/build";
@@ -65,4 +66,35 @@ export async function loadPoolRoleBasis(
     console.warn("loadPoolRoleBasis: no labels — the ranked list counts by the classifier", err);
     return FELL_BACK;
   }
+}
+
+/**
+ * One label read per REQUEST (labels-everywhere follow-up, orchestrator 2026-10-13). A commander page asks
+ * for the ranked list, the free ranking and the detail score, each of which read the labels on its own, so a
+ * read that failed for one and not for another served a classifier ranking beside label figures on one page.
+ * The three share the first read's PROMISE, success or fallback, so they agree with each other.
+ *
+ * Keyed on the user, the reader's resolved basis switch and how many distinct cards were asked about: every
+ * caller passes the user's whole collection, so the count is the cheap stand-in for the set (a collection
+ * that changed between two reads of one render is not a case this has to survive). React's `cache` gives
+ * each render its own map and, outside a render (a script, a server action, `after()`), none: each call then
+ * reads for itself, exactly as before. Callers with a different pool (`suggestions-read`'s available cards)
+ * keep calling `loadPoolRoleBasis`.
+ */
+const sharedBasisMemo = cache(() => new Map<string, Promise<PoolRoleBasis>>());
+
+export function loadSharedPoolRoleBasis(
+  userId: string,
+  cards: readonly { oracleId: string }[],
+  enabled: boolean,
+  read?: typeof readLabelRoleSets,
+  memo: Map<string, Promise<PoolRoleBasis>> = sharedBasisMemo(),
+): Promise<PoolRoleBasis> {
+  const key = `${userId}|${enabled ? "labels" : "classifier"}|${new Set(cards.map((c) => c.oracleId)).size}`;
+  let started = memo.get(key);
+  if (!started) {
+    started = loadPoolRoleBasis(cards, enabled, read);
+    memo.set(key, started);
+  }
+  return started;
 }

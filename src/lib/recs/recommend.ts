@@ -8,7 +8,7 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
-import { loadPoolRoleBasis, type LabelCheck } from "./pool-role-basis";
+import { loadSharedPoolRoleBasis, type LabelCheck } from "./pool-role-basis";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import type { ProfileRoleTargets } from "../profile/types";
 import type { RoleBasis } from "../profile/build";
@@ -295,7 +295,7 @@ export async function recommendCommanders(
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
   // The labels are read first: the targets follow the basis they come back under.
-  const { basis, roleSets, fellBack, labelCheck } = await loadPoolRoleBasis(collection, labelRoleCountsEnabled(env));
+  const { basis, roleSets, fellBack, labelCheck } = await loadSharedPoolRoleBasis(userId, collection, labelRoleCountsEnabled(env));
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
@@ -390,7 +390,7 @@ export async function scoreOneCommander(
   if (!commander) return null;
 
   // The collection's labels, whichever pool is scored: a free pool is a subset of it.
-  const { basis, roleSets } = await loadPoolRoleBasis(collection, labelRoleCountsEnabled(env));
+  const { basis, roleSets } = await loadSharedPoolRoleBasis(userId, collection, labelRoleCountsEnabled(env));
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache([oracleId]),
     loadSupportLists([oracleId]),
