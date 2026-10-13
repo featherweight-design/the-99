@@ -41,13 +41,13 @@ export function OverridePicker({
   const [announced, setAnnounced] = useState(false);
   // A saved or cancelled pending row hands focus back to the Add button it came from.
   const addRef = useRef<HTMLButtonElement>(null);
-  const [refocus, setRefocus] = useState(false);
+  const refocus = useRef(false);
   useEffect(() => {
-    if (refocus && !picked) {
+    if (refocus.current && !picked) {
+      refocus.current = false;
       addRef.current?.focus();
-      setRefocus(false);
     }
-  }, [refocus, picked]);
+  }, [picked]);
   const q = query.trim().toLocaleLowerCase("en-US");
   const found = choices.filter((c) => q === "" || c.search.includes(q) || c.id.toLocaleLowerCase("en-US").startsWith(q)).slice(0, MAX_RESULTS);
   const context: Omit<ConfirmContext, "op"> = { switchLabel: label, scope: kind, groupName: kind === "group" ? (picked?.label ?? null) : null };
@@ -70,12 +70,12 @@ export function OverridePicker({
             setPicked(null);
             setOpen(false);
             setQuery("");
-            setRefocus(true);
+            refocus.current = true;
           }}
           onCleared={() => {
             setPicked(null);
             setOpen(false);
-            setRefocus(true);
+            refocus.current = true;
           }}
         />
       </div>
