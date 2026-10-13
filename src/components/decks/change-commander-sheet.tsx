@@ -186,6 +186,8 @@ function Loading({ pair }: { pair: boolean }) {
       >
         {copy.sheet.loading}
       </p>
+      {/* The rows breathe together (`anim-skeleton`), over their own stepped opacity. */}
+      <div className="anim-skeleton flex flex-col">
       {[1, 0.8, 0.6, 0.4].map((opacity) => (
         <div
           key={opacity}
@@ -201,6 +203,7 @@ function Loading({ pair }: { pair: boolean }) {
           <span className="flex-none rounded-[8px]" style={{ width: 76, height: 36, border: "1px solid var(--border)" }} />
         </div>
       ))}
+      </div>
     </div>
   );
 }

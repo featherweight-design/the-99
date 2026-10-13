@@ -236,7 +236,8 @@ export function HeldResults({ total, by }: { total: number; by?: string }) {
 }
 
 /**
- * Searching (5c): the order line's heading and five still rows. No shimmer (STATES invariant).
+ * Searching (5c): the order line's heading and five skeleton rows. They breathe (`anim-skeleton`;
+ * Hugh, 2026-10-12, superseding the STATES invariant that held them still): opacity alone, no shimmer.
  * `by` names what orders the results; the route's loading screen has no labels to name it with
  * (they come from the database), so it passes none and the line arrives with the page.
  */
@@ -249,7 +250,7 @@ export function ResultsSkeleton({ by }: { by?: string }) {
           <p className="m-0 text-[12.5px] md:text-[13px] leading-[1.55] [text-wrap:pretty] text-[color:var(--fg-muted)]">{copy.results.loadingSub(by)}</p>
         )}
       </div>
-      <ol aria-hidden className="m-0 p-0 list-none flex flex-col gap-[10px]">
+      <ol aria-hidden className="anim-skeleton m-0 p-0 list-none flex flex-col gap-[10px]">
         {SKELETON_NAME.map((w, i) => (
           <li
             key={w}

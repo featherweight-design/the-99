@@ -155,3 +155,13 @@ describe("the bar grow", () => {
     }
   });
 });
+
+// Every loading skeleton breathes (Hugh, 2026-10-12) on opacity alone, so it costs no layout or paint.
+describe("the skeleton breathe", () => {
+  it("animates opacity and nothing else, gently, looping on the in-out curve", () => {
+    const frames = css.match(/@keyframes skeleton-breathe \{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const properties = [...frames.matchAll(/([\w-]+)\s*:/g)].map((m) => m[1]);
+    expect(properties).toEqual(["opacity"]);
+    expect(css).toContain(".anim-skeleton { animation: skeleton-breathe 1.4s ease-in-out infinite; }");
+  });
+});
