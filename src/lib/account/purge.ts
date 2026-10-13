@@ -38,7 +38,7 @@ export const PURGE_ORDER = [
   "decks", "deck_folders",
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
   "owned_support_counts", "owned_support_stamps",
-  "wishlist_items",
+  "wishlist_items", "rate_hits",
   "model_calls",
   "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
