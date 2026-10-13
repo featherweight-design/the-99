@@ -247,7 +247,7 @@ export async function readTuningState(
         lt(deckSuggestionRuns.createdAt, reapCutoff(now)),
       ))
       .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
+    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
   });
 
   const runOf = suggestedRunsOfDeck(deckId);

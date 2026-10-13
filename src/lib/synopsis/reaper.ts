@@ -30,6 +30,6 @@ export async function reapSynopses(tx: Tx, deckId: string, now: Date = new Date(
       lt(deckSynopses.createdAt, reapCutoff(now)),
     ))
     .returning({ callId: deckSynopses.modelCallId });
-  for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
+  for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
   return reaped.length;
 }

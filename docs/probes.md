@@ -2129,3 +2129,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (`markEveryEntrySeen`). Mutation-checked 2026-10-12: putting the hover back on a deck tile fails "no tile previews",
   and dropping the siblings from the token rows fails "Next is offered" at both widths. The contact sheet
   (`docs/superpowers/inventories/hover-rows.json`, `HOVER_ROWS_DECK`) photographs the same surfaces at rest.
+
+- `pnpm probe:intake-settle` settles a Help me choose read by every path it can end by, for real, and reads the two
+  records back: `ok` (call spent, no reason), `failed`, `nothing_valid`, `late_success` (a read that answered `ok` after
+  its reservation went stale: the read stays `ok`, the call is refunded with that reason, and the loud
+  `[intake] read ... settled ok but its call ... was refunded` log fires) and `reaped` (the reaper's `interrupted`), each
+  with `intake_reads.settled_at` set; and that the table refuses a reason outside the four and a reason on a call that
+  was not refunded. Built after two staging reads on 2026-10-12 ended `ok` with their credit `refunded` and nothing
+  recorded why. `PROBE_TARGET_URL` names the database and is required; the probe refuses the production and staging
+  branches, writes only rows under a per-run `user_id` and deletes them in a `finally`, so `local-dev` is fine.
+  Mutation-checked 2026-10-13: dropping `"reaped"` from the intake reaper, the loud log, or the `late_success` write each
+  fails exactly its own check.

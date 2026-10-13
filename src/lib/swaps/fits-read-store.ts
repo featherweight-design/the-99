@@ -144,7 +144,7 @@ export async function reapFitsReads(userId: string, oracleId: string, now = new 
       .set({ status: "failed", errorClass: "interrupted", refunded: true, finishedAt: now })
       .where(and(eq(fitsReads.userId, userId), eq(fitsReads.oracleId, oracleId), eq(fitsReads.status, "pending"), lt(fitsReads.createdAt, cutoff)))
       .returning({ callId: fitsReads.modelCallId });
-    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
+    for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
     return reaped.length;
   });
 }

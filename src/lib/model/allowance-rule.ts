@@ -63,6 +63,13 @@ export function counts(row: LedgerRow, now: Date): boolean {
   return false;
 }
 
+/**
+ * Why a call was refunded, as `model_calls.refund_reason` stores it: the call failed, it answered
+ * with nothing valid, a success came back after its reservation had gone stale (and is not charged,
+ * `settleModelCall`), or the reaper took it as abandoned.
+ */
+export type RefundReason = "failed" | "nothing_valid" | "late_success" | "reaped";
+
 export type ModelFeature = "tuning" | "synopsis" | "intake" | "proposed_cuts" | "fits_read";
 
 export type Allowance = {

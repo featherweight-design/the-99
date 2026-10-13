@@ -2223,10 +2223,15 @@ export const modelCalls = pgTable("model_calls", {
   cacheWriteTokens: integer("cache_write_tokens"),
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
+  refundReason: text("refund_reason"),
 }, (t) => [
   check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
+  // WHY a call was refunded, and only a refunded call has a reason. Written by `settleModelCall`; null
+  // on every row from before it, and on a refund whose caller did not name one.
+  check("model_calls_refund_reason_check", sql`${t.refundReason} is null or ${t.refundReason} in ('failed', 'nothing_valid', 'late_success', 'reaped')`),
+  check("model_calls_refund_reason_status_check", sql`${t.refundReason} is null or ${t.status} = 'refunded'`),
   // The allowance's only query: this player's calls inside the window.
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
   // The admin's month reads, which filter on the month alone.
@@ -2420,6 +2425,9 @@ export const intakeReads = pgTable("intake_reads", {
    * is settled, however it settled: an outcome or the reaper (or, before 2026-10-12, a Stop).
    */
   phase: text("phase"),
+  /** When the read stopped being pending, by any path (an outcome, or the reaper). Null while pending and
+   *  on a row from before it. Its difference from `created_at` is how long the read ran. */
+  settledAt: timestamp("settled_at"),
   /** The read's settled answer (F9e): the picks and their reasons. Null on a row from the retired
    *  one-call read, whose answer is `chips`. */
   result: jsonb("result"),

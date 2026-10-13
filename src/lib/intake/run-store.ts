@@ -6,6 +6,7 @@ import { db } from "../../db";
 import { intakeReads } from "../../db/schema";
 import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
+import type { RefundReason } from "../model/allowance-rule";
 import type { ModelErrorClass } from "../model/client";
 import { INTAKE_REAPER_CUTOFF_MS } from "./limits";
 import type { TheReadResult } from "./the-read";
@@ -216,14 +217,14 @@ export function reapCutoff(now: Date): Date {
  */
 export async function reapReads(tx: Tx, userId: string, now: Date = new Date()): Promise<number> {
   const reaped = await tx.update(intakeReads)
-    .set({ status: "failed", errorClass: "interrupted", phase: null })
+    .set({ status: "failed", errorClass: "interrupted", phase: null, settledAt: now })
     .where(and(
       eq(intakeReads.userId, userId),
       eq(intakeReads.status, "pending"),
       lt(intakeReads.createdAt, reapCutoff(now)),
     ))
     .returning({ callId: intakeReads.modelCallId });
-  for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now);
+  for (const r of reaped) await settleModelCall(tx, r.callId, "refunded", undefined, now, "reaped");
   return reaped.length;
 }
 
@@ -301,12 +302,16 @@ export async function settleTheRead(
 ): Promise<boolean> {
   const useful = outcome.kind === "read" && outcome.result.picks.length > 0;
   const hash = opts.rehash ? { wordsHash: opts.rehash } : {};
+  const settledAt = new Date();
   const set = outcome.kind === "failed"
-    ? { status: "failed", errorClass: outcome.errorClass, phase: null }
+    ? { status: "failed", errorClass: outcome.errorClass, phase: null, settledAt }
     : useful
-      ? { status: "ok", result: outcome.result, phase: null, ...hash }
-      : { status: "failed", errorClass: "nothing_valid" as const, result: outcome.result, phase: null, ...hash };
-  return db.transaction(async (tx) => {
+      ? { status: "ok", result: outcome.result, phase: null, settledAt, ...hash }
+      : { status: "failed", errorClass: "nothing_valid" as const, result: outcome.result, phase: null, settledAt, ...hash };
+  // Why the call is refunded when the read did not spend it. A read that produced a pick asks for a charge
+  // and names no reason: if the ledger refuses (a late success), `settleModelCall` names that one itself.
+  const reason: RefundReason = outcome.kind === "failed" ? "failed" : "nothing_valid";
+  const { settled, charged } = await db.transaction(async (tx) => {
     await lockAsks(tx, userId);
     const rows = await tx.update(intakeReads)
       .set(set)
@@ -315,11 +320,17 @@ export async function settleTheRead(
     const bill = billed.length > 0 ? billed : undefined;
     if (rows.length === 0) {
       if (bill) await recordModelUsage(tx, callId, bill);
-      return false;
+      return { settled: false, charged: null };
     }
-    await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", bill);
-    return true;
+    const charged = await settleModelCall(tx, rows[0].callId, useful ? "spent" : "refunded", bill, new Date(), reason);
+    return { settled: true, charged };
   });
+  // A read that ended ok whose credit was refunded is the case the ledger once left unexplained (two
+  // staging reads, 2026-10-12): loud, with both ids, so it is found the first time it happens.
+  if (settled && useful && charged === "refunded") {
+    console.error(`[intake] read ${readId} settled ok but its call ${callId} was refunded (late_success: the reservation was stale)`);
+  }
+  return settled;
 }
 
 /** The constraint a Postgres error names, wherever the driver put it (the walk `sqlstate` takes). */

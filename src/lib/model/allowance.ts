@@ -12,6 +12,7 @@ import {
   type LedgerRow,
   type ModelFeature,
 } from "./allowance-rule";
+import type { RefundReason } from "./allowance-rule";
 import type { ModelUsage } from "./client";
 import { costMicroUsd, featureWorstCaseMicroUsd, FEATURE_CALLS } from "./prices";
 import { reportSpendThreshold } from "./spend-alerts";
@@ -242,6 +243,11 @@ export async function reserveModelCall(
  * costs the player nothing. Decided in the same statement as the move, so no read can go stale
  * between the check and the write, and against the same clock `reserveModelCall` stamped the
  * row with.
+ *
+ * WHY A CALL WAS REFUNDED is written beside the status: a late success names itself
+ * (`late_success`), and every other refund carries the `reason` its caller names, or none. Returns
+ * the status the row ended on, or null when it was no longer `reserved` and nothing moved, so a
+ * caller that expected a charge can notice it was refunded.
  */
 export async function settleModelCall(
   tx: Tx,
@@ -255,13 +261,20 @@ export async function settleModelCall(
    */
   billed: Billed | readonly Billed[] | undefined,
   now: Date = new Date(),
-): Promise<void> {
+  reason?: RefundReason,
+): Promise<"spent" | "refunded" | null> {
   const live = gt(modelCalls.createdAt, new Date(now.getTime() - RESERVATION_TTL_MS));
-  await tx
+  const [row] = await tx
     .update(modelCalls)
-    .set({ status: to === "spent" ? sql`case when ${live} then 'spent' else 'refunded' end` : "refunded" })
-    .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")));
+    .set(
+      to === "spent"
+        ? { status: sql`case when ${live} then 'spent' else 'refunded' end`, refundReason: sql`case when ${live} then null else 'late_success' end` }
+        : { status: "refunded", refundReason: reason ?? null },
+    )
+    .where(and(eq(modelCalls.id, callId), eq(modelCalls.status, "reserved")))
+    .returning({ status: modelCalls.status });
   if (billed) await recordModelUsage(tx, callId, billed, now);
+  return row ? (row.status as "spent" | "refunded") : null;
 }
 
 /**
