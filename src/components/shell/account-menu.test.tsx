@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
 import { Report } from "./pending-report";
@@ -341,6 +341,23 @@ describe("AccountMenu items", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
     expect(screen.queryByRole("menu")).toBeNull();
     expect(redirectToUserProfile).toHaveBeenCalledOnce();
+  });
+
+  it("from the phone sheet, leaves the sheet's history entry alone so the redirect is not cancelled", async () => {
+    // Earlier tests' sheets release their own entries a task after unmounting; let them settle first.
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    const back = vi.spyOn(window.history, "back");
+    try {
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      // The sheet releases its entry one task after it unmounts.
+      await act(async () => new Promise((r) => setTimeout(r, 20)));
+      expect(redirectToUserProfile).toHaveBeenCalledOnce();
+      expect(back).not.toHaveBeenCalled();
+    } finally {
+      back.mockRestore();
+    }
   });
 
   it("disables both buttons once sign-out is in flight", () => {

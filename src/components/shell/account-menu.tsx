@@ -417,6 +417,9 @@ export function AccountMenu({
   // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
   // prebuilt UI, so the press navigates away. The menu closes first all the same.
   function onManage() {
+    // A navigation like `go`'s: without the mark, the sheet's release steps back off its history
+    // entry while Clerk's page is loading, and that Back cancels it.
+    leaveDialogsForNavigation();
     close();
     void clerk.redirectToUserProfile();
   }
