@@ -99,17 +99,19 @@ const ringOf = (page, hostSelector) =>
       const ring = getComputedStyle(el, "::before");
       const glow = getComputedStyle(el, "::after");
       const r = el.getBoundingClientRect();
-      // The nearest ancestors that clip: an axis with overflow other than `visible` cuts the glow at its edge.
+      // Whatever clips the glow, the host itself first: its own `overflow` cuts everything outside its padding
+      // box, the glow and the ring's outer pixel with it. Then each ancestor: any axis with overflow other than
+      // `visible` (hidden, clip, auto or scroll) cuts at its edge, so the card must sit 3px inside it.
       const clipped = [];
+      const name = (a) => `${a.tagName.toLowerCase()}${a.getAttribute("data-testid") ? `[${a.getAttribute("data-testid")}]` : ""}`;
+      const own = getComputedStyle(el);
+      if (own.overflowX !== "visible" || own.overflowY !== "visible") clipped.push(`${name(el)} (the host itself)`);
       for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
         const cs = getComputedStyle(a);
         const ar = a.getBoundingClientRect();
         const x = cs.overflowX !== "visible";
-        // A scrolling ancestor clips the vertical axis too, but a scroller's own edge is the viewport's, not the card's.
-        const y = cs.overflowY === "hidden" || cs.overflowY === "clip";
-        if ((x && (r.left - ar.left < GLOW || ar.right - r.right < GLOW)) || (y && (r.top - ar.top < GLOW || ar.bottom - r.bottom < GLOW))) {
-          clipped.push(`${a.tagName.toLowerCase()}${a.getAttribute("data-testid") ? `[${a.getAttribute("data-testid")}]` : ""}`);
-        }
+        const y = cs.overflowY !== "visible";
+        if ((x && (r.left - ar.left < GLOW || ar.right - r.right < GLOW)) || (y && (r.top - ar.top < GLOW || ar.bottom - r.bottom < GLOW))) clipped.push(name(a));
       }
       const start = parseFloat(el.style.getPropertyValue("--ai-sweep-start"));
       return {

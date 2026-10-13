@@ -940,7 +940,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    THE START: the lap starts at the host's top-RIGHT corner, whose angle from the top is atan2(width, height)
    for its own aspect. CSS cannot read an auto-height card's height without size containment, so the host
    reports it as `--ai-sweep-start` (`useAiSweepRef`) and 45deg, the square's, stands until it has measured.
-   The head leads: it sits at the end of the gradient, so at the start it is AT the corner.
+   The head leads: its hot stop is 1deg short of the gradient's end (359 of 360), so at the start it sits on the corner
+   to within a degree.
 
    CLIPPING: no host may clip its glow. `overflow: hidden` on the host or an ancestor within 3px of it cuts the
    glow off at that edge (`probe:ai-sweep` checks). Reduced motion, and an engine without `@property` (the
@@ -971,10 +972,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
       from var(--ai-sweep-from),
       color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 0deg,
       color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 328deg,
-      var(--accent) 345deg,
-      var(--accent-hover) 357deg,
-      transparent 358.2deg,
-      color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 360deg
+      var(--accent) 346deg,
+      var(--accent-hover) 359deg,
+      transparent 360deg
     );
   }
   .ai-sweep::after {
@@ -988,9 +988,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
       from var(--ai-sweep-from),
       transparent 0deg,
       transparent 328deg,
-      color-mix(in srgb, var(--accent) 70%, transparent) 345deg,
-      var(--accent-hover) 357deg,
-      transparent 358.6deg,
+      color-mix(in srgb, var(--accent) 70%, transparent) 346deg,
+      var(--accent-hover) 359deg,
       transparent 360deg
     );
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
