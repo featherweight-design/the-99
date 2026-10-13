@@ -1354,6 +1354,8 @@ export async function commitDeckVersion(
 ): Promise<CommitResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
+  // The printing each card showed is recorded only with the reader's printings switch on.
+  const env = await requestSwitchEnv(userId);
   // A Server Action's arguments arrive over the wire, so the declared type is a
   // claim about the caller rather than a guarantee: anything at all can be posted
   // here. An absent note is legitimate, a non-string one is not, and refusing it
@@ -1508,7 +1510,7 @@ export async function commitDeckVersion(
     // deliberate commit. Correctness of the one column the version exists to freeze is worth
     // that on the rare path that reaches it.
     const snapshot = await commitSnapshotFor(deckId, userId);
-    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
+    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot, env);
     // The list this version froze, for the pin below, read back from the VERSION'S OWN ROWS:
     // `commitVersion` snapshots `deck_cards` itself, and a card inserted after the `draft` read
     // above (a new row has nothing to lock) would be in the version and absent from `draft`.
@@ -1623,7 +1625,7 @@ export async function getVersionDiff(
     .where(and(eq(deckVersions.deckId, deckId), lt(deckVersions.number, asked.number)))
     .orderBy(desc(deckVersions.number))
     .limit(1);
-  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId);
+  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId, null, env);
   // A v1 has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
   // from the precon and never from a version. An unlinked one answers two empty lists.
   const origin = preconsEnabled(env) ? await readDeckOrigin(userId, deckId) : null;
@@ -1631,7 +1633,7 @@ export async function getVersionDiff(
     cards: origin.cards,
     nonBasic: origin.nonBasic,
     commanders: [asked.commanderOracleId, ...(asked.partnerOracleId ? [asked.partnerOracleId] : [])],
-  });
+  }, env);
 }
 
 /**
@@ -1911,7 +1913,7 @@ export async function pullCardFromDeck(
   // reader is about to be shown. A failed read still reports the pull: the card
   // has moved, and losing the sentence about it is not worth undoing that.
   try {
-    const state = await loadDraftState(askingDeckId, userId);
+    const state = await loadDraftState(askingDeckId, userId, env);
     // `claimsKnown` false is the loader's degraded answer, and it reports
     // `buyCount: 0` in that state — an honest zero for a figure it could not
     // compute, not a finished shopping list. Quoting it here would tell the

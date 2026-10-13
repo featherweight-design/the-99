@@ -139,7 +139,7 @@ describe("readManaHelpFor (the action)", () => {
     const help = await readManaHelpFor(DECK, "G");
     expect(help?.staples.map((s) => s.imageUri)).toEqual(["fra-399", "catalog-unowned"]);
     // The deck's own chain: its pick first, then the player's owned printing.
-    expect(state.artCalls.at(-1)).toEqual(["user_1", DECK, ["farmland", "unowned"]]);
+    expect(state.artCalls.at(-1)).toEqual(["user_1", DECK, ["farmland", "unowned"], process.env]);
     state.staples = [];
     state.art = new Map();
   });

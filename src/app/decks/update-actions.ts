@@ -219,7 +219,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   const locked = neverCutEnabled(env) && plan.out.length > 0
     ? await lockedOracleIds(input.deckId, userId, "throw")
     : new Set<string>();
-  const printingPicks = await readModalPicks(userId, input.deckId);
+  const printingPicks = await readModalPicks(userId, input.deckId, env);
 
   return {
     ok: true,

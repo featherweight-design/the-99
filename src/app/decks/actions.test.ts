@@ -1425,7 +1425,7 @@ describe("commitDeckVersion", () => {
     vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
     await commitDeckVersion(DECK_ID, null);
     expect(commitVersion).toHaveBeenCalledWith(
-      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] },
+      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] }, process.env,
     );
   });
 
@@ -1462,7 +1462,7 @@ describe("commitDeckVersion", () => {
     });
     await commitDeckVersion(DECK_ID, null);
     expect(cachedDeckProfile).not.toHaveBeenCalled();
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, process.env);
   });
 
   // A Server Action's arguments are wire input, so the signature is a claim about
@@ -1479,7 +1479,7 @@ describe("commitDeckVersion", () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, process.env);
   });
 
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
@@ -1643,7 +1643,7 @@ describe("commitDeckVersion", () => {
     await commitDeckVersion(DECK_ID, "   ");
     // The third argument is the caller's transaction: the diff behind the
     // receipt and the snapshot it describes are read under one lock.
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, process.env);
   });
 });
 
@@ -1904,7 +1904,7 @@ describe("getVersionDiff", () => {
     );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, null, process.env]);
   });
 
   // A v1 has nothing before it, and the diff loader is told so explicitly rather
@@ -1912,7 +1912,7 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null, process.env]);
   });
 
   // Precons R3 K10: a linked deck's v1 diffs against v0, read from the precon and never a version.
@@ -1928,7 +1928,7 @@ describe("getVersionDiff", () => {
       await getVersionDiff(DECK_ID, VERSION_ID);
       expect(readDeckOrigin).toHaveBeenCalledWith(USER_ID, DECK_ID);
       expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([
-        VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] },
+        VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] }, process.env,
       ]);
     } finally {
       vi.unstubAllEnvs();
@@ -2257,7 +2257,7 @@ describe("pullCardFromDeck", () => {
     expect(result).toEqual({ ok: true, buy: 7, total: "$241.00" });
     // After the revalidation, so the figures describe the world the reader is
     // about to be shown rather than the one the pull replaced.
-    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID);
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID, process.env);
   });
 
   // The card has already moved by then. Failing the pull over the sentence

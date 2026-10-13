@@ -53,5 +53,5 @@ export async function readChangeCandidates(deckId: string): Promise<ChangeCandid
   const env = await requestSwitchEnv(userId);
   if (!changeCommanderEnabled(env)) return null;
   if (!isUuid(deckId)) return null;
-  return loadChangeCandidates(deckId, userId);
+  return loadChangeCandidates(deckId, userId, env);
 }

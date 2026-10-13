@@ -22,7 +22,7 @@ import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
-import { roleBasisFromEnv } from "./label-counts-flag";
+import { labelRoleCountsEnabled, roleBasisFromEnv } from "./label-counts-flag";
 import { loadPoolRoleBasis } from "../recs/pool-role-basis";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 import { SHELF_CAP } from "./shelf-cap";
@@ -162,8 +162,10 @@ export async function resolveSuggestionBasis(
   partner: { oracleId: string; colorIdentity?: string[] | null } | null,
   hasPartner: boolean,
   available: readonly { oracleId: string }[],
+  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ mix: RecommendedMix; roleSets: Awaited<ReturnType<typeof loadPoolRoleBasis>>["roleSets"] }> {
-  const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available);
+  const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available, labelRoleCountsEnabled(env));
   let mix = recommendedMix(null, hasPartner, roleBasis);
   try {
     const { skeleton } = await loadSkeletonForCommanders(
@@ -172,7 +174,7 @@ export async function resolveSuggestionBasis(
       [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
       undefined,
       // The strip counts by label when the switch is on, so its targets are the label ones. The
-      // switch is per deployment and the deployment is in this payload's cache key.
+      // switch is per reader, and the deck page puts the reader's resolved switches in this payload's cache key.
       { roleBasis },
     );
     mix = recommendedMix(skeleton, hasPartner, roleBasis);
@@ -186,11 +188,16 @@ export async function resolveSuggestionBasis(
     empty map says "we asked and these cards have no figure"; null says "we could
     not ask". The Shopping rows print an absence for the first and nothing at all
     for the second — an outage is not a fact about any one card. */
-export async function loadDeckSuggestions(deckId: string, userId: string): Promise<DeckSuggestionsPayload> {
+export async function loadDeckSuggestions(
+  deckId: string,
+  userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`). A caller that caches this payload keys it on them. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<DeckSuggestionsPayload> {
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) {
-    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false, roleBasisFromEnv()) };
+    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false, roleBasisFromEnv(env)) };
   }
 
   // The partner is a second commander for every purpose below: the pool it
@@ -254,7 +261,7 @@ export async function loadDeckSuggestions(deckId: string, userId: string): Promi
   // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
   // its tiles quote them; two sources would disagree by construction on any commander whose
   // measured ramp is not ten.
-  const { mix, roleSets } = await resolveSuggestionBasis(commander, partner ?? null, hasPartner, available);
+  const { mix, roleSets } = await resolveSuggestionBasis(commander, partner ?? null, hasPartner, available, env);
 
   const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix, roleSets });
 

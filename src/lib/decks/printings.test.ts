@@ -303,4 +303,19 @@ describe("readModalPicks", () => {
     state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
     expect(await readModalPicks("u", DECK)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
   });
+
+  // Admin PR 6b: the reader's resolved switches decide, not the environment alone. The environment has
+  // the switch off and the reader's override turns it on, so a read deciding from the environment would
+  // answer null and read nothing.
+  it("follows the reader's resolved env over the environment", async () => {
+    vi.stubEnv("DECK_PRINTINGS_ENABLED", "false");
+    try {
+      state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
+      const env = { ...process.env, DECK_PRINTINGS_ENABLED: "true" };
+      expect(await readModalPicks("u", DECK, env)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
+      expect(await readModalPicks("u", DECK)).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

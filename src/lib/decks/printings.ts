@@ -246,8 +246,10 @@ export async function resolveDeckOwnedPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
+  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<Map<string, DeckPrinting>> {
-  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(), ownedOnly: true });
+  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(env), ownedOnly: true });
   return ownedOnly(printings);
 }
 
@@ -256,8 +258,9 @@ export async function readDeckOwnedPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<Map<string, DeckPrinting>> {
-  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(), ownedOnly: true });
+  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(env), ownedOnly: true });
   return ownedOnly(printings);
 }
 
@@ -274,12 +277,13 @@ function ownedOnly(printings: Map<string, DeckPrinting>): Map<string, DeckPrinti
 export async function resolveCommanderPrintingsByDeck(
   userId: string,
   rows: { deckId: string; commanderOracleId: string }[],
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<Map<string, DeckPrinting>> {
   const out = new Map<string, DeckPrinting>();
   if (rows.length === 0) return out;
   try {
     const [picks, collectionRows] = await Promise.all([
-      deckPrintingsEnabled()
+      deckPrintingsEnabled(env)
         ? readDeckPicks(userId, rows.map((r) => r.deckId))
         : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
       selectCollectionRows(userId, [...new Set(rows.map((r) => r.commanderOracleId))]),
@@ -391,9 +395,13 @@ export function recordedColumns(
  * so no figure prices a printing the art no longer shows. Fail-soft to no picks, which is
  * today's figure on every row.
  */
-export async function readHeldPricePicks(userId: string, deckIds: string[]): Promise<PricePick[]> {
+export async function readHeldPricePicks(
+  userId: string,
+  deckIds: string[],
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<PricePick[]> {
   const ids = [...new Set(deckIds)];
-  if (!deckPrintingsEnabled() || ids.length === 0) return [];
+  if (!deckPrintingsEnabled(env) || ids.length === 0) return [];
   try {
     const { rows } = await db.execute<{
       deck_id: string; oracle_id: string; set_code: string; collector_number: string;
@@ -437,9 +445,10 @@ export async function readHeldPricePicks(userId: string, deckIds: string[]): Pro
 export async function readModalPicks(
   userId: string,
   deckId: string,
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<Record<string, { setCode: string; collectorNumber: string }> | null> {
-  if (!deckPrintingsEnabled()) return null;
-  const picks = await readHeldPricePicks(userId, [deckId]);
+  if (!deckPrintingsEnabled(env)) return null;
+  const picks = await readHeldPricePicks(userId, [deckId], env);
   return Object.fromEntries(picks.map((p) => [
     p.oracleId,
     // `BrowsePrinting.setCode` is uppercased for display; a pick is stored lowercase.

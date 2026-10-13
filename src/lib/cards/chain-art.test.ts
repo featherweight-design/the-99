@@ -39,7 +39,7 @@ describe("chainArt", () => {
     calls.deck = new Map([["a", { imageUri: "deck-pick.jpg" }]]);
     calls.owned = new Map([["a", { imageUri: "owned.jpg" }]]);
     expect(await chainArt("u", "d", ["a"])).toEqual(new Map([["a", "deck-pick.jpg"]]));
-    expect(calls.deckArgs).toEqual(["u", "d", ["a"]]);
+    expect(calls.deckArgs).toEqual(["u", "d", ["a"], process.env]);
     expect(calls.ownedArgs).toBeUndefined();
     expect(await chainArt("u", null, ["a"])).toEqual(new Map([["a", "owned.jpg"]]));
     expect(calls.ownedArgs).toEqual(["u", ["a"]]);
@@ -49,7 +49,7 @@ describe("chainArt", () => {
     calls.deck = new Map([["a", { imageUri: "a.jpg" }], ["b", { imageUri: null }]]);
     const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"]);
     expect([...got]).toEqual([["a", "a.jpg"]]);
-    expect(calls.deckArgs).toEqual(["u", "d", ["a", "b", "c"]]);
+    expect(calls.deckArgs).toEqual(["u", "d", ["a", "b", "c"], process.env]);
   });
 
   // A card nothing above resolves is one the reader does not own: it opens on the printing card details open an

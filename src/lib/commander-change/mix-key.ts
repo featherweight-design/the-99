@@ -12,8 +12,8 @@ import { changeCommanderEnabled } from "./flag";
 
 /** Extra key parts: the live commander and partner ids, or nothing with the switch off. Plain
  *  strings, in the deck's own column order, so the key serializes the same way every time. */
-export async function commanderKeyParts(deckId: string): Promise<string[]> {
-  if (!changeCommanderEnabled()) return [];
+export async function commanderKeyParts(deckId: string, env: NodeJS.ProcessEnv = process.env): Promise<string[]> {
+  if (!changeCommanderEnabled(env)) return [];
   const [deck] = await db.select({ c: decks.commanderOracleId, p: decks.partnerOracleId })
     .from(decks).where(eq(decks.id, deckId));
   return deck ? [deck.c, deck.p ?? "-"] : [];

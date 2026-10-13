@@ -32,6 +32,8 @@ const members = (p: CommanderPair) =>
 
 export async function loadCommanderRows(
   userId: string, deckId: string, from: CommanderPair, to: CommanderPair, versionBody: ReadonlySet<string>,
+  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<CommanderRows> {
   const fromIds = members(from);
   const toIds = members(to);
@@ -43,7 +45,7 @@ export async function loadCommanderRows(
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, toIds))),
     // The crop of the copy the reader owns, the one the card details draw (Hugh, 2026-10-05), with
     // the deck's own printing pick first. Fail-soft: a failed read keeps the oracle-level crop.
-    resolveDeckOwnedPrintings(userId, deckId, ids),
+    resolveDeckOwnedPrintings(userId, deckId, ids, env),
   ]);
   const facts = rawFacts.map((f) => ({
     ...f,

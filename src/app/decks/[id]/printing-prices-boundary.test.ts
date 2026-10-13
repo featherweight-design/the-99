@@ -37,7 +37,7 @@ describe("the deck page's prices", () => {
     expect(read).toBeDefined();
     expect(more).toHaveLength(0);
     expect(read.arguments).toHaveLength(2);
-    expect(read.arguments[1].getText(src)).toBe("await readHeldPricePicks(userId, [id])");
+    expect(read.arguments[1].getText(src)).toBe("await readHeldPricePicks(userId, [id], env)");
   });
 
   it("prices each row and both commanders through priceFor, for this deck", () => {

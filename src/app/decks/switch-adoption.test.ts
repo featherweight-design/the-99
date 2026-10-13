@@ -111,3 +111,37 @@ describe("no Server Action, route handler, page or layout reads a switch from th
     expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);
   });
 });
+
+// Admin PR 6b: the deck page, its review route and the readers they start decide every switch from the
+// reader's resolved env. A bare `fooEnabled()` in one of them reads the environment alone.
+const DECK_PAGE_FILES = [
+  "src/app/decks/[id]/page.tsx",
+  "src/app/decks/[id]/changes/page.tsx",
+  "src/app/decks/[id]/import/page.tsx",
+  "src/lib/decks/read.ts",
+  "src/lib/decks/printings.ts",
+  "src/lib/decks/draft-state.ts",
+  "src/lib/decks/versions.ts",
+  "src/lib/decks/suggestions-read.ts",
+  "src/lib/decks/shopping-rollup.ts",
+  "src/lib/commander-change/mix-key.ts",
+  "src/lib/commander-change/draft-rows.ts",
+  "src/lib/commander-change/candidates.ts",
+  "src/lib/cards/chain-art.ts",
+];
+
+describe("the deck page and its readers read no switch from the environment alone", () => {
+  it("names no bare `fooEnabled()` or `roleBasisFromEnv()` call in them", async () => {
+    const { readFileSync } = await import("node:fs");
+    const bare = DECK_PAGE_FILES.flatMap((path) => {
+      const code = readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+      return [...code.matchAll(/\b(\w+Enabled|roleBasisFromEnv)\(\s*\)/g)].map((m) => `${path}: ${m[1]}()`);
+    });
+    expect(bare).toEqual([]);
+  });
+
+  it("finds a bare call (the scan's own failure path)", () => {
+    const code = "const a = deckPrintingsEnabled();\nconst b = roleBasisFromEnv( );\nconst c = tuningEnabled(env);";
+    expect([...code.matchAll(/\b(\w+Enabled|roleBasisFromEnv)\(\s*\)/g)].map((m) => m[1])).toEqual(["deckPrintingsEnabled", "roleBasisFromEnv"]);
+  });
+});

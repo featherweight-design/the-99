@@ -11,7 +11,7 @@ import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
 import { settleLabelRead } from "../../../../lib/decks/label-read-settle";
 import { loadJobRows } from "../../../../lib/decks/job-rows";
-import { labelRoleCountsEnabled } from "../../../../lib/decks/label-counts-flag";
+import { labelRoleCountsEnabled, roleBasisFromEnv } from "../../../../lib/decks/label-counts-flag";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -21,6 +21,8 @@ import { countContestedCards } from "../../../../lib/collection/summary-read";
 import { admitsReview } from "./admits-review";
 import { isUuid } from "../../../../lib/uuid";
 import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
+import { requestSwitchEnv } from "../../../../lib/switches/request";
+import { switchBits } from "../../../../lib/switches/resolve";
 
 // Versioned like every other cached payload here, though since the deployment joined every
 // `cacheForUser` key (`cache/deployment.ts`) a deploy already keeps a mix that grows a field
@@ -57,6 +59,8 @@ export default async function ChangesPage({
   // column is a 500 where the route means not-found.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
+  // The reader's switches, resolved once for this render (admin PR 6b).
+  const env = await requestSwitchEnv(userId);
 
   // The ownership guard every deck route carries. `loadDraftRows` takes a
   // `userId` to scope availability, NOT to prove the deck is this reader's —
@@ -69,7 +73,7 @@ export default async function ChangesPage({
   // One read, not two: `loadDraftRows` calls the same loader `loadDraftState`
   // does and returns its answer on `state`. Asking for both in a `Promise.all`
   // runs the whole diff, availability and price chain twice for one page.
-  const { state, rows } = await loadDraftRows(id, userId);
+  const { state, rows } = await loadDraftRows(id, userId, env);
 
   // The spine's `Commit as v1` offer, re-derived: a versionless list exactly its
   // pair-aware body size with nothing unresolved. `commitDeckVersion` enforces
@@ -163,7 +167,7 @@ export default async function ChangesPage({
     // pulled, or pulled before this read existed) simply has no entry.
     latestReleaseSources(userId, id, inOracleIds).catch(() => new Map<string, ReleaseSource>()),
     // The deck's held picks, so a card opened here shows the deck's printing (deck printings, E9).
-    readModalPicks(userId, id),
+    readModalPicks(userId, id, env),
   ]);
 
   // The same mix the deck page draws, through the one reader that defines it — the
@@ -179,22 +183,23 @@ export default async function ChangesPage({
   // staples join for the same five integers, measured at 632-831ms steady state.
   const mix = await cacheForUser(
     userId,
-    // Change commander: the live commander joins the key, switch on only (audit F5).
-    [...DECK_MIX_KEY, id, await indexGeneration(), ...(await commanderKeyParts(id))],
-    () => loadDeckMix(id, userId),
+    // Change commander: the live commander joins the key, switch on only (audit F5). The reader's
+    // switches join it too: the mix's basis follows LABEL_ROLE_COUNTS_ENABLED, resolved per reader.
+    [...DECK_MIX_KEY, id, await indexGeneration(), switchBits(env), ...(await commanderKeyParts(id, env))],
+    () => loadDeckMix(id, userId, roleBasisFromEnv(env)),
   );
 
   // The strip counts by label when the switch is on, so the label rows cover every card it folds:
   // both lists and the removed rows a restore puts back. Null (switch off, or the read failed)
   // counts by role exactly as before.
-  const labelRead = labelRoleCountsEnabled()
+  const labelRead = labelRoleCountsEnabled(env)
     ? await loadJobRows([
         ...(before ?? []), ...after,
         ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
       ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined))
     : null;
   // The switch is on but the read failed: counts fall back to the classifier, so the targets do too.
-  const settled = settleLabelRead(labelRoleCountsEnabled(), [labelRead], []);
+  const settled = settleLabelRead(labelRoleCountsEnabled(env), [labelRead], []);
   const labelRows = settled.rows;
   const shownMix = settled.classifierTargets ? await loadDeckMix(id, userId, "classifier") : mix;
 
