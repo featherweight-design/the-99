@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import {
@@ -102,6 +102,14 @@ const WATCH_MS = 3000;
 const STAGGER_MS = 350;
 /** Past this, the writing row grows its own mono line (STATES §3 state 7). */
 const LONG_WAIT_MS = 20_000;
+
+type LimitField = "capDollars" | "sets" | "ownedOnly";
+
+/** A limit field's value in one comparable form, as the page's facts spell it. */
+function limitWire(key: LimitField, patch: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean }): string {
+  if (key === "sets") return (patch.sets ?? []).map((code) => code.toLowerCase()).join(",");
+  return String(patch[key]);
+}
 
 export function TuningPanel({
   deckId,
@@ -215,9 +223,10 @@ export function TuningPanel({
   // that included it settles with no NEWER edit queued behind it.
   // State, not a ref: this is read during render (the sync-while-unedited check just below),
   // and a ref may not be read there.
-  const [dirtyLimitFields, setDirtyLimitFields] = useState<ReadonlySet<"capDollars" | "sets" | "ownedOnly">>(
-    () => new Set(),
-  );
+  const [dirtyLimitFields, setDirtyLimitFields] = useState<ReadonlySet<LimitField>>(() => new Set());
+  // Acknowledged saves waiting on the page's facts: the value sent, and the prop's value then.
+  const [heldLimits, setHeldLimits] = useState<Partial<Record<LimitField, { sent: string; from: string }>>>({});
+  const propLimitRef = useRef<Record<LimitField, string> | null>(null);
   // Reconciled every render, not gated behind "did `facts.limits` change reference" — a field
   // whose dirty marker was SKIPPED while its prop changed never got a second look once that
   // marker later cleared, since by then the prop reference was already stale-equal to what
@@ -226,6 +235,33 @@ export function TuningPanel({
   // re-trigger a reference comparison. Checking the actual VALUE every render, guarded by its
   // own `!==`, needs no reference tracking and settles the moment dirty clears.
   const wantedCapDollars = facts.limits.capCents === null ? null : facts.limits.capCents / 100;
+  // A field whose save the server acknowledged stays the reader's until the PAGE's facts move
+  // (Hugh, 2026-10-12: "Cards to add" flipped back for a moment). The ack and this panel's own
+  // re-read land before the revalidated `facts` prop does, so clearing the marker on the ack let
+  // the stale prop redraw the old choice until the new one arrived. Released when the prop reads
+  // the value saved, or moves to anything else (a later change from elsewhere wins).
+  const propLimit: Record<LimitField, string> = {
+    capDollars: String(wantedCapDollars),
+    sets: facts.limits.sets.map((code) => code.toLowerCase()).join(","),
+    ownedOnly: String(facts.limits.ownedOnly),
+  };
+  const caughtUp = (Object.keys(heldLimits) as LimitField[]).filter(
+    (key) => propLimit[key] === heldLimits[key]!.sent || propLimit[key] !== heldLimits[key]!.from,
+  );
+  // What a send reads as "the page's value when it left": refreshed after every commit.
+  useLayoutEffect(() => { propLimitRef.current = propLimit; });
+  if (caughtUp.length > 0) {
+    setHeldLimits((prev) => {
+      const next = { ...prev };
+      caughtUp.forEach((key) => delete next[key]);
+      return next;
+    });
+    setDirtyLimitFields((prev) => {
+      const next = new Set(prev);
+      caughtUp.forEach((key) => next.delete(key));
+      return next;
+    });
+  }
   if (!dirtyLimitFields.has("capDollars") && capDollars !== wantedCapDollars) setCapDollars(wantedCapDollars);
   if (!dirtyLimitFields.has("sets") && limitSets !== facts.limits.sets) setLimitSets(facts.limits.sets);
   if (!dirtyLimitFields.has("ownedOnly") && ownedOnly !== facts.limits.ownedOnly) setOwnedOnly(facts.limits.ownedOnly);
@@ -275,7 +311,6 @@ export function TuningPanel({
   // 2). Two edits to DIFFERENT fields inside the same pause merge into one request; a save
   // already dispatched when a new edit lands is never raced — `limitsChain` serializes every
   // send, and the next one starts only once the last has settled.
-  type LimitField = "capDollars" | "sets" | "ownedOnly";
   type LimitsPatch = { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean };
   const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLimits = useRef<LimitsPatch | null>(null);
@@ -301,6 +336,9 @@ export function TuningPanel({
   const sendLimits = useCallback(
     (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
       const keys = Object.keys(patch) as LimitField[];
+      // The page's value for each field when this send left: the hold ends once it moves.
+      const fromAtSend: Partial<Record<LimitField, string>> = {};
+      keys.forEach((key) => { fromAtSend[key] = propLimitRef.current?.[key]; });
       limitsInFlight.current += 1;
       const sent = limitsChain.current
         .then(async (): Promise<boolean> => {
@@ -320,9 +358,10 @@ export function TuningPanel({
             keys.forEach((key) => failedLimitFields.current.delete(key));
             const settled = keys.filter((key) => limitFieldRevision.current[key] === revisionAtSend[key]);
             if (settled.length > 0) {
-              setDirtyLimitFields((prev) => {
-                const next = new Set(prev);
-                settled.forEach((key) => next.delete(key));
+              // Not cleared here: held until the page's facts catch up (see `heldLimits`).
+              setHeldLimits((prev) => {
+                const next = { ...prev };
+                settled.forEach((key) => { next[key] = { sent: limitWire(key, patch), from: fromAtSend[key] ?? "" }; });
                 return next;
               });
             }
@@ -356,6 +395,13 @@ export function TuningPanel({
         limitFieldRevision.current[key] += 1;
       });
       setDirtyLimitFields((prev) => new Set([...prev, ...keys]));
+      // A new edit supersedes any acknowledged value still waiting on the page.
+      setHeldLimits((prev) => {
+        if (!keys.some((key) => key in prev)) return prev;
+        const next = { ...prev };
+        keys.forEach((key) => delete next[key]);
+        return next;
+      });
       pendingLimits.current = { ...pendingLimits.current, ...patch };
       if (saveLimitsTimer.current !== null) clearTimeout(saveLimitsTimer.current);
       saveLimitsTimer.current = setTimeout(() => {
