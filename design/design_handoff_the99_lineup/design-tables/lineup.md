@@ -10,7 +10,7 @@
 - **Proposal styling:** the R2 frames still draw the `PROPOSAL` badge and the dashed brass border on Worth and Jobs.
 - **Build:** both use the standard Shell, with no badge.
 - **Canvas:** unchanged this round.
-- **Decks per color:** the canvas lights the first N segments (`j < ds.length`, `Decks Stats.dc.html:739`). The build keeps one fixed segment per deck, in lineup order, and lights the segment of each deck that plays the color, so the chosen deck's ring stays in one place on every row.
+- **Decks per color:** the canvas lights the first N segments (`j < ds.length`, `Decks Stats.dc.html:739`). The build first kept one fixed segment per deck in lineup order; Hugh ruled on 2026-10-13 for the canvas, so the build lights the first N and rings no chosen deck.
 - **Fold summaries follow the card state:** the canvas hard-codes `67 wanted by your commanders` in Collection's summary (`:778`). The build's summary counts whatever the deck select and the filter currently show (T5: Gods' own count).
 - **Finished only (F2):** the canvas omits Worth and Jobs from F2 (`:570`) and leaves the wanted block at the All-decks `67` / `144` and the same rows (`:800-802`). The build draws every card under Finished only, with the brews left out of Worth, Jobs and the wanted list, and the wanted counts recounted on the finished decks.
 
@@ -93,7 +93,7 @@ Used in every deck row, chip, lane, select and Never-played name. 26 × 26 box, 
 | range mark | lower mark at 1, upper at `DIM_OPACITY` .65, margin-left −5 | same |
 | top align | mark cell, chip line and count all take the first chip's height (34 / 30), so wrapped rows read as one row | same |
 | chip | inline-flex, gap 7, h 34, pad 0 10 0 6, r 8. 1px `--border-strong`, `--surface`. Mark, then the deck link 12.5. Note mono 10 `--fg-faint`: `declared N`, or `colorless` | h 30 |
-| chosen chip | border 1px `--accent`, name `--accent` | same |
+| chosen chip | none: no deck is picked out on this card; the deck select lives in This deck among yours (Hugh, 2026-10-13) | same |
 | empty | `none` mono 10.5 `--fg-locked` | same |
 | count | mono 11 `--fg-muted`, right. Blank when 0 | same |
 | not analyzed row | min-h 44, pad 9 0 4, margin-top 6. Label `not analyzed` mono 10 / 1.3 `--fg-muted`, top-aligned. Chips dashed `--border-dashed`, transparent | same |
@@ -104,10 +104,10 @@ Used in every deck row, chip, lane, select and Never-played name. 26 × 26 box, 
 | Property | Mobile | Desktop |
 |---|---|---|
 | block | pad-top 12, border-top 1px `--border`, gap 7. Label `DECKS PER COLOR` mono 9.5, ls .12 | same |
-| row | grid `24px 1fr 52px`, gap 10, min-h 28 | same |
+| row | grid `24px 1fr 60px`, gap 10, min-h 28 (60, not the canvas's 52: `10 of 20` in Plex Mono 12 is about 58px and ran past the card) | same |
 | key | `public/mana/{W,U,B,R,G,C}.svg`, 22, as an image, untinted. `alt` = color name | same |
-| bar | h 12, gap 2, one segment per deck in scope. Lit `--w/u/b/r/g/c` for each deck that plays it, unlit `--elevated`, ends r 3. `aria-hidden` | same |
-| chosen | its segment: inset 0 0 0 2px `--accent` | same |
+| bar | h 12, gap 2, one segment per deck in scope, the first N lit `--w/u/b/r/g` (colorless `--fg-muted`) for the N decks that play it, as the canvas draws it (Hugh, 2026-10-13); unlit `--elevated`, ends r 3. `aria-hidden` | same |
+| chosen | none (Hugh, 2026-10-13) | same |
 | figure | `N of M` mono 12 `--fg`, right, nowrap | same |
 | sizes | mono 10.5 / 1.6 `--fg-faint`, pad-top 4 | same |
 
