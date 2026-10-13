@@ -1428,7 +1428,7 @@ Below the threshold the shipped 180px header is untouched.
 | roving tabindex | parks on the pick, else on the shown-now entry |
 | arrow keys | move **and** select; Home/End jump the ends; no wrap |
 | Tab | leaves the group |
-| Escape | first press collapses the region and returns focus to the Set field; second closes the dialog |
+| Escape | with a printing search typed, the first press clears it (DECK INPUT UX, `escapeDismisses`); then a press collapses the region and returns focus to the Set field; the next closes the dialog |
 | focus trap | the existing dialog trap already covers the region — no new trap |
 | live region | exactly one `aria-live="polite"` in the modal; the region never renders its own |
 | minimum tile | ≥ 100×140 |

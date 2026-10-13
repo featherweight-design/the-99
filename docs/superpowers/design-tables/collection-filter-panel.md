@@ -821,7 +821,7 @@ button[aria-haspopup=dialog][aria-expanded]
 | — | panel just opened via `↵`/`␣` | **No option is active** — the caret is in the field, so a first keystroke types rather than selects |
 | `↑` `↓` | panel open | Move the active option and scroll it into view. DOM focus stays in the input; the active row is named by `aria-activedescendant`. **No wrap at the ends** |
 | `␣` / `↵` | an option is active | Toggles it. Panel **stays open**, query is **kept**, list does **not** re-sort. Disabled (0-count) rows do not toggle |
-| `Esc` | panel open | Closes and returns focus to the trigger. Selections are already applied — **Esc is dismiss, never undo** (a `<select>`'s Esc did revert; this does not) |
+| `Esc` | panel open | With a search typed, clears it and keeps the panel open (DECK INPUT UX, `escapeDismisses`); otherwise closes and returns focus to the trigger. Selections are already applied — **Esc is dismiss, never undo** (a `<select>`'s Esc did revert; this does not) |
 | `Tab` | panel open, desktop | Moves to `Clear`, then out — closing the popover |
 | `Tab` | panel open, mobile | Focus is **trapped** (`aria-modal`) and cycles search → rows → `Clear` → `Done` |
 | `Tab` | after `Esc`, trigger focused | Continues into the chip row's dismiss buttons — a new chip is reachable without leaving the keyboard |
