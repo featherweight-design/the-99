@@ -48,24 +48,26 @@ const FitsView = onDemand(() => import("./fits-view").then((m) => m.FitsView));
 const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPicker));
 
 /**
- * A component loaded when first wanted, drawn at once from then on. `lazy` alone suspends on every
- * mount until it has been rendered once, which would hold a warmed modal back a tick on its first
- * press; this draws the loaded component directly and suspends only while it is still on the way.
+ * A component loaded when first wanted, drawn at once from then on. Until its code has arrived it
+ * draws nothing; the provider shows the press as pending meanwhile (`modalReady`). A download that
+ * failed is forgotten, so the next mount, which is the next press, tries again.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each wrapper keeps its component's own props below
 function onDemand<P extends Record<string, any>>(load: () => Promise<React.ComponentType<P>>) {
   let loaded: React.ComponentType<P> | null = null;
   let pending: Promise<unknown> | null = null;
-  // A failed download is forgotten, so the next want tries again rather than replaying the failure.
   const fetch = () => (pending ??= load().then((c) => { loaded = c; }, () => { pending = null; }));
-  // A download that failed draws nothing rather than throwing past the page: the press then reads as
-  // no card opening, which is what a press made offline already reads as.
-  const Lazy = lazy(() => fetch().then(() => ({ default: loaded ?? (() => null) })));
   function OnDemand(props: P) {
-    const Loaded = loaded;
-    return Loaded ? <Loaded {...props} /> : <Lazy {...props} />;
+    const [Loaded, setLoaded] = useState(() => loaded);
+    useEffect(() => {
+      if (Loaded) return;
+      let live = true;
+      void fetch().then(() => { if (live && loaded) setLoaded(() => loaded); });
+      return () => { live = false; };
+    }, [Loaded]);
+    return Loaded ? <Loaded {...props} /> : null;
   }
-  return Object.assign(OnDemand, { fetch });
+  return Object.assign(OnDemand, { fetch, isLoaded: () => loaded !== null });
 }
 
 /**
@@ -591,17 +593,35 @@ export function CardDetailProvider({
 }) {
   const fetchCard = fetchCardProp ?? getCardDetail;
   const prefetchCard = prefetchCardProp ?? (fetchCardProp ? null : fetchCardDetail);
-  // Once the page has hydrated and gone idle, the modal's code is fetched, so the first press finds it
-  // already here; after first paint, where it no longer competes with what the page needs to draw.
+  // The modal's code is fetched once the page has loaded (its `load` event: the document's own
+  // scripts, styles, fonts and images are in) and then gone idle, so the first press finds it already
+  // here and the download never competes with what the page needs to draw. Safari has no
+  // `requestIdleCallback`, so there the load event alone decides.
   useEffect(() => {
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(() => warmCardModal(), { timeout: 4000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const timer = setTimeout(warmCardModal, 1500);
-    return () => clearTimeout(timer);
+    let idle: number | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const warm = () => {
+      if (typeof window.requestIdleCallback === "function") idle = window.requestIdleCallback(() => void warmCardModal(), { timeout: 4000 });
+      else timer = setTimeout(() => void warmCardModal(), 0);
+    };
+    if (document.readyState === "complete") warm();
+    else window.addEventListener("load", warm, { once: true });
+    return () => {
+      window.removeEventListener("load", warm);
+      if (idle !== null) window.cancelIdleCallback(idle);
+      if (timer !== null) clearTimeout(timer);
+    };
   }, []);
   const [card, setCard] = useState<BrowseCard | null>(null);
+  // Whether the modal's code has arrived. A press that lands first stays PENDING, on its trigger and in
+  // the live region below, until it has, rather than reading as a press that did nothing.
+  const [modalReady, setModalReady] = useState(() => CardModal.isLoaded());
+  useEffect(() => {
+    if (modalReady || card === null) return;
+    let live = true;
+    void CardModal.fetch().then(() => { if (live && CardModal.isLoaded()) setModalReady(true); });
+    return () => { live = false; };
+  }, [modalReady, card]);
   // The list Prev/Next pages, in the one shape the provider holds (`siblingCards`). `siblingIds` is
   // what every paging test reads; the cards beside it carry whatever art an opener passed.
   const [siblings, setSiblingList] = useState<SiblingCard[]>([]);
@@ -651,6 +671,7 @@ export function CardDetailProvider({
     printing: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
+  const shownPending = pendingOracleId ?? (card !== null && !modalReady ? card.oracleId : null);
   // One entry per sheet underneath, in the order they registered. A token rather than the label
   // identifies an entry, since two sheets may carry the same label.
   const [sheets, setSheets] = useState<
@@ -1357,7 +1378,7 @@ export function CardDetailProvider({
     () => ({
       open,
       prefetch,
-      pendingOracleId,
+      pendingOracleId: shownPending,
       openOracleId: card?.oracleId ?? null,
       revealing: leaving,
       setSiblings,
@@ -1369,7 +1390,7 @@ export function CardDetailProvider({
       registerDoor,
       registerReceiptLink,
     }),
-    [open, prefetch, pendingOracleId, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
+    [open, prefetch, shownPending, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
   );
 
   const index = card ? siblingIds.indexOf(card.oracleId) : -1;
@@ -1481,15 +1502,12 @@ export function CardDetailProvider({
       {children}
       {/* The fetch is invisible until the modal mounts, so the wait is announced here. */}
       <div aria-live="polite" className="sr-only">
-        {pendingOracleId ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
+        {shownPending ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
       </div>
       {/* The carousel's own region (handoff decision 8), separate from the one above: the
           modal is keyed per card and remounts empty on every page, so the thing that
           survives a page — the provider — is what owns an announcement that must. */}
       <div aria-live="polite" className="sr-only">{pagingAnnouncement}</div>
-      {/* Loaded on demand (see `CardModal` above): one boundary per layer, so a chunk still loading
-          never hides a layer already open. */}
-      <Suspense fallback={null}>
       {held ? (
         <CardModal
           // The same slot and key the card was open in, so lifting it under the sheet keeps it
@@ -1559,7 +1577,6 @@ export function CardDetailProvider({
           view={fitsViewFor === card.oracleId && sheetsBelow === 0 ? {
             onBack: leaveView,
             node: (
-              <Suspense fallback={null}>
               <FitsView
                 card={card}
                 onBack={leaveView}
@@ -1569,7 +1586,6 @@ export function CardDetailProvider({
                 setMemory={(update) => setFitsMemory((all) => ({ ...all, [card.oracleId]: update(all[card.oracleId] ?? EMPTY_MEMORY) }))}
                 onReading={(on) => markReading(card.oracleId, on)}
               />
-              </Suspense>
             ),
           } : null}
           // Only from /collection, and only on a card nothing is stacked on: a partner opened from a
@@ -1608,14 +1624,10 @@ export function CardDetailProvider({
           enterOffset={enterOffset}
         />
       ) : null}
-      </Suspense>
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
           both are fixed at z-50, and the later one wins. */}
-      <Suspense fallback={null}>
-        {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
-      </Suspense>
+      {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
-      <Suspense fallback={null}>
       {held && card ? (
         <CardModal
           // Paging must not carry the previous card's expanded printing region or its
@@ -1678,7 +1690,6 @@ export function CardDetailProvider({
           enterOffset={enterOffset}
         />
       ) : null}
-      </Suspense>
       {editing ? (
         <Suspense fallback={null}>
           <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />
