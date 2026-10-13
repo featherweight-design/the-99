@@ -10,6 +10,8 @@ function grid(rows: number, cols: number) {
     cells.push([]);
     for (let c = 0; c < cols; c++) {
       const el = document.createElement("div");
+      // An id apiece: toEqual compares DOM nodes by structure, and empty divs would all match.
+      el.id = `r${r}c${c}`;
       tops.set(el, r * 300);
       cells[r].push(el);
     }
@@ -45,6 +47,20 @@ describe("ArrivalQueue", () => {
     expect(released).toEqual([]);
     q.landed(cells[0][2]);
     expect(released).toEqual(cells[0]);
+  });
+
+  it("reads tops a few pixels apart as one row: a grid's tiles can differ by a subpixel or two", () => {
+    const tops = [100, 103, 99];
+    const els = tops.map(() => document.createElement("div"));
+    const q = new ArrivalQueue(() => now, (el) => tops[els.indexOf(el)], () => 300, () => true);
+    const released: number[] = [];
+    els.forEach((el, i) => q.join(el, () => released.push(i)));
+    q.landed(els[0]);
+    q.landed(els[1]);
+    expect(released).toEqual([]);
+    q.landed(els[2]);
+    // One release, all three at once (indices, not elements: empty divs compare equal).
+    expect([...released].sort()).toEqual([0, 1, 2]);
   });
 
   it("goes top to bottom: a row that landed first waits for the row above it", () => {
@@ -116,6 +132,7 @@ describe("ArrivalQueue", () => {
   it("queues no art without a layout box, so a hidden copy never makes a false first row", () => {
     const g = grid(2, 1);
     const hidden = document.createElement("div");
+    hidden.id = "hidden";
     const q = new ArrivalQueue(() => now, (el) => (el === hidden ? 0 : g.topOf(el) + 100), () => 300, (el) => el !== hidden);
     const released: HTMLElement[] = [];
     expect(q.join(hidden, () => released.push(hidden))).toBe(false);
