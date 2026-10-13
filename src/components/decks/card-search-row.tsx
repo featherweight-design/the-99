@@ -6,6 +6,7 @@
 
 import { hasFrontFaceCost } from "../../lib/cards/faces";
 import { CostPips } from "../ui/cost-pips";
+import { FadingImg } from "../ui/hydrated-art";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -145,10 +146,7 @@ export function CardSearchRowBody({
           filter: dim ? "grayscale(0.6)" : undefined,
         }}
       >
-        {result.imageUri && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={result.imageUri} alt="" className="w-full h-full object-cover" />
-        )}
+        {result.imageUri && <FadingImg src={result.imageUri} className="w-full h-full object-cover" />}
       </span>
 
       {/* The two widths are different compositions, not one scaled. Desktop
