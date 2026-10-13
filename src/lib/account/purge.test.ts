@@ -1,7 +1,7 @@
 // The purge's COVERAGE, computed from the schema rather than listed by hand: a table added later that holds
 // a player's rows fails here until the purge deletes it, cascades from something it deletes, or is kept on
 // purpose with a reason. A list assembled by reading has a tail; this reads `schema.ts` every run.
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PURGE_ORDER } from "./purge";
 import { SOCIAL_PURGED } from "../social/purge";
@@ -29,6 +29,31 @@ const accountColumns = (t: Table) => ACCOUNT_COLUMNS.filter((c) => new RegExp(`\
 
 const purged = new Set<string>([...PURGE_ORDER, ...SOCIAL_PURGED, "user_data_stamps"]);
 
+type Fk = { name: string; tableFrom: string; tableTo: string; onDelete?: string };
+type Snapshot = { tables: Record<string, { name: string; foreignKeys: Record<string, Fk> }> };
+
+/** The newest generated snapshot: every foreign key the migrations declare, whatever form wrote it. */
+function latestSnapshot(): Snapshot {
+  const last = readdirSync("drizzle/meta").filter((f) => /^\d{4}_snapshot\.json$/.test(f)).sort().at(-1)!;
+  return JSON.parse(readFileSync(`drizzle/meta/${last}`, "utf8"));
+}
+
+/** `child -> parent` for each FK into a purged table that neither cascades, sets null, nor is deleted first. */
+function fkBlocks(snap: Snapshot): string[] {
+  const order = PURGE_ORDER as readonly string[];
+  const out: string[] = [];
+  for (const t of Object.values(snap.tables)) {
+    for (const fk of Object.values(t.foreignKeys)) {
+      if (!purged.has(fk.tableTo) || fk.tableTo === fk.tableFrom) continue;
+      if (fk.onDelete === "cascade" || fk.onDelete === "set null") continue;
+      const child = order.indexOf(fk.tableFrom);
+      if (child !== -1 && child < order.indexOf(fk.tableTo)) continue;
+      out.push(`${fk.tableFrom} -> ${fk.tableTo}`);
+    }
+  }
+  return out;
+}
+
 describe("the account purge's coverage", () => {
   it("reads the schema it claims to (the parse found the tables)", () => {
     expect(tables.length).toBeGreaterThan(50);
@@ -53,20 +78,18 @@ describe("the account purge's coverage", () => {
   });
 
   it("reaches every child of a purged table by cascade or set null, so no FK blocks or outlives it", () => {
-    const bindingOf = new Map(tables.map((t) => [t.binding, t.name]));
-    const blocked: string[] = [];
-    for (const t of tables) {
-      for (const ref of t.body.matchAll(/\.references\(\(\)(?:\s*:\s*\w+)?\s*=>\s*(\w+)\.\w+(\s*,\s*\{[^}]*\})?\)/g)) {
-        const parent = bindingOf.get(ref[1]);
-        if (!parent || !purged.has(parent)) continue;
-        const onDelete = /onDelete:\s*"(cascade|set null)"/.test(ref[2] ?? "");
-        // A child the purge deletes itself, BEFORE its parent, may reference it with no action.
-        const deletedFirst = PURGE_ORDER.indexOf(t.name as never) !== -1
-          && PURGE_ORDER.indexOf(t.name as never) < PURGE_ORDER.indexOf(parent as never);
-        const selfRef = parent === t.name;
-        if (!onDelete && !deletedFirst && !selfRef) blocked.push(`${t.name} -> ${parent}`);
-      }
-    }
-    expect(blocked).toEqual([]);
+    expect(fkBlocks(latestSnapshot())).toEqual([]);
+  });
+
+  it("reads every foreign key the migrations declare, the foreignKey() form included", () => {
+    const fks = Object.values(latestSnapshot().tables).flatMap((t) => Object.values(t.foreignKeys));
+    // `token_prices_printing_fk` is declared with `foreignKey({...})`, not `.references()`.
+    expect(fks.map((f) => f.name)).toContain("token_prices_printing_fk");
+    expect(fks.length).toBeGreaterThan(40);
+  });
+
+  it("fails a child of a purged table with no on delete, in either declaration form", () => {
+    const snap = { tables: { "public.child": { name: "child", foreignKeys: { x: { name: "x", tableFrom: "child", tableTo: "decks", onDelete: "no action" } } } } };
+    expect(fkBlocks(snap)).toEqual(["child -> decks"]);
   });
 });

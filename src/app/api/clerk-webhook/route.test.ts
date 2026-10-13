@@ -56,9 +56,17 @@ describe("POST /api/clerk-webhook", () => {
     expect(purge).not.toHaveBeenCalled();
   });
 
-  it("answers 500 when the purge fails, so Clerk retries", async () => {
+  it("answers 500 when the purge fails, so Clerk retries, and logs no part of the error that could hold the id", async () => {
     verify.mockResolvedValue({ type: "user.deleted", data: { id: "user_gone" } });
-    purge.mockRejectedValue(new Error("db down"));
-    expect((await POST(req())).status).toBe(500);
+    purge.mockRejectedValue(Object.assign(new Error("Failed query: delete ... params: user_gone"), { cause: { code: "40P01" } }));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect((await POST(req())).status).toBe(500);
+      const text = logged.mock.calls.flat().map(String).join(" ");
+      expect(text).not.toContain("user_gone");
+      expect(text).toContain("40P01");
+    } finally {
+      logged.mockRestore();
+    }
   });
 });

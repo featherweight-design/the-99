@@ -40,7 +40,9 @@ export async function POST(req: Request) {
       + `${report.social.podsHandedOn}, deleted ${report.social.podsDeleted}`);
     return new Response("Purged", { status: 200 });
   } catch (error) {
-    console.error("[clerk-webhook] purge failed", error instanceof Error ? error.message : error);
+    // A fixed message and the SQLSTATE alone: a driver error's message and parameters can carry the id.
+    const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
+    console.error(`[clerk-webhook] purge failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
     return new Response("Purge failed", { status: 500 });
   }
 }

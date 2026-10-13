@@ -8,9 +8,9 @@
  * remaining member, and a pod with no one else in it is deleted. Pods are taken in id order, so two purges
  * (or a purge and a leave) lock them the same way round.
  */
-import { asc, eq, or } from "drizzle-orm";
+import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
+import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps } from "../../db/schema";
 import { leavePodIn } from "./pods";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -24,6 +24,24 @@ export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted:
 
 export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge> {
   const out: SocialPurge = { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 0 };
+  // Every data stamp this purge will move (the account's and each friend's, through the friend_links
+  // triggers) is taken FIRST, in user id order, the order `unfriend` and `friendshipRows` take them. Left to
+  // the triggers, they would be locked in whatever order the deletes visited rows, and two purges, or a purge
+  // and an unfriend, could each hold a stamp the other needs. A missing row is created at 0, which reads the
+  // same as no row (`userDataStamp`).
+  const linked = await tx
+    .select({ friendId: friendLinks.friendUserId })
+    .from(friendLinks)
+    .where(eq(friendLinks.userId, userId));
+  const stamped = [...new Set([userId, ...linked.map((r) => r.friendId)])].sort();
+  // With no friend there is no second reader to order against, and creating the account's row only to
+  // delete it would make a retried purge write something.
+  if (linked.length > 0) await tx.execute(sql`
+    insert into ${userDataStamps} (user_id, stamp)
+    select u, 0 from unnest(${sql.param(stamped)}::text[]) as u order by u
+    on conflict (user_id) do nothing`);
+  await tx.execute(sql`
+    select 1 from ${userDataStamps} where user_id = any(${sql.param(stamped)}::text[]) order by user_id for update`);
   const memberOf = await tx
     .select({ podId: podMembers.podId })
     .from(podMembers)
