@@ -210,7 +210,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   probe fails on "nothing carries .ai-sweep once it has" at both widths.
 - `pnpm probe:stats-press` proves the `Stats` press on /decks answers in the frame it lands, at 1300x900 and 390x844 under
   Slow 4G and a 4x CPU: from the pointerdown, in the page, the Stats tab is filled and `aria-busy` within 100ms, before
-  the view has changed, with the shell's pending diamond fully opaque (after its 120ms beat) while the read runs, and once Stats lands the tab is
+  the view has changed, with Tiles letting go of the selected fill in that same frame (Hugh's walk, 2026-10-13: both read selected for a moment), with the shell's pending diamond fully opaque (after its 120ms beat) while the read runs, and once Stats lands the tab is
   selected with no mark and no busy flag. Measured on a production build 2026-10-13: 44-50ms at both widths, Stats
   itself arriving at 700-800ms; `next dev` reads 110-117ms. Needs `LINEUP_ENABLED=true`, writes nothing.
 - `pnpm probe:precon-arrival` proves the precon list's art (/decks/precons) arrives top down, row by row, at 1300x900
