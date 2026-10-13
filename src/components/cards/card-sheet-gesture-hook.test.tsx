@@ -18,11 +18,12 @@ type HarnessProps = {
   bodyScrollTop?: number;
   canCollapse?: boolean;
   disabled?: boolean;
+  canMinimize?: boolean;
 };
 
 function Harness({
   canPrev = true, canNext = true, startFull = false, onPage = () => {}, onPeek = () => {}, onTurn = () => {},
-  bodyScrollTop = 0, canCollapse = true, disabled = false,
+  bodyScrollTop = 0, canCollapse = true, disabled = false, canMinimize = false,
 }: HarnessProps) {
   const bandRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +41,7 @@ function Harness({
     bodyRef,
     canCollapse,
     disabled,
+    canMinimize,
   });
   return (
     <div onClickCapture={g.onClickCapture}>
@@ -168,6 +170,31 @@ describe("useCardSheetGestures", () => {
     render(<Harness />);
     drag(sheet(), [200, 700], [200, 200]);
     expect(sheet()).toHaveAttribute("data-sheet", "full");
+  });
+
+  // The min shelf is raised by the home indicator's inset in CSS, so a drag toward it has to stop at the
+  // same top or the release jumps by the inset. jsdom's window is 768 tall, the shelf 72.
+  it("stops a drag toward the min snap above the home indicator's inset", () => {
+    const real = window.getComputedStyle;
+    const lowest = (inset: string) => {
+      window.getComputedStyle = ((el: Element) => (
+        (el as HTMLElement).style.position === "fixed" ? { paddingBottom: inset } : real(el)
+      )) as typeof window.getComputedStyle;
+      const { unmount } = render(<Harness canMinimize />);
+      const s = sheet();
+      fireEvent.pointerDown(s, { pointerId: 1, clientX: 200, clientY: 300, button: 0, pointerType: "touch" });
+      fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 780, pointerType: "touch" });
+      const top = s.style.getPropertyValue("--sheet-drag-top");
+      fireEvent.pointerUp(window, { pointerId: 1, clientX: 200, clientY: 780, pointerType: "touch" });
+      unmount();
+      return top;
+    };
+    try {
+      expect(lowest("0px")).toBe("696px");
+      expect(lowest("34px")).toBe("662px");
+    } finally {
+      window.getComputedStyle = real;
+    }
   });
 
   it("raises the sheet from a vertical drag that starts on the band", () => {
