@@ -95,7 +95,7 @@ try {
       const hit = document.elementFromPoint(first.left + first.width / 2, first.top + Math.min(first.height / 2, 10));
       return { top: Math.round(l.top), bottom: Math.round(l.bottom), onTop: Boolean(hit && ul.contains(hit)), viewH: window.innerHeight };
     });
-    check(`${w.label} the list opens from [[ and its first option is painted on top`, geometry.onTop && geometry.top >= 0, geometry);
+    check(`${w.label} the list opens from [[ and its first option is painted on top`, geometry.onTop && geometry.top >= 0 && geometry.bottom <= geometry.viewH, geometry);
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/description-tag-box-${w.label}.png` });
 
     await option.first().dispatchEvent("mousedown");
