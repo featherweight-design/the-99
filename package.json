@@ -41,6 +41,7 @@
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:tokens": "tsx scripts/probe-tokens.mts",
     "probe:deck-tokens": "tsx scripts/probe-deck-tokens.mts",
+    "probe:owned-support": "tsx scripts/probe-owned-support.mts",
     "probe:social": "tsx scripts/probe-social.mts",
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",

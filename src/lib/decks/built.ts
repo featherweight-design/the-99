@@ -1,4 +1,5 @@
-import { sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { eq, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { db } from "../../db";
 import { decks } from "../../db/schema";
 
 /**
@@ -30,4 +31,23 @@ export function notBuiltBy(userId: string, oracleIdColumn: SQLWrapper): SQL {
         or ${decks.partnerOracleId} = ${oracleIdColumn}
       )
   )`;
+}
+
+/** The commanders this player has already built around — the scope exclusion,
+    read as a set rather than as the `NOT IN` the candidate query applies, because
+    the lookup has to tell a built commander from a missing one.
+
+    BOTH HALVES OF A PAIR. A partner helms its deck exactly as the primary does,
+    so a list answering "what should I build next" that named it was offering the
+    player a deck they are already holding. It is read here rather than in the
+    candidate query's `NOT IN` because `partner_oracle_id` is nullable, and a
+    `NOT IN (subquery)` yielding one NULL returns no rows at all — the hazard
+    `unbuiltCommanders` documents, out of reach only while the column it reads is
+    `notNull()`. Filtering nulls out in TypeScript has no such edge. */
+export async function loadBuiltCommanderIds(userId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ oracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId })
+    .from(decks)
+    .where(eq(decks.userId, userId));
+  return new Set(rows.flatMap((r) => (r.partnerOracleId ? [r.oracleId, r.partnerOracleId] : [r.oracleId])));
 }

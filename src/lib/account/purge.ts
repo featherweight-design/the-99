@@ -24,6 +24,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { purgeSocialIn, type SocialPurge } from "../social/purge";
+import { ownedSupportLock } from "../discovery/owned-support-lock";
 
 /**
  * Every non-social table holding a row by `user_id`, in delete order. Rows that point at `model_calls`
@@ -36,6 +37,7 @@ export const PURGE_ORDER = [
   "deck_games", "deck_notes", "deck_profiles", "mana_trade_applies", "deck_tool_counts", "deck_swaps",
   "decks", "deck_folders",
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
+  "owned_support_counts", "owned_support_stamps",
   "wishlist_items",
   "model_calls",
   "admin_events", "flag_overrides", "flag_group_members",
@@ -46,6 +48,9 @@ export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; s
 export async function purgeAccount(userId: string): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
   return db.transaction(async (tx) => {
+    // Waits out a refresh of the reader's owned-support store, which would otherwise write rows back
+    // after this commits; a refresh that takes the lock after it finds no collection and writes none.
+    await tx.execute(ownedSupportLock(userId));
     const { counts: social, friendIds } = await purgeSocialIn(tx, userId);
     const rows: Record<string, number> = {};
     for (const table of PURGE_ORDER) {

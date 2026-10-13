@@ -11,7 +11,7 @@ vi.mock("../../db", () => ({
     }),
   },
 }));
-vi.mock("../discovery/candidates", () => ({ loadBuiltCommanderIds: async () => [] }));
+vi.mock("../decks/built", async (orig) => ({ ...(await orig<object>()), loadBuiltCommanderIds: async () => [] }));
 vi.mock("../edhrec/client", () => ({
   readEdhrecCache: async () => new Map(),
   resolveEdhrecData: async () => ({ data: { topCards: [], inclusionByName: {} }, unreachable: false }),

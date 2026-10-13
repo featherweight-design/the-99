@@ -1,13 +1,21 @@
-import { and, eq, ilike, inArray, sql } from "drizzle-orm";
+import { createHash } from "node:crypto";
+import { and, eq, ilike, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import {
   cards,
+  catalogRefreshes,
+  CATALOG_ROW_ID,
+  collectionItems,
   commanderSupport,
   commanderSupportCards,
-  decks,
+  ownedSupportCounts,
+  ownedSupportStamps,
   printings,
   sets,
 } from "../../db/schema";
+import { INDEX_UNREADABLE, indexGeneration } from "../recs/store";
+import { ownedSupportLock } from "./owned-support-lock";
+import { generationKey, readCatalogGeneration } from "../cache/catalog-generation";
 import type { EdhrecTag } from "../edhrec/parse";
 import { notBuiltBy } from "../decks/built";
 
@@ -112,31 +120,48 @@ export async function loadCandidates(
   ownedOracleIds: string[],
   collectionOracleIds?: string[],
 ): Promise<CandidateRow[]> {
-  const base = db
-    .select({
-      oracleId: commanderSupport.commanderOracleId,
-      name: cards.name,
-      colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
-      artCropUri: cards.artCropUri,
-      releasedAt: RELEASED_AT,
-      edhrecTotal: commanderSupport.edhrecTotal,
-      deckCount: commanderSupport.deckCount,
-      tags: commanderSupport.tags,
-      prose: commanderSupport.prose,
-      ownedSupport: ownedSupportColumn(),
-      collectionSupport: collectionSupportColumn(collectionOracleIds != null),
-    })
-    .from(commanderSupport)
-    .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
-    .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON);
+  // The whole-pool read is `/discover`'s, rebuilt on every cache miss: it reads the stored counts.
+  // A narrowed ranked pool is a different count and keeps the live aggregate.
+  const stored = collectionOracleIds == null ? await storedOwnedSupport(userId, ownedOracleIds) : null;
+  const run = (owned: SQL, storeCurrent: SQL) => {
+    const base = db
+      .select({
+        oracleId: commanderSupport.commanderOracleId,
+        name: cards.name,
+        colorIdentity: cards.colorIdentity,
+        imageUri: cards.imageUri,
+        artCropUri: cards.artCropUri,
+        releasedAt: RELEASED_AT,
+        edhrecTotal: commanderSupport.edhrecTotal,
+        deckCount: commanderSupport.deckCount,
+        tags: commanderSupport.tags,
+        prose: commanderSupport.prose,
+        ownedSupport: ownedSupportColumn(),
+        collectionSupport: collectionSupportColumn(collectionOracleIds != null),
+        storeCurrent: sql<boolean>`${storeCurrent}`.as("store_current"),
+      })
+      .from(commanderSupport)
+      .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
+      .leftJoin(owned, OWNED_SUPPORT_ON);
+    return (collectionOracleIds != null
+      ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
+      : base
+    ).where(discoverCandidates(userId, collectionOracleIds ?? ownedOracleIds));
+  };
 
-  const rows = await (collectionOracleIds != null
-    ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
-    : base
-  ).where(discoverCandidates(userId, collectionOracleIds ?? ownedOracleIds));
-
-  return rows.map(shapeCandidate);
+  let rows = stored ? await run(stored.table, stored.current) : await run(ownedSupportTable(ownedOracleIds), sql`true`);
+  // The stamp is re-read INSIDE the statement that read the counts, so both come from one snapshot.
+  // A render whose inputs went stale could rewrite the store between this request's check and its
+  // read; then this statement sees the moved stamp, and the live aggregate answers instead.
+  if (stored && rows.length > 0 && !rows[0].storeCurrent) {
+    rows = await run(ownedSupportTable(ownedOracleIds), sql`true`);
+  }
+  // `storeCurrent` is this read's own check, not a row field: it never reaches the payload.
+  return rows.map((row) => {
+    const { storeCurrent, ...r } = row;
+    void storeCurrent;
+    return shapeCandidate(r);
+  });
 }
 
 /** The most name matches one lookup will classify. A commander-name substring
@@ -218,25 +243,6 @@ export async function loadNameMatches(
     .orderBy(cards.name);
 }
 
-/** The commanders this player has already built around — the scope exclusion,
-    read as a set rather than as the `NOT IN` the candidate query applies, because
-    the lookup has to tell a built commander from a missing one.
-
-    BOTH HALVES OF A PAIR. A partner helms its deck exactly as the primary does,
-    so a list answering "what should I build next" that named it was offering the
-    player a deck they are already holding. It is read here rather than in the
-    candidate query's `NOT IN` because `partner_oracle_id` is nullable, and a
-    `NOT IN (subquery)` yielding one NULL returns no rows at all — the hazard
-    `unbuiltCommanders` documents, out of reach only while the column it reads is
-    `notNull()`. Filtering nulls out in TypeScript has no such edge. */
-export async function loadBuiltCommanderIds(userId: string): Promise<Set<string>> {
-  const rows = await db
-    .select({ oracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId })
-    .from(decks)
-    .where(eq(decks.userId, userId));
-  return new Set(rows.flatMap((r) => (r.partnerOracleId ? [r.oracleId, r.partnerOracleId] : [r.oracleId])));
-}
-
 /**
  * `%`, `_` and the escape character itself are LIKE syntax, and the query comes
  * from a text field. Unescaped, a reader who types `Ob_Nixilis` matches names
@@ -277,6 +283,99 @@ export async function loadCandidateSlugRows(
     .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON)
     .where(discoverCandidates(userId, collectionOracleIds ?? ownedOracleIds));
 }
+
+/**
+ * The key a reader's stored counts are valid for: the owned ids as a set, the index build, and the
+ * catalog refresh. The catalog is in it because the count filters on colour identity, which a
+ * refresh can move under ids that did not change; it moves daily, so the store recomputes about once
+ * a day per reader, against once per page build before.
+ */
+export function ownedSupportKey(ownedOracleIds: readonly string[], indexGen: string, catalogGen: string): string {
+  const ids = [...new Set(ownedOracleIds)].sort();
+  return `${createHash("sha256").update(ids.join(",")).digest("hex")}|${indexGen}|${catalogGen}`;
+}
+
+/**
+ * The owned-support counts as a derived table aliased `osc`, read from `ownedSupportCounts` when
+ * they were computed from these owned ids and this index build, and recomputed into it first when
+ * not. The aggregate is the same `ownedSupportTable`, run once per change of input rather than
+ * once per page build: the page's cache misses on every deck write, and a deck write moves neither.
+ *
+ * Anything that stops the store from answering (an unreadable index generation, a database the
+ * migration has not reached, a failed write) falls back to the live aggregate, which is what this
+ * read did before the store existed. A store is an optimisation, never a reason to fail the page.
+ */
+async function storedOwnedSupport(
+  userId: string,
+  ownedOracleIds: string[],
+): Promise<{ table: SQL; current: SQL } | null> {
+  try {
+    const [indexGen, catalogGen] = await Promise.all([indexGeneration(), readCatalogGeneration()]);
+    // An unreadable index or an unstamped catalog is no key to trust a store on: the live aggregate.
+    if (indexGen === INDEX_UNREADABLE || catalogGen === generationKey(null)) return null;
+    const key = ownedSupportKey(ownedOracleIds, indexGen, catalogGen);
+    const [stamp] = await db
+      .select({ key: ownedSupportStamps.key })
+      .from(ownedSupportStamps)
+      .where(eq(ownedSupportStamps.userId, userId));
+    if (stamp?.key !== key) await refreshOwnedSupport(userId, ownedOracleIds, key);
+    return {
+      table: sql`(select commander_oracle_id, owned_support from ${ownedSupportCounts}
+                   where user_id = ${userId}) as osc`,
+      // Checked in the reading statement's own snapshot: an index or catalog publish committing at any
+      // point after the counts were written fails it, and the read falls back to the live aggregate.
+      current: sql`exists (select 1 from ${ownedSupportStamps}
+                            where user_id = ${userId} and key = ${key}
+                              and support_millis is not distinct from ${SUPPORT_MILLIS}
+                              and catalog_millis is not distinct from ${CATALOG_MILLIS})`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Replaces a reader's stored counts with the aggregate over `ownedOracleIds`, for every commander
+ * with at least one owned support card rather than today's candidates (the rest read as 0 through
+ * the outer `coalesce`), and stamps `key`, in one transaction. The per-reader
+ * advisory lock serialises two page builds that miss at once; the second finds the stamp the first
+ * wrote and writes nothing. The account purge takes the same lock, and a reader with no collection
+ * left once it is held gets nothing written back.
+ *
+ * The counts and the stamp's `support_millis` / `catalog_millis` are written by ONE statement, so
+ * they come from one snapshot whatever an index or catalog publish commits meanwhile, and the
+ * reading statement checks those two against its own snapshot (`current`).
+ */
+async function refreshOwnedSupport(userId: string, ownedOracleIds: string[], key: string) {
+  await db.transaction(async (tx) => {
+    await tx.execute(ownedSupportLock(userId));
+    const [stamp] = await tx
+      .select({ key: ownedSupportStamps.key })
+      .from(ownedSupportStamps)
+      .where(eq(ownedSupportStamps.userId, userId));
+    if (stamp?.key === key) return;
+    const held = await tx.execute<{ held: boolean }>(
+      sql`select exists (select 1 from ${collectionItems} where ${collectionItems.userId} = ${userId}) as held`,
+    );
+    if (!held.rows[0]?.held) return;
+    await tx.delete(ownedSupportCounts).where(eq(ownedSupportCounts.userId, userId));
+    await tx.execute(sql`with counts as (
+        insert into ${ownedSupportCounts} (user_id, commander_oracle_id, owned_support)
+        select ${userId}, osc.commander_oracle_id, osc.owned_support from ${ownedSupportTable(ownedOracleIds)}
+      )
+      insert into ${ownedSupportStamps} (user_id, key, support_millis, catalog_millis, computed_at)
+      values (${userId}, ${key}, ${SUPPORT_MILLIS}, ${CATALOG_MILLIS}, now())
+      on conflict (user_id) do update
+        set key = excluded.key, support_millis = excluded.support_millis,
+            catalog_millis = excluded.catalog_millis, computed_at = excluded.computed_at`);
+  });
+}
+
+/** The newest index build of a commander's support (its header and cards are written in one
+ *  transaction), and the catalog stamp, in epoch millis: the two inputs the counts are derived from. */
+const SUPPORT_MILLIS = sql`(select (extract(epoch from max(computed_at)) * 1000)::bigint from ${commanderSupport})`;
+const CATALOG_MILLIS = sql`(select (extract(epoch from refreshed_at) * 1000)::bigint from ${catalogRefreshes}
+                             where id = ${CATALOG_ROW_ID})`;
 
 // The two queries differ only in their select list, so everything below the
 // projection is shared: drizzle's fluent type falls apart under a generic

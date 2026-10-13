@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
 import { commanderSupport } from "../../db/schema";
-import { discoverCandidates, shapeCandidate, type CandidateSqlRow } from "./candidates";
+import { discoverCandidates, shapeCandidate, type CandidateSqlRow, ownedSupportKey } from "./candidates";
 
 const row = (over: Partial<CandidateSqlRow>): CandidateSqlRow => ({
   oracleId: "a", name: "Atraxa",
@@ -76,3 +76,17 @@ describe("discoverCandidates", () => {
     expect(q.sql).not.toMatch(/not in \(\s*select/i);
   });
 });
+
+describe("ownedSupportKey", () => {
+  const a = "00000000-0000-0000-0000-00000000000a";
+  const b = "00000000-0000-0000-0000-00000000000b";
+  it("reads the owned ids as a set: order and repeats do not move it", () => {
+    expect(ownedSupportKey([a, b], "g1", "c1")).toBe(ownedSupportKey([b, a, a], "g1", "c1"));
+  });
+  it("moves when the owned set, the index build or the catalog refresh moves", () => {
+    expect(ownedSupportKey([a], "g1", "c1")).not.toBe(ownedSupportKey([a, b], "g1", "c1"));
+    expect(ownedSupportKey([a, b], "g1", "c1")).not.toBe(ownedSupportKey([a, b], "g2", "c1"));
+    expect(ownedSupportKey([a, b], "g1", "c1")).not.toBe(ownedSupportKey([a, b], "g1", "c2"));
+  });
+});
+

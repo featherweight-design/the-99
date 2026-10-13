@@ -27,7 +27,7 @@ vi.mock("./recommend", async (importOriginal) => ({
   recommendCommanders,
 }));
 vi.mock("../home/summary", () => ({ getCollectionStats }));
-vi.mock("../discovery/candidates", () => ({ loadBuiltCommanderIds }));
+vi.mock("../decks/built", () => ({ loadBuiltCommanderIds }));
 
 const { getRankedList } = await import("./ranked-list");
 
