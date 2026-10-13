@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 
 /** What the row accepts: the deck-scoped candidate, both deck-scoped fields required. */

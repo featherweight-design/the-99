@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { SpineDesktop } from "./spine-desktop";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";

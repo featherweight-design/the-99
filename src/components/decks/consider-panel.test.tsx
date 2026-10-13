@@ -29,6 +29,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const { ConsiderPanel, SHELF_CAP, rolesWithShelves } = await import("./consider-panel");
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const suggestion = (over: Partial<DeckSuggestionWithFacts> & { name: string }): DeckSuggestionWithFacts => ({
   facts: null,

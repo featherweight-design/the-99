@@ -25,6 +25,8 @@ vi.mock("../collection/edit-copies-host", () => ({
 }));
 
 const { CardDetailProvider, CardDetailTrigger } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 
 const copy = collectionEditCopy.copies;
 const sol = (over: Partial<BrowseCard> = {}): BrowseCard => ({

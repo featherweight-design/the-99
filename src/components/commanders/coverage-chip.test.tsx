@@ -6,6 +6,8 @@ import { fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { CoverageChip, CoverageDisclosure, CoverageRow } from "./coverage-chip";
 import type { RoleCard } from "../../lib/recs/score";

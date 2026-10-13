@@ -12,6 +12,8 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import type { DeckClaim } from "../../lib/decks/availability";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { CardDetailProvider, STACK_DROP_MS, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { DRAFT_ANNOUNCER_ID } from "./draft-announcer";
 import { PullControl } from "./pull-control";
 

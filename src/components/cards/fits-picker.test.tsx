@@ -15,6 +15,8 @@ vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: str
 
 const { FitsPicker } = await import("./fits-picker");
 const { CardDetailProvider, STACK_DROP_MS } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 
 const copy = swapToolsCopy.fits;
 const card = {

@@ -11,6 +11,8 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { StatusPill } from "../../lib/decks/status";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { BuilderSpine } from "./builder-spine";
 
 const deck = {

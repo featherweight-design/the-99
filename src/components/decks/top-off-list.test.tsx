@@ -6,6 +6,8 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { stubViewport } from "../../test-utils/stub-viewport";
 import type { TopOffCandidateWithFacts } from "../../lib/decks/last-slots";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const actions = vi.hoisted(() => ({
   commit: vi.fn(),

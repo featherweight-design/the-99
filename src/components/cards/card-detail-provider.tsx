@@ -32,12 +32,49 @@ import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collectio
 import { printedNameOf, resolvedPrinting, withDeckPick } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
-import { FitsPicker } from "./fits-picker";
-import { FitsView, type FitsViewMemory } from "./fits-view";
+import type { FitsViewMemory } from "./fits-view";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
-import { CardModal, type DeckPrintingScope } from "./card-modal";
+import type { DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+
+// The card details modal and the two fits views are loaded on demand rather than with the page. Every
+// route mounts this provider and none draws them before a card is pressed, yet bundled here they were
+// ~46KB gzipped of every route's startup download (measured on staging, 2026-10-13), sharing a slow
+// phone's line with the stylesheet first paint waits on. The modal's chunk is WARMED, so a press does
+// not wait on it: at idle once the page has hydrated, on intent (`prefetch`) and on the press itself.
+const CardModal = onDemand(() => import("./card-modal").then((m) => m.CardModal));
+const FitsView = onDemand(() => import("./fits-view").then((m) => m.FitsView));
+const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPicker));
+
+/**
+ * A component loaded when first wanted, drawn at once from then on. `lazy` alone suspends on every
+ * mount until it has been rendered once, which would hold a warmed modal back a tick on its first
+ * press; this draws the loaded component directly and suspends only while it is still on the way.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each wrapper keeps its component's own props below
+function onDemand<P extends Record<string, any>>(load: () => Promise<React.ComponentType<P>>) {
+  let loaded: React.ComponentType<P> | null = null;
+  let pending: Promise<unknown> | null = null;
+  // A failed download is forgotten, so the next want tries again rather than replaying the failure.
+  const fetch = () => (pending ??= load().then((c) => { loaded = c; }, () => { pending = null; }));
+  // A download that failed draws nothing rather than throwing past the page: the press then reads as
+  // no card opening, which is what a press made offline already reads as.
+  const Lazy = lazy(() => fetch().then(() => ({ default: loaded ?? (() => null) })));
+  function OnDemand(props: P) {
+    const Loaded = loaded;
+    return Loaded ? <Loaded {...props} /> : <Lazy {...props} />;
+  }
+  return Object.assign(OnDemand, { fetch });
+}
+
+/**
+ * Starts the modal's code downloading, and resolves once it has. A second call costs nothing.
+ * Tests await it after their mocks are in place, so a press draws the modal in the same tick.
+ */
+export function warmCardModal(): Promise<unknown> {
+  return Promise.all([CardModal.fetch(), FitsView.fetch()]);
+}
 
 // Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this
 // provider, and only /collection ever opens the sheet.
@@ -444,7 +481,7 @@ function deckPickFor(
   return picks[oracleId] ?? null;
 }
 const NOOP = () => {};
-import { STACK_DROP_MS } from "./card-modal";
+import { STACK_DROP_MS } from "./card-modal-shared";
 import { usePreviewRow } from "../decks/hover-preview";
 export { STACK_DROP_MS };
 
@@ -554,6 +591,16 @@ export function CardDetailProvider({
 }) {
   const fetchCard = fetchCardProp ?? getCardDetail;
   const prefetchCard = prefetchCardProp ?? (fetchCardProp ? null : fetchCardDetail);
+  // Once the page has hydrated and gone idle, the modal's code is fetched, so the first press finds it
+  // already here; after first paint, where it no longer competes with what the page needs to draw.
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(() => warmCardModal(), { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(warmCardModal, 1500);
+    return () => clearTimeout(timer);
+  }, []);
   const [card, setCard] = useState<BrowseCard | null>(null);
   // The list Prev/Next pages, in the one shape the provider holds (`siblingCards`). `siblingIds` is
   // what every paging test reads; the cards beside it carry whatever art an opener passed.
@@ -983,6 +1030,7 @@ export function CardDetailProvider({
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
       opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
     ) => {
+      warmCardModal();
       // The control this open came from, for the modal to hand focus back to. Set on every open, so
       // an opener that names none falls back to the dialog's own capture rather than an older one.
       openerRef.current = opts?.opener ?? null;
@@ -1265,6 +1313,7 @@ export function CardDetailProvider({
 
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {
+      warmCardModal();
       // Yields to every read already running: a prefetch is a guess, and a second request
       // beside the one the reader is waiting on only slows that one down.
       if (!prefetchCard || cache.current.has(oracleId) || inFlight.current !== null || prefetching.current) return undefined;
@@ -1438,6 +1487,9 @@ export function CardDetailProvider({
           modal is keyed per card and remounts empty on every page, so the thing that
           survives a page — the provider — is what owns an announcement that must. */}
       <div aria-live="polite" className="sr-only">{pagingAnnouncement}</div>
+      {/* Loaded on demand (see `CardModal` above): one boundary per layer, so a chunk still loading
+          never hides a layer already open. */}
+      <Suspense fallback={null}>
       {held ? (
         <CardModal
           // The same slot and key the card was open in, so lifting it under the sheet keeps it
@@ -1507,6 +1559,7 @@ export function CardDetailProvider({
           view={fitsViewFor === card.oracleId && sheetsBelow === 0 ? {
             onBack: leaveView,
             node: (
+              <Suspense fallback={null}>
               <FitsView
                 card={card}
                 onBack={leaveView}
@@ -1516,6 +1569,7 @@ export function CardDetailProvider({
                 setMemory={(update) => setFitsMemory((all) => ({ ...all, [card.oracleId]: update(all[card.oracleId] ?? EMPTY_MEMORY) }))}
                 onReading={(on) => markReading(card.oracleId, on)}
               />
+              </Suspense>
             ),
           } : null}
           // Only from /collection, and only on a card nothing is stacked on: a partner opened from a
@@ -1554,10 +1608,14 @@ export function CardDetailProvider({
           enterOffset={enterOffset}
         />
       ) : null}
+      </Suspense>
       {/* Before the third layer in the document, so a card opened from the picker paints over it:
           both are fixed at z-50, and the later one wins. */}
-      {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
+      <Suspense fallback={null}>
+        {fitsFor ? <FitsPicker card={fitsFor} onClose={() => setFitsFor(null)} /> : null}
+      </Suspense>
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
+      <Suspense fallback={null}>
       {held && card ? (
         <CardModal
           // Paging must not carry the previous card's expanded printing region or its
@@ -1620,6 +1678,7 @@ export function CardDetailProvider({
           enterOffset={enterOffset}
         />
       ) : null}
+      </Suspense>
       {editing ? (
         <Suspense fallback={null}>
           <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />

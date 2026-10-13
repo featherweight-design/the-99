@@ -5,6 +5,8 @@ import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 function make(n: number, facet: SynergyCard["facet"] = "creature"): SynergyCard[] {
   return Array.from({ length: n }, (_, i) => ({

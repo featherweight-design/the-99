@@ -13,6 +13,8 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { SuggestionTile } from "./suggestion-tile";
 
 vi.mock("../../app/decks/actions", () => ({

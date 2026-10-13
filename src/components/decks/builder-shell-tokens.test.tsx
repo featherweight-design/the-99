@@ -22,6 +22,8 @@ vi.mock("../../lib/notices/actions", () => ({ peekNotices: vi.fn(async () => nul
 const { BuilderShell } = await import("./builder-shell");
 const { DeckTokensProvider } = await import("./deck-tokens-context");
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const commander = {
   oracleId: "aang", name: "Avatar Aang", colorIdentity: ["W", "U", "R", "G"],

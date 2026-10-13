@@ -5,6 +5,8 @@ import { TUTOR_DETECTION } from "../../lib/bracket/rules";
 import { BRACKET_RULES_SOURCE, SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { DeckPageSwitches } from "./deck-page-switches";
 import { ProvenanceOpener } from "./provenance-panel";
 

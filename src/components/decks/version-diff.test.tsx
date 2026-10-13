@@ -8,6 +8,8 @@ import type { VersionDiffCard, VersionDiffPayload, VersionSummary } from "../../
 import { COST_TRACK } from "../ui/cost-pips";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const getVersionDiff = vi.fn<
   (deckId: string, versionId: string) => Promise<VersionDiffPayload | null>

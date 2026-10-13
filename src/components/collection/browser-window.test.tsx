@@ -8,6 +8,8 @@ vi.mock("next/navigation", () => ({
 
 import { CollectionBrowser } from "./browser";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { collectionDrawFieldsFor, cutCollectionWindow, decodeCollection, encodeCollection } from "../../lib/collection/list-wire";
 import { PAGE_SIZE, firstWindowIds, parseBrowseParams } from "../../lib/collection/window";

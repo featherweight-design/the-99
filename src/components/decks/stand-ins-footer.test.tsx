@@ -29,6 +29,8 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 const { SwapToolsProvider } = await import("../../lib/swaps/context");
 const { StandInsSheet } = await import("./stand-ins-sheet");
 

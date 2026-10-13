@@ -18,6 +18,8 @@ vi.mock("../../app/collection/actions", () => ({
 vi.mock("../../app/decks/actions", () => ({ setCardProxied: vi.fn(async () => ({ ok: true })) }));
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 const { AnalysisPanel } = await import("./analysis-panel");
 
 const copy = deckAnalysisCopy;

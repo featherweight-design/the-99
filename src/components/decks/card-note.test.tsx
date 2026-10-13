@@ -5,6 +5,8 @@ import { CardNote } from "./card-note";
 import { SuggestionTile } from "./suggestion-tile";
 import { TopOffList } from "./top-off-list";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { cardNote } from "../../lib/copy/card-note";
 import type { CandidateFacts } from "../../lib/bracket/delta";
 import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";

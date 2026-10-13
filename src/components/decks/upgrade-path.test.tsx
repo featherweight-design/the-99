@@ -8,6 +8,8 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { BracketClimb } from "./bracket-climb";
 import { HoverPreviewProvider } from "./hover-preview";

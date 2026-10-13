@@ -7,6 +7,8 @@ import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import type { CardFacet } from "../../lib/cards/facet";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const base: SynergyCard = {
   oracleId: "a", name: "Command Tower", typeLine: "Land — Gate",

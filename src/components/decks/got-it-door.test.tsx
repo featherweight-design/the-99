@@ -19,6 +19,8 @@ vi.mock("./got-it", () => ({
 }));
 
 const { CardDetailProvider, CardDetailTrigger } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 const { GotItDoorRegistration } = await import("./got-it-door");
 
 const asOf = new Date("2026-10-10T00:00:00Z");

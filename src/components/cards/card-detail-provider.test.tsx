@@ -13,6 +13,8 @@ vi.mock("../../app/collection/actions", () => ({
 const {
   CardDetailProvider, CardDetailTrigger, cardDetailCopy, useCardDetail, INTENT_DELAY_MS, PREFETCH_WAIT_MS,
 } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 
 const card = (oracleId: string, name: string): BrowseCard => ({
   oracleId,

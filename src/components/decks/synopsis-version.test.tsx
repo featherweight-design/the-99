@@ -10,6 +10,8 @@ vi.mock("../../app/decks/synopsis-actions", () => actions);
 import { checkedSynopsis } from "./__fixtures__/synopsis";
 import { VersionOverviewLink } from "./synopsis-version";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";
 
 const draw = () =>

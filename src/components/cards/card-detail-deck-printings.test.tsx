@@ -21,6 +21,8 @@ vi.mock("../../app/decks/printing-actions", () => ({
 }));
 
 const { CardDetailProvider, useCardDetail } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 
 const printing = (setCode: string, collectorNumber: string): BrowsePrinting => ({
   setCode, setName: `${setCode} set`, collectorNumber, releasedAt: "2021-01-01",
