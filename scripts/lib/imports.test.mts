@@ -184,4 +184,24 @@ describe("importsSharedBinding", () => {
     ).toBe(false);
     expect(ask('import * as FilterChassis from "../ui/filter-chassis";' + USE)).toBe(false);
   });
+
+  it("accepts the binding loaded on demand and used", () => {
+    const source = [
+      'const FilterChassis = onDemand(() => import("../ui/filter-chassis").then((m) => m.FilterChassis));',
+      "export const View = () => <FilterChassis />;",
+    ].join("\n");
+    expect(ask(source)).toBe(true);
+  });
+
+  it("rejects an on-demand load that is never used, reads another export, or comes from another module", () => {
+    expect(ask('const FilterChassis = onDemand(() => import("../ui/filter-chassis").then((m) => m.FilterChassis));')).toBe(false);
+    expect(ask([
+      'const FilterChassis = onDemand(() => import("../ui/filter-chassis").then((m) => m.CHASSIS_WIDE_MIN_PX));',
+      "export const View = () => <FilterChassis />;",
+    ].join("\n"))).toBe(false);
+    expect(ask([
+      'const FilterChassis = onDemand(() => import("../ui/other-chassis").then((m) => m.FilterChassis));',
+      "export const View = () => <FilterChassis />;",
+    ].join("\n"))).toBe(false);
+  });
 });

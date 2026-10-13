@@ -98,6 +98,54 @@ function valueImports(parsed) {
       }
     }
   }
+  return found.concat(loadedOnDemand(parsed));
+}
+
+/**
+ * A binding loaded on demand: `const Local = wrap(() => import("./x").then((m) => m.Binding))`, the
+ * shape the card details provider loads its modal views with. It takes exactly one named export, by a
+ * property read on the module the import resolves to, and binds whatever wraps it to the declaration's
+ * name, which must then be used like any other import. A dynamic import whose callback does anything
+ * else (destructures, reads two exports, returns the module) is not counted.
+ */
+function loadedOnDemand(parsed) {
+  const file = parsed.fileName;
+  const found = [];
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      const then = node.parent;
+      const call = then?.parent;
+      const callback = call && ts.isCallExpression(call) && call.expression === then ? call.arguments[0] : null;
+      if (
+        ts.isPropertyAccessExpression(then) &&
+        then.name.text === "then" &&
+        callback &&
+        ts.isArrowFunction(callback) &&
+        callback.parameters.length === 1 &&
+        ts.isIdentifier(callback.parameters[0].name) &&
+        ts.isPropertyAccessExpression(callback.body) &&
+        ts.isIdentifier(callback.body.expression) &&
+        callback.body.expression.text === callback.parameters[0].name.text
+      ) {
+        let owner = call.parent;
+        while (owner && !ts.isVariableDeclaration(owner) && !ts.isSourceFile(owner)) owner = owner.parent;
+        if (owner && ts.isVariableDeclaration(owner) && ts.isIdentifier(owner.name)) {
+          found.push({
+            name: callback.body.name.text,
+            local: owner.name.text,
+            from: resolveSpecifier(file, node.arguments[0].text),
+          });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(parsed, visit);
   return found;
 }
 
