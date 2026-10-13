@@ -80,7 +80,32 @@ export type FitsReadRow = {
   finishedAt: Date | null;
   candidateHashes: Record<string, string>;
   picks: StoredFitsPick[];
+  /** The prompt version the row was read under: rows from before it left the hash carry it inside. */
+  promptVersion: number;
 };
+
+/**
+ * The current hashes to judge one stored row against. A row written with the prompt version INSIDE its hash is
+ * judged on the part that never held it: where its stored half still equals the legacy form of today's deck,
+ * the deck has not moved, so today's hash is taken as the stored half (a bumped prompt alone stales nothing);
+ * the plan half is today's, so a new Overview still reads as one.
+ */
+function againstRow(
+  row: FitsReadRow,
+  current: Readonly<Record<string, string>>,
+  legacyCurrent: ((promptVersion: number) => Readonly<Record<string, string>>) | undefined,
+): Readonly<Record<string, string>> {
+  const legacy = legacyCurrent?.(row.promptVersion);
+  if (!legacy) return current;
+  const out: Record<string, string> = { ...current };
+  for (const [id, was] of Object.entries(row.candidateHashes)) {
+    if (!(id in current) || !(id in legacy)) continue;
+    const [planNow] = current[id].split(".");
+    const restWas = was.split(".")[1];
+    if (restWas === legacy[id].split(".")[1]) out[id] = `${planNow}.${restWas}`;
+  }
+  return out;
+}
 
 /** The view from a reader's rows for one card, newest first, against the current candidate hashes. */
 export function fitsReadView(
@@ -88,13 +113,15 @@ export function fitsReadView(
   current: Readonly<Record<string, string>>,
   /** The decks that hold the card now (`loadFits`' `holds`). */
   holding: ReadonlySet<string> = new Set(),
+  /** The older hash form (prompt version inside) for a given version, to recognise rows written before it left. */
+  legacyCurrent?: (promptVersion: number) => Readonly<Record<string, string>>,
 ): FitsReadView {
   const pendingRow = rows.find((r) => r.status === "pending") ?? null;
   const doneRow = rows.find((r) => r.status === "done") ?? null;
   const newestSettled = rows.find((r) => r.status !== "pending") ?? null;
   let stored: StoredFitsRead | null = null;
   if (doneRow) {
-    const { changed, setChanged, resolved } = staleness(doneRow.candidateHashes, current, holding);
+    const { changed, setChanged, resolved } = staleness(doneRow.candidateHashes, againstRow(doneRow, current, legacyCurrent), holding);
     stored = {
       readId: doneRow.id,
       outcome: doneRow.outcome === "noFit" ? "noFit" : "picks",

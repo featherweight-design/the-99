@@ -89,7 +89,7 @@ async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, mo
   const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read")]);
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
-  const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding);
+  const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding, (v) => candidateHashes(load.inputs, model, v));
   const { names, images, commanderIds } = await pickCards(userId, view, load, env);
   return { fits: load.fits, view, candidates: load.inputs.candidates.length, planSources, names, images, commanderIds, allowance };
 }
@@ -161,7 +161,9 @@ export async function pressFitsRead(
   if (inputs.candidates.length === 0) return { ok: false, reason: "noCandidates" };
   const model = deps.model();
   const hashes = candidateHashes(inputs, model);
-  const before = fitsReadView(await readFitsReadRows(userId, oracleId), hashes, new Set(load.fits.holds.map((h) => h.id)));
+  const before = fitsReadView(
+    await readFitsReadRows(userId, oracleId), hashes, new Set(load.fits.holds.map((h) => h.id)), (v) => candidateHashes(inputs, model, v),
+  );
   if (before.pending) return { ok: true, panel: await panelFor(userId, oracleId, load, model, now, env) };
   if (before.stored?.current) return { ok: false, reason: "current" };
 

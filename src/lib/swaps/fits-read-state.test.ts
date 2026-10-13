@@ -5,7 +5,7 @@ import { fitsReadView, readRefunds, staleness, type FitsReadRow } from "./fits-r
 const at = (min: number) => new Date(Date.UTC(2026, 9, 12, 6, min));
 const row = (over: Partial<FitsReadRow>): FitsReadRow => ({
   id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: at(0), finishedAt: at(1),
-  candidateHashes: { a: "p.1", b: "p.2" }, picks: [], ...over,
+  candidateHashes: { a: "p.1", b: "p.2" }, picks: [], promptVersion: 3, ...over,
 });
 
 describe("staleness", () => {
@@ -70,5 +70,29 @@ describe("fitsReadView", () => {
     expect(fitsReadView([failedLater, row({})], {}).failed).toEqual({ at: at(10).toISOString(), errorClass: "timeout" });
     expect(fitsReadView([row({}), failedEarlier], {}).failed).toBeNull();
     expect(fitsReadView([failedLater], {}).stored).toBeNull();
+  });
+});
+
+// Hugh, 2026-10-13: a prompt-version change must not stale a read whose deck has not moved. Rows written before the
+// version left the hash carry it inside; `legacyCurrent` rebuilds that form from the row's own version.
+describe("fitsReadView, a row written with the prompt version inside its hash", () => {
+  const legacyRow = row({ candidateHashes: { a: "p.L1" }, promptVersion: 3 });
+  const view = (current: Record<string, string>, legacy: Record<string, string>) =>
+    fitsReadView([legacyRow], current, new Set(), (v) => (v === 3 ? legacy : {})).stored!;
+
+  it("is current when the deck has not moved, though today's hash has a different shape", () => {
+    expect(view({ a: "p.N1" }, { a: "p.L1" })).toMatchObject({ current: true, changed: [], setChanged: false });
+  });
+  it("still reads a new Overview as one, and a real deck change as a deck change", () => {
+    expect(view({ a: "q.N1" }, { a: "q.L1" })).toMatchObject({ current: false, changed: [{ deckId: "a", reason: "overview" }] });
+    expect(view({ a: "p.N9" }, { a: "p.L9" })).toMatchObject({ current: false, changed: [{ deckId: "a", reason: "deck" }] });
+  });
+  it("judges a row of the new form on today's hash alone", () => {
+    const fresh = row({ candidateHashes: { a: "p.N1" }, promptVersion: 4 });
+    expect(fitsReadView([fresh], { a: "p.N1" }, new Set(), () => ({ a: "p.L1" })).stored).toMatchObject({ current: true });
+    expect(fitsReadView([fresh], { a: "p.N2" }, new Set(), () => ({ a: "p.L1" })).stored).toMatchObject({ current: false });
+  });
+  it("without the legacy form it is judged as before", () => {
+    expect(fitsReadView([legacyRow], { a: "p.N1" }).stored).toMatchObject({ current: false });
   });
 });

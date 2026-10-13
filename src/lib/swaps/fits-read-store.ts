@@ -31,10 +31,16 @@ const facts = (c: ReadCardFacts) =>
  * would be asked the same question. A list edit, a new Overview, a lock, a change in the deck's need
  * or the index's inclusion, the card's own text: each moves it.
  *
+ * The PROMPT VERSION is not in the hash (Hugh, 2026-10-13): a version bump changes how the model is asked, not
+ * what the deck is, and it used to mark every deck's stored read out of date. A row stays what it was read
+ * under in `prompt_version`. Rows written before that carry it INSIDE the hash, so `legacyPromptVersion` rebuilds
+ * that older form from the row's own stored version for `fitsReadView` to compare against; the model stays in
+ * both, since a different model really does ask a different question.
+ *
  * Two halves, `plan.rest`, so a stale row can say WHY (handoff P3g against P10, gap G5): the plan's
  * half moves for a new Overview, the rest for everything else.
  */
-export function candidateHashes(inputs: FitsReadInputs, model: string): Record<string, string> {
+export function candidateHashes(inputs: FitsReadInputs, model: string, legacyPromptVersion?: number): Record<string, string> {
   const card = facts(inputs.card);
   const blocks = new Map(inputs.decks.map((d) => [d.deckId, d]));
   const out: Record<string, string> = {};
@@ -45,7 +51,7 @@ export function candidateHashes(inputs: FitsReadInputs, model: string): Record<s
     // half alone, and reads as a new Overview (P3g), never as a deck change.
     const plan = sha([d?.plan ?? null, sorted(d?.keyCardIds ?? []), d?.themes ?? []]);
     const rest = sha([
-      FITS_READ_PROMPT_VERSION, model, card, c.need, c.inclusion, sorted(c.basicCuts ?? []),
+      ...(legacyPromptVersion === undefined ? [] : [legacyPromptVersion]), model, card, c.need, c.inclusion, sorted(c.basicCuts ?? []),
       d && {
         commanders: d.commanders.map(facts),
         list: d.list.map(facts).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
@@ -158,7 +164,7 @@ export async function readFitsReadRows(userId: string, oracleId: string): Promis
   const cols = {
     id: fitsReads.id, status: fitsReads.status, outcome: fitsReads.outcome, errorClass: fitsReads.errorClass,
     refunded: fitsReads.refunded, createdAt: fitsReads.createdAt, finishedAt: fitsReads.finishedAt,
-    candidateHashes: fitsReads.candidateHashes, picks: fitsReads.picks,
+    candidateHashes: fitsReads.candidateHashes, picks: fitsReads.picks, promptVersion: fitsReads.promptVersion,
   };
   const mine = and(eq(fitsReads.userId, userId), eq(fitsReads.oracleId, oracleId));
   const newest = (where: SQL | undefined) =>
