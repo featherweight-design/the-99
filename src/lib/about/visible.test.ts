@@ -385,3 +385,21 @@ describe("notes follows DECK_NOTES_ENABLED", () => {
     expect(on[on.indexOf("deck-stats") + 1]).toBe("notes");
   });
 });
+
+describe("the History lines follow the Tuning hub, not one tool", () => {
+  const HISTORY_KEY = "Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.";
+  const HISTORY_LINE = "Each color you pick is kept in History too. Reopen it and each trade is checked against today’s deck.";
+  const entry = (env: NodeJS.ProcessEnv, id: string) => visibleEntries(env).find((e) => e.id === id);
+  const tools = (on: { tuning?: boolean; mana?: boolean; cuts?: boolean }) =>
+    ({ ...ON, TUNING_ENABLED: on.tuning ? "true" : "false", MANA_BALANCE_ENABLED: on.mana ? "true" : "false", PROPOSED_CUTS_ENABLED: on.cuts ? "true" : "false" }) as unknown as NodeJS.ProcessEnv;
+
+  it("drops them with one tool on: that tool mounts directly, with no History", () => {
+    expect(entry(tools({ tuning: true }), "suggested-changes")?.keys).not.toContain(HISTORY_KEY);
+    expect(entry(tools({ mana: true }), "mana-balance")?.caption).not.toContain(HISTORY_LINE);
+  });
+
+  it("keeps them once a second tool draws the hub", () => {
+    expect(entry(tools({ tuning: true, cuts: true }), "suggested-changes")?.keys).toContain(HISTORY_KEY);
+    expect(entry(tools({ mana: true, cuts: true }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+  });
+});

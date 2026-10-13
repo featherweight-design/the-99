@@ -11,7 +11,7 @@ import { howItWorksEnabled } from "./how-it-works-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
-import { manaBalanceEnabled, tuningEnabled } from "../tuning/flag";
+import { manaBalanceEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled } from "../collection/edit-flag";
@@ -54,6 +54,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PRECONS_ENABLED: preconsEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
   ADDED_COPY_ENABLED: addedCopyEnabled,
+  // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
+  TUNING_HUB_ENABLED: tuningHubEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */
