@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { dailyLimitFor } from "../model/allowance";
+import { dailyLimitsFor } from "../model/allowance";
 import { featureWorstCaseMicroUsd } from "../model/prices";
 import type { ModelFeature } from "../model/allowance-rule";
 import { riseForAccounts, switchEnvValues } from "../switches/explain";
@@ -69,7 +69,9 @@ async function preview(tx: Tx, rise: { accounts: string[]; capabilities: ModelCa
     names: rise.accounts.map((id) => byId.get(id)?.name ?? byId.get(id)?.email ?? id),
     count: rise.accounts.length,
     costs: rise.capabilities.map((key) => ({ key, reserveMicroUsd: featureWorstCaseMicroUsd(featureOf(key)), meanMicroUsd: mean.get(featureOf(key)) ?? null })),
-    credits: [...new Set(rise.accounts.map(dailyLimitFor))].sort((a, b) => a - b),
+    // Each account's own limit (`dailyLimit`: its group's allowance, the owner's own, or the
+    // default), read in one statement in this transaction.
+    credits: [...new Set((await dailyLimitsFor(tx, rise.accounts)).values())].sort((a, b) => a - b),
     whatsNew: rise.whatsNew.length,
   };
 }

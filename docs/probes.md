@@ -1949,6 +1949,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
   staging, production and local-dev are refused by id. It writes as made-up accounts and removes every row in a
   `finally`.
+- `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:
+  with `MODEL_DAILY_ALLOWANCE` unset, a player in no group keeps five and the owner keeps ten, and a group with no
+  allowance changes nothing; a member takes their group's allowance, through the same read a reservation makes and
+  in the limit a panel reads; with the default at 1, a player in no group takes 1 while the owner keeps their own,
+  until placed in a group; and the column refuses 0. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
+  branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
 - `pnpm probe:game-opponents` proves opponents in the game log (social Feature C) against a real database. It builds a
   player, a friend with two decks and a pod, and a stranger to the player who is the friend's friend (so a read that lost
   its viewer predicate would find the stranger through the friend). It proves that a friend's decks are offered by

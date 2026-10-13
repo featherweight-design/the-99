@@ -50,6 +50,7 @@
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:wishlist": "tsx scripts/probe-wishlist.mts",
     "probe:admin-switches": "tsx scripts/probe-admin-switches.mts",
+    "probe:group-allowance": "tsx scripts/probe-group-allowance.mts",
     "measure:friend-spares": "tsx scripts/measure-friend-spares.mts",
     "probe:manapool-token-link": "tsx scripts/probe-manapool-token-link.mts",
     "probe:pair-index": "tsx scripts/probe-pair-index.ts",

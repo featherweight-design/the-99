@@ -270,13 +270,13 @@ async function run() {
     // Every unit but one already spent, inside the window.
     await fixture.execute(sql`
       insert into model_calls (user_id, feature, status)
-      select ${u}, 'tuning', 'spent' from generate_series(1, ${dailyLimitFor(u) - 1})`);
+      select ${u}, 'tuning', 'spent' from generate_series(1, ${(await dailyLimitFor(fixture as never, u)) - 1})`);
     const raced = await Promise.all([startRun(u, deckA, "fp", null, { env: process.env }), startRun(u, deckB, "fp", null, { env: process.env })]);
     check("4 · exactly one of two decks takes the last unit",
       raced.map((r) => r.kind).sort(), ["allowance", "started"]);
     const allowance = await readAllowance(u);
     check("4 · the allowance reads full, not over", [allowance.used, allowance.limit],
-      [dailyLimitFor(u), dailyLimitFor(u)]);
+      [await dailyLimitFor(fixture as never, u), await dailyLimitFor(fixture as never, u)]);
   }
 
   // 5–7 · Apply and undo, on a cut held at two copies, auto, and proxied.

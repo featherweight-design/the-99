@@ -4,11 +4,10 @@ import { db } from "../../db";
 import { creditGrants, modelCallParts, modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
-  MODEL_FRIEND_DAILY_ALLOWANCE,
   RESERVATION_TTL_MS,
   allowanceFrom,
+  dailyLimit,
   freeRoom,
-  ownerDailyAllowanceFrom,
   type Allowance,
   type LedgerRow,
   type ModelFeature,
@@ -56,13 +55,39 @@ export class AllowanceSpentError extends Error {
 }
 
 /**
- * The player's rolling-24-hour limit. THE ONE PLACE `MODEL_OWNER_USER_ID` is read (a Clerk user
- * id): that account gets the owner's ten (or `MODEL_OWNER_DAILY_ALLOWANCE`, when it parses as a
- * positive whole number), everyone else the friend's five. Unset or empty, no account is the owner
- * and everyone gets five — the limit fails closed.
+ * The player's rolling-24-hour limit (`dailyLimit` holds the rule): their group's allowance, else the
+ * owner's own (`MODEL_OWNER_USER_ID`, the one place it is read, with `MODEL_OWNER_DAILY_ALLOWANCE`),
+ * else the app-wide default (`MODEL_DAILY_ALLOWANCE`, five when unset). Read through `q`, so a
+ * reservation reads it inside its own transaction and one press never meets two limits.
  */
-export function dailyLimitFor(userId: string): number {
-  return isOwner(userId) ? ownerDailyAllowanceFrom(process.env.MODEL_OWNER_DAILY_ALLOWANCE) : MODEL_FRIEND_DAILY_ALLOWANCE;
+export async function dailyLimitFor(q: Tx | typeof db, userId: string): Promise<number> {
+  return (await dailyLimitsFor(q, [userId])).get(userId)!;
+}
+
+/** `dailyLimitFor` for many accounts in ONE read: the admin's confirm names every account it raises. */
+export async function dailyLimitsFor(q: Tx | typeof db, userIds: readonly string[]): Promise<Map<string, number>> {
+  const { rows } = userIds.length
+    ? await q.execute<{ user_id: string; allowance: number }>(groupAllowanceQuery(userIds))
+    : { rows: [] };
+  return new Map(
+    userIds.map((id) => [
+      id,
+      dailyLimit({
+        groupAllowances: rows.filter((r) => r.user_id === id).map((r) => Number(r.allowance)),
+        owner: isOwner(id),
+        ownerRaw: process.env.MODEL_OWNER_DAILY_ALLOWANCE,
+        defaultRaw: process.env.MODEL_DAILY_ALLOWANCE,
+      }),
+    ]),
+  );
+}
+
+/** Exported for its test: a group with no allowance must name none, or a member would read 0. */
+export function groupAllowanceQuery(userIds: readonly string[]) {
+  return sql`
+    select m.user_id, g.daily_allowance as allowance from flag_group_members m
+    join flag_groups g on g.id = m.group_id
+    where m.user_id in (${sql.join(userIds.map((id) => sql`${id}`), sql`, `)}) and g.daily_allowance is not null`;
 }
 
 /**
@@ -204,11 +229,11 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
  * call at all would be let through.
  */
 export async function readAllowance(userId: string, now: Date = new Date(), feature?: ModelFeature): Promise<Allowance> {
-  const [rows, spend, balances] = await Promise.all([
-    ledgerRows(db, userId, now), monthSpend(db, userId, now), grantBalances(db, userId, now),
+  const [rows, spend, balances, limit] = await Promise.all([
+    ledgerRows(db, userId, now), monthSpend(db, userId, now), grantBalances(db, userId, now), dailyLimitFor(db, userId),
   ]);
   const allowance: Allowance = {
-    ...allowanceFrom(rows, now, dailyLimitFor(userId)),
+    ...allowanceFrom(rows, now, limit),
     ...(balances.length > 0 ? creditTotals(balances) : {}),
   };
   const refusal = spendRefusal({
@@ -274,7 +299,7 @@ export async function reserveModelCall(
     callMicro: featureWorstCaseMicroUsd(feature, model),
   });
   if (refusal) return { refused: refusal };
-  const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now, dailyLimitFor(userId));
+  const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now, await dailyLimitFor(tx, userId));
   // The free allowance first, because it is use-it-or-lose-it; then a paid lot, plan before pack
   // (`pickGrant`). Both read under the lock above, so two presses cannot take one last credit.
   let creditGrantId: string | null = null;

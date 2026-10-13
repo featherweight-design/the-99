@@ -19,7 +19,8 @@
  * when the app-wide spend cap arrived (`spend-rule.ts`): the cap bounds the month's dollars, so
  * the per-player number only has to share the budget fairly, and the owner — who tests every
  * change — gets more presses than a friend. Which account is the owner is `MODEL_OWNER_USER_ID`,
- * read once in `allowance.ts` (`dailyLimitFor`); unset, everyone gets the friend's five.
+ * read once in `allowance.ts` (`dailyLimitFor`). Since 2026-10-13 a group's allowance and the
+ * app-wide default (`MODEL_DAILY_ALLOWANCE`) come first; `dailyLimit` below holds the order.
  */
 export const MODEL_OWNER_DAILY_ALLOWANCE = 10;
 export const MODEL_FRIEND_DAILY_ALLOWANCE = 5;
@@ -28,14 +29,44 @@ export const MODEL_FRIEND_DAILY_ALLOWANCE = 5;
  * The owner's daily limit, from `MODEL_OWNER_DAILY_ALLOWANCE` when it is set to a positive whole
  * number. Anything else (unset, blank, zero, negative, fractional, or not a number) falls back to
  * `MODEL_OWNER_DAILY_ALLOWANCE`. It exists so staging can give the owner room to test (Hugh,
- * 2026-10-12) while production stays unset, at ten. It applies to the owner alone: a friend's
- * five has no override.
+ * 2026-10-12) while production stays unset, at ten. It applies to the owner alone; everyone else's
+ * limit moves through a group's allowance or `MODEL_DAILY_ALLOWANCE` (`dailyLimit`).
  */
 export function ownerDailyAllowanceFrom(raw: string | undefined): number {
+  return positiveWholeOr(raw, MODEL_OWNER_DAILY_ALLOWANCE);
+}
+
+function positiveWholeOr(raw: string | undefined, fallback: number): number {
   const v = raw?.trim() ?? "";
-  if (!/^\d+$/.test(v)) return MODEL_OWNER_DAILY_ALLOWANCE;
+  if (!/^\d+$/.test(v)) return fallback;
   const n = Number(v);
-  return Number.isSafeInteger(n) && n > 0 ? n : MODEL_OWNER_DAILY_ALLOWANCE;
+  return Number.isSafeInteger(n) && n > 0 ? n : fallback;
+}
+
+/**
+ * The app-wide default for a player in no group that sets an allowance: `MODEL_DAILY_ALLOWANCE` when it
+ * is a positive whole number, otherwise the friend's five, so leaving it unset changes nobody's limit.
+ */
+export function defaultDailyAllowanceFrom(raw: string | undefined): number {
+  return positiveWholeOr(raw, MODEL_FRIEND_DAILY_ALLOWANCE);
+}
+
+/**
+ * One player's rolling-24-hour limit (payments scope, Hugh's answer to Q16, 2026-10-13), first rung
+ * that applies:
+ * 1. Their group's `daily_allowance`. An account is in at most one group; should a player ever read
+ *    more than one, the highest wins.
+ * 2. The owner's own limit (`MODEL_OWNER_DAILY_ALLOWANCE`), while the owner is in no group that sets
+ *    one, so the default can drop without dropping the owner.
+ * 3. The app-wide default (`defaultDailyAllowanceFrom`).
+ * With no group allowance set anywhere and `MODEL_DAILY_ALLOWANCE` unset, this is exactly the limit
+ * before groups carried one. Pure.
+ */
+export function dailyLimit(input: { groupAllowances: readonly number[]; owner: boolean; ownerRaw: string | undefined; defaultRaw: string | undefined }): number {
+  // The column is checked 1 to 1000; anything else read here is not an allowance.
+  const allowances = input.groupAllowances.filter((n) => Number.isSafeInteger(n) && n > 0);
+  if (allowances.length > 0) return Math.max(...allowances);
+  return input.owner ? ownerDailyAllowanceFrom(input.ownerRaw) : defaultDailyAllowanceFrom(input.defaultRaw);
 }
 
 export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;

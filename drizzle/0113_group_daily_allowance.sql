@@ -1,0 +1,2 @@
+ALTER TABLE "flag_groups" ADD COLUMN "daily_allowance" integer;--> statement-breakpoint
+ALTER TABLE "flag_groups" ADD CONSTRAINT "flag_groups_daily_allowance_check" CHECK ("flag_groups"."daily_allowance" is null or "flag_groups"."daily_allowance" between 1 and 1000);

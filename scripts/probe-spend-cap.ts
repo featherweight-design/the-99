@@ -181,10 +181,10 @@ async function run() {
     const again = newUser();
     const unset = [];
     for (let i = 0; i < 6; i++) unset.push(kindOf(await reserve(again)));
-    check("c · unset, the would-be owner's limit is five", [dailyLimitFor(owner), dailyLimitFor(again)], [5, 5]);
+    check("c · unset, the would-be owner's limit is five", [await dailyLimitFor(db, owner), await dailyLimitFor(db, again)], [5, 5]);
     check("c · five reserve and the sixth is refused", unset, ["reserved", "reserved", "reserved", "reserved", "reserved", "allowance"]);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    check("c · a blank variable names no owner either", dailyLimitFor("   "), 5);
+    check("c · a blank variable names no owner either", await dailyLimitFor(db, "   "), 5);
     delete process.env.MODEL_OWNER_USER_ID;
     await refundAll(again);
   }

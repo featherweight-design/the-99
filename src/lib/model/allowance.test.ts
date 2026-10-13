@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The limit reads the environment and nothing else; the database is never reached.
+// The database is never reached: the limit's group read is handed a fake query.
 vi.mock("../../db", () => ({ db: {} }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { callMicroFor, dailyLimitFor, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
+import { callMicroFor, dailyLimitFor, dailyLimitsFor, groupAllowanceQuery, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
 import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
@@ -29,7 +29,7 @@ describe("ownerShareMicro", () => {
 });
 
 describe("dailyLimitFor", () => {
-  const keys = ["MODEL_OWNER_USER_ID", "MODEL_OWNER_DAILY_ALLOWANCE"] as const;
+  const keys = ["MODEL_OWNER_USER_ID", "MODEL_OWNER_DAILY_ALLOWANCE", "MODEL_DAILY_ALLOWANCE"] as const;
   const before = keys.map((k) => process.env[k]);
   afterEach(() => {
     keys.forEach((k, i) => {
@@ -37,37 +37,68 @@ describe("dailyLimitFor", () => {
       else process.env[k] = before[i];
     });
   });
+  // The reader's group allowances, as the membership read would return them.
+  const groups = (...allowances: number[]) =>
+    ({ execute: async () => ({ rows: allowances.map((allowance) => ({ user_id: "user_owner", allowance })).concat(allowances.map((allowance) => ({ user_id: "user_friend", allowance }))) }) }) as never;
+  const none = groups();
 
-  it("gives the owner an overridden limit, and a friend still five", () => {
+  it("changes nobody's limit while MODEL_DAILY_ALLOWANCE is unset and no group sets one", async () => {
+    delete process.env.MODEL_DAILY_ALLOWANCE;
     process.env.MODEL_OWNER_USER_ID = "user_owner";
+    delete process.env.MODEL_OWNER_DAILY_ALLOWANCE;
+    expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_FRIEND_DAILY_ALLOWANCE]).toEqual([10, 5]);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(10);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
-    expect(dailyLimitFor("user_owner")).toBe(100);
-    expect(dailyLimitFor("user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(100);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
   });
 
-  it("ignores a garbage override, and an override with no owner", () => {
+  it("gives a group's allowance to its member, owner included, over the default", async () => {
+    process.env.MODEL_OWNER_USER_ID = "user_owner";
+    process.env.MODEL_DAILY_ALLOWANCE = "1";
+    expect(await dailyLimitFor(groups(3), "user_friend")).toBe(3);
+    expect(await dailyLimitFor(groups(5), "user_owner")).toBe(5);
+    expect(await dailyLimitFor(groups(3, 5), "user_friend")).toBe(5);
+  });
+
+  it("takes MODEL_DAILY_ALLOWANCE for a player in no group, and the owner keeps their own", async () => {
+    process.env.MODEL_OWNER_USER_ID = "user_owner";
+    process.env.MODEL_DAILY_ALLOWANCE = "1";
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(10);
+  });
+
+  it("ignores a garbage default or override, and an override with no owner", async () => {
+    process.env.MODEL_DAILY_ALLOWANCE = "0";
+    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
     process.env.MODEL_OWNER_USER_ID = "user_owner";
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "lots";
-    expect(dailyLimitFor("user_owner")).toBe(10);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(10);
     delete process.env.MODEL_OWNER_USER_ID;
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
-    expect(dailyLimitFor("user_owner")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(5);
   });
 
-  it("gives the owner ten and everyone else five", () => {
-    process.env.MODEL_OWNER_USER_ID = "user_owner";
-    expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_FRIEND_DAILY_ALLOWANCE]).toEqual([10, 5]);
-    expect(dailyLimitFor("user_owner")).toBe(10);
-    expect(dailyLimitFor("user_friend")).toBe(5);
+  it("reads only groups that set an allowance, so a group without one names none", () => {
+    const text = new PgDialect().sqlToQuery(groupAllowanceQuery(["u1", "u2"])).sql.replace(/\s+/g, " ");
+    expect(text).toContain("g.daily_allowance is not null");
+    expect(text).toContain("m.user_id in ($1, $2)");
   });
 
-  it("fails closed: unset or empty, no account is the owner", () => {
+  it("reads many accounts' limits in one statement", async () => {
+    const execute = vi.fn(async () => ({ rows: [{ user_id: "u1", allowance: 3 }] }));
+    const limits = await dailyLimitsFor({ execute } as never, ["u1", "u2"]);
+    expect(execute).toHaveBeenCalledOnce();
+    expect([limits.get("u1"), limits.get("u2")]).toEqual([3, 5]);
+  });
+
+  it("fails closed: unset or empty, no account is the owner", async () => {
+    delete process.env.MODEL_DAILY_ALLOWANCE;
     delete process.env.MODEL_OWNER_USER_ID;
-    expect(dailyLimitFor("user_owner")).toBe(5);
-    expect(dailyLimitFor("")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(5);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    expect(dailyLimitFor("")).toBe(5);
-    expect(dailyLimitFor("   ")).toBe(5);
+    expect(await dailyLimitFor(none, "   ")).toBe(5);
   });
 });
 
@@ -89,7 +120,7 @@ describe("reserveModelCall and the origins", () => {
     let inserted: Record<string, unknown> | undefined;
     const answers: unknown[][] = [[{ app: "0", user: "0" }], [], []];
     const tx = {
-      execute: async () => undefined,
+      execute: async () => ({ rows: [] }),
       select: () => ({ from: () => ({ where: (w: unknown) => { wheres.push(w); return Promise.resolve(answers.shift() ?? []); } }) }),
       insert: () => ({ values: (v: Record<string, unknown>) => { inserted = v; return { returning: async () => [{ id: "call-1" }] }; } }),
     };
@@ -106,10 +137,35 @@ describe("reserveModelCall and the origins", () => {
     }
   });
 
+  it("refuses at the group's allowance, read through the press's own transaction", async () => {
+    const now = new Date("2026-10-13T12:00:00Z");
+    const spent = (n: number) => Array.from({ length: n }, (_, i) => ({ status: "spent", createdAt: new Date(now.getTime() - (i + 1) * 60_000) }));
+    const dialect = new PgDialect();
+    const reserve = async (used: number) => {
+      const answers: unknown[][] = [[{ app: "0", user: "0" }], [], spent(used)];
+      const reads: string[] = [];
+      const tx = {
+        execute: vi.fn(async (q: never) => {
+          const text = dialect.sqlToQuery(q).sql;
+          reads.push(text);
+          return { rows: text.includes("daily_allowance") ? [{ user_id: "user_a", allowance: 2 }] : [] };
+        }),
+        select: () => ({ from: () => ({ where: () => Promise.resolve(answers.shift() ?? []) }) }),
+        insert: () => ({ values: () => ({ returning: async () => [{ id: "call-1" }] }) }),
+      };
+      return { got: await reserveModelCall(tx as never, "user_a", "tuning", "claude-sonnet-5", now), reads };
+    };
+    // The default would allow five; the group's two is the limit, and it is read on `tx`.
+    const under = await reserve(1);
+    expect(under.got).toEqual({ id: "call-1" });
+    expect(under.reads.some((r) => r.includes("daily_allowance"))).toBe(true);
+    expect((await reserve(2)).got).toEqual({ refused: "allowance" });
+  });
+
   it("a system call checks nothing, writes origin system and never reads the player's rows", async () => {
     let inserted: Record<string, unknown> | undefined;
     const tx = {
-      execute: vi.fn(async () => undefined),
+      execute: vi.fn(async () => ({ rows: [] })),
       select: vi.fn(() => { throw new Error("a system call read the ledger"); }),
       insert: () => ({ values: (v: Record<string, unknown>) => { inserted = v; return { returning: async () => [{ id: "call-s" }] }; } }),
     };
@@ -128,7 +184,8 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     const wheres: unknown[] = [];
     let inserted: Record<string, unknown> | undefined;
     const tx = {
-      execute: async () => undefined,
+      // The lock, then the group allowance read (no group: the default limit).
+      execute: async () => ({ rows: [] }),
       select: () => ({
         from: () => ({
           where: (w: unknown) => {
