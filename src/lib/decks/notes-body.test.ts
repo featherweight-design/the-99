@@ -88,7 +88,7 @@ describe("capBody with a UTF-16 measure and a tag limit", () => {
   const id = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
   const tag = (n: number, name: string) => `[[${id(n)}|${name}]]`;
 
-  it("counts an astral character as the two units the prompt boundary counts, by default as one", () => {
+  it("counts an astral character as one character by default (as the prompt boundary does), and as two units under a UTF-16 measure", () => {
     expect(capBody("😀😀😀", 2)).toBe("😀😀");
     expect(capBody("😀😀😀", 2, { measure: (t) => t.length })).toBe("😀");
   });
