@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
+import { redactSecrets } from "./scripts/lib/redact-env.mjs";
 
 // Testing Library only auto-registers its cleanup hook when Vitest runs with
 // `globals: true`. This project keeps globals off and imports explicitly, so
@@ -18,10 +19,15 @@ afterEach(() => {
   if (typeof localStorage !== "undefined") localStorage.clear();
 });
 
+// No test may see a live credential from the shell that started it: a failing assertion over an
+// object built from `process.env` prints the whole object (scripts/lib/redact-env.mjs).
+redactSecrets(process.env);
+
 // Client components import server actions directly (the pattern throughout src/components),
 // and `src/db` throws at module load without a connection string. No test opens a connection;
-// this is the same stub the production build uses to typecheck without a database.
-process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
+// this is the same stub the production build uses to typecheck without a database. Set outright,
+// not defaulted: the redaction above leaves a shell's DATABASE_URL non-empty but unusable.
+process.env.DATABASE_URL = "postgres://stub:stub@localhost/stub";
 
 // jsdom ships no ResizeObserver either. jsdom lays nothing out, so a real one
 // would never fire anyway — components that measure an element keep whatever
