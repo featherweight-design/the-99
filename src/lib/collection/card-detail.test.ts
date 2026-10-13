@@ -498,7 +498,7 @@ describe("loadCardDetail's round trips", () => {
   const catalogRow = { oracleId: "o-1", scryfallId: "s-1", name: "Arcane Signet", gameChanger: false };
 
   /** A fresh module over a db stub that counts what it is asked, plus the two side reads. */
-  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown }) {
+  async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown; gateRows?: unknown[] }) {
     const asked = { select: 0, printings: 0, execute: 0, flags: 0, partners: 0, token: [] as string[] };
     vi.doMock("../../db", () => ({
       db: {
@@ -515,7 +515,7 @@ describe("loadCardDetail's round trips", () => {
             }),
           };
         },
-        execute: async () => { asked.execute += 1; return { rows: [] }; },
+        execute: async () => { asked.execute += 1; return { rows: opts.gateRows ?? [] }; },
       },
     }));
     vi.doMock("../bracket/flags-read", () => ({
@@ -604,6 +604,32 @@ describe("loadCardDetail's round trips", () => {
       answer([]);
       expect((await pending)?.oracleId).toBe("o-1");
     } finally { done(); }
+  });
+
+  // Admin adoption 6d: the Fits door's gate is decided from the env the loader is HANDED, never the
+  // environment. Sentinel envs, compared by identity, so no assertion prints the process environment.
+  it("hands the reader's env to the Fits gate, whatever the environment says", async () => {
+    const READ = { SWAP_TOOLS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+    selectCollectionRows.mockResolvedValue([ownedRow]);
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockResolvedValue(null);
+    loadAvailability.mockReset();
+    loadAvailability.mockResolvedValue(new Map());
+    const { load } = await fresh({ catalog: [catalogRow], gateRows: [{ commander_legal: true, has_decks: true }] });
+    try {
+      vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
+      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "false");
+      const on = await load("user_1", "o-1", undefined, READ);
+      expect([on?.commanderLegal, on?.hasDecks, on?.fitsRead]).toEqual([true, true, true]);
+      vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
+      vi.stubEnv("FIND_A_DECK_READ_ENABLED", "true");
+      const off = await load("user_1", "o-1", undefined, OFF);
+      expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([undefined, undefined, undefined]);
+    } finally {
+      vi.unstubAllEnvs();
+      done();
+    }
   });
 
   it("keeps an owned card when the catalog read it does not need fails", async () => {

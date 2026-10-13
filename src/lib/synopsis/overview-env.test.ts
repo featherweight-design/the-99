@@ -21,6 +21,8 @@ const stub = vi.hoisted(() => ({
   moved: false,
   illegalAsked: 0,
   offendingAsked: 0,
+  offending: [] as string[],
+  reserved: 0,
 }));
 vi.mock("../notices/overview", () => ({
   overviewDataMovedFor: async (_d: string, _u: string, _seen: number, env?: unknown) => (stub.movedEnvs.push(env), stub.moved),
@@ -28,7 +30,7 @@ vi.mock("../notices/overview", () => ({
 vi.mock("../notices/read", async (orig) => ({
   ...(await orig<object>()),
   holdsIllegalCard: async () => (stub.illegalAsked++, false),
-  liveOffendingIds: async () => (stub.offendingAsked++, []),
+  liveOffendingIds: async () => (stub.offendingAsked++, stub.offending),
 }));
 
 const AT = new Date("2026-10-01T00:00:00Z");
@@ -41,7 +43,16 @@ vi.mock("../profile/stored", async (orig) => ({
   readStoredReading: async () => ({ fresh: true, profile: { cards: [], commanderOracleIds: ["cmdr"] }, analyzedAt: AT }),
 }));
 vi.mock("../profile/load", async (orig) => ({ ...(await orig<object>()), readProfileHead: async () => HEAD }));
-vi.mock("../model/allowance", async (orig) => ({ ...(await orig<object>()), readAllowance: async () => ({ remaining: 5 }) }));
+vi.mock("../model/allowance", async (orig) => ({
+  ...(await orig<object>()),
+  readAllowance: async () => ({ remaining: 5 }),
+  reserveModelCall: async () => (stub.reserved++, { refused: "allowance" }),
+}));
+// The facts and the prompt between the decision and the reservation: stood in, since the write's
+// switch handoff to `startRun` is what is under test, not what the model is asked.
+vi.mock("./facts", async (orig) => ({ ...(await orig<object>()), buildSynopsisFacts: () => ({}) }));
+vi.mock("./prompt", async (orig) => ({ ...(await orig<object>()), buildSynopsisPrompt: () => ({ system: "", user: "" }) }));
+vi.mock("../staples/universal", () => ({ loadUniversalStaples: async () => new Map() }));
 
 const { listFingerprint } = await import("../profile/fingerprint");
 const { writeSynopsisFor } = await import("./generate");
@@ -60,6 +71,8 @@ beforeEach(() => {
   stub.moved = false;
   stub.illegalAsked = 0;
   stub.offendingAsked = 0;
+  stub.offending = [];
+  stub.reserved = 0;
 });
 
 describe("the write's replacement decision", () => {
@@ -74,6 +87,25 @@ describe("the write's replacement decision", () => {
       expect(stub.illegalAsked).toBe(1);
       expect(stub.movedEnvs).toHaveLength(1);
       expect(stub.movedEnvs[0] === ON).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
+
+describe("the write's reservation", () => {
+  it("re-checks legality under the lock with the reader's env, whatever the environment says", async () => {
+    try {
+      vi.stubEnv("NOTICES_ENABLED", "false");
+      // The data moved, so the write goes on to the reservation; the lock's legality check finds a card.
+      stub.moved = true;
+      stub.offending = ["banned"];
+      // freshReading's row, the shown synopsis, then the locked deck row inside startRun.
+      queue.push([{ list: LIST, at: AT, dirty: false, seenSeq: 5 }], [SHOWN], [{ commander: "cmdr", partner: null }]);
+      const result = await writeSynopsisFor("deck", "user", { modelName: "stub", model: vi.fn(), now: () => AT }, ON);
+      expect(result.kind).toBe("illegal");
+      expect(stub.offendingAsked).toBe(1);
+      expect(stub.reserved).toBe(0);
     } finally {
       vi.unstubAllEnvs();
     }
