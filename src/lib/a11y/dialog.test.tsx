@@ -1,4 +1,4 @@
-import { fireEvent, renderHook, waitFor } from "@testing-library/react";
+import { fireEvent, render, renderHook, waitFor } from "@testing-library/react";
 import { StrictMode, useRef } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { leaveDialogsForNavigation, useBackDismiss, useDialogA11y } from "./dialog";
@@ -610,6 +610,32 @@ describe("useBackDismiss", () => {
     push.mockRestore();
     window.history.back();
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  // Hugh, 2026-10-12: the card modal is keyed per card, so Prev/Next unmounts one dialog and mounts
+  // the next in a single commit. Each page used to push an entry, and Back then took one press per
+  // page to leave the route.
+  it("hands its entry to a dialog that replaces it in the same commit, pushing none", async () => {
+    const push = vi.spyOn(window.history, "pushState");
+    const back = vi.spyOn(window.history, "back");
+    const closes = [vi.fn(), vi.fn()];
+    const Page = ({ card }: { card: number }) => <Dialog key={card} onClose={closes[card]} />;
+    function Dialog({ onClose }: { onClose: () => void }) {
+      useBackDismiss(true, onClose);
+      return null;
+    }
+    const view = track(render(<Page card={0} />));
+    expect(push).toHaveBeenCalledTimes(1);
+    view.rerender(<Page card={1} />);
+    await settle();
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(back).not.toHaveBeenCalled();
+    push.mockRestore();
+    back.mockRestore();
+    // The one entry closes the dialog now showing.
+    window.history.back();
+    await waitFor(() => expect(closes[1]).toHaveBeenCalledTimes(1));
+    expect(closes[0]).not.toHaveBeenCalled();
   });
 
   it("takes its own entry back off when the dialog closes some other way", async () => {

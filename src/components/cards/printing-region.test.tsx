@@ -414,17 +414,17 @@ describe("PrintingRegion reveals the tile the reader is looking for (motion U1)"
     expect(revealed).not.toHaveBeenCalled();
   });
 
-  it("on open, after a pick and after a Reset, nearest in the column and centered in a row", () => {
+  it("on open, after a pick and after a Reset, centered in the column (Hugh, 2026-10-12)", () => {
     revealed.mockClear();
     const { rerender } = render(region(null));
     expect(revealed).toHaveBeenCalledTimes(1);
-    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "nearest", "center");
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "center", "center");
     rerender(region({ setCode: "LEA", collectorNumber: "270" }));
     expect(revealed).toHaveBeenCalledTimes(2);
-    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Limited Edition Alpha/), "nearest", "center");
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Limited Edition Alpha/), "center", "center");
     rerender(region(null));
     expect(revealed).toHaveBeenCalledTimes(3);
-    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "nearest", "center");
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "center", "center");
   });
 });
 

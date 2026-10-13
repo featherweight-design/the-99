@@ -16,14 +16,24 @@ import { armArtArrival, useNearViewport } from "./hydrated-art";
  * The Image and the background are asked for in the same commit, so the fade adds no wait of its own.
  */
 export function NearViewportArt({ src, className, style }: { src: string; className: string; style: CSSProperties }) {
+  return <ArrivingArt src={src} className={className} style={style} defer />;
+}
+
+/**
+ * An art-wash layer whose crop fades in when it lands (`armArtArrival`). `defer` waits for the page
+ * to hydrate and the layer to near the viewport before asking for it; without it the crop is in the
+ * server HTML, and a crop already painted when the page hydrates is left as it is.
+ */
+export function ArrivingArt({ src, className, style, defer = false }: { src: string; className: string; style: CSSProperties; defer?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const near = useNearViewport(ref, true);
+  const near = useNearViewport(ref, defer);
+  const shown = !defer || near;
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!near || !el) return;
+    if (!shown || !el) return;
     const image = new Image();
     image.src = src;
     return armArtArrival(el, image);
-  }, [near, src]);
-  return <div ref={ref} className={className} style={near ? { ...style, backgroundImage: cssUrl(src) } : style} />;
+  }, [shown, src]);
+  return <div ref={ref} className={className} style={shown ? { ...style, backgroundImage: cssUrl(src) } : style} />;
 }

@@ -1,7 +1,7 @@
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { NearViewportArt } from "./art-wash-near";
+import { ArrivingArt, NearViewportArt } from "./art-wash-near";
 
 let observed: { el: Element; cb: IntersectionObserverCallback }[] = [];
 class FakeObserver {
@@ -48,6 +48,16 @@ describe("NearViewportArt", () => {
     bringIntoView();
     expect(layer.style.backgroundImage).toContain(SRC);
     expect(probes.map((p) => p.src)).toEqual([SRC]);
+    expect(layer.dataset.arrival).toBe("pending");
+    act(() => void probes[0].dispatchEvent(new Event("load")));
+    expect(layer.dataset.arrival).toBe("in");
+  });
+
+  it("fades an eager crop in too: drawn at once, held only while its bytes are on their way", () => {
+    const { container } = render(<ArrivingArt src={SRC} className="art" style={{ opacity: 0.8 }} />);
+    const layer = container.firstElementChild as HTMLElement;
+    expect(layer.style.backgroundImage).toContain(SRC);
+    expect(observed).toHaveLength(0);
     expect(layer.dataset.arrival).toBe("pending");
     act(() => void probes[0].dispatchEvent(new Event("load")));
     expect(layer.dataset.arrival).toBe("in");

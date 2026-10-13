@@ -526,6 +526,8 @@ html {
   --motion-delay: 100ms;
   --motion-duration: 320ms;
   --motion-quick: 200ms;
+  /* Card art fading in as it lands, every surface alike (Hugh, 2026-10-12: 0.2 to 0.3s). */
+  --motion-fade: 300ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
 }
 
@@ -941,7 +943,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
      still holds while pending there (it then appears at that opacity without the fade, since that
      rule's `!important` also outranks the animation). */
   [data-arrival="pending"][data-arrival] { opacity: 0 !important; }
-  [data-arrival="in"] { animation: art-in var(--motion-duration) var(--motion-ease); }
+  [data-arrival="in"] { animation: art-in var(--motion-fade) var(--motion-ease); }
 }
 
 /* Find a deck's view arriving inside card details, in place of the details pane (handoff R2 §1): a

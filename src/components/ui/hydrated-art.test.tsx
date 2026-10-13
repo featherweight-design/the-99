@@ -174,9 +174,9 @@ describe("the arrival's CSS", () => {
   it("fades from transparent to the element's own opacity", () => {
     expect(css).toMatch(/@keyframes art-in \{\s*from \{ opacity: 0; \}\s*\}/);
   });
-  it("holds pending art transparent and fades `in` on the shared length and curve, with no beat, only where motion is welcome", () => {
+  it("holds pending art transparent and fades `in` on the fade length and the shared curve, with no beat, only where motion is welcome", () => {
     expect(css).toMatch(/\[data-arrival="pending"\]\[data-arrival\] \{ opacity: 0 !important; \}/);
-    expect(css).toMatch(/\[data-arrival="in"\] \{ animation: art-in var\(--motion-duration\) var\(--motion-ease\); \}/);
+    expect(css).toMatch(/\[data-arrival="in"\] \{ animation: art-in var\(--motion-fade\) var\(--motion-ease\); \}/);
     expect(motionBlock('[data-arrival="pending"]')).toMatch(/^@media \(prefers-reduced-motion: no-preference\) \{/);
     expect(motionBlock('[data-arrival="in"]')).toMatch(/^@media \(prefers-reduced-motion: no-preference\) \{/);
   });

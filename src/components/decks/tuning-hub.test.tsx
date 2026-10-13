@@ -343,6 +343,20 @@ describe("TuningHub opening a tool", () => {
     }
   });
 
+  // Hugh, 2026-10-12: History, then Mana Balance from the tab row, left the row at the foot of the
+  // window and the tool below the fold.
+  it("brings the hub up on a tab switch, once the new tool has drawn", async () => {
+    const scroll = vi.mocked(reveal);
+    const mana: HubToolSpec = { tool: "mana", panel: <h2 id="mana-heading">Mana Balance</h2> };
+    readHistoryPage.mockResolvedValue({ rows: [], nextCursor: null });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), mana, { tool: "history" }]} />);
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(scroll).toHaveBeenCalled());
+    scroll.mockClear();
+    fireEvent.click(screen.getByRole("tab", { name: /Mana Balance/ }));
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+  });
+
   it("waits for History's first rows before it scrolls, so the page is tall enough to bring the hub up", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

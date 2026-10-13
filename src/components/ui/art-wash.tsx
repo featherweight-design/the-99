@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
-import { cssUrl } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { NearViewportArt } from "./art-wash-near";
+import { ArrivingArt, NearViewportArt } from "./art-wash-near";
 
 const tint = (token: string, pct: number) =>
   `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
@@ -348,12 +347,12 @@ export function ArtWash(props: ArtWashProps) {
             }}
           />
         ) : artCropUri ? (
-          <div
+          <ArrivingArt
+            src={artCropUri}
             className="art-wash-art absolute inset-y-0 left-0"
             style={{
               ...reducible(p.sharpOpacity, true),
               width: `${p.width}px`,
-              backgroundImage: cssUrl(artCropUri),
               backgroundSize: p.size,
               backgroundPosition: p.position,
               backgroundRepeat: "no-repeat",
@@ -387,17 +386,23 @@ export function ArtWash(props: ArtWashProps) {
         height: `${props.height}px`,
       }}
     >
-      <div
-        className="art-wash-art absolute inset-0"
-        style={{
-          ...reducible(artCropUri ? COVER_ART_OPACITY : 1, Boolean(artCropUri)),
-          background: artCropUri ? undefined : commanderGradient(colorIdentity),
-          backgroundImage: artCropUri ? cssUrl(artCropUri) : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
+      {artCropUri ? (
+        <ArrivingArt
+          src={artCropUri}
+          className="art-wash-art absolute inset-0"
+          style={{
+            ...reducible(COVER_ART_OPACITY, true),
+            backgroundSize: "cover",
+            backgroundPosition: "center top",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      ) : (
+        <div
+          className="art-wash-art absolute inset-0"
+          style={{ ...reducible(1, false), background: commanderGradient(colorIdentity) }}
+        />
+      )}
       <div
         // No edge in the class any more, because there is no longer an edge to
         // choose. The `-top` variant existed so the reduced-transparency override

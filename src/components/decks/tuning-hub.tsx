@@ -276,6 +276,10 @@ export function TuningHub({
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
       if (opening.focus && !heading) return false;
       if (!late && opening.scroll && toolRef.current?.querySelector("[data-hub-pending]")) return false;
+      // A tab switch waits for the new tool to draw something: scrolled while it is still empty,
+      // the page is not tall enough to bring the tab row up (Hugh, 2026-10-12: Mana Balance landed
+      // below the fold). A slow read gives way at the wait's end, as above.
+      if (!late && opening.scroll && !toolRef.current?.textContent?.trim()) return false;
       if (opening.scroll) reveal(sectionRef.current);
       if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
@@ -380,7 +384,8 @@ export function TuningHub({
                   aria-selected={active}
                   tabIndex={active ? 0 : -1}
                   disabled={!!view?.inert && !active}
-                  onClick={() => open(id, { focus: false })}
+                  // Every switch brings the tab row up once the new tool lands (Hugh, 2026-10-12).
+                  onClick={() => open(id, { focus: false, scroll: true })}
                   onKeyDown={(e) => onTabKey(e, i)}
                   className={`-mb-px flex items-center gap-[7px] border-b-2 px-0 pt-[4px] pb-[10px] text-[13px] disabled:cursor-default ${
                     active
