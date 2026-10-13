@@ -203,23 +203,23 @@ export function CartView({
       </div>
   ) : null;
 
-  // `flex-none`: the shell's column is `min-h-screen` (100vh), taller than 100dvh while the
-  // browser's bars show, and a growing page would take that slack and scroll the document.
-  // Until the top is measured the phone reserves the shell header's usual height, so the first
-  // paint is not a header taller than the screen. The phone also clears an open About sheet, as
-  // the shell's own padding does. The list never shrinks under 120px: with the phone's deck
-  // select open, the page scrolls rather than squeezing the list to nothing.
+  // Desktop is one screen tall with the list scrolling in its own box. `flex-none`: the shell's
+  // column is `min-h-screen` (100vh), taller than 100dvh while the browser's bars show, and a
+  // growing page would take that slack and scroll the document. The PHONE has no fixed height at
+  // all (Hugh, 2026-10-13): the page scrolls as one, the checkout and the deck picker scroll away
+  // with it, and the switch and the list heading stay pinned at the top while the cards go by.
+  // A box that took what the checkout and the picker left showed about two rows at 390px.
   const pageHeight = top === null
-    ? "h-[calc(100dvh-var(--tabbar-h)-var(--about-sheet-h,0px)-64px)] md:h-dvh"
-    : "h-[calc(100dvh-var(--tabbar-h)-var(--about-sheet-h,0px)-var(--cart-top))] md:h-[calc(100dvh-var(--cart-top))]";
+    ? "md:h-dvh"
+    : "md:h-[calc(100dvh-var(--cart-top))]";
   const page = empty ?? (
     <div
       ref={pageRef}
-      className={`flex min-h-[420px] min-w-0 flex-none flex-col bg-[color:var(--bg)] font-sans ${pageHeight}`}
+      className={`flex min-w-0 flex-none flex-col bg-[color:var(--bg)] font-sans md:min-h-[420px] ${pageHeight}`}
       style={top === null ? undefined : ({ "--cart-top": `${top}px` } as CSSProperties)}
     >
       {header}
-      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] gap-[12px] px-[16px] pt-[12px] pb-[12px] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-x-[24px] md:px-[22px] md:pt-[18px] md:pb-[18px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_auto] gap-[12px] px-[16px] pt-[12px] pb-[12px] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-x-[24px] md:px-[22px] md:pt-[18px] md:pb-[18px]">
         {/* Phone: the checkout heads the page, above the decks (Hugh, 2026-10-11). Desktop: the
             decks, then the checkout under them, the decks scrolling inside the column. */}
         <div className="flex min-h-0 min-w-0 flex-col gap-[12px] md:gap-[14px]">
@@ -252,19 +252,26 @@ export function CartView({
           ) : (
             <>
               {band === "shown" ? <BackBand onDismiss={() => setBand("dismissed")} /> : null}
-              {/* The switch has nothing to switch between with one deck (E1); the buy key sits
-                  beside it, alone, while there is a line to press. */}
-              {cart.decks.length >= 2 || showKey ? (
-                <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
-                  {cart.decks.length >= 2 ? <ViewSwitch view={view} onView={chooseView} /> : <span />}
-                  {showKey ? <ShoppingKeyBuy /> : null}
-                </div>
-              ) : null}
-              <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
-                {byDeck ? copy.list.headByDeck(deckCount, total.copies) : copy.list.headByCard(lines.length)}
-              </h2>
-              {/* The list is its own scroll box at both widths, filling what the page leaves, so the
-                  controls above it stay put. Focusable and named, so a keyboard reader can scroll it. */}
+              {/* The controls and the list heading: pinned at the top of the phone's page while the cards
+                  scroll under them, and plain blocks on desktop, where the list has its own box. */}
+              <div
+                data-cart-controls
+                className="sticky top-0 z-[2] -mx-[16px] flex flex-col gap-[12px] border-b border-b-[color:var(--border)] bg-[color:var(--bg)] px-[16px] py-[10px] md:static md:mx-0 md:border-b-0 md:bg-transparent md:p-0"
+              >
+                {/* The switch has nothing to switch between with one deck (E1); the buy key sits
+                    beside it, alone, while there is a line to press. */}
+                {cart.decks.length >= 2 || showKey ? (
+                  <div className="flex flex-wrap items-center justify-between gap-x-[14px] gap-y-[10px]">
+                    {cart.decks.length >= 2 ? <ViewSwitch view={view} onView={chooseView} /> : <span />}
+                    {showKey ? <ShoppingKeyBuy /> : null}
+                  </div>
+                ) : null}
+                <h2 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">
+                  {byDeck ? copy.list.headByDeck(deckCount, total.copies) : copy.list.headByCard(lines.length)}
+                </h2>
+              </div>
+              {/* Desktop: the list is its own scroll box, filling what the page leaves, so the controls above
+                  it stay put; focusable and named, so a keyboard reader can scroll it. Phone: the page scrolls. */}
               {/* The provider sits OUTSIDE the scroll box: it draws the modal where it is mounted, and the dialog's
                   scroll lock looks for a scrollable ancestor, so mounted inside it would let the cart scroll behind. */}
               <CardDetailProvider>
@@ -272,7 +279,7 @@ export function CartView({
                 tabIndex={0}
                 role="region"
                 aria-label={copy.list.regionAria}
-                className="-mx-[13px] min-h-[120px] flex-1 overflow-y-auto overscroll-contain border-b border-b-[color:var(--border)] px-[13px]"
+                className="md:-mx-[13px] md:min-h-[120px] md:flex-1 md:overflow-y-auto md:overscroll-contain md:border-b md:border-b-[color:var(--border)] md:px-[13px]"
               >
                 <HoverPreviewProvider>
                 {byDeck ? (
@@ -304,7 +311,7 @@ export function CartView({
                 </HoverPreviewProvider>
                 <div
                   aria-hidden
-                  className="pointer-events-none sticky bottom-0 -mt-[36px] h-[36px]"
+                  className="pointer-events-none sticky bottom-0 -mt-[36px] hidden h-[36px] md:block"
                   style={{ background: "linear-gradient(to bottom, transparent, var(--bg))" }}
                 />
               </div>
