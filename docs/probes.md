@@ -184,6 +184,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   clones one over-100 deck for Proposed cuts and deletes it. `PROBE_SHOTS=<dir>` saves one mid-run shot per tool and
   width. Refuses staging and production. Failure path run: with Suggested changes' class made unconditional the
   probe fails on "nothing carries .ai-sweep once it has" at both widths.
+- `pnpm probe:stats-press` proves the `Stats` press on /decks answers in the frame it lands, at 1300x900 and 390x844 under
+  Slow 4G and a 4x CPU: from the pointerdown, in the page, the Stats tab is filled and `aria-busy` within 100ms, before
+  the view has changed, with the shell's pending diamond fully opaque (after its 120ms beat) while the read runs, and once Stats lands the tab is
+  selected with no mark and no busy flag. Measured on a production build 2026-10-13: 44-50ms at both widths, Stats
+  itself arriving at 700-800ms; `next dev` reads 110-117ms. Needs `LINEUP_ENABLED=true`, writes nothing.
 - `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
   cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
   call is held, and watches the run settle on its own, refunded, and later than the close. The model

@@ -228,6 +228,7 @@
     "probe:tuning-run": "tsx scripts/probe-tuning-run.ts",
     "probe:ai-sweep": "node scripts/probe-ai-sweep.mjs",
     "probe:run-after": "node scripts/probe-run-after.mjs",
+    "probe:stats-press": "node scripts/probe-stats-press.mjs",
     "probe:cuts-panel": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-panel.mts",
     "probe:tuning-optimistic": "node scripts/probe-tuning-optimistic.mjs",
     "probe:tuning-settings": "node scripts/probe-tuning-settings.mjs",

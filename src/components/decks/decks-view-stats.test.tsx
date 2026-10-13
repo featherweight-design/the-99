@@ -172,3 +172,33 @@ describe("DecksView: Stats on /decks", () => {
     expect(read.stats).not.toHaveBeenCalled();
   });
 });
+
+describe("DecksView: the Stats press answers while the read runs", () => {
+  it("fills the Stats segment and draws the pending mark in the press's own commit, over untouched Tiles", async () => {
+    let land: (d: LineupData) => void = () => {};
+    read.stats.mockReturnValue(new Promise<LineupData>((r) => { land = r; }));
+    draw({ data: null, view: "tiles", foldServer: null });
+    const stats = screen.getByRole("tab", { name: "Stats" });
+    expect(stats.querySelector("[data-pending]")).toBeNull();
+    fireEvent.click(stats);
+    expect(stats).toHaveAttribute("aria-busy", "true");
+    expect(stats.querySelector("[data-pending] .anim-pending-pip")).not.toBeNull();
+    expect(stats).toHaveClass("bg-[var(--elevated)]");
+    // Selection follows the view, not the press, and the tiles stay up under it.
+    expect(stats).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Tiles" })).toHaveAttribute("aria-selected", "true");
+    expect(document.querySelector("[data-decks-stats]")).toBeNull();
+    await act(async () => { land(STATS); });
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    expect(screen.getByRole("tab", { name: "Stats" }).querySelector("[data-pending]")).toBeNull();
+  });
+
+  it("takes the mark off a Stats whose read failed", async () => {
+    read.stats.mockRejectedValue(new Error("down"));
+    draw({ data: null, view: "tiles", foldServer: null });
+    fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
+    await waitFor(() => expect(read.stats).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Stats" }).querySelector("[data-pending]")).toBeNull());
+    expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveAttribute("aria-busy");
+  });
+});
