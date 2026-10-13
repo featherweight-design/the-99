@@ -168,10 +168,11 @@ jobs:
       # Shards the SELECTED files, not the whole glob (checked: four explicit files split 2 and 2).
       - name: Selected tests (shard ${{ matrix.shard }}/${{ needs.select.outputs.shards }})
         if: ${{ needs.select.outputs.mode == 'affected' }}
+        # Through the package `test` script, like the full path, so a change to its flags reaches both.
         # mapfile + a quoted array: no word splitting, no globbing of `[id]`, no xargs length limit.
         run: |
           mapfile -t files < ci-selection.txt
-          pnpm exec vitest run --passWithNoTests --shard=${{ matrix.shard }}/${{ needs.select.outputs.shards }} "${files[@]}"
+          pnpm test --shard=${{ matrix.shard }}/${{ needs.select.outputs.shards }} "${files[@]}"
 
   # The one status the rest of the process looks at keeps its old name, `checks`, and is green
   # only when every job above is. `always()` so a skipped or cancelled dependency fails it
