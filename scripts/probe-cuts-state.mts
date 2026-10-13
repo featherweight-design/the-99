@@ -71,9 +71,9 @@ try {
   check("never run: no run, no items, no last ok", [never.run, never.items.length, never.lastOkFingerprint], [null, 0, null]);
 
   // A second run is refused while one is pending; a failed run refunds.
-  const s1 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
+  const s1 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion, { env: process.env });
   check("the first run starts", s1.kind, "started");
-  const s2 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
+  const s2 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion, { env: process.env });
   check("a second cuts run on one deck is refused", s2.kind, "in_flight");
   if (s1.kind === "started") {
     check("a failed run settles", await finishCutsRun(s1, { status: "failed", errorClass: "upstream_busy" }), true);
@@ -81,7 +81,7 @@ try {
   }
 
   // A run that answers: items persisted, unit spent.
-  const s3 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
+  const s3 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion, { env: process.env });
   if (s3.kind !== "started") throw new Error(`start refused: ${s3.kind}`);
   check("persist writes the run and its items", await persistCutsRun(s3, cuts, report), true);
   const ok = await readCutsState(deckId, USER, undefined, undefined, process.env);
@@ -93,7 +93,7 @@ try {
   check("readCutsState: the allowance is this feature's own, one unit spent", ok.allowance.used >= 1, true);
 
   // A failed re-run leaves the last ok run's cuts on screen.
-  const s4 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion);
+  const s4 = await startCutsRun(USER, deckId, inputs.fingerprint, inputs.readVersion, { env: process.env });
   if (s4.kind === "started") await finishCutsRun(s4, { status: "failed", errorClass: "upstream_busy" });
   const after = await readCutsState(deckId, USER, undefined, undefined, process.env);
   check("a failed re-run: newest run failed, last ok cuts stand", [after.run?.status, after.items.length], ["failed", 3]);
@@ -101,7 +101,7 @@ try {
   // Cut: one copy out, verdict and snapshot written with it.
   const before = (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[0].oracleId]))[0].quantity;
   const itemIds = ok.items.map((i) => i.id);
-  const cut = await cutItem(itemIds[0], USER);
+  const cut = await cutItem(itemIds[0], USER, undefined, process.env);
   check("cut succeeds", cut.ok, true);
   const row = (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[0].oracleId]))[0];
   check("cut removed one copy", row?.quantity ?? 0, before - 1);
@@ -114,26 +114,26 @@ try {
   check("and the run's fingerprint followed it, so the result is current", (await readCutsState(deckId, USER, undefined, undefined, process.env)).lastOkFingerprint, now.fingerprint);
 
   // Undo puts the row back exactly, and refuses over a deck that has moved.
-  check("undo succeeds over the deck the cut left", (await undoCutItem(itemIds[0], USER)).ok, true);
+  check("undo succeeds over the deck the cut left", (await undoCutItem(itemIds[0], USER, undefined, process.env)).ok, true);
   check("undo chained the run back to the list it was made against", (await readCutsState(deckId, USER, undefined, undefined, process.env)).lastOkFingerprint, inputs.fingerprint);
   check("undo restored the quantity", (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[0].oracleId]))[0].quantity, before);
-  await cutItem(itemIds[0], USER);
+  await cutItem(itemIds[0], USER, undefined, process.env);
   const afterCut = (await readProposedCuts(deckId, USER, process.env))!.fingerprint;
   await q(`insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, 1, false) on conflict (deck_id, oracle_id) do update set quantity = deck_cards.quantity + 1`, [deckId, picks[0].oracleId]);
   const edited = (await readProposedCuts(deckId, USER, process.env))!.fingerprint;
   check("an edit that is not a cut moves the deck and not the run: the result is stale", [edited !== afterCut, (await readCutsState(deckId, USER, undefined, undefined, process.env)).lastOkFingerprint === edited], [true, false]);
-  const moved = await undoCutItem(itemIds[0], USER);
+  const moved = await undoCutItem(itemIds[0], USER, undefined, process.env);
   check("undo over a moved deck refuses", moved.ok ? "ok" : moved.reason, "moved");
 
   // Locks: a card locked while the run ran can be stored as a proposal and is refused at Cut.
   await q(`insert into deck_locks (deck_id, oracle_id) values ($1, $2)`, [deckId, picks[1].oracleId]);
-  const locked = await cutItem(itemIds[1], USER);
+  const locked = await cutItem(itemIds[1], USER, undefined, process.env);
   check("a locked card is refused at Cut", locked.ok ? "ok" : locked.reason, "cutLocked");
   check("and is still in the deck", (await q(`select count(*)::int n from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[1].oracleId]))[0].n, 1);
 
   // A result is actionable only for the list it was made against: the deck was edited above, so a
   // cut from the old result is refused before it writes anything.
-  const staleCut = await cutItem(itemIds[2], USER);
+  const staleCut = await cutItem(itemIds[2], USER, undefined, process.env);
   check("a cut from a result the deck has moved past is refused as stale", staleCut.ok ? "ok" : staleCut.reason, "stale");
 
   // History's re-review: the same run named by id. The list has moved, so the run's fingerprint is
@@ -145,25 +145,25 @@ try {
   check("review: another reader's id reads as the ordinary panel", (await readCutsState(deckId, `${USER}-other`, new Date(), runId, process.env)).review ?? null, null);
   const qty2 = async () => (await q(`select quantity from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]))[0]?.quantity ?? 0;
   const before2 = await qty2();
-  const reviewCut = await cutItem(itemIds[2], USER, { review: true });
+  const reviewCut = await cutItem(itemIds[2], USER, { review: true }, process.env);
   check("review: a cut the moved list still holds is taken", reviewCut.ok ? "ok" : reviewCut.reason, "ok");
   check("review: it removed one copy", await qty2(), before2 - 1);
-  const reviewUndo = await undoCutItem(itemIds[2], USER, { review: true });
+  const reviewUndo = await undoCutItem(itemIds[2], USER, { review: true }, process.env);
   check("review: its undo puts the row back over the list the cut left", [reviewUndo.ok, await qty2()], [true, before2]);
   // A cut card that has since become the commander is never put back in the body by a review Undo.
-  await cutItem(itemIds[2], USER, { review: true });
+  await cutItem(itemIds[2], USER, { review: true }, process.env);
   const commanderWas = (await q(`select commander_oracle_id c from decks where id = $1`, [deckId]))[0].c;
   await q(`update decks set commander_oracle_id = $2 where id = $1`, [deckId, picks[2].oracleId]);
-  const undoCommander = await undoCutItem(itemIds[2], USER, { review: true });
+  const undoCommander = await undoCutItem(itemIds[2], USER, { review: true }, process.env);
   check("review: an undo whose card is now the commander refuses", undoCommander.ok ? "ok" : undoCommander.reason, "moved");
   check("review: and the commander is not put in the list", await qty2(), before2 - 1);
   await q(`update decks set commander_oracle_id = $2 where id = $1`, [deckId, commanderWas]);
-  check("review: with the commander back, that undo goes through", (await undoCutItem(itemIds[2], USER, { review: true })).ok, true);
-  const lockedReview = await cutItem(itemIds[1], USER, { review: true });
+  check("review: with the commander back, that undo goes through", (await undoCutItem(itemIds[2], USER, { review: true }, process.env)).ok, true);
+  const lockedReview = await cutItem(itemIds[1], USER, { review: true }, process.env);
   check("review: a locked card is still refused", lockedReview.ok ? "ok" : lockedReview.reason, "cutLocked");
   await q(`delete from deck_cards where deck_id = $1 and oracle_id = $2`, [deckId, picks[2].oracleId]);
   check("review: a cut whose card has left reads as not in the deck", (await readCutsState(deckId, USER, new Date(), runId, process.env)).items[2]?.inDeck, false);
-  const goneReview = await cutItem(itemIds[2], USER, { review: true });
+  const goneReview = await cutItem(itemIds[2], USER, { review: true }, process.env);
   check("review: and is refused, writing nothing", goneReview.ok ? "ok" : goneReview.reason, "cutGone");
   await q(`insert into deck_cards (deck_id, oracle_id, quantity, auto) values ($1, $2, $3, false)`, [deckId, picks[2].oracleId, before2]);
 
@@ -174,11 +174,11 @@ try {
 
   // A cut is never offered for a commander, whatever a stale row says.
   const cmd = (await q(`select commander_oracle_id c from decks where id = $1`, [deckId]))[0].c;
-  const run2 = await startCutsRun(USER, deckId, now.fingerprint, null);
+  const run2 = await startCutsRun(USER, deckId, now.fingerprint, null, { env: process.env });
   if (run2.kind === "started") {
     await persistCutsRun(run2, [{ oracleId: cmd, name: "commander", reason: "x", cites: [{ kind: "offList" }], position: 0 }], { ...report, askedCount: 1, survivedCount: 1, keptCount: 1 });
     const id = (await q(`select i.id from deck_cut_items i where i.run_id = $1`, [run2.runId]))[0].id;
-    const c = await cutItem(id, USER);
+    const c = await cutItem(id, USER, undefined, process.env);
     check("the commander is refused", c.ok ? "ok" : c.reason, "cutGone");
     const older = await readCutsState(deckId, USER, new Date(), runId, process.env);
     check("review: an older run is read by id while a newer ok run stands", [older.review?.runId, older.items.length, (await readCutsState(deckId, USER, undefined, undefined, process.env)).items.length], [runId, 3, 1]);

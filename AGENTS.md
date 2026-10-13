@@ -700,9 +700,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
   A `plumbing` switch (`LIST_CACHE_ENABLED`, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis scores are counted
   by) takes the app-wide override alone. An app-wide override still flips one without a deploy, so its readers
-  are handed the resolved env too (since admin PR 7a every flag function, and `roleBasisFromEnv`, `hubTools` and
-  `scoreWriterVersion`, REQUIRES its `env`, so leaving it out does not compile. Since admin PR 7b so does the claim
-  model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`), every reader under `src/lib/decks` (but
+  are handed the resolved env too, and a cache whose payload depends on it carries it in its key (below). Since admin
+  PR 7a every flag function, and `roleBasisFromEnv`, `hubTools` and `scoreWriterVersion`, REQUIRES its `env`, so
+  leaving it out does not compile. Since admin PR 7b so does the claim
+  model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`), every reader under `src/lib/decks` and `src/lib/tuning` (but
   `envForPageBasis`, which reads the kill switch on purpose), and the wrappers that took an OPTIONAL env and forwarded
   it to the claim model (`applyCollectionChange`, `loadContestedCard`, `loadSummaryView`, `loadFillGate`,
   `resolveAnswer`, `loadOwnedCandidates`). Wrappers that DEFAULT their own `env` to `process.env` and hand it to the
@@ -710,8 +711,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `countContestedCards`, `loadChooserCards`), `collection/card-detail` (`loadCardDetail`), `intake/rows`
   (`loadResultsPage`), `intake/search`, `intake/trial`, `commander-change/candidates`, `recs/free-ranking` and
   `swaps/fits`, `swaps/gather` and `swaps/take`, and 7d in `commanders/rankings` and `discovery/list`. Every other
-  reader's `env` default goes in 7b-2 (`src/lib/tuning`), 7c or 7d), and a cache whose payload
-  depends on it carries it in its key:
+  reader's `env` default goes in 7c or 7d. The keys:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` already keys on every switch. The registry
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
@@ -725,7 +725,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   wrappers that start them (`loadCart`, `loadShoppingRollup`, `listDecksWithStats`) take a REQUIRED `env`, so an
   env-less call to one does not compile; the defaulted wrappers named above still compile without one until 7c and
   7d. `switch-adoption.test.ts`'s `CLAIM_ENV` now names only `chainArt`, for `DECK_PRINTINGS_ENABLED`, whose `env`
-  still defaults until 7d. A deeper reader that takes a defaulted env is caught only once admin PRs 7b-2 to 7d make
+  still defaults until 7d. A deeper reader that takes a defaulted env is caught only once admin PRs 7c and 7d make
   `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
   proxy keys About's cookie on the reader's resolved entries, so a flip retires exactly the readers it changes.
   `check:list-cache` knows the two override tables reach a cached page through its key alone, and fails if any loader
@@ -734,14 +734,14 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   longer compiles; `fooEnabled(process.env)` still does, so `pnpm check:switch-reads` (`scripts/lib/switch-reads.mjs`,
   in CI and inside `pnpm test`) fails any code under `src/` that hands the `process.env` OBJECT on (an argument, a
   spread or copy, a `?? process.env` fallback, a variable, a prop), outside `src/lib/switches/`, tests, an `ALLOWED`
-  list (a file, its approved uses and a reason a reviewer can check) and a `PENDING` list of the fallbacks 7b-2 and
-  7d remove. Each approved use is pinned by a FINGERPRINT with a count, never a line or a per-file total:
+  list (a file, its approved uses and a reason a reviewer can check) and a `PENDING` list of the fallbacks 7d
+  removes. Each approved use is pinned by a FINGERPRINT with a count, never a line or a per-file total:
   `<enclosing function, method or module const>:<use>` (`loadAvailability:fallback`,
   `REQUEST_DEPS:argument:requestProfileDeps`), so swapping an approved use for a new one elsewhere in the file fails,
   and so does a listed fingerprint that is gone.
   A member read and a destructuring read are not findings (a rest element, `{ ...e } = process.env`, is a copy and
   is one). A parameter default (`env = process.env`, destructured in a parameter included) is not a finding but is
-  pinned the same way in `DEFAULTS_PENDING` (`<scope>:default:<param>`), so a new one fails and 7b-2 to 7d each shrink it (7b emptied `src/lib/decks`'); a binding
+  pinned the same way in `DEFAULTS_PENDING` (`<scope>:default:<param>`), so a new one fails and 7c and 7d each shrink it (7b emptied `src/lib/decks`' and `src/lib/tuning`'s); a binding
   default in a variable (`const { env = process.env } = opts`) is a finding. It cannot see the environment reached
   through anything but `process.env` itself, or an env built by hand from member reads.
 

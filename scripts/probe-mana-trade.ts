@@ -14,6 +14,7 @@ import ws from "ws";
 import { applyTrade, undoTrade } from "../src/lib/tuning/mana-trade";
 import { listKeyOf } from "../src/lib/tuning/list-key";
 import { PRODUCTION_BRANCH_ID, STAGING_BRANCH_ID } from "./lib/spend-target";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -64,26 +65,26 @@ async function main() {
   const before = await counts();
 
   check("a list that moved since the offer was read is refused, nothing written",
-    [await applyTrade(deck, USER, trade, "a-key-from-another-list"), await counts(), await snapshots()], [null, before, 0]);
-  check("another player's deck is refused", await applyTrade(deck, `${USER}-other`, trade, await key()), null);
+    [await applyTrade(deck, USER, trade, "a-key-from-another-list", process.env), await counts(), await snapshots()], [null, before, 0]);
+  check("another player's deck is refused", await applyTrade(deck, `${USER}-other`, trade, await key(), process.env), null);
 
-  const applyId = await applyTrade(deck, USER, trade, await key());
+  const applyId = await applyTrade(deck, USER, trade, await key(), process.env);
   check("the current list applies: one Plains out, one Forest in, one snapshot", [typeof applyId, await counts(), await snapshots()], ["string", { Plains: 2, Forest: 4 }, 1]);
-  check("another player cannot undo it", await undoTrade(applyId!, `${USER}-other`), null);
-  check("Undo restores the deck exactly and clears its snapshot", [await undoTrade(applyId!, USER), await counts(), await snapshots()], [deck, before, 0]);
-  check("a second Undo refuses", await undoTrade(applyId!, USER), null);
+  check("another player cannot undo it", await undoTrade(applyId!, `${USER}-other`, process.env), null);
+  check("Undo restores the deck exactly and clears its snapshot", [await undoTrade(applyId!, USER, process.env), await counts(), await snapshots()], [deck, before, 0]);
+  check("a second Undo refuses", await undoTrade(applyId!, USER, process.env), null);
 
-  const moved = await applyTrade(deck, USER, trade, await key());
+  const moved = await applyTrade(deck, USER, trade, await key(), process.env);
   await fixture.execute(sql`update deck_cards set quantity = quantity + 1 where deck_id = ${deck}::uuid and oracle_id = ${forest}::uuid`);
-  check("Undo refuses over a deck that moved since the apply", await undoTrade(moved!, USER), null);
+  check("Undo refuses over a deck that moved since the apply", await undoTrade(moved!, USER, process.env), null);
   await fixture.execute(sql`update deck_cards set quantity = quantity - 1 where deck_id = ${deck}::uuid and oracle_id = ${forest}::uuid`);
-  check("and succeeds once it is back as the apply left it", await undoTrade(moved!, USER), deck);
+  check("and succeeds once it is back as the apply left it", await undoTrade(moved!, USER, process.env), deck);
 
   await fixture.execute(sql`insert into mana_trade_applies (deck_id, user_id, cut_oracle_id, add_oracle_id, undo_snapshot, created_at) values (${deck}::uuid, ${USER}, ${plains}::uuid, ${forest}::uuid, '{"cut":null,"add":null}'::jsonb, now() - interval '2 days')`);
-  const fresh = await applyTrade(deck, USER, trade, await key());
+  const fresh = await applyTrade(deck, USER, trade, await key(), process.env);
   check("an apply prunes the player's day-old snapshots and keeps its own",
     (await one<{ old: number; all: number }>(sql`select count(*) filter (where created_at < now() - interval '1 day')::int as old, count(*)::int as "all" from mana_trade_applies where user_id = ${USER}`)), { old: 0, all: 1 });
-  await undoTrade(fresh!, USER);
+  await undoTrade(fresh!, USER, process.env);
   check("the deck ends as it began", await counts(), before);
 
   // A trade can cut a card that is not a basic (a cut the deck's tuning named, an off-plan land): the same
@@ -91,9 +92,9 @@ async function main() {
   const other = (await one<{ oracle_id: string }>(sql`select oracle_id from cards where type_line = 'Land' and name = 'Kessig Wolf Run' limit 1`)).oracle_id;
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck}::uuid, ${other}::uuid, 1)`);
   const held = async () => (await list()).find((r) => r.oracleId === other)?.quantity ?? 0;
-  const nonBasic = await applyTrade(deck, USER, { cutOracleId: other, addOracleId: forest }, await key());
+  const nonBasic = await applyTrade(deck, USER, { cutOracleId: other, addOracleId: forest }, await key(), process.env);
   check("a non-basic card goes out the same way: its row gone, one Forest in", [typeof nonBasic, await held(), (await counts()).Forest], ["string", 0, before.Forest + 1]);
-  check("and its Undo puts it back", [await undoTrade(nonBasic!, USER), await held(), await counts()], [deck, 1, before]);
+  check("and its Undo puts it back", [await undoTrade(nonBasic!, USER, process.env), await held(), await counts()], [deck, 1, before]);
 }
 
 main()

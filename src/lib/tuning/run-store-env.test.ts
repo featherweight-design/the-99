@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import type { Tx } from "./run-store";
+import { ENV_VIEW } from "@/test/env-view";
 
 const { assertSomeCardOpen, AllLockedError } = await import("./run-store");
 
@@ -32,7 +33,7 @@ describe("assertSomeCardOpen reads the reader's resolved switches", () => {
 
   it("reads nothing when the switch is off where it was decided", async () => {
     const { tx, execute } = allLockedTx();
-    await assertSomeCardOpen(tx, DECK);
+    await assertSomeCardOpen(tx, DECK, ENV_VIEW);
     expect(execute).not.toHaveBeenCalled();
   });
 });

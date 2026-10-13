@@ -67,7 +67,7 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * And refused when the player has LOCKED the cut (Locked, F4; `planSwap`'s `cutLocked`): the one
  * refusal where the cut is still in the deck.
  */
-export async function applyItem(itemId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
+export async function applyItem(itemId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
     if (!item || item.verdict !== "pending") return null;
@@ -92,7 +92,7 @@ export async function applyItem(itemId: string, userId: string, env: NodeJS.Proc
  * The deck exactly as it was before the apply (`restoreSwap`), and only over the deck the apply
  * left. The item returns to pending and its snapshot is cleared.
  */
-export async function undoItem(itemId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
+export async function undoItem(itemId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
     if (!item || item.verdict !== "accepted" || !item.undoSnapshot) return null;

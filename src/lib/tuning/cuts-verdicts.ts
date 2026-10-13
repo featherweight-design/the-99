@@ -102,7 +102,7 @@ async function lockedCut(tx: Tx, itemId: string, userId: string) {
 export type VerdictMode = { review?: boolean };
 
 /** Cut one copy of the card, and remember the row exactly as it was. */
-export async function cutItem(itemId: string, userId: string, mode: VerdictMode = {}, env: NodeJS.ProcessEnv = process.env): Promise<CutOutcome> {
+export async function cutItem(itemId: string, userId: string, mode: VerdictMode = {}, env: NodeJS.ProcessEnv): Promise<CutOutcome> {
   return db.transaction(async (tx): Promise<CutOutcome> => {
     const item = await lockedCut(tx, itemId, userId);
     if (!item || item.verdict !== "pending") return { ok: false, reason: "gone" };
@@ -145,7 +145,7 @@ export async function cutItem(itemId: string, userId: string, mode: VerdictMode 
 }
 
 /** Put the card back as the cut found it, and only over the deck the cut left. */
-export async function undoCutItem(itemId: string, userId: string, mode: VerdictMode = {}, env: NodeJS.ProcessEnv = process.env): Promise<CutOutcome> {
+export async function undoCutItem(itemId: string, userId: string, mode: VerdictMode = {}, env: NodeJS.ProcessEnv): Promise<CutOutcome> {
   return db.transaction(async (tx): Promise<CutOutcome> => {
     const item = await lockedCut(tx, itemId, userId);
     const snap = item?.undoSnapshot?.cut;

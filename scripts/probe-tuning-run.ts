@@ -179,7 +179,7 @@ function suggestion(c: Catalog, cut = c.body[0]): ValidatedSuggestion {
 async function answered(
   userId: string, deckId: string, c: Catalog, fingerprint = "fp", cut?: string, readVersion: number | null = null,
 ) {
-  const started = await startRun(userId, deckId, fingerprint, readVersion);
+  const started = await startRun(userId, deckId, fingerprint, readVersion, { env: process.env });
   if (started.kind !== "started") throw new Error(`startRun refused: ${started.kind}`);
   await persistRun(started, [suggestion(c, cut)], 0);
   const [item] = await rows<{ id: string }>(sql`
@@ -196,7 +196,7 @@ async function run() {
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const started = await startRun(u, deck, "fp", null);
+    const started = await startRun(u, deck, "fp", null, { env: process.env });
     if (started.kind !== "started") return fail("case 1 start", started.kind);
     await readTuningState(deck, u, "fp", future(10), undefined, process.env);
     const wrote = await persistRun(started, [suggestion(c)], 0, lateBill);
@@ -221,7 +221,7 @@ async function run() {
       ["failure", (h: { runId: string; callId: string }) => finishRun(h, { status: "failed", errorClass: "timeout" }, lateBill)],
     ] as const) {
       const deck = await makeDeck(u, c);
-      const started = await startRun(u, deck, "fp", null);
+      const started = await startRun(u, deck, "fp", null, { env: process.env });
       if (started.kind !== "started") return fail(`case 1b start (${label})`, started.kind);
       await fixture.execute(sql`delete from decks where id = ${deck}::uuid`);
       check(`1b · the deck's delete took the run row with it (${label})`, await runRow(started.runId), null);
@@ -237,7 +237,7 @@ async function run() {
     const u = newUser();
     const deck = await makeDeck(u, c);
     const chosen = randomUUID();
-    const started = await startRun(u, deck, "fp", null, { runId: chosen });
+    const started = await startRun(u, deck, "fp", null, { runId: chosen, env: process.env });
     if (started.kind !== "started") return fail("case 2 start", started.kind);
     check("2 · the run is written under the id the panel chose", started.runId, chosen);
     check("2 · and reads pending while it runs", (await runRow(started.runId))?.status ?? null, "pending");
@@ -250,14 +250,14 @@ async function run() {
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const first = await startRun(u, deck, "fp", null);
-    const second = await startRun(u, deck, "fp", null);
+    const first = await startRun(u, deck, "fp", null, { env: process.env });
+    const second = await startRun(u, deck, "fp", null, { env: process.env });
     check("3 · a second run on the deck is refused as in flight", [first.kind, second.kind], ["started", "in_flight"]);
     check("3 · the loser holds no unit", await units(u), ["reserved"]);
 
     const u2 = newUser();
     const deck2 = await makeDeck(u2, c);
-    const raced = await Promise.all([startRun(u2, deck2, "fp", null), startRun(u2, deck2, "fp", null)]);
+    const raced = await Promise.all([startRun(u2, deck2, "fp", null, { env: process.env }), startRun(u2, deck2, "fp", null, { env: process.env })]);
     check("3 · started together, exactly one starts",
       raced.map((r) => r.kind).sort(), ["in_flight", "started"]);
     check("3 · and exactly one unit is held", await units(u2), ["reserved"]);
@@ -271,7 +271,7 @@ async function run() {
     await fixture.execute(sql`
       insert into model_calls (user_id, feature, status)
       select ${u}, 'tuning', 'spent' from generate_series(1, ${dailyLimitFor(u) - 1})`);
-    const raced = await Promise.all([startRun(u, deckA, "fp", null), startRun(u, deckB, "fp", null)]);
+    const raced = await Promise.all([startRun(u, deckA, "fp", null, { env: process.env }), startRun(u, deckB, "fp", null, { env: process.env })]);
     check("4 · exactly one of two decks takes the last unit",
       raced.map((r) => r.kind).sort(), ["allowance", "started"]);
     const allowance = await readAllowance(u);
@@ -292,9 +292,9 @@ async function run() {
     const before = (await readTuningState(deck, u, "fp", undefined, undefined, process.env)).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
     check("5 · before the apply the add is not in the deck", before?.addInDeck, false);
 
-    check("7 · another reader cannot apply the item", await applyItem(itemId, newUser()), null);
+    check("7 · another reader cannot apply the item", await applyItem(itemId, newUser(), process.env), null);
 
-    check("5 · apply lands", await applyItem(itemId, u), deck);
+    check("5 · apply lands", await applyItem(itemId, u, process.env), deck);
     check("5 · the cut loses one copy", await cardRow(deck, cut), { quantity: 1, auto: true });
     check("5 · the add arrives as one chosen copy", await cardRow(deck, c.add), { quantity: 1, auto: false });
     check("5 · the verdict and the snapshot land with it", await verdictOf(itemId),
@@ -304,17 +304,17 @@ async function run() {
     const applied = (await readTuningState(deck, u, "fp", undefined, undefined, process.env)).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
     check("5 · the panel reads the applied add as in the deck", applied?.addInDeck, true);
 
-    check("6 · a second apply is refused", await applyItem(itemId, u), null);
+    check("6 · a second apply is refused", await applyItem(itemId, u, process.env), null);
     check("6 · and changes no row", [await cardRow(deck, cut), await cardRow(deck, c.add)],
       [{ quantity: 1, auto: true }, { quantity: 1, auto: false }]);
 
-    check("7 · undo lands", await undoItem(itemId, u), deck);
+    check("7 · undo lands", await undoItem(itemId, u, process.env), deck);
     check("7 · the cut is back at two copies, auto", await cardRow(deck, cut), { quantity: 2, auto: true });
     check("7 · the cut is still proxied", await proxied(deck, cut), true);
     check("7 · the add is gone", await cardRow(deck, c.add), null);
     check("7 · the item is pending again, snapshot cleared", await verdictOf(itemId),
       { verdict: "pending", snapshot: false });
-    check("7 · a second undo is refused", await undoItem(itemId, u), null);
+    check("7 · a second undo is refused", await undoItem(itemId, u, process.env), null);
   }
 
   // 5, 7 · A cut at ONE copy leaves the deck, its proxy mark with it, and both come back.
@@ -324,16 +324,16 @@ async function run() {
     const cut = c.body[1];
     await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
     const { itemId } = await answered(u, deck, c, "fp", cut);
-    await applyItem(itemId, u);
+    await applyItem(itemId, u, process.env);
     check("5 · a last copy cut leaves the deck", await cardRow(deck, cut), null);
     check("5 · and its proxy mark goes with it", await proxied(deck, cut), false);
-    await undoItem(itemId, u);
+    await undoItem(itemId, u, process.env);
     check("7 · undo puts the row back as it was", await cardRow(deck, cut), { quantity: 1, auto: false });
     check("7 · and the proxy mark with it", await proxied(deck, cut), true);
 
     // 5 · The deck moved: the cut is gone, so the apply refuses and writes nothing.
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
-    check("5 · an apply whose cut the deck no longer holds is refused", await applyItem(itemId, u), null);
+    check("5 · an apply whose cut the deck no longer holds is refused", await applyItem(itemId, u, process.env), null);
     check("5 · and adds nothing", await cardRow(deck, c.add), null);
     check("5 · and leaves the item pending", await verdictOf(itemId), { verdict: "pending", snapshot: false });
   }
@@ -346,10 +346,10 @@ async function run() {
     await fixture.execute(sql`
       update deck_cards set quantity = 2 where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
     const { itemId } = await answered(u, deck, c, "fp", cut);
-    await applyItem(itemId, u);
+    await applyItem(itemId, u, process.env);
     // A mark put on the remaining copy AFTER the apply is not part of the deck undo restores.
     await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
-    await undoItem(itemId, u);
+    await undoItem(itemId, u, process.env);
     check("7 · undo takes off a proxy mark added after the apply", await proxied(deck, cut), false);
     check("7 · and the cut is back at two copies", await cardRow(deck, cut), { quantity: 2, auto: false });
 
@@ -360,17 +360,17 @@ async function run() {
       await fixture.execute(sql`
         update deck_cards set quantity = 2, auto = true where deck_id = ${deck2}::uuid and oracle_id = ${cut}::uuid`);
       const kept = await answered(u2, deck2, c, "fp", cut);
-      await applyItem(kept.itemId, u2);
+      await applyItem(kept.itemId, u2, process.env);
       await fixture.execute(sql`
         update deck_cards set auto = false where deck_id = ${deck2}::uuid and oracle_id = ${cut}::uuid`);
-      check("7 · undo after the player kept the cut's copy is refused", await undoItem(kept.itemId, u2), null);
+      check("7 · undo after the player kept the cut's copy is refused", await undoItem(kept.itemId, u2, process.env), null);
       check("7 · and the kept copy stays kept", await cardRow(deck2, cut), { quantity: 1, auto: false });
     }
 
     // The player edits the add after applying: undo would destroy that edit, so it refuses.
-    await applyItem(itemId, u);
+    await applyItem(itemId, u, process.env);
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.add}::uuid`);
-    check("7 · undo over a deck the player has since changed is refused", await undoItem(itemId, u), null);
+    check("7 · undo over a deck the player has since changed is refused", await undoItem(itemId, u, process.env), null);
     check("7 · and leaves the cut as the player left it", await cardRow(deck, cut), { quantity: 1, auto: false });
     check("7 · and the item accepted", (await verdictOf(itemId)).verdict, "accepted");
   }
@@ -382,7 +382,7 @@ async function run() {
     const { itemId } = await answered(u, deck, c);
     check("8 · dismiss lands", await setDismissed(itemId, u, true), deck);
     check("8 · the item reads dismissed", (await verdictOf(itemId)).verdict, "dismissed");
-    check("8 · an apply on a dismissed item is refused", await applyItem(itemId, u), null);
+    check("8 · an apply on a dismissed item is refused", await applyItem(itemId, u, process.env), null);
     check("8 · restore lands", await setDismissed(itemId, u, false), deck);
     check("8 · the item is pending again", (await verdictOf(itemId)).verdict, "pending");
     check("8 · the deck never moved", [await cardRow(deck, c.body[0]), await cardRow(deck, c.add)],
@@ -394,7 +394,7 @@ async function run() {
     const u = newUser();
     const deck = await makeDeck(u, c);
     const before = (await readAllowance(u)).used;
-    const failed = await startRun(u, deck, "fp", null);
+    const failed = await startRun(u, deck, "fp", null, { env: process.env });
     if (failed.kind !== "started") return fail("case 9 start", failed.kind);
     await finishRun(failed, { status: "failed", errorClass: "malformed" });
     check("9 · a failed run gives its unit back", (await runRow(failed.runId))!.unit, "refunded");
@@ -410,7 +410,7 @@ async function run() {
       const u2 = newUser();
       const deck2 = await makeDeck(u2, c);
       const used = (await readAllowance(u2)).used;
-      const thin = await startRun(u2, deck2, "fp-thin", null);
+      const thin = await startRun(u2, deck2, "fp-thin", null, { env: process.env });
       if (thin.kind !== "started") return fail("case 9b start", thin.kind);
       await persistRun(thin, [suggestion(c)], 0, undefined, undefined, "refunded");
       check("9b · a thin answer reads ok and keeps its item",
@@ -427,7 +427,7 @@ async function run() {
     check("9 · a changed deck is stale and ungated", [moved.stale, gateReason(moved)], [true, null]);
     // A failed re-run leaves the last good set on screen, still open: the failure is the new
     // run's, and nothing the player had changed (STATES-tuning-panel.md :42).
-    const rerun = await startRun(u, deck, "fp-2", null);
+    const rerun = await startRun(u, deck, "fp-2", null, { env: process.env });
     if (rerun.kind !== "started") return fail("case 9 re-run start", rerun.kind);
     await finishRun(rerun, { status: "failed", errorClass: "timeout" });
     const kept = await readTuningState(deck, u, "fp-2", undefined, undefined, process.env);
@@ -457,7 +457,7 @@ async function run() {
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.body[0]}::uuid`);
     const moved = await readTuningState(deck, u, "fp-v", undefined, undefined, process.env);
     check("12 · an item whose cut the deck no longer holds does not apply", moved.items.map((i) => i.applies), [false]);
-    check("12 · and apply refuses it", await applyItem(itemId, u), null);
+    check("12 · and apply refuses it", await applyItem(itemId, u, process.env), null);
   }
 
   // 14 · Locked (never cut): a cut the player locks after the run no longer applies, is named as
@@ -476,7 +476,7 @@ async function run() {
     const state = await readTuningState(deck, u, locked!.fingerprint, undefined, undefined, process.env);
     check("14 · and reopens the gate", gateReason(state), null);
     check("14 · the item no longer applies, and says the cut is locked", state.items.map((i) => [i.applies, i.side === undefined ? i.cutLocked : i.locked]), [[false, true]]);
-    check("14 · the apply refuses it", await applyItem(itemId, u), null);
+    check("14 · the apply refuses it", await applyItem(itemId, u, process.env), null);
     check("14 · and the locked card is still in the deck", await cardRow(deck, c.body[0]), { quantity: 1, auto: false });
 
     // The gate read a snapshot; the reservation re-checks under the deck row lock. With every card
@@ -486,12 +486,12 @@ async function run() {
     for (const r of everyCard.rows) {
       await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${deck}::uuid, ${r.oracle_id}::uuid) on conflict do nothing`);
     }
-    const refused = await startRun(u, deck, "fp-all-locked", null);
+    const refused = await startRun(u, deck, "fp-all-locked", null, { env: process.env });
     check("14 · with every card locked, startRun refuses under the lock", refused.kind, "allLocked");
     check("14 · and reserves nothing", (await readAllowance(u)).used, allowanceBefore);
     await fixture.execute(sql`delete from deck_locks where deck_id = ${deck}::uuid and oracle_id <> ${c.body[0]}::uuid`);
 
-    const run = await startRun(u, deck, locked!.fingerprint, null);
+    const run = await startRun(u, deck, locked!.fingerprint, null, { env: process.env });
     if (run.kind !== "started") return fail("case 14 start", run.kind);
     await finishRun(run, { status: "failed", errorClass: "locked_only" });
     const settled = await runRow(run.runId);
@@ -575,7 +575,7 @@ async function run() {
     const deck = await makeDeck(u, c);
     const cutId = c.body[1];
     const line = (over: Partial<ValidatedSuggestion>): ValidatedSuggestion => ({ ...suggestion(c), ...over });
-    const started = await startRun(u, deck, "fp-lists", null);
+    const started = await startRun(u, deck, "fp-lists", null, { env: process.env });
     if (started.kind !== "started") return fail("case 15 start", started.kind);
     await persistRun(started, [
       line({ addOracleId: c.add, cutOracleId: null, position: 0 }),
@@ -586,19 +586,19 @@ async function run() {
       state.items.map((i) => [i.side, i.applies]), [["add", true], ["cut", true]]);
     const [addItem, cutItem] = state.items;
 
-    check("15 · applying the addition adds one chosen copy and cuts nothing", [await applyItem(addItem.id, u), await cardRow(deck, c.add)], [deck, { quantity: 1, auto: false }]);
-    check("15 · applying the cut takes the card out", [await applyItem(cutItem.id, u), await cardRow(deck, cutId)], [deck, null]);
-    check("15 · a second press of either is refused", [await applyItem(addItem.id, u), await applyItem(cutItem.id, u)], [null, null]);
+    check("15 · applying the addition adds one chosen copy and cuts nothing", [await applyItem(addItem.id, u, process.env), await cardRow(deck, c.add)], [deck, { quantity: 1, auto: false }]);
+    check("15 · applying the cut takes the card out", [await applyItem(cutItem.id, u, process.env), await cardRow(deck, cutId)], [deck, null]);
+    check("15 · a second press of either is refused", [await applyItem(addItem.id, u, process.env), await applyItem(cutItem.id, u, process.env)], [null, null]);
     check("15 · the deck is 99 again: one in, one out",
       (await rows<{ n: number }>(sql`select sum(quantity)::int as n from deck_cards where deck_id = ${deck}::uuid`))[0].n, 99);
 
-    check("15 · undoing the cut puts the card back as it was", [await undoItem(cutItem.id, u), await cardRow(deck, cutId)], [deck, { quantity: 1, auto: false }]);
-    check("15 · undoing the addition takes it out again", [await undoItem(addItem.id, u), await cardRow(deck, c.add)], [deck, null]);
+    check("15 · undoing the cut puts the card back as it was", [await undoItem(cutItem.id, u, process.env), await cardRow(deck, cutId)], [deck, { quantity: 1, auto: false }]);
+    check("15 · undoing the addition takes it out again", [await undoItem(addItem.id, u, process.env), await cardRow(deck, c.add)], [deck, null]);
 
     // A cut whose card has left the deck no longer applies, and an addition already in the deck neither.
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${cutId}::uuid`);
     check("15 · a cut whose card left no longer applies, and the apply refuses it",
-      [(await readTuningState(deck, u, "fp-lists", undefined, undefined, process.env)).items.map((i) => i.applies), await applyItem(cutItem.id, u)], [[true, false], null]);
+      [(await readTuningState(deck, u, "fp-lists", undefined, undefined, process.env)).items.map((i) => i.applies), await applyItem(cutItem.id, u, process.env)], [[true, false], null]);
     let refusedBoth = false;
     try {
       await fixture.execute(sql`insert into deck_suggestion_items (run_id, rationale, rationale_short, evidence, position)

@@ -68,8 +68,8 @@ export function rankStaples(candidates: readonly StapleCandidate[], helps: reado
 export async function loadManaStaples(
   deck: DeckDetail,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model; the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. */
+  env: NodeJS.ProcessEnv,
 ): Promise<StapleCandidate[] | null> {
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];

@@ -42,7 +42,7 @@ export type OfferedTrade = { cutOracleId: string; addOracleId: string };
 
 /** The apply's id, for its Undo, or null when it refused. */
 export async function applyTrade(
-  deckId: string, userId: string, trade: OfferedTrade, listKey: string, env: NodeJS.ProcessEnv = process.env,
+  deckId: string, userId: string, trade: OfferedTrade, listKey: string, env: NodeJS.ProcessEnv,
 ): Promise<string | null> {
   return db.transaction(async (tx) => {
     const deck = await lockOwnedDeck(tx, deckId, userId);
@@ -67,7 +67,7 @@ export async function applyTrade(
 
 /** The deck exactly as the apply found it (`restoreSwap`), and only over the deck the apply left. The
  *  row goes with it, so a second press refuses. Returns the deck id, or null when it refused. */
-export async function undoTrade(applyId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
+export async function undoTrade(applyId: string, userId: string, env: NodeJS.ProcessEnv): Promise<string | null> {
   return db.transaction(async (tx) => {
     // The deck first, as every deck write here takes its locks: found by an unlocked read (an apply's
     // deck never changes), locked, and only then the row.

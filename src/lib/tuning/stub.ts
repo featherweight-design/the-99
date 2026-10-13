@@ -12,14 +12,14 @@ import type { ModelOutcome } from "../model/client";
  */
 export const TUNING_STUB_MAX_MS = 60_000;
 
-export function tuningStubDelayMs(env: Record<string, string | undefined> = process.env): number | null {
+export function tuningStubDelayMs(env: Record<string, string | undefined>): number | null {
   if (env.NODE_ENV === "production") return null;
   const n = Number(env.TUNING_STUB_DELAY_MS ?? 0);
   return Number.isFinite(n) && n > 0 ? Math.min(n, TUNING_STUB_MAX_MS) : null;
 }
 
 /** The held failure, or null when the stub is off and the real call should be made. */
-export async function heldStubOutcome(env: Record<string, string | undefined> = process.env): Promise<ModelOutcome<never> | null> {
+export async function heldStubOutcome(env: Record<string, string | undefined>): Promise<ModelOutcome<never> | null> {
   const ms = tuningStubDelayMs(env);
   if (ms === null) return null;
   await new Promise((r) => setTimeout(r, ms));
