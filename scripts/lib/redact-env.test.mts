@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { looksSecret, REDACTED, redactSecrets } from "./redact-env.mjs";
 
+describe("the admin's GitHub token", () => {
+  it("is redacted by name", () => {
+    expect(looksSecret("ADMIN_GITHUB_TOKEN", "github_pat_x")).toBe(true);
+  });
+});
+
 describe("the Stripe secrets (payments scope §5.2)", () => {
   it("are redacted by name, and the Price ids are not secrets", () => {
     for (const name of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_WEBHOOK_SECRET_PREVIOUS"]) {

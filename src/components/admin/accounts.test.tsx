@@ -112,7 +112,7 @@ describe("AdminHead on the Accounts pages", () => {
     const { container } = render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toBeInTheDocument();
     expect(container.querySelector("header p")).toBeNull();
-    expect(tabs()).toEqual([["Costs", null], ["Switches", null], ["Groups", null], ["Accounts", "page"]]);
+    expect(tabs()).toEqual([["Costs", null], ["Switches", null], ["Groups", null], ["Accounts", "page"], ["Models", null]]);
   });
 
   it("draws the back link and no title on an account's page, which titles itself", () => {
@@ -120,7 +120,7 @@ describe("AdminHead on the Accounts pages", () => {
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("link", { name: "‹ Accounts" })).toHaveAttribute("href", "/admin/accounts");
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(tabs().at(-1)).toEqual(["Accounts", "page"]);
+    expect(tabs().at(-2)).toEqual(["Accounts", "page"]);
   });
 });
 

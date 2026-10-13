@@ -173,6 +173,7 @@ describe("AdminHead on /admin/switches", () => {
       ["Switches", "page"],
       ["Groups", null],
       ["Accounts", null],
+      ["Models", null],
     ]);
   });
 });

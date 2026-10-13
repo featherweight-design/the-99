@@ -68,7 +68,9 @@ export function valueImports(path: string, source: string, files: Map<string, st
 
 const SERVER_ONLY = (target: string) =>
   /^npm:(drizzle-orm|@neondatabase\/serverless)(\/|$)/.test(target)
-  || relative(SRC, target).startsWith("db/");
+  || relative(SRC, target).startsWith("db/")
+  // Reads ADMIN_GITHUB_TOKEN: the token must never reach a client bundle.
+  || relative(SRC, target) === "lib/admin/github-variables.ts";
 
 /** Every client module that reaches a server-only module, with the path it takes. */
 export function leaks(files: Map<string, string> = tree): string[] {
@@ -100,7 +102,7 @@ export function leaks(files: Map<string, string> = tree): string[] {
 }
 
 describe("client imports", () => {
-  it("never reach drizzle-orm, the Neon driver or src/db", () => {
+  it("never reach drizzle-orm, the Neon driver, src/db or the GitHub token reader", () => {
     expect(leaks()).toEqual([]);
   });
 

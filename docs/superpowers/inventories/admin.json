@@ -482,6 +482,33 @@
           "settle": 1500
         }
       ]
+    },
+    {
+      "id": "admin-models",
+      "label": "/admin/models: Features and jobs with location lines, footnote, Job switches (M1; M2 when ADMIN_GITHUB_TOKEN is unset) (10)",
+      "view": "src/components/admin/models-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin/models",
+          "wait": "[data-testid='model-rows']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-models-jobs",
+      "label": "/admin/models: scrolled to the Job switches (M1) (10)",
+      "view": "src/components/admin/models-view.tsx",
+      "steps": [
+        {
+          "goto": "/admin/models",
+          "wait": "[data-testid='job-rows']",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid='job-rows']"
+        }
+      ]
     }
   ]
 }
