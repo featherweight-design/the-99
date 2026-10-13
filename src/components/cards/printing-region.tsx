@@ -347,21 +347,29 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           : null;
 
   // The tile the reader is looking for: I got it's selection, else the pick, else the printing
-  // shown now. Brought into view inside the modal's own scroller (and centered in a sideways row)
+  // shown now. Centered inside the modal's own scroller (and in a sideways row)
   // when the picker opens and again after a pick or a Reset moves it (motion plan U1/U2).
   const revealKey = selectMode ? selectedKey : props.role === "choose" ? null : preferredKey ?? resolvedKey;
   // An arrow key already moved focus, and the browser's own focus scroll with it: keyboard
   // focus-following stays instant, so the selection it makes is not revealed again.
   const keyboardMove = useRef(false);
   const still = props.role !== "choose" && props.still === true;
+  // Only the picker's first reveal centers: a later one follows a press, on a tile already in sight.
+  const revealed = useRef(false);
   useEffect(() => {
     if (revealKey === null || still) return;
     if (keyboardMove.current) {
       keyboardMove.current = false;
       return;
     }
-    return reveal(tileRefs.current.get(revealKey), "nearest", "center");
-  }, [revealKey, still]);
+    // On open, centered in its scroll box, so the printings before it stay in sight above (Hugh,
+    // 2026-10-12: "nearest" parked it at the box's foot, rows below where the eye starts). After a
+    // pick or a Reset, "nearest": a tile in view stays put under the pointer. A sideways row keeps
+    // "nearest" on the page's axis: centering it there would scroll the sheet away from the card.
+    const first = !revealed.current;
+    revealed.current = true;
+    return reveal(tileRefs.current.get(revealKey), row || !first ? "nearest" : "center", "center");
+  }, [revealKey, still, row]);
 
   function focusAndSelect(index: number) {
     const next = navigable[index];

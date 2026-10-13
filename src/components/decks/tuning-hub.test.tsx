@@ -343,6 +343,51 @@ describe("TuningHub opening a tool", () => {
     }
   });
 
+  // Hugh, 2026-10-12: History, then Mana Balance from the tab row, left the row at the foot of the
+  // window and the tool below the fold.
+  it("brings the hub up on a tab switch, once the new tool has drawn its content rather than its loading state", async () => {
+    const scroll = vi.mocked(reveal);
+    let land!: () => void;
+    // Mana Balance's own shape: a counting status with text in it, then the body.
+    function Mana() {
+      const [ready, setReady] = useState(false);
+      land = () => setReady(true);
+      return ready ? <h2 id="mana-heading">Mana Balance</h2> : <p role="status" aria-busy="true">Mana Balance</p>;
+    }
+    const mana: HubToolSpec = { tool: "mana", panel: <Mana /> };
+    readHistoryPage.mockResolvedValue({ rows: [], nextCursor: null });
+    render(<TuningHub deckId="d" drawn tools={[suggested(), mana, { tool: "history" }]} />);
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(scroll).toHaveBeenCalled());
+    scroll.mockClear();
+    fireEvent.click(screen.getByRole("tab", { name: /Mana Balance/ }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(scroll).not.toHaveBeenCalled();
+    await act(async () => { land(); });
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+    // Pressing the tool already open switches nothing and moves nothing.
+    scroll.mockClear();
+    fireEvent.click(screen.getByRole("tab", { name: /Mana Balance/ }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(scroll).not.toHaveBeenCalled();
+    // A keyboard switch brings it up too.
+    fireEvent.keyDown(screen.getByRole("tab", { name: /Mana Balance/ }), { key: "ArrowRight" });
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+    // Back to All tools, by key or by press, brings the hub up as well.
+    scroll.mockClear();
+    fireEvent.keyDown(screen.getByRole("tab", { name: /History/ }), { key: "ArrowRight" });
+    await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+    fireEvent.click(tile("history"));
+    await waitFor(() => expect(screen.getByRole("tab", { name: /History/ })).toHaveAttribute("aria-selected", "true"));
+    // A key landing back on the open tool (End, History being the last tab) moves nothing.
+    await waitFor(() => expect(screen.getByRole("tab", { name: /History/ })).toHaveAttribute("aria-selected", "true"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    scroll.mockClear();
+    fireEvent.keyDown(screen.getByRole("tab", { name: /History/ }), { key: "End" });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
   it("waits for History's first rows before it scrolls, so the page is tall enough to bring the hub up", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

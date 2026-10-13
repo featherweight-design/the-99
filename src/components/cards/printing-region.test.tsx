@@ -414,11 +414,12 @@ describe("PrintingRegion reveals the tile the reader is looking for (motion U1)"
     expect(revealed).not.toHaveBeenCalled();
   });
 
-  it("on open, after a pick and after a Reset, nearest in the column and centered in a row", () => {
+  it("centered in the column on open (Hugh, 2026-10-12), and only brought into view after a pick or a Reset", () => {
     revealed.mockClear();
     const { rerender } = render(region(null));
     expect(revealed).toHaveBeenCalledTimes(1);
-    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "nearest", "center");
+    expect(revealed).toHaveBeenLastCalledWith(tileFor(/Commander 2021/), "center", "center");
+    // A pick lands on a tile the reader just pressed: it must not slide out from under the pointer.
     rerender(region({ setCode: "LEA", collectorNumber: "270" }));
     expect(revealed).toHaveBeenCalledTimes(2);
     expect(revealed).toHaveBeenLastCalledWith(tileFor(/Limited Edition Alpha/), "nearest", "center");

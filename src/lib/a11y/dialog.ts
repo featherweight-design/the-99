@@ -263,6 +263,29 @@ let pendingRestore: string | null = null;
  * rather than the browser's stale one.
  */
 let pendingScrollY: number | null = null;
+/**
+ * Entries whose dialog unmounted this task and are waiting out their release. A dialog that
+ * mounts in the same task adopts one rather than pushing a fresh entry: the card modal is keyed
+ * per card and remounts on every Prev/Next, and a push per page left one dead entry per page
+ * under the route, each costing the reader an extra Back to leave (Hugh, 2026-10-12, on an open
+ * precon). One dialog giving way to the next in a single commit is still one dialog to the reader.
+ */
+const releasing = new Set<BackEntry>();
+/**
+ * The releasing entry a new dialog may take: one still on top of the history, on the page it was
+ * made for, and not closed by a navigation (its release then orphans it rather than popping it, and
+ * a dialog adopting it would close onto the old route's entry). With the Navigation API only the
+ * entry on top can match; without it, the most recent release. A stacked pair giving way to ONE
+ * dialog in a single commit would leave the lower pair's entry under the adopter, costing one extra
+ * Back; no surface unmounts a stack that way (the card modal pages alone).
+ */
+function adoptable(): BackEntry | null {
+  const current = currentKey();
+  const fits = [...releasing].filter((e) =>
+    e.onHistory && e.release != null && !e.leaving
+    && (e.key === null || e.key === current) && window.location.pathname === e.path);
+  return fits.at(-1) ?? null;
+}
 let hrefBeforeTraverse: string | null = null;
 let traversingBack = true;
 let listening = false;
@@ -426,12 +449,17 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
   useEffect(() => {
     if (!open) return;
     listen();
-    const reclaimed = held.current;
+    // Its own entry back (a StrictMode remount), else one another dialog just let go of.
+    const adopted = held.current?.release != null ? held.current : adoptable();
     let entry: BackEntry;
-    if (reclaimed?.release != null) {
-      clearTimeout(reclaimed.release);
-      reclaimed.release = null;
-      entry = reclaimed;
+    if (adopted?.release != null) {
+      clearTimeout(adopted.release);
+      adopted.release = null;
+      releasing.delete(adopted);
+      entry = adopted;
+      entry.close = () => closeRef.current();
+      entry.canClose = () => canCloseRef.current();
+      held.current = entry;
       if (entry.onHistory) backStack.push(entry);
     } else {
       entry = {
@@ -453,8 +481,10 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
         held.current = null;
         return;
       }
+      releasing.add(entry);
       entry.release = setTimeout(() => {
         entry.release = null;
+        releasing.delete(entry);
         held.current = null;
         // This timer is the unmount's own work — the self-pop, and the one-task wait
         // that lets a StrictMode remount reclaim the entry — so it has to outlive the
