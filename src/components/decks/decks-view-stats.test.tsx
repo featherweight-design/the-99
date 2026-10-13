@@ -174,7 +174,7 @@ describe("DecksView: Stats on /decks", () => {
 });
 
 describe("DecksView: the Stats press answers while the read runs", () => {
-  it("fills the Stats segment and draws the pending mark in the press's own commit, over untouched Tiles", async () => {
+  it("fills the Stats segment and draws the pending mark in the press's own commit, as Tiles lets go of its fill", async () => {
     let land: (d: LineupData) => void = () => {};
     read.stats.mockReturnValue(new Promise<LineupData>((r) => { land = r; }));
     draw({ data: null, view: "tiles", foldServer: null });
