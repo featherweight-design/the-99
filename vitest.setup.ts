@@ -21,7 +21,9 @@ afterEach(() => {
 
 // No test may see a live credential from the shell that started it: a failing assertion over an
 // object built from `process.env` prints the whole object (scripts/lib/redact-env.mjs).
-redactSecrets(process.env);
+// The names it replaced are kept as the proof it ran (`redact-env.test.mts`): assigned from THIS
+// call, so removing the call removes the proof, wherever else the function runs.
+(globalThis as { __setupRedaction?: string[] }).__setupRedaction = redactSecrets(process.env);
 
 // Client components import server actions directly (the pattern throughout src/components),
 // and `src/db` throws at module load without a connection string. No test opens a connection;

@@ -36,7 +36,7 @@ describe("redactSecrets", () => {
 
   it("has run before this file: the setup redacted, and no variable still looks like a live credential", () => {
     // The marker is what makes this measure something on a machine with no secrets to redact (CI).
-    expect((globalThis as { __envRedacted?: boolean }).__envRedacted).toBe(true);
+    expect(Array.isArray((globalThis as { __setupRedaction?: string[] }).__setupRedaction)).toBe(true);
     // Names only, never values: this assertion must not be the thing that prints one.
     const live = Object.entries(process.env)
       .filter(([name, value]) => value && value !== REDACTED && looksSecret(name, value) && name !== "DATABASE_URL")

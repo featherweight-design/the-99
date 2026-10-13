@@ -29,6 +29,5 @@ export function redactSecrets(env) {
       names.push(name);
     }
   }
-  globalThis.__envRedacted = true;
   return names;
 }
