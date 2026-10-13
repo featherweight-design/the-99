@@ -17,7 +17,7 @@ vi.mock("../../db", () => ({
   },
 }));
 
-const { clearSwitchSnapshot, resolveSwitchEnv, switchSnapshot, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const { clearSwitchSnapshot, resolveSwitchEnv, switchSnapshot, switchSnapshotState, SNAPSHOT_TTL_MS } = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
@@ -31,6 +31,16 @@ describe("switchSnapshot", () => {
     expect(reads.n).toBe(2); // the overrides and the memberships, once
     await switchSnapshot(1_000 + SNAPSHOT_TTL_MS);
     expect(reads.n).toBe(4);
+  });
+
+  it("reports a read as a miss, pending while another's is in flight, and a hit once settled", async () => {
+    expect(switchSnapshotState(1_000)).toBe("miss");
+    const read = switchSnapshot(1_000);
+    expect(switchSnapshotState(1_001)).toBe("pending");
+    await read;
+    await Promise.resolve();
+    expect(switchSnapshotState(1_002)).toBe("hit");
+    expect(switchSnapshotState(1_000 + SNAPSHOT_TTL_MS)).toBe("miss");
   });
 
   it("reads both tables from one repeatable-read snapshot", async () => {

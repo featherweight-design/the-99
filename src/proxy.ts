@@ -18,7 +18,7 @@ import { howItWorksEnabled } from "./lib/about/how-it-works-flag";
 import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutSeen } from "./lib/about/read";
 import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib/about/visible";
-import { resolveSwitchEnv, switchSnapshotFresh } from "./lib/switches/snapshot";
+import { resolveSwitchEnv, switchSnapshotState } from "./lib/switches/snapshot";
 import { SWITCHES_HEADER } from "./lib/switches/request";
 import { switchBits } from "./lib/switches/resolve";
 
@@ -49,17 +49,18 @@ export default clerkMiddleware(async (auth, req) => {
   // page most needs to appear. So: protect what is not public, read the session
   // on what is, and let the gate below judge both.
   // `[perf] proxy` with PERF_TIMING=1: what the proxy costs before any page runs, logged under the
-  // request's own id. `memo` says whether the switch overrides came from the per-instance memo.
+  // request's own id. `memo` is how the switch overrides were answered: `hit` from the settled
+  // per-instance memo, `pending` by waiting on another request's read, `miss` by a read of its own.
   const timing = process.env.PERF_TIMING === "1";
   const t0 = timing ? performance.now() : 0;
   const { userId } = isPublic(req) ? await auth() : await auth.protect();
   const t1 = timing ? performance.now() : 0;
-  const memoHit = timing && userId ? switchSnapshotFresh() : false;
+  const memo = timing && userId ? switchSnapshotState() : null;
   // The reader's own switches (brief, locked rule 9): an account an override switches on sees that
   // feature's entry and its sheet, and the cookie below is keyed on what THEY see.
   const env = userId ? await resolveSwitchEnv(userId) : process.env;
   if (timing && userId) {
-    console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t1)} memo=${memoHit ? "hit" : "miss"}`);
+    console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t1)} memo=${memo}`);
   }
   // Both sheet headers are this proxy's to write, so neither survives from the client on any request.
   // The shell trusts them: `SHEET_ON_HEADER` is its whole answer to whether the sheet is on.
