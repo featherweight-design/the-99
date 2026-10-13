@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-scripts";
+import { clerkFrontendHost, securityHeaders } from "./src/lib/security/headers";
 
 // Deliberately empty. `experimental.staleTimes.dynamic` used to live here, to
 // stop /collection and /commanders refetching their whole payload on every
@@ -27,6 +28,14 @@ const nextConfig: NextConfig = {
   // The admin's Eval ledgers read the committed ledgers at request time (`readEvalLedgers`), so the
   // deploy carries them into the `/admin` function: they move only with a merge.
   outputFileTracingIncludes: { "/admin": ["./docs/superpowers/eval/ledger*.jsonl"] },
+  // Security headers on every path (`src/lib/security/headers.ts`); the CSP is report-only.
+  async headers() {
+    const headers = securityHeaders({
+      production: process.env.NODE_ENV === "production",
+      clerkHost: clerkFrontendHost(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+    });
+    return [{ source: "/:path*", headers }];
+  },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
   },

@@ -775,6 +775,17 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   reads the table (`game-opponents.test.ts` pins who may). `summarizeMatchups` splits a deck's games by commander,
   color identity and friend as `GameSummary` cells: counts with denominators, no rate.
 
+- **Security headers** (payments scope PR S, `boards/scope-payments-2026-10-13.md` §5.8).
+  `next.config.ts` sends, on every path, `Strict-Transport-Security` (one year, no `includeSubDomains`, no
+  `preload`), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` and a `Permissions-Policy` that leaves only the
+  camera to this origin, all built in `src/lib/security/headers.ts`. The **Content-Security-Policy is REPORT-ONLY**
+  and production-only: an enforced policy written blind would take the app down, so the reports
+  (`POST /api/csp-report`, public in `src/proxy.ts`, logs a directive, an origin and a page path per violation and
+  answers 204) are the measurement the enforced policy is written from. It allows what `src/` loads today (Scryfall art
+  and symbols, Clerk's host read out of the publishable key, `'unsafe-inline'` until a nonce is wired through the proxy).
+  Read the reports in the Vercel logs (`[csp]`) for a week before enforcing, and check Clerk's hosted pages, the
+  service worker and the manifest on staging after any change to the policy.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its
