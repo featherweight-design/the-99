@@ -8,7 +8,8 @@
  * caller sends through `playerText` like any other words, and the ids that resolved.
  */
 import { currentLegalNames, currentNames } from "../decks/notes-store";
-import { formatTag, parseBody } from "../decks/notes-body";
+import { formatTag, parseBody, plainText, tagCount } from "../decks/notes-body";
+import { countCharacters } from "../copy/deck-tuning";
 
 export type TaggedText = {
   /** The words with each resolved tag as its catalog name. */
@@ -48,4 +49,22 @@ export async function resolveTaggedText(raw: string, opts: { commanderLegalOnly?
     }
   }
   return { text, body, tagged };
+}
+
+/** Longest raw body worth scanning for a box with this cap: a drawn character is at most two UTF-16 units, and a tag adds its 41-unit wrapper. */
+export const boxRawMax = (cap: number, maxTags: number) => cap * 2 + maxTags * 41;
+
+/**
+ * The words a box that can name a card puts on the wire, checked and resolved at the server: the raw body is
+ * bounded BEFORE anything scans it, a body holds at most `maxTags` tags and at most `cap` drawn code points,
+ * each tag becomes the catalog's name (a card banned in Commander, or an unknown id, becomes the name it
+ * carried as plain words), and the cap is checked again on the resolved words because a catalog name can be
+ * longer than the one the client sent. `text` is trimmed; "" is a blank box.
+ */
+export async function resolveBoxText(raw: string, o: { cap: number; maxTags: number }): Promise<{ ok: true; text: string } | { ok: false }> {
+  if (raw.length > boxRawMax(o.cap, o.maxTags)) return { ok: false };
+  const body = raw.trim();
+  if (tagCount(body) > o.maxTags || countCharacters(plainText(body)) > o.cap) return { ok: false };
+  const text = (await resolveTaggedText(body, { commanderLegalOnly: true })).text.trim();
+  return countCharacters(text) > o.cap ? { ok: false } : { ok: true, text };
 }

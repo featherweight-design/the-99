@@ -30,11 +30,11 @@ import {
 import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
-import { resolveTaggedText } from "../../lib/cards/tagged-text";
+import { resolveBoxText } from "../../lib/cards/tagged-text";
 import { plainText, tagCount } from "../../lib/decks/notes-body";
 import { tuningEnabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
-import { intentTooLong, MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, NOTES_RAW_MAX, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
@@ -62,6 +62,9 @@ function revalidateDeck(deckId: string): void {
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
 }
 
+/** The description box takes the same `[[` card tags as "Additional notes", and stores their names as plain words. */
+const DESCRIPTION_BOX = { cap: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX };
+
 /**
  * The deck's description (H35): one or two sentences, quoted verbatim by Suggested changes. The
  * overview does not read it (H35, Q2: Hugh kept the overview as it was). Every save clears `intent_seeded` too, which no longer matters for a new
@@ -74,7 +77,10 @@ export async function saveDeckDescription(deckId: string, formData: FormData): P
   // would clear the player's description on a malformed request.
   const raw = formData instanceof FormData ? formData.get("intent") : null;
   if (typeof raw !== "string") return { ok: false, message: deckDescriptionCopy.description.refused };
-  const saved = await saveIntent(deckId, userId, raw);
+  // The box takes the `[[` card tag; what is stored is the catalog's name for it, as plain words.
+  const resolved = await resolveBoxText(raw, DESCRIPTION_BOX);
+  if (!resolved.ok) return { ok: false, message: deckDescriptionCopy.description.tooLong };
+  const saved = await saveIntent(deckId, userId, resolved.text);
   if (saved === "tooLong") return { ok: false, message: deckDescriptionCopy.description.tooLong };
   if (saved === "refused") return { ok: false, message: deckDescriptionCopy.description.refused };
   revalidateDeck(deckId);
@@ -109,9 +115,9 @@ export async function saveDeckHeader(
     }
   }
   if (fields.description !== undefined) {
-    const trimmed = fields.description.trim();
-    if (intentTooLong(trimmed)) return { ok: false, message: deckDescriptionCopy.description.tooLong };
-    set.intent = trimmed.length > 0 ? trimmed : null;
+    const resolved = await resolveBoxText(fields.description, DESCRIPTION_BOX);
+    if (!resolved.ok) return { ok: false, message: deckDescriptionCopy.description.tooLong };
+    set.intent = resolved.text.length > 0 ? resolved.text : null;
     set.intentSeeded = false;
   }
   if (Object.keys(set).length === 0) return { ok: true };
@@ -204,23 +210,14 @@ export async function runTuning(
   if (rawNotes !== undefined && typeof rawNotes !== "string") {
     return { ok: false, message: deckTuningCopy.run.refused };
   }
-  // The body may carry `[[id|Name]]` tags (the box takes the `[[` picker). The cap is on what it DRAWS, in
-  // code points, and a body holds at most `NOTES_TAGS_MAX` tags; a tag's id adds no drawn text, so those two
-  // bound the raw length as well.
-  // The raw bound comes first: nothing below should scan or copy a string a forged request made huge.
-  if (rawNotes !== undefined && rawNotes.length > NOTES_RAW_MAX) return { ok: false, message: deckTuningCopy.run.refused };
-  const trimmedBody = rawNotes === undefined ? null : rawNotes.trim();
-  const notesCap = deckDescriptionCopy.notes.maxLength;
-  if (trimmedBody !== null && (tagCount(trimmedBody) > NOTES_TAGS_MAX || countCharacters(plainText(trimmedBody)) > notesCap)) {
-    return { ok: false, message: deckTuningCopy.run.refused };
-  }
-  // A tag is the catalog's name for its id, never the client's: an id the catalog does not hold, or a card
-  // banned in Commander, is plain words. The prompt gets the names, through `playerText`, as ever.
-  const trimmedNotes = trimmedBody === null ? null : (await resolveTaggedText(trimmedBody, { commanderLegalOnly: true })).text.trim();
-  // The catalog's name can be longer than the one the client sent, so the cap is checked again on the words
-  // the prompt will carry: `playerText` would otherwise throw after the credit is reserved.
-  if (trimmedNotes !== null && countCharacters(trimmedNotes) > notesCap) {
-    return { ok: false, message: deckTuningCopy.run.refused };
+  // The body may carry `[[id|Name]]` tags (the box takes the `[[` picker): bounded, capped on what it DRAWS and
+  // resolved to the catalog's names before the words reach the prompt, through `playerText`, as ever. A refusal
+  // here lands before the credit is reserved.
+  let trimmedNotes: string | null = null;
+  if (rawNotes !== undefined) {
+    const resolved = await resolveBoxText(rawNotes, { cap: deckDescriptionCopy.notes.maxLength, maxTags: NOTES_TAGS_MAX });
+    if (!resolved.ok) return { ok: false, message: deckTuningCopy.run.refused };
+    trimmedNotes = resolved.text;
   }
   const notes = trimmedNotes === "" ? null : trimmedNotes;
 

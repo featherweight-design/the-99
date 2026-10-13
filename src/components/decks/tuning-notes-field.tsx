@@ -8,13 +8,13 @@
 // `[[id|Name]]`; the box shows the name, and the server resolves each tag to the catalog's name before
 // the words reach the prompt.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { serialize, toField } from "../../lib/decks/notes-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
-import { CardTagList, useCardTagPicker } from "../cards/card-tag-picker";
-import { InfoTip } from "../ui/info-tip";
+import { CardTagList } from "../cards/card-tag-picker";
+import { useTaggedField } from "../cards/use-tagged-field";
+import { TagHelpRow } from "../cards/tag-help-row";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
 const copy = deckDescriptionCopy.notes;
@@ -28,20 +28,7 @@ const searchNotesCards = (query: string) => searchTagCards("tuning", query);
 export function TuningNotesField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const desktop = useIsDesktop();
   const ref = useRef<HTMLTextAreaElement>(null);
-  // The box's own text and picks, kept beside the panel's body: serializing and parsing back is not an identity
-  // for text being edited (a `[[Name]]` whose name is mid-edit loses its mark), so a body the box itself just
-  // sent up is not parsed back over what the player is typing. A body that did not come from here (Escape, a
-  // run landing, the panel resetting it) replaces the box's text, adjusted during render.
-  const [field, setField] = useState(() => toField(value));
-  const [seen, setSeen] = useState(value);
-  if (value !== seen) {
-    setSeen(value);
-    if (value !== serialize(field.text, field.picked)) setField(toField(value));
-  }
-  const picker = useCardTagPicker({
-    value: field.text, picked: field.picked, search: searchNotesCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref,
-    onChange: (text, picked) => { setField({ text, picked: new Map(picked) }); onChange(serialize(text, picked)); },
-  });
+  const { field, picker } = useTaggedField({ value, onChange, search: searchNotesCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
   const n = picker.count;
   // Grows with its content (review fix) rather than sitting fixed at two rows: measured off the
   // textarea's own `scrollHeight`, which only reflects real layout in a browser — jsdom reports
@@ -56,21 +43,7 @@ export function TuningNotesField({ value, onChange }: { value: string; onChange:
   const infoId = "tuning-notes-field-info";
   return (
     <div className="flex flex-col gap-[6px]">
-      <div className="relative flex items-center gap-[8px]">
-        <label htmlFor="tuning-notes-field" className="block font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
-          {copy.label}
-        </label>
-        <InfoTip id={infoId} lines={copy.tagHelp.lines} label={copy.tagHelp.infoAria} className="self-center" />
-        <button
-          type="button"
-          aria-label={copy.tagHelp.insertAria}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={picker.insertTag}
-          className="ml-auto h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)]"
-        >
-          {copy.tagHelp.insert}
-        </button>
-      </div>
+      <TagHelpRow htmlFor="tuning-notes-field" label={copy.label} infoId={infoId} help={copy.tagHelp} onInsert={picker.insertTag} />
       <div className="relative">
         <textarea
           ref={ref}

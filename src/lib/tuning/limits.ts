@@ -115,6 +115,3 @@ export function intentTooLong(intent: string): boolean {
 
 /** The cards the player may tag in "Additional notes": a run reads a handful, and a tag costs the body 41 more units than its name. */
 export const NOTES_TAGS_MAX = 3;
-
-/** The longest raw body worth scanning: every drawn character is at most two UTF-16 units, and each tag adds its 41-unit wrapper. */
-export const NOTES_RAW_MAX = deckDescriptionCopy.notes.maxLength * 2 + NOTES_TAGS_MAX * 41;
