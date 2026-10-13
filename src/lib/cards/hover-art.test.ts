@@ -339,6 +339,12 @@ describe("the row guard's own failure paths", () => {
     expect(wholeRowHover(`export function R({ c }) { const h = usePreviewRow(c.imageUri); return <li />; }`)).toEqual([]);
   });
 
+  it("finds a tile that previews through only one of its triggers, which `hasHover` would miss", () => {
+    const one = `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const A = () => <p><CardDetailTrigger oracleId="a" name="A" preview>A</CardDetailTrigger><CardDetailTrigger oracleId="b" name="B">B</CardDetailTrigger></p>;`;
+    expect(hasHover(one)).toBe(false);
+    expect(passesPreview(one)).toBe(true);
+  });
+
   it("does not take a comment, a string or a different element's `preview` for a half", () => {
     const comment = `// uses CardDetailTrigger and usePreviewRow\nexport const A = () => <Other preview />;`;
     expect(hasPress(comment)).toBe(false);
@@ -362,7 +368,8 @@ describe("every card row has a hover preview and a press that opens card details
       expect(files[tile], `${tile} does not exist`).toBeDefined();
       const bound = HOVER_BINDINGS.filter((name) => importsBinding(files[tile], name));
       expect(bound, `${tile} draws a hover preview`).toEqual([]);
-      expect(hasHover(files[tile]), `${tile} passes \`preview\` to a trigger`).toBe(false);
+      // ANY trigger opting in is a hover: `hasHover` wants every one to, which is the row guard's rule, not a tile's.
+      expect(passesPreview(files[tile]), `${tile} passes \`preview\` to a trigger`).toBe(false);
     }
   });
 
