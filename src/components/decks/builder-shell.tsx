@@ -2095,8 +2095,9 @@ export function BuilderShell({
                   // are not places to add a card from, and a bar that came and went with a note field's focus
                   // moved the page under the reader. Decided by the panel, never by focus.
                   deckPanel[0] !== "list" || filter !== "all" ? "max-md:hidden" : "",
-                  // The top-off commit bar takes this slot at phone widths. Hidden
-                  // rather than unmounted, so the query survives the list closing.
+                  // The top-off commit bar takes this slot at phone widths. Hidden rather than
+                  // unmounted, so the owned toggle keeps its setting; the query does not survive,
+                  // since the press that opens the bar is outside it and clears it (`useSearchDismiss`).
                   topOffOpen ? "max-md:hidden" : "",
                 ].join(" ")}
                 style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}

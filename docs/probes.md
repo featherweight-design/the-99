@@ -2031,6 +2031,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   list draws ~3s into the read), with the pool report removed the step-1 check fails at both, and
   every check passes on the change.
 
+- `pnpm probe:search-dismiss` presses the one rule for a search field that picks from a list (DECK INPUT UX,
+  `useSearchDismiss`) at 1300x900 and 390x844, on the deck page's Quick add and Help me choose's Theme picker:
+  one Escape clears the text and closes the list; a real pointer press outside the field clears it too; a
+  press inside (Quick add's owned toggle) keeps it; and a theme pick adds the chip, clears the text and keeps
+  the list open with focus in the field. Quick add's clear after an add is pinned by its unit test instead,
+  since an add writes a card. It writes the account's About row and puts it back; run it against a dev
+  server with `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. It refuses staging and production by
+  `neon.branch_id` and a non-localhost `PROBE_BASE`. `PROBE_DECK` names the deck, otherwise the account's
+  newest. In Chromium a `type="search"` field also clears on Escape natively, so the Escape check cannot
+  fail on its own there; the unit tests hold it.
 - `pnpm probe:card-tag-box` types `[[Sol Ri` into Help me choose's "Anything else?" box at 1300x900 and
   390x844 and checks the three facts jsdom cannot: the picker's list opens with a card to pick; the list
   does not overlap the phone's fixed dock (the box is first scrolled to the dock's edge, so a list opening

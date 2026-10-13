@@ -252,6 +252,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | border | — | 1px solid `--border-strong` |
 | box-shadow | — | 0 14px 30px rgba(0,0,0,0.45) |
 | content | — | tags clearing the vocabulary floor, multi-select, each with commander count |
+| behaviour | same | a pick clears the typed text and keeps the list open for the next; Escape or a press outside clears the text and closes the list (DECK INPUT UX, Hugh 2026-10-12; `useSearchDismiss`). Removing a chip leaves the text alone |
 
 ### Theme picker option
 | Property | Mobile | Desktop |

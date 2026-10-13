@@ -17,6 +17,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
+import { useSearchDismiss } from "../../lib/ui/search-dismiss";
 import { markerAria } from "../ui/availability-marker";
 import { comboClauseSpoken } from "../cards/combo-clause";
 import { CardSearchRowBody } from "./card-search-row";
@@ -93,13 +94,22 @@ export function QuickAddBar({
 }: QuickAddBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
-  // Escape dismisses before it clears, so the list can be closed without losing
-  // a query the user is still editing.
-  const [dismissed, setDismissed] = useState(false);
   const listId = useId();
+  // Moves on every edit of the field, so an add that lands clears only the search it was made from:
+  // text typed since, even the same text typed again, is a new search and survives.
+  const editGeneration = useRef(0);
+  const beginAdd = useCallback(() => {
+    const at = editGeneration.current;
+    return () => {
+      if (editGeneration.current === at) setQuery("");
+    };
+  }, []);
+  // Escape, or a press outside the bar and its results, clears the query, which closes the list
+  // with it (one rule for every pick-from-a-list field, `useSearchDismiss`).
+  const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(query.length > 0, () => setQuery(""));
 
-  const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId, search });
+  const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
+    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed: false, deckId, search });
 
   // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
   // add must see the deck the add produced, and the optimistic list moves before that exists.
@@ -156,14 +166,7 @@ export function QuickAddBar({
       if (stale) return;
       const active = results[activeIndex];
       if (active && !inDeck(active)) addRef.current?.(active);
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      // A search still in flight is something to dismiss. Without it the first
-      // Escape means two different things depending on whether the debounce has
-      // fired — list gone for a slow typist, query gone for a fast one.
-      if (!dismissed && (open || noResults || searching)) setDismissed(true);
-      else setQuery("");
-    }
+    } else onEscape(e);
   }
 
   // The row owns the mutation hook, so Enter reaches it through a ref rather
@@ -175,7 +178,7 @@ export function QuickAddBar({
   }, []);
 
   return (
-    <div className="flex flex-col">
+    <div ref={rootRef} className="flex flex-col">
       <div className="flex items-center gap-[14px] flex-wrap">
         <SearchField
           // 44px at phone width is the handoff's tap-target floor. The fill and
@@ -203,8 +206,8 @@ export function QuickAddBar({
           onFocus={startComboMap}
           onChange={(e) => {
             startComboMap();
+            editGeneration.current += 1;
             setQuery(e.target.value);
-            setDismissed(false);
           }}
           onKeyDown={handleKeyDown}
           trailing={
@@ -233,12 +236,7 @@ export function QuickAddBar({
             type="checkbox"
             className="sr-only peer"
             checked={ownedOnly}
-            onChange={(e) => {
-              setOwnedOnly(e.target.checked);
-              // Widening the search is a request to see results, so it undoes an
-              // earlier Escape rather than re-searching into a closed list.
-              setDismissed(false);
-            }}
+            onChange={(e) => setOwnedOnly(e.target.checked)}
             aria-label={addPanelCopy.quickAdd.ownedToggleAria}
           />
           <span
@@ -339,6 +337,7 @@ export function QuickAddBar({
                 active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
+                beginAdd={beginAdd}
               />
             ))}
           </ul>
@@ -399,6 +398,10 @@ interface QuickAddRowProps {
   active: boolean;
   onActivate: () => void;
   registerAdd?: (fn: (r: SearchResult) => void) => void;
+  /** Called as the add starts; the function it returns is called once the add lands, and clears the
+   *  bar's query unless the reader has edited it since. Not called on a refusal, which this row
+   *  reports, so it has to stay on screen to say it. */
+  beginAdd: () => () => void;
 }
 
 function QuickAddRow({
@@ -414,6 +417,7 @@ function QuickAddRow({
   active,
   onActivate,
   registerAdd,
+  beginAdd,
 }: QuickAddRowProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
@@ -444,8 +448,13 @@ function QuickAddRow({
   // while the optimistic row is showing but deckOracleIds has not caught up.
   const handleAdd = useCallback(() => {
     if (applied) return;
+    const added = beginAdd();
     run(
-      () => addCardToDeck(deckId, result.oracleId),
+      async () => {
+        const outcome = await addCardToDeck(deckId, result.oracleId);
+        if (!outcome || outcome.ok) added();
+        return outcome;
+      },
       () =>
         addOptimisticCard({
           oracleId: result.oracleId,
@@ -471,7 +480,7 @@ function QuickAddRow({
           imageUri: result.imageUri,
         }),
     );
-  }, [applied, run, deckId, result, addOptimisticCard]);
+  }, [applied, run, deckId, result, addOptimisticCard, beginAdd]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which
@@ -517,6 +526,8 @@ function QuickAddRow({
         .filter(Boolean)
         .join(", ")}
       onMouseEnter={onActivate}
+      // Keeps focus in the field, so the next search can be typed straight after the add.
+      onMouseDown={(e) => e.preventDefault()}
       onClick={handleAdd}
       // An in-deck row is not actionable, so it must not offer a pointer.
       className={`flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] ${applied ? "cursor-default" : "cursor-pointer"}`}
