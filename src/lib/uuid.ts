@@ -1,3 +1,4 @@
+// (CI selection probe: a comment-only change, to be closed unmerged.)
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Whether a value is a string shaped like the uuids this schema keys on. Worth
