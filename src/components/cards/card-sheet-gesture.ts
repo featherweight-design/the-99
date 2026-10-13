@@ -47,6 +47,22 @@ export const SHEET = {
   flickPxPerMs: 0.5,
 } as const;
 
+/** The min shelf's height as CSS: 72 plus the home indicator's inset, so the title row clears it
+    (Hugh, 2026-10-13). `0px` where there is no inset, so every other device is unchanged. */
+export const MIN_SHELF_CSS = `(${SHEET.minHeight}px + env(safe-area-inset-bottom, 0px))`;
+
+/** The same inset in pixels, for the drag's own arithmetic: a drag toward the min snap must end where
+    the CSS then settles, or the release jumps by the inset. Measured, because `env()` has no JS API. */
+export function safeInsetBottom(): number {
+  if (typeof document === "undefined") return 0;
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom, 0px)";
+  document.body.appendChild(probe);
+  const px = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+  probe.remove();
+  return px;
+}
+
 export type SheetSnap = "full" | "teaser" | "min";
 
 export type Axis = "x" | "y";
@@ -378,7 +394,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       const height = sheet?.parentElement?.clientHeight || window.innerHeight;
       const teaserTop = height - teaserHeight;
       // Min is one step below the teaser: a drag from the full sheet stops at the teaser, as shipped.
-      const minTop = canMinimize && !full ? height - SHEET.minHeight : undefined;
+      const minTop = canMinimize && !full ? height - SHEET.minHeight - safeInsetBottom() : undefined;
       const startTop = full ? SHEET.fullTop : min && minTop !== undefined ? minTop : teaserTop;
       drag.current = {
         pointerId: e.pointerId,

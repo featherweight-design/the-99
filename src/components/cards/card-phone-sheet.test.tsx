@@ -397,6 +397,18 @@ describe("the sheet's min snap", () => {
     expect(onMinimizedChange).toHaveBeenLastCalledWith(true);
   });
 
+  it("raises the shelf by the home indicator's inset, on the band and on the sheet's top", () => {
+    mount();
+    expect(screen.getByTestId("card-band").style.height).toBe("calc(100% - 280px)");
+    minimize();
+    // jsdom's CSS parser rewrites env(), so the inset is asserted by its parts, not byte for byte.
+    for (const css of [screen.getByTestId("card-band").style.height, sheet().style.getPropertyValue("--sheet-top")]) {
+      expect(css).toContain("72px");
+      expect(css).toContain("safe-area-inset-bottom");
+      expect(css).not.toBe("calc(100% - 72px)");
+    }
+  });
+
   it("grows the card past the teaser's 320 cap, to the band less a 16px gutter each side", () => {
     mount();
     const art = () => screen.getByTestId("modal-art-mobile").parentElement as HTMLElement;

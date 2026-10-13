@@ -43,7 +43,7 @@ import { manapoolCardUrl } from "../../lib/manapool/links";
 import { FitsDoor } from "./fits-door";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
-import { SHEET, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
+import { MIN_SHELF_CSS, SHEET, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
 import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
@@ -2086,7 +2086,7 @@ export function CardModal({
           onPointerDown={narrow ? gestures.onBandPointerDown : undefined}
           data-snap={min ? "min" : full ? "full" : "teaser"}
           className="md:hidden band-dim absolute inset-x-0 top-0 z-[1] touch-none [container-type:size]"
-          style={{ height: `calc(100% - ${min ? SHEET.minHeight : teaserHeight}px)`, opacity: full ? 0.35 : 1 }}
+          style={{ height: `calc(100% - ${min ? MIN_SHELF_CSS : `${teaserHeight}px`})`, opacity: full ? 0.35 : 1 }}
         >
           <div
             className="absolute inset-0"
@@ -2332,7 +2332,7 @@ export function CardModal({
           style={{
             "--sheet-top": full
               ? `${SHEET.fullTop}px`
-              : `calc(100% - ${min ? SHEET.minHeight : teaserHeight}px)`,
+              : `calc(100% - ${min ? MIN_SHELF_CSS : `${teaserHeight}px`})`,
           } as React.CSSProperties}
         >
           {/* THE GRIP (plan PR 3, engineering call 2026-10-03): a native button, so Enter and

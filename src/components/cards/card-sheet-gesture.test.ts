@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MIN_SHELF_CSS,
   SHEET,
   bandOffset,
   clampSheetTop,
   lockAxis,
   pageDecision,
+  safeInsetBottom,
   sheetSnap,
   startsAtSystemEdge,
   velocity,
@@ -192,5 +194,25 @@ describe("the sheet's min snap", () => {
   it("is two snaps, as shipped, where there is no min to reach", () => {
     expect(sheetSnap(teaserTop + 20, 0.5, SHEET.fullTop, teaserTop)).toBe("teaser");
     expect(sheetSnap(teaserTop - 20, -0.5, SHEET.fullTop, teaserTop)).toBe("full");
+  });
+});
+
+describe("the min shelf's safe-area inset", () => {
+  it("is the 72px shelf plus the bottom inset, 0 where there is none", () => {
+    expect(MIN_SHELF_CSS).toBe("(72px + env(safe-area-inset-bottom, 0px))");
+  });
+
+  it("measures 0 where the platform reports no inset", () => {
+    expect(safeInsetBottom()).toBe(0);
+  });
+
+  it("measures the padding the browser resolves from env()", () => {
+    const real = window.getComputedStyle;
+    window.getComputedStyle = (() => ({ paddingBottom: "34px" }) as CSSStyleDeclaration) as typeof window.getComputedStyle;
+    try {
+      expect(safeInsetBottom()).toBe(34);
+    } finally {
+      window.getComputedStyle = real;
+    }
   });
 });
