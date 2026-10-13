@@ -21,7 +21,8 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
 const resolveSwitchEnv = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
-vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv }));
+const switchSnapshotState = vi.hoisted(() => vi.fn((): "hit" | "pending" | "miss" => "hit"));
+vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv, switchSnapshotState }));
 // The sheet reads the whole seen state; its version half is the same mock, so every test that
 // sets a version sets both. No switched entry exists yet, so the ids are always empty here.
 vi.mock("./lib/about/read", () => ({
@@ -384,5 +385,33 @@ describe("the CSP report endpoint", () => {
   it("does not make a longer path public", async () => {
     await proxy(auth, request("/api/csp-report-other"));
     expect(protect).toHaveBeenCalled();
+  });
+});
+
+describe("the proxy's [perf] line", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("logs auth, the switch resolve and the memo state for a signed-in request with PERF_TIMING=1", async () => {
+    vi.stubEnv("PERF_TIMING", "1");
+    switchSnapshotState.mockReturnValueOnce("pending");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await proxy(auth, request("/decks"));
+    const lines = log.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith("[perf] proxy"));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^\[perf\] proxy auth=\d+ switches=\d+ memo=pending$/);
+  });
+
+  it("reads no clock and logs nothing without PERF_TIMING", async () => {
+    vi.stubEnv("PERF_TIMING", "");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const now = vi.spyOn(performance, "now");
+    switchSnapshotState.mockClear();
+    await proxy(auth, request("/decks"));
+    expect(log.mock.calls.filter((c) => String(c[0]).startsWith("[perf]"))).toHaveLength(0);
+    expect(now).not.toHaveBeenCalled();
+    expect(switchSnapshotState).not.toHaveBeenCalled();
   });
 });

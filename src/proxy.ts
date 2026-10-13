@@ -52,8 +52,9 @@ export default clerkMiddleware(async (auth, req) => {
   // request's own id. `memo` is how the switch overrides were answered: `hit` from the settled
   // per-instance memo, `pending` by waiting on another request's read, `miss` by a read of its own.
   const timing = process.env.PERF_TIMING === "1";
+  const publicPath = isPublic(req);
   const t0 = timing ? performance.now() : 0;
-  const { userId } = isPublic(req) ? await auth() : await auth.protect();
+  const { userId } = publicPath ? await auth() : await auth.protect();
   const t1 = timing ? performance.now() : 0;
   const memo = timing && userId ? switchSnapshotState() : null;
   // The reader's own switches (brief, locked rule 9): an account an override switches on sees that
