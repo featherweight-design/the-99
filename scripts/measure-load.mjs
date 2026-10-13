@@ -98,7 +98,7 @@ import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { markEveryEntrySeen, sheetCookie } from "./lib/about-clear.mjs";
 import { onPage } from "./lib/surface.mjs";
-import { NAV_PROBE, PRESS_PROBE } from "./lib/press-probe.mjs";
+import { NAV_PROBE, PRESS_PROBE, TAB_PROBE } from "./lib/press-probe.mjs";
 import {
   assertDeployedBase,
   lookupUserId,
@@ -696,16 +696,12 @@ async function tabPress(browser, state, width, url) {
       else await tab.hover();
       await page.waitForTimeout(400);
     }
-    const pressed = Date.now();
+    // Timed in the page (TAB_PROBE): from the pointerdown to the first frame holding the hub.
+    await page.evaluate(TAB_PROBE);
     await tab.click();
     out[key] = await page
-      .waitForFunction(() => {
-        const panel = document.getElementById("panel-analysis");
-        // The hub's landing itself, not just any text under a settled panel: a build that has not yet
-        // drawn the Tuning tools must not read as done.
-        return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.querySelector("[data-tuning-hub]"));
-      }, null, { timeout: 20_000, polling: 16 })
-      .then(() => Date.now() - pressed, () => null);
+      .waitForFunction(() => (window.__tab?.drew != null ? { ms: Math.round(window.__tab.drew - window.__tab.at) } : null), null, { timeout: 20_000 })
+      .then((h) => h.jsonValue().then((v) => v.ms), () => null);
     await context.close();
   }
   return out;

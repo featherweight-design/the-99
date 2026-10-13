@@ -2,14 +2,14 @@
 // The press probes stamp in the page, from the press to the first frame that holds the result, so a
 // figure is never the harness's own wait returning late (press-probe.mjs).
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { NAV_PROBE, PRESS_PROBE } from "./press-probe.mjs";
+import { NAV_PROBE, PRESS_PROBE, TAB_PROBE } from "./press-probe.mjs";
 
 const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const press = () => window.dispatchEvent(new Event("pointerdown"));
 
 type Stamps = { at: number | null; dialog?: number | null; art?: number | null; drew?: number | null };
-const stamps = (key: "__press" | "__nav") => (window as unknown as Record<string, Stamps>)[key];
+const stamps = (key: "__press" | "__nav" | "__tab") => (window as unknown as Record<string, Stamps>)[key];
 
 beforeEach(() => {
   // jsdom computes no layout, so no innerText; the probe reads it for `<main>`'s content.
@@ -88,5 +88,27 @@ describe("NAV_PROBE", () => {
     await frame();
     await frame();
     expect(stamps("__nav").drew).not.toBeNull();
+  });
+});
+
+describe("TAB_PROBE", () => {
+  it("times from the press to the first frame where the panel has settled on the hub's landing", async () => {
+    document.body.innerHTML = '<div id="panel-analysis" aria-busy="true"><p>Loading the tools</p></div>';
+    TAB_PROBE();
+    press();
+    await frame();
+    await frame();
+    // Busy, and then settled with no hub: neither is done.
+    expect(stamps("__tab").drew).toBeNull();
+    document.getElementById("panel-analysis")!.removeAttribute("aria-busy");
+    await frame();
+    await frame();
+    expect(stamps("__tab").drew).toBeNull();
+    await wait(20);
+    document.getElementById("panel-analysis")!.innerHTML = "<section data-tuning-hub></section>";
+    await frame();
+    await frame();
+    const s = stamps("__tab");
+    expect(s.drew! - s.at!).toBeGreaterThanOrEqual(15);
   });
 });
