@@ -21,7 +21,9 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 - **Feature flag (audit F3):** with `HELP_ME_CHOOSE_ENABLED` off, the route answers not-found.
 - **Motion (STATES invariant "zero net motion"):** no transition, animation, shimmer or transform-driven movement
   anywhere on either screen, including chips arriving. The only `transform` in scope is the static 45° rotation of
-  the held-mark square (a shape, not motion).
+  the held-mark square (a shape, not motion). **Except loading** (Hugh, 2026-10-12: every loader moves): the 5c
+  skeleton rows and the row's pending bar breathe (`anim-skeleton`, opacity only), and the route's loading screen
+  pulses its crown. Still under reduced motion.
 - **Hover:** the canvas declares only the global `a:hover { color: var(--accent-hover) }` (links default
   `--accent`). No other hover state is drawn for any element in scope.
 
