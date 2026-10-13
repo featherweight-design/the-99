@@ -203,6 +203,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the view has changed, with the shell's pending diamond fully opaque (after its 120ms beat) while the read runs, and once Stats lands the tab is
   selected with no mark and no busy flag. Measured on a production build 2026-10-13: 44-50ms at both widths, Stats
   itself arriving at 700-800ms; `next dev` reads 110-117ms. Needs `LINEUP_ENABLED=true`, writes nothing.
+- `pnpm probe:precon-arrival` proves the precon list's art (/decks/precons) arrives top down, row by row, at 1300x900
+  and 390x844 in both views: every art `data-arrival` turning `in` is stamped with its page-relative top, and an
+  inversion is a lower row released before an upper one (more than 4px above). Rows (34x48 thumbs) may not exceed 1%
+  of pairs, tiles 8%. The queue's small-art cap (`ARRIVAL_SMALL_CAP_MS`, 1,000ms, for boxes under 6,000px squared) is
+  what the rows' bar measures: 80ms left 5 to 11% of row pairs inverted, 300ms was still 0 to 11%, 1,000ms 0 in 12 runs.
+  Tiles keep the LCP caps (80/150ms), so a slow first row lets lower ones go: 0 inversions in most runs, up to 33/190
+  in some, before and after. Reads only; needs `PRECONS_ENABLED=true` and `pnpm db:seed:precons` on local-dev, or
+  `MEASURE_DEPLOYED=1` against staging.
 - `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
   cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
   call is held, and watches the run settle on its own, refunded, and later than the close. The model

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ARRIVAL_CAP_MS, ARRIVAL_FIRST_CAP_MS, ARRIVAL_STAGGER_MS, ArrivalQueue } from "./arrival-queue";
+import { ARRIVAL_CAP_MS, ARRIVAL_FIRST_CAP_MS, ARRIVAL_SMALL_CAP_MS, ARRIVAL_STAGGER_MS, ArrivalQueue, SMALL_ART_AREA_PX } from "./arrival-queue";
 
 // A grid laid out by hand: each piece of art has the top edge of its row.
 function grid(rows: number, cols: number) {
@@ -155,5 +155,67 @@ describe("ArrivalQueue", () => {
     q.dispose();
     advance(ARRIVAL_CAP_MS * 2);
     expect(released).toEqual([]);
+  });
+});
+
+
+describe("ArrivalQueue: small art", () => {
+  let now = 0;
+  beforeEach(() => {
+    now = 0;
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+  const advance = (ms: number) => {
+    now += ms;
+    vi.advanceTimersByTime(ms);
+  };
+
+  // A one-column list of 2 rows, on the first screen, each piece the given area.
+  function column(area: number) {
+    const g = grid(2, 1);
+    const q = new ArrivalQueue(() => now, g.topOf, () => 10_000, () => true, () => area);
+    const released: HTMLElement[] = [];
+    for (const row of g.cells) for (const el of row) q.join(el, () => released.push(el));
+    return { q, cells: g.cells, released };
+  }
+
+  it("holds a lower row of thumbs for the row above, past the first-screen cap", () => {
+    const { q, cells, released } = column(SMALL_ART_AREA_PX - 1);
+    q.landed(cells[1][0]);
+    advance(ARRIVAL_FIRST_CAP_MS + 10);
+    expect(released).toEqual([]);
+    // The row above lands 120ms late: the lower row goes after it, in order.
+    q.landed(cells[0][0]);
+    advance(ARRIVAL_STAGGER_MS + 1);
+    expect(released).toEqual([cells[0][0], cells[1][0]]);
+  });
+
+  it("still lets go of a lower row of thumbs at the small cap", () => {
+    const { q, cells, released } = column(SMALL_ART_AREA_PX - 1);
+    q.landed(cells[1][0]);
+    advance(ARRIVAL_SMALL_CAP_MS - 1);
+    expect(released).toEqual([]);
+    advance(2);
+    expect(released).toEqual([cells[1][0]]);
+  });
+
+  it("keeps the first-screen cap for art the size of a card tile", () => {
+    const { q, cells, released } = column(SMALL_ART_AREA_PX);
+    q.landed(cells[1][0]);
+    advance(ARRIVAL_FIRST_CAP_MS + 1);
+    expect(released).toEqual([cells[1][0]]);
+  });
+
+  it("gives a row with any larger art the larger art's cap", () => {
+    const g = grid(2, 2);
+    const area = new Map<HTMLElement, number>([[g.cells[1][0], 100], [g.cells[1][1], 40_000]]);
+    const q = new ArrivalQueue(() => now, g.topOf, () => 10_000, () => true, (el) => area.get(el) ?? 100);
+    const released: HTMLElement[] = [];
+    for (const row of g.cells) for (const el of row) q.join(el, () => released.push(el));
+    q.landed(g.cells[1][0]);
+    q.landed(g.cells[1][1]);
+    advance(ARRIVAL_FIRST_CAP_MS + 1);
+    expect(released).toEqual([g.cells[1][0], g.cells[1][1]]);
   });
 });
