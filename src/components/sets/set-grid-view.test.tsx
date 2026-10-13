@@ -1853,7 +1853,8 @@ describe("SetGridView — sort by price", () => {
     expect(within(owned[1]).getByText("$9.00")).toBeInTheDocument();
   });
 
-  it("draws no figure on an owned cell in collector order", () => {
+  // Hugh, 2026-10-13: the missing cells carry a price tag in every sort, so an owned cell shows its figure in every sort.
+  it("draws the owned cell's figure in collector order too", () => {
     window.history.pushState(null, "", "/collection/sets/dsk");
     render(
       <SetGridView
@@ -1864,7 +1865,7 @@ describe("SetGridView — sort by price", () => {
         newestAsOf={NEWEST} baseSetSize={1} staleAsOf={null}
       />,
     );
-    expect(screen.queryByText("$1.00")).toBeNull();
+    expect(screen.getByText("$1.00")).toBeInTheDocument();
   });
 
   // Sort narrows nothing, so Clear all leaves it, as the chassis's does.

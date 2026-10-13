@@ -117,14 +117,14 @@ describe("SetCell — caption and price", () => {
     expect(screen.queryByText(/\$/)).toBeNull();
   });
 
-  it("carries no price tag on an owned cell — the tag is a carrier of missing", () => {
+  it("carries no price TAG on an owned cell — the tag is a carrier of missing (its figure is plain text)", () => {
     render(<SetCell cell={cell({ owned: true })} price={fact({})} newestAsOf={NEWEST} />);
     expect(screen.queryByText("$1.20")).toBeNull();
   });
 
-  it("draws an owned cell's figure as text when sorted by price, at the finish held, and says it", () => {
+  it("draws an owned cell's figure as text, at the finish held, and says it", () => {
     const { container } = render(
-      <SetCell cell={cell({ owned: true, finishes: ["foil"] })} price={fact({ foilCents: 450 })} newestAsOf={NEWEST} showPrice />,
+      <SetCell cell={cell({ owned: true, finishes: ["foil"] })} price={fact({ foilCents: 450 })} newestAsOf={NEWEST} />,
     );
     expect(screen.getByText("$4.50")).toBeInTheDocument();
     expect(screen.getByText("foil")).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe("SetCell — caption and price", () => {
   });
 
   it("says no stock on an owned cell whose printing the store never carried", () => {
-    render(<SetCell cell={cell({ owned: true, finishes: ["nonfoil"] })} price={null} newestAsOf={NEWEST} showPrice />);
+    render(<SetCell cell={cell({ owned: true, finishes: ["nonfoil"] })} price={null} newestAsOf={NEWEST} />);
     expect(screen.getByText("no stock")).toBeInTheDocument();
   });
 });
@@ -154,7 +154,7 @@ describe("SetCell — the target", () => {
   it("says whether the card is yours in its accessible name", () => {
     render(<SetCell cell={cell({ owned: true })}  newestAsOf={null}/>);
     expect(screen.getByRole("button", {
-      name: "Faller's Faithful, 042, in your collection",
+      name: /^Faller's Faithful, 042, in your collection/,
     })).toBeInTheDocument();
   });
 });

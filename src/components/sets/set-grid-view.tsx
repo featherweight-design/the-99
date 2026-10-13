@@ -348,8 +348,7 @@ export function SetGridView(props: SetGridViewProps) {
 
   // The price ORDER's figure for one cell (H16): a missing cell's is the cost strip's own,
   // through the same `livePriceCents`, so the dearest cell this order names first is the one
-  // the strip would charge most for. An owned cell's is the figure it draws while sorted by
-  // price, its printing by `/collection`'s rule for the copies held (Hugh, 2026-10-13), so the
+  // the strip would charge most for. An owned cell's is the figure it draws (in every sort), its printing by `/collection`'s rule for the copies held (Hugh, 2026-10-13), so the
   // order and the figures agree. A cell with no figure is unpriced, which `sortCells` puts last.
   const centsOf = (c: Cell) => c.owned
     ? priceSortCents(ownedPriceCode(c, priceFor.get(c.scryfallId) ?? null, newest))
@@ -1686,7 +1685,6 @@ export function SetGridView(props: SetGridViewProps) {
             cells={shownBase}
             priceFor={priceFor}
             newest={newest}
-            showPrice={effective.sort === "price"}
             siblings={siblingIds}
             setCode={code.toUpperCase()}
             onOpenCard={open}
@@ -1700,7 +1698,6 @@ export function SetGridView(props: SetGridViewProps) {
               cells={shownExtras}
               priceFor={priceFor}
               newest={newest}
-              showPrice={effective.sort === "price"}
               siblings={siblingIds}
               setCode={code.toUpperCase()}
               onOpenCard={open}
@@ -1799,7 +1796,7 @@ function OwnershipToggles({
 }
 
 function Section({
-  id, title, ratio, cells, priceFor, newest, showPrice, siblings, setCode, onOpenCard,
+  id, title, ratio, cells, priceFor, newest, siblings, setCode, onOpenCard,
 }: {
   id?: string;
   title: string;
@@ -1807,8 +1804,6 @@ function Section({
   cells: Cell[];
   priceFor: Map<string, PriceFact>;
   newest: Date | null;
-  /** Sorted by price: owned cells draw their figure too. */
-  showPrice: boolean;
   siblings: readonly Sibling[];
   /** Uppercase, because BrowsePrinting.setCode is and the match is exact (browse.ts:398). */
   setCode: string;
@@ -1844,7 +1839,6 @@ function Section({
             cell={c}
             price={priceFor.get(c.scryfallId) ?? null}
             newestAsOf={newest}
-            showPrice={showPrice}
             // The cell IS a printing, so the modal is told which one. Uppercased because
             // BrowsePrinting.setCode is uppercase and the match is exact (browse.ts:398).
             onOpen={(oracleId) => onOpenCard(oracleId, siblings, {
