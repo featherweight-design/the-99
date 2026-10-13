@@ -1120,6 +1120,20 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   every cache it holds. `measure:load`'s EVICTED figure is the load it exists for: a returning reader
   whose HTTP cache was cleared.
 
+- **The deck page loads the Tuning tools on demand** (speed lane, 2026-10-13). `TuningHub`, `TuningPanel`,
+  `CutsPanelView` and `ManaBalancePanel` come from `tuning-tools.tsx`, a set of `onDemand` wrappers (`ui/on-demand.tsx`,
+  shared with the card details modal) over dynamic `import()`s, so `builder-shell` no longer ships ~290KB of source and
+  the `deck-tuning.ts` and `tuning-hub.ts` strings at startup. They are fetched together, because the hub opens a tool the
+  moment it draws: at idle once the page has loaded, on intent (a pointer or focus on the Analysis tab or on a shortcut
+  into a tool, `warmTuningToolsOnIntent`), and by the press itself. A shortcut's ask for a tool (`hubRequest`) is held in
+  the shell until the hub has answered it, so it survives the hub arriving late. A new importer of one of these modules
+  from client code puts them back in the startup chunk: `scripts/lib/client-graph.mjs` computes the client graph a route
+  ships (server modules stay server, `"use client"` starts the bundle, `"use server"` files are references, type-only and
+  dynamic imports are not followed) and `client-graph.test.mts` pins the tools and their copy out of Home, `/decks` and
+  the deck page. `src/lib/client-imports.test.ts` is a second, regex walker with the opposite rule on dynamic imports (a lazy
+  chunk still ships, so it follows them) and fixture maps of its own; the two were not merged. `measure:load` reads the
+  Analysis tab's press to drawn: early, idle and after intent.
+
 - `pnpm measure:tutors` prints what `classifyTutor` does to the live catalog — the 22-card
   fixture with a reason per card, the corpus splits, reach against a real combo piece, and the
   first 60 parses for reading. Read-only.
