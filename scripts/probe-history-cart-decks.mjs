@@ -65,6 +65,7 @@ const check = (ok, label, saw) => {
 
 let entryId = null;
 let addId = null;
+let mixedId = null;
 await clerkSetup();
 const [{ id: branch }] = await sql`select current_setting('neon.branch_id', true) as id`;
 if (!branch || branch === PRODUCTION || branch === STAGING) {
@@ -100,6 +101,13 @@ try {
     values (${addId}, ${userId}, 'add', null,
       ${JSON.stringify([addRow("Probe Card One", "1", [decks[0].id, decks[1].id]), addRow("Probe Card Two", "2", [decks[2].id])])}::jsonb, 2, 0)`;
 
+  // A mixed entry: one row held by a deck, one only read by a brew. Its line must say "Went to", not "Wanted by".
+  mixedId = randomUUID();
+  const brewRow = { ...addRow("Probe Card Three", "3", [decks[3].id]), wentTo: { soft: true, decks: [{ deckId: decks[3].id, copies: 0 }] } };
+  await sql`
+    insert into collection_history (id, user_id, kind, source, rows, raised, lowered)
+    values (${mixedId}, ${userId}, 'add', null, ${JSON.stringify([addRow("Probe Card One", "1", [decks[0].id]), brewRow])}::jsonb, 2, 0)`;
+
   for (const w of WIDTHS) {
     const context = await browser.newContext({
       viewport: { width: w.width, height: w.height },
@@ -127,6 +135,9 @@ try {
     const entryText = (await entryLine.textContent()) ?? "";
     const wantEntry = `Went to ${decks[0].name}, ${decks[1].name} and ${decks[2].name}.`;
     check(entryText === wantEntry, `${w.name}: the add entry names where its copies went`, entryText === wantEntry ? "exact line" : `got "${entryText}"`);
+    const mixedLine = (await onPage(page, `[id="entry-${mixedId}"]`).locator("p", { hasText: "Went to" }).first().textContent()) ?? "";
+    const wantMixed = `Went to ${decks[0].name} and ${decks[3].name}.`;
+    check(mixedLine === wantMixed, `${w.name}: a held row and a brew's read together read "Went to"`, mixedLine === wantMixed ? "exact line" : `got "${mixedLine}"`);
     await add.locator('button[aria-expanded="false"]').first().click();
     await add.getByText("Probe Card Two").first().waitFor({ timeout: 15_000 });
     const rowLines = await add.locator("li span").evaluateAll((els) => els.map((e) => e.textContent).filter((t) => /^Went to /.test(t ?? "")));
@@ -137,7 +148,7 @@ try {
     await context.close();
   }
 } finally {
-  for (const id of [entryId, addId]) if (id) await sql`delete from collection_history where id = ${id}`;
+  for (const id of [entryId, addId, mixedId]) if (id) await sql`delete from collection_history where id = ${id}`;
   await browser.close();
 }
 if (failures > 0) {

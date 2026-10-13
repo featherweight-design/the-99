@@ -243,8 +243,10 @@ export const listColumns = sql`
       group by 1
     ) w
   ) as went_decks,
-  exists (
-    select 1 from jsonb_array_elements(h.rows) as r(v) where r.v -> 'wentTo' ->> 'soft' = 'true'
+  -- Soft only when EVERY row that kept a placement is a brew's read: one held row makes the line "Went to".
+  (
+    select coalesce(bool_and(coalesce(r.v -> 'wentTo' ->> 'soft', '') = 'true'), false)
+    from jsonb_array_elements(h.rows) as r(v) where r.v -> 'wentTo' is not null
   ) as went_soft,
   h.rows -> 0 ->> 'name' as first_name
 `;
