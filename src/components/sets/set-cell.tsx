@@ -59,9 +59,9 @@ export function SetCell({
    */
   newestAsOf: Date | null;
   /**
-   * The grid is sorted by price: an owned cell then shows the figure `/collection` draws for
-   * the copies filling it (`copiesPriceCode`, the copy's own finish, the dearest when several),
-   * as plain text rather than a tag, because the tag is a carrier of missing.
+   * The grid is sorted by price: an owned cell then shows its printing priced by `/collection`'s
+   * rule (`copiesPriceCode`: the copy's own finish, the dearest when several), as plain text
+   * rather than a tag, because the tag is a carrier of missing.
    */
   showPrice?: boolean;
   onOpen?: (oracleId: string) => void;
@@ -204,14 +204,12 @@ export function SetCell({
 }
 
 /**
- * An owned cell's figure: `/collection`'s, over the finishes held of this printing. The grid read
- * its prices per printing id, so a printing with no row is one the store answered no about.
- *
- * A cell filled BY NAME has none. Its holding names no collector number, so this printing is
- * placement's inference, and `/collection`'s `priceFor` never prices a guess: it answers for the
- * one printing a set holds of the card, and stays silent otherwise. Silence here is that answer.
+ * An owned cell's figure: the cell's own printing, priced by `/collection`'s rule over the finishes
+ * held of it (`copiesPriceCode`). The grid read its prices per printing id, so a printing with no
+ * row is one the store answered no about. A cell filled by name is priced as the printing it is
+ * drawn as, beside its `by name` mark.
  */
 export function ownedPriceCode(cell: Cell, price: PriceFact | null, newestAsOf: Date | null): number | undefined {
-  if (!cell.owned || cell.byName) return undefined;
+  if (!cell.owned) return undefined;
   return copiesPriceCode([{ read: { fact: price }, finishes: cell.finishes }], newestAsOf);
 }

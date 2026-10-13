@@ -347,8 +347,8 @@ export function SetGridView(props: SetGridViewProps) {
   // The price ORDER's figure for one cell (H16): a missing cell's is the cost strip's own,
   // through the same `livePriceCents`, so the dearest cell this order names first is the one
   // the strip would charge most for. An owned cell's is the figure it draws while sorted by
-  // price, `/collection`'s for the copies held (Hugh, 2026-10-13), so the order and the
-  // figures agree. A cell with no figure is unpriced, which `sortCells` puts last.
+  // price, its printing by `/collection`'s rule for the copies held (Hugh, 2026-10-13), so the
+  // order and the figures agree. A cell with no figure is unpriced, which `sortCells` puts last.
   const centsOf = (c: Cell) => c.owned
     ? priceSortCents(ownedPriceCode(c, priceFor.get(c.scryfallId) ?? null, newest))
     : livePriceCents(priceFor.get(c.scryfallId), newest);
