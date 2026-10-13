@@ -6,7 +6,7 @@ import type { NoteCardHit } from "../../lib/decks/notes-store";
 import { useCardTagPicker } from "./card-tag-picker";
 
 /**
- * A textarea that can name a card, for a box whose owner holds a BODY string (a tag as `[[id|Name]]`, see
+ * A textarea that can name a card, for a textarea or one-line input whose owner holds a BODY string (a tag as `[[id|Name]]`, see
  * `notes-body.ts`) and wants to count, save or send it as one value. The box shows names; the owner sees the body.
  *
  * The box keeps its own text and picks beside the owner's body: serializing and parsing back is not an identity
@@ -24,7 +24,7 @@ export function useTaggedField(o: {
   /** The cap on what the box DRAWS, in code points. */
   max: number;
   maxTags: number;
-  field: RefObject<HTMLTextAreaElement | null>;
+  field: RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
 }) {
   const { value, onChange } = o;
   const [field, setField] = useState(() => toField(value));

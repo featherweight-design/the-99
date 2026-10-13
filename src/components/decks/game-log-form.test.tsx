@@ -7,6 +7,9 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 const logGame = vi.fn<(deckId: string, input: unknown) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
 );
+vi.mock("../../app/cards/tag-actions", () => ({
+  searchTagCards: async () => [{ oracleId: "c0ffee00-0000-4000-8000-000000000001", name: "Sol Ring", typeLine: "Artifact", imageUri: null, commanderLegal: true, flavorName: null }],
+}));
 vi.mock("../../app/decks/actions", () => ({
   logGame: (deckId: string, input: unknown) => logGame(deckId, input),
 }));
@@ -350,9 +353,11 @@ describe("GameLogForm", () => {
     it("stops at the cap without erroring", () => {
       mount();
       open();
-      expect(field()).toHaveAttribute("maxlength", String(deckTuningCopy.note.maxLength));
       fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.maxLength) } });
       expect(counter(deckTuningCopy.note.maxLength)).toBeInTheDocument();
+      // One more is not taken (the picker holds the field to the cap on what it DRAWS), and nothing says so.
+      fireEvent.change(field(), { target: { value: "x".repeat(deckTuningCopy.note.maxLength + 1) } });
+      expect((field() as HTMLInputElement).value).toBe("x".repeat(deckTuningCopy.note.maxLength));
       expect(screen.queryByRole("alert")).toBeNull();
     });
 
@@ -393,6 +398,24 @@ describe("GameLogForm", () => {
       // Verbatim. The trim belongs to the action, which is the boundary that
       // has to defend the column's cap against any caller, not just this form.
       expect(logGame.mock.calls.at(-1)?.[1]).toMatchObject({ note: "  Flooded out on turn six.  " });
+    });
+
+    // Card tags (plan PR 3): a pick goes over the wire as the stored tag, which the action stores as the card's name; the
+    // counter counts what is drawn, never the id.
+    it("takes a [[ card tag, counts its name, and sends the stored tag", async () => {
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+      fireEvent.change(field(), { target: { value: "never drew [[Sol" } });
+      const option = await screen.findByRole("option", { name: /Sol Ring/ });
+      // The form sits low on the Games tab, so the list floats in a portal on <body>, held to the room in the window.
+      expect(screen.getByRole("listbox").parentElement).toBe(document.body);
+      fireEvent.mouseDown(option);
+      // "never drew " (11) + the tag drawn as its name "Sol Ring" (8) + the space a pick leaves after it (1).
+      expect(counter(20)).toBeInTheDocument();
+      fireEvent.click(save());
+      await waitFor(() => expect(logGame).toHaveBeenCalled());
+      expect(logGame.mock.calls.at(-1)?.[1]).toMatchObject({ note: "never drew [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]] " });
     });
 
     // S1 state 7. There is no edit action on a logged game, so a refusal that

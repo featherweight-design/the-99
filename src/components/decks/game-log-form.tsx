@@ -10,6 +10,11 @@ import { logGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { plainText } from "../../lib/decks/notes-body";
+import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
+import { CardTagList } from "../cards/card-tag-picker";
+import { searchGameNoteCards } from "../cards/description-tag-search";
+import { useTaggedField } from "../cards/use-tagged-field";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
 
@@ -122,12 +127,20 @@ export function GameLogForm({
   // alone, an empty note's counter vanished on the way into the mutation it was
   // supposed to be frozen during. Cleared only by `collapse()`.
   const [noteTouched, setNoteTouched] = useState(false);
-  // What the counter counts, and what the action checks: code points, the way
-  // the column does. The input's own `maxLength` counts UTF-16 units and cannot
-  // be told otherwise, so the browser stops a note of astral characters
-  // slightly early — a client stricter than the server, which is the safe way
-  // for the two to disagree.
-  const noteLength = countCharacters(note);
+  // What the counter counts, and what the action checks: code points, the way the column does. The picker holds the
+  // field to the cap on what is DRAWN (the input's own `maxLength` counts UTF-16 units, and would count a tag's id).
+  // The note takes the `[[` card tag (card-tags plan, PR 3): `note` is the BODY, a tag as `[[id|Name]]`, and the action
+  // stores each tag as the catalog's name, so the counter counts what is drawn.
+  const noteLength = countCharacters(plainText(note));
+  const noteField = useRef<HTMLInputElement>(null);
+  const noteTags = useTaggedField({
+    value: note,
+    onChange: (body) => { setNote(body); setNoteTouched(true); },
+    search: searchGameNoteCards,
+    max: deckTuningCopy.note.maxLength,
+    maxTags: NOTES_TAGS_MAX,
+    field: noteField,
+  });
   // Two forms can be on one page — the panel's and the empty state's — so the
   // label's `for` and the field's `aria-describedby` cannot be literals.
   const noteId = useId();
@@ -472,20 +485,24 @@ export function GameLogForm({
 
         {/* An input, never a textarea: one line is the whole promise, and a
             textarea invites a paragraph the cap would then cut off. */}
+        <div className="relative">
         <input
+          ref={noteField}
           id={noteId}
           type="text"
-          value={note}
-          maxLength={deckTuningCopy.note.maxLength}
+          value={noteTags.field.text}
+          {...noteTags.picker.fieldProps}
           disabled={busy}
-          onChange={(e) => {
-            setNote(e.target.value);
-            setNoteTouched(true);
-          }}
+          onChange={(e) => noteTags.picker.typed(e.target.value, e.target.selectionStart)}
+          // The picker owns its keys while its list is open (Enter and Tab pick, Escape closes it).
+          onKeyDown={(e) => { noteTags.picker.onKeyDown(e); }}
           onFocus={() => setNoteTouched(true)}
           aria-describedby={noteTouched ? `${describedById} ${counterId}` : describedById}
           className="block md:flex md:items-center w-full min-h-[48px] md:min-h-[46px] px-[13px] md:px-[14px] py-[11px] md:py-[12px] rounded-[8px] bg-surface-sunken border border-border-strong focus:border-[color:var(--accent)] text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed disabled:opacity-50"
         />
+        {/* Floats over the page, held to the room in the window: the form sits low on the Games tab, where a list placed in the flow ends below the fold. */}
+        {noteTags.picker.open && <CardTagList {...noteTags.picker.list} anchor={noteField} />}
+        </div>
         <span id={describedById} className="sr-only">
           {deckTuningCopy.note.ariaDescription}
         </span>

@@ -2090,6 +2090,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   that card's plain name. Removing `anchor` makes the probe fail (it no longer finds the list under `<body>`).
   Measured 2026-10-13 on local-dev (the Card mark probe fixture deck): all eighteen checks pass.
 
+- `pnpm probe:game-note-tag-box` types `[[Sol` into the log-a-game form's note (the Games tab's "Log your first game" or
+  "Log a game") at 1300x900, 768x900 and 390x844, and checks what jsdom cannot: the list, which floats in a portal on
+  `<body>` (the form sits low on the tab, where a list in the flow ends below the fold), is inside the window on every side
+  with its first and a LATER option painted on top; Enter picks the first option and the note draws its name, never the stored
+  `[[<id>|` form; and the saved game's `note` column holds that card's plain name. Needs `GAME_NOTE_DECK` (a deck owned by
+  `E2E_AUDIT_USER_EMAIL`'s account). It WRITES one game on that deck, marked `probe-game-note-tag-box` in its note, and deletes
+  every game so marked before and after (a `finally`); it refuses staging and production by `neon.branch_id` of its
+  `DATABASE_URL` and a `PROBE_BASE` that is not localhost. `PROBE_SHOTS=<dir>` leaves a picture of the open list at each width.
+  Measured 2026-10-13 on local-dev (the Card mark probe fixture deck): all nine checks pass.
+
 - `pnpm probe:opening-printing` proves that a card the reader does not own previews the printing card details opens
   it on. A hover preview drew `cards.image_uri` (one arbitrary printing per card) while the modal opens an unowned
   card on `openingScryfallId`'s pick: the oracle's own printing when the shop carries it, else the cheapest live one

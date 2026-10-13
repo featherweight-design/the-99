@@ -60,7 +60,9 @@ import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../li
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { resolveBoxText } from "../../lib/cards/tagged-text";
+import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { writePullRelease } from "../../lib/decks/pull-release";
 import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
@@ -1195,12 +1197,13 @@ export async function logGame(
   // worse than saying no. The column's check would refuse it anyway, and that
   // refusal would arrive as a generic failure with no explanation.
   if (input.note !== undefined && typeof input.note !== "string") return refuse;
-  const note = input.note?.trim() ?? "";
-  // Code points, not `.length`. JavaScript counts UTF-16 code units, so an
-  // emoji is two and the column's `char_length` is one — counting the JS way
-  // would refuse 71 emoji as 142 characters while the database was happy to
-  // store them. One definition of "character", and it is the column's.
-  if (countCharacters(note) > NOTE_MAX_LENGTH) return refuse;
+  // The note box takes the `[[` card tag (card-tags plan, PR 3): what is stored is the catalog's name for each tag,
+  // as plain words, so nothing that reads a note (the history row, Suggested changes) ever meets a tag. The cap is on
+  // what is DRAWN, in code points (the column's own `char_length`, not UTF-16 units: an emoji is two in JavaScript and one
+  // there), and is checked again on the resolved names.
+  const resolvedNote = await resolveBoxText(input.note ?? "", { cap: NOTE_MAX_LENGTH, maxTags: NOTES_TAGS_MAX });
+  if (!resolvedNote.ok) return refuse;
+  const note = resolvedNote.text;
 
   // Opponents are a claim like everything else here: the shape first, the switch, then the catalog.
   // A friend seat is resolved inside the transaction, where the friendship is held until the game commits.
