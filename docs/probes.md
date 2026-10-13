@@ -165,8 +165,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. Per tool and width it checks
   the class is on, the ring (`::before`) runs `ai-sweep` on a conic gradient, reduced motion holds it as a plain
   accent border, and after the read settles NOTHING in the document carries the class. The models are the held
-  stand-ins, so the server needs `TUNING_STUB_DELAY_MS=9000`, `INTAKE_STUB_DELAY_MS=6000`,
-  `FITS_READ_STUB_DELAY_MS=6000` and the six tool switches (header of the script). Help me choose and Find a deck's
+  stand-ins, so the server needs `TUNING_STUB_DELAY_MS=9000`, `INTAKE_STUB_DELAY_MS=10000`,
+  `FITS_READ_STUB_DELAY_MS=10000` and the six tool switches (header of the script). Help me choose and Find a deck's
   read spend a stand-in credit on success, so the probe deletes the reads and `model_calls` it made (by its start and
   model `stub`) between widths and at the end; a stored read would otherwise replace the next width's offer. It
   clones one over-100 deck for Proposed cuts and deletes it. `PROBE_SHOTS=<dir>` saves one mid-run shot per tool and

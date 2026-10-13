@@ -10,11 +10,12 @@
 //  - OFF afterward: once the read settles, nothing on the page carries `.ai-sweep`. A sweep left
 //    running behind a finished answer is the one failure this exists to catch.
 //
-// The models are the held stand-ins, so no call is made and no credit is spent. THE SERVER MUST BE
+// The models are the held stand-ins, so no model is called. Help me choose and Find a deck's read still
+// SPEND a stand-in credit when they succeed; the probe deletes what it made (see `cleanStandIns`). THE SERVER MUST BE
 // STARTED WITH the switches below and the three delays, or the probe cannot hold a read open:
 //   ANALYSIS_TAB_ENABLED=true TUNING_ENABLED=true PROPOSED_CUTS_ENABLED=true HELP_ME_CHOOSE_ENABLED=true
 //   SWAP_TOOLS_ENABLED=true FIND_A_DECK_READ_ENABLED=true TUNING_STUB_DELAY_MS=9000
-//   INTAKE_STUB_DELAY_MS=6000 FITS_READ_STUB_DELAY_MS=6000
+//   INTAKE_STUB_DELAY_MS=10000 FITS_READ_STUB_DELAY_MS=10000
 // Writes runs, reads and credit rows (and clones one over-100 deck for Proposed cuts, deleted in a
 // `finally`). Point DATABASE_URL at `local-dev` or a scratch branch: it refuses staging and production.
 //
@@ -45,6 +46,14 @@ function report(label, ok, detail) {
   return ok;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** A cleanup that fails leaves rows behind on a shared database: count it, and keep going with the rest. */
+async function tidy(label, run) {
+  try {
+    await run();
+  } catch (error) {
+    report(`cleanup: ${label}`, false, String(error?.message ?? error));
+  }
+}
 const WIDTHS = [{ width: 1300, height: 900 }, { width: 390, height: 844 }];
 
 async function signIn(page) {
@@ -92,7 +101,8 @@ const anySweep = (page) => page.evaluate(() => document.querySelectorAll(".ai-sw
 async function check(page, label, hostSelector, settled, shotName) {
   const tag = `${label} @${page.viewportSize().width}`;
   let hosts = [];
-  for (let i = 0; i < 60 && hosts.length === 0; i += 1) {
+  // Up to 30s: on a dev server a press can wait on a cold route compile before its running state draws.
+  for (let i = 0; i < 200 && hosts.length === 0; i += 1) {
     hosts = (await ringOf(page, hostSelector)).filter((h) => h.cls);
     if (hosts.length === 0) await sleep(150);
   }
@@ -113,8 +123,14 @@ async function check(page, label, hostSelector, settled, shotName) {
     if (!gone) await sleep(250);
   }
   report(`${tag}: the read settled`, gone, gone ? "result drawn" : "still running after 40s");
-  await sleep(300);
-  report(`${tag}: nothing carries .ai-sweep once it has`, (await anySweep(page)) === 0, `${await anySweep(page)} left`);
+  // The settle signal is the caller's own (a run row, a phase, the band's test id), never the class; the
+  // page may take a beat after it to draw the result, so give the class up to 10s to leave.
+  let left = await anySweep(page);
+  for (let i = 0; i < 40 && left > 0; i += 1) {
+    await sleep(250);
+    left = await anySweep(page);
+  }
+  report(`${tag}: nothing carries .ai-sweep once it has`, left === 0, `${left} left`);
 }
 
 async function accountDeckIds(page) {
@@ -139,7 +155,7 @@ const made = [];
 const reads = [];
 const gone = (sel) => (page) => page.evaluate((s) => !document.querySelector(s), sel);
 
-async function toolLeg(browser, size, label, tool, deckId, heading, button, host, running, shot) {
+async function toolLeg(browser, size, label, tool, deckId, heading, button, host, shot) {
   const known = new Set((await sql`select id from deck_suggestion_runs where deck_id = ${deckId} and tool = ${tool}`).map((r) => r.id));
   const context = await browser.newContext({ viewport: size });
   const page = await context.newPage();
@@ -147,12 +163,19 @@ async function toolLeg(browser, size, label, tool, deckId, heading, button, host
     await signIn(page);
     await openAnalysis(page, deckId, heading);
     await onPageRole(page, "button", button).first().click();
+    let found = null;
     for (let i = 0; i < 100; i += 1) {
       const run = (await sql`select id, model_call_id from deck_suggestion_runs where deck_id = ${deckId} and tool = ${tool} order by created_at desc limit 1`).find((r) => !known.has(r.id));
-      if (run) { made.push(run); break; }
+      if (run) { found = run; made.push(run); break; }
       await sleep(150);
     }
-    await check(page, label, host, gone(running), shot);
+    report(`${label} @${size.width}: the press reserved a run`, found !== null, found?.id ?? "no new run row");
+    // Settled is the RUN's status, not the class going: a regression that dropped the class early
+    // would otherwise satisfy both the wait and the assertion after it.
+    await check(page, label, host, async () => {
+      const [row] = await sql`select status from deck_suggestion_runs where id = ${found?.id}`;
+      return !!row && row.status !== "pending";
+    }, shot);
   } finally {
     await context.close();
   }
@@ -209,33 +232,35 @@ async function pickCard(userId) {
 
 /**
  * Help me choose and Find a deck's read SPEND a (stand-in) credit when they succeed, and a stored read
- * stands in place of the offer on the next visit: take back the rows this run made, and only those, by
- * its start and the stand-in's own model name. Run between widths as well as at the end.
+ * stands in place of the offer on the next visit: take back what this run made. Scoped to the signed-in
+ * account, to the stand-in's own model name and to calls created since this run began, so another
+ * account's run on a shared database is never touched. Run between widths as well as at the end.
  */
-async function cleanStandIns() {
-  await sql`delete from fits_reads where model_call_id in (select id from model_calls where model = 'stub' and feature = 'fits_read' and created_at >= ${startedAt})`
-    .catch((e) => console.error("cleanup fits reads:", e));
-  await sql`delete from intake_reads where model_call_id in (select id from model_calls where model = 'stub' and feature = 'intake' and created_at >= ${startedAt})`
-    .catch((e) => console.error("cleanup intake reads:", e));
-  await sql`delete from model_calls where model = 'stub' and feature in ('intake', 'fits_read') and created_at >= ${startedAt}`
-    .catch((e) => console.error("cleanup stand-in calls:", e));
+async function cleanStandIns(userId) {
+  const calls = (await sql`select id from model_calls where user_id = ${userId} and model = 'stub' and feature in ('intake', 'fits_read') and created_at >= ${startedAt}`).map((r) => r.id);
+  if (calls.length === 0) return;
+  await tidy("fits reads", () => sql`delete from fits_reads where model_call_id = any(${calls}::uuid[])`);
+  await tidy("intake reads", () => sql`delete from intake_reads where model_call_id = any(${calls}::uuid[])`);
+  await tidy("stand-in calls", () => sql`delete from model_calls where id = any(${calls}::uuid[])`);
 }
 
-async function cleanup() {
+async function cleanup(userId) {
   for (const run of made) {
-    await sql`delete from deck_suggestion_runs where id = ${run.id}`.catch((e) => console.error("cleanup run:", e));
-    if (run.model_call_id) await sql`delete from model_calls where id = ${run.model_call_id}`.catch((e) => console.error("cleanup call:", e));
+    await tidy(`run ${run.id}`, () => sql`delete from deck_suggestion_runs where id = ${run.id}`);
+    if (run.model_call_id) await tidy(`call ${run.model_call_id}`, () => sql`delete from model_calls where id = ${run.model_call_id}`);
   }
-  for (const r of reads) await sql`delete from intake_reads where id = ${r}::uuid`.catch((e) => console.error("cleanup read:", e));
-  await cleanStandIns();
+  for (const r of reads) await tidy(`read ${r}`, () => sql`delete from intake_reads where id = ${r}::uuid`);
+  if (userId) await tidy("stand-in calls", () => cleanStandIns(userId));
 }
 
 let cloneId = null;
+let accountId = null;
 const browser = await chromium.launch();
 try {
   await clerkSetup();
   const setup = await (await browser.newContext()).newPage();
   const userId = await signIn(setup);
+  accountId = userId;
   const ids = await accountDeckIds(setup);
   const source = process.env.PROBE_CUTS_DECK
     ?? (await sql`select d.id from decks d join deck_cards c on c.deck_id = d.id
@@ -260,20 +285,20 @@ try {
       order by d.id limit 1`)[0];
     if (report(`a never-run analyzed deck for Suggested changes @${size.width}`, !!tuning, tuning?.id ?? "none")) {
       await toolLeg(browser, size, "Suggested changes", "suggested_changes", tuning.id, "Suggested changes", /^Suggest/,
-        "section[aria-labelledby='tuning-heading']", "section[aria-labelledby='tuning-heading'].ai-sweep", "suggested-changes");
+        "section[aria-labelledby='tuning-heading']", "suggested-changes");
     }
     await toolLeg(browser, size, "Proposed cuts", "proposed_cuts", cloneId, "Proposed cuts", /^Look deeper/,
-      "section[aria-labelledby='cuts-heading'] div", "section[aria-labelledby='cuts-heading'] .ai-sweep", "proposed-cuts");
+      "section[aria-labelledby='cuts-heading'] div", "proposed-cuts");
     await chooseLeg(browser, size);
     if (card) await findDeckLeg(browser, size, card);
-    await cleanStandIns();
+    await cleanStandIns(userId);
   }
 } catch (error) {
   console.error(error);
   failures += 1;
 } finally {
-  await cleanup();
-  if (cloneId) await sql`delete from decks where id = ${cloneId}`.catch((e) => console.error("cleanup deck:", e));
+  await cleanup(accountId);
+  if (cloneId) await tidy(`cloned deck ${cloneId}`, () => sql`delete from decks where id = ${cloneId}`);
   await browser.close();
 }
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
