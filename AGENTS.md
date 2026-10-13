@@ -701,10 +701,16 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   A `plumbing` switch (`LIST_CACHE_ENABLED`, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis scores are counted
   by) takes the app-wide override alone. An app-wide override still flips one without a deploy, so its readers
   are handed the resolved env too (since admin PR 7a every flag function, and `roleBasisFromEnv`, `hubTools` and
-  `scoreWriterVersion`, REQUIRES its `env`, so leaving it out does not compile; since admin PR 7b so does every
-  reader under `src/lib/decks` (but `envForPageBasis`, which reads the kill switch on purpose) and the claim model's wrappers outside it, and the rest of the readers' own `env`
-  parameters still default to `process.env` until admin PRs 7b-2 (`src/lib/tuning`), 7c and 7d remove those
-  defaults), and a cache whose payload
+  `scoreWriterVersion`, REQUIRES its `env`, so leaving it out does not compile. Since admin PR 7b so does the claim
+  model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`), every reader under `src/lib/decks` (but
+  `envForPageBasis`, which reads the kill switch on purpose), and the wrappers that took an OPTIONAL env and forwarded
+  it to the claim model (`applyCollectionChange`, `loadContestedCard`, `loadSummary`, `loadFillGate`,
+  `resolveAnswer`, `loadOwnedCandidates`). Wrappers that DEFAULT their own `env` to `process.env` and hand it to the
+  claim model still compile without one: 7c holds those in `collection/summary-read` (`loadContestedCards`,
+  `countContestedCards`, `loadChooserCards`), `collection/card-detail` (`loadCardDetail`), `intake/rows`
+  (`loadResultsPage`), `intake/search`, `intake/trial`, `commander-change/candidates`, `recs/free-ranking` and
+  `swaps/fits`, `swaps/gather` and `swaps/take`, and 7d in `commanders/rankings` and `discovery/list`. Every other
+  reader's `env` default goes in 7b-2 (`src/lib/tuning`), 7c or 7d), and a cache whose payload
   depends on it carries it in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` already keys on every switch. The registry
@@ -715,10 +721,12 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   never raises its parent. `cachePageForUser` puts every resolved switch in its key and hands the load that same env,
   which every switch read inside the load must use (the claim model in `availability-query` takes `env` since admin
   PR 6e, and since 6f-2 every claim read in `src` is handed the reader's env, so `NEVER_CUT_ENABLED` and
-  `CHANGE_COMMANDER_ENABLED` are always the reader's. Since admin PR 7b the claim model's entry points and the
-  wrappers that start them take a REQUIRED `env`, so an env-less call does not compile; `switch-adoption.test.ts`'s
-  `CLAIM_ENV` now names only `chainArt`, for `DECK_PRINTINGS_ENABLED`, whose `env` still defaults until 7d. A deeper
-  reader that takes a defaulted env is caught only once admin PRs 7b-2 to 7d make `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
+  `CHANGE_COMMANDER_ENABLED` are always the reader's. Since admin PR 7b the claim model's entry points and the deck
+  wrappers that start them (`loadCart`, `loadShoppingRollup`, `listDecksWithStats`) take a REQUIRED `env`, so an
+  env-less call to one does not compile; the defaulted wrappers named above still compile without one until 7c and
+  7d. `switch-adoption.test.ts`'s `CLAIM_ENV` now names only `chainArt`, for `DECK_PRINTINGS_ENABLED`, whose `env`
+  still defaults until 7d. A deeper reader that takes a defaulted env is caught only once admin PRs 7b-2 to 7d make
+  `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
   proxy keys About's cookie on the reader's resolved entries, so a flip retires exactly the readers it changes.
   `check:list-cache` knows the two override tables reach a cached page through its key alone, and fails if any loader
   but `page-cache.ts` and the resolver it goes through (`src/lib/switches/request.ts`) reads them. Every page,

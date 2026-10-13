@@ -79,15 +79,15 @@ describe("an action reads the reader's resolved switches", () => {
  */
 
 /**
- * The readers whose DEFAULTED env decides a switch, and where each takes it: in an options object (`opts`,
- * which must name `env`) or as a positional argument (`at`, which must be present). `chainArt` decides
+ * The readers whose DEFAULTED env decides a switch, and the position of that env, which a call must reach
+ * (`at`). `chainArt` decides
  * DECK_PRINTINGS_ENABLED, the deck's printing picks, and its `env` defaults until admin PR 7d makes it
  * required. A reader deeper than this that takes a defaulted env is not scanned: admin PRs 7b-2 to 7d make
  * `env` required, which catches that whole class at compile time.
  */
 const CLAIM_ENV = {
   chainArt: { at: 3 },
-} as const satisfies Record<string, { opts: number } | { at: number }>;
+} as const satisfies Record<string, { at: number }>;
 const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
 type ClaimReader = (typeof CLAIM_READERS)[number];
 
@@ -131,16 +131,7 @@ async function claimCalls(path: string, code: string): Promise<{ call: string; e
     if (reader && ts.isCallExpression(node)) {
       const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
       const call = `${path}:${line}: ${node.expression.getText(file)} (${reader})`;
-      // Widened, so the options-object form stays checked while the list holds positional readers alone.
-      const where = CLAIM_ENV[reader] as { opts: number } | { at: number };
-      if ("opts" in where) {
-        const opts = node.arguments[where.opts];
-        const env = !!opts && ts.isObjectLiteralExpression(opts) && opts.properties.some((p) =>
-          (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.getText(file) === "env");
-        out.push({ call, env });
-      } else {
-        out.push({ call, env: node.arguments.length > where.at });
-      }
+      out.push({ call, env: node.arguments.length > CLAIM_ENV[reader].at });
     }
     ts.forEachChild(node, visit);
   };
