@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import type { CostDetail } from "../../lib/admin/costs-detail-rule";
+import type { AdminEnv } from "../../lib/admin/environment";
 import {
   capMicro,
   capUsd,
@@ -14,6 +16,7 @@ import {
 import { adminCopy } from "../../lib/copy/admin";
 import { ALARM_PCTS, BUDGET_USD, HARD_STOP_USD, usdToMicro } from "../../lib/model/spend-rule";
 import { PendingReporter } from "../shell/pending-reporter";
+import { CostsDetail, fill, INK, SectionHead } from "./costs-detail";
 import { SettingAction } from "./setting-dialog";
 
 // The Costs core (admin STATES C1 to C7; design table, Costs and the R2 deltas): the pinned month
@@ -31,11 +34,9 @@ const monthName = (m: MonthKey) => fmt(m, { month: "long" });
 const monthShort = (m: MonthKey) => fmt(m, { month: "short" });
 const hrefFor = (m: MonthKey, current: MonthKey) => (m.year === current.year && m.month === current.month ? "/admin" : `/admin?month=${monthParam(m)}`);
 const pct = (part: number, whole: number) => Math.round((part / whole) * 100);
+/** A floor of a share, for a figure that is itself a floor: never rounded up past what is known. */
+const pctFloor = (part: number, whole: number) => Math.floor((part / whole) * 100);
 const dayLabel = (asOf: string) => new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${asOf}T00:00:00Z`));
-
-const INK = { player: "var(--accent)", system: "var(--success)", elsewhere: "var(--fg-faint)" } as const;
-const fill = (ink: string, hatch = false) =>
-  hatch ? `repeating-linear-gradient(135deg, ${ink} 0 3px, transparent 3px 6px)` : ink;
 
 type Seg = { micro: number; ink: string; hatch?: boolean };
 type Tick = { micro: number; label: string; ink: string };
@@ -96,15 +97,6 @@ function CapRow({ label, here, figure, children, sub, actions }: { label: string
       {children}
       <span className="text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{sub}</span>
       {actions && <div className="flex flex-wrap gap-[14px]">{actions}</div>}
-    </div>
-  );
-}
-
-function SectionHead({ title, meta }: { title: string; meta?: string }) {
-  return (
-    <div className="flex flex-wrap items-baseline gap-[10px] pt-[10px]">
-      <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{title}</h2>
-      {meta && <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{meta}</span>}
     </div>
   );
 }
@@ -201,7 +193,7 @@ function Banner({ tone, children }: { tone: "warning" | "danger"; children: Reac
   );
 }
 
-export function CostsView({ s, month, current, viewerId }: { s: CostSummary; month: MonthKey; current: MonthKey; viewerId?: string }) {
+export function CostsView({ s, month, current, detail, env, viewerId }: { s: CostSummary; month: MonthKey; current: MonthKey; detail?: CostDetail; env?: AdminEnv; viewerId?: string }) {
   const prev = shiftMonth(month, -1);
   const prevHref = hrefFor(prev, current);
   const nextHref = hrefFor(shiftMonth(month, 1), current);
@@ -219,7 +211,15 @@ export function CostsView({ s, month, current, viewerId }: { s: CostSummary; mon
   const share = s.ownerShareMicro;
   const cap = s.settings.account_cap_usd;
   const elsewhere = s.elsewhere;
-  const accountTotal = s.calls.micro + (elsewhere?.micro ?? 0);
+  const sys = s.systemSplit;
+  const systemSegs: Seg[] = [
+    { micro: sys.labels, ink: INK.labels },
+    { micro: sys.evals, ink: INK.evals },
+    { micro: sys.rewrites, ink: INK.rewrites },
+  ].filter((seg) => seg.micro > 0);
+  const accountTotal = s.player.micro + sys.total + (elsewhere?.micro ?? 0);
+  // A label run still collecting, or unpriced, leaves every figure holding system spend partial.
+  const sysUsd = (micro: number) => (sys.incomplete ? copy.soFar(usd(micro)) : usd(micro));
   const note = (text: string | null | undefined) => (text ? ` ${copy.note(text)}` : "");
 
   let banner: ReactNode = null;
@@ -230,7 +230,7 @@ export function CostsView({ s, month, current, viewerId }: { s: CostSummary; mon
   const tiles = [
     { label: copy.tiles.calls, fig: usd(s.calls.micro), sub: [copy.tileSub.runs(s.calls.runs), s.callsPaceMicro !== null && s.calls.runs > 0 ? copy.tileSub.pace(usd(s.callsPaceMicro)) : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.player, fig: usd(s.player.micro), sub: copy.tileSub.ofPlan(pct(s.player.micro, planMicro), plan), warn: s.alarm >= 80 },
-    { label: copy.tiles.system, fig: usd(s.system.micro), sub: ceiling && ceiling.micro > 0 ? copy.tileSub.ofCeiling(pct(s.system.micro, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.system },
+    { label: copy.tiles.system, fig: sysUsd(sys.total), sub: [ceiling && ceiling.micro > 0 ? (sys.incomplete ? copy.tileSub.ofCeilingAtLeast(pctFloor(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro))) : copy.tileSub.system, sys.incomplete ? copy.systemPartial : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.perAccount, fig: usd(s.perAccountMicro ?? 0), sub: copy.tileSub.accounts(s.accounts) },
   ];
 
@@ -300,20 +300,20 @@ export function CostsView({ s, month, current, viewerId }: { s: CostSummary; mon
           <CapRow
             label={copy.capRows.ceiling}
             here
-            figure={ceiling ? copy.of(usd(s.system.micro), capMicro(ceiling.micro)) : copy.notSet(usd(s.system.micro))}
+            figure={ceiling ? copy.of(sysUsd(sys.total), capMicro(ceiling.micro)) : copy.notSet(sysUsd(sys.total))}
             sub={ceilingSub + note(storedCeiling?.note)}
             actions={s.current && <SettingAction kind="ceiling" label={copy.changeCeiling} />}
           >
             <CapBar
-              scale={Math.max(ceiling?.micro ?? 0, s.system.micro, 1)}
-              segs={ceiling ? [{ micro: s.system.micro, ink: INK.system }] : []}
+              scale={Math.max(ceiling?.micro ?? 0, sys.total, 1)}
+              segs={ceiling ? systemSegs : []}
               ticks={ceiling ? [{ micro: ceiling.micro, label: capMicro(ceiling.micro), ink: "var(--danger)" }] : []}
             />
           </CapRow>
           <CapRow
             label={copy.capRows.account}
             here
-            figure={cap ? copy.of(usd(accountTotal), capMicro(cap.micro)) : copy.notSet(usd(accountTotal))}
+            figure={cap ? copy.of(sysUsd(accountTotal), capMicro(cap.micro)) : copy.notSet(sysUsd(accountTotal))}
             sub={copy.capSub.account + note(cap?.note) + (elsewhere ? copy.capSub.elsewhere(usd(elsewhere.micro), dayLabel(elsewhere.asOf), elsewhere.by === undefined ? null : elsewhere.by === viewerId ? copy.capSub.you : elsewhere.by) + note(elsewhere.note) : copy.capSub.noElsewhere)}
             actions={s.current && <>
               <SettingAction kind="elsewhere" label={elsewhere ? copy.updateElsewhere : copy.enterElsewhere} />
@@ -324,7 +324,7 @@ export function CostsView({ s, month, current, viewerId }: { s: CostSummary; mon
               scale={Math.max(cap?.micro ?? 0, accountTotal, 1)}
               segs={cap ? [
                 { micro: s.player.micro, ink: INK.player },
-                { micro: s.system.micro, ink: INK.system },
+                ...systemSegs,
                 { micro: elsewhere?.micro ?? 0, ink: INK.elsewhere, hatch: true },
               ] : []}
               ticks={cap ? [{ micro: cap.micro, label: capMicro(cap.micro), ink: "var(--danger)" }] : []}
@@ -335,6 +335,7 @@ export function CostsView({ s, month, current, viewerId }: { s: CostSummary; mon
         <SectionHead title={copy.trendPlayer} meta={copy.trendPlayerMeta(plan)} />
         <Trend s={s} month={month} />
         <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.trendNote}</p>
+        {detail && <CostsDetail s={s} d={detail} month={month} env={env ?? null} />}
       </div>
     </>
   );

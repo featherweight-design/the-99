@@ -203,3 +203,27 @@ describe("parseMonth and capUsd at their edges", () => {
     expect(capUsd(1.2345)).toBe("$1.2345");
   });
 });
+
+describe("costSummary, the system split", () => {
+  it("adds label batches and evals to model_calls' system rows, and takes the collector's labels out of rewrites", () => {
+    const s = costSummary(rows([p(2, 1), sys(3, 0.75)], { outside: { batchMicro: 120_950_000, evalsMicro: 14_760_000, labelCallsMicro: 250_000 } }), OCT, NOW);
+    expect(s.systemSplit).toEqual({ labels: 121_200_000, evals: 14_760_000, rewrites: 500_000, total: 136_460_000, labelsPartial: false, evalsPartial: false, incomplete: false });
+    // The model_calls figures are untouched.
+    expect(s.system.micro).toBe(750_000);
+    expect(s.calls.micro).toBe(1_750_000);
+  });
+
+  it("carries partial label spend through to the split", () => {
+    const s = costSummary(rows([sys(3, 0.5)], { outside: { batchMicro: 1_000_000, evalsMicro: 0, labelCallsMicro: 0, labelsIncomplete: true } }), OCT, NOW);
+    expect(s.systemSplit.incomplete).toBe(true);
+  });
+
+  it("marks the evals partial when a ledger could not be read, apart from the labels", () => {
+    const s = costSummary(rows([sys(3, 0.5)], { outside: { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0, evalsUnreadable: true } }), OCT, NOW);
+    expect(s.systemSplit).toMatchObject({ evalsPartial: true, labelsPartial: false, incomplete: true });
+  });
+
+  it("reads no outside spend as none", () => {
+    expect(costSummary(rows([sys(3, 0.5)]), OCT, NOW).systemSplit).toEqual({ labels: 0, evals: 0, rewrites: 500_000, total: 500_000, labelsPartial: false, evalsPartial: false, incomplete: false });
+  });
+});

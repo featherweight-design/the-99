@@ -58,6 +58,45 @@
           "settle": 600
         }
       ]
+    },
+    {
+      "id": "admin-costs-by-model",
+      "label": "/admin: By model and Player against system (R2 delta 9; inks per origin)",
+      "view": "src/components/admin/costs-detail.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"By model\")"
+        }
+      ]
+    },
+    {
+      "id": "admin-costs-by-feature",
+      "label": "/admin: By feature and model, reserved against spent, per account",
+      "view": "src/components/admin/costs-detail.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"By feature and model\")"
+        }
+      ]
+    },
+    {
+      "id": "admin-costs-ledgers",
+      "label": "/admin: Card label runs and Eval ledgers (limit, window; C8 pending)",
+      "view": "src/components/admin/costs-detail.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "h2:has-text(\"Eval ledgers\")"
+        }
+      ]
     }
   ]
 }

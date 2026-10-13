@@ -124,6 +124,25 @@ describe("CostsView, caps not set", () => {
     expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--success)"]);
     expect(capRow("System ceiling").ticks).toHaveLength(1);
   });
+
+  it("splits system spend into labels, evals and rewrites, each in its own ink", () => {
+    draw(rows([p(2, 1), sys(3, 0.75)], {
+      settings: {
+        account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: null },
+        system_ceiling_usd: { micro: usdToMicro(150), asOf: "2026-10-01", note: null },
+      },
+      // $0.25 of the system rows is the manual collector's labels; batches $120.95; evals $14.76.
+      outside: { batchMicro: usdToMicro(120.95), evalsMicro: usdToMicro(14.76), labelCallsMicro: usdToMicro(0.25) },
+    }));
+    expect(screen.getByText("System").parentElement).toHaveTextContent("$136.46");
+    expect(screen.getByText("$136.46 of $150")).toBeInTheDocument();
+    expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--fact)", "var(--warning)", "var(--success)"]);
+    // The account cap: the player's, then the three system inks.
+    expect(screen.getByText("$137.46 of $250")).toBeInTheDocument();
+    expect(capRow("Anthropic account cap").segs.map((el) => el.style.background).slice(0, 4)).toEqual(["var(--accent)", "var(--fact)", "var(--warning)", "var(--success)"]);
+    // The Model calls tile stays model_calls alone.
+    expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.750");
+  });
 });
 
 describe("CostsView, a ceiling that starts later", () => {
@@ -137,15 +156,27 @@ describe("CostsView, a ceiling that starts later", () => {
     expect(row).toHaveTextContent("Starts November.");
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
-    expect(screen.getByText("System").parentElement).toHaveTextContent("rewrites, labels and prose");
+    expect(screen.getByText("System").parentElement).toHaveTextContent("labels, evals and rewrites");
   });
 
   it("applies from the month it starts on", () => {
     draw(rows([p(2, 1), sys(3, 0.5)], { settings: ceilingFrom("2026-10-01") }));
     expect(screen.getByText("$0.500 of $15")).toBeInTheDocument();
-    expect(capRow("System ceiling").row).toHaveTextContent("System rows in model_calls.");
+    expect(capRow("System ceiling").row).toHaveTextContent("System rows in model_calls, card label batches and the eval ledgers.");
     expect(capRow("System ceiling").ticks).toHaveLength(1);
     expect(screen.getByText("System").parentElement).toHaveTextContent("3% of the $15 ceiling");
+  });
+
+  it("calls the ceiling share a floor, and the figure so far, while system spend is still coming in", () => {
+    draw(rows([p(2, 1), sys(3, 0.5)], { settings: ceilingFrom("2026-10-01"), outside: { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0, labelsIncomplete: true } }));
+    const tile = screen.getByText("System").parentElement as HTMLElement;
+    expect(tile).toHaveTextContent("$0.500 so far");
+    expect(tile).toHaveTextContent("at least 3% of the $15 ceiling");
+  });
+
+  it("floors the ceiling share of a partial figure: 99.6% known is at least 99%, not at least 100%", () => {
+    draw(rows([sys(3, 14.94)], { settings: ceilingFrom("2026-10-01"), outside: { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0, labelsIncomplete: true } }));
+    expect(screen.getByText("System").parentElement).toHaveTextContent("at least 99% of the $15 ceiling");
   });
 
   it("names the year when it starts in another one", () => {
