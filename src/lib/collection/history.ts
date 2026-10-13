@@ -140,10 +140,18 @@ async function livingDecks(userId: string, ids: string[]): Promise<Map<string, s
   return new Map(res.rows.map((r) => [r.id, r.name]));
 }
 
-/** Fills `cartDecks` and `wentTo` on a page of entries with ONE read of the player's own decks. */
-async function withDeckLines(userId: string, listed: Listed[]): Promise<HistoryListEntry[]> {
-  const living = await livingDecks(userId, listed.flatMap((l) => [...(cartSourceDecks(l.entry.source) ?? []), ...l.wentIds]));
-  return listed.map(({ entry, wentIds, wentSoft }) => {
+/**
+ * Fills `cartDecks` and `wentTo` on a page of entries with ONE read of the player's own decks. `extraIds` rides
+ * the same read (an opened entry's row lines), and the map it read comes back for the caller to reuse.
+ */
+async function withDeckLines(
+  userId: string, listed: Listed[], extraIds: string[] = [],
+): Promise<{ entries: HistoryListEntry[]; living: Map<string, string> }> {
+  const living = await livingDecks(userId, [
+    ...listed.flatMap((l) => [...(cartSourceDecks(l.entry.source) ?? []), ...l.wentIds]),
+    ...extraIds,
+  ]);
+  const entries = listed.map(({ entry, wentIds, wentSoft }) => {
     const cart = cartSourceDecks(entry.source);
     return {
       ...entry,
@@ -151,6 +159,7 @@ async function withDeckLines(userId: string, listed: Listed[]): Promise<HistoryL
       ...(wentIds.length > 0 ? { wentTo: { decks: cartDecksOf(wentIds, living), soft: wentSoft } } : {}),
     };
   });
+  return { entries, living };
 }
 
 export type HistoryEntry = HistoryListEntry & {
@@ -168,7 +177,7 @@ type ListRow = {
   reverts_visible: boolean; reverted_by_visible: boolean;
   upload_filename: string | null; first_name: string | null;
   shopping_deck_id: string | null; shopping_deck_name: string | null;
-  // The deck ids the rows' `wentTo` name, first appearance first, and whether any is a brew's read.
+  // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
   went_decks: string[] | null; went_soft: boolean;
   rows?: HistoryRow[];
 };
@@ -293,7 +302,7 @@ export async function listHistory(
     order by h.seq desc
     limit ${HISTORY_PAGE_SIZE + 1}
   `);
-  const page = await withDeckLines(userId, rows.rows.slice(0, HISTORY_PAGE_SIZE).map(listedOf));
+  const { entries: page } = await withDeckLines(userId, rows.rows.slice(0, HISTORY_PAGE_SIZE).map(listedOf));
   const more = rows.rows.length > HISTORY_PAGE_SIZE;
   return { entries: page, nextBefore: more ? page[page.length - 1].seq : null };
 }
@@ -307,9 +316,13 @@ export async function getHistoryEntry(userId: string, id: string): Promise<Histo
   `);
   const r = rows.rows[0];
   if (!r) return null;
-  const [entry] = await withDeckLines(userId, [listedOf(r)]);
   const rowIds = (r.rows ?? []).flatMap((x) => x.wentTo?.decks.map((d) => d.deckId) ?? []);
-  return { ...entry, rows: r.rows ?? [], rowDecks: Object.fromEntries(await livingDecks(userId, rowIds)) };
+  const { entries: [entry], living } = await withDeckLines(userId, [listedOf(r)], rowIds);
+  return {
+    ...entry,
+    rows: r.rows ?? [],
+    rowDecks: Object.fromEntries(rowIds.filter((id) => living.has(id)).map((id) => [id, living.get(id)!])),
+  };
 }
 
 /**

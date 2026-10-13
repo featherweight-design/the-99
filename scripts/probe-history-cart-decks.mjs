@@ -1,10 +1,13 @@
 // A cart purchase's History row names the decks it was bought for, and an add's row names the decks its copies
 // went to, entry line and row lines (History deck line, PRs 1 and 3; Hugh 2026-10-13), walked in a real browser at 390x844 and 1300x900.
 //
-// The row's line reads "From Shopping for all decks. Bought for A, B, C, 2 more and a deck you've since deleted.", each living deck linking to its page. JSDOM has no layout, so this reads the page the server drew
-// from a real ledger row: it writes ONE `collection_history` entry sourced `shopping:cart:<ids>` under the
-// account it signs in as (five of its decks and one id that is no deck) and deletes it in a `finally`.
-// Point it at `local-dev`, never production or staging (it checks the branch).
+// The cart row reads "From Shopping for all decks. Bought for A, B, C, 2 more and a deck you've since deleted.",
+// each living deck linking to its page; an add entry reads "Went to A, B and C." and its opened rows each say
+// their own. JSDOM has no layout, so this reads the page the server drew from real ledger rows. It writes THREE
+// `collection_history` entries under the account it signs in as and deletes them in a `finally`: a cart
+// purchase (`shopping:cart:<ids>`, five of its decks and one id that is no deck), an add whose two rows kept
+// `wentTo`, and an add mixing a held row with a brew's read. Point it at `local-dev`, never production or
+// staging (it checks the branch).
 //
 //   PROBE_BASE=http://localhost:3000 node scripts/probe-history-cart-decks.mjs
 import { randomUUID } from "node:crypto";
