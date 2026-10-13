@@ -174,3 +174,12 @@ describe("AdminHead on /admin/switches", () => {
     ]);
   });
 });
+
+describe("SwitchesList row links (admin plan 8b)", () => {
+  it("opens each switch's page from its row", () => {
+    draw({});
+    for (const name of SWITCH_NAMES) {
+      expect(rowOf(name).querySelector("a")).toHaveAttribute("href", `/admin/switches/${name}`);
+    }
+  });
+});

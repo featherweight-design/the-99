@@ -226,6 +226,80 @@
           "settle": 400
         }
       ]
+    },
+    {
+      "id": "admin-switch-model",
+      "label": "/admin/switches/PROPOSED_CUTS_ENABLED: ladder, Needs rung, sections (F1 shape) (8b)",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/PROPOSED_CUTS_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-compound",
+      "label": "/admin/switches/SHOPPING_MARK_BOUGHT_ENABLED: parent off banner (F4); server COLLECTION_EDIT_ENABLED=false and SHOPPING_MARK_BOUGHT_ENABLED=true",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/SHOPPING_MARK_BOUGHT_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-kill",
+      "label": "/admin/switches/DECK_BENCHMARKS_ENABLED: kill banner, env rung in danger (F5); server DECK_BENCHMARKS_ENABLED=off",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/DECK_BENCHMARKS_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-plumbing",
+      "label": "/admin/switches/LIST_CACHE_ENABLED: App-wide and History only (F6)",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/LIST_CACHE_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-check",
+      "label": "/admin/switches/TUNING_ENABLED?account=: Check an account with its source",
+      "view": "src/components/admin/check-account.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/TUNING_ENABLED?account=${ADMIN_CHECK_USER_ID}",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "[data-testid='check-account']"
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-history",
+      "label": "/admin/switches/TUNING_ENABLED: History, or its empty line (F13)",
+      "view": "src/components/admin/switch-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/TUNING_ENABLED",
+          "wait": "h1",
+          "settle": 1500,
+          "scrollTo": "[data-testid='switch-history']"
+        }
+      ]
     }
   ]
 }

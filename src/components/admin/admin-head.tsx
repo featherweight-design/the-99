@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PendingReporter } from "../shell/pending-reporter";
 import type { AdminEnv } from "../../lib/admin/environment";
-import { adminCopy } from "../../lib/copy/admin";
+import { adminCopy, switchCopy } from "../../lib/copy/admin";
+import { isSwitchName, switchKind, switchParent, type SwitchName } from "../../lib/switches/registry";
+import { SwitchTags } from "./switches-list";
 
 /**
  * The page head every admin page shares (design table, Page head): eyebrow and environment chip,
@@ -22,6 +24,12 @@ function tabFor(pathname: string) {
   return [...ADMIN_TABS]
     .sort((a, b) => b.href.length - a.href.length)
     .find((t) => pathname === t.href || pathname.startsWith(`${t.href}/`)) ?? ADMIN_TABS[0];
+}
+
+/** The switch a `/admin/switches/<VARIABLE>` path names, for the head's detail mode (design table, Page head). */
+function switchOf(pathname: string): SwitchName | null {
+  const m = /^\/admin\/switches\/([^/]+)\/?$/.exec(pathname);
+  return m && isSwitchName(m[1]) ? m[1] : null;
 }
 
 /**
@@ -55,7 +63,10 @@ export function usePublishedHeight(ref: RefObject<HTMLElement | null>, name: str
 }
 
 export function AdminHead({ env }: { env: AdminEnv }) {
-  const current = tabFor(usePathname() ?? "/admin");
+  const pathname = usePathname() ?? "/admin";
+  const current = tabFor(pathname);
+  // A switch's page keeps the tab strip, with Switches selected, and titles itself with the switch.
+  const detail = switchOf(pathname);
   const ref = useRef<HTMLElement>(null);
   usePublishedHeight(ref, ADMIN_HEAD_HEIGHT_VAR);
   return (
@@ -71,9 +82,25 @@ export function AdminHead({ env }: { env: AdminEnv }) {
           />
           {env}
         </span>
+        {detail && (
+          <Link href="/admin/switches" className="ml-auto text-[13px] text-[color:var(--accent)]">
+            {adminCopy.switch.back}
+            <PendingReporter href="/admin/switches" />
+          </Link>
+        )}
       </div>
-      <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{current.title}</h1>
-      <p className="m-0 max-w-[720px] text-pretty text-[13px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13.5px]">{current.sub}</p>
+      {detail ? (
+        <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[6px]">
+          <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{switchCopy[detail].label}</h1>
+          <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{detail}</span>
+          <SwitchTags row={{ kind: switchKind(detail), parent: switchParent(detail) }} />
+        </div>
+      ) : (
+        <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{current.title}</h1>
+      )}
+      <p className="m-0 max-w-[720px] text-pretty text-[13px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13.5px]">
+        {detail ? switchCopy[detail].description : current.sub}
+      </p>
       <nav aria-label={adminCopy.tabsLabel} className="mt-[4px] flex gap-[15px] overflow-hidden md:gap-[24px]">
         {ADMIN_TABS.map((tab) => {
           const selected = tab.key === current.key;

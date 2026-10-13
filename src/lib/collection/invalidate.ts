@@ -43,6 +43,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // `db` imports the whole schema. The import cannot be cut, since the page must query; listed as
   // /about and /admin are, for one pointless revalidation of a page only the admin opens.
   { path: "/admin/switches", dynamic: false },
+  // A switch's page, for the same schema import (admin plan 8b).
+  { path: "/admin/switches/[name]", dynamic: true },
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },
