@@ -161,6 +161,7 @@
     "probe:arrivals": "tsx scripts/probe-arrivals.ts",
     "probe:collection-write": "tsx scripts/probe-collection-write.ts",
     "probe:mark-bought": "tsx scripts/probe-mark-bought.ts",
+    "probe:history-went-to": "tsx scripts/probe-history-went-to.ts",
     "measure:collection-revert": "tsx scripts/measure-collection-revert.ts",
     "probe:list-stamp": "tsx scripts/probe-list-stamp.ts",
     "list-stamp:triggers": "tsx scripts/list-stamp-triggers.ts",

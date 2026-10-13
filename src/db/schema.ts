@@ -411,6 +411,13 @@ export type HistoryRow = {
    * reads it to know what it may put back. Absent on every other row and entry.
    */
   placed?: { deckId: string; createdAt?: string; displaced?: { deckId: string; copies: number; createdAt: string } };
+  /**
+   * The decks that took or read the copies this row brought, as they stood WHEN THEY ARRIVED (History
+   * deck line): never rewritten by a later move. `soft` is a brew's read rather than a held copy. Only on
+   * a row whose count rose, once per card, and only while Where-a-copy-goes was on; absent on every other
+   * row and on every entry written before it existed. Unlike `placed`, nothing reads it to undo anything.
+   */
+  wentTo?: { soft?: true; decks: { deckId: string; copies: number }[] };
 };
 
 /**

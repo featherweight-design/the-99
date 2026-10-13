@@ -9,6 +9,7 @@ import type { Availability } from "../decks/availability";
 import { allocateClaims } from "../decks/allocate";
 import { assignCopyIn, lockCardClaims, type AssignRefusal, type AssignReport } from "../decks/assign";
 import { cartSourceDecks, regrant } from "../decks/mark-bought";
+import { annotateWentTo, wentByOracle } from "./went-to";
 import { proxiedMembership } from "../decks/proxies";
 import { pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
@@ -892,6 +893,9 @@ export async function applyCollectionChange(
       }
       if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [] });
 
+      // Where the arriving copies went, read before the entry is written so the entry keeps it (wentTo).
+      const raised = opts.placements ? await raisedCards(tx, userId, plan, opts.env) : undefined;
+      if (raised) annotateWentTo(rows, wentByOracle(raised));
       await tx.update(collectionHistory)
         .set({ rows, ...moves })
         .where(eq(collectionHistory.id, opts.id));
@@ -913,7 +917,7 @@ export async function applyCollectionChange(
         short,
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
-        ...(opts.placements ? { raised: await raisedCards(tx, userId, plan, opts.env) } : {}),
+        ...(raised ? { raised } : {}),
         ...(opts.assign ? { assigned } : {}),
       };
     });
