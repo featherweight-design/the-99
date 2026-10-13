@@ -120,7 +120,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
-  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor);
+  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor, env);
   if (!today) return null;
   return reviewHelp(row.summary.help, today);
 }
@@ -133,7 +133,7 @@ async function helpFor(deckId: string, color: string, userId: string, env: NodeJ
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;
-  const help = await loadManaHelp(deck, userId, color as BalanceColor);
+  const help = await loadManaHelp(deck, userId, color as BalanceColor, env);
   return help ? { ...help, deckId: deck.id, listKey: listFingerprintOf(deck) } : null;
 }
 

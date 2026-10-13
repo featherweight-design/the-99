@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
-const stub = vi.hoisted(() => ({ enabled: true, calls: [] as string[], state: null as unknown, profileEnvs: [] as unknown[] }));
+const stub = vi.hoisted(() => ({ enabled: true, calls: [] as string[], state: null as unknown, profileEnvs: [] as unknown[], envs: [] as unknown[] }));
 
 // Each action's profile reader, reduced to the env it was built under.
 vi.mock("../../lib/profile/stored", () => ({ requestProfileDeps: (env: unknown) => ({ env }) }));
@@ -18,24 +18,27 @@ vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => stub
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
 vi.mock("../../lib/synopsis/generate", () => ({
   defaultDeps: () => ({ modelName: "stub" }),
-  writeSynopsisFor: async (deckId: string, userId: string, deps: { profile?: { env?: unknown } }) => {
+  writeSynopsisFor: async (deckId: string, userId: string, deps: { profile?: { env?: unknown } }, env?: unknown) => {
     stub.calls.push(`write ${deckId} ${userId}`);
     stub.profileEnvs.push(deps.profile?.env);
+    stub.envs.push(env);
     return { kind: "reused" };
   },
-  retrySynopsisFor: async (deckId: string, userId: string, id: string, deps: { profile?: { env?: unknown } }) => {
+  retrySynopsisFor: async (deckId: string, userId: string, id: string, deps: { profile?: { env?: unknown } }, env?: unknown) => {
     stub.calls.push(`retry ${deckId} ${id}`);
     stub.profileEnvs.push(deps.profile?.env);
+    stub.envs.push(env);
     return { kind: "nothing_to_retry" };
   },
 }));
 vi.mock("../../lib/synopsis/read", () => ({
-  readSynopsisState: async (_deckId: string, _userId: string, deps?: { env?: unknown }) => {
+  readSynopsisState: async (_deckId: string, _userId: string, deps?: { env?: unknown }, _now?: Date, env?: unknown) => {
     stub.calls.push("state");
     stub.profileEnvs.push(deps?.env);
+    stub.envs.push(env);
     return stub.state;
   },
-  readVersionSynopsis: async () => { stub.calls.push("version"); return null; },
+  readVersionSynopsis: async (_v: string, _u: string, env?: unknown) => { stub.calls.push("version"); stub.envs.push(env); return null; },
 }));
 
 import { fetchSynopsis, fetchVersionSynopsis, retrySynopsisSections, writeSynopsis } from "./synopsis-actions";
@@ -89,5 +92,16 @@ describe("the profile a synopsis reads", () => {
     await fetchSynopsis(DECK);
     expect(stub.profileEnvs).toHaveLength(3);
     for (const env of stub.profileEnvs) expect(env).toBe(ENV);
+  });
+
+  it("hands the synopsis itself the same env: write, retry, read and a version's read", async () => {
+    stub.envs.length = 0;
+    await writeSynopsis(DECK);
+    await retrySynopsisSections(DECK, RUN);
+    await fetchSynopsis(DECK);
+    await fetchVersionSynopsis(RUN);
+    expect(stub.envs).toHaveLength(4);
+    // Identity as a boolean: a failure never prints an env.
+    expect(stub.envs.map((env) => env === ENV)).toEqual([true, true, true, true]);
   });
 });

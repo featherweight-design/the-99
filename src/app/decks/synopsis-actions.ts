@@ -28,7 +28,7 @@ export async function writeSynopsis(deckId: string): Promise<WriteResult | Refus
   if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId)) return { kind: "not_found" };
   // The profile the synopsis is written from, read under the reader's resolved switches (`requestProfileDeps`).
-  return writeSynopsisFor(deckId, userId, { ...defaultDeps(), profile: requestProfileDeps(env) });
+  return writeSynopsisFor(deckId, userId, { ...defaultDeps(), profile: requestProfileDeps(env) }, env);
 }
 
 export async function retrySynopsisSections(deckId: string, synopsisId: string): Promise<WriteResult | Refused> {
@@ -36,7 +36,7 @@ export async function retrySynopsisSections(deckId: string, synopsisId: string):
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId) || !isUuid(synopsisId)) return { kind: "not_found" };
-  return retrySynopsisFor(deckId, userId, synopsisId, { ...defaultDeps(), profile: requestProfileDeps(env) });
+  return retrySynopsisFor(deckId, userId, synopsisId, { ...defaultDeps(), profile: requestProfileDeps(env) }, env);
 }
 
 export async function fetchSynopsis(deckId: string): Promise<SynopsisState | Refused> {
@@ -44,7 +44,7 @@ export async function fetchSynopsis(deckId: string): Promise<SynopsisState | Ref
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId)) return { kind: "not_found" };
-  return (await readSynopsisState(deckId, userId, requestProfileDeps(env))) ?? { kind: "not_found" };
+  return (await readSynopsisState(deckId, userId, requestProfileDeps(env), new Date(), env)) ?? { kind: "not_found" };
 }
 
 export async function fetchVersionSynopsis(versionId: string) {
@@ -52,6 +52,6 @@ export async function fetchVersionSynopsis(versionId: string) {
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { kind: "disabled" as const };
   if (!isUuid(versionId)) return { kind: "not_found" as const };
-  const found = await readVersionSynopsis(versionId, userId);
+  const found = await readVersionSynopsis(versionId, userId, env);
   return found ? { kind: "ok" as const, ...found } : { kind: "not_found" as const };
 }
