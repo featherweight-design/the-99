@@ -373,6 +373,8 @@ describe("one opening printing", () => {
   it("names only modules that still import it", () => {
     const importers = new Set(openingImporters(sources));
     expect(Object.keys(OPENING_USERS).filter((path) => !importers.has(path))).toEqual([]);
+  });
+});
 
 // ---- Find a deck: every card named inline previews and opens (Hugh, 2026-10-12) ----
 //
