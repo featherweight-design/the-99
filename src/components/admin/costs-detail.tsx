@@ -65,15 +65,31 @@ const pctFloorOf = (part: number, whole: number) => {
 const millions = (n: number) => `${(n / 1e6).toFixed(2)}M`;
 const featureName = (f: string) => copy.featureNames[f] ?? f;
 
+/**
+ * Each non-zero segment's width in percent: its share of `scale`, with a sliver held at `min`. The
+ * widths a sliver gains are taken back from the segments above `min`, in proportion, so the stack
+ * never draws wider than its shares do and the bar's overflow clip never hides the last segment.
+ */
+export function segWidths(values: readonly number[], scale: number, min: number): number[] {
+  const shares = values.filter((v) => v > 0).map((v) => (v / scale) * 100);
+  const total = Math.min(shares.reduce((a, b) => a + b, 0), 100);
+  const slivers = shares.filter((sh) => sh < min).length;
+  const big = shares.filter((sh) => sh >= min).reduce((a, b) => a + b, 0);
+  const room = total - slivers * min;
+  // Nothing to take back from (or nothing above the minimum): the shares as they are, floored.
+  if (big <= 0 || room >= big) return shares.map((sh) => Math.max(sh, min));
+  return shares.map((sh) => (sh < min ? min : (sh / big) * Math.max(room, 0)));
+}
+
 /** A stacked bar's segments, each a share of `scale`; a non-zero one keeps a sliver. */
 function Segs({ parts, scale, min }: { parts: { micro: number; ink: string }[]; scale: number; min: number }) {
+  const drawn = parts.filter((p) => p.micro > 0);
+  const widths = segWidths(drawn.map((p) => p.micro), scale, min);
   return (
     <>
-      {parts
-        .filter((p) => p.micro > 0)
-        .map((p, i) => (
-          <span key={i} className="flex-none" style={{ width: `${Math.max((p.micro / scale) * 100, min)}%`, background: p.ink }} />
-        ))}
+      {drawn.map((p, i) => (
+        <span key={i} className="flex-none" style={{ width: `${widths[i]}%`, background: p.ink }} />
+      ))}
     </>
   );
 }

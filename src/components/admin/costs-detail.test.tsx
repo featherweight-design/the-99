@@ -10,6 +10,7 @@ vi.mock("../../app/admin/actions", () => ({ setElsewhere: vi.fn(), setAccountCap
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin" }));
 
 const { CostsView } = await import("./costs-view");
+const { segWidths } = await import("./costs-detail");
 
 const OCT = { year: 2026, month: 9 };
 const NOW = new Date("2026-10-11T15:00:00Z");
@@ -232,5 +233,20 @@ describe("CostsDetail, a month with no runs (C3)", () => {
     expect(headings()).toEqual(["Against the caps", "Player presses, month to date", "Eval ledgers"]);
     expect(screen.getByRole("table", { name: "Eval ledgers" })).toBeInTheDocument();
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("Original campaign")).toBeInTheDocument();
+  });
+});
+
+describe("segWidths", () => {
+  it("keeps every sliver and never draws a full stack wider than 100%", () => {
+    // 0.2% + 98.8% + 0.5% + 0.5%, with a 0.8% minimum.
+    const w = segWidths([2, 988, 5, 5], 1000, 0.8);
+    expect(w.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 6);
+    expect(w[0]).toBe(0.8);
+    expect(w[2]).toBe(0.8);
+    expect(w[3]).toBe(0.8);
+  });
+
+  it("leaves shares alone when the slivers fit", () => {
+    expect(segWidths([500, 300], 1000, 0.8)).toEqual([50, 30]);
   });
 });
