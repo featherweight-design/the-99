@@ -215,6 +215,7 @@
     "probe:cuts-panel": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-panel.mts",
     "probe:tuning-optimistic": "node scripts/probe-tuning-optimistic.mjs",
     "probe:tuning-settings": "node scripts/probe-tuning-settings.mjs",
+    "probe:description-tag-box": "node scripts/probe-description-tag-box.mjs",
     "probe:fits-read-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-fits-read-state.mts",
     "probe:cuts-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-state.mts",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
