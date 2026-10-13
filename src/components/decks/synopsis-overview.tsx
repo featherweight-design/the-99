@@ -13,6 +13,7 @@ import { SynopsisModal } from "./synopsis-body";
 import { Press, RefusedSlot, WriteRow } from "./synopsis-controls";
 import { SynopsisText } from "./synopsis-text";
 import { WorkPulse } from "./work-pulse";
+import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 
 /**
  * The Analysis tab's Overview (handoff §2 row 1; `SYNOPSIS-modal.md`): the overview's own
@@ -124,10 +125,10 @@ export function SynopsisOverview({
   const lastRefused = freeFailed ? null : state.lastRefused;
   const content = synopsis?.content ?? null;
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
-  const left = Math.max(0, allowance.limit - allowance.used);
-  // No write can reserve: every credit out, the app-wide cap reached, or the owner's share used.
+    // No write can reserve: every credit out, the app-wide cap reached, or the owner's share used.
   // Each disables the press in 7g's form and says which, never "uses a credit".
-  const spent = !freeLeft && (left === 0 || !!allowance.paused || !!allowance.ownerShare);
+  const left = freeCount(allowance);
+  const spent = !freeLeft && (!hasCredit(allowance) || !!allowance.paused || !!allowance.ownerShare);
   // A withheld overview offers no write at all (the server refuses one before its reservation).
   const canWrite = readingFresh && settled && !state.pending && !state.illegal;
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,

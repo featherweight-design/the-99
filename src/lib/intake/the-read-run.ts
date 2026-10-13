@@ -19,6 +19,7 @@ import {
   type ShortlistReply, type TheReadResult,
 } from "./the-read";
 import type { EdhrecTag } from "../edhrec/parse";
+import { hasCredit } from "../model/allowance-rule";
 
 /**
  * One press of the read, end to end (rework plan PR 1): the inputs, the reservation, the shortlist,
@@ -228,7 +229,7 @@ export async function beginTheRead(
 async function closedNow(userId: string, now: Date): Promise<"paused" | "ownerShare" | "allowance" | null> {
   try {
     const closedBy = (a: Awaited<ReturnType<typeof readAllowance>>) =>
-      a.paused ? "paused" : a.ownerShare ? "ownerShare" : a.used >= a.limit ? "allowance" : null;
+      a.paused ? "paused" : a.ownerShare ? "ownerShare" : !hasCredit(a) ? "allowance" : null;
     const first = closedBy(await readAllowance(userId, now, "intake"));
     if (first !== "allowance") return first;
     // A read the process died under still holds its unit until it is reaped, and `startRead` reaps

@@ -45,6 +45,7 @@ import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
+import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 
 /**
  * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
@@ -633,8 +634,8 @@ export function TuningPanel({
   const reading = ticked !== null || (!reviewing && state.run?.status === "pending");
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
-  const spent = state.allowance.used >= state.allowance.limit;
-  const left = Math.max(0, state.allowance.limit - state.allowance.used);
+  const spent = !hasCredit(state.allowance);
+  const left = freeCount(state.allowance);
   // The spend cap's two states disable the press exactly as a spent allowance does, and only the
   // note under it changes. Paused wins (it is the whole app), then the owner's share, then spent.
   const paused = state.allowance.paused;

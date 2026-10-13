@@ -40,6 +40,10 @@ describe("synopsisStatus", () => {
     expect(synopsisStatus({ reading: { fresh: true, list: "A" }, synopsis: null, allowance: spent, pending: false }).wouldSpend).toBe(false);
   });
 
+  it("would write over a spent allowance while a paid lot holds a credit (payments L2)", () => {
+    expect(synopsisStatus({ reading: { fresh: true, list: "A" }, synopsis: null, allowance: { ...spent, pack: 2 }, pending: false }).wouldSpend).toBe(true);
+  });
+
   it("would not write while a run is in flight, which a press would be refused behind", () => {
     expect(synopsisStatus({ reading: { fresh: true, list: "A" }, synopsis: null, allowance: left, pending: true }).wouldSpend).toBe(false);
   });

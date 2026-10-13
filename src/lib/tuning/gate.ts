@@ -1,6 +1,7 @@
 import { deckTuningCopy } from "../copy/deck-tuning";
 import { lockedCardsCopy } from "../copy/locked-cards";
 import type { TuningState } from "./state";
+import { hasCredit } from "../model/allowance-rule";
 
 /**
  * The one answer to "why can this not run now". Pure and client-safe, and shared by the panel
@@ -36,7 +37,7 @@ export function gateReason(state: TuningState): GateReason | null {
   if (!state.stale && !state.modelVersionMoved && !state.retired && state.lastOkFingerprint !== null) {
     return { kind: "unchanged", message: deckTuningCopy.announce.unchanged };
   }
-  if (state.allowance.used >= state.allowance.limit) {
+  if (!hasCredit(state.allowance)) {
     return { kind: "allowance", message: deckTuningCopy.allowance.spent };
   }
   return null;

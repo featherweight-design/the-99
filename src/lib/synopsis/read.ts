@@ -4,7 +4,7 @@ import { resolveDeckOwnedPrintings } from "../decks/printings";
 import { db } from "../../db";
 import { cards, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, modelCalls } from "../../db/schema";
 import { readAllowance } from "../model/allowance";
-import type { Allowance } from "../model/allowance-rule";
+import { hasCredit, type Allowance } from "../model/allowance-rule";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
 import { readStoredReading, requestProfileDeps, type StoredProfileDeps } from "../profile/stored";
@@ -142,7 +142,7 @@ export function synopsisStatus(input: {
   // Paused (the app-wide cap) or the owner's share used: the reservation refuses, so nothing would spend.
   const refused = !!allowance.paused || !!allowance.ownerShare;
   const wouldSpend = !!reading?.fresh && !forThisList && !pending && !refused && !input.illegal
-    && allowance.used < allowance.limit;
+    && hasCredit(allowance);
   return { stale, wouldSpend };
 }
 
