@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe("POST /api/stripe-webhook: fails closed", () => {
-  it("answers 503 and runs nothing with no signing secret, with no key, or with a key of the wrong mode", async () => {
+  it("answers 503 and runs nothing, for a Session of ours, with no signing secret, no key, or a key of the wrong mode", async () => {
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
     expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", SECRET);
@@ -85,9 +85,14 @@ describe("POST /api/stripe-webhook: what a verified event does", () => {
       configured.value = false;
       expect((await POST(delivery("checkout.session.completed", { metadata }))).status).toBe(200);
     }
+    // And where this deployment has no usable key at all: a signature needs none.
+    for (const key of ["", "rk_live_fixture", "sk_test_fixture"]) {
+      vi.stubEnv("STRIPE_SECRET_KEY", key);
+      expect((await POST(delivery("checkout.session.completed", { metadata: { app: "concert-crawl" } }))).status).toBe(200);
+    }
     expect(fulfil).not.toHaveBeenCalled();
     // One fixed info line each, and nothing louder: a Session of ours that lost its tag still shows.
-    expect(vi.mocked(console.info).mock.calls.flat()).toEqual(Array(6).fill("[stripe-webhook] checkout.session.completed: not this app's Session; ignored"));
+    expect(vi.mocked(console.info).mock.calls.flat()).toEqual(Array(9).fill("[stripe-webhook] checkout.session.completed: not this app's Session; ignored"));
     expect([console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls)).toEqual([]);
   });
 

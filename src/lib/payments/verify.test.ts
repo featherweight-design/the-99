@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import type Stripe from "stripe";
 import { SIGNATURE_TOLERANCE_S, verifyStripeEvent } from "./verify";
 
 afterEach(() => vi.unstubAllEnvs());
@@ -11,8 +10,7 @@ describe("verifyStripeEvent", () => {
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_new");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET_PREVIOUS", "whsec_old");
     const constructEvent = vi.fn(() => { throw new Error("no"); });
-    const stripe = { webhooks: { constructEvent } } as unknown as Stripe;
-    expect(verifyStripeEvent(stripe, "{}", "t=1,v1=x")).toBe("invalid");
+    expect(verifyStripeEvent("{}", "t=1,v1=x", { constructEvent } as never)).toBe("invalid");
     expect(SIGNATURE_TOLERANCE_S).toBe(300);
     expect(constructEvent.mock.calls.map((c) => (c as unknown[]).slice(2))).toEqual([["whsec_new", 300], ["whsec_old", 300]]);
   });
@@ -20,9 +18,9 @@ describe("verifyStripeEvent", () => {
   it("is unconfigured with no secret, and invalid with no signature", () => {
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET_PREVIOUS", "");
-    const stripe = { webhooks: { constructEvent: vi.fn() } } as unknown as Stripe;
-    expect(verifyStripeEvent(stripe, "{}", "sig")).toBe("unconfigured");
+    const verifier = { constructEvent: vi.fn() } as never;
+    expect(verifyStripeEvent("{}", "sig", verifier)).toBe("unconfigured");
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_new");
-    expect(verifyStripeEvent(stripe, "{}", null)).toBe("invalid");
+    expect(verifyStripeEvent("{}", null, verifier)).toBe("invalid");
   });
 });
