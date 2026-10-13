@@ -46,9 +46,23 @@ export function socialReadsIn(source) {
   return findings;
 }
 
+/**
+ * A file or directory can be gone between the listing and the read: other tests in the same run write and remove temporary
+ * fixture trees under `src/` (`list-cache-tables.test.mts`), and the scan met them half-way as an ENOENT. What is not there
+ * has nothing to read, so it is skipped; every other error is a real one and still throws.
+ */
+const gone = (err) => err?.code === "ENOENT";
+
 async function walk(dir) {
   const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (err) {
+    if (gone(err)) return out;
+    throw err;
+  }
+  for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) out.push(...(await walk(path)));
     else if (/\.(?:ts|tsx|mts|mjs|js)$/.test(entry.name)) out.push(path);
@@ -60,10 +74,19 @@ async function walk(dir) {
 export async function socialReadFindings(root, dir = "src") {
   const files = await walk(join(root, dir));
   const findings = [];
+  let read = 0;
   for (const file of files) {
     const path = relative(root, file).split(sep).join("/");
-    if (ALLOWED(path) || isTest(path)) continue;
-    for (const f of socialReadsIn(await readFile(file, "utf8"))) findings.push({ path, ...f });
+    if (ALLOWED(path) || isTest(path)) { read += 1; continue; }
+    let source;
+    try {
+      source = await readFile(file, "utf8");
+    } catch (err) {
+      if (gone(err)) continue;
+      throw err;
+    }
+    read += 1;
+    for (const f of socialReadsIn(source)) findings.push({ path, ...f });
   }
-  return { files: files.length, findings };
+  return { files: read, findings };
 }
