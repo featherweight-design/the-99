@@ -89,6 +89,17 @@ describe("DecksView: Stats on /decks", () => {
     expect(window.location.search).toBe("?view=stats");
   });
 
+  it("opens nothing and focuses the first card when there is no deck to compare", async () => {
+    read.stats.mockResolvedValue(STATS);
+    draw({ data: null, view: "tiles", foldServer: null });
+    fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    expect(document.querySelector('[data-stats-card="among"]')).toBeNull();
+    expect(localStorage.getItem("the99:decks:stats:open") ?? "").not.toContain("among");
+    expect(document.activeElement).toBe(document.querySelector("[data-stats-card] > button"));
+  });
+
   it("draws no Stats row in a tile's menu with the switch off", () => {
     draw(null);
     fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));

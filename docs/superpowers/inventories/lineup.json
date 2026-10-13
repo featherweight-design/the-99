@@ -1,6 +1,6 @@
 {
   "feature": "Stats on /decks (Lineup), PRs 1-5: the switch, the seven cards, the tile's See it among your decks, and the About entry",
-  "note": "Needs LINEUP_ENABLED=true and LIST_CACHE_ENABLED on the server, an account with several decks (a pull:staging copy), and LINEUP_MENU_DECK naming a deck that is not the one played most recently, so the menu row's choice is visible. ALL_DECKS_CART_ENABLED adds the cart link to an opened shared row. Rows run in order in one context per width, and fold memory carries between them: `l2` opens every card once, and the rows after it read them open.",
+  "note": "Needs LINEUP_ENABLED=true and LIST_CACHE_ENABLED on the server, an account with several decks (a pull:staging copy), and LINEUP_MENU_DECK naming a deck that is not the one played most recently, so the menu row's choice is visible. ALL_DECKS_CART_ENABLED adds the cart link to an opened shared row. Rows run in order in one context per width, and fold memory carries between them: `s1` runs before the menu row (whose press opens This deck among yours), `l2` opens every card once, and the rows after it read them open.",
   "clearAbout": true,
   "out": "contact-sheets/lineup",
   "rows": [
@@ -12,6 +12,18 @@
         {
           "goto": "/decks?view=tiles",
           "wait": "[role=tablist]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "label": "/decks?view=stats: the cards, folded to their summaries",
+      "view": "src/components/decks/lineup/lineup-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
           "settle": 1500
         }
       ]
@@ -56,18 +68,6 @@
           "wait": "[data-stats-card=among]",
           "settle": 1200,
           "scrollTo": "[data-stats-card=among]"
-        }
-      ]
-    },
-    {
-      "id": "s1",
-      "label": "/decks?view=stats: the cards, folded to their summaries",
-      "view": "src/components/decks/lineup/lineup-view.tsx",
-      "steps": [
-        {
-          "goto": "/decks?view=stats",
-          "wait": "[data-decks-stats]",
-          "settle": 1500
         }
       ]
     },

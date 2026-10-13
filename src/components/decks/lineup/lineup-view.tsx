@@ -83,22 +83,24 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   // The deck This deck among yours compares, and that Worth and Jobs mark: the reader's pick while it is in
   // scope, else the one played most recently (a brew picked, then left out by Finished only, falls back).
   const [picked, setPicked] = useState<string | null>(amongDeck);
-  // Arriving from a tile: open This deck among yours and put focus on its head, since the tile's menu that had
-  // focus has gone with Tiles. Once per arrival (a later fold of that card is the reader's own).
-  const arrived = useRef<string | null>(null);
-  const { show } = fold;
-  useEffect(() => {
-    if (!amongDeck || arrived.current === amongDeck) return;
-    arrived.current = amongDeck;
-    show("among");
-    document.querySelector<HTMLElement>('[data-stats-card="among"] > button')?.focus();
-  }, [amongDeck, show]);
   // Held here, not in the card's body, so the folded summary counts what the select and the cut last showed.
   const [wantedPick, setWantedPick] = useState<WantedPick>({ deckId: null, cut: 40 });
   const chosen = decks.find((d) => d.id === picked) ?? defaultChosen(decks);
   // The build cards compare decks, so they need two with figures (T1: one deck draws none of them).
   const built = decks.filter((d) => d.build);
   const comparing = built.length >= 2 && chosen?.build ? chosen : null;
+  // Arriving from a tile: open This deck among yours and put focus on its head, since the tile's menu that had
+  // focus has gone with Tiles. Once per arrival (a later fold of that card is the reader's own). With no card to
+  // compare in (one deck, or no build figures), nothing is opened or remembered and focus goes to the first head.
+  const arrived = useRef<string | null>(null);
+  const { show } = fold;
+  const canCompare = comparing !== null;
+  useEffect(() => {
+    if (!amongDeck || arrived.current === amongDeck) return;
+    arrived.current = amongDeck;
+    if (canCompare) show("among");
+    document.querySelector<HTMLElement>(canCompare ? '[data-stats-card="among"] > button' : "[data-stats-card] > button")?.focus();
+  }, [amongDeck, canCompare, show]);
   const rank = (key: "valueCents" | "ramp") => {
     const s = comparing ? strip(decks, comparing, key) : null;
     return s ? copy.among.rank(s.chosen.rank, s.total, s.chosen.tied) : "";
