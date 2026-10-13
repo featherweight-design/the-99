@@ -42,11 +42,19 @@ export class ArrivalQueue {
     private readonly now: () => number = () => performance.now(),
     private readonly topOf: (el: HTMLElement) => number = (el) => el.getBoundingClientRect().top,
     private readonly viewportHeight: () => number = () => window.innerHeight,
+    private readonly hasBox: (el: HTMLElement) => boolean = (el) => el.getClientRects().length > 0,
   ) {}
 
-  /** A piece of art still on its way. `release` plays its fade. */
-  join(el: HTMLElement, release: () => void): void {
+  /**
+   * A piece of art still on its way. `release` plays its fade. Art with no layout box (a copy a
+   * responsive split hides with `display: none`, as /decks draws each tile's wash twice) is not
+   * queued, and false says so: its top would read 0 and make a false first row that every real
+   * row waits on. The caller then fades it on landing, which nobody sees.
+   */
+  join(el: HTMLElement, release: () => void): boolean {
+    if (!this.hasBox(el)) return false;
     this.items.set(el, { landedAt: null, release, onScreen: this.topOf(el) < this.viewportHeight() });
+    return true;
   }
 
   /** Its bytes landed (or failed): it is released with its row, or at the cap. */

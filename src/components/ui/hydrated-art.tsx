@@ -92,14 +92,14 @@ export function armArtArrival(el: HTMLElement, image: HTMLImageElement, queue: A
     if (el.dataset.arrival === "pending") el.dataset.arrival = "in";
   };
   // In a list, its fade waits its turn in reading order (`ArrivalOrder`); alone, it plays on landing.
-  queue?.join(el, release);
-  const land = () => (queue ? queue.landed(el) : release());
+  const queued = queue?.join(el, release) === true;
+  const land = () => (queued ? queue!.landed(el) : release());
   image.addEventListener("load", land);
   image.addEventListener("error", land);
   return () => {
     image.removeEventListener("load", land);
     image.removeEventListener("error", land);
-    queue?.leave(el);
+    if (queued) queue!.leave(el);
     clear();
   };
 }

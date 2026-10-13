@@ -32,7 +32,7 @@ describe("ArrivalQueue", () => {
   // Rows sit 300px apart: a 300px viewport holds the first row only.
   function setup(rows: number, cols: number, viewport = 300) {
     const g = grid(rows, cols);
-    const q = new ArrivalQueue(() => now, g.topOf, () => viewport);
+    const q = new ArrivalQueue(() => now, g.topOf, () => viewport, () => true);
     const released: HTMLElement[] = [];
     for (const row of g.cells) for (const el of row) q.join(el, () => released.push(el));
     return { q, cells: g.cells, released };
@@ -111,6 +111,18 @@ describe("ArrivalQueue", () => {
     expect(released).toHaveLength(2);
     advance(ARRIVAL_FIRST_CAP_MS - ARRIVAL_STAGGER_MS);
     expect(released).toHaveLength(5);
+  });
+
+  it("queues no art without a layout box, so a hidden copy never makes a false first row", () => {
+    const g = grid(2, 1);
+    const hidden = document.createElement("div");
+    const q = new ArrivalQueue(() => now, (el) => (el === hidden ? 0 : g.topOf(el) + 100), () => 300, (el) => el !== hidden);
+    const released: HTMLElement[] = [];
+    expect(q.join(hidden, () => released.push(hidden))).toBe(false);
+    for (const [el] of g.cells) expect(q.join(el, () => released.push(el))).toBe(true);
+    q.landed(g.cells[0][0]);
+    expect(released).toEqual([g.cells[0][0]]);
+    expect(q.size).toBe(1);
   });
 
   it("stops waiting on a piece that left", () => {
