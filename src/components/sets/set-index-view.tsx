@@ -264,6 +264,7 @@ export function SetIndexView({
           className="text-[14px]"
           value={query}
           onChange={(e) => search(e.target.value)}
+          onClear={() => search("")}
           placeholder={setsIndexCopy.search.placeholder}
           aria-label={setsIndexCopy.search.ariaLabel}
         />
@@ -283,6 +284,7 @@ export function SetIndexView({
           className="text-[14px]"
           value={query}
           onChange={(e) => search(e.target.value)}
+          onClear={() => search("")}
           placeholder={setsIndexCopy.search.placeholder}
           aria-label={setsIndexCopy.search.ariaLabel}
         />
@@ -311,6 +313,7 @@ export function SetIndexView({
         className="text-[14px]"
         value={query}
         onChange={(e) => search(e.target.value)}
+        onClear={() => search("")}
         placeholder={setsIndexCopy.search.placeholder}
         aria-label={setsIndexCopy.search.ariaLabel}
       />

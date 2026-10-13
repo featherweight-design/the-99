@@ -489,6 +489,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           <SearchField
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
+            onClear={() => onQueryChange("")}
             // With a search typed, the first Escape clears it; the next closes the card's dialog. A pick
             // leaves it: the arrow keys pick here, and clearing would reflow the tiles under them.
             onKeyDown={(e) => escapeDismisses(e, query !== "", () => onQueryChange(""))}

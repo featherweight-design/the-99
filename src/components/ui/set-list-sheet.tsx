@@ -176,6 +176,7 @@ export function SetListSheet({
         <SearchField
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery("")}
           // With a search typed, the first Escape clears it; the next closes the sheet.
           onKeyDown={(e) => escapeDismisses(e, query !== "", () => setQuery(""))}
           placeholder={copy.searchPlaceholder}

@@ -443,6 +443,7 @@ export function CreatePicker(props: CreatePickerProps) {
               className="text-[14px] md:text-[15px]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
               onKeyDown={(e) => escapeDismisses(e, query !== "", () => setQuery(""))}
               placeholder={addPanelCopy.createPicker.searchPlaceholder}
               aria-label="Search commanders"

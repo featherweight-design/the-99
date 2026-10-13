@@ -351,6 +351,7 @@ export function FilterBar({
                 className="text-[14px]"
                 value={filters.search}
                 onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                onClear={() => onFiltersChange({ ...filters, search: "" })}
                 placeholder={collectionChassisCopy.searchPlaceholder.wide}
                 aria-label="Search your cards"
                 ref={searchRef}

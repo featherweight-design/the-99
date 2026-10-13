@@ -257,6 +257,7 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
         ref={search}
         value={q}
         onChange={(e) => setQ(e.target.value)}
+        onClear={() => setQ("")}
         // With a search typed, the first Escape clears it; the next closes the dialog.
         onKeyDown={(e) => escapeDismisses(e, q !== "", () => setQ(""))}
         placeholder={searchLabel}

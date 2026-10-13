@@ -167,8 +167,10 @@ export function SearchField({
           type="button"
           aria-label={clearLabel}
           // Out of the tab order and the accessibility tree while there is nothing to clear.
-          tabIndex={filled ? 0 : -1}
+          tabIndex={filled && !rest.disabled ? 0 : -1}
           aria-hidden={filled ? undefined : true}
+          // A locked field cannot be typed into, so its ✕ cannot empty it either.
+          disabled={rest.disabled}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             onClear();
