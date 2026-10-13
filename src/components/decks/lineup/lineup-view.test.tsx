@@ -134,14 +134,23 @@ describe("LineupView: brackets and colors", () => {
     expect(within(row("5")).getByText("none")).toBeTruthy();
   });
 
-  it("keeps one segment per deck in lineup order on every color row, lit for each deck that plays it", () => {
+  it("draws one segment per deck on every color row, the first N lit for the N decks that play it", () => {
     draw(DATA, "spread");
     const lit = (c: string) => [...card("spread").querySelectorAll(`[data-stats-color="${c}"] [aria-hidden] > span`)].map((s) => (s.hasAttribute("data-lit") ? 1 : 0));
     expect(lit("R")).toEqual([1, 1, 1, 0]);
-    expect(lit("W")).toEqual([0, 1, 1, 0]);
-    expect(lit("C")).toEqual([0, 0, 0, 1]);
+    expect(lit("W")).toEqual([1, 1, 0, 0]);
+    expect(lit("C")).toEqual([1, 0, 0, 0]);
     expect(within(card("spread")).getByText("3 of 4", { selector: "[data-stats-color='R'] span" })).toBeTruthy();
     expect(within(card("spread")).getByRole("img", { name: "Red" }).getAttribute("src")).toBe("/mana/R.svg");
+  });
+
+  it("marks no deck chosen, though Among compares one: no chip in accent and no ringed segment", () => {
+    const b = { manaValue: 3, lands: 36, ramp: 10, draw: 10, removal: 8, valueCents: 100 };
+    draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, build: b })) }, "spread,among");
+    expect(within(card("among")).getByRole("combobox", { name: "Choose a deck" })).toBeTruthy();
+    expect(card("spread").querySelector('[class*="border-[color:var(--accent)]"]')).toBeNull();
+    expect(card("spread").querySelector('[class*="text-[color:var(--accent)]"]')).toBeNull();
+    expect([...card("spread").querySelectorAll("[data-stats-color] [aria-hidden] > span")].some((s) => (s as HTMLElement).style.boxShadow)).toBe(false);
   });
 });
 

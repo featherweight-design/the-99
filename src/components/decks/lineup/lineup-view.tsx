@@ -156,7 +156,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
           open={fold.open.has("spread")}
           onToggle={() => fold.toggle("spread")}
         >
-          <SpreadBody s={spr} decks={decks} chosenId={comparing?.id ?? null} />
+          <SpreadBody s={spr} decks={decks} />
         </FoldCard>
         {sharedTop ? (
           <FoldCard
