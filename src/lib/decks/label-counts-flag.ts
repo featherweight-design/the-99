@@ -5,10 +5,12 @@ import type { RoleBasis } from "../profile/build";
  * `jobTally`) and grades them against the index's `label_*` targets, instead of the classifier's
  * `card.role` against `avg_*` (labels-everywhere plan, PR 2).
  *
- * Server-side, like `analysisTabEnabled`: read on the server, never `NEXT_PUBLIC_*`, and a change
- * needs a redeploy because Vercel binds variables to a deployment. Defaults off: absent, empty or
- * any string but `'true'` renders exactly what shipped before. Turning it off is the rollback, and
- * no data moves back. It rides in the cached payloads' key through the deployment.
+ * Server-side, like `analysisTabEnabled`: read on the server, never `NEXT_PUBLIC_*`. Defaults off:
+ * absent, empty or any string but `'true'` renders exactly what shipped before. Turning it off is
+ * the rollback, and no data moves back. A `plumbing` switch (admin PR 6d-2): an app-wide override
+ * flips it without a deploy, so a reader passes the resolved env, and a cached payload that depends
+ * on it carries the basis in its own key (`discoveryKey`, `commanderRankingsKey`, the scores'
+ * `writer_version`) rather than relying on the deployment.
  */
 export function labelRoleCountsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.LABEL_ROLE_COUNTS_ENABLED === "true";

@@ -696,7 +696,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
   A `plumbing` switch (`LIST_CACHE_ENABLED`, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis scores are counted
   by) takes the app-wide override alone. An app-wide override still flips one without a deploy, so its readers
-  decide it from the resolved env too, and a cache whose payload depends on it carries it in its key:
+  are handed the resolved env too (a reader's `env` parameter still defaults to `process.env` until admin PR 7
+  makes it required, so an omitted argument is not caught yet), and a cache whose payload depends on it carries it
+  in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` already keys on every switch. The registry
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
