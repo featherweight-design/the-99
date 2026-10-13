@@ -83,10 +83,129 @@ describe("IntentPrefetchLink", () => {
     expect(prefetch).not.toHaveBeenCalled();
   });
 
+  it("runs a caller's callback-ref cleanup, and nulls a plain one, on unmount", () => {
+    const release = vi.fn();
+    const object = { current: null as HTMLAnchorElement | null };
+    const { unmount } = render(
+      <>
+        <IntentPrefetchLink href="/decks/d1" ref={(node) => () => release(node)}>One</IntentPrefetchLink>
+        <IntentPrefetchLink href="/decks/d2" ref={object}>Two</IntentPrefetchLink>
+      </>,
+    );
+    expect(object.current?.getAttribute("href")).toBe("/decks/d2");
+    unmount();
+    expect(release).toHaveBeenCalledWith(expect.objectContaining({ tagName: "A" }));
+    expect(object.current).toBeNull();
+  });
+
   it("still calls the caller's own handlers", () => {
     const onFocus = vi.fn();
     render(<IntentPrefetchLink href="/decks/d1" onFocus={onFocus}>Deck</IntentPrefetchLink>);
     fireEvent.focus(screen.getByRole("link"));
     expect(onFocus).toHaveBeenCalledTimes(1);
+  });
+
+  it("prefetches on sight when eager, unless the reader is saving data", () => {
+    Object.defineProperty(navigator, "connection", { value: { saveData: true }, configurable: true });
+    try {
+      render(<IntentPrefetchLink href="/decks/d1" eager>Deck</IntentPrefetchLink>);
+      expect(prefetch).not.toHaveBeenCalled();
+    } finally {
+      delete (navigator as { connection?: unknown }).connection;
+    }
+  });
+});
+
+// The /decks grid's form: a phone, the tile on screen, then an idle moment, and only then.
+describe("IntentPrefetchLink eager on a phone, in view", () => {
+  let phone = true;
+  let observed: ((entries: { isIntersecting: boolean }[]) => void) | null = null;
+  let idle: (() => void) | null = null;
+  beforeEach(() => {
+    phone = true;
+    observed = null;
+    idle = null;
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q === "(width < 40rem)" && phone }));
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(cb: (entries: { isIntersecting: boolean }[]) => void) {
+          observed = cb;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal("requestIdleCallback", (cb: () => void) => {
+      idle = cb;
+      return 1;
+    });
+    vi.stubGlobal("cancelIdleCallback", () => {});
+    return () => vi.unstubAllGlobals();
+  });
+
+  const tile = () => render(<IntentPrefetchLink href="/decks/d1" eager="phone-in-view" />);
+
+  it("waits for the tile to come into view, then for an idle moment", () => {
+    tile();
+    expect(prefetch).not.toHaveBeenCalled();
+    observed!([{ isIntersecting: false }]);
+    expect(idle).toBeNull();
+    observed!([{ isIntersecting: true }]);
+    expect(prefetch).not.toHaveBeenCalled();
+    idle!();
+    expect(prefetch).toHaveBeenCalledWith("/decks/d1", { kind: "full" });
+  });
+
+  it("asks for its slot only when it would start, and starts nothing when refused", () => {
+    const claim = vi.fn(() => false);
+    render(<IntentPrefetchLink href="/decks/d1" eager="phone-in-view" claimPrefetch={claim} />);
+    observed!([{ isIntersecting: true }]);
+    expect(claim).not.toHaveBeenCalled();
+    idle!();
+    expect(claim).toHaveBeenCalledTimes(1);
+    expect(prefetch).not.toHaveBeenCalled();
+  });
+
+  it("checks the width again when the idle moment comes", () => {
+    tile();
+    observed!([{ isIntersecting: true }]);
+    phone = false;
+    idle!();
+    expect(prefetch).not.toHaveBeenCalled();
+  });
+
+  it("drops a waiting prefetch once the tile is pressed", () => {
+    tile();
+    observed!([{ isIntersecting: true }]);
+    fireEvent.click(screen.getByRole("link"));
+    idle!();
+    expect(prefetch).not.toHaveBeenCalled();
+  });
+
+  it("does nothing on a wider screen", () => {
+    phone = false;
+    tile();
+    expect(observed).toBeNull();
+    expect(prefetch).not.toHaveBeenCalled();
+  });
+
+  it("does nothing on a 2g connection", () => {
+    Object.defineProperty(navigator, "connection", { value: { effectiveType: "slow-2g" }, configurable: true });
+    try {
+      tile();
+      expect(observed).toBeNull();
+    } finally {
+      delete (navigator as { connection?: unknown }).connection;
+    }
+  });
+
+  it("drops a scheduled prefetch when the tile unmounts first", () => {
+    const { unmount } = tile();
+    observed!([{ isIntersecting: true }]);
+    const cancel = vi.fn();
+    vi.stubGlobal("cancelIdleCallback", cancel);
+    unmount();
+    expect(cancel).toHaveBeenCalledWith(1);
   });
 });

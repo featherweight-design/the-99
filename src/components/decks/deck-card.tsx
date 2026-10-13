@@ -234,6 +234,10 @@ interface DeckCardProps {
   /** Bumped when a create started from this card's move mode is dismissed, which closes the
    *  panel. It carries no outcome: the move is optimistic, and its answer arrives later. */
   closeAfterCreate: { seq: number } | null;
+  /** One of the first tiles in the grid: on a phone, prefetch the deck once it is on screen. */
+  eager?: boolean;
+  /** Asked when this tile's prefetch would start; `false` cancels it (`IntentPrefetchLink`). */
+  claimPrefetch?: () => boolean;
 }
 
 /**
@@ -271,7 +275,7 @@ interface DeckCardProps {
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, claimPrefetch,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -637,6 +641,8 @@ export function DeckCard({
           marked `aria-hidden` rather than left to be announced a second time. */}
       <IntentPrefetchLink
         href={`/decks/${deck.id}`}
+        eager={eager && "phone-in-view"}
+        claimPrefetch={claimPrefetch}
         className="absolute inset-0"
         aria-label={ariaLabel}
       />
