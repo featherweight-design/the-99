@@ -82,8 +82,8 @@ describe("SetCell — caption and price", () => {
     expect(screen.getByText("· uncommon")).toBeInTheDocument();
   });
 
-  // Addendum R2 §27: at a 174px phone cell the caption holds three things, so the format
-  // stops varying by width. The hiding was a consequence of the old 108px cell.
+  // Addendum R2 §27: the caption format stops varying by width. The phone cell is ~114px
+  // under `/collection`'s 3-up tracks, and the caption still fits.
   it("keeps rarity at every width", () => {
     render(<SetCell cell={cell({})}  newestAsOf={null}/>);
     expect(screen.getByText("· uncommon").className).not.toContain("hidden");

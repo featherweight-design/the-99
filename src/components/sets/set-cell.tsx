@@ -157,8 +157,8 @@ export function SetCell({
       <span className="mt-[6px] flex items-baseline gap-[5px] font-mono text-[10px]">
         <span style={{ color: cell.owned ? "var(--fg-muted)" : "var(--fg-body)" }}>{num}</span>
         {cell.rarity ? (
-          // One caption format at every width (addendum R2 §27): the hiding was a
-          // consequence of the 108px phone cell, and a 174px one holds three things.
+          // One caption format at every width (addendum R2 §27). The phone cell is ~114px
+          // since it took `/collection`'s 3-up tracks, and `326 · mythic` still fits in it.
           <span style={{ color: "var(--fg-locked)" }}>
             · {cell.rarity.toLowerCase()}
           </span>
