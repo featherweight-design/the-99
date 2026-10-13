@@ -617,11 +617,18 @@ export function DecksView({
   // pass after hydration, and the default order's tiles are cancelled before they ever fire. Once
   // two have started, a sort, filter or shelf change promotes no more, and a deck already spent
   // never opts in again: a tile that unmounts and returns would otherwise start a third render.
+  //
+  // The slot is RESERVED synchronously in a ref, at the moment a prefetch would start, so two tiles
+  // whose idle moments land in the same frame cannot both take the last one; the state copy only
+  // redraws which tiles are still eager.
+  const spent = useRef(new Set<string>());
   const [prefetched, setPrefetched] = useState<ReadonlySet<string>>(() => new Set());
-  const spendPrefetch = useCallback(
-    (id: string) => setPrefetched((s) => (s.has(id) || s.size >= 2 ? s : new Set(s).add(id))),
-    [],
-  );
+  const claimPrefetch = useCallback((id: string) => {
+    if (spent.current.has(id) || spent.current.size >= 2) return false;
+    spent.current.add(id);
+    setPrefetched(new Set(spent.current));
+    return true;
+  }, []);
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
   // The cart line draws only with its switch on and some deck missing a card (A1-0).
@@ -1289,7 +1296,7 @@ export function DecksView({
                     deck={deck}
                     // The two a phone shows first: its likeliest next press, prefetched on sight.
                     eager={i < 2 && prefetched.size < 2 && !prefetched.has(deck.id)}
-                    onPrefetch={() => spendPrefetch(deck.id)}
+                    claimPrefetch={() => claimPrefetch(deck.id)}
                     shopping={shopping.byDeck.get(deck.id)}
                     cartLink={cartEnabled}
                     now={now}

@@ -157,13 +157,14 @@ describe("IntentPrefetchLink eager on a phone, in view", () => {
     expect(prefetch).toHaveBeenCalledWith("/decks/d1", { kind: "full" });
   });
 
-  it("reports a prefetch only when it starts, and once", () => {
-    const started = vi.fn();
-    render(<IntentPrefetchLink href="/decks/d1" eager="phone-in-view" onPrefetch={started} />);
+  it("asks for its slot only when it would start, and starts nothing when refused", () => {
+    const claim = vi.fn(() => false);
+    render(<IntentPrefetchLink href="/decks/d1" eager="phone-in-view" claimPrefetch={claim} />);
     observed!([{ isIntersecting: true }]);
-    expect(started).not.toHaveBeenCalled();
+    expect(claim).not.toHaveBeenCalled();
     idle!();
-    expect(started).toHaveBeenCalledTimes(1);
+    expect(claim).toHaveBeenCalledTimes(1);
+    expect(prefetch).not.toHaveBeenCalled();
   });
 
   it("checks the width again when the idle moment comes", () => {

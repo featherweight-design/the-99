@@ -40,8 +40,11 @@ import { useCallback, useContext, useEffect, useRef, type ComponentProps } from 
 type Props = ComponentProps<typeof Link> & {
   href: string;
   eager?: boolean | "phone-in-view";
-  /** Called once, when this link's full prefetch actually starts. */
-  onPrefetch?: () => void;
+  /**
+   * Asked synchronously, at the moment this link's full prefetch would start; `false` cancels it.
+   * A caller holding a budget across links reserves its slot here, before the request exists.
+   */
+  claimPrefetch?: () => boolean;
 };
 type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>;
 
@@ -80,7 +83,7 @@ function onIdle(fn: () => void): () => void {
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
-export function IntentPrefetchLink({ eager = false, href, onPrefetch, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
+export function IntentPrefetchLink({ eager = false, href, claimPrefetch, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
   const router = useContext(AppRouterContext);
   const done = useRef(false);
   const anchor = useRef<HTMLAnchorElement | null>(null);
@@ -104,8 +107,8 @@ export function IntentPrefetchLink({ eager = false, href, onPrefetch, onPointerE
   const prefetch = () => {
     if (done.current || !router) return;
     done.current = true;
+    if (claimPrefetch && !claimPrefetch()) return;
     router.prefetch(href, FULL);
-    onPrefetch?.();
   };
   useEffect(() => {
     if (!eager || !router || done.current || savesData()) return;

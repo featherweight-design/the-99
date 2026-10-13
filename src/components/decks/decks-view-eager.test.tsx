@@ -13,10 +13,17 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ refresh: vi.fn() }),
 }));
+// Each "start" the test fires, and whether the view granted it.
+const claims: [string, boolean][] = [];
 // The link records the eager form it was given, so the test reads what the view asked for.
 vi.mock("../ui/intent-prefetch-link", () => ({
-  IntentPrefetchLink: ({ eager, href, onPrefetch, prefetch: _p, ...rest }: Record<string, unknown> & { href: string }) => (
-    <a href={href} data-eager={String(eager ?? false)} onClick={() => eager && (onPrefetch as () => void)()} {...rest} />
+  IntentPrefetchLink: ({ eager, href, claimPrefetch, prefetch: _p, ...rest }: Record<string, unknown> & { href: string }) => (
+    <a
+      href={href}
+      data-eager={String(eager ?? false)}
+      onClick={() => eager && claims.push([href, (claimPrefetch as () => boolean)()])}
+      {...rest}
+    />
   ),
 }));
 
@@ -41,7 +48,10 @@ function eagerTiles(): string[] {
   return [...document.querySelectorAll<HTMLAnchorElement>('a[data-eager="phone-in-view"]')].map((a) => a.getAttribute("href")!);
 }
 
-beforeEach(() => window.history.replaceState(null, "", "/decks"));
+beforeEach(() => {
+  window.history.replaceState(null, "", "/decks");
+  claims.length = 0;
+});
 
 describe("DecksView: the tiles that prefetch on a phone", () => {
   it("are the first two the list draws", () => {
@@ -81,5 +91,19 @@ describe("DecksView: the tiles that prefetch on a phone", () => {
     act(() => window.history.replaceState(null, "", "/decks"));
     rerender(view(1282));
     expect(eager()).toEqual(["/decks/b"]);
+  });
+
+  it("grants the last slot to one start only, however close together two arrive", () => {
+    window.history.replaceState(null, "", "/decks?status=Draft");
+    const { rerender } = render(view(1284));
+    act(() => document.querySelector<HTMLAnchorElement>('a[href="/decks/d"]')!.click());
+    act(() => window.history.replaceState(null, "", "/decks"));
+    rerender(view(1283));
+    // d is spent, one slot is left, and a and b are both eager: both start inside one act.
+    expect(eager()).toEqual(["/decks/a", "/decks/b"]);
+    act(() => {
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('a[data-eager="phone-in-view"]')) a.click();
+    });
+    expect(claims.filter(([, ok]) => ok).length).toBe(2);
   });
 });
