@@ -26,11 +26,14 @@
 // keep working.
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
+import { redactSecrets } from "./redact-env.mjs";
 
 /** The repository `.env`, resolved from this module rather than the cwd. */
 export const ENV_PATH = new URL("../../.env", import.meta.url);
 
 const loaded = config({ path: ENV_PATH, override: true, quiet: true });
+// Under Vitest the file above just put `.env`'s secrets back after the setup took them out.
+if (process.env.VITEST) redactSecrets(process.env);
 
 /**
  * Assert the named variables are set, and return them.
