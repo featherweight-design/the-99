@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
-import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -11,6 +11,28 @@ vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
   clearCardArtPreference: vi.fn(async () => {}),
 }));
+
+// `landOnReceipt` is a hold that outlives the door that starts it, so nothing in the component stops it
+// when a test ends: it keeps asking for frames for up to three seconds, and its eased reveal arms a
+// timer that fires into a torn-down jsdom (an unhandled error after every test has passed). The test
+// owns what it started, so it keeps each hold's stop and ends them all.
+const holds = vi.hoisted(() => ({ stops: [] as Array<() => void> }));
+vi.mock("./swap-receipt", async (original) => {
+  const real = await original<typeof import("./swap-receipt")>();
+  return {
+    ...real,
+    landOnReceipt: (swapId: string) => {
+      const stop = real.landOnReceipt(swapId);
+      holds.stops.push(stop);
+      return stop;
+    },
+  };
+});
+// Unmount first: a door unmounting is what starts a hold, and cleanup would otherwise run after this.
+afterEach(() => {
+  cleanup();
+  for (const stop of holds.stops.splice(0)) stop();
+});
 
 const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("../cards/card-detail-provider");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
