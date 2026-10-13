@@ -120,7 +120,7 @@ answers / Start over). The bar is a flex column, gap 14; padding 14 (mobile) / 1
 | display | flex | flex |
 | align-items | center | center |
 | gap | 8px | 8px |
-| children | the button; Stop after it in 3b only | same |
+| children | the button alone (until 2026-10-12, Stop followed it in 3b) | same |
 
 ### Button (all states that draw it)
 
@@ -215,10 +215,10 @@ answers / Start over). The bar is a flex column, gap 14; padding 14 (mobile) / 1
 
 | Property | Mobile | Desktop |
 |---|---|---|
-| Renders | in every state | same |
+| Renders | in every state but 3b | same |
 | copy, 3a / 3d | `creditsCopy.first` (ruled: STATES "Credit line, by allowance" gives its examples in `first`'s wording, and a press follows) | same |
 | copy, 3e | `creditsCopy.standing` (no press follows) | same |
-| copy, 3b | `deeper.pendingLine` | same |
+| copy, 3b | none: nothing sits under the press while it reads (removed with Stop, 2026-10-12; was `deeper.pendingLine`) | same |
 | copy, 3c | `deeper.doneLine(creditsCopy.standing)` | same |
 | copy, 3f | `creditsCopy.spent`. `deeper.spentLine` was dropped (orchestrator ruling); it ends in the `What uses credits?` link (superseded F9, 2026-10-12) | same |
 | copy, 3g | `creditsCopy.paused`; its reason ends in the same link (superseded F9, 2026-10-12) | same |
@@ -332,7 +332,7 @@ The same line as before a look; only its label key changes. It is not a chip.
 |---|---|---|---|
 | 3a offer (`leftover`) | Results screen; the submit had words; no look run for these words yet; ≥ 1 credit left; not paused or owner-share | Chips + `Not used` phrases; panel with title, lead, live button (`1 credit` · Look deeper), standing line; first results at opacity 1 | title `deeper.title`; lead `deeper.lead`; stub `deeper.cost`; label `deeper.action`; aria `deeper.aria`; line `creditsCopy.first` |
 | 3a, words all matched (R1) | Same, but no phrase left unused (4c, 4d, 4e, 5b with words) | As 3a, without the Not used row | same as 3a |
-| 3b looking (`reading`) | The player pressed Look deeper; the look is running | Title and lead change; hairline button (`1 credit` · Looking…) in `--fg-muted` with Stop beside it; line `deeper.pendingLine`; first results at 0.45 | title `deeper.pendingTitle`; lead `deeper.pendingLead`; stub `deeper.cost`; label `deeper.actionPending`; Stop `deeper.stop`; line `deeper.pendingLine` |
+| 3b looking (`reading`) | The player pressed Look deeper; the look is running | Title and lead change; hairline button (`1 credit` · Looking…) in `--fg-muted`, alone, with no line under it (Stop and its line removed 2026-10-12); first results at 0.45 | title `deeper.pendingTitle`; lead `deeper.pendingLead`; stub `deeper.cost`; label `deeper.actionPending` |
 | 3c done (`read`) | The look returned ≥ 1 valid answer | Deeper chip(s) with dashed accent edge + `deeper`; `Still not used` with the remaining phrases; panel title + `DONE` tag, lead, no button, line; results re-ranked with the new answer's figure on each row (canvas: 3 figures) | title `deeper.doneTitle`; tag `deeper.doneTag`; lead `deeper.doneLead`; line `deeper.doneLine(standing)`; chip `readAs.deeperMark` |
 | 3d failed (`failed`) | The look errored or timed out; credit refunded | Title + `DIDN'T FINISH` tag (danger); failed lead; live button (`1 credit` · Try again); standing line; first results at 1; `Not used` unchanged | title `deeper.title`; tag `deeper.failTag`; lead `deeper.failedLead`; label `deeper.retry`; line `creditsCopy.first` |
 | 3e nothing to add (`emptyread`) | The look returned no valid answer; credit refunded (READINESS 1, audit F4) | Title `Deeper look`, no tag; empty lead; no button (no second offer for the same words); standing line; `Still not used` with every phrase; first results | title `deeper.doneTitle`; lead `deeper.emptyLead`; line `creditsCopy.standing` |
