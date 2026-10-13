@@ -59,7 +59,9 @@ import { DeckCard } from "./deck-card";
 
 /** Tiles above this position draw their commander's art eagerly: three rows of the three-column grid,
     which covers the first screen of a tall desktop window. Every tile after waits for hydration and
-    for the viewport to come within a screen of it. */
+    for the viewport to come within a screen of it. The server cannot see the width, so a phone's
+    single column gets the same nine, about three of its screens: still 9 crops on its slow line
+    rather than every deck's, and a desktop's first screen never waits on hydration for its art. */
 export const EAGER_ART_TILES = 9;
 import { PLAYED_LABEL, SearchField, STATE_LABEL, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
 import { DeckFilterSheet } from "./deck-filter-sheet";

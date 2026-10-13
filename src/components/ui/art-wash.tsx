@@ -255,8 +255,9 @@ export type ArtWashProps = ArtProps &
         labelAtPx: number;
         portrait?: never;
         /** Ask for the crop only after hydration, once the band is within a screen of the viewport.
-            /decks sets it on every tile below its first screen: its 24 tiles' crops (1.3MB) were all
-            asked for at once, and on the slow profile the two a phone shows landed at 14-16s. */
+            /decks sets it on every tile after its first nine (a desktop's first screen): its 24
+            tiles' crops (1.3MB) were all asked for at once, and on the slow profile the two a phone
+            shows landed at 14-16s. */
         deferArt?: boolean;
       }
     | {
