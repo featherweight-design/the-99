@@ -71,6 +71,8 @@ eng-side item.
 
 ### 2d · `<UserProfile/>` themed modal — `appearance` map (44 enumerated elements)
 
+> **Retired 2026-10-12 (Hugh, speed plan).** *Manage account* now calls `clerk.redirectToUserProfile()` and opens Clerk's hosted account page, and the app loads none of Clerk's prebuilt UI (`prefetchUI={false}`), so this map, S10, S11, S12, N14, N17, N18, X14, the T9+ Clerk strings and ambiguities 13 and 18 describe nothing that renders. The hosted page is themed in Clerk's dashboard; the values below are the reference for that.
+
 `appearance.variables` base pass (16 keys), CV:559-576:
 
 | # | Key | Value |

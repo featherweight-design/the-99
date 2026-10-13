@@ -9,11 +9,6 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Every exemption is a decision, and every decision states its reason here.
 const ALLOWED = new Set([
-  // Clerk's appearance API derives hover and disabled shades from these, so it
-  // needs real colours and rejects custom properties. Driven from the token
-  // values by hand; see the follow-up note in the plan.
-  "lib/shell/clerk-appearance.ts",
-  "lib/shell/clerk-appearance.test.ts",
   // Card-art placeholder gradients, sampled from card art rather than chrome.
   // These are art, not theme surface, and do not move between themes.
   "lib/collection/gradients.ts",
@@ -74,7 +69,7 @@ describe("colour comes from tokens", () => {
   });
 
   // Every scanned path is src-relative, which is what makes ALLOWED's
-  // src-relative entries — lib/shell/clerk-appearance.ts — line up with them.
+  // src-relative entries — lib/collection/gradients.ts — line up with them.
   it("scans from src, not from this directory", () => {
     expect(files).toContain("components/ui/button.tsx");
   });

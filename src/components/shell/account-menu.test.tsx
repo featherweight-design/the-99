@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
 import { Report } from "./pending-report";
 
-const openUserProfile = vi.fn();
+const redirectToUserProfile = vi.fn();
 // Clerk's signOut is thenable — the component releases `busy` on rejection.
 const signOut = vi.fn(() => Promise.resolve());
 
@@ -19,7 +19,7 @@ vi.mock("@clerk/nextjs", () => ({
       primaryEmailAddress: { emailAddress: "ana.ruiz@example.com" },
     },
   }),
-  useClerk: () => ({ openUserProfile, signOut }),
+  useClerk: () => ({ redirectToUserProfile, signOut }),
 }));
 
 function trigger() {
@@ -43,7 +43,7 @@ const rects = vi
 afterAll(() => rects.mockRestore());
 
 beforeEach(() => {
-  openUserProfile.mockClear();
+  redirectToUserProfile.mockClear();
   signOut.mockClear();
 });
 
@@ -335,12 +335,29 @@ describe("AccountMenu items", () => {
     expect(screen.queryByRole("menu")).not.toBeNull();
   });
 
-  it("dismisses the menu before handing the focus trap to Clerk's modal", () => {
+  it("dismisses the menu and sends the reader to Clerk's hosted account page", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
     expect(screen.queryByRole("menu")).toBeNull();
-    expect(openUserProfile).toHaveBeenCalledOnce();
+    expect(redirectToUserProfile).toHaveBeenCalledOnce();
+  });
+
+  it("from the phone sheet, leaves the sheet's history entry alone so the redirect is not cancelled", async () => {
+    // Earlier tests' sheets release their own entries a task after unmounting; let them settle first.
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
+    fireEvent.click(trigger());
+    const back = vi.spyOn(window.history, "back");
+    try {
+      fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
+      // The sheet releases its entry one task after it unmounts.
+      await act(async () => new Promise((r) => setTimeout(r, 20)));
+      expect(redirectToUserProfile).toHaveBeenCalledOnce();
+      expect(back).not.toHaveBeenCalled();
+    } finally {
+      back.mockRestore();
+    }
   });
 
   it("disables both buttons once sign-out is in flight", () => {
