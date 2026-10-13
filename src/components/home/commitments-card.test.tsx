@@ -88,6 +88,9 @@ describe("CommitmentsCard", () => {
     expect(shop.getAttribute("href")).toBe("/decks/shopping");
     expect(shop.parentElement).toBe(review.parentElement);
     expect(review.parentElement!.hasAttribute("data-two")).toBe(true);
+    // Equal halves in the 316px desktop column: each label stays on one line inside the 8px padding.
+    expect(review.parentElement!.className).toContain("data-[two]:grid-cols-2");
+    for (const b of [shop, review]) expect(b.className).toMatch(/whitespace-nowrap.*px-\[8px\]/);
   });
 
   it("keeps the one button with the cart off", () => {

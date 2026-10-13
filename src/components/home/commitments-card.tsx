@@ -111,14 +111,14 @@ export function CommitmentsCard({
             // 44 on a phone, 32 above it. The card was desktop-only when this was
             // written, so it kept the desktop form at every width; it is the last
             // block on the phone now and its control is a tap target.
-            className="flex h-[44px] w-full min-w-0 items-center justify-center rounded-[8px] text-[12.5px] font-normal sm:h-[32px]"
+            className="flex h-[44px] w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-[8px] text-[12.5px] font-normal sm:h-[32px]"
           >
             {c.reviewCommitments}
           </GhostButton>
           {cartEnabled && (
             <GhostButton
               href="/decks/shopping"
-              className="flex h-[44px] w-full min-w-0 items-center justify-center rounded-[8px] text-[12.5px] font-normal sm:h-[32px]"
+              className="flex h-[44px] w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-[8px] text-[12.5px] font-normal sm:h-[32px]"
             >
               {c.shopAllDecks}
             </GhostButton>
