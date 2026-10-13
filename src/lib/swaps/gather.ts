@@ -222,7 +222,7 @@ export async function loadStandIns(
   // The sheet's hover preview draws these, and card details opens the deck's pick, the owned printing or, for a
   // card the player does not own, the printing it opens on: the same chain (`chainArt`), for the original and for
   // every stand-in.
-  const art = await chainArt(userId, deckId, [cutOracleId, ...candidates.map((r) => r.oracle_id)]);
+  const art = await chainArt(userId, deckId, [cutOracleId, ...candidates.map((r) => r.oracle_id)], env);
   const draw = (card: CardRow): CardRow => ({ ...card, imageUri: art.get(card.oracleId) ?? card.imageUri });
   const drawnOriginal = draw(original);
   const pool: Candidate[] = candidates.map((r) => {

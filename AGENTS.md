@@ -712,8 +712,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   never raises its parent. `cachePageForUser` puts every resolved switch in its key and hands the load that same env,
   which every switch read inside the load must use (the claim model in `availability-query` takes `env` since admin
   PR 6e, and since 6f-2 every claim read in `src` is handed the reader's env, so `NEVER_CUT_ENABLED` and
-  `CHANGE_COMMANDER_ENABLED` are always the reader's; `switch-adoption.test.ts` fails one that omits it, with no
-  exemption list, and admin PR 7 makes `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
+  `CHANGE_COMMANDER_ENABLED` are always the reader's. `switch-adoption.test.ts` fails an env-less call, with no
+  exemption list, to the readers and wrappers its `CLAIM_ENV` names (the claim model's entry points, and `chainArt`
+  for `DECK_PRINTINGS_ENABLED`); a deeper reader that takes a defaulted env is caught only once admin PR 7 makes
+  `env` required. `loadFriendSpares` runs each friend's claim model under that FRIEND's switches, `resolveSwitchEnv(friend)`) (a page that decides switches outside the load resolves once with `requestSwitchEnv` and passes it in), and the
   proxy keys About's cookie on the reader's resolved entries, so a flip retires exactly the readers it changes.
   `check:list-cache` knows the two override tables reach a cached page through its key alone, and fails if any loader
   but `page-cache.ts` and the resolver it goes through (`src/lib/switches/request.ts`) reads them. Every page,

@@ -410,7 +410,7 @@ async function readItems(
   ]);
   // The hover preview draws these, and card details opens the deck's pick or the owned printing: the same
   // chain, not the catalog's arbitrary one (`chainArt`).
-  const art = await chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]));
+  const art = await chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id]), env);
   const items = rows.rows.map((r): TuningItem => {
     const addArt = art.get(r.add_oracle_id ?? "") ?? r.add_image_uri;
     const cutArt = art.get(r.cut_oracle_id ?? "") ?? r.cut_image_uri;

@@ -201,8 +201,12 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
  */
 
 /**
- * The claim readers and where each takes its env: in an options object (`opts`, which must name `env`) or
- * as a positional argument (`at`, which must be present). `listDecksWithStats` is a reader by way of its
+ * The readers whose DEFAULTED env decides a switch, and where each takes it: in an options object (`opts`,
+ * which must name `env`) or as a positional argument (`at`, which must be present). Most are the claim
+ * model and the wrappers that start it (NEVER_CUT_ENABLED's `locked` key, CHANGE_COMMANDER_ENABLED's pending
+ * clause); `chainArt` decides DECK_PRINTINGS_ENABLED, the deck's printing picks. A reader deeper than these
+ * that takes a defaulted env is not scanned: admin PR 7 makes `env` required, which catches that whole class
+ * at compile time. `listDecksWithStats` is a reader by way of its
  * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
  * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).
  * `loadShoppingRollup` hands its third argument to `loadDeckBuyRows` the same way (round 2).
@@ -213,6 +217,7 @@ const CLAIM_ENV = {
   loadCart: { at: 1 },
   listDecksWithStats: { opts: 2 },
   loadShoppingRollup: { at: 2 },
+  chainArt: { at: 3 },
 } as const satisfies Record<string, { opts: number } | { at: number }>;
 const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
 type ClaimReader = (typeof CLAIM_READERS)[number];
@@ -295,9 +300,12 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
       "listDecksWithStats(u, \"name\", { env });",
       "loadShoppingRollup(u, ids);",
       "loadShoppingRollup(u, undefined, env);",
+      // The art chain's printing picks (DECK_PRINTINGS_ENABLED).
+      "chainArt(u, deckId, ids);",
+      "chainArt(u, null, ids, env);",
     ].join("\n");
     expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
-      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true],
+      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true, false, true],
     );
   });
 

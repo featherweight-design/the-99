@@ -44,9 +44,9 @@ export type PageLoad<T> = { value: T; store: boolean };
  * `load` is handed the env the key was built from, and must decide every switch from it: only then
  * is the key the whole story. The claim model in `availability-query` takes `env` (admin adoption 6e),
  * and since 6f-2 every claim read in `src` is handed the reader's env, so its `locked` key
- * (`NEVER_CUT_ENABLED`) and pending clause (`CHANGE_COMMANDER_ENABLED`) are the key's own switches;
- * `switch-adoption.test.ts` fails a claim read that omits it. The `env` parameters still default to the
- * environment until admin PR 7 makes them required. A page that also decides switches OUTSIDE the cached load
+ * (`NEVER_CUT_ENABLED`) and pending clause (`CHANGE_COMMANDER_ENABLED`) are the key's own switches.
+ * `switch-adoption.test.ts` fails an env-less call to the readers and wrappers its `CLAIM_ENV` names; a deeper
+ * reader that takes a defaulted env is caught only once admin PR 7 makes `env` required. A page that also decides switches OUTSIDE the cached load
  * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the
  * rest of the render read one snapshot; without it, the reader's switches are resolved here.
  */
