@@ -71,6 +71,10 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // its game commits, so a game logged before this lock is committed (and unlinked here) and one logged after
   // finds no friend to seat. Nothing writes a seat yet; the game log's write path will. The
   // deck link goes with it (`friend_deck_id` requires the friend), ahead of the decks' own `set null`.
+  // The account's decks are locked FIRST, in id order, because a deck delete locks its deck and then its
+  // `set null` locks the seats naming it: taking the seats here and the decks later (in `PURGE_ORDER`) would
+  // be the opposite order, and a deck deleted during the purge could deadlock it.
+  await tx.execute(sql`select d.id from decks d where d.user_id = ${userId} order by d.id for update`);
   await tx
     .update(deckGameOpponents)
     .set({ friendUserId: null, friendDeckId: null })
