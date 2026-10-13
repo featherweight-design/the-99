@@ -129,7 +129,7 @@ describe("fetchDeckProfile", () => {
   // THE FLAG GATES THE LOADER, NOT ONLY THE TAB. A hidden tab whose payload still loads is the
   // worst of both — so the assertion is that NO read happened, which is the only way to tell a
   // gated loader from a gated render.
-  it("answers disabled before reading anything at all", async () => {
+  it("answers disabled after the session, before reading anything else", async () => {
     stub.enabled = false;
     expect(await fetchDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
     // The session alone: the reader's switches resolve from it, so it is read before the gate.
@@ -220,14 +220,14 @@ describe("fetchStoredDeckProfile", () => {
     });
   });
 
-  it("answers disabled before reading anything at all", async () => {
+  it("answers disabled after the session, before reading anything else", async () => {
     stub.enabled = false;
     expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
     // The session alone: the reader's switches resolve from it, so it is read before the gate.
     expect(stub.reads).toEqual(["auth"]);
   });
 
-  it("refuses a malformed id before any read", async () => {
+  it("refuses a malformed id after the session, before any deck read", async () => {
     expect(await fetchStoredDeckProfile("deck-1")).toEqual({ ok: false, reason: "not-found" });
     // The session alone: the reader's switches resolve from it, so it is read before the gate.
     expect(stub.reads).toEqual(["auth"]);

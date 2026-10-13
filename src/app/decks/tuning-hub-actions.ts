@@ -23,7 +23,7 @@ export async function readTuningHub(deckId: string): Promise<HubTiles | null> {
   // One instant for both, so a run cannot cross the cutoff between the reap and the read.
   const now = new Date();
   await reapReaderRuns(deckId, userId, now);
-  return readHubTiles(deckId, userId, hubTools(), now);
+  return readHubTiles(deckId, userId, hubTools(env), now);
 }
 
 const HISTORY_TOOLS: ReadonlySet<string> = new Set<HistoryTool>(["suggested", "mana", "cuts"]);
@@ -41,7 +41,7 @@ export async function readTuningHistory(deckId: string, tool?: HistoryTool | nul
   // As the landing's read: a row saying `credit back` describes a credit already returned.
   const now = new Date();
   await reapReaderRuns(deckId, userId, now);
-  return readHistory(deckId, userId, { tool: tool ?? undefined, cursor: typeof cursor === "string" ? cursor : null, drawn: hubTools() }, now);
+  return readHistory(deckId, userId, { tool: tool ?? undefined, cursor: typeof cursor === "string" ? cursor : null, drawn: hubTools(env) }, now);
 }
 
 /** One past run, read-only. Null on refusal, or when the id names nothing this reader holds here. */
@@ -56,6 +56,6 @@ export async function readTuningPastRun(deckId: string, id: string): Promise<Pas
   const run = await readPastRun(deckId, userId, ref, now);
   // Only the tools this deployment draws, as History's list: a tool whose switch is off is not
   // reachable through an old id either.
-  const drawn: readonly HistoryTool[] = hubTools();
+  const drawn: readonly HistoryTool[] = hubTools(env);
   return run && drawn.includes(pastRunTool(run)) ? run : null;
 }

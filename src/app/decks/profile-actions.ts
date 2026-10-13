@@ -60,7 +60,8 @@ export type ProfileFetch =
  * where a determined verdict goes stale and the control invites another pass.
  *
  * THE FLAG GATES THE LOADER AS WELL AS THE TAB. A hidden tab whose payload still loads is the
- * worst of both, so `disabled` is answered before any read — and it is a distinct reason from
+ * worst of both, so `disabled` is answered before any deck read: after the session and the
+ * reader's own switches, which decide it, and before anything else. It is a distinct reason from
  * `not-found`, because nothing is wrong with the deck.
  */
 export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
