@@ -5,8 +5,10 @@
 // on a slow connection is seconds. It used to show nothing in between. This proves, in the page and on
 // the press's own pointerdown (never a harness wait, which re-checks on a backoff):
 //  - FEEDBACK: the first animation frame whose Stats tab is filled AND marked `aria-busy` comes within
-//    FEEDBACK_MS of the pointerdown, and before the view has changed.
-//  - THE MARK: the pending diamond (`[data-pending]`) is drawn in that tab while the read runs.
+//    FEEDBACK_MS of the pointerdown, and before the view has changed. (The fill is read off the class list: the
+//    off segment's `active:bg-[var(--elevated)]` would satisfy a substring match.)
+//  - THE MARK: the pending diamond (`[data-pending]`) is fully opaque in that tab, after its 120ms beat, while
+//    the read runs.
 //  - THE RESULT: Stats then lands (`[data-decks-stats]`), the tab loses the mark and its busy flag, and
 //    the feedback came BEFORE it (the read was still pending at the feedback frame).
 //
@@ -77,11 +79,13 @@ const ARM = () => {
     const tab = document.querySelector('[data-decks-view="stats"]');
     const landed = !!document.querySelector("[data-decks-stats]");
     if (s.at != null && s.feedback == null && tab?.getAttribute("aria-busy") === "true"
-        && tab.className.includes("bg-[var(--elevated)]")) {
+        && tab.classList.contains("bg-[var(--elevated)]")) {
       s.feedback = performance.now();
       s.statsBefore = landed;
     }
-    if (s.feedback != null && tab?.querySelector("[data-pending]")) s.mark = true;
+    // Present is not drawn: the mark rides `.anim-pending-in`, which holds it at opacity 0 for 120ms.
+    const pip = tab?.querySelector("[data-pending]");
+    if (s.feedback != null && pip && Number(getComputedStyle(pip).opacity) >= 0.99) s.mark = true;
     if (s.at != null && landed) { s.landed = performance.now(); return; }
     requestAnimationFrame(tick);
   };
