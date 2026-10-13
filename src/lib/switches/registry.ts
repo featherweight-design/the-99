@@ -44,6 +44,7 @@ export const SWITCHES = [
   { name: "PROPOSED_CUTS_ENABLED", kind: "model" },
   { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature" },
   { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
+  { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
   { name: "SWAP_TOOLS_ENABLED", kind: "feature" },
   { name: "TUNING_ENABLED", kind: "model" },

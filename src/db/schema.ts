@@ -3036,3 +3036,19 @@ export const podSpareShares = pgTable("pod_spare_shares", {
   primaryKey({ columns: [t.userId, t.podId] }),
   index("pod_spare_shares_pod_idx").on(t.podId),
 ]);
+
+/**
+ * A player's wishlist (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12): cards wanted outside any deck, at
+ * CARD level (any printing will do). `quantity` is how many copies the player wants to own in all; a line
+ * whose card the collection holds that many of reads as GOT, derived and never stored, and stays until the
+ * player clears it. Visible to friends (Q7), read for them only through `src/lib/social/`.
+ */
+export const wishlistItems = pgTable("wishlist_items", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
+  check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),
+]);

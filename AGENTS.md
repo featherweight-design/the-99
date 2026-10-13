@@ -670,9 +670,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
     THEN run `pnpm list-stamp:triggers disable` against that database. Never the other way
     round: disabling the triggers while cached code is live freezes every reader's stamp, and
     every cached page is served stale after the writes that should have retired it.
-  - **Never drop `user_data_stamps` while the triggers exist.** Every write to the seventeen tables
+  - **Never drop `user_data_stamps` while the triggers exist.** Every write to a table carrying a `user_data_touch` trigger (`pnpm list-stamp:triggers` reads the live set)
     would then fail on the missing table.
-  - **Permanent removal is a follow-up migration**: drop the seventeen triggers, then the function,
+  - **Permanent removal is a follow-up migration**: drop every `user_data_touch` trigger (read the live set, never a count), then the function,
     then the table. `list-stamp:triggers` is the emergency lever, not the way out.
   - **Coming back:** `list-stamp:triggers enable`, then a deploy with the switch on. A stamp that
     sat still while writes landed says nothing about them, and a new deployment starts every
@@ -748,6 +748,15 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `on delete` the order does not cover. A new per-user table therefore fails CI until the purge handles it.
   `pnpm probe:purge` searches every text column the DATABASE's catalog lists for the account's id by value and
   proves none holds it afterwards, on a scratch branch.
+
+- **The wishlist** (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12), behind `SOCIAL_WISHLIST_ENABLED`, which stands
+  alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
+  outside any deck at CARD level (any printing), with `quantity` the copies wanted IN ALL. A line is GOT once the
+  collection holds that many, derived on every read and never stored, and it stays until the player clears it.
+  The owner's own rows are read and written in `src/lib/wishlist/`; a FRIEND's wishlist is visible (Q7) and is read
+  only through `src/lib/social/wishlist.ts`, which joins the viewer's friendship row in the same statement and
+  returns the card, the wanted count and got, never an owned count. `pnpm probe:wishlist` proves it on a scratch
+  branch.
 
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
