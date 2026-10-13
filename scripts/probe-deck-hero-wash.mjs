@@ -16,13 +16,22 @@
 //
 // Writes only the probe account's About row, and restores it. Pass at least one deck with an intent line: that is the case the ceiling broke.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { onPage } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+
+// It writes the probe account's About row, so it runs only against a local server and a database
+// no other reader uses, judged by the branch the database reports rather than by its URL.
+const PRODUCTION = "br-noisy-violet-a6vw4ess";
+const STAGING = "br-polished-pond-a6e63y0b";
+if (!["localhost", "127.0.0.1"].includes(new URL(BASE).hostname)) throw new Error(`PROBE_BASE must be a local server, not ${BASE}.`);
+const [{ branch }] = await neon(DATABASE_URL)`select current_setting('neon.branch_id', true) as branch`;
+if (!branch || branch === PRODUCTION || branch === STAGING) throw new Error(`Refusing branch ${branch ?? "(unknown)"}: point DATABASE_URL at local-dev or a scratch branch.`);
 const DECKS = (process.env.PROBE_DECK_IDS ?? "").split(",").filter(Boolean);
 const SHOTS = process.env.PROBE_SHOTS;
 if (!DECKS.length) throw new Error("Set PROBE_DECK_IDS to one or more deck ids, one with an intent line.");
