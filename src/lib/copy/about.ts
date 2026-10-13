@@ -57,6 +57,20 @@
 
 import { HISTORY_RETENTION_DAYS } from '../collection/retention';
 import { benchmarksAboutEntry } from './deck-benchmarks';
+import { numberWord } from './number-words';
+
+/**
+ * Where a reader's own daily credit allowance goes in a sentence (admin PR 9c, 2026-10-13). The limit
+ * is per account (`dailyLimit`: their group's, else the owner's own, else `MODEL_DAILY_ALLOWANCE`), so
+ * the copy holds this slot and the page fills it at render with `fillAllowance`. The content hash
+ * reads the slot, so a change of limit is not a change of copy.
+ */
+export const ALLOWANCE_SLOT = '{allowance}';
+
+/** Fills `ALLOWANCE_SLOT` with the reader's limit, spelled as a number word (11 and up as digits). */
+export function fillAllowance(text: string, limit: number, spell: (n: number) => string = numberWord): string {
+  return text.split(ALLOWANCE_SLOT).join(spell(limit));
+}
 
 export const ABOUT_VERSION = 14;
 
@@ -1363,10 +1377,11 @@ export const aboutEntries: readonly AboutEntry[] = [
     // fails the run), `settleTheRead` in `run-store.ts` for intake (at least one valid pick). NO switch. It shipped at
     // `since: 10` with no bump; Hugh then ruled (2026-10-06) that it is announced, so it moved to
     // `since: 11` with the ABOUT_VERSION bump that ends the second prose pass.
-    // "You get five" is the FRIEND allowance (`MODEL_FRIEND_DAILY_ALLOWANCE`). The owner's
-    // ten and monthly testing share exist and are left out on purpose: Hugh, 2026-10-06, "friends only". The friend number went 3 to 5 on 2026-10-09 (a copy edit, no bump).
+    // "You get {allowance}" is the READER'S own limit (`dailyLimitFor`), filled at render by
+    // `fillAllowance` (admin PR 9c, 2026-10-13, a copy edit, no bump); it was the friend's fixed five.
+    // The owner's monthly testing share is left out on purpose: Hugh, 2026-10-06, "friends only".
     caption:
-      'Some features write something just for you, and those use credits. You get five, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.',
+      'Some features write something just for you, and those use credits. You get {allowance}, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
     // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.

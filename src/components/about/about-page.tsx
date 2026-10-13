@@ -30,11 +30,13 @@ import { switchedIds, unseenEntries, visibleEntries, type SeenState } from "../.
 import {
   ABOUT_VERSION,
   aboutCopy,
+  fillAllowance,
   type AboutChapter,
   type AboutEntry,
 } from "../../lib/copy/about";
 import { PendingReporter } from "../shell/pending-reporter";
 import { EntryCaption } from "./entry-caption";
+import { defaultDailyAllowanceFrom } from "../../lib/model/allowance-rule";
 
 const CHAPTERS: AboutChapter[] = ["01", "02", "03", "04"];
 
@@ -72,14 +74,21 @@ function Entry({
   marked,
   sheetMode,
   howItWorks,
+  creditLimit,
+  specimenLimit,
 }: {
   entry: AboutEntry;
   marked: boolean;
   sheetMode: boolean;
   /** `HOW_IT_WORKS_ENABLED`: an entry the appendix explains links to its row. */
   howItWorks: boolean;
+  /** The reader's own daily credit limit, filled into a caption's `ALLOWANCE_SLOT`. */
+  creditLimit: number;
+  /** The app-wide default limit, which a figure draws: a specimen has no reader of its own. */
+  specimenLimit: number;
 }) {
   const row = howItWorks ? entryRow[entry.id] : undefined;
+  const caption = fillAllowance(entry.caption, creditLimit);
   const Figure = FIGURES[entry.id];
   const inset = entry.width === "inset" && Figure;
   // R6 §P0: a new entry's top rule is 2px of accent at both widths, and on a
@@ -155,17 +164,17 @@ function Entry({
       {inset ? (
         <div className="mt-[6px] flex flex-col gap-[10px] min-[1000px]:flex-row min-[1000px]:items-start min-[1000px]:gap-[20px]">
           <div className="order-2 min-w-0 flex-1 min-[1000px]:order-2">
-            <EntryCaption caption={entry.caption} />
+            <EntryCaption caption={caption} />
           </div>
           <div className="order-1 min-[1000px]:order-1 min-[1000px]:w-[300px] min-[1000px]:flex-none">
-            <Figure width={entry.width} />
+            <Figure width={entry.width} creditLimit={specimenLimit} />
           </div>
         </div>
       ) : (
-        <EntryCaption caption={entry.caption} className="mt-[6px]" />
+        <EntryCaption caption={caption} className="mt-[6px]" />
       )}
 
-      {Figure && !inset && <Figure width={entry.width} />}
+      {Figure && !inset && <Figure width={entry.width} creditLimit={specimenLimit} />}
 
       {/* NUMBERED keys. "Annotation is a numeral and a line" is the handoff's
           grammar, and the lines shipped without the numerals — which is the
@@ -253,6 +262,7 @@ export function AboutPage({
   next,
   sheetMode = false,
   env,
+  creditLimit,
 }: {
   seen: number;
   /** The switched entries this reader has already met, by id (`user_prefs.about_seen_ids`). */
@@ -266,7 +276,15 @@ export function AboutPage({
   sheetMode?: boolean;
   /** The reader's resolved switches (`resolveSwitchEnv`), the same the proxy's gate and sheet decide from. */
   env: NodeJS.ProcessEnv;
+  /**
+   * The reader's own daily credit limit (`dailyLimitFor`), read once by the route. With no reader it
+   * is the app-wide default: `dailyLimit` for an account in no group and not the owner.
+   */
+  creditLimit?: number;
 }) {
+  // A figure is a specimen with no reader, so it always draws the default; a caption draws the reader's.
+  const defaultLimit = defaultDailyAllowanceFrom(process.env.MODEL_DAILY_ALLOWANCE);
+  const readerLimit = creditLimit ?? defaultLimit;
   // Only the entries this reader is drawn: one tied to a switch that is off for them is not on the page.
   const visible = visibleEntries(env);
   // "How the app reaches its answers" (plan 2026-09-28): its section, its clause in the intro,
@@ -413,13 +431,15 @@ export function AboutPage({
                   marked={isNew(entry)}
                   sheetMode={sheetMode}
                   howItWorks={howItWorks}
+                  creditLimit={readerLimit}
+                  specimenLimit={defaultLimit}
                 />
               ))}
           </ul>
         </section>
       ))}
 
-      {howItWorks && <HowItWorks entries={visible} />}
+      {howItWorks && <HowItWorks entries={visible} creditLimit={readerLimit} />}
 
       {/* The pinned bar's own height, given back to the document.
           `<main>` reserves `--tabbar-h` and nothing more, so the bar sat ON

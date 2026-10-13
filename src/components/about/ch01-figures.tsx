@@ -911,8 +911,11 @@ export function SuggestedChangesFigureBody() {
  * here in the type `SuggestedChangesFigureBody` gives it, from the real copy and never retyped.
  * One numeral per state, as the availability figure numbers its rows.
  */
-export function CreditsFigureBody() {
-  const { limit, left, pausedUntil } = CREDITS;
+export function CreditsFigureBody({ limit }: { limit: number }) {
+  // `limit` is the app-wide default (`AboutPage`), so the figure agrees with the caption a reader in no
+  // group reads. Never more left than the limit: at a limit of one the first line reads 1 of 1.
+  const left = Math.min(CREDITS.left, limit);
+  const { pausedUntil } = CREDITS;
   // The reset time is the reader's clock (`clockTime`), which the server cannot know, and React
   // never patches mismatched text. So the server snapshot draws the lines with no time, and the
   // time arrives with the client's own render, the pattern `ThemesFigureBody` uses.
