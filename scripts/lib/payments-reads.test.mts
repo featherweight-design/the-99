@@ -20,6 +20,8 @@ describe("paymentReadsIn", () => {
     expect(paymentReadsIn(`import { decks, stripeCustomers as sc } from "../../db/schema";`)).toEqual([{ line: 1, why: "imports stripeCustomers" }]);
     expect(paymentReadsIn(`import * as s from "../db/schema";\nawait db.select().from(s.paymentRecords);`)).toEqual([{ line: 2, why: "reads schema.paymentRecords" }]);
     expect(paymentReadsIn(`await db.query.stripeEvents.findMany();`)).toEqual([{ line: 1, why: "reads db.query.stripeEvents" }]);
+    expect(paymentReadsIn(`const { decks, paymentRecords: pr } = await import("../../db/schema");`)).toEqual([{ line: 1, why: "imports paymentRecords" }]);
+    expect(paymentReadsIn(`const s = await import("../db/schema");\nawait db.select().from(s.stripeCustomers);`)).toEqual([{ line: 2, why: "reads schema.stripeCustomers" }]);
     expect(paymentReadsIn("sql`DELETE FROM STRIPE_CUSTOMERS`").map((f) => f.why)).toEqual(["names STRIPE_CUSTOMERS"]);
   });
 

@@ -37,7 +37,15 @@ export function paymentReadsIn(source) {
     const names = m[1].split(",").map((s) => s.trim()).filter((s) => s && !/^type\s/.test(s)).map((s) => s.split(/\s+as\s+/)[0]);
     for (const name of names) if (PAYMENT_BINDINGS.includes(name)) findings.push({ line: lineAt(m.index), why: `imports ${name}` });
   }
-  if (/import\s*\*\s*as\s+\w+\s+from\s*["'][^"']*db\/schema["']/.test(source)) {
+  // A dynamic import of the schema, destructured: `const { paymentRecords } = await import("../db/schema")`.
+  const dynamicNamed = /\{([^}]*)\}\s*=\s*await\s+import\(\s*["'][^"']*db\/schema["']\s*\)/g;
+  for (const m of source.matchAll(dynamicNamed)) {
+    const names = m[1].split(",").map((s) => s.trim()).filter(Boolean).map((s) => s.split(/\s*:\s*/)[0]);
+    for (const name of names) if (PAYMENT_BINDINGS.includes(name)) findings.push({ line: lineAt(m.index), why: `imports ${name}` });
+  }
+  // A namespace by either route, `import * as s from` or `const s = await import(...)`, then `s.paymentRecords`.
+  const dynamicNamespace = /\b\w+\s*=\s*await\s+import\(\s*["'][^"']*db\/schema["']\s*\)/;
+  if (/import\s*\*\s*as\s+\w+\s+from\s*["'][^"']*db\/schema["']/.test(source) || dynamicNamespace.test(source)) {
     for (const m of source.matchAll(new RegExp(`\\.(${PAYMENT_BINDINGS.join("|")})\\b`, "g"))) {
       findings.push({ line: lineAt(m.index), why: `reads schema.${m[1]}` });
     }
