@@ -26,6 +26,16 @@ describe("TuningNotesField", () => {
     expect(screen.getByText("15 / 500")).toBeInTheDocument();
   });
 
+  it("keeps the draft when Escape closes the open help tip", () => {
+    const onChange = vi.fn();
+    render(<TuningNotesField value="more removal" onChange={onChange} />);
+    const tip = document.querySelector('button[aria-describedby="tuning-notes-field-info"]') as HTMLElement;
+    fireEvent.pointerEnter(tip, { pointerType: "mouse" });
+    expect(tip).toHaveAttribute("aria-expanded", "true");
+    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("clears the draft on Escape rather than committing it", () => {
     const onChange = vi.fn();
     render(<TuningNotesField value="more removal" onChange={onChange} />);

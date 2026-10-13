@@ -88,7 +88,9 @@ export function TuningNotesField({ value, onChange }: { value: string; onChange:
             if (e.nativeEvent.isComposing) return;
             // Esc clears the draft rather than committing it — there is nothing server-side to
             // cancel (this field is never saved), so a reset to empty is the whole of "Cancel".
-            if (e.key === "Escape") onChange("");
+            // The help tip closes on the same Escape (InfoTip listens at the document, and focus stays here), so
+            // an open tip takes it and the draft stays.
+            if (e.key === "Escape" && !document.querySelector(`button[aria-describedby="${infoId}"][aria-expanded="true"]`)) onChange("");
           }}
           rows={2}
           placeholder={desktop ? copy.placeholder : copy.placeholderPhone}
