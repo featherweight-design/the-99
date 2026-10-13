@@ -10,7 +10,7 @@ vi.mock("../../db", () => ({
   db: { select: () => ({ from: () => ({ where: async () => deckRows }) }) },
 }));
 
-const { loadBuiltCommanderIds } = await import("./candidates");
+const { loadBuiltCommanderIds } = await import("../decks/built");
 
 describe("loadBuiltCommanderIds", () => {
   it("names the commander of every deck", async () => {

@@ -1508,6 +1508,41 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
 ]);
 
 /**
+ * A reader's owned-support count per indexed commander: how many of the commander's support cards
+ * the reader owns within its colour identity (`ownedSupportTable` in `discovery/candidates.ts`).
+ *
+ * Stored because computing it is the costly half of `/discover`'s candidate read (~700ms on a
+ * 2,926-card collection: 275k support rows), and its inputs move far less often than the page is
+ * rebuilt. The page's cache misses on every deck write, and a deck write changes neither input.
+ * The rows are valid only for the key in `ownedSupportStamps`. Every commander with at least one
+ * owned support card gets a row, not just today's candidates, because which commanders pass the
+ * candidate filter changes with the reader's decks; the rest read as 0.
+ *
+ * No foreign key to `commander_support`: an index copy replaces those rows exactly, and the stamp's
+ * index generation is what retires these counts, not a cascade.
+ */
+export const ownedSupportCounts = pgTable("owned_support_counts", {
+  userId: text("user_id").notNull(),
+  commanderOracleId: uuid("commander_oracle_id").notNull(),
+  ownedSupport: integer("owned_support").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.commanderOracleId] }),
+]);
+
+/** The inputs a reader's `ownedSupportCounts` were computed from: the owned ids, the index build and the catalog refresh. */
+export const ownedSupportStamps = pgTable("owned_support_stamps", {
+  userId: text("user_id").primaryKey(),
+  /** sha256 of the sorted, de-duplicated owned oracle ids, `|` the index generation, `|` the catalog generation. */
+  key: text("key").notNull(),
+  /** The newest `commander_support.computed_at` and the catalog stamp, in epoch millis, read in the same
+   *  statement that wrote the counts. A reading statement compares them against its own snapshot, so
+   *  counts from one index build are never served beside another build's candidates. */
+  supportMillis: bigint("support_millis", { mode: "number" }),
+  catalogMillis: bigint("catalog_millis", { mode: "number" }),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+});
+
+/**
  * A partner PAIR's own EDHREC page, which neither commander's page describes.
  *
  * `commander_support` is keyed per oracle id and `edhrec_cache` carries an FK to `cards`, so

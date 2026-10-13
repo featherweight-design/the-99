@@ -1922,6 +1922,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   a stale row) shows nothing, leaving, removal and unfriending each delete the grant ROW (counted in the table, since
   the read alone would hide a missed cleanup), rejoining does not restore it, and `friendGeneration` moves when a
   friend starts sharing, when their collection moves and when they rename.
+- `pnpm probe:owned-support` proves `/discover`'s stored owned-support counts (`owned_support_counts`,
+  `owned_support_stamps`; `storedOwnedSupport` in `discovery/candidates.ts`) against a real database. A miss and a
+  hit both answer exactly what the live aggregate answers, the store holds every commander with owned support rather
+  than only today's candidates, and a changed owned set recomputes. It WRITES that account's two tables and clears
+  them after, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging and
+  production are refused by id. Run it on a scratch branch of staging after `pnpm db:migrate`, with `PROBE_USER_ID`
+  an account holding a collection, then delete the branch. First run (2026-10-12, a 2,926-card collection): 3,193
+  candidates, 3,467 stored rows; the read took 1.7–1.8s live and 0.36–0.51s on a hit, timed from a laptop.
 - `pnpm probe:deck-tokens` proves the deck-tokens seams (`loadDeckTokens`, the join and hand-mark writes) against a real
   database that holds a published token catalog. It WRITES (joins, hand marks, a read marker for the account) and
   cleans up after itself, so it fails closed: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL` reports, and

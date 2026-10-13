@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { loadBuiltCommanderIds } from "../discovery/candidates";
+import { loadBuiltCommanderIds } from "../decks/built";
 import { getCollectionStats } from "../home/summary";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
 import { collectionGeneration, indexGeneration, loadScores, persistScores } from "./store";
