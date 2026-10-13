@@ -5,6 +5,8 @@ const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
   load: vi.fn(),
 }));
+const observe = vi.hoisted(() => vi.fn());
+vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.load }));
 // The reader's resolved switches, a stand-in pinned by identity. The environment has the label basis
@@ -28,6 +30,7 @@ const list = { items: [item("a"), item("b")], sort: "fit" } as unknown as Discov
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/discovery-fields?${qs}`));
 
 beforeEach(() => {
+  observe.mockReset();
   vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
   stub.userId = "user_1";
   stub.load.mockReset();
@@ -111,5 +114,14 @@ describe("GET /api/discovery-fields", () => {
   ])("refuses %s with a 400 before reading", async (_what, qs) => {
     expect((await get(qs)).status).toBe(400);
     expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("counts the request for the rate measurement once the reader is known, and not before", async () => {
+    await get("sort=fit&b=labels&s=a");
+    expect(observe).toHaveBeenCalledWith("user_1", "draw-fields");
+    observe.mockClear();
+    stub.userId = null;
+    await get("sort=fit&b=labels&s=a");
+    expect(observe).not.toHaveBeenCalled();
   });
 });

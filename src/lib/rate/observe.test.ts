@@ -31,8 +31,12 @@ describe("recordHit", () => {
   it("upserts this window's row and sweeps the player's earlier windows in one statement", async () => {
     await recordHit("user_1", "card-detail", new Date("2026-10-13T12:00:30Z"));
     const { sql, params } = new PgDialect().sqlToQuery(h.executed[0] as never);
-    expect(sql).toContain("delete from rate_hits where user_id =");
+    expect(sql).toContain("delete from rate_hits");
+    expect(sql).toMatch(/where \(user_id = \$\d+ and bucket = \$\d+ and window_start </);
     expect(sql).toContain("window_start <");
+    // Anyone's rows past the retention go too, which bounds a row an in-flight hit writes after its account is purged.
+    expect(sql).toMatch(/or\s+window_start </);
+    expect(params).toContain("2026-10-13T11:00:00.000Z");
     expect(sql).toContain("on conflict (user_id, bucket, window_start) do update set hits = rate_hits.hits + 1");
     expect(params).toContain("user_1");
     expect(params).toContain("2026-10-13T12:00:00.000Z");

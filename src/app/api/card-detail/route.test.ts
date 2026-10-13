@@ -5,6 +5,8 @@ const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
   load: vi.fn(),
 }));
+const observe = vi.hoisted(() => vi.fn());
+vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/collection/card-detail", () => ({ loadCardDetail: stub.load }));
 // The reader's resolved switches: a sentinel, so the assertion is that the route hands the loader
@@ -19,6 +21,7 @@ const OTHER = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/card-detail?${qs}`));
 
 beforeEach(() => {
+  observe.mockReset();
   stub.userId = "user_1";
   stub.load.mockReset();
   stub.load.mockResolvedValue({ oracleId: ID, name: "Sol Ring" });
@@ -104,5 +107,14 @@ describe("the route and the action", () => {
     const viaAction = await getCardDetail(ID, [OTHER]);
     expect(viaRoute).toEqual(viaAction);
     expect(stub.load.mock.calls[0]).toEqual(stub.load.mock.calls[1]);
+  });
+
+  it("counts the request for the rate measurement once the reader is known, and not before", async () => {
+    await get(`id=${ID}`);
+    expect(observe).toHaveBeenCalledWith("user_1", "card-detail");
+    observe.mockClear();
+    stub.userId = null;
+    await get(`id=${ID}`);
+    expect(observe).not.toHaveBeenCalled();
   });
 });

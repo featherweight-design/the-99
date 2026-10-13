@@ -32,3 +32,6 @@ export function windowStart(now: Date, windowMs: number): Date {
 export function overLimit(hits: number, rule: RateRule): boolean {
   return hits > rule.limit;
 }
+
+/** How long a window's row is kept, whoever it belongs to: the bound on a row written after its account was purged. */
+export const RETAIN_MS = 60 * 60 * 1000;

@@ -5,6 +5,8 @@ const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
   load: vi.fn(),
 }));
+const observe = vi.hoisted(() => vi.fn());
+vi.mock("../../../lib/rate/observe", () => ({ observeHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/collection/payload", () => ({ loadCollectionListForFields: stub.load }));
 
@@ -22,6 +24,7 @@ const card = (oracleId: string): BrowseListCard => ({
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/collection-fields?${qs}`));
 
 beforeEach(() => {
+  observe.mockReset();
   stub.userId = "user_1";
   stub.load.mockReset();
   stub.load.mockResolvedValue({ cards: [card(A), card(B)], pricesFailed: false });
@@ -61,5 +64,14 @@ describe("GET /api/collection-fields", () => {
   ])("refuses %s before reading anything", async (_, qs) => {
     expect((await get(qs)).status).toBe(400);
     expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("counts the request for the rate measurement once the reader is known, and not before", async () => {
+    await get(`ids=${A}`);
+    expect(observe).toHaveBeenCalledWith("user_1", "draw-fields");
+    observe.mockClear();
+    stub.userId = null;
+    await get(`ids=${A}`);
+    expect(observe).not.toHaveBeenCalled();
   });
 });

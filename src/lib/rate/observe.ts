@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { requestSwitchEnv } from "../switches/request";
 import { rateLimitEnabled } from "./flag";
-import { overLimit, RATE_RULES, windowStart, type RateBucket } from "./rules";
+import { overLimit, RETAIN_MS, RATE_RULES, windowStart, type RateBucket } from "./rules";
 
 /**
  * Counts one hit by `userId` in `bucket` and returns the window's count so far. ONE statement: it
@@ -11,13 +11,20 @@ import { overLimit, RATE_RULES, windowStart, type RateBucket } from "./rules";
  * from earlier windows, so the table needs no sweeper (its rows are one per player, bucket and
  * minute, and only the current one survives the next hit). The delete is a CTE, so it runs whether
  * or not the upsert conflicts.
+ *
+ * It ALSO deletes every row, anyone's, older than `RETAIN_MS`. The write is deferred (`after()`), so one scheduled
+ * before an account's deletion can land after the purge and leave a row for an account that no longer exists;
+ * coordinating with the purge would mean a lock and a deletion marker for a counter. Instead the residue is
+ * bounded: the next hit by anyone removes it within the hour.
  */
 export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date()): Promise<number> {
   const rule = RATE_RULES[bucket];
   const start = windowStart(now, rule.windowMs);
   const res = await db.execute(sql`
     with swept as (
-      delete from rate_hits where user_id = ${userId} and bucket = ${bucket} and window_start < ${start.toISOString()}::timestamp
+      delete from rate_hits
+      where (user_id = ${userId} and bucket = ${bucket} and window_start < ${start.toISOString()}::timestamp)
+         or window_start < ${new Date(start.getTime() - RETAIN_MS).toISOString()}::timestamp
     )
     insert into rate_hits (user_id, bucket, window_start, hits)
     values (${userId}, ${bucket}, ${start.toISOString()}::timestamp, 1)
