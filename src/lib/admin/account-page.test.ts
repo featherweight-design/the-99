@@ -117,3 +117,14 @@ describe("loadAccountPage", () => {
     expect(await loadAccountPage("user_stranger")).toBeNull();
   });
 });
+
+describe("windowWhere", () => {
+  it("counts a player's own unfunded presses only, as readAllowance does", async () => {
+    const { PgDialect } = await import("drizzle-orm/pg-core");
+    const { windowWhere } = await import("./account-page");
+    const q = new PgDialect().sqlToQuery(windowWhere(new Date("2026-10-13T12:00:00Z"))!);
+    expect(q.sql).toContain('"model_calls"."origin" = $');
+    expect(q.params).toContain("player");
+    expect(q.sql).toContain('"model_calls"."credit_grant_id" is null');
+  });
+});

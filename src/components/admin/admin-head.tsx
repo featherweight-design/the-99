@@ -18,7 +18,7 @@ export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
   { key: "switches", href: "/admin/switches", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
   { key: "groups", href: "/admin/groups", title: adminCopy.tabs.groups, sub: adminCopy.groups.sub },
-  // No sub here: Accounts' counts the accounts Clerk lists, which the head (in the layout, on every
+  // No sub here: the Accounts sub counts the accounts Clerk lists, which the head (in the layout, on every
   // admin page) does not read. The list page draws it under the tab strip instead.
   { key: "accounts", href: "/admin/accounts", title: adminCopy.tabs.accounts, sub: null },
 ] as const;

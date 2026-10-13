@@ -46,6 +46,7 @@ function Row({ row }: { row: AccountRow }) {
             <span className={`${MONO_META} text-[color:var(--fg-muted)]`}>{row.id}</span>
           </div>
           <span data-testid="account-spend-phone" className="flex-none font-mono text-[13px] text-[color:var(--fg)] md:hidden">
+            <span className="sr-only">{copy.featureCols.spent} </span>
             {row.spend}
           </span>
         </div>
@@ -58,7 +59,10 @@ function Row({ row }: { row: AccountRow }) {
           <span className="sr-only">{copy.cols.credits} </span>
           {row.credits}
         </span>
-        <span className="hidden text-right font-mono text-[13px] text-[color:var(--fg)] md:inline">{row.spend}</span>
+        <span className="hidden text-right font-mono text-[13px] text-[color:var(--fg)] md:inline">
+          <span className="sr-only">{copy.featureCols.spent} </span>
+          {row.spend}
+        </span>
         <PendingReporter href={href} />
       </Link>
     </li>

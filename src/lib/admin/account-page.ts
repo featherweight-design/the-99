@@ -42,17 +42,22 @@ function monthBounds(now: Date) {
 const playerInMonth = (start: Date, end: Date) =>
   and(eq(modelCalls.origin, "player"), gte(modelCalls.createdAt, start), lt(modelCalls.createdAt, end));
 
-/** The free window's rows for every account at once: what `readAllowance` counts, the paid lots aside. */
+/** What the free window counts, as `readAllowance` does: a player's own presses, the paid lots aside. */
+export function windowWhere(now: Date) {
+  return and(
+    eq(modelCalls.origin, "player"),
+    gt(modelCalls.createdAt, new Date(now.getTime() - ALLOWANCE_WINDOW_MS)),
+    inArray(modelCalls.status, ["reserved", "spent"]),
+    isNull(modelCalls.creditGrantId),
+  );
+}
+
+/** The free window's rows for every account at once. */
 async function windowRows(now: Date): Promise<(LedgerRow & { userId: string })[]> {
   const rows = await db
     .select({ userId: modelCalls.userId, status: modelCalls.status, createdAt: modelCalls.createdAt })
     .from(modelCalls)
-    .where(and(
-      eq(modelCalls.origin, "player"),
-      gt(modelCalls.createdAt, new Date(now.getTime() - ALLOWANCE_WINDOW_MS)),
-      inArray(modelCalls.status, ["reserved", "spent"]),
-      isNull(modelCalls.creditGrantId),
-    ));
+    .where(windowWhere(now));
   return rows as (LedgerRow & { userId: string })[];
 }
 
