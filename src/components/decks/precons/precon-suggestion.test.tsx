@@ -128,25 +128,23 @@ describe("LinkPreconRow", () => {
   });
 });
 
-// Hugh, 2026-10-13 (batch D): the one-suggestion notice read squished. The ✕ is pinned out of the
-// flow in the band's top-right corner, Link it sits flush right on its own line, and the text keeps
-// the width less the ✕'s column.
+// Hugh, 2026-10-13 (walk): the notice shares one row. The ✕ is pinned out of the flow in the band's top-right
+// corner, the text and Link it sit side by side with the row's own right padding keeping both clear of the ✕.
 describe("PreconSuggestion layout", () => {
-  it("pins the ✕ to the corner, right-aligns Link it, and leaves the text the ✕'s column", () => {
+  it("pins the ✕ to the corner and puts the text and Link it on one padded row", () => {
     render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
     const link = screen.getByRole("button", { name: "Link it" });
-    const column = link.parentElement!;
-    const text = column.firstElementChild as HTMLElement;
+    const row = link.parentElement!;
+    const text = row.firstElementChild as HTMLElement;
     const close = screen.getByRole("button", { name: /^Dismiss the suggestion/ });
     expect(close.className).toContain("absolute");
     expect(close.className).toContain("right-[4px]");
     expect(close.className).toContain("top-[2px]");
-    expect(link.className).toContain("self-end");
-    expect(column.className).toContain("flex-col");
-    expect(text.className).toContain("pr-[40px]");
-    expect(column.className).not.toContain("pr-[40px]");
-    expect(column.className).not.toContain("flex-row");
-    // The band the ✕ is positioned against.
+    expect(row.className).toContain("items-center");
+    expect(row.className).toContain("pr-[40px]");
+    expect(row.className).not.toContain("flex-col");
+    expect(text.className).toContain("flex-1");
+    expect(link.className).not.toContain("self-end");
     expect(close.parentElement!.className).toContain("relative");
   });
 });
