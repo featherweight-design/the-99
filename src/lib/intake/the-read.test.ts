@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PLAYER_TEXT_OPEN } from "../model/player-text";
 import { READ_REASON_MAX_CHARS, READ_SHORTLIST_SIZE, READ_TOP } from "./limits";
 import {
-  describeFilters, JUDGE_SYSTEM, judgeRequest, judgeSchema, parseReason, shortlistSchema, readFingerprint, reorder, shortlistRequest, shortlistSystem,
+  describeFilters, allowedKeys, JUDGE_SYSTEM, judgeRequest, judgeSchema, parseReason, shortlistSchema, readFingerprint, reorder, shortlistRequest, shortlistSystem,
   validJudgement, validShortlist, type ReadDeck, type ReadFilters,
 } from "./the-read";
 
@@ -162,6 +162,39 @@ describe("the judgement", () => {
   });
 });
 
+describe("allowedKeys", () => {
+  const card = (name: string, runBy: number[], required: boolean) => ({ name, oracleText: "", runBy, required });
+  it("is the pool when no card is required", () => {
+    expect([...allowedKeys(new Set([1, 2, 3]), [card("A", [1], false)])]).toEqual([1, 2, 3]);
+  });
+  it("keeps only the commanders whose decks run every required card, inside the pool", () => {
+    expect([...allowedKeys(new Set([1, 2, 3]), [card("A", [1, 2, 9], true)])]).toEqual([1, 2]);
+    expect([...allowedKeys(new Set([1, 2, 3]), [card("A", [1, 2], true), card("B", [2, 3], true)])]).toEqual([2]);
+  });
+  it("holds a reply to every commander whose decks run the card, not only the bounded list the prompt shows", () => {
+    const c = { name: "A", oracleText: "", runBy: [1], eligible: [1, 2, 3], required: true };
+    expect([...allowedKeys(new Set([1, 2, 3, 4]), [c])]).toEqual([1, 2, 3]);
+  });
+  it("is empty when no listed commander is in the pool", () => {
+    expect(allowedKeys(new Set([1]), [card("A", [7], true)]).size).toBe(0);
+  });
+});
+
+describe("a tagged card", () => {
+  const card = { name: "Rhystic Study", oracleText: "Whenever an opponent casts a spell...", runBy: [3, 4] };
+
+  it("reads as a required card in the request, and a card only named in the words does not", () => {
+    const req = (c: typeof card & { required?: boolean }) => shortlistRequest({ words: "draw", filters: none, cards: [c] });
+    expect(req({ ...card, required: true })).toContain("Required card: Rhystic Study");
+    expect(req(card)).toContain("Card named in the words: Rhystic Study");
+  });
+
+  it("is a requirement in both steps' rules", () => {
+    expect(shortlistSystem("")).toContain("required card");
+    expect(JUDGE_SYSTEM).toContain("required card");
+  });
+});
+
 describe("the fingerprint", () => {
   const base = { words: "A Landfall  deck", filters: none, listGeneration: "g", pool: ["x", "y"], collection: "c", decks };
 
@@ -182,6 +215,7 @@ describe("the fingerprint", () => {
       { collection: "c2" },
       { decks: [omnath] },
       { decks: [{ ...omnath, themes: ["Ramp"] }, teval] },
+      { tagged: ["card-1"] },
     ]) {
       expect(readFingerprint({ ...base, ...changed })).not.toBe(fp);
     }

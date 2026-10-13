@@ -56,9 +56,17 @@ export function serialize(text: string, picked: Picked): string {
 }
 
 /** Characters counted toward the 140 cap: a picked tag counts as its name, so its brackets and mark are free. */
+export function fieldText(text: string, picked: Picked): string {
+  return text.replace(WHOLE_TAG, (whole, mark: string, name: string) => (mark && picked.has(name) ? name : `[[${name}]]`));
+}
+/** How many picked tags the field's text holds. */
+export function taggedCount(text: string, picked: Picked): number {
+  let n = 0;
+  for (const m of text.matchAll(WHOLE_TAG)) if (m[1] && picked.has(m[2])) n += 1;
+  return n;
+}
 export function fieldCount(text: string, picked: Picked): number {
-  const shown = text.replace(WHOLE_TAG, (whole, mark: string, name: string) => (mark && picked.has(name) ? name : `[[${name}]]`));
-  return [...shown].length;
+  return [...fieldText(text, picked)].length;
 }
 
 /** A stored body as the field shows it, with the map of its tags, for edit. */

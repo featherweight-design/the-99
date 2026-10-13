@@ -55,6 +55,9 @@ export const deckNotesCopy = {
     anyCard: "Any card",
     noneInDeck: "Nothing in this deck by that name",
     empty: "Type a card name. This deck’s cards come first.",
+    /** The same prompt where there is no deck to put first (a box outside a deck). */
+    emptyAny: "Type a card name.",
+    noCard: "No card by that name.",
     searching: "Searching…",
     refused: "Couldn’t search just now.",
     notInDeck: "not in this deck",

@@ -63,6 +63,47 @@ export function withCurrentNames(body: string, names: ReadonlyMap<string, string
     .join("");
 }
 
+/** The body as plain words: each tag drawn as its stored name. What a box that is not a note shows and sends. */
+export function plainText(body: string): string {
+  return parseBody(body).map((s) => (s.kind === "text" ? s.text : s.name)).join("");
+}
+
+/**
+ * The body cut to `max` RENDERED characters (a tag counts as its name), never through the middle of a tag: a
+ * tag that would cross the cap is dropped whole, with everything after it. Code points, as `renderedLength`.
+ */
+/** How many picked tags a body holds. */
+export function tagCount(body: string): number {
+  return parseBody(body).filter((s) => s.kind === "tag").length;
+}
+export function capBody(body: string, max: number, opts: { measure?: (text: string) => number; maxTags?: number } = {}): string {
+  const measure = opts.measure ?? ((text: string) => [...text].length);
+  let used = 0;
+  let tags = 0;
+  let out = "";
+  for (const s of parseBody(body)) {
+    if (s.kind === "tag") {
+      const n = measure(s.name);
+      if (used + n > max) return out;
+      used += n;
+      tags += 1;
+      // A tag past the limit stays in the text as its plain name.
+      out += opts.maxTags !== undefined && tags > opts.maxTags ? s.name : formatTag(s.oracleId, s.name);
+    } else {
+      const room = max - used;
+      if (measure(s.text) > room) {
+        // Cut on a character boundary: whole characters while they fit.
+        let cut = "";
+        for (const ch of s.text) { if (measure(cut + ch) > room) break; cut += ch; }
+        return out + cut;
+      }
+      used += measure(s.text);
+      out += s.text;
+    }
+  }
+  return out;
+}
+
 export type BodyCheck = { ok: true; body: string } | { ok: false; reason: "empty" | "too-long" };
 
 /** The shared shape rule: one line, not empty, within the rendered cap. Tag ids are checked by the caller. */

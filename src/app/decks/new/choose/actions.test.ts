@@ -14,6 +14,13 @@ vi.mock("../../../../lib/sets/printed-in-read", () => ({ loadCommanderPrintings:
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => flag.on }));
 
+const tags = vi.hoisted(() => ({ resolve: vi.fn() }));
+vi.mock("../../../../lib/cards/tagged-text", async (original) => {
+  const real = await original<typeof import("../../../../lib/cards/tagged-text")>();
+  tags.resolve.mockImplementation(real.resolveTaggedText);
+  return { ...real, resolveTaggedText: tags.resolve };
+});
+
 import { submitChoose } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
@@ -61,6 +68,45 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     expect(to).toContain("w=scary+horrors");
   });
 
+  it("reads a tagged card by its name, hands the read the card as tagged, and keeps the stored tag in the address", async () => {
+    const finish = vi.fn();
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish });
+    tags.resolve.mockResolvedValueOnce({
+      text: "a deck with Rhystic Study", body: "a deck with [[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]",
+      tagged: [{ oracleId: "c0ffee00-0000-4000-8000-000000000009", name: "Rhystic Study" }],
+    });
+    const to = await landed(`?w=${encodeURIComponent("a deck with [[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]")}`);
+    expect(stub.begin.mock.calls[0][1]).toMatchObject({ words: "a deck with Rhystic Study", tagged: [{ name: "Rhystic Study" }] });
+    // A tag here is a requirement, so a card banned in Commander must not resolve to one.
+    expect(tags.resolve).toHaveBeenCalledWith(expect.any(String), { commanderLegalOnly: true });
+    expect(decodeURIComponent(String(to).replace(/\+/g, " "))).toContain("[[c0ffee00-0000-4000-8000-000000000009|Rhystic Study]]");
+  });
+
+  it("takes a tagged body whose raw length is over the cap but whose drawn text is not", async () => {
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|Rhystic Study]]`;
+    // 740 + 3 x (space + 13-letter name) = 782 drawn; the three ids take it to 905 raw, over 800.
+    const w = `${"x".repeat(740)} ${tag(1)} ${tag(2)} ${tag(3)}`;
+    expect(w.length).toBeGreaterThan(800);
+    tags.resolve.mockResolvedValueOnce({ text: "a deck", body: w, tagged: [] });
+    await landed(`?w=${encodeURIComponent(w)}`);
+    expect(stub.begin).toHaveBeenCalled();
+  });
+
+  it("refuses words that grow past the cap once the catalog's name replaces the tag's", async () => {
+    // 799 drawn characters pass the pre-check; the catalog's own name then makes it 812.
+    tags.resolve.mockResolvedValueOnce({ text: `${"x".repeat(799)} Rhystic Study`, body: "x", tagged: [] });
+    expect(await submitChoose(`?w=${encodeURIComponent(`${"x".repeat(796)} [[c0ffee00-0000-4000-8000-000000000001|A]]`)}`)).toEqual({ kind: "refused" });
+    expect(stub.begin).not.toHaveBeenCalled();
+  });
+
+  it("refuses a fourth tag, and drawn text over the cap even when the body is short", async () => {
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|A]]`;
+    expect(await submitChoose(`?w=${encodeURIComponent(`${tag(1)} ${tag(2)} ${tag(3)} ${tag(4)}`)}`)).toEqual({ kind: "refused" });
+    expect(await submitChoose(`?w=${encodeURIComponent(`${"x".repeat(790)} [[c0ffee00-0000-4000-8000-000000000001|Rhystic Study]]`)}`)).toEqual({ kind: "refused" });
+    expect(stub.begin).not.toHaveBeenCalled();
+  });
+
   it("marks a read started from the form, and leaves a retry from the results unmarked (entry path)", async () => {
     stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
     expect(await landed("?w=scary")).toContain("rf=1");
@@ -92,10 +138,14 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
 
   it("refuses words over the cap rather than trimming them", async () => {
     expect(await submitChoose(`?w=${"x".repeat(801)}`)).toEqual({ kind: "refused" });
-    // Leading space does not buy room, and an emoji counts as the box counts it (two units).
+    // Leading space does not buy room, and an emoji counts as the prompt boundary counts it (one character).
     expect(await submitChoose(`?w=${encodeURIComponent(` ${"x".repeat(800)}`)}`)).toEqual({ kind: "refused" });
-    expect(await submitChoose(`?w=${encodeURIComponent("😀".repeat(401))}`)).toEqual({ kind: "refused" });
+    expect(await submitChoose(`?w=${encodeURIComponent("😀".repeat(801))}`)).toEqual({ kind: "refused" });
     expect(stub.begin).not.toHaveBeenCalled();
+    // 800 emoji are 1,600 units and within the cap: the raw bound allows two units a character.
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    await landed(`?w=${encodeURIComponent("😀".repeat(800))}`);
+    expect(stub.begin).toHaveBeenCalled();
   });
 
   it("never carries a card from the address into the read (F1)", async () => {

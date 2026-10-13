@@ -18,6 +18,19 @@ export const INTAKE_MAX_TOKENS = 3_000;
  */
 export const READ_WORDS_MAX_CHARS = 800;
 
+/** The cards the player may tag in the words: the read takes three named cards, so a fourth tag buys nothing. */
+export const READ_TAGS_MAX = 3;
+
+/**
+ * The most RAW UTF-16 units of the words the address or a submit may carry: the cap above on what is drawn
+ * (each drawn character may be two units, an emoji), plus the ids of the cards tagged in it
+ * (`[[<uuid>|Name]]` is 41 units longer than its name). The cap itself is on rendered text.
+ */
+export const READ_WORDS_URL_MAX = READ_WORDS_MAX_CHARS * 2 + READ_TAGS_MAX * 41;
+
+/** The words' length as the prompt boundary (`playerText`) counts it: code points, not UTF-16 units. */
+export const wordsLength = (text: string): number => [...text].length;
+
 /** A retry needs this much of the deadline left to finish one whole answer; less, and it fails. */
 export const INTAKE_RETRY_FLOOR_MS = 40_000;
 

@@ -2,7 +2,9 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
-import { READ_WORDS_MAX_CHARS } from "../../../../lib/intake/limits";
+import { plainText, tagCount } from "../../../../lib/decks/notes-body";
+import { resolveTaggedText } from "../../../../lib/cards/tagged-text";
+import { READ_TAGS_MAX, READ_WORDS_MAX_CHARS, READ_WORDS_URL_MAX, wordsLength } from "../../../../lib/intake/limits";
 import { isUuid } from "../../../../lib/uuid";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
@@ -36,18 +38,26 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   // bytes each run to 7,200 characters, and every theme and set comes on top.
   if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };
   const raw = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
-  // The parser cuts `w` to the cap, so it is checked first, on the raw value and in the parser's own
-  // unit (UTF-16, as the box's `maxLength` counts): anything the parser would cut is refused.
-  if ((raw.get("w") ?? "").length > READ_WORDS_MAX_CHARS) return { kind: "refused" };
-  const p = parseLiveParams(raw);
-  const words = p.words.trim();
+  // The parser cuts `w` to the cap, so it is checked first, in the parser's own unit (code points, as the
+  // prompt boundary counts) on what the words DRAW (a card tag counts as its name), on the raw value's
+  // length for the ids a body carries, and on the tags: anything the parser would cut is refused.
+  const rawWords = raw.get("w") ?? "";
+  if (rawWords.length > READ_WORDS_URL_MAX || wordsLength(plainText(rawWords)) > READ_WORDS_MAX_CHARS || tagCount(rawWords) > READ_TAGS_MAX) return { kind: "refused" };
+  const parsed = parseLiveParams(raw);
+  // The cards tagged in the words, looked up: a tag is the catalog's name for its id, and an id the
+  // catalog does not hold is plain words. The address keeps the canonical body.
+  const resolved = await resolveTaggedText(parsed.words, { commanderLegalOnly: true });
+  const p = { ...parsed, words: resolved.body };
+  const words = resolved.text.trim();
+  // The catalog's name can be longer than the one the address carried: measure again, on the text the prompt gets.
+  if (wordsLength(resolved.text) > READ_WORDS_MAX_CHARS) return { kind: "refused" };
   if (!words) redirect(resultsTarget(p, null));
   // Themes and sets reach both prompts as filter lines, outside the player-text boundary. The parser
   // checks their shape only, so a value either picker would not offer refuses the read: the free
   // results, nothing reserved. A failed vocabulary read refuses it the same way.
   if (!(await filtersKnown(p.themes, p.sets))) redirect(resultsTarget(p, null));
   // The card is null (above), so the answers are exactly the read's filters.
-  const begun = await beginTheRead(userId, { readId: randomUUID(), words, filters: answersOf(p) });
+  const begun = await beginTheRead(userId, { readId: randomUUID(), words, tagged: resolved.tagged, filters: answersOf(p) });
   if (begun.kind === "started") {
     after(begun.finish);
     // From the form the free list was never seen, so the page holds its loading state until the read

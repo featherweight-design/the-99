@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkBody, formatTag, oneLine, parseBody, renderedLength, tagIds, withCurrentNames } from "./notes-body";
+import { capBody, checkBody, formatTag, oneLine, parseBody, renderedLength, tagCount, tagIds, withCurrentNames } from "./notes-body";
 
 const ID = "6d0a5f7e-1111-4222-8333-444455556666";
 const ID2 = "7e1b6a8f-aaaa-4bbb-8ccc-ddddeeeeffff";
@@ -61,5 +61,44 @@ describe("notes body", () => {
     it("refuses a whitespace-padded payload by its raw length, before it can be folded down", () => {
       expect(checkBody(`short${" ".repeat(5000)}note`)).toEqual({ ok: false, reason: "too-long" });
     });
+  });
+});
+
+describe("plainText and capBody (boxes that are not notes)", () => {
+  const ID = "0000aaaa-0000-4000-8000-000000000001";
+  const tag = `[[${ID}|Sol Ring]]`;
+
+  it("draws each tag as its name", async () => {
+    const { plainText } = await import("./notes-body");
+    expect(plainText(`with ${tag} and ${tag}!`)).toBe("with Sol Ring and Sol Ring!");
+  });
+
+  it("cuts to the rendered cap, never through a tag, and drops a tag that would cross it with all that follows", async () => {
+    const { capBody, renderedLength } = await import("./notes-body");
+    const body = `ab ${tag} cd`; // 3 + 8 + 3 = 14 rendered
+    expect(capBody(body, 100)).toBe(body);
+    expect(capBody(body, 11)).toBe(`ab ${tag}`);
+    expect(renderedLength(capBody(body, 10))).toBe(3);
+    expect(capBody(body, 10)).toBe("ab ");
+    expect(capBody("abcdef", 4)).toBe("abcd");
+  });
+});
+
+describe("capBody with a UTF-16 measure and a tag limit", () => {
+  const id = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
+  const tag = (n: number, name: string) => `[[${id(n)}|${name}]]`;
+
+  it("counts an astral character as one character by default (as the prompt boundary does), and as two units under a UTF-16 measure", () => {
+    expect(capBody("😀😀😀", 2)).toBe("😀😀");
+    expect(capBody("😀😀😀", 2, { measure: (t) => t.length })).toBe("😀");
+  });
+
+  it("keeps the tags up to the limit and writes a later tag as its plain name", () => {
+    const body = `${tag(1, "A")} ${tag(2, "B")} ${tag(3, "C")}`;
+    expect(capBody(body, 100, { maxTags: 2 })).toBe(`${tag(1, "A")} ${tag(2, "B")} C`);
+  });
+
+  it("counts the tags a body holds", () => {
+    expect(tagCount(`x ${tag(1, "A")} y ${tag(2, "B")} [[Plain]]`)).toBe(2);
   });
 });
