@@ -45,10 +45,10 @@ function reads(name: string): number {
 }
 
 describe("the deck page hands DeckPageSwitches the how-it-works flag", () => {
-  it("wraps the shell once, with howItWorks={howItWorksEnabled()}", () => {
+  it("wraps the shell once, with howItWorks={howItWorksEnabled(env)}", () => {
     const els = switchElements();
     expect(els).toHaveLength(1);
-    expect(els[0].attrs.howItWorks).toBe("howItWorksEnabled()");
+    expect(els[0].attrs.howItWorks).toBe("howItWorksEnabled(env)");
     expect(els[0].children).toBe("{shell}");
   });
 

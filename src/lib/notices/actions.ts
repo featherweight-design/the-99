@@ -27,14 +27,14 @@ export async function peekNotices(deckId: string): Promise<DeckNotices | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!noticesEnabled(env) || !isUuid(deckId)) return null;
-  return loadDeckNotices(deckId, userId);
+  return loadDeckNotices(deckId, userId, env);
 }
 
 export async function openNotices(deckId: string): Promise<DeckNotices | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!noticesEnabled(env) || !isUuid(deckId)) return null;
-  const notices = await loadDeckNotices(deckId, userId);
+  const notices = await loadDeckNotices(deckId, userId, env);
   if (!notices) return null;
   const legalMarked = await markNoticesRead(deckId, userId, notices.readMarks);
   // Deferred, as every revalidating action here is: in the action's own run it would re-render the

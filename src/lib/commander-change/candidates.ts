@@ -188,7 +188,12 @@ async function supportHits(
 /**
  * The candidates for one deck the player owns. Null when the deck is not theirs.
  */
-export async function loadChangeCandidates(deckId: string, userId: string): Promise<ChangeCandidates | null> {
+export async function loadChangeCandidates(
+  deckId: string,
+  userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<ChangeCandidates | null> {
   const [deck] = await db.select({
     commander: decks.commanderOracleId, partner: decks.partnerOracleId,
   }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
@@ -246,7 +251,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
       ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
       : Promise.resolve(new Map<string, Availability>()),
     // The matched cards are the deck's own, so they take the deck's printing the way the details do.
-    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])]),
+    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])], env),
   ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0

@@ -67,7 +67,7 @@ export default async function DecksPage({
   // The precons line's meta is catalog data, the same for every reader, so it is read beside the
   // cached payload rather than inside it; a failed read keeps the line and drops the meta.
   const preconSummary = preconsEnabled(env) ? readPreconSummary() : null;
-  const data = await cachePageForUser(userId, "decks", [], async () => {
+  const data = await cachePageForUser(userId, "decks", [], async (env) => {
     const [decks, shopping, folders] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move
       // under it. The server hands back this order and the client re-sorts from
@@ -88,10 +88,12 @@ export default async function DecksPage({
         includeBracket,
         // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
         includeNotice: includeBracket && noticesEnabled(env),
+        // The env the load is handed, which is the one the entry is keyed on.
+        env,
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.
-      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
       // The shelf line's own read, and it cannot be derived from the decks above:
       // a folder holding no decks has no deck row to be named by, and landing on
       // that empty shelf is the whole loop the create flow teaches.

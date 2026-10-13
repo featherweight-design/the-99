@@ -42,7 +42,7 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!manaBalanceEnabled(env) || !isUuid(deckId)) return null;
-  const deck = await getDeckDetail(deckId, userId);
+  const deck = await getDeckDetail(deckId, userId, undefined, env);
   if (!deck) return null;
   const balance = await loadManaBalance(deck);
   if (!balance) return null;
@@ -92,7 +92,7 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
   // `listKey` is the write's precondition and History's key, never sent to the client.
   // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
   // one the player owns, else the one an unowned card opens on (`chainArt`, as Suggested changes and Proposed cuts do).
-  const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId));
+  const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId), env);
   const shown = art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
   // History's row for this help, once per list and color: it reopens with exactly what was shown here.
   if (shown.inIdentity) {
@@ -116,7 +116,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   // Today's help for that color. A color the commander's identity no longer holds offers nothing,
   // so every stored trade is truly stale; a read that FAILED is not a re-check, so it returns null
   // and the door draws its own failure state rather than calling every trade gone.
-  const deck = await getDeckDetail(deckId, userId);
+  const deck = await getDeckDetail(deckId, userId, undefined, env);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
@@ -129,7 +129,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
  *  null on any refusal or failed read. */
 async function helpFor(deckId: string, color: string, userId: string, env: NodeJS.ProcessEnv): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
   if (!manaBalanceEnabled(env) || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
-  const deck = await getDeckDetail(deckId, userId);
+  const deck = await getDeckDetail(deckId, userId, undefined, env);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;

@@ -17,7 +17,7 @@ const stub = vi.hoisted(() => ({
 vi.mock("../../lib/switches/request", () => ({
   requestSwitchEnv: vi.fn(async (userId: string) => {
     stub.resolvedFor.push(userId);
-    return { ...process.env, ...stub.override };
+    return { ...stub.override };
   }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
@@ -72,40 +72,74 @@ async function isServerModule(src: string): Promise<boolean> {
 /**
  * Pages that still decide a switch from the environment alone, left for the admin plan's later PRs
  * (their readers take no env yet). The scan fails when one of these LOSES its last bare call, so the
- * list only ever shrinks by being edited.
+ * list only ever shrinks by being edited. Empty since 6b converted the deck page and its review route.
  */
-const PENDING = ["src/app/decks/[id]/page.tsx", "src/app/decks/[id]/changes/page.tsx"];
+const PENDING: string[] = [];
 
-describe("no Server Action, route handler, page or layout reads a switch from the environment alone", () => {
+/**
+ * Readers a converted page starts, which decide every switch from the env they are handed (Admin PR
+ * 6b: the deck page, its review route and their readers). A bare call in one reads the environment
+ * alone however carefully the page threads its own.
+ */
+const READERS = [
+  "src/lib/cache/page-cache.ts",
+  "src/lib/decks/read.ts",
+  "src/lib/decks/printings.ts",
+  "src/lib/decks/draft-state.ts",
+  "src/lib/decks/versions.ts",
+  "src/lib/decks/suggestions-read.ts",
+  "src/lib/decks/shopping-rollup.ts",
+  "src/lib/commander-change/mix-key.ts",
+  "src/lib/commander-change/draft-rows.ts",
+  "src/lib/commander-change/candidates.ts",
+  "src/lib/cards/chain-art.ts",
+  "src/lib/decks/notes-read.ts",
+  "src/lib/notices/read.ts",
+];
+
+/** A switch read from the environment alone: `fooEnabled()` or `roleBasisFromEnv()` with no env. */
+const BARE_CALL = /\b(\w+Enabled|roleBasisFromEnv)\(\s*\)/g;
+
+describe("no Server Action, route handler, page, layout or deck-page reader reads a switch from the environment alone", () => {
   it("finds the directive after a header comment", async () => {
     expect(await isServerModule(`/** A header. */\n// and a line\n"use server";\nexport async function a() {}`)).toBe(true);
     expect(await isServerModule(`import x from "y";\n"use server";`)).toBe(false);
   });
 
-  it("names no bare `fooEnabled()` call in a \"use server\" module, a route handler, a page, a layout, the page cache or a module directly under lib/lineup", async () => {
-    const { readFileSync, readdirSync, statSync } = await import("node:fs");
+  it("finds a bare call (the scan's own failure path)", () => {
+    const code = "const a = deckPrintingsEnabled();\nconst b = roleBasisFromEnv( );\nconst c = tuningEnabled(env);";
+    expect([...code.matchAll(BARE_CALL)].map((m) => m[1])).toEqual(["deckPrintingsEnabled", "roleBasisFromEnv"]);
+  });
+
+  it("names no bare call in a \"use server\" module, a route handler, a page, a layout, a listed reader or a module directly under lib/lineup", async () => {
+    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs");
     const { join } = await import("node:path");
+    // A listed reader that moved would drop out of the scan silently.
+    expect(READERS.filter((path) => !existsSync(path))).toEqual([]);
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
       return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
     });
     let actions = 0;
     let pages = 0;
+    let readers = 0;
     const found = (await Promise.all(walk("src").map(async (path) => {
       const src = readFileSync(path, "utf8");
       const isAction = await isServerModule(src);
       const isRoute = /\/route\.ts$/.test(path);
       const isPage = /\/(page|layout)\.tsx$/.test(path);
-      const isReader = path === "src/lib/cache/page-cache.ts" || path.startsWith("src/lib/lineup/");
+      const isReader = READERS.includes(path) || path.startsWith("src/lib/lineup/");
       if (isAction) actions++;
       if (isPage) pages++;
+      if (READERS.includes(path)) readers++;
       if (!isAction && !isRoute && !isPage && !isReader) return [];
       const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-      return [...code.matchAll(/\b(\w+Enabled)\(\s*\)/g)].map((m) => ({ path, call: `${path}: ${m[1]}()` }));
+      return [...code.matchAll(BARE_CALL)].map((m) => ({ path, call: `${path}: ${m[1]}()` }));
     }))).flat();
     // A scan that found no action module, or no page, would pass over anything.
     expect(actions).toBeGreaterThan(20);
     expect(pages).toBeGreaterThan(20);
+    expect(readers).toBe(READERS.length);
     expect(found.filter((f) => !PENDING.includes(f.path)).map((f) => f.call)).toEqual([]);
     // A pending page converted is a page to take off the list.
     expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);

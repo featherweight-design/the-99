@@ -406,6 +406,8 @@ export async function getDeckDetail(
    * Only `.get` is used on it, so the cards it holds beyond this deck's change nothing.
    */
   sharedAvailability?: Promise<Map<string, Availability> | null>,
+  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<DeckDetail | null> {
   // TWO WAVES, not seven reads in a row. Each read below used to wait for the one before it, and
   // on a `pull:staging` copy that chain was ~410-440ms for a 96-card deck, most of it round trips.
@@ -430,7 +432,7 @@ export async function getDeckDetail(
     // draws the deck as it read before Locked existed. Nothing is read with the switch off.
     Promise.all([
       proxiedOracleIds(deckId, userId),
-      neverCutEnabled() ? lockedOracleIds(deckId, userId) : Promise.resolve(new Set<string>()),
+      neverCutEnabled(env) ? lockedOracleIds(deckId, userId) : Promise.resolve(new Set<string>()),
     ]),
     reads.cards,
     reads.unresolved,
@@ -506,7 +508,7 @@ export async function getDeckDetail(
     deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
-    resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),
+    resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds], env),
     readNoteFlags([...cardRows.map((r) => r.oracleId), ...commanderIds]),
   ]);
 
@@ -532,8 +534,8 @@ export async function getDeckDetail(
       // name would have introduced it here.
       printedName: own?.printedName ?? null,
       // Read by the export's commander line alone, which is main's (no printing) with the switch off.
-      printedSetCode: deckPrintingsEnabled() ? (own?.setCode ?? null) : null,
-      printedCollectorNumber: deckPrintingsEnabled() ? (own?.collectorNumber ?? null) : null,
+      printedSetCode: deckPrintingsEnabled(env) ? (own?.setCode ?? null) : null,
+      printedCollectorNumber: deckPrintingsEnabled(env) ? (own?.collectorNumber ?? null) : null,
     };
   };
   const flags = bracketFlags ?? new Map<string, CardBracketFlags>();
@@ -589,7 +591,7 @@ export async function getDeckDetail(
       ownedOnly: deck.tuningOwnedOnly ?? false,
     },
     noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
-    printingPicks: deckPrintingsEnabled()
+    printingPicks: deckPrintingsEnabled(env)
       ? Object.fromEntries(
           [...resolved].filter(([, p]) => p.source === "deck")
             .map(([id, p]) => [id, { setCode: p.setCode, collectorNumber: p.collectorNumber }]),
@@ -1076,8 +1078,8 @@ export const pendingChangesSql = sql<number>`(
  * CHANGE_COMMANDER_ENABLED off this IS `pendingChangesSql`, the same object, so the deck list's
  * SQL is byte-identical to the one before commanders could move.
  */
-export function deckPendingSql(): SQL<number> {
-  if (!changeCommanderEnabled()) return pendingChangesSql;
+export function deckPendingSql(env: NodeJS.ProcessEnv = process.env): SQL<number> {
+  if (!changeCommanderEnabled(env)) return pendingChangesSql;
   return sql<number>`(${pendingChangesSql} + (case when ${deckCommanderMovedSql("decks")} then 1 else 0 end))::int`;
 }
 
@@ -1165,6 +1167,9 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
+    /** The reader's resolved switches (`requestSwitchEnv`), for the deck-state marks and the
+     *  commander art; the environment alone when omitted. */
+    env?: NodeJS.ProcessEnv;
     /**
      * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on
      * `includeBracket`: Home asks for the bracket on its resume rows and draws no notice, and this is
@@ -1258,7 +1263,7 @@ export async function listDecksWithStats(
       // `sql` either way, so the projection's SHAPE does not change with the
       // option: a conditional column would make the row type depend on a
       // runtime value, and every reader would have to narrow it.
-      pendingChanges: opts.includeDeckState ? deckPendingSql() : sql<number>`0::int`,
+      pendingChanges: opts.includeDeckState ? deckPendingSql(opts.env) : sql<number>`0::int`,
       versionNumber: opts.includeDeckState
         ? newestVersionNumberSql
         : sql<number | null>`null::int`,
@@ -1390,6 +1395,7 @@ export async function listDecksWithStats(
     ? await resolveCommanderPrintingsByDeck(
         userId,
         rows.map((r) => ({ deckId: r.id, commanderOracleId: r.commanderOracleId })),
+        opts.env,
       )
     : new Map<string, DeckPrinting>();
 

@@ -71,10 +71,12 @@ export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
 export async function loadShoppingRollup(
   userId: string,
   deckIds?: string[],
+  /** The reader's resolved switches (`requestSwitchEnv`), for the printing picks; the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<ShoppingRollup> {
   const rows = await loadDeckBuyRows(userId, deckIds);
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
-  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows));
+  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows, env));
 }
 
 /**
@@ -84,8 +86,12 @@ export async function loadShoppingRollup(
  * Shopping rows. Shared with the all-decks cart (`cart-read.ts`), which reads it apart from the
  * rows so a failed price read still leaves the cart its rows.
  */
-export async function readBuyRowPrices(userId: string, rows: DeckBuyRow[]): Promise<PriceRead> {
-  const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))]);
+export async function readBuyRowPrices(
+  userId: string,
+  rows: DeckBuyRow[],
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<PriceRead> {
+  const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))], env);
   return loadPrices([...new Set(rows.map((r) => r.oracleId))], picks);
 }
 

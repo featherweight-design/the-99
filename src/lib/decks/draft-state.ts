@@ -161,7 +161,7 @@ export const READ_SNAPSHOT = { isolationLevel: "repeatable read" } as const;
  * `CHANGE_COMMANDER_ENABLED` on. Off, nothing writes those columns after
  * creation, and the deck page pays for no fifth query.
  */
-async function readSnapshot(deckId: string, userId: string) {
+async function readSnapshot(deckId: string, userId: string, env: NodeJS.ProcessEnv) {
   return db.transaction(async (tx) => {
     // OWNER FIRST, in the same snapshot: a deck the reader does not own reads as a deck with no
     // version, and none of its rows are asked for. The deck page starts this read beside its own
@@ -178,7 +178,7 @@ async function readSnapshot(deckId: string, userId: string) {
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, deckId));
     let live: CommanderPair | null = null;
-    if (changeCommanderEnabled()) {
+    if (changeCommanderEnabled(env)) {
       [live = null] = await tx.select({
         commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
       }).from(decks).where(eq(decks.id, deckId));
@@ -260,8 +260,9 @@ async function readDraft(
   deckId: string,
   userId: string,
   detailed: boolean,
+  env: NodeJS.ProcessEnv,
 ): Promise<DraftRead> {
-  const { version, before, draft, live } = await readSnapshot(deckId, userId);
+  const { version, before, draft, live } = await readSnapshot(deckId, userId, env);
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [],
@@ -293,7 +294,7 @@ async function readDraft(
   // cost track, the basics set or the row facts.
   // The version's body goes with them: a half that arrives out of the 99 keeps that card's copy.
   const commanderRows = commander
-    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
+    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)), env)
     : null;
   const commanderNames = new Map((commanderRows?.rows ?? []).map((r) => [r.oracleId, r.name]));
   // A commander-only draft has changes and no card row: its state is the empty
@@ -356,7 +357,7 @@ async function readDraft(
   const prices = priceAsked.length > 0
     // Pick-aware (deck printings): a changed card the deck has picked a printing of is priced as its
     // own row on the deck page prices it, so the review screen and the deck never disagree.
-    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId]))
+    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId], env))
         .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) }))
         .catch(() => null)
     : null;
@@ -440,8 +441,9 @@ async function readDraft(
   };
 }
 
-export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
-  return (await readDraft(deckId, userId, false)).state;
+/** `env` is the reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+export async function loadDraftState(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<DraftState> {
+  return (await readDraft(deckId, userId, false, env)).state;
 }
 
 /** The committed list reduced to what the mix strip and the type distribution
@@ -556,8 +558,8 @@ function returnsFromCommand(state: DraftState, oracleId: string, added: boolean)
  * it. `quantity` on each row is the DELTA, which is what the row's figure means
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
-export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
-  const read = await readDraft(deckId, userId, true);
+export async function loadDraftRows(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<DraftRows> {
+  const read = await readDraft(deckId, userId, true, env);
   const { state } = read;
 
   const built: DraftRow[] = [];
@@ -623,7 +625,7 @@ export async function loadDraftRows(deckId: string, userId: string): Promise<Dra
   // The owned rows draw the copy the reader owns, art and printed name together. Fail-soft through
   // `resolveDeckOwnedPrintings`: a failed read keeps the oracle-level art and the oracle name. The
   // deck's own printing picks come first, so the review rows draw what the deck page does.
-  const ownedArt = await resolveDeckOwnedPrintings(userId, deckId, built.filter((r) => r.owned).map((r) => r.oracleId));
+  const ownedArt = await resolveDeckOwnedPrintings(userId, deckId, built.filter((r) => r.owned).map((r) => r.oracleId), env);
   const drawn = built.map((r) => {
     const own = ownedArt.get(r.oracleId);
     return own

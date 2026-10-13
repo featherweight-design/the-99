@@ -34,6 +34,9 @@ export async function readDeckNotes(
   deckId: string,
   userId: string,
   deck: { commanderOracleId: string; partnerOracleId: string | null },
+  /** The reader's resolved switches (`requestSwitchEnv`), for the tag art's deck printing picks; the
+   *  environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<DeckNotesView> {
   // Stamped before the first query, not after the last: a read that began before a write and finished after
   // it holds the old rows, and must not outrank the read the write's own action makes afterwards.
@@ -46,7 +49,7 @@ export async function readDeckNotes(
     : await Promise.all([
         db.select({ id: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, ids)),
         db.select({ id: deckCards.oracleId }).from(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids))),
-        chainArt(userId, deckId, ids),
+        chainArt(userId, deckId, ids, env),
       ]);
   const nameOf = new Map(names.map((n) => [n.id, n.name]));
   const catalogArt = new Map(names.map((n) => [n.id, n.imageUri]));

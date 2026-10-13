@@ -137,17 +137,20 @@ export async function commitVersion(
   note: string | null,
   tx?: Tx,
   snapshot?: CommitSnapshot,
+  /** The committer's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
-    ? commitVersionIn(tx, deckId, note, snapshot)
-    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot));
+    ? commitVersionIn(tx, deckId, note, snapshot, env)
+    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, env));
 }
 
 async function commitVersionIn(
   tx: Tx,
   deckId: string,
   note: string | null,
-  snapshot?: CommitSnapshot,
+  snapshot: CommitSnapshot | undefined,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
     .where(eq(decks.id, deckId))
@@ -234,7 +237,7 @@ async function commitVersionIn(
   // Collection's, then the catalog's, the chain every deck surface draws. Off, nothing is recorded,
   // and a null reads as today's resolver. Fail-soft: a failed read records nulls rather than
   // failing the commit, because the version's cards are the commit and the printing is a caption.
-  const shown = deckPrintingsEnabled()
+  const shown = deckPrintingsEnabled(env)
     ? (await resolveDeckPrintings(
         deck.userId,
         deckId,
@@ -570,6 +573,8 @@ export async function loadVersionDiff(
   deckId: string,
   /** A linked deck's v1 diffs against v0, which is read from the precon and is never a version. */
   origin: OriginPredecessor | null = null,
+  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<VersionDiffPayload> {
   if (previousVersionId === null && origin === null) return { in: [], out: [], newestAsOf: null };
 
@@ -627,9 +632,9 @@ export async function loadVersionDiff(
     // The throwing read, not `resolveOwnedPrintings`: a failed read there answers "owns
     // nothing", which these rows would draw as a "not owned" dot and a buy tag on cards the
     // reader holds. A failure here reaches `getVersionDiff`'s caller as an unavailable diff.
-    readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId)),
+    readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId), env),
     // Pick-aware, as the deck page prices its rows (deck printings).
-    readHeldPricePicks(userId, [deckId])
+    readHeldPricePicks(userId, [deckId], env)
       .then((picks) => loadPrices(pricedIds(all), picks))
       .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) })),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
@@ -660,7 +665,7 @@ export async function loadVersionDiff(
     const into = r.versionId === versionId ? recordedIn : recordedOut;
     into.set(r.oracleId, { oracleId: r.oracleId, setCode: r.setCode, collectorNumber: r.collectorNumber });
   }
-  const recordedArt = deckPrintingsEnabled() && (recordedIn.size > 0 || recordedOut.size > 0)
+  const recordedArt = deckPrintingsEnabled(env) && (recordedIn.size > 0 || recordedOut.size > 0)
     ? await readRecordedPrintingArt([...recordedIn.values(), ...recordedOut.values()]).catch(() => null)
     : null;
   const asRecorded = (recorded: Map<string, RecordedPrinting>) => (row: VersionDiffCard): VersionDiffCard => {

@@ -21,7 +21,8 @@ import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
-import { applyConsiderLabels, considerLabels } from "../../../lib/decks/consider-labels";
+import { applyConsiderLabels, considerLabels, DEFAULT_DEPS as CONSIDER_DEPS } from "../../../lib/decks/consider-labels";
+import { labelSurfacesEnabled } from "../../../lib/labels/read";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import { readStoredPermits } from "../../../lib/profile/stored";
 import {
@@ -82,6 +83,8 @@ import { ChangeCommanderProvider } from "../../../components/decks/change-comman
 import { readShoppingLimit } from "../../../lib/swaps/read";
 import { initialBuilderView, readBuilderView, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
+import { requestSwitchEnv } from "../../../lib/switches/request";
+import { switchBits } from "../../../lib/switches/resolve";
 
 // The two reads below are the builder's expensive half — measured against the
 // largest deck in the database, `loadDeckSuggestions` took 543ms and
@@ -131,11 +134,15 @@ export default async function DeckBuilderPage({
   // `versions/page.tsx` until that route was deleted.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
+  // The reader's switches, resolved ONCE for this render: every switch below decides from this env, and so
+  // does every reader it starts but one. `loadAvailability` still reads `changeCommanderEnabled()` and
+  // `neverCutEnabled()` from the environment alone, until admin adoption 6e threads env into it.
+  const env = await requestSwitchEnv(userId);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
   // Read up front, beside the other switches below, because it gates a Stage A read
   // (`printedInSetsRead`) that must not start at all when Tuning is off.
-  const tuned = tuningEnabled();
+  const tuned = tuningEnabled(env);
 
   // STAGE A: every read the next wave waits on starts NOW, beside the ownership guard rather than
   // after it. Each is owner-scoped in its own SQL — `getDeckDetail`, the draft's snapshot, the fill
@@ -160,17 +167,17 @@ export default async function DeckBuilderPage({
       return null;
     }),
   );
-  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId, availabilityRead)));
+  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId, availabilityRead, env)));
   // The Jobs card's labels start the moment the detail resolves, beside every other read, and are
   // awaited only where the card is drawn.
   // One label read serves the Jobs card and the Mana colors card's non-land sources.
-  const statsLabelsRead = deckStatsEnabled()
+  const statsLabelsRead = deckStatsEnabled(env)
     ? early(detailRead.then((d) => (d ? perf.timed("statsLabels", () => loadStatsLabels(d.cards)) : null)))
     : null;
   const statsJobsRead = statsLabelsRead ? early(Promise.all([detailRead, statsLabelsRead]).then(([d, labels]) => (d ? loadJobRows(d.cards, labels) : null))) : null;
   // The Colors card's land supply: what each land in the deck can add, read from the catalog's text
   // the moment the detail resolves, and awaited only where the card is drawn.
-  const statsLandsRead = deckStatsEnabled()
+  const statsLandsRead = deckStatsEnabled(env)
     ? early(detailRead.then((d) => (d
         ? perf.timed("statsLands", () => loadLandMana(d.cards, [...d.commander.colorIdentity, ...(d.partner?.colorIdentity ?? [])]))
         : null)))
@@ -182,21 +189,23 @@ export default async function DeckBuilderPage({
         : null)))
     : null;
   // The Average card's basis: the commander's (or pair's, or colors') average deck, through the basis chain.
-  const statsAverageRead = deckStatsEnabled()
+  const statsAverageRead = deckStatsEnabled(env)
     ? early(detailRead.then((d) => (d ? perf.timed("statsAverage", () => loadStatsAverage(d)) : null)))
     : null;
   // A 60-second cached read shared by both cached payloads below, resolved once rather than
   // per entry, and chained into the suggestions rather than awaited on its own.
   const indexGenRead = early(perf.timed("indexGeneration", () => indexGeneration()));
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
-    perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
-      loadDeckSuggestions(id, userId),
+    // The reader's switches are in the key: the payload's mix follows LABEL_ROLE_COUNTS_ENABLED, and
+    // an override flipping it must not be served the entry built under the other basis.
+    perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen, switchBits(env)], () =>
+      loadDeckSuggestions(id, userId, env),
     ))));
   // The move-card picker lists every other deck by name, as it always has.
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
   // route, and nothing cached holds a note). Behind its own switch: off reads nothing.
-  const notesRead = deckNotesEnabled()
-    ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null })) : null)))
+  const notesRead = deckNotesEnabled(env)
+    ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)))
     : null;
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
@@ -207,11 +216,11 @@ export default async function DeckBuilderPage({
   // Not swallowed either, and for the stronger version of the same reason: a failed read would
   // take the banner away, and a deck with pending changes and no banner offers no route to a
   // commit at all.
-  const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
+  const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId, env)));
   // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
   // unlinked deck joins no row. A failed read draws no v0, rather than failing the deck.
-  const originRead = preconsEnabled()
+  const originRead = preconsEnabled(env)
     ? early(perf.timed("preconOrigin", () => readDeckOrigin(userId, id)).catch((error) => {
       // not a fallback: v0 is drawn beside the history, never part of it.
       console.error("precons: the deck's v0 could not be read", error);
@@ -245,39 +254,39 @@ export default async function DeckBuilderPage({
   // The header's bracket chip, from the analysis already stored for this deck. It computes nothing
   // (see `readStoredPermits`), and a failed read draws no chip, which is what an unread deck draws
   // anyway.
-  const storedPermits = analysisTabEnabled()
+  const storedPermits = analysisTabEnabled(env)
     ? perf.timed("storedPermits", () => readStoredPermits(id, userId)).catch(() => undefined)
     : Promise.resolve(null);
   // The header's notice tag, read WITH the page so it paints with the header rather than arriving
   // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
   // after mount in that case.
-  const showNotices = analysisTabEnabled() && noticesEnabled();
+  const showNotices = analysisTabEnabled(env) && noticesEnabled(env);
   const initialNotices = showNotices
-    ? perf.timed("notices", () => loadDeckNotices(id, userId)).catch(() => null)
+    ? perf.timed("notices", () => loadDeckNotices(id, userId, env)).catch(() => null)
     : Promise.resolve(null);
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.
-  const swapTools = swapToolsEnabled();
+  const swapTools = swapToolsEnabled(env);
   // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
   // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
   // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
   // detail that resolved it; a deck that is not the reader's has no detail and reads absent.
   // The precon arrival strip's read, on the one navigation "Start a deck from this" made. Owner-
   // scoped in its own SQL, so it starts here with the rest and is awaited only where it is drawn.
-  const preconArrivalRead = preconsEnabled() && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
+  const preconArrivalRead = preconsEnabled(env) && arrivedFromPrecon(query[PRECON_ARRIVAL_PARAM])
     ? early(perf.timed("preconArrival", () => readPreconArrival(userId, id)))
     : null;
   // The precon link's doors (R3): an unlinked deck's suggestion and the Versions foot row's picker,
   // counted at read and never stored (lock 2). Owner-scoped in its own SQL. A failed read draws
   // neither door, as a linked deck does, rather than failing the deck.
-  const preconLinkRead = preconsEnabled()
+  const preconLinkRead = preconsEnabled(env)
     ? early(perf.timed("preconLink", () => readDeckPreconLink(userId, id)).catch((error) => {
       // not a fallback: an ornament drawn beside the page, never cached in it.
       console.error("precons: the deck's link could not be read", error);
       return null;
     }))
     : null;
-  const tokensRead = deckTokensEnabled()
+  const tokensRead = deckTokensEnabled(env)
     ? early(detailRead.then((d) => (d
       ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
         ...d.cards.map((c) => [c.oracleId, { imageUri: c.imageUri ?? null, name: printedNameOf(c) }] as const),
@@ -330,7 +339,7 @@ export default async function DeckBuilderPage({
             // catalog's one arbitrary printing per card. Read here, inside the synergy read's own slot in the wave, so it overlaps the
             // other five reads rather than following them; overlaid below at the draw, not in the cached
             // loader `/commanders/[slug]` shares.
-            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.map((c) => c.oracleId)));
+            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.map((c) => c.oracleId), env));
             return { ranked: read, ownedArt: art };
           })
         : { ranked: [], ownedArt: new Map<string, string>() },
@@ -436,7 +445,7 @@ export default async function DeckBuilderPage({
         ...suggestions.map((s) => s.oracleId),
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
-    ], await readHeldPricePicks(userId, [id]))).catch(() => null),
+    ], await readHeldPricePicks(userId, [id], env))).catch(() => null),
     // The page's one read, started with the request (above); only `.get` is used on it.
     ownedIds.length > 0 ? availabilityRead : null,
     // BOTH POOLS IN ONE READ, which is 8b widening the read 8a scoped to the candidates.
@@ -473,7 +482,7 @@ export default async function DeckBuilderPage({
     // null. Swallowed like its neighbours: a failed read filters nothing.
     perf.timed("considerLabels", () => considerLabels({
       suggestionIds: suggestions.map((s) => s.oracleId),
-    })).catch(() => null),
+    }, { ...CONSIDER_DEPS, enabled: () => labelSurfacesEnabled(env) })).catch(() => null),
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
@@ -533,7 +542,7 @@ export default async function DeckBuilderPage({
 
   // Read once per request rather than at each use, so the tab and the
   // arrival view cannot disagree about which layout this deployment is drawing.
-  const analysisEnabled = analysisTabEnabled();
+  const analysisEnabled = analysisTabEnabled(env);
   // Undefined when the read FAILED: no chip either way, but the tab must not take a failure for a
   // deck that was never analyzed (`holdsOpening`'s `analyzed`).
   const storedRead = await storedPermits;
@@ -561,7 +570,7 @@ export default async function DeckBuilderPage({
   // The switch is on but the read failed: the counts fall back to the classifier, so the targets must
   // too, or the strip grades classifier counts against `label_*` targets.
   let shellMix = mix;
-  if (labelRoleCountsEnabled()) {
+  if (labelRoleCountsEnabled(env)) {
     const base = await (statsJobsRead ?? early(perf.timed("labelRows", () => loadJobRows(detail.cards))));
     const extra: { oracleId: string; typeLine: string }[] = [];
     const wanted = [...(versionShape ?? []), ...pricedSuggestions, ...candidates];
@@ -630,7 +639,7 @@ export default async function DeckBuilderPage({
         : null}
       preconOrigin={originRead ? (await originRead)?.summary ?? null : null}
       // Deck printings: the strip's printing clauses, from the same one navigation.
-      arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled())}
+      arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM], deckPrintingsEnabled(env))}
       // Left in the URL for the same reason. Its strip is dismissible too, but
       // the dismissal is component state rather than storage: an update happens
       // many times, and persisting it would silence every one after the first.
@@ -640,10 +649,10 @@ export default async function DeckBuilderPage({
       // Nothing in the app produces such a URL now that `/decks/[id]/versions`
       // is retired; see the note in `lib/decks/builder-view.ts`.
       analysisEnabled={analysisEnabled}
-      statsEnabled={deckStatsEnabled()}
-      notesEnabled={deckNotesEnabled()}
+      statsEnabled={deckStatsEnabled(env)}
+      notesEnabled={deckNotesEnabled(env)}
       notesData={notesRead ? await notesRead : null}
-      statsData={deckStatsEnabled()
+      statsData={deckStatsEnabled(env)
         ? {
             jobs: statsJobsRead ? await statsJobsRead : null,
             lands: statsLandsRead ? await statsLandsRead : null,
@@ -659,16 +668,16 @@ export default async function DeckBuilderPage({
           }
         : null}
       tuningEnabled={tuned}
-      proposedCutsEnabled={proposedCutsEnabled()}
-      manaBalanceEnabled={manaBalanceEnabled()}
-      tuningHubEnabled={tuningHubEnabled()}
-      noticesEnabled={noticesEnabled()}
+      proposedCutsEnabled={proposedCutsEnabled(env)}
+      manaBalanceEnabled={manaBalanceEnabled(env)}
+      tuningHubEnabled={tuningHubEnabled(env)}
+      noticesEnabled={noticesEnabled(env)}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips
       // the parameter, so a refresh lands on the deck alone.
       openNoticesOnArrival={showNotices && readNoticesArrival(query[NOTICES_PARAM])}
       // Locked (PR 4a): off, no lock control, mark or key entry draws, and the page is main's.
-      neverCut={neverCutEnabled()}
+      neverCut={neverCutEnabled(env)}
       storedPermits={storedBracket}
       storedPermitsUnknown={storedRead === undefined}
       // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
@@ -683,16 +692,16 @@ export default async function DeckBuilderPage({
     />
   );
   // Switches read here and needed several layers down (the decisions sheet's method tags).
-  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled()}>{shell}</DeckPageSwitches>;
+  const switched = <DeckPageSwitches howItWorks={howItWorksEnabled(env)}>{shell}</DeckPageSwitches>;
   // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
   // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
-  const bought = shoppingMarkBoughtEnabled() ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
+  const bought = shoppingMarkBoughtEnabled(env) ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
   const tooled = swapTools ? (
     <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
   ) : bought;
   // Change commander's door and sheet read this context; without it the deck header draws exactly
   // the card-details trigger it drew before the feature (audit F6).
-  const page = changeCommanderEnabled() ? (
+  const page = changeCommanderEnabled(env) ? (
     <ChangeCommanderProvider
       // One provider per deck: a client navigation to another deck must not carry an open sheet
       // or its chosen candidate across, where it would be written against the new deck.

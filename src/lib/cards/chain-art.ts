@@ -26,6 +26,9 @@ export async function chainArt(
   userId: string,
   deckId: string | null,
   oracleIds: readonly (string | null | undefined)[],
+  /** The reader's resolved switches (`requestSwitchEnv`), for the deck's printing picks; the environment alone
+   *  when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<Map<string, string>> {
   const ids = [...new Set(oracleIds.filter((id): id is string => typeof id === "string"))];
   const art = new Map<string, string>();
@@ -35,7 +38,7 @@ export async function chainArt(
   let printings: Map<string, { imageUri: string | null }>;
   try {
     printings = deckId !== null
-      ? await readDeckOwnedPrintings(userId, deckId, ids)
+      ? await readDeckOwnedPrintings(userId, deckId, ids, env)
       : await readOwnedPrintings(userId, ids);
   } catch {
     recordSoftFailure();

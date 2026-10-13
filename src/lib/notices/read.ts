@@ -83,7 +83,13 @@ export async function liveOffendingIds(tx: Tx, deckId: string, commanderIds: rea
 }
 
 /** The deck notices for `deckId`, or null when it is not the reader's deck. */
-export async function loadDeckNotices(deckId: string, userId: string): Promise<DeckNotices | null> {
+export async function loadDeckNotices(
+  deckId: string,
+  userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the rows' deck printing picks; the environment
+   *  alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<DeckNotices | null> {
   // The deck, its reading and its cards from ONE snapshot: read apart, an edit or an analysis
   // committing between them pairs a reading's marks with a list it never described.
   const snapshot = await db.transaction(async (tx) => {
@@ -152,7 +158,7 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
     ...data.flatMap((d) => d.cards.map((c) => c.oracleId)),
     ...violations.notLegal,
     ...violations.outsideColors.map((v) => v.oracleId),
-  ]);
+  ], env);
   const artOf = (id: string) => art.get(id) ?? byId.get(id)?.imageUri ?? null;
   // The catalog's name first; the name the entry was written with when the catalog no longer has
   // the card (a removed combo keeps `detail.names` for exactly this).
