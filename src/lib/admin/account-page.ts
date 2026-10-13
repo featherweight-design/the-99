@@ -56,7 +56,8 @@ async function windowRows(now: Date): Promise<(LedgerRow & { userId: string })[]
   return rows as (LedgerRow & { userId: string })[];
 }
 
-export type AccountsListData = { rows: AccountRow[]; clerk: "ok" | "down"; month: string };
+/** `overridesRead` is false when `readSwitchSnapshot()` failed: groups and switches then read as the env alone, and the page says so. */
+export type AccountsListData = { rows: AccountRow[]; clerk: "ok" | "down"; overridesRead: boolean; month: string };
 
 /** `/admin/accounts` (A1 to A3). */
 export async function loadAccountsList(now: Date = new Date()): Promise<AccountsListData> {
@@ -83,6 +84,7 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
       spend: new Map(spendRows.map((r) => [r.userId, Number(r.micro)])),
     }),
     clerk,
+    overridesRead: snapshot !== null,
     month: utcMonthName(now),
   };
 }
@@ -101,6 +103,7 @@ export type AccountPage = {
   featureTotal: { presses: number; spent: string };
   month: string;
   clerk: "ok" | "down";
+  overridesRead: boolean;
 };
 
 /**
@@ -154,5 +157,6 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
     featureTotal: featureTotal(features),
     month,
     clerk,
+    overridesRead: snapshot !== null,
   };
 }

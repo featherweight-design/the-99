@@ -75,7 +75,14 @@ function GroupSection({ page }: { page: AccountPage }) {
     try {
       result = await moveAccountToGroup(page.id, target || null, confirmed);
     } catch {
-      result = { ok: false, error: "failed" };
+      // A thrown action is a lost reply, not a refusal: the move may have committed before the reply was
+      // lost, so this is never "nothing changed". Refresh to reconcile and say the outcome is unknown, as
+      // the group editor does.
+      setInFlight(false);
+      setConfirm(null);
+      setFailure(adminCopy.groups.errors.unknown);
+      router.refresh();
+      return;
     }
     setInFlight(false);
     if (result.ok) {
@@ -310,6 +317,7 @@ export function AccountPageView({ page }: { page: AccountPage }) {
   return (
     <div className="flex flex-col gap-[12px] px-[16px] pb-[28px] pt-[16px] md:px-[28px] md:pb-[40px] md:pt-[22px]">
       {page.clerk === "down" && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
+      {!page.overridesRead && <p className="m-0 text-pretty text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.switches.overridesUnread}</p>}
       <div data-testid="account-head" className="flex items-center gap-[14px]">
         <Avatar text={page.initials} size="lg" />
         <div className="flex min-w-0 flex-col gap-[3px]">

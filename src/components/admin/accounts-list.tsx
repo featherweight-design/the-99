@@ -33,7 +33,8 @@ export function Avatar({ text, size }: { text: string; size: "sm" | "lg" }) {
 
 function Row({ row }: { row: AccountRow }) {
   const href = `/admin/accounts/${encodeURIComponent(row.id)}`;
-  const phoneMeta = [row.group?.name, row.credits].filter(Boolean).join(" · ");
+  // The group as the desktop column draws it, `No group` included.
+  const phoneMeta = [row.group?.name ?? copy.noGroup, row.credits].filter(Boolean).join(" · ");
   return (
     <li data-account={row.id} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px] first:[border-top-width:0]">
       <Link href={href} className={`flex min-h-[64px] flex-col gap-[4px] px-[14px] py-[11px] text-inherit no-underline md:px-[16px] md:py-[10px] ${GRID}`}>
@@ -64,7 +65,20 @@ function Row({ row }: { row: AccountRow }) {
   );
 }
 
-export function AccountsList({ rows, clerk, month, env }: { rows: AccountRow[]; clerk: "ok" | "down"; month: string; env: AdminEnv }) {
+export function AccountsList({
+  rows,
+  clerk,
+  overridesRead,
+  month,
+  env,
+}: {
+  rows: AccountRow[];
+  clerk: "ok" | "down";
+  /** False when the overrides and memberships could not be read: every group then reads as none. */
+  overridesRead: boolean;
+  month: string;
+  env: AdminEnv;
+}) {
   const [query, setQuery] = useState("");
   const pinRef = useRef<HTMLDivElement>(null);
   usePublishedHeight(pinRef, PIN_HEIGHT_VAR);
@@ -95,6 +109,7 @@ export function AccountsList({ rows, clerk, month, env }: { rows: AccountRow[]; 
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">
         {clerk === "down" && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
+        {!overridesRead && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.switches.overridesUnread}</p>}
         <div className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div
             aria-hidden
