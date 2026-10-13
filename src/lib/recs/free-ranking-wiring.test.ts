@@ -68,7 +68,7 @@ vi.mock("../edhrec/support-read", () => ({ loadSupportLists: async () => new Map
 // The label read, answered here: `fellBack` is the switch ON with the label read down.
 const basisMock = vi.hoisted(() => ({ fellBack: false }));
 vi.mock("./pool-role-basis", () => ({
-  loadPoolRoleBasis: async () => ({ basis: "classifier", roleSets: undefined, fellBack: basisMock.fellBack }),
+  loadSharedPoolRoleBasis: async () => ({ basis: "classifier", roleSets: undefined, fellBack: basisMock.fellBack }),
 }));
 
 const { rankFree } = await import("./free-ranking");

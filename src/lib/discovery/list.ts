@@ -1,7 +1,7 @@
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
-import { loadPoolRoleBasis } from "../recs/pool-role-basis";
+import { loadSharedPoolRoleBasis } from "../recs/pool-role-basis";
 import { labelRoleCountsEnabled, roleBasisFromEnv } from "../decks/label-counts-flag";
 import type { RoleBasis } from "../profile/build";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
@@ -466,14 +466,14 @@ export async function loadDiscoveryWithIds(
   env: NodeJS.ProcessEnv,
 ): Promise<{ list: DiscoveryList; oracleIds: string[]; basis: RoleBasis; fellBack: boolean }> {
   // The label read starts the moment the collection resolves, beside the availability read and then
-  // the candidate query: it needs only the collection. `loadPoolRoleBasis` never rejects (a failed
+  // the candidate query: it needs only the collection. `loadSharedPoolRoleBasis` never rejects (a failed
   // read is the classifier on both sides), so it cannot be left dangling.
   const labelsOn = labelRoleCountsEnabled(env);
-  let basisStarted: ReturnType<typeof loadPoolRoleBasis> | undefined;
+  let basisStarted: ReturnType<typeof loadSharedPoolRoleBasis> | undefined;
   const { collection, availability, availOk } = await loadDiscoveryPool(userId, env, (c) => {
-    basisStarted = loadPoolRoleBasis(c, labelsOn);
+    basisStarted = loadSharedPoolRoleBasis(userId, c, labelsOn);
   });
-  const basisRead = basisStarted ?? loadPoolRoleBasis(collection, labelsOn);
+  const basisRead = basisStarted ?? loadSharedPoolRoleBasis(userId, collection, labelsOn);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await loadCandidates(

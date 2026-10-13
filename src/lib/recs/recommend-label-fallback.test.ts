@@ -25,7 +25,7 @@ vi.mock("../profile/role-targets", async () => {
       new Map(cs.map((c) => [c.oracleId, { of: "flat", targets: { ...ROLE_TARGETS } }])),
   };
 });
-vi.mock("./pool-role-basis", () => ({ loadPoolRoleBasis: async () => pool.basis }));
+vi.mock("./pool-role-basis", () => ({ loadSharedPoolRoleBasis: async () => pool.basis }));
 vi.mock("../decks/committed", async (orig) => ({ ...(await orig<object>()), readCommittedDecks: async () => [] }));
 
 const { recommendCommanders, scoreOneCommander } = await import("./recommend");
