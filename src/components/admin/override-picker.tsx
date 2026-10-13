@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { adminCopy } from "../../lib/copy/admin";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
+import { SearchIcon } from "../ui/search-icon";
 import type { ConfirmContext } from "./model-confirm";
 import { RowControls } from "./override-controls";
 
@@ -101,7 +102,7 @@ export function OverridePicker({
           {/* Accounts always search; groups once there are more than a lookup shows. */}
           {(kind === "user" || choices.length > MAX_RESULTS) && (
             <label className={`flex h-[44px] items-center gap-[10px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] md:h-[38px] ${AFFIX_FOCUS_INPUT}`}>
-              <span aria-hidden className="text-[14px] text-[color:var(--fg-faint)]">⌕</span>
+              <SearchIcon className="shrink-0 text-[color:var(--fg-faint)]" />
               <input
                 type="search"
                 autoFocus
