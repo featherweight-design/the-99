@@ -365,7 +365,7 @@ export async function confirmUpload(
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first
   // visit — the warm is an optimisation, never a correctness requirement.
-  after(() => warmCommanderScores(userId));
+  after(() => warmCommanderScores(userId, env));
 }
 
 /**

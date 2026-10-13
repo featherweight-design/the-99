@@ -32,7 +32,7 @@ export const SWITCHES = [
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "feature" },
-  { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "feature" },
+  { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
   { name: "LABEL_SURFACES_ENABLED", kind: "feature" },
   { name: "LINEUP_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },

@@ -2,6 +2,8 @@ import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
 import { loadPoolRoleBasis } from "../recs/pool-role-basis";
+import { labelRoleCountsEnabled, roleBasisFromEnv } from "../decks/label-counts-flag";
+import type { RoleBasis } from "../profile/build";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
@@ -381,10 +383,14 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
  */
 const PAYLOAD_VERSION = 9;
 
-/** The cache key a discovery payload is filed under: its sort, and the version
-    of the code that produced it. */
-export function discoveryKey(sort: string): string[] {
-  return ["discovery", sort, `v${PAYLOAD_VERSION}`];
+/** The cache key a discovery payload is filed under: its sort, the version of the code that
+    produced it, and the role basis it was counted by. The basis follows the reader's
+    `LABEL_ROLE_COUNTS_ENABLED`, which an app-wide override flips without a deploy, and nothing else
+    in this key moves when it does: without it an entry counted by one basis would be served under
+    the other for up to the hour ceiling (admin PR 6d-2). `env` is the reader's resolved switches,
+    the same env the load is handed. */
+export function discoveryKey(sort: string, env: NodeJS.ProcessEnv = process.env): string[] {
+  return ["discovery", sort, `v${PAYLOAD_VERSION}`, `basis:${roleBasisFromEnv(env)}`];
 }
 
 /**
@@ -434,27 +440,36 @@ export async function loadDiscoveryPool(
 export async function loadDiscovery(
   userId: string,
   opts: { sort: "fit" | "new" },
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<DiscoveryList> {
-  return (await loadDiscoveryWithIds(userId, opts)).list;
+  return (await loadDiscoveryWithIds(userId, opts, env)).list;
 }
 
 /**
  * `loadDiscovery`, plus each row's oracle id in row order. The ids stay on the server: a row
  * ships no oracle id (it was a sizable share of the payload), and what needs one here is
  * `Printed in ▾`'s index, which the page builds beside the list and aligns by position.
+ *
+ * Also the role `basis` the list was ACTUALLY counted by, and `fellBack` when that is the
+ * classifier only because the label read failed under a labels request (admin PR 6d-2): the page
+ * hands the view the basis its rows were counted by, and the cache refuses to file a fallback
+ * under the labels key.
  */
 export async function loadDiscoveryWithIds(
   userId: string,
   opts: { sort: "fit" | "new" },
-): Promise<{ list: DiscoveryList; oracleIds: string[] }> {
+  /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<{ list: DiscoveryList; oracleIds: string[]; basis: RoleBasis; fellBack: boolean }> {
   // The label read starts the moment the collection resolves, beside the availability read and then
   // the candidate query: it needs only the collection. `loadPoolRoleBasis` never rejects (a failed
   // read is the classifier on both sides), so it cannot be left dangling.
+  const labelsOn = labelRoleCountsEnabled(env);
   let basisStarted: ReturnType<typeof loadPoolRoleBasis> | undefined;
   const { collection, availability, availOk } = await loadDiscoveryPool(userId, (c) => {
-    basisStarted = loadPoolRoleBasis(c);
+    basisStarted = loadPoolRoleBasis(c, labelsOn);
   });
-  const basisRead = basisStarted ?? loadPoolRoleBasis(collection);
+  const basisRead = basisStarted ?? loadPoolRoleBasis(collection, labelsOn);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await loadCandidates(
@@ -467,16 +482,18 @@ export async function loadDiscoveryWithIds(
   // and its detail page print one role count. A label outage during this compute is the classifier
   // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
   // page until it is rebuilt. The prices and played tags do not wait on either read.
-  const [priceRead, playedTags, { roleSets, roleTargets }] = await Promise.all([
+  const [priceRead, playedTags, { basis, fellBack, roleSets, roleTargets }] = await Promise.all([
     readPrices(candidates.map((c) => c.oracleId)),
     loadPlayedTags(userId),
-    basisRead.then(async ({ basis, roleSets }) => ({
+    basisRead.then(async ({ basis, fellBack, roleSets }) => ({
+      basis,
+      fellBack,
       roleSets,
       roleTargets: await loadRoleTargetsForCommanders(candidates, basis),
     })),
   ]);
 
-  return assembleDiscoveryWithIds({
+  const { list, oracleIds } = assembleDiscoveryWithIds({
     availOk,
     roleTargets: new Map([...roleTargets].map(([id, t]) => [id, t.targets])),
     candidates,
@@ -492,4 +509,5 @@ export async function loadDiscoveryWithIds(
     // read of `decks` on every discovery request.
     sort: playedTags.length > 0 ? opts.sort : "fit",
   });
+  return { list, oracleIds, basis, fellBack };
 }

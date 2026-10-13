@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// action reads the environment alone, as it did before overrides. Through a stand-in object that
+// reads it, so a case can pin WHICH env the action handed on by identity, never by comparing the
+// environment itself.
+const RESOLVED = vi.hoisted(() => new Proxy({}, { get: (_t, k) => process.env[k as string] }) as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => RESOLVED) }));
 
 const ACTION = "44444444-4444-4444-4444-444444444444";
 const ORACLE = "11111111-1111-1111-1111-111111111111";
@@ -90,7 +93,7 @@ describe("addToCollection", () => {
     });
     expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION });
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
-    expect(stub.warm).toHaveBeenCalledWith("user_1");
+    expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
 
   it("asks the write where the copies went, and says, only with ADDED_COPY_ENABLED on", async () => {
@@ -143,7 +146,7 @@ describe("addToCollection", () => {
     expect(stub.warm).not.toHaveBeenCalled();
     for (const run of stub.deferred) await run();
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
-    expect(stub.warm).toHaveBeenCalledWith("user_1");
+    expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
 
   it("answers a retry of a committed add as the same success, and invalidates again", async () => {
@@ -173,7 +176,7 @@ describe("editCollection", () => {
       rows: [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil", quantity: 3, expected: 1, condition: "LP", scryfallId: PRINTING }],
     });
     expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, confirmShort: [deck] });
-    expect(stub.warm).toHaveBeenCalledWith("user_1");
+    expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
 
   it("edits a bare import's holding, which names no set and no printing, with a null id", async () => {

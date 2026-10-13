@@ -23,10 +23,15 @@ import { CART_DECKS_MAX } from "../../lib/decks/mark-bought";
  */
 
 async function signedInEditor(): Promise<string> {
+  return (await signedInEditorEnv()).userId;
+}
+
+/** The editor and the resolved switches the check decided from, for an action that warms scores. */
+async function signedInEditorEnv(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
-  return userId;
+  return { userId, env };
 }
 
 /** One page of history, newest first; `before` is the previous page's `nextBefore`. */
@@ -183,7 +188,7 @@ export async function revertCollectionEntry(
    */
   undoPlacement?: UndoPlacement,
 ): Promise<{ reverted: { id: string } } | RevertRefusal> {
-  const userId = await signedInEditor();
+  const { userId, env } = await signedInEditorEnv();
   if (!isUuid(entryId)) return { notFound: true };
   if (!isUuid(actionId)) throw new Error("bad action id");
   const ignore = { ...ignoredDecks(ignoreDeckId), ...placementOf(undoPlacement) };
@@ -198,7 +203,7 @@ export async function revertCollectionEntry(
     case "applied":
     case "alreadyApplied":
       invalidateCollectionReaders(userId);
-      after(() => warmCommanderScores(userId));
+      after(() => warmCommanderScores(userId, env));
       return { reverted: { id: result.entry.id } };
     case "notFound": return { notFound: true };
     case "alreadyReverted": return { alreadyReverted: true };

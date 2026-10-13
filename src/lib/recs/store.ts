@@ -50,7 +50,9 @@ export type ScoreRowWithCard = {
   artCropUri: string | null;
 };
 
-export function toScoreRow(userId: string, r: RankedCommander) {
+/** `env` is the reader's resolved switches: the writer version carries the role basis (`scoreWriterVersion`),
+ *  and the basis follows the reader's `LABEL_ROLE_COUNTS_ENABLED`, which takes an app-wide override. */
+export function toScoreRow(userId: string, r: RankedCommander, env: NodeJS.ProcessEnv = process.env) {
   return {
     userId,
     oracleId: r.oracleId,
@@ -68,7 +70,7 @@ export function toScoreRow(userId: string, r: RankedCommander) {
     roleCounts: r.roleCounts,
     // Named on every insert, which is what makes the column's default a sentinel
     // for rows an older deployment wrote. See `SCORE_WRITER_CURRENT`.
-    writerVersion: scoreWriterVersion(),
+    writerVersion: scoreWriterVersion(env),
     computedAt: new Date(),
   };
 }
@@ -261,10 +263,13 @@ export async function persistScores(
    * that have since moved is stored. Absent is "do not check".
    */
   labelCheck?: LabelCheck,
+  /** The env the scores were COMPUTED under (the reader's resolved switches), so the version stamped
+   *  names the basis they were counted by, not the environment's. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<void> {
   // A token taken over a failed read guards nothing, so there is nothing to compare against.
   if (indexGen === INDEX_UNREADABLE) return;
-  const rows = ranked.map((r) => toScoreRow(userId, r));
+  const rows = ranked.map((r) => toScoreRow(userId, r, env));
   const keep = rows.map((r) => r.oracleId);
   await db.transaction(async (tx) => {
     // Announce which writer this is, transaction-locally. The trigger added in
@@ -274,7 +279,7 @@ export async function persistScores(
     // compute that was already in flight at cutover. A writer that says nothing
     // is, by definition, one that predates the marker.
     await tx.execute(
-      sql`select set_config('app.writer_version', ${String(scoreWriterVersion())}, true)`,
+      sql`select set_config('app.writer_version', ${String(scoreWriterVersion(env))}, true)`,
     );
 
     // BOTH LOCKS COME BEFORE EITHER FINGERPRINT READ, and that ordering is the
@@ -359,6 +364,8 @@ export async function persistScores(
 
 export async function loadScores(
   userId: string,
+  /** The reader's resolved switches: a set is current only under the basis this reader counts by. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ items: CommanderListItem[]; degradedOracleIds: string[] }> {
   try {
     const rows = await db
@@ -407,7 +414,7 @@ export async function loadScores(
     // the set. One stale row condemns the set: `persistScores` writes a user's
     // rows in one transaction, so the rest is no more current than the row that
     // gives it away.
-    if (rows.some((r) => r.writerVersion !== scoreWriterVersion())) {
+    if (rows.some((r) => r.writerVersion !== scoreWriterVersion(env))) {
       return { items: [], degradedOracleIds: [] };
     }
 
@@ -455,14 +462,14 @@ export async function loadScores(
  * excludes what the player owns), and its detail page 404s. That is a separate
  * question, and not one to settle by handing out a rank no list agrees with.
  */
-export function rankableScoreRows(userId: string) {
+export function rankableScoreRows(userId: string, env: NodeJS.ProcessEnv = process.env) {
   return and(
     eq(commanderScores.userId, userId),
     sql`not exists (
       select 1 from ${commanderScores} stale
       where stale.user_id = ${userId}
         and (
-          stale.writer_version <> ${scoreWriterVersion()}
+          stale.writer_version <> ${scoreWriterVersion(env)}
           or stale.rank_score < ${0}
         )
     )`,
@@ -479,6 +486,8 @@ export function rankableScoreRows(userId: string) {
 export async function findScoredCommander(
   userId: string,
   slug: string,
+  /** The reader's resolved switches, as `loadScores` takes them: the rank window is the list's. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<{ oracleId: string; rank: number; anyDegraded: boolean } | null> {
   try {
     const ranked = db.$with("ranked").as(
@@ -506,7 +515,7 @@ export async function findScoredCommander(
         // (which excludes what the player owns). Its detail page 404s, exactly as
         // it did before — a separate question from this one, and not one to
         // settle by handing out a rank no list agrees with.
-        .where(rankableScoreRows(userId)),
+        .where(rankableScoreRows(userId, env)),
     );
     const [row] = await db
       .with(ranked)

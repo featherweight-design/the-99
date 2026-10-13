@@ -8,6 +8,8 @@ import type { RoleCard, RoleName } from "../../../lib/recs/score";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability } from "../../../lib/decks/availability";
 import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
+import { requestSwitchEnv } from "../../../lib/switches/request";
+import { envForPageBasis, parseRoleBasis } from "../../../lib/decks/label-counts-flag";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
     the role cards — the four panels read one payload, so there is one action,
@@ -32,13 +34,28 @@ export async function retryCoverageFigures(
    * silent all-owned panel behind a free URL.
    */
   avail: "all" | "free",
+  /**
+   * The role basis the open page's score was counted by (`CommanderDetailScore.roleBasis`). The
+   * retry's role cards replace the panel's beside counts the page already drew, so they must be
+   * counted the same way, whatever the switch reads now: re-resolving would hand back the other
+   * basis's cards after an app-wide flip (admin PR 6d-2). Parsed to the closed set, since an action's
+   * arguments are the client's to send; anything else is refused.
+   */
+  roleBasis: unknown,
 ): Promise<Record<RoleName, RoleCard[]> | null> {
   const userId = await requireUserId();
+  const basis = parseRoleBasis(roleBasis);
+  if (basis === null) return null;
+  // The reader's resolved switches with the role basis set to the page's. Null is a labels page that
+  // outlived the environment's kill switch: nothing comes back, the note stays and the page's own
+  // next read draws the classifier's figures, never this retry.
+  const env = envForPageBasis(await requestSwitchEnv(userId), basis);
+  if (env === null) return null;
 
   // The same resolver the page uses, so the retry reaches the commander the
   // page rendered. Resolving through the store alone would no-op on every
   // discovery page, which is exactly where a degraded EDHREC is retried.
-  const found = await resolveCommanderSlug(userId, slug);
+  const found = await resolveCommanderSlug(userId, slug, env);
   if (!found) return null;
 
   // The same pool the page scored with — and it is NOT free to ask for.
@@ -77,8 +94,11 @@ export async function retryCoverageFigures(
     pool = free;
   }
 
-  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool);
+  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool, env);
   if (!scored) return null;
+  // Counted by another basis than the page's: the label read failed just now. Its cards would sit
+  // beside the page's label counts, so nothing comes back, as for a still-degraded retry.
+  if (scored.roleBasis !== basis) return null;
 
   // Return only roleCards — the section owns the state update.
   //

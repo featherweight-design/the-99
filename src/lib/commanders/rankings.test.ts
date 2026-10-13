@@ -190,6 +190,20 @@ describe("loadCommanderRankings · the owned printing", () => {
     );
   });
 
+  // Admin PR 6d-2 (Copilot round 5): either ranking counted by the classifier only because the label
+  // read failed marks the payload, so the page serves it without filing it under the labels key.
+  it("marks the payload when either ranking fell back to the classifier", async () => {
+    expect((await loadCommanderRankings("user_1")).labelFallback).toBeUndefined();
+    vi.mocked(rankFree).mockResolvedValue({ ok: false, items: [], labelFallback: true } as never);
+    expect((await loadCommanderRankings("user_1")).labelFallback).toBe(true);
+    vi.mocked(rankFree).mockResolvedValue({ ok: false } as never);
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [item("a")], degraded: false, uniqueCardsRead: 10, candidateCount: 1, labelFallback: true,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    expect((await loadCommanderRankings("user_1")).labelFallback).toBe(true);
+  });
+
   it("enriches the rows it is about to draw", async () => {
     const { items } = await loadCommanderRankings("user_1");
 
@@ -214,8 +228,33 @@ describe("loadCommanderRankings · the owned printing", () => {
 
 describe("the list caches' payload versions", () => {
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey).toEqual(["commander-rankings", "v11"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9"]);
+    const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+    expect(commanderRankingsKey(off)).toEqual(["commander-rankings", "v11", "basis:classifier"]);
+    expect(discoveryKey("fit", off)).toEqual(["discovery", "fit", "v9", "basis:classifier"]);
+  });
+
+  // Admin PR 6d-2. Both payloads are counted by the reader's role basis, which an app-wide override
+  // of LABEL_ROLE_COUNTS_ENABLED flips without a deploy, and nothing else in either key moves when it
+  // does. So each key carries the basis: two bases never share an entry, and two envs that agree on
+  // the basis (whatever else they say) always do. The environment is the opposite of both, so a key
+  // read off `process.env` fails the first half.
+  it("files each payload under the reader's role basis, and nothing else of the env", () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
+    try {
+      const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+      const onToo = { LABEL_ROLE_COUNTS_ENABLED: "true", DECK_NOTES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+      const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+      expect(commanderRankingsKey(on)).not.toEqual(commanderRankingsKey(off));
+      expect(commanderRankingsKey(on)).toEqual(commanderRankingsKey(onToo));
+      expect(commanderRankingsKey(on)).toContain("basis:labels");
+      for (const sort of ["fit", "new"]) {
+        expect(discoveryKey(sort, on)).not.toEqual(discoveryKey(sort, off));
+        expect(discoveryKey(sort, on)).toEqual(discoveryKey(sort, onToo));
+        expect(discoveryKey(sort, on)).toContain("basis:labels");
+      }
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an

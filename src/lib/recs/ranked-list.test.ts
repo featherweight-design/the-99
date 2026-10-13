@@ -27,6 +27,14 @@ vi.mock("./recommend", async (importOriginal) => ({
   recommendCommanders,
 }));
 vi.mock("../home/summary", () => ({ getCollectionStats }));
+// React's `cache` outside a server render memoises nothing, so the per-request memo is modelled
+// here: ONE request per test, its zero-argument factory answered once until `beforeEach` starts the
+// next. Only the memo's own factory reaches this; nothing else in the module calls `cache`.
+const request = vi.hoisted(() => ({ value: undefined as unknown, made: false }));
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react")>()),
+  cache: (fn: () => unknown) => () => (request.made ? request.value : ((request.made = true), (request.value = fn()))),
+}));
 vi.mock("../decks/built", () => ({ loadBuiltCommanderIds }));
 
 const { getRankedList } = await import("./ranked-list");
@@ -42,6 +50,8 @@ function item(oracleId: string, score: number) {
 }
 
 beforeEach(() => {
+  request.made = false;
+  request.value = undefined;
   loadScores.mockReset();
   recommendCommanders.mockReset();
   loadBuiltCommanderIds.mockReset().mockResolvedValue(new Set<string>());
@@ -51,6 +61,47 @@ beforeEach(() => {
 
 
 describe("getRankedList", () => {
+  // Admin PR 6d-2 (Copilot round 1): one request's memo is keyed on the user AND the role basis.
+  // Two callers asking for the same basis share one load, whatever env OBJECT each holds (every
+  // `requestSwitchEnv` builds a new one); two bases in one request are two lists, never one served
+  // as the other.
+  it("shares one load per basis within a request, and keeps the two bases apart", async () => {
+    loadScores.mockResolvedValue({ items: [item("a", 90)], degradedOracleIds: [] });
+    const labels = () => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv;
+    const classifier = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+
+    const first = getRankedList("user_1", labels());
+    const again = getRankedList("user_1", labels());
+    const other = getRankedList("user_1", classifier);
+
+    expect(again).toBe(first);
+    expect(other).not.toBe(first);
+    await Promise.all([first, again, other]);
+    expect(loadScores).toHaveBeenCalledTimes(2);
+    expect(loadScores.mock.calls.map((c) => (c as unknown[])[1] as NodeJS.ProcessEnv).map((e) => e.LABEL_ROLE_COUNTS_ENABLED))
+      .toEqual(["true", "false"]);
+  });
+
+  // Admin PR 6d-2: the stored set is read, the list computed and the set stored under the reader's
+  // resolved switches. The environment has the label basis off; the env handed in has it on, and it
+  // must reach all three, or a set counted by label is stored under the classifier's version.
+  it("reads, computes and stores under the env it is handed, not the environment", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
+    try {
+      const env = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+      loadScores.mockResolvedValue({ items: [], degradedOracleIds: [] });
+      recommendCommanders.mockResolvedValue({ results: [item("a", 90)], degraded: false, uniqueCardsRead: 10, candidateCount: 1 });
+
+      await getRankedList("user_1", env);
+
+      expect((loadScores.mock.calls[0] as unknown[])[1]).toBe(env);
+      expect((recommendCommanders.mock.calls[0] as unknown[])[1]).toBe(env);
+      expect((persistScores.mock.calls[0] as unknown[])[5]).toBe(env);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("drops commanders that already helm a deck, on the cached path", async () => {
     loadScores.mockResolvedValue({
       items: [item("kept", 90), item("built", 95)],
@@ -121,6 +172,8 @@ describe("getRankedList", () => {
 
     expect(list.items).toHaveLength(1);
     expect(persistScores).not.toHaveBeenCalled();
+    // And says so, so a cache filed under the labels basis can refuse it (admin PR 6d-2).
+    expect(list.labelFallback).toBe(true);
   });
 
   // Both fingerprints have to REACH the write, and neither is visible in its

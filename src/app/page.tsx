@@ -154,12 +154,12 @@ export default async function HomePage() {
 
     const [lastUpdated, ranked, shopping, unplayed] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
-      perf.timed("rankedList", () => getRankedList(userId)),
+      perf.timed("rankedList", () => getRankedList(userId, env)),
       perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
       // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
       // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
       // failure, which walks the plain shuffle.
-      perf.timed("unplayedCounts", () => loadUnplayedCounts(userId)),
+      perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
     ]);
 
     // The slice FIRST, then the printings — the two shown rather than every commander the

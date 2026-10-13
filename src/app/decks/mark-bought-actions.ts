@@ -111,7 +111,7 @@ export async function markBought(
     case "applied":
     case "alreadyApplied": {
       invalidateCollectionReaders(userId);
-      after(() => warmCommanderScores(userId));
+      after(() => warmCommanderScores(userId, env));
       const snaps = result.status === "applied" ? result.receipt : undefined;
       const facts = snaps ? receiptFacts(snaps.before, snaps.after, snaps.afterFromDecks[deckId] ?? null, deckId) : null;
       return {
@@ -254,7 +254,7 @@ export async function markBoughtForDecks(
     case "applied":
     case "alreadyApplied": {
       invalidateCollectionReaders(userId);
-      after(() => warmCommanderScores(userId));
+      after(() => warmCommanderScores(userId, env));
       const snaps = result.status === "applied" ? result.receipt : undefined;
       // What the press did with the pick, as the entry recorded it: the same answer on a retry.
       const placed = pick ? result.entry.rows.find((r) => r.oracleId === oracleId && r.placed)?.placed : undefined;

@@ -3,6 +3,7 @@
 // Composes CoverageChip, CoverageRow, CoverageDisclosure from Task 6.
 // One section owns the heading, sub-caption, note, retry, and all four role panels.
 
+import type { RoleBasis } from "../../lib/profile/build";
 import { useState, useTransition, useId, type JSX } from "react";
 import { useDiscardedScroll } from "../ui/scroll-reset";
 import { useRouter } from "next/navigation";
@@ -430,11 +431,18 @@ export type CoverageSectionProps = {
    * all-owned panel while the URL still said free.
    */
   avail: "all" | "free";
+  /**
+   * The role basis the page's score was counted by (`CommanderDetailScore.roleBasis`), handed to the
+   * retry so its role cards are counted the way the counts beside them were, whatever the switch
+   * reads by the time the reader presses (admin PR 6d-2).
+   */
+  roleBasis: RoleBasis;
   /** Injected by the page — server action that re-resolves EDHREC.
       Passed explicitly so tests can mock it without a server-action import. */
   retryCoverageFigures: (
     slug: string,
     avail: "all" | "free",
+    roleBasis: RoleBasis,
   ) => Promise<Record<RoleName, RoleCard[]> | null>;
 };
 
@@ -447,6 +455,7 @@ export function CoverageSection({
   synergyState,
   markerElsewhere,
   avail,
+  roleBasis,
   retryCoverageFigures,
 }: CoverageSectionProps): JSX.Element {
   const router = useRouter();
@@ -512,7 +521,7 @@ export function CoverageSection({
   function handleRetry() {
     startRetry(async () => {
       try {
-        const result = await retryCoverageFigures(slug, avail);
+        const result = await retryCoverageFigures(slug, avail, roleBasis);
         if (result !== null) {
           setRoleCards(result);
           setHasRetryData(true);

@@ -63,11 +63,17 @@ function tagFor(userId: string): string {
  * (3.1 MB plain, 1.1 MB encoded) and `/collection` caches a browse list with no
  * printings, oracle text or back art (2.4 MB before, 1.0 MB after). Anything added to one
  * of these payloads spends headroom that is measured in hundreds of KB, not MB.
+ *
+ * `opts.store`, when given, is asked of every value the loader returns: false SERVES it and never
+ * files it. For a payload the key describes wrongly, such as one counted by the classifier because
+ * the label read failed while the key names the labels basis (admin PR 6d-2): stored, it would be
+ * served as the labels' until the ceiling. The degraded-ranking rule of `cachePageForUser`.
  */
 export async function cacheForUser<T>(
   userId: string,
   key: string[],
   load: () => Promise<T>,
+  opts: { store?: (value: T) => boolean } = {},
 ): Promise<T> {
   // THE CATALOG IS AN INPUT TO EVERY ONE OF THESE PAYLOADS, and the tag cannot express it:
   // the tag is per reader, and the weekly refresh has no list of readers to drop. In the key
@@ -76,10 +82,29 @@ export async function cacheForUser<T>(
   // THE DEPLOYMENT TOO, so a build that changes a payload's shape never serves the last
   // build's entries. That used to be a version each caller had to remember to bump.
   const catalog = await catalogGeneration();
-  return unstable_cache(load, ["user-lists", userId, DEPLOYMENT_ID, catalog, ...key], {
-    tags: [tagFor(userId)],
-    revalidate: CEILING_SECONDS,
-  })();
+  const { store } = opts;
+  const run = store
+    ? async () => {
+        const value = await load();
+        // Thrown rather than returned: the data cache stores whatever the function returns.
+        if (!store(value)) throw new NotStored(value);
+        return value;
+      }
+    : load;
+  try {
+    return await unstable_cache(run, ["user-lists", userId, DEPLOYMENT_ID, catalog, ...key], {
+      tags: [tagFor(userId)],
+      revalidate: CEILING_SECONDS,
+    })();
+  } catch (error) {
+    // not a fallback: a value served unstored, or the loader's own error rethrown.
+    if (error instanceof NotStored) return error.value as T;
+    throw error;
+  }
+}
+
+class NotStored {
+  constructor(readonly value: unknown) {}
 }
 
 /**

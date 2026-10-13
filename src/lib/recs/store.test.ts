@@ -93,6 +93,20 @@ describe("toScoreRow", () => {
     expect(row).not.toHaveProperty("oracleText");
   });
 
+  // Admin PR 6d-2: the writer version carries the role basis, and the basis is the reader's resolved
+  // `LABEL_ROLE_COUNTS_ENABLED`. The environment has it off and the env handed in has it on, so a row
+  // stamped from `process.env` would claim the classifier for scores counted by label.
+  it("stamps the writer version of the env it is handed, not the environment's", () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
+    try {
+      const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+      expect(toScoreRow("user_1", ranked(), on).writerVersion).toBe(-SCORE_WRITER_CURRENT);
+      expect(toScoreRow("user_1", ranked()).writerVersion).toBe(SCORE_WRITER_CURRENT);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("preformats receipts rather than storing the raw overlap list", () => {
     expect(typeof toScoreRow("user_1", ranked()).receipts).toBe("string");
   });

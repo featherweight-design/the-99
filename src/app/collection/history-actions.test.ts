@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// action reads the environment alone, as it did before overrides. Through a stand-in object that
+// reads it, so a case can pin WHICH env the action handed on by identity, never by comparing the
+// environment itself.
+const RESOLVED = vi.hoisted(() => new Proxy({}, { get: (_t, k) => process.env[k as string] }) as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => RESOLVED) }));
 
 const ENTRY = "33333333-3333-3333-3333-333333333333";
 const ACTION = "44444444-4444-4444-4444-444444444444";
@@ -89,7 +92,7 @@ describe("revertCollectionEntry", () => {
     expect(stub.apply.mock.calls[0][1]).toEqual({ kind: "revert", entryId: ENTRY, expected: { [KEY]: 0 } });
     expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, confirmShort: [deck] });
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
-    expect(stub.warm).toHaveBeenCalledWith("user_1");
+    expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
 
   it("answers a retry of a committed revert as the same success, and invalidates again", async () => {

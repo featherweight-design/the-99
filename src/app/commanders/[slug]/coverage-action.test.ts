@@ -21,6 +21,10 @@ vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability }));
 vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings }));
+// The reader's resolved switches, a stand-in pinned by identity: the retry scores under the role
+// basis the page rendered with (admin PR 6d-2), so the env must reach the resolve and the score.
+const RESOLVED = vi.hoisted(() => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
 
 /** A hard claim, so a stamped card reads as something other than free. */
 const CLAIMED = {
@@ -53,8 +57,8 @@ beforeEach(() => {
 
 describe("retryCoverageFigures", () => {
   it("hands back the role cards when the retry resolves ok", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards });
-    await expect(retryCoverageFigures("korvold", "all")).resolves.toEqual(roleCards);
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toEqual(roleCards);
   });
 
   // The section REPLACES its state with whatever this returns, and
@@ -68,10 +72,10 @@ describe("retryCoverageFigures", () => {
       ...roleCards,
       ramp: [{ oracleId: "sol", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null }],
     };
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards: cards });
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards: cards });
     loadAvailability.mockResolvedValue(new Map([["sol", CLAIMED]]));
 
-    const out = await retryCoverageFigures("korvold", "all");
+    const out = await retryCoverageFigures("korvold", "all", "labels");
     expect(out!.ramp[0].availability).toEqual(CLAIMED);
     // Narrowed to the cards this payload actually carries, not the whole shelf.
     expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"] });
@@ -85,10 +89,10 @@ describe("retryCoverageFigures", () => {
       ...roleCards,
       ramp: [{ oracleId: "sol", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null }],
     };
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards: cards });
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards: cards });
     resolveOwnedPrintings.mockResolvedValue(new Map([["sol", { imageUri: "https://img/owned-sol.jpg", printedName: "Renamed Ring" }]]));
 
-    const out = await retryCoverageFigures("korvold", "all");
+    const out = await retryCoverageFigures("korvold", "all", "labels");
     expect(out!.ramp[0].imageUri).toBe("https://img/owned-sol.jpg");
     expect(out!.ramp[0].printedName).toBe("Renamed Ring");
     expect(resolveOwnedPrintings).toHaveBeenCalledWith("user_1", ["sol"]);
@@ -105,42 +109,72 @@ describe("retryCoverageFigures", () => {
       ...roleCards,
       ramp: [{ oracleId: "sol", name: "Sol Ring", inclusionPct: 82, committedTo: null, availability: null }],
     };
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards: cards });
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards: cards });
     loadAvailability.mockRejectedValue(new Error("claim read down"));
 
-    await expect(retryCoverageFigures("korvold", "all")).rejects.toThrow("claim read down");
+    await expect(retryCoverageFigures("korvold", "all", "labels")).rejects.toThrow("claim read down");
   });
 
   // The read is expensive and its result is discarded for any non-ok state, so
   // it must sit AFTER the guard rather than before it.
   it("does not read claims at all when the retry is still degraded", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "degraded", roleCards });
-    await expect(retryCoverageFigures("korvold", "all")).resolves.toBeNull();
+    scoreOneCommander.mockResolvedValue({ synergyState: "degraded", roleBasis: "labels", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
     expect(loadAvailability).not.toHaveBeenCalled();
   });
 
   it("withholds figures when the retry is still degraded", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "degraded", roleCards });
-    await expect(retryCoverageFigures("korvold", "all")).resolves.toBeNull();
+    scoreOneCommander.mockResolvedValue({ synergyState: "degraded", roleBasis: "labels", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
   });
 
   it("withholds figures when the retry comes back absent", async () => {
     // Absent is a real answer from a reachable EDHREC, not a failure — but it
     // is still no data, and returning cards here would draw the ok treatment
     // for a commander EDHREC has nothing on.
-    scoreOneCommander.mockResolvedValue({ synergyState: "absent", roleCards });
-    await expect(retryCoverageFigures("korvold", "all")).resolves.toBeNull();
+    scoreOneCommander.mockResolvedValue({ synergyState: "absent", roleBasis: "labels", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
   });
 
   it("returns null when the commander cannot be resolved", async () => {
     resolveCommanderSlug.mockResolvedValue(null);
-    await expect(retryCoverageFigures("nobody", "all")).resolves.toBeNull();
+    await expect(retryCoverageFigures("nobody", "all", "labels")).resolves.toBeNull();
     expect(scoreOneCommander).not.toHaveBeenCalled();
+  });
+
+  // Admin PR 6d-2 (Copilot round 5): the retry answers on the OPEN page's basis, never a fresh
+  // snapshot. The reader's switch now says labels; the page was drawn under the classifier.
+  it("scores under the basis the page names, not the one the switch resolves to now", async () => {
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "classifier", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "classifier")).resolves.not.toBeNull();
+    const env = scoreOneCommander.mock.calls[0][4] as NodeJS.ProcessEnv;
+    expect(env.LABEL_ROLE_COUNTS_ENABLED).toBe("false");
+  });
+
+  it("refuses a basis outside the closed set, and reads nothing", async () => {
+    await expect(retryCoverageFigures("korvold", "all", "other")).resolves.toBeNull();
+    expect(scoreOneCommander).not.toHaveBeenCalled();
+  });
+
+  it("answers a labels page under the kill switch with nothing, never classifier cards", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "off");
+    try {
+      await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
+      expect(scoreOneCommander).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("answers nothing when the rescore fell back to another basis than the page's", async () => {
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "classifier", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
+    expect(loadAvailability).not.toHaveBeenCalled();
   });
 
   it("returns null when the rescore yields nothing", async () => {
     scoreOneCommander.mockResolvedValue(null);
-    await expect(retryCoverageFigures("korvold", "all")).resolves.toBeNull();
+    await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
   });
   // ── The retry keeps the pool the page is drawing ─────────────────────────
   //
@@ -150,19 +184,20 @@ describe("retryCoverageFigures", () => {
   // excludes, and Role Coverage silently became the all-owned panel while the
   // URL still said free.
   it("scores against the free pool when the page is in free mode", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards });
-    await retryCoverageFigures("korvold", "free");
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
+    await retryCoverageFigures("korvold", "free", "labels");
     expect(loadFreePool).toHaveBeenCalledWith("user_1");
     expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", [
       { oracleId: "free-1" },
-    ]);
+    ], RESOLVED);
   });
 
   it("scores against the collection in the default mode, and reads no free pool", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards });
-    await retryCoverageFigures("korvold", "all");
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
+    await retryCoverageFigures("korvold", "all", "labels");
     expect(loadFreePool).not.toHaveBeenCalled();
-    expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined);
+    expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined, RESOLVED);
+    expect(resolveCommanderSlug).toHaveBeenCalledWith("user_1", "korvold", RESOLVED);
   });
 
   // A failed free-pool read ABANDONS the retry rather than scoring against the
@@ -173,9 +208,9 @@ describe("retryCoverageFigures", () => {
   // rescore never happens, and that the caller gets the same null every other
   // failed retry returns.
   it("abandons the retry when the free pool read fails, rather than scoring the collection", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleCards });
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
     loadFreePool.mockResolvedValue(null);
-    await expect(retryCoverageFigures("korvold", "free")).resolves.toBeNull();
+    await expect(retryCoverageFigures("korvold", "free", "labels")).resolves.toBeNull();
     expect(scoreOneCommander).not.toHaveBeenCalled();
   });
 });

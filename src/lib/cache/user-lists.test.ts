@@ -5,14 +5,19 @@
 // and that a reader's own identity and parameters still separate entries as before.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const calls = vi.hoisted(() => ({ keys: [] as string[][], tags: [] as string[][] }));
+const calls = vi.hoisted(() => ({ keys: [] as string[][], tags: [] as string[][], stored: [] as unknown[] }));
 const generation = vi.hoisted(() => ({ value: "111" }));
 
 vi.mock("next/cache", () => ({
   unstable_cache: (load: () => unknown, key: string[], opts: { tags?: string[] }) => {
     calls.keys.push(key);
     if (opts?.tags) calls.tags.push(opts.tags);
-    return load;
+    // What the data cache would file: whatever the function RETURNS. A throw files nothing.
+    return async () => {
+      const value = await load();
+      calls.stored.push(value);
+      return value;
+    };
   },
   updateTag: () => {},
 }));
@@ -31,6 +36,7 @@ const { cacheForUser } = await import("./user-lists");
 beforeEach(() => {
   calls.keys.length = 0;
   calls.tags.length = 0;
+  calls.stored.length = 0;
   generation.value = "111";
   deployment.id = "dpl_a";
 });
@@ -41,6 +47,22 @@ const keyFor = async (userId: string, key: string[]) => {
 };
 
 describe("cacheForUser", () => {
+  // Admin PR 6d-2: a payload the key describes wrongly (counted by the classifier because the label
+  // read failed, under a key naming labels) is served and never filed.
+  it("serves a value its `store` refuses without filing it, and files one it accepts", async () => {
+    const refused = { basis: "classifier", fellBack: true };
+    expect(await cacheForUser("u1", ["k"], async () => refused, { store: (v) => !v.fellBack })).toBe(refused);
+    expect(calls.stored).toEqual([]);
+    const kept = { basis: "labels", fellBack: false };
+    expect(await cacheForUser("u1", ["k"], async () => kept, { store: (v) => !v.fellBack })).toBe(kept);
+    expect(calls.stored).toEqual([kept]);
+  });
+
+  it("still throws the loader's own error", async () => {
+    await expect(cacheForUser("u1", ["k"], async () => { throw new Error("down"); }, { store: () => true }))
+      .rejects.toThrow("down");
+  });
+
   it("files an entry under the catalog it was built from", async () => {
     expect(await keyFor("u1", ["sets-index"])).toEqual([
       "user-lists", "u1", "dpl_a", "111", "sets-index",

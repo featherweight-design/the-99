@@ -84,7 +84,7 @@ export default async function DiscoverPage({
   // the entry, per request: its read can fail, and a failure filed here would hide the control
   // for the entry's whole life. `loadCommanderPrintings` is memoised per catalog generation, so
   // the per-request cost is the crossing, not the read.
-  const { encoded, oracleIds } = await loadDiscoveryPayload(userId, sort);
+  const { encoded, oracleIds, basis } = await loadDiscoveryPayload(userId, sort, env);
   const printedIn = await lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId })));
 
   // THE URL'S OWN FIRST WINDOW keeps its draw columns and every other row ships without them
@@ -104,7 +104,7 @@ export default async function DiscoverPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={shipped} printedIn={printedIn} chooseLink={helpMeChooseEnabled(env)} />
+      <DiscoveryView encoded={shipped} printedIn={printedIn} chooseLink={helpMeChooseEnabled(env)} basis={basis} />
     </section>
   );
 }

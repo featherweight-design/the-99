@@ -370,8 +370,9 @@ describe("assembleDiscoveryWithIds", () => {
 });
 
 describe("discoveryKey", () => {
-  it("files a payload under its sort and its version", () => {
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9"]);
+  it("files a payload under its sort, its version and the reader's role basis", () => {
+    const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+    expect(discoveryKey("fit", off)).toEqual(["discovery", "fit", "v9", "basis:classifier"]);
   });
 
   it("keeps two sorts apart", () => {

@@ -7,9 +7,13 @@ import { laneQuery, type LaneParams } from "../../lib/commanders/lane-params";
 // pulls the neon driver in with it. A type-only clause is erased at compile
 // time, so none of that reaches the client bundle.
 import type { DecodedDiscovery } from "../../lib/discovery/encode";
+import type { RoleBasis } from "../../lib/profile/build";
 import { mirrorUrl } from "../../lib/url/mirror";
 
 export type SortKey = "fit" | "new";
+
+/** A ranking as served, with the role basis its payload was counted by. */
+type Entry = { list: DecodedDiscovery; basis: RoleBasis };
 
 /**
  * Hold every discovery ranking this visit has already been served, so flipping
@@ -35,15 +39,22 @@ export type SortKey = "fit" | "new";
  * route unmounts it and the next arrival re-fetches. That bounded life is the
  * staleness answer: a deck built elsewhere invalidates nothing here because
  * there is no "here" to invalidate by the time the reader gets back.
+ *
+ * Each entry keeps the ROLE BASIS its payload was counted by (`basis`, the page's
+ * LABEL_ROLE_COUNTS_ENABLED at render), and `viewBasis` is the drawn entry's (admin PR 6d-2). An
+ * app-wide flip can land between two navigations, so a ranking served back out of the cache may be
+ * the other basis's from the latest payload's; the fields fetch has to ask for the basis of the rows
+ * on screen. Stored per entry rather than keyed on, so the sort stays the key and a fresh payload
+ * still replaces its sort's entry outright, whatever basis the old one had.
  */
-export function useDiscoveryCache(served: DecodedDiscovery) {
+export function useDiscoveryCache(served: DecodedDiscovery, basis: RoleBasis) {
   // State rather than a ref, so the payload is filed and shown in one pass. A
   // ref would have to be written during render to be readable by the very next
   // click, which is the thing React tells you not to do.
-  const [cache, setCache] = useState<Map<SortKey, DecodedDiscovery>>(
-    () => new Map([[served.sort, served]]),
+  const [cache, setCache] = useState<Map<SortKey, Entry>>(
+    () => new Map([[served.sort, { list: served, basis }]]),
   );
-  const [view, setView] = useState<DecodedDiscovery>(served);
+  const [view, setView] = useState<Entry>({ list: served, basis });
 
   // A fresh payload always wins, and is filed on its way past. Adjusted during
   // render rather than in an effect, which is what React prescribes for state
@@ -52,8 +63,9 @@ export function useDiscoveryCache(served: DecodedDiscovery) {
   const [prev, setPrev] = useState(served);
   if (served !== prev) {
     setPrev(served);
-    setCache((m) => new Map(m).set(served.sort, served));
-    setView(served);
+    const entry = { list: served, basis };
+    setCache((m) => new Map(m).set(served.sort, entry));
+    setView(entry);
   }
 
   /**
@@ -80,5 +92,5 @@ export function useDiscoveryCache(served: DecodedDiscovery) {
     [cache],
   );
 
-  return { view, serve };
+  return { view: view.list, viewBasis: view.basis, serve };
 }

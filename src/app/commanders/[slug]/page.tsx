@@ -15,6 +15,7 @@ import { loadPrices } from "../../../lib/decks/price-query";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
 import { withChainArt } from "../../../lib/cards/chain-art";
 import { loadOpeningArt } from "../../../lib/cards/opening-printing";
+import { requestSwitchEnv } from "../../../lib/switches/request";
 
 export default async function CommanderDetailPage({
   params,
@@ -30,10 +31,13 @@ export default async function CommanderDetailPage({
   // and the two screens disagreed about the same commander's fit by whatever
   // the player has sleeved.
   const requested = query.avail === "free" ? "free" : "all";
+  // The reader's resolved switches, once for the whole render: the rank, the free ranking and the
+  // score all count roles by its `LABEL_ROLE_COUNTS_ENABLED`, so the page agrees with the list.
+  const env = await requestSwitchEnv(userId);
 
   // Only the requested commander is scored — the page used to rank the whole
   // candidate set to render one.
-  let found = await resolveCommanderSlug(userId, slug);
+  let found = await resolveCommanderSlug(userId, slug, env);
   if (!found) notFound();
   if (found.anyDegraded) {
     // The persisted ranks came from an outage-era compute, so the rank shown beside
@@ -41,7 +45,7 @@ export default async function CommanderDetailPage({
     // only — matched by oracleId, because a recompute can reassign this slug to a
     // different commander (duplicate names take rank-order suffixes) and the URL
     // belongs to whichever commander the persisted row named.
-    const { items } = await getRankedList(userId);
+    const { items } = await getRankedList(userId, env);
     const idx = items.findIndex((i) => i.oracleId === found!.oracleId);
     if (idx !== -1) found = { ...found, rank: idx + 1, anyDegraded: false };
   }
@@ -54,8 +58,8 @@ export default async function CommanderDetailPage({
   let avail: "all" | "free" = "all";
   let pool: PoolCard[] | undefined;
   if (requested === "free") {
-    const { items } = await getRankedList(userId);
-    const free = await rankFree(userId, items);
+    const { items } = await getRankedList(userId, env);
+    const free = await rankFree(userId, items, undefined, env);
     const idx = free.ok ? free.items.findIndex((i) => i.oracleId === found!.oracleId) : -1;
 
     // A commander the free ranking READ CLEANLY and does not hold is not a
@@ -80,7 +84,7 @@ export default async function CommanderDetailPage({
     }
   }
 
-  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool);
+  const scored = await scoreOneCommander(userId, found.oracleId, slug, pool, env);
   if (!scored) notFound();
   // The head of this page is the row's own link target, so it draws what the row drew: a
   // row captioned with the copy the reader owns leading to a page headed with the oracle

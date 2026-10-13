@@ -106,7 +106,7 @@ export default async function DecksPage({
     const [ranked, stats] =
       decks.length === 0
         ? await Promise.all([
-            perf.timed("rankedList", () => getRankedList(userId)),
+            perf.timed("rankedList", () => getRankedList(userId, env)),
             perf.timed("collectionStats", () => getCollectionStats(userId)),
           ])
         : [null, null];

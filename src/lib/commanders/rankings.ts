@@ -14,6 +14,7 @@ import { toFreeDelta, type FreeRankingDelta } from "../recs/free-delta";
 import { rankFree } from "../recs/free-ranking";
 import { withOwnedCardArt } from "../collection/owned-printings";
 import { getRankedList } from "../recs/ranked-list";
+import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { loadCollectionPool } from "../recs/recommend";
 import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
@@ -58,6 +59,9 @@ export type CommanderRankings = {
   candidateCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
+  /** Either ranking was counted by the classifier only because the label read failed under a labels
+   *  request: served, and never filed under the labels key (admin PR 6d-2). */
+  labelFallback?: true;
 };
 
 /**
@@ -147,11 +151,24 @@ export type CommanderRankings = {
  */
 const PAYLOAD_VERSION = 11;
 
-/** The cache key this payload is filed under, version included. */
-export const commanderRankingsKey = ["commander-rankings", `v${PAYLOAD_VERSION}`];
+/**
+ * The cache key this payload is filed under: the version, and the role basis both rankings were
+ * counted by. The basis follows the reader's `LABEL_ROLE_COUNTS_ENABLED`, which an app-wide override
+ * flips without a deploy, and nothing else in this key moves when it does (admin PR 6d-2). `env` is
+ * the reader's resolved switches, the same env `loadCommanderRankings` is handed.
+ */
+export function commanderRankingsKey(env: NodeJS.ProcessEnv = process.env): string[] {
+  return ["commander-rankings", `v${PAYLOAD_VERSION}`, `basis:${roleBasisFromEnv(env)}`];
+}
 
-export async function loadCommanderRankings(userId: string): Promise<CommanderRankings> {
-  const { items: ranked, degraded, uniqueCardsRead, candidateCount } = await getRankedList(userId);
+export async function loadCommanderRankings(
+  userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<CommanderRankings> {
+  const rankedList = await getRankedList(userId, env);
+  const { items: ranked, degraded, uniqueCardsRead, candidateCount } = rankedList;
+  let labelFallback = rankedList.labelFallback === true;
 
   // The art and the name from the copy the player owns, applied HERE rather than inside
   // `getRankedList`: this lane draws every row, and three of that function's five callers
@@ -208,7 +225,8 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
   // and image URLs sent twice. See `free-delta.ts`.
   let freeRanking: FreeRankingDelta | null = null;
   if (availOk && availability) {
-    const free = await rankFree(userId, items, { collection, availability });
+    const free = await rankFree(userId, items, { collection, availability }, env);
+    if (free.labelFallback) labelFallback = true;
     freeRanking = free.ok ? toFreeDelta(items, free.items) : null;
     if (!freeRanking) availOk = false;
   }
@@ -247,5 +265,6 @@ export async function loadCommanderRankings(userId: string): Promise<CommanderRa
 
   return {
     items: rows, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk,
+    ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }

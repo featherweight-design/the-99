@@ -64,8 +64,11 @@ const basisMock = vi.hoisted(() => ({
   value: { basis: "classifier", roleSets: undefined, fellBack: false } as {
     basis: string; roleSets: Map<string, string[]> | undefined; fellBack: boolean;
   },
+  enabledSeen: [] as boolean[],
 }));
-vi.mock("../recs/pool-role-basis", () => ({ loadPoolRoleBasis: async () => basisMock.value }));
+vi.mock("../recs/pool-role-basis", () => ({
+  loadPoolRoleBasis: async (_cards: unknown, enabled: boolean) => (basisMock.enabledSeen.push(enabled), basisMock.value),
+}));
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
     (loadCandidates as unknown as (...a: unknown[]) => unknown)(...args),
@@ -92,7 +95,7 @@ vi.mock("./novelty", async (importOriginal) => ({
   loadPlayedTags: async () => [],
 }));
 
-const { loadDiscovery, loadDiscoveryPool } = await import("./list");
+const { loadDiscovery, loadDiscoveryPool, loadDiscoveryWithIds } = await import("./list");
 
 /** One copy owned, claimed by a committed deck — nothing left free. */
 const committed: Availability = { owned: 1, hard: 1, soft: 0, free: 0, claims: [] };
@@ -166,6 +169,40 @@ describe("loadDiscovery — wiring", () => {
       // And an UNLABELLED card counts toward no role: an empty map scores below the labelled one.
       basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
       expect(roles(await loadDiscovery("user-1", { sort: "fit" }))).toBeLessThan(roles(byLabel));
+    } finally {
+      basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };
+    }
+  });
+
+  // Admin PR 6d-2: the switch is decided from the env the reader resolved, never the environment
+  // alone. The environment has it off and the resolved env on, so a loader reading `process.env`
+  // asks for the classifier and one reading its env asks for the labels.
+  it("asks for the label read by the reader's resolved env, not the environment", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
+    try {
+      basisMock.enabledSeen.length = 0;
+      await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
+      expect(basisMock.enabledSeen).toEqual([true]);
+      basisMock.enabledSeen.length = 0;
+      await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv);
+      expect(basisMock.enabledSeen).toEqual([false]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  // Admin PR 6d-2 (Copilot round 5): the list reports the basis it was COUNTED by, which is not the
+  // requested one when the label read failed. The page hands the view this basis, and the payload
+  // refuses to file a fallback under the labels key.
+  it("reports the basis the list was counted by, and a fallback as one", async () => {
+    const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    try {
+      basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: true };
+      const fell = await loadDiscoveryWithIds("user-1", { sort: "fit" }, on);
+      expect([fell.basis, fell.fellBack]).toEqual(["classifier", true]);
+      basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
+      const read = await loadDiscoveryWithIds("user-1", { sort: "fit" }, on);
+      expect([read.basis, read.fellBack]).toEqual(["labels", false]);
     } finally {
       basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };
     }

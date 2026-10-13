@@ -26,7 +26,12 @@ import { recordSoftFailure } from "../cache/soft-failure";
  */
 export const NOVELTY_CANDIDATES = READY_COUNT + 12;
 
-export function unplayedCountsSql(userId: string, limit = NOVELTY_CANDIDATES): SQL {
+export function unplayedCountsSql(
+  userId: string,
+  limit = NOVELTY_CANDIDATES,
+  /** The reader's resolved switches: the stale-set test is `loadScores`'s, under the reader's basis. */
+  env: NodeJS.ProcessEnv = process.env,
+): SQL {
   // Raw and aliased throughout: every column is written out against its own alias, so no bare name
   // can resolve against the wrong table (AGENTS.md, the correlated-subquery rule).
   return sql`
@@ -46,7 +51,7 @@ export function unplayedCountsSql(userId: string, limit = NOVELTY_CANDIDATES): S
         and not exists (
           select 1 from commander_scores stale
           where stale.user_id = ${userId}
-            and (stale.rank_score < 0 or stale.writer_version <> ${scoreWriterVersion()})
+            and (stale.rank_score < 0 or stale.writer_version <> ${scoreWriterVersion(env)})
         )
         and not exists (
           select 1 from commander_scores dg
@@ -78,9 +83,12 @@ export function unplayedCountsSql(userId: string, limit = NOVELTY_CANDIDATES): S
  * The counts as a map, or null when the read fails: the rotation then walks its plain shuffle, so
  * a failed read costs the lean and never the section.
  */
-export async function loadUnplayedCounts(userId: string): Promise<Map<string, number> | null> {
+export async function loadUnplayedCounts(
+  userId: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<Map<string, number> | null> {
   try {
-    const { rows } = await db.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(userId));
+    const { rows } = await db.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(userId, NOVELTY_CANDIDATES, env));
     return new Map(rows.map((r) => [r.oracleId, r.unplayed]));
   } catch (error) {
     recordSoftFailure();

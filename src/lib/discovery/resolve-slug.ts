@@ -25,11 +25,14 @@ export type ResolvedCommander = { oracleId: string; rank: number; anyDegraded: b
 export async function resolveCommanderSlug(
   userId: string,
   slug: string,
+  /** The reader's resolved switches: the stored set and the owned ranking are read under its role
+   *  basis, so a slug resolves to the rank the reader's own list shows. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<ResolvedCommander | null> {
-  const found = await findScoredCommander(userId, slug);
+  const found = await findScoredCommander(userId, slug, env);
   if (found) return found;
 
-  const { items } = await getRankedList(userId);
+  const { items } = await getRankedList(userId, env);
   const idx = items.findIndex((i) => i.slug === slug);
   if (idx !== -1) {
     return { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };

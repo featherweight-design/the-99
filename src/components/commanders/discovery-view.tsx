@@ -1,5 +1,6 @@
 "use client";
 
+import type { RoleBasis } from "../../lib/profile/build";
 import {
   useCallback,
   useEffect,
@@ -87,8 +88,12 @@ export function DiscoveryView({
   encoded,
   printedIn,
   chooseLink = false,
+  basis,
 }: {
   encoded: EncodedDiscovery;
+  /** The role basis `encoded` was counted by (the reader's LABEL_ROLE_COUNTS_ENABLED at render). The
+      fields fetch asks for that basis's payload, so a later batch never mixes in the other's figures. */
+  basis: RoleBasis;
   /** `Printed in ▾`'s index for `encoded`'s rows, aligned by position. Absent when the read
       failed, and then the control is not drawn and a `?p=` is not applied. */
   printedIn?: LanePrintedIn;
@@ -104,7 +109,7 @@ export function DiscoveryView({
   // back out of the cache. A ranking already seen this visit is served with no
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
-  const { view: discovery, serve } = useDiscoveryCache(served);
+  const { view: discovery, viewBasis, serve } = useDiscoveryCache(served, basis);
   // Each row's sets, keyed by slug (a discover row ships no oracle id). Filed from every payload
   // this visit has seen rather than replaced: a card's printings do not depend on which ranking
   // shipped it, and a cached ranking has no index of its own when it comes back. Adjusted during
@@ -328,7 +333,9 @@ export function DiscoveryView({
   // no drawn waiting state, which would be a Design question this does not answer.
   const wanted = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
   const refreshStale = useCallback(() => router.refresh(), [router]);
-  const { resolve } = useDrawFields(discovery.sort, discovery.items, wanted, refreshStale);
+  // The DRAWN ranking's basis, not the prop's: a ranking served from the cache was counted by the
+  // basis of the payload that filed it, which an app-wide flip since may have moved off.
+  const { resolve } = useDrawFields({ sort: discovery.sort, basis: viewBasis }, discovery.items, wanted, refreshStale);
   const resolvedWanted = wanted.map(resolve);
   const complete = resolvedWanted.every((r) => r !== null);
   // The last rows drawn WHOLE, kept as drawn: a change of order resolves against another
