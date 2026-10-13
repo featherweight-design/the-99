@@ -3,7 +3,7 @@ import { db } from "../../db";
 import type { Availability, DeckClaim } from "./availability";
 import { neverCutEnabled } from "./never-cut-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
-import { deckCommanderMovedSql } from "../commander-change/pending";
+import { deckCommanderMovedSql } from "../commander-change/pending-sql";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

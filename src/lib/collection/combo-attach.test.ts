@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { attachComboPartners, type BrowseCard } from "./browse";
+import type { BrowseCard } from "./browse";
+import { attachComboPartners } from "./browse-read";
 
 const card = (oracleId: string): BrowseCard =>
   ({ oracleId, name: oracleId, typeLine: "Creature", quantity: 1 }) as unknown as BrowseCard;

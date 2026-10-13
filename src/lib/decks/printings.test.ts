@@ -36,15 +36,14 @@ vi.mock("../../db", () => ({
 vi.mock("../cache/soft-failure", () => ({ recordSoftFailure: () => {} }));
 vi.mock("../collection/browse", async (importActual) => {
   const actual = await importActual<typeof import("../collection/browse")>();
-  return {
-    ...actual,
-    selectCollectionRows: async () => {
-      if (state.fail) throw new Error("down");
-      return [];
-    },
-    aggregateCollection: () => state.cards,
-  };
+  return { ...actual, aggregateCollection: () => state.cards };
 });
+vi.mock("../collection/browse-read", () => ({
+  selectCollectionRows: async () => {
+    if (state.fail) throw new Error("down");
+    return [];
+  },
+}));
 
 import {
   heldPrintingFor, readDeckPrintings, readRecordedPrintingArt, recordedColumns, recordedKey,

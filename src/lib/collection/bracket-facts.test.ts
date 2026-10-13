@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { NO_BRACKET_FLAGS, type CardBracketFlags } from "../bracket/flags-read";
-import { attachBracketFacts, type BrowseCard } from "./browse";
+import type { BrowseCard } from "./browse";
+import { attachBracketFacts } from "./browse-read";
 
 const flags = (over: Partial<CardBracketFlags> = {}): CardBracketFlags => ({
   ...NO_BRACKET_FLAGS,

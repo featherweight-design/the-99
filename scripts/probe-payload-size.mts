@@ -30,7 +30,7 @@ import { cutToWindow, decodeDiscovery, encodeDiscovery } from "../src/lib/discov
 import { discoveryRows } from "../src/lib/discovery/window";
 import { REVEAL_STEP } from "../src/lib/commanders/reveal-step";
 import { loadCommanderRankings } from "../src/lib/commanders/rankings";
-import { loadBrowseCards } from "../src/lib/collection/browse";
+import { loadBrowseCards } from "../src/lib/collection/browse-read";
 import { cutCollectionWindow, encodeCollection } from "../src/lib/collection/list-wire";
 import { firstWindowIds, parseBrowseParams } from "../src/lib/collection/window";
 import { loadAvailability } from "../src/lib/decks/availability-query";

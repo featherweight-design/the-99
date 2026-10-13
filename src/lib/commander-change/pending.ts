@@ -5,11 +5,10 @@
 // a commit copies them into the version (`versions.ts`, `commitVersionIn`). So a deck is pending
 // on its commander exactly when the live pair differs from the version's pair.
 //
-// Written once per language. The TypeScript form serves the readers that already hold both rows;
-// the SQL form serves the two queries that decide pending in the database (the availability CTE and
+// Written once per language. The TypeScript form (here) serves the readers that already hold both
+// rows; the SQL form (`pending-sql.ts`, apart so client components take no drizzle-orm) serves
+// the two queries that decide pending in the database (the availability CTE and
 // the deck list's pending edge), so the rule is not restated by hand at either site.
-
-import { sql, type SQL } from "drizzle-orm";
 
 /** A deck's leader: its commander, and its partner when it has one. */
 export type CommanderPair = { commanderOracleId: string; partnerOracleId: string | null };
@@ -27,38 +26,6 @@ export function commanderMoved(version: CommanderPair, live: CommanderPair): boo
   return a.length !== b.length || a.some((id, i) => id !== b[i]);
 }
 
-/**
- * The same rule as a SQL predicate over two row aliases that each carry `commander_oracle_id` and
- * `partner_oracle_id`: `v` for the version row, `d` for the live deck row. Both aliases must be in
- * scope where the fragment is placed.
- *
- * The comparison sorts each side's non-null ids, so it agrees with `commanderMoved` about column
- * order, and `is distinct from` treats a null partner on one side against a set one on the other
- * as a difference rather than as unknown.
- */
-export function commanderMovedSql(v: string, d: string): SQL {
-  const side = (alias: string) => sql.raw(
-    `array(select x from unnest(array[${alias}.commander_oracle_id, ${alias}.partner_oracle_id]) x where x is not null order by x)`,
-  );
-  return sql`(${side(v)} is distinct from ${side(d)})`;
-}
-
-/**
- * The rule against the deck's NEWEST version, for a query that holds only the deck row: true
- * when `deck`'s live pair differs from its newest version's, false for a brew (no version, so
- * nothing to be pending against). `deck` is the alias or table name of a `decks` row in scope.
- *
- * Newest by `number`, the same definition `newestVersion` and both pending queries use.
- */
-export function deckCommanderMovedSql(deck: string): SQL {
-  return sql`coalesce((
-    select ${commanderMovedSql("pcv", deck)}
-    from deck_versions pcv
-    where pcv.deck_id = ${sql.raw(deck)}.id
-    order by pcv.number desc
-    limit 1
-  ), false)`;
-}
 
 /**
  * How a change moves cards between the 99 and the command zone, read off the current leader, the

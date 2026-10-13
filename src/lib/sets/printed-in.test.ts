@@ -9,8 +9,8 @@ import {
   isPrintedIn,
   lanePrintedIn,
   normalizeSetCodes,
-  printedIn,
 } from "./printed-in";
+import { printedIn } from "./printed-in-sql";
 
 const rows = [
   { oracle_id: "a", set_code: "hob", name: "Hobbits", released_at: "2026-09-01" },

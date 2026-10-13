@@ -14,7 +14,7 @@ import {
   parseWideCookie,
 } from "../../../components/ui/view-cookie";
 import { getCollectionStats } from "../../../lib/home/summary";
-import { loadOwnedSetMeta } from "../../../lib/collection/browse";
+import { loadOwnedSetMeta } from "../../../lib/collection/browse-read";
 import { CardFan } from "../../../components/marks";
 import { CollectionClient } from "../../../components/collection/collection-client";
 import { cutCollectionWindow, encodeCollection } from "../../../lib/collection/list-wire";

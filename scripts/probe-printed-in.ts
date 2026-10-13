@@ -13,7 +13,8 @@ import { and, sql } from "drizzle-orm";
 import { isCommanderCandidate } from "../src/lib/recs/score";
 import { db } from "../src/db";
 import { cards } from "../src/db/schema";
-import { filePrintedIn, isPrintedIn, lanePrintedIn, printedIn } from "../src/lib/sets/printed-in";
+import { filePrintedIn, isPrintedIn, lanePrintedIn } from "../src/lib/sets/printed-in";
+import { printedIn } from "../src/lib/sets/printed-in-sql";
 import { readCommanderPrintings } from "../src/lib/sets/printed-in-read";
 
 let failures = 0;

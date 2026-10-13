@@ -4,7 +4,8 @@
 // card — so every surface reading them alone draws art that may not be on the card in the
 // player's box. This is the one place that answers "which printing is theirs", for the deck
 // surfaces and the commander lists alike.
-import { aggregateCollection, resolvedPrinting, selectCollectionRows } from "./browse";
+import { aggregateCollection, resolvedPrinting } from "./browse";
+import { selectCollectionRows } from "./browse-read";
 import { recordSoftFailure } from "../cache/soft-failure";
 
 /** One printing as the player owns it — the art and the name that belong together. */

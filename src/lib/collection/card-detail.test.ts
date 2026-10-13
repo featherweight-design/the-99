@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 // Only the two reads are stood in for; the aggregation they feed is the real one, so a
 // change to how a collection row becomes a BrowseCard still shows up here.
 const selectCollectionRows = vi.fn();
-vi.mock("./browse", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./browse")>()),
+vi.mock("./browse-read", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./browse-read")>()),
   selectCollectionRows: (...args: unknown[]) => selectCollectionRows(...args),
 }));
 const loadAvailability = vi.fn();
