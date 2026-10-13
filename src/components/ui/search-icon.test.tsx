@@ -25,7 +25,7 @@ describe("SearchIcon", () => {
   });
 
   // Every search field had its own copy: a character here, a 14px drawing there.
-  it("is the only magnifier under src: no ⌕ character and no second drawing", () => {
+  it("leaves no ⌕ character standing in any component under src", () => {
     const walk = (d: string): string[] =>
       readdirSync(d).flatMap((f) => {
         const p = join(d, f);
