@@ -14,7 +14,7 @@ import { Pool } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 
 import { requireEnv } from "./lib/env.mjs";
-import { onPage, onPageRole } from "./lib/surface.mjs";
+import { onPageRole } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, GAME_NOTE_DECK: DECK, DATABASE_URL } =
   requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "GAME_NOTE_DECK", "DATABASE_URL"]);
