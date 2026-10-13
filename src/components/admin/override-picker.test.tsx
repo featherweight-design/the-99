@@ -43,6 +43,23 @@ describe("OverridePicker", () => {
     expect(screen.getByText("Members see it in What’s new on their next visit.")).toBeInTheDocument();
   });
 
+  it("returns focus to the Add button after a save", async () => {
+    draw("user");
+    fireEvent.click(screen.getAllByRole("button", { name: "Add an account override" }).at(-1)!);
+    fireEvent.click(screen.getByRole("button", { name: /Player 1/ }));
+    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Off" })));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add an account override" }));
+  });
+
+  it("caps a long group list at seven, with a search that reaches the rest", () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({ id: `g${i}`, label: `group ${i}`, sub: `g${i}`, search: `group ${i}` }));
+    draw("group", many);
+    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(7);
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search groups" }), { target: { value: "group 8" } });
+    expect(screen.getAllByRole("listitem").map((l) => l.textContent)).toEqual(["group 8g8"]);
+  });
+
   it("marks a target that already has a row `already set` and unpickable (F8)", () => {
     draw("group", [{ id: "g1", label: "friends", sub: "g1", search: "friends" }, { id: "g2", label: "testers", sub: "g2", search: "testers" }], new Set(["g1"]));
     fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));

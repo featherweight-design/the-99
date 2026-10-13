@@ -59,9 +59,10 @@ async function preview(tx: Tx, rise: { accounts: string[]; capabilities: ModelCa
   const features = [...new Set(rise.capabilities.map(featureOf))];
   const { rows } = await tx.execute<{ feature: string; mean: number | null }>(sql`
     select feature, avg(cost_micro_usd)::float8 as mean from model_calls
-    where feature in (${sql.join(features.map((f) => sql`${f}`), sql`, `)}) and cost_micro_usd > 0
+    where feature in (${sql.join(features.map((f) => sql`${f}`), sql`, `)}) and origin = 'player' and cost_micro_usd is not null
     group by feature`);
-  // A stub press records a cost of 0, so it never drags the mean of real presses toward nothing.
+  // The Costs page's own mean (`costs-detail-rule.ts`): a player's priced presses. A free method-change
+  // rewrite (origin system) is not a press.
   const mean = new Map(rows.map((r) => [r.feature, r.mean === null ? null : Math.round(r.mean)]));
   const byId = new Map(accounts.map((a) => [a.id, a]));
   return {

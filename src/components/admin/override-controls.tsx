@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSwitchOverride, setSwitchOverride } from "../../app/admin/switches/actions";
 import type { ConfirmPreview, WriteResult } from "../../lib/admin/switch-writes";
@@ -27,8 +27,10 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   const [inFlight, setInFlight] = useState<Pending | null>(null);
   const [failed, setFailed] = useState<{ again: Pending; refused: boolean } | null>(null);
   const [confirm, setConfirm] = useState<{ preview: ConfirmPreview; pending: Pending } | null>(null);
+  const confirmAfter = useRef<(() => void) | null>(null);
 
-  async function run(p: Pending, confirmed?: number) {
+  /** `afterSave` runs once the write saves, before the refresh redraws the page. */
+  async function run(p: Pending, confirmed?: number, afterSave?: () => void) {
     setFailed(null);
     setInFlight(p);
     const input: WriteInput = { ...target, ...(p.op === "set" ? { value: p.value } : {}), ...(p.note ? { note: p.note } : {}), ...(confirmed !== undefined ? { confirmed } : {}) };
@@ -42,8 +44,12 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     if (result.ok) {
       setConfirm(null);
       onSaved?.(p);
+      (afterSave ?? confirmAfter.current)?.();
+      confirmAfter.current = null;
       router.refresh();
     } else if (result.error === "confirm") {
+      // A confirmed write saves later, from the dialog: keep what it should do then.
+      if (afterSave) confirmAfter.current = afterSave;
       setConfirm({ preview: result.preview, pending: p });
     } else {
       setConfirm(null);
@@ -131,6 +137,14 @@ export function Seg<K extends string>({
       })}
     </div>
   );
+}
+
+/**
+ * A cleared row leaves the page, and the button that cleared it with it, so focus goes to its
+ * section's Add button rather than falling to the document.
+ */
+function focusAdd(scope: Scope) {
+  document.querySelector<HTMLButtonElement>(`[data-add-override="${scope}"]`)?.focus();
 }
 
 const APP_OPTIONS = [
@@ -244,7 +258,7 @@ export function RowControls({
       <button
         type="button"
         disabled={w.inFlight !== null}
-        onClick={() => (pending ? onCleared?.() : w.run({ op: "clear", value: null, note: null }))}
+        onClick={() => (pending ? onCleared?.() : w.run({ op: "clear", value: null, note: null }, undefined, () => focusAdd(target.scope)))}
         className="absolute right-[14px] top-[12px] min-h-[24px] border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent)] disabled:text-[color:var(--fg-disabled)] md:static md:flex-none"
       >
         {pending ? copy.cancelAdd : copy.clear}

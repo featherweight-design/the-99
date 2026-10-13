@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { adminCopy } from "../../lib/copy/admin";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
 import type { ConfirmContext } from "./model-confirm";
@@ -39,8 +39,17 @@ export function OverridePicker({
   const [picked, setPicked] = useState<Choice | null>(null);
   // F12 for a group added and turned on at once: the saved row is drawn by the list, so the line is here.
   const [announced, setAnnounced] = useState(false);
+  // A saved or cancelled pending row hands focus back to the Add button it came from.
+  const addRef = useRef<HTMLButtonElement>(null);
+  const [refocus, setRefocus] = useState(false);
+  useEffect(() => {
+    if (refocus && !picked) {
+      addRef.current?.focus();
+      setRefocus(false);
+    }
+  }, [refocus, picked]);
   const q = query.trim().toLocaleLowerCase("en-US");
-  const found = (kind === "user" ? choices.filter((c) => q === "" || c.search.includes(q) || c.id.toLocaleLowerCase("en-US").startsWith(q)) : choices).slice(0, kind === "user" ? MAX_RESULTS : undefined);
+  const found = choices.filter((c) => q === "" || c.search.includes(q) || c.id.toLocaleLowerCase("en-US").startsWith(q)).slice(0, MAX_RESULTS);
   const context: Omit<ConfirmContext, "op"> = { switchLabel: label, scope: kind, groupName: kind === "group" ? (picked?.label ?? null) : null };
 
   if (picked) {
@@ -61,10 +70,12 @@ export function OverridePicker({
             setPicked(null);
             setOpen(false);
             setQuery("");
+            setRefocus(true);
           }}
           onCleared={() => {
             setPicked(null);
             setOpen(false);
+            setRefocus(true);
           }}
         />
       </div>
@@ -75,7 +86,9 @@ export function OverridePicker({
     <div className="flex flex-col gap-[8px]">
       {announced && <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.whatsNewInline}</span>}
       <button
+        ref={addRef}
         type="button"
+        data-add-override={kind}
         aria-expanded={open}
         disabled={killed}
         onClick={() => setOpen((o) => !o)}
@@ -85,7 +98,8 @@ export function OverridePicker({
       </button>
       {open && (
         <div className="flex flex-col gap-[6px]">
-          {kind === "user" && (
+          {/* Accounts always search; groups once there are more than a lookup shows. */}
+          {(kind === "user" || choices.length > MAX_RESULTS) && (
             <label className={`flex h-[44px] items-center gap-[10px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] md:h-[38px] ${AFFIX_FOCUS_INPUT}`}>
               <span aria-hidden className="text-[14px] text-[color:var(--fg-faint)]">⌕</span>
               <input
@@ -93,8 +107,8 @@ export function OverridePicker({
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={copy.accountSearch}
-                aria-label={copy.accountSearch}
+                placeholder={kind === "user" ? copy.accountSearch : copy.groupSearch}
+                aria-label={kind === "user" ? copy.accountSearch : copy.groupSearch}
                 className={`min-w-0 flex-1 p-0 text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px] ${AFFIX_INPUT}`}
               />
             </label>
@@ -102,7 +116,7 @@ export function OverridePicker({
           {choices.length === 0 && kind === "group" ? (
             <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{copy.groupsNone}</p>
           ) : found.length === 0 ? (
-            <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{copy.accountNoMatch}</p>
+            <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{kind === "user" ? copy.accountNoMatch : copy.groupNoMatch}</p>
           ) : (
             <ul className="m-0 flex list-none flex-col overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)] p-0">
               {found.map((c, i) => {

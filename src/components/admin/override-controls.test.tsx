@@ -103,6 +103,19 @@ describe("RowControls", () => {
     expect(clear).toHaveBeenCalledWith({ switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u2" });
   });
 
+  it("hands focus to the section's Add button once a Clear saves, since the row leaves the page", async () => {
+    clear.mockResolvedValueOnce({ ok: true });
+    render(
+      <>
+        {row(false)}
+        <button type="button" data-add-override="user">Add an account override</button>
+      </>,
+    );
+    screen.getByRole("button", { name: "Clear" }).focus();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Clear" })));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add an account override" }));
+  });
+
   it("says the server refused a change with no Try again", async () => {
     set.mockResolvedValueOnce({ ok: false, error: "killed" });
     render(row(false));

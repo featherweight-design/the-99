@@ -294,6 +294,8 @@ export const adminCopy = {
     pendingHint: "Press On or Off to save.",
     accountSearch: "Search by name, email or id",
     accountNoMatch: "No account matches.",
+    groupSearch: "Search groups",
+    groupNoMatch: "No group matches.",
     groupsNone: "No groups yet.",
     already: "already set",
     saveFailed: "Didn’t save. Nothing changed.",
