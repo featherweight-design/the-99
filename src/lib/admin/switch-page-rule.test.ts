@@ -142,6 +142,11 @@ describe("switchPage", () => {
     expect(cut.history.map((h) => h.what)).toEqual(["You set app-wide: not set → 1", "You set app-wide: not set → 2"]);
   });
 
+  it("never says the parent allows all when there are no accounts", () => {
+    const p = switchPage({ name: "TUNING_ENABLED", env: envValues({ TUNING_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" }), overrides: [], verdicts: new Map(), accounts: [], groups: [], events: [], historyLimit: 100, viewerId: "u1" });
+    expect(p.rungs.find((r) => r.key === "needs")).toMatchObject({ value: "Analysis tab: off for all 0 accounts", decides: "decides for none" });
+  });
+
   it("formats times in UTC with a 24-hour clock", () => {
     expect(fmtWhen(new Date("2026-01-02T03:04:00Z"))).toBe("2 Jan · 03:04");
     expect(fmtWhen(new Date("2026-10-11T23:59:00-05:00"))).toBe("12 Oct · 04:59");

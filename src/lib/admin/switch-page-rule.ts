@@ -155,7 +155,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   if (parent) {
     const parentOn = [...verdicts.values()].filter((v) => v[parent].on).length;
     const state = parentOn === total && total > 0 ? copy.result.allOn(total) : parentOn === 0 ? copy.result.allOff(total) : adminCopy.switches.resolved.count(parentOn, total);
-    rungs.push(rung("needs", copy.needsValue(label(parent), state.charAt(0).toLowerCase() + state.slice(1)), "plain", false, parentOn === total ? copy.allows(total) : undefined));
+    rungs.push(rung("needs", copy.needsValue(label(parent), state.charAt(0).toLowerCase() + state.slice(1)), "plain", false, parentOn === total && total > 0 ? copy.allows(total) : undefined));
   }
 
   const onNames = accounts.filter((a) => verdicts.get(a.id)?.[name].on).map(accountName);
