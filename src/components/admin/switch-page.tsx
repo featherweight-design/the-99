@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Banner, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
+import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { KILL } from "../../lib/switches/resolve";
 import { AppWideControl, RowControls } from "./override-controls";
@@ -188,31 +188,41 @@ export function SwitchPageView({
       <CheckAccount explanations={page.explanations} initial={account} />
 
       <SectionHead title={copy.historyHead} meta={page.historyCut ? copy.historyLatest(page.history.length) : copy.historyCount(page.history.length)} />
-      <div data-testid="switch-history" className="flex flex-col gap-[10px]">
-        {page.history.length ? (
-          <>
-            <ol className="m-0 list-none overflow-hidden rounded-[12px] border border-solid border-[color:var(--border)] p-0">
-              {page.history.map((h, i) => (
-                <li
-                  key={i}
-                  className={`flex flex-col gap-[4px] px-[14px] py-[11px] md:grid md:grid-cols-[130px_minmax(0,1fr)] md:gap-[14px] md:px-[16px] ${
-                    i > 0 ? "border-0 border-t border-solid border-[color:var(--border)]" : ""
-                  }`}
-                >
-                  <span className="font-mono text-[11px] leading-[1.6] text-[color:var(--fg-faint)]">{h.when}</span>
-                  <div className="flex min-w-0 flex-col gap-[3px]">
-                    <span className="text-[13.5px] leading-[1.45] text-[color:var(--fg)] [overflow-wrap:anywhere]">{h.what}</span>
-                    {h.note && <span className="text-[12.5px] italic leading-[1.45] text-[color:var(--fg-muted)]">{copy.note(h.note)}</span>}
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <span className="text-[12px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.historyFoot}</span>
-          </>
-        ) : (
-          <p className={`${FAINT_P} text-[color:var(--fg-faint)]`}>{`${copy.noHistory} ${copy.historyFoot}`}</p>
-        )}
-      </div>
+      <HistoryList items={page.history} foot={copy.historyFoot} empty={copy.noHistory} testId="switch-history" />
+    </div>
+  );
+}
+
+/**
+ * A page's history (design table, Switch page; the group page reuses it): newest first, when in
+ * mono at the left from `md` up, the change and its note; the foot says the times are UTC.
+ */
+export function HistoryList({ items, foot, empty, testId }: { items: readonly HistoryItem[]; foot: string; empty: string; testId: string }) {
+  return (
+    <div data-testid={testId} className="flex flex-col gap-[10px]">
+      {items.length ? (
+        <>
+          <ol className="m-0 list-none overflow-hidden rounded-[12px] border border-solid border-[color:var(--border)] p-0">
+            {items.map((h, i) => (
+              <li
+                key={i}
+                className={`flex flex-col gap-[4px] px-[14px] py-[11px] md:grid md:grid-cols-[130px_minmax(0,1fr)] md:gap-[14px] md:px-[16px] ${
+                  i > 0 ? "border-0 border-t border-solid border-[color:var(--border)]" : ""
+                }`}
+              >
+                <span className="font-mono text-[11px] leading-[1.6] text-[color:var(--fg-faint)]">{h.when}</span>
+                <div className="flex min-w-0 flex-col gap-[3px]">
+                  <span className="text-[13.5px] leading-[1.45] text-[color:var(--fg)] [overflow-wrap:anywhere]">{h.what}</span>
+                  {h.note && <span className="text-[12.5px] italic leading-[1.45] text-[color:var(--fg-muted)]">{copy.note(h.note)}</span>}
+                </div>
+              </li>
+            ))}
+          </ol>
+          <span className="text-[12px] leading-[1.5] text-[color:var(--fg-faint)]">{foot}</span>
+        </>
+      ) : (
+        <p className={`${FAINT_P} text-[color:var(--fg-faint)]`}>{`${empty} ${foot}`}</p>
+      )}
     </div>
   );
 }

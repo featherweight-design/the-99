@@ -17,7 +17,11 @@ import { SwitchTags } from "./switches-list";
 export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
   { key: "switches", href: "/admin/switches", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
+  { key: "groups", href: "/admin/groups", title: adminCopy.tabs.groups, sub: adminCopy.groups.sub },
 ] as const;
+
+/** A group's name and description, for the head's detail mode on its page. */
+export type GroupHeadName = { id: string; name: string; description: string | null };
 
 function tabFor(pathname: string) {
   // The longest href that prefixes the path, so a later `/admin/switches` beats `/admin`.
@@ -30,6 +34,19 @@ function tabFor(pathname: string) {
 function switchOf(pathname: string): SwitchName | null {
   const m = /^\/admin\/switches\/([^/]+)\/?$/.exec(pathname);
   return m && isSwitchName(m[1]) ? m[1] : null;
+}
+
+/**
+ * The group a `/admin/groups/<id>` path names, or the new-group page, for the head's detail mode:
+ * the group's name as the title, its description as the sub (none, no sub). An id the map does not
+ * hold draws the plain Groups head; the page itself is the 404.
+ */
+function groupOf(pathname: string, groups: readonly GroupHeadName[]): { title: string; sub: string | null } | null {
+  const m = /^\/admin\/groups\/([^/]+)\/?$/.exec(pathname);
+  if (!m) return null;
+  if (m[1] === "new") return { title: adminCopy.groups.newTitle, sub: null };
+  const g = groups.find((x) => x.id === m[1]);
+  return g ? { title: g.name, sub: g.description } : null;
 }
 
 /**
@@ -98,11 +115,14 @@ function usePinnedHead(headRef: RefObject<HTMLElement | null>, tabsRef: RefObjec
   }, [headRef, tabsRef]);
 }
 
-export function AdminHead({ env }: { env: AdminEnv }) {
+export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readonly GroupHeadName[] }) {
   const pathname = usePathname() ?? "/admin";
   const current = tabFor(pathname);
   // A switch's page keeps the tab strip, with Switches selected, and titles itself with the switch.
   const detail = switchOf(pathname);
+  // A group's page, and the new-group page, title themselves likewise with Groups selected.
+  const group = detail ? null : groupOf(pathname, groups);
+  const back = detail ? { href: "/admin/switches", text: adminCopy.switch.back } : group ? { href: "/admin/groups", text: adminCopy.groups.back } : null;
   const ref = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLElement>(null);
   usePinnedHead(ref, tabsRef);
@@ -120,10 +140,10 @@ export function AdminHead({ env }: { env: AdminEnv }) {
           />
           {env}
         </span>
-        {detail && (
-          <Link href="/admin/switches" className="ml-auto text-[13px] text-[color:var(--accent)]">
-            {adminCopy.switch.back}
-            <PendingReporter href="/admin/switches" />
+        {back && (
+          <Link href={back.href} className="ml-auto text-[13px] text-[color:var(--accent)]">
+            {back.text}
+            <PendingReporter href={back.href} />
           </Link>
         )}
       </div>
@@ -133,12 +153,16 @@ export function AdminHead({ env }: { env: AdminEnv }) {
           <span className="font-mono text-[11.5px] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{detail}</span>
           <SwitchTags row={{ kind: switchKind(detail), parent: switchParent(detail) }} />
         </div>
+      ) : group ? (
+        <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[28px]">{group.title}</h1>
       ) : (
         <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{current.title}</h1>
       )}
-      <p className="m-0 max-w-[720px] text-pretty text-[13px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13.5px]">
-        {detail ? switchCopy[detail].description : current.sub}
-      </p>
+      {(detail || !group || group.sub) && (
+        <p className="m-0 max-w-[720px] text-pretty text-[13px] leading-[1.6] text-[color:var(--fg-body)] [overflow-wrap:anywhere] md:text-[13.5px]">
+          {detail ? switchCopy[detail].description : group ? group.sub : current.sub}
+        </p>
+      )}
       <nav ref={tabsRef} aria-label={adminCopy.tabsLabel} className="mt-[4px] flex gap-[15px] overflow-hidden md:gap-[24px]">
         {ADMIN_TABS.map((tab) => {
           const selected = tab.key === current.key;

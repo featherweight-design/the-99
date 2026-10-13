@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AdminHead } from "../../components/admin/admin-head";
 import { adminMetadata, requireAdmin } from "../../lib/admin/access";
+import { loadGroupHeads } from "../../lib/admin/groups";
 
 // Gated like the render: a stranger's 404 carries the root's metadata alone, as an unknown path's does.
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ robots: { index: false, follow: false } });
@@ -13,12 +14,17 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
  * strip stays, the rest scrolling away), and a page's pinned bar (Costs' month bar) is `sticky`
  * directly beneath it, at the `--admin-head-h` the head publishes from the measured height of its
  * pinned part (design table R2 delta `page`, and the head pinning row).
+ *
+ * The head is a client component keyed off the pathname, so the layout hands it every group's name
+ * and description for a group's page to title itself with (one small query). Every group write
+ * revalidates `/admin` as a layout, so the names are never stale.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { env } = await requireAdmin();
+  const groups = await loadGroupHeads();
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <AdminHead env={env} />
+      <AdminHead env={env} groups={groups} />
       {children}
     </div>
   );

@@ -2398,9 +2398,10 @@ export const adminEvents = pgTable("admin_events", {
   newValue: text("new_value"),
   note: text("note"),
 }, (t) => [
-  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set')`),
+  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set')`),
   check("admin_events_scope_check", sql`${t.scope} is null or ${t.scope} in ('app', 'group', 'user')`),
-  // Each kind names what it changed.
+  // Each kind names what it changed. A `group_allowance_set` names its group and a change: either
+  // side may be null (null is the default daily credits), never both.
   check("admin_events_fields_check", sql`case ${t.kind}
     when 'override_set' then ${t.switchName} is not null and ${t.scope} is not null and ${t.newValue} is not null
     when 'override_cleared' then ${t.switchName} is not null and ${t.scope} is not null and ${t.oldValue} is not null
@@ -2410,6 +2411,7 @@ export const adminEvents = pgTable("admin_events", {
     when 'member_added' then ${t.groupId} is not null and ${t.userId} is not null
     when 'member_removed' then ${t.groupId} is not null and ${t.userId} is not null
     when 'setting_set' then ${t.settingKey} is not null and ${t.settingMonth} is not null and ${t.newValue} is not null
+    when 'group_allowance_set' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
   end`),
   // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
   check("admin_events_scope_target_check", sql`${t.scope} is null

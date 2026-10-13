@@ -45,6 +45,10 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/admin/switches", dynamic: false },
   // A switch's page, for the same schema import (admin plan 8b).
   { path: "/admin/switches/[name]", dynamic: true },
+  // The Groups pages (admin plan 9a) read the same switch state and account list, for the same reason.
+  { path: "/admin/groups", dynamic: false },
+  { path: "/admin/groups/new", dynamic: false },
+  { path: "/admin/groups/[id]", dynamic: true },
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },

@@ -1966,6 +1966,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
   staging, production and local-dev are refused by id. It writes as made-up accounts and removes every row in a
   `finally`.
+- `pnpm probe:admin-groups` proves the admin's group writes (admin plan 9a) against a real database: a create
+  records `group_created` with the name and a `member_added` per member; a name another group holds is refused with
+  nothing written; a rename, a description and daily credits in one save record `group_renamed`, `group_described`
+  and `group_allowance_set`, and clearing the credits records `group_allowance_set` from the old value to null; a
+  save that changes nothing records nothing; moving an account from another group records `member_removed` on that
+  group and then `member_added` here, and leaves it one membership row; a removal records `member_removed` and
+  deletes the row; and adding an account to a group whose override turns a model feature on returns a confirm and
+  writes nothing until the confirmed count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
+  branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. It writes as made-up
+  accounts and removes every row in a `finally`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:
   with `MODEL_DAILY_ALLOWANCE` unset, a player in no group keeps five and the owner keeps ten, and a group with no
   allowance changes nothing; a member takes their group's allowance, through the same read a reservation makes and

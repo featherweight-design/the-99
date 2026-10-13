@@ -108,6 +108,9 @@ describe("every admin page and layout is gated first", () => {
     expect(rel).toContain("page.tsx");
     expect(rel).toContain(join("switches", "page.tsx"));
     expect(rel).toContain(join("switches", "[name]", "page.tsx"));
+    expect(rel).toContain(join("groups", "page.tsx"));
+    expect(rel).toContain(join("groups", "new", "page.tsx"));
+    expect(rel).toContain(join("groups", "[id]", "page.tsx"));
   });
 
   it.each(files.map((f) => [f.slice(HERE.length + 1), f]))("%s", (_rel, path) => {
