@@ -41,6 +41,7 @@ import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 export type AvailMode = "all" | "free";
 
@@ -672,6 +673,7 @@ export function CommandersView({
           />
         ) : (
           <>
+            <ArrivalOrder>
             <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
               {windowed.map((r, i) => (
                 <li
@@ -733,6 +735,7 @@ export function CommandersView({
                 </li>
               )}
             </ul>
+            </ArrivalOrder>
             {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
             {remaining > 0 && <div className="h-[24px] sm:hidden" />}
             {remaining === 0 && wasWindowed && (

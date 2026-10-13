@@ -14,6 +14,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
 import { HeroCommander } from "./hero-commander";
+import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 export function ReadyToBuild({
   ready,
@@ -34,6 +35,8 @@ export function ReadyToBuild({
         {c.readyHeading}
       </h2>
 
+      {/* The pair arrives together: one row, one fade (Hugh, 2026-10-12). */}
+      <ArrivalOrder>
       <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2 sm:gap-[14px]">
         {ready.shown.map((item) => (
           <HeroCommander
@@ -46,6 +49,7 @@ export function ReadyToBuild({
           />
         ))}
       </div>
+      </ArrivalOrder>
 
       {/* §ReadyToBuild — "more above" row */}
       <div className="flex flex-none items-center gap-[10px] sm:gap-[12px]">

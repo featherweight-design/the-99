@@ -1,0 +1,94 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ARRIVAL_CAP_MS, ARRIVAL_STAGGER_MS, ArrivalQueue } from "./arrival-queue";
+
+// A grid laid out by hand: each piece of art has the top edge of its row.
+function grid(rows: number, cols: number) {
+  const tops = new Map<HTMLElement, number>();
+  const cells: HTMLElement[][] = [];
+  for (let r = 0; r < rows; r++) {
+    cells.push([]);
+    for (let c = 0; c < cols; c++) {
+      const el = document.createElement("div");
+      tops.set(el, r * 300);
+      cells[r].push(el);
+    }
+  }
+  return { cells, topOf: (el: HTMLElement) => tops.get(el) ?? 0 };
+}
+
+describe("ArrivalQueue", () => {
+  let now = 0;
+  beforeEach(() => {
+    now = 0;
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+  const advance = (ms: number) => {
+    now += ms;
+    vi.advanceTimersByTime(ms);
+  };
+
+  function setup(rows: number, cols: number) {
+    const g = grid(rows, cols);
+    const q = new ArrivalQueue(() => now, g.topOf);
+    const released: HTMLElement[] = [];
+    for (const row of g.cells) for (const el of row) q.join(el, () => released.push(el));
+    return { q, cells: g.cells, released };
+  }
+
+  it("releases a row only when every piece in it has landed, all together", () => {
+    const { q, cells, released } = setup(1, 3);
+    q.landed(cells[0][0]);
+    q.landed(cells[0][1]);
+    expect(released).toEqual([]);
+    q.landed(cells[0][2]);
+    expect(released).toEqual(cells[0]);
+  });
+
+  it("goes top to bottom: a row that landed first waits for the row above it", () => {
+    const { q, cells, released } = setup(2, 2);
+    cells[1].forEach((el) => q.landed(el));
+    advance(ARRIVAL_CAP_MS - 1);
+    expect(released).toEqual([]);
+    cells[0].forEach((el) => q.landed(el));
+    expect(released).toEqual(cells[0]);
+    // The next row follows a stagger behind.
+    advance(ARRIVAL_STAGGER_MS - 1);
+    expect(released).toEqual(cells[0]);
+    advance(1);
+    expect(released).toEqual([...cells[0], ...cells[1]]);
+  });
+
+  it("never holds landed art past the cap waiting on a slow piece above it", () => {
+    const { q, cells, released } = setup(2, 2);
+    q.landed(cells[0][0]);
+    cells[1].forEach((el) => q.landed(el));
+    advance(ARRIVAL_CAP_MS - 1);
+    expect(released).toEqual([]);
+    advance(1);
+    // Everything that landed goes at the cap; the slow piece waits only for itself.
+    expect(released).toEqual(expect.arrayContaining([cells[0][0], ...cells[1]]));
+    expect(released).not.toContain(cells[0][1]);
+    q.landed(cells[0][1]);
+    // A stagger behind the release just made, at most.
+    advance(ARRIVAL_STAGGER_MS);
+    expect(released).toContain(cells[0][1]);
+    expect(q.size).toBe(0);
+  });
+
+  it("stops waiting on a piece that left", () => {
+    const { q, cells, released } = setup(2, 1);
+    q.landed(cells[1][0]);
+    q.leave(cells[0][0]);
+    expect(released).toEqual([cells[1][0]]);
+  });
+
+  it("releases nothing once disposed", () => {
+    const { q, cells, released } = setup(2, 1);
+    q.landed(cells[1][0]);
+    q.dispose();
+    advance(ARRIVAL_CAP_MS * 2);
+    expect(released).toEqual([]);
+  });
+});

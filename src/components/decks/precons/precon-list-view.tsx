@@ -30,6 +30,7 @@ import { PendingReporter } from "../../shell/pending-reporter";
 import { PreconRow } from "./precon-row";
 import { PreconTile } from "./precon-tile";
 import { EmptyCollectionBand } from "./empty-collection-band";
+import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 const copy = preconsCopy;
 export const PRECON_ORDER_KEY = "the99:precons:order";
@@ -237,10 +238,14 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
           </button>
         </div>
       ) : order === "owned" ? (
-        <div className="p-[16px_16px_24px] md:p-[18px_22px_8px]">
-          <ul className={listClass}>{shown.map(item)}</ul>
-        </div>
+        <ArrivalOrder>
+          <div className="p-[16px_16px_24px] md:p-[18px_22px_8px]">
+            <ul className={listClass}>{shown.map(item)}</ul>
+          </div>
+        </ArrivalOrder>
       ) : (
+        // One reading order across the years: a year's rows wait on the year above.
+        <ArrivalOrder>
         <div className="flex flex-col gap-[22px] p-[16px_16px_24px] md:p-[18px_22px_8px]">
           {groupByYear(shown).map((g) => (
             <section key={g.year} aria-labelledby={`precons-${g.year}`} className={`flex flex-col ${view === "tiles" ? "gap-[10px]" : "gap-[8px]"}`}>
@@ -255,6 +260,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
             </section>
           ))}
         </div>
+        </ArrivalOrder>
       )}
     </div>
   );
