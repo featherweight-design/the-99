@@ -33,8 +33,9 @@ function switchOf(pathname: string): SwitchName | null {
 }
 
 /**
- * The head's height, published for a page's own pinned bar to sit beneath (`top-[var(--admin-head-h,0px)]`).
- * The head wraps its sub at narrow widths, so the height is measured rather than assumed.
+ * The height of the head's PINNED part, published for a page's own pinned bar to sit beneath
+ * (`top-[var(--admin-head-h,0px)]`): the whole head from `md` up, the tab strip alone on a phone
+ * (`usePinnedHead`). The head wraps its sub at narrow widths, so it is measured rather than assumed.
  */
 export const ADMIN_HEAD_HEIGHT_VAR = "--admin-head-h";
 
@@ -75,10 +76,12 @@ function usePinnedHead(headRef: RefObject<HTMLElement | null>, tabsRef: RefObjec
     const root = document.documentElement;
     const wide = window.matchMedia("(min-width: 48rem)");
     const publish = () => {
-      // The head is sticky, so it is the strip's offset parent: what sits above the strip.
-      const hidden = wide.matches ? 0 : tabs.offsetTop;
+      // What sits above the strip, measured unrounded (`offsetTop` is whole pixels, and the sub's
+      // 20.8px lines would leave a sliver of it showing, or clip the strip).
+      const box = head.getBoundingClientRect();
+      const hidden = wide.matches ? 0 : tabs.getBoundingClientRect().top - box.top;
       head.style.top = `${-hidden}px`;
-      root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${head.getBoundingClientRect().height - hidden}px`);
+      root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${box.height - hidden}px`);
     };
     publish();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);

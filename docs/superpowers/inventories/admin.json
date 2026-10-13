@@ -16,7 +16,7 @@
     },
     {
       "id": "admin-costs-caps",
-      "label": "/admin: Costs, scrolled to the caps (IN CODE / SET HERE tags, Enter elsewhere)",
+      "label": "/admin: Costs, scrolled to the caps (IN CODE / RECORDED HERE labels, Enter elsewhere)",
       "view": "src/components/admin/costs-view.tsx",
       "steps": [
         {
