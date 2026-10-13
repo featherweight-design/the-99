@@ -109,6 +109,7 @@ async function main() {
     await db.execute(sql`insert into deck_notes (deck_id, user_id, body) values (${deckId}, ${P}, 'probe')`);
     await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${P}, ${X}, 2, 'prb'), (${F}, ${X}, 1, 'prb')`);
     await db.execute(sql`insert into user_prefs (user_id) values (${P}) on conflict do nothing`);
+    await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity) values (${P}, ${X}, 2)`);
     const { rows: call } = await db.execute<{ id: string }>(sql`insert into model_calls (user_id, feature) values (${P}, 'fits_read') returning id`);
     await db.execute(sql`
       insert into fits_reads (user_id, oracle_id, status, model_call_id, model, prompt_version, candidate_hashes)
@@ -286,6 +287,7 @@ async function main() {
     await db.execute(sql`delete from fits_reads where user_id in ${who}`);
     await db.execute(sql`delete from model_calls where user_id in ${who}`);
     await db.execute(sql`delete from user_prefs where user_id in ${who}`);
+    await db.execute(sql`delete from wishlist_items where user_id in ${who}`);
     await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
     await db.execute(sql`delete from flag_overrides where updated_by = ${ADMIN}`);
     await db.execute(sql`delete from flag_group_members where added_by = ${ADMIN}`);

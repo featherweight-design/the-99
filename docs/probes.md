@@ -1875,7 +1875,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:purge` proves the account purge (`purgeAccount`, run by the Clerk `user.deleted` webhook) against a real
   database. It builds an account with friends (as inviter and as redeemer), a pod it owns with two members, a
   membership of a friend's pod, spare grants, a folder, a deck with cards, a version, a game and a note, a
-  collection, preferences, a model call with a row pointing at it, and an admin event about it; purges it; and then
+  collection, a wishlist line, preferences, a model call with a row pointing at it, and an admin event about it; purges it; and then
   searches every text column of every table (read from `information_schema`) for the account's id BY VALUE, with
   no list of account columns, so a table the schema scan missed would still show. It proves no column names the account afterwards, the deck's children went by cascade, the owned pod
   passed to the longest-standing member, a friend's pod, friendship and collection stand, the friend's stamp
