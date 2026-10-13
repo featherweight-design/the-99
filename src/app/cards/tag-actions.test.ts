@@ -25,6 +25,14 @@ describe("searchTagCards", () => {
     expect(stub.flagEnv).toEqual([RESOLVED, RESOLVED]);
   });
 
+  it("searches the description surface with the tuning switch off, since the header pencil does not depend on it", async () => {
+    stub.tuningOn = false;
+    stub.on = false;
+    expect(await searchTagCards("description", "sol")).toEqual([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]);
+    expect(await searchTagCards("tuning", "sol")).toBeNull();
+    expect(stub.signedIn).toHaveBeenCalled();
+  });
+
   it("asks for only the cards a commander deck may hold, in the query itself, since a tag here is a requirement", async () => {
     await searchTagCards("intake", "o");
     expect(stub.search).toHaveBeenCalledWith("o", { commanderLegalOnly: true });
