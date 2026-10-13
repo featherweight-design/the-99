@@ -841,7 +841,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   this build, with a batch in flight or with the route blocked. What DID move is WHEN a reader can
   press. The page's document went from 1.41MB (~15.5s to arrive) to 528KB (1.6s), so the page is
   usable at ~7.5s instead of ~17.7s, and a press that early queues behind the app's own startup
-  downloads (its JS, Clerk's ~600KB UI bundle, the fonts) and arrives at ~24s. That is startup
+  downloads (its JS, the fonts, and at the time Clerk's prebuilt UI, no longer fetched since `prefetchUI={false}` on 2026-10-12) and arrives at ~24s. That is startup
   contention, identical with the fields route blocked, and not this feature's cost. It also means
   a harness that presses "2s after the router exists" compares two different moments on two
   builds with different load times; press at a fixed time after landing instead.
