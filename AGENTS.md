@@ -704,7 +704,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `scoreWriterVersion`, REQUIRES its `env`, so leaving it out does not compile. Since admin PR 7b so does the claim
   model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`), every reader under `src/lib/decks` (but
   `envForPageBasis`, which reads the kill switch on purpose), and the wrappers that took an OPTIONAL env and forwarded
-  it to the claim model (`applyCollectionChange`, `loadContestedCard`, `loadSummary`, `loadFillGate`,
+  it to the claim model (`applyCollectionChange`, `loadContestedCard`, `loadSummaryView`, `loadFillGate`,
   `resolveAnswer`, `loadOwnedCandidates`). Wrappers that DEFAULT their own `env` to `process.env` and hand it to the
   claim model still compile without one: 7c holds those in `collection/summary-read` (`loadContestedCards`,
   `countContestedCards`, `loadChooserCards`), `collection/card-detail` (`loadCardDetail`), `intake/rows`

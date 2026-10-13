@@ -373,7 +373,8 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
       // `reasonType === "edhrec"` sidesteps that regardless of how real that risk is.
       let onList = false;
       try {
-        const { suggestions } = await loadDeckSuggestions(deckId, userId);
+        // No signed-in reader here: the probe reads under the environment's switches.
+        const { suggestions } = await loadDeckSuggestions(deckId, userId, process.env);
         onList = suggestions.some((s) => s.oracleId === suggested.oracle_id && s.reasonType === "edhrec");
       } catch {
         onList = false;
@@ -692,7 +693,7 @@ async function run() {
     // assuming it: this check FAILS honestly instead of asserting a state the
     // Consider tile's own data path cannot produce.
     if (fixtures.over) {
-      const map = await loadAvailability(setup.userId, { excludeDeckId: setup.deckId, oracleIds: [fixtures.over] });
+      const map = await loadAvailability(setup.userId, { excludeDeckId: setup.deckId, oracleIds: [fixtures.over], env: process.env });
       const a = map.get(fixtures.over);
       const state = a ? availabilityState(a, { selfExcluded: false }) : null;
       if (state !== "over") {
