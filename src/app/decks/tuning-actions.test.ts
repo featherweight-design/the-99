@@ -308,8 +308,8 @@ describe("runTuning's model call (v2)", () => {
   it("refuses a raw notes body past the wire bound without reading it", async () => {
     calls.startKind = "started";
     const before = calls.resolveAsked.length;
-    // Interior whitespace collapses to one space when drawn, so only the raw bound can tell this from a valid note.
-    expect(await runTuning(DECK, { anyway: true, notes: `a${" ".repeat(NOTES_RAW_MAX)}b` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    // Trailing whitespace is trimmed before any later check, so only the raw bound can tell this from a valid note.
+    expect(await runTuning(DECK, { anyway: true, notes: `a${" ".repeat(NOTES_RAW_MAX)}` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
     expect(calls.resolveAsked.length).toBe(before);
     expect(calls.started).toBe(0);
   });
@@ -577,6 +577,18 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
       const [, patch, billed] = calls.finished[calls.finished.length - 1] as [unknown, { errorClass: string }, { usage: unknown }[]];
       expect(patch.errorClass).toBe("ungrounded");
       expect(billed.map((b) => b.usage)).toEqual([USAGE, USAGE]);
+    });
+
+    it("gives the first ask the whole deadline even when the clock ticks before it is made", async () => {
+      setup();
+      const requests: { deadlineMs: number }[] = [];
+      let now = 1_000_000;
+      // Every read advances the clock, so any elapsed-time subtraction on the first ask shows as a short deadline.
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => (now += 1));
+      calls.modelQueue = [good];
+      calls.onModelCall = (req) => { requests.push(req as (typeof requests)[number]); };
+      try { await runTuning(DECK, { anyway: true }); } finally { clock.mockRestore(); calls.onModelCall = undefined; }
+      expect(requests[0].deadlineMs).toBe(110_000);
     });
 
     it("gives the second ask only the deadline the first left, and no retry of its own", async () => {
