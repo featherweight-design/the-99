@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { Banner, OverrideItem, Rung, SwitchPage } from "../../lib/admin/switch-page-rule";
-import { adminCopy } from "../../lib/copy/admin";
+import { adminCopy, switchCopy } from "../../lib/copy/admin";
+import { KILL } from "../../lib/switches/resolve";
+import { AppWideControl, RowControls } from "./override-controls";
+import { OverridePicker, ROW } from "./override-picker";
 import { PendingReporter } from "../shell/pending-reporter";
 import { CheckAccount } from "./check-account";
 import { SectionHead } from "./costs-detail";
@@ -78,44 +81,67 @@ function BannerBox({ banner }: { banner: Banner }) {
   );
 }
 
-function Override({ item }: { item: OverrideItem }) {
+type Section = { kind: "group" | "user"; page: SwitchPage };
+
+function Override({ item, section }: { item: OverrideItem; section: Section }) {
+  const { page, kind } = section;
   return (
-    <li
-      data-override={item.key}
-      className="flex flex-col gap-[10px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[12px] md:flex-row md:items-center md:gap-[16px] md:px-[16px]"
-    >
+    <li data-override={item.key} className={ROW}>
       <div className="flex min-w-0 flex-col gap-[2px] md:flex-1">
-        <span className="text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{item.title}</span>
+        <span className="pr-[48px] text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere] md:pr-0">{item.title}</span>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{item.sub}</span>
       </div>
-      <span className={`flex-none text-[13px] font-medium ${item.refused ? "text-[color:var(--fg-disabled)]" : "text-[color:var(--fg)]"}`}>
-        {adminCopy.switches.app[item.value]}
-      </span>
-      <div className="flex min-w-0 flex-col gap-[2px] md:flex-[1.3]">
-        <span
-          className={`text-[12.5px] leading-[1.45] ${item.note ? "italic" : ""} ${item.refused ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}`}
-        >
-          {item.note ? copy.note(item.note) : copy.noNote}
-        </span>
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{item.meta}</span>
-      </div>
+      <RowControls
+        target={{ switchName: page.name, scope: kind, ...(kind === "group" ? { groupId: item.key } : { targetUserId: item.key }) }}
+        title={item.title}
+        value={item.value}
+        killed={item.refused}
+        context={{ switchLabel: switchCopy[page.name].label, scope: kind, groupName: kind === "group" ? item.title : null }}
+        announces={kind === "group" && page.row.kind !== "model"}
+        note={
+          <>
+            <span className={`text-[12.5px] leading-[1.45] ${item.note ? "italic" : ""} ${item.refused ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}`}>
+              {item.note ? copy.note(item.note) : copy.noNote}
+            </span>
+            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{item.meta}</span>
+          </>
+        }
+      />
     </li>
   );
 }
 
-function Overrides({ title, items, empty }: { title: string; items: OverrideItem[]; empty: string }) {
+function Overrides({ title, items, empty, section }: { title: string; items: OverrideItem[]; empty: string; section: Section }) {
+  const { page, kind } = section;
+  const choices =
+    kind === "group"
+      ? page.groupChoices.map((g) => ({ id: g.id, label: g.name, sub: g.id, search: g.name.toLocaleLowerCase("en-US") }))
+      : page.people.map((p) => ({ id: p.id, label: p.label, sub: p.email ?? p.id, search: `${p.label} ${p.email ?? ""}`.toLocaleLowerCase("en-US") }));
   return (
     <>
       <SectionHead title={title} meta={items.length ? String(items.length) : copy.sectionNone} />
-      {items.length ? (
-        <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
-          {items.map((it) => (
-            <Override key={it.key} item={it} />
-          ))}
-        </ul>
-      ) : (
-        <p className={`${FAINT_P} text-[color:var(--fg-muted)]`}>{empty}</p>
-      )}
+      <div className="flex flex-col gap-[8px]">
+        {items.length ? (
+          <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+            {items.map((it) => (
+              <Override key={it.key} item={it} section={section} />
+            ))}
+          </ul>
+        ) : (
+          <p className={`${FAINT_P} text-[color:var(--fg-muted)]`}>{empty}</p>
+        )}
+        {!page.plumbing && (
+          <OverridePicker
+            kind={kind}
+            name={page.name}
+            label={switchCopy[page.name].label}
+            choices={choices}
+            taken={new Set(items.map((i) => i.key))}
+            killed={page.row.env === KILL}
+            announces={kind === "group" && page.row.kind !== "model"}
+          />
+        )}
+      </div>
     </>
   );
 }
@@ -147,16 +173,14 @@ export function SwitchPageView({
 
       <SectionHead title={copy.appHead} meta={page.app.meta} />
       <div data-testid="switch-app" className="flex flex-col gap-[8px]">
-        <span className={`text-[14px] font-medium ${page.app.refused ? "text-[color:var(--danger)]" : page.app.set ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}>
-          {page.app.value}
-        </span>
+        <AppWideControl name={page.name} label={switchCopy[page.name].label} value={page.app.current} killed={page.row.env === KILL} />
         {page.app.note && <span className="text-pretty text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{page.app.note}</span>}
       </div>
 
       {sections && (
         <>
-          <Overrides title={copy.groupsHead} items={page.groups} empty={copy.noGroup} />
-          <Overrides title={copy.accountsHead} items={page.accounts} empty={copy.noAccount} />
+          <Overrides title={copy.groupsHead} items={page.groups} empty={copy.noGroup} section={{ kind: "group", page }} />
+          <Overrides title={copy.accountsHead} items={page.accounts} empty={copy.noAccount} section={{ kind: "user", page }} />
         </>
       )}
 

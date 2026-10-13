@@ -1,0 +1,52 @@
+// Add a group or an account override (admin STATES F7, F8).
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const set = vi.fn<(input: object) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: (i: object) => set(i), clearSwitchOverride: vi.fn() }));
+
+const { OverridePicker } = await import("./override-picker");
+
+const PEOPLE = Array.from({ length: 9 }, (_, i) => ({ id: `user_${i}`, label: `Player ${i}`, sub: `p${i}@x`, search: `player ${i} p${i}@x` }));
+const draw = (kind: "group" | "user", choices = PEOPLE, taken = new Set<string>(), killed = false) =>
+  render(<OverridePicker kind={kind} name="DECK_NOTES_ENABLED" label="Deck notes" choices={choices} taken={taken} killed={killed} announces={false} />);
+
+describe("OverridePicker", () => {
+  it("opens an inline lookup of at most seven, filtered by name, email or id prefix (F7)", () => {
+    draw("user");
+    fireEvent.click(screen.getByRole("button", { name: "Add an account override" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(7);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "p3@" } });
+    expect(screen.getAllByRole("listitem").map((l) => l.textContent)).toEqual(["Player 3p3@x"]);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzz" } });
+    expect(screen.getByText("No account matches.")).toBeInTheDocument();
+  });
+
+  it("adds a pending row that writes nothing until On or Off, then saves with its note", async () => {
+    draw("user");
+    fireEvent.click(screen.getByRole("button", { name: "Add an account override" }));
+    fireEvent.click(screen.getByRole("button", { name: /Player 2/ }));
+    expect(screen.getByTestId("pending-override")).toBeInTheDocument();
+    expect(set).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("textbox", { name: "Note (optional)" }), { target: { value: "early look" } });
+    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
+    expect(set).toHaveBeenCalledWith({ switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "user_2", value: "on", note: "early look" });
+  });
+
+  it("marks a target that already has a row `already set` and unpickable (F8)", () => {
+    draw("group", [{ id: "g1", label: "friends", sub: "g1", search: "friends" }, { id: "g2", label: "testers", sub: "g2", search: "testers" }], new Set(["g1"]));
+    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    expect(screen.getByRole("button", { name: /friends/ })).toBeDisabled();
+    expect(screen.getByText("already set")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /testers/ })).toBeEnabled();
+  });
+
+  it("says there are no groups yet, and is disabled under a kill", () => {
+    draw("group", []);
+    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    expect(screen.getByText("No groups yet.")).toBeInTheDocument();
+    draw("user", PEOPLE, new Set(), true);
+    expect(screen.getAllByRole("button", { name: "Add an account override" }).at(-1)).toBeDisabled();
+  });
+});

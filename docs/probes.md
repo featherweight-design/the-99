@@ -1909,6 +1909,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cleared, and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
+- `pnpm probe:admin-switches` proves the admin's override writes (admin plan 8c) against a real database: the
+  switch constraint takes every registry name and refuses another; a set writes one row and one `override_set`, and
+  a second set on the same target updates it and records the old value; a no-op records nothing; a clear deletes the
+  row and records `override_cleared` with its old value; a set under a kill, a plumbing account override and a group
+  that does not exist are refused with nothing written; a snapshot read after the commit carries the change; and
+  clearing an app-wide `off` over an env var that is `true` returns a confirm and writes nothing until the confirmed
+  count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
+  staging, production and local-dev are refused by id. It writes as made-up accounts and removes every row in a
+  `finally`.
 - `pnpm probe:game-opponents` proves opponents in the game log (social Feature C) against a real database. It builds a
   player, a friend with two decks and a pod, and a stranger to the player who is the friend's friend (so a read that lost
   its viewer predicate would find the stranger through the friend). It proves that a friend's decks are offered by

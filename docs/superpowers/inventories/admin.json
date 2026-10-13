@@ -300,6 +300,64 @@
           "scrollTo": "[data-testid='switch-history']"
         }
       ]
+    },
+    {
+      "id": "admin-switch-confirm",
+      "label": "/admin/switches/HELP_ME_CHOOSE_ENABLED: On raises a model feature, so the confirm opens (F3); server HELP_ME_CHOOSE_ENABLED=false; LOCAL-DEV OR SCRATCH ONLY (8c)",
+      "view": "src/components/admin/model-confirm.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/HELP_ME_CHOOSE_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "radio",
+          "name": "^On$"
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-add-account",
+      "label": "/admin/switches/SWAP_TOOLS_ENABLED: Add an account override, lookup open (F7) (8c)",
+      "view": "src/components/admin/override-picker.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/SWAP_TOOLS_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add an account override$"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switch-add-group",
+      "label": "/admin/switches/SWAP_TOOLS_ENABLED: Add a group override with no groups yet (F8) (8c)",
+      "view": "src/components/admin/override-picker.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches/SWAP_TOOLS_ENABLED",
+          "wait": "h1",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add a group override$"
+        },
+        {
+          "settle": 400
+        }
+      ]
     }
   ]
 }

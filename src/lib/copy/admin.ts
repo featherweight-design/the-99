@@ -281,6 +281,25 @@ export const adminCopy = {
       you: "You",
       scope: { app: "app-wide", group: (name: string) => `group ${name}`, user: (name: string) => `account ${name}` },
     },
+    // The writes (admin plan 8c; STATES F3, F5, F7 to F12), from the handoff's `switch` keys. The
+    // pending row's prompt, the account and group lookups and a refusal's line are new here and owed
+    // to /copy-review.
+    appOpts: { notSet: "Not set", on: "On", off: "Off" },
+    rowLabel: (title: string) => `Override for ${title}`,
+    addGroup: "Add a group override",
+    addAccount: "Add an account override",
+    clear: "Clear",
+    cancelAdd: "Cancel",
+    noteField: "Note (optional)",
+    pendingHint: "Press On or Off to save.",
+    accountSearch: "Search by name, email or id",
+    accountNoMatch: "No account matches.",
+    groupsNone: "No groups yet.",
+    already: "already set",
+    saveFailed: "Didn’t save. Nothing changed.",
+    tryAgain: "Try again",
+    refusal: "The server refused that change. Reload the page and try again.",
+    whatsNewInline: "Members see it in What’s new on their next visit.",
     sources: {
       kill: "env var is off",
       account: "account override",
@@ -289,6 +308,31 @@ export const adminCopy = {
       env: "from the env var",
       parent: (parent: string) => `${parent} is off`,
     },
+  },
+
+  // The model confirm (admin STATES F3; design table, Confirm), from the handoff's `confirmModel`
+  // keys. The handoff wrote one lead; one per write, the mean line, a cost line per capability and the
+  // rolling-24-hours credits sentence are new here and owed to /copy-review (plan §Copy, items 6, 7).
+  confirmModel: {
+    title: (name: string, n: number) => `Turn ${name} on for ${n} more account${n === 1 ? "" : "s"}?`,
+    lead: {
+      app: { set: "Turning app-wide on reaches every account without an override of its own.", clear: "Clearing app-wide off falls back to the env var (true)." },
+      group: { set: (g: string) => `Turning ${g} on reaches its members without an account override.`, clear: (g: string) => `Clearing ${g} falls its members back to app-wide or the env var.` },
+      user: { set: "Turning this account on lets it press.", clear: "Clearing this account falls it back to its group, app-wide or the env var." },
+    },
+    spends: (features: string) => `It turns on ${features}, which spends money.`,
+    facts: { who: "Who", cost: "Cost", whatsNew: "What’s new", when: "When" },
+    cost: (feature: string, reserve: string) => `${feature}: each press reserves up to ${reserve}.`,
+    mean: (mean: string) => `Priced presses so far average ${mean}.`,
+    noMean: "No press has been priced yet, so there is no mean to go on.",
+    credits: (limits: string) => `Each press uses one of the account’s ${limits} credits in a rolling 24 hours.`,
+    whatsNew: (n: number, name: string) => `The ${n} account${n === 1 ? "" : "s"} see ${name} in the What’s new sheet on their next visit.`,
+    noWhatsNew: "No What’s new entry changes.",
+    when: "Within 30 seconds, on every server.",
+    note: "Note (optional)",
+    confirm: (n: number) => `Turn on for ${n}`,
+    cancel: "Cancel",
+    capability: { synopsis: "Overview", overview_v2: "Overview v2", tuning: "Suggested changes", proposed_cuts: "Proposed cuts", intake: "Help me choose", fits_read: "Find a deck read" },
   },
 } as const;
 

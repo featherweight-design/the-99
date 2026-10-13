@@ -64,13 +64,16 @@ export type SwitchPage = {
   rungs: Rung[];
   result: { state: ResolvedState; text: string };
   banner: Banner | null;
-  app: { value: string; set: boolean; meta: string; note: string; refused: boolean };
+  app: { value: string; current: OverrideValue | null; set: boolean; meta: string; note: string; refused: boolean };
   groups: OverrideItem[];
   accounts: OverrideItem[];
   history: HistoryItem[];
   /** True when older events exist than the history lists. */
   historyCut: boolean;
   explanations: Explanation[];
+  /** The account universe and the groups, for the add pickers (F7, F8). */
+  people: { id: string; label: string; email: string | null }[];
+  groupChoices: { id: string; name: string }[];
 };
 
 const label = (name: SwitchName) => switchCopy[name].label;
@@ -185,6 +188,7 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
     banner,
     app: {
       value: valueText(appRow?.value ?? null),
+      current: appRow?.value ?? null,
       set: appRow !== null,
       meta: appRow ? copy.appSetBy(actor(appRow.updatedBy), fmtWhen(appRow.updatedAt)) : copy.appNotSet,
       note: [appRow?.note ? copy.note(appRow.note) : "", killed ? copy.appRefused : plumbing ? "" : copy.appNotSetNote].filter(Boolean).join(" "),
@@ -202,6 +206,8 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
       return { when: fmtWhen(e.at), what, note: e.note };
     }),
     historyCut: input.events.length > input.historyLimit,
+    people: accounts.map((a) => ({ id: a.id, label: accountName(a), email: a.email })),
+    groupChoices: [...groups].sort((a, b) => a.name.localeCompare(b.name, "en-US")).map((g) => ({ id: g.id, name: g.name })),
     explanations: accounts.flatMap((a) => {
       const v = verdicts.get(a.id)?.[name];
       return v ? [{ id: a.id, label: accountName(a), on: v.on, source: sourceText(v.source, groupName), kill: v.source.kind === "kill" }] : [];

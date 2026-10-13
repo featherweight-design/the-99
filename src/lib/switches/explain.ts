@@ -1,4 +1,5 @@
-import { SWITCH_FLAGS } from "./flags";
+import { visibleEntries } from "../about/visible";
+import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
 import { SWITCHES, switchParent, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
 
@@ -48,4 +49,34 @@ export function explainForAccounts(snapshot: SwitchSnapshot | null, userIds: rea
 /** Each switch's environment value as set on this deployment (`off` included), by member reads. */
 export function switchEnvValues(): Readonly<Record<SwitchName, string | null>> {
   return Object.fromEntries(SWITCHES.map(({ name }) => [name, process.env[name] ?? null])) as Record<SwitchName, string | null>;
+}
+
+/**
+ * What a write raises (admin plan 8c; READINESS audit finding 2): the accounts that gain a model
+ * capability (`MODEL_CAPABILITIES`), the capabilities gained, and the accounts whose About page gains
+ * an entry. Each side resolves through the request path's own `resolveEnv`, so a parent's flip, or
+ * clearing an app-wide `off` over an env var that is `true`, counts exactly as a reader would meet it.
+ * Turning something off never raises. Pure.
+ */
+export type SwitchRise = { accounts: string[]; capabilities: ModelCapabilityKey[]; whatsNew: string[] };
+
+export function riseBetween(base: NodeJS.ProcessEnv, before: SwitchSnapshot, after: SwitchSnapshot, userIds: readonly string[]): SwitchRise {
+  const accounts: string[] = [];
+  const capabilities = new Set<ModelCapabilityKey>();
+  const whatsNew: string[] = [];
+  for (const id of userIds) {
+    const was = resolveEnv(base, before, id);
+    const now = resolveEnv(base, after, id);
+    const gained = MODEL_CAPABILITIES.filter((c) => !c.on(was) && c.on(now));
+    if (gained.length) accounts.push(id);
+    for (const c of gained) capabilities.add(c.key);
+    const seen = new Set(visibleEntries(was).map((e) => e.id));
+    if (visibleEntries(now).some((e) => !seen.has(e.id))) whatsNew.push(id);
+  }
+  return { accounts, capabilities: MODEL_CAPABILITIES.map((c) => c.key).filter((k) => capabilities.has(k)), whatsNew };
+}
+
+/** `riseBetween` under this deployment's environment. */
+export function riseForAccounts(before: SwitchSnapshot, after: SwitchSnapshot, userIds: readonly string[]): SwitchRise {
+  return riseBetween(process.env, before, after, userIds);
 }
