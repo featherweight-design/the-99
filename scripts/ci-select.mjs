@@ -23,9 +23,16 @@ if (allTests.length < 100) throw new Error(`found only ${allTests.length} test f
   const all = spawnSync("pnpm", ["exec", "vitest", "list", "--filesOnly"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (all.status !== 0) throw new Error(`vitest list failed (${all.status}): ${all.stderr || all.stdout}`);
   const listed = lines(all.stdout).sort();
-  if (JSON.stringify(listed) !== JSON.stringify([...allTests].sort())) {
-    const missing = listed.filter((f) => !allTests.includes(f));
-    throw new Error(`pathspec and vitest disagree on the test files; vitest lists ${missing.length} we do not: ${missing.slice(0, 5).join(", ")}`);
+  const have = new Set(allTests);
+  const seen = new Set(listed);
+  const missing = listed.filter((f) => !have.has(f));
+  const extra = allTests.filter((f) => !seen.has(f));
+  if (missing.length || extra.length) {
+    const show = (xs) => xs.slice(0, 5).join(", ") || "none";
+    throw new Error(
+      `pathspec and vitest disagree on the test files: vitest lists ${missing.length} we do not (${show(missing)}), `
+      + `and we list ${extra.length} vitest does not (${show(extra)})`,
+    );
   }
 }
 

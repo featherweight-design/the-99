@@ -64,6 +64,8 @@ describe("alwaysSet", () => {
     'import { spawnSync } from "node:child_process";',
     'const d = import.meta.dirname',
     'existsSync(p)',
+    'const csv = fileURLToPath(new URL("../../../data/the-vault.csv", import.meta.url)); readCsv(csv)',
+    'const here = dirname(__dirname)',
   ])("includes a test reading the tree: %s", (text) => {
     expect(alwaysSet([src(text)])).toEqual(["a.test.ts"]);
   });

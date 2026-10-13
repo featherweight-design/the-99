@@ -7,9 +7,11 @@
 // `related` UNION every test file that touches the filesystem or a child process, and the
 // union is COMPUTED from the test sources rather than listed, because a list built by reading has a tail.
 
-// A test file is in the always set when its source mentions any of these.
+// A test file is in the always set when its source mentions any of these. `import.meta.url` and
+// `fileURLToPath` catch a test that locates a file and hands the path to a helper (seed-collection.test.ts
+// reads data/the-vault.csv through `readCsv`), which names no fs API itself.
 export const ALWAYS_PATTERN =
-  /node:fs|fs\/promises|node:child_process|child_process|process\.cwd\(\)|import\.meta\.dirname|readFileSync|readdirSync|readFile\(|existsSync|statSync/;
+  /node:fs|fs\/promises|node:child_process|child_process|process\.cwd\(\)|import\.meta\.dirname|readFileSync|readdirSync|readFile\(|existsSync|statSync|import\.meta\.url|fileURLToPath|__dirname/;
 
 // A change to any of these can alter what every test means, and none of them is in the import graph
 // (or, for the lockfile and configs, vitest's own trigger does not fire for them: measured).
