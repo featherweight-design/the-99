@@ -211,8 +211,8 @@ describe("loadFreePool", () => {
     expect(await loadFreePool("user-rollup-down", ENV_VIEW)).toBeNull();
   });
   // Admin PR 6f-1: the claim model decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it
-  // is handed, and both this pool and the free ranking that loads it take the environment when none is
-  // passed. The reader's env and the environment hold opposite values; identity is checked as a boolean.
+  // is handed, and both this pool and the free ranking that loads it require that env (admin PR 7c-2).
+  // The reader's env and the environment hold opposite values; identity is checked as a boolean.
   it("runs the claim model under the reader's switches, when loaded by the free ranking too", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "false");
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
