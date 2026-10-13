@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ALLOWED, PENDING, switchReadFindings, switchReadsIn } from "./switch-reads.mjs";
+import { ALLOWED, DEFAULTS_PENDING, PENDING, envDefaultsIn, switchReadFindings, switchReadsIn } from "./switch-reads.mjs";
 
 const lines = (src: string, path = "x.ts") => switchReadsIn(path, src).map((f) => f.line);
 
@@ -38,8 +38,33 @@ describe("switchReadsIn", () => {
     expect(lines("// fooEnabled(process.env)\n/* process.env */")).toEqual([]);
   });
 
+  it("reports a binding default in a VARIABLE, which only a parameter's binding default is exempt from", () => {
+    expect(lines("const { env = process.env } = opts;")).toEqual([1]);
+    expect(lines("const { a: { env = process.env } } = opts;")).toEqual([1]);
+    expect(lines("export function f({ a: { env = process.env } }: Opts) {}")).toEqual([]);
+  });
+
+  it("reports a rest element over process.env, which is a copy of it", () => {
+    expect(lines("const { ...e } = process.env;")).toEqual([1]);
+    expect(lines("const { FOO, ...rest } = process.env;")).toEqual([1]);
+  });
+
   it("reports a call made INSIDE a default, which is a call like any other", () => {
     expect(lines("export function f(basis = roleBasisFromEnv(process.env)) {}")).toEqual([1]);
+  });
+});
+
+describe("envDefaultsIn", () => {
+  it("counts parameter defaults, destructured ones included, and nothing else", () => {
+    const src = [
+      "export function a(env: NodeJS.ProcessEnv = process.env) {}",
+      "export function B({ env = process.env }: P) {}",
+      "export const c = (u: string, env = process.env) => u;",
+      "const { env = process.env } = opts;",
+      "fooEnabled(process.env);",
+      "const x = process.env.FOO;",
+    ].join("\n");
+    expect(envDefaultsIn("x.ts", src)).toEqual([1, 2, 3]);
   });
 });
 
@@ -49,6 +74,11 @@ describe("the lists", () => {
     for (const entry of PENDING) expect(["7b", "7c", "7d"]).toContain(entry.pr);
     const paths = [...ALLOWED, ...PENDING].map((e) => e.path);
     expect(new Set(paths).size).toBe(paths.length);
+    for (const [path, entry] of Object.entries(DEFAULTS_PENDING) as [string, { count: number; pr: string; reason?: string }][]) {
+      expect(entry.count, path).toBeGreaterThan(0);
+      expect(["7b", "7c", "7d", "keep"], path).toContain(entry.pr);
+      if (entry.pr === "keep") expect(entry.reason?.length ?? 0, path).toBeGreaterThan(20);
+    }
   });
 });
 
@@ -87,12 +117,37 @@ describe("a fixture tree", () => {
         { path: "src/app/listed.ts", count: 1, pr: "7d", reason: "a reason long enough to read" },
         { path: "src/app/converted.ts", count: 1, pr: "7b", reason: "a reason long enough to read" },
       ];
-      const { files, findings, drift } = await switchReadFindings(root, { allowed, pending });
+      const { files, findings, drift } = await switchReadFindings(root, { allowed, pending, defaults: {} });
       expect(files).toBe(4);
       expect(findings.map((f) => `${f.path}:${f.line}`)).toEqual(["src/app/bad.ts:1"]);
       expect(drift.map((d) => `${d.path} ${d.expected}->${d.found}`).sort()).toEqual([
         "src/app/converted.ts 1->0",
         "src/app/listed.ts 1->2",
+      ]);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
+  it("holds parameter defaults to their listed counts: a new one fails, a removed one forces the entry down", async () => {
+    const root = tree({
+      "src/lib/new.ts": "export function f(env: NodeJS.ProcessEnv = process.env) {}\n",
+      "src/lib/listed.ts": "export function f(env = process.env) {}\nexport function g({ env = process.env }: P) {}\n",
+      "src/lib/shrunk.ts": "export function f(env: NodeJS.ProcessEnv) {}\n",
+      "src/lib/exact.ts": "export function f(env = process.env) {}\n",
+    });
+    try {
+      const defaults = {
+        "src/lib/listed.ts": { count: 1, pr: "7b" },
+        "src/lib/shrunk.ts": { count: 1, pr: "7c" },
+        "src/lib/exact.ts": { count: 1, pr: "7d" },
+      };
+      const { findings, drift } = await switchReadFindings(root, { allowed: [], pending: [], defaults });
+      expect(findings).toEqual([]);
+      expect(drift.map((d) => `${d.path} ${d.expected}->${d.found}`).sort()).toEqual([
+        "src/lib/listed.ts 1->2",
+        "src/lib/new.ts 0->1",
+        "src/lib/shrunk.ts 1->0",
       ]);
     } finally {
       rmSync(root, { recursive: true });

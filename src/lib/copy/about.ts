@@ -29,7 +29,7 @@
 // 2026-10-08 (Tuning decoupled from the Analysis tab, `src/lib/tuning/flag.ts`): that condition
 // no longer holds — a deployment can now run the tab with Suggested changes off. The entry now
 // carries `switch: 'TUNING_ENABLED'`, its own flag, rather than ANALYSIS_TAB_ENABLED: Tuning
-// already requires the tab (`tuningEnabled()` reads both), so naming the narrower switch is
+// already requires the tab (`tuningEnabled(env)` reads both), so naming the narrower switch is
 // never looser than naming the tab's. No bump: this is the SAME entry catching up to a flag
 // that split under it, not a new capability.
 //

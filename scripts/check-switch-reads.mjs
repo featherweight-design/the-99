@@ -10,8 +10,9 @@ if (findings.length === 0 && drift.length === 0) {
 for (const { path, line, why } of findings) {
   console.error(`${path}:${line} ${why}: decide a switch from the reader's env (requestSwitchEnv), never process.env`);
 }
-for (const { path, expected, found, lines } of drift) {
-  console.error(`${path}: listed with ${expected} use(s) of process.env, found ${found}${lines.length ? ` (lines ${lines.join(", ")})` : ""}: edit its entry in scripts/lib/switch-reads.mjs`);
+for (const { path, expected, found, lines, kind } of drift) {
+  const what = kind === "default" ? "parameter default(s) of process.env (DEFAULTS_PENDING)" : "use(s) of process.env";
+  console.error(`${path}: ${expected === 0 ? "not listed, so 0" : `listed with ${expected}`} ${what}, found ${found}${lines.length ? ` (lines ${lines.join(", ")})` : ""}: ${kind === "default" && found > expected ? "take the reader's env as a required parameter instead" : "edit its entry in scripts/lib/switch-reads.mjs"}`);
 }
 console.error(`\n${findings.length} finding(s), ${drift.length} listed file(s) out of date`);
 process.exit(1);
