@@ -8,8 +8,9 @@
 // rarity and ownership are not applied back. Different populations, different params.
 //
 // One density and no toggle, set by ONE declaration on the grid and by nothing on the cell:
-// `repeat(auto-fill, minmax(146px, 1fr))` (addendum R2 §27). It measures ~150x210 at 1180
-// and 174x243 at 390, and the track — not a breakpointed literal — is what a cell is wide.
+// `CARD_GRID_TRACKS`, the column tracks `/collection`'s grid draws (Hugh, 2026-10-13, bug
+// batch C, replacing addendum R2 §27's 146px floor): three on a phone, a 178px floor from
+// `md`. The track — not a breakpointed literal — is what a cell is wide.
 // The upper bound is structural rather than declared: a track can never reach `2F + gap`,
 // because at that width another column fits and the count goes up instead.
 //
@@ -51,6 +52,7 @@ import { DeltaStrip } from "./delta-strip";
 import { useHeadCollapse } from "./use-head-collapse";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { SearchIcon } from "../ui/search-icon";
+import { CARD_GRID_TRACKS } from "../ui/card-grid";
 
 export type SetGridViewProps = {
   code: string;
@@ -1827,16 +1829,14 @@ function Section({
           <span className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{ratio}</span>
         ) : null}
       </h2>
-      {/* One declaration and one constant (addendum R2 §27). `auto-fill`, NEVER `auto-fit`:
-          auto-fit collapses empty tracks, so a filter leaving three cells would stretch
-          those three across the whole width — the exact reflow the brief forbids, one
-          keyword away. The 146px minimum is `image_uri_small`'s own width, and it produces
-          the phone answer for free: at 390px there is nothing between two tracks at 174 and
-          three at 112.67, so any minimum in that band gives two. */}
+      {/* One declaration, and the same one `/collection`'s grid draws (`CARD_GRID_TRACKS`):
+          three columns on a phone, a 178px floor from `md` (Hugh, 2026-10-13, bug batch C,
+          replacing addendum R2 §27's 146px floor, which gave two on a phone). `auto-fill`,
+          NEVER `auto-fit`: auto-fit collapses empty tracks, so a filter leaving three cells
+          would stretch those three across the whole width — the reflow the brief forbids. */}
       <div
         data-set-grid
-        className="mt-[10px] grid gap-x-[10px] gap-y-[18px]"
-        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(146px, 1fr))" }}
+        className={`mt-[10px] grid ${CARD_GRID_TRACKS} gap-x-[8px] gap-y-[18px] md:gap-x-[20px]`}
       >
         {cells.map((c) => (
           <SetCell

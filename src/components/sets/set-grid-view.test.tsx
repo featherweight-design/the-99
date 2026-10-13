@@ -1,5 +1,6 @@
 import { cloneElement, useLayoutEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { NARROW_HIDE, SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
@@ -675,24 +676,27 @@ describe("SetGridView — the grid declaration", () => {
   const gridOf = (container: HTMLElement) =>
     container.querySelector<HTMLElement>("[data-set-grid]");
 
-  it("lays one auto-fill track set with a 146px minimum", () => {
+  // `/collection`'s tracks (Hugh, 2026-10-13): three on a phone, a 178px floor from `md`.
+  it("lays /collection's column tracks", () => {
     const { container } = renderGrid();
     const grid = gridOf(container);
     expect(grid).not.toBeNull();
-    expect(grid!.style.gridTemplateColumns).toBe("repeat(auto-fill, minmax(146px, 1fr))");
+    for (const c of CARD_GRID_TRACKS.split(" ")) expect(grid!.classList).toContain(c);
+    expect(CARD_GRID_TRACKS).toBe("grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))]");
   });
 
   // One keyword decides the no-reflow constraint: `auto-fit` collapses empty tracks, so a
   // filter leaving three cells would stretch those three across the whole width.
   it("never uses auto-fit", () => {
     const { container } = renderGrid();
-    expect(gridOf(container)!.style.gridTemplateColumns).not.toContain("auto-fit");
+    expect(gridOf(container)!.className).not.toContain("auto-fit");
   });
 
   it("keeps one declaration across both sections", () => {
     const { container } = renderGrid();
     const declared = [...container.querySelectorAll<HTMLElement>("[data-set-grid]")]
-      .map((g) => g.style.gridTemplateColumns);
+      .map((g) => g.className);
+    expect(declared.length).toBe(2);
     expect(new Set(declared).size).toBe(1);
   });
 });

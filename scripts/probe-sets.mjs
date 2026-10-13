@@ -408,8 +408,8 @@ async function run() {
       // wrong size passed the check above while the density was silently broken. The cell
       // no longer declares a size, so the contract is the track it sits in. §27's own
       // 124-129px is derived from a 1100px content box; this shell is `max-w-[1180px]` less
-      // `px-[34px]` either side, so the real content is 1112px and seven tracks measure
-      // ~150px — the band below is the measured one, and it is what the route produces.
+      // `px-[34px]` either side, so the real content is 1112px, and `/collection`'s tracks
+      // (a 178px floor, 20px gaps; Hugh, 2026-10-13) give five of ~206px there.
     }
 
     // The flush edge IS the ruling — a fixed-width row strands its remainder beside a grid
@@ -452,8 +452,8 @@ async function run() {
         : `${edge.stranded}px stranded past ${edge.columns} tracks (${edge.filled} filled)`,
     );
     failures += !report(
-      "seven tracks at 1180",
-      edge !== null && edge.columns === 7,
+      "five tracks at 1180, /collection's 178px floor in a 1112px box",
+      edge !== null && edge.columns === 5,
       edge === null ? "no grid found" : `${edge.columns} tracks, template ${edge.template}`,
     );
 
@@ -486,18 +486,17 @@ async function run() {
     const phone = (await page.evaluate(READ_CELLS)).cells;
     const phoneAny = phone[0];
     if (phoneAny) {
-      // Addendum R2 §27: at 390px there is nothing between three tracks at 112.67 and two
-      // at 174 — an `fr` track takes the whole remainder — so the choice was a column count
-      // and the answer is two.
+      // `/collection`'s phone grid is an explicit 3-up (Hugh, 2026-10-13): 358px of content
+      // less two 8px gaps, divided by three.
       failures += !report(
-        "the phone cell is 174px, which is two columns of the one declaration",
-        Math.abs(phoneAny.width - 174) <= 1,
+        "the phone cell is 114px, three columns of /collection's tracks",
+        Math.abs(phoneAny.width - 114) <= 1,
         `${phoneAny.width}x${phoneAny.height}`,
       );
       const phoneEdge = await page.evaluate(READ_EDGE);
       failures += !report(
-        "two tracks at 390, measured off the track list",
-        phoneEdge !== null && phoneEdge.columns === 2,
+        "three tracks at 390, measured off the track list",
+        phoneEdge !== null && phoneEdge.columns === 3,
         phoneEdge === null ? "no grid found" : `${phoneEdge.columns} tracks, ${phoneEdge.template}`,
       );
       failures += !report(
@@ -532,12 +531,12 @@ async function run() {
       return cells.filter((c) => Math.round(c.getBoundingClientRect().top) === firstTop).length;
     });
     failures += !report(
-      "two columns at 390px",
-      columns === 2,
+      "three columns at 390px",
+      columns === 3,
       `${columns} cells on the first row`,
     );
 
-    // The caption stops varying by width: a 174px cell holds three things.
+    // The caption stops varying by width: a 114px cell still holds three things.
     const phoneRarity = await page.evaluate(() => {
       const grid = document.querySelector("[data-set-grid]");
       if (!grid) return null;
