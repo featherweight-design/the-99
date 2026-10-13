@@ -1100,6 +1100,17 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   }
 }
 
+/* A block of ink over art whose art is itself a press (the phone deck header: a press anywhere
+   on the commander opens it). The block's own box would otherwise swallow every press beside a
+   short title, in its padding and in its foot, so it lets presses through to the art and gives
+   them back to its own controls. */
+.press-through {
+  pointer-events: none;
+}
+.press-through :is(a, button, input, textarea, select, label, summary, [role="button"], [tabindex]) {
+  pointer-events: auto;
+}
+
 /* Collection's pinned head (collection surfaces, readiness E2): the view well
    hides while the search field is focused, so the field can run full width
    under a phone keyboard. `:focus-within` on the ROW does this too, but it
