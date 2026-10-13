@@ -2180,3 +2180,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (pass one deck with an intent line: the case the old 224px ceiling broke) and optionally
   `PROBE_SHOTS`, a directory for the phone band's screenshot. It writes only the probe account's
   About row and restores it. Moving the block's foot back to a 12px inset fails it four ways.
+
+- `pnpm probe:commander-art-press` proves a press anywhere on the phone deck header's commander art
+  opens the commander's card details, at 390. It presses the art across the band above the label block
+  (both sides and the middle, near the top and just above the block) and behind and beside the block's
+  words (the title, the art right of a short title, the block's foot: the block is `press-through`).
+  Each point is chosen clear of the corner door and the rename pencil, and each must open the commander
+  the header's own door opens. The pencil must still open the editor, and there must be no art press
+  while editing. At 1300 the desktop header must carry no art press, as before. `PROBE_BASE` (a local
+  server; it refuses any other host) and `PROBE_DECK_ID`, a deck with commander art. It writes only the
+  probe account's About row, restores it, and refuses a `DATABASE_URL` reporting the production or
+  staging branch. Removing `press-through` from the block fails it.

@@ -96,6 +96,24 @@ const targetInset = (at: Record<string, number>, labelled: boolean) =>
     ]),
   );
 
+/** Full-band tap target — per state table, tapping the art header opens the card.
+    Presentational (not a button, never focusable); the labeled chip beside it is the
+    accessible control. It draws under whatever follows it in the band, so a band that
+    also carries a title or a pencil mounts it before them and they keep their presses. */
+export function BandTapTarget({ oracleId }: { oracleId: string }) {
+  const { open } = useCardDetail();
+  const intent = useCardIntent(oracleId);
+  return (
+    <div
+      aria-hidden="true"
+      data-band-tap-target
+      className="absolute inset-0 cursor-pointer"
+      onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
+      {...intent}
+    />
+  );
+}
+
 export function FullCardTrigger({
   oracleId,
   placement = "hero",
@@ -114,17 +132,7 @@ export function FullCardTrigger({
 
   return (
     <>
-      {/* Full-band tap target — per state table, tapping the art header opens
-          the card. Presentational (not a button, never focusable); the labeled
-          chip below is the accessible control. */}
-      {bandTapTarget ? (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 cursor-pointer"
-          onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
-          {...intent}
-        />
-      ) : null}
+      {bandTapTarget ? <BandTapTarget oracleId={oracleId} /> : null}
 
       {/* ⛶ affordance control. Icon only on every render but ONE — the desktop
           deck header keeps its words, where the control sits in a wide empty

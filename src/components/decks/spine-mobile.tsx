@@ -9,6 +9,7 @@
 import { useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { BandTapTarget } from "../commanders/full-card-trigger";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash, BlockScrim, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
@@ -263,6 +264,12 @@ export function SpineMobile({
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
+        {/* A press anywhere on the art opens the commander (Hugh, 2026-10-13), the art behind
+            the words included: the label block below lets presses through (`press-through`).
+            Mounted before the door and the block, so the corner controls, the pencil and the
+            block's chips keep their own presses; hidden while editing, with the corner buttons.
+            Not with no crop: then there is no printing to open (§G). */}
+        {!renaming && commander.artCropUri ? <BandTapTarget oracleId={commander.oracleId} /> : null}
         {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
             alone, or nothing with the switch off. */}
         {/* Hidden while editing (STATES §2, state 3: "the corner buttons hide"). */}
@@ -274,7 +281,9 @@ export function SpineMobile({
           // The block the ramp is keyed to, hooked so a probe measures it rather
           // than guessing at it.
           data-wash-label
-          className="absolute flex flex-col items-start"
+          // `press-through`: a press on the art beside or behind this block's words reaches the
+          // art's own press; its controls keep theirs.
+          className="press-through absolute flex flex-col items-start"
           // Left-aligned, so the reserved space is on the right ALONE: the
           // card-details control sits in this band's bottom-right corner and its
           // 44px target reached into the meta row. A centred block had to pad

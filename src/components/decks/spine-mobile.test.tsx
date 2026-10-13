@@ -503,3 +503,38 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect((description as HTMLTextAreaElement).value).toContain("Sol Ring");
   });
 });
+
+describe("SpineMobile — a press on the art opens the commander", () => {
+  const fetchCard = () => vi.fn().mockResolvedValue(null);
+
+  // Hugh, 2026-10-13: anywhere on the commander image. The layer spans the band and sits before
+  // the door and the label block, so their own presses still win where they are drawn.
+  it("opens the commander's card details from the band", () => {
+    const fetch = fetchCard();
+    const { container } = render(
+      <CardDetailProvider fetchCard={fetch}>
+        <SpineMobile {...props} />
+      </CardDetailProvider>,
+    );
+    const band = container.querySelector("[data-testid=spine-band]")!;
+    const layer = band.querySelector<HTMLElement>("[data-band-tap-target]")!;
+    expect(layer).toHaveAttribute("aria-hidden", "true");
+    expect(layer.className).toContain("inset-0");
+    // Drawn before the label block, which therefore paints above it…
+    const block = band.querySelector("[data-wash-label]")!;
+    expect(layer.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // …and lets presses through to it, so the art behind and beside the words opens the card too.
+    expect(block.className).toContain("press-through");
+    fireEvent.click(layer);
+    expect(fetch).toHaveBeenCalled();
+    expect(fetch.mock.calls[0][0]).toBe(props.deck.commander.oracleId);
+  });
+
+  // §G: with no crop there is no printing to open, so there is nothing to press.
+  it("draws no layer for a commander with no art", () => {
+    const { container } = renderSpine(
+      <SpineMobile {...props} deck={{ ...props.deck, commander: { ...props.deck.commander, artCropUri: null } }} />,
+    );
+    expect(container.querySelector("[data-band-tap-target]")).toBeNull();
+  });
+});

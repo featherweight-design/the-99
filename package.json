@@ -39,6 +39,7 @@
     "db:copy:prose": "tsx scripts/copy-commander-prose.ts",
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
+    "probe:commander-art-press": "node scripts/probe-commander-art-press.mjs",
     "probe:deck-hero-wash": "node scripts/probe-deck-hero-wash.mjs",
     "probe:tokens": "tsx scripts/probe-tokens.mts",
     "probe:deck-tokens": "tsx scripts/probe-deck-tokens.mts",
