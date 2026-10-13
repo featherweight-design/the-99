@@ -167,8 +167,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   nothing: a read with a pick is `ok`, stores its picks in `result`, clears its phase and spends,
   with BOTH calls billed on the one ledger row, each priced on its own model; the row names its
   phase while the shortlist runs (F2); a repeat answers from the store and reserves nothing; a read
-  that finds nothing refunds and still records its cost; a Stop during the shortlist refunds,
-  never calls the judgement, and lands the shortlist's late bill.
+  that finds nothing refunds and still records its cost. There is no Stop (removed 2026-10-12): a
+  read always runs to its end.
   **Admission (hardening):** eight concurrent `beginTheRead` presses by one player read the pool
   ONCE (a counted loader, held 500ms so the presses overlap), admit one and answer the other seven
   `in_flight`, reserve one credit, and a press after them, while the read runs, is refused without
@@ -1965,8 +1965,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   step 1 never names the commanders it scans (the held state still reports the pool), or when
   the loading state is dimmed (Hugh, 2026-10-12: a list replaced moments later "felt buggy"). The
   form's submit marks its address `rf=1` (`FORM_PARAM`); a hand-written mark changes only that.
-  **From the results** (Stop, then Try again, which submits from the results with no mark) the free
-  list stays, dimmed, under the reading panel with Stop (7d). On both paths, once the list has drawn
+  **From the results** (a read that didn't finish, then Try again, which submits from the results
+  with no mark) the free list stays, dimmed, under the reading panel (7d), and no Stop is offered.
+  With Stop removed, the probe lets its first read settle and marks that row failed itself. On both paths, once the list has drawn
   the results' skeleton may not return: `ReadScope` was once keyed on the server's state, so the
   refresh that found the read settled remounted the results' Suspense (measured 2026-10-12 on a
   scratch copy of staging's decks: with that key restored the skeleton came back for ~3.3s as the
@@ -1974,7 +1975,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   must never give way to the loading state, even for a moment: the probe fails on any skeleton sample
   in the retry's timeline (Hugh, 2026-10-12: no sudden visual jumps). It records a video of each press to `PROBE_VIDEO_DIR` when it is set.
   Run it against a dev server with `HELP_ME_CHOOSE_ENABLED=true` and `INTAKE_STUB_DELAY_MS=5000`;
-  it writes reads (two settled and one stopped per width, the stopped one refunded), so
+  it writes reads (three per width, one of them then marked failed), so
   `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging and production by
   `neon.branch_id`), and it deletes the reads it made. A killed run leaves its reads behind. The
   SERVER writes those reads through its own `DATABASE_URL`, which the probe cannot read, so before

@@ -2111,7 +2111,7 @@ export const deckProfiles = pgTable("deck_profiles", {
  * deck synopsis). One row per model RUN, never per HTTP attempt.
  *
  * A row is `reserved` when a run starts, `spent` when it ends with an answer the player sees,
- * and `refunded` on any failure or Stop (Hugh, 2026-09-23: only a successful answer spends a
+ * and `refunded` on any failure (or, before Stop was removed on 2026-10-12, a Stop) (Hugh, 2026-09-23: only a successful answer spends a
  * unit). `reserved` and `spent` count against the allowance over a rolling 24 hours; a
  * `reserved` row counts because it is a run in flight, which is how two concurrent presses are
  * kept from both taking the last unit. Rows are kept, never deleted: the ledger is also the
@@ -2130,7 +2130,7 @@ export const modelCalls = pgTable("model_calls", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // THE SPEND CAP'S METERS (migration 0057). `model` is written at reserve, so a reservation in
   // flight can be priced at its worst case; the rest by `recordModelUsage` whenever the call
-  // returned usage, spent or refunded, including an outcome landing after a Stop or the reaper.
+  // returned usage, spent or refunded, including an outcome landing after the reaper.
   // Null on every row from before the cap, and on a call that got no response. `cost_micro_usd`
   // is integer micro-dollars from `src/lib/model/prices.ts`; every recorded cost counts toward the
   // month's spend, refunded or not (credits count successes; dollars count everything billed).
@@ -2310,9 +2310,10 @@ export const flagOverrides = pgTable("flag_overrides", {
 /**
  * One Look deeper read in Help me choose (sub-project 8). It happens before any deck exists, so it
  * cannot hang off a deck's row the way tuning's run and the overview do, and it needs a row of its
- * own because a Stop must refund (F4): written `pending` with its allowance unit BEFORE the model is
- * called, and settled with that unit in one transaction. A Stop cancels it and refunds, and a late
- * answer finds it no longer pending and writes nothing. `words_hash` is what it was asked: the
+ * own because a read that fails must refund (F4): written `pending` with its allowance unit BEFORE
+ * the model is called, and settled with that unit in one transaction. A late answer finds it no
+ * longer pending and writes nothing. `cancelled` is a read a Stop settled before Stop was removed
+ * (2026-10-12); nothing writes it now. `words_hash` is what it was asked: the
  * ask's fingerprint (`readFingerprint`, `lib/intake/the-read.ts`), which covers the words, every
  * filter, the prompt version, the commander list's generation, the player's pool, collection and
  * decks. A repeat of an
@@ -2333,7 +2334,7 @@ export const intakeReads = pgTable("intake_reads", {
   /**
    * The read (rework plan, F2): which of its two calls a pending read is in, so the waiting panel
    * can move from the shortlist to the judgement. Null before the first call starts and once the read
-   * is settled, however it settled: an outcome, a Stop or the reaper.
+   * is settled, however it settled: an outcome or the reaper (or, before 2026-10-12, a Stop).
    */
   phase: text("phase"),
   /** The read's settled answer (F9e): the picks and their reasons. Null on a row from the retired
@@ -2352,6 +2353,9 @@ export const intakeReads = pgTable("intake_reads", {
 ]);
 
 /**
+ * NOTHING READS OR WRITES THIS TABLE since Stop was removed from Help me choose (2026-10-12); it is
+ * kept, empty of new rows, until a later migration drops it. What it was for:
+ *
  * A Stop that reached the database before the read it names existed (PR 6, the early Stop). The
  * panel chooses a read's id before its press, so a Stop can name a read whose start has not yet
  * committed; `cancelRead` then finds no row to cancel and leaves this instead, and `startRead`,

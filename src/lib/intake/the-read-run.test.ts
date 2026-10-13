@@ -110,7 +110,7 @@ describe("runTheRead", () => {
     expect(store.settleTheRead.mock.calls[0][2]).toEqual([{ model: "s", usage, step: "shortlist", effort: "medium" }]);
   });
 
-  it("stops between the calls when a Stop has settled the read, landing only the shortlist's bill", async () => {
+  it("stops between the calls when the reaper has settled the read, landing only the shortlist's bill", async () => {
     store.setReadPhase.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     const d = deps(ok({ keys: [1] }), ok({ picks: [] }));
     expect(await runTheRead("u", input, d, inputs())).toEqual({ kind: "stopped" });

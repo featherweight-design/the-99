@@ -78,8 +78,7 @@ const NO_USAGE = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWri
 /**
  * No API call: the shortlist takes the pool's first keys, the judgement the first three with a plain
  * reason. `INTAKE_STUB` reaches the panel's other states: `nothing` (no pick fits), `busy` (the
- * judgement fails), and `INTAKE_STUB_DELAY_MS` holds each call that long, so the wait and Stop can
- * be seen. The switches are read by `stub.ts`.
+ * judgement fails), and `INTAKE_STUB_DELAY_MS` holds each call that long, so the wait can be seen. The switches are read by `stub.ts`.
  */
 export function stubTheReadDeps(env: Record<string, string | undefined> = process.env): TheReadDeps {
   const mode = stubMode(env);
@@ -296,7 +295,7 @@ async function finishTheRead(
 
     // Step 2, the judgement, in whatever is left of the whole deadline.
     if (!(await setReadPhase(handle, "judge"))) {
-      // Stopped or reaped between the calls: this settles nothing, since the read is no longer
+      // Reaped between the calls: this settles nothing, since the read is no longer
       // pending, and only lands the shortlist's bill.
       await settleTheRead(handle, { kind: "failed", errorClass: "upstream_busy" }, billed);
       return { kind: "stopped" };

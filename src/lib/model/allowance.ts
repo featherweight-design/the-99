@@ -33,7 +33,7 @@ import {
  * The allowance ledger's only reader and writer. SERVER-ONLY: it imports the database.
  *
  * A unit is RESERVED when a run starts, SPENT when the run ends with an answer the player sees,
- * and REFUNDED on any failure or Stop. `reserved` counts, because it is a run in flight — not
+ * and REFUNDED on any failure. `reserved` counts, because it is a run in flight — not
  * counting it is exactly how two concurrent presses would both take the last unit — but only for
  * `RESERVATION_TTL_MS`: past that nothing can still be running, and a unit left reserved (a crash,
  * a deck deleted mid-run, which cascades its run away) stops counting on its own.
@@ -88,7 +88,7 @@ function isOwner(userId: string): boolean {
  * CREDITS COUNT SUCCESSES; DOLLARS COUNT EVERYTHING BILLED. The allowance ignores refunded rows;
  * this does not. It is the recorded cost of EVERY call this UTC month, spent or refunded, plus the
  * worst case of every call this month with no recorded cost still inside its TTL, reserved or
- * refunded — a Stopped call is refunded at once but keeps billing until its outcome lands.
+ * refunded — a call the reaper refunded keeps billing until its outcome lands.
  * `spend-rule.ts` holds the rule for the second half (`countsAtWorstCase`); the SQL here only
  * narrows the rows it is asked about.
  */
@@ -250,7 +250,7 @@ export async function settleModelCall(
   /**
    * What the call was billed for, when it got a response back: recorded on a spent AND on a
    * refunded settle, since a refund still burned the tokens (and its cost counts toward the
-   * month). Undefined for a settle that knows nothing: a reaper, a Stop. Their row counts at its
+   * month). Undefined for a settle that knows nothing: the reaper. Its row counts at its
    * worst case until the late outcome records its meters (`recordModelUsage`).
    */
   billed: Billed | readonly Billed[] | undefined,
@@ -294,7 +294,7 @@ export function joinBilled(parts: readonly Billed[]): { model: string; usage: Mo
 /**
  * Write what a call was billed for onto its ledger row, and report an alarm line it carried the
  * month over. The one writer of the meters: `settleModelCall` calls it, and so does an outcome
- * that arrives LATE, after a Stop or the reaper already settled the row, since that call billed
+ * that arrives LATE, after the reaper already settled the row, since that call billed
  * all the same and its row counts at its worst case until this lands.
  *
  * ONLY WHILE THE ROW HAS NO COST, so two writes — a settle and a late outcome, or a retried write —

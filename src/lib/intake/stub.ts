@@ -5,8 +5,8 @@
  * test cannot spend a real call by accident; deployed builds are `production` and call the model
  * with no flag. A stored read records its model as `"stub"`, so a probe can tell from the row that
  * no real call was made. `INTAKE_STUB` picks the outcome the panel has to draw (`nothing`,
- * `malformed`, `busy`, `timeout`) and `INTAKE_STUB_DELAY_MS` holds every reply that long, so a Stop
- * can be pressed while it runs. The two-step read builds its own stub replies (`the-read-run.ts`).
+ * `malformed`, `busy`, `timeout`) and `INTAKE_STUB_DELAY_MS` holds every reply that long, so the
+ * waiting panel can be seen. The two-step read builds its own stub replies (`the-read-run.ts`).
  */
 
 /** The synopsis stub's name: one string the ledger prices at nothing (`UNBILLED_MODELS`). */

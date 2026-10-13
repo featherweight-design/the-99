@@ -1,5 +1,5 @@
 // Help me choose's two-step read (rework plan PR 1), proved against a real Postgres by calling the
-// real `runTheRead`, `startRead`, `setReadPhase`, `settleTheRead` and `cancelRead`.
+// real `runTheRead`, `startRead`, `setReadPhase` and `settleTheRead`.
 //
 // WHAT ONLY A DATABASE CAN ANSWER. The runner's branches are unit tested with the store mocked;
 // what those tests cannot see is what the read WROTE:
@@ -7,9 +7,8 @@
 //    and records BOTH calls' bills on the one ledger row, each priced on its own model;
 //  - while a call runs, the row names its phase, so the waiting panel can read it (F2);
 //  - the same ask again is answered from the store under the read's own id, reserving nothing;
-//  - a read that finds nothing is refunded, and still records what its calls burned;
-//  - a Stop during the shortlist cancels and refunds, the judgement is never called, and the
-//    shortlist's late bill still lands.
+//  - a read that finds nothing is refunded, and still records what its calls burned.
+// There is no Stop (removed 2026-10-12): a read always runs to its end.
 //
 // THE MODELS ARE INJECTED AND SPEND NOTHING; the usages they report are made up and priced at the
 // real models' rates, so the cost column has something to show. The commander list is a fixture,
@@ -77,7 +76,6 @@ async function main() {
   await refuseSharedDatabase();
   try {
     const { runTheRead } = await import("../src/lib/intake/the-read-run");
-    const store = await import("../src/lib/intake/run-store");
     // Imported here, not at the top: both import `src/db`, which must see the target first.
     const { joinBilled } = await import("../src/lib/model/allowance");
     const { formatPoolList } = await import("../src/lib/intake/pool-list");
@@ -133,14 +131,6 @@ async function main() {
     check("it failed as nothing_valid, its unit refunded", [nothing.status, nothing.error_class, nothing.unit], ["failed", "nothing_valid", "refunded"]);
     check("its calls' cost is recorded", (nothing.cost ?? 0) > 0, true);
 
-    console.log("\n4. A Stop during the shortlist");
-    let judged = false;
-    const stopped = await press("fp-stop", deps(async () => { judged = true; return pick(); }, async (readId) => { await store.cancelRead(readId, USER); }));
-    const stopRow = await readRow(current);
-    check("the outcome is stopped, and the judgement never ran", [stopped.kind, judged], ["stopped", false]);
-    check("the read is cancelled, its unit refunded, its phase cleared", [stopRow.status, stopRow.unit, stopRow.phase], ["cancelled", "refunded", null]);
-    check("the shortlist's late bill landed", (stopRow.cost ?? 0) > 0, true);
-
     // ---- hardening: nothing is read for a press that cannot be served -------------------------
     const { beginTheRead } = await import("../src/lib/intake/the-read-run");
     const SPENT = `${USER}-spent`;
@@ -152,7 +142,7 @@ async function main() {
     const begin = (user: string, loader: ReturnType<typeof counted>, d = deps(pick)) =>
       beginTheRead(user, { readId: randomUUID(), words: "scary horrors", filters }, d, loader);
 
-    console.log("\n5. A burst of presses by one player reads the pool once");
+    console.log("\n4. A burst of presses by one player reads the pool once");
     const burstLoader = counted("fp-burst", 500);
     const unitsBefore = await units();
     const burst = await Promise.all(Array.from({ length: 8 }, () => begin(USER, burstLoader)));
@@ -167,7 +157,7 @@ async function main() {
     if (winner && winner.kind === "started") await winner.finish();
     check("the admitted read settled", (await readRow(winner && winner.kind === "started" ? winner.readId : "")).status, "ok");
 
-    console.log("\n6. A player with no credit left reads no pool");
+    console.log("\n5. A player with no credit left reads no pool");
     for (let i = 0; i < 5; i++) {
       await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${SPENT}, 'intake', 'stub', 'player', 'spent')`);
     }
@@ -179,7 +169,7 @@ async function main() {
       Number(((await fixture.execute(sql`select count(*)::int as n from model_calls where user_id = ${SPENT}`)).rows[0] as { n: number }).n),
     ], [0, spentUnits]);
 
-    console.log("\n7. A press that fails in the pool read does not keep the admission");
+    console.log("\n6. A press that fails in the pool read does not keep the admission");
     const failing = Object.assign(async () => { failing.calls += 1; throw new Error("pool read failed"); }, { calls: 0 });
     // Settle the earlier reads first: only a pending read may refuse a press now.
     const failedPress = await begin(USER, failing as never).then(() => "returned", (e: Error) => e.message);
@@ -187,7 +177,7 @@ async function main() {
     const afterFail = counted("fp-after-fail");
     check("the next press is admitted and reads the pool", [(await begin(USER, afterFail)).kind, afterFail.calls], ["started", 1]);
 
-    console.log("\n8. A credit held by an abandoned read does not refuse the press that would reap it");
+    console.log("\n7. A credit held by an abandoned read does not refuse the press that would reap it");
     const STRANDED = `${USER}-stranded`;
     for (let i = 0; i < 4; i++) {
       await fixture.execute(sql`insert into model_calls (user_id, feature, model, origin, status) values (${STRANDED}, 'intake', 'stub', 'player', 'spent')`);
@@ -200,7 +190,6 @@ async function main() {
     check("the abandoned read is reaped and the press is admitted, reading the pool once", [strandedPress.kind, strandedLoader.calls], ["started", 1]);
     check("the abandoned read failed as interrupted, its credit refunded", (await fixture.execute(sql`select r.status, r.error_class, m.status as unit from intake_reads r join model_calls m on m.id = r.model_call_id where r.words_hash = 'stranded' and r.user_id = ${STRANDED}`)).rows[0], { status: "failed", error_class: "interrupted", unit: "refunded" });
   } finally {
-    await fixture.execute(sql`delete from intake_read_stops where user_id like ${`${USER}%`}`);
     await fixture.execute(sql`delete from intake_reads where user_id like ${`${USER}%`}`);
     await fixture.execute(sql`delete from model_calls where user_id like ${`${USER}%`}`);
     await pool.end();

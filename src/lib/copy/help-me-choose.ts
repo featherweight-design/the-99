@@ -135,8 +135,6 @@ export const helpMeChooseCopy = {
     stepNow: "now",
     stepNext: "next",
     actionPending: "Reading…",
-    pendingLine: "Stopping gives the credit back.",
-    stop: "Stop",
     title: "Read what you wrote",
     doneTag: "done",
     doneLead: (pool: string, short: number) =>
@@ -145,6 +143,7 @@ export const helpMeChooseCopy = {
     noDecks: "You have no decks yet, so the lines speak to what you wrote alone.",
     doneLine: (standing: string) => `1 credit used · ${standing}`,
     repeatLine: "No credit used · you asked this already",
+    // A read a Stop settled before Stop was removed (2026-10-12) can still be opened by its URL.
     stoppedTag: "stopped",
     stoppedLead: "Nothing was read, and no credit was used. These are the results for your answers alone.",
     failTag: "didn’t finish",
@@ -161,7 +160,6 @@ export const helpMeChooseCopy = {
     unreadLead: "These results use your answers alone. Your words are kept for another try.",
     // copy-reviewed: Recovery; names the cause, which the standing line under it cannot.
     busyLead: "Another read of yours was still running, so this one didn’t start. These results use your answers alone.",
-    stopped: "Stopped. No credit was used.", // announced
     doneAnnounce: "The read is done, and its picks now lead your results.", // eng: announced
   },
   results: {

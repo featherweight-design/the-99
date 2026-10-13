@@ -1352,7 +1352,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
     },
     keys: [
-      'A run that comes back empty-handed, or that you stop, gives the credit back.',
+      'A run that comes back empty-handed or doesn’t finish gives the credit back.',
       'Next to each button that uses a credit, you’ll see how many you have left and when the next one comes back.',
       'If we change how overviews are written, rewriting one written the old way is free, once per deck.',
       'An Overview settles the deck’s main plan first, with any backups, then writes around it. In the full Overview, “Based on” under a claim lists the cards it’s about, and each one opens like any card.',

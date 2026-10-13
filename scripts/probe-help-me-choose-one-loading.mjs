@@ -6,8 +6,11 @@
 //  1. FROM THE FORM. The free list was never on screen, so while the read is pending the results'
 //     loading state stands in for it (no list, not dimmed), and the list draws once the read settles.
 //     Hugh, 2026-10-12: a list replaced moments later "felt buggy".
-//  2. FROM THE RESULTS. A stopped read leaves the free list up; Try again reads from there, and the
-//     list stays, dimmed, under the reading panel with Stop (7d), with no loading state in between.
+//  2. FROM THE RESULTS. A read that didn't finish leaves the free list up; Try again reads from there,
+//     and the list stays, dimmed, under the reading panel (7d), with no loading state in between.
+//     There is no Stop (removed 2026-10-12), so the probe lets its read settle and then marks that
+//     row failed (and refunded) in the database, the one way left to put a read in front of Try again
+//     on demand.
 //
 // On both, the skeleton may not return once the list has drawn: Hugh once saw loading, the dimmed
 // list, loading AGAIN, then the results, because the settled read remounted the results' Suspense.
@@ -136,7 +139,7 @@ async function press(page, action) {
     if (!last || ["skeleton", "list", "phase", "dim", "stop", "scan"].some((k) => last[k] !== s[k])) timeline.push({ ms: Date.now() - t0, ...s });
     if (s.phase === "reading") sawReading = true;
     // Settled only counts after this press's own read was seen reading: a retry starts on the PREVIOUS
-    // read's stopped panel, which would otherwise read as already done.
+    // read's settled panel, which would otherwise read as already done.
     if (done === null && sawReading && SETTLED.has(s.phase) && s.list) done = Date.now();
     if (done !== null && Date.now() - done > 2_500) break;
     await page.waitForTimeout(40);
@@ -232,8 +235,8 @@ async function run() {
       report(at("form: the skeleton never returns once the list has drawn"), skeletonBack(form.timeline).length === 0,
         skeletonBack(form.timeline).length ? `skeleton again at ${skeletonBack(form.timeline).map((t) => `${t.ms}ms`).join(", ")}` : "no second skeleton");
 
-      // PATH 2, from the results: a read the player stopped leaves the free list on screen, and
-      // Try again reads from there. The list stays, dimmed, under the reading panel (7d), with Stop.
+      // PATH 2, from the results: a read that didn't finish leaves the free list on screen, and
+      // Try again reads from there. The list stays, dimmed, under the reading panel (7d).
       await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "networkidle" });
       await page.locator(`${PAGE} textarea`).fill(`tiny angry goblins ${width} ${Date.now()}`);
       await page.getByRole("button", { name: /^1 credit\. Find commanders/ }).first().click();
@@ -242,17 +245,24 @@ async function run() {
       await page.waitForURL(/[?&]r=/, { timeout: 30_000 });
       readIds.add(new URL(page.url()).searchParams.get("r").toLowerCase());
       await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='reading']`).waitFor({ timeout: 30_000 });
-      await page.getByRole("button", { name: /^Stop/ }).first().click();
-      await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='stopped']`).waitFor({ timeout: 30_000 });
+      report(at("results: no Stop is offered while it reads"), !(await page.getByRole("button", { name: /^Stop/ }).count()), "");
+      const firstRead = new URL(page.url()).searchParams.get("r").toLowerCase();
+      await page.locator(`${PAGE} [data-testid='read-panel']:not([data-phase='reading'])`).waitFor({ timeout: 60_000 });
+      // The probe's own row, on the probe's database: a read that didn't finish, so Try again is drawn.
+      // Refunded as a failed read is, so the account's weekly credits last the run at both widths.
+      const [marked] = await sql`update intake_reads set status = 'failed', error_class = 'upstream_busy', result = null, phase = null where user_id = ${userId} and id = ${firstRead}::uuid returning model_call_id`;
+      await sql`update model_calls set status = 'refunded' where id = ${marked.model_call_id}::uuid`;
+      await page.reload({ waitUntil: "networkidle" });
+      await page.locator(`${PAGE} [data-testid='read-panel'][data-phase='failed']`).waitFor({ timeout: 30_000 });
       await page.locator(`${PAGE} [data-testid='order-line']`).waitFor({ timeout: 30_000 });
-      // Let the stopped panel hydrate: a press before it lands is a click on markup with no handler yet.
+      // Let the failed panel hydrate: a press before it lands is a click on markup with no handler yet.
       await page.waitForTimeout(2_000);
       const retry = await press(page, () => page.getByRole("button", { name: /Try again/ }).first().click());
       console.log(`  results path timeline @ ${width}: ${show(retry.timeline)}`);
       const rereading = retry.timeline.filter((t) => t.phase === "reading");
       report(at("results: the retry read settled"), retry.done !== null, `final phase ${retry.timeline.at(-1)?.phase}`);
       report(at("results: the dimmed free list stays under the reading panel (7d)"), rereading.some((t) => t.list && t.dim), "");
-      report(at("results: Stop is offered while it reads"), rereading.some((t) => t.stop), "");
+      report(at("results: no Stop is offered while it reads"), rereading.every((t) => !t.stop), "");
       // The retry's address carries a new `r`, which is not part of the results' Suspense key: the free
       // list the player is looking at must not give way to the loading state, even for a moment (Hugh,
       // 2026-10-12: no sudden visual jumps).
@@ -268,7 +278,6 @@ async function run() {
     const ids = [...readIds];
     if (userId && ids.length > 0) {
       const calls = (await sql`select model_call_id from intake_reads where user_id = ${userId} and id = any(${ids}::uuid[])`).map((x) => x.model_call_id);
-      await sql`delete from intake_read_stops where user_id = ${userId} and read_id = any(${ids}::uuid[])`;
       await sql`delete from intake_reads where user_id = ${userId} and id = any(${ids}::uuid[])`;
       if (calls.length > 0) await sql`delete from model_calls where user_id = ${userId} and id = any(${calls}::uuid[])`;
       console.log(`  cleaned up ${ids.length} read(s)`);
