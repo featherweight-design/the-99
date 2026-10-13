@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useAiSweepRef } from "../ui/use-ai-sweep";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import {
@@ -611,6 +612,9 @@ export function TuningPanel({
     };
   }, []);
 
+  // The firefly border's start point, measured off this panel's own box (`useAiSweepRef`).
+  const sweepRef = useAiSweepRef();
+
   if (state === null) {
     return reviewFailed ? (
       <section aria-labelledby="tuning-heading" className="rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]"
@@ -1058,6 +1062,7 @@ export function TuningPanel({
   return (
     <VerdictOverridesProvider value={overrides.value}>
     <section
+      ref={sweepRef}
       aria-labelledby="tuning-heading"
       aria-busy={reading || undefined}
       className={`rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]${reading ? " ai-sweep" : ""}`}

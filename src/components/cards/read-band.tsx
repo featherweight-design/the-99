@@ -8,12 +8,15 @@ import type { ReactNode } from "react";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { CreditButton, FailMark } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
+import { useAiSweepRef } from "../ui/use-ai-sweep";
 
 const copy = swapToolsCopy.fits.read;
 
 function Band({ children, accent = false, testId }: { children: ReactNode; accent?: boolean; testId: string }) {
+  const sweepRef = useAiSweepRef();
   return (
     <section
+      ref={sweepRef}
       data-testid={testId}
       className={`flex flex-col gap-[11px] rounded-[10px] px-[16px] py-[14px]${accent ? " ai-sweep" : ""}`}
       style={{ background: "var(--surface)", border: `1px solid ${accent ? "var(--accent)" : "var(--border)"}` }}
