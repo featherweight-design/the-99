@@ -9,7 +9,7 @@ import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
 import { GameHistoryRow } from "./game-history-row";
 import { GameLogForm, type GameResult } from "./game-log-form";
-import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckTuningGamesCopy } from "../../lib/copy/deck-tuning-games";
 import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
 export interface GamesPanelProps {
@@ -317,9 +317,9 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
           returns the empty state above, before this point. */}
       {tuned && onOpenAnalysis ? (
         <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
-          {deckTuningCopy.gamesLine.lead}{" "}
+          {deckTuningGamesCopy.gamesLine.lead}{" "}
           <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent)] hover:underline">
-            {deckTuningCopy.gamesLine.link}
+            {deckTuningGamesCopy.gamesLine.link}
           </button>
         </p>
       ) : null}

@@ -4,7 +4,7 @@ import { useCallback, useState, useTransition } from "react";
 import { saveDeckHeader } from "../../app/decks/tuning-actions";
 import { renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { countCharacters } from "../../lib/copy/deck-tuning";
+import { countCharacters } from "../../lib/text/count-characters";
 import { DECK_NAME_MAX, hasControlChars } from "../../lib/decks/deck-name";
 import { plainText } from "../../lib/decks/notes-body";
 

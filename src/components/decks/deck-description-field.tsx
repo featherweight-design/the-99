@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { countCharacters } from "../../lib/copy/deck-tuning";
+import { countCharacters } from "../../lib/text/count-characters";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";

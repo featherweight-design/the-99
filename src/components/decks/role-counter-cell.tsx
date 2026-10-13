@@ -10,7 +10,7 @@
 
 import { roleCellState } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { tuningHubCopy } from "../../lib/copy/tuning-hub";
+import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 
 interface RoleCounterCellProps {
@@ -169,8 +169,8 @@ export function RoleCounterCell({
           </span>
         ) : balance ? (
           <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid transition-colors">
-            <span className="hidden md:inline">{tuningHubCopy.shortcuts.balanceMana}</span>
-            <span className="md:hidden">{tuningHubCopy.shortcuts.balanceManaShort}</span>
+            <span className="hidden md:inline">{tuningHubShortcutsCopy.balanceMana}</span>
+            <span className="md:hidden">{tuningHubShortcutsCopy.balanceManaShort}</span>
           </span>
         ) : (
           /* Whenever the cell is not a control — met, short with no shelf built
@@ -201,7 +201,7 @@ export function RoleCounterCell({
         type="button"
         onClick={balance}
         data-shortcut="balance-mana"
-        aria-label={named(tuningHubCopy.shortcuts.balanceManaAria(have ?? 0, target))}
+        aria-label={named(tuningHubShortcutsCopy.balanceManaAria(have ?? 0, target))}
         // The shipped interactive cell's border (design table, `Land cell — balance mana`).
         className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}
       >

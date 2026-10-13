@@ -9,7 +9,7 @@
  */
 import { currentLegalNames, currentNames } from "../decks/notes-store";
 import { formatTag, parseBody, plainText, tagCount } from "../decks/notes-body";
-import { countCharacters } from "../copy/deck-tuning";
+import { countCharacters } from "../text/count-characters";
 
 export type TaggedText = {
   /** The words with each resolved tag as its catalog name. */

@@ -9,7 +9,8 @@ import { useEffect, useId, useRef, useState, useTransition, type KeyboardEvent }
 import { logGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
-import { countCharacters, deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckTuningGamesCopy } from "../../lib/copy/deck-tuning-games";
+import { countCharacters } from "../../lib/text/count-characters";
 import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
@@ -150,7 +151,7 @@ export function GameLogForm({
     value: note,
     onChange: (body) => { setNote(body); setNoteTouched(true); },
     search: searchGameNoteCards,
-    max: deckTuningCopy.note.maxLength,
+    max: deckTuningGamesCopy.note.maxLength,
     maxTags: NOTES_TAGS_MAX,
     field: noteField,
     disabled: busy,
@@ -456,15 +457,15 @@ export function GameLogForm({
             htmlFor={noteId}
             className="font-mono text-[9.5px] md:text-[10px] tracking-[0.14em] uppercase text-[color:var(--accent)]"
           >
-            {deckTuningCopy.note.label}
+            {deckTuningGamesCopy.note.label}
           </label>
           {/* The full gloss would push the counter onto a second line at 390px,
               so the phone takes the short form. Both are drawn, and the
               breakpoint hides one — a single element swapping its text would
               read as a layout shift to anything watching the DOM. */}
           <span className="font-mono text-[9.5px] md:text-[10px] text-fg-locked">
-            <span className="md:hidden">{deckTuningCopy.note.hintShort}</span>
-            <span className="hidden md:inline">{deckTuningCopy.note.hint}</span>
+            <span className="md:hidden">{deckTuningGamesCopy.note.hintShort}</span>
+            <span className="hidden md:inline">{deckTuningGamesCopy.note.hint}</span>
           </span>
           {/* S1 states 1–5. Absent until focus or content; `--warning` from
               `warnAt`, and at the cap it says so rather than erroring — a limit
@@ -473,12 +474,12 @@ export function GameLogForm({
             <span
               id={counterId}
               className={`ml-auto font-mono text-[9.5px] md:text-[10px] md:tabular-nums ${
-                noteLength >= deckTuningCopy.note.warnAt ? "text-warning" : "text-fg-locked"
+                noteLength >= deckTuningGamesCopy.note.warnAt ? "text-warning" : "text-fg-locked"
               }`}
             >
-              {deckTuningCopy.note.counter(
+              {deckTuningGamesCopy.note.counter(
                 String(noteLength),
-                String(deckTuningCopy.note.maxLength),
+                String(deckTuningGamesCopy.note.maxLength),
               )}
             </span>
           )}
@@ -505,15 +506,15 @@ export function GameLogForm({
         {noteTags.picker.open && <CardTagList {...noteTags.picker.list} anchor={noteField} />}
         </div>
         <span id={describedById} className="sr-only">
-          {deckTuningCopy.note.ariaDescription}
+          {deckTuningGamesCopy.note.ariaDescription}
         </span>
 
         {/* Desktop only. The handoff's sentence also promises Suggested changes
             reads the note, which is true only where it exists: it ships with the
             Analysis tab, so the clause naming it is drawn only when `tuned`. */}
         <p className="hidden md:block mt-[8px] font-mono text-[10px] leading-[1.5] text-fg-faint">
-          {tuned ? deckTuningCopy.note.readBackTuned : deckTuningCopy.note.readBack}{" "}
-          <em className="not-italic text-fg-body">{deckTuningCopy.note.readBackEmphasis}</em>
+          {tuned ? deckTuningGamesCopy.note.readBackTuned : deckTuningGamesCopy.note.readBack}{" "}
+          <em className="not-italic text-fg-body">{deckTuningGamesCopy.note.readBackEmphasis}</em>
         </p>
       </div>
 
@@ -541,7 +542,7 @@ export function GameLogForm({
             a second optional thing above it. Three words longer, still one
             line at desktop width. */}
         <p className="hidden md:block font-mono text-[11px] text-fg-faint">
-          {deckTuningCopy.note.optionalNote}
+          {deckTuningGamesCopy.note.optionalNote}
         </p>
       </div>
 

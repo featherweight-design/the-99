@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { countCharacters, deckTuningCopy } from "./deck-tuning";
+import { deckTuningCopy } from "./deck-tuning";
+import { countCharacters } from "../text/count-characters";
 import { gameLogCopy } from "./game-log";
 
 /**
