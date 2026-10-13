@@ -24,6 +24,9 @@ export function StatsViewSwitch({ view, onView, busy = false }: {
   busy?: boolean;
 }) {
   const pick = (v: DecksView) => { if (view !== v && !busy) onView(v); };
+  // The segment drawn selected: the press moves it at once, and Tiles lets go in the frame Stats takes it. A read that
+  // fails clears `busy`, and both fall back together.
+  const shown: DecksView = busy ? "stats" : view;
   return (
     <div
       role="tablist"
@@ -44,9 +47,9 @@ export function StatsViewSwitch({ view, onView, busy = false }: {
           data-decks-view={v}
           onClick={() => pick(v)}
           // A press shows in the frame it lands: the segment takes the selected fill under the finger
-          // (`active:`) and keeps it while Stats is read, with the shell's pending mark beside the label (the 4px
+          // (`active:`) and keeps it while Stats is read (Tiles gives it up in the same frame), with the shell's pending mark beside the label (the 4px
           // diamond a nav press draws, after its 120ms beat). `aria-selected` still follows the view alone.
-          className={`${SEGMENT} ${view === v || (busy && v === "stats") ? SEGMENT_ON : `${SEGMENT_OFF} active:bg-[var(--elevated)] active:text-[color:var(--fg)]`}`}
+          className={`${SEGMENT} ${shown === v ? SEGMENT_ON : `${SEGMENT_OFF} active:bg-[var(--elevated)] active:text-[color:var(--fg)]`}`}
         >
           {v === "tiles" ? copy.tiles : copy.stats}
           {busy && v === "stats" ? (

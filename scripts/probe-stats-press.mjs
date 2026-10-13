@@ -7,6 +7,7 @@
 //  - FEEDBACK: the first animation frame whose Stats tab is filled AND marked `aria-busy` comes within
 //    FEEDBACK_MS of the pointerdown, and before the view has changed. (The fill is read off the class list: the
 //    off segment's `active:bg-[var(--elevated)]` would satisfy a substring match.)
+//  - THE SELECTION: in that same frame Tiles has let go of the selected fill (it never shares it with Stats).
 //  - THE MARK: the pending diamond (`[data-pending]`) is fully opaque in that tab, after its 120ms beat, while
 //    the read runs.
 //  - THE RESULT: Stats then lands (`[data-decks-stats]`), the tab loses the mark and its busy flag, and
@@ -71,7 +72,7 @@ async function signIn(page) {
 
 /** Armed in the page: the pointerdown, then the first frame with the tab filled and busy, then the view's arrival. */
 const ARM = () => {
-  const s = { at: null, feedback: null, mark: false, statsBefore: null, landed: null };
+  const s = { at: null, feedback: null, tilesFilled: null, mark: false, statsBefore: null, landed: null };
   window.__stats = s;
   window.addEventListener("pointerdown", () => { s.at ??= performance.now(); }, { capture: true, once: true });
   const tick = () => {
@@ -81,6 +82,7 @@ const ARM = () => {
     if (s.at != null && s.feedback == null && tab?.getAttribute("aria-busy") === "true"
         && tab.classList.contains("bg-[var(--elevated)]")) {
       s.feedback = performance.now();
+      s.tilesFilled = document.querySelector('[data-decks-view="tiles"]')?.classList.contains("bg-[var(--elevated)]") ?? null;
       s.statsBefore = landed;
     }
     // Present is not drawn: the mark rides `.anim-pending-in`, which holds it at opacity 0 for 120ms.
@@ -120,6 +122,7 @@ try {
       const s = await page.evaluate(() => window.__stats);
       const fb = s.feedback == null ? null : s.feedback - s.at;
       report(`${tag}: the press draws feedback within ${FEEDBACK_MS}ms of the pointerdown`, fb != null && fb <= FEEDBACK_MS, fb == null ? "never drew" : `${Math.round(fb)}ms`);
+      report(`${tag}: Tiles let go of the selected fill in the frame Stats took it`, s.feedback != null && s.tilesFilled === false, s.tilesFilled == null ? "no frame" : s.tilesFilled ? "Tiles still filled" : "Tiles cleared");
       report(`${tag}: it came before Stats did`, s.feedback != null && s.statsBefore === false && s.landed - s.at > (fb ?? 0) + 300, `feedback ${fb == null ? "-" : Math.round(fb)}ms, Stats ${Math.round(s.landed - s.at)}ms`);
       report(`${tag}: the pending mark is drawn while the read runs`, s.mark, s.mark ? "drawn" : "never drawn");
       const done = await page.evaluate(() => {
