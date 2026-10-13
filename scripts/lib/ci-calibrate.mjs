@@ -43,3 +43,21 @@ export function failingFiles(report, root) {
     .map((r) => (r.name.startsWith(prefix) ? r.name.slice(prefix.length) : r.name))
     .sort();
 }
+
+/**
+ * The first failure message of each named file, cut to `max` characters, from a vitest json report.
+ * A miss that cannot be read cannot be judged a flake or a gap in the selector.
+ */
+export function failureSummary(report, files, root, max = 400) {
+  const prefix = root.endsWith("/") ? root : `${root}/`;
+  const want = new Set(files);
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const r of report.testResults ?? []) {
+    const rel = r.name.startsWith(prefix) ? r.name.slice(prefix.length) : r.name;
+    if (!want.has(rel) || r.status !== "failed") continue;
+    const msg = (r.assertionResults ?? []).flatMap((a) => a.failureMessages ?? [])[0] ?? r.message ?? "(no message)";
+    out[rel] = String(msg).replace(/\u001b\[[0-9;]*m/g, "").slice(0, max);
+  }
+  return out;
+}

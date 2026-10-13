@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
-import { compare, failingFiles, mutate } from "./ci-calibrate.mjs";
+import { compare, failingFiles, failureSummary, mutate } from "./ci-calibrate.mjs";
 
 describe("mutate", () => {
   it("appends a module-level throw to code", () => {
@@ -43,6 +43,21 @@ describe("failingFiles", () => {
       { name: "/r/src/b.test.ts", status: "passed" },
     ] };
     expect(failingFiles(report, "/r")).toEqual(["src/a.test.ts"]);
+  });
+});
+
+describe("failureSummary", () => {
+  it("returns the first message of each named failed file, without colour codes", () => {
+    const report = { testResults: [
+      { name: "/r/a.test.ts", status: "failed", assertionResults: [{ failureMessages: ["\u001b[31mTimeout\u001b[39m after 5000ms", "second"] }] },
+      { name: "/r/b.test.ts", status: "failed", assertionResults: [{ failureMessages: ["other"] }] },
+      { name: "/r/c.test.ts", status: "passed", assertionResults: [] },
+    ] };
+    expect(failureSummary(report, ["a.test.ts", "c.test.ts"], "/r")).toEqual({ "a.test.ts": "Timeout after 5000ms" });
+  });
+  it("cuts a long message", () => {
+    const report = { testResults: [{ name: "/r/a.test.ts", status: "failed", assertionResults: [{ failureMessages: ["x".repeat(900)] }] }] };
+    expect(failureSummary(report, ["a.test.ts"], "/r", 50)["a.test.ts"]).toHaveLength(50);
   });
 });
 
