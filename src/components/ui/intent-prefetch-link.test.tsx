@@ -166,6 +166,14 @@ describe("IntentPrefetchLink eager on a phone, in view", () => {
     expect(started).toHaveBeenCalledTimes(1);
   });
 
+  it("checks the width again when the idle moment comes", () => {
+    tile();
+    observed!([{ isIntersecting: true }]);
+    phone = false;
+    idle!();
+    expect(prefetch).not.toHaveBeenCalled();
+  });
+
   it("drops a waiting prefetch once the tile is pressed", () => {
     tile();
     observed!([{ isIntersecting: true }]);

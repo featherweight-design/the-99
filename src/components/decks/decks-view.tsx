@@ -615,8 +615,8 @@ export function DecksView({
   // each is a full deck render on the server. The budget is spent when a prefetch STARTS, not when
   // a tile is drawn, because the first draw is not the reader's order: a stored sort lands on the
   // pass after hydration, and the default order's tiles are cancelled before they ever fire. Once
-  // two have started, a sort, filter or shelf change promotes no more; a spent tile that unmounts
-  // and returns asks again, and the router answers it from its cache while the entry is fresh.
+  // two have started, a sort, filter or shelf change promotes no more, and a deck already spent
+  // never opts in again: a tile that unmounts and returns would otherwise start a third render.
   const [prefetched, setPrefetched] = useState<ReadonlySet<string>>(() => new Set());
   const spendPrefetch = useCallback(
     (id: string) => setPrefetched((s) => (s.has(id) || s.size >= 2 ? s : new Set(s).add(id))),
@@ -1288,7 +1288,7 @@ export function DecksView({
                   <DeckCard
                     deck={deck}
                     // The two a phone shows first: its likeliest next press, prefetched on sight.
-                    eager={i < 2 && (prefetched.size < 2 || prefetched.has(deck.id))}
+                    eager={i < 2 && prefetched.size < 2 && !prefetched.has(deck.id)}
                     onPrefetch={() => spendPrefetch(deck.id)}
                     shopping={shopping.byDeck.get(deck.id)}
                     cartLink={cartEnabled}

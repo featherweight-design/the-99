@@ -72,4 +72,14 @@ describe("DecksView: the tiles that prefetch on a phone", () => {
     expect([...document.querySelectorAll("a[data-eager]")].map((a) => a.getAttribute("href"))).toEqual(["/decks/d"]);
     expect(eager()).toEqual([]);
   });
+
+  it("never makes a spent deck eager again, even when it returns to the top", () => {
+    const { rerender } = render(view(1284));
+    act(() => document.querySelector<HTMLAnchorElement>('a[href="/decks/a"]')!.click());
+    act(() => window.history.replaceState(null, "", "/decks?status=Draft"));
+    rerender(view(1283));
+    act(() => window.history.replaceState(null, "", "/decks"));
+    rerender(view(1282));
+    expect(eager()).toEqual(["/decks/b"]);
+  });
 });

@@ -119,7 +119,11 @@ export function IntentPrefetchLink({ eager = false, href, onPrefetch, onPointerE
     const seen = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return;
       seen.disconnect();
-      cancelIdle = onIdle(prefetch);
+      // Checked again when it runs: the connection can drop, or the phone rotate past `sm`, while
+      // the tile waits for an idle moment.
+      cancelIdle = onIdle(() => {
+        if (!savesData() && window.matchMedia(PHONE).matches) prefetch();
+      });
     });
     seen.observe(el);
     return () => {
