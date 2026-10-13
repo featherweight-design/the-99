@@ -700,8 +700,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
   A `plumbing` switch (`LIST_CACHE_ENABLED`, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis scores are counted
   by) takes the app-wide override alone. An app-wide override still flips one without a deploy, so its readers
-  are handed the resolved env too (since admin PR 7a every flag function, and `roleBasisFromEnv`, `hubTools` and
-  `scoreWriterVersion`, REQUIRES its `env`, so leaving it out does not compile. Since admin PR 7b so does the claim
+  are handed the resolved env too, and a cache whose payload depends on it carries it in its key (below). Since admin
+  PR 7a every flag function, and `roleBasisFromEnv`, `hubTools` and `scoreWriterVersion`, REQUIRES its `env`, so
+  leaving it out does not compile. Since admin PR 7b so does the claim
   model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`), every reader under `src/lib/decks` and `src/lib/tuning` (but
   `envForPageBasis`, which reads the kill switch on purpose), and the wrappers that took an OPTIONAL env and forwarded
   it to the claim model (`applyCollectionChange`, `loadContestedCard`, `loadSummaryView`, `loadFillGate`,
@@ -710,8 +711,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `countContestedCards`, `loadChooserCards`), `collection/card-detail` (`loadCardDetail`), `intake/rows`
   (`loadResultsPage`), `intake/search`, `intake/trial`, `commander-change/candidates`, `recs/free-ranking` and
   `swaps/fits`, `swaps/gather` and `swaps/take`, and 7d in `commanders/rankings` and `discovery/list`. Every other
-  reader's `env` default goes in 7c or 7d), and a cache whose payload
-  depends on it carries it in its key:
+  reader's `env` default goes in 7c or 7d. The keys:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` already keys on every switch. The registry
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
