@@ -303,14 +303,16 @@ export function FitsView({
   // and the read still reopens with its rows settled.
   const result = panel !== null && running === null && !failed && stored?.outcome === "picks" ? stored : null;
   const noFit = showsBand && running === null && !failed && stored?.outcome === "noFit" ? stored : null;
-  const changedOf = new Map((stale?.changed ?? []).map((c) => [c.deckId, c.reason]));
+  // A change in which decks can take the card is the set's (P10a): it names no deck and tags no row,
+  // even when a candidate's own inputs moved in the same span.
+  const changedOf = new Map((stale && !stale.setChanged ? stale.changed : []).map((c) => [c.deckId, c.reason]));
   // A deck that is no longer a candidate drops from the read (P10b); one that took the card stays,
   // resolved, whether before this visit, through the free list, or through the row's own press.
   const fitsNow = list.read ?? panel?.fits ?? null;
   const keptIds = new Set([...(fitsNow?.fits ?? []), ...(fitsNow?.holds ?? [])].map((d) => d.id));
   const rowsShown = result?.picks.filter((p) => keptIds.has(p.deckId) || result.resolved.includes(p.deckId) || !!actOf(p.deckId)) ?? [];
   const staleText = !stale ? null
-    : stale.setChanged && stale.changed.length === 0 ? read.staleSet(when(stale.at))
+    : stale.setChanged ? read.staleSet(when(stale.at))
     : stale.changed.length > 1 ? read.staleMany(stale.changed.length, when(stale.at))
     : stale.outcome === "noFit" ? read.noFitChanged(deckOf(stale.changed[0]?.deckId ?? "").name, when(stale.at))
     : stale.changed[0]?.reason === "overview" ? read.staleOverview(deckOf(stale.changed[0].deckId).name, when(stale.at))

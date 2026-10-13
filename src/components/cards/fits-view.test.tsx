@@ -317,8 +317,9 @@ describe("FitsView (Find a deck read, R2)", () => {
     await draw(panel({}, { stored: stored({ current: false, picks: two, changed: [{ deckId: "d-gob", reason: "deck" }, { deckId: "d-kra", reason: "deck" }] }) }));
     expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleMany(2, at));
     cleanupAll();
-    await draw(panel({}, { stored: stored({ current: false, setChanged: true }) }));
-    expect(screen.getByTestId("read-stale")).toHaveTextContent(/aren’t the same ones/);
+    // A set change wins over a deck's own, even when one moved in the same span: no deck named, no row tagged.
+    await draw(panel({}, { stored: stored({ current: false, setChanged: true, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleSet(at));
     expect(screen.queryByTestId("read-row-changed")).toBeNull();
   });
 

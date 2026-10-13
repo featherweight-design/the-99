@@ -372,9 +372,9 @@ export const swapToolsCopy = {
       announceTooBig: "Too many decks for one read. No credit is used.",
       // ── Stored, out of date (lock 6; handoff P10, P3g, P6c) ─────────────
       resultSubStale: (when: string) => `read ${when} · out of date`,
-      staleOne: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so the read may not hold anymore.`,
-      staleMany: (n: number, when: string) => `${n} of your decks have changed since this read on ${when}, so the read may not hold anymore.`,
-      staleSet: (when: string) => `Your decks that can take this card aren’t the same ones as at this read on ${when}, so the read may not hold anymore.`,
+      staleOne: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so the read may not hold any more.`,
+      staleMany: (n: number, when: string) => `${n} of your decks have changed since this read on ${when}, so the read may not hold any more.`,
+      staleSet: (when: string) => `Your decks that can take this card aren’t the same ones as at this read on ${when}, so the read may not hold any more.`,
       staleOverview: (deck: string, when: string) => `${deck} has a new overview since this read on ${when}. Read again to use it.`,
       noFitChanged: (deck: string, when: string) => `${deck} has changed since this read on ${when}, so it’s worth asking again.`,
       changedTag: "changed since",
