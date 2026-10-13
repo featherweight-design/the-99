@@ -221,11 +221,16 @@ export function TuningHub({
   const leaveReview = useCallback(() => setReview((r) => (r ? { ...r, left: true } : r)), []);
   // The History row to focus on the way back from a reviewed run.
   const [returnRow, setReturnRow] = useState<string | null>(null);
+  // A tab press back to All tools brings the hub up too, as every other switch does.
+  const returnScroll = useRef(false);
   const open = useCallback((tool: TuningTool | null, how: { focus: boolean; scroll?: boolean } = { focus: true }) => {
     setPast(null);
     setReview(null);
     setReturnRow(null);
-    if (tool === null) setLeftTool(openTool);
+    if (tool === null) {
+      setLeftTool(openTool);
+      returnScroll.current = how.scroll ?? false;
+    }
     setOpening((prev) => (tool === null ? null : { tool, focus: how.focus, scroll: how.scroll ?? false, seq: (prev?.seq ?? 0) + 1 }));
   }, [openTool]);
   useEffect(() => {
@@ -234,8 +239,11 @@ export function TuningHub({
     // brought the deck to 100), the Tuning heading: focus never falls to the document.
     const tile = sectionRef.current?.querySelector<HTMLElement>(`button[data-tool-tile="${leftTool}"]`);
     const heading = sectionRef.current?.querySelector<HTMLElement>("#tuning-hub-heading");
-    if (tile) tile.focus();
-    else heading?.focus();
+    const scroll = returnScroll.current;
+    returnScroll.current = false;
+    if (scroll) reveal(sectionRef.current);
+    if (tile) tile.focus({ preventScroll: scroll });
+    else heading?.focus({ preventScroll: scroll });
   }, [openTool, leftTool]);
 
   // A shortcut on Your deck, answered once per nonce and during render rather than in an effect,
