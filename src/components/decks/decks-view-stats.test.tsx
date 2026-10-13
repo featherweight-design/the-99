@@ -161,4 +161,14 @@ describe("DecksView: Stats on /decks", () => {
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
     expect(read.stats).not.toHaveBeenCalled();
   });
+
+  it("puts Stats back from the held payload when Back returns to ?view=stats", async () => {
+    window.history.replaceState(null, "", "/decks?view=stats");
+    draw({ data: STATS, view: "stats", foldServer: null });
+    act(() => { window.history.pushState(null, "", "/decks"); window.dispatchEvent(new PopStateEvent("popstate")); });
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).toBeNull());
+    act(() => { window.history.pushState(null, "", "/decks?view=stats"); window.dispatchEvent(new PopStateEvent("popstate")); });
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    expect(read.stats).not.toHaveBeenCalled();
+  });
 });

@@ -347,7 +347,10 @@ export function DecksView({
   const [seenViewQuery, setSeenViewQuery] = useState(liveQuery);
   if (liveQuery !== seenViewQuery) {
     setSeenViewQuery(liveQuery);
-    if (view === "stats" && new URLSearchParams(liveQuery).get("view") !== "stats") setView("tiles");
+    // Both ways: Back to a `?view=stats` address puts Stats up again from the payload this visit holds.
+    const asked = new URLSearchParams(liveQuery).get("view") === "stats";
+    if (view === "stats" && !asked) setView("tiles");
+    else if (view === "tiles" && asked && heldStats !== null) setView("stats");
   }
   if (lineup?.data && lineup.data !== heldStats) {
     setHeldStats(lineup.data);
