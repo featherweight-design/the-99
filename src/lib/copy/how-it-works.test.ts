@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FLOOR_PCT } from "../discovery/floor";
 import { FLAT_TARGETS } from "../decks/mix";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "../model/allowance-rule";
 import { READY_COUNT, READY_SHOWN } from "../recs/ready-to-build";
 import { RELEASE_DELAY_DAYS } from "../catalog/index-due";
 import { THEME_ORDER } from "../recs/themes";
@@ -57,7 +56,8 @@ describe("How the app reaches its answers: the rows", () => {
       expect(row(id).refresh).toContain(`about ${weeks} weeks after each new expansion or Commander set`);
     }
     const written = row("how-written").how;
-    expect(written).toContain(`the owner has ${MODEL_OWNER_DAILY_ALLOWANCE} and friends have ${MODEL_FRIEND_DAILY_ALLOWANCE}`);
+    // The reader's own limit is filled at render (`HowItWorks`), so the copy holds the slot.
+    expect(written).toContain("Credits: you have {allowance} in any 24 hours");
   });
 
   // Brief §3: the schedules run on GitHub, which starts them hours late, so no row names a clock

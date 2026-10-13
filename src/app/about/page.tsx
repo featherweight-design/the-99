@@ -6,6 +6,8 @@ import { aboutSeen } from "../../lib/about/read";
 import { AboutPage } from "../../components/about/about-page";
 import { aboutSheetEnabled } from "../../lib/about/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { db } from "../../db";
+import { dailyLimitFor } from "../../lib/model/allowance";
 
 /**
  * A repeated query key arrives as an array — `/about?next=/decks&next=/collection`
@@ -27,7 +29,8 @@ export default async function AboutRoute({
 }) {
   const [userId, params] = await Promise.all([requireUserId(), searchParams]);
   // The switches the proxy decided this request from: the page must draw the entries its gate counted.
-  const [seen, env] = await Promise.all([aboutSeen(userId), requestSwitchEnv(userId)]);
+  // The reader's own daily credit limit, read once: the credits entry and How it works both state it.
+  const [seen, env, creditLimit] = await Promise.all([aboutSeen(userId), requestSwitchEnv(userId), dailyLimitFor(db, userId)]);
   return (
     <AboutPage
       seen={seen.version}
@@ -35,6 +38,7 @@ export default async function AboutRoute({
       next={soleNext(params.next)}
       sheetMode={aboutSheetEnabled(env)}
       env={env}
+      creditLimit={creditLimit}
     />
   );
 }

@@ -847,10 +847,10 @@ function DeckTokensFigure({ width }: { width: AboutWidth }) {
 }
 
 /** The shared credit line in the three states a friend sees: credits left, every credit out, the monthly limit. */
-function CreditsFigure({ width }: { width: AboutWidth }) {
+function CreditsFigure({ width, creditLimit }: { width: AboutWidth; creditLimit: number }) {
   return (
     <Specimen label="credits" width={width}>
-      <CreditsFigureBody />
+      <CreditsFigureBody limit={creditLimit} />
     </Specimen>
   );
 }
@@ -1172,7 +1172,7 @@ function StandInsFigure({ width }: { width: AboutWidth }) {
 
 // would let a caller invoke a missing one with no type error.
 export const FIGURES: Partial<
-  Record<string, (props: { width: AboutWidth }) => React.JSX.Element>
+  Record<string, (props: { width: AboutWidth; creditLimit: number }) => React.JSX.Element>
 > = {
   availability: AvailabilityFigure,
   "commander-availability": CommanderAvailabilityFigure,

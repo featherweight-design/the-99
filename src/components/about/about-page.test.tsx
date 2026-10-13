@@ -1604,7 +1604,7 @@ describe("the commander-availability figure", () => {
     const { FIGURES } = await import("./figures");
     const Figure = FIGURES["commander-availability"]!;
     expect(Figure).toBeDefined();
-    const { container } = render(<Figure width="plate" />);
+    const { container } = render(<Figure width="plate" creditLimit={5} />);
 
     // Three readings print a label; `free` prints none, and that absence is the
     // fourth. Read from the copy module rather than pinned here.

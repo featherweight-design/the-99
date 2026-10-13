@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe("HowItWorks", () => {
   it("keys all five methods, in order, with their definitions", () => {
-    const { container } = render(<HowItWorks entries={aboutEntries} />);
+    const { container } = render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     const key = container.querySelector("dl")!;
     expect([...key.querySelectorAll("[data-method]")].map((e) => e.getAttribute("data-method"))).toEqual([
       "rules", "decks", "model", "you", "list",
@@ -24,7 +24,7 @@ describe("HowItWorks", () => {
   });
 
   it("draws eight closed rows, each a heading holding its disclosure", () => {
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     for (const r of copy.rows) {
       const b = head(r.title);
       expect(b.getAttribute("aria-expanded")).toBe("false");
@@ -35,7 +35,7 @@ describe("HowItWorks", () => {
   });
 
   it("opens and closes a row on a press, and keeps others open", () => {
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     const roles = copy.rows.find((r) => r.id === "how-roles")!;
     const prices = copy.rows.find((r) => r.id === "how-prices")!;
     fireEvent.click(head(roles.title));
@@ -50,7 +50,7 @@ describe("HowItWorks", () => {
   });
 
   it("gives Brackets its five sub-rows in place of a single statement", () => {
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     fireEvent.click(head("Brackets"));
     const body = document.getElementById("how-brackets-body")!;
     expect(body.textContent).toContain(copy.bracketsLead);
@@ -68,14 +68,14 @@ describe("HowItWorks", () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
     window.history.replaceState(null, "", "/about#how-written");
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     expect(document.getElementById("how-written-body")).not.toBeNull();
     expect(scroll).toHaveBeenCalledTimes(1);
     expect(scroll).toHaveBeenCalledWith(document.getElementById("how-written"), "start");
   });
 
   it("opens a row when the hash moves to it, and ignores a hash that names no row", () => {
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     act(() => {
       window.history.replaceState(null, "", "/about#chapter-01");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -94,7 +94,7 @@ describe("HowItWorks", () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
     window.history.replaceState(null, "", "/about#how-prices");
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     act(() => {
       window.history.replaceState(null, "", "/about#how-written");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
@@ -112,7 +112,7 @@ describe("HowItWorks", () => {
   });
 
   it("carries the jump mark's title line on each row, so JumpMark can wash and focus it", () => {
-    render(<HowItWorks entries={aboutEntries} />);
+    render(<HowItWorks entries={aboutEntries} creditLimit={5} />);
     for (const r of copy.rows) {
       const line = document.getElementById(r.id)!.querySelector("[data-entry-title]")!;
       expect(line.querySelector("h3")!.getAttribute("tabindex")).toBe("-1");

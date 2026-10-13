@@ -14,9 +14,8 @@ import { existsSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_VERSION, aboutCopy, aboutEntries, aboutMenuCopy, aboutSheetCopy } from "./about";
+import { ABOUT_VERSION, ALLOWANCE_SLOT, aboutCopy, aboutEntries, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
 import pin from "./about.version.json";
-import { MODEL_FRIEND_DAILY_ALLOWANCE } from "../model/allowance-rule";
 
 const APP_DIR = join(process.cwd(), "src", "app");
 
@@ -335,12 +334,20 @@ const WORDS: Record<number, string> = {
 };
 
 describe("the credits entry", () => {
-  // The caption spells the allowances out in words, so nothing else ties them to the rule.
-  it("names the allowance the rule grants", () => {
-    const words: Record<number, string> = { 3: "three", 5: "five", 10: "ten" };
-    const word = words[MODEL_FRIEND_DAILY_ALLOWANCE];
-    expect(word, "the allowance has no word here; add it").toBeDefined();
-    const caption = aboutEntries.find((e) => e.id === "credits")?.caption ?? "";
-    expect(caption).toContain(`You get ${word},`);
+  // The caption holds a slot for the reader's own limit (admin PR 9c), never a fixed number.
+  const caption = aboutEntries.find((e) => e.id === "credits")?.caption ?? "";
+  it("holds the reader's limit as a slot, not a number", () => {
+    expect(caption).toContain(`You get ${ALLOWANCE_SLOT}, and each one comes back`);
+    expect(caption).not.toMatch(/You get (five|ten|three|\d+),/);
+  });
+  it.each([
+    [1, "one"],
+    [5, "five"],
+    [10, "ten"],
+    [12, "12"],
+  ])("fills a limit of %i as %s", (limit, spelled) => {
+    const filled = fillAllowance(caption, limit);
+    expect(filled).toContain(`You get ${spelled}, and each one comes back 24 hours after you use it.`);
+    expect(filled).not.toContain(ALLOWANCE_SLOT);
   });
 });

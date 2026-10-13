@@ -17,14 +17,13 @@ import { RELEASE_DELAY_DAYS, RELEASE_SET_TYPES } from "../catalog/index-due";
 import { FLAT_TARGETS } from "../decks/mix";
 import { THEME_ORDER } from "../recs/themes";
 import { FLOOR_PCT } from "../discovery/floor";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE } from "../model/allowance-rule";
 import { READY_COUNT, READY_SHOWN } from "../recs/ready-to-build";
 import { POOL_FULL_AT, POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../recs/score";
-import { howItWorksCopy, type HowMethod } from "./about";
+import { ALLOWANCE_SLOT, howItWorksCopy, type HowMethod } from "./about";
+import { numberWord } from "./number-words";
 import { deckAnalysisCopy } from "./deck-analysis";
 
-const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
-const word = (n: number) => NUMBER_WORDS[n] ?? String(n);
+const word = numberWord;
 
 /** "monthly, and about two weeks after each new expansion or Commander set": `indexDue`. */
 const SET_TYPE_NAMES: Record<string, string> = { expansion: "expansion", commander: "Commander set" };
@@ -212,8 +211,7 @@ export const howItWorksRowsCopy = {
         "puts them into words. Help me choose reads what you write against the commanders your " +
         "answers allow, picks up to ten, and says why for each; your answers always hold, and a line " +
         "never carries a number or a score. Every answer is checked before " +
-        `you see it, and one that fails the check is dropped. Credits: the owner has ${MODEL_OWNER_DAILY_ALLOWANCE} and friends ` +
-        `have ${MODEL_FRIEND_DAILY_ALLOWANCE} in any 24 hours, shared by the Overview, Suggested ` +
+        `you see it, and one that fails the check is dropped. Credits: you have ${ALLOWANCE_SLOT} in any 24 hours, shared by the Overview, Suggested ` +
         "changes and Help me choose. A credit is spent only when an answer arrives. The commander " +
         "sentence costs you nothing.",
       refresh:

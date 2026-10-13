@@ -1,4 +1,4 @@
-import { howItWorksCopy, type AboutEntry, type HowMethod } from "../../lib/copy/about";
+import { fillAllowance, howItWorksCopy, type AboutEntry, type HowMethod } from "../../lib/copy/about";
 import { entryRow, HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 import { bracketSubRows, howItWorksRowsCopy as copy } from "../../lib/copy/how-it-works";
 import { MethodTag } from "../ui/method-tag";
@@ -14,7 +14,7 @@ const KEY_ORDER = Object.keys(howItWorksCopy.methods) as HowMethod[];
  * A server component: the key and every sentence are static. The rows are the one client part,
  * because a row opens and closes, and a hash naming one opens it before the jump lands.
  */
-export function HowItWorks({ entries }: { entries: readonly AboutEntry[] }) {
+export function HowItWorks({ entries, creditLimit }: { entries: readonly AboutEntry[]; creditLimit: number }) {
   // Each row's `explained in` links: the entries this deployment draws that point at it, in page
   // order. An entry whose switch is off is not drawn, so it is not linked.
   const explained: Record<string, { id: string; title: string }[]> = {};
@@ -54,7 +54,8 @@ export function HowItWorks({ entries }: { entries: readonly AboutEntry[] }) {
       </div>
 
       <HowRows
-        rows={copy.rows}
+        // "Written text and credits" states the reader's own limit, in digits as the row always has.
+        rows={copy.rows.map((r) => ({ ...r, how: fillAllowance(r.how, creditLimit, String) }))}
         subRows={bracketSubRows()}
         explained={explained}
         labels={{ fields: copy.fields, verdicts: copy.verdicts, bracketsLead: copy.bracketsLead, explainedIn: copy.explainedIn }}

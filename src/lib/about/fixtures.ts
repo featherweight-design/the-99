@@ -31,7 +31,6 @@ import type { CommanderListItem } from "../recs/recommend";
 import type { ReadySlice } from "../recs/ready-to-build";
 import type { ReceiptCounts } from "../commanders/in-use";
 import { identityGradient } from "../collection/gradients";
-import { MODEL_FRIEND_DAILY_ALLOWANCE } from "../model/allowance-rule";
 // The props every /about specimen is fed.
 //
 // One module, because the handoff's rule for a new entry is "add a fixture
@@ -1218,9 +1217,9 @@ export const SUGGESTED_CHANGES = {
 /**
  * `credits`: three of the lines the app draws beside a button that spends a credit: with credits
  * left, with every credit out, and while the app-wide monthly limit holds. The owner's fourth
- * (`creditsCopy.ownerShare`) is left out on purpose: the entry speaks to friends (Hugh, 2026-10-06). A friend's allowance
- * (`MODEL_FRIEND_DAILY_ALLOWANCE`), read rather than retyped. The caption spells the number out,
- * so `about.test.ts` checks its number word against the allowance constant.
+ * (`creditsCopy.ownerShare`) is left out on purpose: the entry speaks to friends (Hugh, 2026-10-06). The
+ * limit is not a fixture: the page hands the figure the app-wide default (`MODEL_DAILY_ALLOWANCE`), and
+ * `left` is drawn as at most that limit.
  *
  * `nextAt` is a fixed instant. `clockTime` formats it in the reader's own clock, so the server's
  * render and the browser's can differ by time zone; the figure draws the time only after
@@ -1228,7 +1227,6 @@ export const SUGGESTED_CHANGES = {
  * `monthName` reads in UTC and so renders the same everywhere.
  */
 export const CREDITS = {
-  limit: MODEL_FRIEND_DAILY_ALLOWANCE,
   left: 2,
   nextAt: new Date(Date.UTC(2026, 9, 5, 21, 20)),
   pausedUntil: new Date(Date.UTC(2026, 10, 1)),
