@@ -14,9 +14,10 @@ export const ManaBalancePanel = onDemand(() => import("./mana-balance-panel").th
 // The hub is not loaded until its tools are: it opens one the moment a tile is pressed, and a tool whose
 // code lagged would draw nothing. A tool that failed to arrive fails the hub's load too, so it is retried.
 export const TuningHub = onDemand(async () => {
-  await Promise.all([TuningPanel.fetch(), CutsPanelView.fetch(), ManaBalancePanel.fetch()]);
+  // The hub's own chunk is requested in the same round as the tools', and only withheld from drawing.
+  const [hub] = await Promise.all([import("./tuning-hub"), TuningPanel.fetch(), CutsPanelView.fetch(), ManaBalancePanel.fetch()]);
   if (!TuningPanel.isLoaded() || !CutsPanelView.isLoaded() || !ManaBalancePanel.isLoaded()) throw new Error("the Tuning tools did not load");
-  return (await import("./tuning-hub")).TuningHub;
+  return hub.TuningHub;
 });
 
 /**

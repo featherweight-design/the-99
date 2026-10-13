@@ -669,7 +669,9 @@ async function tabPress(browser, state, width, url) {
     out[key] = await page
       .waitForFunction(() => {
         const panel = document.getElementById("panel-analysis");
-        return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.innerText.trim().length > 40);
+        // The hub's landing itself, not just any text under a settled panel: a build that has not yet
+        // drawn the Tuning tools must not read as done.
+        return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.querySelector("[data-tuning-hub]"));
       }, null, { timeout: 60_000, polling: 16 })
       .then(() => Date.now() - pressed, () => null);
     await context.close();
