@@ -15,7 +15,7 @@ function Band({ children, accent = false, testId }: { children: ReactNode; accen
   return (
     <section
       data-testid={testId}
-      className="flex flex-col gap-[11px] rounded-[10px] px-[16px] py-[14px]"
+      className={`flex flex-col gap-[11px] rounded-[10px] px-[16px] py-[14px]${accent ? " ai-sweep" : ""}`}
       style={{ background: "var(--surface)", border: `1px solid ${accent ? "var(--accent)" : "var(--border)"}` }}
     >
       {children}

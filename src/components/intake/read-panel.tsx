@@ -243,7 +243,7 @@ export function ReadPanel({
     <div
       data-testid="read-panel"
       data-phase={phase}
-      className="flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[24px] p-[13px_14px] md:p-[14px_16px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_28%,var(--border))] bg-[color:color-mix(in_oklab,var(--accent)_6%,var(--surface-sunken))]"
+      className={`flex flex-col gap-[12px] md:flex-row md:items-center md:gap-[24px] p-[13px_14px] md:p-[14px_16px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--accent)_28%,var(--border))] bg-[color:color-mix(in_oklab,var(--accent)_6%,var(--surface-sunken))]${phase === "reading" ? " ai-sweep" : ""}`}
     >
       <div className="flex flex-col gap-[6px] flex-1 min-w-0">
         <h3 className="m-0 flex flex-wrap items-center gap-[8px] font-display font-semibold text-[14.5px] md:text-[15.5px] text-[color:var(--fg)]">

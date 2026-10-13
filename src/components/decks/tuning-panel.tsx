@@ -1060,7 +1060,7 @@ export function TuningPanel({
     <section
       aria-labelledby="tuning-heading"
       aria-busy={reading || undefined}
-      className="rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]"
+      className={`rounded-[11px] px-[14px] py-[16px] md:rounded-[12px] md:px-[20px] md:py-[18px]${reading ? " ai-sweep" : ""}`}
       style={{
         background: "var(--surface-sunken)",
         border: `1px solid ${reading ? "var(--accent)" : "var(--border)"}`,
