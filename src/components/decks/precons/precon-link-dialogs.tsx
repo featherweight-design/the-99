@@ -269,7 +269,7 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
         {items.length === 0
           ? <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{none}</p>
           : shown.length === 0 && <p className="m-0 text-[12.5px] text-[color:var(--fg-muted)]">{noMatch(q.trim())}</p>}
-        <div role="radiogroup" aria-label={label} className="flex max-h-[min(340px,40dvh)] flex-col gap-[6px] overflow-y-auto overscroll-contain">
+        <div role="radiogroup" aria-label={label} className="-m-[5px] flex max-h-[min(340px,40dvh)] flex-col gap-[6px] overflow-y-auto overscroll-contain p-[5px]">
           {shown.map((item, index) => {
             const on = item.id === selected;
             return (
