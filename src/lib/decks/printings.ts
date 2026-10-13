@@ -246,8 +246,8 @@ export async function resolveDeckOwnedPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, DeckPrinting>> {
   const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(env), ownedOnly: true });
   return ownedOnly(printings);
@@ -258,7 +258,7 @@ export async function readDeckOwnedPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, DeckPrinting>> {
   const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(env), ownedOnly: true });
   return ownedOnly(printings);
@@ -277,7 +277,7 @@ function ownedOnly(printings: Map<string, DeckPrinting>): Map<string, DeckPrinti
 export async function resolveCommanderPrintingsByDeck(
   userId: string,
   rows: { deckId: string; commanderOracleId: string }[],
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, DeckPrinting>> {
   const out = new Map<string, DeckPrinting>();
   if (rows.length === 0) return out;
@@ -398,7 +398,7 @@ export function recordedColumns(
 export async function readHeldPricePicks(
   userId: string,
   deckIds: string[],
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<PricePick[]> {
   const ids = [...new Set(deckIds)];
   if (!deckPrintingsEnabled(env) || ids.length === 0) return [];
@@ -445,7 +445,7 @@ export async function readHeldPricePicks(
 export async function readModalPicks(
   userId: string,
   deckId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<Record<string, { setCode: string; collectorNumber: string }> | null> {
   if (!deckPrintingsEnabled(env)) return null;
   const picks = await readHeldPricePicks(userId, [deckId], env);

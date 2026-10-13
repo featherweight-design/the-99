@@ -27,6 +27,7 @@ import { loadAvailability } from "../src/lib/decks/availability-query";
 import { changeCount, loadDraftState, releasedCopies } from "../src/lib/decks/draft-state";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, newestVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -98,12 +99,12 @@ async function main() {
     insert into collection_items (user_id, oracle_id, quantity, set_code)
     values (${USER}, ${x}::uuid, 1, 'probe')
   `);
-  const v1 = (await commitVersion(deckId, null)).version;
+  const v1 = (await commitVersion(deckId, null, undefined, undefined, process.env)).version;
 
   const readAll = async () => {
-    const state = await loadDraftState(deckId, USER);
-    const list = await listDecksWithStats(USER, "name", { includeDeckState: true });
-    const claims = await loadAvailability(USER, { oracleIds: [x] });
+    const state = await loadDraftState(deckId, USER, process.env);
+    const list = await listDecksWithStats(USER, "name", { includeDeckState: true, env: process.env });
+    const claims = await loadAvailability(USER, { oracleIds: [x], env: process.env });
     const claim = claims.get(x)?.claims.find((c) => c.id === deckId);
     return {
       moved: state.commander ?? null,
@@ -159,7 +160,7 @@ async function main() {
 
   // ── Commit freezes the move into the version, and resets its tenure ───────
   await fixture.execute(sql`update decks set commander_oracle_id = ${b}::uuid where id = ${deckId}::uuid`);
-  const v2 = (await commitVersion(deckId, null)).version;
+  const v2 = (await commitVersion(deckId, null, undefined, undefined, process.env)).version;
   check("commit: the version is led by the new commander", v2.commanderOracleId, b);
   check("commit: the new commander's tenure starts at the commit", v2.commanderSince > v1.commanderSince, true);
   const committed = await readAll();

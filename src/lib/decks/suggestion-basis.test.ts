@@ -11,6 +11,7 @@ vi.mock("../profile/load", async (importActual) => ({
 }));
 
 import { resolveSuggestionBasis } from "./suggestions-read";
+import { ENV_VIEW } from "@/test/env-view";
 
 const commander = { oracleId: "c", colorIdentity: ["G"] };
 const targets = (n: number) => ({ ramp: n, draw: n, removal: n, wipes: n });
@@ -28,7 +29,7 @@ describe("resolveSuggestionBasis", () => {
     const roleSets = new Map([["a", ["ramp" as const]]]);
     m.basis.mockResolvedValue({ basis: "labels", roleSets, fellBack: false });
     m.skeleton.mockResolvedValue(skeleton(12));
-    const got = await resolveSuggestionBasis(commander, null, false, [{ oracleId: "a" }]);
+    const got = await resolveSuggestionBasis(commander, null, false, [{ oracleId: "a" }], ENV_VIEW);
     expect(m.skeleton.mock.calls[0][4]).toEqual({ roleBasis: "labels" });
     expect(got.roleSets).toBe(roleSets);
     expect(got.mix.cells.ramp.target).toBe(12);
@@ -37,7 +38,7 @@ describe("resolveSuggestionBasis", () => {
   it("asks for the classifier targets and returns no sets when the label read fell back", async () => {
     m.basis.mockResolvedValue({ basis: "classifier", roleSets: undefined, fellBack: true });
     m.skeleton.mockResolvedValue(skeleton(9));
-    const got = await resolveSuggestionBasis(commander, null, false, []);
+    const got = await resolveSuggestionBasis(commander, null, false, [], ENV_VIEW);
     expect(m.skeleton.mock.calls[0][4]).toEqual({ roleBasis: "classifier" });
     expect(got.roleSets).toBeUndefined();
   });
@@ -45,7 +46,7 @@ describe("resolveSuggestionBasis", () => {
   it("falls to the flat targets OF THE BASIS when the skeleton read throws", async () => {
     m.basis.mockResolvedValue({ basis: "labels", roleSets: new Map(), fellBack: false });
     m.skeleton.mockRejectedValue(new Error("down"));
-    const got = await resolveSuggestionBasis(commander, null, false, []);
+    const got = await resolveSuggestionBasis(commander, null, false, [], ENV_VIEW);
     // The label flat targets (12/8/6/1), not the classifier's 10/10/8/3.
     expect(got.mix.cells.ramp.target).toBe(12);
   });

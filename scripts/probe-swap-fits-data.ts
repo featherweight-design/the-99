@@ -35,6 +35,7 @@ import { loadFits } from "../src/lib/swaps/fits";
 import { cardThemes } from "../src/lib/recs/themes";
 import { loadCardDetail } from "../src/lib/collection/card-detail";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 // The card payload's Fits gate reads only with the swap tools on, as a deployment with them on does.
@@ -123,7 +124,7 @@ async function main() {
 
   // 3. Availability: two owned, one of them held by a committed deck.
   await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${x.oracle_id}::uuid, 2, 'probe')`);
-  await commitVersion(holds, null);
+  await commitVersion(holds, null, undefined, undefined, process.env);
   const owned = await loadFits(USER, x.oracle_id);
   check("availability: owned and free", [owned?.owned, owned?.free], [2, 1]);
 

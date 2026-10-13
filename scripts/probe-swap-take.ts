@@ -17,6 +17,7 @@ import ws from "ws";
 
 import { commitVersion } from "../src/lib/decks/versions";
 import { setShoppingLimit, takeStandIn, undoSwap } from "../src/lib/swaps/take";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -116,7 +117,7 @@ async function main() {
   // 4. Free by the TAKE's read, not the list's: a committed deck holding that Command Tower makes
   //    the same take a buy.
   const holder = await makeDeck("probe swap holder", commander.oracle_id, [[tower, 1]]);
-  await commitVersion(holder, null);
+  await commitVersion(holder, null, undefined, undefined, process.env);
   const claimed = await takeStandIn(deck, USER, plateau, tower);
   check("take: a copy a committed deck holds is not free", claimed.ok && claimed.addWasFree, false);
   if (claimed.ok) await undoSwap(claimed.swapId, USER);

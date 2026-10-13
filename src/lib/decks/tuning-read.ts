@@ -64,7 +64,7 @@ export type TuningInputs = {
 };
 
 /** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
-export async function tuningInputs(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<TuningInputs | null> {
+export async function tuningInputs(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<TuningInputs | null> {
   // The head and the version it belongs to, in ONE snapshot: read apart, a commit landing between
   // them would pair the list before the commit with the version after it.
   const snapshot = await db.transaction(async (tx) => {
@@ -132,7 +132,7 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
  * switch bits (`switchBits(env)`). Every caller of either passes the env its action resolved for the
  * reader, so an analysis already pressed is still reused, and never across a role basis.
  */
-export function profileOfHead(head: ProfileHead, env: NodeJS.ProcessEnv = process.env): Promise<DeckProfile> {
+export function profileOfHead(head: ProfileHead, env: NodeJS.ProcessEnv): Promise<DeckProfile> {
   return cacheForUser(head.userId, ["deck-profile", head.deckId, profileFingerprint(head), switchBits(env)], () =>
     loadDeckProfileFromHead(head, env),
   );
@@ -186,7 +186,7 @@ export async function withBracketAfter(
   before: DeckProfile,
   declared: Bracket | null,
   kept: ValidatedSuggestion[],
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<ValidatedSuggestion[]> {
   return Promise.all(kept.map(async (s) => {
     const after = await loadDeckProfileFromHead({ ...head, cards: swapped(head.cards, s) }, env);
@@ -236,7 +236,7 @@ export async function readTuningState(
   fingerprint: string,
   now: Date = new Date(),
   opts: { allLocked?: string | null; runId?: string | null } = {},
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<TuningState> {
   await db.transaction(async (tx) => {
     const reaped = await tx.update(deckSuggestionRuns)

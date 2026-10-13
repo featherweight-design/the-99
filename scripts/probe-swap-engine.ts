@@ -26,6 +26,7 @@ import { jobOf, mainType, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { labelInputHash, LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
 import type { Job as LabelJob } from "../src/lib/labels/types";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -244,7 +245,7 @@ async function main() {
   // 8. Free after a take, against a REAL claim: a committed deck holding the only Command Tower
   //    makes it a buy here, where it was free.
   const holder = await makeDeck("probe swap holder", commander.oracle_id, [tower.oracle_id]);
-  await commitVersion(holder, null);
+  await commitVersion(holder, null, undefined, undefined, process.env);
   const claimed = await loadStandIns(deckId, USER, plateau.oracle_id, false);
   check("free after the take: a copy a committed deck holds is no longer free",
     !names(freeRows(claimed!)).includes("Command Tower") && names(freeRows(lands)).includes("Command Tower"),

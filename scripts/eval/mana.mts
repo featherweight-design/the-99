@@ -16,6 +16,7 @@ import { parseArgs } from "node:util";
 
 import { connectStaging } from "./lib/staging.mjs";
 import { diffGolden, goldenShape, GOLDEN_COLORS, type GoldenBalance } from "./lib/mana-golden.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const { values: args } = parseArgs({ options: { print: { type: "boolean", default: false } } });
 const GOLDEN = new URL("../../docs/superpowers/eval/mana-balance-golden.json", import.meta.url);
@@ -32,7 +33,7 @@ const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
 const [owner] = await db.select({ userId: schema.decks.userId }).from(schema.decks).where(eq(schema.decks.id, golden.deck.deckId));
 if (!owner) throw new Error(`eval:mana: golden deck ${golden.deck.deckId} is not on staging`);
 
-const detail = await getDeckDetail(golden.deck.deckId, owner.userId);
+const detail = await getDeckDetail(golden.deck.deckId, owner.userId, undefined, process.env);
 if (!detail) throw new Error("eval:mana: the golden deck could not be read");
 const balance = await loadManaBalance(detail);
 if (!balance) throw new Error("eval:mana: the golden deck's text reads failed");
@@ -88,7 +89,7 @@ if (diffs.length > 0) {
 console.log("\n## 2. Every deck of the same owner (evidence, no verdict)\n");
 const decks = await db.select({ id: schema.decks.id, name: schema.decks.name }).from(schema.decks).where(eq(schema.decks.userId, owner.userId));
 for (const d of decks) {
-  const detailN = await getDeckDetail(d.id, owner.userId);
+  const detailN = await getDeckDetail(d.id, owner.userId, undefined, process.env);
   const b = detailN ? await loadManaBalance(detailN) : null;
   console.log(`- ${d.name}${!b ? ": read failed" : b.state === "ok" ? "" : ` [${b.state}]`}`);
   // A colorless or no-source deck still has lands, tapped counts, an average and Karsten's figure.
@@ -103,7 +104,7 @@ const ASKS: [string, string, "W" | "U" | "B" | "R" | "G"][] = [
 const price = (cents: number | null) => (cents === null ? "no price" : `$${(cents / 100).toFixed(2)}`);
 const changeText = (cs: { color: string; before: number; after: number }[]) => cs.map((c) => `${c.color} ${c.before} to ${c.after}`).join(", ");
 for (const [label, id, color] of ASKS) {
-  const d = await getDeckDetail(id, owner.userId);
+  const d = await getDeckDetail(id, owner.userId, undefined, process.env);
   const h = d ? await loadManaHelp(d, owner.userId, color) : null;
   console.log(`- ${label}, add ${color} (${h?.sourcesNow ?? "?"} sources now)${h ? "" : ": read failed"}`);
   if (!h) continue;

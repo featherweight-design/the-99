@@ -358,7 +358,7 @@ const claimModel = (userId: string, env: NodeJS.ProcessEnv) => sql`
  */
 export async function loadAvailability(
   userId: string,
-  opts?: {
+  opts: {
     oracleIds?: string[];
     excludeDeckId?: string;
     /**
@@ -369,13 +369,14 @@ export async function loadAvailability(
     unownedAsZero?: boolean;
     /**
      * The reader's resolved switches (`requestSwitchEnv`), which decide the `locked` key and the
-     * moved-commander pending clause; the environment alone when omitted.
+     * moved-commander pending clause. Required (admin PR 7b): a script with no signed-in reader passes
+     * `process.env` itself.
      */
-    env?: NodeJS.ProcessEnv;
+    env: NodeJS.ProcessEnv;
   },
   tx?: Tx,
 ): Promise<Map<string, Availability>> {
-  const env = opts?.env ?? process.env;
+  const env = opts.env;
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
   //
@@ -740,12 +741,11 @@ export async function loadDeckBuyRows(
    * user-wide however few decks the caller wants an answer for. Passing a deck
    * here saves pricing rows the caller will not read, not a scan.
    */
-  deckIds?: string[],
+  deckIds: string[] | undefined,
   /** Read inside a write's transaction, so what it bills is the write's own instant. */
-  tx?: Tx,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause; the
-   *  environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  tx: Tx | undefined,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. */
+  env: NodeJS.ProcessEnv,
 ): Promise<DeckBuyRow[]> {
   if (deckIds && deckIds.length === 0) return [];
   // sql.param for the same reason it is used elsewhere in this file: a bare

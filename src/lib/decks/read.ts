@@ -409,9 +409,9 @@ export async function getDeckDetail(
    * once per page rather than twice (it is ~150ms on staging however few ids it is asked for).
    * Only `.get` is used on it, so the cards it holds beyond this deck's change nothing.
    */
-  sharedAvailability?: Promise<Map<string, Availability> | null>,
-  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  sharedAvailability: Promise<Map<string, Availability> | null> | undefined,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<DeckDetail | null> {
   // TWO WAVES, not seven reads in a row. Each read below used to wait for the one before it, and
   // on a `pull:staging` copy that chain was ~410-440ms for a 96-card deck, most of it round trips.
@@ -1082,7 +1082,7 @@ export const pendingChangesSql = sql<number>`(
  * CHANGE_COMMANDER_ENABLED off this IS `pendingChangesSql`, the same object, so the deck list's
  * SQL is byte-identical to the one before commanders could move.
  */
-export function deckPendingSql(env: NodeJS.ProcessEnv = process.env): SQL<number> {
+export function deckPendingSql(env: NodeJS.ProcessEnv): SQL<number> {
   if (!changeCommanderEnabled(env)) return pendingChangesSql;
   return sql<number>`(${pendingChangesSql} + (case when ${deckCommanderMovedSql("decks")} then 1 else 0 end))::int`;
 }
@@ -1172,17 +1172,17 @@ export async function listDecksWithStats(
      */
     includeBracket?: boolean;
     /** The reader's resolved switches (`requestSwitchEnv`), for the deck-state marks, the commander
-     *  art and the claim model's seniority read; the environment alone when omitted. A names-only
-     *  caller still reaches the claim read through `canFlip`, so every app caller passes it
-     *  (`switch-adoption.test.ts` holds that), and PR 7 makes it required. */
-    env?: NodeJS.ProcessEnv;
+     *  art and the claim model's seniority read. Required (admin PR 7b): a names-only caller still
+     *  reaches the claim read through `canFlip`, and a script with no signed-in reader passes
+     *  `process.env` itself. */
+    env: NodeJS.ProcessEnv;
     /**
      * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on
      * `includeBracket`: Home asks for the bracket on its resume rows and draws no notice, and this is
      * a correlated subquery per deck on the list's hot path.
      */
     includeNotice?: boolean;
-  } = {},
+  },
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (

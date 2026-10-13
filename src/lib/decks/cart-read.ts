@@ -26,7 +26,7 @@ import { chainArt } from "../cards/chain-art";
 export async function loadCart(
   userId: string,
   /** The reader's resolved switches (the cached page's `env`): the claim model and the printing picks. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<CartPayload> {
   const [rows, [{ total }]] = await Promise.all([
     loadDeckBuyRows(userId, undefined, undefined, env),

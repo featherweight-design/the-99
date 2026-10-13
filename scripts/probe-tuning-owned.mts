@@ -25,6 +25,7 @@ import { connectStaging } from "./eval/lib/staging.mjs";
 import { acquireRunLock, readLedger, record, refusal, spent } from "./eval/lib/ledger.mjs";
 import { costUsd, worstCaseUsd } from "./eval/lib/pricing.mjs";
 import { LEDGER_LIMITS } from "../src/lib/eval/ledger-limits";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const TUNING_CAP = LEDGER_LIMITS["ledger-tuning-lists.jsonl"].hardCapUsd;
 
@@ -57,7 +58,7 @@ const L = await import("../src/lib/tuning/limits");
 const [deck] = (await db.execute(sql`select user_id, name from decks where id = ${deckId}`)).rows as { user_id: string; name: string }[];
 if (!deck) throw new Error(`no staging deck ${deckId}`);
 const userId = deck.user_id;
-const inputs = await tuningInputs(deckId, userId);
+const inputs = await tuningInputs(deckId, userId, process.env);
 if (!inputs) throw new Error("deck not readable");
 const { head, games, intent, locked } = inputs;
 const limits = values.limits ? (JSON.parse(values.limits) as typeof inputs.limits) : inputs.limits;
@@ -73,6 +74,7 @@ const ownedCandidates = limits.ownedOnly
   ? await loadOwnedCandidates({
     userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
     inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
+    env: process.env,
   })
   : undefined;
 const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
@@ -126,7 +128,7 @@ async function ask() {
 if (!outcome.ok) { console.log(outcome.errorClass); process.exit(0); }
 if (values.save) writeFileSync(values.save, JSON.stringify(outcome.value, null, 1));
 
-const { kept, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
+const { kept, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value, env: process.env });
 const sized = sizeLists(kept, L.MAX_SUGGESTIONS);
 console.log(`asked ${askedCount}, survived ${kept.length}, kept ${sized.length}`);
 for (const [side, lines] of [["add", outcome.value.additions], ["cut", outcome.value.cuts]] as const) {

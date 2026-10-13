@@ -66,6 +66,7 @@ import { applyItem, setDismissed, undoItem } from "../src/lib/tuning/verdicts";
 import type { ValidatedSuggestion } from "../src/lib/tuning/validate";
 import type { TuningResponse } from "../src/lib/tuning/response-schema";
 import type { PairItem } from "../src/lib/tuning/state";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 
@@ -197,7 +198,7 @@ async function run() {
     const deck = await makeDeck(u, c);
     const started = await startRun(u, deck, "fp", null);
     if (started.kind !== "started") return fail("case 1 start", started.kind);
-    await readTuningState(deck, u, "fp", future(10));
+    await readTuningState(deck, u, "fp", future(10), undefined, process.env);
     const wrote = await persistRun(started, [suggestion(c)], 0, lateBill);
     check("1 · a late success after the reaper reports superseded", wrote, false);
     // The call billed all the same: its meters land on the refunded unit (credits count
@@ -288,7 +289,7 @@ async function run() {
       where deck_id = ${deck}::uuid and oracle_id = ${cut}::uuid`);
     await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${cut}::uuid)`);
     const { itemId } = await answered(u, deck, c);
-    const before = (await readTuningState(deck, u, "fp")).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
+    const before = (await readTuningState(deck, u, "fp", undefined, undefined, process.env)).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
     check("5 · before the apply the add is not in the deck", before?.addInDeck, false);
 
     check("7 · another reader cannot apply the item", await applyItem(itemId, newUser()), null);
@@ -300,7 +301,7 @@ async function run() {
       { verdict: "accepted", snapshot: true });
     // The card reads the add's claim with this deck's own ask subtracted, and marks it self-excluded
     // exactly when the deck holds the add. Before the apply it did not; now it does.
-    const applied = (await readTuningState(deck, u, "fp")).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
+    const applied = (await readTuningState(deck, u, "fp", undefined, undefined, process.env)).items.find((i): i is PairItem => i.id === itemId && i.side === undefined);
     check("5 · the panel reads the applied add as in the deck", applied?.addInDeck, true);
 
     check("6 · a second apply is refused", await applyItem(itemId, u), null);
@@ -419,17 +420,17 @@ async function run() {
       check("9b · and the allowance counts nothing for it", (await readAllowance(u2)).used, used);
     }
 
-    const same = await readTuningState(deck, u, "fp-1");
+    const same = await readTuningState(deck, u, "fp-1", undefined, undefined, process.env);
     check("9 · the panel reads the answer's items", same.items.length, 1);
     check("9 · an unchanged deck gates as unchanged", gateReason(same)?.kind ?? null, "unchanged");
-    const moved = await readTuningState(deck, u, "fp-2");
+    const moved = await readTuningState(deck, u, "fp-2", undefined, undefined, process.env);
     check("9 · a changed deck is stale and ungated", [moved.stale, gateReason(moved)], [true, null]);
     // A failed re-run leaves the last good set on screen, still open: the failure is the new
     // run's, and nothing the player had changed (STATES-tuning-panel.md :42).
     const rerun = await startRun(u, deck, "fp-2", null);
     if (rerun.kind !== "started") return fail("case 9 re-run start", rerun.kind);
     await finishRun(rerun, { status: "failed", errorClass: "timeout" });
-    const kept = await readTuningState(deck, u, "fp-2");
+    const kept = await readTuningState(deck, u, "fp-2", undefined, undefined, process.env);
     check("9 · a failed re-run keeps the last set's items", [kept.run?.status, kept.items.length], ["failed", 1]);
   }
 
@@ -441,20 +442,20 @@ async function run() {
       insert into deck_versions (deck_id, number, commander_oracle_id)
       values (${deck}::uuid, ${n}, ${c.legend}::uuid)`);
     await insertVersion(1);
-    const read = await tuningInputs(deck, u);
+    const read = await tuningInputs(deck, u, process.env);
     check("12 · the inputs carry the version they were read at", read?.readVersion ?? null, 1);
     const { itemId } = await answered(u, deck, c, "fp-v", undefined, read!.readVersion);
-    const before = await readTuningState(deck, u, "fp-v");
+    const before = await readTuningState(deck, u, "fp-v", undefined, undefined, process.env);
     check("12 · a set with no commit since reads unretired", before.retired, null);
     check("12 · and its item applies", before.items.map((i) => i.applies), [true]);
 
     await insertVersion(2);
-    const after = await readTuningState(deck, u, "fp-v");
+    const after = await readTuningState(deck, u, "fp-v", undefined, undefined, process.env);
     check("12 · a commit since the run retires the set, naming both versions", after.retired, { from: 1, to: 2 });
     check("12 · and reopens the gate though the list did not move", [after.stale, gateReason(after)], [false, null]);
 
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${c.body[0]}::uuid`);
-    const moved = await readTuningState(deck, u, "fp-v");
+    const moved = await readTuningState(deck, u, "fp-v", undefined, undefined, process.env);
     check("12 · an item whose cut the deck no longer holds does not apply", moved.items.map((i) => i.applies), [false]);
     check("12 · and apply refuses it", await applyItem(itemId, u), null);
   }
@@ -466,13 +467,13 @@ async function run() {
     process.env.NEVER_CUT_ENABLED = "true";
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const unlocked = await tuningInputs(deck, u);
+    const unlocked = await tuningInputs(deck, u, process.env);
     const { itemId } = await answered(u, deck, c, unlocked!.fingerprint);
-    check("14 · before a lock, the gate reads unchanged", gateReason(await readTuningState(deck, u, unlocked!.fingerprint))?.kind ?? null, "unchanged");
+    check("14 · before a lock, the gate reads unchanged", gateReason(await readTuningState(deck, u, unlocked!.fingerprint, undefined, undefined, process.env))?.kind ?? null, "unchanged");
     await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${deck}::uuid, ${c.body[0]}::uuid)`);
-    const locked = await tuningInputs(deck, u);
+    const locked = await tuningInputs(deck, u, process.env);
     check("14 · locking a card moves the fingerprint (D6)", locked!.fingerprint !== unlocked!.fingerprint, true);
-    const state = await readTuningState(deck, u, locked!.fingerprint);
+    const state = await readTuningState(deck, u, locked!.fingerprint, undefined, undefined, process.env);
     check("14 · and reopens the gate", gateReason(state), null);
     check("14 · the item no longer applies, and says the cut is locked", state.items.map((i) => [i.applies, i.side === undefined ? i.cutLocked : i.locked]), [[false, true]]);
     check("14 · the apply refuses it", await applyItem(itemId, u), null);
@@ -495,7 +496,7 @@ async function run() {
     await finishRun(run, { status: "failed", errorClass: "locked_only" });
     const settled = await runRow(run.runId);
     check("14 · a locked-only run is written (the constraint allows it) and refunded", settled?.unit, "refunded");
-    check("14 · and the panel reads its class", (await readTuningState(deck, u, locked!.fingerprint)).run?.errorClass, "locked_only");
+    check("14 · and the panel reads its class", (await readTuningState(deck, u, locked!.fingerprint, undefined, undefined, process.env)).run?.errorClass, "locked_only");
   }
 
   // 12 · A commit landing BETWEEN the read and the run's start still retires the set: the run
@@ -505,19 +506,19 @@ async function run() {
     const deck = await makeDeck(u, c);
     await fixture.execute(sql`
       insert into deck_versions (deck_id, number, commander_oracle_id) values (${deck}::uuid, 1, ${c.legend}::uuid)`);
-    const read = await tuningInputs(deck, u);
+    const read = await tuningInputs(deck, u, process.env);
     await fixture.execute(sql`
       insert into deck_versions (deck_id, number, commander_oracle_id) values (${deck}::uuid, 2, ${c.legend}::uuid)`);
     await answered(u, deck, c, "fp-race", undefined, read!.readVersion);
     check("12 · a commit between the read and the start retires the set",
-      (await readTuningState(deck, u, "fp-race")).retired, { from: 1, to: 2 });
+      (await readTuningState(deck, u, "fp-race", undefined, undefined, process.env)).retired, { from: 1, to: 2 });
   }
 
   // 13 · v2's context, read from the database a run reads.
   {
     const u = newUser();
     const deck = await makeDeck(u, c);
-    const head = (await tuningInputs(deck, u))!.head;
+    const head = (await tuningInputs(deck, u, process.env))!.head;
     const names = new Map((await rows<{ oracle_id: string; name: string }>(sql`
       select oracle_id, name from cards where oracle_id in (${sql.join([c.body[0], c.body[1], c.add].map((id) => sql`${id}::uuid`), sql`, `)})`)).map((r) => [r.oracle_id, r.name]));
     const [key, other, add] = [names.get(c.body[0])!, names.get(c.body[1])!, names.get(c.add)!];
@@ -580,7 +581,7 @@ async function run() {
       line({ addOracleId: c.add, cutOracleId: null, position: 0 }),
       line({ addOracleId: null, cutOracleId: cutId, position: 1 }),
     ], 0);
-    const state = await readTuningState(deck, u, "fp-lists");
+    const state = await readTuningState(deck, u, "fp-lists", undefined, undefined, process.env);
     check("15 · the run reads back as an addition and a cut",
       state.items.map((i) => [i.side, i.applies]), [["add", true], ["cut", true]]);
     const [addItem, cutItem] = state.items;
@@ -597,7 +598,7 @@ async function run() {
     // A cut whose card has left the deck no longer applies, and an addition already in the deck neither.
     await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${cutId}::uuid`);
     check("15 · a cut whose card left no longer applies, and the apply refuses it",
-      [(await readTuningState(deck, u, "fp-lists")).items.map((i) => i.applies), await applyItem(cutItem.id, u)], [[true, false], null]);
+      [(await readTuningState(deck, u, "fp-lists", undefined, undefined, process.env)).items.map((i) => i.applies), await applyItem(cutItem.id, u)], [[true, false], null]);
     let refusedBoth = false;
     try {
       await fixture.execute(sql`insert into deck_suggestion_items (run_id, rationale, rationale_short, evidence, position)
@@ -633,14 +634,14 @@ async function run() {
     const deck = await makeDeck(u, c);
     const older = await answered(u, deck, c, "fp", c.body[0]);
     const newer = await answered(u, deck, c, "fp", c.body[1]);
-    const ordinary = await readTuningState(deck, u, "fp");
+    const ordinary = await readTuningState(deck, u, "fp", undefined, undefined, process.env);
     check("11 · the ordinary read shows the newest ok run", [ordinary.items.map((i) => i.id), ordinary.review ?? null], [[newer.itemId], null]);
-    const reviewed = await readTuningState(deck, u, "fp", new Date(), { runId: older.runId });
+    const reviewed = await readTuningState(deck, u, "fp", new Date(), { runId: older.runId }, process.env);
     check("11 · a run named by id is read instead", [reviewed.items.map((i) => i.id), reviewed.review?.runId], [[older.itemId], older.runId]);
-    const stranger = await readTuningState(deck, newUser(), "fp", new Date(), { runId: older.runId });
+    const stranger = await readTuningState(deck, newUser(), "fp", new Date(), { runId: older.runId }, process.env);
     check("11 · another reader’s id reads nothing of it", [stranger.items.length, stranger.review ?? null], [0, null]);
     const otherDeck = await makeDeck(u, c);
-    const misplaced = await readTuningState(otherDeck, u, "fp", new Date(), { runId: older.runId });
+    const misplaced = await readTuningState(otherDeck, u, "fp", new Date(), { runId: older.runId }, process.env);
     check("11 · a run of another deck reads as the ordinary panel", misplaced.review ?? null, null);
   }
 }

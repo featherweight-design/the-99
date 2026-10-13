@@ -27,6 +27,7 @@ import { applyCollectionChange } from "../src/lib/collection/write";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import type { PendingItem } from "../src/lib/collection/pending";
 import { recommendCommanders } from "../src/lib/recs/recommend";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -73,7 +74,7 @@ async function main() {
   try {
     const replaceId = randomUUID();
     const [replaced, replaceMs] = await timed(() =>
-      applyCollectionChange(userId, { kind: "replace", items }, { id: replaceId }));
+      applyCollectionChange(userId, { kind: "replace", items }, { id: replaceId, env: process.env }));
     if (replaced.status !== "applied") throw new Error(`replace: ${replaced.status}`);
     console.log(`TIME  Replace raising ${replaced.entry.raised} rows, applied: ${replaceMs.toFixed(0)}ms`);
 
@@ -81,7 +82,7 @@ async function main() {
     let shown: Awaited<ReturnType<typeof applyCollectionChange>> | null = null;
     for (let i = 0; i < 3; i++) {
       const [r, ms] = await timed(() =>
-        applyCollectionChange(userId, { kind: "revert", entryId: replaceId }, { id: randomUUID(), dryRun: true }));
+        applyCollectionChange(userId, { kind: "revert", entryId: replaceId }, { id: randomUUID(), dryRun: true, env: process.env }));
       shown = r;
       dry.push(ms);
     }
@@ -90,18 +91,18 @@ async function main() {
     console.log(`TIME  revert dry run (lowers ${shown.lowered} rows, ${lowered.length} cards; names ${shown.decks.length} short deck-cards): median ${median(dry).toFixed(0)}ms of ${dry.map((x) => x.toFixed(0)).join(", ")}`);
 
     const reads: number[] = [];
-    for (let i = 0; i < 3; i++) reads.push((await timed(() => loadAvailability(userId, { oracleIds: lowered })))[1]);
+    for (let i = 0; i < 3; i++) reads.push((await timed(() => loadAvailability(userId, { oracleIds: lowered, env: process.env })))[1]);
     console.log(`TIME  one claim read over those ${lowered.length} cards: median ${median(reads).toFixed(0)}ms of ${reads.map((x) => x.toFixed(0)).join(", ")} (the check makes two)`);
 
     const [reverted, revertMs] = await timed(() => applyCollectionChange(
-      userId, { kind: "revert", entryId: replaceId }, { id: randomUUID(), confirmShort: shown.status === "preview" ? shown.decks : [] },
+      userId, { kind: "revert", entryId: replaceId }, { id: randomUUID(), confirmShort: shown.status === "preview" ? shown.decks : [], env: process.env },
     ));
     console.log(`TIME  revert applied: ${revertMs.toFixed(0)}ms (${reverted.status})`);
 
     const one = items[0];
     const [edited, editMs] = await timed(() => applyCollectionChange(
       userId, { kind: "edit", rows: [{ ...one, collectorNumber: one.collectorNumber ?? "", finish: one.finish ?? "nonfoil", quantity: one.quantity + 1 }] },
-      { id: randomUUID() },
+      { id: randomUUID(), env: process.env },
     ));
     const scores = (await pool.query("select count(*)::int as n from commander_scores where user_id = $1", [userId])).rows[0].n;
     console.log(`TIME  one-card edit: ${editMs.toFixed(0)}ms (${edited.status}); scores left after it: ${scores}`);

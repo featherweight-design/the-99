@@ -22,6 +22,7 @@ import * as realFlagsRead from "../bracket/flags-read";
 const flagsRead = realFlagsRead as unknown as { loadBracketFlags: ReturnType<typeof vi.fn> };
 import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
+import { ENV_VIEW } from "@/test/env-view";
 
 // ---------------------------------------------------------------------------
 // colorIdentityMask
@@ -553,7 +554,7 @@ describe("deckPendingSql", () => {
   it("follows the reader's resolved env over the environment", () => {
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     try {
-      expect(deckPendingSql()).toBe(pendingChangesSql);
+      expect(deckPendingSql(ENV_VIEW)).toBe(pendingChangesSql);
       const resolved = deckPendingSql({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
       expect(resolved).not.toBe(pendingChangesSql);
     } finally {

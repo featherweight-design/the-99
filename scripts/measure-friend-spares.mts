@@ -5,6 +5,7 @@
 //
 //   MEASURE_FRIEND_USER_ID=user_… pnpm measure:friend-spares
 import "./lib/env.mjs";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 async function main() {
   const friend = process.env.MEASURE_FRIEND_USER_ID;
@@ -27,7 +28,7 @@ async function main() {
     ms.sort((a, b) => a - b);
     return { median: Math.round(ms[Math.floor(runs / 2)]), min: Math.round(ms[0]), max: Math.round(ms[runs - 1]) };
   };
-  const model = await time(() => loadAvailability(friend, { oracleIds: asked }));
+  const model = await time(() => loadAvailability(friend, { oracleIds: asked, env: process.env }));
   const grants = await time(() => spareGrantorsQuery(friend));
   console.log(`asked cards: ${asked.length}`);
   console.log(`claim model per friend: median ${model.median}ms (min ${model.min}, max ${model.max})`);
@@ -43,7 +44,7 @@ async function main() {
         for (let i = w; i < n; i += CLAIM_MODELS_AT_ONCE) {
           await db.transaction(async (tx) => {
             await spareGrantorsQuery(friend, tx);
-            await loadAvailability(friend, { oracleIds: asked }, tx);
+            await loadAvailability(friend, { oracleIds: asked, env: process.env }, tx);
           }, { isolationLevel: "repeatable read" });
         }
       }));

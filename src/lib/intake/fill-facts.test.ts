@@ -7,6 +7,7 @@ vi.mock("../bracket/flags-read", () => ({ loadBracketFlags: vi.fn(async () => ne
 
 import type { FillCandidate } from "../decks/fill";
 import { loadFillGate } from "./fill-facts";
+import { ENV_VIEW } from "@/test/env-view";
 
 const card = (over: Partial<FillCandidate>): FillCandidate => ({
   oracleId: "x", name: "x", typeLine: "Creature", oracleText: null, keywords: [], manaCost: null,
@@ -19,7 +20,7 @@ describe("loadFillGate's budget", () => {
     // them: no price, no ownership. A basic is never a buy, so the budget must not refuse one.
     const gate = await loadFillGate({
       userId: "u", commanderIds: ["cmd"], candidates: [],
-      answers: { budgetCents: 1000, bracket: null, cardOracleId: null },
+      answers: { budgetCents: 1000, bracket: null, cardOracleId: null }, env: ENV_VIEW,
     });
     expect(gate!.admits(card({ oracleId: "cat-mountain", name: "Mountain", typeLine: "Basic Land — Mountain" }))).toBe(true);
     // And an unpriced non-basic it was never told about is still refused, as before.

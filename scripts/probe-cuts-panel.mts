@@ -24,6 +24,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { Pool } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 import { chromium, type Page } from "playwright";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 process.env.PROPOSED_CUTS_ENABLED = "true";
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL, CLERK_SECRET_KEY } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
@@ -150,7 +151,7 @@ try {
     await shot("c1-count");
 
     // C3: a stored result for the deck as it stands now.
-    const inputs = (await readProposedCuts(deckId, owner))!;
+    const inputs = (await readProposedCuts(deckId, owner, process.env))!;
     const picks = inputs.facts.cards.slice(0, 3);
     await q(`delete from deck_suggestion_runs where deck_id = $1`, [deckId]);
     const run = await startCutsRun(owner, deckId, inputs.fingerprint, inputs.readVersion);

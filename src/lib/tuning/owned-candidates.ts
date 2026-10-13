@@ -50,8 +50,8 @@ export async function loadOwnedCandidates(args: {
   limits: { capCents: number | null; sets: readonly string[] };
   max?: number;
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
-   *  pending clause; the environment alone when omitted (a probe). */
-  env?: NodeJS.ProcessEnv;
+   *  pending clause; a probe, with no signed-in reader, passes `process.env`. */
+  env: NodeJS.ProcessEnv;
 }): Promise<OwnedCandidate[]> {
   const { userId, deckId, commanderOracleIds, colorIdentity, inDeck, limits } = args;
   const max = args.max ?? OWNED_SHORTLIST_MAX;

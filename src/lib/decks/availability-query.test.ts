@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
+import { ENV_VIEW } from "@/test/env-view";
 
 const was = process.env.NEVER_CUT_ENABLED;
 afterEach(() => {
@@ -17,7 +18,7 @@ async function emitted(flag: string | undefined): Promise<string> {
   else process.env.NEVER_CUT_ENABLED = flag;
   let captured: SQL | null = null;
   const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
-  await loadAvailability("user_1", { oracleIds: ["o1"] }, tx as never);
+  await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx as never);
   return new PgDialect().sqlToQuery(captured!).sql;
 }
 
@@ -40,10 +41,10 @@ describe("loadAvailability and the lock", () => {
 });
 
 describe("loadAvailability with unownedAsZero (the cart's chooser)", () => {
-  const render = async (opts: Parameters<typeof loadAvailability>[1]) => {
+  const render = async (opts: Omit<Parameters<typeof loadAvailability>[1], "env">) => {
     let captured: SQL | null = null;
     const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
-    await loadAvailability("user_1", opts, tx as never);
+    await loadAvailability("user_1", { ...opts, env: ENV_VIEW }, tx as never);
     return new PgDialect().sqlToQuery(captured!).sql;
   };
 

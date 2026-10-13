@@ -19,6 +19,7 @@ import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const { db } = await import("../src/db");
@@ -68,13 +69,13 @@ const compareMaps = (group: keyof typeof tally, label: string, a: Map<string, un
   }
 };
 
-compareMaps("availability", "availability(user)", await OLD.loadAvailability(userId), await NEW.loadAvailability(userId));
+compareMaps("availability", "availability(user)", await OLD.loadAvailability(userId, { env: process.env }), await NEW.loadAvailability(userId, { env: process.env }));
 for (const d of decks) {
-  compareMaps("availability", `availability(${d.id})`, await OLD.loadAvailability(userId, { excludeDeckId: d.id }), await NEW.loadAvailability(userId, { excludeDeckId: d.id }));
+  compareMaps("availability", `availability(${d.id})`, await OLD.loadAvailability(userId, { excludeDeckId: d.id, env: process.env }), await NEW.loadAvailability(userId, { excludeDeckId: d.id, env: process.env }));
 }
 const rowsOf = (rows: { deckId: string; oracleId: string; quantity: number }[]) =>
   new Map(rows.map((r) => [`${r.deckId}|${r.oracleId}`, r.quantity]));
-compareMaps("buyRows", "buyRows", rowsOf(await OLD.loadDeckBuyRows(userId)), rowsOf(await NEW.loadDeckBuyRows(userId)));
+compareMaps("buyRows", "buyRows", rowsOf(await OLD.loadDeckBuyRows(userId, undefined, undefined, process.env)), rowsOf(await NEW.loadDeckBuyRows(userId, undefined, undefined, process.env)));
 
 console.log(`loadDeckBuyRows: ${tally.buyRows.compared} rows compared, ${tally.buyRows.differ} differ`);
 console.log(`loadAvailability: ${tally.availability.compared} rows compared, ${tally.availability.differ} differ`);
@@ -86,7 +87,7 @@ const time = async (fn: () => Promise<unknown>) => {
   return Math.round(ms.sort((x, y) => x - y)[2]);
 };
 for (const [name, mod] of [["old", OLD], ["new", NEW]] as const) {
-  console.log(`${name}: loadDeckBuyRows ${await time(() => mod.loadDeckBuyRows(userId))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId))}ms`);
+  console.log(`${name}: loadDeckBuyRows ${await time(() => mod.loadDeckBuyRows(userId, undefined, undefined, process.env))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId, { env: process.env }))}ms`);
 }
 
 if (process.env.DIFF_EXPLAIN === "1") {
@@ -98,7 +99,7 @@ if (process.env.DIFF_EXPLAIN === "1") {
       plan = (res.rows as { "QUERY PLAN": string }[]).map((r) => r["QUERY PLAN"]).join("\n");
       return { rows: [] };
     };
-    await mod.loadDeckBuyRows(userId);
+    await mod.loadDeckBuyRows(userId, undefined, undefined, process.env);
     (db as { execute: unknown }).execute = execute;
     console.log(`\n── EXPLAIN ANALYZE loadDeckBuyRows (${name})\n${plan.split("\n").filter((l) => /Execution Time|Planning Time|loops=\d{3,}/.test(l)).join("\n")}`);
   }

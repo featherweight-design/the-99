@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { sumShopping } from "./shopping-rollup";
+import { ENV_VIEW } from "@/test/env-view";
 
 describe("sumShopping", () => {
   it("adds copies, cost and the priced denominator independently", () => {
@@ -59,7 +60,7 @@ describe("loadShoppingRollup, per-deck picks", () => {
       };
     });
     const { loadShoppingRollup } = await import("./shopping-rollup");
-    const rollup = await loadShoppingRollup("u");
+    const rollup = await loadShoppingRollup("u", undefined, ENV_VIEW);
     expect(rollup.byDeck.get("deck-a")?.cents).toBe(110);
     expect(rollup.byDeck.get("deck-b")?.cents).toBe(450);
     // A deck with no pick keeps today's figure.

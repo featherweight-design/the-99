@@ -9,6 +9,7 @@ import { db } from "../../db";
 import { decks } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { deckPendingSql, pendingChangesSql } from "../decks/read";
+import { ENV_VIEW } from "@/test/env-view";
 
 const was = process.env.CHANGE_COMMANDER_ENABLED;
 afterEach(() => {
@@ -25,13 +26,13 @@ async function claimRead(flag: string | undefined): Promise<string> {
   setFlag(flag);
   let captured: SQL | null = null;
   const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
-  await loadAvailability("user_1", { oracleIds: ["o1"] }, tx as never);
+  await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx as never);
   return new PgDialect().sqlToQuery(captured!).sql;
 }
 
 function deckList(flag: string | undefined): string {
   setFlag(flag);
-  return db.select({ id: decks.id, pending: deckPendingSql() }).from(decks).toSQL().sql;
+  return db.select({ id: decks.id, pending: deckPendingSql(ENV_VIEW) }).from(decks).toSQL().sql;
 }
 
 describe("the claim read's pending_decks", () => {
@@ -58,7 +59,7 @@ describe("the claim read's pending_decks", () => {
 describe("the deck list's pending count", () => {
   it("is pendingChangesSql itself with the switch off", () => {
     setFlag(undefined);
-    expect(deckPendingSql()).toBe(pendingChangesSql);
+    expect(deckPendingSql(ENV_VIEW)).toBe(pendingChangesSql);
   });
 
   it("adds one when the commander moved, with the switch on", () => {

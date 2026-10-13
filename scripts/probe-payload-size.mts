@@ -35,6 +35,7 @@ import { cutCollectionWindow, encodeCollection } from "../src/lib/collection/lis
 import { firstWindowIds, parseBrowseParams } from "../src/lib/collection/window";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { gzipSync } from "node:zlib";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -265,7 +266,7 @@ async function main() {
     let worstWire = { bytes: 0, gzip: 0, cards: 0 };
     for (const account of accounts) {
       const { cards: list } = await loadBrowseCards(account.user_id);
-      const availability = await loadAvailability(account.user_id);
+      const availability = await loadAvailability(account.user_id, { env: process.env });
       const entry = Buffer.byteLength(JSON.stringify(list));
       // The page's own cut, for a URL with no filter.
       const keep = firstWindowIds(list, parseBrowseParams(() => null, availability !== null));

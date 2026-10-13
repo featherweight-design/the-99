@@ -32,6 +32,7 @@ import { buildPoolRollup } from "../src/lib/recs/pool-rollup";
 import { loadCollectionPool } from "../src/lib/recs/recommend";
 import { ROLE_TARGETS } from "../src/lib/recs/roles";
 import { computeFit, wholeTarget, type RoleName } from "../src/lib/recs/score";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const TOP = 20;
 const MOVED = 5;
@@ -147,7 +148,7 @@ if (owned.length === 0) {
 
 // ---- /discover: the shipped assembly, twice -------------------------------------------------
 const { collection } = await loadCollectionPool(userId);
-const availability = await loadAvailability(userId, { oracleIds: collection.map((c) => c.oracleId) });
+const availability = await loadAvailability(userId, { oracleIds: collection.map((c) => c.oracleId), env: process.env });
 const candidates = await loadCandidates(userId, collection.map((c) => c.oracleId));
 const [priceRead, playedTags, targets] = await Promise.all([
   readPrices(candidates.map((c) => c.oracleId)),

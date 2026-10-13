@@ -28,6 +28,7 @@ import { db } from "../src/db";
 import { decks } from "../src/db/schema";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { loadShoppingRollup } from "../src/lib/decks/shopping-rollup";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 async function main() {
   const owners = await db
@@ -44,7 +45,7 @@ async function main() {
 
   for (const userId of userIds) {
     const rollup = await loadShoppingRollup(userId, undefined, process.env);
-    const tiles = await listDecksWithStats(userId, "lastPlayed", { includeProxyStats: true });
+    const tiles = await listDecksWithStats(userId, "lastPlayed", { includeProxyStats: true, env: process.env });
     const tileTotal = tiles.reduce((n, d) => n + d.toBuyCount, 0);
 
     // `ownedCount === built`, NOT `toBuyCount === 0`. Since proxies, to-buy is

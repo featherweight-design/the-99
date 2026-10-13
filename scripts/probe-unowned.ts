@@ -14,6 +14,7 @@ import { cards, collectionItems, deckCards, decks } from "../src/db/schema";
 import { getEdhrecData } from "../src/lib/edhrec/client";
 import { loadDeckSuggestions } from "../src/lib/decks/suggestions-read";
 import { SHELF_CAP } from "../src/lib/decks/shelf-cap";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 async function main() {
   const deckRows = await db
@@ -68,7 +69,7 @@ async function main() {
       ).length;
     }
 
-    const { suggestions } = await loadDeckSuggestions(deck.id, deck.userId);
+    const { suggestions } = await loadDeckSuggestions(deck.id, deck.userId, process.env);
     const unownedFromLoader = suggestions.filter((s) => !s.owned).length;
 
     console.log(

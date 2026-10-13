@@ -135,10 +135,10 @@ export type CommitSnapshot = {
 export async function commitVersion(
   deckId: string,
   note: string | null,
-  tx?: Tx,
-  snapshot?: CommitSnapshot,
-  /** The committer's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  tx: Tx | undefined,
+  snapshot: CommitSnapshot | undefined,
+  /** The committer's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   return tx
     ? commitVersionIn(tx, deckId, note, snapshot, env)
@@ -573,8 +573,8 @@ export async function loadVersionDiff(
   deckId: string,
   /** A linked deck's v1 diffs against v0, which is read from the precon and is never a version. */
   origin: OriginPredecessor | null = null,
-  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<VersionDiffPayload> {
   if (previousVersionId === null && origin === null) return { in: [], out: [], newestAsOf: null };
 

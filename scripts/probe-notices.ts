@@ -41,6 +41,7 @@ import { overviewDataMoved } from "../src/lib/notices/overview";
 import { readSynopsisState } from "../src/lib/synopsis/read";
 import { writeSynopsisFor, type GenerateDeps } from "../src/lib/synopsis/generate";
 import { STUB_MODEL, stubReply } from "../src/lib/synopsis/stub";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
@@ -177,7 +178,7 @@ async function run() {
 
   // 7 · A commit's pin keeps the held reading even with an entry pending (H1 is a press only).
   const pending = await plant("gameChanger", [body[5]], {}, "removed");
-  const { version } = await commitVersion(deck.id, null);
+  const { version } = await commitVersion(deck.id, null, undefined, undefined, process.env);
   const head = await db.transaction((tx) => readProfileHead(tx, deck.id, USER));
   computes = 0; freshComputes = 0;
   await computeAndStoreProfile(deck.id, USER, deps, { pinTo: { versionId: version.id, list: listFingerprint(head!) } });

@@ -112,7 +112,7 @@ export type ProposedCutsInputs = {
  * the declared bracket comes from the same head, so a flag is a fact only against the bracket the
  * list was read under.
  */
-export async function readProposedCuts(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<ProposedCutsInputs | null> {
+export async function readProposedCuts(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<ProposedCutsInputs | null> {
   if (!proposedCutsEnabled(env)) return null;
   const snapshot = await db.transaction(async (tx) => {
     const head = await readProfileHead(tx, deckId, userId);
@@ -197,7 +197,7 @@ export async function reapCutsRuns(deckId: string, userId: string, now: Date = n
  * (History's re-review) the cuts are that ok run's instead, when the reader owns it on this deck.
  */
 export async function readCutsState(
-  deckId: string, userId: string, now: Date = new Date(), runId: string | null = null, env: NodeJS.ProcessEnv = process.env,
+  deckId: string, userId: string, now: Date = new Date(), runId: string | null = null, env: NodeJS.ProcessEnv,
 ): Promise<CutsState> {
   await reapCutsRuns(deckId, userId, now);
 

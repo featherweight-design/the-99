@@ -7,6 +7,7 @@ const transaction = vi.hoisted(() => vi.fn());
 vi.mock("../../db", () => ({ db: { transaction } }));
 
 import { loadDraftState } from "./draft-state";
+import { ENV_VIEW } from "@/test/env-view";
 
 // A read-only transaction on the pooled Neon connection left the next transaction taken from the
 // pool failing ("SET TRANSACTION ISOLATION LEVEL must be called before any query", "cannot execute
@@ -14,7 +15,7 @@ import { loadDraftState } from "./draft-state";
 describe("readDraft's snapshot", () => {
   it("opens repeatable read and never a read-only transaction", async () => {
     transaction.mockRejectedValueOnce(new Error("stop"));
-    await expect(loadDraftState("deck", "user")).rejects.toThrow("stop");
+    await expect(loadDraftState("deck", "user", ENV_VIEW)).rejects.toThrow("stop");
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(transaction.mock.calls[0][1]).toEqual({ isolationLevel: "repeatable read" });
   });
