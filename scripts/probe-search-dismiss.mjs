@@ -186,7 +186,8 @@ try {
     } else {
       const sheet = await openSheet(page);
       if (!sheet) throw new Error("no filter sheet on /collection at 390");
-      await sheet.locator('button[aria-haspopup="dialog"]').filter({ visible: true }).first().click();
+      // The sheet's Set row, named as the wide trigger is.
+      await sheet.getByRole("button", { name: /Filter by set/ }).filter({ visible: true }).first().click();
       surface = onPage(page, '[role="dialog"]:has(input[type="search"])').last();
       pickRole = '[role="switch"]:not([aria-disabled="true"])';
     }
