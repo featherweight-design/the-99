@@ -17,7 +17,7 @@
 // over 300ms on deployed staging).
 //
 // Before the first run, every route is loaded once at every width and the figure thrown away, in
-// the startup pass too, with the routes that pass navigates to. The
+// the startup pass too, which also warms the routes the startup pass navigates to. The
 // first request a route gets after an idle spell pays the server's own warm-up (a cold function, an
 // empty data cache), and without this pass it landed on whichever width ran first: /discover read as
 // a warm-load regression at 1300 that moved to 390 when 390 ran first (2026-10-12).
