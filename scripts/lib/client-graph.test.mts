@@ -24,7 +24,6 @@ const PANEL_IMPORTERS = new Set([
   "src/components/decks/tuning-history.tsx",
   "src/components/decks/tuning-panel.tsx",
   "src/lib/tuning/gate.ts",
-  "src/lib/tuning/limits.ts",
   "src/lib/tuning/presentation.ts",
 ]);
 
