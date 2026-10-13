@@ -111,6 +111,9 @@ describe("self-hosted fonts", () => {
     const family = (block: string) => block.match(/prop: "font-family", value: "([^"]+)"/)?.[1];
     expect(family(italic)).toBeDefined();
     expect(family(italic)).toBe(family(upright));
+    // The card modal warms the italic by this family's name, so a rename here must move there too.
+    const provider = readFileSync(join(HERE, "../components/cards/card-detail-provider.tsx"), "utf8");
+    expect(provider).toContain(`document.fonts.load("italic 400 1em ${family(italic)}")`);
   });
 
   it("keeps every CSS variable name the styles read", () => {

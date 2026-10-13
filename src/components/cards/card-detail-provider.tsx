@@ -56,7 +56,20 @@ const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPick
  * Tests await it after their mocks are in place, so a press draws the modal in the same tick.
  */
 export function warmCardModal(): Promise<unknown> {
+  warmItalic();
   return Promise.all([CardModal.fetch(), FitsView.fetch(), FitsPicker.fetch()]);
+}
+
+/**
+ * The modal draws Plex Sans italic, which no first screen does, so the face is not preloaded
+ * (layout.tsx). Asked for here instead, beside the modal's code, so it is in place when the modal
+ * first paints rather than swapping in under the reader (on a slow phone it lands ~0.8s after the
+ * modal opens otherwise). `plexSans` is the family both Plex Sans faces declare. One download
+ * whatever calls this: the browser loads a face once.
+ */
+function warmItalic() {
+  if (typeof document === "undefined" || !document.fonts) return;
+  document.fonts.load("italic 400 1em plexSans").catch(() => {});
 }
 
 /**

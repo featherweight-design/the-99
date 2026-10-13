@@ -14,12 +14,17 @@ afterEach(() => {
 });
 
 describe("the idle warm", () => {
-  it("readies the modal, the fits view and the fits picker", async () => {
+  it("readies the modal, the fits view and the fits picker, and asks for the italic face", async () => {
+    // jsdom has no FontFaceSet; the warm asks for the face the modal draws in, which no first screen
+    // preloads.
+    const load = vi.fn(async () => []);
+    Object.defineProperty(document, "fonts", { configurable: true, value: { load } });
     vi.stubGlobal("requestIdleCallback", (cb: () => void) => setTimeout(cb, 0));
     vi.stubGlobal("cancelIdleCallback", (id: number) => clearTimeout(id));
     const { CardDetailProvider, cardModalViewsReady } = await import("./card-detail-provider");
     expect(cardModalViewsReady()).toEqual({ modal: false, fitsView: false, fitsPicker: false });
     render(<CardDetailProvider fetchCard={async () => null}><p>page</p></CardDetailProvider>);
     await vi.waitFor(() => expect(cardModalViewsReady()).toEqual({ modal: true, fitsView: true, fitsPicker: true }));
+    expect(load).toHaveBeenCalledWith("italic 400 1em plexSans");
   });
 });
