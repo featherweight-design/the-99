@@ -93,6 +93,8 @@ const READERS = [
   "src/lib/commander-change/draft-rows.ts",
   "src/lib/commander-change/candidates.ts",
   "src/lib/cards/chain-art.ts",
+  "src/lib/decks/notes-read.ts",
+  "src/lib/notices/read.ts",
 ];
 
 /** A switch read from the environment alone: `fooEnabled()` or `roleBasisFromEnv()` with no env. */
