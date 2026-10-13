@@ -16,7 +16,7 @@ import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
  */
 export const SNAPSHOT_TTL_MS = 30_000;
 
-let memo: { at: number; snapshot: Promise<SwitchSnapshot | null> } | null = null;
+let memo: { at: number; snapshot: Promise<SwitchSnapshot | null>; settled: boolean } | null = null;
 
 async function readSnapshot(): Promise<SwitchSnapshot | null> {
   try {
@@ -48,13 +48,23 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
 export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null> {
   if (memo && now - memo.at < SNAPSHOT_TTL_MS) return memo.snapshot;
   const snapshot = readSnapshot();
-  const entry = { at: now, snapshot };
+  const entry = { at: now, snapshot, settled: false };
   memo = entry;
   // A failed read is not held: the next request asks again.
   void snapshot.then((s) => {
+    entry.settled = true;
     if (s === null && memo === entry) memo = null;
   });
   return snapshot;
+}
+
+/**
+ * How a read now would be answered, for the proxy's `[perf]` line: `hit` from a settled memo (no
+ * query), `pending` by waiting on another request's read still in flight, `miss` by a read of its own.
+ */
+export function switchSnapshotState(now = Date.now()): "hit" | "pending" | "miss" {
+  if (memo === null || now - memo.at >= SNAPSHOT_TTL_MS) return "miss";
+  return memo.settled ? "hit" : "pending";
 }
 
 /** Called by an admin write, after its transaction commits, so its own instance reads it at once. */
