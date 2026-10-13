@@ -1,4 +1,6 @@
-// One printing on the tile, the hover preview and card details (Hugh, 2026-10-12). Card details always
+// One printing on the row, the hover preview and card details (Hugh, 2026-10-12). A TILE draws no hover preview at all
+// (its art is already about the size of one), and a row that carries prose previews on its name and thumbnail only; the
+// guards for both are below, and everything in this first half is about the ROWS that do preview. Card details always
 // resolves server-side (deck pick, then the printing the player owns, then the catalog's), so a hover
 // preview that reads `cards.image_uri` shows a different printing from the card the same row opens: the
 // Top-off list did exactly that, and the chain's own docstring said it was covered.

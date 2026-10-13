@@ -2058,7 +2058,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   image, and not on the rules text, the makers line or the row's empty space. Card details opened from a token pages
   through the deck's tokens: Next reaches the second token and Previous comes back. The box is `md:block`, so the hover
   checks run at 1300 and the phone walk is the paging and no overflow. A proposed cut's reason is `probe:cuts-panel`'s,
-  which hovers the reason (nothing) and the name (the card). Makes no writes, but needs a server with
+  which hovers the reason (nothing) and the name (the card). Its one write is `clearAboutSheet`, which marks every About
+  entry seen on the account (`user_prefs`) and is not put back, so it runs on a scratch branch. It needs a server with
   `DECK_TOKENS_ENABLED` and `PRECONS_ENABLED` on and a database holding the token catalog, the precons (`PROBE_PRECON`,
   default `CallingAllAngels_FDC`, whose card names the row control uses) and a deck that makes two or
   more tokens: a `pull:staging` copy on a scratch branch of staging, with the account's About row cleared

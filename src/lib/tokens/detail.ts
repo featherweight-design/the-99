@@ -10,9 +10,11 @@ import { tokenManapoolLine } from "./price-line";
  * A token's card details (bug batch 2026-10-12, item 5, ruled by the orchestrator as Hugh's proxy):
  * the card modal opens for a token the same way it opens for a card, drawing only what a token has.
  * Art, zoom, name, type line, rules text, set and number, and the price and buy link when Mana Pool
- * lists it. Rarity, identity, owned copies, the in-deck proxy box and Prev/Next are omitted, not drawn
- * empty: the modal reads `kind: "token"` for the first three, and the last two have nothing to draw
- * (a token id is in no deck's card list, and a token opens with no siblings).
+ * lists it. Rarity, identity, owned copies and the in-deck proxy box are omitted, not drawn
+ * empty: the modal reads `kind: "token"` for the first three, and the last has nothing to draw
+ * (a token id is in no deck's card list). Prev/Next pages through the deck's tokens when a token is
+ * opened from the Tokens group, which hands the modal that list as its siblings (`TokensGroup`); a
+ * token opened with no list has none.
  *
  * Reached from `loadCardDetail`, which asks it only for an id the card catalog does not hold, so the
  * press, the prefetch and every re-read take one path.

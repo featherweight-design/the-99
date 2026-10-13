@@ -9,7 +9,8 @@
 //  - A proposed cut's reason is `probe:cuts-panel`'s (it owns the stored-result fixture).
 //
 // The preview box is `md:block` only, so the hover checks run at 1300; the phone walk is the token paging and the
-// tile press, with no overflow. Makes no writes. Needs a server with DECK_TOKENS_ENABLED and PRECONS_ENABLED on and a
+// tile press, with no overflow. It writes one thing: `clearAboutSheet` marks every About entry seen on the account
+// (`user_prefs`), and nothing puts that back. Nothing else is written. Needs a server with DECK_TOKENS_ENABLED and PRECONS_ENABLED on and a
 // database holding the token catalog, the precons and a deck that makes tokens (a `pull:staging` copy on a scratch
 // branch). The precon is `PROBE_PRECON` (default CallingAllAngels_FDC); its list-row control names three of ITS cards.
 //
@@ -152,21 +153,21 @@ try {
     await page.waitForTimeout(500);
 
     // ---- tokens: preview on the image and the name only; details page through them ----
-    const names = await onPage(page, `${TOKENS} li button:not([aria-hidden]):not([aria-expanded])`).allInnerTexts();
+    const names = await onPage(page, `${TOKENS} li button[aria-describedby^="token-"]:not([aria-expanded])`).allInnerTexts();
     const tokenNames = names.map((n) => n.trim()).filter(Boolean);
     report(`${w.label} token rows have a name to press`, tokenNames.length >= 2, tokenNames);
     await onPage(page, TOKENS).first().scrollIntoViewIfNeeded();
     await shot("tokens");
     if (w.desktop) {
       const row = onPage(page, `${TOKENS} li`).first();
-      const name = row.locator("button:not([aria-hidden]):not([aria-expanded])").first();
+      const name = row.locator('button[aria-describedby^="token-"]:not([aria-expanded])').first();
       const art = row.locator("button[aria-hidden]").first();
       const prose = row.locator("span.font-mono").last();
       // The token the first row draws may have no picture; look down the rows for one that previews.
       let rowIndex = -1;
       const rows = onPage(page, `${TOKENS} li`);
       for (let i = 0; i < Math.min(6, await rows.count()) && rowIndex < 0; i++) {
-        if (await hoverOpens(page, rows.nth(i).locator("button:not([aria-hidden]):not([aria-expanded])").first())) rowIndex = i;
+        if (await hoverOpens(page, rows.nth(i).locator('button[aria-describedby^="token-"]:not([aria-expanded])').first())) rowIndex = i;
       }
       report(`${w.label} a token's name previews its printing`, rowIndex >= 0, { rowIndex });
       if (rowIndex >= 0) {
@@ -183,7 +184,7 @@ try {
 
     // Press the first token's name, then page Next and Previous.
     await page.mouse.move(2, 2);
-    await onPage(page, `${TOKENS} li button:not([aria-hidden]):not([aria-expanded])`).first().click();
+    await onPage(page, `${TOKENS} li button[aria-describedby^="token-"]:not([aria-expanded])`).first().click();
     const dialog = page.getByRole("dialog").last();
     await dialog.waitFor({ timeout: 15_000 });
     await page.waitForTimeout(1200);
