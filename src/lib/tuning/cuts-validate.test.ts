@@ -123,6 +123,20 @@ describe("validateCuts", () => {
       expect(r.kept[0].cites).not.toContainEqual({ kind: "inclusion", pct: 5 });
     });
 
+    it("the card's own counts are its cost, its curve slot and its first role with a target", () => {
+      // A card with a crowded curve slot, and one with a role the deck has a target for: both fallbacks are pinned.
+      const open = (x: (typeof pack.cards)[number]) => !pack.keyCardIds.includes(x.oracleId);
+      const curved = pack.cards.find((x) => x.curve && open(x))!;
+      const roled = pack.cards.find((x) => open(x) && x.roles.some((role) => pack.roles.some((f) => f.role === role)))!;
+      expect(curved).toBeDefined();
+      expect(roled).toBeDefined();
+      const own = (x: typeof curved) => { const r = run([c(x.oracleId, [{ kind: "inclusion", pct: 999 }])]); expect(r.dropped).toEqual([]); return r.kept[0].cites; };
+      expect(own(curved)).toContainEqual({ kind: "curve", cmc: curved.curve!.cmc, have: curved.curve!.have });
+      const fact = pack.roles.find((f) => roled.roles.includes(f.role))!;
+      expect(own(roled)).toContainEqual({ kind: "role", role: fact.role, have: fact.have, target: fact.target });
+      expect(own(roled)[0]).toEqual({ kind: "cost", mv: roled.mv });
+    });
+
     it("a cut that was not softened carries no softened entry", () => {
       expect(run([c("bear1", [OFF])]).report.softened).toBeUndefined();
     });

@@ -336,6 +336,16 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     expect(billed).toEqual([{ ...ONE_BILL, step: "cuts" }, { ...ONE_BILL, step: "cuts_retry" }]);
   });
 
+  it("asks again after a first ask that cost over half of ONE call's bound, since the reservation is two calls", async () => {
+    // 5,000 in and 7,000 out at $2 and $10 a million is $0.08: over half of Suggested changes' bound (so the wrong
+    // feature would refuse the second ask) and well inside half of Proposed cuts' two-call bound.
+    const big = { inputTokens: 5_000, outputTokens: 7_000, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    calls.modelQueue = [{ ...NO_CARD, usage: big }];
+    expect(await runProposedCuts(DECK)).toEqual({ ok: true });
+    expect(calls.modelCalls).toHaveLength(2);
+    expect(calls.persisted).toHaveLength(1);
+  });
+
   it("keeps the second ask's cuts, spent and billed for both asks, when the first left none", async () => {
     calls.modelQueue = [NO_CARD];
     expect(await runProposedCuts(DECK)).toEqual({ ok: true });
