@@ -14,8 +14,6 @@ export interface CardSearchInput {
   /** `null` drops the colour-identity constraint — see search-action.ts. */
   colorIdentity: string[] | null;
   ownedOnly: boolean;
-  /** Escape closes the list without clearing a query still being edited. */
-  dismissed: boolean;
   /** The deck being built — the vantage each row's availability is read from. */
   deckId: string;
   /**
@@ -33,7 +31,6 @@ export function useCardSearch({
   query,
   colorIdentity,
   ownedOnly,
-  dismissed,
   deckId,
   search = searchCards,
 }: CardSearchInput) {
@@ -95,10 +92,10 @@ export function useCardSearch({
 
   const results = rows?.items ?? [];
   const stale = rows !== null && rows.for !== requestKey;
-  const open = !dismissed && queryActive && rows !== null && results.length > 0;
+  const open = queryActive && rows !== null && results.length > 0;
   // "Nothing by that name" is only honest about the query that produced it, so
   // a stale empty list holds its tongue until the current one lands.
-  const noResults = !dismissed && queryActive && !stale && rows !== null && results.length === 0;
+  const noResults = queryActive && !stale && rows !== null && results.length === 0;
   // Results for the query in the field have not landed yet: either none at all,
   // or the ones on screen answer an older query.
   const searching = queryActive && (rows === null || stale);

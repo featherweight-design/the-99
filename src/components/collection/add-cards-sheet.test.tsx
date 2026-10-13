@@ -121,6 +121,20 @@ describe("AddCardsSheet (add)", () => {
     expect(field()).not.toBeDisabled();
   });
 
+  // One rule for a search field that picks from a list (DECK INPUT UX): after a pick, focus is back in
+  // the field for the next search, here as after a printing is chosen.
+  it("gives focus back to the search after a single-printing pick by pointer", async () => {
+    mount();
+    await find("sol ring", [card()]);
+    choices.mockResolvedValueOnce([printing({ finishes: ["foil"], owned: {} })]);
+    // A press on a result row takes focus off the field in a browser (jsdom moves none on a click).
+    field().blur();
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    await waitFor(() => expect(choices).toHaveBeenCalled());
+    await waitFor(() => expect(field()).toHaveFocus());
+    expect(field()).toHaveValue("");
+  });
+
   it("cancels an unchosen add with Escape and keeps the sheet open", async () => {
     mount();
     await find("sol ring", [card()]);

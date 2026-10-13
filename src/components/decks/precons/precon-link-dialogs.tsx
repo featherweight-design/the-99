@@ -20,6 +20,7 @@ import type { PreconDeckChoice } from "../../../lib/precons/open-read";
 import { GhostButton, PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { SearchField } from "../../ui/text-field";
+import { escapeDismisses } from "../../../lib/ui/search-dismiss";
 
 const copy = preconsCopy.link;
 
@@ -256,6 +257,8 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
         ref={search}
         value={q}
         onChange={(e) => setQ(e.target.value)}
+        // With a search typed, the first Escape clears it; the next closes the dialog.
+        onKeyDown={(e) => escapeDismisses(e, q !== "", () => setQ(""))}
         placeholder={searchLabel}
         aria-label={searchLabel}
         containerClassName="h-[44px] rounded-[8px] md:h-[40px]"

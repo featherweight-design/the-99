@@ -306,6 +306,22 @@ describe("PrintingRegion", () => {
       expect(screen.getByText(copy.emptyTitle)).toBeInTheDocument();
     });
 
+    // One rule for a search field that picks from a list (DECK INPUT UX): the first Escape clears a
+    // typed search and stops there, so the card's dialog (listening on window) stays open.
+    it("clears a typed search on Escape without letting the key reach the dialog", () => {
+      renderRegion({ printings: many });
+      const field = screen.getByLabelText(copy.searchAriaLabel);
+      const reached = vi.fn();
+      window.addEventListener("keydown", reached);
+      fireEvent.change(field, { target: { value: "S07" } });
+      fireEvent.keyDown(field, { key: "Escape" });
+      expect(field).toHaveValue("");
+      expect(reached).not.toHaveBeenCalled();
+      fireEvent.keyDown(field, { key: "Escape" });
+      expect(reached).toHaveBeenCalledTimes(1);
+      window.removeEventListener("keydown", reached);
+    });
+
     it("narrows to one finish and back", () => {
       renderRegion({ printings: many });
       fireEvent.click(screen.getByText(copy.filterFoil(10)));

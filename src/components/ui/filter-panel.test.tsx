@@ -1171,3 +1171,36 @@ describe("selectionOrnament", () => {
       .toBe(`${collectionFilterCopy.set.sheetTitle}1`);
   });
 });
+
+// One rule for a search field that picks from a list (DECK INPUT UX, Hugh 2026-10-12): inside a
+// panel, the first Escape clears a typed search and the next closes it, and a pick clears it.
+describe("FilterPanel, its search", () => {
+  for (const desktop of [true, false]) {
+    const at = desktop ? "the popover" : "the sheet";
+
+    it(`${at}: the first Escape clears a typed search and keeps the panel open; the next closes it`, () => {
+      setViewport(desktop);
+      renderPanel();
+      openPanel();
+      const field = screen.getByRole("combobox");
+      fireEvent.change(field, { target: { value: "bloom" } });
+      fireEvent.keyDown(field, { key: "Escape" });
+      expect(field).toHaveValue("");
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      fireEvent.keyDown(field, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it(`${at}: a pick clears the search and keeps the panel open for the next`, () => {
+      setViewport(desktop);
+      const { onToggle } = renderPanel();
+      openPanel();
+      const field = screen.getByRole("combobox");
+      fireEvent.change(field, { target: { value: "bloom" } });
+      fireEvent.click(screen.getByRole("option", { name: /Bloomburrow/ }));
+      expect(onToggle).toHaveBeenCalledWith("BLB");
+      expect(field).toHaveValue("");
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+  }
+});

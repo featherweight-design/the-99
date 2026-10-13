@@ -18,6 +18,12 @@ vi.mock("next/navigation", async (importOriginal) => ({
 
 const { CreatePicker } = await import("./create-picker");
 
+// jsdom implements no layout and ships no scrollIntoView; a pick calls it to bring the picked row into
+// view. Patched only when missing, so a real implementation is never masked.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 const commanders = [
   {
     oracleId: "oracle-1",
@@ -227,5 +233,34 @@ describe("CreatePicker — Help me choose's door", () => {
     render(<CreatePicker legalCommanders={commanders} />);
     expect(screen.queryByTestId("help-me-choose-door")).toBeNull();
     expect(screen.getByText(addPanelCopy.createPicker.subAlone)).toBeTruthy();
+  });
+});
+
+// One rule for a search field that picks from a list (DECK INPUT UX, Hugh 2026-10-12).
+describe("CreatePicker — its search", () => {
+  const two = [
+    commanders[0],
+    { ...commanders[0], oracleId: "oracle-2", name: "Atraxa, Praetors' Voice", colorIdentity: ["W", "U", "B", "G"] },
+  ];
+
+  it("clears the search once a commander is picked, keeps the pick and brings it into view", () => {
+    const reveal = vi.spyOn(Element.prototype, "scrollIntoView");
+    render(<CreatePicker legalCommanders={two} />);
+    const search = screen.getByRole("searchbox");
+    fireEvent.change(search, { target: { value: "greta" } });
+    fireEvent.click(screen.getByRole("button", { name: /Greta, Sweettooth Scourge/, pressed: false }));
+    expect(search).toHaveValue("");
+    expect(screen.getByRole("button", { name: /Greta, Sweettooth Scourge/, pressed: true })).toBeTruthy();
+    expect(screen.getByText("Atraxa, Praetors' Voice")).toBeTruthy();
+    expect(reveal.mock.contexts.some((el) => (el as Element).getAttribute("data-picker-row") === "oracle-1")).toBe(true);
+    reveal.mockRestore();
+  });
+
+  it("clears the search on Escape", () => {
+    render(<CreatePicker legalCommanders={two} />);
+    const search = screen.getByRole("searchbox");
+    fireEvent.change(search, { target: { value: "greta" } });
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveValue("");
   });
 });

@@ -2048,7 +2048,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `useSearchDismiss`) at 1300x900 and 390x844, on the deck page's Quick add and Help me choose's Theme picker:
   one Escape clears the text and closes the list; a real pointer press outside the field clears it too; a
   press inside (Quick add's owned toggle) keeps it; and a theme pick adds the chip, clears the text and keeps
-  the list open with focus in the field. Quick add's clear after an add is pinned by its unit test instead,
+  the list open with focus in the field. On /collection's Set filter (the popover at 1300, the filter sheet's set
+  list at 390) the first Escape clears a typed search and keeps the surface open, a pick clears it with the
+  surface still open (and is pressed again to put the filter back), and Escape on an empty field closes it. On
+  /decks/new a commander picked from a filtered list clears the search and is left pressed, in view and painted
+  on top (the phone dock covers the foot of the window), and Escape clears the search. Quick add's clear after an add is pinned by its unit test instead,
   since an add writes a card. It writes the account's About row and puts it back; run it against a dev
   server with `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. It refuses staging and production by
   `neon.branch_id` and a non-localhost `PROBE_BASE`. `PROBE_DECK` names the deck, otherwise the account's

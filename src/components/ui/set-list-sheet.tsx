@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import { SearchField } from "./text-field";
+import { escapeDismisses } from "../../lib/ui/search-dismiss";
 
 /** 44px, not 36. This is the phone's only route to each filter (R3 §2). */
 // `shrink-0` is the height, not tidiness: in the set panel these are direct
@@ -175,6 +176,8 @@ export function SetListSheet({
         <SearchField
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          // With a search typed, the first Escape clears it; the next closes the sheet.
+          onKeyDown={(e) => escapeDismisses(e, query !== "", () => setQuery(""))}
           placeholder={copy.searchPlaceholder}
           aria-label={copy.searchAriaLabel}
           containerClassName="shrink-0 gap-[8px] px-[12px] py-[9px] min-h-[44px]"
@@ -214,7 +217,11 @@ export function SetListSheet({
                 unavailableAria={copy.optionAriaUnavailable(
                   option.hint ? `${option.label} (${option.hint})` : option.label,
                 )}
-                onClick={() => onToggle(option.code)}
+                // A pick clears the search it came from; the sheet stays open for the next.
+                onClick={() => {
+                  onToggle(option.code);
+                  setQuery("");
+                }}
               />
             ))
           )}
