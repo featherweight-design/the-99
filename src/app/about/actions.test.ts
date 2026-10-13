@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { envViewWith } from "@/test/env-view";
 
 const requireUserId = vi.fn(async () => "user_1");
 const markAboutSeen = vi.fn(async () => {});
@@ -12,7 +13,7 @@ vi.mock("../../lib/about/read", () => ({ markAboutSeen, markAboutVisited }));
 vi.mock("next/navigation", () => ({ redirect }));
 // The reader's switches as the proxy resolved them for this request.
 const resolved = vi.hoisted(() => ({ env: {} as Record<string, string> }));
-const requestSwitchEnv = vi.fn(async () => ({ ...process.env, ...resolved.env }));
+const requestSwitchEnv = vi.fn(async () => envViewWith(resolved.env));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv }));
 // What this deployment draws. The real rule, handed a catalog with a switched entry in it when a
 // test sets one: no shipped entry has a switch yet, and the write must still name them.

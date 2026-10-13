@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+vi.mock("../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+});
 
 // The action module imports the db client, which throws at module init without a
 // live URL. This stub follows src/app/decks/actions.test.ts — same `vi.hoisted`

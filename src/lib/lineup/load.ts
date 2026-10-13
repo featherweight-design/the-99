@@ -124,9 +124,9 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
       readHeldPricePicks(userId, ids, env).then((picks) => loadPrices(priced, picks)),
       // The whole collection's claim model, once (lock 3, lock 4).
-      loadAvailability(userId),
+      loadAvailability(userId, { env }),
       // Shopping's own buy rows, so a row's to-buy count is the cart's.
-      loadDeckBuyRows(userId, ids),
+      loadDeckBuyRows(userId, ids, undefined, env),
     ]);
     buys = buyRows;
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));

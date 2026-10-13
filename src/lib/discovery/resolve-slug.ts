@@ -43,7 +43,7 @@ export async function resolveCommanderSlug(
   // population hands back the commander next to the one that was clicked. Only
   // the pool is shared with the list — prices, played tags and the rollup are
   // the list's work and nothing on this path reads them.
-  const { collection } = await loadDiscoveryPool(userId);
+  const { collection } = await loadDiscoveryPool(userId, env);
   // `unplayedCount` is `byFit`'s required input and never read by it, so it is
   // filled once per row here rather than in the comparator, which would
   // otherwise allocate two objects per comparison.

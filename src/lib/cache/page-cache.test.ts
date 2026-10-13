@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 
 // The data cache, as a Map: a key stores what the function RETURNED, and a throw stores nothing.
 const store = vi.hoisted(() => new Map<string, unknown>());
@@ -18,7 +19,10 @@ vi.mock("./list-cache-flag", () => ({ listCacheEnabled: () => enabled.value }));
 // The reader's resolved switches, as `requestSwitchEnv` hands them over.
 const switchEnv = vi.hoisted(() => ({ value: {} as NodeJS.ProcessEnv }));
 // The environment, with any override a test lays over it, as the resolver hands it back.
-vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ({ ...process.env, ...switchEnv.value })) }));
+vi.mock("../switches/request", async () => {
+  const { envViewWith } = await import("@/test/env-view");
+  return { requestSwitchEnv: vi.fn(async () => envViewWith(switchEnv.value as Record<string, string>)) };
+});
 
 import { cacheForUser } from "./user-lists";
 import { requestSwitchEnv } from "../switches/request";
@@ -60,10 +64,10 @@ describe("cachePageForUser", () => {
   });
 
   it("uses an env the page already resolved, and resolves nothing of its own", async () => {
-    const env = { ...process.env, ANALYSIS_TAB_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const env = envViewWith({ ANALYSIS_TAB_ENABLED: "true" });
     let seen: NodeJS.ProcessEnv | undefined;
     await cachePageForUser("u1", "decks", [], async (e) => ((seen = e), { value: 1, store: true }), env);
-    expect(seen).toBe(env);
+    expect(seen === env).toBe(true);
     expect(requestSwitchEnv).not.toHaveBeenCalled();
     expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(env));
   });

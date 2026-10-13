@@ -274,7 +274,7 @@ export async function buildFillPlan(
     ? await loadFillGate({
       userId, commanderIds: commanders.map((c) => c.oracleId), answers,
       candidates: [...scoped, ...staples.filter((c) => !scoped.includes(c))],
-      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
+      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
     })
     : undefined;
   // CENSUS ONLY. The commanders are deliberately absent from `held` — role floors come from

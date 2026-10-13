@@ -40,6 +40,9 @@ export async function resolveAnswer(args: {
   deckId: string;
   pack: EvidencePack;
   response: TuningResponse;
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
+   *  pending clause; the environment alone when omitted (a probe). */
+  env?: NodeJS.ProcessEnv;
 }) {
   const { userId, deckId, pack, response } = args;
   const { limits } = pack;
@@ -61,7 +64,7 @@ export async function resolveAnswer(args: {
   const [{ prices, newestAsOf }, suggestedOwned, availability] = await Promise.all([
     limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds),
     nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, suggestedIds),
-    nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId }),
+    nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId, env: args.env }),
   ]);
   const rows = nameRows.map((r) => {
     const fact = prices.get(r.oracleId) ?? null;

@@ -281,7 +281,7 @@ export async function runTuning(
       const ownedCandidates = limits.ownedOnly
         ? await loadOwnedCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
-          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits, env,
         })
         : undefined;
       const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
@@ -313,7 +313,7 @@ export async function runTuning(
         // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
         if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
+        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value, env });
         // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
         // whatever order the validator already gives — no new ranking pass. Fewer than 5 is shown as-is.
         sized = sizeLists(resolved.kept, MAX_SUGGESTIONS);

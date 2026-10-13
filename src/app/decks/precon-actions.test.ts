@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+vi.mock("../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+});
 
 const state = vi.hoisted(() => ({ selects: [] as unknown[][], wheres: [] as unknown[], orders: [] as unknown[], written: [] as unknown[], revalidated: [] as string[] }));
 

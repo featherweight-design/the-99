@@ -76,7 +76,7 @@ export default async function CommanderDetailPage({
     if (free.ok && idx === -1) redirect(`/commanders/${slug}`);
 
     // Already loaded and memoised by the ranking above, so this is a map read.
-    const freePool = idx === -1 ? null : await loadFreePool(userId);
+    const freePool = idx === -1 ? null : await loadFreePool(userId, env);
     if (freePool) {
       avail = "free";
       pool = freePool;

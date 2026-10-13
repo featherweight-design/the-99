@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => process.env }));
+vi.mock("../../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: async () => ENV_VIEW };
+});
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3 }) }));
 vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => true }));
 vi.mock("../../../components/collection/replace-flow", () => ({

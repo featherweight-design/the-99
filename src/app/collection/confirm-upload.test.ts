@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 import { requestSwitchEnv } from "../../lib/switches/request";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+vi.mock("../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+});
 
 const UPLOAD = "22222222-2222-2222-2222-222222222222";
 const A = "11111111-1111-1111-1111-111111111111";
@@ -119,7 +123,7 @@ describe("confirmUpload", () => {
     // The environment has it off and the reader's override turns it on: a receipt left to read the
     // switch itself (`writeArrivalsReceipt` defaults to `process.env`) would say off.
     vi.stubEnv("ADDED_COPY_ENABLED", "false");
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce({ ...process.env, ADDED_COPY_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(envViewWith({ ADDED_COPY_ENABLED: "true" }));
     stub.ledger = true;
     stub.apply.mockResolvedValue(applied("upload_replace"));
     try {
