@@ -24,7 +24,7 @@ import { useStoredView } from "../../ui/use-stored-view";
 import { ViewToggle, type ViewToggleOption } from "../../ui/view-toggle";
 import { PRECONS_VIEW_COOKIE } from "../../ui/view-cookie";
 import { GRID_EAGER_TILES } from "../../collection/grid-view";
-import { SearchField } from "../deck-filter-column";
+import { DeckSearchField } from "../deck-filter-column";
 import { OrderMenu } from "../deck-sort-menu";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { PreconRow } from "./precon-row";
@@ -194,7 +194,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
         {!wide && (
           <div className="mb-[8px] flex items-center gap-[8px]">
             <div className="min-w-0 flex-1">
-              <SearchField value={q} onChange={onSearch} size="sheet" placeholder={copy.list.search} />
+              <DeckSearchField value={q} onChange={onSearch} size="sheet" placeholder={copy.list.search} />
             </div>
             {toggle}
           </div>
@@ -205,7 +205,7 @@ export function PreconListView({ rows, hasCollection, fromNew, initial, query, s
             wide ? (
               <>
                 <div className="min-w-0 flex-auto">
-                  <SearchField value={q} onChange={onSearch} size="column" placeholder={copy.list.search} />
+                  <DeckSearchField value={q} onChange={onSearch} size="column" placeholder={copy.list.search} />
                 </div>
                 {pips}
               </>

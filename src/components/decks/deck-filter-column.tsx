@@ -16,8 +16,7 @@ import {
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import type { DeckSort } from "../../lib/decks/sort";
 import type { StatusPill } from "../../lib/decks/status";
-import { SearchIcon } from "../ui/search-icon";
-import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
+import { SearchField } from "../ui/text-field";
 
 export type FilterChromeProps = {
   filters: DeckFilters;
@@ -64,7 +63,7 @@ export const PLAYED_LABEL: Record<PlayedWindow, string> = {
   never: refreshCopy.filters.lastPlayedNever,
 };
 
-export function SearchField({
+export function DeckSearchField({
   value,
   onChange,
   size,
@@ -80,25 +79,16 @@ export function SearchField({
 }) {
   const column = size === "column";
   return (
-    <label
-      // The field carries --fg-faint so the magnifier's `currentColor` lands
-      // there; the input overrides it, because typed text is not a hint.
-      className={`flex items-center gap-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-[color:var(--fg-faint)] ${AFFIX_FOCUS} ${
-        column ? "h-[34px] rounded-[8px] px-[11px]" : "h-[44px] rounded-[10px] px-[12px]"
-      }`}
-    >
-      <SearchIcon size={column ? 16 : 18} />
-      <input
-        type="search"
-        value={value}
-        autoFocus={autoFocus}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        className={`min-w-0 flex-1 ${AFFIX_INPUT} text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] [&::-webkit-search-cancel-button]:appearance-none ${
-          column ? "text-[12.5px]" : "text-[16px]"
-        }`}
-      />
-    </label>
+    <SearchField
+      type="search"
+      value={value}
+      autoFocus={autoFocus}
+      onChange={(e) => onChange(e.target.value)}
+      onClear={() => onChange("")}
+      placeholder={placeholder}
+      aria-label={placeholder}
+      containerClassName={column ? "h-[34px] gap-[9px] rounded-[8px] px-[11px] py-0" : "h-[44px] gap-[9px] rounded-[10px] px-[12px] py-0"}
+      className={column ? "text-[12.5px]" : "text-[16px]"}
+    />
   );
 }

@@ -63,7 +63,7 @@ import { DeckCard } from "./deck-card";
     single column gets the same nine, about three of its screens: still 9 crops on its slow line
     rather than every deck's, and a desktop's first screen never waits on hydration for its art. */
 export const EAGER_ART_TILES = 9;
-import { PLAYED_LABEL, SearchField, STATE_LABEL, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
+import { DeckSearchField, PLAYED_LABEL, STATE_LABEL, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
 import { DecksZero } from "./decks-zero";
@@ -984,7 +984,7 @@ export function DecksView({
                   {/* Search leads, and is the only control allowed to shrink —
                       `min-w-0` on the chassis's leading group is what lets it. */}
                   <div className="min-w-0 flex-auto">
-                    <SearchField
+                    <DeckSearchField
                       value={state.filters.search}
                       onChange={(search) => onFilters({ ...state.filters, search })}
                       size="column"

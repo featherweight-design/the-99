@@ -10,7 +10,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, settled } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -27,6 +27,11 @@ const SURFACES = [
   { route: "/collection", name: "collection compact", widths: ["phone"] },
   { route: "/collection", name: "collection wide", widths: ["desktop"] },
   { route: "/collection/sets", name: "sets index", widths: ["phone", "desktop"] },
+  // The deck list's field is in the column at desktop and behind its search button, in a sheet, on the phone.
+  { route: "/decks", name: "decks column", widths: ["desktop"] },
+  { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: '[role="dialog"] [data-search-field]' },
+  // Not /decks/precons: it draws the same `DeckSearchField` (unit-tested), but local-dev holds no precon catalog,
+  // so the page has no field to press there.
 ];
 
 async function signIn(page) {
@@ -77,9 +82,18 @@ try {
     await signIn(page);
     for (const s of SURFACES.filter((x) => x.widths.includes(w.name))) {
       await page.goto(`${BASE}${s.route}`, { waitUntil: "domcontentloaded" });
-      const input = onPage(page, "[data-search-field] input").first();
+      // Relative to the page: `onPage` is the one definition of what the page is.
+      const scope = s.field ?? "[data-search-field]";
+      if (s.open && w.name === "phone") {
+        await onPage(page, s.open).first().click();
+        // The sheet arrives under a 180ms transform: a box read mid-way is not where the tap lands.
+        const dialog = onPage(page, '[role="dialog"]').first();
+        await dialog.waitFor({ state: "visible" });
+        await settled(dialog);
+      }
+      const input = onPage(page, `${scope} input`).first();
       await input.waitFor({ state: "visible", timeout: 30_000 });
-      const clear = onPage(page, "[data-search-field] button[aria-label]").first();
+      const clear = onPage(page, `${scope} button[aria-label]`).first();
       await input.fill("zzq");
       await clear.waitFor({ state: "visible" });
       const before = await clear.boundingBox();
@@ -87,10 +101,10 @@ try {
       if (w.name === "phone") await page.touchscreen.tap(before.x + before.width / 2, before.y + before.height / 2);
       else await page.mouse.click(before.x + before.width / 2, before.y + before.height / 2);
       await page.waitForTimeout(250);
-      const after = await page.evaluate(() => ({
-        value: document.querySelector("main [data-search-field] input")?.value,
-        focused: document.activeElement === document.querySelector("main [data-search-field] input"),
-      }));
+      const after = {
+        value: await input.inputValue(),
+        focused: await input.evaluate((el) => el === document.activeElement),
+      };
       const tag = `${w.name} ${s.name}`;
       check(after.value === "", `${tag}: one tap empties the field`, `value=${JSON.stringify(after.value)}`);
       check(after.focused, `${tag}: the field keeps focus`, `focused=${after.focused}`);

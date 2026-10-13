@@ -30,7 +30,7 @@ import {
   PLAYED_LABEL,
   STATE_LABEL,
   STATUS_COPY_KEY,
-  SearchField,
+  DeckSearchField,
   toggleIn,
 } from "./deck-filter-column";
 import type { DeckFilters } from "../../lib/decks/filter";
@@ -221,7 +221,7 @@ function SheetBody({
           </span>
         </div>
 
-        <SearchField
+        <DeckSearchField
           value={filters.search}
           onChange={(search) => onChange({ ...filters, search })}
           size="sheet"

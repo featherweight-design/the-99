@@ -15,9 +15,8 @@ import {
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { KILL } from "../../lib/switches/resolve";
 import { PendingReporter } from "../shell/pending-reporter";
-import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
+import { SearchField } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
-import { SearchIcon } from "../ui/search-icon";
 
 // The Switches list (admin STATES L1 to L6; design table, Switches list and the R2 deltas). The
 // shell scrolls the document, as on Costs, so "pinned" is sticky: the search and chips sit under
@@ -187,17 +186,15 @@ export function SwitchesList({
         ref={pinRef}
         className="sticky top-[var(--admin-head-h,0px)] z-[1] flex flex-none flex-col gap-[10px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[14px] md:px-[28px] md:pb-[14px] md:pt-[18px]"
       >
-        <label className={`flex h-[44px] items-center gap-[10px] rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] md:h-[38px] md:max-w-[420px] ${AFFIX_FOCUS_INPUT}`}>
-          <SearchIcon className="shrink-0 text-[color:var(--fg-faint)]" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={copy.search}
-            aria-label={copy.search}
-            className={`min-w-0 flex-1 p-0 text-[16px] text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)] md:text-[14px] ${AFFIX_INPUT}`}
-          />
-        </label>
+        <SearchField
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClear={() => setQuery("")}
+          placeholder={copy.search}
+          aria-label={copy.search}
+          containerClassName="h-[44px] rounded-[9px] px-[12px] py-0 md:h-[38px] md:max-w-[420px]"
+          className="text-[16px] md:text-[14px]"
+        />
         <div role="group" aria-label={copy.chipsLabel} className="flex flex-wrap gap-[6px]">
           {SWITCH_FILTERS.map((f) => {
             const selected = f === filter;
