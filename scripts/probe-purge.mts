@@ -17,6 +17,7 @@ const run = Date.now().toString(36);
 const P = `probe_purge_p_${run}`; // the account being deleted
 const F = `probe_purge_f_${run}`; // a friend, longest-standing in P's pod
 const G = `probe_purge_g_${run}`; // a friend who joined later
+const ADMIN = `probe_purge_admin_${run}`; // this run's own admin actor, so concurrent runs never count each other
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -61,6 +62,7 @@ async function main() {
     return r[0]?.s ?? null;
   };
 
+  const racers: string[] = [];
   try {
     const { rows: picks } = await db.execute<{ oracle_id: string }>(sql`
       select oracle_id from cards where type_line like '%Legendary Creature%' order by oracle_id limit 2`);
@@ -110,7 +112,7 @@ async function main() {
     await db.execute(sql`
       insert into fits_reads (user_id, oracle_id, status, model_call_id, model, prompt_version, candidate_hashes)
       values (${P}, ${CMD}, 'done', ${call[0].id}, 'probe', 1, '[]'::jsonb)`);
-    await db.execute(sql`insert into admin_events (actor_id, kind, switch, scope, user_id, new_value) values ('probe_admin', 'override_set', 'probe', 'user', ${P}, 'on')`);
+    await db.execute(sql`insert into admin_events (actor_id, kind, switch, scope, user_id, new_value) values (${ADMIN}, 'override_set', 'probe', 'user', ${P}, 'on')`);
 
     const before = await rowsNaming(P);
     check("the fixture names the account in many tables", Object.keys(before).length >= 12, Object.keys(before).join(" "));
@@ -138,14 +140,40 @@ async function main() {
       select count(*)::int as n from collection_items where user_id = ${F}`)).rows[0].n === 1);
     check("F's data stamp moved (the friendship went)", ((await stamp(F)) ?? 0) > (fBefore ?? 0));
     check("P's stamp row did not come back at commit", (await stamp(P)) === null);
-    const { rows: kept } = await db.execute<{ n: number }>(sql`select count(*)::int as n from admin_events where actor_id = 'probe_admin'`);
+    const { rows: kept } = await db.execute<{ n: number }>(sql`select count(*)::int as n from admin_events where actor_id = ${ADMIN}`);
     check("an admin event ABOUT the account went", kept[0].n === 0);
     const again = await purgeAccount(P);
     check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0
       && Object.values(again.social).every((n) => n === 0), JSON.stringify(again));
     void open;
+
+    // The lock hierarchy under a real race: a friend unfriends the account while it is purged, with a pod
+    // each owns holding the other. Five fresh pairs, both sides started together; neither may deadlock
+    // (40P01) and the account must end with nothing.
+    let raced = 0;
+    for (let i = 0; i < 5; i++) {
+      const q = `${P}_race${i}`;
+      const h = `${F}_race${i}`;
+      racers.push(q, h);
+      const qp = await friends.ensureProfile(q, "Quin");
+      const hp = await friends.ensureProfile(h, "Hal");
+      const inv = await friends.createInvite(q);
+      if (!inv.ok) throw new Error("createInvite refused");
+      await friends.redeemInvite(h, inv.token);
+      const qPod = await pods.createPod(q, "Q's");
+      const hPod = await pods.createPod(h, "H's");
+      if (!qPod || !hPod) throw new Error("createPod refused");
+      await pods.addMember(q, qPod.id, hp.publicId);
+      await pods.addMember(h, hPod.id, qp.publicId);
+      const results = await Promise.allSettled([purgeAccount(q), friends.unfriend(h, qp.publicId)]);
+      const bad = results.filter((r) => r.status === "rejected").map((r) => String((r as PromiseRejectedResult).reason?.cause?.code ?? (r as PromiseRejectedResult).reason));
+      if (bad.length === 0 && Object.keys(await rowsNaming(q)).length === 0) raced++;
+      else console.log(`  race ${i}: ${bad.join(", ") || JSON.stringify(await rowsNaming(q))}`);
+    }
+    check("a purge racing an unfriend over shared pods settles, five times out of five, with nothing left", raced === 5, `${raced}/5`);
   } finally {
-    const who = sql`(${P}, ${F}, ${G})`;
+    const all = [P, F, G, ...racers];
+    const who = sql`(${sql.join(all.map((u) => sql`${u}`), sql`, `)})`;
     await db.execute(sql`delete from friend_links where user_id in ${who} or friend_user_id in ${who}`);
     await db.execute(sql`delete from decks where user_id in ${who}`);
     await db.execute(sql`delete from deck_folders where user_id in ${who}`);
@@ -153,7 +181,7 @@ async function main() {
     await db.execute(sql`delete from fits_reads where user_id in ${who}`);
     await db.execute(sql`delete from model_calls where user_id in ${who}`);
     await db.execute(sql`delete from user_prefs where user_id in ${who}`);
-    await db.execute(sql`delete from admin_events where actor_id = 'probe_admin'`);
+    await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
     await db.execute(sql`delete from pod_spare_shares where user_id in ${who}`);
     await db.execute(sql`delete from pods where owner_user_id in ${who}`);
     await db.execute(sql`delete from pod_members where user_id in ${who}`);
