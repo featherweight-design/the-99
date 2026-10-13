@@ -15,6 +15,7 @@ import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
+import { warmTuningToolsOnIntent } from "./tuning-tools";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { IdentityPips } from "../commanders/commander-art";
@@ -611,6 +612,7 @@ export function SpineMobile({
           <button
             type="button"
             data-shortcut="proposed-cuts"
+            {...warmTuningToolsOnIntent}
             onClick={onProposedCuts}
             className="mx-auto flex h-[44px] items-center font-mono text-[11.5px] text-[var(--accent)]"
           >

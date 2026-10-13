@@ -26,6 +26,8 @@ interface BuilderTabsProps {
   tabs: readonly BuilderTabSpec[];
   view: BuilderView;
   onViewChange: (view: BuilderView) => void;
+  /** A pointer resting on a tab, or focus arriving at it: the caller can start what the tab will need. */
+  onTabIntent?: (view: BuilderView) => void;
   /** The desktop toolbar rides the same row, pushed right. Mobile draws it below. */
   children?: React.ReactNode;
 }
@@ -86,7 +88,12 @@ function Tab({
   );
 }
 
-export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsProps) {
+export function BuilderTabs({ tabs, view, onViewChange, onTabIntent, children }: BuilderTabsProps) {
+  const intent = (e: React.SyntheticEvent) => {
+    const tab = (e.target as HTMLElement).closest?.("[role=tab]");
+    const hit = tab && tabs.find((t) => `tab-${t.id}` === tab.id);
+    if (hit) onTabIntent?.(hit.id);
+  };
   return (
     <div
       className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px]"
@@ -104,6 +111,8 @@ export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsP
         <div
           className="-m-[4px] flex min-w-0 items-baseline gap-[16px] overflow-x-auto p-[4px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:m-0 md:gap-[22px] md:overflow-visible md:p-0"
           role="tablist"
+          onPointerOver={intent}
+          onFocus={intent}
           // Selection follows focus, which is the pattern's default for panels
           // that are all cheap to render.
           onKeyDown={(e) => {

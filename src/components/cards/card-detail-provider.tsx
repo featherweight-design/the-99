@@ -38,6 +38,7 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+import { onDemand } from "../ui/on-demand";
 
 // The card details modal and the two fits views are loaded on demand rather than with the page. Every
 // route mounts this provider and none draws them before a card is pressed, yet bundled here they were
@@ -47,56 +48,6 @@ import { cardCarouselCopy } from "../../lib/copy/card-carousel";
 const CardModal = onDemand(() => import("./card-modal").then((m) => m.CardModal));
 const FitsView = onDemand(() => import("./fits-view").then((m) => m.FitsView));
 const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPicker));
-
-/**
- * A component loaded when first wanted, drawn at once from then on. Until its code has arrived it
- * draws nothing; the provider shows the press as pending meanwhile (`modalReady`). A download that
- * failed is forgotten, so the next `fetch` tries again, and whichever attempt lands tells every
- * mounted reader. A mounted wrapper keeps trying on its own, backing off from 1s to 30s, because a
- * view switched to inside the modal (the fits views) has no press of its own that would retry it.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each wrapper keeps its component's own props below
-function onDemand<P extends Record<string, any>>(load: () => Promise<React.ComponentType<P>>) {
-  let loaded: React.ComponentType<P> | null = null;
-  let pending: Promise<unknown> | null = null;
-  const listeners = new Set<() => void>();
-  const fetch = () =>
-    (pending ??= load().then(
-      (c) => {
-        loaded = c;
-        for (const l of listeners) l();
-      },
-      () => { pending = null; },
-    ));
-  const subscribe = (l: () => void) => {
-    listeners.add(l);
-    return () => { listeners.delete(l); };
-  };
-  const isLoaded = () => loaded !== null;
-  function OnDemand(props: P) {
-    const ready = useSyncExternalStore(subscribe, isLoaded, () => false);
-    useEffect(() => {
-      if (ready) return;
-      let live = true;
-      let wait = 1000;
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const attempt = () =>
-        void fetch().then(() => {
-          if (!live || isLoaded()) return;
-          timer = setTimeout(attempt, wait);
-          wait = Math.min(wait * 2, 30_000);
-        });
-      attempt();
-      return () => {
-        live = false;
-        clearTimeout(timer);
-      };
-    }, [ready]);
-    const Loaded = ready ? loaded : null;
-    return Loaded ? <Loaded {...props} /> : null;
-  }
-  return Object.assign(OnDemand, { fetch, subscribe, isLoaded });
-}
 
 /**
  * Starts the modal's code downloading, with every view the modal can open (the fits view and the

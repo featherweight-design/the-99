@@ -636,8 +636,56 @@ async function cardPress(page, cap, width) {
   return out;
 }
 
+/**
+ * The deck page's Analysis tab, pressed three ways, each in a fresh context (an empty cache): `early` straight after the load
+ * event (a build that loads the Tuning tools on demand may still be fetching them), `idle` after the
+ * page has sat for IDLE_WAIT_MS (they are warmed by then), and `intent` after a pointer rested on the tab
+ * (focus at 390) for 400ms. Each reads press to the tab's panel no longer busy, which is when it has
+ * drawn its landing; the unchanged server reads are in every figure, so only the difference between
+ * builds means anything.
+ */
+const IDLE_WAIT_MS = 8000;
+async function tabPress(browser, state, width, url) {
+  const out = {};
+  for (const key of ["early", "idle", "intent"]) {
+    // A fresh context from the saved sign-in each time, throttled like every other page, so each
+    // reading starts from the same empty cache: reusing the deck route's page would hand `early` the
+    // tools its warm load had already fetched.
+    const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
+    const page = await context.newPage();
+    await capture(page);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await page.waitForLoadState("load", { timeout: LOAD_CAP_MS }).catch(() => {});
+    const tab = page.locator("#tab-analysis");
+    // A deployment with Analysis off draws no such tab; that is a reading of null, not a failed run.
+    if (!(await tab.waitFor({ state: "visible", timeout: 30_000 }).then(() => true, () => false))) {
+      out[key] = null;
+      await context.close();
+      continue;
+    }
+    if (key === "idle") await page.waitForTimeout(IDLE_WAIT_MS);
+    if (key === "intent") {
+      if (width.isMobile) { await page.keyboard.press("Shift"); await tab.focus(); }
+      else await tab.hover();
+      await page.waitForTimeout(400);
+    }
+    const pressed = Date.now();
+    await tab.click();
+    out[key] = await page
+      .waitForFunction(() => {
+        const panel = document.getElementById("panel-analysis");
+        // The hub's landing itself, not just any text under a settled panel: a build that has not yet
+        // drawn the Tuning tools must not read as done.
+        return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.querySelector("[data-tuning-hub]"));
+      }, null, { timeout: 20_000, polling: 16 })
+      .then(() => Date.now() - pressed, () => null);
+    await context.close();
+  }
+  return out;
+}
+
 async function one(browser, state, width, routes, sql) {
-  const result = { routes: {}, soft: {}, card: null };
+  const result = { routes: {}, soft: {}, card: null, tab: null };
   const ctx = () => browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
   for (const route of LOADS ? routes : []) {
     const context = await ctx();
@@ -670,6 +718,7 @@ async function one(browser, state, width, routes, sql) {
     const evicted = await load(page, cap, `${BASE}${route.path}`);
     result.routes[route.label] = { cold, warm, evicted, coldSpans, spans, db };
     if (route.label === "deck") result.card = await cardPress(page, cap, width);
+    if (route.label === "deck") result.tab = await tabPress(browser, state, width, `${BASE}${route.path}`);
     await context.close();
   }
   // Client navigation from Home, a first visit and then a revisit.
@@ -774,6 +823,7 @@ function table(runs, routes) {
     lines.push(`\nLoad event cold / warm (null: not within ${LOAD_CAP_MS / 1000}s): ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.loadEvent)} / ${m((p) => p.routes[route.label]?.warm?.loadEvent)}`).join(" · ")}.`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nDeck from its tile, click or tap to content (a 300ms hover first at 1300, a bare tap at 390): from /decks ${m((p) => p.tile?.["/decks"])}ms, from Home ${m((p) => p.tile?.["/"])}ms (null: not a resume row there).`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
+    if (routes.some((r) => r.label === "deck")) lines.push(`\nAnalysis tab, press to drawn (a fresh load each): early ${m((p) => p.tab?.early)}ms, idle ${m((p) => p.tab?.idle)}ms, after intent ${m((p) => p.tab?.intent)}ms.`);
   }
   return lines.join("\n");
 }
