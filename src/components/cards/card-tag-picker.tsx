@@ -42,6 +42,8 @@ export type CardTagPickerOptions = {
   normalize?: (text: string) => string;
   /** The element the picker is attached to. */
   field: RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  /** The field is read-only or disabled (a save is out): the picker is closed and stays closed, for the list AND the combobox's own state. */
+  disabled?: boolean;
 };
 
 /**
@@ -49,7 +51,7 @@ export type CardTagPickerOptions = {
  * `<CardTagList {...list} />` where the dropdown goes, and calls `insertTag()` from its `[[ ]]` button.
  */
 export function useCardTagPicker(o: CardTagPickerOptions) {
-  const { value, picked, onChange, search, deckCards, max, normalize, field, maxTags } = o;
+  const { value, picked, onChange, search, deckCards, max, normalize, field, maxTags, disabled } = o;
   const measure = o.measure;
   const id = useId();
   const [caret, setCaret] = useState(0);
@@ -59,7 +61,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   const seq = useRef(0);
 
   const tag = !dismissed ? openTagAt(value, caret) : null;
-  const open = tag !== null;
+  const open = tag !== null && !disabled;
   const query = tag?.query.trim() ?? "";
   const scoped = deckCards !== undefined;
 

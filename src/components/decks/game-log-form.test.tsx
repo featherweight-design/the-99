@@ -431,6 +431,9 @@ describe("GameLogForm", () => {
       fireEvent.click(save());
       await waitFor(() => expect(logGame).toHaveBeenCalled());
       expect(screen.queryByRole("listbox")).toBeNull();
+      // The combobox says so too: no open popup announced for a list that is not there.
+      expect(field()).toHaveAttribute("aria-expanded", "false");
+      expect(field()).not.toHaveAttribute("aria-controls");
       release({ ok: true });
     });
 

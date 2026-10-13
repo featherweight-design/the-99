@@ -132,15 +132,6 @@ export function GameLogForm({
   // The note takes the `[[` card tag (card-tags plan, PR 3): `note` is the BODY, a tag as `[[id|Name]]`, and the action
   // stores each tag as the catalog's name, so the counter counts what is drawn.
   const noteLength = countCharacters(plainText(note));
-  const noteField = useRef<HTMLInputElement>(null);
-  const noteTags = useTaggedField({
-    value: note,
-    onChange: (body) => { setNote(body); setNoteTouched(true); },
-    search: searchGameNoteCards,
-    max: deckTuningCopy.note.maxLength,
-    maxTags: NOTES_TAGS_MAX,
-    field: noteField,
-  });
   // Two forms can be on one page — the panel's and the empty state's — so the
   // label's `for` and the field's `aria-describedby` cannot be literals.
   const noteId = useId();
@@ -154,6 +145,16 @@ export function GameLogForm({
   // The empty state unmounts this form when the game arrives, so nothing ever releases the hold.
   const [holding, setHolding] = useState(false);
   const busy = isPending || holding;
+  const noteField = useRef<HTMLInputElement>(null);
+  const noteTags = useTaggedField({
+    value: note,
+    onChange: (body) => { setNote(body); setNoteTouched(true); },
+    search: searchGameNoteCards,
+    max: deckTuningCopy.note.maxLength,
+    maxTags: NOTES_TAGS_MAX,
+    field: noteField,
+    disabled: busy,
+  });
   const openButton = useRef<HTMLButtonElement>(null);
   const movedTimer = useRef<number | null>(null);
   const resultRoving = useRoving(RESULT_VALUES, setResult);
@@ -501,7 +502,7 @@ export function GameLogForm({
           className="block md:flex md:items-center w-full min-h-[48px] md:min-h-[46px] px-[13px] md:px-[14px] py-[11px] md:py-[12px] rounded-[8px] bg-surface-sunken border border-border-strong focus:border-[color:var(--accent)] text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed disabled:opacity-50"
         />
         {/* Floats over the page, held to the room in the window: the form sits low on the Games tab, where a list placed in the flow ends below the fold. Not drawn while a save is out: a pick then would change a field the save already read. */}
-        {noteTags.picker.open && !busy && <CardTagList {...noteTags.picker.list} anchor={noteField} />}
+        {noteTags.picker.open && <CardTagList {...noteTags.picker.list} anchor={noteField} />}
         </div>
         <span id={describedById} className="sr-only">
           {deckTuningCopy.note.ariaDescription}

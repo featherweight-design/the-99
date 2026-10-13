@@ -152,11 +152,6 @@ export function SpineDesktop({
   const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
   const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
-  // The description takes the `[[` card tag: the hook holds the BODY, the box shows names (card-tags plan, PR 3).
-  const descriptionTags = useTaggedField({
-    value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
-    max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef,
-  });
   // The editor's two halves sit in separate flex columns of the header row, with the partner's
   // card-details trigger between them in DOM order — so blur has to be checked against BOTH
   // halves explicitly (pre-open review round 2), not against one shared ancestor that would
@@ -173,6 +168,11 @@ export function SpineDesktop({
   // the source (a save-disabled field can also be showing a previous error) and
   // the table only ever asks which of the three is true for a given property.
   const saving = rename.isPending;
+  // The description takes the `[[` card tag: the hook holds the BODY, the box shows names (card-tags plan, PR 3).
+  const descriptionTags = useTaggedField({
+    value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
+    max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef, disabled: saving,
+  });
   const failed = rename.error !== null;
   const inert = !rename.canSave && !saving;
 
@@ -346,7 +346,7 @@ export function SpineDesktop({
                       color: "var(--fg)",
                     }}
                   />
-                  {descriptionTags.picker.open && !saving && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFieldRef} />}
+                  {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFieldRef} />}
                 </div>
               </div>
             ) : (

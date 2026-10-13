@@ -1184,7 +1184,7 @@ function DescribingInPlace({
 }) {
   const descCopy = deckDescriptionCopy.description;
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
+  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   const over = n > descCopy.maxLength;
   const warn = n >= descCopy.warnAt;
@@ -1216,7 +1216,7 @@ function DescribingInPlace({
           className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
           style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
         />
-        {picker.open && !saving && <CardTagList {...picker.list} />}
+        {picker.open && <CardTagList {...picker.list} />}
       </div>
       <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
         <span>{descCopy.help}</span>
