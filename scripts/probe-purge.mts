@@ -181,6 +181,32 @@ async function main() {
     }
     check("a purge racing an unfriend over shared pods settles, five times out of five, with nothing left", raced === 5, `${raced}/5`);
 
+    // A purge racing the account's own write, in the order that deadlocks a purge taking stamps early: the
+    // write holds a collection row the purge must delete, then commits, which takes the account's stamp.
+    {
+      const q = `${P}_write`;
+      racers.push(q);
+      await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${q}, ${X}, 1, 'prb')`);
+      let release = () => {};
+      const held = new Promise<void>((done) => { release = done; });
+      let wrote = () => {};
+      const writing = new Promise<void>((done) => { wrote = done; });
+      const write = db.transaction(async (tx) => {
+        await tx.execute(sql`update collection_items set quantity = 2 where user_id = ${q}`);
+        wrote();
+        await held;
+      });
+      await writing;
+      const purging = purgeAccount(q);
+      await new Promise((done) => setTimeout(done, 1500));
+      release();
+      const results = await Promise.allSettled([write, purging]);
+      const bad = results.filter((x) => x.status === "rejected").map((x) => String((x as PromiseRejectedResult).reason?.cause?.code ?? (x as PromiseRejectedResult).reason));
+      const left = await rowsNaming(q);
+      check("a purge racing the account's own write waits for it and leaves nothing", bad.length === 0 && Object.keys(left).length === 0,
+        bad.join(", ") || JSON.stringify(left));
+    }
+
     // And a purge racing the redemption of the account's own open invite, in the order that could strand a
     // friendship: the redemption holds the invite row (as `redeemInvite` does first) while the purge starts,
     // then writes the two links and commits. The purge must wait on the invite and then find the links.

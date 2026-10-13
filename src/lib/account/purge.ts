@@ -45,13 +45,27 @@ export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; s
 export async function purgeAccount(userId: string): Promise<PurgeReport> {
   if (typeof userId !== "string" || userId.length === 0) throw new Error("purgeAccount: no user id");
   return db.transaction(async (tx) => {
-    const social = await purgeSocialIn(tx, userId);
+    const { counts: social, friendIds } = await purgeSocialIn(tx, userId);
     const rows: Record<string, number> = {};
     for (const table of PURGE_ORDER) {
       const done = await tx.execute(sql`delete from ${sql.identifier(table)} where user_id = ${userId}`);
       rows[table] = done.rowCount ?? 0;
     }
-    // Fire every deferred stamp trigger now, so none writes this account's stamp back at commit.
+    // The data stamps LAST, after every row, in user id order, which is where and how any other writer takes
+    // them (the deferred triggers, at its commit). Taken earlier, a writer holding a row this purge must
+    // delete and waiting on a stamp this purge held would deadlock it. A friend's missing row is created at
+    // 0, which reads the same as no row (`userDataStamp`); with no friend nothing is created, so a retried
+    // purge still writes nothing.
+    const stamped = [...new Set([userId, ...friendIds])].sort();
+    if (friendIds.length > 0) {
+      await tx.execute(sql`
+        insert into user_data_stamps (user_id, stamp)
+        select u, 0 from unnest(${sql.param(stamped)}::text[]) as u order by u
+        on conflict (user_id) do nothing`);
+    }
+    await tx.execute(sql`select 1 from user_data_stamps where user_id = any(${sql.param(stamped)}::text[]) order by user_id for update`);
+    // Fire every deferred stamp trigger now, with every stamp already held, so none writes this account's
+    // stamp back at commit.
     await tx.execute(sql`set constraints all immediate`);
     const stamp = await tx.execute(sql`delete from user_data_stamps where user_id = ${userId}`);
     return { social, rows, stamp: stamp.rowCount ?? 0 };

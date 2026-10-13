@@ -11,10 +11,24 @@ const schema = readFileSync("src/db/schema.ts", "utf8");
 /** Columns that name an account. */
 const ACCOUNT_COLUMNS = ["user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by"];
 
-/** Tables holding an account column the purge deliberately leaves, and why. */
+/**
+ * Account columns the purge deliberately leaves, by `table.column`, and why. Each names an ADMIN who did
+ * something: the admin's own audit trail, not the player's data. A row ABOUT the account goes by its
+ * subject column; these columns survive on rows about other accounts.
+ */
 const KEPT: Record<string, string> = {
-  admin_settings: "updated_by is the admin who changed a setting: the admin's own audit trail, not the player's data",
-  flag_groups: "created_by is the admin who made the group: the admin's own audit trail, not the player's data",
+  "admin_events.actor_id": "the admin who made the change",
+  "admin_settings.updated_by": "the admin who changed a setting",
+  "flag_groups.created_by": "the admin who made the group",
+  "flag_group_members.added_by": "the admin who added a member",
+  "flag_overrides.updated_by": "the admin who set the override",
+};
+
+/** The account columns each purged table is cleared BY. A row deleted by one goes whole; any other column is not cleared. */
+const CLEARED_BY: Record<string, readonly string[]> = {
+  ...Object.fromEntries(PURGE_ORDER.map((t) => [t, ["user_id"]])),
+  ...SOCIAL_PURGED,
+  user_data_stamps: ["user_id"],
 };
 
 type Table = { binding: string; name: string; body: string };
@@ -28,7 +42,7 @@ const tables: Table[] = (() => {
 })();
 const accountColumns = (t: Table) => ACCOUNT_COLUMNS.filter((c) => new RegExp(`\\(\\s*"${c}"`).test(t.body));
 
-const purged = new Set<string>([...PURGE_ORDER, ...SOCIAL_PURGED, "user_data_stamps"]);
+const purged = new Set<string>(Object.keys(CLEARED_BY));
 
 type Fk = { name: string; tableFrom: string; tableTo: string; onDelete?: string };
 type Snapshot = { tables: Record<string, { name: string; foreignKeys: Record<string, Fk> }> };
@@ -73,9 +87,24 @@ describe("the account purge's coverage", () => {
     expect(tables.find((t) => t.name === "decks")).toBeDefined();
   });
 
-  it("deletes, or keeps with a reason, every table holding an account column", () => {
-    const missing = tables.filter((t) => accountColumns(t).length > 0 && !purged.has(t.name) && !(t.name in KEPT));
-    expect(missing.map((t) => t.name)).toEqual([]);
+  it("clears, or keeps with a reason, every account COLUMN of every table", () => {
+    const missing = tables.flatMap((t) => accountColumns(t)
+      .filter((c) => !(CLEARED_BY[t.name] ?? []).includes(c) && !(`${t.name}.${c}` in KEPT))
+      .map((c) => `${t.name}.${c}`));
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps no column that does not exist (a stale exception hides nothing, but says something false)", () => {
+    const real = new Set(tables.flatMap((t) => accountColumns(t).map((c) => `${t.name}.${c}`)));
+    expect(Object.keys(KEPT).filter((k) => !real.has(k))).toEqual([]);
+  });
+
+  it("clears each social table by columns it really has", () => {
+    for (const [name, cols] of Object.entries(SOCIAL_PURGED)) {
+      const t = tables.find((x) => x.name === name);
+      expect(t, name).toBeDefined();
+      for (const c of cols) expect(accountColumns(t!), `${name}.${c}`).toContain(c);
+    }
   });
 
   it("deletes each PURGE_ORDER table by a user_id column it really has", () => {
@@ -87,7 +116,8 @@ describe("the account purge's coverage", () => {
   });
 
   it("names every table only once", () => {
-    expect(new Set([...PURGE_ORDER, ...SOCIAL_PURGED]).size).toBe(PURGE_ORDER.length + SOCIAL_PURGED.length);
+    const social = Object.keys(SOCIAL_PURGED);
+    expect(new Set([...PURGE_ORDER, ...social]).size).toBe(PURGE_ORDER.length + social.length);
   });
 
   it("reaches every child of a purged table by cascade or set null, so no FK blocks or outlives it", () => {

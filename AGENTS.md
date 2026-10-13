@@ -732,7 +732,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `verifyWebhook` checks against `CLERK_WEBHOOK_SIGNING_SECRET` on every call; with the secret unset it answers 503 and
   does nothing) runs `purgeAccount` (`src/lib/account/purge.ts`) in
   ONE transaction: the social half first (`purgeSocialIn`: locks in the social hierarchy, its invites, then pods,
-  then friendship rows, then stamps, so it cannot deadlock against an unfriend; every pod is LEFT the way a player leaves it, so an owned
+  then friendship rows, with the data stamps taken LAST after every row delete, as every writer takes them, so it cannot deadlock against an unfriend; every pod is LEFT the way a player leaves it, so an owned
   pod passes to its longest-standing member; both directions of every friendship; every invite naming the account;
   the profile), then every other table by `user_id` in `PURGE_ORDER` (children of `model_calls` before it), then
   `set constraints all immediate` so the deferred stamp triggers fire before the account's own `user_data_stamps`

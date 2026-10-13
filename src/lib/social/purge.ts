@@ -10,27 +10,34 @@
  */
 import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps } from "../../db/schema";
+import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { leavePodIn } from "./pods";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** The social tables this purge clears, by SQL name, for the purge's coverage test. */
-export const SOCIAL_PURGED = [
-  "pod_members", "pods", "pod_spare_shares", "friend_links", "friend_invites", "social_profiles",
-] as const;
+/** The social tables this purge clears, each with the account columns it clears them by, for the coverage test. */
+export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
+  friend_invites: ["inviter_user_id", "redeemed_by"],
+  pods: ["owner_user_id"],
+  pod_members: ["user_id"],
+  pod_spare_shares: ["user_id"],
+  friend_links: ["user_id", "friend_user_id"],
+  social_profiles: ["user_id"],
+};
 
 export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted: number; friendLinks: number };
 
-export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge> {
+/** What the social half did, and the friends whose data stamps the purge moves (sorted). */
+export type SocialPurged = { counts: SocialPurge; friendIds: string[] };
+
+export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurged> {
   const out: SocialPurge = { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 0 };
   // Locks in the hierarchy every social write takes them. The account's invites first, in token order:
   // `redeemInvite` locks its invite before it writes a friendship, so a redemption racing this either lands
   // first (and its new links are read and deleted below) or waits and finds the invite gone. Then (as
   // `unfriend`, `addMember` and `leavePod` take them) pods, in id order; then the friendship rows, in (user_id, friend_user_id) order, which is `friendshipRows`'
-  // order; then the data stamps, in user id order. Left to the deletes and triggers below, they would be
-  // taken in whatever order rows were visited, and an unfriend holding a shared pod could wait on a stamp
-  // this purge held while it waited on that pod.
+  // order. An unfriend takes the same three in the same order, so the two cannot each hold what the other
+  // waits for.
   await tx.execute(sql`
     select i.token from ${friendInvites} i
     where i.inviter_user_id = ${userId} or i.redeemed_by = ${userId}
@@ -43,18 +50,10 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
     select l.user_id, l.friend_user_id from ${friendLinks} l
     where l.user_id = ${userId} or l.friend_user_id = ${userId}
     order by l.user_id, l.friend_user_id for update`);
-  // Every stamp this purge will move (the account's and each friend's, through the friend_links triggers).
-  // A missing row is created at 0, which reads the same as no row (`userDataStamp`). With no friend there is
-  // no second reader to order against, and creating the account's row only to delete it would make a
-  // retried purge write something.
-  const friendIds = links.rows.map((r) => (r.user_id === userId ? r.friend_user_id : r.user_id));
-  const stamped = [...new Set([userId, ...friendIds])].sort();
-  if (friendIds.length > 0) await tx.execute(sql`
-    insert into ${userDataStamps} (user_id, stamp)
-    select u, 0 from unnest(${sql.param(stamped)}::text[]) as u order by u
-    on conflict (user_id) do nothing`);
-  await tx.execute(sql`
-    select 1 from ${userDataStamps} where user_id = any(${sql.param(stamped)}::text[]) order by user_id for update`);
+  // The friends whose stamps this purge will move (through the friend_links triggers). Their stamp rows
+  // are NOT locked here: the caller locks them last, after every row delete, which is where any other
+  // writer takes a stamp (at its commit, after its rows).
+  const friendIds = [...new Set(links.rows.map((r) => (r.user_id === userId ? r.friend_user_id : r.user_id)))].sort();
   const memberOf = await tx
     .select({ podId: podMembers.podId })
     .from(podMembers)
@@ -77,5 +76,5 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // Both sides of an invite name the account: the ones it sent, and the spent ones it accepted.
   await tx.delete(friendInvites).where(or(eq(friendInvites.inviterUserId, userId), eq(friendInvites.redeemedBy, userId)));
   await tx.delete(socialProfiles).where(eq(socialProfiles.userId, userId));
-  return out;
+  return { counts: out, friendIds };
 }
