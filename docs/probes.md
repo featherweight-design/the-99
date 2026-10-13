@@ -26,6 +26,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Desktop: the page fits the screen, the list scrolls in its own box, and the controls are not pinned. Needs
   `ALL_DECKS_CART_ENABLED=true` on the server and an account whose decks miss at least eight cards. Giving the list box
   its overflow back at the phone width fails the "not its own scroll box" check.
+- `pnpm probe:history-cart-decks` walks a cart purchase's row on `/collection/history` at 390 and 1300 (History deck
+  line, PR 1, Hugh 2026-10-13): the line reads `From Shopping for all decks. Bought for A, B, C, 2 more and a deck you’ve
+  since deleted.`, the cart link then one link per named deck, and the page does not scroll sideways. It writes one
+  `collection_history` entry sourced `shopping:cart:<ids>` (five of the account's decks and one id that is no deck) and
+  deletes it in a `finally`; it refuses staging and production by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`
+  on the server and an account with five decks.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a

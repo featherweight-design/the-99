@@ -111,7 +111,40 @@ export type HistoryListEntry = {
   shoppingDeck: { id: string; name: string | null } | null;
   /** Bought from the all-decks cart (source `shopping:cart:<deck ids>`): no one deck to name. */
   shoppingCart: boolean;
+  /**
+   * The decks a cart purchase was bought for (the ids its source records), resolved at read time: the
+   * first `CART_DECKS_NAMED` living decks by name, the living ones past them, and those since deleted.
+   * Null for every entry not sourced from the cart.
+   */
+  cartDecks: CartDecks | null;
 };
+
+export const CART_DECKS_NAMED = 3;
+export type CartDecks = { named: { id: string; name: string }[]; more: number; gone: number };
+
+/** Pure half of the cart's deck line: `living` maps the ids that still exist to their names. */
+export function cartDecksOf(ids: readonly string[], living: ReadonlyMap<string, string>): CartDecks {
+  const alive = ids.filter((id) => living.has(id));
+  return {
+    named: alive.slice(0, CART_DECKS_NAMED).map((id) => ({ id, name: living.get(id)! })),
+    more: Math.max(alive.length - CART_DECKS_NAMED, 0),
+    gone: ids.length - alive.length,
+  };
+}
+
+/** Fills `cartDecks` on a page of entries with ONE read of the player's own decks. */
+async function withCartDecks<T extends HistoryListEntry>(userId: string, entries: T[]): Promise<T[]> {
+  const ids = [...new Set(entries.flatMap((e) => cartSourceDecks(e.source) ?? []))].filter((id) => UUID_RE.test(id));
+  if (ids.length === 0) return entries;
+  const res = await db.execute<{ id: string; name: string }>(sql`
+    select d.id::text as id, d.name from decks d
+    where d.user_id = ${userId} and d.id::text in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+  const living = new Map(res.rows.map((r) => [r.id, r.name]));
+  return entries.map((e) => {
+    const listed = cartSourceDecks(e.source);
+    return listed ? { ...e, cartDecks: cartDecksOf(listed, living) } : e;
+  });
+}
 
 export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
 
@@ -134,6 +167,7 @@ type ListRow = {
  * table, the shape that compares a row with itself when written bare (AGENTS.md).
  */
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const UUID_RE = new RegExp(`^${UUID}$`);
 
 export const listColumns = sql`
   h.id, h.seq, h.created_at, h.kind, h.source, h.raised, h.lowered,
@@ -203,6 +237,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     uploadFilename: r.upload_filename, firstName: r.first_name,
     shoppingDeck: r.shopping_deck_id ? { id: r.shopping_deck_id, name: r.shopping_deck_name } : null,
     shoppingCart: cartSourceDecks(r.source) !== null,
+    cartDecks: null,
   };
 }
 
@@ -224,7 +259,7 @@ export async function listHistory(
     order by h.seq desc
     limit ${HISTORY_PAGE_SIZE + 1}
   `);
-  const page = rows.rows.slice(0, HISTORY_PAGE_SIZE).map(toListEntry);
+  const page = await withCartDecks(userId, rows.rows.slice(0, HISTORY_PAGE_SIZE).map(toListEntry));
   const more = rows.rows.length > HISTORY_PAGE_SIZE;
   return { entries: page, nextBefore: more ? page[page.length - 1].seq : null };
 }
@@ -237,7 +272,9 @@ export async function getHistoryEntry(userId: string, id: string): Promise<Histo
     where ${inWindow(userId)} and h.id = ${id}
   `);
   const r = rows.rows[0];
-  return r ? { ...toListEntry(r), rows: r.rows ?? [] } : null;
+  if (!r) return null;
+  const [entry] = await withCartDecks(userId, [toListEntry(r)]);
+  return { ...entry, rows: r.rows ?? [] };
 }
 
 /**

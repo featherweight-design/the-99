@@ -98,6 +98,16 @@ export const gotItCopy = {
     fromDeleted: "From the Shopping list of a deck you’ve since deleted",
     /** A purchase from the all-decks cart names the cart by its page title, never one deck. */
     fromCart: { pre: "From", link: allDecksCartCopy.title, post: "" },
+    /**
+     * The decks a cart purchase was bought for, as a second sentence under the cart line. `named` are the
+     * first living decks (links), `more` the living decks past them, `gone` those since deleted. Items are
+     * joined like `nameList`: commas, then "and" before the last.
+     */
+    boughtFor: {
+      lead: "Bought for",
+      more: (n: number) => `${n} more`,
+      gone: (n: number) => (n === 1 ? "a deck you’ve since deleted" : `${n} decks you’ve since deleted`),
+    },
   },
   /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
   shortWarning: {

@@ -80,9 +80,22 @@ function ShoppingDeckLine({ deck, linked }: { deck: NonNullable<HistoryListEntry
   );
 }
 
-/** The cart's line: a purchase from Shopping for all decks names the cart, never one deck. */
-function ShoppingCartLine({ linked }: { linked: boolean }) {
+/**
+ * The cart's line: a purchase from Shopping for all decks names the cart, and then the decks it was
+ * bought for (the first few, linked, then a count), so the entry says where its copies went.
+ */
+function ShoppingCartLine({ linked, decks }: { linked: boolean; decks: HistoryListEntry["cartDecks"] }) {
   const line = gotItCopy.history.fromCart;
+  const bf = gotItCopy.history.boughtFor;
+  const items: React.ReactNode[] = decks
+    ? [
+        ...decks.named.map((d) => (linked
+          ? <a key={d.id} href={`/decks/${d.id}`} className="text-[color:var(--accent)] underline underline-offset-2">{d.name}</a>
+          : <span key={d.id}>{d.name}</span>)),
+        ...(decks.more > 0 ? [<span key="more">{bf.more(decks.more)}</span>] : []),
+        ...(decks.gone > 0 ? [<span key="gone">{bf.gone(decks.gone)}</span>] : []),
+      ]
+    : [];
   return (
     <p className={DECK_LINE}>
       {line.pre}{" "}
@@ -95,6 +108,15 @@ function ShoppingCartLine({ linked }: { linked: boolean }) {
         <span>{line.link}</span>
       )}
       {line.post}
+      {items.length > 0 ? (
+        <>
+          {". "}{bf.lead}{" "}
+          {items.map((it, i) => (
+            <span key={i}>{i === 0 ? "" : i === items.length - 1 ? " and " : ", "}{it}</span>
+          ))}
+          {"."}
+        </>
+      ) : null}
     </p>
   );
 }
@@ -208,7 +230,7 @@ export function HistoryEntryItem({
       ) : null}
       </div>
       {e.shoppingDeck ? <ShoppingDeckLine deck={e.shoppingDeck} linked={anchor} /> : null}
-      {e.shoppingCart ? <ShoppingCartLine linked={anchor} /> : null}
+      {e.shoppingCart ? <ShoppingCartLine linked={anchor} decks={e.cartDecks} /> : null}
       {reverted ? (
         <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
           {c.reverted}
