@@ -12,6 +12,7 @@ import { scopeRedirectTarget } from "./scope-redirect";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
 import { lanePrintedInFor, loadCommanderPrintings } from "../../lib/sets/lane-printed-in";
+import { perfRead } from "../../lib/perf/timing";
 import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
 import {
@@ -77,8 +78,8 @@ export default async function CommandersPage({
     cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env), {
       store: (r) => !r.labelFallback,
     }),
-    listRecentDecks(userId, 1),
-    readCommandersAvail(userId),
+    perfRead("commanders.recentDeck", () => listRecentDecks(userId, 1)),
+    perfRead("commanders.availPref", () => readCommandersAvail(userId)),
   ]);
 
   const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;

@@ -52,3 +52,21 @@ export function perfRoute(route: string): Perf {
     },
   };
 }
+
+/**
+ * One read, timed on its own: `[perf] read <label>=<ms> pool=<idle>/<total>`, logged when it settles.
+ * For reads no page's tracker reaches (the shell, a layout, a cache key), whose cost is paid before or
+ * beside the page's own spans. `pool` is the shared database pool's idle and open connections just
+ * before the read: `0/0` means this read had to open a websocket first, which is the cost a cold
+ * instance pays. Off, it is `fn()` and nothing else.
+ */
+export function perfRead<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  if (!enabled()) return fn();
+  const pool = (globalThis as { __the99Pool?: { idleCount: number; totalCount: number } }).__the99Pool;
+  const state = pool ? `${pool.idleCount}/${pool.totalCount}` : "none";
+  const t = performance.now();
+  return fn().finally(() => {
+    console.log(`[perf] read ${label}=${Math.round(performance.now() - t)} pool=${state}`);
+  });
+}
+

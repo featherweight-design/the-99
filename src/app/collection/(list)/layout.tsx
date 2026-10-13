@@ -20,6 +20,7 @@ import { requestSwitchEnv } from "../../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
 import { collectionHasHistory } from "../../../lib/collection/history";
+import { perfRead } from "../../../lib/perf/timing";
 import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
 import { CollectionContentScope } from "../../../components/collection/collection-content-scope";
 
@@ -33,9 +34,9 @@ export default async function CollectionListLayout({
   const editEnabled = collectionEditEnabled(await requestSwitchEnv(userId));
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
-    getCollectionLastUpdated(userId),
+    perfRead("collection.lastUpdated", () => getCollectionLastUpdated(userId)),
     // The History tab's gate on an empty collection; only asked once the ledger is on.
-    editEnabled ? collectionHasHistory(userId) : Promise.resolve(false),
+    editEnabled ? perfRead("collection.hasHistory", () => collectionHasHistory(userId)) : Promise.resolve(false),
   ]);
   // Formatted here rather than handed down as a raw `Date`: the head is a Client Component
   // and would otherwise recompute the label against the browser's clock and timezone on

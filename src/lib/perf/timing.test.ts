@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const afters = vi.fn((fn: () => void) => fn());
 vi.mock("next/server", () => ({ after: (fn: () => void) => afters(fn) }));
 
-const { perfRoute } = await import("./timing");
+const { perfRead, perfRoute } = await import("./timing");
 
 describe("perfRoute", () => {
   let log: ReturnType<typeof vi.spyOn>;
@@ -68,5 +68,39 @@ describe("perfRoute", () => {
     await expect(perf.timed("broken", async () => { throw new Error("x"); })).rejects.toThrow("x");
     finish();
     expect(String(log.mock.calls[0][0])).toMatch(/ broken=\d+$/);
+  });
+});
+
+describe("perfRead", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    delete (globalThis as { __the99Pool?: unknown }).__the99Pool;
+  });
+
+  it("is fn() itself with PERF_TIMING unset: the same promise, no clock, no line", () => {
+    vi.stubEnv("PERF_TIMING", "");
+    const clock = vi.spyOn(performance, "now");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const promise = Promise.resolve(7);
+    expect(perfRead("read", () => promise)).toBe(promise);
+    expect(clock).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it("logs the label, the milliseconds and the pool's idle and open connections before the read", async () => {
+    vi.stubEnv("PERF_TIMING", "1");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    (globalThis as { __the99Pool?: unknown }).__the99Pool = { idleCount: 0, totalCount: 0 };
+    expect(await perfRead("shell.collectionStats", async () => 5)).toBe(5);
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read shell\.collectionStats=\d+ pool=0\/0$/);
+  });
+
+  it("logs a failed read too, and still rejects", async () => {
+    vi.stubEnv("PERF_TIMING", "1");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await expect(perfRead("x", async () => { throw new Error("down"); })).rejects.toThrow("down");
+    expect(String(log.mock.calls[0][0])).toMatch(/^\[perf\] read x=\d+ pool=none$/);
   });
 });

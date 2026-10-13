@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { NavRail, TabBar, MobileHeader } from "./nav";
 import { getCollectionStats } from "../../lib/home/summary";
+import { perfRead } from "../../lib/perf/timing";
 import type { ThemeKey } from "../../lib/theme/themes";
 import { SHEET_ON_HEADER } from "../../lib/about/gate";
 import { readSheetState } from "../../lib/about/sheet-state";
@@ -35,7 +36,7 @@ export default async function Shell({
     return <>{children}</>;
   }
 
-  const stats = await getCollectionStats(userId);
+  const stats = await perfRead("shell.collectionStats", () => getCollectionStats(userId));
   const locked = stats.uniqueCards === 0;
   // The proxy's decision about the one-time About sheet, carried on a request
   // header it sets on document loads only. Read on every render and handed down
