@@ -59,6 +59,7 @@ import {
   type ColourExcludedMatch,
 } from "../../lib/commanders/excluded-report";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 // The empty-state strings, aliased once: four call sites below name them, and
 // `discoveryCopy.empty.` on each would bury the key that actually differs.
@@ -792,6 +793,7 @@ export function DiscoveryView({
               />
             ) : null}
 
+            <ArrivalOrder>
             <ul
               className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0"
               aria-busy={!complete || undefined}
@@ -875,6 +877,7 @@ export function DiscoveryView({
                 </li>
               ) : null}
             </ul>
+            </ArrivalOrder>
 
             {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
             {remaining > 0 ? (

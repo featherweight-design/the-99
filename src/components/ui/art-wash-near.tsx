@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, type CSSProperties } from "react";
 import { cssUrl } from "../../lib/collection/browse";
+import { useArrivalQueue } from "./arrival-queue";
 import { armArtArrival, useNearViewport } from "./hydrated-art";
 
 /**
@@ -39,13 +40,14 @@ export function ArrivingArt({
   const ref = useRef<HTMLDivElement | null>(null);
   const near = useNearViewport(ref, defer && !askedFor.has(src), margin);
   const shown = !defer || near || askedFor.has(src);
+  const queue = useArrivalQueue();
   useLayoutEffect(() => {
     const el = ref.current;
     if (!shown || !el) return;
     askedFor.add(src);
     const image = new Image();
     image.src = src;
-    return armArtArrival(el, image);
-  }, [shown, src]);
+    return armArtArrival(el, image, queue);
+  }, [shown, src, queue]);
   return <div ref={ref} className={className} style={shown ? { ...style, backgroundImage: cssUrl(src) } : style} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ImgHTMLAttributes, type RefObject } from "react";
+import { useArrivalQueue, type ArrivalQueue } from "./arrival-queue";
 
 /**
  * Card art that waits for the page to hydrate.
@@ -74,7 +75,7 @@ export function useNearViewport(ref: RefObject<Element | null>, enabled: boolean
  * the DOM from a layout effect rather than rendered: the server HTML carries no mark, so art is
  * visible without script, and the mark lands before the first paint that could show the source.
  */
-export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => void {
+export function armArtArrival(el: HTMLElement, image: HTMLImageElement, queue: ArrivalQueue | null = null): () => void {
   // Complete when its source is set means settled already: drawn from the cache, or already broken,
   // and a broken one would fire nothing more to release it.
   // Disarming clears the mark too: an element that stops fading (its source moved, or it became
@@ -87,14 +88,18 @@ export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => v
     return clear;
   }
   el.dataset.arrival = "pending";
-  const land = () => {
+  const release = () => {
     if (el.dataset.arrival === "pending") el.dataset.arrival = "in";
   };
+  // In a list, its fade waits its turn in reading order (`ArrivalOrder`); alone, it plays on landing.
+  const queued = queue?.join(el, release) === true;
+  const land = () => (queued ? queue!.landed(el) : release());
   image.addEventListener("load", land);
   image.addEventListener("error", land);
   return () => {
     image.removeEventListener("load", land);
     image.removeEventListener("error", land);
+    if (queued) queue!.leave(el);
     clear();
   };
 }
@@ -104,11 +109,12 @@ export function armArtArrival(el: HTMLElement, image: HTMLImageElement): () => v
  * pick swaps a tile's art in place). For any <img> of card art, eager or lazy, server-drawn or not.
  */
 export function useArtFade(ref: RefObject<HTMLImageElement | null>, src: unknown): void {
+  const queue = useArrivalQueue();
   useLayoutEffect(() => {
     const img = ref.current;
     if (!img || !src) return;
-    return armArtArrival(img, img);
-  }, [ref, src]);
+    return armArtArrival(img, img, queue);
+  }, [ref, src, queue]);
 }
 
 /**

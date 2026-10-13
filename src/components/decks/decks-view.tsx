@@ -98,6 +98,7 @@ import { type DecksView as DecksViewName } from "../ui/view-cookie";
 import { readLineupStats } from "../../app/decks/lineup-actions";
 import { LineupView } from "./lineup/lineup-view";
 import { StatsViewSwitch, viewPanelId, viewTabId } from "./lineup/stats-view-switch";
+import { ArrivalOrder } from "@/components/ui/arrival-queue";
 
 export type DecksViewProps = {
   decks: DeckListItem[];
@@ -1286,6 +1287,7 @@ export function DecksView({
               </button>
             </div>
           ) : (
+            <ArrivalOrder>
             <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
               <DecksMarkKey decks={shown} />
               {shown.map((deck, i) => (
@@ -1335,6 +1337,7 @@ export function DecksView({
                 </li>
               ))}
             </ul>
+            </ArrivalOrder>
           )}
           </div>
           </>)}
