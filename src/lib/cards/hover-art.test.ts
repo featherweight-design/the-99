@@ -314,7 +314,6 @@ describe("every card row has a hover preview and a press that opens card details
 // primitives itself is a surface resolving its own printing, so it must be named here, which is a decision that
 // shows up in a diff rather than a habit.
 
-const OPENING_PRIMITIVES = ["openingScryfallId", "liveCents", "loadOpeningPrintings", "loadOpeningArt"];
 const OPENING_MODULE = "opening-printing";
 
 /** The modules that may import the primitives, each with why. */
@@ -326,25 +325,35 @@ const OPENING_USERS: Record<string, string> = {
   "lib/decks/proxy-list.ts": "a proxy row names the set and rarity of the printing it draws, so it takes the whole printing",
 };
 
-/** Source files (ts and tsx) that import an opening-printing primitive from the module, tests and the module aside. */
+/**
+ * Source files (ts and tsx) that import the module in ANY value form: named, namespace or default import, a
+ * re-export, a dynamic `import()` or a `require`. Not the primitives by name, so `import * as opening` or a lazy
+ * `await import(...)` cannot reach them unlisted. Tests and the module itself aside.
+ */
 export function openingImporters(files: Record<string, string>): string[] {
+  const reaches = new RegExp(`(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\brequire\\s*\\(\\s*|^\\s*import\\s+)["'][^"']*${OPENING_MODULE}["']`, "m");
   return Object.entries(files)
     .filter(([path]) => !/\.test\.tsx?$/.test(path) && path !== "lib/cards/opening-printing.ts")
-    .filter(([, src]) => OPENING_PRIMITIVES.some((name) =>
-      new RegExp(`import\\s*(?:type\\s*)?\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*["'][^"']*${OPENING_MODULE}["']`).test(src)))
+    .filter(([, src]) => reaches.test(src))
     .map(([path]) => path)
     .sort();
 }
 
 describe("the opening-printing guard's own failure paths", () => {
-  it("finds a module importing a primitive, and ignores a test, a type-only mention and a comment", () => {
+  it("finds a module reaching the primitives by any import form, and ignores a test, a comment and a sibling module", () => {
     expect(openingImporters({
       "lib/a.ts": `import { loadOpeningArt } from "../cards/opening-printing";`,
       "lib/b.ts": `import { openingScryfallId, liveCents } from "./opening-printing";`,
+      "lib/ns.ts": `import * as opening from "../cards/opening-printing";`,
+      "lib/dyn.ts": `export const f = async () => (await import("../cards/opening-printing")).loadOpeningArt([]);`,
+      "lib/req.ts": `const o = require("../cards/opening-printing");`,
+      "lib/bare.ts": `import "../cards/opening-printing";`,
+      "lib/reexp.ts": `export { loadOpeningArt } from "../cards/opening-printing";`,
+      "lib/multi.ts": `import {\n  loadOpeningArt,\n} from "../cards/opening-printing";`,
       "lib/c.test.ts": `import { loadOpeningArt } from "../cards/opening-printing";`,
       "lib/d.ts": `// loadOpeningArt from opening-printing\nexport const x = 1;`,
       "lib/e.ts": `import { somethingElse } from "../cards/opening-printing-other";`,
-    })).toEqual(["lib/a.ts", "lib/b.ts"]);
+    })).toEqual(["lib/a.ts", "lib/b.ts", "lib/bare.ts", "lib/dyn.ts", "lib/multi.ts", "lib/ns.ts", "lib/reexp.ts", "lib/req.ts"]);
   });
 });
 
