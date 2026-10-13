@@ -127,7 +127,6 @@ try {
       const l = ul.getBoundingClientRect();
       const opts = [...ul.querySelectorAll('[role="option"]')];
       const hitAt = (o) => { const r = o.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10)); return Boolean(h && ul.contains(h)); };
-      const lastVisible = opts.filter((o) => { const r = o.getBoundingClientRect(); return r.top >= l.top && r.bottom <= l.bottom + 1; }).length;
       return { top: Math.round(l.top), bottom: Math.round(l.bottom), left: Math.round(l.left), right: Math.round(l.right), options: opts.length, firstOnTop: hitAt(opts[0]), lastReachable: hitAt(opts[Math.min(opts.length, 3) - 1]), viewW: window.innerWidth, viewH: window.innerHeight };
     });
     check(`${w.label} pencil: the list is inside the window on every side, with its first and later options painted on top`,
