@@ -1,11 +1,11 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 import { budgetLine, HandOffAnswersBlock } from "./hand-off-answers";
 
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const card = (over: Partial<NonNullable<HandOffAnswers["card"]>> = {}) => ({
-  oracleId: CARD, name: "Regisaur Alpha", owned: false, held: null, price: { kind: "priced", cents: 110 } as const, pct: 64, ...over,
+  oracleId: CARD, name: "Regisaur Alpha", imageUri: "https://img.test/regisaur.jpg", owned: false, held: null, price: { kind: "priced", cents: 110 } as const, pct: 64, ...over,
 });
 const all: HandOffAnswers = {
   themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 91 }],
@@ -84,5 +84,23 @@ describe("Built from your answers", () => {
     expect(budgetLine(card({ owned: true }), false, true)).toBe("The fill buys nothing for the 99.");
     expect(budgetLine(card(), false, true)).toBe("Regisaur Alpha takes $1.10 of it. The fill buys nothing else for the 99.");
     expect(budgetLine(card({ price: { kind: "absent" } }), false, true)).toMatch(/^Regisaur Alpha has no price on record.*nothing else/);
+  });
+});
+
+describe("the built-around card's hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("previews the card's art through the block's own provider", () => {
+    render(<HandOffAnswersBlock answers={all} changeHref="/decks/new/choose?t=dinosaurs" />);
+    fireEvent.mouseEnter(screen.getByTestId("card-chip-name"), { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/regisaur.jpg");
   });
 });

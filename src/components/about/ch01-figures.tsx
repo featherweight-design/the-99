@@ -784,7 +784,7 @@ export function DeckAnalysisFigureBody() {
             versionNumber={version}
             declaration={{ declared: null, version, previous: null, onDeclare: () => {}, refused: false }}
           />
-          <BracketClimb verdict={verdict} profile={profile} locked={new Set()} />
+          <BracketClimb verdict={verdict} profile={profile} locked={new Set()} art={new Map()} />
         </div>
       </AnchoredNumerals>
     </CardDetailProvider>

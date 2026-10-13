@@ -11,6 +11,7 @@ import { upgradePathCopy } from "../../lib/copy/upgrade-path";
 import { BracketMark, bracketInk } from "./bracket-mark";
 import { FindingMark } from "./finding-mark";
 import { AllBracketsSheet } from "./all-brackets-sheet";
+import type { FindingArt } from "./receipt-modal";
 import { UpgradePathSheet } from "./upgrade-path";
 
 /**
@@ -62,6 +63,7 @@ export function BracketClimb({
   profile,
   locked,
   declared = null,
+  art,
 }: {
   verdict: BracketVerdict;
   profile: DeckProfile;
@@ -72,6 +74,8 @@ export function BracketClimb({
    * block reads, so the climb and the block cannot disagree about whether the range is answered.
    */
   declared?: Bracket | null;
+  /** The deck's art for the path sheet's card names; the About figure passes an empty map and previews nothing. */
+  art: FindingArt;
 }) {
   const copy = deckAnalysisCopy.climb;
   const rungs = climb(verdict.permits);
@@ -140,6 +144,7 @@ export function BracketClimb({
           verdict={verdict}
           target={targets[0]}
           locked={locked}
+          art={art}
           onClose={() => setOpen(false)}
         />
       ) : null}

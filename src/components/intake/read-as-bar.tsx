@@ -11,6 +11,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { BuyTag } from "../decks/buy-tag";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
@@ -39,6 +40,7 @@ export function ReadAsBar({
 }) {
   const wrote = words.trim();
   return (
+    <HoverPreviewProvider>
     <section
       aria-labelledby="read-as-label"
       className="flex flex-col gap-[14px] p-[14px] md:p-[16px_18px] rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)]"
@@ -121,6 +123,7 @@ export function ReadAsBar({
       </div>
       {offer}
     </section>
+    </HoverPreviewProvider>
   );
 }
 
@@ -131,6 +134,8 @@ export function CardValue({ card, size = "chip" }: { card: CardChip; /** `row`: 
       <CardDetailTrigger
         oracleId={card.oracleId}
         name={card.name}
+        imageUri={card.imageUri}
+        preview
         testId="card-chip-name"
         className={`min-w-0 truncate ${size === "row" ? "text-[13.5px]" : "text-[12.5px]"} font-semibold text-[color:var(--fg)] underline decoration-dotted decoration-[color:var(--accent)] underline-offset-[3px] cursor-pointer`}
       >

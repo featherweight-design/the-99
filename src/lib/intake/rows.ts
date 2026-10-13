@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { chainArt } from "../cards/chain-art";
 import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { hardDecks } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
@@ -134,6 +135,8 @@ async function decorate(userId: string, slice: readonly Ranked[], sets: readonly
 export type CardChip = {
   oracleId: string;
   name: string;
+  /** The printing the player owns when they own the card (the one card details open), else the catalog's art. */
+  imageUri: string | null;
   owned: boolean;
   /** Owned, every copy held by a committed deck: drawn and charged as a buy (see `buysCard`). */
   held: { deck: string | null } | null;
@@ -147,7 +150,7 @@ export type CardChip = {
 export async function loadCardChip(userId: string, oracleId: string): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
-  const [row, prices] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId])]);
+  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId]), chainArt(userId, null, [oracleId])]);
   if (!row) return null;
-  return { oracleId, name: row.name, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
+  return { oracleId, name: row.name, imageUri: art.get(oracleId) ?? row.imageUri, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
 }

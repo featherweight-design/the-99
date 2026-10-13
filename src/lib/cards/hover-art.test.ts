@@ -40,6 +40,12 @@ const FEEDERS: Record<string, string> = {
   "components/decks/synopsis-text.tsx": "lib/synopsis/read.ts",
   "components/decks/version-diff.tsx": "lib/decks/versions.ts",
   "components/decks/benchmark-ledger.tsx": "lib/decks/read.ts",
+  // Role Coverage's cards carry the printing the player owns (`resolveOwnedPrintings` on the commander page and on its retry).
+  "components/commanders/coverage-chip.tsx": "app/commanders/[slug]/page.tsx",
+  // The deck's own rows are the art: the path's and the mana patterns' names are cards in the deck.
+  "components/decks/upgrade-path.tsx": "lib/decks/read.ts",
+  "components/decks/mana-sections.tsx": "lib/decks/read.ts",
+  "components/intake/read-as-bar.tsx": "lib/intake/rows.ts",
   // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
   "components/ui/preview-button.tsx": "",
   // The collection's own rows and the set grid's cells ARE the printing they draw: the collection list resolves its
@@ -235,12 +241,8 @@ const COMPOSED_ROWS: Record<string, string[]> = {
  */
 const OWED = new Set<string>([
   "components/cards/fits-picker.tsx",
-  "components/commanders/coverage-chip.tsx",
   "components/decks/change-commander-sheet.tsx",
-  "components/decks/mana-sections.tsx",
   "components/decks/notices-body.tsx",
-  "components/decks/upgrade-path.tsx",
-  "components/intake/read-as-bar.tsx",
 ]);
 
 /**

@@ -149,6 +149,8 @@ export function CoverageChip({
       oracleId={card.oracleId}
       name={card.name}
       siblings={siblings}
+      imageUri={card.imageUri ?? null}
+      preview
       ariaLabel={ariaLabel}
       className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card)} bg-surface-raised hover:border-accent transition-colors`}
       style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
@@ -233,6 +235,8 @@ export function CoverageRow({
       oracleId={card.oracleId}
       name={card.name}
       siblings={siblings}
+      imageUri={card.imageUri ?? null}
+      preview
       ariaLabel={ariaLabel}
       className={`flex w-full items-center rounded-[8px] border ${rowBorder(card)} bg-surface`}
       style={{ minHeight: "44px", padding: "0 12px", gap: 9 }}

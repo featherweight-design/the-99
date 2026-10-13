@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 
 import { lockedLast, unreachable, upgradePath, type UpgradeItem, type UpgradePath } from "../../lib/bracket/upgrade";
 import {
@@ -23,7 +23,7 @@ import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { BracketMark } from "./bracket-mark";
 import { LockMark } from "./lock-mark";
-import { ModalChrome } from "./receipt-modal";
+import { ModalChrome, type FindingArt } from "./receipt-modal";
 
 /**
  * What would have to go to reach a bracket below this deck's reading — as CANDIDATES, never a
@@ -40,11 +40,15 @@ import { ModalChrome } from "./receipt-modal";
  * against. This
  * component draws them and derives none.
  */
+/** The deck's own art for the cards the path names, so each name previews the printing its card details open. */
+const PathArt = createContext<FindingArt>(new Map());
+
 export function UpgradePathSheet({
   profile,
   verdict,
   target,
   locked,
+  art,
   onClose,
 }: {
   profile: DeckProfile;
@@ -55,6 +59,8 @@ export function UpgradePathSheet({
    * adds a sentence; it never changes a count.
    */
   locked: ReadonlySet<string>;
+  /** Art for the cards the path names (the deck's rows and commanders); a card missing from it previews nothing. */
+  art: FindingArt;
   /**
    * ONE TARGET, the bracket directly below the reading (handoff §3, 3b). No chips choose another,
    * and a blocked target names no nearer one: the targets nest upward, so nothing between this
@@ -72,6 +78,7 @@ export function UpgradePathSheet({
       ? deckAnalysisCopy.sheets.upgradePath
       : upgradePathCopy.heading(target, thingsToGo(path));
   return (
+    <PathArt.Provider value={art}>
     <ModalChrome
       mark={<BracketMark bracket={target} px={22} />}
       title={title}
@@ -104,6 +111,7 @@ export function UpgradePathSheet({
         )}
       </div>
     </ModalChrome>
+    </PathArt.Provider>
   );
 }
 
@@ -290,10 +298,13 @@ function Candidate({
   locked: boolean;
   inSentence?: boolean;
 }) {
+  const art = useContext(PathArt);
   const name = (
     <CardDetailTrigger
       oracleId={card.oracleId}
       name={card.name}
+      imageUri={art.get(card.oracleId)?.imageUri ?? null}
+      preview
       className={
         "border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] text-[color:var(--fg)] "
         + (inSentence ? "font-semibold" : "text-[12.5px] font-normal")
