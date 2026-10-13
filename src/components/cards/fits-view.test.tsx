@@ -21,6 +21,11 @@ const actions = vi.hoisted(() => ({
 const readActions = vi.hoisted(() => ({ readFitsReadAction: vi.fn(), pressFitsReadAction: vi.fn() }));
 vi.mock("../../lib/swaps/actions", () => actions);
 vi.mock("../../lib/swaps/fits-read-actions", () => readActions);
+// The preview itself is `hover-preview.test.tsx`'s: here, which art each name hands it is the rule under test.
+vi.mock("../ui/preview-button", () => ({
+  PreviewButton: ({ imageUri, ...props }: { imageUri: string | null } & React.ButtonHTMLAttributes<HTMLButtonElement>) =>
+    <button data-preview={imageUri ?? ""} {...props} />,
+}));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
   useLinkStatus: () => ({ pending: false }),
@@ -63,6 +68,8 @@ const stored = (over: Partial<StoredFitsRead> = {}): StoredFitsRead => ({
 const panel = (over: Partial<FitsReadPanel> = {}, view: Partial<FitsReadPanel["view"]> = {}): FitsReadPanel => ({
   fits: list(), candidates: 2, planSources: { "d-gob": "v2", "d-kra": "none" },
   names: { "o-ajani": "Ajani Unrelenting", "o-krenko": "Krenko, Mob Boss", "o-cut": "Goblin Instigator" },
+  images: { "o-ajani": "https://img/ajani.jpg", "o-krenko": "https://img/krenko.jpg", "o-cut": "https://img/cut.jpg" },
+  commanderIds: { "d-gob": ["o-krenko"] },
   allowance, view: { pending: null, stored: null, failed: null, ...view }, ...over,
 });
 
@@ -132,7 +139,7 @@ describe("FitsView (Find a deck read, R2)", () => {
     fireEvent.click(screen.getByTestId("fits-fold"));
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
     // A card the sentence names opens over the dialog, with the way back to the view.
-    fireEvent.click(within(row).getByRole("button", { name: "Krenko, Mob Boss" }));
+    fireEvent.click(within(within(row).getByTestId("read-row-sentence")).getByRole("button", { name: "Krenko, Mob Boss" }));
     expect(onOpenCard).toHaveBeenCalledWith("o-krenko");
   });
 
@@ -537,6 +544,68 @@ describe("FitsView (Find a deck read, R2)", () => {
       readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString() } }));
       await trip();
       expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
+    });
+  });
+
+  describe("Hugh's first walk (2026-10-12)", () => {
+    it("draws nothing in the body until the list and the panel have both answered, so the offer never pops in", async () => {
+      let listed!: (v: unknown) => void;
+      actions.loadFitsAction.mockReturnValue(new Promise((res) => { listed = res; }));
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Harness />);
+      await settle();
+      expect(screen.queryByTestId("read-band-offer")).toBeNull();
+      expect(screen.queryAllByTestId("fits-row")).toHaveLength(0);
+      await act(async () => listed(list()));
+      await settle();
+      expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+    });
+
+    it("every card a row names previews and opens, except the card the read is for, which only opens", async () => {
+      await draw(panel({}, { stored: stored() }));
+      const row = screen.getByTestId("read-row");
+      const sentence = within(row).getByTestId("read-row-sentence");
+      const krenko = within(sentence).getByRole("button", { name: "Krenko, Mob Boss" });
+      const ajani = within(sentence).getByRole("button", { name: "Ajani Unrelenting" });
+      expect(krenko).toHaveAttribute("data-preview", "https://img/krenko.jpg");
+      expect(ajani).toHaveAttribute("data-preview", "");
+      fireEvent.click(ajani);
+      expect(onOpenCard).toHaveBeenCalledWith("o-ajani");
+      // The commander line names its commander as a card, and the cut is one too.
+      fireEvent.click(within(within(row).getByTestId("read-row-source")).getByRole("button", { name: "Krenko, Mob Boss" }));
+      expect(onOpenCard).toHaveBeenCalledWith("o-krenko");
+      const cut = within(row).getByRole("button", { name: "Goblin Instigator" });
+      expect(cut).toHaveAttribute("data-preview", "https://img/cut.jpg");
+      expect(within(within(row).getByTestId("read-row-source")).getByRole("button", { name: "Krenko, Mob Boss" })).toHaveAttribute("data-preview", "https://img/krenko.jpg");
+      fireEvent.click(cut);
+      expect(onOpenCard).toHaveBeenCalledWith("o-cut");
+    });
+
+    it("a return draws what was there at once, with no entrance, and keeps it while the reads come again", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored() }));
+      render(<Trip />);
+      await settle();
+      expect(screen.getByTestId("fits-view").className).toContain("anim-view-in");
+      // Back in, both reads hang: the rows and the list are there anyway, from the visit's own snapshot.
+      actions.loadFitsAction.mockReturnValue(new Promise(() => {}));
+      readActions.readFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByTestId("fits-view").className).not.toContain("anim-view-in");
+      expect(screen.getByTestId("read-row")).toBeInTheDocument();
+      expect(screen.getByTestId("fits-fold")).toBeInTheDocument();
     });
   });
 });

@@ -12,6 +12,7 @@ import type { FitsSentencePart } from "../../lib/swaps/fits-read";
 import { MutationError } from "../decks/mutation-error";
 import { useCardDetailIfAny } from "./card-detail-provider";
 import { PendingReporter } from "../shell/pending-reporter";
+import { PreviewButton } from "../ui/preview-button";
 
 const copy = swapToolsCopy.fits.read;
 
@@ -21,25 +22,38 @@ export type RowAct = { kind: "swapped"; swapId: string } | { kind: "added"; toBu
 const markClass =
   "inline bg-transparent border-0 p-0 cursor-pointer text-left font-[inherit] text-[length:inherit] leading-[inherit] text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]";
 
-/** A card the read names, drawn as the app's own name and opening that card over the dialog. */
-function Mark({ id, name, onOpenCard, className = markClass }: { id: string; name: string; onOpenCard: (oracleId: string) => void; className?: string }) {
+/**
+ * A card the read names, drawn as the app's own name: it previews on hover (the surrounding
+ * `HoverPreviewProvider`, the view's) and opens that card over the dialog on a press. Every inline name has
+ * both (Hugh, 2026-10-12), except the card the read is for, whose art is already on screen: the caller hands
+ * it no `imageUri`, so it keeps the press alone. `hover-art.test.ts` holds the rule.
+ */
+export function Mark({ id, name, imageUri, onOpenCard, className = markClass }: {
+  id: string; name: string; imageUri: string | null; onOpenCard: (oracleId: string) => void; className?: string;
+}) {
   return (
-    <button type="button" onClick={() => onOpenCard(id)} className={className}>
+    <PreviewButton type="button" imageUri={imageUri} onClick={() => onOpenCard(id)} className={className}>
       {name}
-    </button>
+    </PreviewButton>
   );
 }
 
 export function ReadRow({
-  deckId, deckName, commanders, planSource, parts, cut, names, cardName, freeNow, act, settled = false, changed = null, busy, refused, onSwap, onAdd, onOpenCard,
+  deckId, deckName, commanders, commanderIds = [], planSource, parts, cut, names, images = {}, readCard = null, cardName, freeNow, act, settled = false, changed = null, busy, refused, onSwap, onAdd, onOpenCard,
 }: {
   deckId: string;
   deckName: string;
   commanders: string[];
+  /** The commanders' oracle ids, in `commanders`' order: present, the line names them as cards. */
+  commanderIds?: string[];
   planSource: PlanSource;
   parts: FitsSentencePart[];
   cut: string | null;
   names: Record<string, string>;
+  /** Each named card's hover art (`FitsReadPanel.images`). */
+  images?: Record<string, string | null>;
+  /** The card the read is for: its marks open it but never preview it, since its art is on screen. */
+  readCard?: string | null;
   cardName: string;
   /** Free copies of the card now, from the list's re-read: none left, both actions are `to buy`. */
   freeNow: number;
@@ -61,7 +75,20 @@ export function ReadRow({
   const added = act?.kind === "added";
   const cutName = cut ? names[cut] ?? null : null;
   const toBuy = freeNow === 0;
-  const commanderLine = [commanders.join(" & "), copy.planFrom[planSource]].filter(Boolean).join(" · ");
+  const artOf = (id: string) => (id === readCard ? null : images[id] ?? null);
+  const plan = copy.planFrom[planSource];
+  const named = commanderIds.length === commanders.length && commanders.length > 0;
+  const commanderLine = named ? (
+    <>
+      {commanders.map((c, i) => (
+        <span key={commanderIds[i]}>
+          {i > 0 ? " & " : null}
+          <Mark id={commanderIds[i]} name={c} imageUri={artOf(commanderIds[i])} onOpenCard={onOpenCard} className="inline bg-transparent border-0 p-0 cursor-pointer text-left font-[inherit] text-[length:inherit] leading-[inherit] text-[color:inherit] [border-bottom:1px_dotted_var(--border-strong)]" />
+        </span>
+      ))}
+      {plan ? ` · ${plan}` : null}
+    </>
+  ) : [commanders.join(" & "), plan].filter(Boolean).join(" · ");
   const actionBase =
     "inline-flex items-center justify-center h-[44px] rounded-[8px] px-[12px] text-[13px] leading-none whitespace-nowrap cursor-pointer border border-solid disabled:cursor-default md:h-[32px] md:rounded-[7px] md:text-[12.5px]";
   const swapOff = busy || added || !cut || settled || changed !== null;
@@ -111,7 +138,7 @@ export function ReadRow({
       <p data-testid="read-row-sentence" className="m-0 text-[13px] leading-[1.6] text-[color:var(--fg-body)] [text-wrap:pretty]">
         {parts.map((p, i) =>
           "card" in p
-            ? <Mark key={i} id={p.card} name={names[p.card] ?? cardName} onOpenCard={onOpenCard} />
+            ? <Mark key={i} id={p.card} name={names[p.card] ?? cardName} imageUri={artOf(p.card)} onOpenCard={onOpenCard} />
             : "quote" in p
               ? <span key={i}>{`“${p.quote}”`}</span>
               : <span key={i}>{p.text}</span>,
@@ -125,6 +152,7 @@ export function ReadRow({
             <Mark
               id={cut}
               name={cutName}
+              imageUri={artOf(cut)}
               onOpenCard={onOpenCard}
               className="inline bg-transparent border-0 p-0 cursor-pointer text-left text-[12.5px] font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
             />

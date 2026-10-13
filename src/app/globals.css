@@ -959,7 +959,10 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; transform: translateX(16px); }
   to { opacity: 1; transform: none; }
 }
-.anim-view-in { animation: view-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+/* `backwards`, not `both`: the delay holds the view's first frame, and once it lands the view keeps no transform.
+   A held end frame resolves to an identity matrix, which is still a transform, and a transformed view becomes the
+   containing block of the hover preview's `position: fixed` box, which then drew off the right of the window. */
+.anim-view-in { animation: view-in var(--motion-duration) var(--motion-ease) var(--motion-delay) backwards; }
 /* Going back reverses it, faster and with no wait: the reader asked to leave. Its own keyframes,
    because swapping a class that only reverses the same animation does not restart it. */
 @keyframes view-out {

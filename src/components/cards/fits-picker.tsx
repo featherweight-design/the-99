@@ -255,8 +255,12 @@ export function FitsStapleNote({ name, role }: { name: string; role: string }) {
  * when it opens, the rows in the order they opened in, and the Add with its re-read. `refresh` takes
  * the read again (after a swap from the read, say), so the copies come from the server's count.
  */
-export function useFitsList(card: BrowseCard) {
-  const [load, setLoad] = useState<Load>({ state: "loading" });
+/** What a list drew last, kept by its owner so a return draws it at once (Find a deck's view, a round trip). */
+export type FitsListSnapshot = { read: FitsRead; rows: FitDeck[] };
+
+export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null = null) {
+  // A snapshot draws at once and is read again behind it: what is on screen stays until the new read lands.
+  const [load, setLoad] = useState<Load>(() => (initial ? { state: "ready", read: initial.read } : { state: "loading" }));
   const [added, setAdded] = useState<Added[]>([]);
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -271,7 +275,7 @@ export function useFitsList(card: BrowseCard) {
   // A write made beside the list (a read row's Swap in or Add only): the payload's count is spent too.
   const [wrote, setWrote] = useState(false);
   // The rows as the picker opened: an add re-reads the counts, never the order.
-  const [rows, setRows] = useState<FitDeck[] | null>(null);
+  const [rows, setRows] = useState<FitDeck[] | null>(() => initial?.rows ?? null);
   // Decks an add found already holding the card: they leave the list for `already holds it`.
   const [heldAlready, setHeldAlready] = useState<string[]>([]);
 
@@ -352,7 +356,7 @@ export function useFitsList(card: BrowseCard) {
     return readList();
   }, [readList]);
 
-  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh, claim, release };
+  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, opened: rows, holds, role, retry, refresh, claim, release };
 }
 
 export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {

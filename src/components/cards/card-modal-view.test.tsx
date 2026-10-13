@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard, BrowsePrinting } from "../../lib/collection/browse";
+import { cardZoomCopy } from "../../lib/copy/card-surfaces";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -68,6 +69,29 @@ describe("CardModal with Find a deck's view", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the art's zoom live beside the view, and Escape closes the zoom before the view", () => {
+    const onBack = vi.fn();
+    render(
+      <CardModal
+        card={card({ imageUri: "https://img/tithe.jpg", printings: [printing({ imageUri: "https://img/tithe.jpg" })] })}
+        position={1}
+        total={1}
+        onClose={vi.fn()}
+        onPrev={null}
+        onNext={null}
+        view={{ node: <p>the view</p>, onBack }}
+      />,
+    );
+    const zoom = screen.getAllByRole("button", { name: cardZoomCopy.zoomAria("Smothering Tithe") });
+    const live = zoom.find((b) => b.closest("[inert]") === null);
+    expect(live).toBeDefined();
+    fireEvent.click(live!);
+    expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onBack).not.toHaveBeenCalled();
+    expect(screen.getByTestId("card-modal-view")).toBeInTheDocument();
   });
 
   it("without the view, Escape closes as before", () => {

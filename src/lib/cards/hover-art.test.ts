@@ -52,6 +52,9 @@ const FEEDERS: Record<string, string> = {
   "components/decks/change-commander-sheet.tsx": "lib/commander-change/candidates.ts",
   // The combo's other piece previews the printing card details open outside a deck's own page: the reader's owned copy, else the catalog's (`withPartnerArt`).
   "components/cards/fits-picker.tsx": "lib/swaps/fits.ts",
+  // Every card Find a deck's read names (its sentence, its cut, the deck's commanders): the printing card details
+  // opens outside a deck's page, the reader's owned copy else the catalog's (`pickCards`).
+  "components/cards/read-row.tsx": "lib/swaps/fits-read-run.ts",
   // Every card a notice names, down the chain card details uses (`loadDeckNotices`).
   "components/decks/notices-body.tsx": "lib/notices/read.ts",
   // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
@@ -370,5 +373,54 @@ describe("one opening printing", () => {
   it("names only modules that still import it", () => {
     const importers = new Set(openingImporters(sources));
     expect(Object.keys(OPENING_USERS).filter((path) => !importers.has(path))).toEqual([]);
+
+// ---- Find a deck: every card named inline previews and opens (Hugh, 2026-10-12) ----
+//
+// The read's marks take their press from the view (`onOpenCard`), not from `CardDetailTrigger`, so the row guard
+// above cannot see them. This holds them directly: every `Mark` hands an `imageUri`, the mark IS a `PreviewButton`,
+// and the view mounts the provider both it and the free list's reason line draw from.
+/** Named exceptions: a card whose name opens it but never previews it, and why. */
+const INLINE_NO_HOVER: Record<string, string> = {
+  readCard: "the card the read is for: its image is already on screen, in the view's head and the details under it",
+};
+
+/** Every JSX element of `tag` in the file, and whether it passes `attr`. */
+function elementsOf(src: string, tag: string, attr: string): boolean[] {
+  const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out: boolean[] = [];
+  const visit = (node: ts.Node) => {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(file) === tag) {
+      out.push(node.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText(file) === attr));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return out;
+}
+
+describe("Find a deck's inline card names", () => {
+  it("calls a Mark with no imageUri a gap", () => {
+    expect(elementsOf(`const A = () => <p><Mark id="a" name="A" imageUri={null} /><Mark id="b" name="B" /></p>;`, "Mark", "imageUri")).toEqual([true, false]);
+  });
+
+  const row = readFileSync(join(SRC, "components/cards/read-row.tsx"), "utf8");
+  const view = readFileSync(join(SRC, "components/cards/fits-view.tsx"), "utf8");
+
+  it("hands every Mark its art, and draws the mark as a PreviewButton", () => {
+    const marks = elementsOf(row, "Mark", "imageUri");
+    expect(marks.length).toBeGreaterThanOrEqual(3);
+    expect(marks.every(Boolean)).toBe(true);
+    expect(elementsOf(row, "PreviewButton", "imageUri")).toContain(true);
+  });
+
+  it("previews under the view's own provider", () => {
+    expect(importsBinding(view, "HoverPreviewProvider")).toBe(true);
+    expect(elementsOf(view, "HoverPreviewProvider", "waitForMove")).toEqual([true]);
+  });
+
+  it("withholds the preview only for the exceptions named here", () => {
+    for (const name of Object.keys(INLINE_NO_HOVER)) expect(row).toMatch(new RegExp(`id === ${name} \\? null`));
+    // No other id is turned away: the one place art is withheld names only the listed exceptions.
+    expect([...row.matchAll(/id === (\w+) \? null/g)].map((m) => m[1]).sort()).toEqual(Object.keys(INLINE_NO_HOVER).sort());
   });
 });

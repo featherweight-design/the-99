@@ -2172,8 +2172,10 @@ export function CardModal({
         )}
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
+        {/* Live beside Find a deck's view, which sits to its right (md:left-[320px]): the art still says Click to
+            zoom, so it zooms, and closing the zoom lands back on the view as it was (Hugh, 2026-10-12). */}
         <div
-          inert={zoomed || viewOpen}
+          inert={zoomed}
           className="hidden md:flex items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >

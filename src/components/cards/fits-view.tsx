@@ -17,7 +17,8 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { addFromFits, swapFromReadAction, undoReadAddAction, undoReadSwapAction } from "../../lib/swaps/actions";
 import { pressFitsReadAction, readFitsReadAction } from "../../lib/swaps/fits-read-actions";
 import type { FitsReadPanel } from "../../lib/swaps/fits-read-run";
-import { FitsHolds, FitsRows, FitsStapleNote, useFitsList } from "./fits-picker";
+import { HoverPreviewProvider } from "../decks/hover-preview";
+import { FitsHolds, FitsRows, FitsStapleNote, useFitsList, type FitsListSnapshot } from "./fits-picker";
 import { CreditButton } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
@@ -38,6 +39,9 @@ export type FitsViewMemory = {
   tooBigFor?: string | null;
   /** The decks a running read was pressed for, so a reopened run keeps its count. */
   runCount?: number | null;
+  /** What the view last drew: a return (a card opened over it, then Back) draws this at once, with no
+   *  entrance, and reads both again behind it, keeping it on screen until the new reads land. */
+  snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null };
 };
 
 /** How often a read in flight is asked after while the view waits on it (lock 5: one run, polled). */
@@ -64,10 +68,16 @@ export function FitsView({
   /** Going back to the details: the view plays its leave before it unmounts. */
   leaving?: boolean;
 }) {
-  const list = useFitsList(card);
+  // A return draws what the view last drew, at once, and with no entrance (the view was never gone for the reader).
+  const [restored] = useState(() => memory.snapshot ?? null);
+  const list = useFitsList(card, restored?.list ?? null);
   const { name, freeNow, owned, countsKnown } = list;
-  const [panel, setPanel] = useState<FitsReadPanel | null>(null);
-  const [running, setRunning] = useState<number | null>(null);
+  const [panel, setPanel] = useState<FitsReadPanel | null>(() => restored?.panel ?? null);
+  // The panel's first read has answered (or failed): until then and the list's, the body draws nothing, so the
+  // band and the rows arrive with the list rather than after it.
+  const [panelRead, setPanelRead] = useState(() => restored !== null);
+  const pendingAtStart = restored?.panel.view.pending ?? null;
+  const [running, setRunning] = useState<number | null>(() => (pendingAtStart ? Date.parse(pendingAtStart.startedAt) : null));
   // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
   // Kept by the provider, with the refusal and the write lock below, so a round trip keeps them.
   const runCount = memory.runCount ?? null;
@@ -98,6 +108,15 @@ export function FitsView({
     if (!pressing.current) readingRef.current(false);
   }, []);
 
+  // What the view draws, kept for a return. Written as it changes, so the provider holds the latest.
+  useEffect(() => {
+    if (!panel) return;
+    const snap = list.read && list.opened ? { read: list.read, rows: list.opened } : null;
+    setMemory((m) => ({ ...m, snapshot: { panel, list: snap } }));
+    // `setMemory` is the provider's updater, rebuilt each render; the snapshot moves only with these.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel, list.read, list.opened]);
+
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);
 
@@ -109,7 +128,11 @@ export function FitsView({
 
   useEffect(() => {
     let live = true;
-    readFitsReadAction(card.oracleId).then((p) => { if (live) adopt(p); }).catch(() => {});
+    readFitsReadAction(card.oracleId)
+      // A read that comes back empty keeps what is drawn: a return's snapshot stays rather than blanking.
+      .then((p) => { if (live && p) adopt(p); })
+      .catch(() => {})
+      .finally(() => { if (live) setPanelRead(true); });
     return () => { live = false; };
   }, [card.oracleId, adopt]);
 
@@ -343,6 +366,9 @@ export function FitsView({
   ) : null;
   const isFresh = (s: { readId: string }) => s.readId === fresh;
 
+  // Latched: once drawn, a later read (a Try again, a refresh) keeps the body on screen until it lands.
+  const [bodyReady, setBodyReady] = useState(() => restored !== null);
+  if (!bodyReady && panelRead && list.load.state !== "loading") setBodyReady(true);
   let band = null;
   if (showsBand) {
     if (running !== null) band = <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} />;
@@ -403,7 +429,7 @@ export function FitsView({
   ) : null;
 
   return (
-    <div data-testid="fits-view" className={`${leaving ? "anim-view-out" : "anim-view-in"} relative flex flex-col h-full min-h-0 bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)]`}>
+    <div data-testid="fits-view" className={`${leaving ? "anim-view-out" : restored ? "" : "anim-view-in"} relative flex flex-col h-full min-h-0 bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)]`}>
       <header className="flex-none px-[16px] pt-[12px] pb-[14px] md:pl-[30px] md:pr-[22px] md:pt-[22px] md:pb-[16px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
         <div className="flex items-center justify-between gap-[12px] min-h-[44px]">
           <h2 ref={headingRef} tabIndex={-1} className="m-0 flex-none whitespace-nowrap font-display text-[19px] leading-[1.2] md:text-[22px] text-[color:var(--fg)] outline-none">
@@ -431,7 +457,12 @@ export function FitsView({
         </p>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-[16px] px-[16px] pt-[16px] pb-[28px] md:px-[30px] md:pt-[18px] md:pb-[30px]">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-[16px] pt-[16px] pb-[28px] md:px-[30px] md:pt-[18px] md:pb-[30px]">
+        {/* Every card the view names previews on hover (a row's marks, the free list's reasons). */}
+        <HoverPreviewProvider waitForMove className="flex flex-col gap-[16px]">
+        {/* Nothing until the list and the panel have both answered: the band and the read's rows arrive with
+            the list, never after it, so nothing shifts in under the reader. */}
+        {bodyReady ? <>
         {band}
 
         {result ? (
@@ -458,6 +489,9 @@ export function FitsView({
                   parts={p.parts}
                   cut={p.cut}
                   names={panel?.names ?? {}}
+                  images={panel?.images ?? {}}
+                  commanderIds={panel?.commanderIds?.[p.deckId] ?? []}
+                  readCard={card.oracleId}
                   cardName={name}
                   freeNow={freeNow}
                   act={actOf(p.deckId)}
@@ -532,6 +566,8 @@ export function FitsView({
         ) : freeList}
 
         {list.holds.length > 0 && (!result || foldOpen) ? <FitsHolds holds={list.holds} /> : null}
+        </> : null}
+        </HoverPreviewProvider>
       </div>
       {/* Desktop: the body fades to the rail at its foot (design table, Body). */}
       <div aria-hidden className="hidden md:block pointer-events-none absolute inset-x-0 bottom-0 h-[56px] bg-[linear-gradient(to_bottom,transparent,var(--surface-rail))]" />
