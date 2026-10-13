@@ -112,6 +112,8 @@ function Table({ head, right, grid, rows, label }: { head: string[]; right: numb
 
 function ByModel({ d }: { d: CostDetail }) {
   const total = d.modelsTotal;
+  // A share of a total that is only a lower bound is not a share: drawn as a dash until it is whole.
+  const partial = d.labelsIncomplete || d.ledgersUnreadable.length > 0;
   const rows: { key: string; label: string; micro: number; fig: string; sub: string; parts: { micro: number; ink: string }[] }[] = d.models.map((m) => ({
     key: m.model,
     label: m.model,
@@ -137,7 +139,7 @@ function ByModel({ d }: { d: CostDetail }) {
           <div className="flex flex-wrap items-baseline gap-[10px]">
             <span className="min-w-0 flex-1 font-mono text-[13px] text-[color:var(--fg)]">{r.label}</span>
             <span className="font-mono text-[13px] text-[color:var(--fg)]">{r.fig}</span>
-            <span className="w-[44px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{share(r.micro, total)}</span>
+            <span className="w-[44px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{partial ? "—" : share(r.micro, total)}</span>
           </div>
           <div aria-hidden className="mt-[4px] flex h-[10px] gap-[2px] overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]">
             <Segs parts={r.parts} scale={total} min={0.6} />
@@ -158,9 +160,13 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
     { key: "rewrites", t: copy.series.rewrites, micro: sys.rewrites, ink: INK.rewrites },
   ];
   const total = s.player.micro + sys.total;
+  const monthName = monthLabel(month, "long").split(" ")[0];
+  // With system spend still coming in, its share is a floor: the headline says so, and the
+  // legend's shares, whose denominator is not whole, are not drawn.
+  const pctSystem = total > 0 ? pctOf(sys.total, total) : "0";
   return (
     <div className={`${CARD} flex flex-col gap-[12px] p-[14px]`}>
-      <span className="text-[14px] text-[color:var(--fg)]">{copy.splitLine(total > 0 ? pctOf(sys.total, total) : "0", monthLabel(month, "long").split(" ")[0])}</span>
+      <span className="text-[14px] text-[color:var(--fg)]">{sys.incomplete ? copy.splitLineAtLeast(pctSystem, monthName) : copy.splitLine(pctSystem, monthName)}</span>
       <div aria-hidden className="flex h-[14px] gap-[2px] overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]">
         <Segs parts={parts} scale={total || 1} min={0.8} />
       </div>
@@ -170,7 +176,7 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
             <span aria-hidden className="h-[9px] w-[9px] flex-none self-center rounded-[2px]" style={{ background: p.ink }} />
             <span className="min-w-0 flex-1 text-[13px] text-[color:var(--fg-body)]">{p.t}</span>
             <span className="font-mono text-[12.5px] text-[color:var(--fg)]">{"partial" in p && p.partial ? copy.soFar(usd(p.micro)) : usd(p.micro)}</span>
-            <span className="w-[46px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{share(p.micro, total)}</span>
+            <span className="w-[46px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{sys.incomplete ? "—" : share(p.micro, total)}</span>
           </div>
         ))}
       </div>

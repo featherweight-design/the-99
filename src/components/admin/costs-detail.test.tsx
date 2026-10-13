@@ -91,6 +91,11 @@ describe("CostsDetail, a month with runs", () => {
     expect(container.querySelector('[data-model="claude-sonnet-4-5"]')).toHaveTextContent("$59.48 so far");
     // The caps hold system spend too: the ceiling and the account figures read so far as well.
     expect(screen.getByText("$59.53 so far · not set")).toBeInTheDocument();
+    // A share of a total that is only a floor is not drawn, and the headline says it is a floor.
+    expect(container.querySelector('[data-model="claude-sonnet-4-5"]')?.textContent).toContain("—");
+    expect(container.querySelector('[data-model="claude-sonnet-4-5"]')?.textContent).not.toMatch(/\d%/);
+    expect(container.querySelector('[data-series="player"]')?.textContent).not.toMatch(/\d%/);
+    expect(screen.getByText(/^System is at least [\d.]+% of October, with some of its spend not in yet\.$/)).toBeInTheDocument();
     expect(screen.getByText("$59.65 so far · not set")).toBeInTheDocument();
   });
 

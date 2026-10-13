@@ -167,6 +167,13 @@ describe("CostsView, a ceiling that starts later", () => {
     expect(screen.getByText("System").parentElement).toHaveTextContent("3% of the $15 ceiling");
   });
 
+  it("calls the ceiling share a floor, and the figure so far, while system spend is still coming in", () => {
+    draw(rows([p(2, 1), sys(3, 0.5)], { settings: ceilingFrom("2026-10-01"), outside: { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0, labelsIncomplete: true } }));
+    const tile = screen.getByText("System").parentElement as HTMLElement;
+    expect(tile).toHaveTextContent("$0.500 so far");
+    expect(tile).toHaveTextContent("at least 3% of the $15 ceiling");
+  });
+
   it("names the year when it starts in another one", () => {
     draw(rows([sys(3, 0.5)], { settings: ceilingFrom("2027-01-01") }));
     expect(capRow("System ceiling").row).toHaveTextContent("Starts January 2027.");

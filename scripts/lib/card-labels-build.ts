@@ -39,8 +39,8 @@ import {
   type Chunk, type FamilySpend,
 } from "../../src/lib/labels/plan";
 import {
-  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_CEILING, MAX_TOKENS_PER_BATCH, needsLabel, renderBody,
-  SENDS_CACHE_BREAKPOINT, SYSTEM_TOKENS_BOUND,
+  buildRequest, labelInputHash, LABEL_PROMPT_VERSION, MAX_TOKENS_PER_BATCH, needsLabel,
+  SENDS_CACHE_BREAKPOINT,
 } from "../../src/lib/labels/prompt";
 // `CardRow` comes from the same module as the read that returns it — two structurally identical
 // row types drift, and the day one gains a field the other lacks the shared helper silently stops
