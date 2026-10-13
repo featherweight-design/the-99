@@ -184,7 +184,8 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     const wheres: unknown[] = [];
     let inserted: Record<string, unknown> | undefined;
     const tx = {
-      execute: async () => undefined,
+      // The lock, then the group allowance read (no group: the default limit).
+      execute: async () => ({ rows: [] }),
       select: () => ({
         from: () => ({
           where: (w: unknown) => {
