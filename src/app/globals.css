@@ -928,7 +928,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-/* A read in flight: an arc of the accent travels once round the border, wait a beat, ease in and out
+/* A read in flight: an arc of the accent travels round the border, eased in and out, starting after a beat (the delay is the first lap's only)
    (Hugh, 2026-10-13, option 1 of the loading mock). One class for every AI tool: Help me choose's
    reading panel, Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read
    band. It is drawn as a ring ABOVE the host's own border, so the host keeps its background and its
@@ -937,7 +937,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    `overflow: hidden`, which would clip the ring (it sits on the border edge). The base rule is the
    STATIC accent border that reduced motion, and a browser without `@property`, keep: the angle
    cannot animate there, so the sweep rule below is gated on motion alone and an unsupported engine
-   shows the arc at rest. */
+   shows the arc at rest: the angle falls back to 0deg, and the keyframe's 0 to 360deg lands on the same place. */
 @property --ai-sweep-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 .ai-sweep { position: relative; }
 .ai-sweep::before {
@@ -955,7 +955,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 @media (prefers-reduced-motion: no-preference) {
   .ai-sweep::before {
     background: conic-gradient(
-      from var(--ai-sweep-angle),
+      from var(--ai-sweep-angle, 0deg),
       var(--accent-dim) 0deg,
       var(--accent-dim) 250deg,
       var(--accent) 310deg,
