@@ -553,9 +553,17 @@ describe("FitsView (Find a deck read, R2)", () => {
       await settle();
       // Back in, the free list now names one deck: the run still reads two.
       actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
-      readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString(), candidates: 5 } }));
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString(), candidates: 2 } }));
       await trip();
       expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
+    });
+
+    it("a press that meets a run another tab started names that run's count, not the one it pressed with", async () => {
+      await drawTrip(panel());
+      readActions.pressFitsReadAction.mockResolvedValue({ ok: true, panel: panel({}, { pending: { readId: "r8", startedAt: new Date().toISOString(), candidates: 5 } }) });
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(5, card.name));
     });
 
     it("a run reopened in another tab names the decks it was started over, not this tab's count", async () => {
