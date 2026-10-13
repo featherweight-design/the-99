@@ -24,7 +24,8 @@
 
 import { landOnDeckTokens } from "../decks/deck-tokens-landing";
 import {
-  createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { twMerge } from "tailwind-merge";
@@ -50,24 +51,36 @@ const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPick
 /**
  * A component loaded when first wanted, drawn at once from then on. Until its code has arrived it
  * draws nothing; the provider shows the press as pending meanwhile (`modalReady`). A download that
- * failed is forgotten, so the next mount, which is the next press, tries again.
+ * failed is forgotten, so the next `fetch`, which every press makes, tries again, and whichever
+ * attempt lands tells every mounted reader.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each wrapper keeps its component's own props below
 function onDemand<P extends Record<string, any>>(load: () => Promise<React.ComponentType<P>>) {
   let loaded: React.ComponentType<P> | null = null;
   let pending: Promise<unknown> | null = null;
-  const fetch = () => (pending ??= load().then((c) => { loaded = c; }, () => { pending = null; }));
+  const listeners = new Set<() => void>();
+  const fetch = () =>
+    (pending ??= load().then(
+      (c) => {
+        loaded = c;
+        for (const l of listeners) l();
+      },
+      () => { pending = null; },
+    ));
+  const subscribe = (l: () => void) => {
+    listeners.add(l);
+    return () => { listeners.delete(l); };
+  };
+  const isLoaded = () => loaded !== null;
   function OnDemand(props: P) {
-    const [Loaded, setLoaded] = useState(() => loaded);
+    const ready = useSyncExternalStore(subscribe, isLoaded, () => false);
     useEffect(() => {
-      if (Loaded) return;
-      let live = true;
-      void fetch().then(() => { if (live && loaded) setLoaded(() => loaded); });
-      return () => { live = false; };
-    }, [Loaded]);
+      if (!ready) void fetch();
+    }, [ready]);
+    const Loaded = ready ? loaded : null;
     return Loaded ? <Loaded {...props} /> : null;
   }
-  return Object.assign(OnDemand, { fetch, isLoaded: () => loaded !== null });
+  return Object.assign(OnDemand, { fetch, subscribe, isLoaded });
 }
 
 /**
@@ -614,14 +627,9 @@ export function CardDetailProvider({
   }, []);
   const [card, setCard] = useState<BrowseCard | null>(null);
   // Whether the modal's code has arrived. A press that lands first stays PENDING, on its trigger and in
-  // the live region below, until it has, rather than reading as a press that did nothing.
-  const [modalReady, setModalReady] = useState(() => CardModal.isLoaded());
-  useEffect(() => {
-    if (modalReady || card === null) return;
-    let live = true;
-    void CardModal.fetch().then(() => { if (live && CardModal.isLoaded()) setModalReady(true); });
-    return () => { live = false; };
-  }, [modalReady, card]);
+  // the live region below, until it has, rather than reading as a press that did nothing. Every press
+  // fetches it (`open`), so a press after a failed download is the retry.
+  const modalReady = useSyncExternalStore(CardModal.subscribe, CardModal.isLoaded, () => false);
   // The list Prev/Next pages, in the one shape the provider holds (`siblingCards`). `siblingIds` is
   // what every paging test reads; the cards beside it carry whatever art an opener passed.
   const [siblings, setSiblingList] = useState<SiblingCard[]>([]);
