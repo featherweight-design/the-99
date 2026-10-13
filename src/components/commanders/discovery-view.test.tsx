@@ -680,6 +680,52 @@ describe("DiscoveryView", () => {
       expect(params.has("o")).toBe(false);
     });
 
+    // Admin PR 6d-2 (Copilot round 2). A ranking served back out of the cache was counted by the
+    // basis of the payload that filed it, and an app-wide flip of LABEL_ROLE_COUNTS_ENABLED can land
+    // between two navigations: `fit` filed under the classifier, the flip, an uncached `new` served
+    // under labels, then back to the cached `fit`. Its withheld rows must be asked for under the
+    // classifier, the basis they were counted by, not the latest payload's.
+    it("asks for a cached ranking's fields under the basis it was filed with", async () => {
+      const urls: string[] = [];
+      // Never answered, and rejected on abort as a real fetch is, so a batch the view gives up on
+      // releases its rows to be asked for again.
+      vi.stubGlobal("fetch", vi.fn((url: string, init: RequestInit) => {
+        urls.push(url);
+        return new Promise<Response>((_resolve, reject) =>
+          init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError"))));
+      }));
+      try {
+        const fitCut = cutToWindow(list({ items: many(30), candidateCount: 30 }), new Set());
+        const { rerender } = render(<DiscoveryView basis="classifier" encoded={fitCut} />);
+        await waitFor(() => expect(urls.length).toBeGreaterThan(0));
+
+        const asked = () => urls.splice(0).map((u) => new URL(u, "http://x").searchParams);
+        const bases = (ps: URLSearchParams[]) => [...new Set(ps.map((p) => `${p.get("sort")}/${p.get("b")}`))];
+        expect(bases(asked())).toEqual(["fit/classifier"]);
+
+        // The fresh payload is filed under ITS basis (a fresh payload always wins, basis and all).
+        flip(discoverCopy.order.somethingNew);
+        window.history.replaceState(null, "", "/discover?o=new");
+        const newCut = cutToWindow(list({ items: many(30), candidateCount: 30, sort: "new" }), new Set());
+        rerender(<DiscoveryView basis="labels" encoded={newCut} />);
+        await waitFor(() => expect(urls.length).toBeGreaterThan(0));
+        expect(bases(asked())).toEqual(["new/labels"]);
+
+        // Back to the cached `fit`: still the classifier's, whatever the latest payload said.
+        flip(discoverCopy.order.bestFit);
+        await waitFor(() => expect(urls.length).toBeGreaterThan(0));
+        expect(bases(asked())).toEqual(["fit/classifier"]);
+
+        // And forward to the cached `new`: still the labels'.
+        flip(discoverCopy.order.somethingNew);
+        await waitFor(() => expect(urls.length).toBeGreaterThan(0));
+        expect(bases(asked())).toEqual(["new/labels"]);
+      } finally {
+        vi.unstubAllGlobals();
+        window.history.replaceState(null, "", "/discover");
+      }
+    });
+
     // The payload the server just produced is the truth, whatever the cache
     // holds for that ranking — an upload or a new deck re-ranks everything.
     it("takes a fresh payload over a cached one for the same ranking", () => {
