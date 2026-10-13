@@ -50,7 +50,7 @@ describe("AdminHead on a group's page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "testers" })).toBeInTheDocument();
     expect(screen.getByText("Hugh plus one friend.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "‹ Groups" })).toHaveAttribute("href", "/admin/groups");
-    expect(tabs()).toEqual([["Costs", null], ["Switches", null], ["Groups", "page"], ["Accounts", null]]);
+    expect(tabs()).toEqual([["Costs", null], ["Switches", null], ["Groups", "page"], ["Accounts", null], ["Models", null]]);
   });
 
   it("draws no sub for a group with no description, and New group on the new page", () => {

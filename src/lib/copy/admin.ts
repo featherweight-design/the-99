@@ -306,6 +306,39 @@ export const adminCopy = {
     },
   },
 
+  // The Models page (admin STATES M1, M2), from the handoff's `models` keys. The column heads, the
+  // section head `Features and jobs` and its meta, and the footnote are the canvas's own (`models`
+  // scene in `Admin R2.dc.html`).
+  models: {
+    title: "Models",
+    sub: "Which feature or job calls which model, at which effort, and where the constant lives. A model change shows here first.",
+    features: "Features and jobs",
+    featuresMeta: (month: string, env: string) => `${month} so far, ${env}`,
+    cols: { feature: "Feature or job", origin: "Origin", model: "Model", effort: "Effort" },
+    rows: {
+      overview8: "Overview, contract 8",
+      overview7: "Overview, contract 7",
+      tuning: "Suggested changes",
+      cuts: "Proposed cuts",
+      shortlist: "Help me choose, shortlist",
+      judgement: "Help me choose, judgement",
+      fitsRead: "Find a deck, read",
+      labels: "Card labels",
+      prose: "Commander prose",
+    },
+    origin: { player: "player", system: "system" },
+    batch: (model: string) => `${model}, Batch`,
+    noEffort: "none set",
+    partial: (figure: string) => `${figure} so far`,
+    featuresFoot: "Overview’s free rewrite runs on the contract-8 model as system. Mana Balance makes no model call. Evals call whatever model they test and are under Costs, by ledger.",
+    jobs: "Job switches",
+    jobsMeta: "GitHub repository variables · read only",
+    jobCols: { variable: "Variable", value: "Value", readAt: "Read at" },
+    unset: "not set",
+    jobsFoot: "Change these in the repository’s variables on GitHub. The admin only reads them.",
+    noToken: "Values need a GitHub token; names and locations are from the repo.",
+  },
+
   // The Switches list (admin STATES L1 to L6), from the handoff's `switches` keys. The Overrides
   // cell, the App-wide cell and the phone's meta line take the canvas's own shapes (`flagRow` in
   // `Admin R2.dc.html`).

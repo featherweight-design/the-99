@@ -21,6 +21,7 @@ export const ADMIN_TABS = [
   // No sub here: the Accounts sub counts the accounts Clerk lists, which the head (in the layout, on every
   // admin page) does not read. The list page draws it under the tab strip instead.
   { key: "accounts", href: "/admin/accounts", title: adminCopy.tabs.accounts, sub: null },
+  { key: "models", href: "/admin/models", title: adminCopy.tabs.models, sub: adminCopy.models.sub },
 ] as const;
 
 /** A group's name and description, for the head's detail mode on its page. */

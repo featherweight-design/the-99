@@ -52,6 +52,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // The Accounts pages (admin plan 9b) read the same switch state, the account list and model_calls.
   { path: "/admin/accounts", dynamic: false },
   { path: "/admin/accounts/[clerkId]", dynamic: true },
+  // Models (admin plan 10) reads model_calls through the Costs reads, for the same schema import.
+  { path: "/admin/models", dynamic: false },
   { path: "/collection", dynamic: false },
   // Reads `getCollectionStats` for the current card count the replace flow quotes back.
   { path: "/collection/replace", dynamic: false },

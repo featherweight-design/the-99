@@ -135,6 +135,17 @@
 | spend by feature | section head `Spend by feature` + meta `‹Month› so far`; rows pad 11 14, feature 14 / 500, spend mono 13 at the right, `‹n› presses` mono 10.5 `--fg-muted` under; a `Total` foot row, 600 on `--surface-rail`; none: `No presses in ‹Month›.` 13 `--fg-muted` (A6) | grid `1fr 90 90`, gap 12; head `Feature`, `Presses`, `Spent`, pad 9 14; rows pad 11 14, feature 13.5 / 500, presses mono 12.5 `--fg-body`, spent mono 12.5 `--fg` |
 | figures | this UTC month's player presses (`origin = 'player'`), refunds included, as Costs' per-account table counts them; credits are the free allowance's own count (`readAllowance`, `dailyLimitFor`) | same |
 
+## Models
+| Property | Mobile | Desktop |
+|---|---|---|
+| head | title `Models`, sub `Which feature or job calls which model, at which effort, and where the constant lives. A model change shows here first.`; the fifth tab, after Accounts | same |
+| features and jobs | section head `Features and jobs` + meta `‹Month› so far, ‹env›`; one card per row: name 14 / 500 + spend mono 13 at the right; meta mono 10.5 `--fg-muted`, `‹model› · ‹effort› · ‹origin› · ‹where it lives›` (M1) | grid `1.5fr 74 1fr 74 74`, gap 12, pad 11 14; head `Feature or job`, `Origin`, `Model`, `Effort`, the month's name, mono 9.5 upper on `--surface-rail`; name 13.5 / 500; origin, model, effort mono 12.5 `--fg-body`; spend mono 12.5 `--fg` right; a second line across every column, mono 10.5 `--fg-faint`, margin-top −6: where the constant lives |
+| rows | from `src/lib/admin/models.ts`: model and effort imported from the constants the calls read; the two script jobs' models written out and checked against the scripts by `models.test.ts`; a job's model `‹model›, Batch` when it batches; no effort `none set` | same |
+| spend | this UTC month from the Costs reads (`loadCosts`), summed by `model_calls.feature` at the row's origin (Overview split by model, Help me choose by step); card labels the Costs labels series, `‹$x› so far` while a run collects | same |
+| footnote | `Overview’s free rewrite runs on the contract-8 model as system. Mana Balance makes no model call. Evals call whatever model they test and are under Costs, by ledger.` 13 / 1.6 `--fg-faint` | same |
+| job switches | section head `Job switches` + meta `GitHub repository variables · read only`; card per row: variable mono 12 `--fg`, value mono 13 at the right, workflow mono 10.5 `--fg-muted` under; a listed variable the repository lacks reads `not set`; foot `Change these in the repository’s variables on GitHub. The admin only reads them.` 13 `--fg-faint` | grid `1.3fr 70 1fr`, gap 12; head `Variable`, `Value`, `Read at` |
+| no token | every Value `—`, and `Values need a GitHub token; names and locations are from the repo.` 13 / 1.6 `--fg-muted` above the table (M2): no token, a non-2xx, a timeout or a body of the wrong shape | same |
+
 ## Costs
 | Property | Mobile | Desktop |
 |---|---|---|
