@@ -43,6 +43,10 @@ describe("pressNote", () => {
     expect(r.text).toMatch(/^Reads the bracket only; the overview stays as it was\. 0 of 3 left/);
   });
 
+  it("writes over a spent allowance while a paid lot holds a credit (payments L2)", () => {
+    expect(pressNote(ready({ pressWrites: true, allowance: { ...out, pack: 2 } }), "analyze")!.writes).toBe(true);
+  });
+
   it("is silent until the state has been read for the list on screen", () => {
     expect(pressNote({ kind: "idle" }, "analyze")).toBeNull();
     expect(pressNote(ready({ pressWrites: true }, false), "analyze")).toBeNull();

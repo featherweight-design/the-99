@@ -7,9 +7,13 @@ import { freeRoom, hasCredit } from "./allowance-rule";
  * "Out of credits" is decided in ONE place (payments plan, PR L2): `freeRoom` and `hasCredit` in
  * `allowance-rule.ts`. A gate that compares `used` against `limit` itself never sees a paid lot, so a
  * player holding paid credits is told they are spent while the reservation would fund the run. That
- * is how L shipped: three server gates and four panels each held their own comparison. This test
- * reads every source file under `src/` (tests aside) and fails on a comparison of the two anywhere
- * but the rule file.
+ * is how L shipped: three server gates and six panel sites each held their own comparison, two of
+ * them on a free count taken first (`left === 0`). This test reads every source file under `src/`
+ * (tests aside) and fails, anywhere but the rule file, on:
+ *  - a comparison of `used` against `limit`;
+ *  - the free count worked out by hand (`limit - used`): `freeCount` is the one subtraction;
+ *  - a comparison on the free count (`freeCount(...)` itself, or `left` in a file that calls it),
+ *    which is a gate on the free allowance alone.
  */
 const SRC = join(process.cwd(), "src");
 const RULE_FILE = "lib/model/allowance-rule.ts";
@@ -17,9 +21,16 @@ const OPS = String.raw`(?:>=|<=|===|!==|==|!=|<|>)`;
 const COMPARISON = new RegExp(
   String.raw`\bused\b\s*${OPS}\s*[\w.?!]*\blimit\b|\blimit\b\s*${OPS}\s*[\w.?!]*\bused\b`,
 );
+const BY_HAND = /\blimit\b\s*-\s*[\w.?!]*\bused\b/;
+const ON_THE_COUNT = new RegExp(
+  String.raw`freeCount\([^)]*\)\s*${OPS}|${OPS}\s*freeCount\(|\bleft\b\s*${OPS}\s*\d|\d\s*${OPS}\s*\bleft\b`,
+);
 
 function comparisons(text: string): string[] {
-  return text.split("\n").filter((line) => COMPARISON.test(line)).map((l) => l.trim());
+  const countsFree = text.includes("freeCount(");
+  return text.split("\n")
+    .filter((line) => COMPARISON.test(line) || BY_HAND.test(line) || (countsFree && ON_THE_COUNT.test(line)))
+    .map((l) => l.trim());
 }
 
 function sourceFiles(dir: string): string[] {
@@ -45,10 +56,17 @@ describe("out of credits is decided by allowance-rule.ts alone", () => {
       "&& allowance.used < allowance.limit;",
       "const spent = s.used >= s.limit;",
       "if (allowance.limit <= allowance.used) return",
+      "const left = Math.max(0, allowance.limit - allowance.used);",
+      "default: return creditsCopy.first(s.limit - s.used, s.limit, next);",
+      "const left = freeCount(allowance);\nif (left > 0) return {",
+      "const spent = !freeLeft && (left === 0 || !!allowance.paused);\nconst left = freeCount(a);",
+      "if (freeCount(a) > 0) return",
     ]) expect(comparisons(shape)).toHaveLength(1);
     for (const fine of [
-      "const left = Math.max(0, allowance.limit - allowance.used);",
+      "const left = freeCount(allowance);",
       "if (used >= perMinute) return false;",
+      // `left` in a file that never counts free credits is someone else's word.
+      "if (left > 0) return",
     ]) expect(comparisons(fine)).toEqual([]);
   });
 

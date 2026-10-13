@@ -23,7 +23,7 @@ import { CreditButton } from "../ui/credit-button";
 import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
 import { ReadRow, type RowAct } from "./read-row";
-import { hasCredit } from "../../lib/model/allowance-rule";
+import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 
 const copy = swapToolsCopy.fits;
 const read = copy.read;
@@ -337,7 +337,7 @@ export function FitsView({
 
   // ── What the band draws ────────────────────────────────────────────
   const allowance = panel?.allowance;
-  const left = allowance ? Math.max(0, allowance.limit - allowance.used) : 0;
+  const left = allowance ? freeCount(allowance) : 0;
   const spent = allowance ? !hasCredit(allowance) : false;
   const closed = !!allowance?.paused || allowance?.ownerShare === true;
   const blocked = !allowance || spent || closed || running !== null;

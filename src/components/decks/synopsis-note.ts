@@ -2,6 +2,7 @@ import { creditsCopy, monthName } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
+import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 
 /**
  * The credit note beside a press that also writes the overview (`CREDITS-overview.md`, the four
@@ -35,7 +36,7 @@ export function pressNote(view: SynopsisView, where: PressWhere): PressNote | nu
     return { text: synopsisCopy.pressNote.free, writes: true };
   }
   const { allowance } = view.state;
-  const left = Math.max(0, allowance.limit - allowance.used);
+  const left = freeCount(allowance);
   // The press still reads the bracket, which is free; only the overview is withheld. So every form
   // that writes nothing opens with "Reads the bracket only;" and says why in its own words: the
   // app is paused (the player has credits, so "waits for a credit" would be false), the owner's
@@ -46,6 +47,6 @@ export function pressNote(view: SynopsisView, where: PressWhere): PressNote | nu
   }
   if (allowance.ownerShare) return { text: synopsisCopy.pressNote.ownerShare(monthName(new Date())), writes: false };
   const lead = where === "analyze" ? synopsisCopy.pressNote.analyzeUsedUp : synopsisCopy.pressNote.reanalyzeUsedUp;
-  if (left > 0) return { text: synopsisCopy.pressNote.writes(creditsCopy.standing(left, allowance.limit, allowance.nextAt)), writes: true };
+  if (hasCredit(allowance)) return { text: synopsisCopy.pressNote.writes(creditsCopy.standing(left, allowance.limit, allowance.nextAt)), writes: true };
   return { text: `${lead} ${creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)}`, writes: false };
 }

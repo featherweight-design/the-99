@@ -109,6 +109,11 @@ export function freeRoom(a: { used: number; limit: number }): boolean {
   return a.used < a.limit;
 }
 
+/** Free credits left, never below zero: the count a credit line shows. Never a gate: ask `hasCredit`. */
+export function freeCount(a: { used: number; limit: number }): number {
+  return Math.max(0, a.limit - a.used);
+}
+
 export function hasCredit(a: { used: number; limit: number; plan?: number | null; pack?: number | null }): boolean {
   return freeRoom(a) || (a.plan ?? 0) + (a.pack ?? 0) > 0;
 }

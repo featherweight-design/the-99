@@ -29,7 +29,7 @@ import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { CreditButton, FailMark } from "../ui/credit-button";
-import { hasCredit } from "../../lib/model/allowance-rule";
+import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -221,7 +221,7 @@ export function CutsPanelView({
 
   const failed = !running && !priorRun && !panel.review && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";
-  const left = Math.max(0, panel.allowance.limit - panel.allowance.used);
+  const left = freeCount(panel.allowance);
   const spent = !hasCredit(panel.allowance);
   const blocked = spent || !!panel.allowance.paused || panel.allowance.ownerShare === true || panel.allLocked;
   const standing = panel.allowance.paused

@@ -1,6 +1,6 @@
 import { creditsCopy } from "../copy/credits";
 import { helpMeChooseCopy as copy } from "../copy/help-me-choose";
-import { freeRoom, hasCredit, type Allowance } from "../model/allowance-rule";
+import { freeCount, freeRoom, hasCredit, type Allowance } from "../model/allowance-rule";
 
 /**
  * A player's credit standing as Help me choose's surfaces draw it: the form's press (rework plan
@@ -52,7 +52,7 @@ export function standingLine(s: Standing): string {
     case "paused": return creditsCopy.paused(new Date(s.paused!));
     case "ownerShare": return creditsCopy.ownerShare(new Date(s.now));
     case "spent": return creditsCopy.spent(s.limit, s.reopensAt ? new Date(s.reopensAt) : next);
-    default: return creditsCopy.first(s.limit - s.used, s.limit, next);
+    default: return creditsCopy.first(freeCount(s), s.limit, next);
   }
 }
 
@@ -65,7 +65,7 @@ export function bareStanding(s: Standing): string {
   // The FREE count and its reset time: what this line counts, whatever a paid lot holds.
   const spent = !freeRoom(s);
   const at = spent ? s.reopensAt ?? s.nextAt : s.nextAt;
-  return creditsCopy.standing(Math.max(0, s.limit - s.used), s.limit, at ? new Date(at) : null);
+  return creditsCopy.standing(freeCount(s), s.limit, at ? new Date(at) : null);
 }
 
 /**
