@@ -11,7 +11,7 @@
 
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { PENDING_OPACITY } from "../commanders/pending";
-import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { createPortal } from "react-dom";
@@ -44,9 +44,11 @@ function Sheet({ width }: { width: Width }) {
 }
 
 export function ChangeCommanderDoor({
-  oracleId, width, hasCrop,
+  oracleId, width, hasCrop, siblings,
 }: {
   oracleId: string;
+  /** What the commander's card details page through: the deck's own list (`useCommanderSiblings`). */
+  siblings?: readonly Sibling[];
   width: Width;
   /** With no crop there is no printing to open, so the card-details half is absent (§G) and the
    *  ⇄ half is drawn alone. */
@@ -62,6 +64,7 @@ export function ChangeCommanderDoor({
         oracleId={oracleId}
         placement={width === "desktop" ? "deck-desktop" : "deck-mobile"}
         bandTapTarget={false}
+        siblings={siblings}
       />
     ) : null;
   }
@@ -88,7 +91,7 @@ export function ChangeCommanderDoor({
           type="button"
           aria-label="View card details"
           aria-busy={pending}
-          onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
+          onClick={(e) => open(oracleId, siblings, undefined, { opener: e.currentTarget })}
           {...intent}
           className="relative flex h-[44px] items-center bg-transparent p-0 font-mono whitespace-nowrap text-[color:var(--fg)]"
           style={{ gap: 6, padding: "0 9px", fontSize: 11, cursor: "pointer" }}
@@ -165,7 +168,7 @@ export function ChangeCommanderDoor({
         type="button"
         aria-label="View card details"
         aria-busy={pending}
-        onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
+        onClick={(e) => open(oracleId, siblings, undefined, { opener: e.currentTarget })}
         {...intent}
         className="absolute flex items-center justify-center bg-transparent p-0"
         style={{ left: 0, width: 44, top: half, height: 44, paddingBottom: overhang, cursor: "pointer" }}

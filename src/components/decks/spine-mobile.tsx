@@ -10,6 +10,7 @@ import { useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { BandTapTarget } from "../commanders/full-card-trigger";
+import { useCommanderSiblings } from "./deck-siblings";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ArtWash, BlockScrim, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
@@ -81,6 +82,10 @@ export function SpineMobile({
   // and no fallback state. The cost is the block's height, which is why the ramp
   // is keyed to a three-line title rather than a two-line one.
   const { commander, partner } = deck;
+  // The commander's card details page on into the deck: the commanders, then the list as drawn.
+  const commanderSiblings = useCommanderSiblings(
+    [commander, partner].flatMap((c) => (c ? [{ oracleId: c.oracleId, name: commanderDisplayName(c), colorIdentity: c.colorIdentity }] : [])),
+  );
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
   const over = built > bodySize;
@@ -202,6 +207,7 @@ export function SpineMobile({
             <CardDetailTrigger
               oracleId={partner.oracleId}
               name={commanderDisplayName(partner)}
+              siblings={commanderSiblings}
               title={commanderDisplayName(partner)}
               ariaLabel={deckImportCopy.commander.partnerCardAria(commanderDisplayName(partner))}
               className="font-mono"
@@ -269,12 +275,12 @@ export function SpineMobile({
             Mounted before the door and the block, so the corner controls, the pencil and the
             block's chips keep their own presses; hidden while editing, with the corner buttons.
             Not with no crop: then there is no printing to open (§G). */}
-        {!renaming && commander.artCropUri ? <BandTapTarget oracleId={commander.oracleId} /> : null}
+        {!renaming && commander.artCropUri ? <BandTapTarget oracleId={commander.oracleId} siblings={commanderSiblings} /> : null}
         {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
             alone, or nothing with the switch off. */}
         {/* Hidden while editing (STATES §2, state 3: "the corner buttons hide"). */}
         {!renaming && (
-          <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} />
+          <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} siblings={commanderSiblings} />
         )}
 
         <div

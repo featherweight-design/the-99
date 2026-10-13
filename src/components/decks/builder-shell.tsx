@@ -73,6 +73,7 @@ import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+import { DeckSiblingsProvider } from "./deck-siblings";
 import { comboScopeIds } from "../../lib/decks/combo-scope";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
@@ -1424,6 +1425,7 @@ export function BuilderShell({
       comboDeckOracleIds={comboScope}
       deckPrintingPicks={deck.printingPicks ?? null}
     >
+      <DeckSiblingsProvider>
       <AddOptimisticCardProvider value={deckEdits}>
         <PassMarkProvider value={passMark}>
         <LabelRowsProvider value={labelRows} queried={labelQueried}>
@@ -2207,6 +2209,7 @@ export function BuilderShell({
         </LabelRowsProvider>
         </PassMarkProvider>
       </AddOptimisticCardProvider>
+      </DeckSiblingsProvider>
     </CardDetailProvider>
   );
 }

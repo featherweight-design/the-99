@@ -13,7 +13,8 @@ import { useEffect } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
-import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { CardDetailProvider, cardDetailCopy, type Sibling } from "../cards/card-detail-provider";
+import { DeckSiblingsProvider, useCommanderSiblings } from "./deck-siblings";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { PendingChangeProvider } from "./pending-change";
@@ -128,6 +129,8 @@ function renderDecklist(
     labelRows?: Record<string, readonly ("ramp" | "draw" | "removal" | "wipes")[]>;
     /** The deck's tokens, provided around the list as the deck page does with the switch on. */
     tokens?: DeckTokensRead;
+    /** Reads what the list publishes for the header's commander carousel, as the deck page does. */
+    onSiblings?: (list: readonly Sibling[] | undefined) => void;
   } = {},
 ) {
   const deckEdits = {
@@ -159,6 +162,14 @@ function renderDecklist(
       )
       : node;
 
+  const withSiblings = (node: React.ReactNode) =>
+    opts.onSiblings ? (
+      <DeckSiblingsProvider>
+        <SiblingsReader seen={opts.onSiblings} />
+        {node}
+      </DeckSiblingsProvider>
+    ) : node;
+
   const withTokens = (node: React.ReactNode) =>
     opts.tokens ? <DeckTokensProvider deckId="deck-1" read={opts.tokens}>{node}</DeckTokensProvider> : node;
 
@@ -166,7 +177,7 @@ function renderDecklist(
     <CardDetailProvider
       fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
     >
-      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withTokens(withSwaps(withDraft(
+      <AddOptimisticCardProvider value={deckEdits}><LabelRowsProvider value={opts.labelRows ?? null}>{withSiblings(withTokens(withSwaps(withDraft(
         <Decklist mix={TEST_MIX}
           deckId="deck-1"
           cards={cards}
@@ -198,12 +209,49 @@ function renderDecklist(
           versions={opts.versions}
           onLogGame={opts.onLogGame}
         />
-      )))}</LabelRowsProvider></AddOptimisticCardProvider>
+      ))))}</LabelRowsProvider></AddOptimisticCardProvider>
     </CardDetailProvider>,
   );
 }
 
+function SiblingsReader({ seen }: { seen: (list: readonly Sibling[] | undefined) => void }) {
+  seen(useCommanderSiblings([{ oracleId: "commander-1" }]));
+  return null;
+}
+
 // ── Test suites ───────────────────────────────────────────────────────────────
+
+// The header's commander carousel pages into the list the decklist DRAWS. Shopping draws its own
+// list (only what is to buy, in its own sections), so it publishes that one, not the deck's whole.
+describe("the list the commander's carousel pages into", () => {
+  const idsOf = (list: readonly Sibling[] | undefined) => (list ?? []).map((s) => (typeof s === "string" ? s : s.oracleId));
+
+  it("is every listed card in All", () => {
+    let last: readonly Sibling[] | undefined;
+    renderDecklist([rampOwned, rampUnowned, drawOwned], { filter: "all", onSiblings: (l) => (last = l) });
+    expect(idsOf(last)[0]).toBe("commander-1");
+    expect(new Set(idsOf(last).slice(1))).toEqual(new Set([rampOwned.oracleId, rampUnowned.oracleId, drawOwned.oracleId]));
+  });
+
+  // Compared with the rows Shopping draws, in their order. Shopping joins land and other into one
+  // section where the role grouping draws them apart, so with these two the order differs from
+  // All's: All draws `Zzz Tower` (land) before `Aaa Stone` (other), and Shopping the reverse.
+  // Publishing All's list here fails this test.
+  it("is Shopping's own list, in the order its rows draw", () => {
+    let last: readonly Sibling[] | undefined;
+    const otherUnowned = makeCard({ oracleId: "mind-stone", name: "Aaa Stone", role: "other", cardTypeGroup: "Artifacts", owned: false, auto: true });
+    const landUnowned = makeCard({ oracleId: "command-tower", name: "Zzz Tower", role: "land", typeLine: "Land", cardTypeGroup: "Lands", owned: false, auto: true });
+    renderDecklist([rampOwned, landUnowned, rampUnowned, otherUnowned, drawUnowned], {
+      filter: "shopping",
+      onSiblings: (l) => (last = l),
+    });
+    const drawn = Array.from(document.querySelectorAll("[data-decklist-row]"))
+      .map((row) => [landUnowned, rampUnowned, otherUnowned, drawUnowned].find((c) => row.textContent?.includes(c.name))?.oracleId)
+      .filter(Boolean);
+    expect(drawn).toHaveLength(4);
+    expect(idsOf(last)).toEqual(["commander-1", ...drawn]);
+  });
+});
 
 describe("Shopping's intro claims provenance only where it has it", () => {
   it("says we reached past the collection when every row is the fill's", () => {

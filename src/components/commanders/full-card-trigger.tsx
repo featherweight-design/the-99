@@ -3,7 +3,7 @@
 // open the shared card modal through CardDetailProvider, which detail.tsx
 // already mounts for the role chips further down the page.
 
-import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
+import { useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { PENDING_OPACITY } from "./pending";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 
@@ -100,7 +100,7 @@ const targetInset = (at: Record<string, number>, labelled: boolean) =>
     Presentational (not a button, never focusable); the labeled chip beside it is the
     accessible control. It draws under whatever follows it in the band, so a band that
     also carries a title or a pencil mounts it before them and they keep their presses. */
-export function BandTapTarget({ oracleId }: { oracleId: string }) {
+export function BandTapTarget({ oracleId, siblings }: { oracleId: string; siblings?: readonly Sibling[] }) {
   const { open } = useCardDetail();
   const intent = useCardIntent(oracleId);
   return (
@@ -108,7 +108,7 @@ export function BandTapTarget({ oracleId }: { oracleId: string }) {
       aria-hidden="true"
       data-band-tap-target
       className="absolute inset-0 cursor-pointer"
-      onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
+      onClick={(e) => open(oracleId, siblings, undefined, { opener: e.currentTarget })}
       {...intent}
     />
   );
@@ -118,12 +118,15 @@ export function FullCardTrigger({
   oracleId,
   placement = "hero",
   bandTapTarget = true,
+  siblings,
 }: {
   oracleId: string;
   placement?: keyof typeof PLACEMENT;
   /** The deck header withholds this: that band also carries the title button and
       the rename pencil, and a full-band click layer above them eats both. */
   bandTapTarget?: boolean;
+  /** The list the card pages through. The deck header passes the deck's own (`useCommanderSiblings`). */
+  siblings?: readonly Sibling[];
 }) {
   const { open, pendingOracleId } = useCardDetail();
   const intent = useCardIntent(oracleId);
@@ -132,7 +135,7 @@ export function FullCardTrigger({
 
   return (
     <>
-      {bandTapTarget ? <BandTapTarget oracleId={oracleId} /> : null}
+      {bandTapTarget ? <BandTapTarget oracleId={oracleId} siblings={siblings} /> : null}
 
       {/* ⛶ affordance control. Icon only on every render but ONE — the desktop
           deck header keeps its words, where the control sits in a wide empty
@@ -178,7 +181,7 @@ export function FullCardTrigger({
         // CardDetailTrigger is not: disabling the focused element blurs it, and
         // the modal's focus-return would have nothing to hand focus back to.
         aria-busy={pending}
-        onClick={(e) => open(oracleId, undefined, undefined, { opener: e.currentTarget })}
+        onClick={(e) => open(oracleId, siblings, undefined, { opener: e.currentTarget })}
         {...intent}
       >
         {/* The pending dim lands on the GLYPH, never on the plate. Dimming the
