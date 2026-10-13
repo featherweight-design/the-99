@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 /**
  * Clerk's webhook endpoint (Hugh's ruling Q8, 2026-10-12). Public in `src/proxy.ts`, because Clerk calls it
  * with no session; what authorizes it is the Svix signature, checked by `verifyWebhook` against
- * `CLERK_WEBHOOK_SIGNING_SECRET`. An unsigned or forged request is refused with 400 before anything runs.
+ * `CLERK_WEBHOOK_SIGNING_SECRET`, on every call. Until that secret is set the route answers 503 and does nothing;
+ * an unsigned or forged request is refused with 400 before anything runs.
  *
  * Only `user.deleted` does anything: it purges every row the app holds for that account
  * (`purgeAccount`). Any other event is acknowledged and ignored, so subscribing to more events in the
@@ -16,9 +17,13 @@ export const dynamic = "force-dynamic";
  * transaction and idempotent, so a retry either finishes the job or finds nothing left.
  */
 export async function POST(req: Request) {
+  // Inert until configured: with no signing secret nothing can be verified, so nothing runs. Checked here
+  // rather than left to `verifyWebhook`, so "not set up yet" can never depend on how a library fails.
+  const secret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+  if (!secret) return new Response("Webhook not configured", { status: 503 });
   let evt;
   try {
-    evt = await verifyWebhook(req);
+    evt = await verifyWebhook(req, { signingSecret: secret });
   } catch {
     return new Response("Webhook verification failed", { status: 400 });
   }

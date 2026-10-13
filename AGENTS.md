@@ -729,7 +729,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
 
 - **Deleting an account deletes everything the app holds for it** (Hugh's ruling Q8, 2026-10-12). Clerk's
   `user.deleted` webhook (`POST /api/clerk-webhook`, public in `src/proxy.ts`, authorized only by the Svix signature
-  `verifyWebhook` checks against `CLERK_WEBHOOK_SIGNING_SECRET`) runs `purgeAccount` (`src/lib/account/purge.ts`) in
+  `verifyWebhook` checks against `CLERK_WEBHOOK_SIGNING_SECRET` on every call; with the secret unset it answers 503 and
+  does nothing) runs `purgeAccount` (`src/lib/account/purge.ts`) in
   ONE transaction: the social half first (`purgeSocialIn`: every pod is LEFT the way a player leaves it, so an owned
   pod passes to its longest-standing member; both directions of every friendship; every invite naming the account;
   the profile), then every other table by `user_id` in `PURGE_ORDER` (children of `model_calls` before it), then

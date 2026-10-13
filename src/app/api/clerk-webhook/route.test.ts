@@ -11,12 +11,27 @@ const req = () => new Request("https://the99.test/api/clerk-webhook", { method: 
 const report = { social: { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 2 }, rows: { decks: 3 }, stamp: 1 };
 
 beforeEach(() => {
+  process.env.CLERK_WEBHOOK_SIGNING_SECRET = "whsec_test";
   verify.mockReset();
   purge.mockReset();
   purge.mockResolvedValue(report);
 });
 
 describe("POST /api/clerk-webhook", () => {
+  it("is inert until its signing secret is set: 503, nothing verified, nothing purged", async () => {
+    delete process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+    verify.mockResolvedValue({ type: "user.deleted", data: { id: "user_gone" } });
+    expect((await POST(req())).status).toBe(503);
+    expect(verify).not.toHaveBeenCalled();
+    expect(purge).not.toHaveBeenCalled();
+  });
+
+  it("verifies every call against the configured secret", async () => {
+    verify.mockResolvedValue({ type: "user.updated", data: { id: "user_here" } });
+    await POST(req());
+    expect(verify).toHaveBeenCalledWith(expect.any(Request), { signingSecret: "whsec_test" });
+  });
+
   it("refuses a request whose signature does not verify, and purges nothing", async () => {
     verify.mockRejectedValue(new Error("bad signature"));
     expect((await POST(req())).status).toBe(400);
