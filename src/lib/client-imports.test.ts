@@ -45,9 +45,9 @@ function resolve(files: Map<string, string>, from: string, spec: string): string
 
 const STATIC = /^\s*(import|export)\s+(type\s+)?([^'";]*?)\s*from\s*["']([^"']+)["']|^\s*import\s*["']([^"']+)["']/gm;
 // A runtime `import()`, never a type: `import("x").Name` and `typeof import("x")` name a type and
-// load nothing (`.then` is the one member access that is a runtime import).
+// load nothing. A runtime import's only members are a promise's: `.then`, `.catch` and `.finally`.
 // A backtick specifier counts when it interpolates nothing, since it is then a plain string.
-const DYNAMIC = /(?<!typeof\s+)\bimport\(\s*(["'`])((?:(?!\1|\$\{).)+)\1\s*\)(?!\s*\.\s*(?!then\b)[A-Za-z_$])/g;
+const DYNAMIC = /(?<!typeof\s+)\bimport\(\s*(["'`])((?:(?!\1|\$\{).)+)\1\s*\)(?!\s*\.\s*(?!(?:then|catch|finally)\b)[A-Za-z_$])/g;
 
 /** True when an import clause brings in at least one value, not only types. */
 function bringsValues(clause: string): boolean {
@@ -115,10 +115,13 @@ describe("client imports", () => {
       'const m = await import("../db");',
       "const n = await import(`../db/schema`);",
       "const o = await import(`../db/${name}`);",
+      'void import("drizzle-orm/pg-core").catch(() => {});',
+      'void import("@neondatabase/serverless/x").finally(() => {});',
       'export const ROWS: import("../db/schema").HistoryRow[] = [];',
       'type T = typeof import("drizzle-orm");',
     ].join("\n");
-    expect(valueImports(at, source)).toEqual(["npm:drizzle-orm", "npm:@neondatabase/serverless", join(SRC, "db/index.ts"), join(SRC, "db/schema.ts")]);
+    expect(valueImports(at, source)).toEqual(["npm:drizzle-orm", "npm:@neondatabase/serverless", join(SRC, "db/index.ts"), join(SRC, "db/schema.ts"),
+      "npm:drizzle-orm/pg-core", "npm:@neondatabase/serverless/x"]);
   });
 
   it("reports a client module that reaches src/db, and skips a \"use server\" module", () => {
