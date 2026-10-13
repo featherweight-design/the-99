@@ -169,7 +169,7 @@ export type CostDetail = {
   labelCallsMicro: number;
   /** Some label run is unpriced or still collecting, so `series.labels` and every total holding it are so far. */
   labelsIncomplete: boolean;
-  /** Eval ledgers that could not be read: `series.evals` leaves them out, so it and every total holding it are partial. */
+  /** Eval ledgers that could not be read: `series.evals` leaves them out, so it is partial. No environment figure holds it. */
   ledgersUnreadable: string[];
   models: ModelRow[];
   modelsTotal: number;
@@ -361,7 +361,8 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
     labelsIncomplete,
     ledgersUnreadable: [...(rows.ledgersUnreadable ?? [])],
     models: modelList,
-    modelsTotal: modelList.reduce((n, m) => n + m.micro, 0) + series.evals,
+    // This environment's models only: the eval ledgers are repo files, not its spend.
+    modelsTotal: modelList.reduce((n, m) => n + m.micro, 0),
     features,
     runs: calls.length,
     callsMicro: calls.reduce((n, c) => n + (c.call.micro ?? 0), 0),

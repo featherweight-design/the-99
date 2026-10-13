@@ -111,7 +111,7 @@ export async function setAccountCap(input: { amount: unknown; note?: unknown }):
 }
 
 /**
- * The monthly ceiling on system spend (evals, labels, prose, free rewrites), from the month it
+ * The monthly ceiling on system spend (labels, prose, free rewrites; never the repo's evals), from the month it
  * starts: this UTC month or a later one, stored as that month's first day.
  */
 export async function setSystemCeiling(input: { amount: unknown; start: unknown; note?: unknown }): Promise<SettingResult> {

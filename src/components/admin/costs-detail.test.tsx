@@ -65,9 +65,9 @@ describe("CostsDetail, a month with runs", () => {
     expect(within(table).getByText("Overview rewrite, free")).toBeInTheDocument();
   });
 
-  it("draws the split with its four series and the refunds line", () => {
+  it("draws the split with its three series and the refunds line", () => {
     const { container } = draw({ calls, labelRuns: [labelRun] });
-    expect([...container.querySelectorAll("[data-series]")].map((el) => el.getAttribute("data-series"))).toEqual(["player", "labels", "evals", "rewrites"]);
+    expect([...container.querySelectorAll("[data-series]")].map((el) => el.getAttribute("data-series"))).toEqual(["player", "labels", "rewrites"]);
     expect(container.querySelector('[data-series="labels"]')).toHaveTextContent("$59.48");
     expect(screen.getByText(/^One run was refunded: the player got the credit back, and the dollars stay billed\. Suggested changes 1 run, \$0\.050\.$/)).toBeInTheDocument();
   });
@@ -211,6 +211,20 @@ describe("CostsDetail, the eval ledgers", () => {
     expect(cells("October").slice(3)).toEqual(["nothing pending", ""]);
   });
 
+  it("draws the month's evals in their own block, apart from the split and By model", () => {
+    const { container } = draw({
+      calls: [call({ origin: "system", feature: "synopsis", userId: "system", micro: 500_000 })],
+      ledgers: [{ file: "ledger-cuts.jsonl", entries: [{ at: "2026-10-10T08:21:54Z", usd: 21.48, requests: 40 }] }],
+    });
+    const block = container.querySelector("[data-evals-apart]") as HTMLElement;
+    expect(block).toHaveTextContent("Evals (all environments, from the repo)$21.48");
+    expect(block).toHaveTextContent("1 ledger. Every deployment reads the same files, so none of this counts toward System or a cap here.");
+    expect(container.querySelector('[data-series="evals"]')).toBeNull();
+    expect(container.querySelector('[data-model="evals"]')).toBeNull();
+    // System is the rewrite alone: 100% of a month with no player spend, and $0.500.
+    expect(screen.getByText("System").parentElement).toHaveTextContent("$0.500");
+  });
+
   it("says nothing pending when every worst case has settled", () => {
     draw({ calls: [call({})] });
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("nothing pending")).toBeInTheDocument();
@@ -218,12 +232,13 @@ describe("CostsDetail, the eval ledgers", () => {
 });
 
 describe("CostsDetail, an eval ledger that could not be read", () => {
-  it("says which, and reads the eval and system figures as partial rather than complete", () => {
+  it("says which, and reads the eval figure as partial rather than complete", () => {
     const { container } = draw({ calls: [call({})], ledgersUnreadable: ["ledger-cuts.jsonl"] });
     expect(screen.getByRole("alert")).toHaveTextContent("Could not read ledger-cuts.jsonl, so the eval figures leave it out.");
-    expect(container.querySelector('[data-series="evals"]')).toHaveTextContent("so far");
-    expect(container.querySelector('[data-model="evals"]')).toHaveTextContent("so far");
-    expect(screen.getByText(/some label or eval spend is not in yet/)).toBeInTheDocument();
+    expect(container.querySelector("[data-evals-apart]")).toHaveTextContent("Evals (all environments, from the repo)$0 so far");
+    expect(container.querySelector('[data-model="evals"]')).toBeNull();
+    // System is this environment's alone, so an unreadable ledger leaves it whole.
+    expect(screen.queryByText(/not in yet/)).toBeNull();
   });
 });
 
@@ -233,6 +248,13 @@ describe("CostsDetail, a month with no runs (C3)", () => {
     expect(headings()).toEqual(["Against the caps", "Player presses, month to date", "Eval ledgers"]);
     expect(screen.getByRole("table", { name: "Eval ledgers" })).toBeInTheDocument();
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("Original campaign")).toBeInTheDocument();
+  });
+  it("still draws the month's evals, and an unreadable ledger's figure, with nothing else run", () => {
+    const { container, unmount } = draw({ ledgers: [{ file: "ledger-cuts.jsonl", entries: [{ at: "2026-10-10T08:21:54Z", usd: 21.48, requests: 40 }] }] });
+    expect(container.querySelector("[data-evals-apart]")).toHaveTextContent("Evals (all environments, from the repo)$21.48");
+    unmount();
+    const empty = draw({ ledgers: [], ledgersUnreadable: ["ledger-cuts.jsonl"] });
+    expect(empty.container.querySelector("[data-evals-apart]")).toHaveTextContent("$0 so far");
   });
 });
 

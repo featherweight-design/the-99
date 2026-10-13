@@ -223,10 +223,10 @@ describe("the eval ledgers", () => {
     expect(ledgerRow({ ...ledger, file: "ledger-unknown.jsonl" }, OCT).limits).toBeNull();
   });
 
-  it("brings the month's evals into the series, pending included", () => {
+  it("brings the month's evals into the series, pending included, and keeps them out of the models' total", () => {
     const d = costDetail(rows({ ledgers: [ledger] }), OCT);
     expect(d.series.evals).toBe(usdToMicro(2.1));
-    expect(d.modelsTotal).toBe(usdToMicro(2.1));
+    expect(d.modelsTotal).toBe(0);
   });
 
   it("names a ledger from its file", () => {
