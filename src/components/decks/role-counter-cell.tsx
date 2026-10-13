@@ -10,7 +10,6 @@
 
 import { roleCellState } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { warmTuningToolsOnIntent } from "./tuning-tools";
 import { tuningHubShortcutsCopy } from "../../lib/copy/tuning-hub-shortcuts";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 
@@ -202,7 +201,6 @@ export function RoleCounterCell({
         type="button"
         onClick={balance}
         data-shortcut="balance-mana"
-        {...warmTuningToolsOnIntent}
         aria-label={named(tuningHubShortcutsCopy.balanceManaAria(have ?? 0, target))}
         // The shipped interactive cell's border (design table, `Land cell — balance mana`).
         className={shell.replace(`border ${borderClass}`, "border border-border-strong") + interactive}

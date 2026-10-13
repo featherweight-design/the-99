@@ -19,9 +19,11 @@ import type { DeckSuggestionWithFacts } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { AnalysisPanel } from "./analysis-panel";
 import { HoverPreviewProvider } from "./hover-preview";
-import { CutsPanelView, ManaBalancePanel, TuningHub, TuningPanel, warmTuningTools } from "./tuning-tools";
+import { CutsPanelView } from "./cuts-panel";
+import { ManaBalancePanel } from "./mana-balance-panel";
 import { hasColoredPip } from "../../lib/tuning/mana-view";
-import type { HubRequest } from "./tuning-hub";
+import { TuningPanel } from "./tuning-panel";
+import { TuningHub, type HubRequest } from "./tuning-hub";
 import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
 import { OVERVIEW_HOLD_MS, useDeckSynopsis } from "./synopsis-state";
@@ -530,32 +532,6 @@ export function BuilderShell({
     (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
     [],
   );
-  // The Tuning tools are code loaded on demand (`tuning-tools.tsx`). Warmed once the page has loaded and
-  // the browser is idle, so the Analysis tab finds them already here; the tab and the shortcuts warm them
-  // on intent as well, and a press loads them if neither has.
-  const toolsOn = tuningEnabled || proposedCutsEnabled || manaBalanceEnabled || tuningHubEnabled;
-  useEffect(() => {
-    if (!toolsOn) return;
-    let idle: number | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const warm = () => {
-      if (typeof window.requestIdleCallback === "function") idle = window.requestIdleCallback(() => void warmTuningTools(), { timeout: 4000 });
-      else timer = setTimeout(() => void warmTuningTools(), 0);
-    };
-    if (document.readyState === "complete") warm();
-    else window.addEventListener("load", warm, { once: true });
-    return () => {
-      window.removeEventListener("load", warm);
-      if (idle !== undefined) window.cancelIdleCallback?.(idle);
-      clearTimeout(timer);
-    };
-  }, [toolsOn]);
-  // The Analysis view opening is itself the last intent: the hub mounts alone, and a tool's own wrapper
-  // mounts only once it is opened, so without this a press nobody warmed for would fetch the tools in a
-  // second waterfall after the hub.
-  useEffect(() => {
-    if (toolsOn && view === "analysis") void warmTuningTools();
-  }, [toolsOn, view]);
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.
@@ -1709,7 +1685,6 @@ export function BuilderShell({
             {/* The decklist and Consider as peer tabs. The desktop toolbar rides
                 this row; at phone width Consider draws its own toolbar row. */}
             <BuilderTabs
-              onTabIntent={(id) => { if (id === "analysis" && toolsOn) void warmTuningTools(); }}
               tabs={builderTabSpecs({
                 built,
                 suggestionCount: suggestions.length,
