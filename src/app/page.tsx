@@ -179,8 +179,8 @@ export default async function HomePage() {
         // React-cached, so on the branch where getRankedList recomputed this is a
         // cache hit rather than a second query.
         perf.timed("collectionPool", () => loadCollectionPool(userId)),
-        // No options: the whole-user vantage, as /collection already takes.
-        perf.timed("availability", () => loadAvailability(userId)),
+        // No narrowing: the whole-user vantage, as /collection already takes, under the load's env.
+        perf.timed("availability", () => loadAvailability(userId, { env })),
       ]);
       // The shown pair, not the whole ranked list — only a rendered hero prints
       // the clause.

@@ -142,6 +142,7 @@ export default async function CommanderDetailPage({
   const [availability, { prices, newestAsOf }, ownedArt, openingArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyRead.map((c) => c.oracleId)])],
+      env,
     }).catch(() => new Map<string, Availability>()),
     loadPrices(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId)).catch(() => ({
       prices: new Map(),

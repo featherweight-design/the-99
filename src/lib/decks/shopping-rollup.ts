@@ -74,7 +74,7 @@ export async function loadShoppingRollup(
   /** The reader's resolved switches (`requestSwitchEnv`), for the printing picks; the environment alone when omitted. */
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<ShoppingRollup> {
-  const rows = await loadDeckBuyRows(userId, deckIds);
+  const rows = await loadDeckBuyRows(userId, deckIds, undefined, env);
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
   return rollupBuyRows(rows, await readBuyRowPrices(userId, rows, env));
 }

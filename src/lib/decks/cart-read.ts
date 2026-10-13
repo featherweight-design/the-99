@@ -23,9 +23,13 @@ import { chainArt } from "../cards/chain-art";
  * cart its rows, drawn with no figure, and the Mana Pool link still works because it carries names
  * and quantities only. The roll-up reads both in one call and fails whole.
  */
-export async function loadCart(userId: string): Promise<CartPayload> {
+export async function loadCart(
+  userId: string,
+  /** The reader's resolved switches (the cached page's `env`): the claim model and the printing picks. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<CartPayload> {
   const [rows, [{ total }]] = await Promise.all([
-    loadDeckBuyRows(userId),
+    loadDeckBuyRows(userId, undefined, undefined, env),
     db.select({ total: sql<number>`count(*)::int` }).from(decks).where(eq(decks.userId, userId)),
   ]);
   if (rows.length === 0) return { totalDecks: total, decks: [], lines: [], priced: true, newestAsOf: null };
@@ -35,7 +39,7 @@ export async function loadCart(userId: string): Promise<CartPayload> {
   // All four reads at once, and only the price read caught: a failure there degrades the cart to
   // its rows (T2), while a failure in any other read is the page's own error.
   const [read, deckRows, cardRows, availability, ownedArt] = await Promise.all([
-    readBuyRowPrices(userId, rows).catch((err): PriceRead | null => {
+    readBuyRowPrices(userId, rows, env).catch((err): PriceRead | null => {
       // A fallback, so a cached page never stores it: the next visit reads the prices again.
       recordSoftFailure();
       console.error("[cart] price read failed; drawing rows without figures", err);
@@ -46,9 +50,9 @@ export async function loadCart(userId: string): Promise<CartPayload> {
       .from(cards)
       .where(inArray(cards.oracleId, oracleIds)),
     // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
-    loadAvailability(userId, { oracleIds }),
+    loadAvailability(userId, { oracleIds, env }),
     // The printing card details opens for a line's card, so the preview shows it; the catalog's art otherwise.
-    chainArt(userId, null, oracleIds),
+    chainArt(userId, null, oracleIds, env),
   ]);
 
   const ownership = new Map<string, Ownership>();

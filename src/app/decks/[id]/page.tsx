@@ -134,8 +134,7 @@ export default async function DeckBuilderPage({
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
   // The reader's switches, resolved ONCE for this render: every switch below decides from this env, and so
-  // does every reader it starts but one. `loadAvailability` still reads `changeCommanderEnabled()` and
-  // `neverCutEnabled()` from the environment alone, until admin adoption 6e threads env into it.
+  // does every reader it starts, the claim model (`loadAvailability`) included.
   const env = await requestSwitchEnv(userId);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
@@ -161,7 +160,7 @@ export default async function DeckBuilderPage({
   // resolved; the model costs the same however few ids it is asked for. Reader-scoped by
   // `userId`, so a stranger's deck id reads nothing but the reader's own collection.
   const availabilityRead = early(
-    perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id })).catch(() => {
+    perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id, env })).catch(() => {
       recordSoftFailure();
       return null;
     }),

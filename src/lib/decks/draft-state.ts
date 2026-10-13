@@ -342,7 +342,7 @@ async function readDraft(
   const notBasic = (id: string) => !basics.has(id);
   const asked = (detailed ? changed : adds.map((a) => a.oracleId)).filter(notBasic);
   const availability = asked.length > 0
-    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId })
+    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId, env })
         .catch(() => null)
     : new Map<string, Availability>();
 

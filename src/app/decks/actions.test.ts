@@ -2265,9 +2265,22 @@ describe("pullCardFromDeck", () => {
     await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(loadAvailability).toHaveBeenCalledWith(
       USER_ID,
-      { oracleIds: [CARD_A], excludeDeckId: ASKING_ID },
+      { oracleIds: [CARD_A], excludeDeckId: ASKING_ID, env: ENV },
       expect.anything(),
     );
+  });
+
+  // Admin adoption 6e: both claim reads, the one that names the parties and the one that decides
+  // under the locks, run the claim model under the reader's resolved switches (its `locked` key is
+  // NEVER_CUT_ENABLED's), never the environment alone. Identity, not equality: the sentinel is `{}`.
+  it("hands the reader's resolved env to both of its claim reads", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(loadAvailability).mockClear();
+    await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    const calls = vi.mocked(loadAvailability).mock.calls;
+    expect(calls.length).toBe(2);
+    expect(calls.map(([, opts]) => opts?.env === ENV)).toEqual([true, true]);
   });
 
   // One id for both ends is not a transfer: the deck loses a copy to satisfy a

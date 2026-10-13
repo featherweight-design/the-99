@@ -48,14 +48,14 @@ type Row = {
 // A deck whose live commander differs from its newest version's is pending too (change commander,
 // plan decision 2). With CHANGE_COMMANDER_ENABLED off the clause is ABSENT and the CTE is
 // byte-identical to the one before commanders could move (src/lib/commander-change/queries.test.ts
-// pins that).
-const commanderPending = () => changeCommanderEnabled()
+// pins that). Decided from the READER's resolved switches (`requestSwitchEnv`), never the environment alone.
+const commanderPending = (env: NodeJS.ProcessEnv) => changeCommanderEnabled(env)
   ? sql` or exists (
       select 1 from decks lvd where lvd.id = nv.deck_id and ${deckCommanderMovedSql("lvd")}
     )`
   : sql``;
 
-const claimModel = (userId: string) => sql`
+const claimModel = (userId: string, env: NodeJS.ProcessEnv) => sql`
   -- The version each deck is currently sleeved as. number orders it, not
   -- committed_at: the unique key makes number strictly increasing per deck,
   -- and two versions committed in the same millisecond would tie on time.
@@ -182,7 +182,7 @@ const claimModel = (userId: string) => sql`
       except
       select vc.oracle_id, vc.quantity
       from deck_version_cards vc where vc.version_id = nv.version_id
-    )${commanderPending()}
+    )${commanderPending(env)}
   ),
   -- One row per (oracle, claiming deck), carrying that deck's whole ask.
   -- Grouping rather than select distinct is what folds a deck whose commander is
@@ -367,9 +367,15 @@ export async function loadAvailability(
      * (the cart's S1b chooser). Off, the query is the one every other reader runs.
      */
     unownedAsZero?: boolean;
+    /**
+     * The reader's resolved switches (`requestSwitchEnv`), which decide the `locked` key and the
+     * moved-commander pending clause; the environment alone when omitted.
+     */
+    env?: NodeJS.ProcessEnv;
   },
   tx?: Tx,
 ): Promise<Map<string, Availability>> {
+  const env = opts?.env ?? process.env;
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
   //
@@ -383,7 +389,7 @@ export async function loadAvailability(
   // NEVER_CUT_ENABLED off the key is ABSENT and the query is byte-identical to the one before locks
   // existed: /collection and /commanders read it too (availability-query.test.ts pins that).
   // Qualified on both sides: a bare `oracle_id` inside would resolve against `deck_locks` itself.
-  const lockedClaim = neverCutEnabled()
+  const lockedClaim = neverCutEnabled(env)
     ? sql`            'locked', exists (
         select 1 from deck_locks lk
         join deck_cards dk on dk.deck_id = lk.deck_id and dk.oracle_id = lk.oracle_id
@@ -393,7 +399,7 @@ export async function loadAvailability(
     : sql``;
   const skip = sql.param(opts?.excludeDeckId ?? null);
   const rows = await (tx ?? db).execute<Row>(sql`
-    with ${claimModel(userId)},
+    with ${claimModel(userId, env)},
     -- Self-exclusion (Addendum 2 §6): the current deck never claims against
     -- itself. Applied once here, and hard, soft and claims inherit it.
     claim_decks as (
@@ -737,6 +743,9 @@ export async function loadDeckBuyRows(
   deckIds?: string[],
   /** Read inside a write's transaction, so what it bills is the write's own instant. */
   tx?: Tx,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause; the
+   *  environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<DeckBuyRow[]> {
   if (deckIds && deckIds.length === 0) return [];
   // sql.param for the same reason it is used elsewhere in this file: a bare
@@ -747,7 +756,7 @@ export async function loadDeckBuyRows(
     oracle_id: string;
     quantity: number;
   }>(sql`
-    with ${claimModel(userId)},
+    with ${claimModel(userId, env)},
     -- The DRAFT decklist and both commanders. This is what a deck
     -- can be told to go and buy — the preview the player acts on — while
     -- seniority below is measured against what is sleeved. The two diverging

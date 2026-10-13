@@ -89,7 +89,8 @@ describe("loadCart", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     chainArt.mockResolvedValue(new Map([["sol", "owned-sol.jpg"]]));
     expect((await loadCart("user")).lines[0].imageUri).toBe("owned-sol.jpg");
-    expect(chainArt).toHaveBeenCalledWith("user", null, ["sol"]);
+    // The first three arguments only: the fourth is the env, which a test never compares or prints.
+    expect(chainArt.mock.calls[0].slice(0, 3)).toEqual(["user", null, ["sol"]]);
     selects.length = 0;
     selects.push(
       [{ total: 21 }],
@@ -102,5 +103,23 @@ describe("loadCart", () => {
     chainArt.mockResolvedValue(new Map());
     expect((await loadCart("user")).lines[0].imageUri).toBe("catalog-sol.jpg");
     spy.mockRestore();
+  });
+});
+
+// Admin adoption 6e: the cart is a cached page's load, keyed on the reader's resolved switches, and
+// every read it starts decides from that env: the claim model's rows and holders, the printing picks
+// behind the prices, and the art. An omitted env would fall back to the environment alone.
+describe("loadCart threads the env it is handed", () => {
+  it("hands the same env to every read it starts", async () => {
+    const ENV = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const { loadDeckBuyRows, loadAvailability } = await import("./availability-query");
+    vi.mocked(loadDeckBuyRows).mockClear();
+    vi.mocked(loadAvailability).mockClear();
+    readBuyRowPrices.mockResolvedValue(null);
+    await loadCart("user", ENV);
+    expect(vi.mocked(loadDeckBuyRows).mock.calls[0][3] === ENV).toBe(true);
+    expect(vi.mocked(loadAvailability).mock.calls[0][1]?.env === ENV).toBe(true);
+    expect(readBuyRowPrices.mock.calls[0][2] === ENV).toBe(true);
+    expect(chainArt.mock.calls[0][3] === ENV).toBe(true);
   });
 });

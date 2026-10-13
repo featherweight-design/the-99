@@ -130,6 +130,11 @@ const READERS = [
   "src/lib/discovery/list.ts",
   "src/lib/discovery/payload.ts",
   "src/lib/discovery/resolve-slug.ts",
+  // Admin PR 6e: the claim model (NEVER_CUT_ENABLED's lock key, CHANGE_COMMANDER_ENABLED's pending clause) and
+  // the deck readers that start it. Its callers elsewhere in lib take no env for it yet (6f).
+  "src/lib/decks/availability-query.ts",
+  "src/lib/decks/cart-read.ts",
+  "src/lib/decks/fill-plan.ts",
 ];
 
 /** A switch read from the environment alone: `fooEnabled()`, `roleBasisFromEnv()` or `scoreWriterVersion()`
@@ -181,5 +186,95 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
     expect(READERS.filter((path) => !existsSync(path))).toEqual([]);
     // A pending page converted is a page to take off the list.
     expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);
+  });
+});
+
+/**
+ * Admin PR 6e: the claim model (`availability-query`) decides NEVER_CUT_ENABLED's `locked` key and
+ * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
+ * environment, so a caller that omits it compiles and reads the environment alone. Every call to
+ * `loadAvailability` must name `env` in its options object, and every call to `loadDeckBuyRows` must pass
+ * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below, left for admin PR 6f. The list only shrinks: a module
+ * on it whose every call passes an env fails until it is taken off.
+ */
+const CLAIM_PENDING = [
+  "src/lib/collection/arrivals-write.ts",
+  "src/lib/collection/card-detail.ts",
+  "src/lib/collection/summary-read.ts",
+  "src/lib/collection/write.ts",
+  "src/lib/commander-change/candidates.ts",
+  "src/lib/commanders/rankings.ts",
+  "src/lib/discovery/list.ts",
+  "src/lib/intake/fill-facts.ts",
+  "src/lib/intake/rows.ts",
+  "src/lib/intake/search.ts",
+  "src/lib/intake/trial.ts",
+  "src/lib/lineup/load.ts",
+  "src/lib/recs/free-ranking.ts",
+  "src/lib/social/spares.ts",
+  "src/lib/swaps/fits.ts",
+  "src/lib/swaps/gather.ts",
+  "src/lib/swaps/take.ts",
+  "src/lib/tuning/answer.ts",
+  "src/lib/tuning/mana-staples.ts",
+  "src/lib/tuning/owned-candidates.ts",
+];
+
+/** Each call to a claim reader in `code`, and whether it hands the reader an env. */
+async function claimCalls(path: string, code: string): Promise<{ call: string; env: boolean }[]> {
+  const { default: ts } = await import("typescript");
+  const file = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out: { call: string; env: boolean }[] = [];
+  const visit = (node: import("typescript").Node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const name = node.expression.text;
+      const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
+      if (name === "loadAvailability") {
+        const opts = node.arguments[1];
+        const env = !!opts && ts.isObjectLiteralExpression(opts) && opts.properties.some((p) =>
+          (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.getText(file) === "env");
+        out.push({ call: `${path}:${line}: loadAvailability`, env });
+      } else if (name === "loadDeckBuyRows") {
+        out.push({ call: `${path}:${line}: loadDeckBuyRows`, env: node.arguments.length >= 4 });
+      } else if (name === "loadCart") {
+        // The cart's whole read, inside the cached Shopping page's load: its env is the one the key holds.
+        out.push({ call: `${path}:${line}: loadCart`, env: node.arguments.length >= 2 });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return out;
+}
+
+describe("every claim read is handed the reader's env (admin PR 6e)", () => {
+  it("finds a call that omits the env (the scan's own failure path)", async () => {
+    const code = [
+      "loadAvailability(u);",
+      "loadAvailability(u, { oracleIds });",
+      "loadAvailability(u, { oracleIds, env });",
+      "loadAvailability(u, { env: opts.env }, tx);",
+      "loadDeckBuyRows(u, ids);",
+      "loadDeckBuyRows(u, ids, undefined, env);",
+      "loadCart(u);",
+      "loadCart(u, keyed);",
+    ].join("\n");
+    expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual([false, false, true, true, false, true, false, true]);
+  });
+
+  it("names no call without one outside the 6f modules, and no 6f module that has been converted", async () => {
+    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    expect(CLAIM_PENDING.filter((path) => !existsSync(path))).toEqual([]);
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
+    });
+    const all = (await Promise.all(walk("src").map((path) => claimCalls(path, readFileSync(path, "utf8"))))).flat();
+    // A scan that found nothing would pass over everything: the deck page, Home and the pull all read claims.
+    expect(all.filter((c) => c.env).length).toBeGreaterThan(20);
+    const bare = all.filter((c) => !c.env);
+    expect(bare.filter((c) => !CLAIM_PENDING.some((p) => c.call.startsWith(`${p}:`))).map((c) => c.call)).toEqual([]);
+    expect(CLAIM_PENDING.filter((p) => !bare.some((c) => c.call.startsWith(`${p}:`)))).toEqual([]);
   });
 });

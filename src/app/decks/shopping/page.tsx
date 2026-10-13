@@ -38,8 +38,8 @@ export default async function AllDecksShoppingPage({
   const initialView = params.view === "deck" || deck ? "deck" : "card";
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
-  const cart = await cachePageForUser(userId, "cart", [], async () => {
-    const value = await loadCart(userId);
+  const cart = await cachePageForUser(userId, "cart", [], async (keyed) => {
+    const value = await loadCart(userId, keyed);
     return { value, store: value.priced };
   }, env);
   // The provenance line is built here, once, as PriceStrip's caller builds it: the locale and the

@@ -284,7 +284,7 @@ export async function confirmUpload(
   // transaction.
   let ownedBefore: OwnedCounts;
 
-  const buyBefore = await loadDeckBuyRows(userId);
+  const buyBefore = await loadDeckBuyRows(userId, undefined, undefined, env);
 
   // A preview written before migration 0008 carries no collectorNumber/finish;
   // replaceCollection coerces both rather than spreading undefined into the insert.

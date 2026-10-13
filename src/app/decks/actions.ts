@@ -1498,6 +1498,7 @@ export async function commitDeckVersion(
         const availability = await loadAvailability(userId, {
           oracleIds: adds.map((a) => a.oracleId),
           excludeDeckId: deckId,
+          env,
         });
         buy = bucketAdds(
           adds,
@@ -1727,6 +1728,7 @@ export async function pullCardFromDeck(
     const seen = await loadAvailability(userId, {
       oracleIds: [oracleId],
       excludeDeckId: askingDeckId,
+      env,
     });
     claimants = hardDecks(seen.get(oracleId) ?? { claims: [] }).map((d) => d.id);
   } catch {
@@ -1822,7 +1824,7 @@ export async function pullCardFromDeck(
     // sleeved moves no physical card.
     const askingAvailability = await loadAvailability(
       userId,
-      { oracleIds: [oracleId], excludeDeckId: askingDeckId },
+      { oracleIds: [oracleId], excludeDeckId: askingDeckId, env },
       tx,
     );
     const holders = hardDecks(askingAvailability.get(oracleId) ?? { claims: [] });

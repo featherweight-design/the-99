@@ -182,6 +182,7 @@ export async function buildFillPlan(
     const read = loadAvailability(userId, {
       oracleIds: pool.map((c) => c.oracleId),
       excludeDeckId: options.excludeDeckId,
+      env: options.env,
     });
     const seen = options.failClosed ? await read : await read.catch(() => null);
     if (seen) {

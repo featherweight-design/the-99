@@ -1326,7 +1326,7 @@ export async function listDecksWithStats(
   // clause is not worth a 500 on the deck list.
   const availability =
     opts.includeInUseElsewhere && rows.length > 0
-      ? await loadAvailability(userId).catch(() => {
+      ? await loadAvailability(userId, { env: opts.env }).catch(() => {
           recordSoftFailure();
           return null;
         })
@@ -1373,7 +1373,7 @@ export async function listDecksWithStats(
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip
-    ? await loadDeckBuyRows(userId).catch(() => {
+    ? await loadDeckBuyRows(userId, undefined, undefined, opts.env).catch(() => {
         recordSoftFailure();
         return [];
       })
