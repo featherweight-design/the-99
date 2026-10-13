@@ -35,6 +35,14 @@ function gateProblems(path: string, text: string): string[] {
     const exported = mods.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
     const isDefault = mods.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
     if (ts.isExportAssignment(st)) defaultGated = false; // `export default X`: a body this read cannot see
+    // `export { Page as default }`, `export { metadata }` and `export * from` are refused outright,
+    // as `actions.test.ts` refuses them: each can expose a body or a value this read never sees.
+    if (ts.isExportDeclaration(st) && !st.isTypeOnly) {
+      const named = st.exportClause && ts.isNamedExports(st.exportClause) ? st.exportClause.elements.filter((e) => !e.isTypeOnly) : null;
+      if (!named) problems.push("`export *` re-exports names this check cannot read");
+      else for (const e of named) problems.push(`\`export { ${e.getText(source)} }\` exposes \`${e.name.text}\` through a re-export this check cannot read`);
+      continue;
+    }
     if (exported && isDefault && ts.isFunctionDeclaration(st)) defaultGated = isGate(st.body?.statements[0], source);
     if (!exported || !ts.isVariableStatement(st)) {
       if (exported && ts.isFunctionDeclaration(st) && st.name?.text === "generateMetadata" && !callsAdminMetadata(st.body?.statements[0], source)) {
@@ -85,6 +93,23 @@ describe("the gate check's failure paths", () => {
   it("fails a page with no gate, or a default export it cannot read", () => {
     expect(gateProblems("p.tsx", page("return null;"))).toHaveLength(1);
     expect(gateProblems("p.tsx", "const Page = async () => null;\nexport default Page;")).toContain("the default export does not await requireAdmin() first");
+  });
+
+  it("fails a default export or metadata exposed through a re-export", () => {
+    const gatedMeta = 'export const generateMetadata = () => adminMetadata({ title: "X" });';
+    expect(gateProblems("p.tsx", `${gatedMeta}\nconst Page = async () => { await requireAdmin(); return null; };\nexport { Page as default };`)).toEqual([
+      "`export { Page as default }` exposes `default` through a re-export this check cannot read",
+      "the default export does not await requireAdmin() first",
+    ]);
+    const metadata = 'const metadata = { title: "X" };\nexport { metadata };';
+    expect(gateProblems("p.tsx", page("await requireAdmin();", metadata))).toEqual([
+      "`export { metadata }` exposes `metadata` through a re-export this check cannot read",
+    ]);
+    expect(gateProblems("p.tsx", page("await requireAdmin();", `${gatedMeta}\nexport * from "./other";`))).toEqual([
+      "`export *` re-exports names this check cannot read",
+    ]);
+    // A type-only re-export carries no value and passes.
+    expect(gateProblems("p.tsx", page("await requireAdmin();", `${gatedMeta}\nexport type { Metadata } from "next";`))).toEqual([]);
   });
 
   it("fails static metadata and metadata not gated through adminMetadata", () => {

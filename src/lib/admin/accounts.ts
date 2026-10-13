@@ -23,8 +23,12 @@ const PAGE = 500;
  * the page is drawn from the stored ids instead and the late answer is dropped.
  */
 export const CLERK_DEADLINE_MS = 5_000;
-// Far past this admin's audience (Hugh and friends): a guard against an unbounded loop, not a cap.
-const MAX_PAGES = 20;
+/**
+ * Far past this admin's audience (Hugh and friends): a guard against an unbounded loop, not a cap.
+ * A read that fills every page has not reached the end, so it is refused rather than reported as the
+ * whole list, and the page takes the stored ids with its notice instead.
+ */
+export const MAX_PAGES = 20;
 
 type ClerkUser = {
   id: string;
@@ -50,9 +54,10 @@ async function readClerk(listUsers: ListUsers): Promise<ClerkUser[]> {
   for (let page = 0; page < MAX_PAGES; page++) {
     const { data } = await listUsers({ limit: PAGE, offset: page * PAGE });
     users.push(...data);
-    if (data.length < PAGE) break;
+    // A short page is the last one: the list is whole.
+    if (data.length < PAGE) return users;
   }
-  return users;
+  throw new Error(`Clerk listed more than ${MAX_PAGES * PAGE} accounts; the list would be partial`);
 }
 
 async function clerkListUsers(params: { limit: number; offset: number }) {

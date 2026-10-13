@@ -76,6 +76,26 @@ describe("listAccounts' deadline", () => {
     expect(out).toEqual({ clerk: "ok", accounts: [{ id: "user_a", name: "Ana", email: null }] });
   });
 
+  it("refuses a read that fills every page, and takes the stored ids, rather than calling it whole", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { MAX_PAGES } = await import("./accounts");
+    const full = Array.from({ length: 500 }, (_, i) => user(`user_${i}`, null));
+    const listUsers = vi.fn(async () => ({ data: full }));
+    const out = await listAccounts({ listUsers, storedUserIds: async () => ["user_a"], ownerIds: new Set() });
+    expect(listUsers).toHaveBeenCalledTimes(MAX_PAGES);
+    expect(out).toEqual({ clerk: "down", accounts: [{ id: "user_a", name: null, email: null }] });
+    error.mockRestore();
+  });
+
+  it("stops at the first short page, even an empty one after a full one", async () => {
+    const full = Array.from({ length: 500 }, (_, i) => user(`user_${i}`, null));
+    const listUsers = vi.fn(async ({ offset }: { limit: number; offset: number }) => ({ data: offset === 0 ? full : [] }));
+    const out = await listAccounts({ listUsers, storedUserIds: async () => [], ownerIds: new Set() });
+    expect(listUsers).toHaveBeenCalledTimes(2);
+    expect(out.clerk).toBe("ok");
+    expect(out.accounts).toHaveLength(500);
+  });
+
   it("budgets five seconds by default", async () => {
     const { CLERK_DEADLINE_MS } = await import("./accounts");
     expect(CLERK_DEADLINE_MS).toBe(5_000);
