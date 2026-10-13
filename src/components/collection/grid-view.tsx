@@ -13,6 +13,7 @@
 // Missing art → color-identity gradient (READINESS #4).
 
 import type { BrowseListCard } from "../../lib/collection/browse";
+import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { readCardPrice } from "../../lib/collection/copy-price";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { printedFaceName, printedNameOf } from "../../lib/collection/browse";
@@ -95,7 +96,7 @@ export function GridView({
        (362 / 332px at 390 / 360) less two 8px gaps, divided by 3, is 115.3 /
        105.3px — the whole card at 63:88 over a fixed 70px caption. Auto-fill
        would collapse a 178px floor to a single column at this width. */
-    <div aria-busy={busy || undefined} className="grid grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(178px,1fr))] gap-[8px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
+    <div aria-busy={busy || undefined} className={`grid ${CARD_GRID_TRACKS} gap-[8px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]`}>
       {/* The gloss travels WITH the view: a surface drawing a wordless mark carries the
           thing that decodes it, rather than trusting a caller to mount one above. ONE
           instance (Hugh, 2026-10-03): the desktop key matches the phone's, even though

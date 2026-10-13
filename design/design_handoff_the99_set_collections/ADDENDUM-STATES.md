@@ -70,6 +70,13 @@ With missing-only on and every match owned, the shipped good-news branch carries
 **Rest.** `repeat(auto-fill, minmax(146px, 1fr))`, gap 10/18, `aspect-ratio: 63/88`. 2 tracks at
 390px, 7 at 1180.
 
+**Superseded (Hugh, 2026-10-13, bug batch C):** the grid takes `/collection`'s tracks, one shared
+constant (`CARD_GRID_TRACKS`): 3-up on a phone, `repeat(auto-fill, minmax(178px, 1fr))` from `md`,
+gap 8/18 on a phone and 20/18 from `md`. The two routes give the same column count at every width
+up to the set page's 1180px cap (3 at 390 to 900, 4 at 1024, 5 at 1180); above it the set grid
+holds 5 while `/collection` keeps adding columns. The phone cell is ~113px, under `image_uri_small`'s
+146px source width, so the art is drawn downscaled rather than at its source size.
+
 **Filtered.** Same tracks, fewer cells. **`auto-fill`, never `auto-fit`** — the one keyword that
 decides the no-reflow constraint.
 
