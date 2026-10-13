@@ -17,7 +17,6 @@ const calls = vi.hoisted(() => ({
   finished: [] as unknown[][],
   persisted: [] as unknown[][],
   persistResult: true,
-  cancelled: [] as unknown[][],
   modelCalls: [] as { system: string; user: string; effort?: string; deadlineMs?: number; retryFloorMs?: number; schema: unknown }[],
   modelOutcome: undefined as unknown,
   modelThrows: false,
@@ -74,7 +73,6 @@ vi.mock("../../lib/tuning/cuts-run-store", () => ({
   },
   finishCutsRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
   persistCutsRun: async (...args: unknown[]) => { calls.persisted.push(args); return calls.persistResult; },
-  cancelCutsRun: async (...args: unknown[]) => { calls.cancelled.push(args); return true; },
 }));
 vi.mock("../../lib/tuning/cuts-verdicts", () => ({
   cutItem: async (_i: string, _u: string, mode?: unknown) => { calls.verdictCalls.push("cut"); calls.verdictModes.push(mode); return calls.verdict; },
@@ -98,7 +96,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { cancelProposedCuts, cutProposed, keepProposedCut, readCutsPanel, restoreProposedCut, runProposedCuts as runProposedCutsRequest, undoProposedCut } from "./cuts-actions";
+import { cutProposed, keepProposedCut, readCutsPanel, restoreProposedCut, runProposedCuts as runProposedCutsRequest, undoProposedCut } from "./cuts-actions";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
@@ -138,7 +136,6 @@ beforeEach(() => {
   calls.rechained = [];
   calls.verdictCalls = [];
   calls.fingerprints = ["fp0", "fp1"];
-  calls.cancelled = [];
   calls.modelCalls = [];
   later.queue.length = 0;
   calls.modelOutcome = undefined;
@@ -364,22 +361,6 @@ describe("runProposedCuts returns before the model is called", () => {
     expect(later.queue).toHaveLength(1);
     await Promise.all(later.queue.splice(0).map((f) => f()));
     expect(calls.modelCalls).toHaveLength(1);
-  });
-});
-
-describe("cancelProposedCuts", () => {
-  it("stops the named run", async () => {
-    expect(await cancelProposedCuts(DECK, RUN)).toEqual({ ok: true });
-    expect(calls.cancelled).toEqual([[RUN, DECK, "user_1"]]);
-  });
-
-  it("does nothing with the switch off or an id that is not a uuid", async () => {
-    calls.enabled = false;
-    await cancelProposedCuts(DECK, RUN);
-    calls.enabled = true;
-    await cancelProposedCuts("nope", RUN);
-    await cancelProposedCuts(DECK, "nope");
-    expect(calls.cancelled).toHaveLength(0);
   });
 });
 

@@ -5,7 +5,6 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
 import {
   applySuggestion,
-  cancelTuningRun,
   dismissSuggestion,
   readTuningPanel,
   restoreSuggestion,
@@ -48,7 +47,8 @@ import { CreditsText } from "../ui/credits-text";
  * Its states, off `TuningState` and what the reader just pressed:
  *  - never run: with marked games (C1), with no games (D1, E3), with games and no marks (E5);
  *  - reading: the manifest ticking on a pure client-side stagger (H35, PR 3 — not on each read
- *    landing, which it did through PR 2), the fan shuffling, Stop (C2);
+ *    landing, which it did through PR 2), the fan shuffling (C2; its Stop was removed
+ *    2026-10-12: the server finishes every run, so a read always runs to its end);
  *  - results, five or fewer (A1, A2, D2); part answered (C3); all answered (C4);
  *  - retired by a commit (C5): the set is cleared and the gate reopens;
  *  - nothing changed (state 5): drawn when a press finds the gate `unchanged`, with Suggest
@@ -64,14 +64,12 @@ export type TuningDeps = {
   /** `runId`: a past run History reopened (re-review), read in place of the newest. */
   read: (deckId: string, runId?: string | null) => Promise<TuningState | null>;
   run: (deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }) => Promise<DeckMutationResult>;
-  cancel: (deckId: string, runId: string) => Promise<DeckMutationResult>;
   card: CardActions;
 };
 
 const SERVER: TuningDeps = {
   read: readTuningPanel,
   run: runTuning,
-  cancel: cancelTuningRun,
   card: { apply: applySuggestion, undo: undoSuggestion, reject: dismissSuggestion, restore: restoreSuggestion },
 };
 
@@ -99,9 +97,6 @@ const manifest = deckTuningCopy.manifest;
 const descriptionManifest = deckDescriptionCopy.manifest;
 /** How often a run begun elsewhere (another tab, a reload mid-run) is re-read until it settles. */
 const WATCH_MS = 3000;
-/** How long Stop looks for a run's pending row that its press may have beaten to the database. */
-const STOP_TRIES = 5;
-const STOP_WAIT_MS = 300;
 /** The checklist's own pacing (H35, PR 3): presentational, never a real read landing. STATES
  *  §3 state 5 — "~350ms apart from 350ms". */
 const STAGGER_MS = 350;
@@ -235,21 +230,22 @@ export function TuningPanel({
   if (!dirtyLimitFields.has("sets") && limitSets !== facts.limits.sets) setLimitSets(facts.limits.sets);
   if (!dirtyLimitFields.has("ownedOnly") && ownedOnly !== facts.limits.ownedOnly) setOwnedOnly(facts.limits.ownedOnly);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  // Each press takes a token, so a run the reader stopped cannot land over what they did next.
+  // Each press takes a token, so a superseded press cannot land over what the reader did next.
   const token = useRef(0);
   // Leaving the panel ends this visit's press: its poll and its draws check the token, and a bump
   // here supersedes them, so nothing is read or drawn for a panel no longer on screen. The run
   // itself is the server's and finishes regardless.
   useEffect(() => () => { token.current += 1; }, []);
-  // The id this panel gave the run its press started, until that press settles. Stop cancels this
-  // run and no other: the pending row a read turns up may be another tab's.
+  // The id this panel gave the run its press started, until that press settles. The watch for a
+  // pending run leaves this one's stagger to `pressRun`: the pending row a read turns up may be
+  // another tab's.
   const ownRun = useRef<string | null>(null);
   // A SYNCHRONOUS re-entry guard over `press`'s whole body: `reading` (which the render uses to
   // disable the button) only goes true once `setTicked(new Set())` runs below, so a second click during
   // the flush-and-gate-check preamble would otherwise start a SECOND `press`, racing `token` and
   // `ownRun` against the first (pre-open review round 3). Holds the TOKEN the active press is
-  // running under, or null — `stop()` clears it unconditionally, and a press's own `finally`
-  // only clears it when it still names that exact press (round 4).
+  // running under, or null; a press's own `finally` only clears it when it still names that
+  // exact press (round 4).
   const preparingRun = useRef<number | null>(null);
 
   // EVERY server call here can reject (a dropped connection, an unexpected database error), and a
@@ -491,8 +487,8 @@ export function TuningPanel({
     // This effect is reconstructing state from an external system — a run already under way,
     // read off its own `createdAt` — the case `use-card-search.ts` already disables this same
     // rule for, rather than deferring the call through a 0ms timer: that deferral raced a
-    // synchronous Stop landing in the SAME tick in a test with no fake timers (the 0ms timeout
-    // fired after Stop's own `setTicked(null)`, reviving `ticked`).
+    // synchronous `setTicked(null)` landing in the SAME tick in a test with no fake timers,
+    // reviving `ticked`.
     setTicked(new Set(runStepsList.slice(0, already)));
     let localStagger: ReturnType<typeof setInterval> | null = null;
     if (already >= runStepsList.length) {
@@ -535,7 +531,7 @@ export function TuningPanel({
     // closure is current when that happens, same as the rest of this component reads
     // `facts`/`intent`.
   }, [pendingRunId, pendingRunCreatedAt, reread]); // eslint-disable-line react-hooks/exhaustive-deps
-  // The stagger and its long-wait timer are cleared on every unmount, same as a Stop would.
+  // The stagger and its long-wait timer are cleared on every unmount.
   useEffect(() => {
     return () => {
       if (staggerTimer.current !== null) clearInterval(staggerTimer.current);
@@ -581,9 +577,7 @@ export function TuningPanel({
     // Held for the whole press, released on every exit by the `finally` below — not just the
     // preamble, since `reading`'s own disablement only starts once `setTicked(new Set())` runs further
     // down (pre-open review round 3). Stamped with THIS press's own token (bumped here, not
-    // inside `pressRun`), so `stop()` can release it explicitly without the `finally` of an
-    // already-superseded press then clearing a NEWER press's guard (round 4): the `finally`
-    // only clears it when the guard still names the token it set.
+    // inside `pressRun`): the `finally` only clears it when the guard still names the token it set.
     if (preparingRun.current !== null) return;
     const mine = ++token.current;
     preparingRun.current = mine;
@@ -701,10 +695,8 @@ export function TuningPanel({
       ? await awaitRunSettled(() => deps.read(deckId, leftReview.current ? null : reviewRunId), runId, { aborted: () => token.current !== mine })
       : null;
     // Checked BEFORE touching the timer refs, not after (review fix): `staggerTimer`/
-    // `longWaitTimer` are this component's shared refs, and `stop()` lets a new press start
-    // while this press's own `deps.run` is still unresolved (pre-open review round 4, PR 2). If
-    // that superseded run's promise settles late, it must not reach in and clear a NEWER press's
-    // own live timers out from under it.
+    // `longWaitTimer` are this component's shared refs, and a superseded press (the panel left)
+    // must not reach in and clear timers that are no longer its own.
     if (token.current !== mine) return;
     if (staggerTimer.current !== null) {
       clearInterval(staggerTimer.current);
@@ -719,8 +711,8 @@ export function TuningPanel({
     setTicked(new Set(runStepsList));
     setWritingActive(false);
     ownRun.current = null;
-    // Token-checked AFTER the read too: a Stop pressed while this read is in flight owns the panel
-    // from then on, and this press must not draw or announce over it.
+    // Token-checked AFTER the read too: a panel left while this read is in flight must not be
+    // drawn or announced over.
     const next = waited ?? await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
     if (token.current !== mine) return;
     if (next) {
@@ -760,50 +752,6 @@ export function TuningPanel({
         ? deckTuningCopy.announce.readyLists(nextLines.filter((l) => l.side === "add").length, nextLines.filter((l) => l.side === "cut").length)
         : deckTuningCopy.announce.ready(next.items.length));
     headingRef.current?.focus();
-  }
-
-  async function stop() {
-    token.current += 1;
-    if (staggerTimer.current !== null) {
-      clearInterval(staggerTimer.current);
-      staggerTimer.current = null;
-    }
-    if (longWaitTimer.current !== null) {
-      clearTimeout(longWaitTimer.current);
-      longWaitTimer.current = null;
-    }
-    setWritingActive(false);
-    setLongWait(false);
-    // Release the guard so a NEW press can start right away — the request `pressRun` is still
-    // awaiting (the model call, its closing read) can run up to the model timeout, and this
-    // panel's own `press` should not stay unresponsive until it settles (pre-open review round
-    // 4). Unconditional: a `press` whose `finally` later runs will find its own token already
-    // superseded and leave this null alone.
-    preparingRun.current = null;
-    // The run this Stop is about: the one this panel's own press started, by the id it gave it,
-    // or else the pending run already on screen, started elsewhere. Only that id is ever
-    // cancelled, so a Stop never reaches a run another tab started.
-    const own = ownRun.current;
-    ownRun.current = null;
-    const target = own ?? (state?.run?.status === "pending" ? state.run.id : null);
-    let cancelled = false;
-    for (let attempt = 0; target !== null && attempt < STOP_TRIES; attempt += 1) {
-      await deps.cancel(deckId, target).catch(() => null);
-      // `cancelTuningRun` answers ok whether or not its guarded update matched: a run that
-      // settled before the cancel reached it was not stopped, and its credit may be spent. So the
-      // answer is read back, and only a run that now reads cancelled was stopped.
-      const after = await deps.read(deckId, leftReview.current ? null : reviewRunId).catch(() => null);
-      const seen = after?.run?.id === target ? after.run : null;
-      cancelled = seen?.status === "cancelled";
-      // A run that settled is past stopping. One not seen at all can still be on its way in only
-      // when this panel started it (the press can land before its row exists); a watched run
-      // that is gone from the read is over.
-      if (cancelled || (seen !== null && seen.status !== "pending") || (seen === null && own === null)) break;
-      if (attempt < STOP_TRIES - 1) await new Promise((r) => setTimeout(r, STOP_WAIT_MS));
-    }
-    setTicked(null);
-    await reread();
-    if (cancelled) setAnnounced(deckTuningCopy.announce.stopped);
   }
 
   /** After a row's answer: announce it and read again. False when the re-read failed or a newer
@@ -865,7 +813,8 @@ export function TuningPanel({
   const refusal = !reading && !priorRun && state.run?.status === "failed" && state.run.errorClass === "ungrounded"
     ? refusalBody(state.run.validationReport?.refusal ?? { reason: "nothingLeft" })
     : null;
-  // A failed or stopped re-run leaves the set it would have replaced on screen, still open.
+  // A failed or stopped re-run (an old `cancelled` row, from before Stop was removed) leaves the
+  // set it would have replaced on screen, still open.
   const hasSet = !reading && (reviewing || !state.retired) && !priorResult && state.items.length > 0;
   const neverRunRows = manifestRows(facts, intent, null, previewSteps);
   // "Describing in place" (STATES §3 state 2) replaces the checklist with its own editor; Cancel
@@ -992,7 +941,7 @@ export function TuningPanel({
     // No set is on screen, so the press replaces nothing: the first-run note.
     primary = { label: deckTuningCopy.failure.retry, again: false };
   } else {
-    // Never run, or cleared by a Stop: the lead the evidence supports, and what will be read.
+    // Never run, or a run with nothing to show (an old `cancelled` row): the lead the evidence supports, and what will be read.
     neverRun = true;
     body = (
       <>
@@ -1111,13 +1060,6 @@ export function TuningPanel({
               >
                 {copy.reading}
               </span>
-              <button
-                type="button"
-                onClick={() => void stop()}
-                className="h-[44px] flex-1 rounded-[8px] text-[13px] font-medium md:h-auto md:flex-none md:px-[14px] md:py-[10px] text-[color:var(--fg-muted)] [border:1px_solid_var(--border-strong)] hover:text-[color:var(--fg)] transition-colors"
-              >
-                {copy.stop}
-              </button>
             </div>
             <span className="-mt-[1px] text-center font-mono text-[9.5px] md:mt-0 md:text-left md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
               {writingActive

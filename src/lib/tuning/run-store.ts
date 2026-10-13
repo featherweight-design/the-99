@@ -18,8 +18,8 @@ import type { ValidatedSuggestion, ValidationReport } from "./validate";
  * real functions: from a `"use server"` module they would become public actions taking an
  * arbitrary run id.
  *
- * BOTH ARE GUARDED ON `status = 'pending'`. The reaper and a Stop settle a run too, and whichever
- * writer arrives second must change nothing — not the status, not the items, not the unit. The
+ * BOTH ARE GUARDED ON `status = 'pending'`. The reaper settles a run too (and a Stop did, before it
+ * was removed on 2026-10-12), and whichever writer arrives second must change nothing — not the status, not the items, not the unit. The
  * unit is settled in the same transaction as the outcome, so the two can never disagree: a
  * failure refunds it, and only an answer the player will see spends it.
  *
@@ -48,7 +48,7 @@ export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type RunHandle = { runId: string; callId: string };
 
 /**
- * A LATE OUTCOME still records its bill. When a Stop, the reaper or a deck delete got there
+ * A LATE OUTCOME still records its bill. When the reaper or a deck delete got there
  * first, the outcome write matches no pending run and changes nothing about the run or the credit
  * — but the upstream call billed all the same, and until its meters land its unit counts toward
  * the month at its worst case. So the meters go onto the unit anyway, by the id the start handed
@@ -95,8 +95,8 @@ export async function startRun(
   /** The deck version the run's inputs were read at (`TuningInputs.readVersion`). */
   readVersion: number | null,
   /**
-   * `runId` is the id the panel chose for this press, so its Stop can cancel exactly the run it
-   * started and never another tab's (the row's default makes one when absent).
+   * `runId` is the id the panel chose for this press, so it waits on exactly the run it started
+   * and never another tab's (the row's default makes one when absent).
    */
   opts: { runId?: string; now?: Date } = {},
 ): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
@@ -215,35 +215,4 @@ export async function persistRun(
     throw err;
   }
   return true;
-}
-
-/**
- * A Stop: the run the panel was watching, and no other. Scoped to its id as well as the deck
- * and the reader, so a Stop pressed after that run settled cannot cancel the next one. A Stop is
- * not an answer, so its unit comes back. False when there was nothing pending to stop.
- */
-export const cancellableRun = (runId: string, deckId: string, userId: string, tool: string) => and(
-  eq(deckSuggestionRuns.id, runId),
-  eq(deckSuggestionRuns.deckId, deckId),
-  eq(deckSuggestionRuns.userId, userId),
-  eq(deckSuggestionRuns.tool, tool),
-  eq(deckSuggestionRuns.status, "pending"),
-);
-
-/** `tool` is the tool whose Stop this is: a run id from another tool's run on the deck is not found. */
-export async function cancelRun(
-  runId: string,
-  deckId: string,
-  userId: string,
-  tool: string = SUGGESTED_CHANGES_TOOL,
-): Promise<boolean> {
-  const rows = await db.transaction(async (tx) => {
-    const cancelled = await tx.update(deckSuggestionRuns)
-      .set({ status: "cancelled" })
-      .where(cancellableRun(runId, deckId, userId, tool))
-      .returning({ callId: deckSuggestionRuns.modelCallId });
-    for (const r of cancelled) await settleModelCall(tx, r.callId, "refunded", undefined);
-    return cancelled;
-  });
-  return rows.length > 0;
 }

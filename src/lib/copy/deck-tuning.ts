@@ -61,7 +61,6 @@ export const deckTuningCopy = {
     loadingLead:
       "Reading your deck. This takes a few seconds, and the list below stays on screen when the suggestions arrive.",
     reading: "Reading\u2026",
-    stop: "Stop",
     resultsLead: (nWord: string) =>
       `${nWord} swaps, each a card out and a card in. Nothing moves until you apply one.`,
     // Eng-written: the singular the canvas does not draw.
@@ -273,7 +272,6 @@ export const deckTuningCopy = {
     cutCard: (name: string) => `Cut. ${name} is out of the deck.`,
     undoneAdd: (name: string) => `Put back. ${name} is out of the deck again.`,
     undoneCut: (name: string) => `Put back. ${name} is in the deck again.`,
-    stopped: "Stopped. No credit was used.",
     applied: (cut: string, add: string) => `Applied. ${add} is in the deck and ${cut} is out.`,
     undone: (cut: string) => `Put back. ${cut} is in the deck again.`,
     rejected: "Rejected.",

@@ -13,7 +13,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 const detail = vi.hoisted(() => ({ open: vi.fn() }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: detail.open }), useCardIntent: () => ({}) }));
 vi.mock("../../app/decks/cuts-actions", () => ({
-  cancelProposedCuts: vi.fn(), cutProposed: vi.fn(), keepProposedCut: vi.fn(), readCutsPanel: vi.fn(),
+  cutProposed: vi.fn(), keepProposedCut: vi.fn(), readCutsPanel: vi.fn(),
   restoreProposedCut: vi.fn(), runProposedCuts: vi.fn(), undoProposedCut: vi.fn(),
 }));
 
@@ -40,7 +40,7 @@ const withResult = (n: number, asked: number, extra: Partial<CutsPanel> = {}) =>
 
 function deps(read: CutsPanel | null, over: Partial<CutsDeps> = {}): CutsDeps {
   return {
-    read: vi.fn(async () => read), run: vi.fn(async () => ({ ok: true as const })), cancel: vi.fn(async () => ({ ok: true as const })),
+    read: vi.fn(async () => read), run: vi.fn(async () => ({ ok: true as const })),
     cut: vi.fn(async () => ({ ok: true as const })), undo: vi.fn(async () => ({ ok: true as const })),
     keep: vi.fn(async () => ({ ok: true as const })), restore: vi.fn(async () => ({ ok: true as const })), ...over,
   };
@@ -131,14 +131,25 @@ describe("CutsPanelView", () => {
     expect(screen.queryByRole("button", { name: /Look deeper/ })).toBeNull();
   });
 
-  it("C2: a pending run shows the running band and Stop cancels exactly that run", async () => {
+  it("C2: a pending run shows the running band, with no Stop", async () => {
     const pending = panelOf({ run: { id: "r9", status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
-    const after = panelOf({ run: { id: "r9", status: "cancelled", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
-    const read = vi.fn().mockResolvedValueOnce(pending).mockResolvedValue(after);
-    const d = deps(null, { read });
-    await mount(d);
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: copy.deeper.stop })); });
-    await waitFor(() => expect(d.cancel).toHaveBeenCalledWith("d1", "r9"));
+    await mount(deps(null, { read: vi.fn().mockResolvedValue(pending) }));
+    expect(screen.getByText(copy.deeper.pending)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /stop/i })).toBeNull();
+  });
+
+  it("an old cancelled run draws as it always did: no failure, and the offer back", async () => {
+    const cancelled = panelOf({ run: { id: "r9", status: "cancelled", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
+    await mount(deps(null, { read: vi.fn().mockResolvedValue(cancelled) }));
+    expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
+    expect(screen.queryByText(copy.deeper.pending)).toBeNull();
+    expect(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." })).toBeTruthy();
+  });
+
+  it("keeps the last run's cuts standing under an old cancelled re-run", async () => {
+    await mount(deps(withResult(3, 6, { run: { id: "r2", status: "cancelled", errorClass: null, createdAt: new Date(), droppedCount: 0 } })));
+    expect(screen.queryByText(copy.deeper.failedHeading)).toBeNull();
+    expect(screen.getByText("Card 1")).toBeTruthy();
   });
 
   it("C3: six named, each with the Suggestion tag, a sentence and chips quoting the figure", async () => {
@@ -279,42 +290,6 @@ describe("CutsPanelView", () => {
     fireEvent.click(screen.getByRole("button", { name: copy.cut }));
     await waitFor(() => expect(screen.queryByRole("article")).toBeNull());
     expect(screen.getByText(copy.refusals.stale)).toBeTruthy();
-  });
-
-  it("Stop on a run whose pending row does not exist yet keeps cancelling until the request answers", async () => {
-    let answer: (r: { ok: true }) => void = () => {};
-    const run = vi.fn(() => new Promise<{ ok: true }>((r) => { answer = r; }));
-    const cancelled = { id: "x", status: "cancelled" as const, errorClass: null, createdAt: new Date(), droppedCount: 0 };
-    let reads = 0;
-    const read = vi.fn(async () => {
-      reads += 1;
-      // The row appears only on the ninth read, long after five misses.
-      return reads < 9 ? panelOf() : panelOf({ run: { ...cancelled, id: lastRun } });
-    });
-    let lastRun = "";
-    const d = deps(null, { read, run: vi.fn((id: string, o?: { runId?: string }) => { lastRun = o?.runId ?? ""; return run(); }), cancel: vi.fn(async () => ({ ok: true as const })) });
-    await mount(d);
-    fireEvent.click(screen.getByRole("button", { name: "Look deeper. Uses 1 credit." }));
-    await waitFor(() => expect(d.run).toHaveBeenCalled());
-    fireEvent.click(await screen.findByRole("button", { name: copy.deeper.stop }));
-    await waitFor(() => expect((d.cancel as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(5), { timeout: 8000 });
-    answer({ ok: true });
-  }, 15000);
-
-  it("Stop cannot be entered twice while it is still cancelling", async () => {
-    const pending = panelOf({ run: { id: "r9", status: "pending", errorClass: null, createdAt: new Date(), droppedCount: 0 } });
-    let release: () => void = () => {};
-    const gate = new Promise<void>((r) => { release = r; });
-    const cancel = vi.fn(async () => { await gate; return { ok: true as const }; });
-    const read = vi.fn().mockResolvedValue(pending);
-    const d = deps(null, { read, cancel });
-    await mount(d);
-    const stop = screen.getByRole("button", { name: copy.deeper.stop }) as HTMLButtonElement;
-    fireEvent.click(stop);
-    await waitFor(() => expect(stop.disabled).toBe(true));
-    fireEvent.click(stop);
-    expect(cancel).toHaveBeenCalledTimes(1);
-    release();
   });
 
   it("a read that fails after a good one draws the count-failed state, not the old panel", async () => {
@@ -478,7 +453,7 @@ describe("a past run History reopened (re-review)", () => {
     const newer = (status: "pending" | "failed") => reviewed({ run: { id: "r9", status, errorClass: status === "failed" ? "upstream_busy" : null, createdAt: new Date(), droppedCount: 0 } });
     await mountReview(deps(newer("pending")));
     expect(screen.getAllByRole("article")).toHaveLength(1);
-    expect(screen.queryByRole("button", { name: copy.deeper.stop })).toBeNull();
+    expect(screen.queryByRole("button", { name: /stop/i })).toBeNull();
     cleanup();
     await mountReview(deps(newer("failed")));
     expect(screen.getAllByRole("article")).toHaveLength(1);

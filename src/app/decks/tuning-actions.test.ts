@@ -110,7 +110,6 @@ vi.mock("../../lib/tuning/run-store", () => ({
   },
   finishRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
   persistRun: async (...args: unknown[]) => { calls.persisted.push(args); return true; },
-  cancelRun: async () => true,
 }));
 vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
 vi.mock("../../lib/tuning/owned-candidates", () => ({
@@ -148,7 +147,6 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import {
   applySuggestion,
-  cancelTuningRun,
   readTuningPanel,
   runTuning as runTuningRequest,
   saveDeckDescription,
@@ -814,8 +812,7 @@ describe("with TUNING_ENABLED off", () => {
     expect(calls.headerUpdates).toHaveLength(0);
   });
 
-  it("answers cancelTuningRun and readTuningPanel as every other refusal does", async () => {
-    expect(await cancelTuningRun(DECK, "11111111-1111-4111-8111-111111111112")).toEqual({ ok: true });
+  it("answers readTuningPanel as every other refusal does", async () => {
     expect(await readTuningPanel(DECK)).toBeNull();
   });
 

@@ -11,7 +11,6 @@ import { PROPOSED_CUTS_TOOL, TUNING_MODEL } from "./limits";
 import {
   AllLockedError,
   assertSomeCardOpen,
-  cancelRun,
   finishRun,
   recordLate,
   RunSupersededError,
@@ -21,13 +20,13 @@ import {
 import type { ValidationReport } from "./validate";
 
 /**
- * Proposed cuts' run writes, the same four as `run-store.ts` for the same reasons (read its header:
+ * Proposed cuts' run writes, the same three as `run-store.ts` (start, finish, persist) for the same reasons (read its header:
  * every write is guarded on `status = 'pending'`, the unit settles in the outcome's own
  * transaction, a failure refunds it). SERVER-ONLY: it imports the database.
  *
  * Only what differs from Suggested changes is written here. `finishRun` matches a run
- * by its id and touches no items, so it is the same function, re-exported under this tool's name;
- * `cancelRun` is the same function scoped to this tool. `startRun` and `persistRun` differ in the feature reserved, the tool and
+ * by its id and touches no items, so it is the same function, re-exported under this tool's name.
+ * `startRun` and `persistRun` differ in the feature reserved, the tool and
  * prompt version recorded, and the table the items land in.
  *
  * `validation_report` is typed for Suggested changes' report. A cuts report is a different shape in
@@ -125,7 +124,3 @@ export async function persistCutsRun(
   }
   return true;
 }
-
-/** A Stop. Same function as Suggested changes': scoped to the run's id, deck and reader. */
-export const cancelCutsRun = (runId: string, deckId: string, userId: string) =>
-  cancelRun(runId, deckId, userId, PROPOSED_CUTS_TOOL);

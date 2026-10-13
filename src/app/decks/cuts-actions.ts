@@ -26,7 +26,7 @@ import { cutCounts } from "../../lib/tuning/cuts-count";
 import { cutsCountSummary, recordToolCount } from "../../lib/tuning/tool-counts";
 import { buildCutsPack, type CutsPack } from "../../lib/tuning/cuts-evidence";
 import { buildCutsPrompt } from "../../lib/tuning/cuts-prompt";
-import { cancelCutsRun, finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
+import { finishCutsRun, persistCutsRun, startCutsRun } from "../../lib/tuning/cuts-run-store";
 import type { CutsPanel } from "../../lib/tuning/cuts-state";
 import { cutItem, setCutKept, undoCutItem, type CutOutcome } from "../../lib/tuning/cuts-verdicts";
 import { cutsResponseSchema } from "../../lib/tuning/cuts-schema";
@@ -39,7 +39,7 @@ import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 
 /**
- * Proposed cuts' server actions, in the shape of `tuning-actions.ts`'s `runTuning` and Stop. Every
+ * Proposed cuts' server actions, in the shape of `tuning-actions.ts`'s `runTuning`. Every
  * one is a PUBLIC ENDPOINT, so every gate the panel applies is re-applied here, and every argument
  * is checked for what it claims to be (an id that is not a uuid is refused, not handed to Postgres).
  * The transactions live in `src/lib/tuning/cuts-run-store.ts`.
@@ -80,8 +80,8 @@ export async function runProposedCuts(
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!proposedCutsEnabled() || !isUuid(deckId)) return { ok: false, message: deckCutsCopy.run.refused };
-  // The panel names its run so its Stop can cancel that run and no other. Anything but a uuid is
-  // refused rather than dropped: a Stop keyed on an id the row does not carry could never land.
+  // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
+  // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
   const requested = typeof opts === "object" && opts !== null ? opts.runId : undefined;
   if (requested !== undefined && (typeof requested !== "string" || !isUuid(requested))) {
     return { ok: false, message: deckCutsCopy.run.refused };
@@ -184,14 +184,6 @@ export async function runProposedCuts(
     }
   };
   after(work);
-  return { ok: true };
-}
-
-/** Stop: the run the panel was watching, by id, so a late press cannot cancel the next one. */
-export async function cancelProposedCuts(deckId: string, runId: string): Promise<DeckMutationResult> {
-  const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(deckId) || !isUuid(runId)) return { ok: true };
-  if (await cancelCutsRun(runId, deckId, userId)) revalidateDeck(deckId);
   return { ok: true };
 }
 

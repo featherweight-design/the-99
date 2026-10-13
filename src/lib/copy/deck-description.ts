@@ -40,7 +40,7 @@ export const deckDescriptionCopy = {
     notes: "Additional notes",
     // The last row: pending until the model returns.
     writing: "Writing your suggestions…",
-    writingLong: "Taking longer than usual. It is still working, and Stop uses no credit.",
+    writingLong: "Taking longer than usual. It is still working.",
     progressWriting: (done: number, total: number) => `${done} of ${total} read · writing`,
     readDescription: "your description",
     readLimits: "your limits",

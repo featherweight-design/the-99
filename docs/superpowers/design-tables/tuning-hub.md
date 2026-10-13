@@ -121,7 +121,7 @@
 | spent | tag `0 left` `--warning`; button `--fg-locked` on `--border-strong`; `creditsCopy.spent(total, next)` | same |
 
 ### DeeperBand — running / note
-- **Running:** border `1px solid var(--accent)`, `aria-busy`. The title has a 6px accent dot. Stop is a neutral ghost in the button's slot.
+- **Running:** border `1px solid var(--accent)`, `aria-busy`. The title has a 6px accent dot. Stop is a neutral ghost in the button's slot. **Removed 2026-10-12** (Hugh): Look deeper no longer draws Stop or `stopping gives the credit back`; the server finishes every run, so a read always runs to its end. An old `cancelled` row still reads `stopped` in History.
 - **Refused:** `--border-strong`, an 18px `i` disc in `--fg-faint`, a 12.5 `--fg-body` sentence, and `Look deeper` stays.
 - **Failed:** the `Didn't finish` tag (the failure tag spec in `deck-tuning.md`), the sentence, and `Try again` in the button's slot.
 
@@ -207,7 +207,7 @@ Replaces R1's CutRow and "shortlist size" tables (rank number, `Rank again`, ove
 | button | the hub's one filled button: `--accent` fill, `--bg` ink, 44 tall full width, radius 8; `Look deeper` then a segment after a rule `color-mix(in srgb, var(--bg) 35%, transparent)` holding `◆ 1 credit` | 38 tall, auto width |
 | spent / paused | disabled at half opacity, no segment, the standing line says why | same |
 | standing line | mono 10.5 `--fg-faint` under the button: `2 of 3 left · reset at 4:10 PM` (the shared credits line) | same |
-| running (C2) | `--accent` border, `Looking deeper…`, mono read line with the elapsed clock and `stopping gives the credit back`, `Stop` neutral outline | Stop beside the text |
+| running (C2) | `--accent` border, `Looking deeper…`, mono read line with the elapsed clock (`stopping gives the credit back` and `Stop` removed 2026-10-12) | same |
 | refused (C6) | neutral sentence, never `--danger`, the offer stays | same |
 | failed (C7) | 16 `!` disc in `--danger` beside the heading (`aria-label` `Didn’t finish`), one sentence, `Try again` outline with the credit segment | same |
 | all locked (C6c) | neutral sentence, no offer | same |
