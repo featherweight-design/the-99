@@ -2247,7 +2247,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   branch. Dropping the list from the phone header's door fails it at 390 and leaves 1300 green.
 
 - `pnpm probe:card-sheet-min` proves the phone card sheet's min snap (Hugh, 2026-10-13) at 390. It opens a
-  card from the deck page's list and swipes down on the card from the teaser. The sheet must reach min
+  card from the deck page's list and swipes down on the card from the teaser. Mid-drag, the card must have grown as
+  far toward its min size as the sheet has moved toward min (within 5 points), and on a drag back up it must shrink
+  the same way. Writing no drag size fails both checks. The sheet must reach min
   (the shelf 72 tall, its title in view), and the card must grow to the band's width less 16px each side
   without leaving the band. A horizontal swipe must still page, with the next card opening at min, and a
   tap on the card must restore the teaser and the card's teaser size. At 1300 the desktop draws no phone

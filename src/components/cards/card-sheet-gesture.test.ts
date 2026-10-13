@@ -7,6 +7,7 @@ import {
   lockAxis,
   pageDecision,
   sheetSnap,
+  cardAtProgress,
   startsAtSystemEdge,
   velocity,
 } from "./card-sheet-gesture";
@@ -192,5 +193,30 @@ describe("the sheet's min snap", () => {
   it("is two snaps, as shipped, where there is no min to reach", () => {
     expect(sheetSnap(teaserTop + 20, 0.5, SHEET.fullTop, teaserTop)).toBe("teaser");
     expect(sheetSnap(teaserTop - 20, -0.5, SHEET.fullTop, teaserTop)).toBe("full");
+  });
+});
+
+// The card grows WITH the drag (Hugh, 2026-10-13): its size at each point between the teaser and min.
+describe("the card's size along a drag to min", () => {
+  const [w, h] = [390, 844];
+  it("is the teaser's card at the teaser and min's at min", () => {
+    // Teaser: min(320, (844 - 280 - 85) x 0.7159) at y 64.
+    expect(cardAtProgress(w, h, SHEET.teaserHeight, 0)).toEqual({ width: 320, top: 64 });
+    // Min: min(390 - 32, (844 - 72 - 85) x 0.7159) = 358, centred in the 772 band.
+    const end = cardAtProgress(w, h, SHEET.teaserHeight, 1);
+    expect(end.width).toBe(358);
+    expect(end.top).toBeCloseTo((772 - (358 * 88) / 63) / 2, 5);
+  });
+
+  it("is between the two, in proportion, mid-drag", () => {
+    const mid = cardAtProgress(w, h, SHEET.teaserHeight, 0.5);
+    expect(mid.width).toBeCloseTo(339, 5);
+    const end = cardAtProgress(w, h, SHEET.teaserHeight, 1);
+    expect(mid.top).toBeCloseTo((64 + end.top) / 2, 5);
+  });
+
+  it("holds at either end past it", () => {
+    expect(cardAtProgress(w, h, SHEET.teaserHeight, -0.4)).toEqual(cardAtProgress(w, h, SHEET.teaserHeight, 0));
+    expect(cardAtProgress(w, h, SHEET.teaserHeight, 1.7)).toEqual(cardAtProgress(w, h, SHEET.teaserHeight, 1));
   });
 });

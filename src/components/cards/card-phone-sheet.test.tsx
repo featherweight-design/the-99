@@ -1,5 +1,6 @@
 // The phone's card-first sheet (carousel R2, PhoneHero.dc.html and STATES §R2). jsdom lays out
 // nothing, so these pin the states, the controls and the gesture wiring; geometry is the walk's.
+import { cardAtProgress, SHEET } from "./card-sheet-gesture";
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
@@ -472,6 +473,27 @@ describe("the sheet's min snap", () => {
     const onMinimizedChange = vi.fn();
     mount({ onMinimizedChange });
     expect(onMinimizedChange).toHaveBeenCalledWith(false);
+  });
+
+  // The card grows WITH the finger, in the frames the sheet moves in, and hands back to the snap's
+  // own CSS on release.
+  it("sizes the card from the drag while it moves, and lets go on release", () => {
+    mount();
+    const stage = () => screen.getByTestId("modal-art-mobile").parentElement as HTMLElement;
+    const band = screen.getByTestId("card-band");
+    fireEvent.pointerDown(band, { pointerId: 1, clientX: 200, clientY: 300, button: 0, pointerType: "touch" });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 320, pointerType: "touch" });
+    fireEvent.pointerMove(window, { pointerId: 1, clientX: 200, clientY: 404, pointerType: "touch" });
+    // jsdom's window is 1024 x 768: teaser top 488, min top 696, so 104px down is halfway.
+    const mid = cardAtProgress(1024, 768, SHEET.teaserHeight, 0.5);
+    expect(stage().style.getPropertyValue("--card-w-drag")).toBe(`${mid.width}px`);
+    expect(stage().style.getPropertyValue("--card-top-drag")).toBe(`${mid.top}px`);
+    expect(stage()).toHaveAttribute("data-card-dragging");
+    // The card's own width reads the drag's value first.
+    expect(stage().style.getPropertyValue("--card-w")).toMatch(/^var\(--card-w-drag,/);
+    fireEvent.pointerUp(window, { pointerId: 1, clientX: 200, clientY: 404, pointerType: "touch" });
+    expect(stage().style.getPropertyValue("--card-w-drag")).toBe("");
+    expect(stage()).not.toHaveAttribute("data-card-dragging");
   });
 
   // Paging remounts the modal per card, so the provider hands the next card the snap it left.
