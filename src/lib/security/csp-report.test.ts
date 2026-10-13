@@ -14,6 +14,10 @@ describe("originOf", () => {
   it("keeps scheme and host and drops path, query and credentials", () => {
     expect(originOf("https://user:pw@cdn.example.com/a/b?q=1#f")).toBe("https://cdn.example.com");
   });
+  it("keeps a non-default port, which an exact allowlist needs, and drops a default one", () => {
+    expect(originOf("https://cdn.example.com:8443/a.js")).toBe("https://cdn.example.com:8443");
+    expect(originOf("https://cdn.example.com:443/a.js")).toBe("https://cdn.example.com");
+  });
   it("passes CSP keywords and reduces other schemes to the scheme", () => {
     expect(originOf("inline")).toBe("inline");
     expect(originOf("eval")).toBe("eval");

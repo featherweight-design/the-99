@@ -22,7 +22,7 @@ export function originOf(value: unknown): string | null {
       const scheme = u.protocol.replace(":", "");
       return /^[a-z][a-z0-9+.-]{0,15}$/.test(scheme) ? scheme : null;
     }
-    return /^[a-z0-9.-]{1,100}$/i.test(u.hostname) ? `${u.protocol}//${u.hostname}` : null;
+    return /^[a-z0-9.-]{1,100}(:\d{1,5})?$/i.test(u.host) ? `${u.protocol}//${u.host}` : null;
   } catch {
     return null;
   }
