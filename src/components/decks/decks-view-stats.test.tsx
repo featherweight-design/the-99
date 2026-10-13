@@ -53,13 +53,15 @@ describe("DecksView: Stats on /decks", () => {
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
   });
 
-  it("reads Stats on the first press, flips in place, writes ?view=stats and remembers the choice", async () => {
+  it("reads Stats on the first press, flips in place, writes ?view=stats and remembers nothing", async () => {
     read.stats.mockResolvedValue(STATS);
     draw({ data: null, view: "tiles", foldServer: null });
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
     expect(window.location.search).toBe("?view=stats");
-    expect(localStorage.getItem("the99:decks:view")).toBe("stats");
+    // A returning reader is opened on Tiles every time (Hugh, 2026-10-13): neither storage nor a cookie keeps Stats.
+    expect(localStorage.getItem("the99:decks:view")).toBeNull();
+    expect(document.cookie).not.toContain("decks_view");
     expect(document.querySelector("[data-shelf-line], [data-shelf-trigger]")).toBeNull();
     // Back to Tiles and on to Stats again reads nothing: the payload is held for the visit.
     fireEvent.click(screen.getByRole("tab", { name: "Tiles" }));
@@ -118,7 +120,7 @@ describe("DecksView: Stats on /decks", () => {
     expect(screen.queryByRole("button", { name: "See it among your decks" })).toBeNull();
   });
 
-  it("remembers nothing when the first read fails, so the next visit is not sent to Stats", async () => {
+  it("remembers nothing when the first read fails either", async () => {
     read.stats.mockRejectedValue(new Error("down"));
     draw({ data: null, view: "tiles", foldServer: null });
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
@@ -141,7 +143,7 @@ describe("DecksView: Stats on /decks", () => {
     expect(document.getElementById(stats.getAttribute("aria-controls")!)?.getAttribute("role")).toBe("tabpanel");
   });
 
-  it("draws Stats when the server drew it, from ?view=stats or the remembered choice", () => {
+  it("draws Stats when the server drew it, from ?view=stats", () => {
     draw({ data: STATS, view: "stats", foldServer: null });
     expect(screen.getByRole("tab", { name: "Stats" }).getAttribute("aria-selected")).toBe("true");
     expect(document.querySelector("[data-decks-stats]")).not.toBeNull();

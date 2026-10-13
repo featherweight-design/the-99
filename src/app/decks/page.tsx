@@ -22,7 +22,7 @@ import { cookies } from "next/headers";
 import { lineupEnabled } from "../../lib/decks/lineup-flag";
 import { readLineupCached } from "../../lib/lineup/cached";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { DECKS_STATS_OPEN_COOKIE, DECKS_VIEW_COOKIE, parseDecksViewCookie } from "../../components/ui/view-cookie";
+import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
 
 
 export default async function DecksPage({
@@ -48,12 +48,14 @@ export default async function DecksPage({
   // payload's key and its load all decide from this one env.
   const env = await requestSwitchEnv(userId);
   // Stats on /decks (`LINEUP_ENABLED`): off, no switch, no read, and `?view` is ignored. On, the page draws
-  // Stats for `?view=stats`, or for a bare /decks when the reader last chose it (G7, the cookie the view
-  // mirrors), and reads the Stats payload only then. It is its own cache entry, so Tiles pays nothing for it.
+  // Stats for `?view=stats` alone and reads the Stats payload only then. A bare /decks is always Tiles: the
+  // view is no longer remembered (Hugh, 2026-10-13), so a returning reader is never opened on Stats. It is
+  // its own cache entry, so Tiles pays nothing for it.
   const statsOn = lineupEnabled(env);
+  // Only the Stats cards' fold memory is read from here.
   const jar = statsOn ? await cookies() : null;
   const askedView = Array.isArray(params.view) ? params.view[0] : params.view;
-  const view = !statsOn ? "tiles" : askedView === "stats" ? "stats" : askedView === undefined && parseDecksViewCookie(jar?.get(DECKS_VIEW_COOKIE)?.value) === "stats" ? "stats" : "tiles";
+  const view = statsOn && askedView === "stats" ? "stats" : "tiles";
   const lineupData = view === "stats"
     ? readLineupCached(userId, env)
     : null;

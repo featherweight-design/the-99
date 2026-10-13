@@ -94,7 +94,7 @@ import { SearchIcon } from "../ui/search-icon";
 import { DecksMarkKey } from "./decks-mark-key";
 import { mirrorUrl } from "../../lib/url/mirror";
 import type { LineupData } from "../../lib/lineup/types";
-import { DECKS_VIEW_COOKIE, type DecksView as DecksViewName } from "../ui/view-cookie";
+import { type DecksView as DecksViewName } from "../ui/view-cookie";
 import { readLineupStats } from "../../app/decks/lineup-actions";
 import { LineupView } from "./lineup/lineup-view";
 import { StatsViewSwitch, viewPanelId, viewTabId } from "./lineup/stats-view-switch";
@@ -134,7 +134,6 @@ export type DecksViewProps = {
   lineup?: { data: LineupData | null; view: DecksViewName; foldServer: string | null } | null;
 };
 
-const isDecksView = (v: string): v is DecksViewName => v === "tiles" || v === "stats";
 
 /** The parameters this view owns. Everything else on the URL is left alone. */
 // Every parameter `filtersToParams` can WRITE has to be listed here, or
@@ -332,7 +331,7 @@ export function DecksView({
   // expensive route twice per write.
   const router = useRouter();
 
-  // Tiles or Stats (G7): the server drew `lineup.view`, from `?view=stats` or the reader's remembered choice.
+  // Tiles or Stats (G7): the server drew `lineup.view`, from `?view=stats`. Nothing remembers the choice.
   // The Stats payload, once read this visit, is held, so a flip back to Stats re-reads nothing; a fresh one
   // from the server always replaces it, adjusted in render so the old one never paints first.
   const [view, setView] = useState<DecksViewName>(lineup?.data ? lineup.view : "tiles");
@@ -348,10 +347,6 @@ export function DecksView({
     // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
     if (lineup.view === "stats") setView("stats");
   }
-  const [, chooseView] = useStoredView<DecksViewName>("the99:decks:view", isDecksView, {
-    cookie: DECKS_VIEW_COOKIE,
-    serverValue: lineup?.view ?? null,
-  });
   const onView = (next: DecksViewName) => {
     const params = new URLSearchParams(window.location.search);
     if (next === "stats") params.set("view", "stats");
@@ -369,8 +364,6 @@ export function DecksView({
           // The reader may have left, or be leaving, while the read ran: then nothing is drawn, written or
           // remembered. `mirrorUrl` refuses a write off its own page too; this keeps the preference honest.
           if (!data || !mounted.current || window.location.pathname !== path) return;
-          // Remembered only once it is drawn, so a failed read never sends the next visit to Stats.
-          chooseView("stats");
           setHeldStats(data);
           setView("stats");
           // Rebuilt from the URL as it stands now: Tiles stayed live while the read ran, and a shelf, search
@@ -383,7 +376,6 @@ export function DecksView({
         .finally(() => { if (mounted.current) setStatsPending(false); });
       return;
     }
-    chooseView(next);
     setView(next);
     mirrorUrl(url);
   };
@@ -924,7 +916,7 @@ export function DecksView({
           banner. With it off (P4), the cart's own row as it shipped, absent when no deck is missing a
           card (A1-0) or the cart's switch is off. */}
       {precons ? (
-        <div className={`grid gap-[8px] px-[16px] pt-[12px] pb-[4px] sm:grid-cols-2 sm:gap-[12px] sm:px-[22px] sm:pt-0 sm:pb-[16px] ${showCart ? "grid-cols-2" : "grid-cols-1"}`}>
+        <div className={`grid gap-[8px] px-[16px] pt-[12px] pb-[4px] sm:grid-cols-2 sm:gap-[12px] sm:px-[22px] sm:pt-[16px] sm:pb-[16px] ${showCart ? "grid-cols-2" : "grid-cols-1"}`}>
           {showCart && <CartEntry total={shopping.total} deckCount={shopping.byDeck.size} paired />}
           <PreconsEntry summary={precons.summary} />
         </div>

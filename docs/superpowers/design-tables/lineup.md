@@ -22,7 +22,7 @@
 | control | `role="tablist"`. 2px pad, 1px `--border-strong`, r 9, gap 2 | same |
 | segment | h 40, pad 0 13, r 7, 13px. Selected: `--elevated`, 600 `--fg`. Unselected: transparent, 400 `--fg-muted` | h 30 |
 | view row | pad 8 16 10, gap 8 | pad 10 22, gap 6, border-top 1px `--border`, wraps |
-| url | `?view=stats`. Remembered per device (G7). With the switch off, the param is ignored and Tiles draws | same |
+| url | `?view=stats`. Not remembered: a bare /decks always opens on Tiles (Hugh, 2026-10-13, superseding G7). With the switch off, the param is ignored and Tiles draws | same |
 | absent | `LINEUP_ENABLED` off: no segment. The shelf row is as shipped | same |
 | shelves | leave in Stats. A folder never scopes Stats | same |
 

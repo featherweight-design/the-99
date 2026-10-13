@@ -1172,6 +1172,15 @@ describe("DecksView head row", () => {
     expect(screen.getByRole("link", { name: /Shopping for all decks/ }).textContent).toContain("Shop all decks");
   });
 
+  // Hugh, 2026-10-13: from 640 up the two buttons sat tight against the Decks top bar.
+  it("keeps top margin from the Decks top bar from 640 up", () => {
+    render(
+      <DecksView decks={[deckOf()]} folders={[]} shopping={cart} cartEnabled precons={{ summary: { count: 181, newest: "2026-10-02" } }} buildable={9} cards={1284} now={NOW} />,
+    );
+    expect(headRow().className).toContain("sm:pt-[16px]");
+    expect(headRow().className).not.toContain("sm:pt-0");
+  });
+
   it("still draws the precons line for a reader with no decks (P3)", () => {
     render(<DecksView decks={[]} folders={[]} shopping={SHOPPING} precons={{ summary: null }} buildable={9} cards={1284} now={NOW} />);
     expect(screen.getByRole("link", { name: /Commander precons/ })).toBeInTheDocument();
