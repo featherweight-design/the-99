@@ -31,7 +31,9 @@ import { chainArt, withChainArt } from "../cards/chain-art";
 import { deckIdentity } from "../decks/format";
 import { listDecksWithStats } from "../decks/read";
 import { DEFAULT_DECK_SORT } from "../decks/sort";
-import type { LineupBuild, LineupData, LineupGame, LineupShared } from "./types";
+import { shortCommanderName } from "../copy/decks-builder";
+import { readCollection } from "./collection-read";
+import type { LineupBuild, LineupCollection, LineupData, LineupGame, LineupShared } from "./types";
 
 type BuildCard = { deckId: string; oracleId: string; name: string; typeLine: string; cmc: number; quantity: number; oracleText: string | null; keywords: string[]; imageUri: string | null };
 
@@ -95,13 +97,25 @@ export function sharedCards(
 
 type ListRow = { deckId: string; oracleId: string; typeLine: string };
 
-async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null }> {
-  if (ids.length === 0) return { builds: new Map(), asOf: null, shared: [], lists: [] };
+type Built = { builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null; collection: LineupCollection | null };
+
+async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>): Promise<Built> {
+  if (ids.length === 0) {
+    try {
+      const { collection, asOf } = await readCollection(userId, [], [], brews);
+      return { builds: new Map(), asOf, shared: [], lists: [], collection };
+    } catch (error) {
+      recordSoftFailure();
+      console.warn("loadLineup: the collection could not be read", error);
+      return { builds: new Map(), asOf: null, shared: [], lists: [], collection: null };
+    }
+  }
   let lists: Awaited<ReturnType<typeof readLists>>;
   let jobs: JobRowsByCard;
   let prices: PriceRead;
   let availability: Map<string, Availability>;
   let buys: DeckBuyRow[];
+  let collection: LineupCollection;
   try {
     lists = await readLists(ids);
     const all = [...lists.list, ...lists.commanders];
@@ -118,10 +132,15 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));
     prices = read;
     availability = avail;
+    const heads = [...new Set(lists.commanders.map((c) => c.deckId))].map((deckId) => {
+      const cs = lists.commanders.filter((c) => c.deckId === deckId);
+      return { deckId, commander: cs[0].oracleId, partner: cs[1]?.oracleId ?? null };
+    });
+    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews)).collection;
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
-    return { builds: null, asOf: null, shared: null, lists: null };
+    return { builds: null, asOf: null, shared: null, lists: null, collection: null };
   }
   const byDeck = new Map<string, BuildCard[]>();
   for (const c of lists.list) byDeck.set(c.deckId, [...(byDeck.get(c.deckId) ?? []), c]);
@@ -150,7 +169,7 @@ async function readBuilds(userId: string, ids: string[]): Promise<{ builds: Map<
   const shared = sharedCards(every, availability, buys, bodied);
   // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
   const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
-  return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every };
+  return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 
 export async function loadLineup(userId: string): Promise<LineupData> {
@@ -158,6 +177,7 @@ export async function loadLineup(userId: string): Promise<LineupData> {
   // only while that tab exists.
   const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled() });
   const ids = decks.map((d) => d.id);
+  const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
   const [rows, built] = await Promise.all([ids.length === 0
     ? []
     : db
@@ -166,14 +186,13 @@ export async function loadLineup(userId: string): Promise<LineupData> {
       .where(and(eq(deckGames.userId, userId), inArray(deckGames.deckId, ids)))
       // `listDeckGames`' order, so a deck's games read newest first here as on its Games tab.
       .orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt)),
-  readBuilds(userId, ids)]);
+  readBuilds(userId, ids, brews)]);
   const games = new Map<string, LineupGame[]>();
   for (const r of rows) {
     const list = games.get(r.deckId) ?? [];
     list.push({ result: r.result as LineupGame["result"], playedAt: r.playedAt.toISOString(), podSize: r.podSize });
     games.set(r.deckId, list);
   }
-  const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
   const distinct = (keep: (deckId: string) => boolean) =>
     new Set((built.lists ?? []).filter((c) => keep(c.deckId) && !isBasicLand(c.typeLine)).map((c) => c.oracleId)).size;
   return {
@@ -185,9 +204,11 @@ export async function loadLineup(userId: string): Promise<LineupData> {
       brew: d.lastCommittedAt === null,
       bracket: d.bracket,
       games: games.get(d.id) ?? [],
+      basis: [d.commanderName, ...(d.partnerName ? [d.partnerName] : [])].map((c) => shortCommanderName(c.split(" // ")[0])).join(" + "),
       build: built.builds?.get(d.id) ?? null,
     })),
     pricesAsOf: built.asOf ? built.asOf.toISOString() : null,
     shared: built.shared,
+    collection: built.collection,
   };
 }

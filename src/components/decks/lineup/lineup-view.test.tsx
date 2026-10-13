@@ -7,7 +7,7 @@ import { LineupView } from "./lineup-view";
 
 const NOW = "2026-10-11T12:00:00.000Z";
 const game = (day: string, result: "win" | "loss" = "loss", podSize = 4) => ({ result, playedAt: `${day}T20:00:00.000Z`, podSize });
-const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name.toLowerCase(), name, identity: [], brew: false, bracket: null, games: [], build: null, ...over });
+const deck = (name: string, over: Partial<LineupDeck> = {}): LineupDeck => ({ id: name.toLowerCase(), name, identity: [], brew: false, bracket: null, games: [], build: null, basis: name, ...over });
 const DATA: LineupData = {
   decks: [
     deck("Tovolar", { identity: ["R", "G"], bracket: { permits: [1, 2], answered: 2 }, games: [game("2026-09-12"), game("2026-07-17", "loss", 3)] }),
@@ -17,7 +17,7 @@ const DATA: LineupData = {
   ],
   pricesAsOf: null,
   shared: null,
-  cardCounts: { all: 0, finished: 0 },
+  cardCounts: { all: 0, finished: 0 }, collection: null,
 };
 
 const draw = (data = DATA, foldServer: string | null = null) =>
@@ -87,7 +87,7 @@ describe("LineupView: the filter", () => {
 
 describe("LineupView: one deck", () => {
   it("says 1 deck under All decks, and counts what Finished only kept when the only deck is a brew", () => {
-    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 } });
+    draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 }, collection: null });
     expect(screen.getAllByText("1 deck").length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
     expect(screen.getAllByText("0 finished decks · 1 brew left out").length).toBeGreaterThan(0);
@@ -165,7 +165,7 @@ describe("LineupView: among, jobs and worth", () => {
     ],
     pricesAsOf: "2026-10-11T10:00:00.000Z",
     shared: null,
-    cardCounts: { all: 0, finished: 0 },
+    cardCounts: { all: 0, finished: 0 }, collection: null,
   };
 
   it("compares the deck played most recently by default, with its rank, most first", () => {
@@ -204,7 +204,7 @@ describe("LineupView: among, jobs and worth", () => {
   });
 
   it("draws none of the three with one deck (T1)", () => {
-    draw({ decks: [BUILT.decks[0]], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 } });
+    draw({ decks: [BUILT.decks[0]], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 }, collection: null });
     expect(["among", "jobs", "worth"].map((id) => card(id))).toEqual([null, null, null]);
   });
 });
@@ -278,5 +278,89 @@ describe("LineupView: cards your decks share", () => {
   it("says a card is shared once two decks play it, with one deck (T1)", () => {
     render(<LineupView data={{ ...SH, decks: [DATA.decks[0]] }} now={NOW} foldServer="shared" viewSwitch={null} />);
     expect(within(card("shared")).getByText("Needs two decks.")).toBeTruthy();
+  });
+});
+
+describe("LineupView: your collection, put to work", () => {
+  const CO: LineupData = {
+    ...DATA,
+    collection: {
+      copies: 120, cards: 80, valueCents: 30_000, pricedCopies: 120, asOf: null,
+      all: { inDeckCopies: 40, inDeckCents: 21_000 },
+      finished: { inDeckCopies: 30, inDeckCents: 15_000 },
+      wanted: [
+        { oracleId: "boots", name: "Swiftfoot Boots", imageUri: null, owned: 2, wants: [], hits: [{ deckId: "gishath", pct: 58 }, { deckId: "tovolar", pct: 25 }] },
+        { oracleId: "beast", name: "Beast Within", imageUri: null, owned: 1, wants: [], hits: [{ deckId: "tovolar", pct: 47 }] },
+        { oracleId: "path", name: "Path to Exile", imageUri: null, owned: 1, wants: [], hits: [{ deckId: "scrappy", pct: 22 }] },
+      ],
+    },
+  };
+
+  it("splits every copy into in a deck or not, and says what share of the value they hold", () => {
+    draw(CO, "collection");
+    expect(within(card("collection")).getByText("120 copies · 80 cards")).toBeTruthy();
+    expect(within(card("collection")).getByText("33% of your copies hold 70% of your value.")).toBeTruthy();
+    // One square per 10 copies (4 of 12) and per $10 (21 of 30), filled where in a deck.
+    expect(card("collection").querySelectorAll("[data-unit-in]").length).toBe(25);
+    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(within(card("collection")).getByText("25% of your copies hold 50% of your value.")).toBeTruthy();
+  });
+
+  it("lists idle copies your commanders run, cut at 40% by default and recounting with the select", () => {
+    draw(CO, "collection");
+    const rows = () => [...card("collection").querySelectorAll("[data-stats-wanted]")].map((r) => r.getAttribute("data-stats-wanted"));
+    expect(rows()).toEqual(["boots", "beast"]);
+    expect(within(card("collection")).getByText("of Gishath decks")).toBeTruthy();
+    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    expect(rows()).toEqual(["boots", "beast", "path"]);
+    fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "tovolar" } });
+    expect(rows()).toEqual(["beast", "boots"]);
+    expect(within(card("collection")).getByRole("button", { name: "40% or more · 1" })).toBeTruthy();
+  });
+
+  it("folds to a summary counting what the select and the cut last showed", () => {
+    draw(CO, "collection");
+    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    fireEvent.click(head("collection"));
+    // The default (All decks, 40%) would count 2.
+    expect(card("collection").textContent).toContain("3 wanted by your commanders");
+    fireEvent.click(head("collection"));
+    fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "scrappy" } });
+    fireEvent.click(head("collection"));
+    expect(card("collection").textContent).toContain("1 wanted by your commanders");
+  });
+
+  it("says when only some copies are priced, and drops the value with none priced", () => {
+    const c = CO.collection!;
+    const { unmount } = draw({ ...CO, collection: { ...c, pricedCopies: 90 } }, "collection");
+    expect(within(card("collection")).getByText(/90 of 120 copies priced/)).toBeTruthy();
+    unmount();
+    draw({ ...CO, collection: { ...c, pricedCopies: 0, valueCents: 0, all: { ...c.all, inDeckCents: 0 }, finished: { ...c.finished, inDeckCents: 0 } } }, "collection");
+    expect(within(card("collection")).queryByText("VALUE IN A DECK")).toBeNull();
+    expect(within(card("collection")).queryByText(/of your value/)).toBeNull();
+    fireEvent.click(head("collection"));
+    expect(card("collection").textContent).not.toContain("of the value");
+  });
+
+  it("draws a bounded field for a huge collection, each square standing for more", () => {
+    const c = CO.collection!;
+    draw({ ...CO, collection: { ...c, copies: 2_000_000, pricedCopies: 2_000_000 } }, "collection");
+    expect(within(card("collection")).getByText("1 square = 10,000 copies")).toBeTruthy();
+    expect(card("collection").querySelectorAll("[aria-hidden] > span").length).toBeLessThanOrEqual(1100);
+  });
+
+  it("dates its caption by its own price read, not the decks'", () => {
+    const c = CO.collection!;
+    draw({ ...CO, pricesAsOf: new Date(Date.parse(NOW) - 5 * 3_600_000).toISOString(), collection: { ...c, asOf: new Date(Date.parse(NOW) - 2 * 3_600_000).toISOString() } }, "collection");
+    expect(within(card("collection")).getByText("Basics not counted · Mana Pool prices, 2h ago")).toBeTruthy();
+  });
+
+  it("cuts on the share as read, so 39.6% is not 40% or more, and shows it as 39%", () => {
+    const c = CO.collection!;
+    draw({ ...CO, collection: { ...c, wanted: c.wanted.map((w) => (w.oracleId === "boots" ? { ...w, hits: [{ deckId: "gishath", pct: 39.6 }] } : w)) } }, "collection");
+    const rows = () => [...card("collection").querySelectorAll("[data-stats-wanted]")].map((r) => r.getAttribute("data-stats-wanted"));
+    expect(rows()).toEqual(["beast"]);
+    fireEvent.click(within(card("collection")).getByRole("button", { name: "20% or more · 3" }));
+    expect(within(card("collection")).getByText("39%")).toBeTruthy();
   });
 });

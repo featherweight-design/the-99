@@ -18,6 +18,8 @@ export type LineupDeck = {
   bracket: TileBracket | null;
   /** Newest first, as `listDeckGames` returns them. */
   games: LineupGame[];
+  /** Whose decks the commanders' index describes: `Gishath`, or a pair's `Kratos + Atreus`. */
+  basis: string;
   /** The deck's own build figures, from the functions its Stats tab uses (lock 2). Null when that read failed. */
   build: LineupBuild | null;
 };
@@ -48,7 +50,24 @@ export type LineupShared = {
   decks: { id: string; wants: number; held: number }[];
 };
 
+/** The collection's figures, per copy owned, basics left out, counted for both scopes. */
+export type LineupCollection = {
+  copies: number;
+  cards: number;
+  /** The priced copies' value: with `pricedCopies` under `copies`, a part-total, and the card says so. */
+  valueCents: number;
+  pricedCopies: number;
+  /** The newest price this card's own read used, ISO, so its caption dates the figures it shows. */
+  asOf: string | null;
+  all: { inDeckCopies: number; inDeckCents: number };
+  finished: { inDeckCopies: number; inDeckCents: number };
+  /** Owned cards a deck's commander list carries at 20% or more: what each deck wants, and its share. */
+  wanted: { oracleId: string; name: string; imageUri: string | null; owned: number; wants: { deckId: string; n: number }[]; hits: { deckId: string; pct: number }[] }[];
+};
+
 export type LineupData = {
+  /** Null when the collection reads failed, with the build figures. */
+  collection: LineupCollection | null;
   decks: LineupDeck[];
   /** Null when the claim read failed, with the build figures. */
   shared: LineupShared[] | null;

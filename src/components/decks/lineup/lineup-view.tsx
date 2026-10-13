@@ -14,6 +14,8 @@ import { sharedView } from "../../../lib/lineup/shared";
 import { CardDetailProvider } from "../../cards/card-detail-provider";
 import { AmongBody } from "./among-card";
 import { SharedBody } from "./shared-card";
+import { CollectionBody, type WantedPick } from "./collection-card";
+import { collectionScope, wantedRows } from "../../../lib/lineup/collection";
 import { FoldCard, useDecksStatsFold } from "./fold";
 import { JobsBody } from "./jobs-card";
 import { WorthBody } from "./worth-card";
@@ -79,6 +81,8 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   // The deck This deck among yours compares, and that Worth and Jobs mark: the reader's pick while it is in
   // scope, else the one played most recently (a brew picked, then left out by Finished only, falls back).
   const [picked, setPicked] = useState<string | null>(null);
+  // Held here, not in the card's body, so the folded summary counts what the select and the cut last showed.
+  const [wantedPick, setWantedPick] = useState<WantedPick>({ deckId: null, cut: 40 });
   const chosen = decks.find((d) => d.id === picked) ?? defaultChosen(decks);
   // The build cards compare decks, so they need two with figures (T1: one deck draws none of them).
   const built = decks.filter((d) => d.build);
@@ -98,9 +102,10 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   const scopeLine = <span data-stats-scope className="font-mono text-[11px] text-[color:var(--fg-muted)]">{scope}</span>;
 
   return (
-    // Every card name in Stats opens its card (handoff R1 call 11).
+    // Every card name in Stats opens its card (handoff R1 call 11). The view takes the Tiles view's container and
+    // gutters, the whole of `<main>` with 22px sides from md (Hugh, 2026-10-12), rather than a 900 column pinned left.
     <CardDetailProvider>
-    <div data-decks-stats className="flex min-h-0 w-full flex-auto flex-col md:max-w-[900px]">
+    <div data-decks-stats className="flex min-h-0 w-full flex-auto flex-col">
       {/* The view row: the switch, then (from md) the filter and its scope line in the same row. */}
       <div className="flex items-center gap-[8px] px-[16px] pt-[8px] pb-[10px] md:flex-wrap md:gap-[6px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:py-[10px]">
         {viewSwitch}
@@ -151,6 +156,27 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
             <SharedBody shared={data.shared!} decks={decks} cartEnabled={cartEnabled} />
           </FoldCard>
         ) : null}
+        {data.collection ? (() => {
+          const c = data.collection;
+          const sc = collectionScope(c, filter);
+          const inScope = new Set(decks.map((d) => d.id));
+          const chosen = wantedPick.deckId && inScope.has(wantedPick.deckId) ? wantedPick.deckId : null;
+          const wanted = wantedRows(c, inScope, chosen).filter((r) => r.pct >= wantedPick.cut).length;
+          // Dated by the collection's own price read, not the decks', which ran first.
+          const age = c.asOf ? copy.worth.age((Date.parse(now) - Date.parse(c.asOf)) / 60_000) : null;
+          return (
+            <FoldCard
+              id="collection"
+              title={copy.collection.title}
+              denom={copy.collection.denom(c.copies, c.cards)}
+              summary={copy.summary.collection(sc.inDeckCopies, c.copies, c.pricedCopies > 0 ? sc.pctValue : null, wanted)}
+              open={fold.open.has("collection")}
+              onToggle={() => fold.toggle("collection")}
+            >
+              <CollectionBody c={c} decks={decks} filter={filter} age={age} pick={wantedPick} onPick={setWantedPick} />
+            </FoldCard>
+          );
+        })() : null}
         {comparing ? (
           <>
             <FoldCard
