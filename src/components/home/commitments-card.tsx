@@ -49,6 +49,7 @@ export function CommitmentsCard({
   commitments,
   shopping,
   totalCards,
+  cartEnabled = false,
 }: {
   commitments: Commitments;
   shopping: ShoppingRollup;
@@ -58,6 +59,8 @@ export function CommitmentsCard({
    * holds. It is not on `Commitments`, which knows only about decks.
    */
   totalCards: number;
+  /** The all-decks cart's switch for this reader. Off, the card keeps its one button. */
+  cartEnabled?: boolean;
 }) {
   const c = refreshCopy.home;
   return (
@@ -100,15 +103,27 @@ export function CommitmentsCard({
             collection that buried 43 over-committed cards under 1,015 that are
             merely sleeved, which needs no review. `/collection` with no filter
             would be the whole collection, which is not what "review" means here. */}
-        <GhostButton
-          href="/collection?avail=over"
-          // 44 on a phone, 32 above it. The card was desktop-only when this was
-          // written, so it kept the desktop form at every width; it is the last
-          // block on the phone now and its control is a tap target.
-          className="mt-[2px] flex h-[44px] w-full items-center justify-center rounded-[8px] text-[12.5px] font-normal sm:h-[32px]"
-        >
-          {c.reviewCommitments}
-        </GhostButton>
+        {/* Beside it when the cart is on, two equal halves like `New deck` and `Import a deck`
+            at every width: the figures say what is short, and the second button is where to buy it. */}
+        <div className="mt-[2px] grid grid-cols-1 gap-[8px] min-[360px]:data-[two]:grid-cols-2" data-two={cartEnabled ? "" : undefined}>
+          <GhostButton
+            href="/collection?avail=over"
+            // 44 on a phone, 32 above it. The card was desktop-only when this was
+            // written, so it kept the desktop form at every width; it is the last
+            // block on the phone now and its control is a tap target.
+            className="flex h-[44px] w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-[8px] text-[12.5px] font-normal sm:h-[32px]"
+          >
+            {c.reviewCommitments}
+          </GhostButton>
+          {cartEnabled && (
+            <GhostButton
+              href="/decks/shopping"
+              className="flex h-[44px] w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-[8px] text-[12.5px] font-normal sm:h-[32px]"
+            >
+              {c.shopAllDecks}
+            </GhostButton>
+          )}
+        </div>
       </div>
     </section>
   );

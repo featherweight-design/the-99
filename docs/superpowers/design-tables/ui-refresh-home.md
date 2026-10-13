@@ -748,6 +748,13 @@ Its `Review commitments` control takes the 44px phone floor and the 32px desktop
 for a desktop-only card, so it carried 32 at every width until the phone mounted it.
 Copy: heading `home.commitmentsHeading`.
 
+**A second control beside it, with `ALL_DECKS_CART_ENABLED` on for the reader** (Hugh, 2026-10-13):
+`Shop all decks` (`home.shopAllDecks`, the label the phone title of the all-decks cart already uses),
+a link to `/decks/shopping`, in the same box as `Review commitments`. The two sit in two equal columns
+(8px gap) from 360px up, like `New deck` and `Import a deck`, and stack full width below 360px, where a
+half is too narrow for `Review commitments`. Same height, border, radius, type and `whitespace-nowrap`
+with 8px side padding. With the switch off there is no second control and the first stays full width.
+
 ### Card root
 
 | Property | Mobile | Desktop |
@@ -805,7 +812,7 @@ Copy: `home.reviewCommitments`.
 | display | flex | flex |
 | align-items | center | center |
 | justify-content | center | center |
-| width | 100% (stretched by the column) | 100% (stretched by the column) |
+| width | 100% of its column: the whole card width alone, half of it beside `Shop all decks` from 360px up | same |
 | height | **44** — the phone floor. The card was desktop-only when this control was drawn, so it carried 32 at every width until the phone mounted it | 32 |
 | border-width | 1 | 1 |
 | border-style | solid | solid |

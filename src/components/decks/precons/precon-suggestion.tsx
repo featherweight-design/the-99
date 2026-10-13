@@ -49,7 +49,9 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
     return (
       <>
         <ArrivalBandShell align="start">
-          <div className="flex min-w-0 flex-1 flex-col gap-[8px] md:flex-row md:items-center md:gap-[14px]">
+          {/* Link it sits to the right of the heading and its figures from 360px up, where it fits on
+              one line and the strip is shortest; below that the width forces it under them. */}
+          <div className="flex min-w-0 flex-1 flex-col gap-[8px] min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-[14px]">
             <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
               <p className="m-0 text-[13.5px] leading-[1.45] text-[color:var(--fg)]">
                 {m.sameCommanders ? copy.lead(m.name) : copy.leadOtherCommander(m.name)}
@@ -58,7 +60,7 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
                 {m.sameCommanders ? copy.metaSame(m.shared, m.of, m.commanders.length === 2) : copy.metaOther(m.shared, m.of, m.commanders.join(" + "))}
               </p>
             </div>
-            <button type="button" onClick={() => setConfirming(m)} className={`${LINK} self-start md:self-auto`}>{copy.link}</button>
+            <button type="button" onClick={() => setConfirming(m)} className={`${LINK} self-start min-[360px]:self-auto`}>{copy.link}</button>
           </div>
           <button type="button" onClick={dismiss} aria-label={copy.dismissAria(m.name)} className={CLOSE}>✕</button>
         </ArrivalBandShell>

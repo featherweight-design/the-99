@@ -29,6 +29,8 @@ export type DashboardProps = {
   /** Null when the availability read failed. The card renders nothing, not a zero. */
   commitments: Commitments | null;
   shopping: ShoppingRollup;
+  /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
+  cartEnabled?: boolean;
   /**
    * The server's clock, as an ISO string. A `Date` does not survive the
    * server/client boundary intact, and every relative date on this page has to
@@ -159,6 +161,7 @@ export function Dashboard(props: DashboardProps) {
               commitments={props.commitments}
               shopping={props.shopping}
               totalCards={props.stats.totalCards}
+              cartEnabled={props.cartEnabled}
             />
           </div>
         )}

@@ -77,4 +77,25 @@ describe("CommitmentsCard", () => {
       "/collection?avail=over",
     );
   });
+
+  // Hugh, 2026-10-13: the buy figure had no door to the list that buys it.
+  it("draws Shop all decks beside Review commitments when the cart is on, in one equal row", () => {
+    render(
+      <CommitmentsCard commitments={{ inUse: 1, overCommitted: 0 }} shopping={shopping(2, 500)} totalCards={10} cartEnabled />,
+    );
+    const shop = screen.getByRole("link", { name: "Shop all decks" });
+    const review = screen.getByRole("link", { name: "Review commitments" });
+    expect(shop.getAttribute("href")).toBe("/decks/shopping");
+    expect(shop.parentElement).toBe(review.parentElement);
+    expect(review.parentElement!.hasAttribute("data-two")).toBe(true);
+    // Equal halves in the 316px desktop column: each label stays on one line inside the 8px padding.
+    expect(review.parentElement!.className).toContain("min-[360px]:data-[two]:grid-cols-2");
+    for (const b of [shop, review]) expect(b.className).toMatch(/whitespace-nowrap.*px-\[8px\]/);
+  });
+
+  it("keeps the one button with the cart off", () => {
+    render(<CommitmentsCard commitments={{ inUse: 1, overCommitted: 0 }} shopping={shopping(2, 500)} totalCards={10} />);
+    expect(screen.queryByRole("link", { name: "Shop all decks" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Review commitments" }).parentElement!.hasAttribute("data-two")).toBe(false);
+  });
 });

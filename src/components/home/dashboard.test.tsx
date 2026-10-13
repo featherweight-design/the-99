@@ -37,6 +37,16 @@ describe("Dashboard header", () => {
   });
 });
 
+describe("Dashboard commitments", () => {
+  it("hands the cart switch to the card: Shop all decks with it on, absent by default", () => {
+    const { unmount } = render(<Dashboard {...BASE} cartEnabled />);
+    expect(screen.getByRole("link", { name: "Shop all decks" })).toHaveAttribute("href", "/decks/shopping");
+    unmount();
+    render(<Dashboard {...BASE} />);
+    expect(screen.queryByRole("link", { name: "Shop all decks" })).toBeNull();
+  });
+});
+
 const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   id: "d1",
   name: "Atraxa",
