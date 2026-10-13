@@ -6,9 +6,9 @@ import { JOB_VARIABLE_NAMES, type JobVariable } from "./models";
  * reaches this module. Read only.
  *
  * The token never leaves this function: it is sent in one request header and is in no return value,
- * no log line and no error. Any failure (no token, a non-2xx, a timeout, a body that is not the
- * shape below) is `{ values: null }`, which draws M2, with ONE fixed log line that carries nothing
- * from the request or the response. Of the response, only the values of the listed names are kept.
+ * no log line and no error. No token is `{ values: null }` (M2) with no log line, since the token is
+ * optional; a failed read (a non-2xx, a timeout, a body that is not the shape below) is the same, with
+ * ONE fixed log line that carries nothing from the request or the response. Of the response, only the values of the listed names are kept.
  */
 
 export const GITHUB_VARIABLES_URL = "https://api.github.com/repos/HartiganHM/the-99/actions/variables?per_page=100";

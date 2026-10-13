@@ -55,11 +55,12 @@ describe("readJobValues", () => {
     expect(text).not.toContain(TOKEN);
   });
 
-  it("makes no request and draws M2 without a token", async () => {
+  it("makes no request, logs nothing and draws M2 without a token (the token is optional)", async () => {
     for (const token of [undefined, "", "   "]) {
-      const { d, fetch } = deps({ token });
+      const { d, fetch, log } = deps({ token });
       expect(await readJobValues(d)).toEqual({ values: null });
       expect(fetch).not.toHaveBeenCalled();
+      expect(log).not.toHaveBeenCalled();
     }
   });
 
