@@ -67,6 +67,24 @@ describe("listCacheProblems", () => {
 });
 
 describe("switchReaders", () => {
+  it("follows a barrel's value re-export to the snapshot", () => {
+    const dir = mkdtempSync(join(process.cwd(), "src/lib/.switch-barrel-"));
+    const barrel = join(dir, "barrel.ts");
+    const loader = join(dir, "loader.ts");
+    writeFileSync(barrel, 'export { resolveSwitchEnv } from "../switches/snapshot";\n');
+    writeFileSync(loader, 'import { resolveSwitchEnv } from "./barrel";\nexport const x = resolveSwitchEnv;\n');
+    const page = join(dir, "page.tsx");
+    writeFileSync(page, 'import { x } from "./loader";\nexport default x;\n');
+    const rel = (f: string) => f.slice(process.cwd().length + 1);
+    try {
+      const files = loaderFiles([rel(page)]);
+      expect(files).toEqual(expect.arrayContaining([rel(barrel), "src/lib/switches/snapshot.ts"]));
+      expect(switchReaders(files)).toEqual([expect.stringMatching(new RegExp(`^KEYED {3}${rel(barrel)}`))]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
   it("exempts the snapshot alone, not a helper placed beside it", () => {
     const dir = mkdtempSync(join(process.cwd(), "src/lib/switches/.reader-"));
     const file = join(dir, "helper.ts");

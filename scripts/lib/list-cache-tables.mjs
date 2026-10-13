@@ -46,8 +46,13 @@ function resolveImport(fromFile, spec) {
 }
 
 /** Value imports only: an `import type` brings in no query. */
+/**
+ * Every module this source takes a VALUE from: a value import, or a value re-export
+ * (`export { x } from`, `export * from`), since a barrel re-exporting a reader is as much a path to
+ * it as importing it directly. Type-only forms carry no runtime edge and are left out.
+ */
 function importsOf(source) {
-  return [...source.matchAll(/^import\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
+  return [...source.matchAll(/^(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
 }
 
 /** Every file the pages reach through the loaders, the pages included. */
