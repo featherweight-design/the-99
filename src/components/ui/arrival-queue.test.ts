@@ -52,7 +52,7 @@ describe("ArrivalQueue", () => {
   it("reads tops a few pixels apart as one row: a grid's tiles can differ by a subpixel or two", () => {
     const tops = [100, 103, 99];
     const els = tops.map(() => document.createElement("div"));
-    const q = new ArrivalQueue(() => now, (el) => tops[els.indexOf(el)], () => 300, () => true);
+    const q = new ArrivalQueue(() => now, (el) => tops[els.indexOf(el as HTMLDivElement)], () => 300, () => true);
     const released: number[] = [];
     els.forEach((el, i) => q.join(el, () => released.push(i)));
     q.landed(els[0]);
