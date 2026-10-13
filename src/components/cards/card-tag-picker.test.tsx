@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CardTagList } from "./card-tag-picker";
 
 /** A field at `rect` in a window of `innerHeight`, with an optional visual viewport (a phone's keyboard shrinks it). */
-function place(rect: { top: number; bottom: number; left: number; width: number }, o: { innerHeight: number; innerWidth: number; vv?: { offsetTop: number; height: number } }) {
+function place(rect: { top: number; bottom: number; left: number; width: number }, o: { innerHeight: number; innerWidth: number; vv?: { offsetTop: number; height: number; offsetLeft?: number; width?: number } }) {
   vi.stubGlobal("innerHeight", o.innerHeight);
   vi.stubGlobal("innerWidth", o.innerWidth);
-  Object.defineProperty(window, "visualViewport", { configurable: true, value: o.vv ? { ...o.vv, addEventListener: () => {}, removeEventListener: () => {} } : null });
+  Object.defineProperty(window, "visualViewport", { configurable: true, value: o.vv ? { offsetLeft: 0, width: o.innerWidth, ...o.vv, addEventListener: () => {}, removeEventListener: () => {} } : null });
   const field = document.createElement("textarea");
   field.getBoundingClientRect = () => ({ ...rect, right: rect.left + rect.width, height: rect.bottom - rect.top, x: rect.left, y: rect.top, toJSON: () => ({}) });
   document.body.appendChild(field);
@@ -36,6 +36,12 @@ describe("CardTagList floating under an anchor", () => {
 
   it("never wider than 440px or past the window's edges", () => {
     expect(place({ top: 100, bottom: 140, left: 700, width: 600 }, { innerHeight: 800, innerWidth: 800 }).style).toMatchObject({ width: "440px", left: "352px" });
+  });
+
+  it("is placed inside the visible interval when zoomed in, not the layout viewport's", () => {
+    // Pinched in on the right of a 1000px page: the visible part is x 600 to 900. A 400px-wide field at x 100 is mostly off it.
+    const ul = place({ top: 100, bottom: 140, left: 100, width: 400 }, { innerHeight: 800, innerWidth: 1000, vv: { offsetTop: 0, height: 800, offsetLeft: 600, width: 300 } });
+    expect(ul.style).toMatchObject({ left: "608px", width: "284px" });
   });
 
   it("holds to the VISIBLE room above a phone's keyboard, not the layout viewport's", () => {

@@ -221,8 +221,11 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
       const vv = window.visualViewport;
       const visibleTop = vv ? vv.offsetTop : 0;
       const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-      const width = Math.min(r.width, FLOAT_MAX_WIDTH, window.innerWidth - 2 * FLOAT_EDGE);
-      const left = Math.max(FLOAT_EDGE, Math.min(r.left, window.innerWidth - width - FLOAT_EDGE));
+      // Zoomed in, the visible interval is the visual viewport's too: `offsetLeft` to `offsetLeft + width`.
+      const visibleLeft = vv ? vv.offsetLeft : 0;
+      const visibleWidth = vv ? vv.width : window.innerWidth;
+      const width = Math.min(r.width, FLOAT_MAX_WIDTH, visibleWidth - 2 * FLOAT_EDGE);
+      const left = Math.max(visibleLeft + FLOAT_EDGE, Math.min(r.left, visibleLeft + visibleWidth - width - FLOAT_EDGE));
       const below = Math.floor(visibleBottom - (r.bottom + 4) - FLOAT_EDGE);
       const above = Math.floor(r.top - 4 - visibleTop - FLOAT_EDGE);
       const next: CSSProperties = below >= FLOAT_MIN_ROOM || below >= above
