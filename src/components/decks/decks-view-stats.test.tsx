@@ -200,6 +200,9 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     read.stats.mockRejectedValue(new Error("down"));
     draw({ data: null, view: "tiles", foldServer: null });
     fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
+    // While the read runs the fill has moved: Stats holds it and Tiles does not.
+    expect(screen.getByRole("tab", { name: "Tiles" })).not.toHaveClass("bg-[var(--elevated)]");
+    expect(screen.getByRole("tab", { name: "Stats" })).toHaveClass("bg-[var(--elevated)]");
     await waitFor(() => expect(read.stats).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByRole("tab", { name: "Stats" }).querySelector("[data-pending]")).toBeNull());
     expect(screen.getByRole("tab", { name: "Stats" })).not.toHaveAttribute("aria-busy");
