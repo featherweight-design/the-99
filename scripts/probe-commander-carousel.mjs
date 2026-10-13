@@ -118,7 +118,13 @@ try {
     const listTotal = Number(first.counter?.split(" of ")[1]?.replace(/,/g, ""));
 
     // The commander, from the header's own control.
-    await onPage(page, "button[aria-label='View card details']").filter({ visible: true }).first().click();
+    // The commander's own control, scoped to this width's header: both headers are in the document,
+    // and a pair's partner name is a card-details press too.
+    const header = label === "phone" ? "[data-testid=spine-band]" : "[data-deck-spine-desktop]";
+    await onPage(page, `${header} button[aria-label='View card details']`)
+      .filter({ visible: true })
+      .first()
+      .click();
     const commander = await readModal(page);
     const total = Number(commander.counter?.split(" of ")[1]?.replace(/,/g, ""));
     if (!commander.counter?.startsWith("1 of ")) fail(`${label}: the commander reads ${commander.counter ?? "no counter"}, not 1 of N`);

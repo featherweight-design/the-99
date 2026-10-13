@@ -25,7 +25,7 @@ const EMPTY: readonly SiblingCard[] = [];
 // Every field the modal draws from a sibling, so a printing pick that renames or re-arts a card
 // reaches the reader.
 const keyOf = (list: readonly SiblingCard[]) =>
-  list.map((c) => `${c.oracleId}|${c.name ?? ""}|${c.imageUri ?? ""}`).join("\n");
+  list.map((c) => `${c.oracleId}|${c.name ?? ""}|${c.imageUri ?? ""}|${c.colorIdentity?.join("") ?? ""}`).join("\n");
 
 function createStore(): Store {
   let list = EMPTY;

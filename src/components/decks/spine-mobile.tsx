@@ -84,7 +84,7 @@ export function SpineMobile({
   const { commander, partner } = deck;
   // The commander's card details page on into the deck: the commanders, then the list as drawn.
   const commanderSiblings = useCommanderSiblings(
-    [commander, partner].flatMap((c) => (c ? [{ oracleId: c.oracleId, name: commanderDisplayName(c) }] : [])),
+    [commander, partner].flatMap((c) => (c ? [{ oracleId: c.oracleId, name: commanderDisplayName(c), colorIdentity: c.colorIdentity }] : [])),
   );
   const { built } = counts;
   const bodySize = deckBodySize(partner !== null);
