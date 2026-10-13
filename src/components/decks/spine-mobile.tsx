@@ -41,7 +41,6 @@ import { searchDescriptionCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { countCharacters } from "../../lib/copy/deck-tuning";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";

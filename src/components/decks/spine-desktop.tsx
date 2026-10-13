@@ -37,7 +37,6 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
-import { countCharacters } from "../../lib/copy/deck-tuning";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
