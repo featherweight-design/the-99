@@ -1,4 +1,5 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
+import type { NextRequest } from "next/server";
 import { purgeAccount } from "../../../lib/account/purge";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
  * dashboard cannot break this. A purge that fails answers 500, and Clerk retries; the purge is one
  * transaction and idempotent, so a retry either finishes the job or finds nothing left.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   // Inert until configured: with no signing secret nothing can be verified, so nothing runs. Checked here
   // rather than left to `verifyWebhook`, so "not set up yet" can never depend on how a library fails.
   const secret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;

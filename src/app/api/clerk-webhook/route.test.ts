@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const verify = vi.hoisted(() => vi.fn());
@@ -7,7 +8,7 @@ vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge }));
 
 import { POST } from "./route";
 
-const req = () => new Request("https://the99.test/api/clerk-webhook", { method: "POST", body: "{}" });
+const req = () => new NextRequest("https://the99.test/api/clerk-webhook", { method: "POST", body: "{}" });
 const report = { social: { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 2 }, rows: { decks: 3 }, stamp: 1 };
 
 beforeEach(() => {
@@ -29,7 +30,7 @@ describe("POST /api/clerk-webhook", () => {
   it("verifies every call against the configured secret", async () => {
     verify.mockResolvedValue({ type: "user.updated", data: { id: "user_here" } });
     await POST(req());
-    expect(verify).toHaveBeenCalledWith(expect.any(Request), { signingSecret: "whsec_test" });
+    expect(verify).toHaveBeenCalledWith(expect.any(NextRequest), { signingSecret: "whsec_test" });
   });
 
   it("refuses a request whose signature does not verify, and purges nothing", async () => {
