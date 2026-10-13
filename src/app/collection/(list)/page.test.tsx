@@ -7,8 +7,8 @@ vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => process.env }));
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 0, totalCards: 0 }) }));
-vi.mock("../../../lib/collection/browse", async (orig) => ({
-  ...(await orig<typeof import("../../../lib/collection/browse")>()),
+vi.mock("../../../lib/collection/browse-read", async (orig) => ({
+  ...(await orig<typeof import("../../../lib/collection/browse-read")>()),
   loadOwnedSetMeta: async () => [],
 }));
 vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => ({ cards: [], pricesFailed: false }) }));

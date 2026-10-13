@@ -1,12 +1,11 @@
-import { sql, type SQL } from "drizzle-orm";
-
 /**
  * `Printed in`: a card matches a set when ANY of its printings is from that set (filter-chassis
  * decision 9, brief §6 option 1). Not the printing the reader owns, and not the one a row draws:
  * a commander printed in Duskmourn is printed in Duskmourn whichever art is on screen, which is
  * why the control is named `Printed in` and never `Set`.
  *
- * One rule, two readers. `printedIn` is the SQL form, for a query that already has an oracle id
+ * One rule, two readers. `printedIn` (printed-in-sql.ts, kept apart so client components can
+ * import this module without drizzle) is the SQL form, for a query that already has an oracle id
  * in hand (Help me choose's Sets answer). The commander lanes filter a list they already hold, so
  * each page crosses `loadCommanderPrintings` with the rows it ships (`lanePrintedIn`) and the
  * client tests rows with `isPrintedIn`: an empty selection keeps every row, and a row with no
@@ -16,25 +15,6 @@ import { sql, type SQL } from "drizzle-orm";
 /** Lower-cased, trimmed, deduped and sorted: the one form a selection is compared in. */
 export function normalizeSetCodes(codes: readonly string[]): string[] {
   return [...new Set(codes.map((c) => c.trim().toLowerCase()).filter((c) => c !== ""))].sort();
-}
-
-/**
- * True when the card whose oracle id is `oracleId` has a printing in any of `setCodes`. The
- * inner table is aliased and both sides are written out: interpolated into a single-table
- * projection, Drizzle drops the qualifiers and a bare `oracle_id` would compare the printing to
- * itself (AGENTS.md, "A correlated subquery in a single-table select must alias and qualify").
- *
- * An empty selection is no filter at all, so it renders as `true` rather than an `any('{}')`
- * that matches nothing.
- */
-export function printedIn(oracleId: SQL | SQL.Aliased | { getSQL(): SQL }, setCodes: readonly string[]): SQL {
-  const codes = normalizeSetCodes(setCodes);
-  if (codes.length === 0) return sql`true`;
-  return sql`exists (
-    select 1 from printings pi
-    where pi.oracle_id = ${oracleId}
-      and pi.set_code = any(${sql.param(codes)}::text[])
-  )`;
 }
 
 export type PrintedInSet = { code: string; name: string };

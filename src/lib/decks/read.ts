@@ -35,7 +35,7 @@ import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { deckBodySize } from "./deck-size";
 import { changeCommanderEnabled } from "../commander-change/flag";
-import { deckCommanderMovedSql } from "../commander-change/pending";
+import { deckCommanderMovedSql } from "../commander-change/pending-sql";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant, type PriceFact } from "./price";
 import type { Availability } from "./availability";

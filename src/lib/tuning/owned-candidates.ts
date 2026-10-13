@@ -5,7 +5,7 @@ import { cards, collectionItems, commanderSupportCards } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
-import { printedIn } from "../sets/printed-in";
+import { printedIn } from "../sets/printed-in-sql";
 
 /**
  * The cards the player owns that this deck could take, for a run whose "owned only" limit is set.

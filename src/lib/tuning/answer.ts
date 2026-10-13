@@ -6,7 +6,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { readOwnedOracleIds } from "../decks/tuning-read";
-import { printedIn } from "../sets/printed-in";
+import { printedIn } from "../sets/printed-in-sql";
 import type { EvidencePack } from "./evidence";
 import { nameResolver } from "./resolve-names";
 import type { TuningResponse } from "./response-schema";

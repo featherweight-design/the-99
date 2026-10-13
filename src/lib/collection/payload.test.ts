@@ -14,7 +14,7 @@ vi.mock("../cache/user-lists", () => ({
   },
 }));
 const loadBrowseCards = vi.fn();
-vi.mock("./browse", () => ({ loadBrowseCards: (...args: unknown[]) => loadBrowseCards(...args) }));
+vi.mock("./browse-read", () => ({ loadBrowseCards: (...args: unknown[]) => loadBrowseCards(...args) }));
 
 const { loadCollectionList, loadCollectionListForFields } = await import("./payload");
 

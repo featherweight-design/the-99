@@ -15,7 +15,8 @@
 // nothing for a throw, and it is caught here, so the next visit asks again rather than reading
 // `Prices didn't load` until the catalog moves.
 import { cacheForUser } from "../cache/user-lists";
-import { loadBrowseCards, type BrowseListCard } from "./browse";
+import { type BrowseListCard } from "./browse";
+import { loadBrowseCards } from "./browse-read";
 
 // THE FIELDS ROUTE MUST NOT REBUILD A FAILED LIST PER BATCH. A failed list is never stored under
 // the page's key, so without this every withheld-fields batch (200 cards each, ~15 for a large

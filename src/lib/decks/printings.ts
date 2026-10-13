@@ -22,9 +22,9 @@ import {
   cardArt,
   matchesPreference,
   resolvedPrinting,
-  selectCollectionRows,
   type BrowsePrinting,
 } from "../collection/browse";
+import { selectCollectionRows } from "../collection/browse-read";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { deckPrintingsEnabled } from "./printings-flag";
 import type { PricePick } from "./price-query";

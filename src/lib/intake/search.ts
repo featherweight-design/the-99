@@ -11,7 +11,7 @@ import { notBuiltBy } from "../decks/built";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
 import type { EdhrecTag } from "../edhrec/parse";
-import { printedIn } from "../sets/printed-in";
+import { printedIn } from "../sets/printed-in-sql";
 import { loadCommanderPrintings } from "../sets/printed-in-read";
 import { isInfiniteOrGameEnding, producesInfiniteTurns } from "../spellbook/combo-features";
 import { buysCard, buysCopy } from "./buys-card";

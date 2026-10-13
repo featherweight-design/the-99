@@ -16,8 +16,8 @@ import {
   resolveImageUri,
   resolveBackImageUri,
   resolvedPrinting,
-  selectCollectionRows,
 } from "./browse";
+import { selectCollectionRows } from "./browse-read";
 
 /** The `cards` columns the modal reads. */
 export type CatalogCardRow = {

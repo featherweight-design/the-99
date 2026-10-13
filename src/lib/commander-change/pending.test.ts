@@ -1,7 +1,8 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { commanderMoved, commanderMovedSql } from "./pending";
+import { commanderMoved } from "./pending";
+import { commanderMovedSql } from "./pending-sql";
 
 const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";

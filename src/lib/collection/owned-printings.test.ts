@@ -7,7 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 const selectCollectionRows = vi.fn<(userId: string, ids: string[]) => Promise<unknown[]>>();
 const aggregateCollection = vi.fn<(rows: unknown[]) => unknown[]>();
 const resolvedPrinting = vi.fn<(card: unknown) => unknown>();
-vi.mock("./browse", () => ({ selectCollectionRows, aggregateCollection, resolvedPrinting }));
+vi.mock("./browse", () => ({ aggregateCollection, resolvedPrinting }));
+vi.mock("./browse-read", () => ({ selectCollectionRows }));
 
 const { readOwnedPrintings, resolveOwnedPrintings, withOwnedCardArt } = await import("./owned-printings");
 
