@@ -118,6 +118,19 @@ describe("SearchField's clear", () => {
     expect(screen.getByRole("button", { name: "Clear search" })).toBeTruthy();
   });
 
+  it("offers the clear for spaces too, so a reader can always empty the box", () => {
+    render(<Controlled initial="   " />);
+    expect(screen.getByRole("button", { name: "Clear search" })).toBeTruthy();
+  });
+
+  it("puts the clear after a caller's trailing element", () => {
+    const { container } = render(
+      <SearchField aria-label="Search" value="x" onChange={() => {}} onClear={() => {}} trailing={<span data-count>3</span>} />,
+    );
+    const kids = [...container.querySelector("label")!.children].map((c) => (c.hasAttribute("data-count") ? "count" : c.tagName.toLowerCase()));
+    expect(kids.slice(-2)).toEqual(["count", "button"]);
+  });
+
   it("draws no clear for a field that gives no onClear", () => {
     const { container } = render(<SearchField aria-label="Search" value="x" onChange={() => {}} />);
     expect(container.querySelector("button")).toBeNull();

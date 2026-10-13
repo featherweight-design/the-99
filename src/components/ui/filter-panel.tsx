@@ -893,10 +893,8 @@ export function FilterPanel({
             // 14px mobile / 13px desktop as specced. 14px sits under Safari's
             // 16px focus-zoom floor; a global maximum-scale=1 is an App Shell
             // decision, not one to make inside a single control (gap 3).
-            // The placeholder is --fg-locked here, not --fg-faint: the table
-            // draws it a step quieter, and twMerge drops the primitive's own
-            // placeholder colour unless this restates it.
-            className={`${bp("text-[13px]", "text-[14px]")}`}
+            // The placeholder is the primitive's --fg-faint, like every search field.
+            className={bp("text-[13px]", "text-[14px]")}
             clearLabel={copy.clearSearch}
             onClear={() => {
               setQuery("");

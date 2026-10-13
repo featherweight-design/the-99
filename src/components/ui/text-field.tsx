@@ -110,8 +110,8 @@ export function SearchField({
   dropStyle(rest);
   const input = useRef<HTMLInputElement | null>(null);
   // Hidden by value, not by the caller: an uncontrolled field has no value to read and gets no ✕.
-  // Blank text (spaces only) reads as an empty box, so it earns no ✕ either.
-  const filled = typeof rest.value === "string" && rest.value.trim() !== "";
+  // Any text at all earns the ✕, spaces included: a reader can always clear what they typed.
+  const filled = typeof rest.value === "string" && rest.value !== "";
   return (
     <label
       // A styling hook only — lets a page target "this field or its own trailing
@@ -149,6 +149,7 @@ export function SearchField({
         }}
         {...rest}
       />
+      {trailing}
       {onClear && (
         <button
           type="button"
@@ -168,7 +169,6 @@ export function SearchField({
           ✕
         </button>
       )}
-      {trailing}
     </label>
   );
 }

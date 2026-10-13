@@ -283,27 +283,8 @@ export function IssueInspector({
             }
             autoComplete="off"
             spellCheck={false}
-            trailing={
-              /* Always rendered; hidden via visibility when the input is empty
-                 so its 22px doesn't reflow the input width (which made the
-                 field jump as the last character was deleted). */
-              <button
-                type="button"
-                onClick={clearFilter}
-                aria-label={issueInspectorCopy.filter.clearAriaLabel}
-                aria-hidden={rawQuery === "" || undefined}
-                tabIndex={rawQuery === "" ? -1 : 0}
-                className="flex-none rounded-full flex items-center justify-center bg-[color:var(--border)] text-[color:var(--fg-muted)]"
-                style={{
-                  width: 22,
-                  height: 22,
-                  fontSize: 12,
-                  visibility: rawQuery === "" ? "hidden" : "visible",
-                }}
-              >
-                ✕
-              </button>
-            }
+            clearLabel={issueInspectorCopy.filter.clearAriaLabel}
+            onClear={clearFilter}
           />
           {/* Visual count — no aria-live (would announce every keystroke).
               Fixed min-width + right-align + tabular-nums so the text can't
