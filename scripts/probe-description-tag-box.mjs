@@ -107,6 +107,34 @@ try {
     let row = await stored();
     for (let i = 0; i < 100 && row.v === null; i += 1) { await page.waitForTimeout(100); row = await stored(); }
     check(`${w.label} the save stores the card's name as plain words`, typeof row.v === "string" && row.v.includes("Sol Ring") && !row.v.includes("[["), row.v);
+
+    // The header pencil's editor: it commits on blur and Enter, so a pick must keep the editor open and Enter must pick.
+    await pool.query("update decks set intent = null, intent_seeded = false where id = $1", [DECK]);
+    await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded" });
+    await onPageRole(page, "button", /Edit name and description of/).first().click();
+    const pencilBox = onPageRole(page, "combobox", "Deck description").first();
+    await pencilBox.waitFor({ timeout: 30_000 });
+    await pencilBox.click();
+    await page.keyboard.type("Rocks: [[Sol Ri");
+    const pencilOption = onPageRole(page, "option", /Sol Ring/);
+    await pencilOption.first().waitFor({ timeout: 10_000 });
+    await page.waitForTimeout(800);
+    const pencilGeometry = await onPageRole(page, "listbox").evaluate((ul) => {
+      const l = ul.getBoundingClientRect();
+      const first = ul.querySelector('[role="option"]').getBoundingClientRect();
+      const hit = document.elementFromPoint(first.left + first.width / 2, first.top + Math.min(first.height / 2, 10));
+      return { top: Math.round(l.top), bottom: Math.round(l.bottom), onTop: Boolean(hit && ul.contains(hit)), viewH: window.innerHeight };
+    });
+    check(`${w.label} pencil: the list opens from [[ and its first option is painted on top, inside the window`, pencilGeometry.onTop && pencilGeometry.top >= 0 && pencilGeometry.bottom <= pencilGeometry.viewH, pencilGeometry);
+    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/description-tag-pencil-${w.label}.png` });
+    // Enter picks while the list is open, and the editor is still open (no commit).
+    await page.keyboard.press("Enter");
+    const pencilWritten = await pencilBox.inputValue();
+    check(`${w.label} pencil: Enter picks the card and the editor stays open`, pencilWritten.includes("Sol Ring") && (await pencilBox.isVisible()) && (await stored()).v === null, pencilWritten);
+    await onPageRole(page, "button", /Save/).first().click();
+    let pencilRow = await stored();
+    for (let i = 0; i < 100 && pencilRow.v === null; i += 1) { await page.waitForTimeout(100); pencilRow = await stored(); }
+    check(`${w.label} pencil: the save stores the card's name as plain words`, typeof pencilRow.v === "string" && pencilRow.v.includes("Sol Ring") && !pencilRow.v.includes("[["), pencilRow.v);
     await ctx.close();
   }
 } finally {

@@ -1,19 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { searchTagCards } from "../../app/cards/tag-actions";
 import { countCharacters } from "../../lib/copy/deck-tuning";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
+import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { MutationError } from "./mutation-error";
 
 const copy = deckDescriptionCopy.description;
-/** The picker's lookup, module-level so its identity is stable across renders. */
-const searchDescriptionCards = (query: string) => searchTagCards("tuning", query);
 
 /**
  * The empty-state description field (STATES-deck-description.md §1), between the second

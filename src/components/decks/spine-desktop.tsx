@@ -27,6 +27,10 @@ import { SpineBracketChip } from "./bracket-chip";
 import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
+import { CardTagList } from "../cards/card-tag-picker";
+import { searchDescriptionCards } from "../cards/description-tag-search";
+import { useTaggedField } from "../cards/use-tagged-field";
+import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
@@ -149,6 +153,11 @@ export function SpineDesktop({
   const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
   const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
+  // The description takes the `[[` card tag: the hook holds the BODY, the box shows names (card-tags plan, PR 3).
+  const descriptionTags = useTaggedField({
+    value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
+    max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef,
+  });
   // The editor's two halves sit in separate flex columns of the header row, with the partner's
   // card-details trigger between them in DOM order — so blur has to be checked against BOTH
   // halves explicitly (pre-open review round 2), not against one shared ancestor that would
@@ -310,32 +319,36 @@ export function SpineDesktop({
                     color: "var(--fg)",
                   }}
                 />
-                <textarea
-                  ref={descriptionFieldRef}
-                  value={rename.description}
-                  onChange={(e) => {
-                    if (countCharacters(e.target.value) <= deckDescriptionCopy.description.maxLength) {
-                      rename.setDescription(e.target.value);
-                    }
-                  }}
-                  onKeyDown={rename.onDescriptionKeyDown}
-                  readOnly={saving}
-                  rows={2}
-                  placeholder={deckDescriptionCopy.description.placeholder}
-                  aria-label={deckDescriptionCopy.description.fieldAria}
-                  className="resize-none font-sans"
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    background: "var(--surface-sunken)",
-                    border: "1px dashed var(--border-strong)",
-                    borderRadius: 8,
-                    padding: "6px 10px",
-                    fontSize: pointerFine ? 13.5 : 16,
-                    lineHeight: 1.45,
-                    color: "var(--fg)",
-                  }}
-                />
+                <div className="relative">
+                  <textarea
+                    ref={descriptionFieldRef}
+                    value={descriptionTags.field.text}
+                    {...descriptionTags.picker.fieldProps}
+                    onChange={(e) => descriptionTags.picker.typed(e.target.value, e.target.selectionStart)}
+                    onKeyDown={(e) => {
+                      // The picker owns its keys while its list is open (Enter and Tab pick, Escape closes it); the rest is the editor's.
+                      if (descriptionTags.picker.onKeyDown(e)) return;
+                      rename.onDescriptionKeyDown(e);
+                    }}
+                    readOnly={saving}
+                    rows={2}
+                    placeholder={deckDescriptionCopy.description.placeholder}
+                    aria-label={deckDescriptionCopy.description.fieldAria}
+                    className="resize-none font-sans"
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      background: "var(--surface-sunken)",
+                      border: "1px dashed var(--border-strong)",
+                      borderRadius: 8,
+                      padding: "6px 10px",
+                      fontSize: pointerFine ? 13.5 : 16,
+                      lineHeight: 1.45,
+                      color: "var(--fg)",
+                    }}
+                  />
+                  {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} />}
+                </div>
               </div>
             ) : (
               <>

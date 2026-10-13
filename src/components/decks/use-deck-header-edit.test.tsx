@@ -29,6 +29,22 @@ describe("useDeckHeaderEdit (H35, STATES-deck-description.md §2)", () => {
     expect(onDone).toHaveBeenCalledOnce();
   });
 
+  // Card tags (plan PR 3): the draft is a BODY and the stored description is the name as plain words, so "changed" and
+  // the cap read what is drawn. A tagged draft that draws the stored words must not save the same text again.
+  it("reads a tagged draft by what it draws: unchanged saves nothing, and the cap counts names not ids", async () => {
+    const ID = "c0ffee00-0000-4000-8000-000000000001";
+    const { result } = renderHook(() => useDeckHeaderEdit("d1", "Name", "Rocks: Sol Ring", () => {}));
+    act(() => { result.current.setDescription(`Rocks: [[${ID}|Sol Ring]]`); });
+    expect(result.current.canSave).toBe(false);
+    await act(async () => { result.current.commit(); await Promise.resolve(); });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    // 3 tags of one-letter names plus 230 letters draw 233 characters (under the 240 cap) though the body is far longer.
+    act(() => { result.current.setDescription(`${"x".repeat(230)}[[${ID}|a]][[${ID}|b]][[${ID}|c]]`); });
+    await act(async () => { result.current.commit(); await Promise.resolve(); await Promise.resolve(); });
+    expect(saveDeckHeader).toHaveBeenCalledOnce();
+    expect(result.current.error).toBeNull();
+  });
+
   // Round 5: `onDone` closes the editor on success, so the only thing that lets a screen-reader
   // user hear it happened is state that OUTLIVES that unmount — a caller renders this outside
   // the editor's own conditional.

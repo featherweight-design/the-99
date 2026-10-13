@@ -37,10 +37,10 @@ import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
 import { TuningLimitsBox } from "./tuning-limits-box";
 import { TuningNotesField } from "./tuning-notes-field";
-import { searchTagCards } from "../../app/cards/tag-actions";
 import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
+import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
@@ -1165,9 +1165,6 @@ export function TuningPanel({
 
 // ── The pieces ──────────────────────────────────────────────────────────
 
-/** The picker's lookup, module-level so its identity is stable across renders. */
-const searchDescribingCards = (query: string) => searchTagCards("tuning", query);
-
 /** "Describing in place" (STATES §3 state 2): the absent description row's own editor, with
  *  explicit Save/Cancel rather than the empty-state field's blur-to-save. */
 function DescribingInPlace({
@@ -1187,7 +1184,7 @@ function DescribingInPlace({
 }) {
   const descCopy = deckDescriptionCopy.description;
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { field, picker } = useTaggedField({ value, onChange, search: searchDescribingCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
+  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
   const n = countCharacters(plainText(value));
   const over = n > descCopy.maxLength;
   const warn = n >= descCopy.warnAt;
