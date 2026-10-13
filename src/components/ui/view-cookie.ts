@@ -41,13 +41,8 @@ export function writeViewCookie(name: string, value: string): void {
   document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${MAX_AGE_S}; SameSite=Lax`;
 }
 
-/** The view the reader last chose on `/decks` (Stats on /decks, G7): `tiles` or `stats`. */
-export const DECKS_VIEW_COOKIE = "decks_view";
 /** Which Stats cards the reader left open on `/decks` (G10), as `useDecksStatsFold` writes it. */
 export const DECKS_STATS_OPEN_COOKIE = "decks_stats_open";
 
 export type DecksView = "tiles" | "stats";
 
-export function parseDecksViewCookie(raw: string | undefined | null): DecksView | null {
-  return raw === "tiles" || raw === "stats" ? raw : null;
-}

@@ -45,3 +45,13 @@ describe("the precon link picker's search", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+// Hugh, 2026-10-13: the list ran almost the window's height on desktop. It scrolls inside a capped box instead.
+describe("the precon link picker's list", () => {
+  it("is a capped, self-scrolling box, so the dialog does not grow with the catalog", () => {
+    mount();
+    const list = screen.getByRole("radiogroup", { name: "Precons" });
+    expect(list.className).toMatch(/max-h-\[min\(340px,40dvh\)\]/);
+    expect(list.className).toContain("overflow-y-auto");
+  });
+});
