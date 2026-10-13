@@ -30,8 +30,9 @@ self.addEventListener("install", () => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
+      // Only this worker's own older versions: Cache Storage is shared by the whole origin.
       for (const name of await caches.keys()) {
-        if (name !== STATIC) await caches.delete(name);
+        if (name.startsWith("static-") && name !== STATIC) await caches.delete(name);
       }
       await self.clients.claim();
     })(),

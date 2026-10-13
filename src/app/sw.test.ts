@@ -98,12 +98,13 @@ describe("the service worker", () => {
     expect(kept[0]).toBe(`${ORIGIN}/_next/static/immutable/chunks/5.js`);
   });
 
-  it("drops the caches of an older version when it activates", async () => {
+  it("drops its own older versions when it activates, and no other cache", async () => {
     stores.set("static-v0", new FakeCache());
+    stores.set("someone-else", new FakeCache());
     await fetchVia("/_next/static/immutable/chunks/a.js");
     let done: Promise<unknown> = Promise.resolve();
     listeners.activate({ waitUntil: (p: Promise<unknown>) => (done = p) });
     await done;
-    expect([...stores.keys()]).toEqual(["static-v1"]);
+    expect([...stores.keys()].sort()).toEqual(["someone-else", "static-v1"]);
   });
 });
