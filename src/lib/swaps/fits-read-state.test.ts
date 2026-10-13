@@ -64,6 +64,11 @@ describe("fitsReadView", () => {
     expect(v.stored?.readId).toBe("r");
   });
 
+  it("a pending row that recorded no candidates reads null, never a count of zero", () => {
+    const v = fitsReadView([row({ id: "p", status: "pending", outcome: null, createdAt: at(5), finishedAt: null, candidateHashes: {} })], { a: "p.1" });
+    expect(v.pending?.candidates).toBeNull();
+  });
+
   it("reports a failure only when it is newer than the stored read, and never as the result", () => {
     const failedLater = row({ id: "f", status: "failed", outcome: null, errorClass: "timeout", createdAt: at(9), finishedAt: at(10) });
     const failedEarlier = row({ id: "f", status: "failed", outcome: null, errorClass: "timeout", createdAt: at(-9), finishedAt: at(-8) });

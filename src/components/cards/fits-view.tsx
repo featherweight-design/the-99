@@ -425,7 +425,7 @@ export function FitsView({
   if (showsBand) {
     if (running !== null) {
       band = <>
-        <RunningBand title={read.running(runCount ?? (panel?.view.pending?.candidates || candidates), name)} elapsed={clock(now - running)} still={!result && !noFit} />
+        <RunningBand title={read.running(runCount ?? (panel?.view.pending?.candidates ?? candidates), name)} elapsed={clock(now - running)} still={!result && !noFit} />
         {noFitBox ? <div className="opacity-[0.72]">{noFitBox}</div> : null}
       </>;
     } else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;

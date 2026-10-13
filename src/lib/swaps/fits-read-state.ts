@@ -32,8 +32,8 @@ export type StoredFitsRead = {
 };
 
 export type FitsReadView = {
-  /** A run in flight for this reader and card (lock 5). `candidates`: the decks it was started over (its own row's), 0 when the row recorded none. */
-  pending: { readId: string; startedAt: string; candidates: number } | null;
+  /** A run in flight for this reader and card (lock 5). `candidates`: the decks it was started over (its own row's), null when the row recorded none. */
+  pending: { readId: string; startedAt: string; candidates: number | null } | null;
   /** The newest settled read, current or out of date. */
   stored: StoredFitsRead | null;
   /** The newest row, when it is a failure newer than `stored` (handoff P7). */
@@ -113,7 +113,7 @@ export function fitsReadView(
     ? { at: (newestSettled.finishedAt ?? newestSettled.createdAt).toISOString(), errorClass: newestSettled.errorClass }
     : null;
   return {
-    pending: pendingRow ? { readId: pendingRow.id, startedAt: pendingRow.createdAt.toISOString(), candidates: Object.keys(pendingRow.candidateHashes).length } : null,
+    pending: pendingRow ? { readId: pendingRow.id, startedAt: pendingRow.createdAt.toISOString(), candidates: Object.keys(pendingRow.candidateHashes).length || null } : null,
     stored,
     failed,
   };
