@@ -52,10 +52,10 @@ async function main() {
     manaCost: cmd.mana_cost ?? null,
   }];
 
-  const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [] });
-  const budgeted = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
-  const bracketed = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null } });
-  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null } });
+  const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: process.env });
+  const budgeted = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: process.env });
+  const bracketed = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null }, env: process.env });
+  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null }, env: process.env });
 
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
@@ -85,7 +85,7 @@ async function main() {
   const selCents = prices.get(selection.oracleId)?.liveCents ?? 0;
   const { placedCardsOf } = await import("../src/lib/decks/costs-of");
   const withSelection = await buildFillPlan(USER, commanders, new Set([selection.oracleId]),
-    { selected: await placedCardsOf([selection.oracleId]), answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null } });
+    { selected: await placedCardsOf([selection.oracleId]), answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: process.env });
   check("a placed selection is charged: it and the fill's buys fit the cap together", selCents + spend(withSelection) <= BUDGET_CENTS,
     `selection $${(selCents / 100).toFixed(2)} + fill $${(spend(withSelection) / 100).toFixed(2)} against $${BUDGET_CENTS / 100}`);
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { deckSurfaces } from "../../lib/decks/revalidate";
@@ -59,8 +60,9 @@ async function prepareBody(raw: unknown): Promise<string | null> {
 
 export async function addNote(deckId: string, rawBody: string): Promise<NotesResult> {
   const refuse = { ok: false as const, message: deckNotesCopy.add.refused };
-  if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId)) return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -78,8 +80,9 @@ export async function addNote(deckId: string, rawBody: string): Promise<NotesRes
 
 export async function editNote(deckId: string, noteId: string, rawBody: string): Promise<NotesResult> {
   const refuse = { ok: false as const, message: deckNotesCopy.edit.refused };
-  if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -96,8 +99,9 @@ export async function editNote(deckId: string, noteId: string, rawBody: string):
 /** Select (`done: true`) or unselect a note. */
 export async function setNoteDone(deckId: string, noteId: string, done: boolean): Promise<NotesResult> {
   const refuse = { ok: false as const, message: done === true ? deckNotesCopy.row.doneRefused : deckNotesCopy.row.reopenRefused };
-  if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId) || !isUuid(noteId) || typeof done !== "boolean") return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -111,8 +115,9 @@ export async function setNoteDone(deckId: string, noteId: string, done: boolean)
 
 export async function deleteNote(deckId: string, noteId: string): Promise<NotesResult> {
   const refuse = { ok: false as const, message: deckNotesCopy.confirm.refused };
-  if (!deckNotesEnabled()) return refuse;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -126,8 +131,9 @@ export async function deleteNote(deckId: string, noteId: string): Promise<NotesR
 
 /** The `[[` picker's "any card" lookup. Null when the switch is off or the search fails. */
 export async function searchNoteCards(query: string): Promise<NoteCardHit[] | null> {
-  if (!deckNotesEnabled()) return null;
-  await requireUserId();
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckNotesEnabled(env)) return null;
   if (typeof query !== "string") return null;
   try {
     return await searchNoteCardsIn(query);

@@ -10,12 +10,14 @@ import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { decks, precons } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { preconsEnabled } from "../../lib/precons/flag";
 
 export async function linkPrecon(deckId: string, fileName: string): Promise<void> {
-  if (!preconsEnabled()) throw new Error("precons are off");
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) throw new Error("precons are off");
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
   // A Collector's Edition twin links to the plain edition it folds into (lock 1).
   const [head] = await db.select({ fileName: precons.fileName, twinOf: precons.twinOf }).from(precons).where(eq(precons.fileName, fileName));
@@ -26,8 +28,9 @@ export async function linkPrecon(deckId: string, fileName: string): Promise<void
 /** Clears the link only while it still names `fileName`, the precon the confirm named: a deck
  *  moved to another precon since the dialog opened keeps its newer link, and the confirm fails. */
 export async function unlinkPrecon(deckId: string, fileName: string): Promise<void> {
-  if (!preconsEnabled()) throw new Error("precons are off");
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) throw new Error("precons are off");
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
   await writeLink(userId, deckId, null, fileName);
 }

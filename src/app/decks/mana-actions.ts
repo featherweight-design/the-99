@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { shortCommanderName } from "../../lib/copy/decks-builder";
 import { chainArt } from "../../lib/cards/chain-art";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -39,7 +40,8 @@ function listFingerprintOf(deck: Pick<DeckDetail, "commander" | "partner" | "car
  */
 export async function readManaBalance(deckId: string): Promise<ManaPanelData | null> {
   const userId = await requireUserId();
-  if (!manaBalanceEnabled() || !isUuid(deckId)) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!manaBalanceEnabled(env) || !isUuid(deckId)) return null;
   const deck = await getDeckDetail(deckId, userId);
   if (!deck) return null;
   const balance = await loadManaBalance(deck);
@@ -83,7 +85,8 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
  */
 export async function readManaHelpFor(deckId: string, color: string): Promise<ManaHelp | null> {
   const userId = await requireUserId();
-  const read = await helpFor(deckId, color, userId);
+  const env = await requestSwitchEnv(userId);
+  const read = await helpFor(deckId, color, userId, env);
   if (!read) return null;
   const { deckId: id, listKey, ...help } = read;
   // `listKey` is the write's precondition and History's key, never sent to the client.
@@ -105,7 +108,8 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
  */
 export async function readManaHelpReview(deckId: string, countId: string): Promise<ManaHelp | null> {
   const userId = await requireUserId();
-  if (!manaBalanceEnabled() || !isUuid(deckId) || !isUuid(countId)) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!manaBalanceEnabled(env) || !isUuid(deckId) || !isUuid(countId)) return null;
   const [row] = await db.select({ summary: deckToolCounts.summary }).from(deckToolCounts)
     .where(helpReadWhere(countId, deckId, userId)).limit(1);
   if (!row || !isManaHelpSummary(row.summary)) return null;
@@ -123,8 +127,8 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
 
 /** Improve my mana for one of the reader's decks, read fresh, with the key of the list it was read from:
  *  null on any refusal or failed read. */
-async function helpFor(deckId: string, color: string, userId: string): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
-  if (!manaBalanceEnabled() || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
+async function helpFor(deckId: string, color: string, userId: string, env: NodeJS.ProcessEnv): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
+  if (!manaBalanceEnabled(env) || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
   const deck = await getDeckDetail(deckId, userId);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
@@ -149,8 +153,9 @@ export type ManaTradeResult = { ok: true; applyId: string } | { ok: false; messa
 export async function applyManaTrade(deckId: string, color: string, stapleOracleId: string, outId: string): Promise<ManaTradeResult> {
   const refused = { ok: false as const, message: deckTuningCopy.card.applyRefused };
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   if (!isUuid(stapleOracleId) || !isUuid(outId)) return refused;
-  const help = await helpFor(deckId, color, userId);
+  const help = await helpFor(deckId, color, userId, env);
   const trade = help?.trades.find((t) => t.staple.oracleId === stapleOracleId);
   if (!help || !trade || trade.out.id !== outId) return refused;
   const applyId = await applyTrade(help.deckId, userId, { cutOracleId: trade.out.id, addOracleId: trade.staple.oracleId }, help.listKey);
@@ -163,7 +168,8 @@ export async function applyManaTrade(deckId: string, color: string, stapleOracle
 export async function undoManaTrade(applyId: string): Promise<DeckMutationResult> {
   const refused = { ok: false as const, message: deckTuningCopy.card.undoRefused };
   const userId = await requireUserId();
-  if (!manaBalanceEnabled() || !isUuid(applyId)) return refused;
+  const env = await requestSwitchEnv(userId);
+  if (!manaBalanceEnabled(env) || !isUuid(applyId)) return refused;
   const deckId = await undoTrade(applyId, userId);
   if (!deckId) return refused;
   revalidateClaims(deckId, userId);

@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { printings } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
@@ -57,8 +58,9 @@ export async function markBought(
   rawOracleId: string,
   input: { scryfallId: unknown; finish: unknown; quantity: unknown; expected: unknown; id: unknown },
 ): Promise<MarkBoughtOutcome> {
-  if (!shoppingMarkBoughtEnabled()) return { refused: "off" };
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!shoppingMarkBoughtEnabled(env)) return { refused: "off" };
   const { scryfallId, finish, quantity, expected, id } = input;
   if (!isUuid(rawDeckId) || !isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   // Lowercased: Postgres hands uuids back lowercase, every map is keyed on what it returned, and the
@@ -118,7 +120,7 @@ export async function markBought(
           // Where the copy went, and the chooser Change opens on it, both from the write's own
           // snapshot (taken under its locks), so the receipt says what the write did and the
           // chooser opens with no second read. Only while the switch is on.
-          receipt: facts && snaps && addedCopyEnabled()
+          receipt: facts && snaps && addedCopyEnabled(env)
             ? {
                 ...facts,
                 went: placementsOf(snaps.before, snaps.after),
@@ -189,8 +191,9 @@ export async function markBoughtForDecks(
     scryfallId: unknown; finish: unknown; quantity: unknown; expected: unknown; id: unknown;
   },
 ): Promise<MarkBoughtForDecksOutcome> {
-  if (!shoppingMarkBoughtEnabled() || !allDecksCartEnabled()) return { refused: "off" };
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!shoppingMarkBoughtEnabled(env) || !allDecksCartEnabled(env)) return { refused: "off" };
   const { scryfallId, finish, quantity, expected, id, pickDeckId } = input;
   if (!isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   if (!Array.isArray(input.deckIds) || input.deckIds.length === 0 || input.deckIds.length > CART_DECKS_MAX
@@ -284,8 +287,9 @@ export async function markBoughtForDecks(
  * it does at full count.
  */
 export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown): Promise<ContestedCard | null> {
-  if (!shoppingMarkBoughtEnabled() || !allDecksCartEnabled()) return null;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!shoppingMarkBoughtEnabled(env) || !allDecksCartEnabled(env)) return null;
   if (!isUuid(rawOracleId) || !Array.isArray(rawDeckIds) || rawDeckIds.length === 0
     || rawDeckIds.length > CART_DECKS_MAX || !rawDeckIds.every(isUuid)) {
     throw new Error("bad chooser input");

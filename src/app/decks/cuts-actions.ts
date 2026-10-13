@@ -7,6 +7,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { castFaceText } from "../../lib/cards/facet";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
@@ -80,7 +81,8 @@ export async function runProposedCuts(
   opts: { runId?: string } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(deckId)) return { ok: false, message: deckCutsCopy.run.refused };
+  const env = await requestSwitchEnv(userId);
+  if (!proposedCutsEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckCutsCopy.run.refused };
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
   // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
   const requested = typeof opts === "object" && opts !== null ? opts.runId : undefined;
@@ -213,7 +215,8 @@ export async function runProposedCuts(
  */
 export async function readCutsPanel(deckId: string, runId: string | null = null): Promise<CutsPanel | null> {
   const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(deckId)) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!proposedCutsEnabled(env) || !isUuid(deckId)) return null;
   const inputs = await readProposedCuts(deckId, userId);
   if (!inputs) return null;
   const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
@@ -277,25 +280,29 @@ async function settleVerdict(outcome: CutOutcome, userId: string, membership: bo
 /** `review`: pressed on a past run History opened, re-checked card by card (`VerdictMode`). */
 export async function cutProposed(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  const env = await requestSwitchEnv(userId);
+  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await cutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
 export async function undoProposedCut(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  const env = await requestSwitchEnv(userId);
+  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
 /** Keep and Show it again change no card, so they move no fingerprint. */
 export async function keepProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  const env = await requestSwitchEnv(userId);
+  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await setCutKept(itemId, userId, true), userId, false);
 }
 
 export async function restoreProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!proposedCutsEnabled() || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  const env = await requestSwitchEnv(userId);
+  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await setCutKept(itemId, userId, false), userId, false);
 }

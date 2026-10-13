@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const DECK = "11111111-1111-4111-8111-111111111111";
 const CARD = "22222222-2222-4222-8222-222222222222";
 const SCRY = "33333333-3333-4333-8333-333333333333";

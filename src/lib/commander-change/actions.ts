@@ -5,6 +5,7 @@
 
 import { db } from "../../db";
 import { requireUserId } from "../auth";
+import { requestSwitchEnv } from "../switches/request";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { changeCommanderEnabled } from "./flag";
@@ -15,8 +16,9 @@ import { writeCommanderChange, type ChangeCommanderResult } from "./write";
 export async function changeCommander(
   deckId: string, to: CommanderPair, staysOracleId: string | null = null,
 ): Promise<ChangeCommanderResult> {
-  if (!changeCommanderEnabled()) return { ok: false, reason: "unavailable" };
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!changeCommanderEnabled(env)) return { ok: false, reason: "unavailable" };
   // Request data: an id that is not a uuid would reach Postgres's cast and throw, where the caller
   // is owed the typed refusal.
   if (!isUuid(deckId)) return { ok: false, reason: "unavailable" };
@@ -47,8 +49,9 @@ export async function changeCommander(
  * switch is off or the deck is not the reader's.
  */
 export async function readChangeCandidates(deckId: string): Promise<ChangeCandidates | null> {
-  if (!changeCommanderEnabled()) return null;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!changeCommanderEnabled(env)) return null;
   if (!isUuid(deckId)) return null;
   return loadChangeCandidates(deckId, userId);
 }

@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
+import { deckBenchmarksEnabled } from "../../lib/decks/benchmarks-flag";
 import { readingBenchmarks } from "../../lib/benchmarks/reading";
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { computeAndStoreProfile, readStoredReading } from "../../lib/profile/stored";
@@ -58,17 +60,19 @@ export type ProfileFetch =
  * where a determined verdict goes stale and the control invites another pass.
  *
  * THE FLAG GATES THE LOADER AS WELL AS THE TAB. A hidden tab whose payload still loads is the
- * worst of both, so `disabled` is answered before any read — and it is a distinct reason from
+ * worst of both, so `disabled` is answered before any deck read: after the session and the
+ * reader's own switches, which decide it, and before anything else. It is a distinct reason from
  * `not-found`, because nothing is wrong with the deck.
  */
 export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
-  if (!analysisTabEnabled()) return { ok: false, reason: "disabled" };
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!analysisTabEnabled(env)) return { ok: false, reason: "disabled" };
 
   // Before the id reaches a `uuid` column: Postgres answers a malformed one with 22P02, which
   // arrives as a rejected action rather than as the refusal this type promises.
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
 
-  const userId = await requireUserId();
   // Computed through the same cache as before, and now also STORED, so the next visit can show
   // it without a press. See `stored.ts`.
   const result = await computeAndStoreProfile(deckId, userId);
@@ -91,7 +95,7 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   });
 
   const { profile, analyzedAt, fresh, versionNumber } = result.reading;
-  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber, benchmarks: await readingBenchmarks(profile, userId) };
+  return { ok: true, profile, analyzedAt: analyzedAt.toISOString(), fresh, versionNumber, benchmarks: await readingBenchmarks(profile, userId, deckBenchmarksEnabled(env)) };
 }
 
 export type StoredProfileFetch =
@@ -109,9 +113,10 @@ export type StoredProfileFetch =
  * already bought; a reader who never pressed still sees the press.
  */
 export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProfileFetch> {
-  if (!analysisTabEnabled()) return { ok: false, reason: "disabled" };
-  if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!analysisTabEnabled(env)) return { ok: false, reason: "disabled" };
+  if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const stored = await readStoredReading(deckId, userId);
   // A STALE reading is answered as one: the tab holds it under the banner (2i) rather than
   // withdrawing it.
@@ -122,7 +127,7 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
         analyzedAt: stored.analyzedAt.toISOString(),
         fresh: stored.fresh,
         versionNumber: stored.versionNumber,
-        benchmarks: await readingBenchmarks(stored.profile, userId),
+        benchmarks: await readingBenchmarks(stored.profile, userId, deckBenchmarksEnabled(env)),
       }
     : { ok: false, reason: "none" };
 }

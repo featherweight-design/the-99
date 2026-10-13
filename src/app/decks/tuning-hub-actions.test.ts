@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+const resolved = vi.hoisted(() => ({ env: { RESOLVED: "1" } as unknown as NodeJS.ProcessEnv }));
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => resolved.env) }));
+
 const order: string[] = [];
 vi.mock("../../lib/auth", () => ({ requireUserId: vi.fn(async () => "u1") }));
-vi.mock("../../lib/tuning/flag", () => ({ tuningHubEnabled: () => true, hubTools: () => ["suggested", "cuts"] }));
+const hubTools = vi.hoisted(() => vi.fn((_env?: NodeJS.ProcessEnv) => ["suggested", "cuts"]));
+vi.mock("../../lib/tuning/flag", () => ({ tuningHubEnabled: () => true, hubTools }));
 vi.mock("../../lib/tuning/reap-runs", () => ({ reapReaderRuns: vi.fn(async () => { order.push("reap"); }) }));
 const readArgs: unknown[][] = [];
 vi.mock("../../lib/tuning/hub-read", () => ({ readHubTiles: vi.fn(async (...a: unknown[]) => { order.push("read"); readArgs.push(a); return null; }) }));
@@ -38,6 +44,16 @@ describe("the hub's reads reap the reader's abandoned runs before they describe 
     expect(await readTuningPastRun(DECK, `count:${DECK}`)).toBeNull();
     vi.mocked(readPastRun).mockResolvedValueOnce({ kind: "count", tool: "cuts", at: "2026-10-11T12:00:00Z", summary: { kind: "none" } } as never);
     expect(await readTuningPastRun(DECK, `count:${DECK}`)).not.toBeNull();
+  });
+
+  it.each([
+    ["landing", () => readTuningHub(DECK)],
+    ["History", () => readTuningHistory(DECK, null, null)],
+    ["a past run", () => readTuningPastRun(DECK, `run:${DECK}`)],
+  ])("%s draws the tools the reader's own switches turn on, not the environment's", async (_, read) => {
+    hubTools.mockClear();
+    await read();
+    expect(hubTools).toHaveBeenCalledWith(resolved.env);
   });
 
   it("reaps nothing for an id that is not a deck's", async () => {

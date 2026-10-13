@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { proxiedMembership } from "../../lib/decks/proxies";
@@ -51,7 +52,8 @@ export async function setDeckPrinting(
   printing: { setCode: string; collectorNumber: string },
 ): Promise<SetDeckPrintingResult> {
   const userId = await requireUserId();
-  if (!deckPrintingsEnabled()) return { ok: false, reason: "off" };
+  const env = await requestSwitchEnv(userId);
+  if (!deckPrintingsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, reason: "refused" };
   if (typeof printing !== "object" || printing === null) return { ok: false, reason: "refused" };
   const { setCode: rawSet, collectorNumber } = printing;

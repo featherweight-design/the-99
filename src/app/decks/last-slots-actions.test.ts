@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 // ---------------------------------------------------------------------------
 // Hoisted stub — must mirror the shape actions.ts imports from ../../db so the
 // module can be mocked before it loads. We extend the existing test-harness

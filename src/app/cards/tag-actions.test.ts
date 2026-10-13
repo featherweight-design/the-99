@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ on: true, tuningOn: true, search: vi.fn(), signedIn: vi.fn(async () => "user_1") }));
+const RESOLVED = { RESOLVED: "1" } as unknown as NodeJS.ProcessEnv;
+const stub = vi.hoisted(() => ({ on: true, tuningOn: true, search: vi.fn(), signedIn: vi.fn(async () => "user_1"), flagEnv: [] as unknown[] }));
 vi.mock("../../lib/auth", () => ({ requireUserId: stub.signedIn }));
-vi.mock("../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
-vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => stub.tuningOn }));
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => RESOLVED) }));
+vi.mock("../../lib/intake/flag", () => ({ helpMeChooseEnabled: (env?: unknown) => (stub.flagEnv.push(env), stub.on) }));
+vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: (env?: unknown) => (stub.flagEnv.push(env), stub.tuningOn) }));
 vi.mock("../../lib/decks/notes-store", () => ({ searchNoteCards: stub.search }));
 
 const { searchTagCards } = await import("./tag-actions");
@@ -14,6 +16,13 @@ describe("searchTagCards", () => {
   it("searches for a signed-in reader of a surface whose switch is on", async () => {
     expect(await searchTagCards("intake", "sol")).toEqual([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]);
     expect(stub.signedIn).toHaveBeenCalled();
+  });
+
+  it("decides the switch from the reader's resolved switches, not the environment's", async () => {
+    stub.flagEnv.length = 0;
+    await searchTagCards("intake", "sol");
+    await searchTagCards("tuning", "sol");
+    expect(stub.flagEnv).toEqual([RESOLVED, RESOLVED]);
   });
 
   it("asks for only the cards a commander deck may hold, in the query itself, since a tag here is a requirement", async () => {

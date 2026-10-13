@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cutFacts, type CutFacts } from "../../lib/tuning/cuts";
 import { deck, profile, support } from "../../lib/tuning/cuts-fixture";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 // What the tests pin: the order of refusals against the reservation, the refund on every failure
 // path, and what a kept cut is persisted as. The reads and the run store are mocked; the pack, the
 // prompt, the schema and the validator are the real ones.

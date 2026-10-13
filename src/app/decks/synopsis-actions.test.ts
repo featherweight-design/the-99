@@ -4,6 +4,10 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const stub = vi.hoisted(() => ({ enabled: true, calls: [] as string[], state: null as unknown }));
 
 vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => stub.enabled }));

@@ -12,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { requireUserId } from "../auth";
+import { requestSwitchEnv } from "../switches/request";
 import { noticesEnabled } from "./flag";
 import { isUuid } from "../uuid";
 import { markNoticesRead } from "./mark";
@@ -23,13 +24,16 @@ import { loadDeckNotices, type DeckNotices } from "./read";
  */
 export async function peekNotices(deckId: string): Promise<DeckNotices | null> {
   // Behind the release switch here too, not only in the page: an action is callable directly.
-  if (!noticesEnabled() || !isUuid(deckId)) return null;
-  return loadDeckNotices(deckId, await requireUserId());
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!noticesEnabled(env) || !isUuid(deckId)) return null;
+  return loadDeckNotices(deckId, userId);
 }
 
 export async function openNotices(deckId: string): Promise<DeckNotices | null> {
-  if (!noticesEnabled() || !isUuid(deckId)) return null;
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!noticesEnabled(env) || !isUuid(deckId)) return null;
   const notices = await loadDeckNotices(deckId, userId);
   if (!notices) return null;
   const legalMarked = await markNoticesRead(deckId, userId, notices.readMarks);

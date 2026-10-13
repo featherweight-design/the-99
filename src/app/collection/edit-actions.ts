@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import {
   loadEditSheetData, loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings,
@@ -25,9 +26,15 @@ import { placedOf, type AddedPlacement } from "../../lib/collection/add-placemen
  */
 
 async function signedInEditor(): Promise<string> {
+  return (await signedInEditorEnv()).userId;
+}
+
+/** The editor's id with the switches resolved for them, for an action that reads another switch. */
+async function signedInEditorEnv(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
-  if (!collectionEditEnabled()) throw new Error("collection editing is off");
-  return userId;
+  const env = await requestSwitchEnv(userId);
+  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
+  return { userId, env };
 }
 
 /**
@@ -111,7 +118,7 @@ export type AddOutcome =
  * catalog, never from the client.
  */
 export async function addToCollection(actionId: string, lines: unknown): Promise<AddOutcome> {
-  const userId = await signedInEditor();
+  const { userId, env } = await signedInEditorEnv();
   if (!isUuid(actionId)) throw new Error("bad action id");
   const parsed = linesOf(lines).map((l) => {
     const identity = identityOf(l);
@@ -125,7 +132,7 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
     if (!printing || !printing.finishes.includes(l.finish)) throw new Error("not a catalog printing");
     return { ...l, scryfallId: printing.scryfallId, condition: null };
   });
-  const placements = addedCopyEnabled();
+  const placements = addedCopyEnabled(env);
   const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, ...(placements ? { placements } : {}) });
   const done = settled(userId, result);
   // Where each copy went, read inside the write. A retry that found the save applied has no read of

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import {
   getHistoryEntry, listHistory, revertDiffers, type HistoryEntry, type HistoryListEntry,
@@ -23,7 +24,8 @@ import { CART_DECKS_MAX } from "../../lib/decks/mark-bought";
 
 async function signedInEditor(): Promise<string> {
   const userId = await requireUserId();
-  if (!collectionEditEnabled()) throw new Error("collection editing is off");
+  const env = await requestSwitchEnv(userId);
+  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   return userId;
 }
 

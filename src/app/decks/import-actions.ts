@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
@@ -167,6 +168,7 @@ async function heldPrintingKeys(userId: string, oracleIds: string[]): Promise<Se
  */
 export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResult> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   const name = validateDeckName(input.name);
   const maxBytes = deckImportMaxBytes(input.source);
   if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
@@ -302,7 +304,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   let printingPicks: ImportPrintingPick[] = [];
   let printingsKept = 0;
   let printingsNotOwned = 0;
-  if (deckPrintingsEnabled() && result.printings.length > 0) {
+  if (deckPrintingsEnabled(env) && result.printings.length > 0) {
     const members = new Set([
       ...deckCardValues.map((c) => c.oracleId),
       commanderOracleId,

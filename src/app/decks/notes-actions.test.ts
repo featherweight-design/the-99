@@ -5,6 +5,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const ID = "6d0a5f7e-1111-4222-8333-444455556666";
 const DECK = "22222222-2222-4222-8222-222222222222";
 const NOTE = "33333333-3333-4333-8333-333333333333";

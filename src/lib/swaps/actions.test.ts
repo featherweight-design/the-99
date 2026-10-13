@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 // The two Fits actions are PUBLIC ENDPOINTS: every gate is re-checked here, and the add's
 // revalidation waits for `after()` rather than shipping the caller's page back.
 const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[], enabled: true, readEnabled: true }));

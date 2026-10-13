@@ -6,6 +6,11 @@
 // calls this export, because a server action needs a request and a signed-in reader.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { requestSwitchEnv } from "../../lib/switches/request";
+
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
 
 const stub = vi.hoisted(() => ({
   enabled: true,
@@ -24,6 +29,8 @@ const stub = vi.hoisted(() => ({
   revalidated: [] as string[],
   /** What the reading's benchmarks read answers. */
   benchmarks: null as unknown,
+  /** The switch value each benchmarks read was handed (its third argument). */
+  benchmarksEnabled: [] as unknown[],
   deferred: 0,
 }));
 
@@ -45,8 +52,9 @@ vi.mock("../../lib/decks/analysis-flag", () => ({
 }));
 
 vi.mock("../../lib/benchmarks/reading", () => ({
-  readingBenchmarks: async (profile: unknown) => {
+  readingBenchmarks: async (profile: unknown, _userId: string, enabled?: boolean) => {
     stub.reads.push("benchmarks");
+    stub.benchmarksEnabled.push(enabled);
     return profile ? stub.benchmarks : null;
   },
 }));
@@ -92,6 +100,7 @@ beforeEach(() => {
   stub.revalidated = [];
   stub.deferred = 0;
   stub.benchmarks = null;
+  stub.benchmarksEnabled = [];
 });
 
 describe("fetchDeckProfile", () => {
@@ -125,10 +134,11 @@ describe("fetchDeckProfile", () => {
   // THE FLAG GATES THE LOADER, NOT ONLY THE TAB. A hidden tab whose payload still loads is the
   // worst of both — so the assertion is that NO read happened, which is the only way to tell a
   // gated loader from a gated render.
-  it("answers disabled before reading anything at all", async () => {
+  it("answers disabled after the session, before reading anything else", async () => {
     stub.enabled = false;
     expect(await fetchDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
-    expect(stub.reads).toEqual([]);
+    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    expect(stub.reads).toEqual(["auth"]);
   });
 
   // `disabled` is not a failure and must never be reported as one: nothing is wrong with the
@@ -149,7 +159,8 @@ describe("fetchDeckProfile", () => {
     "refuses %p before any read, rather than letting Postgres answer",
     async (bad) => {
       expect(await fetchDeckProfile(bad)).toEqual({ ok: false, reason: "not-found" });
-      expect(stub.reads).toEqual([]);
+      // The session alone: the reader's switches resolve from it, so it is read before the gate.
+      expect(stub.reads).toEqual(["auth"]);
     },
   );
 
@@ -214,15 +225,17 @@ describe("fetchStoredDeckProfile", () => {
     });
   });
 
-  it("answers disabled before reading anything at all", async () => {
+  it("answers disabled after the session, before reading anything else", async () => {
     stub.enabled = false;
     expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
-    expect(stub.reads).toEqual([]);
+    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    expect(stub.reads).toEqual(["auth"]);
   });
 
-  it("refuses a malformed id before any read", async () => {
+  it("refuses a malformed id after the session, before any deck read", async () => {
     expect(await fetchStoredDeckProfile("deck-1")).toEqual({ ok: false, reason: "not-found" });
-    expect(stub.reads).toEqual([]);
+    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    expect(stub.reads).toEqual(["auth"]);
   });
 });
 
@@ -232,6 +245,22 @@ describe("the reading's benchmarks", () => {
     expect(await fetchDeckProfile(DECK)).toMatchObject({ ok: true, benchmarks: { velocity: { step: 3 } } });
     stub.stored = { brackets: {} };
     expect(await fetchStoredDeckProfile(DECK)).toMatchObject({ ok: true, benchmarks: { velocity: { step: 3 } } });
+  });
+
+  it("grades by the reader's resolved DECK_BENCHMARKS_ENABLED, from a press and from the store", async () => {
+    // `readingBenchmarks` defaults its switch to the environment's, so a dropped argument still
+    // compiles; the environment has it off here and the reader's override turns it on.
+    vi.stubEnv("DECK_BENCHMARKS_ENABLED", "false");
+    const resolved = { ...process.env, DECK_BENCHMARKS_ENABLED: "true" };
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(resolved).mockResolvedValueOnce(resolved);
+    try {
+      await fetchDeckProfile(DECK);
+      stub.stored = { brackets: {} };
+      await fetchStoredDeckProfile(DECK);
+      expect(stub.benchmarksEnabled).toEqual([true, true]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("reads none when there is no reading to grade", async () => {

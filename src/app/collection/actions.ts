@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { db } from "../../db";
 import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
 import { formatLastUpdated } from "../../lib/collection/browse";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
@@ -20,6 +21,7 @@ import {
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
+import { addedCopyEnabled } from "../../lib/collection/added-copy-flag";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt } from "../../lib/collection/history";
 import { summarizeUploadPreview, type UploadPreviewDetail } from "../../lib/collection/upload-preview";
 import { randomUUID } from "node:crypto";
@@ -208,7 +210,8 @@ export async function previewUploadChange(
   mode?: UploadMode,
 ): Promise<UploadChangePreview | { missingCard: string[] } | null> {
   const userId = await requireUserId();
-  if (!collectionEditEnabled()) throw new Error("collection editing is off");
+  const env = await requestSwitchEnv(userId);
+  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   const kind = parseMode(mode);
   const upload = await loadUpload(userId, uploadId);
   // Already confirmed: there is nothing left to choose.
@@ -251,8 +254,9 @@ export async function confirmUpload(
   opts: { firstImport?: boolean; mode?: UploadMode; confirmShort?: ShortDeck[] } = {},
 ): Promise<ConfirmOutcome> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   const mode = parseMode(opts.mode);
-  const ledger = collectionEditEnabled();
+  const ledger = collectionEditEnabled(env);
   if (mode === "add" && !ledger) throw new Error("adding an upload needs collection editing on");
   const upload = await loadUpload(userId, uploadId);
 
@@ -355,6 +359,7 @@ export async function confirmUpload(
     nowShort,
     unmatched: preview.unmatched ?? [],
     parseErrorCount: (preview.parseErrors ?? []).length,
+    addedCopy: addedCopyEnabled(env),
   });
 
   // Warm the new collection's scores without blocking the upload response. If this
@@ -468,10 +473,11 @@ export async function refreshCollectionHeader(): Promise<{
   historyHasEntries: boolean;
 }> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),
-    collectionEditEnabled() ? collectionHasHistory(userId) : Promise.resolve(false),
+    collectionEditEnabled(env) ? collectionHasHistory(userId) : Promise.resolve(false),
   ]);
   // Formatted HERE, on the server, rather than handed to the client as a raw `Date` — the
   // head that renders this is a Client Component and would otherwise recompute the label

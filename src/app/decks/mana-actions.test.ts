@@ -4,6 +4,10 @@ import { NO_TAPPED_LANDS } from "../../lib/mana/lands-tapped";
 import type { ManaSupplyCardRow } from "../../lib/mana/supply";
 import { readManaBalance as engine, type ManaBalance } from "../../lib/tuning/mana-balance";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const state = vi.hoisted(() => ({
   enabled: true,
   deck: null as unknown,
