@@ -1899,6 +1899,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
   production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp
   row comes back and two checks fail.
+  It also proves the purge UNLINKS the account from a friend's game log (a seat naming it as an opponent): the row
+  stands with its snapshot, and its friend and deck links go null. Mutation-checked: without the unlink the
+  by-value search finds `deck_game_opponents.friend_user_id`.
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
   and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,

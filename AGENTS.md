@@ -762,6 +762,16 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   returns the card, the wanted count and got, never an owned count. `pnpm probe:wishlist` proves it on a scratch
   branch.
 
+- **Opponents in the game log** (scope §4, Feature C; Hugh's ruling Q15), behind `SOCIAL_GAMES_ENABLED`, which requires
+  `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until its UI PR). `deck_game_opponents`
+  holds the seats of a game, seat 1 upward and fewer than its pod size: a friend, a friend's deck, or anyone by a
+  catalog commander and an optional label, plus an optional `won` on a loss (one at most). The rows are the game
+  owner's and SNAPSHOT the friend's name and the deck's name and commanders at log time, so every read draws the
+  snapshot and none depends on a friend's live rows or cache. The live friend link is never sent to a client and is
+  UNLINKED by the account purge (`SOCIAL_UNLINKED`), keeping the snapshot. The label is player-typed and no prompt
+  reads the table (`game-opponents.test.ts` pins who may). `summarizeMatchups` splits a deck's games by commander,
+  color identity and friend as `GameSummary` cells: counts with denominators, no rate.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its

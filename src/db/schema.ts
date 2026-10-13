@@ -1000,6 +1000,52 @@ export const deckGameAxes = pgTable("deck_game_axes", {
 ]);
 
 /**
+ * Who sat across the table in one logged game (social scope §4, Feature C; Hugh's ruling Q15). One row
+ * per recorded opponent, seat 1 upward in the order the form sent them, and always fewer than the game's
+ * pod size (checked by the write, which the table cannot do; a seat left out is simply unrecorded). The rows are the GAME OWNER's,
+ * reached through `game_id`, and go with the game by cascade.
+ *
+ * A seat is a friend (`friend_user_id`, with their display name SNAPSHOT in `friend_name_then`), a friend's
+ * deck (`friend_deck_id`, whose name and commanders are snapshot too), or anyone at all: a commander from
+ * the catalog and an optional `label` the player typed. The snapshot is what every read draws, so the
+ * record stays true after the friend renames, rebuilds or deletes the deck, unfriends, or deletes their
+ * account; the live links only group seats, are never sent to a client, and go null when the friend's
+ * account or deck goes (the purge, and `set null` on the deck).
+ *
+ * `won` marks the opponent who won a game the owner LOST (Q15: an optional tap). At most one per game, and
+ * none on a win or a draw, both checked by the write.
+ *
+ * `label` is player-typed free text. It is never sent to a model: no prompt reads this table
+ * (`game-opponents.test.ts` fails a module outside the allowed few that names it).
+ *
+ * No `user_data_touch` trigger: rows are written only with their game (whose own trigger moves the stamp)
+ * and nothing Home or `/decks` reads draws them.
+ */
+export const deckGameOpponents = pgTable("deck_game_opponents", {
+  gameId: uuid("game_id").notNull().references(() => deckGames.id, { onDelete: "cascade" }),
+  seat: integer("seat").notNull(),
+  friendUserId: text("friend_user_id"),
+  friendDeckId: uuid("friend_deck_id").references(() => decks.id, { onDelete: "set null" }),
+  friendNameThen: text("friend_name_then"),
+  deckNameThen: text("deck_name_then"),
+  commanderOracleId: uuid("commander_oracle_id").references(() => cards.oracleId),
+  partnerOracleId: uuid("partner_oracle_id").references(() => cards.oracleId),
+  label: text("label"),
+  won: boolean("won").notNull().default(false),
+}, (t) => [
+  primaryKey({ columns: [t.gameId, t.seat] }),
+  check("deck_game_opponents_seat_check", sql`${t.seat} between 1 and 7`),
+  check("deck_game_opponents_label_check", sql`${t.label} is null or char_length(${t.label}) between 1 and 30`),
+  check("deck_game_opponents_friend_name_check", sql`${t.friendNameThen} is null or char_length(${t.friendNameThen}) between 1 and 30`),
+  check("deck_game_opponents_deck_name_check", sql`${t.deckNameThen} is null or char_length(${t.deckNameThen}) between 1 and 120`),
+  check("deck_game_opponents_partner_check", sql`${t.partnerOracleId} is null or (${t.commanderOracleId} is not null and ${t.partnerOracleId} <> ${t.commanderOracleId})`),
+  check("deck_game_opponents_deck_friend_check", sql`${t.friendDeckId} is null or ${t.friendUserId} is not null`),
+  // A seat says SOMETHING about who sat there: a friend's name, a commander, or a label.
+  check("deck_game_opponents_named_check", sql`${t.friendNameThen} is not null or ${t.commanderOracleId} is not null or ${t.label} is not null`),
+  index("deck_game_opponents_friend_idx").on(t.friendUserId).where(sql`${t.friendUserId} is not null`),
+]);
+
+/**
  * Lines an import could not match to a card, kept alongside the deck they came from.
  *
  * There is deliberately NO foreign key to cards — the whole point of a row here is that no
