@@ -750,6 +750,13 @@
       "when": 1791852163480,
       "tag": "0106_admin_switches",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1791855683442,
+      "tag": "0107_wishlist_items",
+      "breakpoints": true
     }
   ]
 }

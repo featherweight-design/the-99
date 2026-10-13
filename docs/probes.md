@@ -1888,6 +1888,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
   production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp
   row comes back and two checks fail.
+- `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
+  count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
+  and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,
+  that a stranger, a forged or malformed public id and a former friend read nothing, that a got line stays until
+  cleared, and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
+  branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
+  dropping the viewer predicate from the friendship join makes the stranger see the list.
 - `pnpm probe:social` proves the social foundation's queries (plan `boards/plan-social-foundation-2026-10-12.md`,
   PR 1): three made-up accounts plus a fourth, where the stranger gets nothing from any read or write; a token that
   is spent, declined, revoked or expired cannot be accepted, and two accepts at once let exactly one through; the

@@ -749,6 +749,15 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `pnpm probe:purge` searches every text column the DATABASE's catalog lists for the account's id by value and
   proves none holds it afterwards, on a scratch branch.
 
+- **The wishlist** (scope §2, Hugh's rulings Q7 and Q9, 2026-10-12), behind `SOCIAL_WISHLIST_ENABLED`, which stands
+  alone (`'true'` on staging, unset on production; dark until its UI PR). `wishlist_items` holds cards wanted
+  outside any deck at CARD level (any printing), with `quantity` the copies wanted IN ALL. A line is GOT once the
+  collection holds that many, derived on every read and never stored, and it stays until the player clears it.
+  The owner's own rows are read and written in `src/lib/wishlist/`; a FRIEND's wishlist is visible (Q7) and is read
+  only through `src/lib/social/wishlist.ts`, which joins the viewer's friendship row in the same statement and
+  returns the card, the wanted count and got, never an owned count. `pnpm probe:wishlist` proves it on a scratch
+  branch.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its
