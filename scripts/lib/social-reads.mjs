@@ -53,18 +53,19 @@ export function socialReadsIn(source) {
  */
 const gone = (err) => err?.code === "ENOENT";
 
-async function walk(dir) {
+async function walk(dir, top = true) {
   const out = [];
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });
   } catch (err) {
-    if (gone(err)) return out;
+    // Never the root: a scan that cannot find `src` must fail, not report zero files and pass.
+    if (!top && gone(err)) return out;
     throw err;
   }
   for (const entry of entries) {
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await walk(path)));
+    if (entry.isDirectory()) out.push(...(await walk(path, false)));
     else if (/\.(?:ts|tsx|mts|mjs|js)$/.test(entry.name)) out.push(path);
   }
   return out;

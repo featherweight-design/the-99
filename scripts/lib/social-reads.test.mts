@@ -63,6 +63,15 @@ describe("a file that is gone between the listing and the read", () => {
     }
   });
 
+  it("still fails when the tree to scan is itself missing, rather than reporting zero files and passing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "social-reads-"));
+    try {
+      await expect(socialReadFindings(root)).rejects.toThrow(/ENOENT/);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
   it("still throws on an error that is not a missing file", async () => {
     const root = mkdtempSync(join(tmpdir(), "social-reads-"));
     try {
