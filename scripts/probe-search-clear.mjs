@@ -29,8 +29,8 @@ const SURFACES = [
   { route: "/collection/sets", name: "sets index", widths: ["phone", "desktop"] },
   // The deck list's field is in the column at desktop and behind its search button, in a sheet, on the phone.
   { route: "/decks", name: "decks column", widths: ["desktop"] },
-  { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: 'main [role="dialog"] [data-search-field]' },
-  { route: "/decks/precons", name: "precons list", widths: ["phone", "desktop"], open: null, field: "main [data-search-field]" },
+  { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: '[role="dialog"] [data-search-field]' },
+  { route: "/decks/precons", name: "precons list", widths: ["phone", "desktop"] },
 ];
 
 async function signIn(page) {
@@ -81,7 +81,8 @@ try {
     await signIn(page);
     for (const s of SURFACES.filter((x) => x.widths.includes(w.name))) {
       await page.goto(`${BASE}${s.route}`, { waitUntil: "domcontentloaded" });
-      const scope = s.field ?? "main [data-search-field]";
+      // Relative to the page: `onPage` is the one definition of what the page is.
+      const scope = s.field ?? "[data-search-field]";
       if (s.open && w.name === "phone") {
         await onPage(page, s.open).first().click();
         // The sheet arrives under a 180ms transform: a box read mid-way is not where the tap lands.
@@ -89,9 +90,9 @@ try {
         await dialog.waitFor({ state: "visible" });
         await settled(dialog);
       }
-      const input = page.locator(`${scope} input`).first();
+      const input = onPage(page, `${scope} input`).first();
       await input.waitFor({ state: "visible", timeout: 30_000 });
-      const clear = page.locator(`${scope} button[aria-label]`).first();
+      const clear = onPage(page, `${scope} button[aria-label]`).first();
       await input.fill("zzq");
       await clear.waitFor({ state: "visible" });
       const before = await clear.boundingBox();
@@ -99,10 +100,10 @@ try {
       if (w.name === "phone") await page.touchscreen.tap(before.x + before.width / 2, before.y + before.height / 2);
       else await page.mouse.click(before.x + before.width / 2, before.y + before.height / 2);
       await page.waitForTimeout(250);
-      const after = await page.evaluate((sel) => ({
-        value: document.querySelector(`${sel} input`)?.value,
-        focused: document.activeElement === document.querySelector(`${sel} input`),
-      }), scope);
+      const after = {
+        value: await input.inputValue(),
+        focused: await input.evaluate((el) => el === document.activeElement),
+      };
       const tag = `${w.name} ${s.name}`;
       check(after.value === "", `${tag}: one tap empties the field`, `value=${JSON.stringify(after.value)}`);
       check(after.focused, `${tag}: the field keeps focus`, `focused=${after.focused}`);
