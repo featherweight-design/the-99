@@ -99,11 +99,13 @@ function onDemand<P extends Record<string, any>>(load: () => Promise<React.Compo
 }
 
 /**
- * Starts the modal's code downloading, and resolves once it has. A second call costs nothing.
+ * Starts the modal's code downloading, with every view the modal can open (the fits view and the
+ * fits picker), and resolves once all have arrived. Warming them together means no press inside the
+ * modal waits on a download of its own. A second call costs nothing.
  * Tests await it after their mocks are in place, so a press draws the modal in the same tick.
  */
 export function warmCardModal(): Promise<unknown> {
-  return Promise.all([CardModal.fetch(), FitsView.fetch()]);
+  return Promise.all([CardModal.fetch(), FitsView.fetch(), FitsPicker.fetch()]);
 }
 
 // Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this

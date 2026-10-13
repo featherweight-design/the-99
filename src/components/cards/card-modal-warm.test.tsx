@@ -14,11 +14,17 @@ vi.mock("./card-modal", async (importOriginal) => {
   await gate;
   return importOriginal();
 });
+let pickerLoads = 0;
+vi.mock("./fits-picker", async (importOriginal) => {
+  pickerLoads += 1;
+  return importOriginal();
+});
 vi.mock("../../app/collection/actions", () => ({}));
 
 beforeEach(() => {
   vi.resetModules();
   loads = 0;
+  pickerLoads = 0;
   gate = Promise.resolve();
 });
 // Unmounted before the stubs go: the provider cancels its idle callback on unmount.
@@ -42,6 +48,8 @@ describe("warming the card details modal", () => {
     const { CardDetailProvider } = await import("./card-detail-provider");
     render(<CardDetailProvider fetchCard={async () => null}><p>page</p></CardDetailProvider>);
     await vi.waitFor(() => expect(loads).toBe(1));
+    // With every view the modal can open, so a press inside it waits on no download of its own.
+    await vi.waitFor(() => expect(pickerLoads).toBe(1));
   });
 
   it("loads it on intent, before any idle time", async () => {
