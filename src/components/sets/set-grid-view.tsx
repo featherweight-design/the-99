@@ -42,7 +42,8 @@ import { sectionsOf, type Cell } from "../../lib/sets/completion";
 import { costToComplete, livePriceCents } from "../../lib/sets/cost";
 import { setFilterCopy, setPageCopy, setsIndexCopy } from "../../lib/copy/set-collections";
 import type { PrintingPriceRow } from "../../lib/sets/read";
-import { SetCell } from "./set-cell";
+import { ownedPriceCode, SetCell } from "./set-cell";
+import { priceSortCents } from "../../lib/collection/copy-price";
 import { SetIcon } from "./set-icon";
 import { SearchField } from "../ui/text-field";
 import { CostStrip } from "./cost-strip";
@@ -343,11 +344,14 @@ export function SetGridView(props: SetGridViewProps) {
     ? { ...filters, own: "all" }
     : filters;
 
-  // The price ORDER's figure for one cell (H16): the cost strip's own, through the same
-  // `livePriceCents`, so the dearest cell this order names first is the one the strip would
-  // charge most for. Owned cells are read the same way — a price row is per printing, not
-  // per holding — and a cell with no row is unpriced, which `sortCells` puts last.
-  const centsOf = (c: Cell) => livePriceCents(priceFor.get(c.scryfallId), newest);
+  // The price ORDER's figure for one cell (H16): a missing cell's is the cost strip's own,
+  // through the same `livePriceCents`, so the dearest cell this order names first is the one
+  // the strip would charge most for. An owned cell's is the figure it draws while sorted by
+  // price, its printing by `/collection`'s rule for the copies held (Hugh, 2026-10-13), so the
+  // order and the figures agree. A cell with no figure is unpriced, which `sortCells` puts last.
+  const centsOf = (c: Cell) => c.owned
+    ? priceSortCents(ownedPriceCode(c, priceFor.get(c.scryfallId) ?? null, newest))
+    : livePriceCents(priceFor.get(c.scryfallId), newest);
 
   // ONE count function. Everything below reads these arrays and nothing recomputes the
   // filter — the result line, the Send label and the cost denominator must agree.
@@ -1707,6 +1711,7 @@ export function SetGridView(props: SetGridViewProps) {
             cells={shownBase}
             priceFor={priceFor}
             newest={newest}
+            showPrice={effective.sort === "price"}
             siblings={siblingIds}
             setCode={code.toUpperCase()}
             onOpenCard={open}
@@ -1720,6 +1725,7 @@ export function SetGridView(props: SetGridViewProps) {
               cells={shownExtras}
               priceFor={priceFor}
               newest={newest}
+              showPrice={effective.sort === "price"}
               siblings={siblingIds}
               setCode={code.toUpperCase()}
               onOpenCard={open}
@@ -1818,7 +1824,7 @@ function OwnershipToggles({
 }
 
 function Section({
-  id, title, ratio, cells, priceFor, newest, siblings, setCode, onOpenCard,
+  id, title, ratio, cells, priceFor, newest, showPrice, siblings, setCode, onOpenCard,
 }: {
   id?: string;
   title: string;
@@ -1826,6 +1832,8 @@ function Section({
   cells: Cell[];
   priceFor: Map<string, PriceFact>;
   newest: Date | null;
+  /** Sorted by price: owned cells draw their figure too. */
+  showPrice: boolean;
   siblings: readonly Sibling[];
   /** Uppercase, because BrowsePrinting.setCode is and the match is exact (browse.ts:398). */
   setCode: string;
@@ -1863,6 +1871,7 @@ function Section({
             cell={c}
             price={priceFor.get(c.scryfallId) ?? null}
             newestAsOf={newest}
+            showPrice={showPrice}
             // The cell IS a printing, so the modal is told which one. Uppercased because
             // BrowsePrinting.setCode is uppercase and the match is exact (browse.ts:398).
             onOpen={(oracleId) => onOpenCard(oracleId, siblings, {

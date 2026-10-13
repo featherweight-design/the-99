@@ -10,7 +10,7 @@ const cell = (over: Partial<Cell>): Cell => ({
   scryfallId: "s", oracleId: "o", collectorNumber: "042", name: "Faller's Faithful",
   imageUriSmall: "https://cards.scryfall.io/small/a.jpg", colorIdentity: ["W"],
   rarity: "uncommon", booster: true, isVariant: false,
-  owned: false, byName: false, foilOnly: false, ...over,
+  owned: false, byName: false, foilOnly: false, finishes: [], ...over,
 });
 
 const fact = (over: Partial<PriceFact>): PriceFact => ({
@@ -120,6 +120,20 @@ describe("SetCell — caption and price", () => {
   it("carries no price tag on an owned cell — the tag is a carrier of missing", () => {
     render(<SetCell cell={cell({ owned: true })} price={fact({})} newestAsOf={NEWEST} />);
     expect(screen.queryByText("$1.20")).toBeNull();
+  });
+
+  it("draws an owned cell's figure as text when sorted by price, at the finish held, and says it", () => {
+    const { container } = render(
+      <SetCell cell={cell({ owned: true, finishes: ["foil"] })} price={fact({ foilCents: 450 })} newestAsOf={NEWEST} showPrice />,
+    );
+    expect(screen.getByText("$4.50")).toBeInTheDocument();
+    expect(screen.getByText("foil")).toBeInTheDocument();
+    expect(container.querySelector("button")?.getAttribute("aria-label")).toMatch(/\$4\.50 foil/);
+  });
+
+  it("says no stock on an owned cell whose printing the store never carried", () => {
+    render(<SetCell cell={cell({ owned: true, finishes: ["nonfoil"] })} price={null} newestAsOf={NEWEST} showPrice />);
+    expect(screen.getByText("no stock")).toBeInTheDocument();
   });
 });
 

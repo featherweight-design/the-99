@@ -213,6 +213,7 @@ export const SET_CELLS: Cell[] = [
     owned: true,
     byName: false,
     foilOnly: false,
+    finishes: ["nonfoil"],
   },
   {
     scryfallId: "f0000000-0000-4000-8000-000000000002",
@@ -227,6 +228,7 @@ export const SET_CELLS: Cell[] = [
     owned: true,
     byName: false,
     foilOnly: false,
+    finishes: ["nonfoil"],
   },
   {
     scryfallId: "f0000000-0000-4000-8000-000000000003",
@@ -241,6 +243,7 @@ export const SET_CELLS: Cell[] = [
     owned: true,
     byName: false,
     foilOnly: false,
+    finishes: ["nonfoil"],
   },
   {
     scryfallId: "f0000000-0000-4000-8000-000000000004",
@@ -255,6 +258,7 @@ export const SET_CELLS: Cell[] = [
     owned: true,
     byName: false,
     foilOnly: false,
+    finishes: ["nonfoil"],
   },
   {
     scryfallId: "f0000000-0000-4000-8000-000000000005",
@@ -269,6 +273,7 @@ export const SET_CELLS: Cell[] = [
     owned: false,
     byName: false,
     foilOnly: false,
+    finishes: [],
   },
   {
     scryfallId: "f0000000-0000-4000-8000-000000000006",
@@ -283,6 +288,7 @@ export const SET_CELLS: Cell[] = [
     owned: false,
     byName: false,
     foilOnly: false,
+    finishes: [],
   },
 ];
 

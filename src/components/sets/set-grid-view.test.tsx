@@ -1821,6 +1821,48 @@ describe("SetGridView — sort by price", () => {
     expect(cellNames()).toEqual(["Card 1", "Card 5", "Card 3", "Card 2", "Card 4"]);
   });
 
+  // An owned cell draws `/collection`'s figure for the copies held, and is ORDERED by it: a foil
+  // copy of s-1 is worth its foil $20.00, which puts it first, ahead of s-3's $9.00 (Hugh,
+  // 2026-10-13, bug batch C item 3).
+  it("draws an owned cell's figure at its held finish, and orders by it", () => {
+    search = "sort=price";
+    window.history.pushState(null, "", "/collection/sets/dsk?sort=price");
+    render(
+      <SetGridView
+        code="dsk" name="Duskmourn" iconSvgUri={null} releasedAt="2026-09-01"
+        ownedFingerprint="" artGeneration={0}
+        cells={placeCells([p("1"), p("2"), p("3")], [
+          { oracleId: "o-1", collectorNumber: "1", finish: "foil" },
+          { oracleId: "o-3", collectorNumber: "3", finish: "nonfoil" },
+        ])}
+        prices={[
+          { scryfallId: "s-1", cents: 100, foilCents: 2000, etchedCents: null, asOf: NEWEST },
+          { scryfallId: "s-3", cents: 900, foilCents: null, etchedCents: null, asOf: NEWEST },
+        ]}
+        newestAsOf={NEWEST} baseSetSize={3} staleAsOf={null}
+      />,
+    );
+    const owned = screen.getAllByRole("button", { name: /in your collection/ })
+      .filter((b) => (b.getAttribute("aria-label") ?? "").includes("Card 1") || (b.getAttribute("aria-label") ?? "").includes("Card 3"));
+    expect(owned.map((b) => (b.getAttribute("aria-label") ?? "").split(",")[0])).toEqual(["Card 1", "Card 3"]);
+    expect(within(owned[0]).getByText("$20.00")).toBeInTheDocument();
+    expect(within(owned[1]).getByText("$9.00")).toBeInTheDocument();
+  });
+
+  it("draws no figure on an owned cell in collector order", () => {
+    window.history.pushState(null, "", "/collection/sets/dsk");
+    render(
+      <SetGridView
+        code="dsk" name="Duskmourn" iconSvgUri={null} releasedAt="2026-09-01"
+        ownedFingerprint="" artGeneration={0}
+        cells={placeCells([p("1")], [{ oracleId: "o-1", collectorNumber: "1", finish: "nonfoil" }])}
+        prices={[{ scryfallId: "s-1", cents: 100, foilCents: null, etchedCents: null, asOf: NEWEST }]}
+        newestAsOf={NEWEST} baseSetSize={1} staleAsOf={null}
+      />,
+    );
+    expect(screen.queryByText("$1.00")).toBeNull();
+  });
+
   // Sort narrows nothing, so Clear all leaves it, as the chassis's does.
   it("survives Clear all filters", () => {
     search = "sort=price&c=W";

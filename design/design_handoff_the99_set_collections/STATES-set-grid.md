@@ -120,6 +120,12 @@ here that costs money.
 **Must not:** render `$0.00`, an empty slot, or a tag whose height differs from the priced case.
 *Drawn: §3, the price-slot strip.*
 
+**Owned cells under the price sort (Hugh, 2026-10-13, bug batch C).** Sorted by price, an owned cell
+also draws its figure, as plain text in the tag's slot and never as a tag (the tag stays a carrier
+of missing): the cell's printing priced by `/collection`'s rule, at the finish held, the dearest when
+several, with `no stock` when the store never carried it. A cell filled by name is priced as the
+printing it is drawn as. The price order reads that same figure for an owned cell, so the order and the figures agree. Collector order draws no figure on an owned cell.
+
 ### S16 · Unpinned fill (ruling 4) — **ruled at R2: mark the cell**
 Owned cells filled by `oracle_id` carry an **outlined** brand diamond + mono `BY NAME`, bottom-left of
 the art, in the foil mark's skin. The filled diamond is `printing_picker`'s shipped `Your pick`; this

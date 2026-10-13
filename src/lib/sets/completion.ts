@@ -85,6 +85,8 @@ export type Cell = SetPrinting & {
   byName: boolean;
   /** Every holding filling this cell is foil. */
   foilOnly: boolean;
+  /** The finishes held of this printing, in nonfoil, foil, etched order; empty when not owned. */
+  finishes: Holding["finish"][];
 };
 
 /** Every digit in a collector number, non-digits stripped, or null when it has none ("★"). */
@@ -129,7 +131,7 @@ export function placeCells(
 ): Cell[] {
   const cells: Cell[] = [...printings]
     .sort(byCollectorNumber)
-    .map((p) => ({ ...p, owned: false, byName: false, foilOnly: false }));
+    .map((p) => ({ ...p, owned: false, byName: false, foilOnly: false, finishes: [] as Holding["finish"][] }));
 
   const finishesByCell = new Map<number, Set<string>>();
   const claim = (i: number, finish: string, byName: boolean) => {
@@ -201,6 +203,7 @@ export function placeCells(
 
   for (const [i, held] of finishesByCell) {
     cells[i].foilOnly = held.has("foil") && !held.has("nonfoil") && !held.has("etched");
+    cells[i].finishes = (["nonfoil", "foil", "etched"] as const).filter((f) => held.has(f));
   }
   return cells;
 }

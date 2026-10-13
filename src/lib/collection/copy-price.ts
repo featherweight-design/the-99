@@ -53,6 +53,21 @@ export function cardPriceCode(
   prices: PrintingPrices | null | undefined,
 ): number | undefined {
   if (!prices) return undefined;
+  return copiesPriceCode(
+    printings.map((p) => ({ read: priceFor(prices, p), finishes: FINISHES.filter((f) => (p.finishes[f] ?? 0) > 0) })),
+    prices.newestAsOf,
+  );
+}
+
+/**
+ * The same figure over copies whose printing has already been read: each a `priceFor` answer
+ * and the finishes held of it. The set page reads its prices per printing id and calls this
+ * for an owned cell, so a cell's figure is the one `/collection` draws for those copies.
+ */
+export function copiesPriceCode(
+  copies: readonly { read: { fact: PriceFact | null } | null; finishes: readonly Finish[] }[],
+  newestAsOf: Date | null,
+): number | undefined {
   let best: { cents: number; finish: Finish } | null = null;
   let cheapest: number | null = null;
   let soldOut = false;
@@ -60,15 +75,13 @@ export function cardPriceCode(
   // A live row with nothing in any price column is not one (`priceState` reads it `absent`, and
   // `sets/cost.ts` calls it inconclusive), so it stays silent rather than saying `no stock`.
   let neverStocked = false;
-  for (const p of printings) {
-    const finishes = FINISHES.filter((f) => (p.finishes[f] ?? 0) > 0);
-    const read = priceFor(prices, p);
+  for (const { read, finishes } of copies) {
     if (read === null) continue;
     if (read.fact === null) {
       neverStocked = true;
       continue;
     }
-    const state = priceState(read.fact, prices.newestAsOf);
+    const state = priceState(read.fact, newestAsOf);
     if (state === "soldOut") {
       soldOut = true;
       continue;
