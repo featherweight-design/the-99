@@ -21,7 +21,7 @@ export const adminCopy = {
 
   costs: {
     title: "Costs",
-    sub: "What the model features cost, read from model_calls, card_label_batches and the committed eval ledgers. Read only, except the caps set here.",
+    sub: "What the model features cost, read from model_calls, card_label_batches and the committed eval ledgers. Read only, except the caps recorded here.",
     period: {
       previous: "Previous month",
       next: "Next month",
@@ -46,7 +46,7 @@ export const adminCopy = {
       pace: (plan: string, date: string) => `On this pace, player presses pass the ${plan} plan around ${date}.`,
     },
     caps: "Against the caps",
-    capsMeta: "set in code and read only, except the rows set here",
+    capsMeta: "set in code and read only, except the rows recorded here",
     capsReference: "The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.",
     // `here` names a figure typed in on this page, not read from code; owed to /copy-review.
     capSource: { code: "in code", here: "recorded here" },
