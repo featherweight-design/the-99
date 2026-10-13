@@ -18,6 +18,8 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 /** The calls that apply the chain, or read the printing a version recorded (the version diff's own rule). */
 export const RESOLVERS = new Set([
   "chainArt", "resolveOwnedPrintings", "resolveDeckOwnedPrintings", "withOwnedCardArt", "readRecordedPrintingArt",
+  // The same reads that throw rather than swallow, for a caller that must tell "failed" from "owns none".
+  "readOwnedPrintings", "readDeckOwnedPrintings",
 ]);
 
 /** Components that draw a hover preview, mapped to the module whose read supplies the art they hand it. */

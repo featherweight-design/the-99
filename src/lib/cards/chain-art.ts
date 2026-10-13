@@ -1,5 +1,6 @@
-import { resolveOwnedPrintings } from "../collection/owned-printings";
-import { resolveDeckOwnedPrintings } from "../decks/printings";
+import { recordSoftFailure } from "../cache/soft-failure";
+import { readOwnedPrintings } from "../collection/owned-printings";
+import { readDeckOwnedPrintings } from "../decks/printings";
 import { loadOpeningArt } from "./opening-printing";
 
 /**
@@ -18,8 +19,8 @@ import { loadOpeningArt } from "./opening-printing";
  * preview overlays this on the art it read, at the draw rather than inside a shared loader, the same
  * reason `withOwnedCardArt` gives.
  *
- * Fail-soft through the two resolvers: a failed read answers an empty map and every row keeps the art
- * it arrived with.
+ * Fail-soft: a failed ownership read answers an empty map (recorded, so no cached page keeps it) and every row
+ * keeps the art it arrived with.
  */
 export async function chainArt(
   userId: string,
@@ -29,14 +30,22 @@ export async function chainArt(
   const ids = [...new Set(oracleIds.filter((id): id is string => typeof id === "string"))];
   const art = new Map<string, string>();
   if (ids.length === 0) return art;
-  const printings = deckId !== null
-    ? await resolveDeckOwnedPrintings(userId, deckId, ids)
-    : await resolveOwnedPrintings(userId, ids);
+  // The throwing reads: only a SUCCESSFUL read says which cards the reader owns, and a failed one answers nothing
+  // rather than "owns nothing", or every owned card would be sent through the unowned rule below.
+  let printings: Map<string, { imageUri: string | null }>;
+  try {
+    printings = deckId !== null
+      ? await readDeckOwnedPrintings(userId, deckId, ids)
+      : await readOwnedPrintings(userId, ids);
+  } catch {
+    recordSoftFailure();
+    return art;
+  }
   for (const [id, p] of printings) if (p.imageUri) art.set(id, p.imageUri);
-  // The cards nothing above resolved are cards the reader does not own (or whose copy has no art): they open on the
-  // opening printing, so the preview and the press show one picture. Fail-soft inside `loadOpeningArt`.
-  const open = ids.filter((id) => !art.has(id));
-  for (const [id, uri] of await loadOpeningArt(open)) art.set(id, uri);
+  // The cards the read confirms absent are cards the reader does not own: they open on the opening printing, so
+  // the preview and the press show one picture. A card the reader owns whose printing has no art is in the map
+  // and keeps what the caller holds. Fail-soft inside `loadOpeningArt`.
+  for (const [id, uri] of await loadOpeningArt(ids.filter((id) => !printings.has(id)))) art.set(id, uri);
   return art;
 }
 

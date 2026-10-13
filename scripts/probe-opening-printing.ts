@@ -64,6 +64,9 @@ async function main() {
       if (s.image_uri !== mine) oldWrong += 1;
     }
     check(`${label}: the preview's art is the art card details opens on`, agree === opened, `${agree} of ${opened} cards the rule resolves (of ${sample.length} sampled)`);
+    // The stranded query guarantees live art for every sampled card, so a resolver that answers nothing (removed,
+    // or failing) must fail here rather than pass over an empty comparison.
+    if (label === "stranded default") check(`${label}: the rule resolves every sampled card`, opened === sample.length, `${opened} of ${sample.length}`);
     console.log(`INFO  ${label}: ${oldWrong} of ${opened} would have previewed another printing off \`cards.image_uri\``);
   }
   check("the stranded-default class is real in this catalog", stranded.length > 0, `${stranded.length} sampled`);

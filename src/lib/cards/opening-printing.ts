@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, printings } from "../../db/schema";
+import { recordSoftFailure } from "../cache/soft-failure";
 import { comparePrintings, type BrowsePrinting } from "../collection/browse";
 import { loadOwnedPrintingPrices } from "./prices";
 import type { PrintingPrices } from "./price-lookup";
@@ -75,6 +76,8 @@ export async function loadOpeningPrintings(oracleIds: readonly string[]): Promis
       if (r?.imageUri) out.set(oracleId, { scryfallId: r.scryfallId, imageUri: r.imageUri, setCode: r.setCode, rarity: r.rarity });
     }
   } catch {
+    // Soft: the callers keep the catalog's art. Recorded, so a cached page does not store the fallback as the answer.
+    recordSoftFailure();
     return new Map();
   }
   return out;
