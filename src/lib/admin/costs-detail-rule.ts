@@ -146,10 +146,16 @@ export type LabelRun = { runId: string | null; firstAt: Date; source: "batches" 
 
 export type LedgerRow = {
   file: string;
+  /** The selected month's: the footer and the system series read these. */
   requests: number;
   settledMicro: number;
   pendingMicro: number;
   allTimeMicro: number;
+  /**
+   * The whole campaign's, all time: what a ledger's own row shows, beside the hard limit its scripts
+   * enforce and its window (the canvas draws Original campaign at its campaign totals in October).
+   */
+  campaign: { requests: number; settledMicro: number; pendingMicro: number };
   /** The first and last entry the ledger still counts, all time: the canvas's Window. */
   firstAt: string | null;
   lastAt: string | null;
@@ -184,6 +190,7 @@ export function ledgerRow(ledger: LedgerFile, month: MonthKey): LedgerRow {
   const closed = new Set(ledger.entries.flatMap((e) => (e.settles ? [e.settles] : [])));
   const open = (e: LedgerEntry) => !!e.pending && !closed.has(e.pending);
   let requests = 0, settled = 0, pending = 0, all = 0;
+  const campaign = { requests: 0, settledMicro: 0, pendingMicro: 0 };
   let firstAt: string | null = null;
   let lastAt: string | null = null;
   for (const e of ledger.entries) {
@@ -193,6 +200,11 @@ export function ledgerRow(ledger: LedgerFile, month: MonthKey): LedgerRow {
     all += usd;
     if (!firstAt || e.at < firstAt) firstAt = e.at;
     if (!lastAt || e.at > lastAt) lastAt = e.at;
+    if (e.pending) campaign.pendingMicro += usd;
+    else {
+      campaign.settledMicro += usd;
+      campaign.requests += e.requests;
+    }
     if (!e.at.startsWith(prefix)) continue;
     if (e.pending) pending += usd;
     else {
@@ -200,7 +212,7 @@ export function ledgerRow(ledger: LedgerFile, month: MonthKey): LedgerRow {
       requests += e.requests;
     }
   }
-  return { file: ledger.file, requests, settledMicro: settled, pendingMicro: pending, allTimeMicro: all, firstAt, lastAt, limits: ledgerLimits(ledger.file) };
+  return { file: ledger.file, requests, settledMicro: settled, pendingMicro: pending, allTimeMicro: all, campaign, firstAt, lastAt, limits: ledgerLimits(ledger.file) };
 }
 
 const mean = (xs: readonly number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);

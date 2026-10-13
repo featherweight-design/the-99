@@ -34,6 +34,8 @@ const monthName = (m: MonthKey) => fmt(m, { month: "long" });
 const monthShort = (m: MonthKey) => fmt(m, { month: "short" });
 const hrefFor = (m: MonthKey, current: MonthKey) => (m.year === current.year && m.month === current.month ? "/admin" : `/admin?month=${monthParam(m)}`);
 const pct = (part: number, whole: number) => Math.round((part / whole) * 100);
+/** A floor of a share, for a figure that is itself a floor: never rounded up past what is known. */
+const pctFloor = (part: number, whole: number) => Math.floor((part / whole) * 100);
 const dayLabel = (asOf: string) => new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${asOf}T00:00:00Z`));
 
 type Seg = { micro: number; ink: string; hatch?: boolean };
@@ -228,7 +230,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
   const tiles = [
     { label: copy.tiles.calls, fig: usd(s.calls.micro), sub: [copy.tileSub.runs(s.calls.runs), s.callsPaceMicro !== null && s.calls.runs > 0 ? copy.tileSub.pace(usd(s.callsPaceMicro)) : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.player, fig: usd(s.player.micro), sub: copy.tileSub.ofPlan(pct(s.player.micro, planMicro), plan), warn: s.alarm >= 80 },
-    { label: copy.tiles.system, fig: sysUsd(sys.total), sub: [ceiling && ceiling.micro > 0 ? (sys.incomplete ? copy.tileSub.ofCeilingAtLeast : copy.tileSub.ofCeiling)(pct(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.system, sys.incomplete ? copy.systemPartial : null].filter(Boolean).join(" · ") },
+    { label: copy.tiles.system, fig: sysUsd(sys.total), sub: [ceiling && ceiling.micro > 0 ? (sys.incomplete ? copy.tileSub.ofCeilingAtLeast(pctFloor(sys.total, ceiling.micro), capMicro(ceiling.micro)) : copy.tileSub.ofCeiling(pct(sys.total, ceiling.micro), capMicro(ceiling.micro))) : copy.tileSub.system, sys.incomplete ? copy.systemPartial : null].filter(Boolean).join(" · ") },
     { label: copy.tiles.perAccount, fig: usd(s.perAccountMicro ?? 0), sub: copy.tileSub.accounts(s.accounts) },
   ];
 

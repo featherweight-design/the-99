@@ -41,13 +41,26 @@ export function fmtWindow(first: string | null, last: string | null): string {
 const usdLimit = (v: number) => (Number.isInteger(v) ? `$${v}` : `$${v.toFixed(2)}`);
 const monthLabel = (m: MonthKey, month: "long" | "short") =>
   new Intl.DateTimeFormat("en-US", { month, ...(month === "long" ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(Date.UTC(m.year, m.month, 1)));
-const share = (part: number, whole: number) => (whole > 0 ? `${((part / whole) * 100).toFixed(1)}%` : "0%");
-// A share as a reader can trust it: one place near either end, so a sliver never rounds to 0% or
-// 100% while the other side is still drawn.
+/**
+ * A share as a reader can trust it: a part that is neither nothing nor everything never prints as an
+ * endpoint, however thin. Rounding puts it at 0.1 or 99.9 instead, so the figure agrees with the
+ * segment still drawn beside it.
+ */
+const clamped = (p: number, places: number): string => {
+  if (p === 0 || p === 100) return String(p);
+  const step = 1 / 10 ** places;
+  return Math.min(Math.max(p, step), 100 - step).toFixed(places);
+};
+const share = (part: number, whole: number) => (whole > 0 ? `${clamped((part / whole) * 100, 1)}%` : "0%");
+// One place near either end, whole numbers between.
 const pctOf = (part: number, whole: number) => {
   const p = (part / whole) * 100;
-  if (p === 0 || p === 100) return String(p);
-  return p < 10 || p > 90 ? p.toFixed(1) : String(Math.round(p));
+  return p < 10 || p > 90 ? clamped(p, 1) : String(Math.round(p));
+};
+/** The same, for a share that is a floor: rounded DOWN, so it never claims more than is known. */
+const pctFloorOf = (part: number, whole: number) => {
+  const p = (part / whole) * 100;
+  return p < 10 || p > 90 ? clamped(Math.floor(p * 10) / 10, 1) : String(Math.floor(p));
 };
 const millions = (n: number) => `${(n / 1e6).toFixed(2)}M`;
 const featureName = (f: string) => copy.featureNames[f] ?? f;
@@ -163,7 +176,7 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
   const monthName = monthLabel(month, "long").split(" ")[0];
   // With system spend still coming in, its share is a floor: the headline says so, and the
   // legend's shares, whose denominator is not whole, are not drawn.
-  const pctSystem = total > 0 ? pctOf(sys.total, total) : "0";
+  const pctSystem = total <= 0 ? "0" : sys.incomplete ? pctFloorOf(sys.total, total) : pctOf(sys.total, total);
   return (
     <div className={`${CARD} flex flex-col gap-[12px] p-[14px]`}>
       <span className="text-[14px] text-[color:var(--fg)]">{sys.incomplete ? copy.splitLineAtLeast(pctSystem, monthName) : copy.splitLine(pctSystem, monthName)}</span>
@@ -274,8 +287,10 @@ function EvalLedgers({ d, month }: { d: CostDetail; month: MonthKey }) {
     const title = ledgerName(l.file, copy.originalLedger);
     const limit = l.limits ? copy.limit(usdLimit(l.limits.hardCapUsd), l.limits.askAtUsd === null ? null : usdLimit(l.limits.askAtUsd)) : copy.noLimit;
     const window = fmtWindow(l.firstAt, l.lastAt);
-    const settled = <>{usd(l.settledMicro)}{l.pendingMicro > 0 && <Pending micro={l.pendingMicro} />}</>;
-    return { cells: [title, l.requests, settled, limit, window], title, fig: settled, meta: copy.ledgerMeta(l.requests, limit, window) };
+    // The campaign's own totals, against its all-time limit and window; only the footer is the month's.
+    const c = l.campaign;
+    const settled = <>{usd(c.settledMicro)}{c.pendingMicro > 0 && <Pending micro={c.pendingMicro} />}</>;
+    return { cells: [title, c.requests, settled, limit, window], title, fig: settled, meta: copy.ledgerMeta(c.requests, limit, window) };
   });
   const t = d.ledgers.reduce((n, l) => ({ requests: n.requests + l.requests, settled: n.settled + l.settledMicro, pending: n.pending + l.pendingMicro }), { requests: 0, settled: 0, pending: 0 });
   const name = monthLabel(month, "long").split(" ")[0];

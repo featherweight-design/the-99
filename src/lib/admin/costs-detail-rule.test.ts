@@ -206,8 +206,16 @@ describe("the eval ledgers", () => {
   };
 
   it("nets as spent() does: a settled pending drops, an open one counts", () => {
-    expect(ledgerRow(ledger, OCT)).toEqual({ file: "ledger-cuts.jsonl", requests: 1, settledMicro: usdToMicro(0.1), pendingMicro: usdToMicro(2), allTimeMicro: usdToMicro(3.1), firstAt: "2026-09-30T23:00:00Z", lastAt: "2026-10-11T08:00:00Z", limits: { hardCapUsd: 15, askAtUsd: 10 } });
+    expect(ledgerRow(ledger, OCT)).toEqual({ file: "ledger-cuts.jsonl", requests: 1, settledMicro: usdToMicro(0.1), pendingMicro: usdToMicro(2), allTimeMicro: usdToMicro(3.1), campaign: { requests: 3, settledMicro: usdToMicro(1.1), pendingMicro: usdToMicro(2) }, firstAt: "2026-09-30T23:00:00Z", lastAt: "2026-10-11T08:00:00Z", limits: { hardCapUsd: 15, askAtUsd: 10 } });
     expect(ledgerRow(ledger, { year: 2026, month: 8 })).toMatchObject({ requests: 2, settledMicro: usdToMicro(1), pendingMicro: 0 });
+  });
+
+  it("keeps the campaign's totals whatever month is read: a row is its campaign, the footer the month", () => {
+    const sept = ledgerRow(ledger, { year: 2026, month: 8 });
+    const nov = ledgerRow(ledger, { year: 2026, month: 10 });
+    expect(nov).toMatchObject({ requests: 0, settledMicro: 0, pendingMicro: 0 });
+    expect(nov.campaign).toEqual(sept.campaign);
+    expect(nov.campaign).toEqual({ requests: 3, settledMicro: usdToMicro(1.1), pendingMicro: usdToMicro(2) });
   });
 
   it("carries the limits the eval scripts enforce, and none for a file no script guards", () => {

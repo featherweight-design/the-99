@@ -174,6 +174,11 @@ describe("CostsView, a ceiling that starts later", () => {
     expect(tile).toHaveTextContent("at least 3% of the $15 ceiling");
   });
 
+  it("floors the ceiling share of a partial figure: 99.6% known is at least 99%, not at least 100%", () => {
+    draw(rows([sys(3, 14.94)], { settings: ceilingFrom("2026-10-01"), outside: { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0, labelsIncomplete: true } }));
+    expect(screen.getByText("System").parentElement).toHaveTextContent("at least 99% of the $15 ceiling");
+  });
+
   it("names the year when it starts in another one", () => {
     draw(rows([sys(3, 0.5)], { settings: ceilingFrom("2027-01-01") }));
     expect(capRow("System ceiling").row).toHaveTextContent("Starts January 2027.");

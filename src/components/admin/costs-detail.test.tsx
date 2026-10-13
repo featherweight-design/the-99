@@ -161,6 +161,17 @@ describe("CostsDetail, the split headline", () => {
     draw({ calls: [call({ micro: 2_000 }), call({ feature: "synopsis", origin: "system", userId: "system", micro: 998_000 })], ledgers: [] });
     expect(screen.getByText("System is 99.8% of October.")).toBeInTheDocument();
   });
+
+  it("keeps even a hundredth of a percent off the endpoint, so the segment drawn is not contradicted", () => {
+    draw({ calls: [call({ micro: 100 }), call({ feature: "synopsis", origin: "system", userId: "system", micro: 999_900 })], ledgers: [] });
+    expect(screen.getByText("System is 99.9% of October.")).toBeInTheDocument();
+  });
+
+  it("rounds a floor down, never up past what is known", () => {
+    // 99.96% known, with a label run still collecting: at least 99.9%, never at least 100%.
+    draw({ calls: [call({ micro: 400 }), call({ feature: "synopsis", origin: "system", userId: "system", micro: 999_600 })], ledgers: [], labelRuns: [{ ...labelRun, batches: 1, collected: 0, open: 1, inTokens: 0, outTokens: 0 }] });
+    expect(screen.getByText("System is at least 99.9% of October, with some of its spend not in yet.")).toBeInTheDocument();
+  });
 });
 
 describe("CostsDetail, the eval ledgers", () => {
@@ -191,6 +202,8 @@ describe("CostsDetail, the eval ledgers", () => {
     const row = (name: string) => within(table).getByText(name).closest("[role=row]") as HTMLElement;
     const cells = (name: string) => within(row(name)).getAllByRole("cell").map((c) => c.textContent);
     expect(cells("Original campaign").slice(3)).toEqual(["$25 hard · ask at $15", "Sep 24"]);
+    // The row is the campaign's own, though none of it fell in October; the footer is October's.
+    expect(cells("Original campaign").slice(1, 3)).toEqual(["12", "$0.229"]);
     expect(cells("Help me choose").slice(3)).toEqual(["$5 hard", "Oct 10–11"]);
     expect(cells("Tuning lists").slice(3)).toEqual(["$3 hard · ask at $2.50", "Sep 30–Oct 11"]);
     expect(cells("New").slice(3)).toEqual(["no limit in code", "Oct 2"]);
