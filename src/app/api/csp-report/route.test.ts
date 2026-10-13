@@ -18,11 +18,17 @@ describe("POST /api/csp-report", () => {
     expect(res.status).toBe(204);
     expect(info).toHaveBeenCalledWith("[csp] img-src blocked=https://evil.example page=/about");
   });
-  it("answers 204 and logs nothing for junk, an oversized body or invalid JSON", async () => {
-    for (const body of ["not json", "{}", JSON.stringify({ "csp-report": 5 }), "x".repeat(20_000)]) {
+  it("answers 204 and logs nothing for junk or invalid JSON", async () => {
+    for (const body of ["not json", "{}", JSON.stringify({ "csp-report": 5 })]) {
       expect((await post(body)).status).toBe(204);
     }
-    expect((await post("{}", { "content-length": "99999" })).status).toBe(204);
+    expect(info).not.toHaveBeenCalled();
+  });
+  it("reads nothing past the size cap: a VALID report padded over it is dropped", async () => {
+    const padded = JSON.stringify({ ...JSON.parse(report), pad: "x".repeat(20_000) });
+    expect((await post(padded)).status).toBe(204);
+    // A declared length over the cap is refused before the body is read.
+    expect((await post(report, { "content-length": "99999" })).status).toBe(204);
     expect(info).not.toHaveBeenCalled();
   });
 });
