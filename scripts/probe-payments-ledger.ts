@@ -95,11 +95,18 @@ async function grant(userId: string, source: "plan" | "pack", units: number, opt
   return row.id;
 }
 
+/** Every fixture user's rows, each user on its own: one failed delete neither stops the rest nor
+ *  lets the run exit 0 over rows it left behind. */
 async function cleanup() {
   for (const u of made) {
-    await fixture.execute(sql`delete from model_call_parts where call_id in (select id from model_calls where user_id = ${u})`);
-    await fixture.execute(sql`delete from model_calls where user_id = ${u}`);
-    await fixture.execute(sql`delete from credit_grants where user_id = ${u}`);
+    try {
+      await fixture.execute(sql`delete from model_call_parts where call_id in (select id from model_calls where user_id = ${u})`);
+      await fixture.execute(sql`delete from model_calls where user_id = ${u}`);
+      await fixture.execute(sql`delete from credit_grants where user_id = ${u}`);
+    } catch (err) {
+      failures += 1;
+      console.error(`cleanup failed for ${u}`, err);
+    }
   }
 }
 
@@ -227,7 +234,7 @@ async function run() {
 run()
   .catch((err) => { failures += 1; console.error(err); })
   .finally(async () => {
-    await cleanup().catch((err) => console.error("cleanup failed", err));
+    await cleanup();
     await pool.end();
     console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} failure(s).`);
     process.exit(failures === 0 ? 0 : 1);
