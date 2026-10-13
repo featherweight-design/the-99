@@ -780,6 +780,40 @@ describe("TuningPanel: Locked (never cut)", () => {
     }
   });
 
+  // Pre-open pass: a revert queued behind a slower save must take "the page's value" when it
+  // LEAVES, after the first save's revalidation, or that revalidation reads as a move from
+  // elsewhere and releases the revert's hold at once.
+  it("holds a revert queued behind an earlier save until the page reads the revert", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveFirst!: (v: { ok: true }) => void;
+      let resolveSecond!: (v: { ok: true }) => void;
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      (saveDeckLimits as ReturnType<typeof vi.fn>)
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+      const d = deps([fresh]);
+      let utils!: ReturnType<typeof render>;
+      const draw = async (f: TuningFacts) => { await act(async () => { utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={f} onLogGame={vi.fn()} deps={d} printedInSets={[]} />); }); };
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      fireEvent.click(screen.getByRole("radio", { name: "Any card" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      // The first save answers and its revalidation lands; the revert's own save then leaves.
+      await act(async () => { resolveFirst({ ok: true }); await vi.advanceTimersByTimeAsync(0); });
+      await draw({ ...facts, limits: { capCents: null, sets: [], ownedOnly: true } });
+      await act(async () => { resolveSecond({ ok: true }); await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      await draw({ ...facts, limits: { capCents: null, sets: [], ownedOnly: false } });
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // Pre-open review round 2: a REVERT while an earlier save for the same field is still in
   // flight must not be overwritten once that earlier save's response lands and revalidates the
   // page — an equality check against the old prop would wrongly call the revert "unedited".

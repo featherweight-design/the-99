@@ -225,7 +225,10 @@ export function TuningPanel({
   // and a ref may not be read there.
   const [dirtyLimitFields, setDirtyLimitFields] = useState<ReadonlySet<LimitField>>(() => new Set());
   // Acknowledged saves waiting on the page's facts: the value sent, and the prop's value then.
-  const [heldLimits, setHeldLimits] = useState<Partial<Record<LimitField, { sent: string; from: string }>>>({});
+  const [heldLimits, setHeldLimits] = useState<Partial<Record<LimitField, { sent: string; from: string; ours: readonly string[] }>>>({});
+  // Every value this panel has sent per field since the field's hold began: the page echoing an
+  // EARLIER one of ours (a revert queued behind a slower save) is not a change from elsewhere.
+  const sentLimitValues = useRef<Record<LimitField, Set<string>>>({ capDollars: new Set(), sets: new Set(), ownedOnly: new Set() });
   const propLimitRef = useRef<Record<LimitField, string> | null>(null);
   // Reconciled every render, not gated behind "did `facts.limits` change reference" — a field
   // whose dirty marker was SKIPPED while its prop changed never got a second look once that
@@ -246,9 +249,18 @@ export function TuningPanel({
     ownedOnly: String(facts.limits.ownedOnly),
   };
   const caughtUp = (Object.keys(heldLimits) as LimitField[]).filter(
-    (key) => propLimit[key] === heldLimits[key]!.sent || propLimit[key] !== heldLimits[key]!.from,
+    (key) => {
+      const held = heldLimits[key]!;
+      return propLimit[key] === held.sent || (propLimit[key] !== held.from && !held.ours.includes(propLimit[key]));
+    },
   );
-  // What a send reads as "the page's value when it left": refreshed after every commit.
+  // A field the reader is no longer editing starts its next hold with no values of ours.
+  useEffect(() => {
+    (Object.keys(sentLimitValues.current) as LimitField[]).forEach((key) => {
+      if (!dirtyLimitFields.has(key)) sentLimitValues.current[key].clear();
+    });
+  }, [dirtyLimitFields]);
+  // The page's value as a send leaving now would read it: refreshed after every commit.
   useLayoutEffect(() => { propLimitRef.current = propLimit; });
   if (caughtUp.length > 0) {
     setHeldLimits((prev) => {
@@ -336,13 +348,17 @@ export function TuningPanel({
   const sendLimits = useCallback(
     (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
       const keys = Object.keys(patch) as LimitField[];
-      // The page's value for each field when this send left: the hold ends once it moves.
+      // The page's value for each field when this send LEAVES (read inside the chain, after any
+      // earlier send's revalidation has landed): the hold ends once the page moves off it.
       const fromAtSend: Partial<Record<LimitField, string>> = {};
-      keys.forEach((key) => { fromAtSend[key] = propLimitRef.current?.[key]; });
       limitsInFlight.current += 1;
       const sent = limitsChain.current
         .then(async (): Promise<boolean> => {
           try {
+            keys.forEach((key) => {
+              fromAtSend[key] = propLimitRef.current?.[key];
+              sentLimitValues.current[key].add(limitWire(key, patch));
+            });
             const result = await saveDeckLimits(deckId, patch);
             if (!result.ok) {
               setLimitsError(result.message);
@@ -361,7 +377,9 @@ export function TuningPanel({
               // Not cleared here: held until the page's facts catch up (see `heldLimits`).
               setHeldLimits((prev) => {
                 const next = { ...prev };
-                settled.forEach((key) => { next[key] = { sent: limitWire(key, patch), from: fromAtSend[key] ?? "" }; });
+                settled.forEach((key) => {
+                  next[key] = { sent: limitWire(key, patch), from: fromAtSend[key] ?? "", ours: [...sentLimitValues.current[key]] };
+                });
                 return next;
               });
             }
