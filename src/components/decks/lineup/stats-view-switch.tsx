@@ -43,9 +43,17 @@ export function StatsViewSwitch({ view, onView, busy = false }: {
           aria-busy={busy && v === "stats" ? true : undefined}
           data-decks-view={v}
           onClick={() => pick(v)}
-          className={`${SEGMENT} ${view === v ? SEGMENT_ON : SEGMENT_OFF}`}
+          // A press shows in the frame it lands: the segment takes the selected fill under the finger
+          // (`active:`) and keeps it while Stats is read, with the shell's pending mark beside the label (the 4px
+          // diamond a nav press draws, after its 120ms beat). `aria-selected` still follows the view alone.
+          className={`${SEGMENT} ${view === v || (busy && v === "stats") ? SEGMENT_ON : `${SEGMENT_OFF} active:bg-[var(--elevated)] active:text-[color:var(--fg)]`}`}
         >
           {v === "tiles" ? copy.tiles : copy.stats}
+          {busy && v === "stats" ? (
+            <span aria-hidden="true" data-pending className="anim-pending-in ml-[8px] inline-flex">
+              <span className="anim-pending-pip block size-[4px] rotate-45 bg-[color:var(--fg)]" />
+            </span>
+          ) : null}
         </button>
       ))}
     </div>
