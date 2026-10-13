@@ -574,7 +574,7 @@ export async function finishRun(
       })
       .where(and(eq(deckSynopses.id, runId), eq(deckSynopses.status, "pending")))
       .returning({ callId: deckSynopses.modelCallId });
-    for (const r of rows) await settleModelCall(tx, r.callId, set.charge, set.billed, now);
+    for (const r of rows) await settleModelCall(tx, r.callId, set.charge, set.billed, now, set.content ? "nothing_valid" : "failed");
     if (rows.length === 0 && set.billed) {
       // A LATE OUTCOME: the reaper settled this run first, or its deck was deleted and took the run
       // row with it, so nothing about the run or the credit moves, but the call billed all the
