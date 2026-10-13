@@ -37,6 +37,12 @@ import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
 import { TuningLimitsBox } from "./tuning-limits-box";
 import { TuningNotesField } from "./tuning-notes-field";
+import { searchTagCards } from "../../app/cards/tag-actions";
+import { plainText } from "../../lib/decks/notes-body";
+import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
+import { CardTagList } from "../cards/card-tag-picker";
+import { TagHelpRow } from "../cards/tag-help-row";
+import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
 
 /**
@@ -847,7 +853,7 @@ export function TuningPanel({
       // round 2: comparing the RAW draft against the server's normalized `facts.intent` meant a
       // value with surrounding whitespace, or an explicit clear, never matched, leaving
       // `savedIntent` set indefinitely and blocking a LATER external edit from syncing in.
-      const normalized = normalizeIntent(descDraft);
+      const normalized = normalizeIntent(plainText(descDraft));
       const result = await onSaveDescription(descDraft).catch(
         (): DeckMutationResult => ({ ok: false, message: deckDescriptionCopy.description.refused }),
       );
@@ -1159,6 +1165,9 @@ export function TuningPanel({
 
 // ── The pieces ──────────────────────────────────────────────────────────
 
+/** The picker's lookup, module-level so its identity is stable across renders. */
+const searchDescribingCards = (query: string) => searchTagCards("tuning", query);
+
 /** "Describing in place" (STATES §3 state 2): the absent description row's own editor, with
  *  explicit Save/Cancel rather than the empty-state field's blur-to-save. */
 function DescribingInPlace({
@@ -1177,35 +1186,41 @@ function DescribingInPlace({
   refused: string | null;
 }) {
   const descCopy = deckDescriptionCopy.description;
-  const n = countCharacters(value);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const { field, picker } = useTaggedField({ value, onChange, search: searchDescribingCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
+  const n = countCharacters(plainText(value));
   const over = n > descCopy.maxLength;
   const warn = n >= descCopy.warnAt;
   return (
     <div className="mt-[14px] flex flex-col gap-[6px]">
-      <label htmlFor="tuning-describing-field" className="block font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
-        {descCopy.label}
-      </label>
-      <textarea
-        id="tuning-describing-field"
-        autoFocus
-        value={value}
-        onChange={(e) => {
-          if (countCharacters(e.target.value) <= descCopy.maxLength) onChange(e.target.value);
-        }}
-        onKeyDown={(e) => {
-          // Escape cancels an IME composition candidate first, same as the deck header's own
-          // description editor (`use-deck-header-edit.ts`) — without this guard, Escape during
-          // Japanese/Chinese/Korean input discards the whole draft instead.
-          if (e.nativeEvent.isComposing) return;
-          if (e.key === "Escape") onCancel();
-        }}
-        readOnly={saving}
-        rows={2}
-        placeholder={descCopy.placeholder}
-        aria-label={descCopy.fieldAria}
-        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
-        style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
-      />
+      <TagHelpRow htmlFor="tuning-describing-field" label={descCopy.label} infoId="tuning-describing-field-info" help={deckDescriptionCopy.notes.tagHelp} onInsert={picker.insertTag} />
+      <div className="relative">
+        <textarea
+          ref={ref}
+          id="tuning-describing-field"
+          autoFocus
+          value={field.text}
+          {...picker.fieldProps}
+          aria-describedby="tuning-describing-field-info"
+          onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
+          onKeyDown={(e) => {
+            // The picker owns its keys while it is open (Escape closes the list); what is left is ours.
+            if (picker.onKeyDown(e)) return;
+            // Escape cancels an IME composition candidate first, same as the deck header's own
+            // description editor (`use-deck-header-edit.ts`) — without this guard, Escape during
+            // Japanese/Chinese/Korean input discards the whole draft instead.
+            if (e.nativeEvent.isComposing) return;
+            if (e.key === "Escape") onCancel();
+          }}
+          readOnly={saving}
+          rows={2}
+          placeholder={descCopy.placeholder}
+          aria-label={descCopy.fieldAria}
+          className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] md:text-[13.5px]"
+          style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
+        />
+        {picker.open && <CardTagList {...picker.list} />}
+      </div>
       <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
         <span>{descCopy.help}</span>
         <span className="flex-none text-right font-mono" style={{ width: "9ch", color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}>

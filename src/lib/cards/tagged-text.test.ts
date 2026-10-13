@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const names = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][] }));
 const legal = vi.hoisted(() => ({ ids: new Set<string>() }));
 vi.mock("../decks/notes-store", () => ({
-  currentLegalNames: async (ids: string[]) => new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))),
+  currentLegalNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))); },
   currentNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id))); } }));
 
-const { resolveTaggedText } = await import("./tagged-text");
+const { boxRawMax, resolveBoxText, resolveTaggedText } = await import("./tagged-text");
 
 const SOL = "0000aaaa-0000-4000-8000-000000000001";
 const DS = "0000aaaa-0000-4000-8000-000000000002";
@@ -40,5 +40,32 @@ describe("resolveTaggedText", () => {
     expect(out.tagged).toEqual([{ oracleId: SOL, name: "Sol Ring" }]);
     expect(out.text).toBe("Sol Ring and Doubling Season");
     expect(out.body).toBe(`[[${SOL}|Sol Ring]] and Doubling Season`);
+  });
+});
+
+describe("resolveBoxText", () => {
+  const box = { cap: 20, maxTags: 2 };
+  it("resolves a tag to the catalog's name and trims", async () => {
+    expect(await resolveBoxText(`  more of [[${SOL}|Sol Rong]]  `, box)).toEqual({ ok: true, text: "more of Sol Ring" });
+  });
+  it("answers a blank box as an empty string", async () => {
+    expect(await resolveBoxText("   ", box)).toEqual({ ok: true, text: "" });
+  });
+  it("refuses a body past the raw bound before it reads anything", async () => {
+    expect(await resolveBoxText(`a${" ".repeat(boxRawMax(20, 2))}`, box)).toEqual({ ok: false });
+    expect(names.asked).toEqual([]);
+  });
+  it("refuses more tags than the box allows, and a drawn length over the cap", async () => {
+    expect(await resolveBoxText(`[[${SOL}|a]][[${SOL}|a]][[${SOL}|a]]`, box)).toEqual({ ok: false });
+    expect(await resolveBoxText("x".repeat(21), box)).toEqual({ ok: false });
+    expect(await resolveBoxText("x".repeat(20), box)).toEqual({ ok: true, text: "x".repeat(20) });
+  });
+  it("checks the cap again on the resolved name, which can be longer than the one sent", async () => {
+    // "Doubling Season" is 15 characters: with 10 letters it is 25 against a cap of 20, where the client sent 11.
+    legal.ids.add(DS);
+    expect(await resolveBoxText(`${"x".repeat(10)}[[${DS}|a]]`, { cap: 20, maxTags: 2 })).toEqual({ ok: false });
+  });
+  it("turns a card banned in Commander into the words it carried", async () => {
+    expect(await resolveBoxText(`[[${DS}|Banned Thing]]`, box)).toEqual({ ok: true, text: "Banned Thing" });
   });
 });

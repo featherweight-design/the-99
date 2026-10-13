@@ -18,6 +18,9 @@ vi.mock("../../app/decks/tuning-actions", () => ({
   readTuningPanel: vi.fn(), restoreSuggestion: vi.fn(), runTuning: vi.fn(), saveDeckIntent: vi.fn(),
   saveDeckLimits: vi.fn(async () => ({ ok: true })), undoSuggestion: vi.fn(),
 }));
+vi.mock("../../app/cards/tag-actions", () => ({
+  searchTagCards: async () => [{ oracleId: "c0ffee00-0000-4000-8000-000000000001", name: "Sol Ring", typeLine: "Artifact", imageUri: null, commanderLegal: true, flavorName: null }],
+}));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ open: vi.fn() }), useCardIntent: () => ({}) }));
 
 const copy = deckTuningCopy.panel;
@@ -1349,6 +1352,24 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
   });
 
+  it("saves a tagged description as its body, and the row fills", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    await act(async () => {
+      render(
+        <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    });
+    expect(onSaveDescription).toHaveBeenCalledWith("Rocks: [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]] ");
+    expect(screen.queryByText("none yet")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
+  });
+
   it("saves through onSaveDescription and shows the row filled, with an announcement", async () => {
     const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
     await act(async () => {
@@ -1431,6 +1452,24 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
+    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+  });
+
+  // Card tags: the draft is a body (`[[id|Name]]`) and the server stores the name, so the optimistic value is the
+  // DRAWN text. Normalizing the raw body would never match the plain value the revalidation brings back.
+  it("releases a tagged draft's optimistic value when the revalidation brings its plain name", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    let utils!: ReturnType<typeof render>;
+    const panel = (facts: typeof noDescription) => (
+      <TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />
+    );
+    await act(async () => { utils = render(panel(noDescription)); });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save" })); });
+    await act(async () => { utils.rerender(panel({ ...noDescription, intent: "Rocks: Sol Ring" })); });
+    await act(async () => { utils.rerender(panel(noDescription)); });
     expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
   });
 

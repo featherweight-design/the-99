@@ -9,7 +9,7 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | null } | undefined, inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
-  resolveAsked: [] as unknown[], resolveText: undefined as string | undefined, modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
+  resolveAsked: [] as unknown[], catalog: new Map<string, string>(), savedText: [] as string[], modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
   // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
   // real catalog read, price read and `validateSuggestions` rather than throwing on a bare `db`
@@ -41,12 +41,13 @@ const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | nul
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabled }));
-// The catalog read behind a tag: the real module would reach the (stubbed) database. The stand-in resolves
-// every tag to the name it carried and records how it was asked.
-vi.mock("../../lib/cards/tagged-text", async () => {
-  const { plainText } = await import("../../lib/decks/notes-body");
-  return { resolveTaggedText: async (raw: string, opts: unknown) => { calls.resolveAsked.push(opts); return { text: calls.resolveText ?? plainText(raw), body: raw, tagged: [] }; } };
-});
+// The catalog read behind a tag: the real module would reach the (stubbed) database. The stand-in knows only the
+// ids a test puts in `catalog`; any other id is unknown to it, so its tag degrades to the name it carried, and
+// every ask is recorded with whether it was the Commander-legal lookup.
+vi.mock("../../lib/decks/notes-store", () => ({
+  currentLegalNames: async (ids: string[]) => { calls.resolveAsked.push({ commanderLegalOnly: true }); return new Map(ids.flatMap((id) => (calls.catalog.has(id) ? [[id, calls.catalog.get(id)!] as const] : []))); },
+  currentNames: async (ids: string[]) => { calls.resolveAsked.push({ commanderLegalOnly: false }); return new Map(ids.flatMap((id) => (calls.catalog.has(id) ? [[id, calls.catalog.get(id)!] as const] : []))); },
+}));
 // `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
 // `after()` runs the run's model call and settle once the response is sent: tests collect them and
@@ -112,7 +113,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   commanderName: async () => "Kykar, Wind's Fury",
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
-  saveIntent: async () => { calls.saved += 1; return "saved"; },
+  saveIntent: async (_deck: string, _user: string, raw: string) => { calls.saved += 1; calls.savedText.push(raw); return "saved"; },
   startRun: async (...args: unknown[]) => {
     calls.started += 1;
     calls.startOpts = args[4];
@@ -159,7 +160,9 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
-import { NOTES_RAW_MAX } from "../../lib/tuning/limits";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { boxRawMax } from "../../lib/cards/tagged-text";
+const NOTES_RAW_MAX = boxRawMax(500, 3);
 import {
   applySuggestion,
   readTuningPanel,
@@ -183,6 +186,7 @@ beforeEach(() => {
   calls.started = 0;
   calls.applied = 0;
   calls.saved = 0;
+  calls.savedText = [];
   calls.startKind = "in_flight";
   calls.allLocked = null;
   calls.reachModel = false;
@@ -191,6 +195,7 @@ beforeEach(() => {
   calls.modelOutcome = undefined;
   calls.modelQueue = [];
   calls.resolveAsked = [];
+  calls.catalog = new Map();
   calls.lockedIds = [];
   calls.runPending = true;
   calls.modelCalls = 0;
@@ -300,13 +305,9 @@ describe("runTuning's model call (v2)", () => {
 
   it("refuses a tagged note whose resolved names outgrow the cap, before a credit is reserved", async () => {
     calls.startKind = "started";
-    calls.resolveText = "x".repeat(501);
-    try {
-      expect(await runTuning(DECK, { anyway: true, notes: "[[c0ffee00-0000-4000-8000-000000000001|A]]" })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
-      expect(calls.started).toBe(0);
-    } finally {
-      calls.resolveText = undefined;
-    }
+    calls.catalog.set("c0ffee00-0000-4000-8000-000000000001", "x".repeat(501));
+    expect(await runTuning(DECK, { anyway: true, notes: "[[c0ffee00-0000-4000-8000-000000000001|A]]" })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(calls.started).toBe(0);
   });
 
   it("refuses a raw notes body past the wire bound without reading it", async () => {
@@ -766,6 +767,37 @@ describe("saveDeckDescription's field", () => {
     form.set("intent", "");
     expect((await saveDeckDescription(DECK, form)).ok).toBe(true);
     expect(calls.saved).toBe(1);
+  });
+});
+
+const SOL_ID = "c0ffee00-0000-4000-8000-000000000001";
+
+describe("a description that carries card tags", () => {
+  it("stores the catalog's name for a tag, as plain words, through the pencil and through the empty-state field", async () => {
+    calls.catalog.set(SOL_ID, "Sol Ring");
+    const body = `keep [[${SOL_ID}|sol rong]] in`;
+    await saveDeckHeader(DECK, { description: body });
+    expect(calls.headerUpdates[0].set).toMatchObject({ intent: "keep Sol Ring in" });
+    const form = new FormData();
+    form.set("intent", body);
+    expect((await saveDeckDescription(DECK, form)).ok).toBe(true);
+    expect(calls.savedText).toEqual(["keep Sol Ring in"]);
+    expect(calls.resolveAsked).toEqual([{ commanderLegalOnly: true }, { commanderLegalOnly: true }]);
+  });
+
+  it("refuses, writing nothing, a fourth tag, a drawn length over the cap and a resolved name that outgrows it", async () => {
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|A]]`;
+    const tooLong = deckDescriptionCopy.description.tooLong;
+    expect(await saveDeckHeader(DECK, { description: `${tag(1)}${tag(2)}${tag(3)}${tag(4)}` })).toEqual({ ok: false, message: tooLong });
+    expect(await saveDeckHeader(DECK, { description: "x".repeat(241) })).toEqual({ ok: false, message: tooLong });
+    // A one-letter tag whose catalog name is far longer: 1 drawn character on the wire, 300 once resolved.
+    calls.catalog.set(SOL_ID, "n".repeat(300));
+    expect(await saveDeckHeader(DECK, { description: `[[${SOL_ID}|A]]` })).toEqual({ ok: false, message: tooLong });
+    const form = new FormData();
+    form.set("intent", `${"x".repeat(100)}[[${SOL_ID}|A]]`);
+    expect(await saveDeckDescription(DECK, form)).toEqual({ ok: false, message: tooLong });
+    expect(calls.headerUpdates).toHaveLength(0);
+    expect(calls.savedText).toEqual([]);
   });
 });
 

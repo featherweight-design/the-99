@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { plainText } from "../../lib/decks/notes-body";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { AnalysisRing } from "./analysis-ring";
 import { DeckDescriptionField } from "./deck-description-field";
@@ -74,7 +75,7 @@ export function AnalysisEmpty({
   // a revalidation that landed from, say, their own header save (pre-open review).
   const [seenDescription, setSeenDescription] = useState(description ?? null);
   if (seenDescription !== description) {
-    const unedited = draft.trim() === (seenDescription ?? "").trim();
+    const unedited = drawn(draft) === (seenDescription ?? "").trim();
     setSeenDescription(description ?? null);
     if (unedited) setDraft(description ?? "");
   }
@@ -87,7 +88,7 @@ export function AnalysisEmpty({
     if (pendingSave.current) return pendingSave.current;
     if (!onSaveDescription) return { ok: true };
     const trimmed = draft.trim();
-    if (trimmed === (description ?? "").trim()) return { ok: true };
+    if (drawn(draft) === (description ?? "").trim()) return { ok: true };
     setSavingDescription(true);
     setDescriptionRefused(null);
     setDescriptionAnnounced("");
@@ -184,7 +185,7 @@ export function AnalysisEmpty({
               onClick={disabled ? undefined : () => {
                 // Nothing to save: read now, synchronously — a caller with no save wired up
                 // (or no pending edit) gets exactly the old one-press behavior.
-                if (!onSaveDescription || draft.trim() === (description ?? "").trim()) { onRequest(); return; }
+                if (!onSaveDescription || drawn(draft) === (description ?? "").trim()) { onRequest(); return; }
                 // A refused or thrown save leaves the field as it was (including `savingDescription`
                 // reset by `saveDescription`'s own `finally`) and never reads — reading over an
                 // unsaved, refused description would silently drop it (pre-open review).
@@ -244,4 +245,9 @@ export function AnalysisEmpty({
       </div>
     </section>
   );
+}
+
+/** The draft as it reads on screen and as the server will store it: a `[[id|Name]]` tag is its name, and the ends are trimmed. */
+function drawn(draft: string): string {
+  return plainText(draft).trim();
 }
