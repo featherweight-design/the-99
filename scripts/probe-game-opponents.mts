@@ -6,7 +6,7 @@
 // commits, so an unfriend racing a log waits for it; the matchup cells over the read; the cascade with the
 // game; and the table's own checks.
 //
-// It drives the write path through `writeOpponentsIn`, which is what `logGame` runs inside its transaction
+// It drives the write path through `resolveOpponentsIn` and `insertOpponentsIn`, in the order `logGame` runs them in its transaction
 // (the action itself needs a signed-in request), after the same `parseOpponents` and catalog check.
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL`
@@ -21,6 +21,7 @@ const run = Date.now().toString(36);
 const V = `probe_opp_v_${run}`; // the player logging games
 const F = `probe_opp_f_${run}`; // a friend
 const S = `probe_opp_s_${run}`; // a stranger to V (a friend of F)
+const W = `probe_opp_w_${run}`; // a player whose account is deleted while a log of theirs is open
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -44,6 +45,7 @@ async function main() {
   const opp = await import("../src/lib/decks/game-opponents");
   const { listDeckGames } = await import("../src/lib/decks/games");
   const { summarizeMatchups } = await import("../src/lib/decks/matchups");
+  const { purgeAccount } = await import("../src/lib/account/purge");
 
   const befriend = async (a: string, b: string) => {
     const t = await friends.createInvite(a);
@@ -58,9 +60,10 @@ async function main() {
     if (parsed === null || !(await opp.opponentCommandersValid(parsed))) return null;
     try {
       return await db.transaction(async (tx) => {
+        const facts = await opp.resolveOpponentsIn(tx, viewer, parsed);
         const { rows: g } = await tx.execute<{ id: string }>(sql`
           insert into deck_games (deck_id, user_id, result, pod_size) values (${deckId}, ${viewer}, ${result}, 4) returning id`);
-        await opp.writeOpponentsIn(tx, viewer, g[0].id, parsed);
+        await opp.insertOpponentsIn(tx, g[0].id, parsed, facts);
         return g[0].id;
       });
     } catch (err) {
@@ -159,10 +162,11 @@ async function main() {
     const parsed = opp.parseOpponents([{ friend: f.publicId, deck: fay2 }], { podSize: 4, result: "draw" })!;
     let heldGame = "";
     const holding = db.transaction(async (tx) => {
+      const facts = await opp.resolveOpponentsIn(tx, V, parsed);
       const { rows: g } = await tx.execute<{ id: string }>(sql`
         insert into deck_games (deck_id, user_id, result, pod_size) values (${mine}, ${V}, 'draw', 4) returning id`);
       heldGame = g[0].id;
-      await opp.writeOpponentsIn(tx, V, heldGame, parsed);
+      await opp.insertOpponentsIn(tx, heldGame, parsed, facts);
       wrote();
       await gate;
     });
@@ -192,6 +196,36 @@ async function main() {
     check("matchups: every game recorded", m.games === 3 && m.recorded === 3, `${m.games} ${m.recorded}`);
     check("matchups: C3 in two games (Sam's, and Fay's second)", m.commanders.find((c) => c.commander.oracleId === C3)?.summary.count === 2);
 
+    // A log racing its own account's deletion: the log holds W's friendship (taken first) and W's deck (by
+    // the game insert), the purge wants both in that order, so it waits for the log and then removes it all.
+    await friends.ensureProfile(W, "Wen");
+    await befriend(W, F);
+    const wens = await deck(W, "Wen's deck", C1);
+    let releaseW!: () => void;
+    const gateW = new Promise<void>((r) => { releaseW = r; });
+    let wroteW!: () => void;
+    const writtenW = new Promise<void>((r) => { wroteW = r; });
+    const seatF = opp.parseOpponents([{ friend: f.publicId }], { podSize: 4, result: "win" })!;
+    const logging = db.transaction(async (tx) => {
+      const facts = await opp.resolveOpponentsIn(tx, W, seatF);
+      const { rows: g } = await tx.execute<{ id: string }>(sql`
+        insert into deck_games (deck_id, user_id, result, pod_size) values (${wens}, ${W}, 'win', 4) returning id`);
+      await opp.insertOpponentsIn(tx, g[0].id, seatF, facts);
+      wroteW();
+      await gateW;
+    });
+    await writtenW;
+    let purged = false;
+    const purging = purgeAccount(W).then((r) => { purged = true; return r; });
+    await sleep(800);
+    check("a purge racing its account's own open log waits for it", !purged);
+    releaseW();
+    const raced = await Promise.allSettled([logging, purging]);
+    check("and both finish, with no deadlock", raced.every((r) => r.status === "fulfilled"),
+      JSON.stringify(raced.map((r) => (r.status === "rejected" ? String((r.reason as Error).message) : "ok"))));
+    const { rows: left } = await db.execute<{ n: number }>(sql`select count(*)::int as n from deck_games where user_id = ${W}`);
+    check("the purge took the raced game with the account", left[0].n === 0);
+
     // The table's own checks, and the cascade.
     const refused = async (q: ReturnType<typeof sql>) => db.execute(q).then(() => false, () => true);
     check("a seat past 7 is refused", await refused(sql`insert into deck_game_opponents (game_id, seat, label) values (${g1}, 8, 'x')`));
@@ -203,7 +237,7 @@ async function main() {
     const { rows: gone } = await db.execute<{ n: number }>(sql`select count(*)::int as n from deck_game_opponents where game_id = ${g1}`);
     check("a deleted game takes its seats", gone[0].n === 0);
   } finally {
-    const who = sql`(${V}, ${F}, ${S})`;
+    const who = sql`(${V}, ${F}, ${S}, ${W})`;
     await db.execute(sql`delete from decks where user_id in ${who}`);
     await db.execute(sql`delete from pods where owner_user_id in ${who}`);
     await db.execute(sql`delete from friend_links where user_id in ${who} or friend_user_id in ${who}`);

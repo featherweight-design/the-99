@@ -160,16 +160,26 @@ export class SeatRefused extends Error {
 }
 
 /**
- * Write one game's seats inside the game's own transaction. Each friend seat is resolved there, by the
- * viewer's friendship as it stands now (`resolveFriendSeatsIn`, which holds it until commit); one that
- * does not resolve throws `SeatRefused`, and the whole log rolls back.
+ * Resolve one game's friend seats inside the game's own transaction, BEFORE the game row is written. Each
+ * friend seat is read by the viewer's friendship as it stands now (`resolveFriendSeatsIn`, which holds it
+ * until commit); one that does not resolve throws `SeatRefused`, and the whole log rolls back.
+ *
+ * Before, because the order is the lock order: the account purge takes the friendship rows and then the
+ * account's decks, and inserting the game takes a key-share lock on the player's own deck. Resolving after
+ * the insert would take the deck and then the friendship, the opposite way round, and a log racing its own
+ * account's deletion could deadlock.
  */
-export async function writeOpponentsIn(tx: Tx, viewerId: string, gameId: string, parsed: readonly ParsedOpponent[]): Promise<void> {
-  if (parsed.length === 0) return;
+export async function resolveOpponentsIn(tx: Tx, viewerId: string, parsed: readonly ParsedOpponent[]): Promise<FriendSeatFacts[]> {
   const asks = parsed.flatMap((o): FriendSeatAsk[] =>
     o.kind === "friendDeck" ? [{ friend: o.friend, deck: o.deck }] : o.kind === "friend" ? [{ friend: o.friend, deck: null }] : []);
   const friends = await resolveFriendSeatsIn(tx, viewerId, asks);
   if (friends === null) throw new SeatRefused();
+  return friends;
+}
+
+/** Write one game's seats, from `resolveOpponentsIn`'s facts, in the same transaction. */
+export async function insertOpponentsIn(tx: Tx, gameId: string, parsed: readonly ParsedOpponent[], friends: readonly FriendSeatFacts[]): Promise<void> {
+  if (parsed.length === 0) return;
   await tx.insert(deckGameOpponents).values(opponentRows(gameId, parsed, friends));
 }
 

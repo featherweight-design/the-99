@@ -19,7 +19,7 @@ import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { socialGamesEnabled } from "../../lib/social/flag";
 import {
-  opponentCommandersValid, parseOpponents, SeatRefused, writeOpponentsIn, type OpponentInput,
+  insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, type OpponentInput,
 } from "../../lib/decks/game-opponents";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { isUuid } from "../../lib/uuid";
@@ -1220,6 +1220,8 @@ export async function logGame(
 
   try {
     await db.transaction(async (tx) => {
+      // Friend seats first: their locks come before the game row's (see `resolveOpponentsIn`).
+      const friends = await resolveOpponentsIn(tx, userId, opponents);
       const [game] = await tx
         .insert(deckGames)
         .values({
@@ -1238,7 +1240,7 @@ export async function logGame(
       // Drizzle rejects an empty values array, and no marks is a valid log.
       if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
 
-      await writeOpponentsIn(tx, userId, game.id, opponents);
+      await insertOpponentsIn(tx, game.id, opponents, friends);
     });
   } catch (err) {
     // A seat that no longer resolves (not a friend now, or not their deck) is a refusal, not a failure.

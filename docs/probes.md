@@ -1918,7 +1918,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   whole log and leave no game; that the snapshot outlives a deck rename, a deck delete (whose link goes null) and a
   friend's rename; that an unfriend racing a log waits until the log commits; that a former friend can no longer be
   seated and every past seat stands; the matchup cells over the real read; the table's checks; and the cascade with
-  the game. It drives `writeOpponentsIn`, which `logGame` runs in its transaction. It WRITES, so it fails closed:
+  the game. It drives `resolveOpponentsIn` then `insertOpponentsIn`, in the order `logGame` runs them in its transaction. It WRITES, so it fails closed:
   `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by
   id. Mutation-checked: dropping the FOR SHARE on the friendship fails the race check, and dropping the viewer
   predicate from either friend read fails the stranger checks.
