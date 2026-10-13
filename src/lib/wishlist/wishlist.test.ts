@@ -53,6 +53,11 @@ describe("friendWishlistQuery", () => {
 
 describe("wishlistEnabled", () => {
   it("is on only for exactly 'true'", () => {
-    expect([wishlistEnabled({ SOCIAL_WISHLIST_ENABLED: "true" }), wishlistEnabled({ SOCIAL_WISHLIST_ENABLED: "1" }), wishlistEnabled({})]).toEqual([true, false, false]);
+    const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
+    expect([
+      wishlistEnabled(env({ SOCIAL_WISHLIST_ENABLED: "true" })),
+      wishlistEnabled(env({ SOCIAL_WISHLIST_ENABLED: "1" })),
+      wishlistEnabled(env({})),
+    ]).toEqual([true, false, false]);
   });
 });
