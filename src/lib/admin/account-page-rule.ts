@@ -88,7 +88,8 @@ export function accountRows(input: {
       clerkName: a.name,
       email: a.email,
       initials: initials(a),
-      group: groupId && groupName ? { id: groupId, name: groupName } : null,
+      // A membership whose group's name did not load (a failed or racing read) keeps the id as its name.
+      group: groupId ? { id: groupId, name: groupName ?? groupId } : null,
       credits: c ? copy.creditsLeft(c.left, c.limit) : "",
       spend: usd(input.spend.get(a.id) ?? 0),
     };

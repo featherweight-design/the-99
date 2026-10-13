@@ -58,6 +58,11 @@ describe("the list (A1)", () => {
     ]);
   });
 
+  it("keeps a membership whose group name did not load, naming it by its id", () => {
+    const rows = accountRows({ accounts: [MARA], groupOf: new Map([[MARA.id, "g9"]]), groupNames: new Map(), credits: new Map(), spend: new Map() });
+    expect(rows[0].group).toEqual({ id: "g9", name: "g9" });
+  });
+
   it("counts each account's free credits from the window's rows against its own limit", () => {
     const now = new Date("2026-10-13T12:00:00Z");
     const hour = (h: number) => new Date(now.getTime() - h * 3_600_000);

@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 // the app's 404, decided before any read.
 const listAccounts = vi.fn();
 const readSwitchSnapshot = vi.fn();
-vi.mock("../../db", () => ({ db: { select: () => { throw new Error("no read expected"); } } }));
+const execute = vi.fn();
+vi.mock("../../db", () => ({ db: { select: () => { throw new Error("no read expected"); }, execute } }));
 vi.mock("./accounts", () => ({ listAccounts }));
 vi.mock("../switches/snapshot", () => ({ readSwitchSnapshot }));
 

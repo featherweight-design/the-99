@@ -110,6 +110,15 @@ export type AccountPage = {
  * `/admin/accounts/<clerkId>` (A4 to A7). Null when the id is no account this environment knows: not
  * in the universe, and named by no membership, override or `model_calls` row.
  */
+/** Whether a membership or an account override names this id: the existence check when the snapshot is unread. */
+async function namedByRows(userId: string): Promise<boolean> {
+  const { rows } = await db.execute(sql`
+    select 1 from flag_group_members where user_id = ${userId}
+    union all select 1 from flag_overrides where user_id = ${userId}
+    limit 1`);
+  return rows.length > 0;
+}
+
 export async function loadAccountPage(userId: string, now: Date = new Date()): Promise<AccountPage | null> {
   // `system` is the batch spend's sentinel (`scripts/lib/system-spend.ts`), never an account, though
   // it has `model_calls` rows; the list leaves it out too (`accounts.ts`).
@@ -128,7 +137,11 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
     db.select({ one: sql<number>`1` }).from(modelCalls).where(eq(modelCalls.userId, userId)).limit(1),
   ]);
   const listed: Account | undefined = accounts.find((a) => a.id === userId);
-  const named = !!snapshot && (snapshot.groupOf.has(userId) || snapshot.overrides.some((o) => o.userId === userId));
+  // With the snapshot unread, a membership or an override still makes the account known: read the two
+  // rows directly rather than call it a stranger.
+  const named = snapshot
+    ? snapshot.groupOf.has(userId) || snapshot.overrides.some((o) => o.userId === userId)
+    : !listed && called.length === 0 && (await namedByRows(userId));
   if (!listed && !named && called.length === 0) return null;
   const account: Account = listed ?? { id: userId, name: null, email: null };
 
