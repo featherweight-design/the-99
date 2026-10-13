@@ -125,7 +125,8 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad)
   // One catalog read serves both the names the inputs lack and the art fallback; the art itself is fail-soft,
   // so a failed read leaves the names standing and the cards with no preview.
   const [rows, owned] = await Promise.all([
-    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, all)),
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, all))
+      .catch(() => [] as { oracleId: string; name: string; imageUri: string | null }[]),
     chainArt(userId, null, all).catch(() => new Map<string, string>()),
   ]);
   const images: Record<string, string | null> = {};

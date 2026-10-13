@@ -47,7 +47,7 @@ export type FitsViewMemory = {
   runFrom?: { stored: string | null; failedAt: string | null } | null;
   /** What the view last drew: a return (a card opened over it, then Back) draws this at once, with no
    *  entrance, and reads both again behind it, keeping it on screen until the new reads land. */
-  snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null };
+  snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null; fresh: string | null };
 };
 
 /** How often a read in flight is asked after while the view waits on it (lock 5: one run, polled). */
@@ -98,7 +98,7 @@ export function FitsView({
   const tooBigFor = memory.tooBigFor ?? null;
   const writing = memory.writing === true;
   // The read this visit's press produced: its sub reads `just now` rather than a date.
-  const [fresh, setFresh] = useState<string | null>(null);
+  const [fresh, setFresh] = useState<string | null>(() => restored?.fresh ?? null);
   const [now, setNow] = useState(() => Date.now());
   const [foldOpen, setFoldOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -123,10 +123,10 @@ export function FitsView({
   useEffect(() => {
     if (!panel) return;
     const snap = list.read && list.opened ? { read: list.read, rows: list.opened } : null;
-    setMemory((m) => ({ ...m, snapshot: { panel, list: snap } }));
+    setMemory((m) => ({ ...m, snapshot: { panel, list: snap, fresh } }));
     // `setMemory` is the provider's updater, rebuilt each render; the snapshot moves only with these.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panel, list.read, list.opened]);
+  }, [panel, list.read, list.opened, fresh]);
 
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);

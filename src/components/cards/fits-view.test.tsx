@@ -619,6 +619,31 @@ describe("FitsView (Find a deck read, R2)", () => {
       expect(screen.getByTestId("read-row")).toBeInTheDocument();
       expect(screen.getByTestId("fits-fold")).toBeInTheDocument();
     });
+
+    it("a read made this visit still reads just now on a return", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Trip />);
+      await settle();
+      readActions.pressFitsReadAction.mockResolvedValue({ ok: true, panel: panel({}, { stored: stored() }) });
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      expect(screen.getByText(r.resultSubNow(1, 2))).toBeInTheDocument();
+      readActions.readFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByText(r.resultSubNow(1, 2))).toBeInTheDocument();
+    });
   });
 
   describe("round 6", () => {
