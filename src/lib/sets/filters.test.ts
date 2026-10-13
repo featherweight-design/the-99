@@ -8,7 +8,7 @@ import type { Cell } from "./completion";
 const cell = (over: Partial<Cell>): Cell => ({
   scryfallId: "s", oracleId: "o", collectorNumber: "1", name: "Card",
   imageUriSmall: null, colorIdentity: [], rarity: "common", booster: true,
-  isVariant: false, owned: false, byName: false, foilOnly: false, ...over,
+  isVariant: false, owned: false, byName: false, foilOnly: false, finishes: [], ...over,
 });
 
 describe("applyFilters", () => {
@@ -291,7 +291,7 @@ describe("applyFilters — the name search", () => {
   const c = (name: string, over: Partial<Cell> = {}): Cell => ({
     scryfallId: `s-${name}`, oracleId: `o-${name}`, collectorNumber: "1", name,
     imageUriSmall: null, colorIdentity: ["W"], rarity: "common", booster: true,
-    owned: false, byName: false, foilOnly: false, isVariant: false, ...over,
+    owned: false, byName: false, foilOnly: false, finishes: [], isVariant: false, ...over,
   });
   const f = (query: string): SetGridFilters => ({ ...EMPTY_FILTERS, query });
 
@@ -378,7 +378,7 @@ describe("isQueryActive — the one question every reader asks", () => {
       [{
         scryfallId: "s", oracleId: "o", collectorNumber: "1", name: "Plains",
         imageUriSmall: null, colorIdentity: [], rarity: "common", booster: true,
-        isVariant: false, owned: false, byName: false, foilOnly: false,
+        isVariant: false, owned: false, byName: false, foilOnly: false, finishes: [],
       }],
       { ...EMPTY_FILTERS, query: "́" },
     )).toHaveLength(1);

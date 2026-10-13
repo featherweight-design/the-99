@@ -23,6 +23,8 @@ import { formatCents, priceOf, priceState, type PriceFact } from "../../lib/deck
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PriceTag } from "../cards/price-tag";
+import { PriceFigure, priceSpoken } from "../collection/price-figure";
+import { copiesPriceCode } from "../../lib/collection/copy-price";
 import type { Cell } from "../../lib/sets/completion";
 import { FadingImg } from "../ui/hydrated-art";
 
@@ -36,6 +38,7 @@ export function SetCell({
   cell,
   price = null,
   newestAsOf,
+  showPrice = false,
   onOpen,
 }: {
   cell: Cell;
@@ -55,6 +58,12 @@ export function SetCell({
    * point is that the caller states it.
    */
   newestAsOf: Date | null;
+  /**
+   * The grid is sorted by price: an owned cell then shows the figure `/collection` draws for
+   * the copies filling it (`copiesPriceCode`, the copy's own finish, the dearest when several),
+   * as plain text rather than a tag, because the tag is a carrier of missing.
+   */
+  showPrice?: boolean;
   onOpen?: (oracleId: string) => void;
 }) {
   const num = cell.collectorNumber;
@@ -85,9 +94,12 @@ export function SetCell({
   // The base name carries the amount, and the foil/etched qualifier carries it again —
   // "$5.00 … Available in foil only, $5.00". The qualifier says both, so the base drops it.
   const foilQualified = !cell.owned && cents !== null && state === "foilOnly";
+  const ownedCode = cell.owned && showPrice ? ownedPriceCode(cell, price, newestAsOf) : undefined;
+  const ownedSpoken = priceSpoken(ownedCode);
   const label = [
     setPageCopy.cell.aria(cell.name, num, cell.owned, foilQualified ? undefined : money),
     ...qualifiers,
+    ...(ownedSpoken ? [ownedSpoken] : []),
   ].join(". ");
 
   return (
@@ -174,12 +186,28 @@ export function SetCell({
         {cell.name}
       </span>
 
-      {/* Content is the third carrier: a price tag is a thing only a missing cell has. */}
-      {cell.owned ? null : (
+      {/* Content is the third carrier: a price TAG is a thing only a missing cell has. Sorted by
+          price, an owned cell draws its figure as plain text in the same slot. */}
+      {cell.owned ? (
+        ownedCode !== undefined ? (
+          <span className="mt-[4px] flex font-mono text-[10px]">
+            <PriceFigure code={ownedCode} className="font-semibold" noStockClassName="font-medium" />
+          </span>
+        ) : null
+      ) : (
         <span className="mt-[4px] block">
           <PriceTag fact={price} newestAsOf={newestAsOf} />
         </span>
       )}
     </button>
   );
+}
+
+/**
+ * An owned cell's figure: `/collection`'s, over the finishes held of this printing. The grid read
+ * its prices per printing id, so a printing with no row is one the store answered no about.
+ */
+export function ownedPriceCode(cell: Cell, price: PriceFact | null, newestAsOf: Date | null): number | undefined {
+  if (!cell.owned) return undefined;
+  return copiesPriceCode([{ read: { fact: price }, finishes: cell.finishes }], newestAsOf);
 }
