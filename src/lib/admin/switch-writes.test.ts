@@ -130,6 +130,19 @@ describe("writeOverride", () => {
     expect(kinds()).toEqual(["lock", "snapshot", "target", "delete", "event"]);
   });
 
+  it("refuses a write that raises model access for an unlisted account while Clerk is down", async () => {
+    env = { HELP_ME_CHOOSE_ENABLED: "true" };
+    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
+    current = { value: "off", note: null };
+    const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null }], clerk: "down" as const }) };
+    expect(await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", confirmed: 1 }, down)).toEqual({ ok: false, error: "accounts" });
+    expect(kinds()).not.toContain("delete");
+    // An account's own override touches only that listed account, so it is counted and confirmed as usual.
+    log.length = 0;
+    current = null;
+    expect(await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", targetUserId: "u1", value: "on", confirmed: 1 }, down)).toEqual({ ok: true });
+  });
+
   it("says nothing changed when the transaction throws, and clears no memo", async () => {
     failOn = /^insert into admin_events/;
     expect(await writeOverride("u1", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "failed" });

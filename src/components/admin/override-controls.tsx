@@ -25,7 +25,7 @@ type Pending = { op: Op; value: OverrideValue | null; note: string | null };
 export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void) {
   const router = useRouter();
   const [inFlight, setInFlight] = useState<Pending | null>(null);
-  const [failed, setFailed] = useState<{ again: Pending; refused: boolean } | null>(null);
+  const [failed, setFailed] = useState<{ again: Pending; refused: boolean; clerkDown?: boolean } | null>(null);
   const [confirm, setConfirm] = useState<{ preview: ConfirmPreview; pending: Pending } | null>(null);
   const confirmAfter = useRef<(() => void) | null>(null);
 
@@ -54,7 +54,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
       setConfirm({ preview: result.preview, pending: p });
     } else {
       setConfirm(null);
-      setFailed({ again: p, refused: result.error !== "failed" });
+      setFailed({ again: p, refused: result.error !== "failed", clerkDown: result.error === "accounts" });
     }
   }
 
@@ -72,7 +72,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
   );
   const failure = failed && (
     <p role="alert" className="m-0 flex flex-wrap items-baseline gap-x-[10px] text-[12.5px] leading-[1.5] text-[color:var(--danger)]">
-      <span>{failed.refused ? copy.refusal : copy.saveFailed}</span>
+      <span>{failed.clerkDown ? copy.clerkDownRefusal : failed.refused ? copy.refusal : copy.saveFailed}</span>
       {!failed.refused && (
         <button type="button" onClick={() => run(failed.again)} className="border-0 bg-transparent p-0 text-[12.5px] text-[color:var(--accent)]">
           {copy.tryAgain}

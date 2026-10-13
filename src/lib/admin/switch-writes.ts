@@ -39,7 +39,7 @@ export type ConfirmPreview = {
 };
 export type WriteResult =
   | { ok: true }
-  | { ok: false; error: Refusal | "group" | "failed" }
+  | { ok: false; error: Refusal | "group" | "accounts" | "failed" }
   | { ok: false; error: "confirm"; preview: ConfirmPreview };
 
 export const SWITCH_WRITE_LOCK = "admin_switches";
@@ -79,7 +79,10 @@ class Abort {
   constructor(readonly result: WriteResult) {}
 }
 
-async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Account[], riseOf: WriteDeps["rise"]): Promise<{ wrote: boolean }> {
+/** An id no override or membership can name: the stand-in for an account a partial list leaves out. */
+const UNLISTED = "\u0000unlisted";
+
+async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Account[], clerkDown: boolean, riseOf: WriteDeps["rise"]): Promise<{ wrote: boolean }> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${SWITCH_WRITE_LOCK}, 0))`);
   if (w.scope === "group") {
     const { rows } = await tx.execute(sql`select id from flag_groups where id = ${w.groupId} for share`);
@@ -94,7 +97,12 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
   const row = current[0] ?? null;
   if (isNoop(row, w)) return { wrote: false };
 
-  const rise = riseOf(before, applyWrite(before, w), accounts.map((a) => a.id));
+  // With Clerk down the list is the stored ids alone, so an account that never pressed is missing
+  // from it. One unlisted account (no row of its own, no group) stands for every such account: a
+  // write that raises model access for it is refused rather than counted short.
+  const ids = accounts.map((a) => a.id);
+  const rise = riseOf(before, applyWrite(before, w), clerkDown ? [...ids, UNLISTED] : ids);
+  if (rise.accounts.includes(UNLISTED)) throw new Abort({ ok: false, error: "accounts" });
   if (rise.accounts.length > 0 && w.confirmed !== rise.accounts.length) {
     throw new Abort({ ok: false, error: "confirm", preview: await preview(tx, rise, accounts) });
   }
@@ -119,7 +127,7 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
 }
 
 export type WriteDeps = {
-  accounts: () => Promise<{ accounts: Account[] }>;
+  accounts: () => Promise<{ accounts: Account[]; clerk?: "ok" | "down" }>;
   env: typeof switchEnvValues;
   rise: typeof riseForAccounts;
   transaction: <T>(fn: (tx: Tx) => Promise<T>) => Promise<T>;
@@ -139,12 +147,12 @@ const DEPS: WriteDeps = {
 };
 
 export async function writeOverride(actorId: string, op: Op, input: WriteInput, deps: WriteDeps = DEPS): Promise<WriteResult> {
-  const { accounts } = await deps.accounts();
+  const { accounts, clerk } = await deps.accounts();
   const checked = validate(op, input, deps.env(), new Set(accounts.map((a) => a.id)));
   if (!checked.ok) return checked;
   let wrote: boolean;
   try {
-    ({ wrote } = await deps.transaction((tx) => writeIn(tx, actorId, checked.write, accounts, deps.rise)));
+    ({ wrote } = await deps.transaction((tx) => writeIn(tx, actorId, checked.write, accounts, clerk === "down", deps.rise)));
   } catch (error) {
     if (error instanceof Abort) return error.result;
     console.error(`admin: the override write on ${checked.write.name} failed`);
