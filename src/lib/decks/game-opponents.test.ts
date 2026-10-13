@@ -1,10 +1,92 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { assembleOpponents, gameOpponentsQuery } from "./game-opponents";
+import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents } from "./game-opponents";
 
 const A = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
 const B = "7a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+const C = "8b1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+const loss = { podSize: 4, result: "loss" };
+const win = { podSize: 4, result: "win" };
+
+describe("parseOpponents", () => {
+  it("takes no opponents as none", () => {
+    expect(parseOpponents(undefined, loss)).toEqual([]);
+    expect(parseOpponents([], loss)).toEqual([]);
+  });
+
+  it("reads each kind of seat", () => {
+    expect(parseOpponents([
+      { friend: A, deck: B },
+      { friend: C, commander: A },
+      { commander: B, partner: C, label: "  Sam  " },
+      { label: "Jo" },
+    ].slice(0, 3), loss)).toEqual([
+      { kind: "friendDeck", friend: A, deck: B, won: false },
+      { kind: "friend", friend: C, commander: A, partner: null, won: false },
+      { kind: "other", commander: B, partner: C, label: "Sam", won: false },
+    ]);
+    expect(parseOpponents([{ label: "Jo" }], loss)).toEqual([{ kind: "other", commander: null, partner: null, label: "Jo", won: false }]);
+  });
+
+  it("holds at most pod size minus one seats", () => {
+    expect(parseOpponents([{ label: "a" }, { label: "b" }, { label: "c" }], loss)).toHaveLength(3);
+    expect(parseOpponents([{ label: "a" }, { label: "b" }, { label: "c" }, { label: "d" }], loss)).toBeNull();
+    expect(parseOpponents([{ label: "a" }, { label: "b" }], { podSize: 2, result: "loss" })).toBeNull();
+  });
+
+  it("marks one winner, and only on a loss (Q15)", () => {
+    expect(parseOpponents([{ label: "a", won: true }, { label: "b" }], loss)?.map((o) => o.won)).toEqual([true, false]);
+    expect(parseOpponents([{ label: "a", won: true }, { label: "b", won: true }], loss)).toBeNull();
+    expect(parseOpponents([{ label: "a", won: true }], win)).toBeNull();
+    expect(parseOpponents([{ label: "a", won: true }], { podSize: 4, result: "draw" })).toBeNull();
+    expect(parseOpponents([{ label: "a", won: "yes" }], loss)).toBeNull();
+  });
+
+  it("refuses a seat that names nobody", () => {
+    expect(parseOpponents([{}], loss)).toBeNull();
+    expect(parseOpponents([{ label: "   " }], loss)).toBeNull();
+    expect(parseOpponents([{ won: false }], loss)).toBeNull();
+  });
+
+  it("refuses a malformed shape", () => {
+    for (const bad of [
+      "seat", {}, [null], [[A]], [{ friend: "nope" }], [{ friend: A, deck: "nope" }], [{ commander: 7 }],
+      [{ commander: A, partner: A }], [{ partner: A }], [{ deck: B }], [{ label: 5 }],
+    ]) expect(parseOpponents(bad, loss), JSON.stringify(bad)).toBeNull();
+  });
+
+  it("snapshots a friend's deck, so nothing may ride beside it", () => {
+    expect(parseOpponents([{ friend: A, deck: B, commander: C }], loss)).toBeNull();
+    expect(parseOpponents([{ friend: A, label: "Dave" }], loss)).toBeNull();
+  });
+
+  it("seats a friend once", () => {
+    expect(parseOpponents([{ friend: A }, { friend: A, deck: B }], loss)).toBeNull();
+  });
+
+  it("refuses a label over 30 code points or holding a control character", () => {
+    expect(parseOpponents([{ label: "x".repeat(30) }], loss)).not.toBeNull();
+    expect(parseOpponents([{ label: "x".repeat(31) }], loss)).toBeNull();
+    expect(parseOpponents([{ label: "a\u0007b" }], loss)).toBeNull();
+  });
+});
+
+describe("opponentRows", () => {
+  it("numbers seats from 1 and lays each friend's facts on its own seat", () => {
+    const parsed = parseOpponents([{ label: "Sam", won: true }, { friend: A, deck: B }, { friend: C, commander: A }], loss)!;
+    const facts = (id: string, deck: string | null) => ({
+      friendUserId: id, friendNameThen: id, friendDeckId: deck, deckNameThen: deck && "Yuriko",
+      commanderOracleId: deck && C, partnerOracleId: null,
+    });
+    const rows = opponentRows("g", parsed, [facts("u_a", B), facts("u_c", null)]);
+    expect(rows.map((r) => [r.seat, r.label, r.friendUserId, r.friendDeckId, r.commanderOracleId, r.won])).toEqual([
+      [1, "Sam", null, null, null, true],
+      [2, null, "u_a", B, C, false],
+      [3, null, "u_c", null, A, false],
+    ]);
+  });
+});
 
 describe("gameOpponentsQuery", () => {
   it("reads only the owner's games on the deck", () => {
@@ -70,9 +152,9 @@ describe("who reads the opponents table", () => {
   });
 
   it("and its read reaches only the game log's own modules, never a prompt builder", () => {
-    const IMPORTERS = new Set(["src/lib/decks/matchups.ts"]);
+    const IMPORTERS = new Set(["src/app/decks/actions.ts", "src/lib/decks/matchups.ts"]);
     const importers = walk("src").filter((p) => /from\s+["'][^"']*\/(?:game-opponents|matchups)["']/.test(readFileSync(p, "utf8")));
-    expect(importers).toContain("src/lib/decks/matchups.ts");
+    expect(importers).toContain("src/app/decks/actions.ts");
     expect(importers.filter((p) => !IMPORTERS.has(p))).toEqual([]);
   });
 });

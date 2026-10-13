@@ -17,6 +17,10 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { socialGamesEnabled } from "../../lib/social/flag";
+import {
+  insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, type OpponentInput,
+} from "../../lib/decks/game-opponents";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { isUuid } from "../../lib/uuid";
 import { loadAvailability } from "../../lib/decks/availability-query";
@@ -1119,6 +1123,9 @@ export type LogGameInput = {
    *  required, not even on a loss. Blank stores null, so "has a note" is one
    *  predicate everywhere rather than two. */
   note?: string;
+  /** Who sat across the table, seat 1 upward (social Feature C). Optional, and refused outright while
+   *  `SOCIAL_GAMES_ENABLED` is off for this reader. Shape-checked by `parseOpponents`. */
+  opponents?: OpponentInput[];
 };
 
 const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
@@ -1195,6 +1202,15 @@ export async function logGame(
   // store them. One definition of "character", and it is the column's.
   if (countCharacters(note) > NOTE_MAX_LENGTH) return refuse;
 
+  // Opponents are a claim like everything else here: the shape first, the switch, then the catalog.
+  // A friend seat is resolved inside the transaction, where the friendship is held until the game commits.
+  const opponents = parseOpponents(input.opponents, { podSize: input.podSize, result: input.result });
+  if (opponents === null) return refuse;
+  if (opponents.length > 0) {
+    if (!socialGamesEnabled(await requestSwitchEnv(userId))) return refuse;
+    if (!(await opponentCommandersValid(opponents))) return refuse;
+  }
+
   // The version live when the game was PLAYED, not when it was logged: a game
   // can be backdated, and stamping it with today's list would credit a night's
   // result to a deck that did not exist that night. Null for a brew, and null
@@ -1204,6 +1220,8 @@ export async function logGame(
 
   try {
     await db.transaction(async (tx) => {
+      // Friend seats first: their locks come before the game row's (see `resolveOpponentsIn`).
+      const friends = await resolveOpponentsIn(tx, userId, opponents);
       const [game] = await tx
         .insert(deckGames)
         .values({
@@ -1221,8 +1239,12 @@ export async function logGame(
       ];
       // Drizzle rejects an empty values array, and no marks is a valid log.
       if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
+
+      await insertOpponentsIn(tx, game.id, opponents, friends);
     });
   } catch (err) {
+    // A seat that no longer resolves (not a friend now, or not their deck) is a refusal, not a failure.
+    if (err instanceof SeatRefused) return refuse;
     // The player sees one generic refusal by design, so the underlying failure
     // has nowhere else to surface.
     console.error("logGame failed", err);

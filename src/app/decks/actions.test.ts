@@ -1321,6 +1321,93 @@ describe("logGame", () => {
       "/",
     ]);
   });
+
+  // Opponents (social Feature C) ride the same log. Dark: refused outright while the reader's resolved
+  // SOCIAL_GAMES_ENABLED is off, and nothing is written, not even the game.
+  describe("with opponents", () => {
+    // The reader's resolved switches are the file's ENV sentinel, not process.env.
+    afterEach(() => {
+      delete ENV.SOCIAL_GAMES_ENABLED;
+      delete ENV.SOCIAL_FRIENDS_ENABLED;
+    });
+    const seats = [{ label: "Sam", won: true }];
+
+    it("refuses opponents while the switch is off, writing nothing", async () => {
+      ENV.SOCIAL_GAMES_ENABLED = "true";
+      ENV.SOCIAL_FRIENDS_ENABLED = "false";
+      const result = await logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents: seats });
+      expect(result.ok).toBe(false);
+      expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    it("writes a seat per opponent, numbered from 1, when the switch is on", async () => {
+      ENV.SOCIAL_GAMES_ENABLED = "true";
+      ENV.SOCIAL_FRIENDS_ENABLED = "true";
+      const result = await logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents: seats });
+      expect(result).toEqual({ ok: true });
+      const rows = stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents");
+      expect(rows).toHaveLength(1);
+      expect(rows[0].values).toEqual([expect.objectContaining({ seat: 1, label: "Sam", won: true, friendUserId: null })]);
+    });
+
+    // Each commander a seat names must lead a deck, and a pair must be able to pair (createDeck's rule).
+    const PAIR_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const PAIR_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    const pairOf = (text: string) => {
+      stub.state.cards.length = 0;
+      stub.state.cards.push(
+        commanderCard({ oracleId: PAIR_A, name: "Tymna the Weaver", oracleText: text, layout: "normal" }),
+        commanderCard({ oracleId: PAIR_B, name: "Thrasios, Triton Hero", oracleText: text, layout: "normal" }),
+      );
+    };
+    afterEach(() => { stub.state.cards.length = 0; });
+
+    it("refuses two legal commanders that cannot pair, writing nothing", async () => {
+      ENV.SOCIAL_GAMES_ENABLED = "true";
+      ENV.SOCIAL_FRIENDS_ENABLED = "true";
+      pairOf("Flying");
+      const result = await logGame("deck_1", {
+        result: "win", podSize: 4, worked: [], hurt: [], opponents: [{ commander: PAIR_A, partner: PAIR_B }],
+      });
+      expect(result.ok).toBe(false);
+      expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    it("seats a pair that can pair", async () => {
+      ENV.SOCIAL_GAMES_ENABLED = "true";
+      ENV.SOCIAL_FRIENDS_ENABLED = "true";
+      pairOf("Partner (You can have two commanders if both have partner.)");
+      const result = await logGame("deck_1", {
+        result: "win", podSize: 4, worked: [], hurt: [], opponents: [{ commander: PAIR_A, partner: PAIR_B }],
+      });
+      expect(result).toEqual({ ok: true });
+      const rows = stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents");
+      expect(rows[0].values).toEqual([expect.objectContaining({ commanderOracleId: PAIR_A, partnerOracleId: PAIR_B })]);
+    });
+
+    it("refuses a seat whose commander cannot lead a deck", async () => {
+      ENV.SOCIAL_GAMES_ENABLED = "true";
+      ENV.SOCIAL_FRIENDS_ENABLED = "true";
+      stub.state.cards.push(commanderCard({ oracleId: PAIR_A, typeLine: "Instant", layout: "normal" }));
+      const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: [{ commander: PAIR_A }] });
+      expect(result.ok).toBe(false);
+      expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    it("refuses a winner on a game the player won", async () => {
+      ENV.SOCIAL_GAMES_ENABLED = "true";
+      ENV.SOCIAL_FRIENDS_ENABLED = "true";
+      const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: seats });
+      expect(result.ok).toBe(false);
+      expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    it("logs no opponents with the switch off exactly as before", async () => {
+      const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: [] });
+      expect(result).toEqual({ ok: true });
+      expect(stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents")).toHaveLength(0);
+    });
+  });
 });
 
 describe("deleteGame", () => {

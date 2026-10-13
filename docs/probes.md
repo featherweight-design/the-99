@@ -1909,6 +1909,19 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cleared, and that clearing and re-quantifying work. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. Mutation-checked:
   dropping the viewer predicate from the friendship join makes the stranger see the list.
+- `pnpm probe:game-opponents` proves opponents in the game log (social Feature C) against a real database. It builds a
+  player, a friend with two decks and a pod, and a stranger to the player who is the friend's friend (so a read that lost
+  its viewer predicate would find the stranger through the friend). It proves that a friend's decks are offered by
+  name and commander only to a friend, and a pod seats only its members who are friends; that a log seats a friend's
+  deck and a stranger by commander, snapshotting the friend's name and the deck's name and commanders; that a
+  stranger, a forged id, someone else's deck, a non-commander, a winner on a win and too many opponents each refuse the
+  whole log and leave no game; that the snapshot outlives a deck rename, a deck delete (whose link goes null) and a
+  friend's rename; that an unfriend racing a log waits until the log commits; that a former friend can no longer be
+  seated and every past seat stands; the matchup cells over the real read; the table's checks; and the cascade with
+  the game. It drives `resolveOpponentsIn` then `insertOpponentsIn`, in the order `logGame` runs them in its transaction. It WRITES, so it fails closed:
+  `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are refused by
+  id. Mutation-checked: dropping the FOR SHARE on the friendship fails the race check, and dropping the viewer
+  predicate from either friend read fails the stranger checks.
 - `pnpm probe:social` proves the social foundation's queries (plan `boards/plan-social-foundation-2026-10-12.md`,
   PR 1): three made-up accounts plus a fourth, where the stranger gets nothing from any read or write; a token that
   is spent, declined, revoked or expired cannot be accepted, and two accepts at once let exactly one through; the
