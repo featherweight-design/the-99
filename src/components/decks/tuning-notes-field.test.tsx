@@ -1,5 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+const search = vi.hoisted(() => vi.fn(async (surface: string, query: string) => {
+  void surface; void query;
+  return [{ oracleId: "c0ffee00-0000-4000-8000-000000000001", name: "Sol Ring", typeLine: "Artifact", imageUri: null, commanderLegal: true, flavorName: null }];
+}));
+vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: search }));
+
 import { TuningNotesField } from "./tuning-notes-field";
 
 describe("TuningNotesField", () => {
@@ -36,5 +43,31 @@ describe("TuningNotesField", () => {
       isComposing: true,
     });
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  describe("card tags", () => {
+    const ID = "c0ffee00-0000-4000-8000-000000000001";
+
+    it("looks a typed [[ up as the tuning surface, and a pick sends the stored tag up", async () => {
+      const seen = vi.fn();
+      // The panel owns the value; a wrapper stands in for it, as a controlled field needs.
+      function Panel() {
+        const [value, setValue] = useState("swap out ");
+        return <TuningNotesField value={value} onChange={(next) => { seen(next); setValue(next); }} />;
+      }
+      render(<Panel />);
+      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "swap out [[Sol" } });
+      const option = await screen.findByRole("option", { name: /Sol Ring/ });
+      expect(search).toHaveBeenCalledWith("tuning", "Sol");
+      fireEvent.mouseDown(option);
+      expect(seen).toHaveBeenLastCalledWith(`swap out [[${ID}|Sol Ring]] `);
+    });
+
+    it("shows a stored tag as its name and counts it as its name", () => {
+      render(<TuningNotesField value={`swap out [[${ID}|Sol Ring]]`} onChange={vi.fn()} />);
+      expect((screen.getByLabelText("Additional notes") as HTMLTextAreaElement).value).toContain("Sol Ring");
+      expect((screen.getByLabelText("Additional notes") as HTMLTextAreaElement).value).not.toContain(ID);
+      expect(screen.getByText("17 / 500")).toBeInTheDocument();
+    });
   });
 });

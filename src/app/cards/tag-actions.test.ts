@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stub = vi.hoisted(() => ({ on: true, search: vi.fn(), signedIn: vi.fn(async () => "user_1") }));
+const stub = vi.hoisted(() => ({ on: true, tuningOn: true, search: vi.fn(), signedIn: vi.fn(async () => "user_1") }));
 vi.mock("../../lib/auth", () => ({ requireUserId: stub.signedIn }));
 vi.mock("../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
+vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => stub.tuningOn }));
 vi.mock("../../lib/decks/notes-store", () => ({ searchNoteCards: stub.search }));
 
 const { searchTagCards } = await import("./tag-actions");
 
-beforeEach(() => { stub.on = true; stub.search.mockReset().mockResolvedValue([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]); stub.signedIn.mockClear(); });
+beforeEach(() => { stub.on = true; stub.tuningOn = true; stub.search.mockReset().mockResolvedValue([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]); stub.signedIn.mockClear(); });
 
 describe("searchTagCards", () => {
   it("searches for a signed-in reader of a surface whose switch is on", async () => {
@@ -32,5 +33,15 @@ describe("searchTagCards", () => {
   it("answers null when the lookup throws", async () => {
     stub.search.mockRejectedValueOnce(new Error("db down"));
     expect(await searchTagCards("intake", "sol")).toBeNull();
+  });
+
+  it("answers each surface behind its own switch", async () => {
+    stub.on = false;
+    expect(await searchTagCards("tuning", "sol")).not.toBeNull();
+    expect(await searchTagCards("intake", "sol")).toBeNull();
+    stub.on = true;
+    stub.tuningOn = false;
+    expect(await searchTagCards("tuning", "sol")).toBeNull();
+    expect(await searchTagCards("intake", "sol")).not.toBeNull();
   });
 });

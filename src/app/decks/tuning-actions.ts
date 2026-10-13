@@ -29,9 +29,11 @@ import {
 import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
+import { resolveTaggedText } from "../../lib/cards/tagged-text";
+import { plainText, tagCount } from "../../lib/decks/notes-body";
 import { tuningEnabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
-import { intentTooLong, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
+import { intentTooLong, MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
@@ -199,10 +201,20 @@ export async function runTuning(
   if (rawNotes !== undefined && typeof rawNotes !== "string") {
     return { ok: false, message: deckTuningCopy.run.refused };
   }
-  const trimmedNotes = rawNotes === undefined ? null : rawNotes.trim();
-  if (trimmedNotes !== null && countCharacters(trimmedNotes) > deckDescriptionCopy.notes.maxLength) {
+  // The body may carry `[[id|Name]]` tags (the box takes the `[[` picker). The cap is on what it DRAWS, in
+  // code points, with room in the raw text for the ids of at most `NOTES_TAGS_MAX` tags.
+  const trimmedBody = rawNotes === undefined ? null : rawNotes.trim();
+  const notesCap = deckDescriptionCopy.notes.maxLength;
+  if (trimmedBody !== null && (
+    trimmedBody.length > notesCap * 2 + NOTES_TAGS_MAX * 41
+    || tagCount(trimmedBody) > NOTES_TAGS_MAX
+    || countCharacters(plainText(trimmedBody)) > notesCap
+  )) {
     return { ok: false, message: deckTuningCopy.run.refused };
   }
+  // A tag is the catalog's name for its id, never the client's: an id the catalog does not hold, or a card
+  // banned in Commander, is plain words. The prompt gets the names, through `playerText`, as ever.
+  const trimmedNotes = trimmedBody === null ? null : (await resolveTaggedText(trimmedBody, { commanderLegalOnly: true })).text.trim();
   const notes = trimmedNotes === "" ? null : trimmedNotes;
 
   const inputs = await tuningInputs(deckId, userId);
