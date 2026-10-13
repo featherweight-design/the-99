@@ -1882,8 +1882,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   moved, the account's own stamp row did not come back at commit, a purge racing a friend's unfriend over shared
   pods settles five times out of five, a purge racing a redemption of its own invite (held mid-way) waits and
   leaves nothing, a purge racing the account's own write (a held collection row) waits and leaves
-  nothing, a purge racing a friend adding it to the friend's pod (the pod held mid-add) waits and
-  leaves nothing, and a second purge deletes nothing
+  nothing, a purge racing a friend adding it to a pod created after the friendship (the pod and
+  the friendship row held mid-add, as `addMember` holds them) waits and leaves nothing, and a second purge deletes nothing
   anywhere (rows, social counts and the stamp all zero). It WRITES and
   DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
   production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp

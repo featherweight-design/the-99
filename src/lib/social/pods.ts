@@ -7,7 +7,7 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
+import { friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
 import { cleanPodName, isUuid, nextPodOwner } from "./rules";
 
@@ -68,6 +68,12 @@ export async function addMember(viewerId: string, podId: unknown, friendPublicId
     if (!pod) return false;
     const friendId = await resolveFriend(viewerId, friendPublicId, tx);
     if (friendId === null) return false;
+    // Hold the friendship row itself while adding (pod, then friendship: the order `unfriend` and the
+    // account purge take them), so a friendship being ended waits for this add, or this add waits for it
+    // and finds the row gone.
+    const held = await tx.execute(sql`
+      select 1 from ${friendLinks} where user_id = ${viewerId} and friend_user_id = ${friendId} for share`);
+    if (held.rows.length === 0) return false;
     await tx.insert(podMembers).values({ podId, userId: friendId }).onConflictDoNothing();
     return true;
   });

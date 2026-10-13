@@ -182,8 +182,9 @@ async function main() {
     check("a purge racing an unfriend over shared pods settles, five times out of five, with nothing left", raced === 5, `${raced}/5`);
 
     // A purge racing a friend ADDING the account to the friend's pod, in the order that could strand a
-    // membership: the add holds the pod (as `addMember` does, before reading the friendship), the purge
-    // starts, then the add inserts the membership and commits. The purge must wait and then leave it.
+    // membership: the add holds the pod and the friendship row (as `addMember` does), the purge starts, then
+    // the add inserts the membership and commits. The purge must wait and then leave it. The pod is created
+    // AFTER the friendship and the purge reads nothing of it first, so no pod lock can be what saves it.
     {
       const q = `${P}_added`;
       const o = `${F}_adder`;
@@ -201,6 +202,7 @@ async function main() {
       const locking = new Promise<void>((done) => { locked = done; });
       const add = db.transaction(async (tx) => {
         await tx.execute(sql`select 1 from pods where id = ${pod.id} for update`);
+        await tx.execute(sql`select 1 from friend_links where user_id = ${o} and friend_user_id = ${q} for share`);
         locked();
         await held;
         await tx.execute(sql`insert into pod_members (pod_id, user_id) values (${pod.id}, ${q})`);
