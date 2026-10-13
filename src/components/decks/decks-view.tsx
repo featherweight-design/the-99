@@ -344,9 +344,15 @@ export function DecksView({
   }, []);
   // The shell's `Decks` link clears the query without unmounting this view, so a bare /decks reached from
   // Stats must draw Tiles: the address bar no longer asks for Stats. `heldStats` stays for a later flip.
+  // A first Stats read still in flight is the OLDER ask once the address moves under it (the same link, a
+  // Back): its result is dropped by comparing this epoch, read through a ref the promise can see.
+  const [statsEpoch, setStatsEpoch] = useState(0);
+  const epochRef = useRef(0);
+  useEffect(() => { epochRef.current = statsEpoch; }, [statsEpoch]);
   const [seenViewQuery, setSeenViewQuery] = useState(liveQuery);
   if (liveQuery !== seenViewQuery) {
     setSeenViewQuery(liveQuery);
+    if (statsPending) { setStatsEpoch((e) => e + 1); setStatsPending(false); }
     // Both ways: Back to a `?view=stats` address puts Stats up again from the payload this visit holds.
     const asked = new URLSearchParams(liveQuery).get("view") === "stats";
     if (view === "stats" && !asked) setView("tiles");
@@ -369,11 +375,14 @@ export function DecksView({
     // leaves Tiles drawn, and a second press asks again.
     if (next === "stats" && !heldStats) {
       setStatsPending(true);
+      const epoch = epochRef.current;
       readLineupStats()
         .then((data) => {
           // The reader may have left, or be leaving, while the read ran: then nothing is drawn, written or
           // remembered. `mirrorUrl` refuses a write off its own page too; this keeps the preference honest.
           if (!data || !mounted.current || window.location.pathname !== path) return;
+          // The address moved while this read ran: the newer navigation wins, the payload is only kept.
+          if (epochRef.current !== epoch) { setHeldStats(data); return; }
           setHeldStats(data);
           setView("stats");
           // Rebuilt from the URL as it stands now: Tiles stayed live while the read ran, and a shelf, search

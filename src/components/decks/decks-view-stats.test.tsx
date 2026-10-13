@@ -171,4 +171,23 @@ describe("DecksView: Stats on /decks", () => {
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
     expect(read.stats).not.toHaveBeenCalled();
   });
+
+  // The first Stats read is still in flight when the shell's Decks link clears the query: the newer
+  // navigation wins, Tiles stays drawn and the address stays bare.
+  it("drops a Stats read that lands after the address moved under it", async () => {
+    let resolve!: (d: LineupData) => void;
+    read.stats.mockReturnValue(new Promise<LineupData>((r) => { resolve = r; }));
+    window.history.replaceState(null, "", "/decks?q=gish");
+    draw({ data: null, view: "tiles", foldServer: null });
+    fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
+    await waitFor(() => expect(read.stats).toHaveBeenCalled());
+    act(() => { window.history.pushState(null, "", "/decks"); window.dispatchEvent(new PopStateEvent("popstate")); });
+    await act(async () => { resolve(STATS); });
+    expect(document.querySelector("[data-decks-stats]")).toBeNull();
+    expect(window.location.search).toBe("");
+    // The payload was kept: a second press flips with no second read.
+    fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    expect(read.stats).toHaveBeenCalledTimes(1);
+  });
 });
