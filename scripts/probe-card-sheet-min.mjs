@@ -1,6 +1,7 @@
 // probe:card-sheet-min — the phone card sheet's min snap (Hugh, 2026-10-13).
 //
-// At 390 this opens a card from the deck page's list and swipes down on the card from the teaser.
+// At 390 this opens a card from the deck page's list and swipes down on the card from the teaser,
+// sampling the card mid-drag: it must have grown as far as the sheet has moved.
 // It checks the sheet reaches its min snap (the shelf 72 tall, its title row in view), the card
 // grows to the band's width less a 16px gutter each side, a horizontal swipe still pages and the
 // next card opens at min too, and a tap on the card brings the teaser back with the card at its
@@ -129,10 +130,28 @@ try {
   const teaser = await settle(page);
   if (teaser.snap !== "teaser") fail(`phone: the card opened at ${teaser.snap}, not the teaser`);
 
-  // Down the card, from the teaser.
+  // Down the card, from the teaser, sampled MID-DRAG: the card grows with the finger, in the same
+  // frames as the sheet (Hugh, 2026-10-13), rather than once the sheet has settled at min.
   const c = teaser.card;
-  await drag(page, [c.left + c.width / 2, c.top + 80], [c.left + c.width / 2, c.top + 80 + 260]);
+  const x = c.left + c.width / 2;
+  const y0 = c.top + 80;
+  await page.mouse.move(x, y0);
+  await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(x, y0 + (130 * i) / 6);
+  await page.waitForTimeout(50);
+  const midDrag = await page.evaluate(READ);
+  for (let i = 1; i <= 6; i++) await page.mouse.move(x, y0 + 130 + (130 * i) / 6);
+  await page.mouse.up();
   const min = await settle(page);
+  // Where the sheet stood mid-drag, as a share of the way from the teaser to min, should be where
+  // the card stood between its two widths: the same progress drives both.
+  const teaserTop = 844 - teaser.shelf;
+  const sheetProgress = (844 - midDrag.shelf - teaserTop) / (844 - 72 - teaserTop);
+  const cardProgress = (midDrag.card.width - teaser.card.width) / (min.card.width - teaser.card.width);
+  if (!(sheetProgress > 0.15 && sheetProgress < 0.85)) fail(`phone: the mid-drag sample caught the sheet at ${(sheetProgress * 100).toFixed(0)}% of the way, not mid-drag`);
+  else if (Math.abs(cardProgress - sheetProgress) > 0.05)
+    fail(`phone: mid-drag the sheet is ${(sheetProgress * 100).toFixed(0)}% of the way to min and the card ${(cardProgress * 100).toFixed(0)}% of the way to its min size`);
+  else ok(`phone: mid-drag the card is ${midDrag.card.width.toFixed(0)}px, ${(cardProgress * 100).toFixed(0)}% of the way, with the sheet at ${(sheetProgress * 100).toFixed(0)}%`);
   if (process.env.PROBE_SHOTS) {
     await page.screenshot({ path: `${process.env.PROBE_SHOTS}/sheet-min.png` });
   }
@@ -148,6 +167,28 @@ try {
   if (min.peekMid !== null && Math.abs(min.peekMid - (min.card.top + min.card.height / 2)) > 1.5)
     fail(`phone: the neighbor's peek sits at ${min.peekMid.toFixed(0)}, the grown card's middle at ${(min.card.top + min.card.height / 2).toFixed(0)}`);
   if (min.card.top < 63.5 || min.card.top + min.card.height > 844 - 72 + 0.5) fail(`phone: the grown card runs outside the band (${min.card.top.toFixed(0)} to ${(min.card.top + min.card.height).toFixed(0)})`);
+
+  // The reverse on the way up: halfway back toward the teaser the card has shrunk halfway, and a
+  // finger taken back down to where it started leaves the sheet at min.
+  {
+    const ux = min.card.left + min.card.width / 2;
+    const uy = min.card.top + min.card.height / 2;
+    await page.mouse.move(ux, uy);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(ux, uy - (104 * i) / 6);
+    await page.waitForTimeout(50);
+    const up = await page.evaluate(READ);
+    for (let i = 1; i <= 6; i++) await page.mouse.move(ux, uy - 104 + (104 * i) / 6);
+    await page.mouse.up();
+    const sheetBack = (844 - 72 - (844 - up.shelf)) / (844 - 72 - teaserTop);
+    const cardBack = (min.card.width - up.card.width) / (min.card.width - teaser.card.width);
+    if (!(sheetBack > 0.15 && sheetBack < 0.85)) fail(`phone: the upward sample caught the sheet ${(sheetBack * 100).toFixed(0)}% of the way back, not mid-drag`);
+    else if (Math.abs(cardBack - sheetBack) > 0.05)
+      fail(`phone: on the way up the sheet is ${(sheetBack * 100).toFixed(0)}% back and the card ${(cardBack * 100).toFixed(0)}%`);
+    else ok(`phone: on the way up the card shrinks with the sheet (${(cardBack * 100).toFixed(0)}% / ${(sheetBack * 100).toFixed(0)}%)`);
+    const settled = await settle(page);
+    if (settled.snap !== "min") fail(`phone: a drag up and back down left the sheet at ${settled.snap}, not min`);
+  }
 
   // Paging still works at min, and the next card opens there too.
   const before = min.name;

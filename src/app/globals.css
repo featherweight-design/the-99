@@ -1023,6 +1023,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    teaser to full keeps its 240ms snap above. The card's growth rides the same tokens. */
 .sheet-snap.sheet-gentle { transition: top var(--motion-duration) var(--motion-ease) var(--motion-delay); }
 .sheet-snap.sheet-gentle[data-dragging] { transition: none; }
+/* While a drag sizes the card it tracks the finger; the ease is for the settle after release. */
+[data-card-dragging] .card-grow { transition: none; }
 .card-grow {
   transition:
     width var(--motion-duration) var(--motion-ease) var(--motion-delay),

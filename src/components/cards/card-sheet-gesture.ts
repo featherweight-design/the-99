@@ -134,6 +134,29 @@ export function sheetSnap(
   return snaps.reduce((best, s) => (Math.abs(s[1] - top) < Math.abs(best[1] - top) ? s : best))[0];
 }
 
+/**
+ * The phone card's width and top, in px, at `progress` of the way from the teaser (0) to min (1),
+ * for a dialog `width` by `height` (Hugh, 2026-10-13: the card grows WITH the drag, not after it).
+ * Both ends are the card-modal's own CSS at its two snaps, worked out in pixels: the teaser's
+ * `min(320px, (band - 85) x 0.7159)` at y 64, and min's `min(band width - 32, (band - 85) x 0.7159)`,
+ * centred in the band and never above y 64. A drag writes these while it moves, and the snap's CSS
+ * takes over on release.
+ */
+export function cardAtProgress(
+  width: number,
+  height: number,
+  teaserHeight: number,
+  progress: number,
+): { width: number; top: number } {
+  const p = Math.min(Math.max(progress, 0), 1);
+  const teaserBand = height - teaserHeight;
+  const minBand = height - SHEET.minHeight;
+  const teaserW = Math.min(320, (teaserBand - 85) * 0.7159);
+  const minW = Math.min(width - 32, (minBand - 85) * 0.7159);
+  const minTop = Math.max(64, (minBand - (minW * 88) / 63) / 2);
+  return { width: teaserW + (minW - teaserW) * p, top: 64 + (minTop - 64) * p };
+}
+
 type Drag = {
   pointerId: number;
   source: "band" | "sheet";
@@ -151,6 +174,9 @@ type Drag = {
   minTop: number | undefined;
   /** The drag began at min: it reaches the teaser at most, as one from full reaches it at least. */
   fromMin: boolean;
+  /** The dialog's height and the teaser's, for the card's size along the way. */
+  height: number;
+  teaserHeight: number;
   bandX: number;
   sheetTop: number;
   /** A pull down the full sheet's body from its top, which the body's own scroll would take. */
@@ -160,6 +186,9 @@ type Drag = {
 export type CardSheetGestureOptions = {
   bandRef: RefObject<HTMLElement | null>;
   sheetRef: RefObject<HTMLElement | null>;
+  /** The box that sizes the card (`--card-w`, `--card-top`): a drag between the teaser and min
+   *  writes its `--card-w-drag` and `--card-top-drag`, so the card grows in the sheet's frames. */
+  stageRef?: RefObject<HTMLElement | null>;
   /** The sheet is at its full snap. Paging is withheld there (STATES h3). */
   full: boolean;
   /** The sheet is at its min snap: a tap on the band or the shelf returns it to the teaser. */
@@ -185,6 +214,14 @@ export type CardSheetGestureOptions = {
 };
 
 const SPRING = "transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+
+/** Hands the card back to its snap's own CSS, which then eases to it (`card-grow`). */
+function clearCardDrag(stage: HTMLElement | null | undefined) {
+  if (!stage) return;
+  stage.style.removeProperty("--card-w-drag");
+  stage.style.removeProperty("--card-top-drag");
+  stage.removeAttribute("data-card-dragging");
+}
 
 /**
  * Returns the band to rest: 180ms, or a jump under reduced motion (STATES §Motion, "Phone
@@ -241,6 +278,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
       sheet.style.removeProperty("--sheet-drag-top");
       delete sheet.dataset.dragging;
     }
+    clearCardDrag(opts.current.stageRef?.current);
   }, [options.disabled]);
 
   const end = useCallback((e: PointerEvent, cancelled: boolean) => {
@@ -296,6 +334,7 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         : sheetSnap(d.sheetTop, vy, SHEET.fullTop, d.teaserTop, d.minTop, d.fromMin);
       sheet.style.removeProperty("--sheet-drag-top");
       delete sheet.dataset.dragging;
+      clearCardDrag(opts.current.stageRef?.current);
       onSnap(to);
       return;
     }
@@ -353,6 +392,14 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
     if (!sheet) return;
     d.sheetTop = clampSheetTop(d.startTop + dy, d.fromMin ? d.teaserTop : SHEET.fullTop, d.minTop ?? d.teaserTop);
     sheet.style.setProperty("--sheet-drag-top", `${d.sheetTop}px`);
+    // Between the teaser and min the card follows the same finger, frame for frame.
+    const stage = opts.current.stageRef?.current;
+    if (stage && d.minTop !== undefined) {
+      const card = cardAtProgress(d.width, d.height, d.teaserHeight, (d.sheetTop - d.teaserTop) / (d.minTop - d.teaserTop));
+      stage.setAttribute("data-card-dragging", "");
+      stage.style.setProperty("--card-w-drag", `${card.width}px`);
+      stage.style.setProperty("--card-top-drag", `${card.top}px`);
+    }
   }, []);
 
   const begin = useCallback(
@@ -394,6 +441,8 @@ export function useCardSheetGestures(options: CardSheetGestureOptions) {
         teaserTop,
         minTop,
         fromMin: min && minTop !== undefined,
+        height,
+        teaserHeight,
         bandX: 0,
         sheetTop: startTop,
         pull,

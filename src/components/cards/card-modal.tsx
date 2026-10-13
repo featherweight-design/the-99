@@ -1008,6 +1008,8 @@ export function CardModal({
     return () => drop.cancel();
   }, [dropping]);
   const bandRef = useRef<HTMLDivElement | null>(null);
+  /** The box that sizes the phone card; a drag writes its size there as it moves. */
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   // The sheet's scrolling body: a pull down from its top returns the full sheet to the teaser.
   const sheetBodyRef = useRef<HTMLDivElement | null>(null);
@@ -1443,6 +1445,7 @@ export function CardModal({
   const gestures = useCardSheetGestures({
     bandRef,
     sheetRef,
+    stageRef,
     full,
     min,
     canMinimize: !cramped,
@@ -2089,18 +2092,24 @@ export function CardModal({
           style={{ height: `calc(100% - ${min ? SHEET.minHeight : teaserHeight}px)`, opacity: full ? 0.35 : 1 }}
         >
           <div
+            ref={stageRef}
             className="absolute inset-0"
             // Card width = min(320px, (100dvh - 85px - 280px) x 0.7159) (README R2 "Sizing"): 85 is
             // the 64 above the card and 21 below it, and the band already ends at the teaser. At the
             // min snap the band runs to the shelf and the 320 cap lifts to the band's width less a
             // 16px gutter each side (Hugh, 2026-10-13).
+            // A drag between the teaser and min writes `--card-w-drag` and `--card-top-drag` here,
+            // so the card grows with the finger (Hugh, 2026-10-13); on release they go and the
+            // snap's own values below take over, eased by `card-grow`.
             style={{
               "--card-w": min
-                ? "min(calc(100cqw - 32px), calc((100cqh - 85px) * 0.7159))"
-                : "min(320px, calc((100cqh - 85px) * 0.7159))",
+                ? "var(--card-w-drag, min(calc(100cqw - 32px), calc((100cqh - 85px) * 0.7159)))"
+                : "var(--card-w-drag, min(320px, calc((100cqh - 85px) * 0.7159)))",
               // At the min snap the grown card sits in the middle of the band, never above y 64.
               // The peeks read it too, so they stay level with the card.
-              "--card-top": min ? "max(64px, calc((100cqh - var(--card-w) * 88 / 63) / 2))" : "64px",
+              "--card-top": min
+                ? "var(--card-top-drag, max(64px, calc((100cqh - var(--card-w) * 88 / 63) / 2)))"
+                : "var(--card-top-drag, 64px)",
             } as React.CSSProperties}
           >
             {narrow && prevSibling && onPrevPeek ? (
