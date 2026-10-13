@@ -16,9 +16,10 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cardAssignments, cards, csvUploads, collectionItems, decks } from "../../db/schema";
+import { cardAssignments, cards, collectionHistory, csvUploads, collectionItems, decks } from "../../db/schema";
+import { annotateWentTo } from "./went-to";
 import {
-  arrivalPlacement, buildArrivalsSummary, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts,
+  arrivalPlacement, buildArrivalsSummary, wentOf, type ArrivalsSummary, type ArrivedClaimState, type NowShortRow, type OwnedCounts, type WentRow,
 } from "./arrivals";
 import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
@@ -221,6 +222,40 @@ export async function writeArrivalsReceipt(args: {
   });
   await db.update(csvUploads).set({ summaryPayload: summary })
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
+  if (placements) await stampUploadWentTo(userId, uploadId, placements, ownedBefore, ownedAfter);
   return summary;
 }
 
+
+/**
+ * Keeps where the upload's copies went on its history entry (`HistoryRow.wentTo`), from the placements the
+ * receipt was just built on. A separate write after the confirm committed, and NON-FATAL by design: the
+ * entry stands without it and only loses its deck line, which a failure here must not turn into a failed
+ * upload. It reads the entry's own rows under the same user and source, so another account's can never be
+ * touched, and writes nothing when no deck took a copy.
+ */
+async function stampUploadWentTo(
+  userId: string,
+  uploadId: string,
+  placements: Record<string, Placement>,
+  ownedBefore: OwnedCounts,
+  ownedAfter: OwnedCounts,
+): Promise<void> {
+  try {
+    const went = new Map<string, WentRow>();
+    for (const [oracleId, p] of Object.entries(placements)) {
+      const before = ownedBefore[oracleId] ?? 0;
+      went.set(oracleId, wentOf(p, Math.max((ownedAfter[oracleId] ?? 0) - before, 0), before));
+    }
+    const [entry] = await db.select({ id: collectionHistory.id, rows: collectionHistory.rows })
+      .from(collectionHistory)
+      .where(and(eq(collectionHistory.userId, userId), eq(collectionHistory.source, `csv_uploads:${uploadId}`)));
+    if (!entry?.rows) return;
+    annotateWentTo(entry.rows, went);
+    if (!entry.rows.some((r) => r.wentTo)) return;
+    await db.update(collectionHistory).set({ rows: entry.rows })
+      .where(and(eq(collectionHistory.id, entry.id), eq(collectionHistory.userId, userId)));
+  } catch (error) {
+    console.warn("[history] could not keep where an upload's copies went", error instanceof Error ? error.message : error);
+  }
+}

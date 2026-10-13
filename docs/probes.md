@@ -32,6 +32,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `collection_history` entry sourced `shopping:cart:<ids>` (five of the account's decks and one id that is no deck) and
   deletes it in a `finally`; it refuses staging and production by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`
   on the server and an account with five decks.
+- `pnpm probe:history-went-to` (tsx, a real Postgres; History deck line, PR 2) proves an Add Cards save and an upload's
+  receipt keep where the arriving copies went on the history row (`HistoryRow.wentTo`): a card two committed decks want
+  is the senior deck's, a card only a brew wants is a `soft` read, a card no deck wants carries nothing, deleting the deck
+  afterwards leaves the stored row alone, and a save made without the placement read stores none. It writes under a
+  per-run user_id and deletes it in a `finally`; refused on staging and production. The upload check passes
+  `ADDED_COPY_ENABLED` and `COLLECTION_EDIT_ENABLED` in the env it hands the receipt, as the confirm's switches would.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a
