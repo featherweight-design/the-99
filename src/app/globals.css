@@ -971,7 +971,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
     background: conic-gradient(
       from var(--ai-sweep-from),
       color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 0deg,
-      color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 328deg,
+      color-mix(in srgb, var(--accent-dim) 55%, var(--surface-raised)) 330deg,
       var(--accent) 346deg,
       var(--accent-hover) 359deg,
       transparent 360deg
@@ -987,7 +987,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
     background: conic-gradient(
       from var(--ai-sweep-from),
       transparent 0deg,
-      transparent 328deg,
+      transparent 330deg,
       color-mix(in srgb, var(--accent) 70%, transparent) 346deg,
       var(--accent-hover) 359deg,
       transparent 360deg

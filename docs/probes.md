@@ -182,7 +182,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   tool while its read runs and is gone once the result lands, at 1300x900 and 390x844: Help me choose's reading panel,
   Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. Per tool and width it checks
   the class is on, the ring (`::before`) runs `ai-sweep` on a conic gradient with a blurred glow (`::after`) on the same
-  lap, no ancestor within 3px clips the glow, the lap starts at the top-right corner (`--ai-sweep-start` equals
+  lap, neither the host nor an ancestor within 10px clips the glow, the lap starts at the top-right corner (`--ai-sweep-start` equals
   atan2(width, height) of the card's own box; every tool at both widths is a different aspect, 27 to 87deg), reduced
   motion holds it as a plain accent border with no glow, and after the read settles NOTHING in the document carries the class. The models are the held
   stand-ins, so the server needs `TUNING_STUB_DELAY_MS=9000`, `INTAKE_STUB_DELAY_MS=10000`,

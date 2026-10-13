@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useAiSweepRef } from "./use-ai-sweep";
 
@@ -34,5 +34,41 @@ describe("the firefly's start angle", () => {
   it("leaves an unmeasured box on the stylesheet's own 45deg", () => {
     const { getByTestId } = render(<Host w={0} h={0} />);
     expect(getByTestId("host").style.getPropertyValue("--ai-sweep-start")).toBe("");
+  });
+});
+
+// The start follows the box: a viewport or content resize moves the corner, and the ResizeObserver is what notices.
+describe("the firefly's start angle, kept current", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("re-measures when the host's box changes", () => {
+    let notify: () => void = () => {};
+    let disconnected = 0;
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(cb: () => void) { notify = cb; }
+      observe() {}
+      disconnect() { disconnected += 1; }
+    });
+    let box = { w: 200, h: 200 };
+    function Resizable() {
+      const ref = useAiSweepRef();
+      return (
+        <div
+          data-testid="host"
+          ref={(el) => {
+            if (el) el.getBoundingClientRect = () => ({ width: box.w, height: box.h, top: 0, left: 0, right: box.w, bottom: box.h, x: 0, y: 0, toJSON: () => ({}) });
+            ref(el);
+          }}
+        />
+      );
+    }
+    const { getByTestId, unmount } = render(<Resizable />);
+    const read = () => parseFloat(getByTestId("host").style.getPropertyValue("--ai-sweep-start"));
+    expect(read()).toBeCloseTo(45, 5);
+    box = { w: 1000, h: 250 };
+    notify();
+    expect(read()).toBeCloseTo(75.96, 1);
+    unmount();
+    expect(disconnected).toBeGreaterThan(0);
   });
 });
