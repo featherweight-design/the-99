@@ -96,6 +96,20 @@
 | selection mark | 22 square, radius 6; selected `--accent` fill + 2px `--accent`, inner 7px `--bg` diamond; unselected 2px `--border-dashed`, empty | same |
 | selected row | `--surface-raised` | same |
 | pending bar | stacked, pad 14, radius 12, 1px `--accent`, `--surface-raised`; Undo ghost + Save primary | row |
+| list head | section head `‹N› groups` + meta `‹N› accounts · ‹M› in no group` (N = the account universe); `New group` 13 `--accent` at the end; empty: `No groups yet.` 13 `--fg-muted` (G5) | same |
+| card body | description 13 `--fg-body` (none, no line); members 12.5 / 1.5 `--fg-muted`, joined `, `, or `No members.`; override chips wrap, gap 6 | same |
+| head on a group's page | title the group's name (display, as every head), sub its description (none, no sub), `‹ Groups` back link, Groups tab selected; `/admin/groups/new` titles `New group` | same |
+| field | label 12.5 `--fg-muted`; input h44, radius 8, 1px `--border-strong`, `--surface-sunken`, 16 (name and credits mono); hint 12 `--fg-faint`; refusal 12.5 `--danger` | h38, 13.5 |
+| Daily credits | its own row, first column; empty is the default; hint `Members get this many credits in a rolling 24 hours. Empty means the default.` | same |
+| members head | section head `Members` + meta `‹n› selected, ‹m› not saved` (m = adds and removes pending) | same |
+| member search | full width, h44, radius 9, `--surface-sunken`; filters by name, email or id on the page; none: `No account matches.` | h38 |
+| member row text | name 14 / 500 `--fg` + email mono 10.5 `--fg-faint` on one baseline; Clerk id mono 10.5 `--fg-muted`, breaks anywhere; sub 12 `--fg-muted`: `in ‹group›`, `moves from ‹group›` when selected here and saved elsewhere, none in no group | same |
+| member state | hidden (the mark carries it) | mono 10.5: `selected, not saved` `--accent`; `selected` `--fg-body`; `unselected` `--fg-faint` |
+| member row control | the whole row is one `role=checkbox` button | same |
+| pending text | title 14 / 600; body 13 / 1.55 `--fg-body`; one sentence per change, naming the account and what it gains or loses, never a pronoun; a refusal 12.5 `--danger` under it; `Create` replaces `Save` on a new group | same |
+| overrides carried | section head + count (`none`); rows in a box radius 12: label 14, On/Off with the resolved dot, `Open the switch ›` 13 `--accent` (grid `1fr auto`, the link on its own line); none: `This group carries no overrides.` | grid `1fr 70 1.5fr`, pad 11 16 |
+| history | as the switch page's; foot `Times are UTC.`; none: `No changes yet. Times are UTC.` | same |
+| confirm on save | the model confirm, lead `Saving changes who is in ‹group›, and so which overrides apply to them.`, no note field | same |
 
 ## Accounts
 | Property | Mobile | Desktop |

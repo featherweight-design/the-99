@@ -3,6 +3,7 @@ import type { AccountSwitches, ExplainSource } from "../switches/explain";
 import { KILL, type OverrideValue } from "../switches/resolve";
 import { switchKind, switchParent, type SwitchName } from "../switches/registry";
 import type { Account } from "./accounts";
+import { accountName, accountNames } from "./names";
 import { switchRows, type ResolvedState, type SwitchRow } from "./switches-rule";
 
 /**
@@ -77,7 +78,6 @@ export type SwitchPage = {
 };
 
 const label = (name: SwitchName) => switchCopy[name].label;
-const accountName = (a: Account) => a.name ?? a.email ?? a.id;
 const valueText = (v: OverrideValue | null) => (v === "on" ? adminCopy.switches.app.on : v === "off" ? adminCopy.switches.app.off : adminCopy.switches.app.notSet);
 
 /** `11 Oct · 14:02`, UTC (the history foot says so). */
@@ -113,15 +113,10 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   const plumbing = switchKind(name) === "plumbing";
   const killed = env[name] === KILL;
   const parent = switchParent(name);
-  const byId = new Map(accounts.map((a) => [a.id, a]));
   const groupById = new Map(groups.map((g) => [g.id, g]));
   // A group deleted since an event names it reads as its id's first 8 characters.
   const groupName = (id: string) => groupById.get(id)?.name ?? id.slice(0, 8);
-  const userName = (id: string) => {
-    const a = byId.get(id);
-    return a ? accountName(a) : id;
-  };
-  const actor = (id: string) => (id === viewerId ? copy.history.you : userName(id));
+  const { userName, actor } = accountNames(accounts, viewerId);
 
   const [row] = switchRows({
     env,

@@ -16,8 +16,8 @@ const copy = adminCopy.confirmModel;
 
 export type ConfirmContext = { switchLabel: string; op: Op; scope: Scope; groupName: string | null };
 
-function lead({ op, scope, groupName }: ConfirmContext, preview: ConfirmPreview): string {
-  const what = scope === "group" ? copy.lead.group[op](groupName ?? "") : copy.lead[scope][op];
+function lead({ op, scope, groupName }: ConfirmContext, preview: ConfirmPreview, what?: string): string {
+  what ??= scope === "group" ? copy.lead.group[op](groupName ?? "") : copy.lead[scope][op];
   const features = preview.costs.map((c) => copy.capability[c.key]);
   const list = features.length < 3 ? features.join(" and ") : `${features.slice(0, -1).join(", ")} and ${features.at(-1)}`;
   return `${what} ${copy.spends(list)}`;
@@ -29,9 +29,15 @@ export function ModelConfirm({
   pending,
   onConfirm,
   onCancel,
+  leadText,
+  noted = true,
 }: {
   preview: ConfirmPreview;
   context: ConfirmContext;
+  /** The lead's first sentence, when the write is not an override (a group save names its own). */
+  leadText?: string;
+  /** False where the write has no note to record (a group save's events carry none). */
+  noted?: boolean;
   pending: boolean;
   onConfirm: (note: string) => void;
   onCancel: () => void;
@@ -70,7 +76,7 @@ export function ModelConfirm({
           {copy.title(context.switchLabel, preview.count)}
         </h2>
         <p id={`${id}-lead`} className="m-0 text-pretty text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
-          {lead(context, preview)}
+          {lead(context, preview, leadText)}
         </p>
         <dl className="m-0 overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
           {facts.map(([k, v], i) => (
@@ -83,16 +89,18 @@ export function ModelConfirm({
             </div>
           ))}
         </dl>
-        <label className="flex flex-col gap-[6px] text-[12.5px] text-[color:var(--fg-muted)]">
-          {copy.note}
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={500}
-            autoComplete="off"
-            className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[14px]"
-          />
-        </label>
+        {noted && (
+          <label className="flex flex-col gap-[6px] text-[12.5px] text-[color:var(--fg-muted)]">
+            {copy.note}
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={500}
+              autoComplete="off"
+              className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[14px]"
+            />
+          </label>
+        )}
         <div className="flex gap-[10px] md:justify-end">
           <button
             ref={cancelRef}

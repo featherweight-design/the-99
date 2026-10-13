@@ -1,16 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { dailyLimitsFor } from "../model/allowance";
-import { featureWorstCaseMicroUsd } from "../model/prices";
-import type { ModelFeature } from "../model/allowance-rule";
 import { riseForAccounts, switchEnvValues } from "../switches/explain";
-import type { ModelCapabilityKey } from "../switches/flags";
-import { isSwitchName } from "../switches/registry";
-import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
-import { clearSwitchSnapshot, SNAPSHOT_SQL } from "../switches/snapshot";
+import { clearSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts, type Account } from "./accounts";
+import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type Tx } from "./rise-confirm";
 import { applyWrite, isNoop, validate, type Op, type Refusal, type Write, type WriteInput } from "./switch-writes-rule";
+
+export { SWITCH_WRITE_LOCK, type CapabilityCost, type ConfirmPreview } from "./rise-confirm";
 
 /**
  * An admin override write (admin plan 8c, "The write, in order"). Only `src/app/admin/**` may import
@@ -26,69 +23,16 @@ import { applyWrite, isNoop, validate, type Op, type Refusal, type Write, type W
  * 3. After the commit only: the memo clear and the revalidations. Clearing inside the transaction
  *    would let a concurrent request re-read the old rows and hold them for 30 seconds.
  */
-export type CapabilityCost = { key: ModelCapabilityKey; reserveMicroUsd: number; meanMicroUsd: number | null };
-export type ConfirmPreview = {
-  /** The accounts that gain a model capability, as named on the page. */
-  names: string[];
-  count: number;
-  costs: CapabilityCost[];
-  /** The distinct rolling-24-hour credit limits of those accounts, low to high. */
-  credits: number[];
-  /** How many accounts' What's new sheet gains an entry. */
-  whatsNew: number;
-};
 export type WriteResult =
   | { ok: true }
   | { ok: false; error: Refusal | "group" | "accounts" | "failed" }
   | { ok: false; error: "confirm"; preview: ConfirmPreview };
 
-export const SWITCH_WRITE_LOCK = "admin_switches";
-
-// The Overview v2 changes the synopsis's model and method, so it is priced as the synopsis.
-const featureOf = (key: ModelCapabilityKey): ModelFeature => (key === "overview_v2" ? "synopsis" : key);
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-async function readSnapshotIn(tx: Tx): Promise<SwitchSnapshot> {
-  const { rows } = await tx.execute<{ overrides: OverrideRow[]; members: { userId: string; groupId: string }[] }>(sql.raw(SNAPSHOT_SQL));
-  const [row] = rows;
-  return { overrides: row.overrides.filter((o) => isSwitchName(o.switchName)), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
-}
-
-async function preview(tx: Tx, rise: { accounts: string[]; capabilities: ModelCapabilityKey[]; whatsNew: string[] }, accounts: readonly Account[]): Promise<ConfirmPreview> {
-  const features = [...new Set(rise.capabilities.map(featureOf))];
-  const { rows } = await tx.execute<{ feature: string; mean: number | null }>(sql`
-    select feature, avg(cost_micro_usd)::float8 as mean from model_calls
-    where feature in (${sql.join(features.map((f) => sql`${f}`), sql`, `)}) and origin = 'player' and cost_micro_usd is not null
-    group by feature`);
-  // The Costs page's own mean (`costs-detail-rule.ts`): a player's priced presses. A free method-change
-  // rewrite (origin system) is not a press.
-  const mean = new Map(rows.map((r) => [r.feature, r.mean === null ? null : Math.round(r.mean)]));
-  const byId = new Map(accounts.map((a) => [a.id, a]));
-  return {
-    names: rise.accounts.map((id) => byId.get(id)?.name ?? byId.get(id)?.email ?? id),
-    count: rise.accounts.length,
-    costs: rise.capabilities.map((key) => ({ key, reserveMicroUsd: featureWorstCaseMicroUsd(featureOf(key)), meanMicroUsd: mean.get(featureOf(key)) ?? null })),
-    // Each account's own limit (`dailyLimit`: its group's allowance, the owner's own, or the
-    // default), read in one statement in this transaction.
-    credits: [...new Set((await dailyLimitsFor(tx, rise.accounts)).values())].sort((a, b) => a - b),
-    whatsNew: rise.whatsNew.length,
-  };
-}
-
-/** Raised inside the transaction to end it with nothing written and hand back a result. */
-class Abort {
-  constructor(readonly result: WriteResult) {}
-}
-
-/** An id no override or membership can name: the stand-in for an account a partial list leaves out. */
-const UNLISTED = "\u0000unlisted";
-
 async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Account[], clerkDown: boolean, riseOf: WriteDeps["rise"]): Promise<{ wrote: boolean }> {
-  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${SWITCH_WRITE_LOCK}, 0))`);
+  await lockSwitchWrites(tx);
   if (w.scope === "group") {
     const { rows } = await tx.execute(sql`select id from flag_groups where id = ${w.groupId} for share`);
-    if (rows.length === 0) throw new Abort({ ok: false, error: "group" });
+    if (rows.length === 0) throw new Abort<WriteResult>({ ok: false, error: "group" });
   }
   const before = await readSnapshotIn(tx);
   const { rows: current } = await tx.execute<{ value: string; note: string | null }>(sql`
@@ -99,18 +43,8 @@ async function writeIn(tx: Tx, actorId: string, w: Write, accounts: readonly Acc
   const row = current[0] ?? null;
   if (isNoop(row, w)) return { wrote: false };
 
-  // With Clerk down the list is the stored ids alone, so an account that never pressed is missing
-  // from it. One unlisted account (no row of its own, no group) stands for every such account: a
-  // write that raises model access for it is refused rather than counted short.
-  // Every account the overrides and memberships name joins it too, so a group member who never
-  // pressed is counted and confirmed, not missed.
-  const ids = accounts.map((a) => a.id);
-  const named = before.overrides.flatMap((o) => (o.userId ? [o.userId] : [])).concat([...before.groupOf.keys()]);
-  const rise = riseOf(before, applyWrite(before, w), clerkDown ? [...new Set([...ids, ...named]), UNLISTED] : ids);
-  if (rise.accounts.includes(UNLISTED)) throw new Abort({ ok: false, error: "accounts" });
-  if (rise.accounts.length > 0 && w.confirmed !== rise.accounts.length) {
-    throw new Abort({ ok: false, error: "confirm", preview: await preview(tx, rise, accounts) });
-  }
+  const refusal = await checkRise(tx, { before, after: applyWrite(before, w), accounts, clerkDown, confirmed: w.confirmed, rise: riseOf });
+  if (refusal) throw new Abort<WriteResult>(refusal);
 
   if (w.op === "set") {
     await tx.execute(sql`
@@ -146,8 +80,9 @@ const DEPS: WriteDeps = {
   transaction: (fn) => db.transaction(fn),
   afterCommit: () => {
     clearSwitchSnapshot();
-    revalidatePath("/admin/switches");
-    revalidatePath("/admin/switches/[name]", "page");
+    // Every admin page draws the switch state (the Groups pages carry overrides and their effects), so
+    // the whole admin layout is revalidated, as a group write does.
+    revalidatePath("/admin", "layout");
   },
 };
 
@@ -159,7 +94,7 @@ export async function writeOverride(actorId: string, op: Op, input: WriteInput, 
   try {
     ({ wrote } = await deps.transaction((tx) => writeIn(tx, actorId, checked.write, accounts, clerk === "down", deps.rise)));
   } catch (error) {
-    if (error instanceof Abort) return error.result;
+    if (error instanceof Abort) return error.result as WriteResult;
     console.error(`admin: the override write on ${checked.write.name} failed`);
     return { ok: false, error: "failed" };
   }

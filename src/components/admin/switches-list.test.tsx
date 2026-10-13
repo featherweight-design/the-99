@@ -171,6 +171,7 @@ describe("AdminHead on /admin/switches", () => {
     expect(tabs.map((t) => [t.textContent, t.getAttribute("aria-current")])).toEqual([
       ["Costs", null],
       ["Switches", "page"],
+      ["Groups", null],
     ]);
   });
 });
