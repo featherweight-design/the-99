@@ -742,8 +742,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   **Coverage is computed, not listed**: `src/lib/account/purge.test.ts` reads `schema.ts` and fails when a table
   holding an account column is neither purged nor kept with a reason, and when a child of a purged table has no
   `on delete` the order does not cover. A new per-user table therefore fails CI until the purge handles it.
-  `pnpm probe:purge` reads the DATABASE's own catalog for every account column and proves none names the account
-  afterwards, on a scratch branch.
+  `pnpm probe:purge` searches every text column the DATABASE's catalog lists for the account's id by value and
+  proves none holds it afterwards, on a scratch branch.
 
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`

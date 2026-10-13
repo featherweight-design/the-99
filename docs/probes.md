@@ -1876,10 +1876,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   database. It builds an account with friends (as inviter and as redeemer), a pod it owns with two members, a
   membership of a friend's pod, spare grants, a folder, a deck with cards, a version, a game and a note, a
   collection, preferences, a model call with a row pointing at it, and an admin event about it; purges it; and then
-  counts every column in `information_schema` that names an account, so a table the schema scan missed would still
-  show. It proves no column names the account afterwards, the deck's children went by cascade, the owned pod
+  searches every text column of every table (read from `information_schema`) for the account's id BY VALUE, with
+  no list of account columns, so a table the schema scan missed would still show. It proves no column names the account afterwards, the deck's children went by cascade, the owned pod
   passed to the longest-standing member, a friend's pod, friendship and collection stand, the friend's stamp
-  moved, the account's own stamp row did not come back at commit, and a second purge finds nothing. It WRITES and
+  moved, the account's own stamp row did not come back at commit, and a second purge deletes nothing
+  anywhere (rows, social counts and the stamp all zero). It WRITES and
   DELETES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging,
   production and local-dev are refused by id. Mutation-checked: without `set constraints all immediate` the stamp
   row comes back and two checks fail.

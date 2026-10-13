@@ -2,8 +2,8 @@
 // database: that every row naming the purged account goes, that nobody else's rows do, that a pod the
 // account owned passes to its longest-standing member, that friends' data stamps move, and that the
 // account's own stamp row does not come back at commit. The unit tests pin the coverage from the schema;
-// this reads the DATABASE for the answer: every column in it that names an account is counted, so a table
-// the schema scan missed would still show here.
+// this reads the DATABASE for the answer: every text column of every table is searched for the account's
+// id by value, with no list of account columns, so a table the schema scan missed would still show here.
 //
 // It WRITES and DELETES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch
 // `DATABASE_URL` reports, and never staging, production or local-dev. Its three accounts are made-up ids,
@@ -17,7 +17,6 @@ const run = Date.now().toString(36);
 const P = `probe_purge_p_${run}`; // the account being deleted
 const F = `probe_purge_f_${run}`; // a friend, longest-standing in P's pod
 const G = `probe_purge_g_${run}`; // a friend who joined later
-const ACCOUNT_COLUMNS = ["user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by"];
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -39,11 +38,14 @@ async function main() {
   const spares = await import("../src/lib/social/spares");
   const { purgeAccount } = await import("../src/lib/account/purge");
 
-  // Every (table, column) in the database that names an account, read from the catalog.
+  // Every text column in the database, read from the catalog, and searched for the account's id by VALUE.
+  // No list of account columns is involved, so this is independent of the purge's own coverage test: a
+  // table naming the account under any column name at all shows here.
   const { rows: columns } = await db.execute<{ t: string; c: string }>(sql`
-    select table_name as t, column_name as c from information_schema.columns
-    where table_schema = 'public' and column_name in ${sql.raw(`(${ACCOUNT_COLUMNS.map((c) => `'${c}'`).join(",")})`)}
-    order by table_name, column_name`);
+    select c.table_name as t, c.column_name as c from information_schema.columns c
+    join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
+    where c.table_schema = 'public' and t.table_type = 'BASE TABLE' and c.data_type in ('text', 'character varying')
+    order by c.table_name, c.column_name`);
   const rowsNaming = async (u: string) => {
     const out: Record<string, number> = {};
     for (const { t, c } of columns) {
@@ -138,7 +140,9 @@ async function main() {
     check("P's stamp row did not come back at commit", (await stamp(P)) === null);
     const { rows: kept } = await db.execute<{ n: number }>(sql`select count(*)::int as n from admin_events where actor_id = 'probe_admin'`);
     check("an admin event ABOUT the account went", kept[0].n === 0);
-    check("a second purge finds nothing", Object.values((await purgeAccount(P)).rows).every((n) => n === 0));
+    const again = await purgeAccount(P);
+    check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0
+      && Object.values(again.social).every((n) => n === 0), JSON.stringify(again));
     void open;
   } finally {
     const who = sql`(${P}, ${F}, ${G})`;

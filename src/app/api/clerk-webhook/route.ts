@@ -32,9 +32,12 @@ export async function POST(req: Request) {
   if (typeof userId !== "string" || userId.length === 0) return new Response("No user id", { status: 400 });
   try {
     const report = await purgeAccount(userId);
-    const total = Object.values(report.rows).reduce((a, b) => a + b, 0) + report.social.friendLinks;
-    // Counts only: never the account id in a log line.
-    console.info(`[clerk-webhook] user.deleted purged ${total} rows`);
+    const direct = Object.values(report.rows).reduce((a, b) => a + b, 0);
+    // Counts only, never the account id. `direct` is the PURGE_ORDER deletes alone: rows that went by
+    // cascade (a deck's cards and versions) and the social half are not in it, and are reported apart.
+    console.info(`[clerk-webhook] user.deleted: ${direct} rows deleted directly (cascades not counted); `
+      + `${report.social.friendLinks} friend links; pods left ${report.social.podsLeft}, handed on `
+      + `${report.social.podsHandedOn}, deleted ${report.social.podsDeleted}`);
     return new Response("Purged", { status: 200 });
   } catch (error) {
     console.error("[clerk-webhook] purge failed", error instanceof Error ? error.message : error);
