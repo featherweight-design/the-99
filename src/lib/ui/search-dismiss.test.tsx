@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import { useSearchDismiss } from "./search-dismiss";
 
+// Stands in for a sheet: `useDialogA11y` listens for Escape on `window` and does not read
+// `defaultPrevented`, so only a key that stopped short of it leaves the sheet open.
 function Field({ onOuterEscape }: { onOuterEscape?: () => void }) {
+  useEffect(() => {
+    if (!onOuterEscape) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onOuterEscape();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onOuterEscape]);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const { ref, onEscape } = useSearchDismiss<HTMLDivElement>(query !== "" || open, () => {
@@ -13,7 +21,7 @@ function Field({ onOuterEscape }: { onOuterEscape?: () => void }) {
     setOpen(false);
   });
   return (
-    <div onKeyDown={(e) => !e.defaultPrevented && e.key === "Escape" && onOuterEscape?.()}>
+    <div>
       <div ref={ref}>
         <input
           aria-label="search"

@@ -185,6 +185,20 @@ describe("QuickAddBar — dismissing and clearing", () => {
     expect(field()).toHaveValue("rhy");
   });
 
+  // The same text typed again is a new search, not the one the add came from.
+  it("keeps the same text typed again while the add was in flight", async () => {
+    let land: (r: { ok: true }) => void = () => {};
+    addCardToDeck.mockReturnValueOnce(new Promise((res) => { land = res; }) as never);
+    mount();
+    await search();
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.change(field(), { target: { value: "" } });
+    fireEvent.change(field(), { target: { value: "stu" } });
+    await act(async () => land({ ok: true }));
+    expect(field()).toHaveValue("stu");
+  });
+
   // The row draws the refusal, so the list has to stay up to show it.
   it("keeps the query when the add is refused", async () => {
     addCardToDeck.mockResolvedValueOnce({ ok: false, message: "Nope." } as never);

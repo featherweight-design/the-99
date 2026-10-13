@@ -16,8 +16,9 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
  *
  * Returns the ref for the element that holds the field AND its list (a press inside it is not
  * outside), and the Escape half for the field's own key handler: it answers true when it took the
- * key. With nothing to dismiss it leaves Escape alone, so a sheet or dialog around the field still
- * closes on it.
+ * key, and stops it there: a sheet's own Escape listener sits on `window` and reads no
+ * `defaultPrevented`, so a key that only cleared the field would close the sheet too. With nothing
+ * to dismiss it leaves Escape alone, so the sheet or dialog around the field closes on it.
  */
 export function useSearchDismiss<T extends HTMLElement>(active: boolean, dismiss: () => void) {
   const ref = useRef<T | null>(null);
@@ -41,6 +42,7 @@ export function useSearchDismiss<T extends HTMLElement>(active: boolean, dismiss
   const onEscape = (e: KeyboardEvent<HTMLElement>): boolean => {
     if (e.key !== "Escape" || !active) return false;
     e.preventDefault();
+    e.stopPropagation();
     dismissRef.current();
     return true;
   };

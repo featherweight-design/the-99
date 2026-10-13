@@ -95,6 +95,15 @@ export function QuickAddBar({
   const [query, setQuery] = useState(initialQuery);
   const [ownedOnly, setOwnedOnly] = useState(initialOwnedOnly);
   const listId = useId();
+  // Moves on every edit of the field, so an add that lands clears only the search it was made from:
+  // text typed since, even the same text typed again, is a new search and survives.
+  const editGeneration = useRef(0);
+  const beginAdd = useCallback(() => {
+    const at = editGeneration.current;
+    return () => {
+      if (editGeneration.current === at) setQuery("");
+    };
+  }, []);
   // Escape, or a press outside the bar and its results, clears the query, which closes the list
   // with it (one rule for every pick-from-a-list field, `useSearchDismiss`).
   const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(query.length > 0, () => setQuery(""));
@@ -197,6 +206,7 @@ export function QuickAddBar({
           onFocus={startComboMap}
           onChange={(e) => {
             startComboMap();
+            editGeneration.current += 1;
             setQuery(e.target.value);
           }}
           onKeyDown={handleKeyDown}
@@ -327,9 +337,7 @@ export function QuickAddBar({
                 active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
-                // Only while the field still holds the search the add was made from: a reader who has
-                // typed the next one while the add was in flight keeps it.
-                onAdded={(addedFrom) => setQuery((current) => (current.trim() === addedFrom ? "" : current))}
+                beginAdd={beginAdd}
               />
             ))}
           </ul>
@@ -390,9 +398,10 @@ interface QuickAddRowProps {
   active: boolean;
   onActivate: () => void;
   registerAdd?: (fn: (r: SearchResult) => void) => void;
-  /** The add landed, made from the search `addedFrom`: the bar clears its query for the next one.
-   *  Not on a refusal, which this row reports, so it has to stay on screen to say it. */
-  onAdded: (addedFrom: string) => void;
+  /** Called as the add starts; the function it returns is called once the add lands, and clears the
+   *  bar's query unless the reader has edited it since. Not called on a refusal, which this row
+   *  reports, so it has to stay on screen to say it. */
+  beginAdd: () => () => void;
 }
 
 function QuickAddRow({
@@ -408,7 +417,7 @@ function QuickAddRow({
   active,
   onActivate,
   registerAdd,
-  onAdded,
+  beginAdd,
 }: QuickAddRowProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
@@ -439,11 +448,11 @@ function QuickAddRow({
   // while the optimistic row is showing but deckOracleIds has not caught up.
   const handleAdd = useCallback(() => {
     if (applied) return;
-    const addedFrom = query;
+    const added = beginAdd();
     run(
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
-        if (!outcome || outcome.ok) onAdded(addedFrom);
+        if (!outcome || outcome.ok) added();
         return outcome;
       },
       () =>
@@ -471,7 +480,7 @@ function QuickAddRow({
           imageUri: result.imageUri,
         }),
     );
-  }, [applied, run, deckId, result, addOptimisticCard, onAdded, query]);
+  }, [applied, run, deckId, result, addOptimisticCard, beginAdd]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which
