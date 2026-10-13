@@ -29,10 +29,10 @@ Committed from the R1 handoff with Hugh's 2026-10-11 rulings applied (READINESS-
 | Property | Mobile | Desktop |
 |---|---|---|
 | header | back mono 11 `--fg-faint` · h1 display 22 / 700 · sub mono 11 `--fg-faint` · pad 16 16 12, rule below | pad 20 22 16 |
-| page | one screen tall (Hugh, 2026-10-11): `100dvh` less the tab bar, an open About sheet and the measured top of the page; the document does not scroll, the list does (except with the deck select open, below) | `100dvh` less the measured top; the document never scrolls |
-| grid | rows `auto minmax(0,1fr)`: the checkout and selections column, then the list filling to the tab bar; gap 12, pad 12 16 | `280px minmax(0,1fr)`, one `minmax(0,1fr)` row: the selections and checkout column beside the list; gap 14 24, pad 18 22 |
+| page | no fixed height (Hugh, 2026-10-13): the document scrolls as one, the checkout and the selections scroll away with it | `100dvh` less the measured top; the document never scrolls |
+| grid | rows `auto auto`: the checkout and selections column, then the list; gap 12, pad 12 16 | `280px minmax(0,1fr)`, one `minmax(0,1fr)` row: the selections and checkout column beside the list; gap 14 24, pad 18 22 |
 | checkout | heads the page, above the selections (Hugh, 2026-10-11); in flow, the CartCheckout card as drawn | under the selections, in the same column |
-| list box | the cart's own scroll box, `flex: 1`, filling what the page leaves below the switch and the head line; never under 120, so with the deck select open the page scrolls rather than squeezing it; 36 fade at its foot | same; the switch and the head line stay put above it |
+| list box | not a scroll box: the list is part of the page; the switch, the buy key and the head line are one block pinned `sticky top-0` over `--bg` with a 1px `--border` rule below (pad 10 16, full bleed), so they stay while the cards go by; no foot fade | the cart's own scroll box, `flex: 1`, filling what the page leaves below the switch and the head line; never under 120; 36 fade at its foot; the switch and the head line stay put above it, unpinned |
 
 ## Component: DeckSelect
 

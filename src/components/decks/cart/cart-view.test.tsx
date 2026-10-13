@@ -200,6 +200,32 @@ describe("CartView", () => {
     expect(screen.getByRole("link", { name: copy.empty.back }).getAttribute("href")).toBe("/decks");
   });
 
+  // Hugh, 2026-10-13: on the phone the page scrolls as one and the switch stays pinned; the list's own
+  // scroll box (and the page's fixed height) are desktop's alone.
+  it("scrolls the phone's page as one, pinning the controls, and keeps the list's own box for desktop", () => {
+    const { container } = render(<CartView cart={cart()} provenance={provenance} />);
+    const controls = container.querySelector("[data-cart-controls]") as HTMLElement;
+    expect(controls.className).toContain("sticky");
+    expect(controls.className).toContain("top-0");
+    expect(controls.className).toContain("md:static");
+    // The switch and the heading are the pinned block's members.
+    expect(within(controls).getByRole("group", { name: copy.view.label })).toBeTruthy();
+    expect(within(controls).getByRole("heading", { level: 2 })).toBeTruthy();
+    const box = screen.getByRole("region", { name: copy.list.regionAria });
+    // Desktop keeps what the phone gave up: positive assertions first, so dropping a class outright fails too.
+    for (const c of ["md:overflow-y-auto", "md:flex-1", "md:min-h-[120px]"]) expect(box.className).toContain(c);
+    expect((container.firstElementChild as HTMLElement).className).toContain("md:min-h-[420px]");
+    // `md:h-dvh` before the top is measured, `md:h-[calc(100dvh-var(--cart-top))]` after.
+    expect((container.firstElementChild as HTMLElement).className).toMatch(/md:h-(dvh|\[calc\(100dvh-var\(--cart-top\)\)\])/);
+    for (const c of box.className.split(/\s+/)) {
+      if (/overflow|flex-1|min-h-/.test(c)) expect(c.startsWith("md:"), c).toBe(true);
+    }
+    const page = container.firstElementChild as HTMLElement;
+    for (const c of page.className.split(/\s+/)) {
+      if (/^(min-)?h-/.test(c)) expect(c.startsWith("md:"), c).toBe(true);
+    }
+  });
+
   it("splits a cart too long for one link into named parts (K3)", () => {
     const long = (id: string) => ({
       oracleId: id, name: `${id} ${"x".repeat(13_000)}`, commander: false, owned: 0, heldElsewhere: 0,

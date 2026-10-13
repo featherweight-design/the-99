@@ -20,6 +20,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   it writes a fixture deck and a fixture precon with the same list (`probe-precon-notice.json`) under the account it
   signs in as and deletes both in a `finally`; it refuses staging and production by `neon.branch_id`. Needs
   `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Moving `Link it` back to `self-start` fails it at both widths.
+- `pnpm probe:cart-scroll` walks Shopping for all decks (`/decks/shopping`) at 390 and 1300 (bug batch D item 3,
+  Hugh 2026-10-13). Phone: the document scrolls, the list is not its own scroll box, the switch and heading stay pinned
+  at `top: 0` after a 700px scroll, and at least five cards show under them (about two and a half did in the old box).
+  Desktop: the page fits the screen, the list scrolls in its own box, and the controls are not pinned. Needs
+  `ALL_DECKS_CART_ENABLED=true` on the server and an account whose decks miss at least eight cards. Giving the list box
+  its overflow back at the phone width fails the "not its own scroll box" check.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a
