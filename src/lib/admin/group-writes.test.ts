@@ -15,7 +15,7 @@ vi.mock("../../db", () => ({ db: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("../model/allowance", () => ({ dailyLimitsFor: async (_q: unknown, ids: string[]) => new Map(ids.map((id) => [id, 5])) }));
 
-const { writeGroup } = await import("./group-writes");
+const { moveAccount, writeGroup } = await import("./group-writes");
 
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
@@ -37,6 +37,7 @@ const tx = {
     if (failOn?.test(text)) throw Object.assign(new Error("boom"), failCode ? { code: failCode } : {});
     if (text.startsWith("select id, name, description, daily_allowance from flag_groups")) return { rows: group ? [group] : [] };
     if (text.startsWith("select 1 from flag_groups")) return { rows: nameTaken ? [{}] : [] };
+    if (text.startsWith("select id from flag_groups")) return { rows: group ? [{ id: params[0] }] : [] };
     if (text.includes("json_agg")) return { rows: [{ overrides, members }] };
     return { rows: [] };
   },
@@ -81,7 +82,7 @@ beforeEach(() => {
 const kinds = () =>
   log.map(({ text }) =>
     text.includes("pg_advisory") ? "lock"
-    : text.startsWith("select id, name") ? "group"
+    : text.startsWith("select id, name") || text.startsWith("select id from flag_groups") ? "group"
     : text.includes("json_agg") ? "snapshot"
     : text.startsWith("select 1 from flag_groups") ? "name"
     : text.startsWith("insert into flag_groups") ? "create"
@@ -204,7 +205,77 @@ describe("who may import the group write", () => {
         // A type-only import carries no code, so a component may take the result's shape.
         .filter((f) => new RegExp(`^\\s*(import|export)(?!\\s+type\\b)[^;]*?from\\s+["'][^"']*/${mod}["']`, "m").test(readFileSync(f, "utf8")))
         .map((f) => relative(SRC, f));
-    expect(importers("group-writes")).toEqual([join("app", "admin", "groups", "actions.ts")]);
+    expect(importers("group-writes").sort()).toEqual([join("app", "admin", "accounts", "actions.ts"), join("app", "admin", "groups", "actions.ts")]);
     expect(importers("rise-confirm").sort()).toEqual([join("lib", "admin", "group-writes.ts"), join("lib", "admin", "switch-writes.ts")]);
+  });
+});
+
+describe("moveAccount (admin plan 9b, STATES G7)", () => {
+  it("locks first, takes the target group for update, and records member_added for an account in no group", async () => {
+    expect(await moveAccount("u_hugh", "u_jun", T, null, deps())).toEqual({ ok: true });
+    expect(kinds()).toEqual(["lock", "group", "snapshot", "add", "event"]);
+    expect(log[1].text).toContain("for update");
+    expect(events()).toEqual([["member_added", T, "u_jun"]]);
+    expect(order).toEqual(["begin", "commit", "afterCommit"]);
+  });
+
+  it("records a move between groups as member_removed on the old, then member_added on the new, over one row", async () => {
+    members = [{ userId: "u_theo", groupId: F }];
+    expect(await moveAccount("u_hugh", "u_theo", T, null, deps())).toEqual({ ok: true });
+    expect(kinds()).toEqual(["lock", "group", "snapshot", "add", "event", "event"]);
+    expect(events()).toEqual([
+      ["member_removed", F, "u_theo"],
+      ["member_added", T, "u_theo"],
+    ]);
+    // One row per account: the upsert replaces the row the account had, so it is never in two groups.
+    expect(log.find((l) => l.text.startsWith("insert into flag_group_members"))!.text).toContain("on conflict (user_id) do update");
+  });
+
+  it("moves to no group by deleting the row and recording member_removed alone", async () => {
+    members = [{ userId: "u_theo", groupId: F }];
+    expect(await moveAccount("u_hugh", "u_theo", null, null, deps())).toEqual({ ok: true });
+    expect(kinds()).toEqual(["lock", "snapshot", "remove", "event"]);
+    expect(events()).toEqual([["member_removed", F, "u_theo"]]);
+  });
+
+  it("writes nothing, and clears no memo, for a move to where the account already is", async () => {
+    members = [{ userId: "u_theo", groupId: T }];
+    expect(await moveAccount("u_hugh", "u_theo", T, null, deps())).toEqual({ ok: true });
+    expect(await moveAccount("u_hugh", "u_jun", null, null, deps())).toEqual({ ok: true });
+    expect(kinds()).toEqual(["lock", "group", "snapshot", "lock", "snapshot"]);
+    expect(afterCommit).not.toHaveBeenCalled();
+  });
+
+  it("returns the preview when the move raises model access, and writes once the count is confirmed", async () => {
+    env = { HELP_ME_CHOOSE_ENABLED: "false" };
+    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: T, userId: null, value: "on" }];
+    expect(await moveAccount("u_hugh", "u_theo", T, null, deps())).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["Theo"] } });
+    expect(kinds()).not.toContain("event");
+    expect(afterCommit).not.toHaveBeenCalled();
+    log.length = 0;
+    // A stale count is answered with a fresh preview, not a write.
+    expect(await moveAccount("u_hugh", "u_theo", T, 2, deps())).toMatchObject({ ok: false, error: "confirm" });
+    log.length = 0;
+    expect(await moveAccount("u_hugh", "u_theo", T, 1, deps())).toEqual({ ok: true });
+    expect(events()).toEqual([["member_added", T, "u_theo"]]);
+  });
+
+  it("refuses a group that is gone, an account this environment does not know, and a bad id before any transaction", async () => {
+    group = null;
+    expect(await moveAccount("u_hugh", "u_jun", T, null, deps())).toEqual({ ok: false, error: "group" });
+    expect(kinds()).toEqual(["lock", "group"]);
+    group = { id: T, name: "testers", description: null, daily_allowance: null };
+    expect(await moveAccount("u_hugh", "u_stranger", T, null, deps())).toEqual({ ok: false, error: "account" });
+    expect(kinds()).not.toContain("add");
+    transaction.mockClear();
+    expect(await moveAccount("u_hugh", "u_jun", "nope", null, deps())).toEqual({ ok: false, error: "group" });
+    expect(await moveAccount("u_hugh", "", T, null, deps())).toEqual({ ok: false, error: "account" });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("says nothing changed when the transaction throws", async () => {
+    failOn = /^insert into admin_events/;
+    expect(await moveAccount("u_hugh", "u_jun", T, null, deps())).toEqual({ ok: false, error: "failed" });
+    expect(afterCommit).not.toHaveBeenCalled();
   });
 });

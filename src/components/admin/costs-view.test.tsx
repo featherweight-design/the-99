@@ -431,6 +431,7 @@ describe("AdminHead", () => {
       ["Costs", "/admin", "page"],
       ["Switches", "/admin/switches", null],
       ["Groups", "/admin/groups", null],
+      ["Accounts", "/admin/accounts", null],
     ]);
   });
 });

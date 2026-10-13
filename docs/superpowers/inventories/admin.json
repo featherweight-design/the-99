@@ -431,6 +431,57 @@
           "scrollTo": "[data-testid='group-pending']"
         }
       ]
+    },
+    {
+      "id": "admin-accounts-list",
+      "label": "/admin/accounts: the owner first, then A to Z, with group, credits and this month's spend (A1) (9b)",
+      "view": "src/components/admin/accounts-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "[data-testid='account-rows']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-accounts-no-match",
+      "label": "/admin/accounts: a search nothing matches, `No account matches ‹q›.` (A2) (9b)",
+      "view": "src/components/admin/accounts-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "[data-testid='account-rows']",
+          "settle": 1500
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zzzz"
+        },
+        {
+          "wait": "h1",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "admin-account-page",
+      "label": "/admin/accounts/<id>, reached by pressing a row: head block, tiles, group, switches in three groups, spend by feature (A4) (9b)",
+      "view": "src/components/admin/account-page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/accounts",
+          "wait": "[data-testid='account-rows']",
+          "settle": 1500
+        },
+        {
+          "click": "[data-testid='account-rows'] li a"
+        },
+        {
+          "wait": "[data-testid='account-tiles']",
+          "settle": 1500
+        }
+      ]
     }
   ]
 }

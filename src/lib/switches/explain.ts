@@ -2,6 +2,7 @@ import { visibleEntries } from "../about/visible";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
 import { SWITCHES, switchParent, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
+import { hubTools, tuningHubEnabled } from "../tuning/flag";
 
 /**
  * The admin's reading of the switches (admin PR 8): for each account, each switch's effective value
@@ -44,6 +45,16 @@ export function explainAccounts(base: NodeJS.ProcessEnv, snapshot: SwitchSnapsho
 /** Every account's switches under this deployment's environment. */
 export function explainForAccounts(snapshot: SwitchSnapshot | null, userIds: readonly string[]): Map<string, AccountSwitches> {
   return explainAccounts(process.env, snapshot, userIds);
+}
+
+/**
+ * The deck page's Tuning hub as one account meets it (admin PR 9b, the Accounts page's tile): whether
+ * the Analysis tab draws the hub, and how many of its tools are on, from the account's resolved env and
+ * the deck page's own `tuningHubEnabled` and `hubTools`. Under this deployment's environment.
+ */
+export function hubForAccount(snapshot: SwitchSnapshot | null, userId: string): { drawn: boolean; tools: number } {
+  const env = resolveEnv(process.env, snapshot, userId);
+  return { drawn: tuningHubEnabled(env), tools: hubTools(env).length };
 }
 
 /** Each switch's environment value as set on this deployment (`off` included), by member reads. */

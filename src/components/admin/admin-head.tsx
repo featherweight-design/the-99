@@ -18,6 +18,9 @@ export const ADMIN_TABS = [
   { key: "costs", href: "/admin", title: adminCopy.tabs.costs, sub: adminCopy.costs.sub },
   { key: "switches", href: "/admin/switches", title: adminCopy.tabs.switches, sub: adminCopy.switches.sub },
   { key: "groups", href: "/admin/groups", title: adminCopy.tabs.groups, sub: adminCopy.groups.sub },
+  // No sub here: Accounts' counts the accounts Clerk lists, which the head (in the layout, on every
+  // admin page) does not read. The list page draws it under the tab strip instead.
+  { key: "accounts", href: "/admin/accounts", title: adminCopy.tabs.accounts, sub: null },
 ] as const;
 
 /** A group's name and description, for the head's detail mode on its page. */
@@ -47,6 +50,15 @@ function groupOf(pathname: string, groups: readonly GroupHeadName[]): { title: s
   if (m[1] === "new") return { title: adminCopy.groups.newTitle, sub: null };
   const g = groups.find((x) => x.id === m[1]);
   return g ? { title: g.name, sub: g.description } : null;
+}
+
+/**
+ * Whether a path is one account's page, `/admin/accounts/<clerkId>`. Its name comes from Clerk, which
+ * the head does not read, so on that page the head draws the back link and the tab strip only, and the
+ * page draws the account's own head block (name as the title, email, id, role) under the strip.
+ */
+function isAccountPage(pathname: string): boolean {
+  return /^\/admin\/accounts\/[^/]+\/?$/.test(pathname);
 }
 
 /**
@@ -122,7 +134,15 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
   const detail = switchOf(pathname);
   // A group's page, and the new-group page, title themselves likewise with Groups selected.
   const group = detail ? null : groupOf(pathname, groups);
-  const back = detail ? { href: "/admin/switches", text: adminCopy.switch.back } : group ? { href: "/admin/groups", text: adminCopy.groups.back } : null;
+  const account = !detail && !group && isAccountPage(pathname);
+  const back = detail
+    ? { href: "/admin/switches", text: adminCopy.switch.back }
+    : group
+      ? { href: "/admin/groups", text: adminCopy.groups.back }
+      : account
+        ? { href: "/admin/accounts", text: adminCopy.accounts.back }
+        : null;
+  const sub = detail ? switchCopy[detail].description : group ? group.sub : account ? null : current.sub;
   const ref = useRef<HTMLElement>(null);
   const tabsRef = useRef<HTMLElement>(null);
   usePinnedHead(ref, tabsRef);
@@ -155,12 +175,12 @@ export function AdminHead({ env, groups = [] }: { env: AdminEnv; groups?: readon
         </div>
       ) : group ? (
         <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[28px]">{group.title}</h1>
-      ) : (
+      ) : account ? null : (
         <h1 className="m-0 font-display text-[23px] font-normal leading-[1.2] text-[color:var(--fg)] md:text-[28px]">{current.title}</h1>
       )}
-      {(detail || !group || group.sub) && (
+      {sub && (
         <p className="m-0 max-w-[720px] text-pretty text-[13px] leading-[1.6] text-[color:var(--fg-body)] [overflow-wrap:anywhere] md:text-[13.5px]">
-          {detail ? switchCopy[detail].description : group ? group.sub : current.sub}
+          {sub}
         </p>
       )}
       <nav ref={tabsRef} aria-label={adminCopy.tabsLabel} className="mt-[4px] flex gap-[15px] overflow-hidden md:gap-[24px]">

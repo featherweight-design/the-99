@@ -1984,9 +1984,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   save that changes nothing records nothing; moving an account from another group records `member_removed` on that
   group and then `member_added` here, and leaves it one membership row; a removal records `member_removed` and
   deletes the row; and adding an account to a group whose override turns a model feature on returns a confirm and
-  writes nothing until the confirmed count comes back. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
-  branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id. It writes as made-up
-  accounts and removes every row in a `finally`.
+  writes nothing until the confirmed count comes back. It also proves the Accounts page's move (admin plan 9b,
+  `moveAccount`): a move to no group deletes the row and records `member_removed`; a move into a group writes one row
+  and records `member_added`; a move into a group whose override turns a model feature on returns a confirm and
+  writes nothing, and the confirmed count then records `member_removed` on the old group and `member_added` on the
+  new, over one membership row; and a move to where the account already is records nothing. It WRITES, so it fails
+  closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and staging, production and local-dev are
+  refused by id. It writes as made-up accounts and removes every row in a `finally`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:
   with `MODEL_DAILY_ALLOWANCE` unset, a player in no group keeps five and the owner keeps ten, and a group with no
   allowance changes nothing; a member takes their group's allowance, through the same read a reservation makes and
