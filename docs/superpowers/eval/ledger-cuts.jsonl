@@ -21,3 +21,5 @@
 {"at":"2026-10-10T17:54:46.323Z","runId":"2026-10-10T17-50-41-290Z-cuts-plan-new/a2","source":"batch","usd":0.059321,"requests":1,"settles":"2026-10-10T17-50-41-290Z-cuts-plan-new/a2","note":"cuts-plan eval, prompt v2 with plan"}
 {"at":"2026-10-10T17:55:16.764Z","runId":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1","source":"pending","usd":0.04,"requests":1,"pending":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1"}
 {"at":"2026-10-10T17:57:59.714Z","runId":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1","source":"batch","usd":0.098301,"requests":1,"settles":"2026-10-10T17-55-16-763Z-cuts-plan-new-mm16k/a1","note":"cuts-plan eval, prompt v2 with plan"}
+{"at":"2026-10-13T03:01:13.427Z","runId":"2026-10-13T03-01-13-426Z-replay-a/a1","source":"pending","usd":0.1128,"requests":2,"pending":"2026-10-13T03-01-13-426Z-replay-a/a1"}
+{"at":"2026-10-13T03:02:35.209Z","runId":"2026-10-13T03-01-13-426Z-replay-a/a1","source":"batch","usd":0.028290000000000003,"requests":2,"settles":"2026-10-13T03-01-13-426Z-replay-a/a1","note":"cuts-plan eval, prompt v4 with plan"}

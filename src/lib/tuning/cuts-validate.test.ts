@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { deckCutsCopy } from "../copy/deck-cuts";
 
 import { cutFacts } from "./cuts";
 import { profile, row, support, deck } from "./cuts-fixture";
@@ -67,7 +68,7 @@ describe("validateCuts", () => {
     it("inclusion pct must equal the card's", () => {
       expect(citeHolds({ kind: "inclusion", pct: 41 }, card("ramp0"), pack)).toBe(true);
       expect(citeHolds({ kind: "inclusion", pct: 40 }, card("ramp0"), pack)).toBe(false);
-      expect(run([c("ramp0", [{ kind: "inclusion", pct: 40 }])]).dropped[0]).toMatchObject({ rule: "citeMismatch", cite: "inclusion" });
+      expect(run([c("ramp0", [{ kind: "inclusion", pct: 40 }])]).report.softened?.[0]).toMatchObject({ rule: "citeMismatch", cite: "inclusion" });
     });
 
     it("offList only for an off-list card", () => {
@@ -105,16 +106,39 @@ describe("validateCuts", () => {
       expect(citeHolds({ kind: "intent" }, card("bear1"), mk(null))).toBe(false);
     });
 
-    it("one false cite drops the whole cut, never repaired", () => {
-      const r = run([c("bear1", [OFF, { kind: "inclusion", pct: 5 }])]);
-      expect(r.kept).toEqual([]);
-      expect(r.dropped[0].rule).toBe("citeMismatch");
+    it("one false cite removes that cite and the model's words, and keeps the cut with the cites that held", () => {
+      const r = run([c("bear1", [OFF, { kind: "inclusion", pct: 5 }], "Nobody plays it.")]);
+      expect(r.dropped).toEqual([]);
+      expect(r.kept).toHaveLength(1);
+      expect(r.kept[0].cites).toEqual([OFF]);
+      expect(r.kept[0].reason).toBe(deckCutsCopy.unchecked);
+      expect(r.report.softened).toEqual([{ position: 0, name: r.kept[0].name, rule: "citeMismatch", cite: "inclusion" }]);
+    });
+
+    it("a cut with no cite that held shows the card's own counts, never the claim", () => {
+      const r = run([c("bear1", [{ kind: "inclusion", pct: 5 }])]);
+      expect(r.kept).toHaveLength(1);
+      expect(r.kept[0].cites).toContainEqual({ kind: "cost", mv: card("bear1").mv });
+      expect(r.kept[0].cites.every((x) => citeHolds(x, card("bear1"), pack))).toBe(true);
+      expect(r.kept[0].cites).not.toContainEqual({ kind: "inclusion", pct: 5 });
+    });
+
+    it("a cut that was not softened carries no softened entry", () => {
+      expect(run([c("bear1", [OFF])]).report.softened).toBeUndefined();
+    });
+
+    it("a card that is not a valid cut is still dropped whatever its cites say", () => {
+      expect(run([c("Nope", [OFF])]).dropped[0].rule).toBe("cardExists");
+      expect(run([c("nobody", [OFF])]).dropped[0].rule).toBe("notInDeck");
+      expect(run([c("ramp1", [OFF])]).dropped[0].rule).toBe("keyCard");
     });
   });
 
-  it("drops a reason that names a bracket or promises a result", () => {
-    expect(run([c("bear1", [OFF], "Too strong for a bracket 2 deck.")]).dropped[0].rule).toBe("noBracketClaim");
-    expect(run([c("bear1", [OFF], "Cutting it will make the deck stronger.")]).dropped[0].rule).toBe("noResultClaim");
+  it("replaces a reason that names a bracket or promises a result, and keeps the cut and its cites", () => {
+    const a = run([c("bear1", [OFF], "Too strong for a bracket 2 deck.")]);
+    expect([a.dropped, a.kept[0].reason, a.kept[0].cites, a.report.softened?.[0].rule]).toEqual([[], deckCutsCopy.unchecked, [OFF], "noBracketClaim"]);
+    const b = run([c("bear1", [OFF], "Cutting it will make the deck stronger.")]);
+    expect([b.dropped, b.kept[0].reason, b.report.softened?.[0].rule]).toEqual([[], deckCutsCopy.unchecked, "noResultClaim"]);
   });
 });
 
