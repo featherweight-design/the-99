@@ -22,9 +22,11 @@ export function NearViewportArt({ src, className, style, margin }: { src: string
 /**
  * Every crop a layer has asked for in this page's life. A deferred layer whose crop is here draws it
  * at once rather than waiting on the observer again, so a list restored by Back, or re-sorted under
- * the reader, never blanks art it has already drawn.
+ * the reader, never blanks art it has already drawn. Held under a registered symbol so the test setup
+ * can empty it between tests without importing this module (vitest.setup.ts).
  */
-const askedFor = new Set<string>();
+const ASKED_FOR = Symbol.for("the99.artAskedFor");
+const askedFor: Set<string> = ((globalThis as Record<symbol, Set<string>>)[ASKED_FOR] ??= new Set());
 
 /**
  * An art-wash layer whose crop fades in when it lands (`armArtArrival`). `defer` waits for the page

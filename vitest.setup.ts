@@ -19,6 +19,13 @@ afterEach(() => {
   if (typeof localStorage !== "undefined") localStorage.clear();
 });
 
+// The art layers remember every crop they have asked for, so a list restored by Back never blanks one
+// (src/components/ui/art-wash-near.tsx). Within a test file that memory would let one test's crop
+// skip the next test's viewport gate, so it is emptied here, by its registered symbol.
+afterEach(() => {
+  (globalThis as Record<symbol, Set<string> | undefined>)[Symbol.for("the99.artAskedFor")]?.clear();
+});
+
 // No test may see a live credential from the shell that started it: a failing assertion over an
 // object built from `process.env` prints the whole object (scripts/lib/redact-env.mjs).
 // The names it replaced are kept as the proof it ran (`redact-env.test.mts`): assigned from THIS
