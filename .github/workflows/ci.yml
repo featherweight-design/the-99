@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # `labeled` so adding `ci:full` re-runs with the full suite forced.
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
 
@@ -18,6 +20,36 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Which tests this PR would need. SHADOW: it prints the decision to the job summary and gates
+  # nothing but its own success; the full suite below still runs. `vitest related` alone skips the
+  # guards that READ the tree instead of importing it (measured: 23 of the last 25 merged PRs), so
+  # the selection is related UNION every fs-reading test, or the full suite when a global file moves.
+  # A failure here fails `checks`, so a broken selector can never read as a pass.
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The merge base has to be reachable.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Select tests
+        env:
+          CI_BASE_REF: origin/${{ github.base_ref || 'main' }}
+          CI_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') && '1' || '' }}
+        run: node scripts/ci-select.mjs
+
   # Static checks and the build. Tests run in their own sharded job so the slowest step of the old
   # single job (about 80% of its wall clock) no longer serialises behind everything else.
   static:
@@ -117,9 +149,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [static, test]
+    needs: [select, static, test]
     if: ${{ always() }}
     steps:
       - name: Every job succeeded
         run: |
-          [ "${{ needs.static.result }}" = success ] && [ "${{ needs.test.result }}" = success ]
+          [ "${{ needs.select.result }}" = success ] && [ "${{ needs.static.result }}" = success ] && [ "${{ needs.test.result }}" = success ]
