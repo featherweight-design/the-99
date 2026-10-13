@@ -57,6 +57,11 @@ export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null>
   return snapshot;
 }
 
+/** Whether a read now would be answered from the memo, for the proxy's `[perf]` line. */
+export function switchSnapshotFresh(now = Date.now()): boolean {
+  return memo !== null && now - memo.at < SNAPSHOT_TTL_MS;
+}
+
 /** Called by an admin write, after its transaction commits, so its own instance reads it at once. */
 export function clearSwitchSnapshot(): void {
   memo = null;

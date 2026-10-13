@@ -18,7 +18,7 @@ import { howItWorksEnabled } from "./lib/about/how-it-works-flag";
 import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutSeen } from "./lib/about/read";
 import { isFirstRun, unseenEntries, visibleEntries, type SeenState } from "./lib/about/visible";
-import { resolveSwitchEnv } from "./lib/switches/snapshot";
+import { resolveSwitchEnv, switchSnapshotFresh } from "./lib/switches/snapshot";
 import { SWITCHES_HEADER } from "./lib/switches/request";
 import { switchBits } from "./lib/switches/resolve";
 
@@ -48,10 +48,19 @@ export default clerkMiddleware(async (auth, req) => {
   // most likely arrival in the app ungated, which is the one place the About
   // page most needs to appear. So: protect what is not public, read the session
   // on what is, and let the gate below judge both.
+  // `[perf] proxy` with PERF_TIMING=1: what the proxy costs before any page runs, logged under the
+  // request's own id. `memo` says whether the switch overrides came from the per-instance memo.
+  const timing = process.env.PERF_TIMING === "1";
+  const t0 = timing ? performance.now() : 0;
   const { userId } = isPublic(req) ? await auth() : await auth.protect();
+  const t1 = timing ? performance.now() : 0;
+  const memoHit = timing && userId ? switchSnapshotFresh() : false;
   // The reader's own switches (brief, locked rule 9): an account an override switches on sees that
   // feature's entry and its sheet, and the cookie below is keyed on what THEY see.
   const env = userId ? await resolveSwitchEnv(userId) : process.env;
+  if (timing && userId) {
+    console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t1)} memo=${memoHit ? "hit" : "miss"}`);
+  }
   // Both sheet headers are this proxy's to write, so neither survives from the client on any request.
   // The shell trusts them: `SHEET_ON_HEADER` is its whole answer to whether the sheet is on.
   const headers = new Headers(req.headers);
