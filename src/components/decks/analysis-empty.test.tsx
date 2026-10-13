@@ -4,6 +4,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("../../app/cards/tag-actions", () => ({
+  searchTagCards: async () => [{ oracleId: "c0ffee00-0000-4000-8000-000000000001", name: "Sol Ring", typeLine: "Artifact", imageUri: null, commanderLegal: true, flavorName: null }],
+}));
+
 import { AnalysisEmpty } from "./analysis-empty";
 
 const NOTE = "Reads the bracket only. The overview waits until every card is legal in this deck.";
@@ -84,6 +88,21 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     render(<AnalysisEmpty phase="idle" onRequest={() => {}} description="Same." onSaveDescription={onSaveDescription} />);
     fireEvent.blur(screen.getByLabelText("Describe your deck"));
     expect(onSaveDescription).not.toHaveBeenCalled();
+  });
+
+  // Card tags: the draft holds `[[id|Name]]` while the stored description holds the name as plain words, so "unchanged"
+  // compares what is drawn. Reading the raw draft would save the same words again on every blur and Analyze press.
+  it("saves nothing, and reads at once, when a tagged draft draws the stored description", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    const onRequest = vi.fn();
+    render(<AnalysisEmpty phase="idle" onRequest={onRequest} description="Rocks: Sol Ring" onSaveDescription={onSaveDescription} />);
+    const box = screen.getByLabelText("Describe your deck");
+    fireEvent.change(box, { target: { value: "Rocks: [[Sol" } });
+    fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
+    fireEvent.blur(box);
+    fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
+    expect(onSaveDescription).not.toHaveBeenCalled();
+    expect(onRequest).toHaveBeenCalledOnce();
   });
 
   // Pre-open review: a refused or thrown save must never read, and must not leave the field

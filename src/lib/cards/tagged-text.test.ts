@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const names = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][] }));
 const legal = vi.hoisted(() => ({ ids: new Set<string>() }));
 vi.mock("../decks/notes-store", () => ({
-  currentLegalNames: async (ids: string[]) => new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))),
+  currentLegalNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))); },
   currentNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id))); } }));
 
 const { boxRawMax, resolveBoxText, resolveTaggedText } = await import("./tagged-text");

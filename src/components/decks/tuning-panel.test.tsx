@@ -1455,6 +1455,24 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
   });
 
+  // Card tags: the draft is a body (`[[id|Name]]`) and the server stores the name, so the optimistic value is the
+  // DRAWN text. Normalizing the raw body would never match the plain value the revalidation brings back.
+  it("releases a tagged draft's optimistic value when the revalidation brings its plain name", async () => {
+    const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
+    let utils!: ReturnType<typeof render>;
+    const panel = (facts: typeof noDescription) => (
+      <TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />
+    );
+    await act(async () => { utils = render(panel(noDescription)); });
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save" })); });
+    await act(async () => { utils.rerender(panel({ ...noDescription, intent: "Rocks: Sol Ring" })); });
+    await act(async () => { utils.rerender(panel(noDescription)); });
+    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+  });
+
   describe("the two lists", () => {
     const line = (over: Partial<LineItem>): LineItem => ({
       side: "add", id: "l1", cardOracleId: "a", cardName: "Three Visits", cardTypeLine: "Sorcery", cardImageUri: null,
