@@ -114,7 +114,7 @@ async function main() {
     await logGame(solo, USER, result);
   }
 
-  const stats = await loadDeckStats({ userId: USER });
+  const stats = await loadDeckStats({ env: process.env, userId: USER });
   check("both of this player's decks are answered for", stats.size, 2);
   check("another player's deck is not", stats.has(foreign), false);
 
@@ -142,23 +142,23 @@ async function main() {
 
   // The shared-reference trap: two gameless decks must not hand back one object.
   two.record.wins += 1;
-  const reread = await loadDeckStats({ userId: USER, deckIds: [pair] });
+  const reread = await loadDeckStats({ env: process.env, userId: USER, deckIds: [pair] });
   check("records are not shared between decks", reread.get(pair)!.record.wins, 0);
 
-  check("loadOneDeckStats narrows to one deck", (await loadOneDeckStats(solo, USER))?.deckId, solo);
+  check("loadOneDeckStats narrows to one deck", (await loadOneDeckStats(solo, USER, process.env))?.deckId, solo);
   check(
     "loadOneDeckStats refuses another player's deck",
-    await loadOneDeckStats(foreign, USER),
+    await loadOneDeckStats(foreign, USER, process.env),
     null,
   );
   check(
     "an unowned deck id yields no entry",
-    (await loadDeckStats({ userId: USER, deckIds: [foreign] })).size,
+    (await loadDeckStats({ env: process.env, userId: USER, deckIds: [foreign] })).size,
     0,
   );
   check(
     "an empty deckIds list asks for nothing",
-    (await loadDeckStats({ userId: USER, deckIds: [] })).size,
+    (await loadDeckStats({ env: process.env, userId: USER, deckIds: [] })).size,
     0,
   );
 

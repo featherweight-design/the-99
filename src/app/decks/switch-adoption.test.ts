@@ -225,12 +225,14 @@ const CLAIM_PENDING = [
  * as a positional argument (`at`, which must be present). `listDecksWithStats` is a reader by way of its
  * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
  * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).
+ * `loadShoppingRollup` hands its third argument to `loadDeckBuyRows` the same way (round 2).
  */
 const CLAIM_ENV = {
   loadAvailability: { opts: 1 },
   loadDeckBuyRows: { at: 3 },
   loadCart: { at: 1 },
   listDecksWithStats: { opts: 2 },
+  loadShoppingRollup: { at: 2 },
 } as const satisfies Record<string, { opts: number } | { at: number }>;
 const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
 type ClaimReader = (typeof CLAIM_READERS)[number];
@@ -311,9 +313,11 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
       "listDecksWithStats(u, \"name\");",
       "listDecksWithStats(u, \"name\", { includeProxyStats: true });",
       "listDecksWithStats(u, \"name\", { env });",
+      "loadShoppingRollup(u, ids);",
+      "loadShoppingRollup(u, undefined, env);",
     ].join("\n");
     expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
-      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true],
+      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true],
     );
   });
 
