@@ -37,7 +37,7 @@ vi.mock("../../lib/decks/fill", async (importActual) => ({
   planFill: m.planFill,
 }));
 
-import { buildFillPlan } from "./actions";
+import { buildFillPlan } from "../../lib/decks/fill-plan";
 
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["G"], manaCost: "{G}" }];
 const skeleton = (of: string) => ({ roleTargets: { of, targets: {} }, composition: null, staples: [] });

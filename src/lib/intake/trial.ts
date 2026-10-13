@@ -1,4 +1,4 @@
-import { buildFillPlan } from "../../app/decks/actions";
+import { buildFillPlan } from "../decks/fill-plan";
 import { placedCardsOf } from "../decks/costs-of";
 import { loadAvailability } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";

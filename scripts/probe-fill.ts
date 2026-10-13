@@ -58,7 +58,7 @@ import { readFileSync } from "node:fs";
  * `synergyRank` — and the comment explaining the argument contains that word, so the check was
  * satisfied by its own prose and would have passed with the argument deleted.
  */
-const BUILD_FILL_PLAN_SRC = readFileSync("src/app/decks/actions.ts", "utf8")
+const BUILD_FILL_PLAN_SRC = readFileSync("src/lib/decks/fill-plan.ts", "utf8")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/^\s*\/\/.*$/gm, "");
 

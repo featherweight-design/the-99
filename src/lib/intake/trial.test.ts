@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Only the WIRING is under test: which placed cards `trialFill` hands the plan. The plan, the
 // prices and the claims are stubbed flat.
 const planOptions: unknown[] = [];
-vi.mock("../../app/decks/actions", () => ({
+vi.mock("../decks/fill-plan", () => ({
   buildFillPlan: vi.fn(async (_u: unknown, _c: unknown, _x: unknown, options: unknown) => {
     planOptions.push(options);
     return { rows: [] };
