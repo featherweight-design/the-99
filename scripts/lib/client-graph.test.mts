@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { chainTo, clientGraph, directiveOf } from "./client-graph.mjs";
+import { chainTo, clientGraph, directiveOf, valueImports } from "./client-graph.mjs";
 
 // Copy modules that belong to the deck page's tools, and must stay out of the client bundle of the
 // routes that only list or summarise decks. Each is a file a one-line import can drag in whole.
@@ -27,9 +27,10 @@ const PANEL_IMPORTERS = new Set([
   "src/lib/tuning/presentation.ts",
 ]);
 
+// A value import of `target`, found by the same AST walk the graph follows (so a side-effect import
+// counts, and a type-only import or a mention in a comment does not).
 function importsCopy(file: string, target: string): boolean {
-  const name = target.replace(/^src\/lib\//, "").replace(/\.ts$/, "");
-  return new RegExp(`from\\s+["'][^"']*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`).test(fs.readFileSync(file, "utf8"));
+  return valueImports(file, fs.readFileSync(file, "utf8")).includes(target.replace(/\.ts$/, "") + ".ts");
 }
 
 describe("client graph helpers", () => {
@@ -37,6 +38,16 @@ describe("client graph helpers", () => {
     expect(directiveOf(`// note\n"use client";\nexport {}`)).toBe("client");
     expect(directiveOf(`"use server"\nexport {}`)).toBe("server");
     expect(directiveOf(`import "x";\n"use client";`)).toBeNull();
+  });
+
+  it("valueImports follows value and side-effect imports and skips type-only ones and comments", () => {
+    const src = [
+      `// import { x } from "../copy/deck-tuning";`,
+      `import "../copy/deck-tuning";`,
+      `import type { T } from "../copy/tuning-hub";`,
+      `import { type U } from "../copy/deck-tuning-games";`,
+    ].join("\n");
+    expect(valueImports("src/lib/cards/a.ts", src)).toEqual(["src/lib/copy/deck-tuning.ts"]);
   });
 
   it("chainTo lists the route's client root first", () => {
@@ -59,6 +70,7 @@ describe("the startup graph keeps the deck page's copy on the deck page", () => 
   it("on the deck page, deck-tuning.ts is imported by the Tuning panels and their parts, and no other surface", { timeout: 30_000 }, () => {
     const { files, via } = clientGraph([LAYOUT, "src/app/decks/[id]/page.tsx"]);
     const found = [...files].filter((f) => importsCopy(f, "src/lib/copy/deck-tuning.ts"));
+    expect(found.length, "the deck page reaches deck-tuning.ts through its panels, or this guard walks nothing").toBeGreaterThan(0);
     const strays = found.filter((f) => !PANEL_IMPORTERS.has(f)).map((f) => chainTo(f, via).join(" > "));
     expect(strays, "import the slice (deck-tuning-games.ts) instead of deck-tuning.ts").toEqual([]);
   });
