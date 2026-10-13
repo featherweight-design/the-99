@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  listCacheProblems, loaderFiles, schemaTables, tablesRead, triggeredTables, unrecordedCatches,
+  listCacheProblems, loaderFiles, schemaTables, socialKeyProblems, tablesRead, triggeredTables, unrecordedCatches,
 } from "./list-cache-tables.mjs";
 
 const create = (table: string, column: string, deferred = true) =>
@@ -125,3 +125,71 @@ describe("the shipped tree", () => {
     expect(unrecordedCatches()).toEqual([]);
   });
 });
+
+describe("socialKeyProblems", () => {
+  const page = "src/app/decks/shopping/page.tsx";
+  const reach = (files: string[]) => () => [page, ...files];
+
+  it("fails a cached page that reaches src/lib/social without friendGeneration in its key", () => {
+    const problems = socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => "cachePageForUser(userId, 'cart', [], load)");
+    expect(problems).toEqual([expect.stringContaining(`FRIEND KEY ${page} reaches src/lib/social/spares.ts`)]);
+  });
+
+  it("passes it once the key carries friendGeneration", () => {
+    const src = "cachePageForUser(userId, 'cart', [await friendGeneration(userId)], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
+  });
+
+  it("fails a friendGeneration that is not in the key: a comment, an unused call, or inside the loader", () => {
+    for (const src of [
+      "// friendGeneration(userId)\ncachePageForUser(userId, 'cart', [], load)",
+      "const g = await friendGeneration(userId);\ncachePageForUser(userId, 'cart', [], load)",
+      "cachePageForUser(userId, 'cart', [], async () => ({ value: await friendGeneration(userId) }))",
+      "cachePageForUser(userId, 'cart', [\"friendGeneration(\"], load)",
+      "cachePageForUser(userId, 'cart', [`friendGeneration(`], load)",
+    ]) {
+      expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+    }
+  });
+
+  it("fails an unawaited generation, which keys the string of a Promise", () => {
+    const src = "cachePageForUser(userId, 'cart', [`f:${friendGeneration(userId)}`], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+  });
+
+  it("fails a generation taken for another reader than the cache call's", () => {
+    const src = "cachePageForUser(userId, 'cart', [await friendGeneration(otherId)], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+  });
+
+  it("fails a page where one cache call carries it and another does not", () => {
+    const src = "cachePageForUser(userId, 'a', [await friendGeneration(userId)], load)\ncachePageForUser(userId, 'b', [], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+  });
+
+  it("fails a generation that is not a bare key element: interpolated, or folded into an expression", () => {
+    for (const key of ["[`f:${await friendGeneration(userId)}`]", "[(await friendGeneration(userId)) && 'constant']", "[await friendGeneration(userId) && 'c']"]) {
+      const src = `cachePageForUser(userId, 'cart', ${key}, load)`;
+      expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+    }
+  });
+
+  it("passes a bare element beside other key parts", () => {
+    const src = "cachePageForUser(userId, 'cart', [sort, await friendGeneration(userId)], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
+  });
+
+  it("reads the key past a string holding a comma or a paren", () => {
+    const src = "cachePageForUser(userId, 'a,(b', [await friendGeneration(userId)], load)";
+    expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
+  });
+
+  it("holds no page that reaches no social module", () => {
+    expect(socialKeyProblems([page], reach(["src/lib/decks/cart.ts"]), () => "")).toEqual([]);
+  });
+
+  it("holds the shipped tree's cached pages", () => {
+    expect(socialKeyProblems()).toEqual([]);
+  });
+});
+

@@ -9,11 +9,11 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 
 /** Drizzle bindings for the social tables. A new table joins both lists in the PR that adds it. */
-export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites", "pods", "podMembers"];
+export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites", "pods", "podMembers", "podSpareShares"];
 /** The tables' SQL names. `pods` is matched only where SQL would name a table, never as a word in copy. */
 const RAW = [
   // Case-insensitive: Postgres folds an unquoted identifier, so `FROM FRIEND_LINKS` names the same table.
-  /\b(?:social_profiles|friend_links|friend_invites|pod_members)\b/i,
+  /\b(?:social_profiles|friend_links|friend_invites|pod_members|pod_spare_shares)\b/i,
   /\b(?:from|join|into|update|table)\s+"?pods\b"?/i,
 ];
 

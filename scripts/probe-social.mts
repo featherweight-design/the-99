@@ -145,10 +145,107 @@ async function main() {
     const errors = pairs.filter((p) => p.status === "rejected").map((p) => String((p as PromiseRejectedResult).reason));
     check("concurrent befriend and unfriend in both orders commit without an error", errors.length === 0, errors.join("; "));
     check("and the befriends really ran", befriended === 6, `${befriended}`);
+
+    // ── Spares (PR 2): per pod, view-only, a copy only in a draft is not spare (Q3, Q12).
+    const spares = await import("../src/lib/social/spares");
+    const { rows: picks } = await db.execute<{ oracle_id: string }>(sql`
+      select oracle_id from cards where type_line not like 'Basic%' and type_line like '%Creature%' order by oracle_id limit 3`);
+    const [X, Y, CMD] = picks.map((r) => r.oracle_id);
+    // A and B friends again; A's pod with B in it.
+    if (!(await access.listFriends(A)).some((f) => f.publicId === b.publicId)) {
+      const t = await friends.createInvite(A);
+      if (!t.ok) throw new Error("createInvite refused");
+      await friends.redeemInvite(B, t.token);
+    }
+    const night = await pods.createPod(A, "Game night");
+    if (!night) throw new Error("createPod refused");
+    await pods.addMember(A, night.id, b.publicId);
+    // B owns 3 of X and 1 of Y; a draft of B's asks 1 of X and 1 of Y.
+    await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${B}, ${X}, 3, 'prb'), (${B}, ${Y}, 1, 'prb')`);
+    const { rows: deckRows } = await db.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id) values (${B}, 'probe draft', ${CMD}) returning id`);
+    await db.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckRows[0].id}, ${X}, 1), (${deckRows[0].id}, ${Y}, 1)`);
+
+    check("no grant, no spares", (await spares.loadFriendSpares(A, [X, Y])).length === 0);
+    const solo = await pods.createPod(B, "Just me");
+    if (!solo) throw new Error("createPod refused");
+    check("B cannot share with a pod B is not in", (await spares.shareSparesWith(B, (await pods.createPod(C, "Cleo's"))?.id, true)) === false);
+    await spares.shareSparesWith(B, solo.id, true);
+    check("a grant to a pod the viewer is not in shows nothing", (await spares.loadFriendSpares(A, [X, Y])).length === 0);
+    const genBefore = await spares.friendGeneration(A);
+    check("B shares spares with the game-night pod", await spares.shareSparesWith(B, night.id, true));
+    const seenSpares = await spares.loadFriendSpares(A, [X, Y]);
+    check("A sees B's spare X: owned 3, a draft asks 1, so 2", seenSpares.length === 1 && seenSpares[0].oracleId === X && seenSpares[0].spare === 2
+      && seenSpares[0].friend.publicId === b.publicId, JSON.stringify(seenSpares));
+    check("a copy only a draft wants is not spare (Y)", seenSpares.every((r) => r.oracleId !== Y));
+    check("the row carries no owned count, claim or deck", Object.keys(seenSpares[0] ?? {}).sort().join() === "friend,oracleId,spare");
+    check("C, the stranger, sees nothing", (await spares.loadFriendSpares(C, [X, Y])).length === 0);
+    check("B sees no spares of their own through the friend read", (await spares.loadFriendSpares(B, [X, Y])).length === 0);
+    const genShared = await spares.friendGeneration(A);
+    check("friendGeneration moves when a friend starts sharing", genShared !== genBefore);
+    await db.execute(sql`update collection_items set quantity = 4 where user_id = ${B} and oracle_id = ${X}`);
+    const genMoved = await spares.friendGeneration(A);
+    check("and when that friend's collection moves", genMoved !== genShared);
+    check("a malformed card id asks for nothing", (await spares.loadFriendSpares(A, ["nope"])).length === 0);
+    check("and it holds still when nothing moved", (await spares.friendGeneration(A)) === genMoved);
+
+    await friends.setDisplayName(B, "Bobby");
+    check("and when that friend renames", (await spares.friendGeneration(A)) !== genMoved);
+
+    // Every way out of a pod drops the grant ROW, counted in the table (the read alone would hide a missed
+    // cleanup, because it joins membership too).
+    const grantRows = async () => Number((await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from pod_spare_shares where user_id = ${B} and pod_id = ${night.id}`)).rows[0].n);
+    check("B leaves the game-night pod", (await pods.leavePod(B, night.id)) === "left");
+    check("leaving dropped the grant row", (await grantRows()) === 0);
+    await pods.addMember(A, night.id, b.publicId);
+    check("rejoining does not bring the grant back", (await spares.loadFriendSpares(A, [X])).length === 0);
+    await spares.shareSparesWith(B, night.id, true);
+    check("B shares again", (await spares.loadFriendSpares(A, [X])).length === 1);
+    check("A removes B", await pods.removeMember(A, night.id, b.publicId));
+    check("removal dropped the grant row", (await grantRows()) === 0);
+    // A share racing a removal, in the order that could strand a grant: the removal deletes the membership
+    // and its grants, then holds its transaction open while B shares. The share must wait on the membership
+    // row and find nothing once the removal commits.
+    await pods.addMember(A, night.id, b.publicId);
+    let release = () => {};
+    const held = new Promise<void>((r) => { release = r; });
+    let removed = () => {};
+    const removing = new Promise<void>((r) => { removed = r; });
+    // The production lock order: the pod row FOR UPDATE first, as removeMember, leavePod and unfriend take it.
+    const removal = db.transaction(async (tx) => {
+      await tx.execute(sql`select 1 from pods where id = ${night.id} for update`);
+      await tx.execute(sql`delete from pod_members where pod_id = ${night.id} and user_id = ${B}`);
+      await tx.execute(sql`delete from pod_spare_shares where pod_id = ${night.id} and user_id = ${B}`);
+      removed();
+      await held;
+    });
+    await removing;
+    const sharing = spares.shareSparesWith(B, night.id, true);
+    await new Promise((r) => setTimeout(r, 1500));
+    release();
+    await removal;
+    check("a share racing a removal is refused", (await sharing) === false);
+    check("and leaves no grant row behind", (await grantRows()) === 0);
+    // A stale grant row, as a missed cleanup would leave it, still shows nothing: the read joins membership.
+    await db.execute(sql`insert into pod_spare_shares (user_id, pod_id) values (${B}, ${night.id})`);
+    check("a grant to a pod its owner left shows nothing", (await spares.loadFriendSpares(A, [X])).length === 0);
+    await db.execute(sql`delete from pod_spare_shares where user_id = ${B} and pod_id = ${night.id}`);
+    await pods.addMember(A, night.id, b.publicId);
+    await spares.shareSparesWith(B, night.id, true);
+    check("B shares a third time", (await grantRows()) === 1);
+    await friends.unfriend(A, b.publicId);
+    check("unfriending ends it", (await spares.loadFriendSpares(A, [X])).length === 0);
+    check("unfriending dropped the grant row", (await grantRows()) === 0);
+    await db.execute(sql`delete from decks where user_id = ${B}`);
+    await db.execute(sql`delete from collection_items where user_id = ${B}`);
   } finally {
     // Stamps last: every delete above fires the deferred stamp trigger, which writes them back.
     const who = sql`(${A}, ${B}, ${C}, ${D})`;
     await db.execute(sql`delete from friend_links where user_id in ${who} or friend_user_id in ${who}`);
+    await db.execute(sql`delete from decks where user_id in ${who}`);
+    await db.execute(sql`delete from collection_items where user_id in ${who}`);
+    await db.execute(sql`delete from pod_spare_shares where user_id in ${who}`);
     await db.execute(sql`delete from pods where owner_user_id in ${who}`);
     await db.execute(sql`delete from pod_members where user_id in ${who}`);
     await db.execute(sql`delete from friend_invites where inviter_user_id in ${who}`);

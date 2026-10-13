@@ -75,6 +75,21 @@ describe("cachePageForUser", () => {
     expect(store.size).toBe(0);
   });
 
+  it("loads again once SOCIAL_FRIENDS_ENABLED flips: the switch is in the key", async () => {
+    const before = process.env.SOCIAL_FRIENDS_ENABLED;
+    try {
+      delete process.env.SOCIAL_FRIENDS_ENABLED;
+      const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
+      await cachePageForUser("u1", "decks", [], load);
+      process.env.SOCIAL_FRIENDS_ENABLED = "true";
+      await cachePageForUser("u1", "decks", [], load);
+      expect(load).toHaveBeenCalledTimes(2);
+    } finally {
+      if (before === undefined) delete process.env.SOCIAL_FRIENDS_ENABLED;
+      else process.env.SOCIAL_FRIENDS_ENABLED = before;
+    }
+  });
+
   it("caches nothing when the stamp cannot be read", async () => {
     stamp.value = null;
     const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));

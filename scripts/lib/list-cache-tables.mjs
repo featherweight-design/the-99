@@ -158,3 +158,135 @@ export function unrecordedCatches(files = loaderFiles()) {
   }
   return out;
 }
+
+/**
+ * A source with its comments removed and every string literal emptied, so nothing quoted can pass for code.
+ * A template literal keeps its `${…}` interpolations, which are code. Regex literals are not recognised;
+ * the page sources this reads carry none in a cache key.
+ */
+export function codeOnly(text) {
+  let i = 0;
+  const scan = (inInterpolation) => {
+    let out = "";
+    let depth = 0;
+    while (i < text.length) {
+      const c = text[i];
+      if (c === "/" && text[i + 1] === "/") {
+        while (i < text.length && text[i] !== "\n") i++;
+      } else if (c === "/" && text[i + 1] === "*") {
+        const end = text.indexOf("*/", i + 2);
+        i = end === -1 ? text.length : end + 2;
+      } else if (c === '"' || c === "'") {
+        for (i++; i < text.length && text[i] !== c; i++) if (text[i] === "\\") i++;
+        i++;
+        out += c + c;
+      } else if (c === "`") {
+        out += "`";
+        for (i++; i < text.length && text[i] !== "`"; ) {
+          if (text[i] === "\\") i += 2;
+          else if (text[i] === "$" && text[i + 1] === "{") {
+            i += 2;
+            out += "${" + scan(true) + "}";
+          } else i++;
+        }
+        i++;
+        out += "`";
+      } else {
+        if (inInterpolation && c === "{") depth++;
+        if (inInterpolation && c === "}") {
+          if (depth === 0) { i++; return out; }
+          depth--;
+        }
+        out += c;
+        i++;
+      }
+    }
+    return out;
+  };
+  return scan(false);
+}
+
+/** `text` split on its top-level commas (brackets balanced; strings already emptied by `codeOnly`). */
+function topLevel(text) {
+  const parts = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) depth--;
+    else if (c === "," && depth === 0) {
+      parts.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
+/**
+ * The reader (first argument) and key (third) of every `cachePageForUser(...)` call in a source, read from `codeOnly`, so
+ * a `friendGeneration(` in a comment or a string keys nothing, and neither does one elsewhere in the page
+ * (an unused call, or inside the loader).
+ */
+export function cacheKeysOf(text) {
+  const src = codeOnly(text);
+  const keys = [];
+  const call = /\bcachePageForUser\s*(?:<[^>]*>)?\s*\(/g;
+  for (let m; (m = call.exec(src)); ) {
+    const args = [];
+    let depth = 0, start = call.lastIndex, i = start;
+    for (; i < src.length; i++) {
+      const c = src[i];
+      if ("([{".includes(c)) depth++;
+      else if (")]}".includes(c)) {
+        if (depth === 0) break;
+        depth--;
+      } else if (c === "," && depth === 0) {
+        args.push(src.slice(start, i));
+        start = i + 1;
+      }
+    }
+    args.push(src.slice(start, i));
+    if (args.length >= 3) keys.push({ reader: args[0].trim(), key: args[2] });
+  }
+  return keys;
+}
+
+/**
+ * A FRIEND's rows ride a cached page only with the friends' stamps in its key (social plan, scope §5).
+ * The reader's own stamp moves when the reader writes, never when a friend does, so a page whose loaders
+ * reach `src/lib/social/` (where every cross-user read lives) must call `friendGeneration` inside the KEY
+ * argument of its `cachePageForUser` call (`cacheKeysOf`), or a friend's write leaves it stale. A page that reaches the module is held to
+ * the rule whether or not it reads a friend's data today: the import is the cheap, honest proxy.
+ */
+export function socialKeyProblems(
+  pages = CACHED_PAGES,
+  filesOf = (page) => loaderFiles([page]),
+  source = (file) => readFileSync(file, "utf8"),
+) {
+  const out = [];
+  for (const page of pages) {
+    // The switch reads an env var and no rows, and `page-cache.ts` itself keys on it.
+    const social = filesOf(page)
+      .map((f) => f.split("\\").join("/"))
+      .filter((f) => f.includes("src/lib/social/") && !f.endsWith("src/lib/social/flag.ts"));
+    if (social.length === 0) continue;
+    // EVERY key on the page: reachability is page-level, so it cannot say which call's loader reads a friend.
+    const keys = cacheKeysOf(source(page));
+    // ...as a BARE ELEMENT of the key array, exactly `await friendGeneration(<the call's reader>)`. Anything
+    // looser (unawaited, wrapped in an expression, another account's id) keys something that does not move
+    // with the friends' stamps, so the rule is the one shape that carries the generation unchanged.
+    const keyed = ({ reader, key }) => {
+      const text = key.trim();
+      if (!text.startsWith("[") || !text.endsWith("]")) return false;
+      return topLevel(text.slice(1, -1)).some((el) => {
+        const m = /^await\s+friendGeneration\s*\(\s*([^,()]*?)\s*\)$/.exec(el.trim());
+        return m !== null && m[1] === reader;
+      });
+    };
+    if (keys.length === 0 || !keys.every(keyed)) {
+      out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
+    }
+  }
+  return out;
+}

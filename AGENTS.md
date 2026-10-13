@@ -691,6 +691,17 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   by schema import, through `db.query`, or by name in raw SQL, and runs against the shipped tree inside `pnpm test`; `pnpm probe:social` proves the
   answers on a scratch branch.
 
+  **Spares are view-only and shared per pod** (Q3, Q12): `loadFriendSpares(viewer, oracleIds)` reads the grants (the
+  friendship, the friend's `pod_spare_shares` grant, the friend's membership of that pod and the viewer's, in one
+  statement), then runs each granting friend's own claim model, at most four at once, each in a repeatable-read
+  snapshot that re-checks that friend's grant first, so a grant revoked mid-read reads nothing. A spare is
+  `owned − hard − soft`, so a copy only a draft wants is not spare.
+  **A friend's write never moves the viewer's stamp**, so friend data stays out of cached payloads by default; a cached
+  page that must draw it puts `await friendGeneration(viewer)` as a bare element of EVERY `cachePageForUser` key on that
+  page, for that call's own reader, and `check:list-cache` fails a cached page whose loaders reach `src/lib/social/`
+  (the switch module aside) without it. `pnpm measure:friend-spares`
+  times the per-friend cost (read-only).
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its

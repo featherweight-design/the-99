@@ -2961,3 +2961,18 @@ export const podMembers = pgTable("pod_members", {
   primaryKey({ columns: [t.podId, t.userId] }),
   index("pod_members_user_idx").on(t.userId),
 ]);
+
+/**
+ * Spares are shared PER POD (Hugh, Q3): a row says this account lets that pod's members see its spare
+ * copies. View-only (no asks, no cart change). A grant counts only while its owner is still a member of
+ * the pod, and a reader sees it only as a friend who is a member too: `loadFriendSpares` joins all of
+ * that on the viewer in one statement.
+ */
+export const podSpareShares = pgTable("pod_spare_shares", {
+  userId: text("user_id").notNull(),
+  podId: uuid("pod_id").notNull().references(() => pods.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.podId] }),
+  index("pod_spare_shares_pod_idx").on(t.podId),
+]);

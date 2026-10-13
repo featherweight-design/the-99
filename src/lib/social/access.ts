@@ -14,7 +14,7 @@ import { db } from "../../db";
 import { friendLinks, podMembers, pods, socialProfiles } from "../../db/schema";
 import { isUuid } from "./rules";
 
-export type Reader = Pick<typeof db, "select">;
+export type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
 export type Friend = { publicId: string; displayName: string; since: Date };
 

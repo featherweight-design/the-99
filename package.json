@@ -42,6 +42,7 @@
     "probe:tokens": "tsx scripts/probe-tokens.mts",
     "probe:deck-tokens": "tsx scripts/probe-deck-tokens.mts",
     "probe:social": "tsx scripts/probe-social.mts",
+    "measure:friend-spares": "tsx scripts/measure-friend-spares.mts",
     "probe:manapool-token-link": "tsx scripts/probe-manapool-token-link.mts",
     "probe:pair-index": "tsx scripts/probe-pair-index.ts",
     "probe:printed-in": "tsx scripts/probe-printed-in.ts",

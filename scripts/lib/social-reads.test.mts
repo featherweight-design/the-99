@@ -21,6 +21,11 @@ describe("socialReadsIn", () => {
     expect(socialReadsIn("sql`SELECT * FROM FRIEND_LINKS`").map((f) => f.why)).toEqual(["names FRIEND_LINKS in SQL"]);
   });
 
+  it("covers pod_spare_shares, by binding and by name", () => {
+    expect(socialReadsIn(`import { podSpareShares } from "../../db/schema";`)).toEqual([{ line: 1, why: "imports podSpareShares" }]);
+    expect(socialReadsIn("sql`delete from pod_spare_shares where user_id = ${id}`").map((f) => f.why)).toEqual(["names pod_spare_shares in SQL"]);
+  });
+
   it("does not read the word pods in copy, or a type-only import", () => {
     expect(socialReadsIn(`const line = "Your pods are where game nights start.";`)).toEqual([]);
     expect(socialReadsIn(`import type { pods } from "../db/schema";`)).toEqual([]);
