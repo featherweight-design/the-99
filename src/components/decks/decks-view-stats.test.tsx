@@ -182,7 +182,7 @@ describe("DecksView: the Stats press answers while the read runs", () => {
     expect(stats.querySelector("[data-pending]")).toBeNull();
     fireEvent.click(stats);
     expect(stats).toHaveAttribute("aria-busy", "true");
-    expect(stats.querySelector("[data-pending]")).not.toBeNull();
+    expect(stats.querySelector("[data-pending] .anim-pending-pip")).not.toBeNull();
     expect(stats).toHaveClass("bg-[var(--elevated)]");
     // Selection follows the view, not the press, and the tiles stay up under it.
     expect(stats).toHaveAttribute("aria-selected", "false");

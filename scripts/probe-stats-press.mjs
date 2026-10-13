@@ -84,8 +84,12 @@ const ARM = () => {
       s.statsBefore = landed;
     }
     // Present is not drawn: the mark rides `.anim-pending-in`, which holds it at opacity 0 for 120ms.
-    const pip = tab?.querySelector("[data-pending]");
-    if (s.feedback != null && pip && Number(getComputedStyle(pip).opacity) >= 0.99) s.mark = true;
+    // The wrapper is opaque after its beat; the mark itself is the 4px diamond inside it (which also pulses, so
+    // only its box is read), so a wrapper with no diamond in it does not count.
+    const wrap = tab?.querySelector("[data-pending]");
+    const pip = wrap?.querySelector(".anim-pending-pip");
+    if (s.feedback != null && wrap && pip && Number(getComputedStyle(wrap).opacity) >= 0.99
+        && pip.offsetWidth === 4 && pip.offsetHeight === 4) s.mark = true;
     if (s.at != null && landed) { s.landed = performance.now(); return; }
     requestAnimationFrame(tick);
   };
