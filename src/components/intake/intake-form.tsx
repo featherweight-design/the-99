@@ -163,7 +163,11 @@ export function IntakeForm({
     window.visualViewport?.addEventListener("resize", place);
     window.visualViewport?.addEventListener("scroll", place);
     window.addEventListener("scroll", place, { passive: true });
-    return () => { clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); window.visualViewport?.removeEventListener("scroll", place); window.removeEventListener("scroll", place); };
+    // Dragging the box's resize handle, or the dock changing height, emits no scroll or resize event.
+    const watch = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    if (wordsRef.current) watch?.observe(wordsRef.current);
+    if (dockRef.current) watch?.observe(dockRef.current);
+    return () => { watch?.disconnect(); clearTimeout(settled); window.visualViewport?.removeEventListener("resize", place); window.visualViewport?.removeEventListener("scroll", place); window.removeEventListener("scroll", place); };
   }, [picker.open]);
 
   const names = copy.intake.colorsJoin(colorNames(colors.map((c) => c.toUpperCase())));

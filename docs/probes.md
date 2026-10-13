@@ -1993,10 +1993,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   request, which the probe ABORTS in the browser, so no read runs and no credit is spent. It writes the
   account's About row through `clearAboutSheet` and nothing else, and puts it back in its `finally` (`captureAboutSeen`, `restoreAboutSeen`); run it against a dev server with
   `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. It refuses staging and production by `neon.branch_id` of its
-  `DATABASE_URL` before the first write. At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
+  `DATABASE_URL` before the first write, and refuses a `PROBE_BASE` that is not localhost. It also grows the box a few pixels
+  under the open list and requires the list's max height to follow (a resize handle emits no scroll or resize event). At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
   short, and requires the list to end above the dock's top (the list is held to that room and scrolls
   inside it; `listMax` in `intake-form.tsx`). Without that hold the list is its 220px height and runs
   under the dock there.
   A 300px window checks the same clearance with almost no room, where the list keeps a floor of 96px (a row or two,
   scrolling) rather than opening above the box: that flip was cut after three review rounds on its geometry.
-  Measured 2026-10-12 on local-dev: all fourteen checks pass.
+  Measured 2026-10-12 on local-dev: all fifteen checks pass.

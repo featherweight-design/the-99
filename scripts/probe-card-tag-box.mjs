@@ -71,6 +71,9 @@ async function signIn(page) {
 // the DATABASE_URL `env.mjs` loads, so that is the database whose branch is checked. Never staging or production.
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
+// The app the browser reaches must be local too: this probe signs in there and dismisses its About card.
+const baseHost = new URL(BASE).hostname;
+if (!["localhost", "127.0.0.1", "[::1]"].includes(baseHost)) throw new Error(`probe:card-tag-box refuses PROBE_BASE ${BASE}; it runs against a local server only.`);
 const [{ branch }] = await neon(requireEnv(["DATABASE_URL"]).DATABASE_URL)`select current_setting('neon.branch_id', true) as branch`;
 if (!branch || branch === STAGING_BRANCH || branch === PRODUCTION_BRANCH) {
   throw new Error(`probe:card-tag-box refuses branch ${branch ?? "(unknown)"}; point DATABASE_URL at local-dev or a scratch branch.`);
@@ -137,6 +140,16 @@ try {
     report(`${vp.label} the list does not overlap the dock`, !geometry.overlapsDock,
       `list ${geometry.listTop}-${geometry.listBottom}px, dock top ${geometry.dockTop ?? "none"}`);
     report(`${vp.label} the first option is what is painted at its centre, inside the window`, geometry.onTop && geometry.inWindow, JSON.stringify(geometry));
+
+    if (vp.width < 768) {
+      // Growing the box while the list is open (its resize handle emits no scroll or resize): the list's room is
+      // measured again, so its max height follows the box instead of going stale.
+      const before = await list.evaluate((ul) => parseFloat(ul.style.maxHeight));
+      await box.evaluate((n) => { n.style.height = `${n.getBoundingClientRect().height + 6}px`; });
+      await page.waitForTimeout(500);
+      const after = await list.evaluate((ul) => parseFloat(ul.style.maxHeight));
+      report(`${vp.label} a box grown under the open list shrinks the list's room with it`, after < before, JSON.stringify({ before, after }));
+    }
 
     await option.first().dispatchEvent("mousedown");
     const written = await box.inputValue();
