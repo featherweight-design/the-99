@@ -890,8 +890,6 @@ export function FilterPanel({
                 ? "border-[color:var(--accent)] focus-within:border-[color:var(--accent)]"
                 : "")
             }
-            // §Leading icon: 14px mobile / 13px desktop, not the primitive's 15.
-            iconClassName={bp("text-[13px]", "text-[14px]")}
             // 14px mobile / 13px desktop as specced. 14px sits under Safari's
             // 16px focus-zoom floor; a global maximum-scale=1 is an App Shell
             // decision, not one to make inside a single control (gap 3).

@@ -49,6 +49,7 @@ import { CostStrip } from "./cost-strip";
 import { DeltaStrip } from "./delta-strip";
 import { useHeadCollapse } from "./use-head-collapse";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { SearchIcon } from "../ui/search-icon";
 
 export type SetGridViewProps = {
   code: string;
@@ -768,7 +769,7 @@ export function SetGridView(props: SetGridViewProps) {
               className="inline-flex size-[44px] shrink-0 items-center justify-center
                          rounded-[6px] text-[13px] text-[color:var(--fg-body)]"
             >
-              <span aria-hidden="true">⌕</span>
+              <SearchIcon size={18} />
             </button>
             <button
               type="button"

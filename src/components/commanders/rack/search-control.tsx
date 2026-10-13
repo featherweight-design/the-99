@@ -10,6 +10,7 @@
 import { filterCopy } from "../../../lib/copy/lanes";
 import { useEffect, useRef } from "react";
 import { SearchField } from "../../ui/text-field";
+import { SearchIcon } from "../../ui/search-icon";
 
 const copy = filterCopy.search;
 
@@ -52,7 +53,7 @@ export function SearchControl({
       // The placeholder is not a name — it disappears the moment anything is
       // typed, taking the field's accessible name with it.
       aria-label={copy.placeholderWide}
-      leading={<SearchGlyph size={wide ? 14 : 16} />}
+      leading={<SearchIcon size={wide ? 16 : 18} className="shrink-0 text-[color:var(--fg-faint)]" />}
       containerClassName={[
         "gap-[9px] px-[10px]",
         wide ? "h-[34px] w-[300px] rounded-lg" : "h-[44px] w-full rounded-[10px]",
@@ -84,28 +85,5 @@ export function SearchControl({
       }
     />
     </div>
-  );
-}
-
-// Drawn rather than the `⌕` character `SearchField` falls back to: at 14px that
-// glyph renders as a hairline in the mono face and loses its handle entirely on
-// some platforms. Local to the rack — the app's other search fields keep the
-// character, and their `iconClassName` sizing with it.
-function SearchGlyph({ size }: { size: number }) {
-  return (
-    <svg
-      aria-hidden
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      className="shrink-0 text-[color:var(--fg-faint)]"
-    >
-      <circle cx="9" cy="9" r="5.4" />
-      <path d="m13.2 13.2 3.3 3.3" />
-    </svg>
   );
 }

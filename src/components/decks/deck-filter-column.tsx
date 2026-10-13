@@ -16,7 +16,7 @@ import {
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import type { DeckSort } from "../../lib/decks/sort";
 import type { StatusPill } from "../../lib/decks/status";
-import { SearchIcon } from "./search-icon";
+import { SearchIcon } from "../ui/search-icon";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 
 export type FilterChromeProps = {
@@ -87,7 +87,7 @@ export function SearchField({
         column ? "h-[34px] rounded-[8px] px-[11px]" : "h-[44px] rounded-[10px] px-[12px]"
       }`}
     >
-      <SearchIcon size={column ? 14 : 16} />
+      <SearchIcon size={column ? 16 : 18} />
       <input
         type="search"
         value={value}
