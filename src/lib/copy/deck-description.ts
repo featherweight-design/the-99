@@ -77,6 +77,17 @@ export const deckDescriptionCopy = {
     placeholderPhone: "Anything for this run? e.g. more removal",
     maxLength: 500,
     counter: (n: number, max: number) => `${n} / ${max}`,
+    // The box takes the Notes `[[` card tag (card-tags plan, PR 2). A tag only names the card for this run.
+    tagHelp: {
+      infoAria: "How card tags work",
+      lines: [
+        "Type [[ and the start of a card’s name to tag it, or press [[ ]] to start one.",
+        "A tagged card is read by its exact name.",
+        "A name typed without picking it from the list stays plain text.",
+      ],
+      insert: "[[ ]]",
+      insertAria: "Insert a card tag",
+    },
     cite: "you asked", // chip key, drawn uppercase beside the shipped 'you said'
   },
 

@@ -5,7 +5,7 @@ import type { SQL } from "drizzle-orm";
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | null } | undefined, inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
-  modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
+  resolveAsked: [] as unknown[], resolveText: undefined as string | undefined, modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
   // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
   // real catalog read, price read and `validateSuggestions` rather than throwing on a bare `db`
@@ -37,6 +37,12 @@ const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | nul
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabled }));
+// The catalog read behind a tag: the real module would reach the (stubbed) database. The stand-in resolves
+// every tag to the name it carried and records how it was asked.
+vi.mock("../../lib/cards/tagged-text", async () => {
+  const { plainText } = await import("../../lib/decks/notes-body");
+  return { resolveTaggedText: async (raw: string, opts: unknown) => { calls.resolveAsked.push(opts); return { text: calls.resolveText ?? plainText(raw), body: raw, tagged: [] }; } };
+});
 // `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
 // `after()` runs the run's model call and settle once the response is sent: tests collect them and
@@ -149,6 +155,7 @@ vi.mock("../../lib/tuning/verdicts", () => ({
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { creditsCopy } from "../../lib/copy/credits";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { NOTES_RAW_MAX } from "../../lib/tuning/limits";
 import {
   applySuggestion,
   readTuningPanel,
@@ -179,6 +186,7 @@ beforeEach(() => {
   calls.modelRequest = undefined;
   calls.modelOutcome = undefined;
   calls.modelQueue = [];
+  calls.resolveAsked = [];
   calls.lockedIds = [];
   calls.runPending = true;
   calls.modelCalls = 0;
@@ -262,6 +270,48 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.packInput).toMatchObject({ notes: "swap out Sol Ring" });
     await runTuning(DECK, { anyway: true, notes: "   " }).catch(() => undefined);
     expect(calls.packInput).toMatchObject({ notes: null });
+  });
+
+  it("hands the pack the names a tagged note resolves to, asking for Commander-legal cards only", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    const tag = "[[c0ffee00-0000-4000-8000-000000000001|Sol Ring]]";
+    await runTuning(DECK, { anyway: true, notes: `swap out ${tag}` }).catch(() => undefined);
+    expect(calls.packInput).toMatchObject({ notes: "swap out Sol Ring" });
+    expect(calls.resolveAsked).toEqual([{ commanderLegalOnly: true }]);
+  });
+
+  it("measures the cap on what a tagged note draws, so ids do not count, and refuses a fourth tag", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|A]]`;
+    // 497 letters + 3 one-letter tags draw 500 characters but carry far more raw: within the cap.
+    await runTuning(DECK, { anyway: true, notes: `${"x".repeat(497)}${tag(1)}${tag(2)}${tag(3)}` }).catch(() => undefined);
+    expect(calls.started).toBe(1);
+    calls.started = 0;
+    expect(await runTuning(DECK, { anyway: true, notes: `${tag(1)}${tag(2)}${tag(3)}${tag(4)}` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(await runTuning(DECK, { anyway: true, notes: `${"x".repeat(499)}${tag(1)}${tag(2)}` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(calls.started).toBe(0);
+  });
+
+  it("refuses a tagged note whose resolved names outgrow the cap, before a credit is reserved", async () => {
+    calls.startKind = "started";
+    calls.resolveText = "x".repeat(501);
+    try {
+      expect(await runTuning(DECK, { anyway: true, notes: "[[c0ffee00-0000-4000-8000-000000000001|A]]" })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+      expect(calls.started).toBe(0);
+    } finally {
+      calls.resolveText = undefined;
+    }
+  });
+
+  it("refuses a raw notes body past the wire bound without reading it", async () => {
+    calls.startKind = "started";
+    const before = calls.resolveAsked.length;
+    // Trailing whitespace is trimmed before any later check, so only the raw bound can tell this from a valid note.
+    expect(await runTuning(DECK, { anyway: true, notes: `a${" ".repeat(NOTES_RAW_MAX)}` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+    expect(calls.resolveAsked.length).toBe(before);
+    expect(calls.started).toBe(0);
   });
 
   it("refuses a notes string over its own character cap", async () => {
@@ -527,6 +577,18 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
       const [, patch, billed] = calls.finished[calls.finished.length - 1] as [unknown, { errorClass: string }, { usage: unknown }[]];
       expect(patch.errorClass).toBe("ungrounded");
       expect(billed.map((b) => b.usage)).toEqual([USAGE, USAGE]);
+    });
+
+    it("gives the first ask the whole deadline even when the clock ticks before it is made", async () => {
+      setup();
+      const requests: { deadlineMs: number }[] = [];
+      let now = 1_000_000;
+      // Every read advances the clock, so any elapsed-time subtraction on the first ask shows as a short deadline.
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => (now += 1));
+      calls.modelQueue = [good];
+      calls.onModelCall = (req) => { requests.push(req as (typeof requests)[number]); };
+      try { await runTuning(DECK, { anyway: true }); } finally { clock.mockRestore(); calls.onModelCall = undefined; }
+      expect(requests[0].deadlineMs).toBe(110_000);
     });
 
     it("gives the second ask only the deadline the first left, and no retry of its own", async () => {
