@@ -29,9 +29,10 @@ describe("ArrivalQueue", () => {
     vi.advanceTimersByTime(ms);
   };
 
-  function setup(rows: number, cols: number) {
+  // Rows sit 300px apart: a 300px viewport holds the first row only.
+  function setup(rows: number, cols: number, viewport = 300) {
     const g = grid(rows, cols);
-    const q = new ArrivalQueue(() => now, g.topOf);
+    const q = new ArrivalQueue(() => now, g.topOf, () => viewport);
     const released: HTMLElement[] = [];
     for (const row of g.cells) for (const el of row) q.join(el, () => released.push(el));
     return { q, cells: g.cells, released };
@@ -78,6 +79,17 @@ describe("ArrivalQueue", () => {
     advance(ARRIVAL_STAGGER_MS);
     expect(released).toContain(cells[0][1]);
     expect(q.size).toBe(0);
+  });
+
+  it("holds a first-screen row waiting on the row above for the tighter cap, and a row below the fold for the full one", () => {
+    const { q, cells, released } = setup(3, 1, 600);
+    // Rows 2 and 3 land, row 1 is slow. Row 2 is on screen, row 3 is not.
+    q.landed(cells[1][0]);
+    q.landed(cells[2][0]);
+    advance(ARRIVAL_FIRST_CAP_MS);
+    expect(released).toEqual([cells[1][0]]);
+    advance(ARRIVAL_CAP_MS - ARRIVAL_FIRST_CAP_MS);
+    expect(released).toEqual([cells[1][0], cells[2][0]]);
   });
 
   it("holds the first row for the tighter cap only, still as one row's release", () => {

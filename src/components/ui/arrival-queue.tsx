@@ -14,9 +14,11 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  *    `ARRIVAL_STAGGER_MS` apart, so a screen fills from the top down;
  *  - nothing is held hidden past `ARRIVAL_CAP_MS` after its own bytes landed: a slow piece above
  *    it delays a row by that much at most, and the slow piece fades in on its own when it lands.
- *    The list's first row holds for `ARRIVAL_FIRST_CAP_MS` only: it is usually the largest paint on
- *    the page, and its hold is what LCP pays (measured on slow 4G: about +100-180ms at 150ms;
- *    orchestrator ruling, 2026-10-12). It still fades as one row.
+ *    A row on the first screen (its top inside the viewport when its art joined) holds for
+ *    `ARRIVAL_FIRST_CAP_MS` only: the largest paint on the page is one of them, and its hold is
+ *    what LCP pays (measured on slow 4G: about +100-180ms at 150ms everywhere; on a one-column list
+ *    the LCP is often row 2, whose bytes landed before row 1's; orchestrator ruling, 2026-10-12).
+ *    Those rows still fade one at a time, top down.
  *
  * Art that settled before it joined (cached, or already painted when the page hydrated) never
  * joins, so it is never held. With no `<ArrivalOrder>` above it, art fades as it lands. Under
@@ -29,7 +31,7 @@ export const ARRIVAL_STAGGER_MS = 50;
 /** Boxes whose tops are this close are one row: a grid's tiles can differ by a subpixel. */
 const ROW_TOLERANCE_PX = 4;
 
-type Item = { landedAt: number | null; release: () => void };
+type Item = { landedAt: number | null; release: () => void; onScreen: boolean };
 
 export class ArrivalQueue {
   private items = new Map<HTMLElement, Item>();
@@ -39,11 +41,12 @@ export class ArrivalQueue {
   constructor(
     private readonly now: () => number = () => performance.now(),
     private readonly topOf: (el: HTMLElement) => number = (el) => el.getBoundingClientRect().top,
+    private readonly viewportHeight: () => number = () => window.innerHeight,
   ) {}
 
   /** A piece of art still on its way. `release` plays its fade. */
   join(el: HTMLElement, release: () => void): void {
-    this.items.set(el, { landedAt: null, release });
+    this.items.set(el, { landedAt: null, release, onScreen: this.topOf(el) < this.viewportHeight() });
   }
 
   /** Its bytes landed (or failed): it is released with its row, or at the cap. */
@@ -88,7 +91,7 @@ export class ArrivalQueue {
     }
     let blocked = false;
     let next = Infinity;
-    for (const [index, row] of rows.entries()) {
+    for (const row of rows) {
       const landed = row.filter((e) => e.item.landedAt !== null);
       if (landed.length === 0) {
         blocked = true;
@@ -96,9 +99,9 @@ export class ArrivalQueue {
       }
       const whole = landed.length === row.length;
       const firstLanded = Math.min(...landed.map((e) => e.item.landedAt as number));
-      // The first row, until anything has been released, takes the tighter cap.
-      const first = index === 0 && this.lastRelease === -Infinity;
-      const capAt = firstLanded + (first ? ARRIVAL_FIRST_CAP_MS : ARRIVAL_CAP_MS);
+      // A row on the first screen takes the tighter cap.
+      const onScreen = row.some((e) => e.item.onScreen);
+      const capAt = firstLanded + (onScreen ? ARRIVAL_FIRST_CAP_MS : ARRIVAL_CAP_MS);
       // In order: this row and every row above it have landed. Else the cap lets it go anyway.
       const due = !blocked && whole ? Math.max(now, this.lastRelease + ARRIVAL_STAGGER_MS) : capAt;
       if (!whole) blocked = true;
