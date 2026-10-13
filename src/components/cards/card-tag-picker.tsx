@@ -275,6 +275,16 @@ export function CardTagList({
 }): ReactNode {
   const p = deckNotesCopy.picker;
   const floating = useFloatingPlace(anchor);
+  // A list held shorter than its options (a phone above its keyboard) must keep the option the arrow keys are on in
+  // view, or a keyboard reader picks a card they cannot see. Scrolled inside the list only, and only as far as it
+  // needs: the page itself is never moved (`scrollIntoView` would, and the picker places the field on its own).
+  useEffect(() => {
+    const ul = document.getElementById(listId);
+    const opt = document.getElementById(`${id}-opt-${activeIndex}`);
+    if (!ul || !opt) return;
+    if (opt.offsetTop < ul.scrollTop) ul.scrollTop = opt.offsetTop;
+    else if (opt.offsetTop + opt.offsetHeight > ul.scrollTop + ul.clientHeight) ul.scrollTop = opt.offsetTop + opt.offsetHeight - ul.clientHeight;
+  }, [id, listId, activeIndex, options.length]);
   const list = (
     <div
       id={listId}

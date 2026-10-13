@@ -64,3 +64,47 @@ describe("CardTagList floating under an anchor", () => {
     expect(ul.style.maxHeight).toBe("0px");
   });
 });
+
+describe("CardTagList's active option", () => {
+  const options = [0, 1, 2].map((i) => ({ oracleId: `c${i}`, name: `Card ${i}`, meta: "Artifact", group: "any" as const }));
+  const draw = (activeIndex: number) => (
+    <CardTagList id="t" listId="l" open query="car" local={[]} activeIndex={activeIndex} remoteStatus="ok" scoped={false} pick={() => {}} options={options} />
+  );
+
+  /** jsdom lays nothing out: give the list a 100px window over three 40px options. */
+  function layOut() {
+    const ul = screen.getByRole("listbox");
+    Object.defineProperty(ul, "clientHeight", { configurable: true, value: 100 });
+    screen.getAllByRole("option").forEach((o, i) => {
+      Object.defineProperty(o, "offsetTop", { configurable: true, value: i * 40 });
+      Object.defineProperty(o, "offsetHeight", { configurable: true, value: 40 });
+    });
+    return ul;
+  }
+
+  it("is scrolled into view inside the list as the arrow keys move it, only as far as it needs", () => {
+    const { rerender } = render(draw(0));
+    const ul = layOut();
+    rerender(draw(2));
+    // Option 2 spans 80 to 120 and the window shows 0 to 100: scrolled down by 20, no more.
+    expect(ul.scrollTop).toBe(20);
+    rerender(draw(0));
+    expect(ul.scrollTop).toBe(0);
+    rerender(draw(1));
+    expect(ul.scrollTop).toBe(0);
+  });
+
+  it("never moves the page", () => {
+    const original = Element.prototype.scrollIntoView;
+    const moved = vi.fn();
+    Element.prototype.scrollIntoView = moved;
+    try {
+      const { rerender } = render(draw(0));
+      layOut();
+      rerender(draw(2));
+      expect(moved).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+});
