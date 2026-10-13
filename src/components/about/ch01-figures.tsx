@@ -926,7 +926,8 @@ export function CreditsFigureBody({ limit }: { limit: number }) {
   );
   const nextAt = hydrated ? CREDITS.nextAt : null;
   const lines = [
-    creditsCopy.first(left, limit, nextAt),
+    // A reset time only with a credit out, as the app draws it (`nextAt` is null when none is used).
+    creditsCopy.first(left, limit, left < limit ? nextAt : null),
     creditsCopy.spent(limit, nextAt),
     creditsCopy.paused(pausedUntil),
   ];

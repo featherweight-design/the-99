@@ -56,5 +56,7 @@ describe("the reader's credit limit on /about", () => {
     expect(credits(container)).toContain("You get 12,");
     expect(credits(container)).toContain("1 of 1");
     expect(credits(container)).not.toMatch(/\b2 of\b/);
+    // Nothing used, so no reset time: the app draws one only with a credit out.
+    expect(credits(container)).not.toMatch(/1 of 1 left[^.]*reset/);
   });
 });
