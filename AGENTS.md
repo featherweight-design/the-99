@@ -826,6 +826,22 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   `[rate] would refuse ...` and refuses nothing; the limits are provisional until those logs say what a real reader does.
   Enforcing is a separate change. The table is purged with the account.
 
+- **Paid credits in the ledger** (payments PR L, `boards/plan-payments-ledger-2026-10-13.md`, Hugh's answers in
+  `boards/scope-payments-2026-10-13.md`). `credit_grants` holds one row per lot of paid credits, `plan` (a
+  subscription period; rolls over with no cap while subscribed, `expires_at` set to the period end on cancel) or
+  `pack` (never expires, which a check holds). `model_calls.credit_grant_id` names the lot a run spent, null for the
+  free allowance. `reserveModelCall`, under the per-player lock it already took, funds from the free allowance while
+  it has room, then a plan lot (soonest to expire, then oldest), then a pack lot (oldest), else refuses as before.
+  A lot is spent by the rows naming it under the allowance's own rule minus the 24-hour window
+  (`src/lib/model/credit-rule.ts`), so a refunded run, or a reservation past its TTL, returns its credit to the lot
+  that funded it with no second refund path, and a paid run never counts toward the free window. `Allowance` carries
+  `plan` and `pack` when the player holds a lot. Nothing writes a lot yet (the Stripe webhook is K1), so every
+  reserve takes the pre-payments path. Every reader that decides whether a press may start still judges "spent" from
+  `used` against `limit` alone, the SERVER gates included (`tuning/gate.ts`, `intake/the-read-run.ts`'s `closedNow`,
+  `synopsis/read.ts`) as well as the panels, so a lot cannot fund those presses until L2 teaches them `plan` and `pack`;
+  L2 must merge before anything can write a lot. Purged
+  with the account; unspent credits are forfeited (Q7). `pnpm probe:payments-ledger` proves it on a scratch branch.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its

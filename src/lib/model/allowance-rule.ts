@@ -89,6 +89,10 @@ export type Allowance = {
   paused?: { until: Date };
   /** True for the owner once their month's testing share cannot fit one more call. */
   ownerShare?: boolean;
+  /** Paid credits left (`credit-rule.ts`), spent only once `used` reaches `limit`: plan credits
+   *  first, then pack credits. OPTIONAL like `paused`, and absent while the player holds no lot. */
+  plan?: number;
+  pack?: number;
 };
 
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */

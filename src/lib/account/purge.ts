@@ -28,7 +28,8 @@ import { ownedSupportLock } from "../discovery/owned-support-lock";
 
 /**
  * Every non-social table holding a row by `user_id`, in delete order. Rows that point at `model_calls`
- * (no `on delete`) go before it; `decks` goes before `deck_folders` only for tidiness (`folder_id` sets null).
+ * (no `on delete`) go before it, and `model_calls` before the `credit_grants` its rows name. Unspent paid
+ * credits are forfeited with the account (Hugh, Q7, 2026-10-13); `decks` goes before `deck_folders` only for tidiness (`folder_id` sets null).
  */
 export const PURGE_ORDER = [
   "deck_token_joins", "token_ownership", "token_reads",
@@ -39,7 +40,7 @@ export const PURGE_ORDER = [
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
   "owned_support_counts", "owned_support_stamps",
   "wishlist_items", "rate_hits",
-  "model_calls",
+  "model_calls", "credit_grants",
   "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
 

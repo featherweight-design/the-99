@@ -225,6 +225,7 @@
     "probe:game-note-tag-box": "node scripts/probe-game-note-tag-box.mjs",
     "probe:fits-read-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-fits-read-state.mts",
     "probe:cuts-state": "NODE_OPTIONS=--require=./scripts/lib/no-next-cache.cjs tsx scripts/probe-cuts-state.mts",
+    "probe:payments-ledger": "tsx scripts/probe-payments-ledger.ts",
     "probe:spend-cap": "tsx scripts/probe-spend-cap.ts",
     "probe:tuning-panel": "node scripts/probe-tuning-panel.mjs",
     "probe:intent-line": "node scripts/probe-intent-line.mjs",

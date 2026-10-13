@@ -122,6 +122,71 @@ describe("reserveModelCall and the origins", () => {
   });
 });
 
+describe("reserveModelCall and paid credits (payments PR L)", () => {
+  // A select whose `where` answers in order, and a grouped read for the lots' usage.
+  function fakeTx(answers: unknown[][]) {
+    const wheres: unknown[] = [];
+    let inserted: Record<string, unknown> | undefined;
+    const tx = {
+      execute: async () => undefined,
+      select: () => ({
+        from: () => ({
+          where: (w: unknown) => {
+            wheres.push(w);
+            const rows = answers.shift() ?? [];
+            return Object.assign(Promise.resolve(rows), { groupBy: () => Promise.resolve(rows) });
+          },
+        }),
+      }),
+      insert: () => ({ values: (v: Record<string, unknown>) => { inserted = v; return { returning: async () => [{ id: "call-1" }] }; } }),
+    };
+    return { tx, wheres, inserted: () => inserted };
+  }
+  const now = new Date("2026-10-13T12:00:00Z");
+  const spentToday = (n: number) => Array.from({ length: n }, () => ({ status: "spent", createdAt: new Date(now.getTime() - 60_000) }));
+
+  it("funds from the free allowance while it has room, reading no lot, and counts only allowance runs in the window", async () => {
+    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1)]);
+    expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
+    expect(f.inserted()?.creditGrantId).toBeNull();
+    expect(f.wheres).toHaveLength(3);
+    const window = new PgDialect().sqlToQuery(f.wheres[2] as never);
+    expect(window.sql).toContain('"model_calls"."credit_grant_id" is null');
+  });
+
+  it("refuses exactly as today once the allowance is spent and the player holds no lot", async () => {
+    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), []]);
+    expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
+    expect(f.inserted()).toBeUndefined();
+  });
+
+  it("funds from the plan lot before the pack lot once the allowance is spent, and names it on the row", async () => {
+    const lots = [
+      { id: "pack-1", source: "pack", units: 40, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") },
+      { id: "plan-1", source: "plan", units: 60, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-10-01T00:00:00Z") },
+    ];
+    const usage = [{ grantId: "pack-1", spent: "3", reserved: null }];
+    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
+    expect(f.inserted()?.creditGrantId).toBe("plan-1");
+  });
+
+  it("refuses when every lot is spent, counting a reservation still in flight", async () => {
+    const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
+    const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - 1000] }];
+    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
+  });
+
+  it("a lot's stranded reservation gives its credit back", async () => {
+    const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
+    const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - RESERVATION_TTL_MS - 1] }];
+    const f = fakeTx([[{ app: "0", user: "0" }], [], spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
+    expect(f.inserted()?.creditGrantId).toBe("pack-1");
+  });
+});
+
 describe("joinBilled", () => {
   // Help me choose's read bills two calls on two models under one reservation.
   it("sums the meters, joins the models, and prices each call on its own model", () => {

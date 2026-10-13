@@ -1902,6 +1902,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   It also proves the purge UNLINKS the account from a friend's game log (a seat naming it as an opponent): the row
   stands with its snapshot, and its friend and deck links go null. Mutation-checked: without the unlink the
   by-value search finds `deck_game_opponents.friend_user_id`.
+- `pnpm probe:payments-ledger` proves paid credits in the allowance ledger (payments plan, PR L) against a real
+  database, through the real `reserveModelCall`, `settleModelCall`, `readAllowance` and `purgeAccount`: with no lot a
+  player reserves exactly as before payments; the free allowance is spent first, then plan lots, then pack lots; a
+  refunded run and a reservation stranded past its TTL give the credit back to the lot that funded it, and a late
+  success on the stranded run is refunded; an expired plan lot and revoked units fund nothing; two concurrent presses
+  at a balance of one reserve exactly once; a paid run never counts toward the free window; and the purge takes the
+  lots and the runs naming them. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL`
+  reports, and staging and production are refused by id. Mutation-checked four ways (the window's lot filter, the
+  per-player lock, the plan-before-pack order, a refunded run read as spend); each fails it.
 - `pnpm probe:wishlist` proves the wishlist backend against a real database: the owner's lines with their owned
   count and GOT state (summed across printings), that a write moves the owner's data stamp, that an unknown card
   and a quantity outside 1 to 99 write nothing, that a friend reads the lines with only the wanted count and got,
