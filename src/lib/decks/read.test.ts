@@ -540,7 +540,7 @@ describe("deckPendingSql", () => {
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     try {
       expect(deckPendingSql()).toBe(pendingChangesSql);
-      const resolved = deckPendingSql({ ...process.env, CHANGE_COMMANDER_ENABLED: "true" });
+      const resolved = deckPendingSql({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
       expect(resolved).not.toBe(pendingChangesSql);
     } finally {
       vi.unstubAllEnvs();

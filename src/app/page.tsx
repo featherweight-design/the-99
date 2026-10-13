@@ -118,7 +118,7 @@ export default async function HomePage() {
   // for why that is correct after any write, from anywhere. The UTC DATE is in the key because
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
-  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (): Promise<PageLoad<HomePayload>> => {
+  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (env): Promise<PageLoad<HomePayload>> => {
     const [stats, decks] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
       // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
@@ -144,6 +144,8 @@ export default async function HomePage() {
         // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
         // `/decks` reads it under. 0.83ms on staging.
         includeBracket: analysisTabEnabled(env),
+        // The env the load is handed, which is the one the entry is keyed on.
+        env,
       })),
     ]);
     if (stats.uniqueCards === 0 && decks.length === 0) {
@@ -153,7 +155,7 @@ export default async function HomePage() {
     const [lastUpdated, ranked, shopping, unplayed] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
       perf.timed("rankedList", () => getRankedList(userId)),
-      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
       // What the Ready-to-build rotation leans on (the themes each candidate plays that no deck
       // does). Beside the ranked list, never after it: it reads nothing the list returns. Null on
       // failure, which walks the plain shuffle.

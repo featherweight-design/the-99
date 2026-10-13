@@ -311,7 +311,7 @@ describe("readModalPicks", () => {
     vi.stubEnv("DECK_PRINTINGS_ENABLED", "false");
     try {
       state.picks = [{ deck_id: DECK, oracle_id: OWNED, set_code: "khm", collector_number: "31" }];
-      const env = { ...process.env, DECK_PRINTINGS_ENABLED: "true" };
+      const env = { DECK_PRINTINGS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
       expect(await readModalPicks("u", DECK, env)).toEqual({ [OWNED]: { setCode: "KHM", collectorNumber: "31" } });
       expect(await readModalPicks("u", DECK)).toBeNull();
     } finally {

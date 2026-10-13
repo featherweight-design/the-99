@@ -32,9 +32,14 @@ const surfaces = (deckId: string) => {
  * shows these rather than waiting on the page's refresh, which can arrive after (or before) it and show the
  * notes as they were. A failed read costs nothing: the write stands and the page payload carries them.
  */
-async function fresh(deckId: string, userId: string, deck: { commanderOracleId: string; partnerOracleId: string | null }): Promise<NotesResult> {
+async function fresh(
+  deckId: string,
+  userId: string,
+  deck: { commanderOracleId: string; partnerOracleId: string | null },
+  env: NodeJS.ProcessEnv,
+): Promise<NotesResult> {
   surfaces(deckId);
-  const notes = await readDeckNotes(deckId, userId, deck).catch((err) => {
+  const notes = await readDeckNotes(deckId, userId, deck, env).catch((err) => {
     console.error("readDeckNotes after a write failed", err);
     return null;
   });
@@ -75,7 +80,7 @@ export async function addNote(deckId: string, rawBody: string): Promise<NotesRes
     console.error("addNote failed", err);
     return refuse;
   }
-  return fresh(deckId, userId, deck);
+  return fresh(deckId, userId, deck, env);
 }
 
 export async function editNote(deckId: string, noteId: string, rawBody: string): Promise<NotesResult> {
@@ -93,7 +98,7 @@ export async function editNote(deckId: string, noteId: string, rawBody: string):
     console.error("editNote failed", err);
     return refuse;
   }
-  return fresh(deckId, userId, deck);
+  return fresh(deckId, userId, deck, env);
 }
 
 /** Select (`done: true`) or unselect a note. */
@@ -110,7 +115,7 @@ export async function setNoteDone(deckId: string, noteId: string, done: boolean)
     console.error("setNoteDone failed", err);
     return refuse;
   }
-  return fresh(deckId, userId, deck);
+  return fresh(deckId, userId, deck, env);
 }
 
 export async function deleteNote(deckId: string, noteId: string): Promise<NotesResult> {
@@ -126,7 +131,7 @@ export async function deleteNote(deckId: string, noteId: string): Promise<NotesR
     console.error("deleteNote failed", err);
     return refuse;
   }
-  return fresh(deckId, userId, deck);
+  return fresh(deckId, userId, deck, env);
 }
 
 /** The `[[` picker's "any card" lookup. Null when the switch is off or the search fails. */

@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// The proxy resolves each reader's switches onto a request header; here the reader's resolved env is
+// a SENTINEL holding only the switches a test sets, so an assertion on it compares identity and a
+// failure prints a small object, never the process environment.
+const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
 // The action module imports the db client, which throws at module init without a live URL.
 /** A drizzle `sql` template rendered to something a test can match on.
@@ -944,7 +946,6 @@ describe("addCardToDeck — relock wakes a dormant lock, and only on request", (
   const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
   const CARD = "11111111-1111-1111-1111-111111111111";
   const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-  const was = process.env.NEVER_CUT_ENABLED;
   const revived = () => stub.state.executeTexts.join(" ").includes("update deck_locks");
 
   beforeEach(() => {
@@ -953,11 +954,10 @@ describe("addCardToDeck — relock wakes a dormant lock, and only on request", (
       { oracleId: CARD, commanderLegal: true, colorIdentity: [], typeLine: "Artifact" },
       { oracleId: CMDR, commanderLegal: true, colorIdentity: ["G"], typeLine: "Legendary Creature" },
     );
-    process.env.NEVER_CUT_ENABLED = "true";
+    ENV.NEVER_CUT_ENABLED = "true";
   });
   afterEach(() => {
-    if (was === undefined) delete process.env.NEVER_CUT_ENABLED;
-    else process.env.NEVER_CUT_ENABLED = was;
+    delete ENV.NEVER_CUT_ENABLED;
   });
 
   it("wakes it when asked, with the switch on", async () => {
@@ -976,7 +976,7 @@ describe("addCardToDeck — relock wakes a dormant lock, and only on request", (
     const { addCardToDeck } = await import("./actions");
     await addCardToDeck(DECK, CARD, { relock: "true" } as never);
     expect(revived()).toBe(false);
-    delete process.env.NEVER_CUT_ENABLED;
+    delete ENV.NEVER_CUT_ENABLED;
     await addCardToDeck(DECK, CARD, { relock: true });
     expect(revived()).toBe(false);
   });
@@ -1425,7 +1425,7 @@ describe("commitDeckVersion", () => {
     vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
     await commitDeckVersion(DECK_ID, null);
     expect(commitVersion).toHaveBeenCalledWith(
-      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] }, process.env,
+      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] }, ENV,
     );
   });
 
@@ -1462,7 +1462,7 @@ describe("commitDeckVersion", () => {
     });
     await commitDeckVersion(DECK_ID, null);
     expect(cachedDeckProfile).not.toHaveBeenCalled();
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, process.env);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, ENV);
   });
 
   // A Server Action's arguments are wire input, so the signature is a claim about
@@ -1479,7 +1479,7 @@ describe("commitDeckVersion", () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, process.env);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, ENV);
   });
 
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
@@ -1643,7 +1643,7 @@ describe("commitDeckVersion", () => {
     await commitDeckVersion(DECK_ID, "   ");
     // The third argument is the caller's transaction: the diff behind the
     // receipt and the snapshot it describes are read under one lock.
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, process.env);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, ENV);
   });
 });
 
@@ -1775,20 +1775,18 @@ describe("setCardProxied", () => {
 
 
 describe("setCardLocked", () => {
-  const was = process.env.NEVER_CUT_ENABLED;
   beforeEach(() => {
     stub.state.decks = [OWNED_DECK];
     stub.state.revalidated.length = 0;
     stub.state.afters.length = 0;
-    process.env.NEVER_CUT_ENABLED = "true";
+    ENV.NEVER_CUT_ENABLED = "true";
   });
   afterEach(() => {
-    if (was === undefined) delete process.env.NEVER_CUT_ENABLED;
-    else process.env.NEVER_CUT_ENABLED = was;
+    delete ENV.NEVER_CUT_ENABLED;
   });
 
   it("refuses with the switch off, before touching the database (D3)", async () => {
-    delete process.env.NEVER_CUT_ENABLED;
+    delete ENV.NEVER_CUT_ENABLED;
     stub.state.executeRows = [{ held: true }];
     const result = await setCardLocked(DECK_ID, CARD_A, true);
     stub.state.executeRows = null;
@@ -1904,7 +1902,7 @@ describe("getVersionDiff", () => {
     );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, null, process.env]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, null, ENV]);
   });
 
   // A v1 has nothing before it, and the diff loader is told so explicitly rather
@@ -1912,12 +1910,12 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null, process.env]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null, ENV]);
   });
 
   // Precons R3 K10: a linked deck's v1 diffs against v0, read from the precon and never a version.
   it("hands a linked deck's first version v0 as its predecessor", async () => {
-    vi.stubEnv("PRECONS_ENABLED", "true");
+    ENV.PRECONS_ENABLED = "true";
     try {
       stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID, commanderOracleId: CMD, partnerOracleId: null });
       vi.mocked(readDeckOrigin).mockResolvedValueOnce({
@@ -1928,10 +1926,10 @@ describe("getVersionDiff", () => {
       await getVersionDiff(DECK_ID, VERSION_ID);
       expect(readDeckOrigin).toHaveBeenCalledWith(USER_ID, DECK_ID);
       expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([
-        VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] }, process.env,
+        VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] }, ENV,
       ]);
     } finally {
-      vi.unstubAllEnvs();
+      delete ENV.PRECONS_ENABLED;
     }
   });
 });
@@ -2257,7 +2255,7 @@ describe("pullCardFromDeck", () => {
     expect(result).toEqual({ ok: true, buy: 7, total: "$241.00" });
     // After the revalidation, so the figures describe the world the reader is
     // about to be shown rather than the one the pull replaced.
-    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID, process.env);
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID, ENV);
   });
 
   // The card has already moved by then. Failing the pull over the sentence

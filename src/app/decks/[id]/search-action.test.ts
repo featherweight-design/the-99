@@ -22,7 +22,9 @@ vi.mock("../../../db", () => {
   return { db: { select: () => chain } };
 });
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => process.env }));
+// The reader's resolved env, a SENTINEL: an assertion on it never prints the process environment.
+const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ENV }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => new Map() }));
 vi.mock("../../../lib/cards/chain-art", () => ({ chainArt: (...args: unknown[]) => stub.chainArt(...args) }));
 
@@ -53,13 +55,13 @@ describe("searchCards art", () => {
 
   it("asks the chain about every result, owned or not, in the deck's context", async () => {
     await searchCards("zom", null, false, "deck-1");
-    expect(stub.chainArt).toHaveBeenCalledWith("user-1", "deck-1", ["zombify", "unowned"], process.env);
+    expect(stub.chainArt).toHaveBeenCalledWith("user-1", "deck-1", ["zombify", "unowned"], ENV);
   });
 
   it("keeps the catalog art for every row when the chain answers nothing", async () => {
     stub.chainArt.mockResolvedValue(new Map());
     const out = await searchCards("zom", null, false);
     expect(out.map((r) => r.imageUri)).toEqual(["catalog-zombify.jpg", "catalog-unowned.jpg"]);
-    expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify", "unowned"], process.env);
+    expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify", "unowned"], ENV);
   });
 });

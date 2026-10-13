@@ -22,6 +22,9 @@ vi.mock("../decks/printings", () => ({
 
 import { chainArt, withChainArt } from "./chain-art";
 
+// The reader's resolved switches, a SENTINEL: an assertion on it never prints the process environment.
+const ENV = { DECK_PRINTINGS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+
 beforeEach(() => {
   calls.owned = new Map();
   calls.deck = new Map();
@@ -38,8 +41,10 @@ describe("chainArt", () => {
   it("asks the deck's chain when a deck is in context, and the player's owned printing when none is", async () => {
     calls.deck = new Map([["a", { imageUri: "deck-pick.jpg" }]]);
     calls.owned = new Map([["a", { imageUri: "owned.jpg" }]]);
-    expect(await chainArt("u", "d", ["a"])).toEqual(new Map([["a", "deck-pick.jpg"]]));
-    expect(calls.deckArgs).toEqual(["u", "d", ["a"], process.env]);
+    expect(await chainArt("u", "d", ["a"], ENV)).toEqual(new Map([["a", "deck-pick.jpg"]]));
+    expect((calls.deckArgs as unknown[]).slice(0, 3)).toEqual(["u", "d", ["a"]]);
+    // By identity, as a boolean: a chain that fell back to the environment must not print it on failure.
+    expect((calls.deckArgs as unknown[])[3] === ENV).toBe(true);
     expect(calls.ownedArgs).toBeUndefined();
     expect(await chainArt("u", null, ["a"])).toEqual(new Map([["a", "owned.jpg"]]));
     expect(calls.ownedArgs).toEqual(["u", ["a"]]);
@@ -49,7 +54,9 @@ describe("chainArt", () => {
     calls.deck = new Map([["a", { imageUri: "a.jpg" }], ["b", { imageUri: null }]]);
     const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"]);
     expect([...got]).toEqual([["a", "a.jpg"]]);
-    expect(calls.deckArgs).toEqual(["u", "d", ["a", "b", "c"], process.env]);
+    expect((calls.deckArgs as unknown[]).slice(0, 3)).toEqual(["u", "d", ["a", "b", "c"]]);
+    // Omitted, the env is the environment alone; compared by identity so a failure never prints it.
+    expect((calls.deckArgs as unknown[])[3] === process.env).toBe(true);
   });
 
   // A card nothing above resolves is one the reader does not own: it opens on the printing card details open an

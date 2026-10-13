@@ -134,8 +134,9 @@ export default async function DeckBuilderPage({
   // `versions/page.tsx` until that route was deleted.
   if (!isUuid(id)) notFound();
   const userId = await requireUserId();
-  // The reader's switches, resolved ONCE for this render: every switch below and every reader it starts
-  // decides from this env, never from the environment alone (admin PR 6b).
+  // The reader's switches, resolved ONCE for this render: every switch below decides from this env, and so
+  // does every reader it starts but one. `loadAvailability` still reads `changeCommanderEnabled()` and
+  // `neverCutEnabled()` from the environment alone, until admin adoption 6e threads env into it.
   const env = await requestSwitchEnv(userId);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
@@ -204,7 +205,7 @@ export default async function DeckBuilderPage({
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
   // route, and nothing cached holds a note). Behind its own switch: off reads nothing.
   const notesRead = deckNotesEnabled(env)
-    ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null })) : null)))
+    ? early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, env)) : null)))
     : null;
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
@@ -261,7 +262,7 @@ export default async function DeckBuilderPage({
   // after mount in that case.
   const showNotices = analysisTabEnabled(env) && noticesEnabled(env);
   const initialNotices = showNotices
-    ? perf.timed("notices", () => loadDeckNotices(id, userId)).catch(() => null)
+    ? perf.timed("notices", () => loadDeckNotices(id, userId, env)).catch(() => null)
     : Promise.resolve(null);
   // The swap tools read the flag once, here, and reach every surface through one provider: a row
   // that finds no provider draws nothing of them.

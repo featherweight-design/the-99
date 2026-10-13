@@ -4,9 +4,10 @@ import { NO_TAPPED_LANDS } from "../../lib/mana/lands-tapped";
 import type { ManaSupplyCardRow } from "../../lib/mana/supply";
 import { readManaBalance as engine, type ManaBalance } from "../../lib/tuning/mana-balance";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// The proxy resolves each reader's switches onto a request header; here the reader's resolved env is
+// a SENTINEL, so an assertion on it compares a small object and never prints the process environment.
+const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
 const state = vi.hoisted(() => ({
   enabled: true,
@@ -139,7 +140,7 @@ describe("readManaHelpFor (the action)", () => {
     const help = await readManaHelpFor(DECK, "G");
     expect(help?.staples.map((s) => s.imageUri)).toEqual(["fra-399", "catalog-unowned"]);
     // The deck's own chain: its pick first, then the player's owned printing.
-    expect(state.artCalls.at(-1)).toEqual(["user_1", DECK, ["farmland", "unowned"], process.env]);
+    expect(state.artCalls.at(-1)).toEqual(["user_1", DECK, ["farmland", "unowned"], ENV]);
     state.staples = [];
     state.art = new Map();
   });

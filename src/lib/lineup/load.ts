@@ -176,7 +176,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
 export async function loadLineup(userId: string, env: NodeJS.ProcessEnv): Promise<LineupData> {
   // The bracket follows the tile's own switch: a bracket only the Analysis tab can explain is drawn
   // only while that tab exists.
-  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled(env) });
+  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled(env), env });
   const ids = decks.map((d) => d.id);
   const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
   const [rows, built] = await Promise.all([ids.length === 0
