@@ -18,7 +18,7 @@ const call = (over: Partial<CallRow>): CallRow => ({
   id: `c${++n}`, userId: "user_hugh", feature: "tuning", origin: "player", status: "spent", model: "claude-sonnet-5", micro: 40_000, createdAt: new Date("2026-10-06T10:00:00Z"), ...over,
 });
 const labelRun: LabelRunRow = {
-  runId: "backfill-2026-10-03", model: "claude-sonnet-4-5", batches: 2677, collected: 2677, inTokens: 13_862_095, outTokens: 5_157_552, cacheWriteTokens: 0, cacheReadTokens: 0, firstAt: new Date("2026-10-03T07:20:15Z"),
+  runId: "backfill-2026-10-03", model: "claude-sonnet-4-5", batches: 2677, collected: 2677, open: 0, expired: 0, inTokens: 13_862_095, outTokens: 5_157_552, cacheWriteTokens: 0, cacheReadTokens: 0, firstAt: new Date("2026-10-03T07:20:15Z"),
 };
 const settledLedger = { file: "ledger.jsonl", entries: [{ at: "2026-09-24T06:03:01Z", usd: 0.229259, requests: 12 }] };
 
@@ -29,7 +29,7 @@ function draw(detailRows: Partial<DetailRows>, opts: { env?: "staging" | "produc
   const days = (detailRows.calls ?? []).map((c) => ({ day: c.createdAt.getUTCDate(), origin: c.origin, runs: 1, micro: c.micro ?? 0 }));
   const rows: CostRows = {
     days, playerAccounts: 1, ownerMicro: 0, ownerShareMicro: usdToMicro(5), previous: { runs: 0, micro: 0 }, settings: {}, paused: false,
-    outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro, labelsIncomplete: d.labelsIncomplete },
+    outside: { batchMicro: d.series.labels - d.labelCallsMicro, evalsMicro: d.series.evals, labelCallsMicro: d.labelCallsMicro, labelsIncomplete: d.labelsIncomplete, evalsUnreadable: d.ledgersUnreadable.length > 0 },
   };
   return render(<CostsView s={costSummary(rows, month, NOW)} detail={d} env={opts.env} month={month} current={OCT} />);
 }
@@ -83,7 +83,7 @@ describe("CostsDetail, a month with runs", () => {
   });
 
   it("marks label figures so far while chunks are still collecting", () => {
-    const { container } = draw({ calls, labelRuns: [{ ...labelRun, batches: 2678 }] });
+    const { container } = draw({ calls, labelRuns: [{ ...labelRun, batches: 2678, open: 1 }] });
     expect(container.querySelector('[data-series="labels"]')).toHaveTextContent("$59.48 so far");
     const labels = screen.getByRole("table", { name: "Card label runs" });
     expect(within(labels).getAllByText("$59.48 so far")).toHaveLength(2);
@@ -195,6 +195,16 @@ describe("CostsDetail, the eval ledgers", () => {
   it("says nothing pending when every worst case has settled", () => {
     draw({ calls: [call({})] });
     expect(within(screen.getByRole("table", { name: "Eval ledgers" })).getByText("nothing pending")).toBeInTheDocument();
+  });
+});
+
+describe("CostsDetail, an eval ledger that could not be read", () => {
+  it("says which, and reads the eval and system figures as partial rather than complete", () => {
+    const { container } = draw({ calls: [call({})], ledgersUnreadable: ["ledger-cuts.jsonl"] });
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not read ledger-cuts.jsonl, so the eval figures leave it out.");
+    expect(container.querySelector('[data-series="evals"]')).toHaveTextContent("so far");
+    expect(container.querySelector('[data-model="evals"]')).toHaveTextContent("so far");
+    expect(screen.getByText(/some label or eval spend is not in yet/)).toBeInTheDocument();
   });
 });
 

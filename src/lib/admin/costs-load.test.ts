@@ -1,6 +1,7 @@
 // `loadCosts` wiring, against a database that answers every read with no rows: the owner's share it
 // hands the view is the one the allowance enforces (`ownerShareMicro()`), env var included.
-import { readdirSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -27,7 +28,7 @@ vi.mock("../model/allowance", async (importOriginal) => ({
   readAllowance: async () => ({ paused: false }),
 }));
 
-const { loadCosts } = await import("./costs");
+const { loadCosts, readEvalLedgers } = await import("./costs");
 
 const OCT = { year: 2026, month: 9 };
 const NOW = new Date("2026-10-11T15:00:00Z");
@@ -68,5 +69,28 @@ describe("loadCosts", () => {
     // October 2026 has eval spend on the committed ledgers, and nothing else in this empty database.
     expect(summary.systemSplit.evals).toBeGreaterThan(0);
     expect(summary.systemSplit.total).toBe(summary.systemSplit.evals);
+  });
+});
+
+describe("readEvalLedgers", () => {
+  it("names a missing directory, so eval spend reads unknown rather than $0", () => {
+    expect(readEvalLedgers(join(tmpdir(), "no-such-eval-dir"))).toEqual({ ledgers: [], unreadable: ["docs/superpowers/eval"] });
+  });
+
+  it("names a ledger that will not parse and keeps the ones that do", () => {
+    const dir = mkdtempSync(join(tmpdir(), "eval-"));
+    try {
+      writeFileSync(join(dir, "ledger.jsonl"), '{"at":"2026-10-01T00:00:00Z","usd":1,"requests":2}\n');
+      writeFileSync(join(dir, "ledger-broken.jsonl"), "{not json\n");
+      const { ledgers, unreadable } = readEvalLedgers(dir);
+      expect(ledgers.map((l) => l.file)).toEqual(["ledger.jsonl"]);
+      expect(unreadable).toEqual(["ledger-broken.jsonl"]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("reads the committed ledgers whole", () => {
+    expect(readEvalLedgers().unreadable).toEqual([]);
   });
 });

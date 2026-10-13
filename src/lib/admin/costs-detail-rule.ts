@@ -1,6 +1,8 @@
 import { ledgerLimits, type LedgerLimits } from "../eval/ledger-limits";
 import type { ModelFeature } from "../model/allowance-rule";
-import { batchCostMicroUsd, FEATURE_CALLS, featureWorstCaseMicroUsd } from "../model/prices";
+import { expiredReserveFor } from "../labels/reserve";
+import { SENDS_CACHE_BREAKPOINT } from "../labels/prompt";
+import { batchCostMicroUsd, batchRates, FEATURE_CALLS, featureWorstCaseMicroUsd } from "../model/prices";
 import { usdToMicro } from "../model/spend-rule";
 import { monthParam, type MonthKey } from "./costs-rule";
 
@@ -33,12 +35,16 @@ export type PartRow = { callId: string; step: string; model: string; effort: str
 /**
  * One `card_label_batches` run's chunks in the month, by model. The token sums are 0, never null,
  * until a chunk collects (the query coalesces them); an uncollected run is told apart by `collected === 0`.
+ * `open` chunks may still be billed; `expired` ones were billed with their results gone, and are
+ * priced at the ledger's reserve (`expiredReserveFor`); a failed or abandoned chunk is done and unbilled.
  */
 export type LabelRunRow = {
   runId: string;
   model: string;
   batches: number;
   collected: number;
+  open: number;
+  expired: number;
   inTokens: number;
   outTokens: number;
   cacheWriteTokens: number;
@@ -49,7 +55,17 @@ export type LabelRunRow = {
 export type LedgerEntry = { at: string; usd: number; requests: number; pending?: string; settles?: string };
 export type LedgerFile = { file: string; entries: readonly LedgerEntry[] };
 
-export type DetailRows = { calls: readonly CallRow[]; parts: readonly PartRow[]; labelRuns: readonly LabelRunRow[]; ledgers: readonly LedgerFile[] };
+/** What `ledgersUnreadable` names when the ledgers directory itself was not there to read. */
+export const EVAL_DIR_UNREADABLE = "docs/superpowers/eval";
+
+export type DetailRows = {
+  calls: readonly CallRow[];
+  parts: readonly PartRow[];
+  labelRuns: readonly LabelRunRow[];
+  ledgers: readonly LedgerFile[];
+  /** Ledger files, or the directory (`EVAL_DIR_UNREADABLE`), that could not be read: eval spend is then unknown, not $0. */
+  ledgersUnreadable?: readonly string[];
+};
 
 /** The four series every split draws, each in its own ink. */
 export type Series = { player: number; rewrites: number; labels: number; evals: number };
@@ -147,6 +163,8 @@ export type CostDetail = {
   labelCallsMicro: number;
   /** Some label run is unpriced or still collecting, so `series.labels` and every total holding it are so far. */
   labelsIncomplete: boolean;
+  /** Eval ledgers that could not be read: `series.evals` leaves them out, so it and every total holding it are partial. */
+  ledgersUnreadable: string[];
   models: ModelRow[];
   modelsTotal: number;
   features: FeatureRow[];
@@ -189,10 +207,17 @@ const mean = (xs: readonly number[]) => (xs.length ? Math.round(xs.reduce((a, b)
 
 const RESERVED_FEATURES = Object.keys(FEATURE_CALLS) as ModelFeature[];
 
-/** A batch run's cost, or null when its model cannot be priced from summed meters. */
+/**
+ * A batch run's cost: its measured tokens, plus each expired chunk at the ledger's reserve, as
+ * `familySpend` books them. Null when its model cannot be priced from summed meters.
+ */
 function batchPrice(model: string, t: LabelRunRow): number | null {
   try {
-    return batchCostMicroUsd(model, t);
+    const measured = t.collected === 0 ? 0 : batchCostMicroUsd(model, t);
+    if (t.expired === 0) return measured;
+    const r = batchRates(model);
+    const reserve = expiredReserveFor({ in: r.in, out: r.out, ...(SENDS_CACHE_BREAKPOINT ? { system: r.cacheWrite } : {}) });
+    return measured + Math.round(usdToMicro(reserve) * t.expired);
   } catch {
     return null;
   }
@@ -226,9 +251,10 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
     // from summed meters (no rate, or a rate step). Such a run is drawn as unpriced, never as $0.
     // Chunks still collecting have no usage yet, so a run with any is priced from the collected ones
     // and marked partial, and so is every total it reaches.
-    const priced = r.collected === 0 ? 0 : batchPrice(r.model, r);
+    const priced = batchPrice(r.model, r);
     const micro = priced ?? 0;
-    const uncollected = r.batches - r.collected;
+    // Still open, so possibly still to be billed. A failed or abandoned chunk is finished.
+    const uncollected = r.open;
     const partial = priced === null || uncollected > 0;
     if (partial) labelsIncomplete = true;
     const m = modelRow(r.model);
@@ -321,6 +347,7 @@ export function costDetail(rows: DetailRows, month: MonthKey): CostDetail {
     series,
     labelCallsMicro,
     labelsIncomplete,
+    ledgersUnreadable: [...(rows.ledgersUnreadable ?? [])],
     models: modelList,
     modelsTotal: modelList.reduce((n, m) => n + m.micro, 0) + series.evals,
     features,

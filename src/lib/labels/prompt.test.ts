@@ -65,8 +65,12 @@ describe("SYSTEM_TOKENS_BOUND", () => {
   it("is at least one token per character, and is what the build books", () => {
     expect(SYSTEM_TOKENS_BOUND).toBeGreaterThanOrEqual(SYSTEM.length);
     // import.meta.url, not __dirname: Vitest runs tests as ESM.
-    const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../scripts/lib/card-labels-build.ts"), "utf8");
-    expect(build).toMatch(/const SYSTEM_TOKENS = SYSTEM_TOKENS_BOUND;/);
+    // The figure lives in `reserve.ts`, which the build imports, so the cap and the admin's expired
+    // reserve book the same one.
+    const here = dirname(fileURLToPath(import.meta.url));
+    expect(readFileSync(join(here, "reserve.ts"), "utf8")).toMatch(/export const SYSTEM_TOKENS = SYSTEM_TOKENS_BOUND;/);
+    const build = readFileSync(join(here, "../../../scripts/lib/card-labels-build.ts"), "utf8");
+    expect(build).toMatch(/import \{[^}]*\bSYSTEM_TOKENS\b[^}]*\} from "\.\.\/\.\.\/src\/lib\/labels\/reserve";/);
   });
 });
 

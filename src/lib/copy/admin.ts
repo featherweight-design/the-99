@@ -148,6 +148,8 @@ export const adminCopy = {
     unpriced: "not priced",
     soFar: (v: string) => `${v} so far`,
     labelsPartial: "label runs still collecting or not priced",
+    systemPartial: "some label or eval spend is not in yet",
+    ledgersUnreadable: (names: string) => `Could not read ${names}, so the eval figures leave it out.`,
     labelsOnStaging: "Card labels run on staging; production receives copies and calls no model for them.",
     evals: "Eval ledgers",
     evalsMeta: "committed in the repo; they move only with a merge",

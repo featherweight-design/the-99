@@ -1,6 +1,7 @@
 // The Costs detail's arithmetic (admin PR 3), on rows shaped like staging's October.
 import { describe, expect, it } from "vitest";
-import { batchCostMicroUsd, featureWorstCaseMicroUsd } from "../model/prices";
+import { batchCostMicroUsd, batchRates, featureWorstCaseMicroUsd } from "../model/prices";
+import { expiredReserveFor } from "../labels/reserve";
 import { usdToMicro } from "../model/spend-rule";
 import { costDetail, ledgerName, ledgerRow, percentileCont, shortModel, type CallRow, type DetailRows, type LabelRunRow, type PartRow } from "./costs-detail-rule";
 
@@ -11,7 +12,7 @@ const call = (over: Partial<CallRow>): CallRow => ({
 });
 const part = (callId: string, over: Partial<PartRow>): PartRow => ({ callId, step: "call", model: "claude-sonnet-5", effort: "medium", micro: 10_000, ...over });
 const labelRun = (over: Partial<LabelRunRow>): LabelRunRow => ({
-  runId: "backfill-2026-10-03", model: "claude-sonnet-4-5", batches: 2677, collected: 2677, inTokens: 13_862_095, outTokens: 5_157_552, cacheWriteTokens: 0, cacheReadTokens: 0, firstAt: new Date("2026-10-03T07:20:15Z"), ...over,
+  runId: "backfill-2026-10-03", model: "claude-sonnet-4-5", batches: 2677, collected: 2677, open: 0, expired: 0, inTokens: 13_862_095, outTokens: 5_157_552, cacheWriteTokens: 0, cacheReadTokens: 0, firstAt: new Date("2026-10-03T07:20:15Z"), ...over,
 });
 const rows = (over: Partial<DetailRows>): DetailRows => ({ calls: [], parts: [], labelRuns: [], ledgers: [], ...over });
 
@@ -76,9 +77,9 @@ describe("costDetail, by model", () => {
   it("folds a run's chunks into one row, and prices only collected tokens", () => {
     const d = costDetail(rows({
       labelRuns: [
-        labelRun({ runId: "backfill-2026-10-04", batches: 2678, inTokens: 14_400_000, outTokens: 5_300_000, firstAt: new Date("2026-10-04T16:54:00Z") }),
-        labelRun({ runId: "backfill-2026-10-04", batches: 1, collected: 0, inTokens: 0, outTokens: 0, firstAt: new Date("2026-10-07T00:00:00Z") }),
-        labelRun({ runId: "weekly-2026-W40", batches: 127, collected: 0, inTokens: 0, outTokens: 0, firstAt: new Date("2026-10-05T00:00:00Z") }),
+        labelRun({ runId: "backfill-2026-10-04", batches: 2678, open: 1, inTokens: 14_400_000, outTokens: 5_300_000, firstAt: new Date("2026-10-04T16:54:00Z") }),
+        labelRun({ runId: "backfill-2026-10-04", batches: 1, collected: 0, open: 1, inTokens: 0, outTokens: 0, firstAt: new Date("2026-10-07T00:00:00Z") }),
+        labelRun({ runId: "weekly-2026-W40", batches: 127, collected: 0, open: 127, inTokens: 0, outTokens: 0, firstAt: new Date("2026-10-05T00:00:00Z") }),
       ],
     }), OCT);
     expect(d.labelRuns.map((r) => [r.runId, r.batches, r.tokens])).toEqual([
@@ -91,6 +92,22 @@ describe("costDetail, by model", () => {
     expect(d.labelRuns.map((r) => r.uncollected)).toEqual([2, 127]);
     expect(d.models[0].incomplete).toBe(true);
     expect(d.labelsIncomplete).toBe(true);
+  });
+
+  it("calls a run with failed or abandoned chunks finished, not still collecting", () => {
+    // 2,677 collected and 3 more that failed: unbilled and done, so nothing is still to come.
+    const d = costDetail(rows({ labelRuns: [labelRun({ batches: 2680 })] }), OCT);
+    expect(d.labelRuns[0].uncollected).toBeUndefined();
+    expect(d.labelsIncomplete).toBe(false);
+  });
+
+  it("books an expired chunk at the ledger's reserve, as the build's cap does", () => {
+    const base = costDetail(rows({ labelRuns: [labelRun({})] }), OCT).labelRuns[0].micro;
+    const d = costDetail(rows({ labelRuns: [labelRun({ batches: 2679, expired: 2 })] }), OCT);
+    const r = batchRates("claude-sonnet-4-5");
+    const reserve = usdToMicro(expiredReserveFor({ in: r.in, out: r.out }));
+    expect(d.labelRuns[0].micro).toBe(base + Math.round(reserve * 2));
+    expect(d.labelsIncomplete).toBe(false);
   });
 
   it("calls a fully collected, priced month complete", () => {

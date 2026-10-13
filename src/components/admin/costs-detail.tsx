@@ -126,9 +126,9 @@ function ByModel({ d }: { d: CostDetail }) {
     ].filter(Boolean).join("; "),
     parts: [{ micro: m.segs.player, ink: INK.player }, { micro: m.segs.rewrites, ink: INK.rewrites }, { micro: m.segs.labels, ink: INK.labels }],
   }));
-  if (d.series.evals > 0) {
+  if (d.series.evals > 0 || d.ledgersUnreadable.length > 0) {
     const ledgers = d.ledgers.filter((l) => l.settledMicro + l.pendingMicro > 0).length;
-    rows.push({ key: "evals", label: copy.evalsUnsplit, micro: d.series.evals, fig: usd(d.series.evals), sub: copy.modelSub.evals(ledgers), parts: [{ micro: d.series.evals, ink: INK.evals }] });
+    rows.push({ key: "evals", label: copy.evalsUnsplit, micro: d.series.evals, fig: d.ledgersUnreadable.length ? copy.soFar(usd(d.series.evals)) : usd(d.series.evals), sub: copy.modelSub.evals(ledgers), parts: [{ micro: d.series.evals, ink: INK.evals }] });
   }
   return (
     <div className={CARD}>
@@ -153,8 +153,8 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
   const sys = s.systemSplit;
   const parts = [
     { key: "player", t: copy.series.player, micro: s.player.micro, ink: INK.player },
-    { key: "labels", t: copy.series.labels, micro: sys.labels, ink: INK.labels, partial: sys.incomplete },
-    { key: "evals", t: copy.series.evals, micro: sys.evals, ink: INK.evals },
+    { key: "labels", t: copy.series.labels, micro: sys.labels, ink: INK.labels, partial: sys.labelsPartial },
+    { key: "evals", t: copy.series.evals, micro: sys.evals, ink: INK.evals, partial: sys.evalsPartial },
     { key: "rewrites", t: copy.series.rewrites, micro: sys.rewrites, ink: INK.rewrites },
   ];
   const total = s.player.micro + sys.total;
@@ -320,6 +320,9 @@ export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetai
       )}
 
       <SectionHead title={copy.evals} meta={copy.evalsMeta} />
+      {d.ledgersUnreadable.length > 0 && (
+        <p role="alert" className="text-[13px] leading-[1.5] text-[color:var(--warning)]">{copy.ledgersUnreadable(d.ledgersUnreadable.join(", "))}</p>
+      )}
       <EvalLedgers d={d} month={month} />
     </>
   );

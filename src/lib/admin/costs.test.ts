@@ -80,6 +80,9 @@ describe("the detail's queries", () => {
     expect(q.sql).toContain(`count("card_label_batches"."in_tokens")::int`);
     expect(q.sql).toContain(`coalesce(sum("card_label_batches"."out_tokens"), 0)`);
     expect(q.sql).toContain(`min("card_label_batches"."intended_at")`);
+    // Open and expired by status, as the ledger counts them, never by a null meter.
+    expect(q.sql).toContain(`count(*) filter (where "card_label_batches"."status" in ('intended', 'submitted', 'in_progress'))`);
+    expect(q.sql).toContain(`count(*) filter (where "card_label_batches"."status" = 'expired')`);
     expect(q.sql).toMatch(/where \("card_label_batches"\."intended_at" >= \$1 and "card_label_batches"\."intended_at" < \$2\) group by "card_label_batches"\."run_id", "card_label_batches"\."model"$/);
   });
 });

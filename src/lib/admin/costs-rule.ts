@@ -68,13 +68,14 @@ export type CostRows = {
    * System spend `model_calls` does not hold, and the part of it that is labels: card label
    * batches, the month's eval ledgers, and the manual collector's `labels` rows (already in the
    * system day rows). Absent reads as none. `labelsIncomplete`: a label run is unpriced or still
-   * collecting, so the labels figure is so far.
+   * collecting, so the labels figure is so far. `evalsUnreadable`: an eval ledger could not be read,
+   * so the evals figure leaves it out.
    */
-  outside?: { batchMicro: number; evalsMicro: number; labelCallsMicro: number; labelsIncomplete?: boolean };
+  outside?: { batchMicro: number; evalsMicro: number; labelCallsMicro: number; labelsIncomplete?: boolean; evalsUnreadable?: boolean };
 };
 
 /** System spend in its three inks: card labels, evals, and the rest (free rewrites and prose). `incomplete`: labels are so far. */
-export type SystemSplit = { labels: number; evals: number; rewrites: number; total: number; incomplete: boolean };
+export type SystemSplit = { labels: number; evals: number; rewrites: number; total: number; labelsPartial: boolean; evalsPartial: boolean; incomplete: boolean };
 
 export type Banner = { kind: "paused" } | { kind: "alarm" } | { kind: "pace"; day: number } | null;
 
@@ -149,7 +150,7 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
   const outside = rows.outside ?? { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0 };
   const labels = outside.batchMicro + outside.labelCallsMicro;
   const rewrites = system.micro - outside.labelCallsMicro;
-  const systemSplit = { labels, evals: outside.evalsMicro, rewrites, total: labels + outside.evalsMicro + rewrites, incomplete: !!outside.labelsIncomplete };
+  const systemSplit = { labels, evals: outside.evalsMicro, rewrites, total: labels + outside.evalsMicro + rewrites, labelsPartial: !!outside.labelsIncomplete, evalsPartial: !!outside.evalsUnreadable, incomplete: !!outside.labelsIncomplete || !!outside.evalsUnreadable };
 
   const elsewhere = rows.settings.elsewhere_usd;
   const prefix = monthParam(month);

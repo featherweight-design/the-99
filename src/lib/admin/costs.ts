@@ -4,7 +4,8 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminSettings, cardLabelBatches, modelCallParts, modelCalls } from "../../db/schema";
 import { modelOwnerUserId, ownerShareMicro, readAllowance } from "../model/allowance";
-import { costDetail, type CallRow, type CostDetail, type LedgerEntry, type LedgerFile } from "./costs-detail-rule";
+import { costDetail, EVAL_DIR_UNREADABLE, type CallRow, type CostDetail, type LedgerEntry, type LedgerFile } from "./costs-detail-rule";
+import { OPEN_STATUSES } from "../labels/reserve";
 import {
   costSummary,
   settingsForMonth,
@@ -122,6 +123,12 @@ export function labelRunsQuery(start: Date, end: Date, x: Reader = db) {
       model,
       batches: sql<number>`count(*)::int`,
       collected: sql<number>`count(${lcol("in_tokens")})::int`,
+      // By STATUS, as the ledger reads them (`familySpend`): a chunk still open may yet be billed,
+      // an expired one was billed with its results gone, and a failed or abandoned one is done and
+      // unbilled. A null meter alone cannot tell those apart.
+      // The statuses are this module's own constants, written as literals so the month stays $1 and $2.
+      open: sql<number>`(count(*) filter (where ${lcol("status")} in (${sql.raw(OPEN_STATUSES.map((s) => `'${s}'`).join(", "))})))::int`,
+      expired: sql<number>`(count(*) filter (where ${lcol("status")} = 'expired'))::int`,
       inTokens: sum("in_tokens"),
       outTokens: sum("out_tokens"),
       cacheWriteTokens: sum("cache_write_tokens"),
@@ -136,24 +143,34 @@ export function labelRunsQuery(start: Date, end: Date, x: Reader = db) {
 /**
  * The committed eval ledgers, as the deploy carries them: `next.config.ts` traces
  * `docs/superpowers/eval/ledger*.jsonl` into the `/admin` function, so they move only with a merge.
- * A file that cannot be read or parsed is left out rather than taking the page down.
+ * What cannot be read is NAMED, never dropped: a missing directory (the trace did not ship it) or a
+ * file that will not parse leaves eval spend unknown, and the page says so rather than reading $0.
  */
-export function readEvalLedgers(dir = join(process.cwd(), "docs/superpowers/eval")): LedgerFile[] {
+export function readEvalLedgers(dir = join(process.cwd(), "docs/superpowers/eval")): { ledgers: LedgerFile[]; unreadable: string[] } {
   let files: string[];
   try {
     files = readdirSync(dir).filter((f) => /^ledger.*\.jsonl$/.test(f)).sort();
   } catch {
-    return [];
+    return { ledgers: [], unreadable: [EVAL_DIR_UNREADABLE] };
   }
-  return files.flatMap((file) => {
+  if (files.length === 0) return { ledgers: [], unreadable: [EVAL_DIR_UNREADABLE] };
+  const ledgers: LedgerFile[] = [];
+  const unreadable: string[] = [];
+  for (const file of files) {
     try {
       const entries = readFileSync(join(dir, file), "utf8").split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l) as LedgerEntry);
-      return [{ file, entries }];
+      ledgers.push({ file, entries });
     } catch {
-      return [];
+      unreadable.push(file);
     }
-  });
+  }
+  return { ledgers, unreadable };
 }
+
+const readEvalLedgersAs = () => {
+  const { ledgers, unreadable } = readEvalLedgers();
+  return { ledgers, ledgersUnreadable: unreadable };
+};
 
 export async function loadCosts(month: MonthKey, adminId: string, now: Date = new Date()): Promise<{ summary: CostSummary; detail: CostDetail }> {
   const start = monthStart(month);
@@ -200,13 +217,15 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
       model: r.model,
       batches: Number(r.batches),
       collected: Number(r.collected),
+      open: Number(r.open),
+      expired: Number(r.expired),
       inTokens: Number(r.inTokens),
       outTokens: Number(r.outTokens),
       cacheWriteTokens: Number(r.cacheWriteTokens),
       cacheReadTokens: Number(r.cacheReadTokens),
       firstAt: r.firstAt,
     })),
-    ledgers: readEvalLedgers(),
+    ...readEvalLedgersAs(),
   }, month);
 
   const rows: CostRows = {
@@ -226,7 +245,7 @@ export async function loadCosts(month: MonthKey, adminId: string, now: Date = ne
       month,
     ),
     paused,
-    outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro, labelsIncomplete: detail.labelsIncomplete },
+    outside: { batchMicro: detail.series.labels - detail.labelCallsMicro, evalsMicro: detail.series.evals, labelCallsMicro: detail.labelCallsMicro, labelsIncomplete: detail.labelsIncomplete, evalsUnreadable: detail.ledgersUnreadable.length > 0 },
   };
   return { summary: costSummary(rows, month, now), detail };
 }
