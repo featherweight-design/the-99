@@ -69,5 +69,37 @@ describe("TuningNotesField", () => {
       expect((screen.getByLabelText("Additional notes") as HTMLTextAreaElement).value).not.toContain(ID);
       expect(screen.getByText("17 / 500")).toBeInTheDocument();
     });
+
+    function Panel({ start }: { start: string }) {
+      const [value, setValue] = useState(start);
+      return <TuningNotesField value={value} onChange={setValue} />;
+    }
+
+    it("lets the player edit inside a tagged name without the box rewriting what they typed", () => {
+      render(<Panel start={`swap out [[${ID}|Sol Ring]] now`} />);
+      const box = screen.getByLabelText("Additional notes") as HTMLTextAreaElement;
+      // The box shows the name with its invisible mark; the player deletes a letter inside it.
+      const typed = box.value.replace("Sol Ring", "Sol Rig");
+      fireEvent.change(box, { target: { value: typed } });
+      expect(box.value).toBe(typed);
+    });
+
+    it("closes the list on Escape and keeps the draft, and clears the draft on the next Escape", async () => {
+      const seen = vi.fn();
+      function Watched() {
+        const [value, setValue] = useState("swap out ");
+        return <TuningNotesField value={value} onChange={(n) => { seen(n); setValue(n); }} />;
+      }
+      render(<Watched />);
+      const box = screen.getByLabelText("Additional notes");
+      fireEvent.change(box, { target: { value: "swap out [[Sol" } });
+      await screen.findByRole("option", { name: /Sol Ring/ });
+      seen.mockClear();
+      fireEvent.keyDown(box, { key: "Escape" });
+      expect(screen.queryByRole("option")).toBeNull();
+      expect(seen).not.toHaveBeenCalled();
+      fireEvent.keyDown(box, { key: "Escape" });
+      expect(seen).toHaveBeenCalledWith("");
+    });
   });
 });

@@ -202,14 +202,11 @@ export async function runTuning(
     return { ok: false, message: deckTuningCopy.run.refused };
   }
   // The body may carry `[[id|Name]]` tags (the box takes the `[[` picker). The cap is on what it DRAWS, in
-  // code points, with room in the raw text for the ids of at most `NOTES_TAGS_MAX` tags.
+  // code points, and a body holds at most `NOTES_TAGS_MAX` tags; a tag's id adds no drawn text, so those two
+  // bound the raw length as well.
   const trimmedBody = rawNotes === undefined ? null : rawNotes.trim();
   const notesCap = deckDescriptionCopy.notes.maxLength;
-  if (trimmedBody !== null && (
-    trimmedBody.length > notesCap * 2 + NOTES_TAGS_MAX * 41
-    || tagCount(trimmedBody) > NOTES_TAGS_MAX
-    || countCharacters(plainText(trimmedBody)) > notesCap
-  )) {
+  if (trimmedBody !== null && (tagCount(trimmedBody) > NOTES_TAGS_MAX || countCharacters(plainText(trimmedBody)) > notesCap)) {
     return { ok: false, message: deckTuningCopy.run.refused };
   }
   // A tag is the catalog's name for its id, never the client's: an id the catalog does not hold, or a card

@@ -8,7 +8,7 @@
 // `[[id|Name]]`; the box shows the name, and the server resolves each tag to the catalog's name before
 // the words reach the prompt.
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { serialize, toField } from "../../lib/decks/notes-field";
@@ -28,10 +28,19 @@ const searchNotesCards = (query: string) => searchTagCards("tuning", query);
 export function TuningNotesField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const desktop = useIsDesktop();
   const ref = useRef<HTMLTextAreaElement>(null);
-  const field = useMemo(() => toField(value), [value]);
+  // The box's own text and picks, kept beside the panel's body: serializing and parsing back is not an identity
+  // for text being edited (a `[[Name]]` whose name is mid-edit loses its mark), so a body the box itself just
+  // sent up is not parsed back over what the player is typing. A body that did not come from here (Escape, a
+  // run landing, the panel resetting it) replaces the box's text, adjusted during render.
+  const [field, setField] = useState(() => toField(value));
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
+    if (value !== serialize(field.text, field.picked)) setField(toField(value));
+  }
   const picker = useCardTagPicker({
     value: field.text, picked: field.picked, search: searchNotesCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref,
-    onChange: (text, picked) => onChange(serialize(text, picked)),
+    onChange: (text, picked) => { setField({ text, picked: new Map(picked) }); onChange(serialize(text, picked)); },
   });
   const n = picker.count;
   // Grows with its content (review fix) rather than sitting fixed at two rows: measured off the
