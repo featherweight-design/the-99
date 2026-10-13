@@ -4,6 +4,7 @@ import { MAX_DECK_SCOPE, sanitizeDeckScope } from "../../../lib/combos/deck-scop
 import { loadCardDetail } from "../../../lib/collection/card-detail";
 import { encodeCardDetail } from "../../../lib/cards/card-detail-wire";
 import { perfRoute } from "../../../lib/perf/timing";
+import { observeHit } from "../../../lib/rate/observe";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
   const perf = perfRoute("/api/card-detail");
   const { userId } = await perf.timed("auth", () => auth());
   if (!userId) return NextResponse.json(null, { status: 401 });
+  await observeHit(userId, "card-detail");
   const params = req.nextUrl.searchParams;
   const oracleId = params.get("id") ?? "";
   // A non-uuid would reach Postgres as a cast error rather than a miss.

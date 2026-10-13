@@ -38,8 +38,9 @@ describe("the switch registry", () => {
 
   // LABEL_ROLE_COUNTS is a scoring basis no reader sees as a feature (admin PR 6d-2): a per-account
   // override of it would add nothing and score one reader's stored set by a basis another's does not use.
-  it("keeps plumbing to the list cache and the role-count basis, and marks the switches that spend model calls", () => {
-    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual(["LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED"]);
+  // RATE_LIMIT counts requests (payments scope PR S); no reader sees a difference.
+  it("keeps plumbing to the list cache, the role-count basis and the request counter, and marks the switches that spend model calls", () => {
+    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual(["LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "RATE_LIMIT_ENABLED"]);
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(
       ["FIND_A_DECK_READ_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"],
     );

@@ -3135,3 +3135,21 @@ export const wishlistItems = pgTable("wishlist_items", {
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),
 ]);
+
+/**
+ * Request counts for the rate rules (`src/lib/rate/`, payments scope PR S): one row per player,
+ * bucket and window. Written by `recordHit` alone, which also deletes the player's earlier windows
+ * for the bucket, so a player holds at most a few rows. Observe-only for now: nothing reads the
+ * count to refuse a request. Purged with the account.
+ */
+export const rateHits = pgTable("rate_hits", {
+  userId: text("user_id").notNull(),
+  bucket: text("bucket").notNull(),
+  windowStart: timestamp("window_start").notNull(),
+  hits: integer("hits").notNull().default(0),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.bucket, t.windowStart] }),
+  check("rate_hits_hits_check", sql`${t.hits} >= 0`),
+  // The retention sweep in `recordHit` deletes by age alone, across every player.
+  index("rate_hits_window_idx").on(t.windowStart),
+]);

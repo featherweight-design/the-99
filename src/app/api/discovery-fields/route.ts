@@ -15,6 +15,7 @@
 // A route rather than a server action because Next runs a page's actions one at a time: a
 // background read queued as an action would wait on, and delay, the reader's own writes.
 import { auth } from "@clerk/nextjs/server";
+import { observeHit } from "../../../lib/rate/observe";
 import { NextResponse, type NextRequest } from "next/server";
 import { drawFieldsFor } from "../../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../../lib/discovery/payload";
@@ -30,6 +31,7 @@ const HEADERS = { "Content-Type": "application/json", "Cache-Control": "private,
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
+  await observeHit(userId, "draw-fields");
   const params = req.nextUrl.searchParams;
   const sort = params.get("sort");
   if (sort !== "fit" && sort !== "new") return NextResponse.json(null, { status: 400, headers: HEADERS });

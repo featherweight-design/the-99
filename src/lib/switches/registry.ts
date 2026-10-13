@@ -42,6 +42,7 @@ export const SWITCHES = [
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PRECONS_ENABLED", kind: "feature" },
   { name: "PROPOSED_CUTS_ENABLED", kind: "model" },
+  { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
   { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature" },
   { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
   { name: "SOCIAL_GAMES_ENABLED", kind: "feature" },
