@@ -364,7 +364,7 @@ export function CutsPanelView({
 
 function Band({ children, accent = false }: { children: ReactNode; accent?: boolean }) {
   return (
-    <div className="mt-[14px] rounded-[10px] px-[14px] py-[14px] md:px-[16px]"
+    <div className={`mt-[14px] rounded-[10px] px-[14px] py-[14px] md:px-[16px]${accent ? " ai-sweep" : ""}`}
       style={{ background: "var(--surface)", border: `1px solid ${accent ? "var(--accent)" : "var(--border)"}` }}>
       {children}
     </div>

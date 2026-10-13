@@ -160,6 +160,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `neon.branch_id`. `PROBE_USER_ID=<clerk id> ... --seed` leaves eight `mn-probe-fixture-` decks (the eighth, `contract-8`, holds a contract-8 overview with its evidence, for the Based on contact sheet) for
   `docs/superpowers/inventories/method-notice.json`'s contact sheet and prints the ids it reads;
   `--unseed` removes them, and touches only those decks and the calls their overviews hold.
+- `pnpm probe:ai-sweep` proves the shared `.ai-sweep` border (the conic sweep Hugh chose, 2026-10-13) rides each AI
+  tool while its read runs and is gone once the result lands, at 1300x900 and 390x844: Help me choose's reading panel,
+  Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read band. Per tool and width it checks
+  the class is on, the ring (`::before`) runs `ai-sweep` on a conic gradient, reduced motion holds it as a plain
+  accent border, and after the read settles NOTHING in the document carries the class. The models are the held
+  stand-ins, so the server needs `TUNING_STUB_DELAY_MS=9000`, `INTAKE_STUB_DELAY_MS=10000`,
+  `FITS_READ_STUB_DELAY_MS=10000` and the six tool switches (header of the script). Help me choose and Find a deck's
+  read spend a stand-in credit on success, so the probe deletes the reads and `model_calls` it made (by its start and
+  model `stub`) between widths and at the end; a stored read would otherwise replace the next width's offer. It
+  clones one over-100 deck for Proposed cuts and deletes it. `PROBE_SHOTS=<dir>` saves one mid-run shot per tool and
+  width. Refuses staging and production. Failure path run: with Suggested changes' class made unconditional the
+  probe fails on "nothing carries .ai-sweep once it has" at both widths.
 - `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
   cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
   call is held, and watches the run settle on its own, refunded, and later than the close. The model

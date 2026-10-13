@@ -529,6 +529,8 @@ html {
   /* Card art fading in as it lands, wherever it fades (`data-arrival`; Hugh, 2026-10-12: 0.2 to 0.3s). */
   --motion-fade: 300ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
+  /* One lap of a running read's border (`.ai-sweep`; Hugh, 2026-10-13: option 1, the conic sweep). */
+  --motion-loop: 3200ms;
 }
 
 /* The desktop rail's width (desktop nav labels handoff, R2): 62px beside a
@@ -926,6 +928,44 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/* A read in flight: an arc of the accent travels round the border, eased in and out, starting after a beat (the delay is the first lap's only)
+   (Hugh, 2026-10-13, option 1 of the loading mock). One class for every AI tool: Help me choose's
+   reading panel, Suggested changes' panel, Proposed cuts' Look deeper band and Find a deck's read
+   band. It is drawn as a ring ABOVE the host's own border, so the host keeps its background and its
+   layout, and it takes each theme's accent. The host sets the class only while its read runs and drops
+   it the moment the result lands, so it never runs behind a finished answer. The host needs no
+   `overflow: hidden`, which would clip the ring (it sits on the border edge). The base rule is the
+   STATIC accent border that reduced motion, and a browser without `@property`, keep: the angle
+   cannot animate there, so the sweep rule below is gated on motion alone and an unsupported engine
+   shows the arc at rest: the angle falls back to 0deg, and the keyframe's 0 to 360deg lands on the same place. */
+@property --ai-sweep-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.ai-sweep { position: relative; }
+.ai-sweep::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--accent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ai-sweep::before {
+    background: conic-gradient(
+      from var(--ai-sweep-angle, 0deg),
+      var(--accent-dim) 0deg,
+      var(--accent-dim) 250deg,
+      var(--accent) 310deg,
+      var(--accent-hover) 345deg,
+      var(--accent-dim) 360deg
+    );
+    animation: ai-sweep var(--motion-loop) var(--motion-ease) var(--motion-delay) infinite;
+  }
+}
+@keyframes ai-sweep { to { --ai-sweep-angle: 360deg; } }
 .anim-gentle-in { animation: gentle-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
 /* A surface that has mounted but whose content has not landed yet holds transparent, so its
    arrival plays when the content does rather than on an empty box (the Tuning hub's tools, which
