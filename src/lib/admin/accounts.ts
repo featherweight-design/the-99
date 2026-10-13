@@ -40,18 +40,29 @@ type ListUsers = (params: { limit: number; offset: number }) => Promise<{ data: 
 
 export type AccountsDeps = { listUsers: ListUsers; storedUserIds: () => Promise<string[]>; ownerIds: ReadonlySet<string>; deadlineMs?: number };
 
-/** `work`, or a rejection once `ms` have passed, whichever comes first. */
-function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+type Deadline = { expired: boolean };
+
+/**
+ * `work(deadline)`, or a rejection once `ms` have passed, whichever comes first. The race cannot
+ * cancel `work`, so `deadline.expired` turns true at the same moment and `work` checks it before
+ * starting anything more: a read that lost the race stops instead of fetching on unobserved.
+ */
+function withDeadline<T>(work: (deadline: Deadline) => Promise<T>, ms: number): Promise<T> {
+  const deadline: Deadline = { expired: false };
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`Clerk did not answer within ${ms}ms`)), ms);
+    timer = setTimeout(() => {
+      deadline.expired = true;
+      reject(new Error(`Clerk did not answer within ${ms}ms`));
+    }, ms);
   });
-  return Promise.race([work, late]).finally(() => clearTimeout(timer));
+  return Promise.race([work(deadline), late]).finally(() => clearTimeout(timer));
 }
 
-async function readClerk(listUsers: ListUsers): Promise<ClerkUser[]> {
+async function readClerk(listUsers: ListUsers, deadline: Deadline): Promise<ClerkUser[]> {
   const users: ClerkUser[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
+    if (deadline.expired) throw new Error("Clerk read abandoned at the deadline");
     const { data } = await listUsers({ limit: PAGE, offset: page * PAGE });
     users.push(...data);
     // A short page is the last one: the list is whole.
@@ -88,7 +99,7 @@ export async function listAccounts(
   deps: AccountsDeps = { listUsers: clerkListUsers, storedUserIds, ownerIds: adminUserIds() },
 ): Promise<AccountList> {
   try {
-    const users = await withDeadline(readClerk(deps.listUsers), deps.deadlineMs ?? CLERK_DEADLINE_MS);
+    const users = await withDeadline((deadline) => readClerk(deps.listUsers, deadline), deps.deadlineMs ?? CLERK_DEADLINE_MS);
     const accounts = users
       .filter((u) => u.id !== "system")
       .map((u) => ({ id: u.id, name: u.fullName || u.username || null, email: u.primaryEmailAddress?.emailAddress ?? null }));

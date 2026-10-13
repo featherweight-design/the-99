@@ -71,6 +71,18 @@ describe("listAccounts' deadline", () => {
     error.mockRestore();
   });
 
+  it("starts no further page once the deadline has passed", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const full = Array.from({ length: 500 }, (_, i) => user(`user_${i}`, null));
+    // The first page lands after the deadline: the loop must not go on to ask for the second.
+    const listUsers = vi.fn(() => new Promise<{ data: typeof full }>((resolve) => setTimeout(() => resolve({ data: full }), 30)));
+    const out = await listAccounts({ listUsers, storedUserIds: async () => ["user_a"], ownerIds: new Set(), deadlineMs: 10 });
+    expect(out.clerk).toBe("down");
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(listUsers).toHaveBeenCalledTimes(1);
+    error.mockRestore();
+  });
+
   it("uses Clerk's answer when it lands inside the deadline", async () => {
     const out = await listAccounts({ listUsers: async () => ({ data: [user("user_a", "Ana")] }), storedUserIds: async () => [], ownerIds: new Set(), deadlineMs: 1000 });
     expect(out).toEqual({ clerk: "ok", accounts: [{ id: "user_a", name: "Ana", email: null }] });
