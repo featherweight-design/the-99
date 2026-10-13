@@ -236,6 +236,8 @@ interface DeckCardProps {
   closeAfterCreate: { seq: number } | null;
   /** One of the first tiles in the grid: on a phone, prefetch the deck once it is on screen. */
   eager?: boolean;
+  /** Below the grid's first screen: ask for the commander's art only once the tile nears the viewport. */
+  deferArt?: boolean;
   /** Asked when this tile's prefetch would start; `false` cancels it (`IntentPrefetchLink`). */
   claimPrefetch?: () => boolean;
   /** Passed through to the menu's `See it among your decks` row; absent while Stats is off. */
@@ -277,7 +279,7 @@ interface DeckCardProps {
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, claimPrefetch, onAmong,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, deferArt = false, claimPrefetch, onAmong,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -411,6 +413,7 @@ export function DeckCard({
             labelAtPx={46}
             artCropUri={deck.commanderArtCropUri}
             colorIdentity={deck.commanderColorIdentity}
+            deferArt={deferArt}
           />
         </div>
         <div className="hidden @min-[330px]:block">
@@ -425,6 +428,7 @@ export function DeckCard({
             labelAtPx={46}
             artCropUri={deck.commanderArtCropUri}
             colorIdentity={deck.commanderColorIdentity}
+            deferArt={deferArt}
           />
         </div>
         <DeckCardOverflow

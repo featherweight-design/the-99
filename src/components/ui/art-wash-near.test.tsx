@@ -62,4 +62,43 @@ describe("NearViewportArt", () => {
     act(() => void probes[0].dispatchEvent(new Event("load")));
     expect(layer.dataset.arrival).toBe("in");
   });
+
+  it("draws a crop it has already asked for at once, so a list restored by Back never blanks it", () => {
+    const seen = "https://cards.scryfall.io/art_crop/front/c/d/cd.jpg";
+    const first = render(<NearViewportArt src={seen} className="art" style={{}} />);
+    bringIntoView();
+    expect((first.container.firstElementChild as HTMLElement).style.backgroundImage).toContain(seen);
+    first.unmount();
+    observed = [];
+    const again = render(<NearViewportArt src={seen} className="art" style={{}} />);
+    expect((again.container.firstElementChild as HTMLElement).style.backgroundImage).toContain(seen);
+    expect(observed).toHaveLength(0);
+  });
+});
+
+describe("ArtWash, cover band", () => {
+  it("defers its crop when asked, a screen ahead of the viewport", async () => {
+    const { ArtWash } = await import("./art-wash");
+    const crop = "https://cards.scryfall.io/art_crop/front/e/f/ef.jpg";
+    let margin: string | undefined;
+    vi.stubGlobal("IntersectionObserver", class extends FakeObserver {
+      constructor(cb: IntersectionObserverCallback, opts?: IntersectionObserverInit) {
+        super(cb);
+        margin = opts?.rootMargin;
+      }
+    });
+    const { container } = render(<ArtWash strategy="cover" height={248} labelAtPx={46} artCropUri={crop} colorIdentity={[]} deferArt />);
+    const layer = container.querySelector(".art-wash-art") as HTMLElement;
+    expect(layer.style.backgroundImage).toBe("");
+    expect(margin).toBe("100% 0px");
+    bringIntoView();
+    expect(layer.style.backgroundImage).toContain(crop);
+  });
+
+  it("draws its crop at once when not deferred", async () => {
+    const { ArtWash } = await import("./art-wash");
+    const crop = "https://cards.scryfall.io/art_crop/front/1/2/12.jpg";
+    const { container } = render(<ArtWash strategy="cover" height={248} labelAtPx={46} artCropUri={crop} colorIdentity={[]} />);
+    expect((container.querySelector(".art-wash-art") as HTMLElement).style.backgroundImage).toContain(crop);
+  });
 });
