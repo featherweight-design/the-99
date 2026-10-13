@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { HistoryRow } from "../../db/schema";
 import { cartSourceDecks } from "../decks/mark-bought";
+import { cartDecksOf, type CartDecks } from "./deck-line";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { HISTORY_RETENTION_DAYS } from "./write";
 
@@ -117,36 +118,55 @@ export type HistoryListEntry = {
    * Null for every entry not sourced from the cart.
    */
   cartDecks: CartDecks | null;
+  /**
+   * The decks the copies an add or an upload brought went to (`HistoryRow.wentTo`, kept at arrival), in the
+   * order the rows name them, resolved at read time like `cartDecks`; `soft` when every one is a brew's read
+   * rather than a held copy. Null when no row recorded one: an older entry, or a write made with
+   * Where-a-copy-goes off.
+   */
+  wentTo: { decks: CartDecks; soft: boolean } | null;
 };
 
-export const CART_DECKS_NAMED = 3;
-export type CartDecks = { named: { id: string; name: string }[]; more: number; gone: number };
+/** An entry as read, with the deck ids its source and its rows name still to be resolved to names. */
+type Listed = { entry: HistoryListEntry; wentIds: string[]; wentSoft: boolean };
 
-/** Pure half of the cart's deck line: `living` maps the ids that still exist to their names. */
-export function cartDecksOf(ids: readonly string[], living: ReadonlyMap<string, string>): CartDecks {
-  const alive = ids.filter((id) => living.has(id));
-  return {
-    named: alive.slice(0, CART_DECKS_NAMED).map((id) => ({ id, name: living.get(id)! })),
-    more: Math.max(alive.length - CART_DECKS_NAMED, 0),
-    gone: ids.length - alive.length,
-  };
-}
-
-/** Fills `cartDecks` on a page of entries with ONE read of the player's own decks. */
-async function withCartDecks<T extends HistoryListEntry>(userId: string, entries: T[]): Promise<T[]> {
-  const ids = [...new Set(entries.flatMap((e) => cartSourceDecks(e.source) ?? []))].filter((id) => UUID_RE.test(id));
-  if (ids.length === 0) return entries;
+/** The player's own decks among `ids`, as id to name: ONE read, and none for an empty list. */
+async function livingDecks(userId: string, ids: string[]): Promise<Map<string, string>> {
+  const valid = [...new Set(ids)].filter((id) => UUID_RE.test(id));
+  if (valid.length === 0) return new Map();
   const res = await db.execute<{ id: string; name: string }>(sql`
     select d.id::text as id, d.name from decks d
-    where d.user_id = ${userId} and d.id::text in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
-  const living = new Map(res.rows.map((r) => [r.id, r.name]));
-  return entries.map((e) => {
-    const listed = cartSourceDecks(e.source);
-    return listed ? { ...e, cartDecks: cartDecksOf(listed, living) } : e;
-  });
+    where d.user_id = ${userId} and d.id::text in (${sql.join(valid.map((id) => sql`${id}`), sql`, `)})`);
+  return new Map(res.rows.map((r) => [r.id, r.name]));
 }
 
-export type HistoryEntry = HistoryListEntry & { rows: HistoryRow[] };
+/**
+ * Fills `cartDecks` and `wentTo` on a page of entries with ONE read of the player's own decks. `extraIds` rides
+ * the same read (an opened entry's row lines), and the map it read comes back for the caller to reuse.
+ */
+async function withDeckLines(
+  userId: string, listed: Listed[], extraIds: string[] = [],
+): Promise<{ entries: HistoryListEntry[]; living: Map<string, string> }> {
+  const living = await livingDecks(userId, [
+    ...listed.flatMap((l) => [...(cartSourceDecks(l.entry.source) ?? []), ...l.wentIds]),
+    ...extraIds,
+  ]);
+  const entries = listed.map(({ entry, wentIds, wentSoft }) => {
+    const cart = cartSourceDecks(entry.source);
+    return {
+      ...entry,
+      ...(cart ? { cartDecks: cartDecksOf(cart, living) } : {}),
+      ...(wentIds.length > 0 ? { wentTo: { decks: cartDecksOf(wentIds, living), soft: wentSoft } } : {}),
+    };
+  });
+  return { entries, living };
+}
+
+export type HistoryEntry = HistoryListEntry & {
+  rows: HistoryRow[];
+  /** The player's living decks named by the rows' `wentTo`, as id to name: what a row's own line draws. */
+  rowDecks: Record<string, string>;
+};
 
 type ListRow = {
   id: string; seq: string | number; created_at: Date | string; kind: HistoryListEntry["kind"];
@@ -157,6 +177,8 @@ type ListRow = {
   reverts_visible: boolean; reverted_by_visible: boolean;
   upload_filename: string | null; first_name: string | null;
   shopping_deck_id: string | null; shopping_deck_name: string | null;
+  // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
+  went_decks: string[] | null; went_soft: boolean;
   rows?: HistoryRow[];
 };
 
@@ -219,6 +241,22 @@ export const listColumns = sql`
     where d.user_id = h.user_id
       and d.id = case when h.source ~ '^shopping:${sql.raw(UUID)}$' then substr(h.source, 10)::uuid end
   ) as shopping_deck_name,
+  -- The decks the rows' \`wentTo\` name (add and upload entries), distinct, in order of first appearance. A row
+  -- with no \`wentTo\` yields nothing from the lateral set-returning call, so most entries cost one empty scan.
+  (
+    select coalesce(jsonb_agg(w.deck_id order by w.ord), '[]'::jsonb)
+    from (
+      select d.v ->> 'deckId' as deck_id, min(r.o * 100000 + d.o) as ord
+      from jsonb_array_elements(h.rows) with ordinality as r(v, o),
+           jsonb_array_elements(r.v -> 'wentTo' -> 'decks') with ordinality as d(v, o)
+      group by 1
+    ) w
+  ) as went_decks,
+  -- Soft only when EVERY row that kept a placement is a brew's read: one held row makes the line "Went to".
+  (
+    select coalesce(bool_and(coalesce(r.v -> 'wentTo' ->> 'soft', '') = 'true'), false)
+    from jsonb_array_elements(h.rows) as r(v) where r.v -> 'wentTo' is not null
+  ) as went_soft,
   h.rows -> 0 ->> 'name' as first_name
 `;
 
@@ -226,6 +264,10 @@ const inWindow = (userId: string) => sql`
   h.user_id = ${userId} and h.rows is not null
   and h.created_at >= now() - make_interval(days => ${HISTORY_RETENTION_DAYS})
 `;
+
+function listedOf(r: ListRow): Listed {
+  return { entry: toListEntry(r), wentIds: r.went_decks ?? [], wentSoft: r.went_soft === true };
+}
 
 function toListEntry(r: ListRow): HistoryListEntry {
   return {
@@ -238,6 +280,7 @@ function toListEntry(r: ListRow): HistoryListEntry {
     shoppingDeck: r.shopping_deck_id ? { id: r.shopping_deck_id, name: r.shopping_deck_name } : null,
     shoppingCart: cartSourceDecks(r.source) !== null,
     cartDecks: null,
+    wentTo: null,
   };
 }
 
@@ -259,7 +302,7 @@ export async function listHistory(
     order by h.seq desc
     limit ${HISTORY_PAGE_SIZE + 1}
   `);
-  const page = await withCartDecks(userId, rows.rows.slice(0, HISTORY_PAGE_SIZE).map(toListEntry));
+  const { entries: page } = await withDeckLines(userId, rows.rows.slice(0, HISTORY_PAGE_SIZE).map(listedOf));
   const more = rows.rows.length > HISTORY_PAGE_SIZE;
   return { entries: page, nextBefore: more ? page[page.length - 1].seq : null };
 }
@@ -273,8 +316,13 @@ export async function getHistoryEntry(userId: string, id: string): Promise<Histo
   `);
   const r = rows.rows[0];
   if (!r) return null;
-  const [entry] = await withCartDecks(userId, [toListEntry(r)]);
-  return { ...entry, rows: r.rows ?? [] };
+  const rowIds = (r.rows ?? []).flatMap((x) => x.wentTo?.decks.map((d) => d.deckId) ?? []);
+  const { entries: [entry], living } = await withDeckLines(userId, [listedOf(r)], rowIds);
+  return {
+    ...entry,
+    rows: r.rows ?? [],
+    rowDecks: Object.fromEntries(rowIds.filter((id) => living.has(id)).map((id) => [id, living.get(id)!])),
+  };
 }
 
 /**

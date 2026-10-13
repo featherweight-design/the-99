@@ -26,11 +26,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Desktop: the page fits the screen, the list scrolls in its own box, and the controls are not pinned. Needs
   `ALL_DECKS_CART_ENABLED=true` on the server and an account whose decks miss at least eight cards. Giving the list box
   its overflow back at the phone width fails the "not its own scroll box" check.
-- `pnpm probe:history-cart-decks` walks a cart purchase's row on `/collection/history` at 390 and 1300 (History deck
+- `pnpm probe:history-cart-decks` also walks an add entry whose rows carry `wentTo` (PR 3): the entry line names the decks in
+  the rows' order and the opened rows each say their own. It walks a cart purchase's row on `/collection/history` at 390 and 1300 (History deck
   line, PR 1, Hugh 2026-10-13): the line reads `From Shopping for all decks. Bought for A, B, C, 2 more and a deck you’ve
-  since deleted.`, the cart link then one link per named deck, and the page does not scroll sideways. It writes one
-  `collection_history` entry sourced `shopping:cart:<ids>` (five of the account's decks and one id that is no deck) and
-  deletes it in a `finally`; it refuses staging and production by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`
+  since deleted.`, the cart link then one link per named deck, and the page does not scroll sideways. It writes three
+  `collection_history` entries: a cart purchase sourced `shopping:cart:<ids>` (five of the account's decks and one id that
+  is no deck), an add whose two rows kept `wentTo`, and an add mixing a held row with a brew's read; it deletes all three
+  in a `finally`; it refuses staging and production by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`
   on the server and an account with five decks.
 - `pnpm probe:history-went-to` (tsx, a real Postgres; History deck line, PR 2) proves an Add Cards save and an upload's
   receipt keep where the arriving copies went on the history row (`HistoryRow.wentTo`): a card two committed decks want

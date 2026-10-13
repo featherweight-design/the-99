@@ -97,7 +97,7 @@ export function CollectionHistoryFigureBody() {
           title={entryTitle(e, byId, reachesBack)}
           revertedByEntry={e.revertedBy ? byId.get(e.revertedBy) : undefined}
           isOpen={e.id === "about-h1"}
-          detail={e.id === "about-h1" ? { ...e, rows: HISTORY_OPEN_ROWS } : undefined}
+          detail={e.id === "about-h1" ? { ...e, rows: HISTORY_OPEN_ROWS, rowDecks: {} } : undefined}
           onToggle={noop}
           onRevert={noop}
           onRetry={noop}

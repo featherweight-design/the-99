@@ -15,6 +15,7 @@ import {
   GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, dayLabel, entryTitle, groupByDay, groupRows, rowDelta, timeLabel, type RowGroup,
 } from "../../lib/collection/history-view";
 import type { HistoryRow } from "../../db/schema";
+import { cartDecksOf, type CartDecks } from "../../lib/collection/deck-line";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -35,7 +36,7 @@ const TAG_INK: Record<HistoryKind, string> = {
   revert: "var(--fg-muted)",
 };
 
-function RowLine({ row }: { row: HistoryRow }) {
+function RowLine({ row, rowDecks }: { row: HistoryRow; rowDecks: Readonly<Record<string, string>> | null }) {
   const d = rowDelta(row);
   const where = [row.setCode ? row.setCode.toUpperCase() : "", row.collectorNumber ? `#${row.collectorNumber}` : "", row.finish === "nonfoil" ? "" : row.finish]
     .filter(Boolean)
@@ -45,6 +46,16 @@ function RowLine({ row }: { row: HistoryRow }) {
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13.5px] text-[color:var(--fg)]">{row.name}</span>
         {where ? <span className="block font-mono text-[11px] text-[color:var(--fg-faint)]">{where}</span> : null}
+        {rowDecks && row.wentTo ? (
+          <span className="block text-[12px] text-[color:var(--fg-muted)]">
+            {row.wentTo.soft ? gotItCopy.history.wentTo.leadSoft : gotItCopy.history.wentTo.lead}{" "}
+            <DeckNames
+              decks={cartDecksOf(row.wentTo.decks.map((d) => d.deckId), new Map(Object.entries(rowDecks)))}
+              linked={false}
+            />
+            {"."}
+          </span>
+        ) : null}
       </span>
       <span className="flex-none font-mono text-[12.5px]" style={{ color: d > 0 ? "var(--success)" : "var(--fg-muted)" }}>
         {d === 0 ? c.rowDetails : c.rowDelta(d)}
@@ -81,21 +92,34 @@ function ShoppingDeckLine({ deck, linked }: { deck: NonNullable<HistoryListEntry
 }
 
 /**
+ * The decks of a deck line as one run of text: the first few linked (plain on /about, which links nowhere),
+ * then the count of the rest and of those since deleted, joined by commas and a last "and".
+ */
+function DeckNames({ decks, linked }: { decks: CartDecks; linked: boolean }) {
+  const bf = gotItCopy.history.boughtFor;
+  const items: React.ReactNode[] = [
+    ...decks.named.map((d) => (linked
+      ? <a key={d.id} href={`/decks/${d.id}`} className="text-[color:var(--accent)] underline underline-offset-2">{d.name}</a>
+      : <span key={d.id}>{d.name}</span>)),
+    ...(decks.more > 0 ? [<span key="more">{bf.more(decks.more)}</span>] : []),
+    ...(decks.gone > 0 ? [<span key="gone">{bf.gone(decks.gone)}</span>] : []),
+  ];
+  return (
+    <>
+      {items.map((it, i) => (
+        <span key={i}>{i === 0 ? "" : i === items.length - 1 ? " and " : ", "}{it}</span>
+      ))}
+    </>
+  );
+}
+
+/**
  * The cart's line: a purchase from Shopping for all decks names the cart, and then the decks it was
  * bought for (the first few, linked, then a count), so the entry says where its copies went.
  */
 function ShoppingCartLine({ linked, decks }: { linked: boolean; decks: HistoryListEntry["cartDecks"] }) {
   const line = gotItCopy.history.fromCart;
-  const bf = gotItCopy.history.boughtFor;
-  const items: React.ReactNode[] = decks
-    ? [
-        ...decks.named.map((d) => (linked
-          ? <a key={d.id} href={`/decks/${d.id}`} className="text-[color:var(--accent)] underline underline-offset-2">{d.name}</a>
-          : <span key={d.id}>{d.name}</span>)),
-        ...(decks.more > 0 ? [<span key="more">{bf.more(decks.more)}</span>] : []),
-        ...(decks.gone > 0 ? [<span key="gone">{bf.gone(decks.gone)}</span>] : []),
-      ]
-    : [];
+  const named = decks !== null && decks.named.length + decks.more + decks.gone > 0;
   return (
     <p className={DECK_LINE}>
       {line.pre}{" "}
@@ -108,27 +132,34 @@ function ShoppingCartLine({ linked, decks }: { linked: boolean; decks: HistoryLi
         <span>{line.link}</span>
       )}
       {line.post}
-      {items.length > 0 ? (
-        <>
-          {". "}{bf.lead}{" "}
-          {items.map((it, i) => (
-            <span key={i}>{i === 0 ? "" : i === items.length - 1 ? " and " : ", "}{it}</span>
-          ))}
-          {"."}
-        </>
-      ) : null}
+      {named ? <>{". "}{gotItCopy.history.boughtFor.lead} <DeckNames decks={decks} linked={linked} />{"."}</> : null}
+    </p>
+  );
+}
+
+/** Where an add's or an upload's copies went, kept at arrival: one line under the entry. */
+function WentToLine({ wentTo, linked }: { wentTo: NonNullable<HistoryListEntry["wentTo"]>; linked: boolean }) {
+  const w = gotItCopy.history.wentTo;
+  return (
+    <p className={DECK_LINE}>
+      {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
     </p>
   );
 }
 
 /** What an opened entry shows: every row when it is short, else its groups, one at a time, paged. */
-function EntryRows({ rows }: { rows: HistoryRow[] }) {
+/**
+ * `rowDecks` names the decks a row's own line may print. Null (no row line) for an entry of one row that
+ * already shows its entry line, which says it: the same sentence an inch apart would be said twice. An entry read
+ * before an upload's placement was stamped has no entry line, so its rows speak for themselves.
+ */
+function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<Record<string, string>> | null }) {
   const groups = useMemo(() => groupRows(rows), [rows]);
   const [picked, setPicked] = useState<RowGroup | null>(null);
   const [shown, setShown] = useState(GROUP_FIRST);
   if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
   if (rows.length <= SHORT_ENTRY_ROWS) {
-    return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} />)}</ul>;
+    return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>;
   }
   const active = groups.find((g) => g.group === picked) ?? groups[0];
   if (!active) return null;
@@ -152,7 +183,7 @@ function EntryRows({ rows }: { rows: HistoryRow[] }) {
           </button>
         ))}
       </div>
-      <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} />)}</ul>
+      <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>
       {shown < active.rows.length ? (
         <button
           type="button"
@@ -231,6 +262,7 @@ export function HistoryEntryItem({
       </div>
       {e.shoppingDeck ? <ShoppingDeckLine deck={e.shoppingDeck} linked={anchor} /> : null}
       {e.shoppingCart ? <ShoppingCartLine linked={anchor} decks={e.cartDecks} /> : null}
+      {e.wentTo ? <WentToLine wentTo={e.wentTo} linked={anchor} /> : null}
       {reverted ? (
         <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
           {c.reverted}
@@ -255,7 +287,7 @@ export function HistoryEntryItem({
       {isOpen ? (
         <div className="border-t border-t-[color:var(--border)] px-[14px] py-[8px] md:pl-[176px]">
           {detail && detail !== "loading" && detail !== "failed" ? (
-            <EntryRows rows={detail.rows} />
+            <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} />
           ) : detail === "failed" ? (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
               {c.loadFailed}{" "}

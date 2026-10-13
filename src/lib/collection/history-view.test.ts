@@ -6,7 +6,7 @@ import { entryTitle, groupByDay, groupRows, historyReachesBack, rowGroup, timeLa
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e", seq: 1, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 1, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, wentTo: null, ...over,
 });
 const row = (before: number | null, after: number | null): HistoryRow => ({
   oracleId: "o", setCode: "lea", collectorNumber: "1", finish: "nonfoil", name: "X",

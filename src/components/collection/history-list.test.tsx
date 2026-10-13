@@ -22,14 +22,14 @@ const NOW = Date.parse("2026-10-09T20:00:00Z");
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e1", seq: 5, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
   copiesUp: 2, copiesDown: 0, removesOnly: false, revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false,
-  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, ...over,
+  uploadFilename: null, firstName: "Sol Ring", shoppingDeck: null, shoppingCart: false, cartDecks: null, wentTo: null, ...over,
 });
 const row = (name: string, before: number | null, after: number | null): HistoryRow => ({
   oracleId: name, setCode: "lea", collectorNumber: "1", finish: "nonfoil", name,
   before: before === null ? null : { quantity: before, scryfallId: null, condition: null },
   after: after === null ? null : { quantity: after, scryfallId: null, condition: null },
 });
-const detail = (e: HistoryListEntry, rows: HistoryRow[]): HistoryEntry => ({ ...e, rows });
+const detail = (e: HistoryListEntry, rows: HistoryRow[], rowDecks: Record<string, string> = {}): HistoryEntry => ({ ...e, rows, rowDecks });
 
 function draw(entries: HistoryListEntry[], over: Partial<React.ComponentProps<typeof HistoryList>> = {}) {
   return render(
@@ -183,6 +183,51 @@ describe("HistoryList", () => {
     draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true, cartDecks: { named: [], more: 0, gone: 2 } })]);
     expect(screen.getByRole("link", { name: "Shopping for all decks" }).closest("p")?.textContent)
       .toBe("From Shopping for all decks. Bought for 2 decks you’ve since deleted.");
+  });
+
+  it("says where an add's copies went under the entry, linked, and Wanted by for a brew's read", () => {
+    const decks = { named: [{ id: "d1", name: "Gishath" }, { id: "d2", name: "Omnath" }], more: 1, gone: 0 };
+    draw([
+      entry({ id: "w1", wentTo: { decks, soft: false } }),
+      entry({ id: "w2", wentTo: { decks: { named: [{ id: "b1", name: "Brew" }], more: 0, gone: 0 }, soft: true } }),
+      entry({ id: "w3", wentTo: { decks: { named: [], more: 0, gone: 2 }, soft: false } }),
+    ]);
+    const first = screen.getByRole("link", { name: "Gishath" }).closest("p")!;
+    expect(first.textContent).toBe("Went to Gishath, Omnath and 1 more.");
+    expect(screen.getByRole("link", { name: "Omnath" }).getAttribute("href")).toBe("/decks/d2");
+    expect(screen.getByRole("link", { name: "Brew" }).closest("p")?.textContent).toBe("Wanted by Brew.");
+    expect(screen.getAllByText((_, n) => n?.tagName === "P" && n.textContent === "Went to 2 decks you’ve since deleted.")).toHaveLength(1);
+  });
+
+  it("repeats it on each row of an entry with several, and not on an entry of one", async () => {
+    const wentRow = (name: string, deckId: string): HistoryRow => ({ ...row(name, null, 1), wentTo: { decks: [{ deckId, copies: 1 }] } });
+    const e = entry({ id: "m1", rowCount: 2, wentTo: { decks: { named: [{ id: "d1", name: "Gishath" }], more: 0, gone: 0 }, soft: false } });
+    loadEntry.mockResolvedValue(detail(e, [wentRow("Sol Ring", "d1"), wentRow("Arcane Signet", "gone")], { d1: "Gishath" }));
+    draw([e]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    expect(await screen.findByText("Arcane Signet")).toBeTruthy();
+    const lines = screen.getAllByText(/^Went to /).map((n) => n.textContent);
+    expect(lines).toContain("Went to Gishath.");
+    expect(lines).toContain("Went to a deck you’ve since deleted.");
+  });
+
+  it("draws no row line for an entry of one row: the entry line already says it", async () => {
+    const e = entry({ id: "o1", rowCount: 1, wentTo: { decks: { named: [{ id: "d1", name: "Gishath" }], more: 0, gone: 0 }, soft: false } });
+    loadEntry.mockResolvedValue(detail(e, [{ ...row("Sol Ring", null, 1), wentTo: { decks: [{ deckId: "d1", copies: 1 }] } }], { d1: "Gishath" }));
+    draw([e]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    expect((await screen.findAllByText("Sol Ring")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((_, n) => n?.tagName === "P" && /^Went to /.test(n.textContent ?? ""))).toHaveLength(1);
+    expect([...document.querySelectorAll("li span")].filter((n) => /^Went to /.test(n.textContent ?? ""))).toHaveLength(0);
+  });
+
+  it("lets a single row speak when the entry was listed before its placement was kept", async () => {
+    const e = entry({ id: "late", rowCount: 1, wentTo: null });
+    loadEntry.mockResolvedValue(detail(e, [{ ...row("Sol Ring", null, 1), wentTo: { decks: [{ deckId: "d1", copies: 1 }] } }], { d1: "Gishath" }));
+    draw([e]);
+    await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
+    expect((await screen.findAllByText("Sol Ring")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText((_, n) => n?.tagName === "SPAN" && n.textContent === "Went to Gishath.")).toHaveLength(1);
   });
 
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {
