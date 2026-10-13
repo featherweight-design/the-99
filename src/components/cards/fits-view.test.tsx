@@ -370,6 +370,21 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(1, 0));
   });
 
+  it("the free list is the list as last read: a deck newly able to take the card joins, one that can't leaves", async () => {
+    await draw(panel());
+    actions.addFromFits.mockResolvedValue({ ok: true });
+    const atraxa = { id: "d-atr", name: "Atraxa", commanders: ["Atraxa, Praetors' Voice"], need: null, reason: null };
+    // The add's re-read: Kratos no longer fits, Atraxa (the card taken out elsewhere) now does.
+    actions.loadFitsAction.mockResolvedValue(list({ fits: [atraxa], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+    fireEvent.click(within(screen.getAllByTestId("fits-row")[0]).getAllByRole("button").find((b) => b.textContent)!);
+    await settle();
+    const rows = screen.getAllByTestId("fits-row").map((r) => r.textContent ?? "");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toContain("Goblins");
+    expect(rows[1]).toContain("Atraxa");
+    expect(rows.some((t) => t.includes("Kratos"))).toBe(false);
+  });
+
   it("an add to the last deck that could take the card takes the offer away (P1b)", async () => {
     await draw(panel({ candidates: 1 }), list({ fits: [list().fits[0]] }));
     expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();

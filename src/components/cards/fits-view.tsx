@@ -299,7 +299,16 @@ export function FitsView({
   // after a write, which leaves the opening count spent.
   const rowsLocked = busy || list.busy !== null || list.load.state !== "ready";
   const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
-  const freeRows = list.shown.filter((r) => !heldNow.has(r.id) || list.noteFor(r.id) !== null);
+  // The free list as last read, in the order it opened: a deck still listed is drawn as it reads now,
+  // one that left (took the card, or no longer fits) stays only while it carries this visit's Add
+  // stamp, and a deck newly listed (another tab took the card out) joins at the end.
+  const liveFits = (list.read?.fits ?? []).filter((d) => !heldNow.has(d.id));
+  const liveById = new Map(liveFits.map((d) => [d.id, d]));
+  const openedIds = new Set(list.shown.map((r) => r.id));
+  const freeRows = [
+    ...list.shown.flatMap((r) => liveById.get(r.id) ?? (list.noteFor(r.id) !== null ? r : [])),
+    ...liveFits.filter((d) => !openedIds.has(d.id)),
+  ];
   const freeList = list.read && freeRows.length > 0 ? (
     <FitsRows
       rows={freeRows}
