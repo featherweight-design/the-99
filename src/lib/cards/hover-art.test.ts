@@ -191,14 +191,13 @@ export function hasPress(src: string): boolean {
 }
 
 /**
- * Draws a preview: imports `usePreviewRow` (a row that previews as a whole) or `PreviewButton` (a button that is the
- * name or the row), or EVERY `CardDetailTrigger` in the file
- * hands `preview` (a name or a plate that is the row). One trigger without it leaves the file short, so a file
- * cannot hide an unpreviewed name behind one that has it.
+ * Draws a preview: imports `usePreviewRow` (a row that previews as a whole), or every `CardDetailTrigger` in the file
+ * hands `preview` (a name or a plate that is the row), or the file draws its names as `PreviewButton`s (Find a deck's
+ * inline card names). One trigger without `preview` leaves the file short whatever else it imports, so a file cannot
+ * hide an unpreviewed name behind one that has it, or behind a `PreviewButton` beside it.
  */
 export function hasHover(src: string): boolean {
-  // `PreviewButton` is a name or a row that previews as one button (Find a deck's inline card names).
-  if (importsBinding(src, "usePreviewRow") || importsBinding(src, "PreviewButton")) return true;
+  if (importsBinding(src, "usePreviewRow")) return true;
   const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let triggers = 0;
   let withPreview = 0;
@@ -210,7 +209,8 @@ export function hasHover(src: string): boolean {
     ts.forEachChild(node, visit);
   };
   visit(file);
-  return triggers > 0 && withPreview === triggers;
+  if (triggers > 0 && withPreview < triggers) return false;
+  return importsBinding(src, "PreviewButton") || (triggers > 0 && withPreview === triggers);
 }
 
 /** Rows with one half and not the other, excluding the named exceptions. */
@@ -354,6 +354,10 @@ describe("the row guard's own failure paths", () => {
     const named = `import { useCardDetailIfAny } from "./card-detail-provider";\nimport { PreviewButton } from "../ui/preview-button";\nexport const A = () => <PreviewButton imageUri="u" type="button">X</PreviewButton>;`;
     expect(hasHover(named)).toBe(true);
     expect(rowGaps({ "components/a.tsx": named }, new Set())).toEqual([]);
+    // ...but not when a plain trigger beside it has no `preview`: that name still has no hover.
+    const mixed = `import { CardDetailTrigger } from "../cards/card-detail-provider";\nimport { PreviewButton } from "../ui/preview-button";\nexport const A = () => <p><PreviewButton imageUri="u" type="button">X</PreviewButton><CardDetailTrigger oracleId="b" name="B">B</CardDetailTrigger></p>;`;
+    expect(hasHover(mixed)).toBe(false);
+    expect(rowGaps({ "components/a.tsx": mixed }, new Set())).toEqual([{ path: "components/a.tsx", missing: "hover" }]);
   });
 
   it("does not take a comment, a string or a different element's `preview` for a half", () => {
