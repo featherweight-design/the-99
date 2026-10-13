@@ -22,7 +22,8 @@ export type OpponentCommander = { oracleId: string; name: string };
 /** One seat as every surface draws it: the snapshot, never a friend's live rows. */
 export type GameOpponent = {
   seat: number;
-  /** A friend, by the name they had then. `key` groups one person's seats within this read; it is not an id. */
+  /** A friend, by the name they had then. `key` groups one person's seats within this read; it is not an id.
+   *  A seat whose friend's account has gone keys alone, so it groups with no other seat. */
   friend: { key: string; name: string } | null;
   /** The friend's deck, by the name it had then. */
   deckName: string | null;
@@ -71,8 +72,9 @@ export function assembleOpponents(rows: Awaited<ReturnType<typeof gameOpponentsQ
   for (const r of rows) {
     let friend: GameOpponent["friend"] = null;
     if (r.friendNameThen !== null) {
-      // A friend whose account has gone (the purge unlinks it) still groups by the name they had.
-      let key = `n:${r.friendNameThen}`;
+      // A friend whose account has gone (the purge unlinks it) groups with nobody: a display name is not
+      // unique, so grouping by it would fold two people into one cell. The seat keeps its own key.
+      let key = `gone:${r.gameId}:${r.seat}`;
       if (r.friendUserId !== null) {
         if (!keys.has(r.friendUserId)) keys.set(r.friendUserId, `f${keys.size + 1}`);
         key = keys.get(r.friendUserId)!;

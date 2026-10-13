@@ -27,9 +27,12 @@ describe("assembleOpponents", () => {
       row({ friendUserId: "user_dave", friendNameThen: "Dave" }),
       row({ gameId: "g2", friendUserId: "user_dave", friendNameThen: "David" }),
       row({ gameId: "g2", seat: 2, friendUserId: null, friendNameThen: "Gone" }),
+      row({ gameId: "g3", friendUserId: null, friendNameThen: "Gone" }),
     ]);
     expect(out.get("g1")![0].friend).toEqual({ key: "f1", name: "Dave" });
-    expect(out.get("g2")!.map((s) => s.friend)).toEqual([{ key: "f1", name: "David" }, { key: "n:Gone", name: "Gone" }]);
+    expect(out.get("g2")!.map((s) => s.friend)).toEqual([{ key: "f1", name: "David" }, { key: "gone:g2:2", name: "Gone" }]);
+    // Two seats of deleted accounts sharing a name are not assumed to be one person.
+    expect(out.get("g3")![0].friend!.key).not.toBe(out.get("g2")![1].friend!.key);
     expect(JSON.stringify([...out.values()])).not.toContain("user_dave");
   });
 

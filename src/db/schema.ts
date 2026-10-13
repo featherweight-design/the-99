@@ -1043,6 +1043,8 @@ export const deckGameOpponents = pgTable("deck_game_opponents", {
   // A seat says SOMETHING about who sat there: a friend's name, a commander, or a label.
   check("deck_game_opponents_named_check", sql`${t.friendNameThen} is not null or ${t.commanderOracleId} is not null or ${t.label} is not null`),
   index("deck_game_opponents_friend_idx").on(t.friendUserId).where(sql`${t.friendUserId} is not null`),
+  // For the `set null` a friend's deck delete runs, which would otherwise scan every seat.
+  index("deck_game_opponents_friend_deck_idx").on(t.friendDeckId).where(sql`${t.friendDeckId} is not null`),
 ]);
 
 /**

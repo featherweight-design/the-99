@@ -1,5 +1,5 @@
 {
-  "id": "63035c97-3948-4430-b959-386da4566eef",
+  "id": "1de09e3d-4f5f-4924-b505-63703e34d836",
   "prevId": "bdbc3184-93f5-4099-8353-7bf6b19598e6",
   "version": "7",
   "dialect": "postgresql",
@@ -2757,6 +2757,22 @@
           ],
           "isUnique": false,
           "where": "\"deck_game_opponents\".\"friend_user_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deck_game_opponents_friend_deck_idx": {
+          "name": "deck_game_opponents_friend_deck_idx",
+          "columns": [
+            {
+              "expression": "friend_deck_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"deck_game_opponents\".\"friend_deck_id\" is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}
