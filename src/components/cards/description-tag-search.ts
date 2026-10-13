@@ -6,3 +6,6 @@ import { searchTagCards } from "../../app/cards/tag-actions";
  * switch: the header pencil edits the description whether or not Suggested changes is on.
  */
 export const searchDescriptionCards = (query: string) => searchTagCards("description", query);
+
+/** The same lookup for the log-a-game form's note, which is offered whether or not Suggested changes is on. */
+export const searchGameNoteCards = (query: string) => searchTagCards("gameNote", query);

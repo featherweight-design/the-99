@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const names = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][] }));
+const names = vi.hoisted(() => ({ map: new Map<string, string>(), asked: [] as string[][], fail: false }));
 const legal = vi.hoisted(() => ({ ids: new Set<string>() }));
 vi.mock("../decks/notes-store", () => ({
-  currentLegalNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))); },
+  currentLegalNames: async (ids: string[]) => { if (names.fail) throw new Error("db down"); names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id) && legal.ids.has(id))); },
   currentNames: async (ids: string[]) => { names.asked.push([...ids]); return new Map([...names.map].filter(([id]) => ids.includes(id))); } }));
 
 const { boxRawMax, resolveBoxText, resolveTaggedText } = await import("./tagged-text");
 
 const SOL = "0000aaaa-0000-4000-8000-000000000001";
 const DS = "0000aaaa-0000-4000-8000-000000000002";
-beforeEach(() => { names.map = new Map([[SOL, "Sol Ring"], [DS, "Doubling Season"]]); names.asked = []; legal.ids = new Set([SOL]); });
+beforeEach(() => { names.fail = false; names.map = new Map([[SOL, "Sol Ring"], [DS, "Doubling Season"]]); names.asked = []; legal.ids = new Set([SOL]); });
 
 describe("resolveTaggedText", () => {
   it("replaces each tag with the catalog's name, not the one the client sent, and lists the cards once", async () => {
@@ -65,6 +65,16 @@ describe("resolveBoxText", () => {
     legal.ids.add(DS);
     expect(await resolveBoxText(`${"x".repeat(10)}[[${DS}|a]]`, { cap: 20, maxTags: 2 })).toEqual({ ok: false });
   });
+  it("answers a failed catalog read as a refusal, never a throw", async () => {
+    names.fail = true;
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await resolveBoxText(`a [[${SOL}|Sol Ring]]`, box)).toEqual({ ok: false });
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("turns a card banned in Commander into the words it carried", async () => {
     expect(await resolveBoxText(`[[${DS}|Banned Thing]]`, box)).toEqual({ ok: true, text: "Banned Thing" });
   });

@@ -90,7 +90,7 @@ export function SpineMobile({
   // The description takes the `[[` card tag: the hook holds the BODY, the box shows names (card-tags plan, PR 3).
   const descriptionTags = useTaggedField({
     value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
-    max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef,
+    max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef, disabled: rename.isPending,
   });
 
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while

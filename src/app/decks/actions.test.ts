@@ -384,6 +384,12 @@ const stub = vi.hoisted(() => {
 
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+// The catalog read behind a note's card tag: the stand-in knows only the ids a test puts in `noteCatalog`.
+const noteCatalog = vi.hoisted(() => new Map<string, string>());
+vi.mock("../../lib/decks/notes-store", async (importActual) => ({
+  ...(await importActual<typeof import("../../lib/decks/notes-store")>()),
+  currentLegalNames: async (ids: string[]) => new Map(ids.flatMap((id) => (noteCatalog.has(id) ? [[id, noteCatalog.get(id)!] as const] : []))),
+}));
 vi.mock("next/cache", () => ({
   revalidatePath: (path: string) => { stub.state.revalidated.push(path); },
   updateTag: () => {},
@@ -1207,6 +1213,29 @@ describe("logGame", () => {
     });
     const [game] = stub.state.insertCalls.filter((c) => c.table === "deck_games");
     expect(game.values).toMatchObject({ note: "Kept a two-lander and never found the third." });
+  });
+
+  // The note box takes the `[[` card tag: the body goes over the wire and the catalog's name is what is stored.
+  it("stores a tagged note as the catalog's name for the card, plain words, never the tag", async () => {
+    noteCatalog.set("c0ffee00-0000-4000-8000-000000000001", "Sol Ring");
+    const result = await logGame("deck_1", {
+      result: "win", podSize: 4, worked: [], hurt: [],
+      note: "Never drew [[c0ffee00-0000-4000-8000-000000000001|sol rong]] again.",
+    });
+    expect(result).toEqual({ ok: true });
+    const [game] = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    expect(game.values).toMatchObject({ note: "Never drew Sol Ring again." });
+    noteCatalog.clear();
+  });
+
+  it("refuses a tagged note that is over the cap once its names are resolved, or past three tags", async () => {
+    noteCatalog.set("c0ffee00-0000-4000-8000-000000000001", "n".repeat(200));
+    const tag = (n: number) => `[[c0ffee00-0000-4000-8000-00000000000${n}|A]]`;
+    for (const note of [`[[c0ffee00-0000-4000-8000-000000000001|A]]`, `${tag(1)}${tag(2)}${tag(3)}${tag(4)}`, `x${" ".repeat(2000)}`]) {
+      expect((await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], note })).ok).toBe(false);
+    }
+    expect(stub.state.insertCalls.filter((c) => c.table === "deck_games")).toHaveLength(0);
+    noteCatalog.clear();
   });
 
   // Blank is null, never an empty string, so "has a note" is one predicate

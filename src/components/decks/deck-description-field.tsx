@@ -40,7 +40,7 @@ export function DeckDescriptionField({
   refused: string | null;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
+  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   const over = n > copy.maxLength;
   const warn = n >= copy.warnAt;

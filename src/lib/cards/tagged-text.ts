@@ -59,12 +59,20 @@ export const boxRawMax = (cap: number, maxTags: number) => cap * 2 + maxTags * 4
  * bounded BEFORE anything scans it, a body holds at most `maxTags` tags and at most `cap` drawn code points,
  * each tag becomes the catalog's name (a card banned in Commander, or an unknown id, becomes the name it
  * carried as plain words), and the cap is checked again on the resolved words because a catalog name can be
- * longer than the one the client sent. `text` is trimmed; "" is a blank box.
+ * longer than the one the client sent. A failed catalog read answers `ok: false` too. `text` is trimmed; "" is a blank box.
  */
 export async function resolveBoxText(raw: string, o: { cap: number; maxTags: number }): Promise<{ ok: true; text: string } | { ok: false }> {
   if (raw.length > boxRawMax(o.cap, o.maxTags)) return { ok: false };
   const body = raw.trim();
   if (tagCount(body) > o.maxTags || countCharacters(plainText(body)) > o.cap) return { ok: false };
-  const text = (await resolveTaggedText(body, { commanderLegalOnly: true })).text.trim();
+  // A failed catalog read is a refusal, never a throw: every caller answers its own refusal sentence and keeps the player's
+  // text, where a rejection would surface as a failed request with the box already emptied or the credit already asked for.
+  let text: string;
+  try {
+    text = (await resolveTaggedText(body, { commanderLegalOnly: true })).text.trim();
+  } catch (err) {
+    console.error("resolveBoxText: the catalog read failed", err);
+    return { ok: false };
+  }
   return countCharacters(text) > o.cap ? { ok: false } : { ok: true, text };
 }

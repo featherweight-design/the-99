@@ -1184,7 +1184,7 @@ function DescribingInPlace({
 }) {
   const descCopy = deckDescriptionCopy.description;
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref });
+  const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   const over = n > descCopy.maxLength;
   const warn = n >= descCopy.warnAt;
