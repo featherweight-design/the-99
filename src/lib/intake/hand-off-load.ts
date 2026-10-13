@@ -42,9 +42,8 @@ export async function loadHandOffAnswers(
   userId: string,
   commanderId: string,
   p: ChooseParams,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the card chip's claim read and art; the
-   *  environment alone when omitted (admin PR 7 makes it required). */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the card chip's claim read and art. */
+  env: NodeJS.ProcessEnv,
 ): Promise<HandOffAnswers> {
   const [vocabulary, card, [row], printings] = await Promise.all([
     p.themes.length > 0 ? loadIntakeThemes().catch(() => []) : Promise.resolve([]),

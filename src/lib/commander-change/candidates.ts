@@ -191,8 +191,8 @@ async function supportHits(
 export async function loadChangeCandidates(
   deckId: string,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<ChangeCandidates | null> {
   const [deck] = await db.select({
     commander: decks.commanderOracleId, partner: decks.partnerOracleId,

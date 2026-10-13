@@ -174,9 +174,9 @@ type GateReader = { execute: (q: SQL) => Promise<{ rows: unknown[] }> };
 export async function fitsGate(
   userId: string,
   oracleId: string,
-  on?: GateReader,
-  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, takes the environment. */
-  env: NodeJS.ProcessEnv = process.env,
+  on: GateReader | undefined,
+  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, passes `process.env`. */
+  env: NodeJS.ProcessEnv,
 ): Promise<{ commanderLegal?: boolean; hasDecks?: boolean; fitsRead?: boolean }> {
   // Nothing reads the gate while the swap tools are off, so a reader without them pays no
   // round trip for it: the fields stay absent, which is also the door's closed state.
@@ -334,9 +334,9 @@ export const loadCardDetail = cache(async function loadCardDetail(
   userId: string,
   oracleId: string,
   /** The deck the modal was opened from, if any. See `withComboPartners`. */
-  deckOracleIds?: readonly string[],
-  /** The reader's resolved switches (`requestSwitchEnv`): the Fits door's gate. A probe takes the environment. */
-  env: NodeJS.ProcessEnv = process.env,
+  deckOracleIds: readonly string[] | undefined,
+  /** The reader's resolved switches (`requestSwitchEnv`): the Fits door's gate. A probe passes `process.env`. */
+  env: NodeJS.ProcessEnv,
 ): Promise<BrowseCard | null> {
   // TWO STAGES, and never more. Every read below is keyed on (reader, oracle id) alone, so none
   // waits on another's answer. They used to run in serial stages, each a round trip to the

@@ -138,7 +138,7 @@ async function main() {
   };
 
   // 1. A land: every stand-in makes both of Plateau's colors, and the free copy leads.
-  const lands = await timed("Plateau", () => loadStandIns(deckId, USER, plateau.oracle_id, false));
+  const lands = await timed("Plateau", () => loadStandIns(deckId, USER, plateau.oracle_id, false, process.env));
   if (!lands) throw new Error("no read for the fixture's own deck");
   const landList = all(lands);
   check("land: a job read off the text", lands.job.kind === "land", JSON.stringify(lands.job));
@@ -157,7 +157,7 @@ async function main() {
   guards("land", lands);
 
   // 2. A fetch: every stand-in finds both Mountain and Forest.
-  const fetches = await timed("Wooded Foothills", () => loadStandIns(deckId, USER, foothills.oracle_id, false));
+  const fetches = await timed("Wooded Foothills", () => loadStandIns(deckId, USER, foothills.oracle_id, false, process.env));
   const fetchList = all(fetches!);
   check("fetch: every stand-in finds a Mountain and a Forest", fetchList.length > 0 && fetchList.every((s) => {
     const f = fetchFinds(s.card);
@@ -167,7 +167,7 @@ async function main() {
     fetchList.map((s) => `${s.card.name}[${s.drawbacks.map((d) => d.kind).join("+")}]`).join(", "));
 
   // 3. A spell: a ramp stand-in at mana value 1 or less, never a land, ordered as ruled.
-  const spells = await timed("Mana Vault", () => loadStandIns(deckId, USER, vault.oracle_id, false));
+  const spells = await timed("Mana Vault", () => loadStandIns(deckId, USER, vault.oracle_id, false, process.env));
   const spellList = all(spells!);
   check("spell: every stand-in shares ramp at mana value 1 or less, and is no land",
     spellList.length > 0 && spellList.every((s) => s.card.cmc <= 1 && !isLandFace(s.card.typeLine) && classifyRoles(s.card).includes("ramp")),
@@ -197,7 +197,7 @@ async function main() {
   guards("spell", spells!);
 
   // 4. A utility land: every stand-in names what Cavern does that it does not (H3).
-  const caverns = await timed("Cavern of Souls", () => loadStandIns(deckId, USER, cavern.oracle_id, false));
+  const caverns = await timed("Cavern of Souls", () => loadStandIns(deckId, USER, cavern.oracle_id, false, process.env));
   const cavernList = all(caverns!);
   check("H3: every Cavern stand-in gives up uncounterable spells",
     cavernList.length > 0 && cavernList.every((s) => s.givesUp.some((g) => g.kind === "named" && g.label === "uncounterable spells")),
@@ -208,7 +208,7 @@ async function main() {
   const cradle = await card("Gaea's Cradle");
   const forest = await card("Forest");
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${forest.oracle_id}::uuid, 5), (${deckId}::uuid, ${cradle.oracle_id}::uuid, 1)`);
-  const cradles = await loadStandIns(deckId, USER, cradle.oracle_id, false);
+  const cradles = await loadStandIns(deckId, USER, cradle.oracle_id, false, process.env);
   const forestRow = freeRows(cradles!).find((s) => s.card.oracleId === forest.oracle_id);
   check("basics: a Forest already in the draft is offered for Gaea's Cradle, free, giving up its extra mana",
     !!forestRow && forestRow.givesUp.some((g) => g.kind === "named" && g.label === "its extra mana"),
@@ -228,16 +228,16 @@ async function main() {
     `${subtypes.size} subtypes; Equipment ${subtypes.has("Equipment")}, Gate ${subtypes.has("Gate")}, Elf ${subtypes.has("Elf")}`);
 
   // 5. No job: no stand-in and no guess.
-  const none = await loadStandIns(deckId, USER, roleless.oracle_id, false);
+  const none = await loadStandIns(deckId, USER, roleless.oracle_id, false, process.env);
   check("no role: nothing offered", none!.job.kind === "none" && all(none!).length === 0, JSON.stringify(none!.job));
 
   // 6. Another reader's deck reads as nothing.
-  check("another reader's deck reads as nothing", (await loadStandIns(deckId, "someone-else", plateau.oracle_id, false)) === null, "null");
+  check("another reader's deck reads as nothing", (await loadStandIns(deckId, "someone-else", plateau.oracle_id, false, process.env)) === null, "null");
 
   // 7. The draft guard, both sides: a stand-in staged into the draft leaves the list.
   const staged = landList.find((s) => !s.free) ?? landList[0];
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${staged.card.oracleId}::uuid, 1)`);
-  const after = await loadStandIns(deckId, USER, plateau.oracle_id, false);
+  const after = await loadStandIns(deckId, USER, plateau.oracle_id, false, process.env);
   check(`draft guard: ${staged.card.name} leaves once it is in the draft`,
     !names(all(after!)).includes(staged.card.name) && names(landList).includes(staged.card.name), "present before, absent after");
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}::uuid and oracle_id = ${staged.card.oracleId}::uuid`);
@@ -246,7 +246,7 @@ async function main() {
   //    makes it a buy here, where it was free.
   const holder = await makeDeck("probe swap holder", commander.oracle_id, [tower.oracle_id]);
   await commitVersion(holder, null, undefined, undefined, process.env);
-  const claimed = await loadStandIns(deckId, USER, plateau.oracle_id, false);
+  const claimed = await loadStandIns(deckId, USER, plateau.oracle_id, false, process.env);
   check("free after the take: a copy a committed deck holds is no longer free",
     !names(freeRows(claimed!)).includes("Command Tower") && names(freeRows(lands)).includes("Command Tower"),
     `free before: ${names(freeRows(lands)).join(", ")}; after: ${names(freeRows(claimed!)).join(", ")}`);
@@ -270,7 +270,7 @@ async function main() {
       insert into commander_pair_support_cards (commander_oracle_id, partner_oracle_id, oracle_id, inclusion, position)
       values (${a}::uuid, ${b}::uuid, ${ramp.card.oracleId}::uuid, 77.5, 1)`);
     const pairDeck = await makeDeck("probe swap pair", commander.oracle_id, [vault.oracle_id], partner.oracle_id);
-    const pairRead = await loadStandIns(pairDeck, USER, vault.oracle_id, false);
+    const pairRead = await loadStandIns(pairDeck, USER, vault.oracle_id, false, process.env);
     const pairRow = all(pairRead!).find((s) => s.card.oracleId === ramp.card.oracleId);
     check("pair: the pair's own figure, and nothing from either commander's list",
       pairRow?.inclusion === 77.5 && all(pairRead!).filter((s) => s.inclusion !== null).every((s) => s.card.oracleId === ramp.card.oracleId),
@@ -281,7 +281,7 @@ async function main() {
   //     which proves the label path inert and nothing more. Seeded labels for Mana Vault and two of its
   //     stand-ins must change the read: one stand-in labelled as burst mana fails the ramp-kind gate and
   //     leaves, one labelled with an extra theme gains it, and every unlabelled row is the text path's.
-  const offRead = await loadStandIns(deckId, USER, vault.oracle_id, true);
+  const offRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
   const offRows = all(offRead!).filter((s) => !s.isUniversal);
   // Seeds go only where no label row exists. Debris from a run that died before its cleanup carries this
   // model, which no real label does, so sweeping it can never remove anyone's label.
@@ -313,13 +313,13 @@ async function main() {
       insert into card_labels (oracle_id, labels, model, prompt_version, input_hash)
       values (${c.oracle_id}::uuid, ${JSON.stringify(seeds.get(c.oracle_id))}::jsonb, ${LABEL_MODEL}, ${LABEL_PROMPT_VERSION}, ${hash})`);
   }
-  const offAgain = await loadStandIns(deckId, USER, vault.oracle_id, true);
+  const offAgain = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
   check("labels: with the switch OFF, seeded labels change nothing",
     JSON.stringify(offAgain) === JSON.stringify(offRead), `${all(offAgain!).length} rows, as before the seed`);
   process.env.STAND_IN_LABELS_ENABLED = "true";
   let onRead: StandInsRead | null;
   try {
-    onRead = await loadStandIns(deckId, USER, vault.oracle_id, true);
+    onRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
   } finally {
     delete process.env.STAND_IN_LABELS_ENABLED;
   }

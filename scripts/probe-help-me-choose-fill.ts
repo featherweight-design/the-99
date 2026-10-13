@@ -126,7 +126,7 @@ async function main() {
 
   console.log("\n4. A row's trial figures");
   const { trialFill } = await import("../src/lib/intake/trial");
-  const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null });
+  const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, process.env);
   check("the trial fill fills the body, owns what it can and prices the rest within the budget",
     trial.body === budgeted.filled && trial.owned < trial.body && trial.buyCents <= BUDGET_CENTS && trial.unpricedCard === null,
     `own ${trial.owned} of ${trial.body}, about $${(trial.buyCents / 100).toFixed(2)} to buy`);
@@ -134,7 +134,7 @@ async function main() {
     `trial ${trial.buyCents}, independent ${spend(budgeted)}`);
   // The plan fills a whole body beside the build-around card, so without the cap its row makes 100.
   const around = plain.rows.find((r) => r.quantity === 1)!.oracleId;
-  const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around });
+  const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around }, process.env);
   check("with a build-around card the trial body is still the whole body, never one over",
     withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
 }

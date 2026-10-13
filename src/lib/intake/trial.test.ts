@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 // Only the WIRING is under test: which placed cards `trialFill` hands the plan. The plan, the
 // prices and the claims are stubbed flat.
@@ -33,13 +34,13 @@ describe("trialFill", () => {
   it("places the build-around card beside the plan, as the create it predicts does", async () => {
     // The card is placed beside the plan and excluded from its pool, so the plan sees it only
     // through `selected`. Left out, the trial predicts a mana base the create would not build.
-    await trialFill("u", commander, { budgetCents: null, bracket: null, cardOracleId: "card-1" });
+    await trialFill("u", commander, { budgetCents: null, bracket: null, cardOracleId: "card-1" }, ENV_VIEW);
     expect(vi.mocked(placedCardsOf)).toHaveBeenCalledWith(["card-1"]);
     expect(planOptions[0]).toMatchObject({ selected: [PLACED] });
   });
 
   it("places nothing when no card was chosen", async () => {
-    await trialFill("u", commander, { budgetCents: null, bracket: null, cardOracleId: null });
+    await trialFill("u", commander, { budgetCents: null, bracket: null, cardOracleId: null }, ENV_VIEW);
     expect(planOptions[0]).toMatchObject({ selected: [] });
   });
 });

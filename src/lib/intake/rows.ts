@@ -76,9 +76,8 @@ export async function loadResultsPage(
   answers: Answers,
   offset = 0,
   picks: ReadPicks | null = null,
-  /** The reader's resolved switches (`requestSwitchEnv`), for every claim read below; the environment
-   *  alone when omitted (admin PR 7 makes it required). */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`), for every claim read below. */
+  env: NodeJS.ProcessEnv,
 ): Promise<ResultsPage> {
   const outcome = await searchCommanders(userId, answers, env);
   const ordered = picks ? reorder(outcome.rows, (r) => r.candidate.oracleId, picks) : outcome.rows;
@@ -163,8 +162,8 @@ export async function loadCardChip(
   userId: string,
   oracleId: string,
   /** The reader's resolved switches (`requestSwitchEnv`), for the card's claim read and its printing
-   *  picks (`chainArt`); the environment alone when omitted (admin PR 7 makes it required). */
-  env: NodeJS.ProcessEnv = process.env,
+   *  picks (`chainArt`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.

@@ -97,8 +97,8 @@ export async function loadContestedCards(
   oracleIds: string[],
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and pending
-   *  clause; the environment alone when omitted (admin PR 7 makes it required). */
-  env: NodeJS.ProcessEnv = process.env,
+   *  clause. */
+  env: NodeJS.ProcessEnv,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
   const availability = await loadAvailability(userId, { oracleIds, env });
@@ -144,8 +144,8 @@ export async function countContestedCards(
   oracleIds: string[],
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and pending
-   *  clause; the environment alone when omitted (admin PR 7 makes it required). */
-  env: NodeJS.ProcessEnv = process.env,
+   *  clause. */
+  env: NodeJS.ProcessEnv,
 ): Promise<number> {
   if (oracleIds.length === 0) return 0;
   const availability = await loadAvailability(userId, { oracleIds, env });
@@ -195,8 +195,8 @@ export async function loadChooserCards(
   userId: string,
   frozen: Record<string, { arrived: number; ownedBefore: number }> = {},
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and pending
-   *  clause; the environment alone when omitted (admin PR 7 makes it required). */
-  env: NodeJS.ProcessEnv = process.env,
+   *  clause. */
+  env: NodeJS.ProcessEnv,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
   const availability = await loadAvailability(userId, { oracleIds, env });

@@ -15,7 +15,8 @@
 // a destructuring read (`const { FOO } = process.env`; a REST element, `const { ...e } = process.env`, is a
 // copy and is a finding). A PARAMETER DEFAULT (`env = process.env`, or `{ env = process.env }` destructured
 // in a parameter, a component's prop) is not a finding either, but is held to DEFAULTS_PENDING so no new
-// one lands while admin PRs 7c and 7d remove them (7b emptied `src/lib/decks` and `src/lib/tuning`); a binding default in a VARIABLE
+// one lands while admin PRs 7c-2 (`src/lib/recs`) and 7d remove them (7b emptied `src/lib/decks` and `src/lib/tuning`, 7c
+// collection, commander-change, intake and swaps); a binding default in a VARIABLE
 // (`const { env = process.env } = opts`) is a finding.
 //
 // Every listed occurrence is pinned by a FINGERPRINT, never a line number or a per-file total:
@@ -65,8 +66,9 @@ export const PENDING = [
 /**
  * Parameter defaults of `process.env` (`env = process.env`, or `{ env = process.env }` destructured in a
  * parameter), pinned per file by fingerprint (`<scope>:default:<name>`) with a count each, the same way as
- * PENDING: a new default fails, and a removed one fails until its entry shrinks. Admin PRs 7c and 7d each
- * empty their own entries (7b emptied `src/lib/decks`' and `src/lib/tuning`'s); `keep` names a default that reads the environment on purpose, with its reason.
+ * PENDING: a new default fails, and a removed one fails until its entry shrinks. Admin PRs 7c-2 and 7d each
+ * empty their own entries (7b emptied `src/lib/decks`' and `src/lib/tuning`'s, 7c collection's, commander-change's,
+ * intake's and swaps'); `keep` names a default that reads the environment on purpose, with its reason.
  * Seeded from the tree at admin PR 7a.
  */
 /** @type {Record<string, { pr: string, reason?: string, uses: Record<string, number> }>} */
@@ -74,11 +76,6 @@ export const DEFAULTS_PENDING = {
   "src/components/about/about-page.tsx": { pr: "7d", uses: { "AboutPage:default:env": 1 } },
   "src/lib/about/visible.ts": { pr: "7d", uses: { "visibleEntries:default:env": 1 } },
   "src/lib/cards/chain-art.ts": { pr: "7d", uses: { "chainArt:default:env": 1 } },
-  "src/lib/collection/card-detail.ts": { pr: "7c", uses: { "fitsGate:default:env": 1, "loadCardDetail:default:env": 1 } },
-  "src/lib/collection/summary-read.ts": { pr: "7c", uses: { "loadContestedCards:default:env": 1, "countContestedCards:default:env": 1, "loadChooserCards:default:env": 1 } },
-  "src/lib/commander-change/candidates.ts": { pr: "7c", uses: { "loadChangeCandidates:default:env": 1 } },
-  "src/lib/commander-change/draft-rows.ts": { pr: "7c", uses: { "loadCommanderRows:default:env": 1 } },
-  "src/lib/commander-change/mix-key.ts": { pr: "7c", uses: { "commanderKeyParts:default:env": 1 } },
   "src/lib/commanders/rankings.ts": { pr: "7d", uses: { "commanderRankingsKey:default:env": 1, "loadCommanderRankings:default:env": 1 } },
   "src/lib/decks/label-counts-flag.ts": {
     pr: "keep",
@@ -88,28 +85,30 @@ export const DEFAULTS_PENDING = {
   "src/lib/discovery/list.ts": { pr: "7d", uses: { "discoveryKey:default:env": 1, "loadDiscoveryPool:default:env": 1, "loadDiscovery:default:env": 1, "loadDiscoveryWithIds:default:env": 1 } },
   "src/lib/discovery/payload.ts": { pr: "7d", uses: { "loadDiscoveryPayload:default:env": 1 } },
   "src/lib/discovery/resolve-slug.ts": { pr: "7d", uses: { "resolveCommanderSlug:default:env": 1 } },
-  "src/lib/intake/hand-off-load.ts": { pr: "7c", uses: { "loadHandOffAnswers:default:env": 1 } },
-  "src/lib/intake/rows.ts": { pr: "7c", uses: { "loadResultsPage:default:env": 1, "loadCardChip:default:env": 1 } },
-  "src/lib/intake/search.ts": { pr: "7c", uses: { "searchCommanders:default:env": 1, "loadSearchFacts:default:env": 1, "loadCardRow:default:env": 1 } },
-  "src/lib/intake/stub.ts": { pr: "7c", uses: { "stubMode:default:env": 1, "stubDelayMs:default:env": 1, "intakeLive:default:env": 1 } },
-  "src/lib/intake/the-read-run.ts": { pr: "7c", uses: { "stubTheReadDeps:default:env": 1, "loadTheReadInputs:default:env": 1 } },
-  "src/lib/intake/trial.ts": { pr: "7c", uses: { "trialFill:default:env": 1 } },
+  "src/lib/intake/stub.ts": {
+    pr: "keep",
+    reason: "reads only `NODE_ENV`, `INTAKE_LIVE`, `INTAKE_STUB` and `INTAKE_STUB_DELAY_MS`: deployment settings for the model stand-in, none of them a registry switch, so `resolveEnv` passes each through unchanged and a reader's env could not differ",
+    uses: { "stubMode:default:env": 1, "stubDelayMs:default:env": 1, "intakeLive:default:env": 1 },
+  },
+  "src/lib/intake/the-read-run.ts": {
+    pr: "keep",
+    reason: "`stubTheReadDeps` hands its env only to `stubMode` and `stubDelayMs` (`intake/stub.ts`, kept for the same reason): deployment settings, never a registry switch",
+    uses: { "stubTheReadDeps:default:env": 1 },
+  },
   "src/lib/notices/overview.ts": { pr: "7d", uses: { "overviewDataMovedFor:default:env": 1 } },
   "src/lib/notices/read.ts": { pr: "7d", uses: { "loadDeckNotices:default:env": 1 } },
   "src/lib/profile/load.ts": { pr: "7d", uses: { "loadDeckProfileFromHead:default:env": 1, "loadDeckProfile:default:env": 1, "cachedDeckProfile:default:env": 1 } },
-  "src/lib/recs/free-ranking.ts": { pr: "7c", uses: { "loadFreePool:default:env": 1, "rankFree:default:env": 1 } },
-  "src/lib/recs/home-novelty.ts": { pr: "7c", uses: { "unplayedCountsSql:default:env": 1, "loadUnplayedCounts:default:env": 1 } },
-  "src/lib/recs/ranked-list.ts": { pr: "7c", uses: { "getRankedList:default:env": 1 } },
-  "src/lib/recs/recommend.ts": { pr: "7c", uses: { "recommendCommanders:default:env": 1, "scoreOneCommander:default:env": 1 } },
-  "src/lib/recs/store.ts": { pr: "7c", uses: { "toScoreRow:default:env": 1, "persistScores:default:env": 1, "loadScores:default:env": 1, "rankableScoreRows:default:env": 1, "findScoredCommander:default:env": 1 } },
-  "src/lib/recs/warm.ts": { pr: "7c", uses: { "warmCommanderScores:default:env": 1 } },
-  "src/lib/swaps/draft-swap.ts": { pr: "7c", uses: { "planSwap:default:env": 1, "restoreSwap:default:env": 1 } },
-  "src/lib/swaps/fits-read-load.ts": { pr: "7c", uses: { "loadFitsReadInputs:default:env": 1 } },
-  "src/lib/swaps/fits-read-run.ts": { pr: "7c", uses: { "readFitsRead:default:env": 1, "pressFitsRead:default:env": 1 } },
-  "src/lib/swaps/fits-read-stub.ts": { pr: "7c", uses: { "fitsReadLive:default:env": 1, "fitsStubMode:default:env": 1, "fitsStubDelayMs:default:env": 1 } },
-  "src/lib/swaps/fits.ts": { pr: "7c", uses: { "loadFits:default:env": 1 } },
-  "src/lib/swaps/gather.ts": { pr: "7c", uses: { "loadStandIns:default:env": 1 } },
-  "src/lib/swaps/take.ts": { pr: "7c", uses: { "takeStandIn:default:env": 1, "undoSwap:default:env": 1 } },
+  "src/lib/recs/free-ranking.ts": { pr: "7c-2", uses: { "loadFreePool:default:env": 1, "rankFree:default:env": 1 } },
+  "src/lib/recs/home-novelty.ts": { pr: "7c-2", uses: { "unplayedCountsSql:default:env": 1, "loadUnplayedCounts:default:env": 1 } },
+  "src/lib/recs/ranked-list.ts": { pr: "7c-2", uses: { "getRankedList:default:env": 1 } },
+  "src/lib/recs/recommend.ts": { pr: "7c-2", uses: { "recommendCommanders:default:env": 1, "scoreOneCommander:default:env": 1 } },
+  "src/lib/recs/store.ts": { pr: "7c-2", uses: { "toScoreRow:default:env": 1, "persistScores:default:env": 1, "loadScores:default:env": 1, "rankableScoreRows:default:env": 1, "findScoredCommander:default:env": 1 } },
+  "src/lib/recs/warm.ts": { pr: "7c-2", uses: { "warmCommanderScores:default:env": 1 } },
+  "src/lib/swaps/fits-read-stub.ts": {
+    pr: "keep",
+    reason: "reads only `NODE_ENV`, `FITS_READ_LIVE`, `FITS_READ_STUB` and `FITS_READ_STUB_DELAY_MS`: deployment settings for the model stand-in, none of them a registry switch, so `resolveEnv` passes each through unchanged and a reader's env could not differ",
+    uses: { "fitsReadLive:default:env": 1, "fitsStubMode:default:env": 1, "fitsStubDelayMs:default:env": 1 },
+  },
   "src/lib/synopsis/generate.ts": { pr: "7d", uses: { "factsFor:default:env": 1, "startRun:default:env": 1, "writeSynopsisFor:default:env": 1, "retrySynopsisFor:default:env": 1 } },
   "src/lib/synopsis/read.ts": { pr: "7d", uses: { "readSynopsisState:default:env": 1, "readVersionSynopsis:default:env": 1 } },
   "src/lib/synopsis/stub.ts": { pr: "7d", uses: { "stubMode:default:env": 1, "stubDelayMs:default:env": 1, "stubDelay:default:env": 1, "synopsisLive:default:env": 1 } },
@@ -137,7 +136,7 @@ function bindingOwner(node) {
 
 /**
  * What one occurrence of `process.env` does: `read` (only reads the environment), `default` (a parameter
- * default, held per file by DEFAULTS_PENDING until admin PRs 7c and 7d remove them), or `handoff` (the
+ * default, held per file by DEFAULTS_PENDING until admin PRs 7c-2 and 7d remove them), or `handoff` (the
  * object travels on, a finding).
  */
 function classify(node) {

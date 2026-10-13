@@ -41,7 +41,7 @@ export async function trialFill(
   // `manaCost` feeds the basics pip census in `planFill`; required so a caller cannot omit it.
   commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
   answers: DeckAnswers,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<TrialFigures> {
   const card = answers.cardOracleId;
   // The card is placed beside the plan below, so the plan counts it, as the create this trial

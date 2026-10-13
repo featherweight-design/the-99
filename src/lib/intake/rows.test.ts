@@ -4,6 +4,7 @@
 // what is proved here is the order and the lines, which the page and the action only pass through.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { envViewWith } from "@/test/env-view";
 
 const stub = vi.hoisted(() => ({ search: vi.fn(), cardRow: vi.fn(), chainArt: vi.fn(async () => new Map()) }));
@@ -33,22 +34,22 @@ describe("loadResultsPage under a read", () => {
   const picks = { picks: [{ oracleId: id(20), reason: [{ text: "First." }] }, { oracleId: id(5), reason: [{ text: "Second." }] }] };
 
   it("puts the read's picks first, in its order, with their lines, then the rest in the free order", async () => {
-    const page = await loadResultsPage("u", answers, 0, picks);
+    const page = await loadResultsPage("u", answers, 0, picks, ENV_VIEW);
     expect(page.rows.map((r) => r.name).slice(0, 4)).toEqual(["Commander 20", "Commander 5", "Commander 1", "Commander 2"]);
     expect(page.rows[0].reason).toEqual([{ text: "First." }]);
     expect(page.rows[2].reason).toBeUndefined();
   });
 
   it("continues the same list across slices: no pick repeated, no free row skipped", async () => {
-    const first = await loadResultsPage("u", answers, 0, picks);
-    const second = await loadResultsPage("u", answers, RESULT_PAGE, picks);
-    const all = [...first.rows, ...second.rows, ...(await loadResultsPage("u", answers, RESULT_PAGE * 2, picks)).rows].map((r) => r.oracleId);
+    const first = await loadResultsPage("u", answers, 0, picks, ENV_VIEW);
+    const second = await loadResultsPage("u", answers, RESULT_PAGE, picks, ENV_VIEW);
+    const all = [...first.rows, ...second.rows, ...(await loadResultsPage("u", answers, RESULT_PAGE * 2, picks, ENV_VIEW)).rows].map((r) => r.oracleId);
     expect(new Set(all).size).toBe(30);
     expect(second.rows.some((r) => r.reason)).toBe(false);
   });
 
   it("leaves the free order alone with no read", async () => {
-    const page = await loadResultsPage("u", answers, 0, null);
+    const page = await loadResultsPage("u", answers, 0, null, ENV_VIEW);
     expect(page.rows.map((r) => r.name).slice(0, 2)).toEqual(["Commander 1", "Commander 2"]);
   });
 });

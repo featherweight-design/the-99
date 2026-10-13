@@ -32,8 +32,8 @@ const members = (p: CommanderPair) =>
 
 export async function loadCommanderRows(
   userId: string, deckId: string, from: CommanderPair, to: CommanderPair, versionBody: ReadonlySet<string>,
-  /** The reader's resolved switches (`requestSwitchEnv`); the environment alone when omitted. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv,
 ): Promise<CommanderRows> {
   const fromIds = members(from);
   const toIds = members(to);

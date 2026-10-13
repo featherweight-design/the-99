@@ -73,11 +73,10 @@ export const LIVE_DEPS: Deps = {
 
 /**
  * The view for one card: free, never a call. `env` is the reader's resolved switches (`requestSwitchEnv`),
- * for the free list's claim read and every card's art; the environment alone when omitted (admin PR 7 makes
- * it required).
+ * for the free list's claim read and every card's art.
  */
 export async function readFitsRead(
-  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv = process.env,
+  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv,
 ): Promise<FitsReadPanel | null> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);
@@ -152,7 +151,7 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad,
  * settles it: spent for a read that held up, refunded for a failure, a no fit or a thin read.
  */
 export async function pressFitsRead(
-  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv = process.env,
+  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv,
 ): Promise<FitsReadPress> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);

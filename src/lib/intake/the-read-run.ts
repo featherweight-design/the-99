@@ -123,9 +123,8 @@ export async function loadTheReadInputs(
   words: string,
   filters: ReadFilters,
   tagged: readonly TaggedCard[] = [],
-  /** The reader's resolved switches (`requestSwitchEnv`), for the search's claim read; the environment alone
-   *  when omitted (admin PR 7 makes it required). The card is always null here, so no claim read runs today. */
-  env: NodeJS.ProcessEnv = process.env,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the search's claim read. The card is always null here, so no claim read runs today. */
+  env: NodeJS.ProcessEnv,
 ): Promise<TheReadInputs> {
   const [list, facts, decks, collection, catalog] = await Promise.all([
     loadPoolList(),
@@ -168,7 +167,7 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
 /** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env?: NodeJS.ProcessEnv },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
@@ -185,7 +184,7 @@ export async function runTheRead(
 export async function beginTheRead(
   userId: string,
   /** `env`: the reader's resolved switches, handed to the pool read (`loadTheReadInputs`). */
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env?: NodeJS.ProcessEnv },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv },
   deps: TheReadDeps = defaultTheReadDeps(),
   /** The inputs, or a loader for them (a test counts its calls); omitted, they are read here. */
   inputs?: TheReadInputs | (() => Promise<TheReadInputs>),
