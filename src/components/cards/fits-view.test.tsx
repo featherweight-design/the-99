@@ -8,6 +8,7 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { FitsRead } from "../../lib/swaps/fits";
 import type { FitsReadPanel } from "../../lib/swaps/fits-read-run";
 import type { StoredFitsRead } from "../../lib/swaps/fits-read-state";
+import type { FitsViewMemory } from "./fits-view";
 import { creditLine } from "../ui/credit-line-matcher";
 
 const actions = vi.hoisted(() => ({
@@ -68,7 +69,7 @@ const panel = (over: Partial<FitsReadPanel> = {}, view: Partial<FitsReadPanel["v
 const onBack = vi.fn();
 const onOpenCard = vi.fn();
 function Harness() {
-  const [memory, setMemory] = useState({});
+  const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
   return <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} />;
 }
 const settle = () => act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
@@ -202,7 +203,7 @@ describe("FitsView (Find a deck read, R2)", () => {
   });
 
   it("what the reader did on a read's rows belongs to that read: a newer read starts with none of it", async () => {
-    const memory = { "r1:d-gob": { kind: "swapped", swapId: "s1" } } as const;
+    const memory: FitsViewMemory = { acts: { "r1:d-gob": { kind: "swapped", swapId: "s1" } } };
     actions.loadFitsAction.mockResolvedValue(list());
     const view = (readId: string) => {
       readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored({ readId }) }));
@@ -399,5 +400,65 @@ describe("FitsView (Find a deck read, R2)", () => {
     await draw(panel({ candidates: 0 }), list({ fits: [], holds: [{ id: "d-a", name: "Atraxa", quantity: 1, commanders: [] }] }));
     expect(screen.queryByTestId("read-band-offer")).toBeNull();
     expect(screen.getByText(copy.allHold(card.name))).toBeInTheDocument();
+  });
+
+  describe("across a round trip through a card opened over the view", () => {
+    function Trip() {
+      const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+      const [shown, setShown] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+          {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+        </>
+      );
+    }
+    const trip = async () => {
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      await settle();
+    };
+    async function drawTrip(p: FitsReadPanel, l: FitsRead = list()) {
+      actions.loadFitsAction.mockResolvedValue(l);
+      readActions.readFitsReadAction.mockResolvedValue(p);
+      render(<Trip />);
+      await settle();
+    }
+
+    it("a write in flight still holds every action, and the list is read again once it lands", async () => {
+      await drawTrip(panel({}, { stored: stored() }));
+      let resolve!: (v: unknown) => void;
+      actions.swapFromReadAction.mockReturnValue(new Promise((res) => { resolve = res; }));
+      fireEvent.click(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") }));
+      await trip();
+      for (const b of within(screen.getByTestId("read-row")).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
+      // The write spends the free copy: the view drawn now has to read that itself.
+      actions.loadFitsAction.mockResolvedValue(list({ free: 0 }));
+      await act(async () => resolve({ ok: true, swapId: "s1", addWasFree: true, cutLeft: 0 }));
+      await settle();
+      expect(screen.getByTestId("fits-copies")).toHaveTextContent(copy.copies(1, 0));
+      expect(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toBeEnabled();
+    });
+
+    it("a too-many-decks refusal still stands for the same decks", async () => {
+      await drawTrip(panel());
+      readActions.pressFitsReadAction.mockResolvedValue({ ok: false, reason: "tooBig" });
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      await trip();
+      expect(screen.getByTestId("read-band-refused")).toBeInTheDocument();
+    });
+
+    it("a running read keeps the count it was pressed with", async () => {
+      await drawTrip(panel());
+      readActions.pressFitsReadAction.mockResolvedValue({ ok: true, panel: panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString() } }) });
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      // Back in, the free list now names one deck: the run still reads two.
+      actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString() } }));
+      await trip();
+      expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
+    });
   });
 });

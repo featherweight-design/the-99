@@ -456,7 +456,7 @@ type OpenAt = {
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
 /** A card a combo partner was opened FROM, put back when the partner closes. */
-const EMPTY_MEMORY: FitsViewMemory = {};
+const EMPTY_MEMORY: FitsViewMemory = { acts: {} };
 /** Find a deck's view leaving, as `anim-view-out` runs it. */
 const VIEW_LEAVE_MS = 160;
 type TrailEntry = { card: BrowseCard; siblings: SiblingCard[]; openAt: OpenAt; door: boolean; label?: string };

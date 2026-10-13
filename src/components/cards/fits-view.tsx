@@ -28,7 +28,15 @@ const read = copy.read;
  * What the reader did on the read's rows this visit, kept by the provider across a card opened over it.
  * Keyed on the read and the deck (`actKey`), so a newer read never inherits an older one's Swapped in.
  */
-export type FitsViewMemory = Record<string, RowAct>;
+export type FitsViewMemory = {
+  acts: Record<string, RowAct>;
+  /** A write from this view is in flight. It outlives the view (a card opened over it), so the lock does too. */
+  writing?: boolean;
+  /** The decks a press was refused for as too many for one read (`tooBig`), while they still are. */
+  tooBigFor?: string | null;
+  /** The decks a running read was pressed for, so a reopened run keeps its count. */
+  runCount?: number | null;
+};
 
 /** How often a read in flight is asked after while the view waits on it (lock 5: one run, polled). */
 const POLL_MS = 3000;
@@ -59,11 +67,13 @@ export function FitsView({
   const [panel, setPanel] = useState<FitsReadPanel | null>(null);
   const [running, setRunning] = useState<number | null>(null);
   // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
-  const [runCount, setRunCount] = useState<number | null>(null);
+  // Kept by the provider, with the refusal and the write lock below, so a round trip keeps them.
+  const runCount = memory.runCount ?? null;
   const [pressFailed, setPressFailed] = useState(false);
   // The decks a press was refused for, before any credit, as too many for one read (`tooBig`). The
   // refusal holds only while those are still the decks: an add that changes them brings the offer back.
-  const [tooBigFor, setTooBigFor] = useState<string | null>(null);
+  const tooBigFor = memory.tooBigFor ?? null;
+  const writing = memory.writing === true;
   // The read this visit's press produced: its sub reads `just now` rather than a date.
   const [fresh, setFresh] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -93,7 +103,6 @@ export function FitsView({
     setPanel(p);
     const pending = p?.view.pending ?? null;
     setRunning(pending ? Date.parse(pending.startedAt) : null);
-    if (!pending) setRunCount(null);
   }, []);
 
   useEffect(() => {
@@ -126,6 +135,7 @@ export function FitsView({
     const stored = p.view.stored;
     const failed = p.view.failed !== null;
     setPressFailed(failed);
+    setMemory((m) => (m.runCount == null ? m : { ...m, runCount: null }));
     // Announced only when it is drawn: a read that settled after its decks moved comes back out of date.
     if (stored && stored.readId !== before && !failed && stored.current) {
       setFresh(stored.readId);
@@ -138,7 +148,7 @@ export function FitsView({
     if (running !== null || !panel) return;
     const before = panel.view.stored?.readId ?? null;
     setRunning(Date.now());
-    setRunCount(candidates);
+    setMemory((m) => ({ ...m, runCount: candidates }));
     setNow(Date.now());
     setPressFailed(false);
     setAnnounced(read.announceStarted);
@@ -158,7 +168,7 @@ export function FitsView({
       const again = await readFitsReadAction(card.oracleId).catch(() => null);
       if (again) adopt(again);
       if (res.reason === "tooBig") {
-        setTooBigFor(candidateKey);
+        setMemory((m) => ({ ...m, tooBigFor: candidateKey }));
         setAnnounced(read.announceTooBig);
       } else if (res.reason === "notFound" || res.reason === "noCandidates") setPressFailed(true);
     } catch {
@@ -171,7 +181,31 @@ export function FitsView({
   }
 
   const actKey = (deckId: string) => `${panel?.view.stored?.readId ?? ""}:${deckId}`;
-  const actOf = (deckId: string) => memory[actKey(deckId)] ?? null;
+  const actOf = (deckId: string) => memory.acts[actKey(deckId)] ?? null;
+  const setAct = (deckId: string, act: RowAct) =>
+    setMemory((m) => ({ ...m, acts: { ...m.acts, [actKey(deckId)]: act } }));
+  // One write at a time, across the read's rows, the folded list and a round trip through a card
+  // opened over the view: the provider's flag holds while a write this view started is in flight.
+  const startWrite = () => {
+    if (writing || !list.claim()) return false;
+    setMemory((m) => ({ ...m, writing: true }));
+    return true;
+  };
+  const endWrite = () => {
+    list.release();
+    setMemory((m) => ({ ...m, writing: false }));
+  };
+  // A view mounted while an earlier one's write was in flight reads the list again once it lands.
+  const sawWriting = useRef(writing);
+  useEffect(() => {
+    if (sawWriting.current && !writing && !busy && list.busy === null) void list.refresh(true);
+    sawWriting.current = writing;
+  });
+  async function addFree(deck: Parameters<typeof list.add>[0]) {
+    if (writing) return;
+    setMemory((m) => ({ ...m, writing: true }));
+    try { await list.add(deck); } finally { setMemory((m) => ({ ...m, writing: false })); }
+  }
 
   const deckOf = (deckId: string) => {
     const row = list.read?.fits.find((d) => d.id === deckId) ?? panel?.fits.fits.find((d) => d.id === deckId);
@@ -181,7 +215,7 @@ export function FitsView({
   };
 
   async function onSwap(deckId: string, cut: string, cutName: string) {
-    if (!list.claim()) return;
+    if (!startWrite()) return;
     const act = actOf(deckId);
     setBusy(true);
     setRefused(null);
@@ -189,25 +223,25 @@ export function FitsView({
       if (act?.kind === "swapped") {
         const r = await undoReadSwapAction(act.swapId);
         if (!r.ok) return setRefused({ deckId, kind: "undo" });
-        setMemory((m) => ({ ...m, [actKey(deckId)]: null }));
+        setAct(deckId, null);
         setAnnounced(read.announceUndone(name, cutName));
       } else {
         const r = await swapFromReadAction(deckId, cut, card.oracleId);
         if (!r.ok) return setRefused({ deckId, kind: "swap" });
-        setMemory((m) => ({ ...m, [actKey(deckId)]: { kind: "swapped", swapId: r.swapId } }));
+        setAct(deckId, { kind: "swapped", swapId: r.swapId });
         setAnnounced(read.announceSwapped(name, cutName));
       }
       await list.refresh(true);
     } catch {
       setRefused({ deckId, kind: act?.kind === "swapped" ? "undo" : "swap" });
     } finally {
-      list.release();
+      endWrite();
       setBusy(false);
     }
   }
 
   async function onAdd(deckId: string, deckName: string) {
-    if (!list.claim()) return;
+    if (!startWrite()) return;
     const act = actOf(deckId);
     setBusy(true);
     setRefused(null);
@@ -215,14 +249,14 @@ export function FitsView({
       if (act?.kind === "added") {
         const r = await undoReadAddAction(deckId, card.oracleId);
         if (!r.ok) return setRefused({ deckId, kind: "undo" });
-        setMemory((m) => ({ ...m, [actKey(deckId)]: null }));
+        setAct(deckId, null);
         setAnnounced(read.announceAddUndone(name, deckName));
       } else {
         const toBuy = freeNow === 0;
         const r = await addFromFits(deckId, card.oracleId);
         if (!r.ok) return setRefused({ deckId, kind: "add" });
         if (!r.held) {
-          setMemory((m) => ({ ...m, [actKey(deckId)]: { kind: "added", toBuy } }));
+          setAct(deckId, { kind: "added", toBuy });
           setAnnounced(read.announceAdded(name, deckName));
         }
       }
@@ -230,7 +264,7 @@ export function FitsView({
     } catch {
       setRefused({ deckId, kind: act?.kind === "added" ? "undo" : "add" });
     } finally {
-      list.release();
+      endWrite();
       setBusy(false);
     }
   }
@@ -297,7 +331,7 @@ export function FitsView({
   // Every row action waits on any write in flight, the folded list's included, and on a count the
   // view does not have yet: the list's first read, a Try again in flight, or a re-read that failed
   // after a write, which leaves the opening count spent.
-  const rowsLocked = busy || list.busy !== null || list.load.state !== "ready";
+  const rowsLocked = busy || writing || list.busy !== null || list.load.state !== "ready";
   const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
   // The free list as last read, in the order it opened: a deck still listed is drawn as it reads now,
   // one that left (took the card, or no longer fits) stays only while it carries this visit's Add
@@ -316,10 +350,10 @@ export function FitsView({
       cardName={name}
       freeNow={freeNow}
       // A read row's write holds the folded list too: one mutation at a time across the view.
-      busy={list.busy ?? (busy ? "read" : null)}
+      busy={list.busy ?? (busy || writing ? "read" : null)}
       refused={list.refused}
       noteFor={list.noteFor}
-      onAdd={(deck) => void list.add(deck)}
+      onAdd={(deck) => void addFree(deck)}
       onOpenCard={onOpenCard}
     />
   ) : null;
