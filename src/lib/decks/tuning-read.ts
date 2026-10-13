@@ -16,6 +16,7 @@ import {
 } from "../../db/schema";
 import { readAllowance, settleModelCall } from "../model/allowance";
 import { cacheForUser } from "../cache/user-lists";
+import { switchBits } from "../switches/resolve";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { loadDeckProfileFromHead, readProfileHead, type ProfileHead } from "../profile/load";
 import { PROFILE_VERSION } from "../profile/version";
@@ -63,7 +64,7 @@ export type TuningInputs = {
 };
 
 /** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
-export async function tuningInputs(deckId: string, userId: string): Promise<TuningInputs | null> {
+export async function tuningInputs(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<TuningInputs | null> {
   // The head and the version it belongs to, in ONE snapshot: read apart, a commit landing between
   // them would pair the list before the commit with the version after it.
   const snapshot = await db.transaction(async (tx) => {
@@ -71,7 +72,7 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
     if (!head) return null;
     const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
       .where(eq(deckVersions.deckId, deckId));
-    const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
+    const locked = neverCutEnabled(env) ? [...(await liveLockedIds(tx, deckId))] : [];
     return { head, readVersion: v?.n ?? null, locked };
   }, { isolationLevel: "repeatable read" });
   if (!snapshot) return null;
@@ -129,9 +130,9 @@ export async function tuningInputs(deckId: string, userId: string): Promise<Tuni
  * pair a profile of one list with a fingerprint and a flag of another. The cache key is the one
  * `cachedDeckProfile` files under, so an analysis already pressed is still reused.
  */
-export function profileOfHead(head: ProfileHead): Promise<DeckProfile> {
-  return cacheForUser(head.userId, ["deck-profile", head.deckId, profileFingerprint(head)], () =>
-    loadDeckProfileFromHead(head),
+export function profileOfHead(head: ProfileHead, env: NodeJS.ProcessEnv = process.env): Promise<DeckProfile> {
+  return cacheForUser(head.userId, ["deck-profile", head.deckId, profileFingerprint(head), switchBits(env)], () =>
+    loadDeckProfileFromHead(head, env),
   );
 }
 
@@ -183,9 +184,10 @@ export async function withBracketAfter(
   before: DeckProfile,
   declared: Bracket | null,
   kept: ValidatedSuggestion[],
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<ValidatedSuggestion[]> {
   return Promise.all(kept.map(async (s) => {
-    const after = await loadDeckProfileFromHead({ ...head, cards: swapped(head.cards, s) });
+    const after = await loadDeckProfileFromHead({ ...head, cards: swapped(head.cards, s) }, env);
     return { ...s, bracketAfter: bracketAfter({ before, after, declared }) };
   }));
 }
@@ -232,6 +234,7 @@ export async function readTuningState(
   fingerprint: string,
   now: Date = new Date(),
   opts: { allLocked?: string | null; runId?: string | null } = {},
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<TuningState> {
   await db.transaction(async (tx) => {
     const reaped = await tx.update(deckSuggestionRuns)
@@ -282,7 +285,7 @@ export async function readTuningState(
   // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
   // run, and nothing the player had was changed by it.
   const { items, newestPriceAsOf } = lastOk
-    ? await readItems(lastOk.id, deckId, userId)
+    ? await readItems(lastOk.id, deckId, userId, env)
     : { items: [], newestPriceAsOf: null };
 
   return {
@@ -335,9 +338,10 @@ async function readItems(
   runId: string,
   deckId: string,
   userId: string,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
   // Qualified by hand: a bare `oracle_id` inside would resolve against `deck_locks` itself.
-  const cutLocked = neverCutEnabled()
+  const cutLocked = neverCutEnabled(env)
     ? sql`exists (
         select 1 from deck_locks lk
         join ${deckCards} dk on dk.deck_id = lk.deck_id and dk.oracle_id = lk.oracle_id

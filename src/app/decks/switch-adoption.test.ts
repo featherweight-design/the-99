@@ -78,7 +78,7 @@ const PENDING: string[] = [];
 
 /**
  * Readers a converted page starts, which decide every switch from the env they are handed (Admin PR
- * 6b: the deck page, its review route and their readers). A bare call in one reads the environment
+ * 6b: the deck page, its review route and their readers; 6c: locks and tuning reads). A bare call in one reads the environment
  * alone however carefully the page threads its own.
  */
 const READERS = [
@@ -95,6 +95,17 @@ const READERS = [
   "src/lib/cards/chain-art.ts",
   "src/lib/decks/notes-read.ts",
   "src/lib/notices/read.ts",
+  "src/lib/decks/cuts-read.ts",
+  "src/lib/decks/tuning-read.ts",
+  "src/lib/profile/load.ts",
+  "src/lib/swaps/draft-swap.ts",
+  "src/lib/swaps/gather.ts",
+  "src/lib/swaps/take.ts",
+  "src/lib/tuning/cuts-run-store.ts",
+  "src/lib/tuning/cuts-verdicts.ts",
+  "src/lib/tuning/mana-trade.ts",
+  "src/lib/tuning/run-store.ts",
+  "src/lib/tuning/verdicts.ts",
 ];
 
 /** A switch read from the environment alone: `fooEnabled()` or `roleBasisFromEnv()` with no env. */
@@ -141,6 +152,8 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
     expect(pages).toBeGreaterThan(20);
     expect(readers).toBe(READERS.length);
     expect(found.filter((f) => !PENDING.includes(f.path)).map((f) => f.call)).toEqual([]);
+    // A listed reader that moved or was renamed would drop out of the scan silently.
+    expect(READERS.filter((path) => !existsSync(path))).toEqual([]);
     // A pending page converted is a page to take off the list.
     expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);
   });

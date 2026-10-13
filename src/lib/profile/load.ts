@@ -16,6 +16,7 @@ import { loadBracketFlags } from "../bracket/flags-read";
 import { EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/oracle-rules";
 import { classifySearches, tutorReaches } from "../bracket/tutor-targets";
 import { cacheForUser } from "../cache/user-lists";
+import { switchBits } from "../switches/resolve";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
@@ -284,7 +285,7 @@ function compositionFrom(row: CompositionRow | undefined) {
  * ceiling expires. The head already holds `(oracleId, quantity)`, so this joins `cards` by
  * those ids.
  */
-export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckProfile> {
+export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.ProcessEnv = process.env): Promise<DeckProfile> {
   const commanderIds = [
     head.commanderOracleId,
     ...(head.partnerOracleId ? [head.partnerOracleId] : []),
@@ -359,7 +360,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead): Promise<DeckPr
   // from one decision so the profile never grades one count against the other's targets. A label
   // read that fails throws rather than quietly building a classifier profile that the cache would
   // file under the same key: the labels sit in the database every other read here uses.
-  const roleBasis = roleBasisFromEnv();
+  const roleBasis = roleBasisFromEnv(env);
   const { skeleton: skeletonFor, candidates, condition, staples, commanderDeckCount } =
     await loadSkeletonForCommanders(
       head.commanderOracleId, head.partnerOracleId ?? null, combinedIdentity,
@@ -601,12 +602,15 @@ export async function loadDeckProfile(
 export async function cachedDeckProfile(
   deckId: string,
   userId: string,
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<DeckProfile | null> {
   const head = await loadProfileHead(deckId, userId);
   if (!head) return null;
   const fingerprint = profileFingerprint(head);
-  return cacheForUser(userId, ["deck-profile", deckId, fingerprint], () =>
-    loadDeckProfileFromHead(head),
+  // The resolved switches ride in the key: the role basis is a per-reader switch, and a profile built
+  // on one basis must never be served to a reader on the other (`profileOfHead` files under the same key).
+  return cacheForUser(userId, ["deck-profile", deckId, fingerprint, switchBits(env)], () =>
+    loadDeckProfileFromHead(head, env),
   );
 }
 

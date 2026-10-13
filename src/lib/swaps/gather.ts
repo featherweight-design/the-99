@@ -136,7 +136,9 @@ async function readNoncreatureSubtypes(): Promise<Set<string>> {
 
 /** Null when the deck is not this reader's, or the card is not in the catalog. */
 /** `full` reads every stand-in of every group, for `Show all` on a group the first read capped. */
-export async function loadStandIns(deckId: string, userId: string, cutOracleId: string, full: boolean): Promise<StandInsRead | null> {
+export async function loadStandIns(
+  deckId: string, userId: string, cutOracleId: string, full: boolean, env: NodeJS.ProcessEnv = process.env,
+): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner
     from decks where id = ${deckId} and user_id = ${userId}
@@ -172,7 +174,7 @@ export async function loadStandIns(deckId: string, userId: string, cutOracleId: 
   const draft = sql.param([...new Set([...draftRows.rows.map((r) => r.oracle_id), ...commanderIds])]);
 
   // Off, no label is read and the pool and every comparison are the text path's, unchanged.
-  const labelsOn = standInLabelsEnabled();
+  const labelsOn = standInLabelsEnabled(env);
   const originalLabels: readonly LabelJob[] | undefined = labelsOn && !isLandFace(original.typeLine)
     ? (await readLabels([cutOracleId])).get(cutOracleId)
     : undefined;

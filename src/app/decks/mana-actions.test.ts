@@ -198,7 +198,7 @@ describe("applyManaTrade and undoManaTrade (the actions)", () => {
     reset();
     state.undone = DECK;
     expect(await undoManaTrade(APPLY)).toEqual({ ok: true });
-    expect(state.writes).toEqual([["undo", APPLY, "user_1"]]);
+    expect(state.writes).toEqual([["undo", APPLY, "user_1", ENV]]);
     expect(state.revalidated).toEqual([[DECK, "user_1"]]);
     expect(await undoManaTrade("nope")).toEqual({ ok: false, message: deckTuningCopy.card.undoRefused });
     state.undone = null;

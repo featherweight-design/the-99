@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// The reader's resolved switches: a sentinel holding no variable at all (the flags are mocked below), so a
+// write is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
+const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
 // The two Fits actions are PUBLIC ENDPOINTS: every gate is re-checked here, and the add's
 // revalidation waits for `after()` rather than shipping the caller's page back.
@@ -94,7 +95,7 @@ describe("swapFromReadAction", () => {
   it("takes the card for the read's cut, for the signed-in reader, and revalidates in after()", async () => {
     vi.mocked(takeStandIn).mockResolvedValueOnce({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
     expect(await swapFromReadAction(DECK, CUT, CARD)).toEqual({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
-    expect(takeStandIn).toHaveBeenCalledWith(DECK, "user_1", CUT, CARD);
+    expect(takeStandIn).toHaveBeenCalledWith(DECK, "user_1", CUT, CARD, ENV);
     expect(revalidateClaims).not.toHaveBeenCalled();
     await state.afters[0]();
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
@@ -119,7 +120,7 @@ describe("undoReadSwapAction", () => {
   it("undoes the reader's own swap and revalidates its deck in after()", async () => {
     vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
     expect(await undoReadSwapAction(SWAP)).toEqual({ ok: true });
-    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1");
+    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1", ENV);
     await state.afters[0]();
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
   });

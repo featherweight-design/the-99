@@ -112,14 +112,14 @@ export type ProposedCutsInputs = {
  * the declared bracket comes from the same head, so a flag is a fact only against the bracket the
  * list was read under.
  */
-export async function readProposedCuts(deckId: string, userId: string): Promise<ProposedCutsInputs | null> {
-  if (!proposedCutsEnabled()) return null;
+export async function readProposedCuts(deckId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<ProposedCutsInputs | null> {
+  if (!proposedCutsEnabled(env)) return null;
   const snapshot = await db.transaction(async (tx) => {
     const head = await readProfileHead(tx, deckId, userId);
     if (!head) return null;
     const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
       .where(eq(deckVersions.deckId, deckId));
-    const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
+    const locked = neverCutEnabled(env) ? [...(await liveLockedIds(tx, deckId))] : [];
     const [d] = await tx.select({ intent: decks.intent }).from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
     return { head, readVersion: v?.n ?? null, locked, intent: d?.intent?.trim() ? d.intent : null };
@@ -127,7 +127,7 @@ export async function readProposedCuts(deckId: string, userId: string): Promise<
   if (!snapshot) return null;
   const { head, readVersion, locked, intent } = snapshot;
   const [profile, support] = await Promise.all([
-    profileOfHead(head),
+    profileOfHead(head, env),
     readCutSupport(head.commanderOracleId, head.partnerOracleId),
   ]);
   const facts = cutFacts({
@@ -196,7 +196,9 @@ export async function reapCutsRuns(deckId: string, userId: string, now: Date = n
  * run with its cuts, and the allowance measured against this feature's own call. With `runId`
  * (History's re-review) the cuts are that ok run's instead, when the reader owns it on this deck.
  */
-export async function readCutsState(deckId: string, userId: string, now: Date = new Date(), runId: string | null = null): Promise<CutsState> {
+export async function readCutsState(
+  deckId: string, userId: string, now: Date = new Date(), runId: string | null = null, env: NodeJS.ProcessEnv = process.env,
+): Promise<CutsState> {
   await reapCutsRuns(deckId, userId, now);
 
   const runOf = cutsRunsOfDeck(deckId);
@@ -248,7 +250,7 @@ export async function readCutsState(deckId: string, userId: string, now: Date = 
       // One after the other: a transaction is one connection.
       const held = rows.length === 0 ? [] : await tx.select({ oracleId: deckCards.oracleId }).from(deckCards).where(eq(deckCards.deckId, deckId));
       const [deck] = rows.length === 0 ? [] : await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId }).from(decks).where(eq(decks.id, deckId));
-      const locks: ReadonlySet<string> = rows.length > 0 && neverCutEnabled() ? await liveLockedIds(tx, deckId) : new Set();
+      const locks: ReadonlySet<string> = rows.length > 0 && neverCutEnabled(env) ? await liveLockedIds(tx, deckId) : new Set();
       const inList = new Set(held.map((h) => h.oracleId));
       const commanders = new Set([deck?.commander, deck?.partner].filter((x): x is string => !!x));
       const live = rows.map((r) => ({

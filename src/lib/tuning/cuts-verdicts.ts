@@ -42,10 +42,12 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * still carried the former. Read in a separate step after the commit, the new figure raced the
  * pooled connections' snapshots and the result retired itself after its own cut.
  */
-async function deckFingerprint(tx: Tx, deckId: string, userId: string, keyCards?: readonly string[]): Promise<string | null> {
+async function deckFingerprint(
+  tx: Tx, deckId: string, userId: string, keyCards: readonly string[] | undefined, env: NodeJS.ProcessEnv,
+): Promise<string | null> {
   const head = await readProfileHead(tx, deckId, userId);
   if (!head) return null;
-  const locked = neverCutEnabled() ? [...(await liveLockedIds(tx, deckId))] : [];
+  const locked = neverCutEnabled(env) ? [...(await liveLockedIds(tx, deckId))] : [];
   const [d] = await tx.select({ intent: decks.intent }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   return cutsFingerprint(head, locked, d?.intent?.trim() ? d.intent : null, keyCards ?? (await readKeyCardNames(head)));
 }
@@ -100,13 +102,13 @@ async function lockedCut(tx: Tx, itemId: string, userId: string) {
 export type VerdictMode = { review?: boolean };
 
 /** Cut one copy of the card, and remember the row exactly as it was. */
-export async function cutItem(itemId: string, userId: string, mode: VerdictMode = {}): Promise<CutOutcome> {
+export async function cutItem(itemId: string, userId: string, mode: VerdictMode = {}, env: NodeJS.ProcessEnv = process.env): Promise<CutOutcome> {
   return db.transaction(async (tx): Promise<CutOutcome> => {
     const item = await lockedCut(tx, itemId, userId);
     if (!item || item.verdict !== "pending") return { ok: false, reason: "gone" };
     const { deckId, oracleId } = item;
     const keys = await keyCardsOf(tx, deckId, userId);
-    const before = await deckFingerprint(tx, deckId, userId, keys);
+    const before = await deckFingerprint(tx, deckId, userId, keys, env);
 
     const [deck] = await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
       .from(decks).where(eq(decks.id, deckId));
@@ -114,7 +116,7 @@ export async function cutItem(itemId: string, userId: string, mode: VerdictMode 
     const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto })
       .from(deckCards).where(rowOf(deckId, oracleId)).for("update");
     if (!row) return { ok: false, reason: "cutGone" };
-    if (neverCutEnabled() && (await isLiveLocked(tx, deckId, oracleId))) return { ok: false, reason: "cutLocked" };
+    if (neverCutEnabled(env) && (await isLiveLocked(tx, deckId, oracleId))) return { ok: false, reason: "cutLocked" };
     // A result is actionable only for the list it was made against. Another tab may still show one
     // after the deck moved, and a cut from it would remove a card the model never saw in this list.
     if (item.runStatus !== "ok" || before === null || (!mode.review && item.fingerprint !== before)) return { ok: false, reason: "stale" };
@@ -137,20 +139,20 @@ export async function cutItem(itemId: string, userId: string, mode: VerdictMode 
       await pruneOrphanLocks(tx, deckId);
     }
     await touchDeck(tx, deckId);
-    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId, keys));
+    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId, keys, env));
     return { ok: true, deckId, runId: item.runId };
   });
 }
 
 /** Put the card back as the cut found it, and only over the deck the cut left. */
-export async function undoCutItem(itemId: string, userId: string, mode: VerdictMode = {}): Promise<CutOutcome> {
+export async function undoCutItem(itemId: string, userId: string, mode: VerdictMode = {}, env: NodeJS.ProcessEnv = process.env): Promise<CutOutcome> {
   return db.transaction(async (tx): Promise<CutOutcome> => {
     const item = await lockedCut(tx, itemId, userId);
     const snap = item?.undoSnapshot?.cut;
     if (!item || item.verdict !== "accepted" || !snap) return { ok: false, reason: "gone" };
     const { deckId, oracleId } = item;
     const keys = await keyCardsOf(tx, deckId, userId);
-    const before = await deckFingerprint(tx, deckId, userId, keys);
+    const before = await deckFingerprint(tx, deckId, userId, keys, env);
     // Only over the deck the cut left: the card's own row is checked below, and the rest of the
     // inputs (the list, the locks, the intent, the bracket) by the run's fingerprint.
     // In review only the card's own row is held to that (below): the list moved before the press.
@@ -182,7 +184,7 @@ export async function undoCutItem(itemId: string, userId: string, mode: VerdictM
       .set({ verdict: "pending", verdictAt: null, undoSnapshot: null })
       .where(and(eq(deckCutItems.id, itemId), eq(deckCutItems.verdict, "accepted")));
     await touchDeck(tx, deckId);
-    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId, keys));
+    await chainRun(tx, item.runId, before, await deckFingerprint(tx, deckId, userId, keys, env));
     return { ok: true, deckId, runId: item.runId };
   });
 }

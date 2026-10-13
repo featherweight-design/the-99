@@ -732,7 +732,11 @@ describe("ids off the wire", () => {
   it("hands the panel's run id to startRun, and refuses one that is not a uuid", async () => {
     const RUN = "22222222-2222-4222-8222-222222222222";
     await runTuning(DECK, { anyway: true, runId: RUN });
-    expect(calls.startOpts).toEqual({ runId: RUN });
+    // The run starts under the env the action resolved for the reader. Compared by identity as a boolean
+    // and kept out of the deep compare, so a failing diff never prints the environment.
+    const { env, ...startOpts } = calls.startOpts as { env?: unknown };
+    expect(startOpts).toEqual({ runId: RUN });
+    expect(env === process.env).toBe(true);
     for (const runId of ["not-a-uuid", 7, {}]) {
       const result = await runTuning(DECK, { anyway: true, runId } as unknown as { runId: string });
       expect(result.ok).toBe(false);

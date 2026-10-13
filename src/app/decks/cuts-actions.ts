@@ -90,7 +90,7 @@ export async function runProposedCuts(
     return { ok: false, message: deckCutsCopy.run.refused };
   }
 
-  const inputs = await readProposedCuts(deckId, userId);
+  const inputs = await readProposedCuts(deckId, userId, env);
   if (!inputs) return { ok: false, message: deckCutsCopy.run.refused };
   const { head, facts, allLocked, fingerprint, readVersion, intent, keyCards } = inputs;
 
@@ -108,7 +108,7 @@ export async function runProposedCuts(
       .from(cards)
       .where(inArray(cards.oracleId, facts.cards.map((c) => c.oracleId))),
     // The deck's plan: its combos, the commander's text and the colours it leans on.
-    profileOfHead(head).then(readCutsPlan).catch(() => undefined),
+    profileOfHead(head, env).then(readCutsPlan).catch(() => undefined),
   ]);
   const texts = new Map(textRows.flatMap((r) => {
     const t = castFaceText(r.text, r.layout);
@@ -132,7 +132,7 @@ export async function runProposedCuts(
   // A run abandoned by a process that is gone would otherwise answer "in flight" until someone
   // opened the panel.
   await reapCutsRuns(deckId, userId);
-  const started = await startCutsRun(userId, deckId, fingerprint, readVersion, { runId: requested });
+  const started = await startCutsRun(userId, deckId, fingerprint, readVersion, { runId: requested, env });
   if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
@@ -217,13 +217,13 @@ export async function readCutsPanel(deckId: string, runId: string | null = null)
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!proposedCutsEnabled(env) || !isUuid(deckId)) return null;
-  const inputs = await readProposedCuts(deckId, userId);
+  const inputs = await readProposedCuts(deckId, userId, env);
   if (!inputs) return null;
   const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
   const keyCards = inputs.keyCards;
   const [state, name] = await Promise.all([
     // `runId` is History's re-review: that past run's cuts. Anything not a uuid reads as ordinary.
-    readCutsState(deckId, userId, new Date(), runId && isUuid(runId) ? runId : null),
+    readCutsState(deckId, userId, new Date(), runId && isUuid(runId) ? runId : null, env),
     commanderName(head),
   ]);
   const declared = (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null;
@@ -282,14 +282,14 @@ export async function cutProposed(itemId: string, review = false): Promise<DeckM
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await cutItem(itemId, userId, { review: review === true }), userId, true);
+  return settleVerdict(await cutItem(itemId, userId, { review: review === true }, env), userId, true);
 }
 
 export async function undoProposedCut(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
-  return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }), userId, true);
+  return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }, env), userId, true);
 }
 
 /** Keep and Show it again change no card, so they move no fingerprint. */

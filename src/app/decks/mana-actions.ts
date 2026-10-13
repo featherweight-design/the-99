@@ -158,7 +158,7 @@ export async function applyManaTrade(deckId: string, color: string, stapleOracle
   const help = await helpFor(deckId, color, userId, env);
   const trade = help?.trades.find((t) => t.staple.oracleId === stapleOracleId);
   if (!help || !trade || trade.out.id !== outId) return refused;
-  const applyId = await applyTrade(help.deckId, userId, { cutOracleId: trade.out.id, addOracleId: trade.staple.oracleId }, help.listKey);
+  const applyId = await applyTrade(help.deckId, userId, { cutOracleId: trade.out.id, addOracleId: trade.staple.oracleId }, help.listKey, env);
   if (!applyId) return refused;
   revalidateClaims(deckId, userId);
   return { ok: true, applyId };
@@ -170,7 +170,7 @@ export async function undoManaTrade(applyId: string): Promise<DeckMutationResult
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!manaBalanceEnabled(env) || !isUuid(applyId)) return refused;
-  const deckId = await undoTrade(applyId, userId);
+  const deckId = await undoTrade(applyId, userId, env);
   if (!deckId) return refused;
   revalidateClaims(deckId, userId);
   return { ok: true };

@@ -35,7 +35,7 @@ export async function takeStandInAction(deckId: string, cutOracleId: string, add
   if (!swapToolsEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) {
     return { ok: false, reason: "notFound" };
   }
-  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
+  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId, env);
   if (result.ok) revalidateClaims(deckId, userId);
   return result;
 }
@@ -44,7 +44,7 @@ export async function undoSwapAction(swapId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!swapToolsEnabled(env) || !isUuid(swapId)) return { ok: false };
-  const deckId = await undoSwap(swapId, userId);
+  const deckId = await undoSwap(swapId, userId, env);
   if (deckId) revalidateClaims(deckId, userId);
   return { ok: deckId !== null };
 }
@@ -69,7 +69,7 @@ export async function loadStandInsAction(deckId: string, cutOracleId: string, fu
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!swapToolsEnabled(env) || !isUuid(deckId) || !isUuid(cutOracleId)) return null;
-  return loadStandIns(deckId, userId, cutOracleId, full === true);
+  return loadStandIns(deckId, userId, cutOracleId, full === true, env);
 }
 
 /**
@@ -114,7 +114,7 @@ export async function swapFromReadAction(deckId: string, cutOracleId: string, ad
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!findADeckReadEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
-  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
+  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId, env);
   if (result.ok) after(() => revalidateClaims(deckId, userId));
   return result;
 }
@@ -123,7 +123,7 @@ export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean 
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!findADeckReadEnabled(env) || !isUuid(swapId)) return { ok: false };
-  const deckId = await undoSwap(swapId, userId);
+  const deckId = await undoSwap(swapId, userId, env);
   if (deckId) after(() => revalidateClaims(deckId, userId));
   return { ok: deckId !== null };
 }
