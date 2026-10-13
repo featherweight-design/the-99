@@ -10,7 +10,7 @@
  */
 import { asc, eq, or, sql } from "drizzle-orm";
 import type { db } from "../../db";
-import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
+import { deckGameOpponents, friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { leavePodIn } from "./pods";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -23,6 +23,15 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
   pod_spare_shares: ["user_id"],
   friend_links: ["user_id", "friend_user_id"],
   social_profiles: ["user_id"],
+};
+
+/**
+ * Account columns the purge UNLINKS rather than deletes: another player's game log names the account as
+ * an opponent, and that row is theirs. The live link goes null and the snapshot (the name it had, the
+ * deck's name and commanders) stays, so their record survives the account. For the coverage test.
+ */
+export const SOCIAL_UNLINKED: Readonly<Record<string, readonly string[]>> = {
+  deck_game_opponents: ["friend_user_id"],
 };
 
 export type SocialPurge = { podsLeft: number; podsHandedOn: number; podsDeleted: number; friendLinks: number };
@@ -57,6 +66,19 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // are NOT locked here: the caller locks them last, after every row delete, which is where any other
   // writer takes a stamp (at its commit, after its rows).
   const friendIds = [...new Set(links.rows.map((r) => (r.user_id === userId ? r.friend_user_id : r.user_id)))].sort();
+  // Unlink the account from every other player's game log, AFTER the friendship rows are held. That order is
+  // the contract for whatever writes a friend seat: it must hold the seated friendship row FOR SHARE until
+  // its game commits, so a game logged before this lock is committed (and unlinked here) and one logged after
+  // finds no friend to seat. Nothing writes a seat yet; the game log's write path will. The
+  // deck link goes with it (`friend_deck_id` requires the friend), ahead of the decks' own `set null`.
+  // The account's decks are locked FIRST, in id order, because a deck delete locks its deck and then its
+  // `set null` locks the seats naming it: taking the seats here and the decks later (in `PURGE_ORDER`) would
+  // be the opposite order, and a deck deleted during the purge could deadlock it.
+  await tx.execute(sql`select d.id from decks d where d.user_id = ${userId} order by d.id for update`);
+  await tx
+    .update(deckGameOpponents)
+    .set({ friendUserId: null, friendDeckId: null })
+    .where(eq(deckGameOpponents.friendUserId, userId));
   const memberOf = await tx
     .select({ podId: podMembers.podId })
     .from(podMembers)

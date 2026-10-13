@@ -107,6 +107,14 @@ async function main() {
     await db.execute(sql`insert into deck_versions (deck_id, number, commander_oracle_id) values (${deckId}, 1, ${CMD})`);
     await db.execute(sql`insert into deck_games (deck_id, user_id, result, pod_size) values (${deckId}, ${P}, 'win', 4)`);
     await db.execute(sql`insert into deck_notes (deck_id, user_id, body) values (${deckId}, ${P}, 'probe')`);
+    // F logged a game against P's deck: F's row, naming P, which must survive the purge unlinked.
+    const { rows: fDeck } = await db.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id) values (${F}, 'fay deck', ${CMD}) returning id`);
+    const { rows: fGame } = await db.execute<{ id: string }>(sql`
+      insert into deck_games (deck_id, user_id, result, pod_size) values (${fDeck[0].id}, ${F}, 'loss', 4) returning id`);
+    await db.execute(sql`
+      insert into deck_game_opponents (game_id, seat, friend_user_id, friend_deck_id, friend_name_then, deck_name_then, commander_oracle_id, won)
+      values (${fGame[0].id}, 1, ${P}, ${deckId}, 'Pat', 'probe deck', ${CMD}, true)`);
     await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${P}, ${X}, 2, 'prb'), (${F}, ${X}, 1, 'prb')`);
     await db.execute(sql`insert into user_prefs (user_id) values (${P}) on conflict do nothing`);
     await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity) values (${P}, ${X}, 2)`);
@@ -152,6 +160,11 @@ async function main() {
     check("an admin event ABOUT the account went", kept[0].n === 0);
     const { rows: groupLeft } = await db.execute<{ n: number }>(sql`select count(*)::int as n from flag_groups where id = ${groupIds[0]}`);
     check("the switch group the account was in stands, as the admin's", groupLeft[0].n === 1);
+    const { rows: seatLeft } = await db.execute<{ f: string | null; d: string | null; n: string; c: string; w: boolean }>(sql`
+      select friend_user_id as f, friend_deck_id as d, friend_name_then as n, commander_oracle_id as c, won as w
+      from deck_game_opponents where game_id = ${fGame[0].id}`);
+    check("F's game against P stands, unlinked, with its snapshot", seatLeft.length === 1 && seatLeft[0].f === null
+      && seatLeft[0].d === null && seatLeft[0].n === "Pat" && seatLeft[0].c === CMD && seatLeft[0].w === true, JSON.stringify(seatLeft));
     const again = await purgeAccount(P);
     check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0
       && Object.values(again.social).every((n) => n === 0), JSON.stringify(again));

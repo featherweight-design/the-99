@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PURGE_ORDER } from "./purge";
-import { SOCIAL_PURGED } from "../social/purge";
+import { SOCIAL_PURGED, SOCIAL_UNLINKED } from "../social/purge";
 
 const schema = readFileSync("src/db/schema.ts", "utf8");
 
@@ -89,7 +89,7 @@ describe("the account purge's coverage", () => {
 
   it("clears, or keeps with a reason, every account COLUMN of every table", () => {
     const missing = tables.flatMap((t) => accountColumns(t)
-      .filter((c) => !(CLEARED_BY[t.name] ?? []).includes(c) && !(`${t.name}.${c}` in KEPT))
+      .filter((c) => !(CLEARED_BY[t.name] ?? []).includes(c) && !(SOCIAL_UNLINKED[t.name] ?? []).includes(c) && !(`${t.name}.${c}` in KEPT))
       .map((c) => `${t.name}.${c}`));
     expect(missing).toEqual([]);
   });
@@ -104,6 +104,17 @@ describe("the account purge's coverage", () => {
       const t = tables.find((x) => x.name === name);
       expect(t, name).toBeDefined();
       for (const c of cols) expect(accountColumns(t!), `${name}.${c}`).toContain(c);
+    }
+  });
+
+  it("unlinks each table by NULLABLE account columns it really has (a not-null column cannot be set null)", () => {
+    for (const [name, cols] of Object.entries(SOCIAL_UNLINKED)) {
+      const t = tables.find((x) => x.name === name);
+      expect(t, name).toBeDefined();
+      for (const c of cols) {
+        expect(accountColumns(t!), `${name}.${c}`).toContain(c);
+        expect(new RegExp(`\\(\\s*"${c}"\\)[^,\\n]*\\.notNull\\(`).test(t!.body), `${name}.${c} is not null`).toBe(false);
+      }
     }
   });
 
