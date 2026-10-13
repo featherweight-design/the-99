@@ -57,11 +57,12 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = publicPath ? await auth() : await auth.protect();
   const t1 = timing ? performance.now() : 0;
   const memo = timing && userId ? switchSnapshotState() : null;
+  const t2 = timing ? performance.now() : 0;
   // The reader's own switches (brief, locked rule 9): an account an override switches on sees that
   // feature's entry and its sheet, and the cookie below is keyed on what THEY see.
   const env = userId ? await resolveSwitchEnv(userId) : process.env;
   if (timing && userId) {
-    console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t1)} memo=${memo}`);
+    console.log(`[perf] proxy auth=${Math.round(t1 - t0)} switches=${Math.round(performance.now() - t2)} memo=${memo}`);
   }
   // Both sheet headers are this proxy's to write, so neither survives from the client on any request.
   // The shell trusts them: `SHEET_ON_HEADER` is its whole answer to whether the sheet is on.
