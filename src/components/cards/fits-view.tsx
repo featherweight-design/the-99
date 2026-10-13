@@ -327,7 +327,16 @@ export function FitsView({
     <section data-testid="read-stale" className="flex flex-col gap-[10px] rounded-[10px] px-[14px] py-[12px] border border-dashed border-[color:var(--border-dashed)]">
       <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">{staleText}</p>
       <div className="flex">
-        <CreditButton label={read.readAgain} credit={read.credit} filled={false} blocked={blocked} spent={spent || closed} onPress={() => void press()} />
+        <CreditButton
+          label={read.readAgain}
+          credit={read.credit}
+          filled={false}
+          blocked={blocked}
+          spent={spent || closed}
+          onPress={() => void press()}
+          // Paused or the owner's share, no credit is out: the press is named alone, never `No credits left`.
+          ariaLabel={closed && !spent ? read.readAgain : undefined}
+        />
       </div>
       <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]"><CreditsText text={staleLine} /></p>
     </section>

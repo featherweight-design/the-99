@@ -303,6 +303,13 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.queryByTestId("read-stale")).toBeNull();
   });
 
+  it("paused, Read again is off and named alone, never as out of credits", async () => {
+    const paused = { ...allowance, paused: { until: new Date("2026-11-01T00:00:00Z") } } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: paused }, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+    const press = within(screen.getByTestId("read-stale")).getByRole("button", { name: r.readAgain });
+    expect(press).toBeDisabled();
+  });
+
   it("a new overview tags the row and drops its source note (P3g); several or a set change say so (P10a)", async () => {
     const at = new Date(stored().at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     // An older overview would draw a source note; a new one since the read drops it for the tag.
