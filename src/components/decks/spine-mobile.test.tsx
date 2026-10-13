@@ -296,23 +296,33 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(heading.querySelector("button")).toBeNull();
     expect(heading.querySelector("[data-deck-title]")!.textContent).toBe(props.deck.name);
   });
-  // The band and the figure keyed to it, at this call site. The contrast table
-  // and the primitive's own tests both stay green if this component drifts back
-  // to the old geometry — the figures are only a contract where they are passed.
-  it("states the 288 band and the 143px three-line block it measured", () => {
+  // The band and the ramp keyed to it, at this call site. The block draws its own ramp, so the
+  // ramp follows the block's laid-out height. A stated ceiling (224px for any deck with an intent
+  // line) held the scrim from 64px down and darkened the commander's face.
+  it("states the 288 band and hands the ramp to the block", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const wash = container.querySelector("[data-art-wash-band]")!;
     expect(wash).toHaveAttribute("data-art-wash-band", "288");
-    expect(wash).toHaveAttribute("data-art-wash-label-at", "143");
+    expect(wash).toHaveAttribute("data-art-wash-label-at", "block");
     expect((wash as HTMLElement).style.height).toBe("288px");
+    expect(wash.querySelector(".art-wash-scrim")).toBeNull();
   });
 
-  // The intent line sits inside the same block, so a deck with one keys the ramp to the taller
-  // block: up to four 12.5/1.5 lines and their gap on top of the 143.
-  it("keys the ramp to the taller block when the deck has an intent line", () => {
-    const { container } = renderSpine(<SpineMobile {...props} deck={{ ...props.deck, intent: "go wide and win late" }} />);
-    const wash = container.querySelector("[data-art-wash-band]")!;
-    expect(wash).toHaveAttribute("data-art-wash-label-at", "224");
+  // The ramp's geometry rides on the block's: its foot is the band's (the inset is padding, so
+  // the block's height is the figure the ramp takes), and it isolates so the ramp sits under its
+  // ink. Lose either and the hold lands 12px low or the ramp paints over the title.
+  it.each([undefined, "go wide and win late"])("keys the ramp to the block's own height (intent: %s)", (intent) => {
+    const { container } = renderSpine(<SpineMobile {...props} deck={{ ...props.deck, intent: intent ?? null }} />);
+    const block = container.querySelector<HTMLElement>("[data-wash-label]")!;
+    expect(block.style.bottom).toBe("0px");
+    expect(block.style.paddingBottom).toBe("12px");
+    expect(block.style.isolation).toBe("isolate");
+    const scrim = block.querySelector<HTMLElement>("[data-block-scrim]")!;
+    expect(scrim.style.top).toBe("-48%");
+    expect(scrim.style.bottom).toBe("0px");
+    expect(scrim.style.left).toBe("-18px");
+    expect(scrim.style.right).toBe("-18px");
+    expect(scrim.style.zIndex).toBe("-1");
   });
 
   // The meta row inside that block is ONE row: a pair's two names and five pips are wider than

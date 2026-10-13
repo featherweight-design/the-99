@@ -10,7 +10,7 @@ import { useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { ChangeCommanderDoor } from "./change-commander-door";
-import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
+import { ArtWash, BlockScrim, COVER_INK_SHADOW } from "../ui/art-wash";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -44,6 +44,9 @@ import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { ProxyTag } from "./proxy-tag";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { shortName } from "../../lib/cards/short-name";
+
+/** The label block's inset from the band's sides; its ramp reaches back out across it. */
+const BLOCK_INSET_X = 18;
 
 /** The rename glyph's drawn size. Named because the measurement below has to
     keep the glyph inside the block, and the heading reserves the same figure. */
@@ -133,12 +136,10 @@ export function SpineMobile({
   );
 
   const metaRow = (onWash: boolean) => (
-    // `flex-nowrap`, and it is load-bearing. `labelAtPx` counts this row as ONE
-    // line, and at 390px a pair's two names plus five 10px pips exceed the
-    // caption's width — so a wrapping row would grow the block past the figure
-    // the ramp is keyed to (143, with the chips row below) and leave the
-    // title's first line on a ramp still climbing. The names group already
-    // ellipsises under pressure, and it is the half that should give.
+    // `flex-nowrap`: at 390px a pair's two names plus five 10px pips exceed the
+    // caption's width, and a wrapping row would push the title a line further up
+    // the art. The names group already ellipsises under pressure, and it is the
+    // half that should give.
     // `min-w-0 w-full`, and it is the fix for a real overflow: the row is
     // `flex-nowrap`, and without a zero minimum of its OWN the row inherits its
     // content's min-content width as a floor — so a long two-faced commander
@@ -253,25 +254,12 @@ export function SpineMobile({
         <ArtWash
           strategy="cover"
           height={288}
-          // The block's MEASURED height in pixels from the foot, at a THREE-line
-          // title: 12 bottom inset, a 22px meta row — the settled chip height —
-          // a 6px gap and three 25px title lines at 20/1.25 gives 115.
-          //
-          // Three, not two, because the title is no longer clamped: clamping
-          // needs `-webkit-box`, an atomic inline box whose width is the whole
-          // available width once its text wraps, which is what put the rename
-          // glyph at the far right of a two-line name. An unclamped inline
-          // heading lets the glyph follow the words at any line count, and the
-          // price is keying this figure to the taller block. It is a ceiling, so
-          // a one- or two-line title simply holds its ramp higher than it needs
-          // — more art, never less protection.
-          // Plus the chips row since the Analysis tab handoff (§1) moved the status pill and the
-          // bracket chip onto a line of their own: another 6px gap and a 22px row, so 143.
-          // Plus the deck's intent line when it has one (placement addendum r3, E2b): a 6px gap
-          // and up to four 18.75px lines at 12.5/1.5. A 120-character line wraps to three at
-          // 390, and the seeded chip and `edit` riding its last line can push a fourth. So 224,
-          // a ceiling again: a one-line intent holds the ramp higher than it needs.
-          labelAtPx={deck.intent ? 224 : 143}
+          // The block draws its own ramp (`BlockScrim`, below), so the ramp
+          // follows the block's laid-out height: the title's line count, the
+          // intent's, and the rename editor's. The ceiling it replaced keyed every
+          // deck with an intent line to four of them (224px), which held the
+          // scrim from 64px down and darkened the commander's face.
+          labelAtPx="block"
           artCropUri={commander.artCropUri}
           colorIdentity={commander.colorIdentity}
         />
@@ -292,14 +280,20 @@ export function SpineMobile({
           // 44px target reached into the meta row. A centred block had to pad
           // both sides to clear that corner without moving its centre; a
           // left-aligned one pays for it once.
+          // Its foot is the band's, with the 12px inset as padding, so its own
+          // height is the figure the ramp is keyed to; `isolation` keeps the ramp
+          // under this block's ink and over the art.
           style={{
-            left: 18,
-            right: 18,
-            bottom: 12,
+            left: BLOCK_INSET_X,
+            right: BLOCK_INSET_X,
+            bottom: 0,
+            paddingBottom: 12,
             paddingRight: 40,
+            isolation: "isolate",
             gap: renaming ? 8 : 6,
           }}
         >
+          <BlockScrim insetX={BLOCK_INSET_X} />
           {renaming ? (
             <div className="flex w-full flex-col" style={{ gap: 8 }} onBlur={rename.onPairBlur}>
               <input

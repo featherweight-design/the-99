@@ -2152,3 +2152,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   settles the intake paths only.
   Mutation-checked 2026-10-13: dropping `"reaped"` from the intake reaper, the loud log, or the `late_success` write each
   fails exactly its own check.
+
+- `pnpm probe:deck-hero-wash` proves the phone deck header's ramp follows its label block
+  (`BlockScrim`), on a real page at 390: the ramp holds at the block's top within a pixel, starts
+  1.48 blocks from the foot and no higher, reaches the band's edges and foot, and the band paints no
+  ramp of its own. It opens the rename editor, the tallest block the header draws, and measures
+  again. At 1300 it checks the desktop header draws no block ramp. `PROBE_BASE`, `PROBE_DECK_IDS`
+  (pass one deck with an intent line: the case the old 224px ceiling broke) and optionally
+  `PROBE_SHOTS`, a directory for the phone band's screenshot. It writes only the probe account's
+  About row and restores it. Moving the block's foot back to a 12px inset fails it four ways.
