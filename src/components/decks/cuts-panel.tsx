@@ -583,14 +583,12 @@ function CutRow({ item, panel, deps, items, onSettled }: {
         <span className="flex min-w-0 items-center gap-[10px]">
           <span className="w-[86px] flex-none rounded-full px-[8px] py-[2px] text-center font-mono text-[9px] uppercase tracking-[0.1em]"
             style={{ color: "var(--accent)", border: "1px solid var(--accent-dim)" }}>{copy.suggestion}</span>
-          <span {...previewHandlers} className="flex min-w-0 items-center gap-[10px]">
-          <span aria-hidden className="h-[31px] w-[22px] flex-none rounded-[3px] bg-cover bg-center [border:1px_solid_var(--border-strong)]"
+          <span aria-hidden {...previewHandlers} className="h-[31px] w-[22px] flex-none rounded-[3px] bg-cover bg-center [border:1px_solid_var(--border-strong)]"
             style={item.cutImageUri ? { backgroundImage: cssUrl(item.cutImageUri) } : undefined} />
-          <button type="button" onClick={openCard} {...intent} aria-label={item.cutName}
+          <button type="button" onClick={openCard} {...previewHandlers} {...intent} aria-label={item.cutName}
             className="min-w-0 text-left text-[13px] font-semibold text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)] hover:[border-bottom-style:solid] focus-visible:[border-bottom-style:solid]">
             {item.cutName}
           </button>
-          </span>
         </span>
         <span className="flex gap-[8px] md:flex-none md:gap-[7px]">
           <button type="button" disabled={busy !== null} onClick={() => void answer("cut")}
