@@ -41,7 +41,11 @@ export function useDecksStatsFold(serverValue: string | null) {
   }, [open, choose]);
   const allOpen = STATS_CARDS.every((c) => open.has(c));
   const setAll = useCallback((on: boolean) => choose(serialise(on ? STATS_CARDS : [])), [choose]);
-  return { open, toggle, allOpen, setAll };
+  /** Opens one card, leaving the rest as they are. */
+  const show = useCallback((id: StatsCardId) => {
+    if (!open.has(id)) choose(serialise([...open, id]));
+  }, [open, choose]);
+  return { open, toggle, allOpen, setAll, show };
 }
 
 export function FoldCard({ id, title, denom, summary, open, onToggle, children }: {

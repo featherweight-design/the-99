@@ -21,6 +21,8 @@ const brews = (k: number) => `${n(k)} ${k === 1 ? "brew" : "brews"}`;
 
 export const decksStatsCopy = {
   view: { tiles: "Tiles", stats: "Stats", aria: "Show decks as" },
+  /** The tile's `…` item, appended after the shipped ones: Stats with that deck chosen in This deck among yours. */
+  menu: { among: "See it among your decks" },
   filter: {
     aria: "Decks in Stats",
     all: "All decks",

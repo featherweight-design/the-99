@@ -5,7 +5,7 @@
 // The filter has two positions, held for this visit: `All decks` (brews included) and `Finished only`, which
 // leaves brews out of every chart.
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { defaultChosen, jobsGrid, strip, worth } from "../../../lib/lineup/among";
 import { fullestSlot, recency, scoped, spread } from "../../../lib/lineup/figures";
@@ -58,7 +58,7 @@ function Filter({ filter, onFilter, phone }: { filter: LineupFilter; onFilter: (
   );
 }
 
-export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = false }: {
+export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = false, amongDeck = null }: {
   data: LineupData;
   /** The server's clock, ISO: every "N days ago" is measured against it. */
   now: string;
@@ -67,6 +67,8 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   viewSwitch: ReactNode;
   /** `ALL_DECKS_CART_ENABLED`: a shared row's to-buy line links to Shopping for all decks only while it is on. */
   cartEnabled?: boolean;
+  /** A tile's `See it among your decks`: the deck This deck among yours opens on, with that card open and focused. */
+  amongDeck?: string | null;
 }) {
   const [filter, setFilter] = useState<LineupFilter>("all");
   const fold = useDecksStatsFold(foldServer);
@@ -80,7 +82,17 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   const top = fullestSlot(spr);
   // The deck This deck among yours compares, and that Worth and Jobs mark: the reader's pick while it is in
   // scope, else the one played most recently (a brew picked, then left out by Finished only, falls back).
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(amongDeck);
+  // Arriving from a tile: open This deck among yours and put focus on its head, since the tile's menu that had
+  // focus has gone with Tiles. Once per arrival (a later fold of that card is the reader's own).
+  const arrived = useRef<string | null>(null);
+  const { show } = fold;
+  useEffect(() => {
+    if (!amongDeck || arrived.current === amongDeck) return;
+    arrived.current = amongDeck;
+    show("among");
+    document.querySelector<HTMLElement>('[data-stats-card="among"] > button')?.focus();
+  }, [amongDeck, show]);
   // Held here, not in the card's body, so the folded summary counts what the select and the cut last showed.
   const [wantedPick, setWantedPick] = useState<WantedPick>({ deckId: null, cut: 40 });
   const chosen = decks.find((d) => d.id === picked) ?? defaultChosen(decks);

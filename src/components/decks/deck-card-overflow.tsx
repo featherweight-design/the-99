@@ -13,6 +13,7 @@ import { DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 /** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
 const MENU_WIDTH = 186;
 import { folderCopy } from "../../lib/copy/folders";
+import { decksStatsCopy } from "../../lib/copy/decks-stats";
 
 /** One menu row. The same geometry `DeckSortMenu` draws, which is the only
  *  menu the Decks frames specify. */
@@ -58,6 +59,8 @@ interface DeckCardOverflowProps {
    * every other card.
    */
   closeAfterCreate: { seq: number } | null;
+  /** Stats with this deck chosen (`LINEUP_ENABLED`): absent while the switch is off, and the row with it. */
+  onAmong?: () => void;
 }
 
 /**
@@ -77,6 +80,7 @@ export function DeckCardOverflow({
   onMove,
   keepsFocus,
   closeAfterCreate,
+  onAmong,
 }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename" | "move" | "delete">("menu");
@@ -304,6 +308,16 @@ export function DeckCardOverflow({
               >
                 {refreshCopy.decks.menu.delete}
               </button>
+              {/* Appended after the shipped rows (handoff G6). The view leaves Tiles, so this panel goes with it. */}
+              {onAmong ? (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); onAmong(); }}
+                  className={`${ITEM.replace(" transition-colors", "")} cursor-pointer bg-transparent text-[color:var(--fg)]`}
+                >
+                  {decksStatsCopy.menu.among}
+                </button>
+              ) : null}
             </div>
           ) : mode === "move" ? (
             <MoveMode

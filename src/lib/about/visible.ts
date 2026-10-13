@@ -23,6 +23,7 @@ import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckTokensEnabled } from "../decks/tokens-flag";
 import { preconsEnabled } from "../precons/flag";
 import { addedCopyEnabled } from "../collection/added-copy-flag";
+import { lineupEnabled } from "../decks/lineup-flag";
 import { aboutEntries, type AboutEntry, type AboutLineSwitch, type AboutSwitch } from "../copy/about";
 
 /**
@@ -56,6 +57,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   ADDED_COPY_ENABLED: addedCopyEnabled,
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
+  LINEUP_ENABLED: lineupEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

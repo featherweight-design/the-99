@@ -90,7 +90,8 @@ export type AboutSwitch =
   | 'ADDED_COPY_ENABLED'
   // Not an env var of its own: on when the Tuning hub draws (two or more of its tools on), which
   // is where History lives. For a line that names History, never for a whole entry.
-  | 'TUNING_HUB_ENABLED';
+  | 'TUNING_HUB_ENABLED'
+  | 'LINEUP_ENABLED';
 
 /**
  * A switch as a caption or key LINE names it: the bare name keeps the line while that switch is
@@ -1277,6 +1278,28 @@ export const aboutEntries: readonly AboutEntry[] = [
     ],
     marksPending: true,
     since: 11,
+  },
+  // Stats on /decks (handoff `design_handoff_the99_lineup`, R2, `about · lineup.ts`): follows LINEUP_ENABLED,
+  // so turning Stats on is what announces it, by id. No bump: `since` is the version current at merge, the
+  // deck-stats precedent. Caption through /prose-pass (2026-10-12); the title to /copy-review.
+  {
+    id: 'decks-stats',
+    chapter: '04',
+    title: 'Stats: your decks, side by side',
+    route: '/decks',
+    opens: 'opens Decks, on Stats',
+    width: 'plate',
+    switch: 'LINEUP_ENABLED',
+    caption:
+      'Somewhere around deck twenty it gets hard to say which one hasn’t left the box since July, or how many are fighting over the same Sol Ring. Stats on Decks puts every deck side by side.\n\nYou see when each last played, where they sit by bracket and color, the cards they share, and how much of your Collection they put to work. Pick a deck to see how it stacks up against the rest, from its ramp and removal to what it’s worth.\n\nYour Collection gets its own say, too: the cards you own that sit in no deck, though your commanders’ decks run them. Each copy counts once, however many decks play the card.',
+    keys: [
+      'Never-played decks always show, together in their own group.',
+      'Results are as logged, with each game’s pod size.',
+      '“Finished only” leaves brews out. Your Collection still counts every copy.',
+      'A tile’s “…” menu has “See it among your decks”.',
+    ],
+    marksPending: true,
+    since: 14,
   },
   {
     id: 'notes',

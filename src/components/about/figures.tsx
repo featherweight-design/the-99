@@ -25,6 +25,7 @@ import { PreconTile } from "../decks/precons/precon-tile";
 import { TokenRow } from "../decks/token-row";
 import { NotesFigureBody } from "./notes-figure";
 import { BrowseFigureBody } from "./browse-figure";
+import { DecksStatsFigureBody } from "./stats-figures";
 import { AddedCopyFigureBody, AllDecksCartFigureBody, DeckPrintingFigureBody, GotItFigureBody } from "./purchase-figures";
 import { KeyNumeral } from "./numeral";
 import { SetsColourFigure } from "./sets-colour-figure";
@@ -1122,6 +1123,15 @@ function AddedCopyFigure({ width }: { width: AboutWidth }) {
   );
 }
 
+/** `decks-stats`: Cards your decks share, Sol Ring in 20 decks against 17 owned. */
+function DecksStatsFigure({ width }: { width: AboutWidth }) {
+  return (
+    <Specimen label="decks-stats" width={width}>
+      <DecksStatsFigureBody />
+    </Specimen>
+  );
+}
+
 /** `shopping-got-it`: two Shopping rows whose buy tag is the button, and the receipt one leaves. */
 function GotItFigure({ width }: { width: AboutWidth }) {
   return (
@@ -1207,6 +1217,7 @@ export const FIGURES: Partial<
   proxies: ProxiesFigure,
   "suggested-changes": SuggestedChangesFigure,
   "deck-stats": DeckStatsFigure,
+  "decks-stats": DecksStatsFigure,
   notes: NotesFigure,
   "mana-balance": ManaBalanceFigure,
   credits: CreditsFigure,
