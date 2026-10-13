@@ -206,6 +206,23 @@ export function codeOnly(text) {
   return scan(false);
 }
 
+/** `text` split on its top-level commas (brackets balanced; strings already emptied by `codeOnly`). */
+function topLevel(text) {
+  const parts = [];
+  let depth = 0, start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) depth--;
+    else if (c === "," && depth === 0) {
+      parts.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
 /**
  * The reader (first argument) and key (third) of every `cachePageForUser(...)` call in a source, read from `codeOnly`, so
  * a `friendGeneration(` in a comment or a string keys nothing, and neither does one elsewhere in the page
@@ -256,10 +273,17 @@ export function socialKeyProblems(
     if (social.length === 0) continue;
     // EVERY key on the page: reachability is page-level, so it cannot say which call's loader reads a friend.
     const keys = cacheKeysOf(source(page));
-    // ...AWAITED (an unawaited call keys the string of a Promise) and for the SAME reader (a generation of
-    // another account's friends keys the wrong stamps).
-    const keyed = ({ reader, key }) =>
-      [...key.matchAll(/\bawait\s+friendGeneration\s*\(\s*([^,)]*?)\s*[,)]/g)].some((m) => m[1] === reader);
+    // ...as a BARE ELEMENT of the key array, exactly `await friendGeneration(<the call's reader>)`. Anything
+    // looser (unawaited, wrapped in an expression, another account's id) keys something that does not move
+    // with the friends' stamps, so the rule is the one shape that carries the generation unchanged.
+    const keyed = ({ reader, key }) => {
+      const text = key.trim();
+      if (!text.startsWith("[") || !text.endsWith("]")) return false;
+      return topLevel(text.slice(1, -1)).some((el) => {
+        const m = /^await\s+friendGeneration\s*\(\s*([^,()]*?)\s*\)$/.exec(el.trim());
+        return m !== null && m[1] === reader;
+      });
+    };
     if (keys.length === 0 || !keys.every(keyed)) {
       out.push(`FRIEND KEY ${page} reaches ${social[0]} but keys no friendGeneration(): a friend's write would leave it stale`);
     }

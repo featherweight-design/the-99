@@ -167,8 +167,15 @@ describe("socialKeyProblems", () => {
     expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
   });
 
-  it("counts a friendGeneration inside a template interpolation, which is code", () => {
-    const src = "cachePageForUser(userId, 'cart', [`f:${await friendGeneration(userId)}`], load)";
+  it("fails a generation that is not a bare key element: interpolated, or folded into an expression", () => {
+    for (const key of ["[`f:${await friendGeneration(userId)}`]", "[(await friendGeneration(userId)) && 'constant']", "[await friendGeneration(userId) && 'c']"]) {
+      const src = `cachePageForUser(userId, 'cart', ${key}, load)`;
+      expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toHaveLength(1);
+    }
+  });
+
+  it("passes a bare element beside other key parts", () => {
+    const src = "cachePageForUser(userId, 'cart', [sort, await friendGeneration(userId)], load)";
     expect(socialKeyProblems([page], reach(["src/lib/social/spares.ts"]), () => src)).toEqual([]);
   });
 
