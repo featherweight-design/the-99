@@ -36,6 +36,15 @@ export const SNAPSHOT_SQL = `select
 
 let http: ReturnType<typeof neon> | null = null;
 
+/**
+ * Every override and membership, read now and never memoized: what the admin's pages read, so a page
+ * drawn after the admin's own write shows that write (the 30-second window is the players', not the
+ * admin's). Null when the read fails.
+ */
+export async function readSwitchSnapshot(): Promise<SwitchSnapshot | null> {
+  return readSnapshot();
+}
+
 async function readSnapshot(): Promise<SwitchSnapshot | null> {
   try {
     const url = process.env.DATABASE_URL;

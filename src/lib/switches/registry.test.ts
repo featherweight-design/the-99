@@ -38,11 +38,19 @@ describe("the switch registry", () => {
 
   // LABEL_ROLE_COUNTS is a scoring basis no reader sees as a feature (admin PR 6d-2): a per-account
   // override of it would add nothing and score one reader's stored set by a basis another's does not use.
-  // RATE_LIMIT counts requests (payments scope PR S); no reader sees a difference.
-  it("keeps plumbing to the list cache, the role-count basis and the request counter, and marks the switches that spend model calls", () => {
-    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual(["LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "RATE_LIMIT_ENABLED"]);
+  // RATE_LIMIT counts requests (payments scope PR S); no reader sees a difference. The About sheet and
+  // How it works are app-wide only by Design's answer to the brief's open question 2 (admin PR 8a).
+  // ANALYSIS_TAB spends: it gates every Overview press (READINESS audit finding 2), and SWAP_TOOLS
+  // gates Find a deck's read the same way.
+  it("keeps plumbing app-wide only, and marks the switches that spend model calls", () => {
+    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual([
+      "ABOUT_SHEET_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "RATE_LIMIT_ENABLED",
+    ]);
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(
-      ["FIND_A_DECK_READ_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"],
+      [
+        "ANALYSIS_TAB_ENABLED", "FIND_A_DECK_READ_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED",
+        "SWAP_TOOLS_ENABLED", "TUNING_ENABLED",
+      ],
     );
   });
 });

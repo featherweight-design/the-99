@@ -698,8 +698,12 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`flag_groups`, one group per account in `flag_group_members`) or per account. Per switch: the variable set to the
   literal `off` wins outright (the KILL SWITCH: no override can raise it, so a bad override is always beaten by a
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
-  A `plumbing` switch (`LIST_CACHE_ENABLED`, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis scores are counted
-  by) takes the app-wide override alone. An app-wide override still flips one without a deploy, so its readers
+  A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`, `LABEL_ROLE_COUNTS_ENABLED`, the role basis
+  scores are counted by, and since admin PR 8a `ABOUT_SHEET_ENABLED` and `HOW_IT_WORKS_ENABLED`, by Design's answer
+  to the brief's open question 2) takes the app-wide override alone. A compound switch names its parent as `needs`
+  in the registry, and a switch is tagged `model` exactly when turning it on can let a reader spend (the Analysis
+  tab and Swap tools are parents of spending switches); `src/lib/switches/flags.test.ts` holds both to the flag
+  functions. An app-wide override still flips one without a deploy, so its readers
   are handed the resolved env too, and a cache whose payload depends on it carries it in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` keys on every switch. The registry

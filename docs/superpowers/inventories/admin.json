@@ -1,6 +1,6 @@
 {
-  "feature": "Admin: the gate, the shell and the door (PR 2a), then each page as it ships",
-  "note": "Run against a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL set; without both, /admin is the app's 404 and every row fails, which is the gate working. The account menu's Admin row sits outside <main>, where every verb here is scoped, so account-menu.test.tsx covers the door. A signed-out /admin redirects to sign-in exactly as an unknown path does, so it is not photographed.",
+  "feature": "Admin: the gate, the shell and the door (PR 2a), then each page as it ships (Costs; Switches from PR 8a)",
+  "note": "Run against a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL set; without both, /admin is the app's 404 and every row fails, which is the gate working. The account menu's Admin row sits outside <main>, where every verb here is scoped, so account-menu.test.tsx covers the door. A signed-out /admin redirects to sign-in exactly as an unknown path does, so it is not photographed. Switches (PR 8a) reads only. For the kill and compound rows start the server with DECK_BENCHMARKS_ENABLED=off and COLLECTION_EDIT_ENABLED=false; every other row reads whatever the server's environment and database hold. Point it at local-dev or a scratch branch.",
   "rows": [
     {
       "id": "admin-costs-current",
@@ -29,7 +29,7 @@
     },
     {
       "id": "admin-costs-past",
-      "label": "/admin?month=2026-09: a past month (no pace, \u203a live)",
+      "label": "/admin?month=2026-09: a past month (no pace, › live)",
       "view": "src/components/admin/costs-view.tsx",
       "steps": [
         {
@@ -95,6 +95,135 @@
           "wait": "h1",
           "settle": 1500,
           "scrollTo": "h2:has-text(\"Eval ledgers\")"
+        }
+      ]
+    },
+    {
+      "id": "admin-tabs-costs",
+      "label": "/admin: the tab strip reads Costs · Switches, Costs selected (8a)",
+      "view": "src/components/admin/admin-head.tsx",
+      "steps": [
+        {
+          "goto": "/admin",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-list",
+      "label": "/admin/switches: Features A to Z, then Plumbing; footnote (L1)",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-model-chip",
+      "label": "/admin/switches: Model features selected (L2)",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Model features"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-search",
+      "label": "/admin/switches: a search by variable (L3)",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "deck_"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-none-match",
+      "label": "/admin/switches: a search that matches nothing, with Show all (L2, L3)",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1000
+        },
+        {
+          "fill": "input[type=search]",
+          "text": "zzzz"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-scrolled",
+      "label": "/admin/switches: scrolled to Plumbing; head, pinned bar and (desktop) column head stay put (R2 delta 1)",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1000,
+          "scrollTo": "[data-testid='switches-plumbing-head']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-kill",
+      "label": "/admin/switches: Deck benchmarks killed, env off in danger ink (L4); server DECK_BENCHMARKS_ENABLED=off",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1000,
+          "scrollTo": "[data-switch='DECK_BENCHMARKS_ENABLED']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "admin-switches-compound",
+      "label": "/admin/switches: Mark bought off because Collection edit is off (L5); server COLLECTION_EDIT_ENABLED=false",
+      "view": "src/components/admin/switches-list.tsx",
+      "steps": [
+        {
+          "goto": "/admin/switches",
+          "wait": "h1",
+          "settle": 1000,
+          "scrollTo": "[data-switch='SHOPPING_MARK_BOUGHT_ENABLED']"
+        },
+        {
+          "settle": 400
         }
       ]
     }

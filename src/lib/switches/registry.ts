@@ -9,19 +9,26 @@
  *
  * `kind`:
  * - `feature`: a surface a reader sees. Overridable app-wide, per group and per account.
- * - `model`: as `feature`, and turning it on spends model calls (the Switches UI confirms a raise).
- * - `plumbing`: infrastructure with no reader-facing difference. App-wide only: an account or
- *   group override of one is ignored by the resolver, so no reader runs on different plumbing.
+ * - `model`: as `feature`, and turning it on can let a reader spend model calls: the switch itself,
+ *   or a parent of one (the Analysis tab gates the Overview; Swap tools gates Find a deck's read).
+ *   The Switches UI confirms a raise. `flags.test.ts` holds the tag to exactly that.
+ * - `plumbing`: infrastructure, or a surface no friend tries on its own (the About sheet and How it
+ *   works, by Design's answer to the brief's open question 2). App-wide only: an account or group
+ *   override of one is ignored by the resolver, so no reader runs on different plumbing.
+ *
+ * `needs`: the parent a compound switch's flag function also checks (`tuningEnabled` asks
+ * `analysisTabEnabled`). The flag functions decide; this records it for the admin, and
+ * `flags.test.ts` fails when the two disagree.
  *
  * Client-safe: no imports.
  */
 export type SwitchKind = "feature" | "model" | "plumbing";
 
 export const SWITCHES = [
-  { name: "ABOUT_SHEET_ENABLED", kind: "feature" },
-  { name: "ADDED_COPY_ENABLED", kind: "feature" },
+  { name: "ABOUT_SHEET_ENABLED", kind: "plumbing" },
+  { name: "ADDED_COPY_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
-  { name: "ANALYSIS_TAB_ENABLED", kind: "feature" },
+  { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "COLLECTION_EDIT_ENABLED", kind: "feature" },
   { name: "DECK_BENCHMARKS_ENABLED", kind: "feature" },
@@ -29,28 +36,28 @@ export const SWITCHES = [
   { name: "DECK_PRINTINGS_ENABLED", kind: "feature" },
   { name: "DECK_STATS_ENABLED", kind: "feature" },
   { name: "DECK_TOKENS_ENABLED", kind: "feature" },
-  { name: "FIND_A_DECK_READ_ENABLED", kind: "model" },
+  { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
-  { name: "HOW_IT_WORKS_ENABLED", kind: "feature" },
+  { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
   { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
   { name: "LABEL_SURFACES_ENABLED", kind: "feature" },
   { name: "LINEUP_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
-  { name: "MANA_BALANCE_ENABLED", kind: "feature" },
+  { name: "MANA_BALANCE_ENABLED", kind: "feature", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "NEVER_CUT_ENABLED", kind: "feature" },
   { name: "NOTICES_ENABLED", kind: "feature" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PRECONS_ENABLED", kind: "feature" },
-  { name: "PROPOSED_CUTS_ENABLED", kind: "model" },
+  { name: "PROPOSED_CUTS_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
-  { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature" },
+  { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
-  { name: "SOCIAL_GAMES_ENABLED", kind: "feature" },
+  { name: "SOCIAL_GAMES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
-  { name: "SWAP_TOOLS_ENABLED", kind: "feature" },
-  { name: "TUNING_ENABLED", kind: "model" },
-] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind }[];
+  { name: "SWAP_TOOLS_ENABLED", kind: "model" },
+  { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
+] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED` }[];
 
 export type SwitchName = (typeof SWITCHES)[number]["name"];
 
@@ -59,5 +66,12 @@ export const SWITCH_NAMES: readonly SwitchName[] = SWITCHES.map((s) => s.name);
 const KINDS = new Map<string, SwitchKind>(SWITCHES.map((s) => [s.name, s.kind]));
 
 export const switchKind = (name: SwitchName): SwitchKind => KINDS.get(name) as SwitchKind;
+
+const PARENTS = new Map<string, SwitchName>(
+  SWITCHES.flatMap((s) => ("needs" in s ? [[s.name, s.needs as SwitchName] as const] : [])),
+);
+
+/** The parent a compound switch needs, or null. */
+export const switchParent = (name: SwitchName): SwitchName | null => PARENTS.get(name) ?? null;
 
 export const isSwitchName = (name: string): name is SwitchName => KINDS.has(name);

@@ -643,7 +643,7 @@ entries an account sees, and that is already each feature's own entry's job (loc
 | # | Mismatch | Status |
 |---|---|---|
 | 1 | The brief says 21 switches, the handoff 24, and the plan 27. The registry has **32**. | **Resolved** by plan correction 1: the list renders from the registry. Chips read `All 32`, and the heads read Features 27 / Plumbing 5 if open question 1 is ruled that way, or 29 / 3 if not. 11 descriptions are owed (Copy, new 1). |
-| 2 | Model features: the handoff counts 5, including `ANALYSIS_TAB`. The registry tags 5 without it and with `FIND_A_DECK_READ`. | **Resolved** by audit finding 2 (accepted). 8a retags `ANALYSIS_TAB` `model`, so the chip reads `Model features 6`. The confirm fires on a capability rise, not on the tag, so a parent flip is caught either way. |
+| 2 | Model features: the handoff counts 5, including `ANALYSIS_TAB`. The registry tags 5 without it and with `FIND_A_DECK_READ`. | **Resolved** by audit finding 2 (accepted). 8a retags `ANALYSIS_TAB` `model`. **Amended in the 8a build:** `SWAP_TOOLS` is retagged too, since it is the parent of `FIND_A_DECK_READ` exactly as `ANALYSIS_TAB` is of the Overview, and `flags.test.ts` now holds the tag to "turning it on can raise a spending capability". The chip reads `Model features 7`. The confirm fires on a capability rise, not on the tag, so a parent flip is caught either way. |
 | 3 | Plumbing: the handoff names `ABOUT_SHEET`, `HOW_IT_WORKS` and `LIST_CACHE`. The registry names `LABEL_ROLE_COUNTS`, `LIST_CACHE` and `RATE_LIMIT`. | Partly resolved. `LABEL_ROLE_COUNTS` (#1626) and `RATE_LIMIT` (#1634) became plumbing by later rulings. Admin PR 4 kept `ABOUT_SHEET` and `HOW_IT_WORKS` as `feature` with no recorded reason, against Design's Q2 answer, which the audit accepted. **Open question 1.** If retagged, any existing group or account row for them stops applying. Staging holds none, and the list draws any such row as `ignored`, so it is visible and clearable rather than silent. |
 | 4 | The handoff puts Switches at `/admin` and Costs at `/admin/costs`. | **Resolved** by plan correction 2 and Hugh's ruling: Costs is `/admin`, and Switches is `/admin/switches`, the second tab. Detail is `/admin/switches/[name]`, keyed on the variable's name. |
 | 5 | The plan's correction 3 says to give `/admin(.*)` `auth()` only. | **Resolved otherwise, in PR 2a (#1536):** `/admin` stays protected, so a signed-out reader redirects to sign-in exactly as an unknown path does. Exempting it made it the one private path that did not redirect, which is a hint it exists. Out of PR 8's scope. Noted because the plan file still reads the old way. |
@@ -660,6 +660,8 @@ entries an account sees, and that is already each feature's own entry's job (loc
 | 16 | The compound relations: the canvas knows 4 children of 2 parents. The code has 7 children of 4 parents. | **Resolved** by `needs` in the registry, pinned to the flag functions by `flags.test.ts`. |
 
 ## Open questions (real ones only)
+
+**Ruled 2026-10-13 (coordinator, as Hugh's proxy):** question 1 follows Design. `ABOUT_SHEET` and `HOW_IT_WORKS` are app-wide only from 8a.
 
 1. **Should `ABOUT_SHEET_ENABLED` and `HOW_IT_WORKS_ENABLED` be app-wide only?**
    - Design answered Q2 "Plumbing, app-wide only", and the audit accepted it.
