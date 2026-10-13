@@ -200,14 +200,15 @@ async function navDrew(page, path, pressedEpoch) {
   return page
     .waitForFunction(([want, epoch]) => {
       const n = window.__nav;
-      if (n?.drew != null) return Math.round(n.drew - n.at);
+      // Wrapped: a revisit can draw in under a millisecond, and a bare 0 would never end the wait.
+      if (n?.drew != null) return { ms: Math.round(n.drew - n.at) };
       if (n) return null;
       const main = document.querySelector("main");
       return location.pathname === want && main && !main.querySelector('[role="status"][class*="min-h-[420px]"]') && main.innerText.trim().length > 40
-        ? Math.round(performance.timeOrigin + performance.now() - epoch)
+        ? { ms: Math.round(performance.timeOrigin + performance.now() - epoch) }
         : null;
     }, [path, pressedEpoch], { timeout: 60_000, polling: 16 })
-    .then((h) => h.jsonValue(), () => null);
+    .then((h) => h.jsonValue().then((v) => v.ms), () => null);
 }
 
 /** Deployed sign-in: a Backend-API sign-in token, redeemed on the app's own origin. Writes nothing. */
