@@ -34,7 +34,7 @@ import { fulfilCheckoutSession } from "./fulfil";
 const session = {
   id: "cs_1", mode: "payment", payment_status: "paid", currency: "usd", amount_total: 500,
   total_details: { amount_tax: 0 }, line_items: { data: [{ price: { id: "price_pack40" }, quantity: 1 }] },
-  customer: "cus_1", client_reference_id: "user_a", metadata: { pack: "pack40", user_id: "user_a" },
+  customer: "cus_1", client_reference_id: "user_a", metadata: { app: "the-99", pack: "pack40", user_id: "user_a" },
   payment_intent: "pi_1", customer_details: { address: { country: "US" } },
 };
 const stripe = { checkout: { sessions: { retrieve: vi.fn(async () => session) } } } as unknown as Stripe;

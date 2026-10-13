@@ -1,4 +1,17 @@
 /**
+ * The tag on every Checkout Session this app creates (`metadata.app`). Hugh's Stripe account is SHARED
+ * with Concert Crawl (one LLC), and a webhook endpoint receives every `checkout.session.completed` on the
+ * account, theirs included. A Session without this tag is not ours: the webhook acknowledges it and does
+ * nothing else, never a retry and never a refusal.
+ */
+export const PAYMENTS_APP = "the-99";
+
+/** Whether a Session's metadata names this app. */
+export function isOurSession(metadata: Record<string, string> | null | undefined): boolean {
+  return metadata?.app === PAYMENTS_APP;
+}
+
+/**
  * What is for sale, as the server knows it (payments scope §5.4). Pure: the client sends a pack id
  * from this closed set and nothing else, and the server sets the Stripe Price, the quantity (1), the
  * currency and every other field. The webhook checks a paid Session against the same entry, so a

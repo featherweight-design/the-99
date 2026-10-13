@@ -11,8 +11,9 @@ import { POST } from "./route";
 const SECRET = "whsec_test_fixture";
 const signer = new Stripe("sk_test_fixture");
 
-function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null } = {}) {
-  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: "cs_1", object: "checkout.session" } } });
+function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null; metadata?: Record<string, string> | null } = {}) {
+  const metadata = opts.metadata === undefined ? { app: "the-99" } : opts.metadata;
+  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: "cs_1", object: "checkout.session", metadata } } });
   const header = opts.signature !== undefined
     ? opts.signature
     : signer.webhooks.generateTestHeaderString({ payload, secret: opts.secret ?? SECRET, timestamp: opts.timestamp });
@@ -38,7 +39,7 @@ afterEach(() => {
 });
 
 describe("POST /api/stripe-webhook: fails closed", () => {
-  it("answers 503 and runs nothing with no signing secret, with no key, or with a key of the wrong mode", async () => {
+  it("answers 503 and runs nothing, for a Session of ours, with no signing secret, no key, or a key of the wrong mode", async () => {
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
     expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", SECRET);
@@ -73,6 +74,26 @@ describe("POST /api/stripe-webhook: what a verified event does", () => {
     configured.value = false;
     expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
     expect(fulfil).not.toHaveBeenCalled();
+  });
+
+  // The Stripe account is shared with Concert Crawl, whose Sessions reach this endpoint too.
+  it("acknowledges another app's Session with 200 and touches nothing, even while our Price is unset", async () => {
+    const others: (Record<string, string> | null)[] = [{ app: "concert-crawl" }, {}, null];
+    for (const metadata of others) {
+      configured.value = true;
+      expect((await POST(delivery("checkout.session.completed", { metadata }))).status).toBe(200);
+      configured.value = false;
+      expect((await POST(delivery("checkout.session.completed", { metadata }))).status).toBe(200);
+    }
+    // And where this deployment has no usable key at all: a signature needs none.
+    for (const key of ["", "rk_live_fixture", "sk_test_fixture"]) {
+      vi.stubEnv("STRIPE_SECRET_KEY", key);
+      expect((await POST(delivery("checkout.session.completed", { metadata: { app: "concert-crawl" } }))).status).toBe(200);
+    }
+    expect(fulfil).not.toHaveBeenCalled();
+    // One fixed info line each, and nothing louder: a Session of ours that lost its tag still shows.
+    expect(vi.mocked(console.info).mock.calls.flat()).toEqual(Array(9).fill("[stripe-webhook] checkout.session.completed: not this app's Session; ignored"));
+    expect([console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls)).toEqual([]);
   });
 
   it("acknowledges an event type it does not handle, and acts on none", async () => {
