@@ -35,11 +35,19 @@ function exportedParams(src: string): { name: string; params: string }[] {
   return out;
 }
 
-/** A parameter, or an options field, named `userId` or `env` (comments stripped first). */
+/**
+ * A parameter, an inline options field or a destructured binding named `userId` or `env`
+ * (comments stripped first). It reads the parameter text, so an options object whose TYPE is
+ * declared elsewhere (`opts: FillOpts`) is not seen: name the field inline in an action's signature.
+ */
 function trustedInputs(params: string): string[] {
-  const bare = params.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-  return [...new Set([...bare.matchAll(/\b(userId|env)\??\s*:/g)].map((m) => m[1]))];
+  return [...new Set([...stripComments(params).matchAll(/\b(userId|env)\b/g)].map((m) => m[1]))];
 }
+
+const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+/** A `"use server"` directive at the head of the module, after any leading comments. */
+const isServerModule = (src: string) => /^\s*["']use server["']/.test(stripComments(src));
 
 describe("a Server Action never takes the reader's identity or switches as an argument", () => {
   it("finds them in a parameter and in an options field, across lines", () => {
@@ -49,15 +57,18 @@ describe("a Server Action never takes the reader's identity or switches as an ar
       "export const c = async (env: NodeJS.ProcessEnv) => env;",
       "export const d = (deckId: string, userId: string) => deckId + userId;",
       "export const e = async function (o: { userId: string }) { return o; };",
+      "export async function f({ userId }: { userId: string }) { return userId; }",
     ].join("\n");
     expect(exportedParams(src).map((f) => [f.name, trustedInputs(f.params)])).toEqual([
-      ["a", ["userId", "env"]], ["b", []], ["c", ["env"]], ["d", ["userId"]], ["e", ["userId"]],
+      ["a", ["userId", "env"]], ["b", []], ["c", ["env"]], ["d", ["userId"]], ["e", ["userId"]], ["f", ["userId"]],
     ]);
+    expect(isServerModule(`/** A header. */\n// and a line\n"use server";\nexport async function g() {}`)).toBe(true);
+    expect(isServerModule(`import x from "y";\n"use server";`)).toBe(false);
   });
 
   it("holds across every \"use server\" module", () => {
     const offenders = sources("src")
-      .filter((path) => /^\s*["']use server["']/.test(readFileSync(path, "utf8")))
+      .filter((path) => isServerModule(readFileSync(path, "utf8")))
       .flatMap((path) => exportedParams(readFileSync(path, "utf8"))
         .map((f) => ({ at: `${path} ${f.name}`, inputs: trustedInputs(f.params) }))
         .filter((f) => f.inputs.length > 0)
