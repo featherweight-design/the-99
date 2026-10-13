@@ -191,12 +191,14 @@ export function hasPress(src: string): boolean {
 }
 
 /**
- * Draws a preview: imports `usePreviewRow` (a row that previews as a whole), or EVERY `CardDetailTrigger` in the file
+ * Draws a preview: imports `usePreviewRow` (a row that previews as a whole) or `PreviewButton` (a button that is the
+ * name or the row), or EVERY `CardDetailTrigger` in the file
  * hands `preview` (a name or a plate that is the row). One trigger without it leaves the file short, so a file
  * cannot hide an unpreviewed name behind one that has it.
  */
 export function hasHover(src: string): boolean {
-  if (importsBinding(src, "usePreviewRow")) return true;
+  // `PreviewButton` is a name or a row that previews as one button (Find a deck's inline card names).
+  if (importsBinding(src, "usePreviewRow") || importsBinding(src, "PreviewButton")) return true;
   const file = ts.createSourceFile("row.tsx", src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let triggers = 0;
   let withPreview = 0;
@@ -346,6 +348,12 @@ describe("the row guard's own failure paths", () => {
     const one = `import { CardDetailTrigger } from "../cards/card-detail-provider";\nexport const A = () => <p><CardDetailTrigger oracleId="a" name="A" preview>A</CardDetailTrigger><CardDetailTrigger oracleId="b" name="B">B</CardDetailTrigger></p>;`;
     expect(hasHover(one)).toBe(false);
     expect(passesPreview(one)).toBe(true);
+  });
+
+  it("takes a `PreviewButton` import for the hover half, so a name drawn as one is not a gap", () => {
+    const named = `import { useCardDetailIfAny } from "./card-detail-provider";\nimport { PreviewButton } from "../ui/preview-button";\nexport const A = () => <PreviewButton imageUri="u" type="button">X</PreviewButton>;`;
+    expect(hasHover(named)).toBe(true);
+    expect(rowGaps({ "components/a.tsx": named }, new Set())).toEqual([]);
   });
 
   it("does not take a comment, a string or a different element's `preview` for a half", () => {
