@@ -19,6 +19,8 @@ vi.mock("../../app/collection/actions", () => ({}));
 // The modal's real code is imported and transformed on the first ask: 0.8 to 2s on an idle machine, so
 // the 1s default wait fails on a loaded CI runner and passes on a re-run.
 const COLD_IMPORT_MS = 15_000;
+// The test's own limit must outlast that wait, or it fails first with a 5s timeout.
+vi.setConfig({ testTimeout: COLD_IMPORT_MS + 5000 });
 
 const settle = () => new Promise((r) => setTimeout(r, 50));
 
