@@ -19,6 +19,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
+// Each FRIEND's switches, not the viewer's. `check:list-cache` refuses this import on a cached page's path: a
+// friend's override flip moves no key there, so such a page must first key on the friends' resolved switches.
 import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
 import { isUuid } from "./rules";

@@ -3,6 +3,7 @@
 
 import { act, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 
 const recordAboutVisit = vi.fn(async () => {});
 vi.mock("../../app/about/actions", () => ({ dismissAbout: vi.fn(), recordAboutVisit }));
@@ -112,11 +113,11 @@ describe("recording the visit (§O4, audit E2)", () => {
   });
 
   it("hands the visit the switched entries it drew from the reader's switches, and no others", () => {
-    const env = { ...process.env, DECK_NOTES_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const env = envViewWith({ DECK_NOTES_ENABLED: "true" });
     const { unmount } = render(<AboutPage seen={PRIOR} sheetMode env={env} />);
     expect((recordAboutVisit.mock.calls[0] as unknown as [string[]])[0]).toContain("notes");
     unmount();
-    render(<AboutPage seen={PRIOR} sheetMode env={{ ...env, DECK_NOTES_ENABLED: "false" } as NodeJS.ProcessEnv} />);
+    render(<AboutPage seen={PRIOR} sheetMode env={envViewWith({ DECK_NOTES_ENABLED: "false" })} />);
     expect((recordAboutVisit.mock.calls[1] as unknown as [string[]])[0]).not.toContain("notes");
   });
 

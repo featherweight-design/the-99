@@ -195,8 +195,10 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
  * environment, so a caller that omits it compiles and reads the environment alone. Every call to
  * `loadAvailability` must name `env` in its options object, and every call to `loadDeckBuyRows` must pass
  * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below. Admin PR 6f-1
- * converted the deck, commander, discovery, tuning, lineup, swap and social readers; these, the collection writers,
- * the intake search and Fits your decks, are left for 6f-2, whose callers resolve no env yet. The list only shrinks:
+ * converted the deck, commander, discovery, tuning, lineup, swap and social readers. Left for 6f-2, whose callers resolve
+ * no env yet: the collection's two writes, its contested-card reads (`summary-read`, which the deck changes page and
+ * the replace summary page render and the assignment and mark-bought actions call), the new-deck search (`intake/rows`, `intake/search`) and Fits
+ * your decks (`swaps/fits`). The list only shrinks:
  * a module on it whose every call passes an env fails until it is taken off.
  */
 const CLAIM_PENDING = [

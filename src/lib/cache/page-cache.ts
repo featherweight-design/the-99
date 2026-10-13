@@ -44,8 +44,9 @@ export type PageLoad<T> = { value: T; store: boolean };
  * `load` is handed the env the key was built from, and must decide every switch from it: only then
  * is the key the whole story. The claim model in `availability-query` takes `env` (admin adoption 6e),
  * and every claim read a cached load reaches passes it (6f-1 converted the lineup's). The modules
- * still on `CLAIM_PENDING` in `switch-adoption.test.ts` (the collection writers, the intake search and
- * Fits your decks) read `NEVER_CUT_ENABLED` and `CHANGE_COMMANDER_ENABLED` from the environment until
+ * still on `CLAIM_PENDING` in `switch-adoption.test.ts` (`collection/arrivals-write`, `collection/write`,
+ * `collection/summary-read`, `intake/rows`, `intake/search` and `swaps/fits`; summary-read is a reader that
+ * uncached pages render) read `NEVER_CUT_ENABLED` and `CHANGE_COMMANDER_ENABLED` from the environment until
  * adoption 6f-2, and no cached load reaches any of them. A page that also decides switches OUTSIDE the cached load
  * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the
  * rest of the render read one snapshot; without it, the reader's switches are resolved here.
