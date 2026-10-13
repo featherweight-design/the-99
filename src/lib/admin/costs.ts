@@ -24,9 +24,10 @@ import {
  * The Costs reads (admin STATES C1 to C6, and the detail of PR 3). SERVER-ONLY: it imports the
  * database. Read only. The model-call figures are `model_calls` (locked rule 11); beside them sit
  * the settings the admin enters, the month's runs and their parts, `card_label_batches` grouped by
- * run, and the committed eval ledgers. The batch labels and the ledgers also reach the summary, as
- * its `outside` (spend no `model_calls` row carries), so its System figure and split are not
- * `model_calls` alone. The month is a UTC calendar month, and a row belongs to the month its
+ * run, and the committed eval ledgers. The batch labels also reach the summary's System figure and
+ * split, as its `outside` (spend no `model_calls` row carries). The ledgers reach it as `evals`, a
+ * figure of its own: they are repo files every deployment reads, so they are no environment's
+ * System spend and count toward no cap. The month is a UTC calendar month, and a row belongs to the month its
  * `created_at` (or a ledger entry's `at`) falls in, as the spend cap counts it.
  */
 
