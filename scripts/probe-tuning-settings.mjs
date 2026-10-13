@@ -5,7 +5,7 @@
 // Presses "Only cards I own" with every server-action POST (`next-action` header) held, asserts the
 // choice reads at once, then lets the save through and samples the toggle every 50ms for 8s: it
 // must never read "Any card" in that window. The deck is put back as it was found, and that
-// restore is sampled the same way. At 1300x900 and 390x844.
+// restore is sampled the same way; the stored setting and `last_edited_at` are restored after. At 1300x900 and 390x844.
 //
 // Needs a running server (`PROBE_BASE`) signed in as E2E_AUDIT_USER_EMAIL and one of that
 // account's decks with Suggested changes offered (SETTINGS_DECK). It WRITES the deck's owned-only
@@ -37,6 +37,8 @@ const pool = new Pool({ connectionString: DATABASE_URL });
   }
 }
 const storedOwnedOnly = async () => (await pool.query("select tuning_owned_only as v from decks where id = $1", [DECK])).rows[0]?.v ?? null;
+// A save also moves `last_edited_at`, which orders Home's recent decks: restored with the setting.
+const storedLastEdited = async () => (await pool.query("select last_edited_at as v from decks where id = $1", [DECK])).rows[0]?.v ?? null;
 
 let failures = 0;
 const check = (label, ok, detail) => {
@@ -93,6 +95,7 @@ async function pressAndWatch(page, label, name, other) {
 }
 
 const original = await storedOwnedOnly();
+const originalEdited = await storedLastEdited();
 const browser = await chromium.launch();
 try {
   for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width: 390, height: 844 }]) {
@@ -119,7 +122,7 @@ try {
 } finally {
   await browser.close();
   // Leave the deck as it was found.
-  await pool.query("update decks set tuning_owned_only = $2 where id = $1", [DECK, original]);
+  await pool.query("update decks set tuning_owned_only = $2, last_edited_at = $3 where id = $1", [DECK, original, originalEdited]);
   await pool.end();
 }
 console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) FAILED`);

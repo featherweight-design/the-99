@@ -1870,7 +1870,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   8s, failing on any frame that reads "Any card"; then it checks the deck stored the choice and
   presses back the same way. Needs a running server signed in as `E2E_AUDIT_USER_EMAIL` and
   `SETTINGS_DECK`, one of that account's decks with Suggested changes offered. It writes the deck's
-  owned-only limit and restores the stored value in a `finally`, and it FAILS CLOSED the same way
+  owned-only limit and restores the stored value and `last_edited_at` in a `finally`, and it FAILS CLOSED the same way
   as `probe:tuning-optimistic`.
 
 - `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
