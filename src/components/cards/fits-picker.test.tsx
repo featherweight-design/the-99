@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
@@ -29,7 +29,7 @@ const read = (over: Partial<FitsRead> = {}): FitsRead => ({
   free: 1,
   fits: [
     { id: "d-g", name: "Gishath", commanders: ["Gishath, Sun's Avatar"], need: { role: "ramp", have: 7, target: 10 },
-      reason: { kind: "combo", with: { oracleId: "o-sanity", name: "Fraying Sanity" } } },
+      reason: { kind: "combo", with: { oracleId: "o-sanity", name: "Fraying Sanity", imageUri: null } } },
     { id: "d-k", name: "Kinnan", commanders: ["Kinnan, Bonder Prodigy"], need: null, reason: { kind: "theme", theme: "mill", n: 9 } },
   ],
   holds: [{ id: "d-a", name: "Atraxa", quantity: 1, commanders: [] }],
@@ -430,5 +430,29 @@ describe("a card opened from a read's view", () => {
     await act(async () => fireEvent.click(screen.getAllByRole("button", { name: new RegExp(copy.pickerTitle) })[0]));
     await settle();
     expect(screen.getByTestId("fits-view")).toBeInTheDocument();
+  });
+});
+
+describe("FitsPicker hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("previews the art the combo's other piece carries, once the pointer moves over it", async () => {
+    actions.loadFitsAction.mockResolvedValue(read({
+      fits: [{ id: "d-g", name: "Gishath", commanders: ["Gishath, Sun's Avatar"], need: null, reason: { kind: "combo", with: { oracleId: "o-sanity", name: "Fraying Sanity", imageUri: "https://img.test/sanity.jpg" } } }],
+    }));
+    draw();
+    await settle();
+    const piece = screen.getByRole("button", { name: /Fraying Sanity/ });
+    fireEvent.mouseEnter(piece, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(piece, { clientX: 60, clientY: 60 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/sanity.jpg");
   });
 });

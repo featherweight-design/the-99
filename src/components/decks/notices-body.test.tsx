@@ -1,7 +1,7 @@
 // The Notices sheet's body and the header's tag (deck notices HANDOFF §1, §2, §4). Layout is the
 // probe's; what is asserted here is which rows, groups, words and controls each state draws.
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckNotices } from "../../lib/notices/read";
@@ -28,10 +28,10 @@ const notices = (over: Partial<DeckNotices> = {}): DeckNotices => ({
   analyzedAt: new Date("2026-09-20T12:00:00Z"),
   readingStale: false,
   groups: [
-    { group: "notLegal", items: [{ kind: "violation", group: "notLegal", card: { oracleId: "ban", name: "Banned Card" }, colors: [] }] },
-    { group: "outsideColors", items: [{ kind: "violation", group: "outsideColors", card: { oracleId: "red", name: "Red Card" }, colors: ["R"] }] },
-    { group: "gameChangers", items: [{ kind: "data", seq: 3, group: "gameChangers", direction: "added", cards: [{ oracleId: "gc", name: "Big Card" }], detail: {}, publishedAt: at }] },
-    { group: "twoCardCombos", items: [{ kind: "data", seq: 4, group: "twoCardCombos", direction: "removed", cards: [{ oracleId: "a", name: "Piece A" }, { oracleId: "b", name: "Piece B" }], detail: { produces: ["Infinite mana"] }, publishedAt: at }] },
+    { group: "notLegal", items: [{ kind: "violation", group: "notLegal", card: { oracleId: "ban", name: "Banned Card", imageUri: null }, colors: [] }] },
+    { group: "outsideColors", items: [{ kind: "violation", group: "outsideColors", card: { oracleId: "red", name: "Red Card", imageUri: "https://img.test/red.jpg" }, colors: ["R"] }] },
+    { group: "gameChangers", items: [{ kind: "data", seq: 3, group: "gameChangers", direction: "added", cards: [{ oracleId: "gc", name: "Big Card", imageUri: null }], detail: {}, publishedAt: at }] },
+    { group: "twoCardCombos", items: [{ kind: "data", seq: 4, group: "twoCardCombos", direction: "removed", cards: [{ oracleId: "a", name: "Piece A", imageUri: null }, { oracleId: "b", name: "Piece B", imageUri: null }], detail: { produces: ["Infinite mana"] }, publishedAt: at }] },
     { group: "rules", items: [{ kind: "data", seq: 5, group: "rules", direction: "moved", cards: [], detail: { rule: "A rule", reads: "What it reads now" }, publishedAt: at }] },
   ],
   dataCount: 3,
@@ -143,5 +143,23 @@ describe("the header's tag", () => {
     const quiet = read.getByRole("button", { name: "3 notices, read. Open notices" });
     expect(quiet.querySelector("[data-notice-dot]")).toBeNull();
     expect(quiet.className).toContain("text-[color:var(--fg-locked)]");
+  });
+});
+
+describe("the Notices body's hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("previews the art a notice's card carries, above the sheet", () => {
+    draw({ kind: "none" });
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /Red Card/ }), { clientX: 10, clientY: 10 });
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/red.jpg");
   });
 });

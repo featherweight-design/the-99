@@ -56,7 +56,7 @@ export type Candidate = {
   halves: CandidateHalf[];
   fit: Fit;
   /** The body's cards the candidate's decks run, by name, for the figure's inline list. */
-  matched: { oracleId: string; name: string }[];
+  matched: { oracleId: string; name: string; imageUri: string | null }[];
   deckCount: number;
 };
 
@@ -198,7 +198,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
   const pair = currentIds.length === 2;
   const [currentCards, bodyRows, staples] = await Promise.all([
     readCards(currentIds),
-    db.select({ oracleId: deckCards.oracleId, typeLine: cards.typeLine, name: cards.name })
+    db.select({ oracleId: deckCards.oracleId, typeLine: cards.typeLine, name: cards.name, imageUri: cards.imageUri })
       .from(deckCards).innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
       .where(eq(deckCards.deckId, deckId)),
     loadUniversalStaples(),
@@ -210,6 +210,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
   );
   const inDeck = new Set(bodyRows.map((r) => r.oracleId));
   const bodyNames = new Map(bodyRows.map((r) => [r.oracleId, r.name]));
+  const bodyArt = new Map(bodyRows.map((r) => [r.oracleId, r.imageUri]));
 
   const keys = await candidateKeys(currentIds, identity, pair);
   const halfIds = [...new Set(keys.flatMap((k) => k.ids))];
@@ -244,7 +245,8 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
     asked.length > 0
       ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
       : Promise.resolve(new Map<string, Availability>()),
-    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds])]),
+    // The matched cards are the deck's own, so they take the deck's printing the way the details do.
+    resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])]),
   ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0
@@ -259,7 +261,7 @@ export async function loadChangeCandidates(deckId: string, userId: string): Prom
       deckCount: k.deckCount,
       fit: fitCount(new Set(matchedIds), body),
       matched: matchedIds
-        .map((id) => ({ oracleId: id, name: bodyNames.get(id) ?? "" }))
+        .map((id) => ({ oracleId: id, name: bodyNames.get(id) ?? "", imageUri: ownedArt.get(id)?.imageUri ?? bodyArt.get(id) ?? null }))
         .sort((a, b) => a.name.localeCompare(b.name)),
       halves: k.ids.map((id) => {
         const f = factBy.get(id)!;

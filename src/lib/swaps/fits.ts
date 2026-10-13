@@ -14,6 +14,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { chainArt } from "../cards/chain-art";
 import { loadAvailability } from "../decks/availability-query";
 import { loadMixesForCommanders, mixKey } from "../decks/deck-mix";
 import type { RecommendedMix } from "../decks/mix";
@@ -42,7 +43,7 @@ export type FitDeck = {
 };
 
 export type FitReason =
-  | { kind: "combo"; with: { oracleId: string; name: string } }
+  | { kind: "combo"; with: { oracleId: string; name: string; imageUri: string | null } }
   /** `theme` is an approved theme, or the deck's key creature type for a card of that type (`Elf`). */
   | { kind: "theme"; theme: Theme | { type: string }; n: number };
 
@@ -232,13 +233,32 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
       knownNames: new Map([...cards.map((d) => [d.oracle_id, d.name] as const), ...commanders.map((id, i) => [id, r.commander_names[i]] as const)]),
     });
     const combo = partners.get(oracleId);
-    if (combo) return void reasons.set(r.id, { kind: "combo", with: { oracleId: combo.partnerOracleId, name: combo.partnerName } });
+    if (combo) return void reasons.set(r.id, { kind: "combo", with: { oracleId: combo.partnerOracleId, name: combo.partnerName, imageUri: null } });
     const theme = themeReason(themed, cards, r.commander_types, isType);
     if (theme) reasons.set(r.id, { kind: "theme", ...theme });
   }));
+  await withPartnerArt(userId, reasons);
 
   const a = availability.get(oracleId);
   return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId), reasons);
+}
+
+/**
+ * The art each combo's other piece previews. The piece is a card of THAT deck (a completion means every other
+ * piece is already in it), so it takes the printing card details open from the deck: the deck's pick, else the
+ * copy the reader owns, else the catalog's. Fail-soft: a failed read leaves the piece without a preview.
+ */
+async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): Promise<void> {
+  const combos = [...reasons].flatMap(([deckId, r]) => (r.kind === "combo" ? [{ deckId, r }] : []));
+  if (combos.length === 0) return;
+  const ids = [...new Set(combos.map(({ r }) => r.with.oracleId))];
+  const [chained, catalog] = await Promise.all([
+    Promise.all(combos.map(({ deckId, r }) => chainArt(userId, deckId, [r.with.oracleId]))),
+    db.execute<{ oracle_id: string; image_uri: string | null }>(sql`select oracle_id, image_uri from cards where oracle_id = any(${ids}::uuid[])`)
+      .then((res) => new Map(res.rows.map((x) => [x.oracle_id, x.image_uri] as const)))
+      .catch(() => new Map<string, string | null>()),
+  ]);
+  combos.forEach(({ r }, i) => { r.with.imageUri = chained[i].get(r.with.oracleId) ?? catalog.get(r.with.oracleId) ?? null; });
 }
 
 /**

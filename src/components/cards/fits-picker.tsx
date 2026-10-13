@@ -17,6 +17,8 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { addFromFits, loadFitsAction } from "../../lib/swaps/actions";
 import type { FitDeck, FitsRead } from "../../lib/swaps/fits";
 import { MutationError } from "../decks/mutation-error";
+import { PreviewButton } from "../ui/preview-button";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { Crown } from "../ui/crown";
@@ -42,17 +44,20 @@ function ReasonLine({ deck, staple, onOpenCard }: { deck: FitDeck; staple: boole
         <span className="whitespace-nowrap text-[color:var(--fg)]">
           {copy.reasonCombo}{" "}
           {onOpenCard ? (
-            <button
+            <PreviewButton
               type="button"
+              imageUri={r.with.imageUri}
               onClick={() => onOpenCard(r.with.oracleId)}
               className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
             >
               {r.with.name}
-            </button>
+            </PreviewButton>
           ) : (
             <CardDetailTrigger
               oracleId={r.with.oracleId}
               name={r.with.name}
+              imageUri={r.with.imageUri}
+              preview
               className="bg-transparent border-0 p-0 font-mono text-[10.5px] cursor-pointer text-[color:var(--fg)] [border-bottom:1px_dotted_var(--accent)]"
             >
               {r.with.name}
@@ -354,6 +359,8 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
   const { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry } = useFitsList(card);
 
   return (
+    // The combo piece previews like a decklist name, raised above the sheet; it opens under the pointer that pressed it.
+    <HoverPreviewProvider waitForMove>
     <ModalChrome
       title={copy.pickerTitle}
       closeLabel={swapToolsCopy.sheet.backToCardAria(name)}
@@ -442,5 +449,6 @@ export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () =>
         {read && holds.length > 0 ? <FitsHolds holds={holds} /> : null}
       </div>
     </ModalChrome>
+    </HoverPreviewProvider>
   );
 }

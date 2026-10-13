@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
 import type { BrowseCard } from "../../lib/collection/browse";
 
@@ -21,7 +21,7 @@ const half = (name: string, over: Partial<CandidateHalf> = {}): CandidateHalf =>
   price: null, ...over,
 });
 const cand = (h: CandidateHalf, n: number): Candidate => ({
-  key: h.oracleId, halves: [h], fit: { n, of: 62 }, matched: [{ oracleId: "x", name: "Llanowar Elves" }], deckCount: 500,
+  key: h.oracleId, halves: [h], fit: { n, of: 62 }, matched: [{ oracleId: "x", name: "Llanowar Elves", imageUri: "https://img.test/elves.jpg" }], deckCount: 500,
 });
 const data = (over: Partial<ChangeCandidates> = {}): ChangeCandidates => ({
   current: [{ oracleId: "korvold", name: "Korvold, Fae-Cursed King", cmc: 5, manaCost: "{2}{B}{R}{G}", imageUri: null }],
@@ -343,5 +343,36 @@ describe("CandidateRow and CandidateGroupHeading, mounted alone", () => {
     );
     expect(alone.getByTestId("change-commander-row").outerHTML).toBe(sheetRow);
     expect(alone.getByText("Yours · 1").parentElement!.outerHTML).toBe(sheetHeading);
+  });
+});
+
+describe("ChangeCommanderSheet hover preview", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({ matches: query === "(hover: hover)", media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {} }),
+    });
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  // The sheet opens under the pointer that pressed its door, so a preview waits for a MOVE.
+  const hover = (el: HTMLElement) => {
+    fireEvent.mouseEnter(el, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(el, { clientX: 60, clientY: 60 });
+    act(() => { vi.advanceTimersByTime(1000); });
+  };
+
+  it("previews a candidate's own art and a matched card's, above the sheet", async () => {
+    readChangeCandidates.mockResolvedValue(data({ yours: [cand(half("Prosper", { imageUri: "https://img.test/prosper.jpg" }), 41)] }));
+    mount();
+    const figure = await screen.findByRole("button", { name: /41 of 62 cards in this deck are in Prosper's decks/ });
+    hover(screen.getAllByRole("button", { name: /Prosper/ }).find((b) => b.tagName === "BUTTON" && b.textContent === "Prosper")!);
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/prosper.jpg");
+    fireEvent.mouseLeave(screen.getAllByRole("button", { name: /Prosper/ })[0]);
+    act(() => { vi.advanceTimersByTime(1000); });
+    fireEvent.click(figure);
+    hover(screen.getByText("Llanowar Elves").closest("button")!);
+    expect(screen.getByTestId("hover-preview").getAttribute("style")).toContain("https://img.test/elves.jpg");
   });
 });
