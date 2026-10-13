@@ -1999,4 +1999,4 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   under the dock there.
   A 300px window checks the same clearance with almost no room, where the list keeps a floor of 96px (a row or two,
   scrolling) rather than opening above the box: that flip was cut after three review rounds on its geometry.
-  Measured 2026-10-12 on local-dev: all twelve checks pass.
+  Measured 2026-10-12 on local-dev: all fourteen checks pass.

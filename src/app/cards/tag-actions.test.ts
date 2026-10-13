@@ -15,9 +15,9 @@ describe("searchTagCards", () => {
     expect(stub.signedIn).toHaveBeenCalled();
   });
 
-  it("offers only cards a commander deck may hold, since a tag here is a requirement", async () => {
-    stub.search.mockResolvedValue([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }, { oracleId: "b", name: "Black Lotus", commanderLegal: false }]);
-    expect((await searchTagCards("intake", "o"))?.map((h) => h.name)).toEqual(["Sol Ring"]);
+  it("asks for only the cards a commander deck may hold, in the query itself, since a tag here is a requirement", async () => {
+    await searchTagCards("intake", "o");
+    expect(stub.search).toHaveBeenCalledWith("o", { commanderLegalOnly: true });
   });
 
   it("answers null, searching nothing, with the surface off, an unknown surface or a non-string query", async () => {

@@ -76,7 +76,7 @@ export type NoteCardHit = { oracleId: string; name: string; typeLine: string; co
  * remember it), so it has no legality filter and says what the legality is. `searchCards` stays as it is:
  * it is the Add panel's per-keystroke search with ownership, availability and facts a note never draws.
  */
-export async function searchNoteCards(query: string): Promise<NoteCardHit[]> {
+export async function searchNoteCards(query: string, opts: { commanderLegalOnly?: boolean } = {}): Promise<NoteCardHit[]> {
   const match = nameSearch(query);
   if (!match) return [];
   const rows = await db
@@ -84,7 +84,8 @@ export async function searchNoteCards(query: string): Promise<NoteCardHit[]> {
     .from(cards)
     // The name match may be a Secret Lair flavor name, which lives in the join `nameSearch` hands back.
     .leftJoin(match.flavorHits, eq(match.flavorHits.oracleId, cards.oracleId))
-    .where(and(match.where, isGameCardWhere()))
+    // A legal-only lookup filters BEFORE the limit, so banned cards cannot use up the window.
+    .where(and(match.where, isGameCardWhere(), opts.commanderLegalOnly ? eq(cards.commanderLegal, true) : undefined))
     .limit(20);
   return rows.map((r) => ({ ...r, flavorName: match.shownFlavor(r.name, r.flavorName) }));
 }
