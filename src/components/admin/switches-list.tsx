@@ -91,18 +91,21 @@ function Row({ row }: { row: SwitchRow }) {
       className={`flex flex-col border-0 border-solid border-[color:var(--border)] [border-top-width:1px] px-[14px] py-[12px] md:items-start ${GRID}`}
     >
       <div className="flex min-w-0 flex-col gap-[3px]">
-        <div className="flex flex-wrap items-center gap-[7px]">
-          <span className="text-[14px] font-medium text-[color:var(--fg)]">{label(row)}</span>
-          <SwitchTags row={row} />
-          <span className="flex-1 md:hidden" />
-          <span className="md:hidden">
+        {/* The name and its tags wrap among themselves; the phone's resolved pill sits apart from them,
+            pinned right, so two tags can never push it onto a line of its own. */}
+        <div className="flex items-start gap-[10px]">
+          <div data-testid="switch-title" className="flex min-w-0 flex-1 flex-wrap items-center gap-[7px]">
+            <span className="text-[14px] font-medium text-[color:var(--fg)]">{label(row)}</span>
+            <SwitchTags row={row} />
+          </div>
+          <span data-testid="switch-resolved-phone" className="flex-none pt-[1px] md:hidden">
             <Pill row={row} />
           </span>
         </div>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.name}</span>
         <span className="text-pretty text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{switchCopy[row.name].description}</span>
         <span className="mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
-          {[copy.metaEnv(env), copy.metaApp(appText(row)), ov, sub].filter(Boolean).join(" · ")}
+          {[copy.metaEnv(env), copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides, sub].join(" · ")}
         </span>
       </div>
       <span className={`hidden font-mono text-[12.5px] md:inline ${envClass(row.env)}`}>

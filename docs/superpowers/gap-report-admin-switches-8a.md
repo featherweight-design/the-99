@@ -22,6 +22,18 @@ layout; from `md` up it uses the desktop one.
 | 1 | The search input drew its own focus treatment inside a bordered field. `wrapped-input-focus.test.ts`, a tree-reading guard, caught it. | The field takes `AFFIX_FOCUS_INPUT` and the input takes `AFFIX_INPUT` (`ui/text-field.tsx`), so the ring is drawn on the field, as on every other wrapped input. |
 | 2 | Sticky offsets were first written as interpolated class names, such as ``top-[var(${VAR},0px)]``. Tailwind cannot see an interpolated class, so no rule would have been emitted, and both the pinned bar and the column head would have scrolled away. | Both are written as literal classes: `top-[var(--admin-head-h,0px)]` and `top-[calc(var(--admin-head-h,0px)+var(--admin-pin-h,0px))]`. |
 
+### Found by the contact sheet and fixed (2026-10-13)
+
+The sheet ran 15 rows at 390 and 1300. It turned up two gaps, three questions and two notes.
+
+| # | Finding | Resolution |
+|---|---|---|
+| 3 | **At 390, a row with two tags wrapped its resolved pill onto its own line, at the left.** Find a deck read (MODEL and NEEDS SWAP TOOLS) showed it, and Proposed cuts and Suggested changes have the same shape. The name, the tags, a `flex-1` spacer and the pill all sat in one `flex-wrap` row, so the spacer could not hold the pill right once the tags wrapped. | Fixed. The header is now a non-wrapping row of two parts: a `flex-1 min-w-0 flex-wrap` group holding the name and the tags, then the pill as a `flex-none` sibling. The tags wrap inside their own group, and the pill stays right-aligned. `switches-list.test.tsx` checks this on all three rows: the pill sits outside the wrapping group, as its next sibling, in a parent that does not wrap. A mutation putting the pill back inside the group is caught, and so is one making the parent wrap. |
+| 4 | **The phone's meta line dropped the overrides part when there were none,** for example `env unset · app-wide not set · 0 of 5 on`. That follows the canvas's `flagRow`, but the design table spells the line `env · app-wide · overrides · N of 7 on`. | Fixed, following the table. The overrides slot is always drawn, and reads `no overrides` when the switch has none. `metaNoOverrides` is a new string for `/copy-review`. A mutation that drops the slot again is caught. |
+| 5 | **The killed reason reads `env var is off`, while STATES L4 writes `killed by the environment`.** | **Kept as `env var is off`, unchanged.** The handoff's R2 copy file locks `switches.killed: "env var is off"`, and R2 delta 2 says "env var" throughout. STATES L4 still carries R1's wording. The copy pass (9d212e57c) did not touch this string. |
+| 6 | **The Plumbing head shows a note and no count,** while STATES L1 writes `Plumbing (3)`, which would be 5 today. | **The note is kept, unchanged.** The design table's group-head row specifies `mono 10 upper --fg-muted + note --fg-faint`: a note, not a count. The R2 canvas fills the Features note with its count and the Plumbing note with `plumbingNote` ("app-wide only, not features a friend tries"), which is a string in the handoff's copy file. The table wins over STATES L1. |
+| 7 | **Two inventory notes were wrong.** The compound row also needs `SHOPPING_MARK_BOUGHT_ENABLED=true`: with the child off too, the row reads off by its own env var, not by its parent. And `ADMIN_ENV_LABEL` must be `staging` or `production`, since any other value means there is no admin. | Fixed in `docs/superpowers/inventories/admin.json`: the note, and the compound row's label. |
+
 ### Verified, row by row
 
 All of the following matched.
@@ -109,5 +121,4 @@ the plan's Copy section covers them too.
 
 ### Not reviewed here
 
-The switch page (8b) and the writes (8c) are reviewed in their own PRs. The contact sheet was not
-run for this pass: it needs a running server signed in as an admin (see the PR body).
+The switch page (8b) and the writes (8c) are reviewed in their own PRs. The contact sheet ran on 2026-10-13, after this pass: 15 rows at both widths. Its findings are rows 3 to 7 above.

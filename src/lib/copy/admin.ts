@@ -213,6 +213,7 @@ export const adminCopy = {
     tagNeeds: (parent: string) => `needs ${parent}`,
     metaEnv: (env: string) => `env ${env}`,
     metaApp: (app: string) => `app-wide ${app.toLowerCase()}`,
+    metaNoOverrides: "no overrides",
     footnote: (total: number, env: string) => `Resolved counts the ${total} accounts on ${env}. Signed out gets the app-wide result.`,
     noneMatch: "None match.",
     showAll: "Show all",

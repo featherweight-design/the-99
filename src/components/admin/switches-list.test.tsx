@@ -104,8 +104,29 @@ describe("SwitchesList", () => {
   it("names an unset env var, and an app-wide override", () => {
     draw({}, [row({ scope: "app", value: "on" })]);
     const r = rowOf("DECK_NOTES_ENABLED");
-    expect(within(r).getByText("env unset · app-wide on · 2 of 2 on")).toBeInTheDocument();
+    // The overrides slot is always drawn (design table: `env · app-wide · overrides · N of 7 on`).
+    expect(within(r).getByText("env unset · app-wide on · no overrides · 2 of 2 on")).toBeInTheDocument();
   });
+
+  // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
+  // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it.
+  it.each(["FIND_A_DECK_READ_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"] as const)(
+    "keeps the phone's resolved pill out of %s's wrapping title group",
+    (name) => {
+      draw({});
+      const r = rowOf(name);
+      const title = within(r).getByTestId("switch-title");
+      const pill = within(r).getByTestId("switch-resolved-phone");
+      expect(title.className).toContain("flex-wrap");
+      expect(title.className).toContain("flex-1");
+      expect(title.contains(pill)).toBe(false);
+      expect(title.querySelectorAll("span.uppercase")).toHaveLength(2);
+      expect(pill.parentElement).toBe(title.parentElement);
+      expect(pill.previousElementSibling).toBe(title);
+      expect(pill.className).toContain("flex-none");
+      expect(pill.parentElement!.className).not.toContain("flex-wrap");
+    },
+  );
 
   it("says so when the overrides could not be read", () => {
     draw({}, [], ["u1"], { overridesRead: false });

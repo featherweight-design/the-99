@@ -1,6 +1,6 @@
 {
   "feature": "Admin: the gate, the shell and the door (PR 2a), then each page as it ships (Costs; Switches from PR 8a)",
-  "note": "Run against a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL set; without both, /admin is the app's 404 and every row fails, which is the gate working. The account menu's Admin row sits outside <main>, where every verb here is scoped, so account-menu.test.tsx covers the door. A signed-out /admin redirects to sign-in exactly as an unknown path does, so it is not photographed. Switches (PR 8a) reads only. For the kill and compound rows start the server with DECK_BENCHMARKS_ENABLED=off and COLLECTION_EDIT_ENABLED=false; every other row reads whatever the server's environment and database hold. Point it at local-dev or a scratch branch.",
+  "note": "Run against a server started with ADMIN_USER_IDS naming the signed-in account and ADMIN_ENV_LABEL set to `staging` or `production` (any other value, or none, means there is no admin); without both, /admin is the app's 404 and every row fails, which is the gate working. The account menu's Admin row sits outside <main>, where every verb here is scoped, so account-menu.test.tsx covers the door. A signed-out /admin redirects to sign-in exactly as an unknown path does, so it is not photographed. Switches (PR 8a) reads only. For the kill and compound rows start the server with DECK_BENCHMARKS_ENABLED=off, COLLECTION_EDIT_ENABLED=false and SHOPPING_MARK_BOUGHT_ENABLED=true (with the child off too, the row reads off by its own env var, not by its parent); every other row reads whatever the server's environment and database hold. Point it at local-dev or a scratch branch.",
   "rows": [
     {
       "id": "admin-costs-current",
@@ -213,7 +213,7 @@
     },
     {
       "id": "admin-switches-compound",
-      "label": "/admin/switches: Mark bought off because Collection edit is off (L5); server COLLECTION_EDIT_ENABLED=false",
+      "label": "/admin/switches: Mark bought off because Collection edit is off (L5); server COLLECTION_EDIT_ENABLED=false and SHOPPING_MARK_BOUGHT_ENABLED=true",
       "view": "src/components/admin/switches-list.tsx",
       "steps": [
         {
