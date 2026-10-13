@@ -222,6 +222,73 @@ export const adminCopy = {
     noneMatch: "None match.",
     showAll: "Show all",
   },
+
+  // One switch's page (admin STATES F1 to F13), from the handoff's `switch` keys. The source labels,
+  // the history scope and actor labels, the Needs rung's value and `allows all`, the plumbing row's
+  // `ignored` meta and Check an account's prompt are new here and owed to /copy-review (plan
+  // §"New, owed to /copy-review" items 4, 5 and 8).
+  switch: {
+    back: "‹ Switches",
+    ladderHead: "Who gets it",
+    ladderMeta: "most specific wins",
+    rungs: { account: "Account", group: "Group", app: "App-wide", env: "Env var", needs: "Needs" },
+    decides: (n: number) => (n ? `decides for ${n}` : "decides for none"),
+    allows: (t: number) => `allows all ${t}`,
+    refused: "refused",
+    killSet: "off · refuses every override",
+    none: "None",
+    needsValue: (parent: string, state: string) => `${parent}: ${state}`,
+    result: {
+      allOn: (t: number) => `On for all ${t} accounts`,
+      allOff: (t: number) => `Off for all ${t} accounts`,
+      some: (n: number, t: number, names: string) => `On for ${n} of ${t}: ${names}`,
+    },
+    appHead: "App-wide",
+    appSetBy: (who: string, when: string) => `set by ${who}, ${when}`,
+    appNotSet: "not set: the env var decides",
+    appNotSetNote: "Not set falls back to the env var.",
+    appRefused: "Refused while the env var is off.",
+    note: (note: string) => `Note: “${note}”`,
+    noNote: "No note",
+    groupsHead: "Groups",
+    accountsHead: "Accounts",
+    sectionNone: "none",
+    members: (n: number) => plural(n, "member", "members"),
+    noGroup: "No group override.",
+    noAccount: "No account override.",
+    check: "Check an account",
+    checkPick: "Pick an account",
+    historyHead: "History",
+    historyCount: (n: number) => plural(n, "change", "changes"),
+    historyFoot: "UTC. Env var changes ship with a deploy and aren’t listed.",
+    noHistory: "No overrides yet.",
+    refusedMeta: "refused, env var is off",
+    ignoredMeta: "ignored, plumbing is app-wide only",
+    kill: {
+      title: "Off: the env var is off.",
+      body: (v: string) => `${v}=off refuses every override. Redeploy to change it. Clear still works.`,
+    },
+    compound: {
+      title: (parent: string) => `Off: needs ${parent}, which is off.`,
+      body: "The env var is true, but overrides here can’t turn the parent on.",
+      link: (parent: string) => `Open ${parent} ›`,
+    },
+    history: {
+      set: (who: string, scope: string, from: string, to: string) => `${who} set ${scope}: ${from} → ${to}`,
+      cleared: (who: string, scope: string, from: string) => `${who} cleared ${scope} (was ${from})`,
+      notSet: "not set",
+      you: "You",
+      scope: { app: "app-wide", group: (name: string) => `group ${name}`, user: (name: string) => `account ${name}` },
+    },
+    sources: {
+      kill: "env var is off",
+      account: "account override",
+      group: (name: string) => `group ${name}`,
+      app: "app-wide override",
+      env: "from the env var",
+      parent: (parent: string) => `${parent} is off`,
+    },
+  },
 } as const;
 
 /**

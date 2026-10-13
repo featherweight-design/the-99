@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { AdminEnv } from "../../lib/admin/environment";
 import {
   matchesFilter,
@@ -13,6 +14,7 @@ import {
 } from "../../lib/admin/switches-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { KILL } from "../../lib/switches/resolve";
+import { PendingReporter } from "../shell/pending-reporter";
 import { AFFIX_FOCUS_INPUT, AFFIX_INPUT } from "../ui/text-field";
 import { usePublishedHeight } from "./admin-head";
 
@@ -90,10 +92,12 @@ function Row({ row }: { row: SwitchRow }) {
   const env = row.env ?? copy.envUnset;
   const sub = resolvedSub(row);
   return (
-    <li
-      data-switch={row.name}
-      className={`flex flex-col border-0 border-solid border-[color:var(--border)] [border-top-width:1px] px-[14px] py-[12px] md:items-start ${GRID}`}
-    >
+    <li data-switch={row.name} className="border-0 border-solid border-[color:var(--border)] [border-top-width:1px]">
+      {/* The whole row opens the switch's page (admin plan 8b). */}
+      <Link
+        href={`/admin/switches/${row.name}`}
+        className={`flex flex-col px-[14px] py-[12px] text-inherit no-underline md:items-start ${GRID}`}
+      >
       <div className="flex min-w-0 flex-col gap-[3px]">
         {/* The name and its tags wrap among themselves; the phone's resolved pill sits apart from them,
             pinned right, so two tags can never push it onto a line of its own. */}
@@ -131,6 +135,8 @@ function Row({ row }: { row: SwitchRow }) {
         <Pill row={row} />
         <span className="whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>
       </div>
+      <PendingReporter href={`/admin/switches/${row.name}`} />
+      </Link>
     </li>
   );
 }
