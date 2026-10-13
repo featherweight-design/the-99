@@ -138,10 +138,14 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
 
   it("refuses words over the cap rather than trimming them", async () => {
     expect(await submitChoose(`?w=${"x".repeat(801)}`)).toEqual({ kind: "refused" });
-    // Leading space does not buy room, and an emoji counts as the box counts it (two units).
+    // Leading space does not buy room, and an emoji counts as the prompt boundary counts it (one character).
     expect(await submitChoose(`?w=${encodeURIComponent(` ${"x".repeat(800)}`)}`)).toEqual({ kind: "refused" });
-    expect(await submitChoose(`?w=${encodeURIComponent("😀".repeat(401))}`)).toEqual({ kind: "refused" });
+    expect(await submitChoose(`?w=${encodeURIComponent("😀".repeat(801))}`)).toEqual({ kind: "refused" });
     expect(stub.begin).not.toHaveBeenCalled();
+    // 800 emoji are 1,600 units and within the cap: the raw bound allows two units a character.
+    stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish: vi.fn() });
+    await landed(`?w=${encodeURIComponent("😀".repeat(800))}`);
+    expect(stub.begin).toHaveBeenCalled();
   });
 
   it("never carries a card from the address into the read (F1)", async () => {

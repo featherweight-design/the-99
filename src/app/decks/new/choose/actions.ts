@@ -38,7 +38,7 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   // bytes each run to 7,200 characters, and every theme and set comes on top.
   if (typeof query !== "string" || query.length > 64_000) return { kind: "refused" };
   const raw = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
-  // The parser cuts `w` to the cap, so it is checked first, in the parser's own unit (UTF-16, as the
+  // The parser cuts `w` to the cap, so it is checked first, in the parser's own unit (code points, as the
   // prompt boundary counts) on what the words DRAW (a card tag counts as its name), on the raw value's
   // length for the ids a body carries, and on the tags: anything the parser would cut is refused.
   const rawWords = raw.get("w") ?? "";
