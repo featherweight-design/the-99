@@ -111,6 +111,9 @@ export type AccountPage = {
  * in the universe, and named by no membership, override or `model_calls` row.
  */
 export async function loadAccountPage(userId: string, now: Date = new Date()): Promise<AccountPage | null> {
+  // `system` is the batch spend's sentinel (`scripts/lib/system-spend.ts`), never an account, though
+  // it has `model_calls` rows; the list leaves it out too (`accounts.ts`).
+  if (userId === "system") return null;
   const { start, end } = monthBounds(now);
   const [{ accounts, clerk }, snapshot, heads, allowance, featureRows, called] = await Promise.all([
     listAccounts(),
