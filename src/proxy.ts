@@ -56,28 +56,31 @@ export default clerkMiddleware(async (auth, req) => {
   headers.delete(SWITCHES_HEADER);
   if (userId) headers.set(SWITCHES_HEADER, switchBits(env));
   const pass = () => NextResponse.next({ request: { headers } });
+  const path = req.nextUrl.pathname;
+  // `/about` itself, as a navigation, in either mode: the page draws and acknowledges the entries
+  // THIS request's switches show, which another instance's memo may not have agreed with when it
+  // redirected here and set the legacy cookie. So that cookie is re-keyed to what this page is
+  // drawn: an entry it did not draw stops matching, and the gate asks again once the instances
+  // agree, rather than the cookie suppressing that entry for good. In sheet mode too, so a cookie
+  // the legacy gate left is still corrected if the reader returns to it.
+  // Any navigation the gate would handle (a document load or a client transition, never a
+  // prefetch), since a reader sent here by a redirect arrives either way.
+  const rekeyLegacy = (response: NextResponse): NextResponse => {
+    if (userId && path === "/about" && gateHandles(req.method, req.headers)) {
+      response.cookies.set(ABOUT_COOKIE, sheetCookieValue(userId, visibleEntries(env)), {
+        ...COOKIE_OPTIONS,
+        secure: req.nextUrl.protocol === "https:",
+      });
+    }
+    return response;
+  };
   if (userId && aboutSheetEnabled(env)) {
     headers.set(SHEET_ON_HEADER, "1");
-    return sheet(req, userId, env, headers, pass);
+    return rekeyLegacy(await sheet(req, userId, env, headers, pass));
   }
   if (!userId) return pass();
 
-  const path = req.nextUrl.pathname;
-  // `/about` itself, as a navigation: the page draws and acknowledges the entries THIS request's
-  // switches show, which another instance's memo may not have agreed with when it redirected here and
-  // set the cookie. So the cookie is re-keyed to what this page is drawn: an entry it did not draw
-  // stops matching, and the gate asks again once the instances agree, rather than the cookie
-  // suppressing that entry for good.
-  // Any navigation the gate would handle (a document load or a client transition, never a
-  // prefetch), since a reader sent here by a redirect arrives either way.
-  if (path === "/about" && gateHandles(req.method, req.headers)) {
-    const response = pass();
-    response.cookies.set(ABOUT_COOKIE, sheetCookieValue(userId, visibleEntries(env)), {
-      ...COOKIE_OPTIONS,
-      secure: req.nextUrl.protocol === "https:",
-    });
-    return response;
-  }
+  if (path === "/about" && gateHandles(req.method, req.headers)) return rekeyLegacy(pass());
   if (!gateApplies(path) || !gateHandles(req.method, req.headers)) return pass();
 
   // The cookie is the fast path and the reason this costs nothing on a normal

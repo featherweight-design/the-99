@@ -163,6 +163,17 @@ describe("requests the gate keeps its hands off", () => {
     expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
   });
 
+  it("re-keys it on /about in sheet mode too, so a cookie the legacy gate left cannot outlive a mode switch", async () => {
+    const { cookieValue } = await import("./lib/about/gate");
+    resolveSwitchEnv.mockImplementation(async () => ({ ...process.env, ABOUT_SHEET_ENABLED: "true" }));
+    try {
+      const res = await proxy(auth, request("/about", {}, `${cookieValue("user_1")}+notes`));
+      expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
+    } finally {
+      resolveSwitchEnv.mockImplementation(async () => process.env);
+    }
+  });
+
   it("re-keys it on a client transition to /about too, and never on a prefetch", async () => {
     const { cookieValue } = await import("./lib/about/gate");
     const nav = await proxy(auth, request("/about", { RSC: "1" }, `${cookieValue("user_1")}+notes`));
