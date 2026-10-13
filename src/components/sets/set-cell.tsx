@@ -182,8 +182,8 @@ export function SetCell({
         {cell.name}
       </span>
 
-      {/* Content is the third carrier: a price TAG is a thing only a missing cell has. Sorted by
-          price, an owned cell draws its figure as plain text in the same slot. */}
+      {/* Content is the third carrier: a price TAG is a thing only a missing cell has. An owned
+          cell draws its figure as plain text in the same slot, in every sort. */}
       {cell.owned ? (
         ownedCode !== undefined ? (
           <span className="mt-[4px] flex font-mono text-[10px]">

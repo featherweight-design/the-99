@@ -117,7 +117,7 @@ describe("SetCell — caption and price", () => {
     expect(screen.queryByText(/\$/)).toBeNull();
   });
 
-  it("carries no price tag on an owned cell — the tag is a carrier of missing", () => {
+  it("carries no price TAG on an owned cell — the tag is a carrier of missing (its figure is plain text)", () => {
     render(<SetCell cell={cell({ owned: true })} price={fact({})} newestAsOf={NEWEST} />);
     expect(screen.queryByText("$1.20")).toBeNull();
   });

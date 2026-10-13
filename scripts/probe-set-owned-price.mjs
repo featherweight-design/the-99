@@ -84,8 +84,17 @@ try {
       if (owned.length === 0) continue;
       found = true;
       // The default order is Number: a sort that is NOT price, which is the case that was missing.
-      const bare = owned.filter((n) => !/\$\d|no stock/.test(n));
+      // A figure is spoken as "$4.50" (with its finish) or, when the feed has none, as the store's own
+      // line ("Never stocked at ManaPool", "Sold out at ManaPool"): the visible "no stock" is not in the name.
+      const bare = owned.filter((n) => !/\$\d|at ManaPool/.test(n));
       check(bare.length === 0, `${w.name} ${href}: every owned cell names its price in Number order`, `${owned.length} owned, ${bare.length} without a figure${bare[0] ? `, e.g. "${bare[0]}"` : ""}`);
+      // And the figure the reader SEES, not only the name built from the same read: the cell's own text.
+      const unseen = await cells.evaluateAll((bs) =>
+        bs
+          .filter((b) => !/not in your collection/.test(b.getAttribute("aria-label") ?? ""))
+          .filter((b) => !/\$\d|no stock/.test(b.textContent ?? "")).length,
+      );
+      check(unseen === 0, `${w.name} ${href}: every owned cell draws its figure`, `${unseen} of ${owned.length} owned cells show none`);
       break;
     }
     if (!found) check(false, `${w.name}: a set with an owned card exists to measure`, `looked at ${hrefs.length} sets`);

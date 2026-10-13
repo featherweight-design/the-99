@@ -1140,12 +1140,12 @@ describe("what each chapter 01 figure actually draws", () => {
     // longer existed.
     expect(el.querySelector('[role="radiogroup"][aria-label="Color match"]')).not.toBeNull();
 
-    // Six cells as drawn, and only a missing one shows a price. This is an
+    // Six cells as drawn, and every one shows a price. This is an
     // INVARIANCE over the route's rule rather than a guard on this figure:
-    // `SetCell` renders the tag on `!cell.owned` itself, so the figure passes
-    // a price to every cell and cannot break it. It is asserted because it is
-    // what the reader must see, and it fails if the figure ever stops using
-    // the route's cell — which is the thing that could actually regress.
+    // `SetCell` draws a price on a missing cell and the collection's own
+    // figure on an owned one, in every sort, so the figure passes a price to
+    // every cell and cannot break it. It fails if the figure ever stops using
+    // the route's cell, which is the thing that could actually regress.
     // Scoped to the GRID. Swept over the whole plate the cost strip's own
     // `$188.66` counts as a cell price, so the check read 3 where the rule is
     // 2 — and a figure pricing every cell would have passed a looser form.
@@ -1159,7 +1159,7 @@ describe("what each chapter 01 figure actually draws", () => {
     const priced = [...grid!.querySelectorAll("*")].filter(
       (n) => n.children.length === 0 && /^\$[0-9.,]+$/.test(n.textContent ?? ""),
     );
-    expect(priced).toHaveLength(SET_CELLS.filter((c) => !c.owned).length);
+    expect(priced).toHaveLength(SET_CELLS.length);
   });
 
   it("browse: a chip per narrowing, a count, and the reading choice", () => {

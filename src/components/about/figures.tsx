@@ -531,8 +531,9 @@ function SetsFigure({ width }: { width: AboutWidth }) {
 
       {/* SIX across, as drawn, and the route's own `SetCell` for every one.
           The price is passed to every cell and the COMPONENT decides: it
-          renders the tag only for `!cell.owned`, because "a price tag is a
-          thing only a missing cell has" is the route's rule, not this page's.
+          renders the TAG only for `!cell.owned`, because "a price tag is a
+          thing only a missing cell has" is the route's rule, not this page's;
+          an owned cell draws its plain figure when it carries the finishes held.
           Gating it here as well would look like a guard while guarding
           nothing. */}
       <div className="grid grid-cols-3 gap-[10px] min-[1000px]:grid-cols-6">
