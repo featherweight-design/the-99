@@ -286,12 +286,17 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
   // Every read of the list is numbered, and only the newest one asked lands: a slow read from before
   // a write must never replace what a later read says about the copies left or the decks holding it.
   const asked = useRef(0);
+  // The read behind a restored snapshot: if it fails, the snapshot stays (nothing newer landed), and the
+  // view is as it was. Any later read, a write's included, fails as before.
+  const restoring = useRef(initial !== null);
   const readList = useCallback(() => {
     const n = ++asked.current;
     return loadFitsAction(card.oracleId)
       .catch(() => null)
       .then((r) => {
-        if (n === asked.current) {
+        const keepRestored = restoring.current && !r;
+        restoring.current = false;
+        if (n === asked.current && !keepRestored) {
           setLoad(r ? { state: "ready", read: r } : { state: "failed" });
           if (r) setRows((prev) => prev ?? r.fits);
         }
@@ -356,7 +361,10 @@ export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null =
 
   /** Re-reads the list. `afterWrite`: the caller just wrote, so a failed re-read leaves no count. */
   const refresh = useCallback(async (afterWrite = false) => {
-    if (afterWrite) setWrote(true);
+    if (afterWrite) {
+      setWrote(true);
+      restoring.current = false;
+    }
     return readList();
   }, [readList]);
 
