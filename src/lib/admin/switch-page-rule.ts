@@ -88,7 +88,8 @@ export function fmtWhen(at: Date): string {
   return `${part("day")} ${part("month")} · ${time}`;
 }
 
-function sourceText(source: ExplainSource, groupName: (id: string) => string): string {
+/** Where a verdict comes from, as the switch page and the Accounts page print it. */
+export function sourceText(source: ExplainSource, groupName: (id: string) => string): string {
   switch (source.kind) {
     case "kill":
       return copy.sources.kill;

@@ -140,3 +140,72 @@ export async function writeGroup(actorId: string, id: string | null, input: Grou
   if (out.wrote) deps.afterCommit();
   return { ok: true, id: out.id };
 }
+
+/**
+ * An account's move from the Accounts page (admin plan 9b, STATES G7): into a group, between groups or
+ * out of every group, through the group writes' own path. One transaction under the switch writes'
+ * lock: the target group `for update` (it must still exist), the memberships read inside it, then the
+ * one membership row written, the rise checked AFTER that write (so the confirm's credits read the
+ * limit the move leaves) and confirmed exactly as a group save's is, and the events: `member_removed`
+ * on the group left, then `member_added` on the group joined. A move to where the account already is
+ * writes nothing. The memo clear and the revalidation run after the commit only.
+ */
+export type MoveResult =
+  | { ok: true }
+  | { ok: false; error: "group" | "account" | "accounts" | "failed" }
+  | { ok: false; error: "confirm"; preview: ConfirmPreview };
+
+export async function moveAccount(
+  actorId: string,
+  userId: string,
+  groupId: string | null,
+  confirmed: number | null = null,
+  deps: GroupWriteDeps = DEPS,
+): Promise<MoveResult> {
+  if (typeof userId !== "string" || userId === "" || userId === "system") return { ok: false, error: "account" };
+  if (groupId !== null && (typeof groupId !== "string" || !isGroupId(groupId))) return { ok: false, error: "group" };
+  const { accounts, clerk } = await deps.accounts();
+  let wrote: boolean;
+  try {
+    wrote = await deps.transaction(async (tx) => {
+      await lockSwitchWrites(tx);
+      if (groupId !== null) {
+        const { rows } = await tx.execute(sql`select id from flag_groups where id = ${groupId}::uuid for update`);
+        if (rows.length === 0) throw new Abort<MoveResult>({ ok: false, error: "group" });
+      }
+      const before = await readSnapshotIn(tx);
+      // The account must be one this environment lists, or one a membership or an override already names (Clerk down).
+      const known = accounts.some((a) => a.id === userId) || before.groupOf.has(userId) || before.overrides.some((o) => o.userId === userId);
+      if (!known) throw new Abort<MoveResult>({ ok: false, error: "account" });
+      const from = before.groupOf.get(userId) ?? null;
+      if (from === groupId) return false;
+
+      const groupOf = new Map(before.groupOf);
+      if (groupId === null) {
+        await tx.execute(sql`delete from flag_group_members where user_id = ${userId}`);
+        groupOf.delete(userId);
+      } else {
+        // One row per account (the key is `user_id`), so a move replaces the row it had.
+        await tx.execute(sql`
+          insert into flag_group_members (user_id, group_id, added_by, added_at) values (${userId}, ${groupId}::uuid, ${actorId}, now())
+          on conflict (user_id) do update set group_id = excluded.group_id, added_by = excluded.added_by, added_at = excluded.added_at`);
+        groupOf.set(userId, groupId);
+      }
+      const refusal = await checkRise(tx, { before, after: { ...before, groupOf }, accounts, clerkDown: clerk === "down", confirmed, rise: deps.rise });
+      if (refusal) throw new Abort<MoveResult>(refusal);
+      const events = [...(from ? [{ kind: "member_removed", group: from }] : []), ...(groupId ? [{ kind: "member_added", group: groupId }] : [])];
+      for (const e of events) {
+        await tx.execute(sql`
+          insert into admin_events (actor_id, kind, group_id, user_id, old_value, new_value)
+          values (${actorId}, ${e.kind}, ${e.group}::uuid, ${userId}, ${null}, ${null})`);
+      }
+      return true;
+    });
+  } catch (error) {
+    if (error instanceof Abort) return error.result as MoveResult;
+    console.error("admin: an account's move failed");
+    return { ok: false, error: "failed" };
+  }
+  if (wrote) deps.afterCommit();
+  return { ok: true };
+}

@@ -250,7 +250,7 @@ export const adminCopy = {
       allowance: "Enter a whole number from 1 to 1000, or leave it empty.",
       members: "An account in the list isn’t on this environment. Reload the page and try again.",
       group: "This group no longer exists. Reload the page.",
-      unknown: "The page lost touch with the server, so it may have saved. The page has reloaded; check it before saving again.",
+      unknown: "Lost touch with the server, so it may have saved. Check the page before saving again.",
     },
     history: {
       created: (who: string, name: string) => `${who} created ${name}`,
@@ -266,9 +266,45 @@ export const adminCopy = {
     confirmLead: (g: string) => `Saving changes who is in ${g}, and so which overrides apply to them.`,
   },
 
-  // From the handoff's `accounts` keys: what the Switches list (and, in PR 9, Accounts) says when the
-  // account list is the stored ids because Clerk could not be read (STATES A3).
-  accounts: { clerkDown: "Names didn’t load from Clerk." },
+  // The Accounts pages (admin STATES A1 to A7, plan 9b), from the handoff's `accounts` keys. The
+  // handoff's role lines spelled 10 and 5 credits and a $5 share; these take the account's own limit
+  // and the share the allowance enforces. The column heads, the move's controls and errors, the tile
+  // subs and the reset time's `UTC` are new here and owed to /copy-review. `clerkDown` is also what
+  // the Switches list says when the account list is the stored ids (STATES A3).
+  accounts: {
+    title: "Accounts",
+    sub: (n: number, env: string) => `${plural(n, "account", "accounts")} on ${env}. Names and emails from Clerk; the app stores only the id.`,
+    search: "Name, email or Clerk id",
+    noMatch: (q: string) => `No account matches ${q}.`,
+    clerkDown: "Names didn’t load from Clerk.",
+    back: "‹ Accounts",
+    cols: { account: "Account", group: "Group", credits: "Credits now" },
+    noGroup: "No group",
+    role: {
+      owner: (credits: number, share: string) => `Owner. ${plural(credits, "credit", "credits")} a day, and a ${share} testing share each month.`,
+      other: (credits: number) => `${plural(credits, "credit", "credits")} a day.`,
+    },
+    tiles: { credits: "Credits now", spent: (m: string) => `Spent in ${m}`, presses: "Presses", hub: "Tuning hub" },
+    creditsLeft: (left: number, limit: number) => `${left} of ${limit} left`,
+    resetAt: (time: string) => `reset at ${time} UTC`,
+    ownerShare: (pct: number, share: string) => `${pct}% of the ${share} testing share`,
+    hub: { drawn: "Drawn", notDrawn: "Not drawn", tools: (n: number) => `${n} of its tools on` },
+    switchGroups: { override: "Set by an override", rule: "Off by a rule", env: "From the environment" },
+    envList: { on: (n: number) => `On · ${n}`, off: (n: number) => `Off · ${n}` },
+    group: "Group",
+    changeGroup: "Change group",
+    pickGroup: "Move to",
+    save: "Save",
+    cancel: "Cancel",
+    spendByFeature: "Spend by feature",
+    spendMeta: (m: string) => `${m} so far`,
+    featureCols: { feature: "Feature", presses: "Presses", spent: "Spent" },
+    total: "Total",
+    pressesCell: (n: number) => plural(n, "press", "presses"),
+    errors: {
+      account: "This account isn’t on this environment. Reload the page.",
+    },
+  },
 
   // The Switches list (admin STATES L1 to L6), from the handoff's `switches` keys. The Overrides
   // cell, the App-wide cell and the phone's meta line take the canvas's own shapes (`flagRow` in

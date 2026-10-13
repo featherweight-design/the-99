@@ -121,6 +121,19 @@
 | resolved row | grid `1fr auto` (source wraps under) | grid `1fr 70 1.5fr` |
 | source ink | `--fg-muted`; disagreement `--warning`; kill `--danger` | same |
 | environment group | two lists, `On · N` and `Off · N`, names 13 / 1.6 | same |
+| head on the list | title `Accounts`; the head draws no sub (it does not read Clerk), so the page draws `‹N› accounts on ‹env›. Names and emails from Clerk; the app stores only the id.` under the tab strip, 13 / 1.6 `--fg-body` | 13.5 |
+| head on an account's page | the head draws `‹ Accounts` and the tab strip, Accounts selected, and no title; the page's head block carries the title: the account's name (else its email, else its id), display 23 | display 28 |
+| list order | the owner first, then A to Z by name, email, id (A1) | same |
+| row text | name 14 / 500 `--fg`; email mono 10.5 `--fg-faint`; Clerk id mono 10.5 `--fg-muted`; spend mono 13 `--fg` at the right; meta `‹group› · ‹n› of ‹limit› left` mono 10.5 `--fg-body`, indented 45 | columns `Account`, `Group` (`No group`), `Credits now`, the month's name; group and credits mono 12 `--fg-body`; column head mono 9.5 upper on `--surface-rail`, sticky under the search |
+| search | the shared `SearchField`, pinned under the head: a name or email holding the query, or a Clerk id starting with it; none: `No account matches ‹q›.` 13 `--fg-muted` (A2) | h38 |
+| Clerk down | ids only, `Names didn’t load from Clerk.` 13 `--warning` above the list (A3) | same |
+| role line | 12.5 `--fg-body`, from the account's own limit: `Owner. ‹n› credits a day, and a ‹$x› testing share each month.` or `‹n› credits a day.` | same |
+| tile text | label 12 `--fg-muted`; sub mono 10.5 `--fg-faint`. Credits now `‹left› of ‹limit› left`, sub `reset at ‹time› UTC` only at 0 left (A7); Spent in ‹Month›, the owner's sub `‹p›% of the ‹$x› testing share`; Presses, no sub; Tuning hub `Drawn` / `Not drawn`, sub `‹n› of its tools on` | same |
+| group | section head `Group`; the group a chip (h36, radius 8, pad 0 12, `--surface`, 1px `--border-strong`, mono 12.5 `--fg`) linking to its page, or `No group` 13 `--fg-muted`; `Change group` 13 `--accent` | chip h30 |
+| change group | a box on `--surface-rail`, radius 12: a select `Move to` (`No group` first, then the groups A to Z) h44 full; Cancel ghost + Save primary, Save disabled at the current group; a refusal 12.5 `--danger`; a rise opens the model confirm, lead `Saving changes who is in ‹group›, and so which overrides apply to them.` (the group joined, else the one left), no note field | row; select 220 × 36 |
+| switches | section head `Switches` + the count; one box radius 12: group heads mono 10 upper on `--surface-sunken` with a count; `Set by an override` (an account, group or app-wide override decides), `Off by a rule` (the env var's kill, or an off parent), `From the environment`; a row's label links to the switch's page | same |
+| spend by feature | section head `Spend by feature` + meta `‹Month› so far`; rows pad 11 14, feature 14 / 500, spend mono 13 at the right, `‹n› presses` mono 10.5 `--fg-muted` under; a `Total` foot row, 600 on `--surface-rail`; none: `No presses in ‹Month›.` 13 `--fg-muted` (A6) | grid `1fr 90 90`, gap 12; head `Feature`, `Presses`, `Spent`, pad 9 14; rows pad 11 14, feature 13.5 / 500, presses mono 12.5 `--fg-body`, spent mono 12.5 `--fg` |
+| figures | this UTC month's player presses (`origin = 'player'`), refunds included, as Costs' per-account table counts them; credits are the free allowance's own count (`readAllowance`, `dailyLimitFor`) | same |
 
 ## Costs
 | Property | Mobile | Desktop |

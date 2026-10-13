@@ -1,7 +1,9 @@
 // Proves the admin's group writes (admin plan 9a) against a real database: a create and its event, a
 // taken name refused, a rename, a description and daily credits set and cleared with their events, a
 // plain add, a move from another group (removed there, then added here, and one membership row), a
-// removal, and a membership change that raises model access asking to confirm before it writes.
+// removal, and a membership change that raises model access asking to confirm before it writes. Then
+// the Accounts page's move (admin plan 9b, `moveAccount`): to no group, into a group, between groups
+// (removed there, then added here, one membership row), a rise asking to confirm, and a no-op.
 //
 // It WRITES, so it fails closed on its target: `PROBE_DB_BRANCH` must name the Neon branch `DATABASE_URL`
 // reports, and never staging, production or local-dev. It writes as made-up accounts and removes every
@@ -32,7 +34,7 @@ async function main() {
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (rows[0]?.b !== named) throw new Error(`probe:admin-groups: database reports ${rows[0]?.b}, not ${named}`);
 
-  const { writeGroup } = await import("../src/lib/admin/group-writes");
+  const { moveAccount, writeGroup } = await import("../src/lib/admin/group-writes");
   const { riseForAccounts } = await import("../src/lib/switches/explain");
   const { randomUUID } = await import("node:crypto");
   let cleared = 0;
@@ -114,6 +116,28 @@ async function main() {
     check("and writes nothing", (await groupOf(U3)).length === 0 && (await eventsOf(A)).length === before);
     const c = await writeGroup(ADMIN, A, { name: renamed, description: "probe group", members: [U1, U2, U3], confirmed: 1 }, deps);
     check("the confirmed count writes it", c.ok && JSON.stringify(await groupOf(U3)) === JSON.stringify([A]));
+
+    // The Accounts page's move (admin plan 9b). A carries the override that turns H on; B carries none.
+    const movesOf = async () =>
+      (
+        await db.execute<{ kind: string; group_id: string }>(
+          sql`select kind, group_id from admin_events where actor_id = ${ADMIN} and user_id = ${U1} order by id`,
+        )
+      ).rows.map((e) => [e.kind, e.group_id]);
+    const m0 = (await movesOf()).length;
+    check("a move to no group saves", (await moveAccount(ADMIN, U1, null, null, deps)).ok);
+    check("it deletes the row and records member_removed on the group left", (await groupOf(U1)).length === 0 && JSON.stringify((await movesOf()).slice(m0)) === JSON.stringify([["member_removed", A]]));
+    check("a move into a group saves", (await moveAccount(ADMIN, U1, B, null, deps)).ok);
+    check("it writes one row and records member_added", JSON.stringify(await groupOf(U1)) === JSON.stringify([B]) && JSON.stringify((await movesOf()).slice(m0 + 1)) === JSON.stringify([["member_added", B]]));
+    const m1 = (await movesOf()).length;
+    const rise = await moveAccount(ADMIN, U1, A, null, deps);
+    check("a move into the group that turns a model feature on asks to confirm", !rise.ok && rise.error === "confirm" && rise.preview.count === 1);
+    check("and writes nothing", JSON.stringify(await groupOf(U1)) === JSON.stringify([B]) && (await movesOf()).length === m1);
+    check("the confirmed count moves it", (await moveAccount(ADMIN, U1, A, 1, deps)).ok);
+    check("between groups: member_removed on the old, then member_added on the new", JSON.stringify((await movesOf()).slice(m1)) === JSON.stringify([["member_removed", B], ["member_added", A]]));
+    check("and one membership row, in the new group", JSON.stringify(await groupOf(U1)) === JSON.stringify([A]));
+    const m2 = (await movesOf()).length;
+    check("a move to where the account already is saves and records nothing", (await moveAccount(ADMIN, U1, A, null, deps)).ok && (await movesOf()).length === m2);
   } finally {
     if (savedH === undefined) delete process.env[H];
     else process.env[H] = savedH;

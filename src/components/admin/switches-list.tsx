@@ -39,7 +39,8 @@ export function ResolvedDot({ state }: { state: ResolvedState }) {
   return <span aria-hidden className={`h-[8px] w-[8px] flex-none rounded-full border-[1.5px] border-solid ${fill}`} />;
 }
 
-function Pill({ row }: { row: SwitchRow }) {
+/** A resolved value with its dot: Off in `--fg-muted`. The Accounts page draws its switch rows with it too. */
+export function Pill({ row }: { row: Pick<SwitchRow, "state"> }) {
   return (
     <span
       className={`inline-flex items-center gap-[7px] whitespace-nowrap text-[13px] font-medium ${
