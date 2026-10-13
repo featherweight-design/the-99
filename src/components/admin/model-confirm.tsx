@@ -55,7 +55,7 @@ export function ModelConfirm({
     [copy.facts.when, copy.when],
   ];
   return (
-    <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-center">
+    <div role="presentation" className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_72%,transparent)] md:items-start md:pt-[110px]">
       <div
         ref={ref}
         role="dialog"
@@ -63,26 +63,27 @@ export function ModelConfirm({
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-lead`}
         tabIndex={-1}
-        className="max-h-[100dvh] w-full overflow-y-auto rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
+        className="flex max-h-[100dvh] w-full flex-col gap-[14px] overflow-y-auto rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
       >
+        <span aria-hidden className="mx-auto h-[4px] w-[40px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
         <h2 id={`${id}-title`} className="m-0 font-display text-[20px] font-normal leading-[1.3] text-[color:var(--fg)]">
           {copy.title(context.switchLabel, preview.count)}
         </h2>
-        <p id={`${id}-lead`} className="mb-0 mt-[8px] text-pretty text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
+        <p id={`${id}-lead`} className="m-0 text-pretty text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
           {lead(context, preview)}
         </p>
-        <dl className="mb-0 mt-[14px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
+        <dl className="m-0 overflow-hidden rounded-[10px] border border-solid border-[color:var(--border)]">
           {facts.map(([k, v], i) => (
             <div
               key={k}
               className={`grid grid-cols-[74px_minmax(0,1fr)] gap-[10px] px-[12px] py-[10px] md:grid-cols-[92px_minmax(0,1fr)] ${i > 0 ? "border-0 border-t border-solid border-[color:var(--border)]" : ""}`}
             >
-              <dt className="pt-[2px] font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{k}</dt>
+              <dt className="pt-[2px] font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{k}</dt>
               <dd className="m-0 text-pretty text-[13px] leading-[1.5] text-[color:var(--fg-body)]">{v}</dd>
             </div>
           ))}
         </dl>
-        <label className="mt-[14px] flex flex-col gap-[6px] text-[13px] text-[color:var(--fg-body)]">
+        <label className="flex flex-col gap-[6px] text-[12.5px] text-[color:var(--fg-muted)]">
           {copy.note}
           <input
             value={note}
@@ -92,7 +93,7 @@ export function ModelConfirm({
             className="h-[44px] w-full rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] md:text-[14px]"
           />
         </label>
-        <div className="mt-[16px] flex gap-[10px] md:justify-end">
+        <div className="flex gap-[10px] md:justify-end">
           <button
             ref={cancelRef}
             type="button"
@@ -106,7 +107,7 @@ export function ModelConfirm({
             type="button"
             onClick={() => onConfirm(note)}
             disabled={pending}
-            className="h-[46px] flex-1 rounded-[8px] bg-[color:var(--fg)] px-[20px] text-[14px] font-semibold text-[color:var(--bg)] disabled:opacity-60 md:h-[40px] md:flex-none"
+            className="h-[46px] flex-1 rounded-[10px] bg-[color:var(--fg)] px-[20px] text-[14px] font-semibold text-[color:var(--bg)] disabled:opacity-60 md:h-[40px] md:flex-none"
           >
             {copy.confirm(preview.count)}
           </button>

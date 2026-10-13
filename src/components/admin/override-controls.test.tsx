@@ -57,6 +57,9 @@ describe("AppWideControl", () => {
     await act(async () => fireEvent.click(radio("Not set")));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading").textContent).toBe("Turn Help me choose on for 2 more accounts?");
+    // The option the confirm asks about is ringed in dashed accent; the saved one stays selected.
+    expect(radio("Not set").className).toContain("border-dashed");
+    expect(radio("Off")).toHaveAttribute("aria-checked", "true");
     fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "evals settled" } });
     await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "Turn on for 2" })));
     expect(clear).toHaveBeenLastCalledWith({ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", note: "evals settled", confirmed: 2 });

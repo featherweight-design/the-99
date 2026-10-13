@@ -37,6 +37,8 @@ export function OverridePicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Choice | null>(null);
+  // F12 for a group added and turned on at once: the saved row is drawn by the list, so the line is here.
+  const [announced, setAnnounced] = useState(false);
   const q = query.trim().toLocaleLowerCase("en-US");
   const found = (kind === "user" ? choices.filter((c) => q === "" || c.search.includes(q) || c.id.toLocaleLowerCase("en-US").startsWith(q)) : choices).slice(0, kind === "user" ? MAX_RESULTS : undefined);
   const context: Omit<ConfirmContext, "op"> = { switchLabel: label, scope: kind, groupName: kind === "group" ? (picked?.label ?? null) : null };
@@ -54,7 +56,12 @@ export function OverridePicker({
           value={null}
           killed={killed}
           context={context}
-          announces={announces}
+          onSaved={(value) => {
+            setAnnounced(announces && value === "on");
+            setPicked(null);
+            setOpen(false);
+            setQuery("");
+          }}
           onCleared={() => {
             setPicked(null);
             setOpen(false);
@@ -66,6 +73,7 @@ export function OverridePicker({
 
   return (
     <div className="flex flex-col gap-[8px]">
+      {announced && <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.whatsNewInline}</span>}
       <button
         type="button"
         aria-expanded={open}

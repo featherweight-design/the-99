@@ -34,6 +34,15 @@ describe("OverridePicker", () => {
     expect(set).toHaveBeenCalledWith({ switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "user_2", value: "on", note: "early look" });
   });
 
+  it("hands back to the add button once saved, and a group turned on says members see it next visit (F12)", async () => {
+    render(<OverridePicker kind="group" name="DECK_NOTES_ENABLED" label="Deck notes" choices={[{ id: "g1", label: "friends", sub: "g1", search: "friends" }]} taken={new Set()} killed={false} announces />);
+    fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));
+    fireEvent.click(screen.getByRole("button", { name: /friends/ }));
+    await act(async () => fireEvent.click(screen.getByRole("radio", { name: "On" })));
+    expect(screen.queryByTestId("pending-override")).toBeNull();
+    expect(screen.getByText("Members see it in What’s new on their next visit.")).toBeInTheDocument();
+  });
+
   it("marks a target that already has a row `already set` and unpickable (F8)", () => {
     draw("group", [{ id: "g1", label: "friends", sub: "g1", search: "friends" }, { id: "g2", label: "testers", sub: "g2", search: "testers" }], new Set(["g1"]));
     fireEvent.click(screen.getByRole("button", { name: "Add a group override" }));

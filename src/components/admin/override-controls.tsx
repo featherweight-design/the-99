@@ -22,7 +22,7 @@ export type Target = { switchName: string; scope: Scope; groupId?: string; targe
 type Pending = { op: Op; value: OverrideValue | null; note: string | null };
 
 /** One control's write: its pending option, its failure, and its confirm. */
-export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">) {
+export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "op">, onSaved?: (p: Pending) => void) {
   const router = useRouter();
   const [inFlight, setInFlight] = useState<Pending | null>(null);
   const [failed, setFailed] = useState<{ again: Pending; refused: boolean } | null>(null);
@@ -41,6 +41,7 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
     setInFlight(null);
     if (result.ok) {
       setConfirm(null);
+      onSaved?.(p);
       router.refresh();
     } else if (result.error === "confirm") {
       setConfirm({ preview: result.preview, pending: p });
@@ -69,7 +70,9 @@ export function useOverrideWrite(target: Target, context: Omit<ConfirmContext, "
       )}
     </p>
   );
-  return { run, inFlight, dialog, failure };
+  /** The write the open confirm is asking about (F3 rings its option). */
+  const confirming = confirm?.pending ?? null;
+  return { run, inFlight, confirming, dialog, failure };
 }
 
 /**
@@ -84,6 +87,7 @@ export function Seg<K extends string>({
   disabled,
   fill,
   locked = [],
+  ringed = null,
   onPick,
 }: {
   label: string;
@@ -93,6 +97,8 @@ export function Seg<K extends string>({
   disabled: boolean;
   /** Options disabled on their own: under a kill, App-wide's On and Off, while Not set clears (F5). */
   locked?: readonly K[];
+  /** The option an open confirm is asking about, ringed in dashed accent (F3). */
+  ringed?: K | null;
   /** Full width, options equal (the phone's App-wide segment). */
   fill?: boolean;
   onPick: (key: K) => void;
@@ -115,9 +121,9 @@ export function Seg<K extends string>({
             aria-checked={on}
             disabled={off}
             onClick={() => !on && onPick(o.key)}
-            className={`inline-flex items-center justify-center rounded-[6px] border border-solid px-[14px] text-[13px] ${fill ? "h-[40px] flex-1 md:h-[32px] md:flex-none" : "h-[36px] px-[12px] md:h-[28px]"} ${
-              on ? "border-[color:var(--border-dashed)] bg-[color:var(--elevated)] font-medium" : "border-[color:transparent] bg-transparent"
-            } ${off ? "text-[color:var(--fg-disabled)]" : on ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+            className={`inline-flex items-center justify-center rounded-[6px] border border-solid text-[13px] ${fill ? "h-[40px] flex-1 px-[14px] md:h-[32px] md:flex-none" : "h-[36px] px-[12px] md:h-[28px]"} ${
+              on ? "border-[color:var(--border-dashed)] bg-[color:var(--elevated)] font-medium" : o.key === ringed ? "border-dashed border-[color:var(--accent)] bg-transparent" : "border-[color:transparent] bg-transparent"
+            } ${off ? "text-[color:var(--fg-disabled)]" : on || o.key === ringed ? "text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
           >
             {o.text}
           </button>
@@ -137,7 +143,8 @@ type AppKey = (typeof APP_OPTIONS)[number]["key"];
 /** The App-wide segment (F9). `Not set` clears; under a kill the segment is disabled (F5). */
 export function AppWideControl({ name, label, value, killed }: { name: string; label: string; value: OverrideValue | null; killed: boolean }) {
   const w = useOverrideWrite({ switchName: name, scope: "app" }, { switchLabel: label, scope: "app", groupName: null });
-  const pressed: AppKey | null = w.inFlight ? (w.inFlight.op === "clear" ? "notSet" : w.inFlight.value!) : null;
+  const keyOf = (p: { op: string; value: OverrideValue | null } | null): AppKey | null => (p ? (p.op === "clear" ? "notSet" : p.value!) : null);
+  const pressed = keyOf(w.inFlight);
   return (
     <div className="flex flex-col gap-[8px]">
       <Seg
@@ -148,6 +155,7 @@ export function AppWideControl({ name, label, value, killed }: { name: string; l
         // Under a kill a set must not be made, but a row already there can still be cleared.
         disabled={killed && value === null}
         locked={killed ? ["on", "off"] : []}
+        ringed={keyOf(w.confirming)}
         fill
         onPick={(k) => w.run(k === "notSet" ? { op: "clear", value: null, note: null } : { op: "set", value: k, note: null })}
       />
@@ -171,6 +179,7 @@ export function RowControls({
   onCleared,
   initialNote,
   announces,
+  onSaved,
 }: {
   target: Target;
   title: string;
@@ -184,8 +193,10 @@ export function RowControls({
   initialNote?: string;
   /** F12: a group row turned on for a feature that is not a model one says members see it next visit. */
   announces?: boolean;
+  /** Called once a write saves: a pending row hands back to its picker (F7, F8). */
+  onSaved?: (value: OverrideValue | null) => void;
 }) {
-  const w = useOverrideWrite(target, context);
+  const w = useOverrideWrite(target, context, (p) => onSaved?.(p.value));
   const [draft, setDraft] = useState(initialNote ?? "");
   const [savedOn, setSavedOn] = useState(false);
   const pending = value === null;
@@ -204,6 +215,7 @@ export function RowControls({
         ]}
         selected={value}
         pressed={pressed}
+        ringed={w.confirming?.op === "set" ? w.confirming.value : null}
         disabled={killed || (w.inFlight?.op === "clear")}
         onPick={pick}
       />
