@@ -21,17 +21,17 @@ export type ConsiderLabelDeps = {
 
 export type ConsiderLabels = { labels: ReadonlyMap<string, readonly Job[]> };
 
-export const DEFAULT_DEPS: ConsiderLabelDeps = {
-  enabled: () => labelSurfacesEnabled(),
-  readLabels,
-};
+/** The request's deps: the switch decided from the reader's resolved switches (`requestSwitchEnv`). */
+export function considerLabelDeps(env: NodeJS.ProcessEnv): ConsiderLabelDeps {
+  return { enabled: () => labelSurfacesEnabled(env), readLabels };
+}
 
 export async function considerLabels(
   args: {
     /** The ids of the suggestions the page renders, and nothing else: never the catalog, never the deck. */
     suggestionIds: readonly string[];
   },
-  deps: ConsiderLabelDeps = DEFAULT_DEPS,
+  deps: ConsiderLabelDeps,
 ): Promise<ConsiderLabels | null> {
   if (!deps.enabled()) return null;
   if (args.suggestionIds.length === 0) return null;

@@ -107,6 +107,17 @@ const READERS = [
   "src/lib/tuning/mana-trade.ts",
   "src/lib/tuning/run-store.ts",
   "src/lib/tuning/verdicts.ts",
+  // 6d: the synopsis, benchmarks, card details, arrivals, the Consider filter and the deck mix.
+  "src/lib/synopsis/generate.ts",
+  "src/lib/synopsis/read.ts",
+  "src/lib/synopsis/pin.ts",
+  "src/lib/notices/overview.ts",
+  "src/lib/benchmarks/reading.ts",
+  "src/lib/collection/card-detail.ts",
+  "src/lib/collection/arrivals-write.ts",
+  "src/lib/decks/consider-labels.ts",
+  "src/lib/decks/deck-mix.ts",
+  "src/lib/tuning/mana-help-load.ts",
 ];
 
 /** A switch read from the environment alone: `fooEnabled()` or `roleBasisFromEnv()` with no env. */

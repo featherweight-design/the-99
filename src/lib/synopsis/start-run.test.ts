@@ -25,6 +25,8 @@ vi.mock("../model/allowance", () => ({
   settleModelCall: vi.fn(),
 }));
 vi.mock("./reaper", () => ({ reapSynopses: async () => {} }));
+const liveOffendingIds = vi.fn(async (): Promise<string[]> => []);
+vi.mock("../notices/read", async (orig) => ({ ...(await orig<object>()), liveOffendingIds: () => liveOffendingIds() }));
 let head: ProfileHead | null = null;
 vi.mock("../profile/load", async (orig) => ({ ...(await orig<object>()), readProfileHead: async () => head }));
 
@@ -167,5 +169,46 @@ describe("startRun: the free method-change rewrite", () => {
     expect(reserveModelCall.mock.calls[0][5]).toBe("player");
     // Only the reuse check read after the reservation, not the free-run count.
     expect(queue).toHaveLength(0);
+  });
+});
+
+// Admin adoption 6d: the legality check under the lock asks the READER's resolved switches, never the
+// environment. The env is a sentinel, so the assertion never prints the process environment.
+describe("startRun: the notices switch is the reader's", () => {
+  const ON = { NOTICES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const OFF = { NOTICES_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+  const startWith = (env: NodeJS.ProcessEnv) =>
+    startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, undefined, null, env);
+
+  beforeEach(() => {
+    queue.length = 0;
+    reserveModelCall.mockReset();
+    reserveModelCall.mockResolvedValue({ refused: "allowance" });
+    liveOffendingIds.mockReset();
+    liveOffendingIds.mockResolvedValue(["banned"]);
+    head = HEAD;
+  });
+
+  it("withholds the write when the reader's switch is on, whatever the environment says", async () => {
+    try {
+      vi.stubEnv("NOTICES_ENABLED", "false");
+      queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }]);
+      expect(await startWith(ON)).toEqual({ kind: "illegal" });
+      expect(liveOffendingIds).toHaveBeenCalledOnce();
+      expect(reserveModelCall).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("asks nothing when the reader's switch is off, whatever the environment says", async () => {
+    try {
+      vi.stubEnv("NOTICES_ENABLED", "true");
+      queue.push([{ commander: "cmdr", partner: null }], [{ fingerprint: LIST, profileVersion: 1, dirty: false }]);
+      expect(await startWith(OFF)).toEqual({ kind: "allowance" });
+      expect(liveOffendingIds).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

@@ -25,6 +25,7 @@ const state = vi.hoisted(() => ({
   revalidated: [] as unknown[][],
   helpRows: [] as unknown[],
   helpFails: false,
+  helpEnvs: [] as unknown[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -32,7 +33,7 @@ vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enable
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => (state.helpFails ? null : { color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string, env?: unknown) => (state.helpEnvs.push(env), state.helpFails ? null : { color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
 vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit: async () => state.helpRows }) }) }) } }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
   applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string, env?: unknown) => {
@@ -129,8 +130,11 @@ describe("readManaBalance with a partner", () => {
 
 describe("readManaHelpFor (the action)", () => {
   it("answers a color in the commander's identity, and records that help for History, keyed on the list and the color", async () => {
+    state.helpEnvs.length = 0;
     const shown = await readManaHelpFor(DECK, "G");
     expect(shown).toEqual({ color: "G", inIdentity: true, staples: [], trades: [] });
+    // The help is loaded under the reader's resolved switches (the mix's basis), not the environment's.
+    expect(state.helpEnvs.map((env) => env === ENV)).toEqual([true]);
     expect(state.recorded).toEqual([{ deckId: DECK, userId: "user_1", tool: "mana_help", listFingerprint: "list-fp:G", readVersion: null, summary: { color: "G", help: shown } }]);
   });
 
@@ -216,9 +220,12 @@ describe("readManaHelpReview (History's re-review)", () => {
   it("draws the help as it was shown, each trade re-checked against today's help for that color", async () => {
     state.helpRows = [{ summary: { color: "G", help: past } }];
     state.trades = [trade("s1", "forest")];
+    state.helpEnvs.length = 0;
     const shown = await readManaHelpReview(DECK, COUNT);
     expect(shown?.trades.map((t) => t.staple.oracleId)).toEqual(["s1", "s2"]);
     expect(shown?.noLonger).toEqual(["s2"]);
+    // Today's help, for the re-check, is loaded under the reader's resolved switches, not the environment's.
+    expect(state.helpEnvs.map((env) => env === ENV)).toEqual([true]);
   });
 
   it("is null for an id that names no help read (the reader, deck and tool filter is pinned in mana-help-read.test)", async () => {

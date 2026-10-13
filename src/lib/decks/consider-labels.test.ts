@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Job } from "../labels/types";
-import { applyConsiderLabels, considerLabels, DEFAULT_DEPS, type ConsiderLabelDeps } from "./consider-labels";
+import { applyConsiderLabels, considerLabelDeps, considerLabels, type ConsiderLabelDeps } from "./consider-labels";
 
 const GRAVEYARD_HATE: Job = {
   space: "theme", kind: "graveyardHate", restrictedTo: null, affects: "opponents", to: null, method: null,
@@ -28,13 +28,14 @@ describe("considerLabels", () => {
     expect(applyConsiderLabels(SUGGESTIONS, read)).toBe(SUGGESTIONS);
   });
 
-  // The default deps read the switch per request, exactly 'true' and nothing else. Asserted on
-  // `enabled()` itself: a considerLabels call with no ids answers null whichever way the switch is.
-  it("reads the default switch per request, on only for exactly 'true'", () => {
+  // The request's deps read the switch from the reader's resolved env, exactly 'true' and nothing else,
+  // and never the environment. Asserted on `enabled()` itself: a considerLabels call with no ids
+  // answers null whichever way the switch is.
+  it("reads the switch from the env it is handed, on only for exactly 'true'", () => {
     try {
       for (const [value, on] of [["true", true], ["1", false], ["TRUE", false], ["", false]] as const) {
-        vi.stubEnv("LABEL_SURFACES_ENABLED", value);
-        expect(DEFAULT_DEPS.enabled()).toBe(on);
+        vi.stubEnv("LABEL_SURFACES_ENABLED", on ? "false" : "true");
+        expect(considerLabelDeps({ LABEL_SURFACES_ENABLED: value } as unknown as NodeJS.ProcessEnv).enabled()).toBe(on);
       }
     } finally {
       vi.unstubAllEnvs();

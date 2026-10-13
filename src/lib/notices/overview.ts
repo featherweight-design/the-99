@@ -37,9 +37,15 @@ export async function overviewDataMoved(
  * (schema note on `deck_profiles`) and is read as the deck's current list, as the notices read and
  * H1 read it; taken as stored it would hold no card and nothing would ever move.
  */
-export async function overviewDataMovedFor(deckId: string, userId: string, overviewSeen: number): Promise<boolean> {
+export async function overviewDataMovedFor(
+  deckId: string,
+  userId: string,
+  overviewSeen: number,
+  /** The reader's resolved switches (`requestSwitchEnv`). */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<boolean> {
   // Behind the notices switch: off, no overview is marked stale by data it cannot show.
-  if (!noticesEnabled()) return false;
+  if (!noticesEnabled(env)) return false;
   // The reading's marks and the deck's list from ONE snapshot: read apart, an edit or an analysis
   // committing between them pairs a reading with a list it never described.
   const read = await db.transaction(async (tx) => {

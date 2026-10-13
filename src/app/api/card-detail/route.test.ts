@@ -7,6 +7,10 @@ const stub = vi.hoisted(() => ({
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/collection/card-detail", () => ({ loadCardDetail: stub.load }));
+// The reader's resolved switches: a sentinel, so the assertion is that the route hands the loader
+// exactly the env it resolved, never the environment.
+const { ENV } = vi.hoisted(() => ({ ENV: { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv }));
+vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ENV }));
 
 import { GET } from "./route";
 
@@ -27,7 +31,8 @@ describe("GET /api/card-detail", () => {
     expect(await res.json()).toEqual({ oracleId: ID, name: "Sol Ring" });
     expect(res.headers.get("content-type")).toBe("application/json");
     expect(res.headers.get("cache-control")).toBe("private, no-store");
-    expect(stub.load).toHaveBeenCalledWith("user_1", ID, undefined);
+    expect(stub.load).toHaveBeenCalledWith("user_1", ID, undefined, ENV);
+    expect(stub.load.mock.calls[0][3]).toBe(ENV);
   });
 
   it("refuses a signed-out request with a 401 and reads nothing", async () => {
@@ -61,12 +66,12 @@ describe("GET /api/card-detail", () => {
   it("reads as the signed-in reader, whatever the URL says", async () => {
     stub.userId = "user_session";
     await get(`id=${ID}&user=user_other&userId=user_other`);
-    expect(stub.load).toHaveBeenCalledWith("user_session", ID, undefined);
+    expect(stub.load).toHaveBeenCalledWith("user_session", ID, undefined, ENV);
   });
 
   it("passes the deck scope through the same sanitizer the action used", async () => {
     await get(`id=${ID}&scope=${OTHER},junk,${ID}`);
-    expect(stub.load).toHaveBeenCalledWith("user_1", ID, [OTHER, ID]);
+    expect(stub.load).toHaveBeenCalledWith("user_1", ID, [OTHER, ID], ENV);
   });
 });
 

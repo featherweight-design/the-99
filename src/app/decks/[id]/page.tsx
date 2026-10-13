@@ -21,8 +21,7 @@ import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
 import { chainArt, withChainArt } from "../../../lib/cards/chain-art";
 import { indexGeneration } from "../../../lib/cache/index-generation";
 import { loadDeckSuggestions } from "../../../lib/decks/suggestions-read";
-import { applyConsiderLabels, considerLabels, DEFAULT_DEPS as CONSIDER_DEPS } from "../../../lib/decks/consider-labels";
-import { labelSurfacesEnabled } from "../../../lib/labels/read";
+import { applyConsiderLabels, considerLabelDeps, considerLabels } from "../../../lib/decks/consider-labels";
 import { BuilderShell } from "../../../components/decks/builder-shell";
 import { readStoredPermits } from "../../../lib/profile/stored";
 import {
@@ -482,7 +481,7 @@ export default async function DeckBuilderPage({
     // null. Swallowed like its neighbours: a failed read filters nothing.
     perf.timed("considerLabels", () => considerLabels({
       suggestionIds: suggestions.map((s) => s.oracleId),
-    }, { ...CONSIDER_DEPS, enabled: () => labelSurfacesEnabled(env) })).catch(() => null),
+    }, considerLabelDeps(env))).catch(() => null),
   ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no

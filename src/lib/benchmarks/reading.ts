@@ -5,7 +5,6 @@ import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardLabels } from "../../db/schema";
 import { cacheForUser } from "../cache/user-lists";
-import { deckBenchmarksEnabled } from "../decks/benchmarks-flag";
 import type { DeckProfile } from "../profile/types";
 import { computeBenchmarks } from "./compute";
 import { BENCHMARK_CUTS } from "./cuts";
@@ -15,7 +14,8 @@ import { toWire, type BenchmarksWire } from "./wire";
 /**
  * A reading's benchmarks, for the two profile actions to send beside it (plan "Where it computes").
  * Computed from the list stored WITH the reading, so a held or stale reading is graded on its own
- * list and goes stale with it. Off with `DECK_BENCHMARKS_ENABLED`: nothing is read. Null as well when
+ * list and goes stale with it. Off with `DECK_BENCHMARKS_ENABLED` (`enabled`, which the caller decides
+ * from the reader's resolved switches, never this module): nothing is read. Null as well when
  * a read fails, and the reading then draws exactly as it did before benchmarks existed.
  *
  * CACHED ON EVERY MUTABLE INPUT (plan "Cost"). Uncached, the three reads cost a median 305ms on
@@ -28,7 +28,7 @@ import { toWire, type BenchmarksWire } from "./wire";
 export async function readingBenchmarks(
   profile: DeckProfile,
   userId: string,
-  enabled: boolean = deckBenchmarksEnabled(),
+  enabled: boolean,
 ): Promise<BenchmarksWire | null> {
   if (!enabled) return null;
   const labelled = await newestLabel(profile);
