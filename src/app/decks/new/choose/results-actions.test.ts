@@ -7,6 +7,10 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn(), read: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => true }));

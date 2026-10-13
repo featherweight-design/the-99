@@ -8,6 +8,7 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { db } from "../../db";
 import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -139,7 +140,8 @@ export async function saveDeckLimits(
   fields: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean },
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!tuningEnabled() || !isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
+  const env = await requestSwitchEnv(userId);
+  if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
   if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.limits.refused };
   const { capDollars, sets, ownedOnly } = fields;
   if (
@@ -185,7 +187,8 @@ export async function runTuning(
   opts: { anyway?: boolean; runId?: string; notes?: string } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!tuningEnabled() || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
+  const env = await requestSwitchEnv(userId);
+  if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
   // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
@@ -364,7 +367,8 @@ export async function runTuning(
  */
 export async function readTuningPanel(deckId: string, runId: string | null = null): Promise<TuningState | null> {
   const userId = await requireUserId();
-  if (!tuningEnabled() || !isUuid(deckId)) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!tuningEnabled(env) || !isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId);
   if (!inputs) return null;
   // `runId` is History's re-review: that past run's lines, each re-checked live. Anything that is
@@ -393,11 +397,12 @@ async function verdict(
   claims: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   const refuse = async (): Promise<DeckMutationResult> => ({
     ok: false,
     message: typeof refused === "string" ? refused : (await isLine(itemId)) ? refused.line : refused.pair,
   });
-  if (!tuningEnabled() || !isUuid(itemId)) return refuse();
+  if (!tuningEnabled(env) || !isUuid(itemId)) return refuse();
   const deckId = await write(userId);
   if (!deckId) return refuse();
   if (claims) revalidateClaims(deckId, userId);

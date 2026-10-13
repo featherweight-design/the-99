@@ -91,6 +91,9 @@ export async function buildFillPlan(
      *
      * Absent everywhere but the two top-off controls, which fill exactly as before. */
     onlyOracleIds?: ReadonlySet<string>;
+    /** The switches resolved for the reader (`requestSwitchEnv`). Required, and never an action
+     *  input: this module is not `"use server"`, so only server code that resolved them can pass it. */
+    env: NodeJS.ProcessEnv;
   },
 ): Promise<FillPlan> {
   const commander = commanders[0];
@@ -122,7 +125,7 @@ export async function buildFillPlan(
   // shipped for a year, while a create that throws leaves the player with an empty deck and no
   // way to tell why. `planFill` reports `measured: false` for it, so nothing downstream
   // presents an asserted floor as a derived one.
-  const labelsOn = labelRoleCountsEnabled();
+  const labelsOn = labelRoleCountsEnabled(options.env);
   let skeleton: ProfileSkeleton | null = null;
   try {
     ({ skeleton } = await loadSkeletonForCommanders(

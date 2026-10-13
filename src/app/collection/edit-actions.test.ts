@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const ACTION = "44444444-4444-4444-4444-444444444444";
 const ORACLE = "11111111-1111-1111-1111-111111111111";
 const PRINTING = "22222222-2222-2222-2222-222222222222";

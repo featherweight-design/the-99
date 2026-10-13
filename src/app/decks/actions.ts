@@ -16,6 +16,7 @@ import {
   deckUnresolvedRows, deckVersions, fillPassCards, fillPasses,
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { isUuid } from "../../lib/uuid";
 import { loadAvailability } from "../../lib/decks/availability-query";
@@ -94,6 +95,7 @@ export async function createDeck(
   answers: CreateAnswers | null = null,
 ): Promise<void> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   const asked = answers === null ? null : validateCreateAnswers(answers);
   // Shape first: a crafted request can put any string here, and a malformed uuid
   // reaching `inArray` is rejected by Postgres rather than by this action — the
@@ -239,6 +241,7 @@ export async function createDeck(
           // Nothing is bought for it, so the budget has only the placed card to charge.
           ...(asked.pool === "own" ? { pool: "sleeveable" as const, failClosed: true } : {}),
         }),
+        env,
       },
     );
     deckId = await db.transaction(async (tx) => {
@@ -325,8 +328,9 @@ export async function addCardToDeck(
   opts: { relock?: boolean } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   // The literal `true` only: this is a public endpoint, and `{ relock: "false" }` must not revive.
-  const relock = typeof opts === "object" && opts !== null && opts.relock === true && neverCutEnabled();
+  const relock = typeof opts === "object" && opts !== null && opts.relock === true && neverCutEnabled(env);
   const outcome = await addCardToDeckFor(userId, deckId, oracleId, { relock });
   revalidateAdd(deckId, userId, outcome);
   return outcome.result;
@@ -425,7 +429,8 @@ export async function setCardLocked(
   on: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  if (!neverCutEnabled()) return { ok: false, message: lockedCardsCopy.mode.refused };
+  const env = await requestSwitchEnv(userId);
+  if (!neverCutEnabled(env)) return { ok: false, message: lockedCardsCopy.mode.refused };
   if (typeof on !== "boolean") return { ok: false, message: lockedCardsCopy.mode.refused };
   if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: lockedCardsCopy.mode.refused };
   await requireDeck(deckId, userId);
@@ -483,6 +488,7 @@ export async function deleteDeck(deckId: string): Promise<void> {
     must not double a deck the player has since added to by hand. */
 export async function fillDeck(deckId: string): Promise<void> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) return;
@@ -516,6 +522,7 @@ export async function fillDeck(deckId: string): Promise<void> {
       ...(answers === null ? {} : { answers }),
       // The retry fills the way the create was asked to: from the player's own cards.
       ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, failClosed: true, excludeDeckId: deck.id } : {}),
+      env,
     },
   );
   // The card first, then the plan, which is already sized to the slots the card leaves; the cap
@@ -651,6 +658,7 @@ export type SweptRow = { oracleId: string; quantity: number };
     already doing. */
 export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   await requireDeck(deckId, userId);
   // The transaction is the stamp's, not the sweep's: the delete still takes no
   // lock of its own and still relies on Postgres re-evaluating its WHERE after
@@ -668,7 +676,7 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
       .where(and(
         eq(deckCards.deckId, deckId),
         eq(deckCards.auto, true),
-        neverCutEnabled() ? notLiveLocked() : undefined,
+        neverCutEnabled(env) ? notLiveLocked() : undefined,
       ))
       .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
     if (rows.length > 0) {
@@ -941,6 +949,7 @@ export async function undoFillPass(
   passId: string,
 ): Promise<{ removed: number; built: number }> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   await requireDeck(deckId, userId);
   if (!isUuid(passId)) throw new Error("invalid pass id");
 
@@ -1046,7 +1055,7 @@ export async function undoFillPass(
             eq(deckCards.auto, true),
             gt(deckCards.quantity, held),
             // A locked stack keeps every copy: a decrement removes copies with no delete (L3).
-            neverCutEnabled() ? notLiveLocked() : undefined,
+            neverCutEnabled(env) ? notLiveLocked() : undefined,
           ))
           .returning({ oracleId: deckCards.oracleId });
         if (decremented.length > 0) removedCards += held;
@@ -1068,7 +1077,7 @@ export async function undoFillPass(
         eq(deckCards.auto, true),
         lte(deckCards.quantity, held),
         inArray(deckCards.oracleId, oracleIds),
-        neverCutEnabled() ? notLiveLocked() : undefined,
+        neverCutEnabled(env) ? notLiveLocked() : undefined,
       )).returning({ quantity: deckCards.quantity });
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
       if (deleted.length > 0) {
@@ -1592,6 +1601,7 @@ export async function getVersionDiff(
   versionId: string,
 ): Promise<VersionDiffPayload | null> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   if (!isUuid(deckId) || !isUuid(versionId)) return null;
   await requireDeck(deckId, userId);
 
@@ -1616,7 +1626,7 @@ export async function getVersionDiff(
   if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId);
   // A v1 has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
   // from the precon and never from a version. An unlinked one answers two empty lists.
-  const origin = preconsEnabled() ? await readDeckOrigin(userId, deckId) : null;
+  const origin = preconsEnabled(env) ? await readDeckOrigin(userId, deckId) : null;
   return loadVersionDiff(versionId, null, userId, deckId, origin && {
     cards: origin.cards,
     nonBasic: origin.nonBasic,
@@ -1657,6 +1667,7 @@ export async function pullCardFromDeck(
   askingDeckId: string,
 ): Promise<PullResult> {
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
   if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
     return { ok: false, message: "We couldn't find that card." };
   }
@@ -1748,7 +1759,7 @@ export async function pullCardFromDeck(
     // L2: a card the source deck has LOCKED is never pulled out of it. Under that deck's row lock,
     // taken above, so a lock landing first is honoured and none can land between this and the
     // delete. Only while `NEVER_CUT_ENABLED` is on (D3).
-    if (neverCutEnabled() && (await isLiveLocked(tx, sourceDeckId, oracleId))) {
+    if (neverCutEnabled(env) && (await isLiveLocked(tx, sourceDeckId, oracleId))) {
       return { ok: false, message: PULL_REFUSED_LOCKED };
     }
 
@@ -2028,6 +2039,7 @@ async function planFromPool(
   openSlots: number,
   pool: "all" | "sleeveable",
   allowed: ReadonlySet<string>,
+  env: NodeJS.ProcessEnv,
 ) {
   const { deck, commander, partner, heldIds, heldCount, held } = inputs;
     return await buildFillPlan(
@@ -2049,6 +2061,7 @@ async function planFromPool(
         // So this deck's own claims are not counted as competition for itself when the pool
         // is narrowed to cards with a free copy.
         excludeDeckId: deckId,
+        env,
         // BOUNDED BY THE DECK, not only by the caller. `Number.isInteger` accepts 1e308, and
         // the shape guard above says nothing about size.
         //
@@ -2133,6 +2146,7 @@ export async function bulkFillOptions(
 
   try {
     const userId = await requireUserId();
+    const env = await requestSwitchEnv(userId);
     const inputs = await gatherFillInputs(deckId, userId);
     if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
 
@@ -2140,8 +2154,8 @@ export async function bulkFillOptions(
     // same commander, and firing them together races two cold fetches for one answer where
     // the second would have been served from the cache the first fills.
     const allowed = await topOffAllowList(userId, inputs);
-    const collection = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable", allowed);
-    const best = await planFromPool(userId, deckId, inputs, openSlots, "all", allowed);
+    const collection = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable", allowed, env);
+    const best = await planFromPool(userId, deckId, inputs, openSlots, "all", allowed, env);
 
     return {
       ok: true,
@@ -2176,10 +2190,11 @@ export async function chooseBulkFill(
 
   try {
     const userId = await requireUserId();
+    const env = await requestSwitchEnv(userId);
     const inputs = await gatherFillInputs(deckId, userId);
     if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
     const plan = await planFromPool(
-      userId, deckId, inputs, openSlots, "sleeveable", await topOffAllowList(userId, inputs),
+      userId, deckId, inputs, openSlots, "sleeveable", await topOffAllowList(userId, inputs), env,
     );
     // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
     //

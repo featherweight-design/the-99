@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { isUuid } from "../../lib/uuid";
 import { retrySynopsisFor, writeSynopsisFor, type WriteResult } from "../../lib/synopsis/generate";
@@ -21,26 +22,34 @@ import { readSynopsisState, readVersionSynopsis, type SynopsisState } from "../.
 type Refused = { kind: "not_found" } | { kind: "disabled" };
 
 export async function writeSynopsis(deckId: string): Promise<WriteResult | Refused> {
-  if (!analysisTabEnabled()) return { kind: "disabled" };
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId)) return { kind: "not_found" };
-  return writeSynopsisFor(deckId, await requireUserId());
+  return writeSynopsisFor(deckId, userId);
 }
 
 export async function retrySynopsisSections(deckId: string, synopsisId: string): Promise<WriteResult | Refused> {
-  if (!analysisTabEnabled()) return { kind: "disabled" };
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId) || !isUuid(synopsisId)) return { kind: "not_found" };
-  return retrySynopsisFor(deckId, await requireUserId(), synopsisId);
+  return retrySynopsisFor(deckId, userId, synopsisId);
 }
 
 export async function fetchSynopsis(deckId: string): Promise<SynopsisState | Refused> {
-  if (!analysisTabEnabled()) return { kind: "disabled" };
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId)) return { kind: "not_found" };
-  return (await readSynopsisState(deckId, await requireUserId())) ?? { kind: "not_found" };
+  return (await readSynopsisState(deckId, userId)) ?? { kind: "not_found" };
 }
 
 export async function fetchVersionSynopsis(versionId: string) {
-  if (!analysisTabEnabled()) return { kind: "disabled" as const };
+  const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!analysisTabEnabled(env)) return { kind: "disabled" as const };
   if (!isUuid(versionId)) return { kind: "not_found" as const };
-  const found = await readVersionSynopsis(versionId, await requireUserId());
+  const found = await readVersionSynopsis(versionId, userId);
   return found ? { kind: "ok" as const, ...found } : { kind: "not_found" as const };
 }

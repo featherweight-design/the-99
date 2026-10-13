@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../../../../db";
 import { requireUserId } from "../../../../lib/auth";
+import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
@@ -37,7 +38,8 @@ function checkQuery(queryString: unknown): string {
 /** The next slice of rows, for *Show 12 more*. */
 export async function moreRows(queryString: string, offset: number): Promise<ResultsPage> {
   const userId = await requireUserId();
-  if (!helpMeChooseEnabled()) throw new Error("not found");
+  const env = await requestSwitchEnv(userId);
+  if (!helpMeChooseEnabled(env)) throw new Error("not found");
   const qs = checkQuery(queryString);
   if (typeof offset !== "number" || !Number.isInteger(offset) || offset < 0 || offset > MAX_OFFSET) {
     throw new Error("bad offset");
@@ -68,7 +70,8 @@ const CONCURRENCY = 4;
  */
 export async function trialFillRows(commanderOracleIds: string[], queryString: string): Promise<Record<string, TrialFigures | null>> {
   const userId = await requireUserId();
-  if (!helpMeChooseEnabled()) throw new Error("not found");
+  const env = await requestSwitchEnv(userId);
+  if (!helpMeChooseEnabled(env)) throw new Error("not found");
   if (!Array.isArray(commanderOracleIds) || commanderOracleIds.length > MAX_ROWS || !commanderOracleIds.every((id) => typeof id === "string" && isUuid(id))) {
     throw new Error("bad commanders");
   }
@@ -102,6 +105,7 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
           userId,
           { oracleId: id, name: c.name, colorIdentity: c.color_identity ?? [], manaCost: c.mana_cost },
           answers,
+          env,
         ).catch(() => null)
         : null;
     }

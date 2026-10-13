@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { hubTools, tuningHubEnabled } from "../../lib/tuning/flag";
 import { readHubTiles } from "../../lib/tuning/hub-read";
 import type { HubTiles } from "../../lib/tuning/hub-tiles";
@@ -16,7 +17,8 @@ import { isUuid } from "../../lib/uuid";
  */
 export async function readTuningHub(deckId: string): Promise<HubTiles | null> {
   const userId = await requireUserId();
-  if (!tuningHubEnabled() || !isUuid(deckId)) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!tuningHubEnabled(env) || !isUuid(deckId)) return null;
   // Abandoned runs are failed and refunded first, so a tile never says a credit came back early.
   // One instant for both, so a run cannot cross the cutoff between the reap and the read.
   const now = new Date();
@@ -33,7 +35,8 @@ const HISTORY_TOOLS: ReadonlySet<string> = new Set<HistoryTool>(["suggested", "m
  */
 export async function readTuningHistory(deckId: string, tool?: HistoryTool | null, cursor?: string | null): Promise<HistoryPage | null> {
   const userId = await requireUserId();
-  if (!tuningHubEnabled() || !isUuid(deckId)) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!tuningHubEnabled(env) || !isUuid(deckId)) return null;
   if (tool != null && !HISTORY_TOOLS.has(tool)) return null;
   // As the landing's read: a row saying `credit back` describes a credit already returned.
   const now = new Date();
@@ -44,7 +47,8 @@ export async function readTuningHistory(deckId: string, tool?: HistoryTool | nul
 /** One past run, read-only. Null on refusal, or when the id names nothing this reader holds here. */
 export async function readTuningPastRun(deckId: string, id: string): Promise<PastRun | null> {
   const userId = await requireUserId();
-  if (!tuningHubEnabled() || !isUuid(deckId) || typeof id !== "string") return null;
+  const env = await requestSwitchEnv(userId);
+  if (!tuningHubEnabled(env) || !isUuid(deckId) || typeof id !== "string") return null;
   const ref = parseHistoryId(id);
   if (!ref || !isUuid(ref.uuid)) return null;
   const now = new Date();

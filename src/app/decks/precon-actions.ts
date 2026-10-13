@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import { db } from "../../db";
 import { cards, preconCards, precons } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
@@ -20,8 +21,9 @@ import { preconsEnabled } from "../../lib/precons/flag";
 import { isCommanderCandidate } from "../../lib/recs/score";
 
 export async function createDeckFromPrecon(fileName: string, rawName: string): Promise<void> {
-  if (!preconsEnabled()) throw new Error("precons are off");
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!preconsEnabled(env)) throw new Error("precons are off");
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
 

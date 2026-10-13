@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 // The action module imports the db client, which throws at module init without a live URL.
 const stub = vi.hoisted(() => {
   // Drizzle tags every table with its SQL name, so the fake can answer a query

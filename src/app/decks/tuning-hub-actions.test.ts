@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const order: string[] = [];
 vi.mock("../../lib/auth", () => ({ requireUserId: vi.fn(async () => "u1") }));
 vi.mock("../../lib/tuning/flag", () => ({ tuningHubEnabled: () => true, hubTools: () => ["suggested", "cuts"] }));

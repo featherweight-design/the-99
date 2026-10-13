@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { lineupEnabled } from "../../lib/decks/lineup-flag";
 import { readLineupCached } from "../../lib/lineup/cached";
 import type { LineupData } from "../../lib/lineup/types";
@@ -12,6 +13,7 @@ import type { LineupData } from "../../lib/lineup/types";
  */
 export async function readLineupStats(): Promise<LineupData | null> {
   const userId = await requireUserId();
-  if (!lineupEnabled()) return null;
+  const env = await requestSwitchEnv(userId);
+  if (!lineupEnabled(env)) return null;
   return readLineupCached(userId);
 }

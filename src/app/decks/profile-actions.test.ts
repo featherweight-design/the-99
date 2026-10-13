@@ -7,6 +7,10 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// The proxy resolves each reader's switches onto a request header; with no request here, the
+// action reads the environment alone, as it did before overrides.
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+
 const stub = vi.hoisted(() => ({
   enabled: true,
   profile: null as unknown,
@@ -128,7 +132,8 @@ describe("fetchDeckProfile", () => {
   it("answers disabled before reading anything at all", async () => {
     stub.enabled = false;
     expect(await fetchDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
-    expect(stub.reads).toEqual([]);
+    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    expect(stub.reads).toEqual(["auth"]);
   });
 
   // `disabled` is not a failure and must never be reported as one: nothing is wrong with the
@@ -149,7 +154,8 @@ describe("fetchDeckProfile", () => {
     "refuses %p before any read, rather than letting Postgres answer",
     async (bad) => {
       expect(await fetchDeckProfile(bad)).toEqual({ ok: false, reason: "not-found" });
-      expect(stub.reads).toEqual([]);
+      // The session alone: the reader's switches resolve from it, so it is read before the gate.
+      expect(stub.reads).toEqual(["auth"]);
     },
   );
 
@@ -217,12 +223,14 @@ describe("fetchStoredDeckProfile", () => {
   it("answers disabled before reading anything at all", async () => {
     stub.enabled = false;
     expect(await fetchStoredDeckProfile(DECK)).toEqual({ ok: false, reason: "disabled" });
-    expect(stub.reads).toEqual([]);
+    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    expect(stub.reads).toEqual(["auth"]);
   });
 
   it("refuses a malformed id before any read", async () => {
     expect(await fetchStoredDeckProfile("deck-1")).toEqual({ ok: false, reason: "not-found" });
-    expect(stub.reads).toEqual([]);
+    // The session alone: the reader's switches resolve from it, so it is read before the gate.
+    expect(stub.reads).toEqual(["auth"]);
   });
 });
 

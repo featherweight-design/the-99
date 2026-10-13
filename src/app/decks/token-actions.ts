@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { deckTokensEnabled } from "../../lib/decks/tokens-flag";
 import { requireDeck } from "../../lib/decks/read";
 import { joinToken, leaveToken, markOwnedOnDeck, unmarkOwned } from "../../lib/tokens/joins";
@@ -26,8 +27,9 @@ function revalidateTokenSurfaces(deckId: string, accountWide: boolean): void {
 async function guard(rawDeckId: unknown, rawTokenId: unknown, flag: unknown): Promise<
   { off: true } | { off: false; userId: string; deckId: string; tokenId: string }
 > {
-  if (!deckTokensEnabled()) return { off: true };
   const userId = await requireUserId();
+  const env = await requestSwitchEnv(userId);
+  if (!deckTokensEnabled(env)) return { off: true };
   // A Server Action argument is a runtime value: `"false"` is a string, and truthy.
   if (typeof flag !== "boolean") throw new Error("bad token input");
   if (typeof rawDeckId !== "string" || typeof rawTokenId !== "string" || !isUuid(rawDeckId) || !isUuid(rawTokenId)) {
