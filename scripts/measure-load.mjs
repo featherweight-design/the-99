@@ -13,7 +13,14 @@
 //   - the card-details press on the deck page: a cold card, the same card again, and another cold
 //     card, each to the dialog and to its art.
 // Times come from CDP, never Resource Timing: Scryfall's CDN sends no `Timing-Allow-Origin`.
-// Each figure is the MEDIAN of MEASURE_RUNS runs (default 3).
+// Each figure is the MEDIAN of MEASURE_RUNS runs (default 7: at 3, one outlier moved a median by
+// over 300ms on deployed staging).
+//
+// Before the first run, every route is loaded once at every width and the figure thrown away, in
+// the startup pass too, which also warms the routes the startup pass navigates to. The
+// first request a route gets after an idle spell pays the server's own warm-up (a cold function, an
+// empty data cache), and without this pass it landed on whichever width ran first: /discover read as
+// a warm-load regression at 1300 that moved to 390 when 390 ran first (2026-10-12).
 //
 // Two optional readings, each only as good as its source:
 //   - MEASURE_SERVER_LOG=<file>: the stdout of the server under test, started with PERF_TIMING=1.
@@ -29,7 +36,7 @@
 //     bytes/s down, 84,375 up) plus a 4x CPU throttle, through CDP. That is the profile the
 //     navigation-pending brief measured, so its table and this one can be read side by side.
 //   - MEASURE_ROUTES=collection,discover: only the routes named (by label), since a slow run of all
-//     six at two widths and three runs takes a long time. The card press needs `deck`.
+//     six at two widths and seven runs takes a long time. The card press needs `deck`.
 //   - MEASURE_WIDTHS=390: only the widths named (1300, 390).
 //   - MEASURE_LOADS=0: skip each route's cold and warm loads (and with them the card press, which
 //     runs on the deck's loaded page) and run only the client navigation pass. The table then
@@ -117,7 +124,7 @@ const DEPLOYED_ENV = DEPLOYED
 const VERCEL_PROJECT = process.env.MEASURE_VERCEL_PROJECT ?? "the-99-staging";
 // Read-only `pg_stat_statements` deltas on staging, taken around each warm load. No reset.
 const PGSTAT_URL = process.env.MEASURE_PGSTAT_URL ?? null;
-const RUNS = Math.max(1, Number(process.env.MEASURE_RUNS ?? 3));
+const RUNS = Math.max(1, Number(process.env.MEASURE_RUNS ?? 7));
 const OUT = process.env.MEASURE_OUT ?? path.join(os.tmpdir(), `measure-load-${Date.now()}.json`);
 const SERVER_LOG = process.env.MEASURE_SERVER_LOG ?? null;
 const DB_URL = process.env.MEASURE_DB_URL ?? null;
@@ -801,6 +808,17 @@ async function main() {
   }
 }
 
+/** One load of every route at this width, discarded: the server's warm-up, kept out of the runs. */
+async function warmUp(browser, state, width, routes) {
+  for (const route of routes) {
+    const context = await browser.newContext({ viewport: width.viewport, isMobile: width.isMobile, hasTouch: width.hasTouch, storageState: state });
+    await context.addInitScript(CONTENT_PROBE);
+    const page = await context.newPage();
+    await load(page, await capture(page), `${BASE}${route.path}`);
+    await context.close();
+  }
+}
+
 /** Deployed: staging only, no write from the harness, the deck named by id, spans from Vercel's logs. */
 async function mainDeployed() {
   const sql = PGSTAT_URL ? neon(PGSTAT_URL) : null;
@@ -837,6 +855,11 @@ function routesFor(deckId) {
 
 async function runAll(browser, state, routes, sql) {
   console.error(`profile ${PROFILE}, routes ${routes.map((r) => r.label).join(", ")}${PRESS_AT == null ? "" : `, startup pass: press at ${PRESS_AT}ms to ${PRESS_TO}`}`);
+  // The startup pass also navigates to MEASURE_PRESS_TO (or `/` from it), which may not be among the
+  // routes measured, so those are warmed too.
+  const pressTargets = PRESS_AT == null ? [] : [PRESS_TO, PRESS_TO === "/" ? "/decks" : "/"];
+  const warmed = [...routes, ...pressTargets.filter((p) => !routes.some((r) => r.path === p)).map((path) => ({ path }))];
+  for (const width of MEASURED_WIDTHS) await warmUp(browser, state, width, warmed);
   const runs = [];
   for (let i = 0; i < RUNS; i += 1) {
     const run = {};
