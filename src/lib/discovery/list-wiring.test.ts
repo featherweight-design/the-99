@@ -68,7 +68,7 @@ const basisMock = vi.hoisted(() => ({
   enabledSeen: [] as boolean[],
 }));
 vi.mock("../recs/pool-role-basis", () => ({
-  loadPoolRoleBasis: async (_cards: unknown, enabled: boolean) => (basisMock.enabledSeen.push(enabled), basisMock.value),
+  loadSharedPoolRoleBasis: async (_user: unknown, _cards: unknown, enabled: boolean) => (basisMock.enabledSeen.push(enabled), basisMock.value),
 }));
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>

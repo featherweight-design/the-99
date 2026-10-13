@@ -72,9 +72,9 @@ describe("loadSharedPoolRoleBasis", () => {
     expect((await loadSharedPoolRoleBasis("u1", cards, true, read, m)).basis).toBe("labels");
   });
 
-  it("is what the ranked list, the free ranking and the detail score call, never the raw read", () => {
-    for (const f of ["recommend.ts", "free-ranking.ts"]) {
-      const src = readFileSync(`${process.cwd()}/src/lib/recs/${f}`, "utf8");
+  it("is what the ranked list, the free ranking, the detail score and the discovery list call, never the raw read", () => {
+    for (const f of ["recs/recommend.ts", "recs/free-ranking.ts", "discovery/list.ts"]) {
+      const src = readFileSync(`${process.cwd()}/src/lib/${f}`, "utf8");
       expect(src, f).toContain("loadSharedPoolRoleBasis(");
       expect(src, f).not.toMatch(/[^d]loadPoolRoleBasis\(/);
     }
