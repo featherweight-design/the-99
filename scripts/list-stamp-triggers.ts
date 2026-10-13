@@ -10,7 +10,7 @@
 // Disabling the triggers while cached code is live leaves the stamp frozen, so every cached page
 // goes on being served after the writes that should have retired it: stale pages for every reader
 // until the hour ceiling. And never drop `user_data_stamps` while the triggers exist: every write
-// to the seventeen tables would then fail on the missing table. Permanent removal is a migration.
+// to any table carrying a `user_data_touch` trigger would then fail on the missing table. Permanent removal is a migration.
 //
 //   STAMP_TARGET_URL=<database> STAMP_TARGET_BRANCH=br-… pnpm list-stamp:triggers disable
 //   STAMP_TARGET_URL=<database> STAMP_TARGET_BRANCH=br-… pnpm list-stamp:triggers enable
