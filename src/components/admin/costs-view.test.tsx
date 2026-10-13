@@ -125,7 +125,7 @@ describe("CostsView, caps not set", () => {
     expect(capRow("System ceiling").ticks).toHaveLength(1);
   });
 
-  it("splits system spend into labels, evals and rewrites, each in its own ink", () => {
+  it("splits system spend into labels and rewrites, each in its own ink, and leaves the evals out", () => {
     draw(rows([p(2, 1), sys(3, 0.75)], {
       settings: {
         account_cap_usd: { micro: usdToMicro(250), asOf: "2026-10-01", note: null },
@@ -134,12 +134,16 @@ describe("CostsView, caps not set", () => {
       // $0.25 of the system rows is the manual collector's labels; batches $120.95; evals $14.76.
       outside: { batchMicro: usdToMicro(120.95), evalsMicro: usdToMicro(14.76), labelCallsMicro: usdToMicro(0.25) },
     }));
-    expect(screen.getByText("System").parentElement).toHaveTextContent("$136.46");
-    expect(screen.getByText("$136.46 of $150")).toBeInTheDocument();
-    expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--fact)", "var(--warning)", "var(--success)"]);
-    // The account cap: the player's, then the three system inks.
-    expect(screen.getByText("$137.46 of $250")).toBeInTheDocument();
-    expect(capRow("Anthropic account cap").segs.map((el) => el.style.background).slice(0, 4)).toEqual(["var(--accent)", "var(--fact)", "var(--warning)", "var(--success)"]);
+    expect(screen.getByText("System").parentElement).toHaveTextContent("$121.70");
+    expect(screen.getByText("System").parentElement).toHaveTextContent("81% of the $150 ceiling");
+    expect(screen.getByText("$121.70 of $150")).toBeInTheDocument();
+    expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--fact)", "var(--success)"]);
+    // The account cap: the player's, then the two system inks; no eval ink.
+    expect(screen.getByText("$122.70 of $250")).toBeInTheDocument();
+    expect(capRow("Anthropic account cap").segs.map((el) => el.style.background).slice(0, 3)).toEqual(["var(--accent)", "var(--fact)", "var(--success)"]);
+    expect(capRow("Anthropic account cap").segs.map((el) => el.style.background)).not.toContain("var(--warning)");
+    // Both lines are reference only, and the page says so.
+    expect(screen.getByText("The system ceiling and the Anthropic account cap are reference lines only. Nothing outside this page reads them, and neither blocks a call.")).toBeInTheDocument();
     // The Model calls tile stays model_calls alone.
     expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.750");
   });
@@ -156,13 +160,13 @@ describe("CostsView, a ceiling that starts later", () => {
     expect(row).toHaveTextContent("Starts November.");
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
-    expect(screen.getByText("System").parentElement).toHaveTextContent("labels, evals and rewrites");
+    expect(screen.getByText("System").parentElement).toHaveTextContent("labels, rewrites and prose");
   });
 
   it("applies from the month it starts on", () => {
     draw(rows([p(2, 1), sys(3, 0.5)], { settings: ceilingFrom("2026-10-01") }));
     expect(screen.getByText("$0.500 of $15")).toBeInTheDocument();
-    expect(capRow("System ceiling").row).toHaveTextContent("System rows in model_calls, card label batches and the eval ledgers.");
+    expect(capRow("System ceiling").row).toHaveTextContent("System rows in model_calls and card label batches. Evals are not counted.");
     expect(capRow("System ceiling").ticks).toHaveLength(1);
     expect(screen.getByText("System").parentElement).toHaveTextContent("3% of the $15 ceiling");
   });

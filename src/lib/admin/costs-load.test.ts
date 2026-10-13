@@ -61,14 +61,15 @@ describe("loadCosts", () => {
     expect(reads.outside).toBe(0);
   });
 
-  it("hands the view the committed eval ledgers, and their month in the system figure", async () => {
+  it("hands the view the committed eval ledgers, and their month apart from the system figure", async () => {
     const { summary, detail } = await loadCosts(OCT, "user_admin", NOW);
     const files = readdirSync(join(process.cwd(), "docs/superpowers/eval")).filter((f) => /^ledger.*\.jsonl$/.test(f));
     expect(files.length).toBeGreaterThan(0);
     expect(detail.ledgers.map((l) => l.file).sort()).toEqual(files.sort());
     // October 2026 has eval spend on the committed ledgers, and nothing else in this empty database.
-    expect(summary.systemSplit.evals).toBeGreaterThan(0);
-    expect(summary.systemSplit.total).toBe(summary.systemSplit.evals);
+    expect(summary.evals.micro).toBeGreaterThan(0);
+    // The ledgers are repo files every deployment reads: no environment's System holds them.
+    expect(summary.systemSplit.total).toBe(0);
   });
 });
 

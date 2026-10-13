@@ -65,17 +65,25 @@ export type CostRows = {
   /** The spend cap refuses every press now (`readAllowance`'s `paused`). Current month only. */
   paused: boolean;
   /**
-   * System spend `model_calls` does not hold, and the part of it that is labels: card label
-   * batches, the month's eval ledgers, and the manual collector's `labels` rows (already in the
-   * system day rows). Absent reads as none. `labelsIncomplete`: a label run is unpriced or still
+   * Spend `model_calls` does not hold, and the part of it that is labels: card label batches, the
+   * month's eval ledgers (drawn apart, never in System), and the manual collector's `labels` rows
+   * (already in the system day rows). Absent reads as none. `labelsIncomplete`: a label run is unpriced or still
    * collecting, so the labels figure is so far. `evalsUnreadable`: an eval ledger could not be read,
    * so the evals figure leaves it out.
    */
   outside?: { batchMicro: number; evalsMicro: number; labelCallsMicro: number; labelsIncomplete?: boolean; evalsUnreadable?: boolean };
 };
 
-/** System spend in its three inks: card labels, evals, and the rest (free rewrites and prose). `incomplete`: labels are so far. */
-export type SystemSplit = { labels: number; evals: number; rewrites: number; total: number; labelsPartial: boolean; evalsPartial: boolean; incomplete: boolean };
+/** System spend in its two inks: card labels, and the rest (free rewrites and prose). `incomplete`: labels are so far. */
+export type SystemSplit = { labels: number; rewrites: number; total: number; labelsPartial: boolean; incomplete: boolean };
+
+/**
+ * The month's eval spend, from the committed ledgers. Those files ship to EVERY deployment and the
+ * runs they record are made from a laptop, so no environment spent them: they are drawn on their own
+ * and never counted into System, the ceiling or the account cap. No ledger entry records an
+ * environment. `partial`: a ledger could not be read, so `micro` leaves it out.
+ */
+export type EvalSpend = { micro: number; partial: boolean };
 
 export type Banner = { kind: "paused" } | { kind: "alarm" } | { kind: "pace"; day: number } | null;
 
@@ -88,8 +96,10 @@ export type CostSummary = {
   player: { runs: number; micro: number };
   /** System rows in `model_calls` only. */
   system: { runs: number; micro: number };
-  /** All system spend: `model_calls`, card label batches and the eval ledgers. */
+  /** All of this environment's system spend: `model_calls` and card label batches. Never the evals. */
   systemSplit: SystemSplit;
+  /** The eval ledgers' month, apart from every environment figure. */
+  evals: EvalSpend;
   perAccountMicro: number | null;
   /** Accounts with a player press in the month. */
   accounts: number;
@@ -150,7 +160,9 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
   const outside = rows.outside ?? { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0 };
   const labels = outside.batchMicro + outside.labelCallsMicro;
   const rewrites = system.micro - outside.labelCallsMicro;
-  const systemSplit = { labels, evals: outside.evalsMicro, rewrites, total: labels + outside.evalsMicro + rewrites, labelsPartial: !!outside.labelsIncomplete, evalsPartial: !!outside.evalsUnreadable, incomplete: !!outside.labelsIncomplete || !!outside.evalsUnreadable };
+  // Evals stay out of System: the ledgers are repo files every deployment reads, not this one's spend.
+  const systemSplit = { labels, rewrites, total: labels + rewrites, labelsPartial: !!outside.labelsIncomplete, incomplete: !!outside.labelsIncomplete };
+  const evals = { micro: outside.evalsMicro, partial: !!outside.evalsUnreadable };
 
   const elsewhere = rows.settings.elsewhere_usd;
   const prefix = monthParam(month);
@@ -163,6 +175,7 @@ export function costSummary(rows: CostRows, month: MonthKey, now: Date): CostSum
     player,
     system,
     systemSplit,
+    evals,
     perAccountMicro: rows.playerAccounts > 0 ? Math.round(player.micro / rows.playerAccounts) : null,
     accounts: rows.playerAccounts,
     playerCumulative: cumulative,

@@ -205,9 +205,10 @@ describe("parseMonth and capUsd at their edges", () => {
 });
 
 describe("costSummary, the system split", () => {
-  it("adds label batches and evals to model_calls' system rows, and takes the collector's labels out of rewrites", () => {
+  it("adds label batches to model_calls' system rows, and takes the collector's labels out of rewrites", () => {
     const s = costSummary(rows([p(2, 1), sys(3, 0.75)], { outside: { batchMicro: 120_950_000, evalsMicro: 14_760_000, labelCallsMicro: 250_000 } }), OCT, NOW);
-    expect(s.systemSplit).toEqual({ labels: 121_200_000, evals: 14_760_000, rewrites: 500_000, total: 136_460_000, labelsPartial: false, evalsPartial: false, incomplete: false });
+    expect(s.systemSplit).toEqual({ labels: 121_200_000, rewrites: 500_000, total: 121_700_000, labelsPartial: false, incomplete: false });
+    expect(s.evals).toEqual({ micro: 14_760_000, partial: false });
     // The model_calls figures are untouched.
     expect(s.system.micro).toBe(750_000);
     expect(s.calls.micro).toBe(1_750_000);
@@ -218,12 +219,25 @@ describe("costSummary, the system split", () => {
     expect(s.systemSplit.incomplete).toBe(true);
   });
 
-  it("marks the evals partial when a ledger could not be read, apart from the labels", () => {
+  it("marks the evals partial when a ledger could not be read, and leaves System whole", () => {
     const s = costSummary(rows([sys(3, 0.5)], { outside: { batchMicro: 0, evalsMicro: 0, labelCallsMicro: 0, evalsUnreadable: true } }), OCT, NOW);
-    expect(s.systemSplit).toMatchObject({ evalsPartial: true, labelsPartial: false, incomplete: true });
+    expect(s.evals).toEqual({ micro: 0, partial: true });
+    expect(s.systemSplit).toMatchObject({ labelsPartial: false, incomplete: false });
+  });
+
+  // The ledgers are repo files every deployment reads, so one laptop's evals once read as
+  // production's System at 144% of its ceiling. Eval spend must never re-enter System.
+  it("keeps eval spend out of the System total, however large", () => {
+    const without = costSummary(rows([sys(3, 0.5)]), OCT, NOW);
+    const withEvals = costSummary(rows([sys(3, 0.5)], { outside: { batchMicro: 0, evalsMicro: 21_480_000, labelCallsMicro: 0 } }), OCT, NOW);
+    expect(withEvals.systemSplit).toEqual(without.systemSplit);
+    expect(withEvals.systemSplit.total).toBe(500_000);
+    expect(withEvals.evals.micro).toBe(21_480_000);
   });
 
   it("reads no outside spend as none", () => {
-    expect(costSummary(rows([sys(3, 0.5)]), OCT, NOW).systemSplit).toEqual({ labels: 0, evals: 0, rewrites: 500_000, total: 500_000, labelsPartial: false, evalsPartial: false, incomplete: false });
+    const s = costSummary(rows([sys(3, 0.5)]), OCT, NOW);
+    expect(s.systemSplit).toEqual({ labels: 0, rewrites: 500_000, total: 500_000, labelsPartial: false, incomplete: false });
+    expect(s.evals).toEqual({ micro: 0, partial: false });
   });
 });

@@ -142,7 +142,8 @@ function Table({ head, right, grid, rows, label }: { head: string[]; right: numb
 function ByModel({ d }: { d: CostDetail }) {
   const total = d.modelsTotal;
   // A share of a total that is only a lower bound is not a share: drawn as a dash until it is whole.
-  const partial = d.labelsIncomplete || d.ledgersUnreadable.length > 0;
+  // Evals are not here: they are no environment's spend, and are drawn apart (`EvalsApart`).
+  const partial = d.labelsIncomplete;
   const rows: { key: string; label: string; micro: number; fig: string; sub: string; parts: { micro: number; ink: string }[] }[] = d.models.map((m) => ({
     key: m.model,
     label: m.model,
@@ -157,10 +158,6 @@ function ByModel({ d }: { d: CostDetail }) {
     ].filter(Boolean).join("; "),
     parts: [{ micro: m.segs.player, ink: INK.player }, { micro: m.segs.rewrites, ink: INK.rewrites }, { micro: m.segs.labels, ink: INK.labels }],
   }));
-  if (d.series.evals > 0 || d.ledgersUnreadable.length > 0) {
-    const ledgers = d.ledgers.filter((l) => l.settledMicro + l.pendingMicro > 0).length;
-    rows.push({ key: "evals", label: copy.evalsUnsplit, micro: d.series.evals, fig: d.ledgersUnreadable.length ? copy.soFar(usd(d.series.evals)) : usd(d.series.evals), sub: copy.modelSub.evals(ledgers), parts: [{ micro: d.series.evals, ink: INK.evals }] });
-  }
   return (
     <div className={CARD}>
       {rows.map((r) => (
@@ -185,7 +182,6 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
   const parts = [
     { key: "player", t: copy.series.player, micro: s.player.micro, ink: INK.player },
     { key: "labels", t: copy.series.labels, micro: sys.labels, ink: INK.labels, partial: sys.labelsPartial },
-    { key: "evals", t: copy.series.evals, micro: sys.evals, ink: INK.evals, partial: sys.evalsPartial },
     { key: "rewrites", t: copy.series.rewrites, micro: sys.rewrites, ink: INK.rewrites },
   ];
   const total = s.player.micro + sys.total;
@@ -208,6 +204,26 @@ function Split({ s, month }: { s: CostSummary; month: MonthKey }) {
             <span className="w-[46px] text-right font-mono text-[11px] text-[color:var(--fg-faint)]">{sys.incomplete ? "—" : share(p.micro, total)}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The month's eval spend, on its own: the ledgers are committed files every deployment reads, so it
+ * is no environment's System figure and sits under no cap. An unreadable ledger keeps it `so far`.
+ */
+function EvalsApart({ s, d }: { s: CostSummary; d: CostDetail }) {
+  const ledgers = d.ledgers.filter((l) => l.settledMicro + l.pendingMicro > 0).length;
+  return (
+    <div className={CARD} data-evals-apart>
+      <div className={ROW}>
+        <div className="flex flex-wrap items-baseline gap-[8px]">
+          <span aria-hidden className="h-[9px] w-[9px] flex-none self-center rounded-[2px]" style={{ background: INK.evals }} />
+          <span className="min-w-0 flex-1 text-[13.5px] font-medium text-[color:var(--fg)]">{copy.evalsApart.title}</span>
+          <span className="font-mono text-[13px] text-[color:var(--fg)]">{s.evals.partial ? copy.soFar(usd(s.evals.micro)) : usd(s.evals.micro)}</span>
+        </div>
+        <span className="text-pretty text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.evalsApart.sub(ledgers)}</span>
       </div>
     </div>
   );
@@ -329,6 +345,7 @@ export function CostsDetail({ s, d, month, env }: { s: CostSummary; d: CostDetai
 
           <SectionHead title={copy.split} />
           <Split s={s} month={month} />
+          {(s.evals.micro > 0 || s.evals.partial) && <EvalsApart s={s} d={d} />}
 
           <SectionHead title={copy.byFeature} meta={copy.byFeatureMeta} />
           <ByFeature d={d} />

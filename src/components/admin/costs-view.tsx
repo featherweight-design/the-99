@@ -214,9 +214,9 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
   const sys = s.systemSplit;
   const systemSegs: Seg[] = [
     { micro: sys.labels, ink: INK.labels },
-    { micro: sys.evals, ink: INK.evals },
     { micro: sys.rewrites, ink: INK.rewrites },
   ].filter((seg) => seg.micro > 0);
+  // Evals are never in it: the ledgers are repo files every deployment reads (`CostSummary.evals`).
   const accountTotal = s.player.micro + sys.total + (elsewhere?.micro ?? 0);
   // A label run still collecting, or unpriced, leaves every figure holding system spend partial.
   const sysUsd = (micro: number) => (sys.incomplete ? copy.soFar(usd(micro)) : usd(micro));
@@ -331,6 +331,7 @@ export function CostsView({ s, month, current, detail, env, viewerId }: { s: Cos
             />
           </CapRow>
         </div>
+        <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{copy.capsReference}</p>
 
         <SectionHead title={copy.trendPlayer} meta={copy.trendPlayerMeta(plan)} />
         <Trend s={s} month={month} />
