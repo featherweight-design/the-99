@@ -56,6 +56,13 @@ import { FilterPanel } from "../ui/filter-panel";
 import { useMinWidth } from "../ui/use-min-width";
 import { deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { DeckCard } from "./deck-card";
+
+/** Tiles above this position draw their commander's art eagerly: three rows of the three-column grid,
+    which covers the first screen of a tall desktop window. Every tile after waits for hydration and
+    for the viewport to come within a screen of it. The server cannot see the width, so a phone's
+    single column gets the same nine, about three of its screens: still 9 crops on its slow line
+    rather than every deck's, and a desktop's first screen never waits on hydration for its art. */
+export const EAGER_ART_TILES = 9;
 import { PLAYED_LABEL, SearchField, STATE_LABEL, STATUS_COPY_KEY, toggleIn } from "./deck-filter-column";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 import { DeckSortMenu } from "./deck-sort-menu";
@@ -1298,6 +1305,7 @@ export function DecksView({
                     deck={deck}
                     // The two a phone shows first: its likeliest next press, prefetched on sight.
                     eager={i < 2 && prefetched.size < 2 && !prefetched.has(deck.id)}
+                    deferArt={i >= EAGER_ART_TILES}
                     claimPrefetch={() => claimPrefetch(deck.id)}
                     shopping={shopping.byDeck.get(deck.id)}
                     cartLink={cartEnabled}
