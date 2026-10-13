@@ -276,10 +276,11 @@ export function TuningHub({
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
       if (opening.focus && !heading) return false;
       if (!late && opening.scroll && toolRef.current?.querySelector("[data-hub-pending]")) return false;
-      // A tab switch waits for the new tool to draw something: scrolled while it is still empty,
-      // the page is not tall enough to bring the tab row up (Hugh, 2026-10-12: Mana Balance landed
-      // below the fold). A slow read gives way at the wait's end, as above.
-      if (!late && opening.scroll && !toolRef.current?.textContent?.trim()) return false;
+      // A tab switch waits for the new tool to draw its content, not its loading state: scrolled
+      // while it is empty or still counting, the page is not tall enough to bring the tab row up
+      // (Hugh, 2026-10-12: Mana Balance landed below the fold). A slow read gives way at the wait's
+      // end, as above.
+      if (!late && opening.scroll && !(toolRef.current && toolDrew(toolRef.current))) return false;
       if (opening.scroll) reveal(sectionRef.current);
       if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
@@ -347,7 +348,7 @@ export function TuningHub({
     while (!live(next)) next = (next + step + ids.length) % ids.length;
     const id = ids[next];
     tabRefs.current.get(id ?? "all")?.focus();
-    open(id, { focus: false });
+    open(id, { focus: false, scroll: true });
   };
 
   // Once drawn, the hub stays for the rest of this visit to the tab: the last cut on a deck that
@@ -384,8 +385,9 @@ export function TuningHub({
                   aria-selected={active}
                   tabIndex={active ? 0 : -1}
                   disabled={!!view?.inert && !active}
-                  // Every switch brings the tab row up once the new tool lands (Hugh, 2026-10-12).
-                  onClick={() => open(id, { focus: false, scroll: true })}
+                  // Every switch brings the tab row up once the new tool lands (Hugh, 2026-10-12);
+                  // pressing the tool already open switches nothing, so it moves nothing either.
+                  onClick={() => { if (id !== opened.tool) open(id, { focus: false, scroll: true }); }}
                   onKeyDown={(e) => onTabKey(e, i)}
                   className={`-mb-px flex items-center gap-[7px] border-b-2 px-0 pt-[4px] pb-[10px] text-[13px] disabled:cursor-default ${
                     active
@@ -536,6 +538,10 @@ function ToolTile({ view, onOpen }: { view: TileView; onOpen: () => void }) {
 const PENDING = '[data-hub-pending], [aria-busy="true"]';
 /** A control a reader can reach: a box holding one is shown, whatever else it is still reading. */
 const CONTROL = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+/** The box holds the tool's content: something drawn, and no loading state unless a control is there. */
+function toolDrew(el: HTMLElement): boolean {
+  return !!el.textContent?.trim() && (el.querySelector(PENDING) === null || el.querySelector(CONTROL) !== null);
+}
 /** How long a box holds for content before it shows anyway: a slow read must not leave it unseen. */
 const ARRIVAL_CAP_MS = 2500;
 
@@ -556,8 +562,7 @@ function useArrival(ref: RefObject<HTMLDivElement | null>, key: string | null) {
     if (!el || key === null || typeof ResizeObserver === "undefined") return;
     // A box holding a control has content worth showing, busy or not: a held panel must never hide
     // something a reader can focus or press (a running Proposed cuts panel's Stop, say).
-    const landed = () => el.getBoundingClientRect().height > 0
-      && (el.querySelector(PENDING) === null || el.querySelector(CONTROL) !== null);
+    const landed = () => el.getBoundingClientRect().height > 0 && toolDrew(el);
     if (landed()) return;
     el.classList.remove("anim-gentle-in");
     el.classList.add("gentle-hold");

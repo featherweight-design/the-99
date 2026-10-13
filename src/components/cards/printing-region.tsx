@@ -354,16 +354,21 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   // focus-following stays instant, so the selection it makes is not revealed again.
   const keyboardMove = useRef(false);
   const still = props.role !== "choose" && props.still === true;
+  // Only the picker's first reveal centers: a later one follows a press, on a tile already in sight.
+  const revealed = useRef(false);
   useEffect(() => {
     if (revealKey === null || still) return;
     if (keyboardMove.current) {
       keyboardMove.current = false;
       return;
     }
-    // Centered in its scroll box, so the printings before it stay in sight above (Hugh, 2026-10-12:
-    // "nearest" parked it at the box's foot, rows below where the eye starts). A sideways row keeps
+    // On open, centered in its scroll box, so the printings before it stay in sight above (Hugh,
+    // 2026-10-12: "nearest" parked it at the box's foot, rows below where the eye starts). After a
+    // pick or a Reset, "nearest": a tile in view stays put under the pointer. A sideways row keeps
     // "nearest" on the page's axis: centering it there would scroll the sheet away from the card.
-    return reveal(tileRefs.current.get(revealKey), row ? "nearest" : "center", "center");
+    const first = !revealed.current;
+    revealed.current = true;
+    return reveal(tileRefs.current.get(revealKey), row || !first ? "nearest" : "center", "center");
   }, [revealKey, still, row]);
 
   function focusAndSelect(index: number) {

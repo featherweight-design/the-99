@@ -526,7 +526,7 @@ html {
   --motion-delay: 100ms;
   --motion-duration: 320ms;
   --motion-quick: 200ms;
-  /* Card art fading in as it lands, every surface alike (Hugh, 2026-10-12: 0.2 to 0.3s). */
+  /* Card art fading in as it lands, wherever it fades (`data-arrival`; Hugh, 2026-10-12: 0.2 to 0.3s). */
   --motion-fade: 300ms;
   --motion-ease: cubic-bezier(0.45, 0, 0.55, 1);
 }

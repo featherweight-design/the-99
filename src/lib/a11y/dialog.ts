@@ -271,6 +271,21 @@ let pendingScrollY: number | null = null;
  * precon). One dialog giving way to the next in a single commit is still one dialog to the reader.
  */
 const releasing = new Set<BackEntry>();
+/**
+ * The releasing entry a new dialog may take: one still on top of the history, on the page it was
+ * made for, and not closed by a navigation (its release then orphans it rather than popping it, and
+ * a dialog adopting it would close onto the old route's entry). With the Navigation API only the
+ * entry on top can match; without it, the most recent release. A stacked pair giving way to ONE
+ * dialog in a single commit would leave the lower pair's entry under the adopter, costing one extra
+ * Back; no surface unmounts a stack that way (the card modal pages alone).
+ */
+function adoptable(): BackEntry | null {
+  const current = currentKey();
+  const fits = [...releasing].filter((e) =>
+    e.onHistory && e.release != null && !e.leaving
+    && (e.key === null || e.key === current) && window.location.pathname === e.path);
+  return fits.at(-1) ?? null;
+}
 let hrefBeforeTraverse: string | null = null;
 let traversingBack = true;
 let listening = false;
@@ -435,7 +450,7 @@ export function useBackDismiss(open: boolean, onClose: () => void, canClose: () 
     if (!open) return;
     listen();
     // Its own entry back (a StrictMode remount), else one another dialog just let go of.
-    const adopted = held.current?.release != null ? held.current : [...releasing].find((e) => e.onHistory && e.release != null) ?? null;
+    const adopted = held.current?.release != null ? held.current : adoptable();
     let entry: BackEntry;
     if (adopted?.release != null) {
       clearTimeout(adopted.release);
