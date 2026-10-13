@@ -304,9 +304,18 @@ describe("FitsView (Find a deck read, R2)", () => {
   });
 
   it("a new overview tags the row and drops its source note (P3g); several or a set change say so (P10a)", async () => {
-    await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "overview" }] }) }));
-    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleOverview("Goblins", "x").split(" has")[0]);
+    const at = new Date(stored().at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    // An older overview would draw a source note; a new one since the read drops it for the tag.
+    const pick = { ...stored().picks[0], planSource: "older" as const };
+    await draw(panel({}, { stored: stored({ current: false, picks: [pick], changed: [{ deckId: "d-gob", reason: "overview" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleOverview("Goblins", at));
     expect(screen.getByTestId("read-row-changed")).toHaveTextContent(r.changedTagOverview);
+    expect(screen.queryByTestId("read-row-source-note")).toBeNull();
+    cleanupAll();
+    // Two decks changed: the note counts them rather than naming the first.
+    const two = [stored().picks[0], { ...stored().picks[0], deckId: "d-kra" }];
+    await draw(panel({}, { stored: stored({ current: false, picks: two, changed: [{ deckId: "d-gob", reason: "deck" }, { deckId: "d-kra", reason: "deck" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleMany(2, at));
     cleanupAll();
     await draw(panel({}, { stored: stored({ current: false, setChanged: true }) }));
     expect(screen.getByTestId("read-stale")).toHaveTextContent(/aren’t the same ones/);
