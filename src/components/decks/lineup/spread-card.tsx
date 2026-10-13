@@ -73,9 +73,12 @@ export function SpreadBody({ s, decks }: { s: Spread; decks: readonly LineupDeck
       {s.analyzed === 0 ? <span className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.noneAnalyzed}</span> : null}
       <div className="flex flex-col gap-[7px] border-t border-t-[color:var(--border)] pt-[12px]">
         <span className="pb-[2px] font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">{copy.colorsHead}</span>
+        {/* One column track for every row (subgrid), so the figure column grows to the widest
+            figure, `100 of 100` included, and every bar still starts and ends in one place. */}
+        <div className="grid grid-cols-[24px_minmax(0,1fr)_minmax(60px,max-content)] gap-x-[10px] gap-y-[7px]">
         {s.colors.map(({ color, decks: playing }) => {
           return (
-            <div key={color} data-stats-color={color} className="grid min-h-[28px] grid-cols-[24px_minmax(0,1fr)_60px] items-center gap-[10px]">
+            <div key={color} data-stats-color={color} className="col-span-3 grid min-h-[28px] grid-cols-subgrid items-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- the shipped symbol, drawn as itself and untinted */}
               <img src={`/mana/${color}.svg`} alt={copy.colorName[color]} width={22} height={22} className="block h-[22px] w-[22px]" />
               <div aria-hidden="true" className="flex h-[12px] gap-[2px]">
@@ -92,6 +95,7 @@ export function SpreadBody({ s, decks }: { s: Spread; decks: readonly LineupDeck
             </div>
           );
         })}
+        </div>
         <span className="pt-[4px] font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.sizeLine(s.sizes)}</span>
       </div>
     </>

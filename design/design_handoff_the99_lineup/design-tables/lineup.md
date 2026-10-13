@@ -104,7 +104,7 @@ Used in every deck row, chip, lane, select and Never-played name. 26 × 26 box, 
 | Property | Mobile | Desktop |
 |---|---|---|
 | block | pad-top 12, border-top 1px `--border`, gap 7. Label `DECKS PER COLOR` mono 9.5, ls .12 | same |
-| row | grid `24px 1fr 60px`, gap 10, min-h 28 (60, not the canvas's 52: `10 of 20` in Plex Mono 12 is about 58px and ran past the card) | same |
+| row | grid `24px 1fr minmax(60px, max-content)`, shared by every row (subgrid), gap 10, min-h 28. 60, not the canvas's 52: `10 of 20` in Plex Mono 12 is about 58px and ran past the card, and the track grows for `100 of 100` | same |
 | key | `public/mana/{W,U,B,R,G,C}.svg`, 22, as an image, untinted. `alt` = color name | same |
 | bar | h 12, gap 2, one segment per deck in scope, the first N lit `--w/u/b/r/g` (colorless `--fg-muted`) for the N decks that play it, as the canvas draws it (Hugh, 2026-10-13); unlit `--elevated`, ends r 3. `aria-hidden` | same |
 | chosen | none (Hugh, 2026-10-13) | same |
