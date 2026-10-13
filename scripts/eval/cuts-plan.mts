@@ -281,8 +281,8 @@ for (const p of prepared) {
     deck: p.deckName, over: p.over, size: p.size, hughCut: [...p.hughCut.values()].sort(), asked: value?.cuts.length ?? 0,
     picks: (checked?.kept ?? []).map((k) => ({ name: k.name, reason: k.reason, cites: k.cites, hit: p.hughCut.has(k.oracleId) })),
     drops: (checked?.dropped ?? []).map((d) => `${d.rule}:${d.name ?? ""}`), usd, answered: value !== null,
-    // What the model cited next to what the pack says of the same card: the point of a citeMismatch.
-    dropDetail: (checked?.dropped ?? []).filter((d) => d.rule === "citeMismatch").map((d) => ({
+    // What the model cited next to what the pack says of the same card: the point of a citeMismatch (a softened cut since 2026-10-13: the cut is kept without it).
+    dropDetail: (checked?.report.softened ?? []).filter((d) => d.rule === "citeMismatch").map((d) => ({
       name: d.name, failed: d.cite, cited: value?.cuts[d.position]?.cites,
       pack: (() => { const c = p.pack.cards.find((x) => normalizeName(x.name) === normalizeName(d.name ?? "")); return c ? { comboState: c.comboState ?? null, roles: c.roles, inclusion: c.inclusion, mv: c.mv } : "NOT IN PACK"; })(),
     })),
