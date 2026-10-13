@@ -10,7 +10,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPage } from "./lib/surface.mjs";
+import { onPage, settled } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -29,7 +29,7 @@ const SURFACES = [
   { route: "/collection/sets", name: "sets index", widths: ["phone", "desktop"] },
   // The deck list's field is in the column at desktop and behind its search button, in a sheet, on the phone.
   { route: "/decks", name: "decks column", widths: ["desktop"] },
-  { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: '[role="dialog"] [data-search-field]' },
+  { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: 'main [role="dialog"] [data-search-field]' },
   { route: "/decks/precons", name: "precons list", widths: ["phone", "desktop"], open: null, field: "main [data-search-field]" },
 ];
 
@@ -82,7 +82,13 @@ try {
     for (const s of SURFACES.filter((x) => x.widths.includes(w.name))) {
       await page.goto(`${BASE}${s.route}`, { waitUntil: "domcontentloaded" });
       const scope = s.field ?? "main [data-search-field]";
-      if (s.open && w.name === "phone") await onPage(page, s.open).first().click();
+      if (s.open && w.name === "phone") {
+        await onPage(page, s.open).first().click();
+        // The sheet arrives under a 180ms transform: a box read mid-way is not where the tap lands.
+        const dialog = onPage(page, '[role="dialog"]').first();
+        await dialog.waitFor({ state: "visible" });
+        await settled(dialog);
+      }
       const input = page.locator(`${scope} input`).first();
       await input.waitFor({ state: "visible", timeout: 30_000 });
       const clear = page.locator(`${scope} button[aria-label]`).first();
