@@ -736,8 +736,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   pod passes to its longest-standing member; both directions of every friendship; every invite naming the account;
   the profile), then every other table by `user_id` in `PURGE_ORDER` (children of `model_calls` before it), then
   `set constraints all immediate` so the deferred stamp triggers fire before the account's own `user_data_stamps`
-  row is deleted, or commit would write it back. Kept on purpose: `admin_events.actor_id` and
-  `admin_settings.updated_by`, the admin's own audit trail. It runs whatever the switches say: deleting a deleted
+  row is deleted, or commit would write it back. Kept on purpose: what an ADMIN did (`admin_events.actor_id`,
+  `admin_settings.updated_by`, `flag_groups.created_by`, the flag rows' `added_by` / `updated_by`), the admin's own
+  audit trail; the account's own switch overrides and group memberships go. It runs whatever the switches say: deleting a deleted
   account's data is never a feature to hide. It is idempotent, so a Clerk retry is harmless.
 
   **Coverage is computed, not listed**: `src/lib/account/purge.test.ts` reads `schema.ts` and fails when a table

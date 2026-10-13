@@ -63,6 +63,7 @@ async function main() {
   };
 
   const racers: string[] = [];
+  const groupIds: string[] = [];
   try {
     const { rows: picks } = await db.execute<{ oracle_id: string }>(sql`
       select oracle_id from cards where type_line like '%Legendary Creature%' order by oracle_id limit 2`);
@@ -113,6 +114,12 @@ async function main() {
       insert into fits_reads (user_id, oracle_id, status, model_call_id, model, prompt_version, candidate_hashes)
       values (${P}, ${CMD}, 'done', ${call[0].id}, 'probe', 1, '[]'::jsonb)`);
     await db.execute(sql`insert into admin_events (actor_id, kind, switch, scope, user_id, new_value) values (${ADMIN}, 'override_set', 'probe', 'user', ${P}, 'on')`);
+    // An admin put the account in a switch group and gave it an override of its own.
+    const { rows: group } = await db.execute<{ id: string }>(sql`
+      insert into flag_groups (name, created_by) values (${`probe group ${run}`}, ${ADMIN}) returning id`);
+    groupIds.push(group[0].id);
+    await db.execute(sql`insert into flag_group_members (user_id, group_id, added_by) values (${P}, ${group[0].id}, ${ADMIN})`);
+    await db.execute(sql`insert into flag_overrides (switch, scope, user_id, value, updated_by) values ('NOTICES_ENABLED', 'user', ${P}, 'on', ${ADMIN})`);
 
     const before = await rowsNaming(P);
     check("the fixture names the account in many tables", Object.keys(before).length >= 12, Object.keys(before).join(" "));
@@ -142,6 +149,8 @@ async function main() {
     check("P's stamp row did not come back at commit", (await stamp(P)) === null);
     const { rows: kept } = await db.execute<{ n: number }>(sql`select count(*)::int as n from admin_events where actor_id = ${ADMIN}`);
     check("an admin event ABOUT the account went", kept[0].n === 0);
+    const { rows: groupLeft } = await db.execute<{ n: number }>(sql`select count(*)::int as n from flag_groups where id = ${groupIds[0]}`);
+    check("the switch group the account was in stands, as the admin's", groupLeft[0].n === 1);
     const again = await purgeAccount(P);
     check("a second purge finds nothing", Object.values(again.rows).every((n) => n === 0) && again.stamp === 0
       && Object.values(again.social).every((n) => n === 0), JSON.stringify(again));
@@ -215,6 +224,9 @@ async function main() {
     await db.execute(sql`delete from model_calls where user_id in ${who}`);
     await db.execute(sql`delete from user_prefs where user_id in ${who}`);
     await db.execute(sql`delete from admin_events where actor_id = ${ADMIN}`);
+    await db.execute(sql`delete from flag_overrides where updated_by = ${ADMIN}`);
+    await db.execute(sql`delete from flag_group_members where added_by = ${ADMIN}`);
+    await db.execute(sql`delete from flag_groups where created_by = ${ADMIN}`);
     await db.execute(sql`delete from pod_spare_shares where user_id in ${who}`);
     await db.execute(sql`delete from pods where owner_user_id in ${who}`);
     await db.execute(sql`delete from pod_members where user_id in ${who}`);

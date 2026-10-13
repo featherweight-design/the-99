@@ -9,11 +9,12 @@ import { SOCIAL_PURGED } from "../social/purge";
 const schema = readFileSync("src/db/schema.ts", "utf8");
 
 /** Columns that name an account. */
-const ACCOUNT_COLUMNS = ["user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by"];
+const ACCOUNT_COLUMNS = ["user_id", "owner_user_id", "inviter_user_id", "friend_user_id", "redeemed_by", "actor_id", "updated_by", "created_by", "added_by"];
 
 /** Tables holding an account column the purge deliberately leaves, and why. */
 const KEPT: Record<string, string> = {
   admin_settings: "updated_by is the admin who changed a setting: the admin's own audit trail, not the player's data",
+  flag_groups: "created_by is the admin who made the group: the admin's own audit trail, not the player's data",
 };
 
 type Table = { binding: string; name: string; body: string };

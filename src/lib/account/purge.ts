@@ -14,8 +14,10 @@
  *   after it was deleted; `set constraints all immediate` fires them first (and moves each friend's stamp),
  *   then the account's own stamp row is deleted.
  *
- * Kept on purpose: `admin_events` rows the account ACTED in (`actor_id`, the admin's own audit trail) and
- * `admin_settings.updated_by`. Rows ABOUT the account (`admin_events.user_id`) go.
+ * Kept on purpose: what an ADMIN did, which is the admin's own audit trail: `admin_events.actor_id`,
+ * `admin_settings.updated_by`, `flag_groups.created_by`, and the `added_by` / `updated_by` of the flag rows.
+ * Rows ABOUT the account go: `admin_events.user_id`, its own switch overrides (`flag_overrides.user_id`) and its
+ * group memberships (`flag_group_members.user_id`).
  *
  * Idempotent: an account with no rows purges to all zeros, so a retried webhook is harmless.
  */
@@ -35,7 +37,7 @@ export const PURGE_ORDER = [
   "decks", "deck_folders",
   "collection_history", "collection_items", "card_art_preferences", "commander_scores", "csv_uploads", "user_prefs",
   "model_calls",
-  "admin_events",
+  "admin_events", "flag_overrides", "flag_group_members",
 ] as const;
 
 export type PurgeReport = { social: SocialPurge; rows: Record<string, number>; stamp: number };
