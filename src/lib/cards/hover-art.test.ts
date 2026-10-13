@@ -46,6 +46,12 @@ const FEEDERS: Record<string, string> = {
   "components/decks/upgrade-path.tsx": "lib/decks/read.ts",
   "components/decks/mana-sections.tsx": "lib/decks/read.ts",
   "components/intake/read-as-bar.tsx": "lib/intake/rows.ts",
+  // The deck's own printing for a matched card or a half it holds, the reader's copy for the rest (`resolveDeckOwnedPrintings`).
+  "components/decks/change-commander-sheet.tsx": "lib/commander-change/candidates.ts",
+  // The combo's other piece previews the printing card details open outside a deck's own page: the reader's owned copy, else the catalog's (`withPartnerArt`).
+  "components/cards/fits-picker.tsx": "lib/swaps/fits.ts",
+  // Every card a notice names, down the chain card details uses (`loadDeckNotices`).
+  "components/decks/notices-body.tsx": "lib/notices/read.ts",
   // The button a row or tile IS: the owner (browser.tsx, set-grid-view.tsx) passes each row's art from its own loader.
   "components/ui/preview-button.tsx": "",
   // The collection's own rows and the set grid's cells ARE the printing they draw: the collection list resolves its
@@ -235,18 +241,6 @@ const COMPOSED_ROWS: Record<string, string[]> = {
 };
 
 /**
- * Rows still owed a half, each named so the list can only shrink: a surface shipping its half leaves it here
- * (the test below fails while a row sits here with both halves). Anything NOT here that has one half and not
- * the other fails the build. Tokens are their own bug batch's and precons their own lane's: neither reaches
- * this guard.
- */
-const OWED = new Set<string>([
-  "components/cards/fits-picker.tsx",
-  "components/decks/change-commander-sheet.tsx",
-  "components/decks/notices-body.tsx",
-]);
-
-/**
  * Triggers that are a card's HEADER or a door, not a row in a list: the commander's own title, the doors that
  * open a swap or a printing sheet, the pull sheet's head. A press and no preview is what they are.
  */
@@ -288,9 +282,9 @@ describe("every card row has a hover preview and a press that opens card details
     if (/\.tsx$/.test(path)) files[relative(SRC, path)] = readFileSync(path, "utf8");
   }
 
-  it("has no row with one half and not the other, beyond the ones named as owed", () => {
+  it("has no row with one half and not the other, beyond the headers and doors", () => {
     const composed = new Set(Object.entries(COMPOSED_ROWS).flatMap(([owner, children]) => [owner, ...children]));
-    expect(rowGaps(files, new Set([...OWED, ...NOT_A_ROW, ...composed]))).toEqual([]);
+    expect(rowGaps(files, new Set([...NOT_A_ROW, ...composed]))).toEqual([]);
   });
 
   it("composed rows: the owner mounts the provider and opens details, each child draws the preview", () => {
@@ -303,8 +297,8 @@ describe("every card row has a hover preview and a press that opens card details
     }
   });
 
-  it("names only rows that still owe a half", () => {
-    const stale = [...OWED, ...NOT_A_ROW].filter((path) => !(path in files && rowGaps({ [path]: files[path] }, new Set()).length > 0));
+  it("names only triggers that still are a header or a door", () => {
+    const stale = [...NOT_A_ROW].filter((path) => !(path in files && rowGaps({ [path]: files[path] }, new Set()).length > 0));
     expect(stale).toEqual([]);
   });
 });

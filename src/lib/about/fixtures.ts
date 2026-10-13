@@ -2020,7 +2020,7 @@ export const FITS = {
       name: "HD - Chainer",
       commanders: ["Chainer, Nightmare Adept"],
       need: { role: "ramp", have: 9, target: 10 },
-      reason: { kind: "combo", with: { oracleId: "about-nim-deathmantle", name: "Nim Deathmantle" } },
+      reason: { kind: "combo", with: { oracleId: "about-nim-deathmantle", name: "Nim Deathmantle", imageUri: null } },
     },
     {
       id: "about-fits-korvold",

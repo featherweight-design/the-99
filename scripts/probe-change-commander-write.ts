@@ -206,6 +206,29 @@ async function main() {
   const truth = { n: counted.filter((id) => supportIds.has(id)).length, of: counted.length };
   check("loader: the figure is at least the three planted hits", (picked?.fit.n ?? 0) >= 3, true);
   check("loader: the figure matches the support list's hits in the body", picked?.fit, truth);
+
+  // The matched cards preview the printing card details open for them: the catalog's art for a card the reader holds
+  // no copy of, and the OWNED printing once they do (`resolveDeckOwnedPrintings` over the hit ids). One of the three
+  // planted hits is given a copy whose art is not the catalog's; delete the hit ids from that read and this fails.
+  const { rows: catalogArt } = await fixture.execute<{ id: string; image_uri: string | null }>(sql`
+    select oracle_id::text as id, image_uri from cards where oracle_id in (${sql.join(hits.map((h) => sql`${h.id}::uuid`), sql`, `)})`);
+  const catalog = new Map(catalogArt.map((r) => [r.id, r.image_uri] as const));
+  const matchedArt = (l: typeof loaded) => new Map([...(l?.yours ?? []), ...(l?.toBuy ?? [])].find((x) => x.key === target.id)?.matched.map((m) => [m.oracleId, m.imageUri] as const) ?? []);
+  const unowned = matchedArt(loaded);
+  check("loader: a matched card the reader holds no copy of previews the catalog's art", hits.every((h) => unowned.get(h.id) === (catalog.get(h.id) ?? null)), true);
+  const { rows: [ownedHit] } = await fixture.execute<{ id: string; scryfall_id: string; set_code: string; collector_number: string; image_uri: string }>(sql`
+    select p.oracle_id::text as id, p.scryfall_id::text, p.set_code, p.collector_number, p.image_uri
+    from printings p join cards k on k.oracle_id = p.oracle_id
+    where p.oracle_id in (${sql.join(hits.map((h) => sql`${h.id}::uuid`), sql`, `)}) and p.image_uri is not null and p.image_uri is distinct from k.image_uri
+    order by p.scryfall_id limit 1`);
+  if (!ownedHit) {
+    console.log("SKIP  loader: no planted hit has a printing other than the catalog's, so the owned-art case is not exercised");
+  } else {
+    await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code, scryfall_id, collector_number)
+      values (${USER}, ${ownedHit.id}::uuid, 1, ${ownedHit.set_code}, ${ownedHit.scryfall_id}::uuid, ${ownedHit.collector_number})`);
+    const owned = matchedArt(await loadChangeCandidates(deck, USER));
+    check("loader: a matched card the reader owns previews the printing they own", owned.get(ownedHit.id), ownedHit.image_uri);
+  }
   // A sub-floor legend of the same identity, if the index holds one, must not appear.
   const { rows: small } = await fixture.execute<{ id: string }>(sql`
     select cs.commander_oracle_id::text as id from commander_support cs
@@ -303,6 +326,7 @@ main()
     try {
       if (verified) {
         await fixture.execute(sql`delete from decks where user_id in (${USER}, ${`${USER}-other`})`);
+        await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
       }
     } catch (error) {
       failures += 1;

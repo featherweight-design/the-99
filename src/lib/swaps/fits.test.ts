@@ -56,7 +56,7 @@ describe("shapeFits", () => {
     const reasons = new Map<string, FitReason>([
       ["t1", { kind: "theme", theme: "mill", n: 3 }],
       ["t2", { kind: "theme", theme: { type: "Elf" }, n: 9 }],
-      ["c", { kind: "combo", with: { oracleId: "o-x", name: "Fraying Sanity" } }],
+      ["c", { kind: "combo", with: { oracleId: "o-x", name: "Fraying Sanity", imageUri: null } }],
     ]);
     const r = shapeFits(birds, [
       deck({ id: "s", name: "Synergy", synergy: 0.9 }),

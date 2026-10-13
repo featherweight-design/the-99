@@ -26,6 +26,7 @@ import type { NoticeGroup } from "../../lib/notices/group";
 import type { DataNotice, DeckNotices, ViolationNotice } from "../../lib/notices/read";
 import type { FindingId } from "../../lib/bracket/findings";
 import { FindingMark } from "./finding-mark";
+import { HoverPreviewProvider } from "./hover-preview";
 import { ModalChrome } from "./receipt-modal";
 
 export type NoticesFoot =
@@ -64,6 +65,8 @@ export function NoticesBody({
   );
   const lastLegal = notices.groups.filter((g) => LEGAL_GROUPS.has(g.group)).at(-1)?.group ?? null;
   return (
+    // Each name previews its card like a decklist row, raised above the sheet since it sits in a dialog.
+    <HoverPreviewProvider>
     <ModalChrome
       width={560}
       title={copy.sheet.title}
@@ -105,15 +108,18 @@ export function NoticesBody({
       </div>
       {foot.kind !== "none" && <Foot foot={foot} />}
     </ModalChrome>
+    </HoverPreviewProvider>
   );
 }
 
-function CardName({ oracleId, name, siblings }: { oracleId: string; name: string; siblings: string[] }) {
+function CardName({ oracleId, name, imageUri, siblings }: { oracleId: string; name: string; imageUri: string | null; siblings: string[] }) {
   return (
     <CardDetailTrigger
       oracleId={oracleId}
       name={name}
       siblings={siblings}
+      imageUri={imageUri}
+      preview
       className="inline border-b border-b-[color:var(--accent)] border-dotted border-[color:var(--accent)] font-semibold text-[color:var(--fg)]"
     >
       {name}
@@ -140,7 +146,7 @@ function DataRow({ item, siblings }: { item: DataNotice; siblings: string[] }) {
               {item.cards.map((c, i) => (
                 <span key={c.oracleId}>
                   {i > 0 && <span style={{ color: "var(--fg-faint)" }}> + </span>}
-                  <CardName oracleId={c.oracleId} name={c.name} siblings={siblings} />
+                  <CardName oracleId={c.oracleId} name={c.name} imageUri={c.imageUri} siblings={siblings} />
                 </span>
               ))}
             </span>
@@ -170,7 +176,7 @@ function ViolationRow({
 }) {
   return (
     <li data-notice-row className="flex min-h-[36px] flex-col justify-center gap-[2px] py-[7px] text-[13.5px] leading-[1.45]">
-      <span><CardName oracleId={item.card.oracleId} name={item.card.name} siblings={siblings} /></span>
+      <span><CardName oracleId={item.card.oracleId} name={item.card.name} imageUri={item.card.imageUri} siblings={siblings} /></span>
       <span className="flex flex-wrap items-center gap-[6px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
         {item.group === "notLegal" ? (
           copy.sheet.legal.notLegal

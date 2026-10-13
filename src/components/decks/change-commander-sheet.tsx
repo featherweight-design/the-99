@@ -7,6 +7,7 @@
 // whose way back reads `← Change commander`.
 
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { HoverPreviewProvider } from "./hover-preview";
 import { ModalChrome } from "./receipt-modal";
 import { BuyTag } from "./buy-tag";
 import { SwapGlyph } from "./change-commander-glyph";
@@ -115,6 +116,9 @@ export function ChangeCommanderSheet({
   };
 
   return (
+    // Each candidate, matched card and plate previews like a decklist row, raised above the sheet. It opens under the
+    // pointer that pressed its door, so a preview waits for a move (the stand-ins sheet's rule).
+    <HoverPreviewProvider waitForMove>
     <ModalChrome
       title={title}
       // Desktop only: the phone's 43px header cannot hold the deck's name beside the title without
@@ -152,6 +156,7 @@ export function ChangeCommanderSheet({
         ) : null}
       </div>
     </ModalChrome>
+    </HoverPreviewProvider>
   );
 }
 
@@ -411,6 +416,8 @@ export function CandidateRow({
                 oracleId={h.oracleId}
                 name={h.name}
                 siblings={siblings}
+                imageUri={h.imageUri}
+                preview
                 className="min-w-0 text-left text-[14px] leading-[1.3] font-semibold"
                 style={{ color: "var(--fg)", borderBottom: "1px solid var(--border-strong)" }}
               >
@@ -461,6 +468,8 @@ export function CandidateRow({
                 oracleId={m.oracleId}
                 name={m.name}
                 siblings={candidate.matched.map((x) => x.oracleId)}
+                imageUri={m.imageUri}
+                preview
                 className="min-w-0 truncate py-[3px] text-left text-[12.5px] leading-[1.35]"
                 style={{ color: "var(--fg-body)" }}
               >
@@ -501,6 +510,8 @@ function Plate({
             oracleId={c.oracleId}
             name={c.name}
             siblings={cards.map((x) => ({ oracleId: x.oracleId, name: x.name, imageUri: x.imageUri }))}
+            imageUri={c.imageUri}
+            preview
             className={"flex flex-col items-center gap-[6px] " + (one ? "w-[104px] md:w-[120px]" : "w-[68px] md:w-[84px]")}
           >
             <span

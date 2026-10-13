@@ -13,6 +13,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { cards, deckCards, deckDataChanges, deckProfiles, decks } from "../../db/schema";
+import { chainArt } from "../cards/chain-art";
 import { dataGroup, inGroupOrder, type NoticeGroup } from "./group";
 import type { ChangeDirection, ChangeKind } from "./log";
 import { offendingIds, rulesViolations } from "./rules-violations";
@@ -20,7 +21,8 @@ import { touches, type LoggedEntry, type ReadingMarks } from "./touches";
 import { sameList } from "../profile/stored";
 import { readProfileHead } from "../profile/load";
 
-export type NoticeCard = { oracleId: string; name: string };
+/** `imageUri`: the printing card details open (the deck's pick, else the one the reader owns, else the catalog's), filled by `loadDeckNotices`; null until then. */
+export type NoticeCard = { oracleId: string; name: string; imageUri: string | null };
 
 export type DataNotice = {
   kind: "data";
@@ -136,20 +138,28 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
 
   // VIOLATIONS: live, from the current cards and the commanders' identity.
   const facts = await db
-    .select({ oracleId: cards.oracleId, name: cards.name, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
+    .select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
     .from(cards)
     .where(inArray(cards.oracleId, [...new Set([...currentIds, ...data.flatMap((d) => d.cards.map((c) => c.oracleId))])]));
   const byId = new Map(facts.map((f) => [f.oracleId, f]));
   const nameOf = (id: string) => byId.get(id)?.name ?? id;
-  // The catalog's name first; the name the entry was written with when the catalog no longer has
-  // the card (a removed combo keeps `detail.names` for exactly this).
-  for (const d of data) d.cards = d.cards.map((c) => ({ oracleId: c.oracleId, name: byId.get(c.oracleId)?.name ?? c.name }));
-
   const present = (ids: readonly string[]) => ids.map((id) => byId.get(id)).filter((f) => f !== undefined);
   const violations = rulesViolations(present(currentIds.filter((id) => !commanderIds.includes(id))), present(commanderIds));
+  // The art each row previews: the printing card details open for it, down the same chain (the deck's pick, the
+  // reader's own copy), under the catalog's art. Only for the cards a notice NAMES: the chain is the expensive
+  // read, and most decks have no notice at all. Fail-soft inside `chainArt`: a failed read keeps the catalog's.
+  const art = await chainArt(userId, deckId, [
+    ...data.flatMap((d) => d.cards.map((c) => c.oracleId)),
+    ...violations.notLegal,
+    ...violations.outsideColors.map((v) => v.oracleId),
+  ]);
+  const artOf = (id: string) => art.get(id) ?? byId.get(id)?.imageUri ?? null;
+  // The catalog's name first; the name the entry was written with when the catalog no longer has
+  // the card (a removed combo keeps `detail.names` for exactly this).
+  for (const d of data) d.cards = d.cards.map((c) => ({ oracleId: c.oracleId, name: byId.get(c.oracleId)?.name ?? c.name, imageUri: artOf(c.oracleId) }));
   const violationItems: ViolationNotice[] = [
-    ...violations.notLegal.map((id) => ({ kind: "violation" as const, group: "notLegal" as const, card: { oracleId: id, name: nameOf(id) }, colors: [] })),
-    ...violations.outsideColors.map((v) => ({ kind: "violation" as const, group: "outsideColors" as const, card: { oracleId: v.oracleId, name: nameOf(v.oracleId) }, colors: v.colors })),
+    ...violations.notLegal.map((id) => ({ kind: "violation" as const, group: "notLegal" as const, card: { oracleId: id, name: nameOf(id), imageUri: artOf(id) }, colors: [] })),
+    ...violations.outsideColors.map((v) => ({ kind: "violation" as const, group: "outsideColors" as const, card: { oracleId: v.oracleId, name: nameOf(v.oracleId), imageUri: artOf(v.oracleId) }, colors: v.colors })),
   ];
   const seenViolations = offendingIds(violations);
 
@@ -270,7 +280,7 @@ async function touchingEntries(
  */
 export function entryCards(oracleIds: readonly string[], detail: Record<string, unknown>): NoticeCard[] {
   const names = Array.isArray(detail.names) ? detail.names : [];
-  return oracleIds.map((id, i) => ({ oracleId: id, name: typeof names[i] === "string" ? (names[i] as string) : id }));
+  return oracleIds.map((id, i) => ({ oracleId: id, name: typeof names[i] === "string" ? (names[i] as string) : id, imageUri: null }));
 }
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {

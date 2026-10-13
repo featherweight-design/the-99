@@ -11,9 +11,11 @@
 // the card, the catalog's creature types (memoized), their mixes (once per distinct commander pair),
 // the card's availability and the universal staples; then the full-rule combo read, only for a deck
 // holding one of those pieces.
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { cards as cardsTable } from "../../db/schema";
+import { chainArt } from "../cards/chain-art";
 import { loadAvailability } from "../decks/availability-query";
 import { loadMixesForCommanders, mixKey } from "../decks/deck-mix";
 import type { RecommendedMix } from "../decks/mix";
@@ -42,7 +44,7 @@ export type FitDeck = {
 };
 
 export type FitReason =
-  | { kind: "combo"; with: { oracleId: string; name: string } }
+  | { kind: "combo"; with: { oracleId: string; name: string; imageUri: string | null } }
   /** `theme` is an approved theme, or the deck's key creature type for a card of that type (`Elf`). */
   | { kind: "theme"; theme: Theme | { type: string }; n: number };
 
@@ -232,13 +234,34 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
       knownNames: new Map([...cards.map((d) => [d.oracle_id, d.name] as const), ...commanders.map((id, i) => [id, r.commander_names[i]] as const)]),
     });
     const combo = partners.get(oracleId);
-    if (combo) return void reasons.set(r.id, { kind: "combo", with: { oracleId: combo.partnerOracleId, name: combo.partnerName } });
+    if (combo) return void reasons.set(r.id, { kind: "combo", with: { oracleId: combo.partnerOracleId, name: combo.partnerName, imageUri: null } });
     const theme = themeReason(themed, cards, r.commander_types, isType);
     if (theme) reasons.set(r.id, { kind: "theme", ...theme });
   }));
+  await withPartnerArt(userId, reasons);
 
   const a = availability.get(oracleId);
   return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId), reasons);
+}
+
+/**
+ * The art each combo's other piece previews: the printing card details open for it, which outside a deck's own
+ * page (and this picker opens from any page) is the copy the reader owns, else the catalog's. NOT a per-deck
+ * pick: a row naming another deck's pick would preview a printing the modal does not open. One batched read for
+ * every piece (`chainArt`), plus one `cards` read for the catalog fallback. Fail-soft: a failed read leaves the
+ * piece without a preview.
+ */
+async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): Promise<void> {
+  const combos = [...reasons.values()].flatMap((r) => (r.kind === "combo" ? [r] : []));
+  if (combos.length === 0) return;
+  const ids = [...new Set(combos.map((r) => r.with.oracleId))];
+  const [owned, catalog] = await Promise.all([
+    chainArt(userId, null, ids),
+    db.select({ oracleId: cardsTable.oracleId, imageUri: cardsTable.imageUri }).from(cardsTable).where(inArray(cardsTable.oracleId, ids))
+      .then((rows) => new Map(rows.map((x) => [x.oracleId, x.imageUri] as const)))
+      .catch(() => new Map<string, string | null>()),
+  ]);
+  for (const r of combos) r.with.imageUri = owned.get(r.with.oracleId) ?? catalog.get(r.with.oracleId) ?? null;
 }
 
 /**

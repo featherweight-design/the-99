@@ -67,7 +67,7 @@ const OTHER = { ...DECK, id: "deck-2", name: "Another" } as unknown as DeckDetai
 const ILLEGAL: DeckNotices = {
   analyzedAt: null,
   readingStale: false,
-  groups: [{ group: "notLegal", items: [{ kind: "violation", group: "notLegal", card: { oracleId: "x", name: "Banned Card" }, colors: [] }] }],
+  groups: [{ group: "notLegal", items: [{ kind: "violation", group: "notLegal", card: { oracleId: "x", name: "Banned Card", imageUri: null }, colors: [] }] }],
   dataCount: 0,
   dataUnread: 0,
   violationCount: 1,
