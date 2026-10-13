@@ -45,6 +45,11 @@ describe("packageDepsChanged", () => {
   it("ignores scripts", () => {
     expect(packageDepsChanged(pkg, { ...pkg, scripts: { a: "x", b: "y" } })).toBe(false);
   });
+  it("does not ignore the test script, which CI runs", () => {
+    const withTest = { ...pkg, scripts: { a: "x", test: "vitest run" } };
+    expect(packageDepsChanged(withTest, { ...withTest, scripts: { a: "x", test: "vitest run --pool=threads" } })).toBe(true);
+    expect(packageDepsChanged(pkg, withTest)).toBe(true);
+  });
   it.each([
     ["dependencies", { dependencies: { next: "2" } }],
     ["devDependencies", { devDependencies: { vitest: "1" } }],

@@ -38,7 +38,9 @@ const PACKAGE_FIELDS = [
 export function packageDepsChanged(before, after) {
   const a = before ?? {};
   const b = after ?? {};
-  return PACKAGE_FIELDS.some((k) => JSON.stringify(a[k] ?? null) !== JSON.stringify(b[k] ?? null));
+  const differs = (x, y) => JSON.stringify(x ?? null) !== JSON.stringify(y ?? null);
+  // `pnpm test` is what CI runs, so its flags and environment are part of every test's meaning.
+  return PACKAGE_FIELDS.some((k) => differs(a[k], b[k])) || differs(a.scripts?.test, b.scripts?.test);
 }
 
 export function globalReason(path) {
