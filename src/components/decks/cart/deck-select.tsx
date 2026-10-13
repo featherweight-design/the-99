@@ -75,8 +75,9 @@ export function DeckSelect({
           <Chevron open={open} />
         </button>
       </div>
-      {/* The page is one screen tall (Hugh, 2026-10-11): an open phone list scrolls inside a cap, and
-          the desktop column scrolls the decks under its head. */}
+      {/* The phone's page scrolls as one now (Hugh, 2026-10-13), so only this open list keeps a cap and scrolls
+          inside it, which keeps a long deck list from pushing the cards a screen down; the desktop column
+          scrolls the decks under its head (the page there is one screen tall, 2026-10-11). */}
       <div id={listId} className={`max-h-[30dvh] min-h-0 overflow-y-auto overscroll-contain md:max-h-none ${open ? "" : "hidden md:block"}`}>
         <ul className="m-0 list-none p-0">
           {decks.map((d) => {
