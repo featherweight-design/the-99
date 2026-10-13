@@ -345,7 +345,7 @@ export function SpineMobile({
                     color: "var(--fg)",
                   }}
                 />
-                {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} />}
+                {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFieldRef} />}
               </div>
               {rename.error ? (
                 <p role="alert" className="font-mono" style={{ fontSize: 11, color: "var(--danger)" }}>

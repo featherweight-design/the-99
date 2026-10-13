@@ -346,7 +346,7 @@ export function SpineDesktop({
                       color: "var(--fg)",
                     }}
                   />
-                  {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} />}
+                  {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFieldRef} />}
                 </div>
               </div>
             ) : (

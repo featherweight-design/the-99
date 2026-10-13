@@ -1,4 +1,4 @@
-// probe:description-tag-box — the `[[` card tag in a deck's description box (card-tags PR 3), at 1300x900 and 390x844.
+// probe:description-tag-box — the `[[` card tag in a deck's description box (card-tags PR 3), at 1300x900, 768x900 and 390x844.
 // Three facts about a laid-out page and a real save, which jsdom does not produce:
 //
 // 1. THE LIST OPENS FROM THE BOX and is painted on top, inside the window. Typing `[[Sol Ri` offers Sol Ring.
@@ -61,7 +61,8 @@ async function signIn(page) {
 
 const browser = await chromium.launch();
 try {
-  for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 390, width: 390, height: 844 }]) {
+  // 768 is the desktop layout's floor, where the header's editor sits furthest right of the rail.
+  for (const w of [{ label: 1300, width: 1300, height: 900 }, { label: 768, width: 768, height: 900 }, { label: 390, width: 390, height: 844 }]) {
     await pool.query("update decks set intent = null, intent_seeded = false where id = $1", [DECK]);
     const ctx = await browser.newContext({ viewport: { width: w.width, height: w.height } });
     const page = await ctx.newPage();
@@ -115,26 +116,32 @@ try {
     const pencilBox = onPageRole(page, "combobox", "Deck description").first();
     await pencilBox.waitFor({ timeout: 30_000 });
     await pencilBox.click();
-    await page.keyboard.type("Rocks: [[Sol Ri");
-    const pencilOption = onPageRole(page, "option", /Sol Ring/);
+    // "Sol" offers several cards (not only Sol Ring), so a later option is far from the first: a list clipped by an ancestor shows only the top.
+    await page.keyboard.type("Rocks: [[Sol");
+    // The pencil's list floats in a portal on <body> (the header band clips what overflows it), outside <main>.
+    const floating = page.locator('body > [role="listbox"]');
+    const pencilOption = floating.getByRole("option");
     await pencilOption.first().waitFor({ timeout: 10_000 });
     await page.waitForTimeout(800);
-    const pencilGeometry = await onPageRole(page, "listbox").evaluate((ul) => {
+    const pencilGeometry = await floating.evaluate((ul) => {
       const l = ul.getBoundingClientRect();
-      const first = ul.querySelector('[role="option"]').getBoundingClientRect();
-      const hit = document.elementFromPoint(first.left + first.width / 2, first.top + Math.min(first.height / 2, 10));
-      return { top: Math.round(l.top), bottom: Math.round(l.bottom), onTop: Boolean(hit && ul.contains(hit)), viewH: window.innerHeight };
+      const opts = [...ul.querySelectorAll('[role="option"]')];
+      const hitAt = (o) => { const r = o.getBoundingClientRect(); const h = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 10)); return Boolean(h && ul.contains(h)); };
+      const lastVisible = opts.filter((o) => { const r = o.getBoundingClientRect(); return r.top >= l.top && r.bottom <= l.bottom + 1; }).length;
+      return { top: Math.round(l.top), bottom: Math.round(l.bottom), left: Math.round(l.left), right: Math.round(l.right), options: opts.length, firstOnTop: hitAt(opts[0]), lastReachable: hitAt(opts[Math.min(opts.length, 3) - 1]), viewW: window.innerWidth, viewH: window.innerHeight };
     });
-    check(`${w.label} pencil: the list opens from [[ and its first option is painted on top, inside the window`, pencilGeometry.onTop && pencilGeometry.top >= 0 && pencilGeometry.bottom <= pencilGeometry.viewH, pencilGeometry);
+    check(`${w.label} pencil: the list is inside the window on every side, with its first and later options painted on top`,
+      pencilGeometry.top >= 0 && pencilGeometry.bottom <= pencilGeometry.viewH && pencilGeometry.left >= 0 && pencilGeometry.right <= pencilGeometry.viewW && pencilGeometry.firstOnTop && pencilGeometry.lastReachable && pencilGeometry.options >= 2, pencilGeometry);
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/description-tag-pencil-${w.label}.png` });
-    // Enter picks while the list is open, and the editor is still open (no commit).
+    // Enter picks the first option while the list is open, and the editor is still open (no commit).
+    const firstName = (await pencilOption.first().locator("span").first().innerText()).trim();
     await page.keyboard.press("Enter");
     const pencilWritten = await pencilBox.inputValue();
-    check(`${w.label} pencil: Enter picks the card and the editor stays open`, pencilWritten.includes("Sol Ring") && (await pencilBox.isVisible()) && (await stored()).v === null, pencilWritten);
+    check(`${w.label} pencil: Enter picks the card and the editor stays open`, pencilWritten.includes(firstName) && (await pencilBox.isVisible()) && (await stored()).v === null, pencilWritten);
     await onPageRole(page, "button", /Save/).first().click();
     let pencilRow = await stored();
     for (let i = 0; i < 100 && pencilRow.v === null; i += 1) { await page.waitForTimeout(100); pencilRow = await stored(); }
-    check(`${w.label} pencil: the save stores the card's name as plain words`, typeof pencilRow.v === "string" && pencilRow.v.includes("Sol Ring") && !pencilRow.v.includes("[["), pencilRow.v);
+    check(`${w.label} pencil: the save stores the card's name as plain words`, pencilRow.v === `Rocks: ${firstName}`, pencilRow.v);
     await ctx.close();
   }
 } finally {

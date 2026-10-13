@@ -469,7 +469,10 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     fireEvent.change(description, { target: { value: "Rocks: [[Sol" } });
-    fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
+    const option = await screen.findByRole("option", { name: /Sol Ring/ });
+    // The header band clips what overflows it, so the list floats in a portal on <body> rather than sitting in the editor.
+    expect(screen.getByRole("listbox").parentElement).toBe(document.body);
+    fireEvent.mouseDown(option);
     expect(saveDeckHeader).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Deck name")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));

@@ -2079,9 +2079,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and a dev server with `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` true. It WRITES that deck's `intent`, `intent_seeded`
   and `last_edited_at` and puts them back in its `finally`; it refuses staging and production by `neon.branch_id` of its
   `DATABASE_URL` and a `PROBE_BASE` that is not localhost. `PROBE_SHOTS=<dir>` leaves a picture of the open list at each width.
-  It also drives the header pencil's editor (which commits on blur and Enter): the list opens inside the window with its first
-  option on top, Enter picks the card and leaves the editor open with nothing saved, and Save stores the plain name.
-  Measured 2026-10-13 on local-dev (the Card mark probe fixture deck): all twelve checks pass.
+  It also drives the header pencil's editor (which commits on blur and Enter), at 768 too, the desktop layout's floor. The
+  band the editor sits in clips what overflows it, so its list floats in a portal on `<body>` (`CardTagList`'s `anchor`):
+  the probe finds it there, requires it inside the window on every side with its first and a LATER option painted on top
+  (a list clipped to its first row fails the later one), then Enter picks the first option with nothing saved and Save stores
+  that card's plain name. Removing `anchor` makes the probe fail (it no longer finds the list under `<body>`).
+  Measured 2026-10-13 on local-dev (the Card mark probe fixture deck): all eighteen checks pass.
 
 - `pnpm probe:opening-printing` proves that a card the reader does not own previews the printing card details opens
   it on. A hover preview drew `cards.image_uri` (one arbitrary printing per card) while the modal opens an unowned
