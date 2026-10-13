@@ -192,16 +192,22 @@ async function run() {
     const sh = session(h.customerId, h.userId);
     const { stub } = stripeServing(sh);
     const purge = await pool.connect();
+    let open = false;
     try {
       await purge.query("begin");
+      open = true;
       await purge.query("delete from stripe_customers where user_id = $1", [h.userId]);
       const granting = fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", sh.id);
       await new Promise((r) => setTimeout(r, 1500));
       await purge.query("delete from credit_grants where user_id = $1", [h.userId]);
       await purge.query("commit");
+      open = false;
       check("h · a grant racing the purge of its account is kept unattributed", (await granting).outcome, "unattributed");
       check("h · and leaves no lot behind", await lots(h.userId), 0);
     } finally {
+      // A failure mid-way must not hand a connection still inside the transaction, and its locks, back
+      // to the pool that the cleanup then runs on.
+      if (open) await purge.query("rollback").catch(() => {});
       purge.release();
     }
   }

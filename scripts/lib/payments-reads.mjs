@@ -11,19 +11,24 @@ import { join, relative, sep } from "node:path";
 export const PAYMENT_BINDINGS = ["stripeCustomers", "stripeEvents", "paymentRecords"];
 const RAW = /\b(?:stripe_customers|stripe_events|payment_records)\b/i;
 
-// `src/lib/payments/` may do both. Two files may NAME the tables and nothing more: the schema declares
-// them, and the purge lists `stripe_customers` in PURGE_ORDER, which is how an account's mapping goes
-// with it. Neither may import the SDK, and that is still checked there.
+// `src/lib/payments/` may do both. Two files may NAME a table and nothing more: the schema declares all
+// three, and the purge lists `stripe_customers` in PURGE_ORDER, which is how an account's mapping goes
+// with it. Neither may import the SDK, and the purge may name no other Stripe table nor reach one by
+// binding: that is still checked there.
 const ALLOWED = (path) => path.startsWith("src/lib/payments/");
-const NAMES_TABLES = (path) => path === "src/db/schema.ts" || path === "src/lib/account/purge.ts";
+const EXEMPT = {
+  "src/db/schema.ts": (why) => why.startsWith("names "),
+  "src/lib/account/purge.ts": (why) => why.toLowerCase() === "names stripe_customers",
+};
 const isTest = (path) => /\.test\.(?:t|j)sx?$|\.test\.mts$/.test(path);
 
 /** The findings for one file's source, as `{ line, why }`. Exported for the tests. */
 export function paymentReadsIn(source) {
   const findings = [];
   const lineAt = (offset) => source.slice(0, offset).split("\n").length;
-  // The SDK, by any import form a module can take: a value import, `import type`, `require` or `import()`.
-  for (const m of source.matchAll(/(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*)["']stripe(?:\/[^"']*)?["']/g)) {
+  // The SDK, by any import form a module can take: a value import, `import type`, a bare side-effect
+  // `import "stripe"`, `require` or `import()`.
+  for (const m of source.matchAll(/(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(?\s*)["']stripe(?:\/[^"']*)?["']/g)) {
     findings.push({ line: lineAt(m.index), why: "imports the stripe package" });
   }
   const imports = /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']([^"']*db\/schema)["']/g;
@@ -80,7 +85,7 @@ export async function paymentReadFindings(root, dir = "src") {
     }
     read += 1;
     for (const f of paymentReadsIn(source)) {
-      if (NAMES_TABLES(path) && f.why !== "imports the stripe package") continue;
+      if (EXEMPT[path]?.(f.why)) continue;
       findings.push({ path, ...f });
     }
   }

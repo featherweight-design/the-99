@@ -9,6 +9,7 @@ describe("paymentReadsIn", () => {
     for (const src of [
       `import Stripe from "stripe";`,
       `import type Stripe from "stripe";`,
+      `import "stripe";`,
       `const S = require("stripe");`,
       `const S = await import("stripe");`,
       `import { webhooks } from "stripe/lib/webhooks";`,
@@ -55,9 +56,14 @@ describe("the shipped tree", () => {
       mkdirSync(join(root, "src/db"), { recursive: true });
       mkdirSync(join(root, "src/lib/account"), { recursive: true });
       writeFileSync(join(root, "src/db/schema.ts"), `export const t = pgTable("stripe_customers", {});\n`);
-      writeFileSync(join(root, "src/lib/account/purge.ts"), `const ORDER = ["stripe_customers"];\nimport Stripe from "stripe";\n`);
+      writeFileSync(join(root, "src/lib/account/purge.ts"),
+        `const ORDER = ["stripe_customers"];\nimport Stripe from "stripe";\nimport { paymentRecords } from "../../db/schema";\nsql\`delete from stripe_events\`;\n`);
       const { findings } = await paymentReadFindings(root);
-      expect(findings).toEqual([{ path: "src/lib/account/purge.ts", line: 2, why: "imports the stripe package" }]);
+      expect(findings).toEqual([
+        { path: "src/lib/account/purge.ts", line: 2, why: "imports the stripe package" },
+        { path: "src/lib/account/purge.ts", line: 3, why: "imports paymentRecords" },
+        { path: "src/lib/account/purge.ts", line: 4, why: "names stripe_events" },
+      ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
