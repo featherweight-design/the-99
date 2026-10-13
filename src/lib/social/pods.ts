@@ -7,7 +7,7 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
+import { friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { resolveFriend } from "./access";
 import { cleanPodName, isUuid, nextPodOwner } from "./rules";
 
@@ -68,6 +68,12 @@ export async function addMember(viewerId: string, podId: unknown, friendPublicId
     if (!pod) return false;
     const friendId = await resolveFriend(viewerId, friendPublicId, tx);
     if (friendId === null) return false;
+    // Hold the friendship row itself while adding (pod, then friendship: the order `unfriend` and the
+    // account purge take them), so a friendship being ended waits for this add, or this add waits for it
+    // and finds the row gone.
+    const held = await tx.execute(sql`
+      select 1 from ${friendLinks} where user_id = ${viewerId} and friend_user_id = ${friendId} for share`);
+    if (held.rows.length === 0) return false;
     await tx.insert(podMembers).values({ podId, userId: friendId }).onConflictDoNothing();
     return true;
   });
@@ -107,29 +113,34 @@ export async function removeMember(viewerId: string, podId: unknown, memberPubli
  * every read that uses one also joins the friendship. The pod row is locked first, so two leaves
  * at once cannot both hand it on.
  */
-export async function leavePod(viewerId: string, podId: unknown): Promise<"left" | "handedOn" | "deleted" | "notMember"> {
+export async function leavePod(viewerId: string, podId: unknown): Promise<LeaveOutcome> {
   if (!isId(podId)) return "notMember";
-  return db.transaction(async (tx) => {
-    const [pod] = await tx.select({ ownerUserId: pods.ownerUserId }).from(pods).where(eq(pods.id, podId)).for("update");
-    if (!pod) return "notMember";
-    const members = await tx
-      .select({ userId: podMembers.userId, joinedAt: podMembers.joinedAt })
-      .from(podMembers)
-      .where(eq(podMembers.podId, podId));
-    if (!members.some((m) => m.userId === viewerId)) return "notMember";
-    if (pod.ownerUserId !== viewerId) {
-      await tx.delete(podMembers).where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
-      await dropShare(tx, viewerId, podId);
-      return "left";
-    }
-    const next = nextPodOwner(members, viewerId);
-    if (next === null) {
-      await tx.delete(pods).where(eq(pods.id, podId));
-      return "deleted";
-    }
-    await tx.update(pods).set({ ownerUserId: next }).where(eq(pods.id, podId));
+  return db.transaction((tx) => leavePodIn(tx, viewerId, podId));
+}
+
+export type LeaveOutcome = "left" | "handedOn" | "deleted" | "notMember";
+
+/** `leavePod` inside a caller's transaction: the account purge leaves every pod inside its one transaction. */
+export async function leavePodIn(tx: Tx, viewerId: string, podId: string): Promise<LeaveOutcome> {
+  const [pod] = await tx.select({ ownerUserId: pods.ownerUserId }).from(pods).where(eq(pods.id, podId)).for("update");
+  if (!pod) return "notMember";
+  const members = await tx
+    .select({ userId: podMembers.userId, joinedAt: podMembers.joinedAt })
+    .from(podMembers)
+    .where(eq(podMembers.podId, podId));
+  if (!members.some((m) => m.userId === viewerId)) return "notMember";
+  if (pod.ownerUserId !== viewerId) {
     await tx.delete(podMembers).where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
     await dropShare(tx, viewerId, podId);
-    return "handedOn";
-  });
+    return "left";
+  }
+  const next = nextPodOwner(members, viewerId);
+  if (next === null) {
+    await tx.delete(pods).where(eq(pods.id, podId));
+    return "deleted";
+  }
+  await tx.update(pods).set({ ownerUserId: next }).where(eq(pods.id, podId));
+  await tx.delete(podMembers).where(and(eq(podMembers.podId, podId), eq(podMembers.userId, viewerId)));
+  await dropShare(tx, viewerId, podId);
+  return "handedOn";
 }

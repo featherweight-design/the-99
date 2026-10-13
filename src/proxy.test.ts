@@ -353,3 +353,19 @@ describe("the sheet switch, per reader", () => {
     expect(list?.split(",")).not.toContain("x-about-sheet");
   });
 });
+
+describe("the Clerk webhook", () => {
+  // Clerk calls it with no session, so it must not be session-protected; its route checks the signature.
+  it("is public at its exact path, with or without the trailing slash", async () => {
+    for (const path of ["/api/clerk-webhook", "/api/clerk-webhook/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+  });
+
+  it("does not make a longer path public", async () => {
+    await proxy(auth, request("/api/clerk-webhook-other"));
+    expect(protect).toHaveBeenCalled();
+  });
+});

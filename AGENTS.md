@@ -727,6 +727,28 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (the switch module aside) without it. `pnpm measure:friend-spares`
   times the per-friend cost (read-only).
 
+- **Deleting an account deletes everything the app holds for it** (Hugh's ruling Q8, 2026-10-12). Clerk's
+  `user.deleted` webhook (`POST /api/clerk-webhook`, public in `src/proxy.ts`, authorized only by the Svix signature
+  `verifyWebhook` checks against `CLERK_WEBHOOK_SIGNING_SECRET` on every call; with the secret unset it answers 503 and
+  does nothing) runs `purgeAccount` (`src/lib/account/purge.ts`) in
+  ONE transaction. The social half first (`purgeSocialIn`): it locks in the order every social write does (its
+  invites, then the pods it owns or is in, then its friendship rows, which `addMember` also holds while it adds),
+  leaves every pod the way a player leaves it (an owned pod passes to its longest-standing member), and deletes both
+  directions of every friendship, every invite naming the account and the profile. Then every other table by
+  `user_id` in `PURGE_ORDER` (children of `model_calls` before it). Then the data stamps of the account and its
+  friends, locked LAST in user id order (where every writer takes them, at its commit), and
+  `set constraints all immediate` so the deferred stamp triggers fire before the account's own `user_data_stamps`
+  row is deleted, or commit would write it back. Kept on purpose: what an ADMIN did (`admin_events.actor_id`,
+  `admin_settings.updated_by`, `flag_groups.created_by`, the flag rows' `added_by` / `updated_by`), the admin's own
+  audit trail; the account's own switch overrides and group memberships go. It runs whatever the switches say: deleting a deleted
+  account's data is never a feature to hide. It is idempotent, so a Clerk retry is harmless.
+
+  **Coverage is computed, not listed**: `src/lib/account/purge.test.ts` reads `schema.ts` and fails when a table
+  holding an account column is neither purged nor kept with a reason, and when a child of a purged table has no
+  `on delete` the order does not cover. A new per-user table therefore fails CI until the purge handles it.
+  `pnpm probe:purge` searches every text column the DATABASE's catalog lists for the account's id by value and
+  proves none holds it afterwards, on a scratch branch.
+
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does
   not cover. It COMPUTES the tables read by following both pages' imports through `src/lib`
   (never `src/components`, which query nothing), and collects every table named by its
