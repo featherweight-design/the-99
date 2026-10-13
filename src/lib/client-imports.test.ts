@@ -46,7 +46,8 @@ function resolve(files: Map<string, string>, from: string, spec: string): string
 const STATIC = /^\s*(import|export)\s+(type\s+)?([^'";]*?)\s*from\s*["']([^"']+)["']|^\s*import\s*["']([^"']+)["']/gm;
 // A runtime `import()`, never a type: `import("x").Name` and `typeof import("x")` name a type and
 // load nothing (`.then` is the one member access that is a runtime import).
-const DYNAMIC = /(?<!typeof\s+)\bimport\(\s*["']([^"']+)["']\s*\)(?!\s*\.\s*(?!then\b)[A-Za-z_$])/g;
+// A backtick specifier counts when it interpolates nothing, since it is then a plain string.
+const DYNAMIC = /(?<!typeof\s+)\bimport\(\s*(["'`])((?:(?!\1|\$\{).)+)\1\s*\)(?!\s*\.\s*(?!then\b)[A-Za-z_$])/g;
 
 /** True when an import clause brings in at least one value, not only types. */
 function bringsValues(clause: string): boolean {
@@ -61,7 +62,7 @@ export function valueImports(path: string, source: string, files: Map<string, st
     if (m[5]) out.push(m[5]);
     else if (!m[2] && bringsValues(m[3].trim())) out.push(m[4]);
   }
-  for (const m of source.matchAll(DYNAMIC)) out.push(m[1]);
+  for (const m of source.matchAll(DYNAMIC)) out.push(m[2]);
   return out.map((spec) => resolve(files, path, spec)).filter((r): r is string => r !== null);
 }
 
@@ -112,10 +113,12 @@ describe("client imports", () => {
       'import { type D } from "../db/schema";',
       'export { e } from "@neondatabase/serverless";',
       'const m = await import("../db");',
+      "const n = await import(`../db/schema`);",
+      "const o = await import(`../db/${name}`);",
       'export const ROWS: import("../db/schema").HistoryRow[] = [];',
       'type T = typeof import("drizzle-orm");',
     ].join("\n");
-    expect(valueImports(at, source)).toEqual(["npm:drizzle-orm", "npm:@neondatabase/serverless", join(SRC, "db/index.ts")]);
+    expect(valueImports(at, source)).toEqual(["npm:drizzle-orm", "npm:@neondatabase/serverless", join(SRC, "db/index.ts"), join(SRC, "db/schema.ts")]);
   });
 
   it("reports a client module that reaches src/db, and skips a \"use server\" module", () => {
