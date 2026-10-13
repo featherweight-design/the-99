@@ -50,7 +50,7 @@ const rankedListMemo = cache(() => new Map<string, Promise<RankedList>>());
 
 export function getRankedList(
   userId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<RankedList> {
   const memo = rankedListMemo();
   const key = `${userId}|${labelRoleCountsEnabled(env) ? "labels" : "classifier"}`;

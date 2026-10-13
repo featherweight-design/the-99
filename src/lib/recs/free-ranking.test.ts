@@ -1,4 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 import { carryCanonicalSlugs, freePool, loadFreePool, rankFree } from "./free-ranking";
 import type { CommanderListItem } from "./recommend";
 import type { PoolCard } from "./score";
@@ -155,7 +156,7 @@ describe("rankFree with preloaded reads", () => {
     const out = await rankFree("user", [canonical], {
       collection: [commander, card("b")],
       availability: new Map([["b", avail(1, 1)]]),
-    });
+    }, ENV_VIEW);
 
     expect(out.ok).toBe(true);
     expect(out.items[0].imageUri).toBe("owned.jpg");
@@ -171,7 +172,7 @@ describe("rankFree with preloaded reads", () => {
     const out = await rankFree("user", [item("a")], {
       collection: [commander, card("b")],
       availability: new Map([["b", avail(1, 0)]]),
-    });
+    }, ENV_VIEW);
 
     expect(out.items.map((i) => i.oracleId)).toEqual(["a"]);
     expect(readEdhrecCache).not.toHaveBeenCalled();
@@ -184,7 +185,7 @@ describe("rankFree with preloaded reads", () => {
     const out = await rankFree("user", [item("a")], {
       collection: [commander, card("b")],
       availability: new Map([["b", avail(1, 1)]]),
-    });
+    }, ENV_VIEW);
 
     expect(out.ok).toBe(true);
     expect(out.items.map((i) => i.oracleId)).toEqual(["a"]);
@@ -197,7 +198,7 @@ describe("loadFreePool", () => {
   it("returns the free slice of the collection", async () => {
     loadCollectionPool.mockResolvedValue({ collection: [card("a"), card("b")] });
     loadAvailability.mockResolvedValue(new Map([["a", avail(1, 1)]]));
-    const pool = await loadFreePool("user-free-pool");
+    const pool = await loadFreePool("user-free-pool", ENV_VIEW);
     expect(pool!.map((c) => c.oracleId)).toEqual(["b"]);
   });
 
@@ -207,7 +208,7 @@ describe("loadFreePool", () => {
   it("returns null when the availability rollup will not read", async () => {
     loadCollectionPool.mockResolvedValue({ collection: [card("a")] });
     loadAvailability.mockRejectedValue(new Error("rollup down"));
-    expect(await loadFreePool("user-rollup-down")).toBeNull();
+    expect(await loadFreePool("user-rollup-down", ENV_VIEW)).toBeNull();
   });
   // Admin PR 6f-1: the claim model decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it
   // is handed, and both this pool and the free ranking that loads it take the environment when none is
@@ -259,7 +260,7 @@ describe("rankFree reads the stored support list", () => {
     const out = await rankFree("user", [item("cmd")], {
       collection: [commander, owned],
       availability: new Map(),
-    });
+    }, ENV_VIEW);
 
     expect(out.ok).toBe(true);
     const scored = out.items[0];
@@ -279,7 +280,7 @@ describe("rankFree reads the stored support list", () => {
     const out = await rankFree("user", [item("cmd")], {
       collection: [commander, card("sup")],
       availability: new Map(),
-    });
+    }, ENV_VIEW);
 
     const scored = out.items[0];
     expect(scored.fitSynergy).toBeNull();
@@ -299,7 +300,7 @@ describe("rankFree membership", () => {
     const out = await rankFree("user", [item("sleeved"), item("spare")], {
       collection: [legend("sleeved"), legend("spare")],
       availability: new Map([["sleeved", avail(1, 1)]]),
-    });
+    }, ENV_VIEW);
 
     expect(out.ok).toBe(true);
     expect(out.items.map((i) => i.oracleId)).toEqual(["spare"]);
@@ -309,7 +310,7 @@ describe("rankFree membership", () => {
     const out = await rankFree("user", [item("spare")], {
       collection: [legend("spare")],
       availability: new Map([["spare", avail(2, 1)]]),
-    });
+    }, ENV_VIEW);
     expect(out.items.map((i) => i.oracleId)).toEqual(["spare"]);
   });
 
@@ -319,7 +320,7 @@ describe("rankFree membership", () => {
     const out = await rankFree("user", [item("brewed")], {
       collection: [legend("brewed")],
       availability: new Map([["brewed", { ...avail(1, 0), soft: 1 }]]),
-    });
+    }, ENV_VIEW);
     expect(out.items.map((i) => i.oracleId)).toEqual(["brewed"]);
   });
 
@@ -327,7 +328,7 @@ describe("rankFree membership", () => {
     const out = await rankFree("user", [item("unclaimed")], {
       collection: [legend("unclaimed")],
       availability: new Map(),
-    });
+    }, ENV_VIEW);
     expect(out.items.map((i) => i.oracleId)).toEqual(["unclaimed"]);
   });
 
@@ -340,7 +341,7 @@ describe("rankFree membership", () => {
     const out = await rankFree("user", [item("held"), item("gone")], {
       collection: [legend("held")],
       availability: new Map(),
-    });
+    }, ENV_VIEW);
 
     expect(out.ok).toBe(false);
     expect(out.items).toEqual([]);
@@ -352,7 +353,7 @@ describe("rankFree membership", () => {
     });
     loadAvailability.mockResolvedValue(new Map([["sleeved", avail(1, 1)]]));
 
-    const out = await rankFree("user-own-reads", [item("sleeved"), item("spare")]);
+    const out = await rankFree("user-own-reads", [item("sleeved"), item("spare")], undefined, ENV_VIEW);
 
     expect(out.ok).toBe(true);
     expect(out.items.map((i) => i.oracleId)).toEqual(["spare"]);

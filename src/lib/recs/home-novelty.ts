@@ -30,7 +30,7 @@ export function unplayedCountsSql(
   userId: string,
   limit = NOVELTY_CANDIDATES,
   /** The reader's resolved switches: the stale-set test is `loadScores`'s, under the reader's basis. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): SQL {
   // Raw and aliased throughout: every column is written out against its own alias, so no bare name
   // can resolve against the wrong table (AGENTS.md, the correlated-subquery rule).
@@ -85,7 +85,7 @@ export function unplayedCountsSql(
  */
 export async function loadUnplayedCounts(
   userId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, number> | null> {
   try {
     const { rows } = await db.execute<{ oracleId: string; unplayed: number }>(unplayedCountsSql(userId, NOVELTY_CANDIDATES, env));

@@ -48,6 +48,7 @@ import ws from "ws";
 import { collectionGeneration, indexGeneration, persistScores, SCORE_INDEX_LOCK } from "../src/lib/recs/store";
 import { buildCommanderIndex } from "../src/lib/edhrec/seed-index";
 import type { RankedCommander } from "../src/lib/recs/recommend";
+// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -316,7 +317,7 @@ try {
       [support.oracle_id],
     );
 
-    const writing = persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), captured);
+    const writing = persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), captured, undefined, process.env);
     await waitForLockWaiter("the score write");
     await rebuilder.query("commit");
     await writing;
@@ -328,7 +329,7 @@ try {
   // And the same call against the fingerprint the index now carries does write,
   // so case 3 is measuring the comparison rather than a writer that never
   // writes at all.
-  await persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), await indexGen());
+  await persistScores(USER, [ranked(subject.oracle_id)], await collectionGeneration(USER), await indexGen(), undefined, process.env);
   check("the same write lands against the current fingerprint", await scoreRows(), 1);
 } catch (err) {
   // A `process.exit` in the `finally` below swallows whatever threw — the first

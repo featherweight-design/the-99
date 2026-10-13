@@ -12,6 +12,7 @@
 // that scored out of 100 and carry receipts, and the banner would then have
 // vanished once the set persisted.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const pool = vi.hoisted(() => ({ collection: [] as unknown[] }));
 vi.mock("../../db", () => ({
@@ -90,7 +91,7 @@ describe("recommendCommanders — the degraded flag", () => {
     live.unreachable = true;
     support.lists = new Map([["cmd", { total: 4, oracleIds: ["sol"] }]]);
 
-    const { results, degraded } = await recommendCommanders("u1");
+    const { results, degraded } = await recommendCommanders("u1", ENV_VIEW);
     expect(results).toHaveLength(1);
     expect(results[0].fitSynergy).not.toBeNull();
     expect(results[0].synergyState).toBe("ok");
@@ -101,7 +102,7 @@ describe("recommendCommanders — the degraded flag", () => {
   // row says so, and the banner agrees.
   it("is true during an outage when the index had no figure either", async () => {
     live.unreachable = true;
-    const { results, degraded } = await recommendCommanders("u2");
+    const { results, degraded } = await recommendCommanders("u2", ENV_VIEW);
     expect(results[0].fitSynergy).toBeNull();
     expect(results[0].synergyState).toBe("degraded");
     expect(degraded).toBe(true);
@@ -109,7 +110,7 @@ describe("recommendCommanders — the degraded flag", () => {
 
   // No index row and a healthy live read is a settled absence, not an outage.
   it("is false when there is no figure and the live read was healthy", async () => {
-    const { results, degraded } = await recommendCommanders("u3");
+    const { results, degraded } = await recommendCommanders("u3", ENV_VIEW);
     expect(results[0].synergyState).toBe("absent");
     expect(degraded).toBe(false);
   });
@@ -123,7 +124,7 @@ describe("recommendCommanders — the degraded flag", () => {
         support.lists = indexed
           ? new Map([["cmd", { total: 4, oracleIds: ["sol"] }]])
           : new Map();
-        const { results, degraded } = await recommendCommanders("u4");
+        const { results, degraded } = await recommendCommanders("u4", ENV_VIEW);
         expect(degraded).toBe(results.some((r) => r.synergyState === "degraded"));
       }
     }
@@ -134,10 +135,10 @@ describe("recommendCommanders — the degraded flag", () => {
 // targets loaded for it, never the flat constants.
 describe("recommendCommanders — the role targets", () => {
   it("scores each commander against the targets the reader loaded", async () => {
-    const flat = await recommendCommanders("u-targets-flat");
+    const flat = await recommendCommanders("u-targets-flat", ENV_VIEW);
     roleTargetMock.measured = true;
     try {
-      const measured = await recommendCommanders("u-targets-measured");
+      const measured = await recommendCommanders("u-targets-measured", ENV_VIEW);
       expect(measured.results[0].fitRoles).toBeGreaterThan(flat.results[0].fitRoles);
     } finally {
       roleTargetMock.measured = false;

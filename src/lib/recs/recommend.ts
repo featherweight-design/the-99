@@ -271,8 +271,8 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
 export async function recommendCommanders(
   userId: string,
   /** The reader's resolved switches (`requestSwitchEnv`): the role basis follows its
-   *  `LABEL_ROLE_COUNTS_ENABLED`. The environment alone only for a caller outside a request (a script). */
-  env: NodeJS.ProcessEnv = process.env,
+   *  `LABEL_ROLE_COUNTS_ENABLED`. A script, outside a request, passes `process.env`. */
+  env: NodeJS.ProcessEnv,
 ): Promise<RecommendResult> {
   const { collection, uniqueCardsRead } = await loadCollectionPool(userId);
 
@@ -376,9 +376,9 @@ export async function scoreOneCommander(
   userId: string,
   oracleId: string,
   slug: string,
-  pool?: PoolCard[],
+  pool: PoolCard[] | undefined,
   /** The reader's resolved switches, as `recommendCommanders` takes them. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<CommanderDetailScore | null> {
   const { collection } = await loadCollectionPool(userId);
   // A discovery commander is by definition one the player may not own, so a

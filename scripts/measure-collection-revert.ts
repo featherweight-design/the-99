@@ -107,7 +107,7 @@ async function main() {
     const scores = (await pool.query("select count(*)::int as n from commander_scores where user_id = $1", [userId])).rows[0].n;
     console.log(`TIME  one-card edit: ${editMs.toFixed(0)}ms (${edited.status}); scores left after it: ${scores}`);
     const recompute: number[] = [];
-    for (let i = 0; i < 3; i++) recompute.push((await timed(() => recommendCommanders(userId)))[1]);
+    for (let i = 0; i < 3; i++) recompute.push((await timed(() => recommendCommanders(userId, process.env)))[1]);
     console.log(`TIME  the recompute the next Commanders visit pays: median ${median(recompute).toFixed(0)}ms of ${recompute.map((x) => x.toFixed(0)).join(", ")}`);
   } finally {
     const c = await pool.connect();

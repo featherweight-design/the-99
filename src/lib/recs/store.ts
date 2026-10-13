@@ -52,7 +52,7 @@ export type ScoreRowWithCard = {
 
 /** `env` is the reader's resolved switches: the writer version carries the role basis (`scoreWriterVersion`),
  *  and the basis follows the reader's `LABEL_ROLE_COUNTS_ENABLED`, which takes an app-wide override. */
-export function toScoreRow(userId: string, r: RankedCommander, env: NodeJS.ProcessEnv = process.env) {
+export function toScoreRow(userId: string, r: RankedCommander, env: NodeJS.ProcessEnv) {
   return {
     userId,
     oracleId: r.oracleId,
@@ -243,7 +243,7 @@ export async function persistScores(
    * whose index has moved since is dropped, which closes the rebuild race — see
    * `indexGeneration`.
    *
-   * `undefined` — omitted — is "do not check", the behaviour every caller had
+   * `undefined` is "do not check", the behaviour every caller had
    * before this existed. Every reading is a string: an index with no rows at all
    * reads as the token's own unstamped constant, which compares equal to itself,
    * so "empty" stays a real reading rather than collapsing onto "no opinion".
@@ -254,7 +254,7 @@ export async function persistScores(
    * closed by `SCORE_WRITER_CURRENT`, which version 4 bumps for this reason
    * alone: rows an unguarded writer leaves behind announce 3 and are refused.
    */
-  indexGen?: string,
+  indexGen: string | undefined,
   /**
    * What the compute read its label sets as (labels basis only). Re-read under the same shared
    * lock a label publish retires scores behind: a publish committing before the compute's labels
@@ -262,10 +262,10 @@ export async function persistScores(
    * fingerprint, and one holding the lock makes this wait. Either way no row counted by labels
    * that have since moved is stored. Absent is "do not check".
    */
-  labelCheck?: LabelCheck,
+  labelCheck: LabelCheck | undefined,
   /** The env the scores were COMPUTED under (the reader's resolved switches), so the version stamped
    *  names the basis they were counted by, not the environment's. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<void> {
   // A token taken over a failed read guards nothing, so there is nothing to compare against.
   if (indexGen === INDEX_UNREADABLE) return;
@@ -365,7 +365,7 @@ export async function persistScores(
 export async function loadScores(
   userId: string,
   /** The reader's resolved switches: a set is current only under the basis this reader counts by. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ items: CommanderListItem[]; degradedOracleIds: string[] }> {
   try {
     const rows = await db
@@ -462,7 +462,7 @@ export async function loadScores(
  * excludes what the player owns), and its detail page 404s. That is a separate
  * question, and not one to settle by handing out a rank no list agrees with.
  */
-export function rankableScoreRows(userId: string, env: NodeJS.ProcessEnv = process.env) {
+export function rankableScoreRows(userId: string, env: NodeJS.ProcessEnv) {
   return and(
     eq(commanderScores.userId, userId),
     sql`not exists (
@@ -487,7 +487,7 @@ export async function findScoredCommander(
   userId: string,
   slug: string,
   /** The reader's resolved switches, as `loadScores` takes them: the rank window is the list's. */
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): Promise<{ oracleId: string; rank: number; anyDegraded: boolean } | null> {
   try {
     const ranked = db.$with("ranked").as(

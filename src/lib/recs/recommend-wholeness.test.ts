@@ -7,6 +7,7 @@
 // `commander_scores` the moment a deck was built around it: a warm store
 // short-circuits the recompute, so deleting that deck never brought it back.
 import { describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 const pool = [
   { oracleId: "korvold", name: "Korvold, Fae-Cursed King" },
@@ -58,14 +59,14 @@ const { recommendCommanders } = await import("./recommend");
 describe("recommendCommanders — what the persisted store is written from", () => {
   it("scores every candidate when the user has no decks", async () => {
     builtCommanderIds.length = 0;
-    const { results } = await recommendCommanders("user-1");
+    const { results } = await recommendCommanders("user-1", ENV_VIEW);
     expect(results.map((r) => r.oracleId).sort()).toEqual(["atraxa", "korvold"]);
   });
 
   it("keeps a commander the user has already built a deck around", async () => {
     builtCommanderIds.length = 0;
     builtCommanderIds.push("korvold");
-    const { results, candidateCount } = await recommendCommanders("user-1");
+    const { results, candidateCount } = await recommendCommanders("user-1", ENV_VIEW);
     expect(results.map((r) => r.oracleId).sort()).toEqual(["atraxa", "korvold"]);
     // The figure the page prints is `getRankedList`'s, counted after the read's
     // exclusion. This one counts what was scored, which is what the store holds.

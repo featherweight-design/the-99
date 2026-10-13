@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW } from "@/test/env-view";
 
 // Two queries, two shapes. `loadCollectionPool` ends at `.orderBy`,
 // `loadPoolCard` at `.limit` — the mock returns a chain that answers both and
@@ -88,7 +89,7 @@ describe("scoreOneCommander", () => {
     // A distinct userId per case: `loadCollectionPool` is wrapped in `cache`,
     // which memoizes on that argument, so a shared id would let the first case's
     // collection answer the second one.
-    const got = await scoreOneCommander("user-unowned", "unowned", "atraxa");
+    const got = await scoreOneCommander("user-unowned", "unowned", "atraxa", undefined, ENV_VIEW);
     expect(got).not.toBeNull();
     expect(got!.name).toBe("Atraxa, Praetors' Voice");
     // The one owned card is colour-legal and is not the commander, so the pool
@@ -101,10 +102,10 @@ describe("scoreOneCommander", () => {
   it("grades the roles against the targets the reader loaded", async () => {
     pool.collection = [card({ oracleId: "owned-1", name: "Owned" })];
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
-    const flat = await scoreOneCommander("user-targets-flat", "unowned", "atraxa");
+    const flat = await scoreOneCommander("user-targets-flat", "unowned", "atraxa", undefined, ENV_VIEW);
     roleTargetMock.measured = true;
     try {
-      const measured = await scoreOneCommander("user-targets-measured", "unowned", "atraxa");
+      const measured = await scoreOneCommander("user-targets-measured", "unowned", "atraxa", undefined, ENV_VIEW);
       expect(measured!.fitRoles).toBeGreaterThan(flat!.fitRoles);
       // And it RETURNS them, so Role Coverage and the thinnest role read the same ones (§5.4b).
       expect(measured!.roleTargets.of).toBe("commander");
@@ -118,7 +119,7 @@ describe("scoreOneCommander", () => {
     // Format legality is not commander candidacy: an Instant carries the first
     // and fails the second, and a crafted URL is the only way to ask for one.
     pool.card = [card({ oracleId: "bolt", name: "Lightning Bolt", typeLine: "Instant" })];
-    expect(await scoreOneCommander("user-instant", "bolt", "lightning-bolt")).toBeNull();
+    expect(await scoreOneCommander("user-instant", "bolt", "lightning-bolt", undefined, ENV_VIEW)).toBeNull();
   });
 
   // Marked here rather than in `scoreCommander`, so that both readers of this
@@ -131,14 +132,14 @@ describe("scoreOneCommander", () => {
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
     committed.value = new Map([["sol", { id: "d1", name: "Krenko" }]]);
 
-    const got = await scoreOneCommander("user-committed", "unowned", "atraxa");
+    const got = await scoreOneCommander("user-committed", "unowned", "atraxa", undefined, ENV_VIEW);
     const byId = new Map(got!.roleCards.ramp.map((c) => [c.oracleId, c.committedTo]));
     expect(byId.get("sol")).toBe("Krenko");
     expect(byId.get("signet")).toBeNull();
   });
 
   it("still returns null for an oracle id that is in no table", async () => {
-    expect(await scoreOneCommander("user-missing", "nonsense", "nonsense")).toBeNull();
+    expect(await scoreOneCommander("user-missing", "nonsense", "nonsense", undefined, ENV_VIEW)).toBeNull();
   });
 });
 
@@ -154,7 +155,7 @@ describe("scoreOneCommander with an explicit pool", () => {
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
 
     const free = [pool.collection[0]] as PoolCard[];
-    const got = await scoreOneCommander("user-pool", "unowned", "atraxa", free);
+    const got = await scoreOneCommander("user-pool", "unowned", "atraxa", free, ENV_VIEW);
     expect(got!.colorPoolSize).toBe(1);
     expect(got!.roleCards.ramp.map((c) => c.oracleId)).toEqual(["sol"]);
   });
@@ -164,7 +165,7 @@ describe("scoreOneCommander with an explicit pool", () => {
   // up there would 404 a page the list just linked to.
   it("still finds a commander the pool excludes", async () => {
     pool.collection = [card({ oracleId: "cmd", name: "Atraxa, Praetors' Voice" })];
-    const got = await scoreOneCommander("user-pool-excludes", "cmd", "atraxa", []);
+    const got = await scoreOneCommander("user-pool-excludes", "cmd", "atraxa", [], ENV_VIEW);
     expect(got).not.toBeNull();
     expect(got!.colorPoolSize).toBe(0);
   });
@@ -191,7 +192,7 @@ describe("scoreOneCommander committed-support attribution", () => {
     ]);
 
     // Both support cards are sleeved, so the free pool holds neither.
-    const got = await scoreOneCommander("user-committed-free", "unowned", "atraxa", []);
+    const got = await scoreOneCommander("user-committed-free", "unowned", "atraxa", [], ENV_VIEW);
     expect(got!.committedSupport).toEqual({ count: 2, topDeck: "Krenko" });
     // The score still speaks for the pool it was given.
     expect(got!.edhrecOwnedCount).toBe(0);
