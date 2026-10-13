@@ -18,19 +18,21 @@ import { freeRoom, hasCredit } from "./allowance-rule";
 const SRC = join(process.cwd(), "src");
 const RULE_FILE = "lib/model/allowance-rule.ts";
 const OPS = String.raw`(?:>=|<=|===|!==|==|!=|<|>)`;
+// Matched over the WHOLE text, never line by line: `\s` spans a line break, so a comparison a
+// formatter splits across two lines is still found.
 const COMPARISON = new RegExp(
   String.raw`\bused\b\s*${OPS}\s*[\w.?!]*\blimit\b|\blimit\b\s*${OPS}\s*[\w.?!]*\bused\b`,
+  "g",
 );
-const BY_HAND = /\blimit\b\s*-\s*[\w.?!]*\bused\b/;
+const BY_HAND = /\blimit\b\s*-\s*[\w.?!]*\bused\b/g;
 const ON_THE_COUNT = new RegExp(
   String.raw`freeCount\([^)]*\)\s*${OPS}|${OPS}\s*freeCount\(|\bleft\b\s*${OPS}\s*\d|\d\s*${OPS}\s*\bleft\b`,
+  "g",
 );
 
 function comparisons(text: string): string[] {
-  const countsFree = text.includes("freeCount(");
-  return text.split("\n")
-    .filter((line) => COMPARISON.test(line) || BY_HAND.test(line) || (countsFree && ON_THE_COUNT.test(line)))
-    .map((l) => l.trim());
+  const patterns = text.includes("freeCount(") ? [COMPARISON, BY_HAND, ON_THE_COUNT] : [COMPARISON, BY_HAND];
+  return patterns.flatMap((re) => [...text.matchAll(re)].map((m) => m[0].replace(/\s+/g, " ")));
 }
 
 function sourceFiles(dir: string): string[] {
@@ -61,6 +63,9 @@ describe("out of credits is decided by allowance-rule.ts alone", () => {
       "const left = freeCount(allowance);\nif (left > 0) return {",
       "const spent = !freeLeft && (left === 0 || !!allowance.paused);\nconst left = freeCount(a);",
       "if (freeCount(a) > 0) return",
+      // Split by a formatter across two lines.
+      "if (\n  state.allowance.used >=\n  state.allowance.limit\n) {",
+      "const left = Math.max(0, allowance.limit -\n  allowance.used);",
     ]) expect(comparisons(shape)).toHaveLength(1);
     for (const fine of [
       "const left = freeCount(allowance);",
