@@ -106,13 +106,30 @@ const metamorphous = localFont({
 // THE ONLY FAMILY WITH A STYLE AXIS. `style: ["normal", "italic"]` was declared
 // here before self-hosting, and dropping it renders every italic in body text as
 // a browser-synthesized oblique of the upright rather than the real italic face.
+//
+// TWO CALLS, ONE FAMILY. `preload` is per call, and no first screen draws the italic
+// (measured on staging, 2026-10-13: 0 of 18 route and width first screens). Preloaded,
+// its 44KB shared a slow phone's line with the one render-blocking stylesheet on every
+// page. So the italic is its own call, not preloaded, and names the upright's family in
+// its `@font-face` (`declarations`; both calls spell the family out, since a font call takes
+// literals only), which is what keeps `font-style: italic` picking
+// the real italic face rather than a synthesized oblique. It brings no fallback face of
+// its own: the upright's metric-matched fallback already carries that name.
 const plexSans = localFont({
-  src: [
-    { path: "./fonts/ibm-plex-sans-variable.woff2", weight: "400 600", style: "normal" },
-    { path: "./fonts/ibm-plex-sans-italic-variable.woff2", weight: "400 600", style: "italic" },
-  ],
+  src: [{ path: "./fonts/ibm-plex-sans-variable.woff2", weight: "400 600", style: "normal" }],
   variable: "--font-plex-sans",
+  declarations: [{ prop: "font-family", value: "plexSans" }],
   display: "swap",
+});
+
+const plexSansItalic = localFont({
+  src: [{ path: "./fonts/ibm-plex-sans-italic-variable.woff2", weight: "400 600", style: "italic" }],
+  // Read by nothing: it is on <html> only so the @font-face is emitted with the rest.
+  variable: "--font-plex-sans-italic",
+  declarations: [{ prop: "font-family", value: "plexSans" }],
+  adjustFontFallback: false,
+  display: "swap",
+  preload: false,
 });
 
 const plexMono = localFont({
@@ -149,7 +166,7 @@ export default async function RootLayout({
       <html
         lang="en"
         data-theme={theme}
-        className={`${cinzel.variable} ${chakraPetch.variable} ${trirong.variable} ${syncopate.variable} ${cormorantGaramond.variable} ${metamorphous.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+        className={`${cinzel.variable} ${chakraPetch.variable} ${trirong.variable} ${syncopate.variable} ${cormorantGaramond.variable} ${metamorphous.variable} ${plexSans.variable} ${plexSansItalic.variable} ${plexMono.variable} h-full antialiased`}
       >
         {/* Signed-out routes render without the shell, so the stretch chain has
             to start here or a full-height child has nothing to grow into. */}

@@ -28,13 +28,15 @@ const fontFiles = readdirSync(join(HERE, "fonts"));
 const declaredPaths = [...layout.matchAll(/path:\s*"\.\/fonts\/([^"]+)"/g)].map((m) => m[1]);
 
 describe("self-hosted fonts", () => {
-  it("declares eight families through next/font/local, and imports nothing from Google", () => {
+  it("declares eight families in nine next/font/local calls, and imports nothing from Google", () => {
     // The IMPORT, not the string: the comments above the declarations explain at
     // length why this moved off `next/font/google`, so a bare substring check
     // fails on its own rationale.
     expect(layout).not.toMatch(/^\s*import\b[^;]*["']next\/font\/google["']/m);
     expect(layout).toMatch(/^import localFont from "next\/font\/local";$/m);
-    expect([...layout.matchAll(/=\s*localFont\(\{/g)]).toHaveLength(8);
+    // Nine calls: Plex Sans's italic is a call of its own (so it can skip the preload), naming the
+    // upright's family.
+    expect([...layout.matchAll(/=\s*localFont\(\{/g)]).toHaveLength(9);
   });
 
   it("points every declaration at a file that exists", () => {
@@ -90,6 +92,25 @@ describe("self-hosted fonts", () => {
         "preload: false",
       );
     }
+  });
+
+  // The italic is drawn on no first screen, so it is not preloaded; and it must name the upright's
+  // family, or `font-style: italic` falls back to a synthesized oblique of the upright.
+  it("keeps the Plex Sans italic out of the preload, in the upright's family", () => {
+    const blockFor = (variable: string) => {
+      const from = layout.indexOf(`variable: "${variable}"`);
+      const start = layout.lastIndexOf("localFont({", from);
+      return layout.slice(start, layout.indexOf("});", from));
+    };
+    const upright = blockFor("--font-plex-sans");
+    const italic = blockFor("--font-plex-sans-italic");
+    expect(upright).toContain("ibm-plex-sans-variable.woff2");
+    expect(upright).not.toContain("italic");
+    expect(italic).toContain("ibm-plex-sans-italic-variable.woff2");
+    expect(italic).toContain("preload: false");
+    const family = (block: string) => block.match(/prop: "font-family", value: "([^"]+)"/)?.[1];
+    expect(family(italic)).toBeDefined();
+    expect(family(italic)).toBe(family(upright));
   });
 
   it("keeps every CSS variable name the styles read", () => {
