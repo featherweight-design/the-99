@@ -17,7 +17,8 @@ const enabled = vi.hoisted(() => ({ value: true }));
 vi.mock("./list-cache-flag", () => ({ listCacheEnabled: () => enabled.value }));
 // The reader's resolved switches, as `resolveSwitchEnv` hands them over.
 const switchEnv = vi.hoisted(() => ({ value: {} as NodeJS.ProcessEnv }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => switchEnv.value) }));
+// The environment, with any override a test lays over it, as the resolver hands it back.
+vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: vi.fn(async () => ({ ...process.env, ...switchEnv.value })) }));
 
 import { cacheForUser } from "./user-lists";
 import { userDataStamp } from "./user-data-stamp";
