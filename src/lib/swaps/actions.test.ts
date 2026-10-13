@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// The reader's resolved switches: a sentinel holding no variable at all (the flags are mocked below), so a
+// write is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
+const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
 // The two Fits actions are PUBLIC ENDPOINTS: every gate is re-checked here, and the add's
 // revalidation waits for `after()` rather than shipping the caller's page back.
@@ -22,7 +23,11 @@ vi.mock("../decks/add-card", () => ({
   revalidateAdd: vi.fn(),
 }));
 
-const { addFromFits, loadFitsAction, swapFromReadAction, undoReadAddAction, undoReadSwapAction } = await import("./actions");
+const {
+  addFromFits, loadFitsAction, loadStandInsAction, swapFromReadAction, takeStandInAction, undoReadAddAction,
+  undoReadSwapAction, undoSwapAction,
+} = await import("./actions");
+const { loadStandIns } = await import("./gather");
 const { takeStandIn, undoSwap } = await import("./take");
 const { revalidateClaims } = await import("../decks/revalidate-claims");
 const { requireDeck } = await import("../decks/read");
@@ -94,7 +99,7 @@ describe("swapFromReadAction", () => {
   it("takes the card for the read's cut, for the signed-in reader, and revalidates in after()", async () => {
     vi.mocked(takeStandIn).mockResolvedValueOnce({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
     expect(await swapFromReadAction(DECK, CUT, CARD)).toEqual({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
-    expect(takeStandIn).toHaveBeenCalledWith(DECK, "user_1", CUT, CARD);
+    expect(takeStandIn).toHaveBeenCalledWith(DECK, "user_1", CUT, CARD, ENV);
     expect(revalidateClaims).not.toHaveBeenCalled();
     await state.afters[0]();
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
@@ -119,7 +124,7 @@ describe("undoReadSwapAction", () => {
   it("undoes the reader's own swap and revalidates its deck in after()", async () => {
     vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
     expect(await undoReadSwapAction(SWAP)).toEqual({ ok: true });
-    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1");
+    expect(undoSwap).toHaveBeenCalledWith(SWAP, "user_1", ENV);
     await state.afters[0]();
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
   });
@@ -158,5 +163,33 @@ describe("undoReadAddAction", () => {
     vi.mocked(removeOneCopy).mockResolvedValueOnce(false);
     expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: false });
     expect(state.afters).toHaveLength(0);
+  });
+});
+
+// Admin adoption 6c: the Shopping sheet's swap tools hand the env they resolved for the reader to the take,
+// its undo and the stand-ins read. Identity with the sentinel, so a failing diff prints nothing real.
+describe("the swap tools' reads and writes take the reader's resolved env", () => {
+  const CUT = "33333333-3333-4333-8333-333333333333";
+  const SWAP = "44444444-4444-4444-8444-444444444444";
+
+  it("takeStandInAction hands it to the take", async () => {
+    vi.mocked(takeStandIn).mockResolvedValueOnce({ ok: true, swapId: SWAP, addWasFree: true, cutLeft: 0 });
+    await takeStandInAction(DECK, CUT, CARD);
+    expect(vi.mocked(takeStandIn).mock.calls[0]?.slice(0, 4)).toEqual([DECK, "user_1", CUT, CARD]);
+    expect(vi.mocked(takeStandIn).mock.calls[0]?.[4] === ENV).toBe(true);
+  });
+
+  it("undoSwapAction hands it to the undo", async () => {
+    vi.mocked(undoSwap).mockResolvedValueOnce(DECK);
+    expect(await undoSwapAction(SWAP)).toEqual({ ok: true });
+    expect(vi.mocked(undoSwap).mock.calls[0]?.slice(0, 2)).toEqual([SWAP, "user_1"]);
+    expect(vi.mocked(undoSwap).mock.calls[0]?.[2] === ENV).toBe(true);
+  });
+
+  it("loadStandInsAction hands it to the stand-ins read", async () => {
+    vi.mocked(loadStandIns).mockResolvedValueOnce(null);
+    await loadStandInsAction(DECK, CUT, true);
+    expect(vi.mocked(loadStandIns).mock.calls[0]?.slice(0, 4)).toEqual([DECK, "user_1", CUT, true]);
+    expect(vi.mocked(loadStandIns).mock.calls[0]?.[4] === ENV).toBe(true);
   });
 });

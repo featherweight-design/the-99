@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cutFacts, type CutFacts } from "../../lib/tuning/cuts";
 import { deck, profile, support } from "../../lib/tuning/cuts-fixture";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// The reader's resolved switches: a sentinel holding no variable (the flag is mocked below), so every read
+// and write is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
+const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
 // What the tests pin: the order of refusals against the reservation, the refund on every failure
 // path, and what a kept cut is persisted as. The reads and the run store are mocked; the pack, the
@@ -36,7 +37,10 @@ const calls = vi.hoisted(() => ({
   verdictModes: [] as unknown[],
   fingerprints: ["fp0", "fp1"] as string[],
   recorded: [] as { listFingerprint: string; tool: string }[],
+  /** The env each mocked read or write was handed, by name. */
+  envs: {} as Record<string, unknown[]>,
 }));
+const sawEnv = (name: string, env: unknown) => { (calls.envs[name] ??= []).push(env); };
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // History's free row is keyed on the LIST alone, never on the tool's input fingerprint ("fp").
@@ -55,16 +59,24 @@ vi.mock("../../db", () => ({
   db: { select: () => ({ from: () => ({ where: async () => calls.textRows }) }) },
 }));
 vi.mock("../../lib/decks/cuts-read", () => ({
-  readProposedCuts: async () => {
+  readProposedCuts: async (_d: string, _u: string, env?: unknown) => {
+    sawEnv("readProposedCuts", env);
     calls.inputsReads += 1;
     const inputs = calls.inputs as { fingerprint: string } | null;
     const withKeys = inputs ? { ...inputs, keyCards: calls.keyCards } : inputs;
     return withKeys && calls.fingerprints.length > 0 ? { ...withKeys, fingerprint: calls.fingerprints[Math.min(calls.inputsReads - 1, calls.fingerprints.length - 1)] } : withKeys;
   },
-  readCutsState: async (_d: string, _u: string, _n?: Date, runId?: string | null) => { calls.stateRunId = runId; return calls.state; },
+  readCutsState: async (_d: string, _u: string, _n?: Date, runId?: string | null, env?: unknown) => {
+    sawEnv("readCutsState", env);
+    calls.stateRunId = runId;
+    return calls.state;
+  },
   reapCutsRuns: async () => { calls.reaped += 1; },
 }));
-vi.mock("../../lib/decks/tuning-read", () => ({ commanderName: async () => "Gishath", profileOfHead: async () => ({}) }));
+vi.mock("../../lib/decks/tuning-read", () => ({
+  commanderName: async () => "Gishath",
+  profileOfHead: async (_head: unknown, env?: unknown) => { sawEnv("profileOfHead", env); return {}; },
+}));
 // The plan read is its own module with its own test; here it answers a fixed plan (or throws, to prove the run carries on without one).
 vi.mock("../../lib/decks/cuts-plan-read", () => ({
   readCutsPlan: async () => {
@@ -77,7 +89,8 @@ vi.mock("../../lib/tuning/run-store", async (importOriginal) => ({
   runIsPending: async () => calls.runPending,
 }));
 vi.mock("../../lib/tuning/cuts-run-store", () => ({
-  startCutsRun: async () => {
+  startCutsRun: async (_u: string, _d: string, _f: string, _v: unknown, opts?: { env?: unknown }) => {
+    sawEnv("startCutsRun", opts?.env);
     calls.started += 1;
     return calls.startKind === "started" ? { kind: "started", runId: "run_1", callId: "call_1" } : { kind: calls.startKind };
   },
@@ -85,8 +98,12 @@ vi.mock("../../lib/tuning/cuts-run-store", () => ({
   persistCutsRun: async (...args: unknown[]) => { calls.persisted.push(args); return calls.persistResult; },
 }));
 vi.mock("../../lib/tuning/cuts-verdicts", () => ({
-  cutItem: async (_i: string, _u: string, mode?: unknown) => { calls.verdictCalls.push("cut"); calls.verdictModes.push(mode); return calls.verdict; },
-  undoCutItem: async (_i: string, _u: string, mode?: unknown) => { calls.verdictCalls.push("undo"); calls.verdictModes.push(mode); return calls.verdict; },
+  cutItem: async (_i: string, _u: string, mode?: unknown, env?: unknown) => {
+    sawEnv("cutItem", env); calls.verdictCalls.push("cut"); calls.verdictModes.push(mode); return calls.verdict;
+  },
+  undoCutItem: async (_i: string, _u: string, mode?: unknown, env?: unknown) => {
+    sawEnv("undoCutItem", env); calls.verdictCalls.push("undo"); calls.verdictModes.push(mode); return calls.verdict;
+  },
   setCutKept: async (_i: string, _u: string, kept: boolean) => { calls.verdictCalls.push(kept ? "keep" : "restore"); return calls.verdict; },
 }));
 const USAGE = { inputTokens: 5_000, outputTokens: 1_200, cacheReadTokens: 0, cacheWriteTokens: 0 };
@@ -130,6 +147,7 @@ const inputsFor = (facts: CutFacts, over: object = {}) => ({
 });
 
 beforeEach(() => {
+  calls.envs = {};
   calls.stateRunId = undefined;
   calls.verdictModes = [];
   calls.enabled = true;
@@ -542,5 +560,27 @@ describe("readCutsPanel", () => {
   it("is null with the switch off", async () => {
     calls.enabled = false;
     expect(await readCutsPanel(DECK)).toBeNull();
+  });
+});
+
+// Admin adoption 6c: every read and write the cuts actions reach takes the env the action resolved for the
+// reader, never the environment alone. Identity with the sentinel, so a failing diff prints nothing real.
+describe("the cuts actions hand the reader's resolved env on", () => {
+  it("to the inputs, the profile, the run start, the panel's state and both verdicts", async () => {
+    calls.inputs = inputsFor(factsFor(), { head: { declaredBracket: null, partnerOracleId: null } });
+    calls.state = {
+      run: null, items: [], itemsReport: { over: 6 }, lastOkFingerprint: null, lastOkAt: null, modelVersionMoved: false,
+      allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null },
+    };
+    expect(await runProposedCuts(DECK, { runId: RUN })).toEqual({ ok: true });
+    await readCutsPanel(DECK);
+    await cutProposed(ITEM);
+    await undoProposedCut(ITEM);
+    const names = ["readProposedCuts", "profileOfHead", "startCutsRun", "readCutsState", "cutItem", "undoCutItem"];
+    for (const name of names) {
+      const seen = calls.envs[name] ?? [];
+      expect(seen.length, name).toBeGreaterThan(0);
+      for (const env of seen) expect(env === ENV, name).toBe(true);
+    }
   });
 });

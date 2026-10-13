@@ -67,13 +67,13 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
  * And refused when the player has LOCKED the cut (Locked, F4; `planSwap`'s `cutLocked`): the one
  * refusal where the cut is still in the deck.
  */
-export async function applyItem(itemId: string, userId: string): Promise<string | null> {
+export async function applyItem(itemId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
     if (!item || item.verdict !== "pending") return null;
     const { deckId, addOracleId, cutOracleId } = item;
 
-    const plan = await planSwap(tx, deckId, cutOracleId, addOracleId);
+    const plan = await planSwap(tx, deckId, cutOracleId, addOracleId, env);
     if (!plan.ok) return null;
 
     // The verdict and the snapshot first, before the deck changes: undo can only ever read a
@@ -92,13 +92,13 @@ export async function applyItem(itemId: string, userId: string): Promise<string 
  * The deck exactly as it was before the apply (`restoreSwap`), and only over the deck the apply
  * left. The item returns to pending and its snapshot is cleared.
  */
-export async function undoItem(itemId: string, userId: string): Promise<string | null> {
+export async function undoItem(itemId: string, userId: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
   return db.transaction(async (tx) => {
     const item = await lockedItem(tx, itemId, userId);
     if (!item || item.verdict !== "accepted" || !item.undoSnapshot) return null;
     const { deckId, addOracleId, cutOracleId, undoSnapshot: snap } = item;
 
-    if (!(await restoreSwap(tx, deckId, cutOracleId, addOracleId, snap))) return null;
+    if (!(await restoreSwap(tx, deckId, cutOracleId, addOracleId, snap, env))) return null;
 
     await tx.update(deckSuggestionItems)
       .set({ verdict: "pending", verdictAt: null, undoSnapshot: null })

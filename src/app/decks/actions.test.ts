@@ -444,7 +444,9 @@ vi.mock("../../lib/decks/catalog-basics", () => ({ loadCatalogBasics: vi.fn(asyn
 vi.mock("../../lib/profile/load", () => ({ cachedDeckProfile: vi.fn() }));
 // The pin after a commit (ruling 2) is a whole analysis; what these tests own is that the commit
 // SCHEDULES it, off its own path, for the version it wrote.
-vi.mock("../../lib/profile/stored", () => ({ pinAnalysisToVersion: vi.fn() }));
+// The pin's profile reader is a fixed token here, so an assertion on the pin's arguments never holds an env.
+const PIN_DEPS = vi.hoisted(() => ({ pinDeps: true }));
+vi.mock("../../lib/profile/stored", () => ({ pinAnalysisToVersion: vi.fn(), requestProfileDeps: vi.fn(() => PIN_DEPS) }));
 vi.mock("../../lib/synopsis/pin", () => ({ pinSynopsisToVersion: vi.fn() }));
 vi.mock("../../lib/precons/origin-read", () => ({ readDeckOrigin: vi.fn(async () => null) }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
@@ -1388,7 +1390,8 @@ const aVersion = () => ({
 });
 
 const { cachedDeckProfile } = await import("../../lib/profile/load");
-const { pinAnalysisToVersion } = await import("../../lib/profile/stored");
+const { pinAnalysisToVersion, requestProfileDeps } = await import("../../lib/profile/stored");
+const { requestSwitchEnv } = await import("../../lib/switches/request");
 const { pinSynopsisToVersion } = await import("../../lib/synopsis/pin");
 const { slotDeck } = await import("../../lib/bracket/slot");
 
@@ -1429,6 +1432,23 @@ describe("commitDeckVersion", () => {
     );
   });
 
+  // Admin adoption 6c: the snapshot's profile is read under the env the commit resolved for the reader, so
+  // its cache key is the one the analysis tab filed it under. A sentinel env, compared by identity, so a
+  // failing diff prints nothing real.
+  it("reads the snapshot's profile, and builds the pin's reader, under the reader's resolved env", async () => {
+    const SENTINEL = { SENTINEL: "resolved" } as unknown as NodeJS.ProcessEnv;
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(SENTINEL);
+    stub.state.decks.push({
+      id: DECK_ID, userId: USER_ID, commanderOracleId: CMD, declaredBracket: 2,
+    });
+    vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
+    await commitDeckVersion(DECK_ID, null);
+    expect(vi.mocked(cachedDeckProfile).mock.calls.at(-1)?.slice(0, 2)).toEqual([DECK_ID, USER_ID]);
+    expect(vi.mocked(cachedDeckProfile).mock.calls.at(-1)?.[2]).toBe(SENTINEL);
+    for (const fn of stub.state.afters) await fn();
+    expect(vi.mocked(requestProfileDeps).mock.calls.at(-1)?.[0]).toBe(SENTINEL);
+  });
+
   // RULING 2: the commit pins the analysis to the version it wrote, in `after()` so the reader is
   // not held on a 2.2s analysis, and with the fingerprint of the list it froze so a later edit
   // cannot be pinned to it.
@@ -1441,7 +1461,7 @@ describe("commitDeckVersion", () => {
     expect(stub.state.afters).toHaveLength(1);
     await stub.state.afters[0]();
     expect(pinAnalysisToVersion).toHaveBeenCalledWith(
-      DECK_ID, USER_ID, { versionId: VERSION_ID, list: expect.stringMatching(/^[0-9a-f]{16,}$/) },
+      DECK_ID, USER_ID, { versionId: VERSION_ID, list: expect.stringMatching(/^[0-9a-f]{16,}$/) }, PIN_DEPS,
     );
     // The synopsis is copied with the same pin, never written (ruling 7).
     expect(pinSynopsisToVersion).toHaveBeenCalledWith(DECK_ID, USER_ID, vi.mocked(pinAnalysisToVersion).mock.calls[0][2]);

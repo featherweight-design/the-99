@@ -32,6 +32,8 @@ const stub = vi.hoisted(() => ({
   /** The switch value each benchmarks read was handed (its third argument). */
   benchmarksEnabled: [] as unknown[],
   deferred: 0,
+  /** The env each stored-profile read was built under (`requestProfileDeps`, reduced to its env). */
+  profileEnvs: [] as unknown[],
 }));
 
 vi.mock("next/cache", () => ({
@@ -69,14 +71,17 @@ vi.mock("../../lib/auth", () => ({
 const STORED_AT = new Date("2026-09-18T12:00:00Z");
 
 vi.mock("../../lib/profile/stored", () => ({
-  computeAndStoreProfile: async () => {
+  requestProfileDeps: (env: unknown) => ({ env }),
+  computeAndStoreProfile: async (_deckId: string, _userId: string, deps?: { env?: unknown }) => {
+    stub.profileEnvs.push(deps?.env);
     stub.reads.push("profile");
     if (stub.illegal) return { kind: "illegal", ...stub.illegal };
     return stub.profile
       ? { kind: "ok", reading: { profile: stub.profile, analyzedAt: stub.pressedAt, fresh: true, versionId: null, versionNumber: stub.versionNumber } }
       : null;
   },
-  readStoredReading: async () => {
+  readStoredReading: async (_deckId: string, _userId: string, deps?: { env?: unknown }) => {
+    stub.profileEnvs.push(deps?.env);
     stub.reads.push("stored");
     return stub.stored
       ? { profile: stub.stored, analyzedAt: STORED_AT, fresh: stub.storedFresh, versionId: null, versionNumber: stub.versionNumber }
@@ -89,6 +94,7 @@ const { fetchDeckProfile, fetchStoredDeckProfile } = await import("./profile-act
 const DECK = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
+  stub.profileEnvs = [];
   stub.enabled = true;
   stub.profile = { brackets: {} };
   stub.illegal = null;
@@ -261,6 +267,17 @@ describe("the reading's benchmarks", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  // Admin adoption 6c: the profile is built and keyed under the reader's resolved switches. A sentinel env,
+  // compared by identity, so a failing diff prints nothing real.
+  it("reads the profile under the env it resolved for the reader, from a press and from the store", async () => {
+    const SENTINEL = { SENTINEL: "resolved" } as unknown as NodeJS.ProcessEnv;
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(SENTINEL).mockResolvedValueOnce(SENTINEL);
+    await fetchDeckProfile(DECK);
+    await fetchStoredDeckProfile(DECK);
+    expect(stub.profileEnvs).toHaveLength(2);
+    for (const env of stub.profileEnvs) expect(env).toBe(SENTINEL);
   });
 
   it("reads none when there is no reading to grade", async () => {

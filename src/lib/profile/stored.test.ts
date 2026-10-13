@@ -6,7 +6,8 @@ vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./load", () => ({ cachedDeckProfile: vi.fn(), loadDeckProfile: vi.fn(), readProfileHead: vi.fn() }));
 vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: vi.fn() }));
 
-const { deckLegality, storedBasisMoved, pressMustRecompute } = await import("./stored");
+const { deckLegality, storedBasisMoved, pressMustRecompute, requestProfileDeps } = await import("./stored");
+const { cachedDeckProfile, loadDeckProfile } = await import("./load");
 
 const cards = (n: number) => Array.from({ length: n }, (_, i) => ({ oracleId: `c${i}`, quantity: 1 }));
 
@@ -85,5 +86,21 @@ describe("pressMustRecompute", () => {
     await pressMustRecompute({ ...base, storedProfile: classifier, noticesOn: true, logMoved });
     expect(logMoved).not.toHaveBeenCalled();
     vi.unstubAllEnvs();
+  });
+});
+
+// Admin adoption 6c: the stored-read path builds under the reader's resolved switches, so the cached build
+// keys on the reader's switch bits, the same key `profileOfHead` files under. A sentinel env, compared by
+// identity, so a failing diff prints nothing real.
+describe("requestProfileDeps", () => {
+  const ENV = { SENTINEL: "resolved" } as unknown as NodeJS.ProcessEnv;
+
+  it("hands the reader's env to both builds and carries it for the press's switches", async () => {
+    const deps = requestProfileDeps(ENV);
+    await deps.compute("deck", "user");
+    await deps.computeFresh?.("deck", "user");
+    expect(vi.mocked(cachedDeckProfile).mock.calls[0]?.[2]).toBe(ENV);
+    expect(vi.mocked(loadDeckProfile).mock.calls[0]?.[2]).toBe(ENV);
+    expect(deps.env).toBe(ENV);
   });
 });

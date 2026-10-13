@@ -67,8 +67,8 @@ export async function recordLate(tx: Tx, callId: string, billed: Billed | readon
  * `startRun` takes. Throws `AllLockedError`; a no-op while `NEVER_CUT_ENABLED` is off. Shared by
  * both tools' starts (`cuts-run-store.ts`).
  */
-export async function assertSomeCardOpen(tx: Tx, deckId: string): Promise<void> {
-  if (neverCutEnabled()) {
+export async function assertSomeCardOpen(tx: Tx, deckId: string, env: NodeJS.ProcessEnv = process.env): Promise<void> {
+  if (neverCutEnabled(env)) {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     const { rows: [body] } = await tx.execute<{ cards: number; open: number }>(sql`
       select count(*)::int as cards,
@@ -98,12 +98,12 @@ export async function startRun(
    * `runId` is the id the panel chose for this press, so it waits on exactly the run it started
    * and never another tab's (the row's default makes one when absent).
    */
-  opts: { runId?: string; now?: Date } = {},
+  opts: { runId?: string; now?: Date; env?: NodeJS.ProcessEnv } = {},
 ): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "paused" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
-      await assertSomeCardOpen(tx, deckId);
+      await assertSomeCardOpen(tx, deckId, opts.env ?? process.env);
       const unit = await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
       if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
       const [row] = await tx.insert(deckSuggestionRuns).values({

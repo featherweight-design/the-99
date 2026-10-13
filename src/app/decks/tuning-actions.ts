@@ -221,19 +221,19 @@ export async function runTuning(
   }
   const notes = trimmedNotes === "" ? null : trimmedNotes;
 
-  const inputs = await tuningInputs(deckId, userId);
+  const inputs = await tuningInputs(deckId, userId, env);
   if (!inputs) return { ok: false, message: deckTuningCopy.run.refused };
   const { head, games, intent, declared, fingerprint, readVersion, locked, allLocked, limits } = inputs;
 
   // `allLocked` is a gate reason, so this refusal lands BEFORE `startRun` reserves a credit: the
   // panel's "No credit is used." is true of the server, not only of a disabled button.
-  const gate = gateReason(await readTuningState(deckId, userId, fingerprint, new Date(), { allLocked }));
+  const gate = gateReason(await readTuningState(deckId, userId, fingerprint, new Date(), { allLocked }, env));
   // "Additional notes" (H35, PR 4b, review round 2): the same bypass `anyway` gives — notes are
   // new input the model has never seen, so "unchanged" is not true of this request even when
   // nothing else moved. Never bypasses the other gate reasons.
   if (gate && !(gate.kind === "unchanged" && (anyway || notes !== null))) return { ok: false, message: gate.message };
 
-  const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested });
+  const started = await startRun(userId, deckId, fingerprint, readVersion, { runId: requested, env });
   if (started.kind === "paused") return { ok: false, message: creditsCopy.pausedServer };
   if (started.kind === "ownerShare") return { ok: false, message: creditsCopy.ownerShare(new Date()) };
   if (started.kind === "allowance") return { ok: false, message: deckTuningCopy.allowance.spent };
@@ -265,7 +265,7 @@ export async function runTuning(
   // run finishes whether or not the player stays on the page. The panel reads the run until it settles.
   const work = async (): Promise<unknown> => {
     try {
-      const profile = await profileOfHead(head);
+      const profile = await profileOfHead(head, env);
       const [owned, { overview, universal }] = await Promise.all([
         readOwnedOracleIds(userId, [
           ...profile.cards.map((c) => c.oracleId),
@@ -343,7 +343,7 @@ export async function runTuning(
       }
 
       // The bracket flag: shown, never dropped (Hugh, 2026-09-23).
-      const flagged = await withBracketAfter(head, profile, declared, sized);
+      const flagged = await withBracketAfter(head, profile, declared, sized, env);
       if (await persistRun(run, flagged, droppedCount, billed, report, refunded ? "refunded" : "spent")) revalidateDeck(deckId);
       return undefined;
     } catch (err) {
@@ -366,14 +366,14 @@ export async function readTuningPanel(deckId: string, runId: string | null = nul
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!tuningEnabled(env) || !isUuid(deckId)) return null;
-  const inputs = await tuningInputs(deckId, userId);
+  const inputs = await tuningInputs(deckId, userId, env);
   if (!inputs) return null;
   // `runId` is History's re-review: that past run's lines, each re-checked live. Anything that is
   // not a uuid reads as the ordinary panel.
   return readTuningState(deckId, userId, inputs.fingerprint, new Date(), {
     allLocked: inputs.allLocked,
     runId: runId && isUuid(runId) ? runId : null,
-  });
+  }, env);
 }
 
 /** A line of the two lists (one card), as against a pair stored before them: the refusal names a
@@ -389,7 +389,7 @@ async function isLine(itemId: string): Promise<boolean> {
 
 async function verdict(
   itemId: string,
-  write: (userId: string) => Promise<string | null>,
+  write: (userId: string, env: NodeJS.ProcessEnv) => Promise<string | null>,
   refused: string | { pair: string; line: string },
   claims: boolean,
 ): Promise<DeckMutationResult> {
@@ -400,7 +400,7 @@ async function verdict(
     message: typeof refused === "string" ? refused : (await isLine(itemId)) ? refused.line : refused.pair,
   });
   if (!tuningEnabled(env) || !isUuid(itemId)) return refuse();
-  const deckId = await write(userId);
+  const deckId = await write(userId, env);
   if (!deckId) return refuse();
   if (claims) revalidateClaims(deckId, userId);
   else revalidateDeck(deckId);
@@ -408,11 +408,11 @@ async function verdict(
 }
 
 export async function applySuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict(itemId, (u) => applyItem(itemId, u), { pair: deckTuningCopy.card.applyRefused, line: deckTuningCopy.lists.applyRefused }, true);
+  return verdict(itemId, (u, env) => applyItem(itemId, u, env), { pair: deckTuningCopy.card.applyRefused, line: deckTuningCopy.lists.applyRefused }, true);
 }
 
 export async function undoSuggestion(itemId: string): Promise<DeckMutationResult> {
-  return verdict(itemId, (u) => undoItem(itemId, u), { pair: deckTuningCopy.card.undoRefused, line: deckTuningCopy.lists.undoRefused }, true);
+  return verdict(itemId, (u, env) => undoItem(itemId, u, env), { pair: deckTuningCopy.card.undoRefused, line: deckTuningCopy.lists.undoRefused }, true);
 }
 
 export async function dismissSuggestion(itemId: string): Promise<DeckMutationResult> {

@@ -5,7 +5,7 @@ import { bracketOf } from "../../lib/bracket/rules";
 import { slotDeck } from "../../lib/bracket/slot";
 import { cachedDeckProfile } from "../../lib/profile/load";
 import { listFingerprint } from "../../lib/profile/fingerprint";
-import { pinAnalysisToVersion, type CommitPin } from "../../lib/profile/stored";
+import { pinAnalysisToVersion, requestProfileDeps, type CommitPin } from "../../lib/profile/stored";
 import { pinSynopsisToVersion } from "../../lib/synopsis/pin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -1321,6 +1321,7 @@ export type CommitResult =
 async function commitSnapshotFor(
   deckId: string,
   userId: string,
+  env: NodeJS.ProcessEnv,
 ): Promise<CommitSnapshot | undefined> {
   // The column under its own name rather than through a projection alias: the shape then does
   // not depend on the alias surviving a driver or a test's select stub.
@@ -1330,7 +1331,7 @@ async function commitSnapshotFor(
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   const declared = bracketOf(live?.declaredBracket ?? null);
   if (declared === null) return undefined;
-  const profile = await cachedDeckProfile(deckId, userId);
+  const profile = await cachedDeckProfile(deckId, userId, env);
   return profile ? { declared, permits: slotDeck(profile).permits } : undefined;
 }
 
@@ -1354,7 +1355,9 @@ export async function commitDeckVersion(
 ): Promise<CommitResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return { ok: false, message: "We couldn't find that deck." };
-  // The printing each card showed is recorded only with the reader's printings switch on.
+  // The reader's resolved switches: the printing each card showed is recorded only with their printings
+  // switch on, and the commit's bracket snapshot and the analysis pin both build the profile under them,
+  // so each finds the entry the reader's own analysis filed.
   const env = await requestSwitchEnv(userId);
   // A Server Action's arguments arrive over the wire, so the declared type is a
   // claim about the caller rather than a guarantee: anything at all can be posted
@@ -1509,7 +1512,7 @@ export async function commitDeckVersion(
     // has declared something, which is none of them until a player answers, and only on a
     // deliberate commit. Correctness of the one column the version exists to freeze is worth
     // that on the rare path that reaches it.
-    const snapshot = await commitSnapshotFor(deckId, userId);
+    const snapshot = await commitSnapshotFor(deckId, userId, env);
     const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot, env);
     // The list this version froze, for the pin below, read back from the VERSION'S OWN ROWS:
     // `commitVersion` snapshots `deck_cards` itself, and a card inserted after the `draft` read
@@ -1538,7 +1541,7 @@ export async function commitDeckVersion(
   if (committed) {
     after(async () => {
       await pinSynopsisToVersion(deckId, userId, committed);
-      await pinAnalysisToVersion(deckId, userId, committed);
+      await pinAnalysisToVersion(deckId, userId, committed, requestProfileDeps(env));
     });
   }
   revalidateClaims(deckId, userId);
