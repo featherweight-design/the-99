@@ -16,6 +16,7 @@ import { printingPickerCopy } from "../../lib/copy/collection";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { SearchField } from "../ui/text-field";
+import { escapeDismisses } from "../../lib/ui/search-dismiss";
 
 const copy = printingPickerCopy.printing;
 const deckCopy = deckPrintingsCopy.picker;
@@ -488,6 +489,9 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           <SearchField
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
+            // With a search typed, the first Escape clears it; the next closes the card's dialog. A pick
+            // leaves it: the arrow keys pick here, and clearing would reflow the tiles under them.
+            onKeyDown={(e) => escapeDismisses(e, query !== "", () => onQueryChange(""))}
             placeholder={choose ? chooseCopy.searchPlaceholder : copy.searchPlaceholder}
             aria-label={choose ? chooseCopy.searchAria : copy.searchAriaLabel}
             className="text-[16px] md:text-[13.5px] py-[9px]"
