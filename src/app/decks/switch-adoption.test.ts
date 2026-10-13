@@ -61,7 +61,19 @@ describe("an action reads the reader's resolved switches", () => {
   });
 });
 
+/** A `"use server"` directive: the module's first statement, whatever comments come before it. */
+async function isServerModule(src: string): Promise<boolean> {
+  const { default: ts } = await import("typescript");
+  const first = ts.createSourceFile("m.tsx", src, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX).statements[0];
+  return !!first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === "use server";
+}
+
 describe("no Server Action or route handler reads a switch from the environment alone", () => {
+  it("finds the directive after a header comment", async () => {
+    expect(await isServerModule(`/** A header. */\n// and a line\n"use server";\nexport async function a() {}`)).toBe(true);
+    expect(await isServerModule(`import x from "y";\n"use server";`)).toBe(false);
+  });
+
   it("names no bare `fooEnabled()` call in a \"use server\" module or a route handler", async () => {
     const { readFileSync, readdirSync, statSync } = await import("node:fs");
     const { join } = await import("node:path");
@@ -69,14 +81,18 @@ describe("no Server Action or route handler reads a switch from the environment 
       const path = join(dir, name);
       return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
     });
-    const bare = walk("src").flatMap((path) => {
+    let actions = 0;
+    const bare = (await Promise.all(walk("src").map(async (path) => {
       const src = readFileSync(path, "utf8");
-      const isAction = /^\s*["']use server["']/.test(src);
+      const isAction = await isServerModule(src);
       const isRoute = /\/route\.ts$/.test(path);
+      if (isAction) actions++;
       if (!isAction && !isRoute) return [];
       const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
       return [...code.matchAll(/\b(\w+Enabled)\(\s*\)/g)].map((m) => `${path}: ${m[1]}()`);
-    });
+    }))).flat();
+    // A scan that found no action module would pass over anything.
+    expect(actions).toBeGreaterThan(20);
     expect(bare).toEqual([]);
   });
 });
