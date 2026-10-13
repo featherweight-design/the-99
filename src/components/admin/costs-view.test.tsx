@@ -143,7 +143,7 @@ describe("CostsView, caps not set", () => {
     expect(capRow("Anthropic account cap").segs.map((el) => el.style.background).slice(0, 3)).toEqual(["var(--accent)", "var(--fact)", "var(--success)"]);
     expect(capRow("Anthropic account cap").segs.map((el) => el.style.background)).not.toContain("var(--warning)");
     // Both lines are reference only, and the page says so.
-    expect(screen.getByText("The system ceiling and the Anthropic account cap are reference lines only. Nothing outside this page reads them, and neither blocks a call.")).toBeInTheDocument();
+    expect(screen.getByText("The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.")).toBeInTheDocument();
     // The Model calls tile stays model_calls alone.
     expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.750");
   });

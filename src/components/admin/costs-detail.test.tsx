@@ -218,7 +218,7 @@ describe("CostsDetail, the eval ledgers", () => {
     });
     const block = container.querySelector("[data-evals-apart]") as HTMLElement;
     expect(block).toHaveTextContent("Evals (all environments, from the repo)$21.48");
-    expect(block).toHaveTextContent("1 ledger committed in the repo. Every deployment reads the same files, so evals are in no environment’s System figure or cap.");
+    expect(block).toHaveTextContent("1 ledger. Every deployment reads the same files, so none of this counts toward System or a cap here.");
     expect(container.querySelector('[data-series="evals"]')).toBeNull();
     expect(container.querySelector('[data-model="evals"]')).toBeNull();
     // System is the rewrite alone: 100% of a month with no player spend, and $0.500.

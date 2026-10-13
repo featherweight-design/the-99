@@ -45,7 +45,7 @@ export const adminCopy = {
     },
     caps: "Against the caps",
     capsMeta: "set in code and read only, except the rows set here",
-    capsReference: "The system ceiling and the Anthropic account cap are reference lines only. Nothing outside this page reads them, and neither blocks a call.",
+    capsReference: "The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.",
     capSource: { code: "in code", here: "set here" },
     capRows: { plan: "Player presses, planned budget", owner: "Owner testing share", ceiling: "System ceiling", account: "Anthropic account cap" },
     of: (figure: string, cap: string) => `${figure} of ${cap}`,
@@ -105,7 +105,7 @@ export const adminCopy = {
     evalsApart: {
       title: "Evals (all environments, from the repo)",
       sub: (n: number) =>
-        `${plural(n, "ledger", "ledgers")} committed in the repo. Every deployment reads the same files, so evals are in no environment’s System figure or cap.`,
+        `${plural(n, "ledger", "ledgers")}. Every deployment reads the same files, so none of this counts toward System or a cap here.`,
     },
     byFeature: "By feature and model",
     byFeatureMeta: "per run is the month’s mean of its priced runs",
