@@ -81,6 +81,15 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
       expect((screen.getByRole("combobox") as HTMLTextAreaElement).value).not.toContain(ID);
     });
 
+    // The field is read-only while its save is out; a list left open would still take a pick and change what was saved.
+    it("draws no tag list while its save is out", async () => {
+      const { rerender } = render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+      fireEvent.change(screen.getByRole("combobox"), { target: { value: "Rocks: [[Sol" } });
+      await screen.findByRole("option", { name: /Sol Ring/ });
+      rerender(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving refused={null} />);
+      expect(screen.queryByRole("listbox")).toBeNull();
+    });
+
     it("draws the [[ ]] button and the card-tags tip beside the label", () => {
       render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
       expect(screen.getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();

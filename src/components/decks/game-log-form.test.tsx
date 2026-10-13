@@ -418,6 +418,22 @@ describe("GameLogForm", () => {
       expect(logGame.mock.calls.at(-1)?.[1]).toMatchObject({ note: "never drew [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]] " });
     });
 
+    // The picker is part of the form: while a save is out the field is disabled, and a list left open would still take a
+    // pick, changing a field the save already read.
+    it("draws no tag list while a save is out", async () => {
+      let release!: (v: { ok: boolean }) => void;
+      logGame.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+      mount();
+      open();
+      fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+      fireEvent.change(field(), { target: { value: "never drew [[Sol" } });
+      await screen.findByRole("option", { name: /Sol Ring/ });
+      fireEvent.click(save());
+      await waitFor(() => expect(logGame).toHaveBeenCalled());
+      expect(screen.queryByRole("listbox")).toBeNull();
+      release({ ok: true });
+    });
+
     // S1 state 7. There is no edit action on a logged game, so a refusal that
     // wiped the field would mean retyping a sentence the player has already
     // written — and the refusal is the one moment they are least inclined to.

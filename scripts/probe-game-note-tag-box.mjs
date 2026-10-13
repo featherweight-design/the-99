@@ -31,7 +31,8 @@ if (!branch || FORBIDDEN.has(branch)) {
   process.exit(2);
 }
 const owner = (await pool.query("select user_id as u from decks where id = $1", [DECK])).rows[0]?.u;
-const MARK = "probe-game-note-tag-box";
+// Per run, so two runs on one deck never delete each other's game.
+const MARK = `probe-game-note-tag-box-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const storedNotes = async () => (await pool.query("select id, note from deck_games where deck_id = $1 and note like $2", [DECK, `%${MARK}%`])).rows;
 const wipe = async () => { await pool.query("delete from deck_games where deck_id = $1 and note like $2", [DECK, `%${MARK}%`]); };
 await wipe();

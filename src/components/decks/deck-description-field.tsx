@@ -81,7 +81,7 @@ export function DeckDescriptionField({
           color: "var(--fg)",
         }}
       />
-      {picker.open && <CardTagList {...picker.list} />}
+      {picker.open && !saving && <CardTagList {...picker.list} />}
       </div>
       <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
         <span>{copy.help}</span>
