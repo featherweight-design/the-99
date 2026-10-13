@@ -10,6 +10,10 @@
 // that list, under the account it signs in as, both deleted in a `finally`. Point it at `local-dev`, never
 // production or staging (it checks the branch). Needs PRECONS_ENABLED=true in the server's environment.
 //
+// Start the server FRESH for the run and stop it after: `loadPreconCatalog` memoizes the catalog for ten minutes
+// per server, keyed on a catalog generation this fixture does not move, so a server that already read the catalog
+// never shows the fixture row, and one that reads it during the run keeps showing it after the cleanup.
+//
 //   PRECONS_ENABLED=true pnpm dev   (another shell)
 //   PROBE_BASE=http://localhost:3000 node scripts/probe-precon-notice.mjs
 import { neon } from "@neondatabase/serverless";
@@ -112,7 +116,9 @@ try {
     await signIn(page);
     await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
     const link = onPage(page, 'button:has-text("Link it")').first();
-    await link.waitFor({ timeout: 30_000 });
+    await link.waitFor({ timeout: 30_000 }).catch(() => {
+      throw new Error("no precon notice drew: restart the dev server so its ten-minute precon catalog memo is empty, then run again");
+    });
     const close = onPage(page, 'button[aria-label^="Dismiss the suggestion"]').first();
     const m = await page.evaluate(
       ([l, c]) => {
@@ -133,7 +139,11 @@ try {
       },
       [await link.elementHandle(), await close.elementHandle()],
     );
-    check(m.band.right - m.close.right <= 24 && m.close.top - m.band.top <= 8, `${w.name}: the ✕ sits in the band's top-right corner`, `${(m.band.right - m.close.right).toFixed(0)}px from the right, ${(m.close.top - m.band.top).toFixed(0)}px from the top`);
+    // The offsets the classes name: right 4 / top 2 on the phone, right 22 / top 4 from md up.
+    const want = w.name === "phone" ? { right: 4, top: 2 } : { right: 22, top: 4 };
+    const right = m.band.right - m.close.right;
+    const top = m.close.top - m.band.top;
+    check(Math.abs(right - want.right) <= 1 && Math.abs(top - want.top) <= 1, `${w.name}: the ✕ sits ${want.right}px from the band's right edge and ${want.top}px from its top`, `${right.toFixed(1)}px from the right, ${top.toFixed(1)}px from the top`);
     check(Math.abs(m.band.right - m.pad - m.link.right) <= 1, `${w.name}: Link it is flush with the band's right padding edge`, `${(m.band.right - m.pad - m.link.right).toFixed(1)}px short`);
     check(m.link.top >= m.close.bottom, `${w.name}: Link it clears the ✕ below it`, `link top ${m.link.top.toFixed(0)}, ✕ bottom ${m.close.bottom.toFixed(0)}`);
     check(m.text.textRight.every((r) => r <= m.close.left + 0.5), `${w.name}: the text stops before the ✕'s column`, `text ends ${Math.max(...m.text.textRight).toFixed(0)}, ✕ starts ${m.close.left.toFixed(0)}`);
