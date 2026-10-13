@@ -60,3 +60,23 @@ describe("an action reads the reader's resolved switches", () => {
     expect(await searchNoteCards("bolt")).toBeNull();
   });
 });
+
+describe("no Server Action or route handler reads a switch from the environment alone", () => {
+  it("names no bare `fooEnabled()` call in a \"use server\" module or a route handler", async () => {
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
+    });
+    const bare = walk("src").flatMap((path) => {
+      const src = readFileSync(path, "utf8");
+      const isAction = /^\s*["']use server["']/.test(src);
+      const isRoute = /\/route\.ts$/.test(path);
+      if (!isAction && !isRoute) return [];
+      const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+      return [...code.matchAll(/\b(\w+Enabled)\(\s*\)/g)].map((m) => `${path}: ${m[1]}()`);
+    });
+    expect(bare).toEqual([]);
+  });
+});
