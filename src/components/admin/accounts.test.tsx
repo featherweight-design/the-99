@@ -62,7 +62,7 @@ beforeEach(() => {
 
 describe("AccountsList (A1 to A3)", () => {
   it("draws a row per account linking to its page, with group, credits and spend, under the tab's sub", () => {
-    render(<AccountsList rows={ROWS} clerk="ok" overridesRead month="October" env="production" />);
+    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="production" />);
     expect(screen.getByText("2 accounts on production. Names and emails from Clerk; the app stores only the id.")).toBeInTheDocument();
     const rows = within(screen.getByTestId("account-rows")).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
@@ -79,7 +79,7 @@ describe("AccountsList (A1 to A3)", () => {
   });
 
   it("searches by name, email or id prefix through the shared search field, and says when nothing matches", () => {
-    render(<AccountsList rows={ROWS} clerk="ok" overridesRead month="October" env="staging" />);
+    render(<AccountsList rows={ROWS} clerk="ok" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
     fireEvent.change(search, { target: { value: "user_9" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
@@ -90,7 +90,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("matches an account with no Clerk name by its id's start only, not the id it draws in the name's place", () => {
     const bare: AccountRow = { id: "user_7bare", name: "user_7bare", clerkName: null, email: null, initials: "U", group: null, credits: "", spend: "$0" };
-    render(<AccountsList rows={[bare]} clerk="down" overridesRead month="October" env="staging" />);
+    render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
     const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
     fireEvent.change(search, { target: { value: "7bare" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
@@ -98,16 +98,8 @@ describe("AccountsList (A1 to A3)", () => {
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
   });
 
-  it("says the overrides did not load, rather than drawing every account in no group as fact", () => {
-    const { unmount } = render(<AccountsList rows={ROWS} clerk="ok" overridesRead month="October" env="staging" />);
-    expect(screen.queryByText("Overrides didn’t load. Every row shows the env var alone.")).toBeNull();
-    unmount();
-    render(<AccountsList rows={ROWS} clerk="ok" overridesRead={false} month="October" env="staging" />);
-    expect(screen.getByText("Overrides didn’t load. Every row shows the env var alone.")).toBeInTheDocument();
-  });
-
   it("says the names did not load when Clerk is down", () => {
-    render(<AccountsList rows={ROWS} clerk="down" overridesRead month="October" env="staging" />);
+    render(<AccountsList rows={ROWS} clerk="down" month="October" env="staging" />);
     expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
   });
 });

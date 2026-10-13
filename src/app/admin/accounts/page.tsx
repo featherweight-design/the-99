@@ -9,5 +9,5 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
 export default async function AdminAccountsPage() {
   const { env } = await requireAdmin();
   const list = await loadAccountsList();
-  return <AccountsList rows={list.rows} clerk={list.clerk} overridesRead={list.overridesRead} month={list.month} env={env} />;
+  return <AccountsList rows={list.rows} clerk={list.clerk} month={list.month} env={env} />;
 }

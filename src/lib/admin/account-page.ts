@@ -69,8 +69,8 @@ export function inListOrder(accounts: readonly Account[], owner: string | null =
   return orderAccounts(accounts, new Set(owner ? [owner] : []));
 }
 
-/** `overridesRead` is false when `readSwitchSnapshot()` failed: groups and switches then read as the env alone, and the page says so. */
-export type AccountsListData = { rows: AccountRow[]; clerk: "ok" | "down"; overridesRead: boolean; month: string };
+/** The list draws no switch, so an unread snapshot costs it nothing: memberships are then read on their own. */
+export type AccountsListData = { rows: AccountRow[]; clerk: "ok" | "down"; month: string };
 
 /** `/admin/accounts` (A1 to A3). */
 export async function loadAccountsList(now: Date = new Date()): Promise<AccountsListData> {
@@ -92,13 +92,12 @@ export async function loadAccountsList(now: Date = new Date()): Promise<Accounts
   return {
     rows: accountRows({
       accounts,
-      groupOf: snapshot?.groupOf ?? new Map(),
+      groupOf: snapshot?.groupOf ?? (await readMemberships()),
       groupNames: new Map(heads.map((g) => [g.id, g.name])),
       credits: creditsNow(ids, ledger, limits, now),
       spend: new Map(spendRows.map((r) => [r.userId, Number(r.micro)])),
     }),
     clerk,
-    overridesRead: snapshot !== null,
     month: utcMonthName(now),
   };
 }
@@ -119,6 +118,15 @@ export type AccountPage = {
   clerk: "ok" | "down";
   overridesRead: boolean;
 };
+
+/**
+ * Every membership, read on its own when the switch snapshot is unread, so a failed snapshot never
+ * draws an account's real group as "No group". A failure here fails the page rather than guess.
+ */
+async function readMemberships(): Promise<Map<string, string>> {
+  const { rows } = await db.execute<{ user_id: string; group_id: string }>(sql`select user_id, group_id from flag_group_members`);
+  return new Map(rows.map((r) => [r.user_id, r.group_id]));
+}
 
 /** Whether a membership or an account override names this id: the existence check when the snapshot is unread. */
 async function namedByRows(userId: string): Promise<boolean> {
@@ -160,7 +168,7 @@ export async function loadAccountPage(userId: string, now: Date = new Date()): P
   const account: Account = listed ?? { id: userId, name: null, email: null };
 
   const groupNames = new Map(heads.map((g) => [g.id, g.name]));
-  const groupId = snapshot?.groupOf.get(userId);
+  const groupId = (snapshot?.groupOf ?? (await readMemberships())).get(userId);
   const owner = modelOwnerUserId() === userId;
   const shareMicro = ownerShareMicro();
   const features = featureRows.map((r) => ({ feature: r.feature, presses: Number(r.presses), micro: Number(r.micro) }));

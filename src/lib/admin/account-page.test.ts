@@ -1,3 +1,5 @@
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SwitchSnapshot } from "../switches/resolve";
 
@@ -66,6 +68,13 @@ describe("loadAccountsList", () => {
     expect(list.rows.map((r) => r.id)).toEqual(["user_hugh", "user_adam", "user_bea"]);
   });
 
+  it("reads memberships on their own when the snapshot is unread, never drawing a real group as none", async () => {
+    readSwitchSnapshot.mockResolvedValue(null);
+    listAccounts.mockResolvedValue({ accounts: [HUGH], clerk: "ok" });
+    execute.mockResolvedValue({ rows: [{ user_id: HUGH.id, group_id: G }] });
+    expect((await loadAccountsList()).rows[0].group).toMatchObject({ id: G });
+  });
+
   it("orders A to Z with no owner set", async () => {
     listAccounts.mockResolvedValue({ accounts: [HUGH, ADAM], clerk: "ok" });
     expect((await loadAccountsList()).rows.map((r) => r.id)).toEqual(["user_adam", "user_hugh"]);
@@ -107,12 +116,15 @@ describe("loadAccountPage", () => {
     expect(await loadAccountPage("user_stranger")).toBeNull();
   });
 
-  it("with the snapshot unread, still finds a membership through its own read, and says the overrides did not load", async () => {
+  it("with the snapshot unread, still finds a membership and its group through their own reads, and says the overrides did not load", async () => {
     readSwitchSnapshot.mockResolvedValue(null);
-    execute.mockResolvedValue({ rows: [{ "?column?": 1 }] });
+    execute.mockImplementation(async (q: SQL) => {
+      const text = new PgDialect().sqlToQuery(q).sql;
+      if (text.includes("union all")) return { rows: [{ "?column?": 1 }] };
+      return { rows: [{ user_id: "user_ghost", group_id: G }] };
+    });
     const page = await loadAccountPage("user_ghost");
-    expect(page).toMatchObject({ id: "user_ghost", overridesRead: false });
-    expect(execute).toHaveBeenCalledTimes(1);
+    expect(page).toMatchObject({ id: "user_ghost", overridesRead: false, group: { id: G } });
     execute.mockResolvedValue({ rows: [] });
     expect(await loadAccountPage("user_stranger")).toBeNull();
   });

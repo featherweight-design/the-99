@@ -72,14 +72,11 @@ function Row({ row }: { row: AccountRow }) {
 export function AccountsList({
   rows,
   clerk,
-  overridesRead,
   month,
   env,
 }: {
   rows: AccountRow[];
   clerk: "ok" | "down";
-  /** False when the overrides and memberships could not be read: every group then reads as none. */
-  overridesRead: boolean;
   month: string;
   env: AdminEnv;
 }) {
@@ -113,7 +110,6 @@ export function AccountsList({
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">
         {clerk === "down" && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.clerkDown}</p>}
-        {!overridesRead && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.switches.overridesUnread}</p>}
         <div className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div
             aria-hidden
