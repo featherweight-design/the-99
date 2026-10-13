@@ -22,7 +22,10 @@ const GLOBAL_PATTERNS = [
   /^postcss\.config\./,
   /^next\.config\./,
   /^eslint\.config\./,
+  /^\.github\/workflows\/ci\.yml$/,
   /^scripts\/clock-shift\.mjs$/,
+  /^scripts\/ci-select\.mjs$/,
+  /^scripts\/lib\/ci-select\.mjs$/,
 ];
 
 // package.json changes on most PRs (a new `probe:*` script). Only the fields that change what is
