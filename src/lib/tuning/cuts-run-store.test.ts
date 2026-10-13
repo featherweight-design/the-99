@@ -51,7 +51,7 @@ const NOW = new Date("2026-10-10T12:00:00Z");
 const handle = { runId: "run_1", callId: "call_1" };
 const cut: ValidatedCut = { oracleId: "o1", name: "Bear", reason: "Off the list.", cites: [{ kind: "offList" }], position: 0 };
 const report: CutsReport = { askedCount: 2, survivedCount: 1, keptCount: 1, over: 2, drops: [{ position: 1, rule: "cardExists" }] };
-const BILLED = { model: "claude-sonnet-5", usage: { inputTokens: 1, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+const BILLED = { model: "claude-sonnet-5-5", usage: { inputTokens: 1, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 } };
 
 beforeEach(() => {
   rec.reserved = []; rec.settled = []; rec.late = []; rec.inserts = []; rec.updates = [];
@@ -62,7 +62,7 @@ describe("startCutsRun", () => {
   it("reserves a proposed_cuts unit and records the cuts tool and prompt version", async () => {
     const out = await startCutsRun("u", "d", "fp", 4, { runId: "r", now: NOW });
     expect(out).toEqual({ kind: "started", runId: "run_1", callId: "call_1" });
-    expect(rec.reserved).toEqual([["u", "proposed_cuts", "claude-sonnet-5", NOW]]);
+    expect(rec.reserved).toEqual([["u", "proposed_cuts", "claude-sonnet-5-5", NOW]]);
     expect(rec.inserts).toHaveLength(1);
     expect(rec.inserts[0].table).toBe(deckSuggestionRuns);
     expect(rec.inserts[0].values).toMatchObject({

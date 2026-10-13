@@ -218,7 +218,7 @@ describe("runProposedCuts, a run that answers", () => {
     expect(handle).toEqual({ runId: "run_1", callId: "call_1" });
     expect(kept).toMatchObject([{ oracleId: "bear1", reason: "Off the commander's list.", position: 0 }]);
     expect(report).toMatchObject({ keptCount: 1, over: 2 });
-    expect((calls.persisted[0] as unknown[])[3]).toEqual({ model: "claude-sonnet-5", usage: USAGE, step: "cuts", effort: "medium" });
+    expect((calls.persisted[0] as unknown[])[3]).toEqual({ model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" });
     expect(billed).toBeDefined();
   });
 
@@ -293,7 +293,7 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "malformed", droppedCount: undefined, report: undefined },
-      { model: "claude-sonnet-5", usage: USAGE, step: "cuts", effort: "medium" },
+      { model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" },
     ]]);
   });
 
@@ -327,7 +327,7 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     expect(set).toMatchObject({ status: "failed", errorClass: "ungrounded", droppedCount: 2 });
     expect(set.report).toMatchObject({ askedCount: 2, keptCount: 0 });
     expect(set.report.drops.map((d) => d.rule)).toEqual(["cardExists", "citeMismatch"]);
-    expect(billed).toEqual({ model: "claude-sonnet-5", usage: USAGE, step: "cuts", effort: "medium" });
+    expect(billed).toEqual({ model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" });
   });
 
   it("refunds and logs, never throws, when something throws after the reservation", async () => {
