@@ -6,6 +6,8 @@ const moreRows = vi.fn();
 vi.mock("../../app/decks/new/choose/results-actions", () => ({ trialFillRows, moreRows }));
 
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 const { ChooseResults } = await import("./choose-results");
 const { ReadScope } = await import("./read-panel");
 import type { ReadPhase } from "../../lib/intake/read-phase";

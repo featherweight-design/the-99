@@ -14,6 +14,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { PendingChangeProvider } from "./pending-change";
 import { DeckTokensProvider } from "./deck-tokens-context";
 import type { DeckTokensRead } from "../../lib/tokens/read";

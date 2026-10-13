@@ -7,6 +7,8 @@ import { cardMarkCopy } from "../../lib/copy/card-mark";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";

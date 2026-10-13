@@ -9,6 +9,8 @@ import { checkedSynopsis, synopsisRow, synopsisState } from "./__fixtures__/syno
 import { HoverPreviewProvider } from "./hover-preview";
 import { SynopsisOverview } from "./synopsis-overview";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { clockTime } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";

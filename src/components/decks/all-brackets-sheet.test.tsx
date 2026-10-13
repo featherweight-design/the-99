@@ -8,6 +8,8 @@ import { COMBO_POLICY, EXTRA_TURN_LIMIT_BRACKET_1, GAME_CHANGER_LIMIT, MASS_LAND
 import { BRACKETS_INTRO_SOURCE, BRACKETS_OCT25_SOURCE, BRACKET_RULES_SOURCE } from "../../lib/bracket/sources";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { AllBracketsSheet, allowance } from "./all-brackets-sheet";
 
 const copy = deckAnalysisCopy.bracketsSheet;

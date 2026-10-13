@@ -22,6 +22,8 @@ vi.mock("../../app/decks/actions", () => ({
 }));
 
 const { CardDetailProvider, useCardDetail } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 
 const card = (over: Partial<BrowseCard> = {}) => ({
   oracleId: "held", name: "The Ozolith", typeLine: "Legendary Artifact",

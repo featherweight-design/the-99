@@ -12,6 +12,8 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { DiffRowIn, DiffRowOut, type DiffRowCard } from "./update-diff-row";
 import { COST_TRACK } from "../ui/cost-pips";
 

@@ -6,6 +6,8 @@ import { ConsiderPanel } from "./consider-panel";
 import { SuggestionTile } from "./suggestion-tile";
 import { TopOffList } from "./top-off-list";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { CARD_FACTS, cardFactName } from "../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { CandidateFacts } from "../../lib/bracket/delta";

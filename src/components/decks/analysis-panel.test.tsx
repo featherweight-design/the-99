@@ -9,6 +9,8 @@ import { AnalysisPanel } from "./analysis-panel";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckBenchmarksCopy } from "../../lib/copy/deck-benchmarks";
 import type { ProfileState } from "./use-deck-profile";

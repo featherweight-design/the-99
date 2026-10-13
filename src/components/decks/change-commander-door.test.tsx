@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ChangeCommanderProvider } from "./change-commander-context";

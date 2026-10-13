@@ -13,6 +13,8 @@ import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile
 import { contrast, mixOklab } from "../../lib/theme/color";
 import { parseThemeBlocks } from "../../lib/theme/parse-css";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 /**
  * Every case is a REAL profile through the REAL verdict. The climb's three rungs are a function

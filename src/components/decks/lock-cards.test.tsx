@@ -16,6 +16,8 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { recommendedMix } from "../../lib/decks/mix";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { SwapToolsProvider } from "../../lib/swaps/context";
 
 const TEST_MIX = recommendedMix(null, false);

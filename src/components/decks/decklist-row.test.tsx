@@ -9,6 +9,8 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";

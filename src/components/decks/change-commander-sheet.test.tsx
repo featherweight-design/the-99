@@ -14,6 +14,8 @@ vi.mock("../../lib/commander-change/actions", () => ({
 
 const { ChangeCommanderSheet, shortName } = await import("./change-commander-sheet");
 const { CardDetailProvider } = await import("../cards/card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 const half = (name: string, over: Partial<CandidateHalf> = {}): CandidateHalf => ({
   oracleId: name.toLowerCase(), name, manaCost: "{2}{G}", cmc: 3, artCropUri: null, imageUri: null,

@@ -11,6 +11,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { recommendedMix } from "../../lib/decks/mix";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),

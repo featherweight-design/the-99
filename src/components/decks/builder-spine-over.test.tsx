@@ -10,6 +10,8 @@ import { overCopy, overWord } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { CardDetailProvider } from "../cards/card-detail-provider";
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("../cards/card-detail-provider")).warmCardModal();
 import { BuilderSpine } from "./builder-spine";
 
 const deck = {

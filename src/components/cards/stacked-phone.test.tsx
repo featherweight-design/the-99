@@ -18,6 +18,8 @@ vi.mock("next/link", () => ({
 }));
 
 const { CardDetailProvider, CardDetailTrigger, useCardDetail, STACK_DROP_MS } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 const { ModalChrome } = await import("../decks/receipt-modal");
 
 const birds: BrowseCard = {

@@ -17,7 +17,7 @@ import { gotItCopy } from "../../lib/copy/i-got-it";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { deckRowTag } from "../../lib/decks/row-tag";
 import { isSpokenFor } from "../../lib/decks/shopping";
-import { RECEIPT_LINK_CLASS } from "../cards/card-modal";
+import { RECEIPT_LINK_CLASS } from "../cards/card-modal-shared";
 import { useCardDetail } from "../cards/card-detail-provider";
 import { useGotIt } from "./got-it";
 

@@ -11,6 +11,8 @@ vi.mock("../../app/collection/actions", () => ({
 }));
 
 const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("./card-detail-provider");
+// The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
+await (await import("./card-detail-provider")).warmCardModal();
 
 // The stacked carousel (carousel PR 4, call #9): a card opened from a sheet that sits over a held
 // card pages ITS OWN list, with its own neighbors, and the held card under the sheet draws none.

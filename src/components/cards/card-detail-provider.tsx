@@ -24,7 +24,8 @@
 
 import { landOnDeckTokens } from "../decks/deck-tokens-landing";
 import {
-  createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { twMerge } from "tailwind-merge";
@@ -32,12 +33,89 @@ import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collectio
 import { printedNameOf, resolvedPrinting, withDeckPick } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
-import { FitsPicker } from "./fits-picker";
-import { FitsView, type FitsViewMemory } from "./fits-view";
+import type { FitsViewMemory } from "./fits-view";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
-import { CardModal, type DeckPrintingScope } from "./card-modal";
+import type { DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+
+// The card details modal and the two fits views are loaded on demand rather than with the page. Every
+// route mounts this provider and none draws them before a card is pressed, yet bundled here they were
+// ~46KB gzipped of every route's startup download (measured on staging, 2026-10-13), sharing a slow
+// phone's line with the stylesheet first paint waits on. The modal's chunk is WARMED, so a press does
+// not wait on it: at idle once the page has hydrated, on intent (`prefetch`) and on the press itself.
+const CardModal = onDemand(() => import("./card-modal").then((m) => m.CardModal));
+const FitsView = onDemand(() => import("./fits-view").then((m) => m.FitsView));
+const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPicker));
+
+/**
+ * A component loaded when first wanted, drawn at once from then on. Until its code has arrived it
+ * draws nothing; the provider shows the press as pending meanwhile (`modalReady`). A download that
+ * failed is forgotten, so the next `fetch` tries again, and whichever attempt lands tells every
+ * mounted reader. A mounted wrapper keeps trying on its own, backing off from 1s to 30s, because a
+ * view switched to inside the modal (the fits views) has no press of its own that would retry it.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each wrapper keeps its component's own props below
+function onDemand<P extends Record<string, any>>(load: () => Promise<React.ComponentType<P>>) {
+  let loaded: React.ComponentType<P> | null = null;
+  let pending: Promise<unknown> | null = null;
+  const listeners = new Set<() => void>();
+  const fetch = () =>
+    (pending ??= load().then(
+      (c) => {
+        loaded = c;
+        for (const l of listeners) l();
+      },
+      () => { pending = null; },
+    ));
+  const subscribe = (l: () => void) => {
+    listeners.add(l);
+    return () => { listeners.delete(l); };
+  };
+  const isLoaded = () => loaded !== null;
+  function OnDemand(props: P) {
+    const ready = useSyncExternalStore(subscribe, isLoaded, () => false);
+    useEffect(() => {
+      if (ready) return;
+      let live = true;
+      let wait = 1000;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const attempt = () =>
+        void fetch().then(() => {
+          if (!live || isLoaded()) return;
+          timer = setTimeout(attempt, wait);
+          wait = Math.min(wait * 2, 30_000);
+        });
+      attempt();
+      return () => {
+        live = false;
+        clearTimeout(timer);
+      };
+    }, [ready]);
+    const Loaded = ready ? loaded : null;
+    return Loaded ? <Loaded {...props} /> : null;
+  }
+  return Object.assign(OnDemand, { fetch, subscribe, isLoaded });
+}
+
+/**
+ * Starts the modal's code downloading, with every view the modal can open (the fits view and the
+ * fits picker), and resolves once all have arrived. Warming them together means no press inside the
+ * modal waits on a download of its own. A second call costs nothing.
+ * Tests await it after their mocks are in place, so a press draws the modal in the same tick.
+ */
+export function warmCardModal(): Promise<unknown> {
+  return Promise.all([CardModal.fetch(), FitsView.fetch(), FitsPicker.fetch()]);
+}
+
+/**
+ * Which of the modal's views have arrived, read by the warm test. A module loaded is not the same as
+ * its wrapper being ready: the fits view imports the picker's module statically, and the picker's
+ * wrapper still draws nothing until its own fetch has run.
+ */
+export function cardModalViewsReady() {
+  return { modal: CardModal.isLoaded(), fitsView: FitsView.isLoaded(), fitsPicker: FitsPicker.isLoaded() };
+}
 
 // Edit copies (collection edit R2 §C) is loaded when first pressed: every deck surface mounts this
 // provider, and only /collection ever opens the sheet.
@@ -444,7 +522,7 @@ function deckPickFor(
   return picks[oracleId] ?? null;
 }
 const NOOP = () => {};
-import { STACK_DROP_MS } from "./card-modal";
+import { STACK_DROP_MS } from "./card-modal-shared";
 import { usePreviewRow } from "../decks/hover-preview";
 export { STACK_DROP_MS };
 
@@ -554,7 +632,30 @@ export function CardDetailProvider({
 }) {
   const fetchCard = fetchCardProp ?? getCardDetail;
   const prefetchCard = prefetchCardProp ?? (fetchCardProp ? null : fetchCardDetail);
+  // The modal's code is fetched once the page has loaded (its `load` event: the document's own
+  // scripts, styles, fonts and images are in) and then gone idle, so the first press finds it already
+  // here and the download never competes with what the page needs to draw. Safari has no
+  // `requestIdleCallback`, so there the load event alone decides.
+  useEffect(() => {
+    let idle: number | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const warm = () => {
+      if (typeof window.requestIdleCallback === "function") idle = window.requestIdleCallback(() => void warmCardModal(), { timeout: 4000 });
+      else timer = setTimeout(() => void warmCardModal(), 0);
+    };
+    if (document.readyState === "complete") warm();
+    else window.addEventListener("load", warm, { once: true });
+    return () => {
+      window.removeEventListener("load", warm);
+      if (idle !== null) window.cancelIdleCallback(idle);
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, []);
   const [card, setCard] = useState<BrowseCard | null>(null);
+  // Whether the modal's code has arrived. A press that lands first stays PENDING, on its trigger and in
+  // the live region below, until it has, rather than reading as a press that did nothing. Every press
+  // fetches it (`open`), so a press after a failed download is the retry.
+  const modalReady = useSyncExternalStore(CardModal.subscribe, CardModal.isLoaded, () => false);
   // The list Prev/Next pages, in the one shape the provider holds (`siblingCards`). `siblingIds` is
   // what every paging test reads; the cards beside it carry whatever art an opener passed.
   const [siblings, setSiblingList] = useState<SiblingCard[]>([]);
@@ -604,6 +705,7 @@ export function CardDetailProvider({
     printing: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
+  const shownPending = pendingOracleId ?? (card !== null && !modalReady ? card.oracleId : null);
   // One entry per sheet underneath, in the order they registered. A token rather than the label
   // identifies an entry, since two sheets may carry the same label.
   const [sheets, setSheets] = useState<
@@ -983,6 +1085,7 @@ export function CardDetailProvider({
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
       opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null },
     ) => {
+      warmCardModal();
       // The control this open came from, for the modal to hand focus back to. Set on every open, so
       // an opener that names none falls back to the dialog's own capture rather than an older one.
       openerRef.current = opts?.opener ?? null;
@@ -1265,6 +1368,7 @@ export function CardDetailProvider({
 
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {
+      warmCardModal();
       // Yields to every read already running: a prefetch is a guess, and a second request
       // beside the one the reader is waiting on only slows that one down.
       if (!prefetchCard || cache.current.has(oracleId) || inFlight.current !== null || prefetching.current) return undefined;
@@ -1308,7 +1412,7 @@ export function CardDetailProvider({
     () => ({
       open,
       prefetch,
-      pendingOracleId,
+      pendingOracleId: shownPending,
       openOracleId: card?.oracleId ?? null,
       revealing: leaving,
       setSiblings,
@@ -1320,7 +1424,7 @@ export function CardDetailProvider({
       registerDoor,
       registerReceiptLink,
     }),
-    [open, prefetch, pendingOracleId, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
+    [open, prefetch, shownPending, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
   );
 
   const index = card ? siblingIds.indexOf(card.oracleId) : -1;
@@ -1432,7 +1536,7 @@ export function CardDetailProvider({
       {children}
       {/* The fetch is invisible until the modal mounts, so the wait is announced here. */}
       <div aria-live="polite" className="sr-only">
-        {pendingOracleId ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
+        {shownPending ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
       </div>
       {/* The carousel's own region (handoff decision 8), separate from the one above: the
           modal is keyed per card and remounts empty on every page, so the thing that
