@@ -1,8 +1,9 @@
 // The one-suggestion precon notice is laid out as drawn (bug batch D item 2, Hugh 2026-10-13), walked in a
 // real browser at 390x844 and 1300x900.
 //
-// The ✕ is pinned in the band's top-right corner, `Link it` is flush with the band's right padding edge
-// on a line of its own, and the text keeps the width less the ✕'s column (it never runs under the ✕).
+// The ✕ is pinned in the band's top-right corner; the text and `Link it` share ONE row (text left, flexible and
+// wrapping; the button right, centred on it), and the row's right padding keeps both clear of the ✕'s column. The
+// notice must also be shorter than the two-row layout it replaced (BEFORE_HEIGHT, measured on main).
 // JSDOM has no layout, so the unit test pins the classes and this reads the boxes.
 //
 // It needs a precon that the shared rule suggests for a deck, and local-dev holds no precon catalog, so it
@@ -30,6 +31,8 @@ const sql = neon(DATABASE_URL);
 const PRODUCTION = "br-noisy-violet-a6vw4ess";
 const STAGING = "br-polished-pond-a6e63y0b";
 const FILE = "probe-precon-notice.json";
+// The band's height on main (Link it on its own row), measured by this probe at each width.
+const BEFORE_HEIGHT = { phone: 128.1, desktop: 108.3 };
 
 const WIDTHS = [
   { name: "phone", width: 390, height: 844 },
@@ -126,13 +129,11 @@ try {
         const box = (e) => e.getBoundingClientRect();
         const text = l.parentElement.firstElementChild;
         const bandBox = box(band);
-        const pad = parseFloat(getComputedStyle(band).paddingRight);
         return {
-          band: { top: bandBox.top, right: bandBox.right },
-          pad,
-          close: { top: box(c).top, right: box(c).right, left: box(c).left, bottom: box(c).bottom },
-          link: { right: box(l).right, top: box(l).top },
-          text: { right: box(text).right, textRight: [...text.querySelectorAll("p")].map((p) => {
+          band: { top: bandBox.top, right: bandBox.right, height: bandBox.height },
+          close: { top: box(c).top, right: box(c).right, left: box(c).left },
+          link: { left: box(l).left, right: box(l).right, top: box(l).top, bottom: box(l).bottom },
+          text: { top: box(text).top, bottom: box(text).bottom, textRight: [...text.querySelectorAll("p")].map((p) => {
             const r = document.createRange(); r.selectNodeContents(p); return r.getBoundingClientRect().right;
           }) },
         };
@@ -144,9 +145,15 @@ try {
     const right = m.band.right - m.close.right;
     const top = m.close.top - m.band.top;
     check(Math.abs(right - want.right) <= 1 && Math.abs(top - want.top) <= 1, `${w.name}: the ✕ sits ${want.right}px from the band's right edge and ${want.top}px from its top`, `${right.toFixed(1)}px from the right, ${top.toFixed(1)}px from the top`);
-    check(Math.abs(m.band.right - m.pad - m.link.right) <= 1, `${w.name}: Link it is flush with the band's right padding edge`, `${(m.band.right - m.pad - m.link.right).toFixed(1)}px short`);
-    check(m.link.top >= m.close.bottom, `${w.name}: Link it clears the ✕ below it`, `link top ${m.link.top.toFixed(0)}, ✕ bottom ${m.close.bottom.toFixed(0)}`);
+    const sameRow = m.link.top >= m.text.top - 0.5 && m.link.top <= m.text.bottom;
+    check(sameRow, `${w.name}: Link it's top lies within the text block's height`, `link top ${m.link.top.toFixed(0)}, text ${m.text.top.toFixed(0)}-${m.text.bottom.toFixed(0)}`);
+    const dy = Math.abs((m.link.top + m.link.bottom) / 2 - (m.text.top + m.text.bottom) / 2);
+    check(dy <= 2, `${w.name}: Link it is vertically centred on the text`, `${dy.toFixed(1)}px off`);
+    check(m.text.textRight.every((r) => r <= m.link.left + 0.5), `${w.name}: the text does not overlap Link it`, `text ends ${Math.max(...m.text.textRight).toFixed(0)}, button starts ${m.link.left.toFixed(0)}`);
+    check(m.link.right <= m.close.left + 0.5, `${w.name}: Link it stops before the ✕'s column`, `button ends ${m.link.right.toFixed(0)}, ✕ starts ${m.close.left.toFixed(0)}`);
     check(m.text.textRight.every((r) => r <= m.close.left + 0.5), `${w.name}: the text stops before the ✕'s column`, `text ends ${Math.max(...m.text.textRight).toFixed(0)}, ✕ starts ${m.close.left.toFixed(0)}`);
+    console.log(`${w.name}: band height ${m.band.height.toFixed(1)}px (main: ${BEFORE_HEIGHT[w.name]}px)`);
+    check(m.band.height < BEFORE_HEIGHT[w.name], `${w.name}: the notice is shorter than the two-row layout`, `${m.band.height.toFixed(1)}px against ${BEFORE_HEIGHT[w.name]}px`);
     await context.close();
   }
 } finally {

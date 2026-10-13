@@ -14,12 +14,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   started, checked first with `ps -o pid=,comm= -p <pid>`.
 
 ---
-- `pnpm probe:precon-notice` walks the one-suggestion precon notice on a deck page at 390 and 1300 (bug batch D
-  item 2, Hugh 2026-10-13): the ✕ sits in the band's top-right corner, `Link it` is flush with the band's right
-  padding edge on a line below it, and the text stops before the ✕'s column. local-dev holds no precon catalog, so
+- `pnpm probe:precon-notice` walks the one-suggestion precon notice on a deck page at 390 and 1300 (Hugh's walk,
+  2026-10-13, after bug batch D item 2 went the wrong way): the ✕ sits in the band's top-right corner, the text and `Link it`
+  share ONE row (text left, flexible and wrapping; the button right, centred on it, its top within the text block's height), the
+  row's right padding keeps both clear of the ✕'s column, and the band is shorter than the two-row layout it replaced
+  (`BEFORE_HEIGHT`, measured on main: 128.1px phone, 108.3px desktop; now 74.1px and 62.3px). local-dev holds no precon catalog, so
   it writes a fixture deck and a fixture precon with the same list (`probe-precon-notice.json`) under the account it
   signs in as and deletes both in a `finally`; it refuses staging and production by `neon.branch_id`. Needs
-  `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Moving `Link it` back to `self-start` fails it at both widths.
+  `PRECONS_ENABLED=true` on the server, started fresh for the run (the precon catalog is memoized per server for ten minutes). Putting `Link it` back on its own row fails it at both widths.
 - `pnpm probe:cart-scroll` walks Shopping for all decks (`/decks/shopping`) at 390 and 1300 (bug batch D item 3,
   Hugh 2026-10-13). Phone: the document scrolls, the list is not its own scroll box, the switch and heading stay pinned
   at `top: 0` after a 700px scroll, and at least five cards show under them (about two and a half did in the old box).
