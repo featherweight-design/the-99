@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
+import { describe, expect, it, vi } from "vitest";
 import { SearchField, TextField } from "./text-field";
 
 describe("TextField", () => {
@@ -76,5 +77,80 @@ describe("SearchField", () => {
     expect(input.className).toContain("text-[15px]");
     expect(input.className).not.toContain("p-[11px_13px]");
     expect(input.closest("label")?.className).toContain("p-[11px_13px]");
+  });
+});
+
+// One clear for every search field (Hugh, 2026-10-13): one tap empties the field and the field keeps focus,
+// whether or not the tap's mousedown would have blurred it.
+function Controlled({ initial = "", onClear = () => {} }: { initial?: string; onClear?: () => void }) {
+  const [q, setQ] = useState(initial);
+  return (
+    <SearchField
+      aria-label="Search"
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      onClear={() => { onClear(); setQ(""); }}
+    />
+  );
+}
+
+describe("SearchField's clear", () => {
+  it("empties the field in one tap, refuses the mousedown, and leaves focus in the field", () => {
+    const onClear = vi.fn();
+    render(<Controlled initial="gishath" onClear={onClear} />);
+    const input = screen.getByLabelText("Search") as HTMLInputElement;
+    const clear = screen.getByRole("button", { name: "Clear search" });
+    expect(fireEvent.mouseDown(clear)).toBe(false);
+    fireEvent.click(clear);
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(input.value).toBe("");
+    expect(document.activeElement).toBe(input);
+  });
+
+  it("stays mounted but hidden and out of the accessibility tree while the field is empty", () => {
+    const { container } = render(<Controlled />);
+    expect(screen.queryByRole("button", { name: "Clear search" })).toBeNull();
+    const hidden = container.querySelector("button")!;
+    expect(hidden.style.visibility).toBe("hidden");
+    expect(hidden.tabIndex).toBe(-1);
+    fireEvent.change(screen.getByLabelText("Search"), { target: { value: "a" } });
+    expect(container.querySelector("button")!.style.visibility).toBe("visible");
+    expect(screen.getByRole("button", { name: "Clear search" })).toBeTruthy();
+  });
+
+  it("offers the clear for spaces too, so a reader can always empty the box", () => {
+    render(<Controlled initial="   " />);
+    expect(screen.getByRole("button", { name: "Clear search" })).toBeTruthy();
+  });
+
+  it("puts the clear after a caller's trailing element", () => {
+    const { container } = render(
+      <SearchField aria-label="Search" value="x" onChange={() => {}} onClear={() => {}} trailing={<span data-count>3</span>} />,
+    );
+    const kids = [...container.querySelector("label")!.children].map((c) => (c.hasAttribute("data-count") ? "count" : c.tagName.toLowerCase()));
+    expect(kids.slice(-2)).toEqual(["count", "button"]);
+  });
+
+  it("draws no clear for a field that gives no onClear", () => {
+    const { container } = render(<SearchField aria-label="Search" value="x" onChange={() => {}} />);
+    expect(container.querySelector("button")).toBeNull();
+  });
+
+  it("keeps a callback ref attached across re-renders, and runs its cleanup on unmount", () => {
+    const cleanup = vi.fn();
+    const ref = vi.fn(() => cleanup);
+    const { rerender, unmount } = render(<SearchField aria-label="Search" value="" onChange={() => {}} ref={ref} />);
+    rerender(<SearchField aria-label="Search" value="a" onChange={() => {}} ref={ref} />);
+    rerender(<SearchField aria-label="Search" value="ab" onChange={() => {}} ref={ref} />);
+    expect(ref).toHaveBeenCalledTimes(1);
+    expect(cleanup).not.toHaveBeenCalled();
+    unmount();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it("still hands the caller's ref the input", () => {
+    const ref = { current: null as HTMLInputElement | null };
+    render(<SearchField aria-label="Search" value="" onChange={() => {}} onClear={() => {}} ref={ref} />);
+    expect(ref.current).toBe(screen.getByLabelText("Search"));
   });
 });

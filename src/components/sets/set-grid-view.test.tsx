@@ -1963,16 +1963,17 @@ describe("SetGridView — what makes Clear all live", () => {
   });
 });
 
-// Every other reading of the query trims: serialisation, matching, the result line. The
-// clear did not, so typing only spaces left the grid unfiltered under an enabled,
-// focusable control for a query that filtered nothing.
+// Every other reading of the query trims (serialisation, matching, the result line), so a blank query
+// filters nothing and has one inactive state.
 describe("SetGridView — a blank query has one inactive state", () => {
-  it("keeps the clear inert for whitespace", () => {
-    search = "q=%20%20";
+  // One rule for every field (2026-10-13): any text in the box earns a ✕, spaces included. The query still
+  // filters nothing, which the grid's own result line pins elsewhere.
+  it("offers the clear for whitespace typed into the box too", () => {
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search cards in Duskmourn" }), { target: { value: "  " } });
     const clear = screen.getByLabelText("Clear the search", { selector: "button" });
-    expect(clear).not.toBeVisible();
-    expect(clear).toHaveAttribute("tabindex", "-1");
+    expect(clear).toBeVisible();
+    expect(clear).toHaveAttribute("tabindex", "0");
   });
 
   it("and live for a real one", () => {
@@ -2057,8 +2058,8 @@ describe("SetGridView — row 2 under a query alone", () => {
     search = "q=plains";
     view([p("1", { name: "Plains" })], []);
     const clear = screen.getByRole("button", { name: "Clear the search" });
-    expect(clear.style.width).toBe("24px");
-    expect(clear.style.height).toBe("24px");
+    expect(clear.className).toContain("h-[24px]");
+    expect(clear.className).toContain("w-[24px]");
   });
 });
 

@@ -1,4 +1,6 @@
+import { useCallback, useRef } from "react";
 import { twMerge } from "tailwind-merge";
+import { searchFieldCopy } from "../../lib/copy/search-field";
 import { SearchIcon } from "./search-icon";
 
 // Shared text-entry primitives, sibling to button.tsx.
@@ -72,6 +74,15 @@ type SearchFieldProps = TextFieldProps & {
    * there would be a second vocabulary in a row that already has one.
    */
   leading?: React.ReactNode;
+  /**
+   * The field's ONE clear control. Given, a ✕ sits inside the box, always mounted and merely hidden while
+   * the field is empty, so it never reflows the input. One press clears: the press is kept from taking focus
+   * off the input (Safari blurs on a button tap, and a blur can move the ✕ out from under the finger before
+   * the click lands), then focus goes back to the field. The caller owns the value, so it owns the clear.
+   */
+  onClear?: () => void;
+  /** The ✕'s accessible name, when "Clear search" is not specific enough. */
+  clearLabel?: string;
 };
 
 /**
@@ -90,10 +101,33 @@ export function SearchField({
   containerClassName,
   leading,
   trailing,
+  onClear,
+  clearLabel = searchFieldCopy.clear,
   type = "search",
+  ref: callerRef,
   ...rest
 }: SearchFieldProps) {
   dropStyle(rest);
+  const input = useRef<HTMLInputElement | null>(null);
+  // Hidden by value, not by the caller: an uncontrolled field has no value to read and gets no ✕.
+  // Stable across renders, so a caller's callback ref is not detached and re-attached on every keystroke. A
+  // React 19 callback ref may return its own cleanup, which React then runs in place of calling it with null;
+  // this one always returns a cleanup, so it does both on the caller's behalf.
+  const setRef = useCallback(
+    (el: HTMLInputElement) => {
+      input.current = el;
+      const cleanup = typeof callerRef === "function" ? callerRef(el) : callerRef ? ((callerRef.current = el), undefined) : undefined;
+      return () => {
+        input.current = null;
+        if (typeof cleanup === "function") cleanup();
+        else if (typeof callerRef === "function") callerRef(null);
+        else if (callerRef) callerRef.current = null;
+      };
+    },
+    [callerRef],
+  );
+  // Any text at all earns the ✕, spaces included: a reader can always clear what they typed.
+  const filled = typeof rest.value === "string" && rest.value !== "";
   return (
     <label
       // A styling hook only — lets a page target "this field or its own trailing
@@ -124,9 +158,29 @@ export function SearchField({
             "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
           className,
         )}
+        ref={setRef}
         {...rest}
       />
       {trailing}
+      {onClear && (
+        <button
+          type="button"
+          aria-label={clearLabel}
+          // Out of the tab order and the accessibility tree while there is nothing to clear.
+          tabIndex={filled ? 0 : -1}
+          aria-hidden={filled ? undefined : true}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            onClear();
+            input.current?.focus();
+          }}
+          // `visibility` rather than unmounting, so the box is held and the input never reflows.
+          style={{ visibility: filled ? "visible" : "hidden" }}
+          className="flex h-[24px] w-[24px] shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[color:var(--border)] p-0 text-[12px] leading-none text-[color:var(--fg-faint)]"
+        >
+          ✕
+        </button>
+      )}
     </label>
   );
 }

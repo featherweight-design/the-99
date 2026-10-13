@@ -168,6 +168,8 @@ function Field({
       aria-label={copy.searchLabel}
       containerClassName={tall ? "h-[44px]" : "h-[34px]"}
       className={tall ? "text-[16px]" : "text-[13px]"}
+      clearLabel={copy.clear}
+      onClear={() => setQuery("")}
       trailing={
         <>
           {/* The count is the live region (§R2), so a reader who cannot see the
@@ -175,19 +177,6 @@ function Field({
           <span aria-live="polite" className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             {searching ? copy.count(result.count, result.total) : ""}
           </span>
-          {searching && (
-            <button
-              type="button"
-              aria-label={copy.clear}
-              onClick={() => setQuery("")}
-              className={
-                "flex flex-none items-center justify-center rounded-[6px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] transition-colors " +
-                (tall ? "h-[32px] w-[32px]" : "h-[22px] w-[22px]")
-              }
-            >
-              <span aria-hidden>✕</span>
-            </button>
-          )}
         </>
       }
     />

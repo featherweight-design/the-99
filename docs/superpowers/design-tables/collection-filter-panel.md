@@ -324,7 +324,7 @@ with the field omitted entirely.
 | Padding | `12px` | `9px 12px` |
 | Outer spacing | `margin: 0 16px 8px` (`0 16px 10px` in the anatomy card) | `margin: 10px` |
 | Placeholder | `Search sets` | `Search sets` |
-| Placeholder color | `#6E6353` | `#6E6353` |
+| Placeholder color | `var(--fg-faint)` (was `#6E6353`; one token for every search field, 2026-10-13) | same |
 | Font size | `14px` | `13px` |
 | Role | `input[role=combobox][aria-controls=set-list][aria-expanded=true][aria-activedescendant]` | same |
 | Accessible name | `Search your sets` | `Search your sets` |

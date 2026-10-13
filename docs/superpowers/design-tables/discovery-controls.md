@@ -497,10 +497,10 @@ copy, so the input appears in the accessibility tree once.
 | leading element | mono 10px, `0.12em`, var(--fg-faint), `aria-hidden` | same |
 | leading copy key | `planeCopy.search.caption` | same |
 | input font-size | **16px** (iOS zoom floor, #101 — the drawing says 13px) | 12.5px |
-| placeholder colour | var(--fg-locked) | var(--fg-locked) |
+| placeholder colour | var(--fg-faint) (one token for every search field, 2026-10-13: `--fg-locked` reads 2.5 to 3.4:1 on the six themes' fields, `--fg-faint` 3.4 to 5.2:1) | same |
 | placeholder copy key | `planeCopy.search.placeholder` | same |
 | input aria-label key | `planeCopy.search.inputAria` | same |
-| clear glyph | `✕`, 11px, var(--fg-faint), rendered only while the value is non-empty | same |
+| clear glyph | `✕`, 12px in a 24px circle on var(--border), var(--fg-faint), `SearchField`'s own `onClear`: always mounted, `visibility:hidden` while the value is empty, one tap clears and keeps focus (2026-10-13) | same |
 | clear aria-label key | `planeCopy.search.clearAria` | same |
 | URL mirroring | `?q=`, non-default only, through the existing `replaceState` effect | same |
 | announcement key | `planeCopy.search.announce(matched, total)`, one per settle; a cleared query announces nothing | same |

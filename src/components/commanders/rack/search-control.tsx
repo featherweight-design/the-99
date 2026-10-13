@@ -64,25 +64,9 @@ export function SearchControl({
       // under the reader as they type. The 44px field is tall enough for it.
       className={[
         wide ? "text-[12.5px]" : "text-[16px]",
-        "placeholder:text-[color:var(--fg-locked)]",
       ].join(" ")}
-      trailing={
-        filled ? (
-          <button
-            type="button"
-            aria-label={copy.clear}
-            onClick={() => onChange("")}
-            className={[
-              "shrink-0 cursor-pointer border-0 p-0 leading-none",
-              "flex items-center justify-center rounded-full",
-              "bg-[color:var(--border)] text-[color:var(--fg-faint)]",
-              wide ? "h-[18px] w-[18px] text-[10px]" : "h-[24px] w-[24px] text-[12px]",
-            ].join(" ")}
-          >
-            ✕
-          </button>
-        ) : null
-      }
+      clearLabel={copy.clear}
+      onClear={() => onChange("")}
     />
     </div>
   );
