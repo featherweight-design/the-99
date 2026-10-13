@@ -101,6 +101,8 @@ function checkPhone(name, m) {
 await clerkSetup();
 const browser = await chromium.launch();
 let aboutCapture = null;
+// The intent case is the one the old ceiling broke, so a run that never meets it proves nothing.
+let intentDecks = 0;
 try {
   const auth = await browser.newContext();
   const userId = await signIn(await auth.newPage());
@@ -118,9 +120,10 @@ try {
     await clearAboutSheet(page, userId);
     const band = onPage(page, "[data-testid=spine-band]").first();
     await band.waitFor({ timeout: 60_000 });
-    const intent = await onPage(page, "[data-wash-label]").first().innerText();
+    const hasIntent = (await onPage(page, "[data-wash-label] [data-deck-intent]").count()) > 0;
+    if (hasIntent) intentDecks++;
     const m = await band.evaluate(READ_PHONE);
-    checkPhone(intent.split("\n").length > 3 ? "phone, with its block" : "phone", m);
+    checkPhone(hasIntent ? "phone, with an intent line" : "phone", m);
     if (SHOTS) await band.screenshot({ path: `${SHOTS}/${id}-phone.png` });
 
     // The rename editor is the tallest block this header draws; the ramp has to follow it up.
@@ -157,8 +160,13 @@ try {
     await desk.close();
   }
 } finally {
-  await browser.close();
-  if (aboutCapture) await restoreAboutSeen(aboutCapture);
+  // The database write is undone first, so a browser that fails to close cannot strand it.
+  try {
+    if (aboutCapture) await restoreAboutSeen(aboutCapture);
+  } finally {
+    await browser.close();
+  }
 }
+if (!intentDecks) fail("no deck passed has an intent line, so the case the old ceiling broke went unmeasured");
 console.log(failures ? `\n${failures} failure(s)` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
