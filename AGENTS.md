@@ -1080,8 +1080,10 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   push the harness makes itself, to the first animation frame holding the result. Never by when a
   Playwright wait returns, because those re-check on a backoff that reaches 500ms. Timed that way, the
   cold card press read as ~230, ~330 or ~830ms, a false "slow mode" in 2 of 7 runs, while a trace of
-  every run showed the dialog at 204-338ms. Card-press, soft-navigation and tile figures from before
-  2026-10-13 carry that quantization, and the intent press carried ~15-40ms of harness overhead.
+  every run showed the dialog at 204-338ms. Card-press DIALOG figures from before 2026-10-13 carry
+  that quantization, and the intent press carried ~15-40ms of harness overhead. The art, soft-navigation
+  and tile figures were polled every 16ms, so they were never quantized: they read late by that
+  interval plus a harness round trip.
 
   **Point it at `next start`, never `next dev`**, whose compile times swamp every figure. The
   server runs on a scratch Neon branch holding a `pull:staging` copy, and the worktree's `.env`

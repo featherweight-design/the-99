@@ -49,6 +49,21 @@ describe("PRESS_PROBE", () => {
 });
 
 describe("NAV_PROBE", () => {
+  it("does not stamp the page being left, however much content it holds", async () => {
+    // A soft navigation leaves a page whose <main> already has content: only the destination counts.
+    document.body.innerHTML = `<main>${"The page being left, with plenty of content of its own.".repeat(2)}</main>`;
+    const from = location.pathname;
+    NAV_PROBE({ path: "/decks/elsewhere", at: performance.now() });
+    await frame();
+    await frame();
+    expect(stamps("__nav").drew).toBeNull();
+    history.pushState(null, "", "/decks/elsewhere");
+    await frame();
+    await frame();
+    expect(stamps("__nav").drew).not.toBeNull();
+    history.pushState(null, "", from);
+  });
+
   it("times from a given push to the frame where the path is current and main holds content", async () => {
     NAV_PROBE({ path: location.pathname, at: performance.now() });
     await wait(30);

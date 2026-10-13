@@ -34,7 +34,8 @@ export const PRESS_PROBE = () => {
  * Arms one client navigation's timing, in the page: from the press (`at` given, for a push the
  * harness makes itself, or else the next pointerdown) to the first animation frame where the
  * destination's path is current and `<main>` holds content rather than a loading screen. Read back
- * as `window.__nav`. Timed in the page for the same reason as `PRESS_PROBE`.
+ * as `window.__nav`. In the page so the figure carries no harness round trip and no polling interval,
+ * and so it starts at the press itself rather than at whenever the harness's next command ran.
  */
 export const NAV_PROBE = ({ path, at }) => {
   const stamps = { at: at ?? null, drew: null };
