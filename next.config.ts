@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-scripts";
 
+/** `INLINE_CSS_ENABLED`, `"true"` on the-99-staging only (speed plan, 2026-10-12). */
+export function inlineCssEnabled(env: Record<string, string | undefined>): boolean {
+  return env.INLINE_CSS_ENABLED === "true";
+}
+
 // Deliberately empty. `experimental.staleTimes.dynamic` used to live here, to
 // stop /collection and /commanders refetching their whole payload on every
 // filter change — but it is a router-wide setting, so it bought that one fix
@@ -11,11 +16,6 @@ import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-script
 // allows: a ManaBox export over 1 MB was refused with a 413 before the action ran,
 // and the reader saw only a minified React error. It matches COLLECTION_FILE_MAX_BYTES
 // plus room for the multipart envelope, and stays under Vercel's 4.5 MB request cap.
-/** `INLINE_CSS_ENABLED`, `"true"` on the-99-staging only (speed plan, 2026-10-12). */
-export function inlineCssEnabled(env: Record<string, string | undefined>): boolean {
-  return env.INLINE_CSS_ENABLED === "true";
-}
-
 const nextConfig: NextConfig = {
   // One copy of the Neon driver, loaded from node_modules. drizzle-orm's `db.transaction` only checks a
   // connection out of the pool when `client instanceof Pool` against ITS copy of the driver; the server
