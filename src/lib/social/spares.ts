@@ -57,10 +57,10 @@ export type FriendSpare = { oracleId: string; friend: { publicId: string; displa
 
 /**
  * Each granting friend's claim model narrowed to `asked`, in input order, at most CLAIM_MODELS_AT_ONCE at a
- * time. Each one runs in its own read-only repeatable-read transaction that FIRST re-reads the viewer's
+ * time. Each one runs in its own repeatable-read transaction (never a read-only one, which poisons the
+ * pooled connection: `draft-state-snapshot.test.ts`) that FIRST re-reads the viewer's
  * grants inside it, so the authorization and the friend's rows are one snapshot: a friend whose grant is
- * absent at that instant reads as `null` and nothing of theirs is read. Exported so
- * `measure:friend-spares` times the shipped path rather than restating it.
+ * absent at that instant reads as `null` and nothing of theirs is read.
  */
 export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
   const models: (Awaited<ReturnType<typeof loadAvailability>> | null)[] = new Array(friends.length);
@@ -72,7 +72,7 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
         const granting = await spareGrantorsQuery(viewerId, tx);
         if (!granting.some((g) => g.userId === friend)) return null;
         return loadAvailability(friend, { oracleIds: [...asked] }, tx);
-      }, { isolationLevel: "repeatable read", accessMode: "read only" });
+      }, { isolationLevel: "repeatable read" });
     }
   }));
   return models;

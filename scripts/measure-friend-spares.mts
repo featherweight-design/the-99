@@ -32,7 +32,7 @@ async function main() {
   console.log(`asked cards: ${asked.length}`);
   console.log(`claim model per friend: median ${model.median}ms (min ${model.min}, max ${model.max})`);
   console.log(`grant read: median ${grants.median}ms`);
-  // The shipped flow: a grant read, then per friend one read-only repeatable-read transaction holding the
+  // The shipped flow: a grant read, then per friend one repeatable-read transaction holding the
   // grant check and the claim model, at most CLAIM_MODELS_AT_ONCE at a time.
   for (const n of [1, 3, 6, 10]) {
     const flow = await time(async () => {
@@ -44,7 +44,7 @@ async function main() {
           await db.transaction(async (tx) => {
             await spareGrantorsQuery(friend, tx);
             await loadAvailability(friend, { oracleIds: asked }, tx);
-          }, { isolationLevel: "repeatable read", accessMode: "read only" });
+          }, { isolationLevel: "repeatable read" });
         }
       }));
     }, 5);
