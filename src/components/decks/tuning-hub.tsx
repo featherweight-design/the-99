@@ -348,7 +348,8 @@ export function TuningHub({
     while (!live(next)) next = (next + step + ids.length) % ids.length;
     const id = ids[next];
     tabRefs.current.get(id ?? "all")?.focus();
-    open(id, { focus: false, scroll: true });
+    // A key that lands back on the tool already open (End on the last tab) switches nothing.
+    if (id !== openTool) open(id, { focus: false, scroll: true });
   };
 
   // Once drawn, the hub stays for the rest of this visit to the tab: the last cut on a deck that

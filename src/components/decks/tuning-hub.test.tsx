@@ -373,6 +373,13 @@ describe("TuningHub opening a tool", () => {
     // A keyboard switch brings it up too.
     fireEvent.keyDown(screen.getByRole("tab", { name: /Mana Balance/ }), { key: "ArrowRight" });
     await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
+    // A key landing back on the open tool (End, History being the last tab) moves nothing.
+    await waitFor(() => expect(screen.getByRole("tab", { name: /History/ })).toHaveAttribute("aria-selected", "true"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    scroll.mockClear();
+    fireEvent.keyDown(screen.getByRole("tab", { name: /History/ }), { key: "End" });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(scroll).not.toHaveBeenCalled();
   });
 
   it("waits for History's first rows before it scrolls, so the page is tall enough to bring the hub up", async () => {
