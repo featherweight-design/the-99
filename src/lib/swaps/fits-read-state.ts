@@ -32,8 +32,7 @@ export type StoredFitsRead = {
 };
 
 export type FitsReadView = {
-  /** A run in flight for this reader and card (lock 5). */
-  /** `candidates`: the decks the run was started over (its own row's), 0 when the row recorded none. */
+  /** A run in flight for this reader and card (lock 5). `candidates`: the decks it was started over (its own row's), 0 when the row recorded none. */
   pending: { readId: string; startedAt: string; candidates: number } | null;
   /** The newest settled read, current or out of date. */
   stored: StoredFitsRead | null;

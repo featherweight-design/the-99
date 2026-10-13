@@ -553,7 +553,7 @@ describe("FitsView (Find a deck read, R2)", () => {
       await settle();
       // Back in, the free list now names one deck: the run still reads two.
       actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
-      readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString(), candidates: 2 } }));
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString(), candidates: 5 } }));
       await trip();
       expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
     });
