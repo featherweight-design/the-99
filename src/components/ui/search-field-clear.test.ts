@@ -27,9 +27,8 @@ function searchFieldsWithoutClear(file: string): string[] {
   const visit = (n: ts.Node) => {
     if ((ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) && n.tagName.getText() === "SearchField") {
       const has = n.attributes.properties.some((a) => ts.isJsxAttribute(a) && a.name.getText() === "onClear");
-      // `{...props}` spreads cannot be read; a field built from one names onClear in the spread's own file.
-      const spread = n.attributes.properties.some((a) => ts.isJsxSpreadAttribute(a));
-      if (!has && !spread) bad.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+      // A spread is not evidence: `onClear` must be named on the element itself.
+      if (!has) bad.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
     }
     ts.forEachChild(n, visit);
   };
@@ -41,6 +40,18 @@ describe("every SearchField passes onClear", () => {
   it("has no field under src that cannot clear itself", () => {
     const root = join(process.cwd(), "src");
     expect(walk(root).flatMap(searchFieldsWithoutClear)).toEqual([]);
+  });
+
+  it("is not satisfied by a spread (the guard's own failure path)", () => {
+    const tmp = join(process.cwd(), "src/components/ui/__guard-fixture-spread.tsx");
+    const body =
+      'import { SearchField } from "./text-field";\nexport const A = (p: object) => <SearchField aria-label="x" {...p} />;\n';
+    writeFileSync(tmp, body);
+    try {
+      expect(searchFieldsWithoutClear(tmp)).toHaveLength(1);
+    } finally {
+      unlinkSync(tmp);
+    }
   });
 
   it("sees a field that omits it (the guard's own failure path)", () => {
