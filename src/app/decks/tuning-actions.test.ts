@@ -5,7 +5,7 @@ import type { SQL } from "drizzle-orm";
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | null } | undefined, inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
-  reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
+  modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
   // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
   // real catalog read, price read and `validateSuggestions` rather than throwing on a bare `db`
@@ -80,7 +80,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
   tuningInputs: async () => {
     calls.inputs += 1;
     return {
-      head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: [], allLocked: calls.allLocked,
+      head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: calls.lockedIds, allLocked: calls.allLocked,
       limits: calls.limits,
     };
   },
@@ -110,6 +110,7 @@ vi.mock("../../lib/tuning/run-store", () => ({
   },
   finishRun: async (...args: unknown[]) => { calls.finished.push(args); return true; },
   persistRun: async (...args: unknown[]) => { calls.persisted.push(args); return true; },
+  runIsPending: async () => calls.runPending,
 }));
 vi.mock("../../lib/profile/play", () => ({ buildPlayGroup: () => ({}) }));
 vi.mock("../../lib/tuning/owned-candidates", () => ({
@@ -129,6 +130,9 @@ vi.mock("../../lib/tuning/prompt", () => ({ buildPrompt: () => ({ system: "s", u
 vi.mock("../../lib/model/client", () => ({
   callModel: async (req: unknown) => {
     calls.modelRequest = req;
+    calls.modelCalls += 1;
+    calls.onModelCall?.(req);
+    if (calls.modelQueue.length > 0) return calls.modelQueue.shift();
     return calls.modelOutcome ?? {
       ok: true,
       value: { additions: [{ card: "Sol Ring" }], cuts: [{ card: "Island" }] },
@@ -174,6 +178,10 @@ beforeEach(() => {
   calls.finished = [];
   calls.modelRequest = undefined;
   calls.modelOutcome = undefined;
+  calls.modelQueue = [];
+  calls.lockedIds = [];
+  calls.runPending = true;
+  calls.modelCalls = 0;
   calls.contextRead = 0;
   calls.packInput = undefined;
   calls.headerUpdates = [];
@@ -204,7 +212,7 @@ describe("runTuning after the call returned", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "upstream_busy", droppedCount: undefined },
-      { model: "claude-sonnet-5-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "suggest", effort: "medium" },
+      [{ model: "claude-sonnet-5-5", usage: { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 }, step: "suggest", effort: "medium" }],
     ]]);
   });
 });
@@ -275,7 +283,7 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "malformed", droppedCount: undefined },
-      { model: "claude-sonnet-5-5", usage, step: "suggest", effort: "medium" },
+      [{ model: "claude-sonnet-5-5", usage, step: "suggest", effort: "medium" }],
     ]]);
   });
 });
@@ -486,6 +494,105 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
     expect(flagged.every((f) => f.addOracleId === null && f.cutOracleId !== null)).toBe(true);
     expect(flagged).toHaveLength(5);
     expect(droppedCount).toBe(6);
+  });
+
+  // Model tiering: a Sonnet 5.5 answer came back as one "skip" placeholder (1 in 24). One more ask, and the
+  // credit goes back only when that one fails too.
+  describe("an answer with nothing to show", () => {
+    const USAGE = { inputTokens: 4_000, outputTokens: 900, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    const capped = { ok: true, value: { additions: ADDS, cuts: [] }, usage: USAGE };
+    const good = { ok: true, value: { additions: [], cuts: CUTS }, usage: USAGE };
+    const setup = () => {
+      calls.limits = { capCents: 300, sets: [], ownedOnly: false };
+      calls.priceRows = new Map(SIX.map((i) => [`add${i}`, 1000] as const));
+    };
+
+    it("asks once more, keeps the second answer, and bills both asks under the one reservation", async () => {
+      setup();
+      calls.modelQueue = [capped, good];
+      await runTuning(DECK, { anyway: true });
+      expect(calls.modelCalls).toBe(2);
+      const [, flagged, , billed] = persistedOnce() as unknown as [unknown, unknown[], number, { step: string; usage: unknown }[]];
+      expect(flagged).toHaveLength(5);
+      // One entry per provider call, so the ledger writes one part for each.
+      expect(billed.map((b) => [b.step, b.usage])).toEqual([["suggest", USAGE], ["suggest_retry", USAGE]]);
+    });
+
+    it("fails as ungrounded, billed for both asks, when the second ask is empty too", async () => {
+      setup();
+      calls.modelQueue = [capped, capped];
+      await runTuning(DECK, { anyway: true });
+      expect(calls.modelCalls).toBe(2);
+      expect(calls.persisted).toHaveLength(0);
+      const [, patch, billed] = calls.finished[calls.finished.length - 1] as [unknown, { errorClass: string }, { usage: unknown }[]];
+      expect(patch.errorClass).toBe("ungrounded");
+      expect(billed.map((b) => b.usage)).toEqual([USAGE, USAGE]);
+    });
+
+    it("gives the second ask only the deadline the first left, and no retry of its own", async () => {
+      setup();
+      const requests: { deadlineMs: number; retryFloorMs: number }[] = [];
+      let now = 1_000_000;
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => now);
+      calls.modelQueue = [capped, good];
+      calls.onModelCall = (req) => { requests.push(req as (typeof requests)[number]); now += 30_000; };
+      try { await runTuning(DECK, { anyway: true }); } finally { clock.mockRestore(); calls.onModelCall = undefined; }
+      expect(requests).toHaveLength(2);
+      expect(requests[0].deadlineMs).toBe(110_000);
+      expect(requests[1].deadlineMs).toBe(80_000);
+      expect(requests[1].retryFloorMs).toBeGreaterThanOrEqual(110_000);
+    });
+
+    it("does not ask again for a run a Stop settled while the first ask was out, and records the first ask's usage", async () => {
+      setup();
+      calls.modelQueue = [capped, good];
+      calls.runPending = false;
+      await runTuning(DECK, { anyway: true });
+      expect(calls.modelCalls).toBe(1);
+      expect(calls.persisted).toHaveLength(0);
+      const [, , billed] = calls.finished[calls.finished.length - 1] as [unknown, unknown, { usage: unknown }[]];
+      expect(billed.map((b) => b.usage)).toEqual([USAGE]);
+    });
+
+    it("spends the credit for whatever the second ask kept, even a thin answer the first ask would have refunded", async () => {
+      setup();
+      // Two additions asked of the second answer, one kept: thin enough that a single ask refunds it.
+      const thin = { ok: true, value: { additions: [], cuts: CUTS.slice(0, 1) }, usage: USAGE };
+      calls.modelQueue = [capped, thin];
+      await runTuning(DECK, { anyway: true });
+      const [, flagged, , , report, settleAs] = persistedOnce() as unknown as [unknown, unknown[], number, unknown, { refunded?: boolean }, string];
+      expect(flagged).toHaveLength(1);
+      expect(report.refunded).toBeUndefined();
+      expect(settleAs).toBe("spent");
+    });
+
+    it("never asks again for a run whose every drop was a locked card", async () => {
+      setup();
+      // Every card the model proposes to cut is one the player locked.
+      calls.evidencePack = { ...(calls.evidencePack as object), cards: SIX.map((i) => ({ oracleId: `cut${i}`, name: `Cut ${i}`, commander: false, locked: true })) };
+      calls.modelQueue = [{ ok: true, value: { additions: [], cuts: CUTS }, usage: USAGE }, good];
+      await runTuning(DECK, { anyway: true });
+      expect(calls.modelCalls).toBe(1);
+      const [, patch] = calls.finished[calls.finished.length - 1] as [unknown, { errorClass: string }];
+      expect(patch.errorClass).toBe("locked_only");
+    });
+
+    it("fails with the second ask's own class when it fails, billed for both", async () => {
+      setup();
+      calls.modelQueue = [capped, { ok: false, errorClass: "malformed", usage: USAGE }];
+      await runTuning(DECK, { anyway: true });
+      expect(calls.modelCalls).toBe(2);
+      const [, patch, billed] = calls.finished[calls.finished.length - 1] as [unknown, { errorClass: string }, { usage: unknown }[]];
+      expect(patch.errorClass).toBe("malformed");
+      expect(billed.map((b) => b.usage)).toEqual([USAGE, USAGE]);
+    });
+
+    it("does not ask again when the first answer had something to show", async () => {
+      setup();
+      calls.modelQueue = [good, good];
+      await runTuning(DECK, { anyway: true });
+      expect(calls.modelCalls).toBe(1);
+    });
   });
 
   // An all-dropped run is persisted as "ungrounded" with only a one-line `refusal` the player
