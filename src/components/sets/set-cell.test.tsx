@@ -131,9 +131,14 @@ describe("SetCell — caption and price", () => {
     expect(container.querySelector("button")?.getAttribute("aria-label")).toMatch(/\$4\.50 foil/);
   });
 
-  it("draws no figure on a cell filled by name, whose printing is only inferred", () => {
-    render(<SetCell cell={cell({ owned: true, byName: true, finishes: ["nonfoil"] })} price={fact({})} newestAsOf={NEWEST} showPrice />);
+  it("draws no figure on a cell filled by name when the set holds siblings, whose printing is only inferred", () => {
+    render(<SetCell cell={cell({ owned: true, byName: true, finishes: ["nonfoil"] })} price={fact({})} newestAsOf={NEWEST} showPrice printingsOfCard={2} />);
     expect(screen.queryByText("$1.20")).toBeNull();
+  });
+
+  it("prices a cell filled by name when it is the set's one printing of the card", () => {
+    render(<SetCell cell={cell({ owned: true, byName: true, finishes: ["nonfoil"] })} price={fact({})} newestAsOf={NEWEST} showPrice printingsOfCard={1} />);
+    expect(screen.getByText("$1.20")).toBeInTheDocument();
   });
 
   it("says no stock on an owned cell whose printing the store never carried", () => {

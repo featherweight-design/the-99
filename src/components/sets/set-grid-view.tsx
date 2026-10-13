@@ -327,6 +327,12 @@ export function SetGridView(props: SetGridViewProps) {
   const newest = newestAsOf ? parseAsOf(newestAsOf) : null;
 
   const sections = useMemo(() => sectionsOf(cells, baseSetSize), [cells, baseSetSize]);
+  // Printings of each card in the set, for pricing a cell filled by name (`ownedPriceCode`).
+  const printingsOf = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const c of cells) n.set(c.oracleId, (n.get(c.oracleId) ?? 0) + 1);
+    return n;
+  }, [cells]);
   // Part of the strip's key: a set that goes unindexed and back must start from a clean
   // baseline rather than re-render a delta belonging to the previous one.
   const indexedKey = sections.indexed ? "i" : "u";
@@ -350,7 +356,7 @@ export function SetGridView(props: SetGridViewProps) {
   // price, `/collection`'s for the copies held (Hugh, 2026-10-13), so the order and the
   // figures agree. A cell with no figure is unpriced, which `sortCells` puts last.
   const centsOf = (c: Cell) => c.owned
-    ? priceSortCents(ownedPriceCode(c, priceFor.get(c.scryfallId) ?? null, newest))
+    ? priceSortCents(ownedPriceCode(c, priceFor.get(c.scryfallId) ?? null, newest, printingsOf.get(c.oracleId) ?? 1))
     : livePriceCents(priceFor.get(c.scryfallId), newest);
 
   // ONE count function. Everything below reads these arrays and nothing recomputes the
@@ -1712,6 +1718,7 @@ export function SetGridView(props: SetGridViewProps) {
             priceFor={priceFor}
             newest={newest}
             showPrice={effective.sort === "price"}
+            printingsOf={printingsOf}
             siblings={siblingIds}
             setCode={code.toUpperCase()}
             onOpenCard={open}
@@ -1726,6 +1733,7 @@ export function SetGridView(props: SetGridViewProps) {
               priceFor={priceFor}
               newest={newest}
               showPrice={effective.sort === "price"}
+              printingsOf={printingsOf}
               siblings={siblingIds}
               setCode={code.toUpperCase()}
               onOpenCard={open}
@@ -1824,7 +1832,7 @@ function OwnershipToggles({
 }
 
 function Section({
-  id, title, ratio, cells, priceFor, newest, showPrice, siblings, setCode, onOpenCard,
+  id, title, ratio, cells, priceFor, newest, showPrice, printingsOf, siblings, setCode, onOpenCard,
 }: {
   id?: string;
   title: string;
@@ -1834,6 +1842,7 @@ function Section({
   newest: Date | null;
   /** Sorted by price: owned cells draw their figure too. */
   showPrice: boolean;
+  printingsOf: Map<string, number>;
   siblings: readonly Sibling[];
   /** Uppercase, because BrowsePrinting.setCode is and the match is exact (browse.ts:398). */
   setCode: string;
@@ -1872,6 +1881,7 @@ function Section({
             price={priceFor.get(c.scryfallId) ?? null}
             newestAsOf={newest}
             showPrice={showPrice}
+            printingsOfCard={printingsOf.get(c.oracleId) ?? 1}
             // The cell IS a printing, so the modal is told which one. Uppercased because
             // BrowsePrinting.setCode is uppercase and the match is exact (browse.ts:398).
             onOpen={(oracleId) => onOpenCard(oracleId, siblings, {
