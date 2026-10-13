@@ -78,7 +78,7 @@ describe("pressFitsRead: refusals that cost nothing", () => {
 
   it("a stored read that is still current is not asked again, a no fit included (handoff §6, R2 3)", async () => {
     const hashes = candidateHashes(inputs(), MODEL);
-    store.rows = [{ id: "r", status: "done", outcome: "noFit", errorClass: null, refunded: true, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [] }];
+    store.rows = [{ id: "r", status: "done", outcome: "noFit", errorClass: null, refunded: true, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [], promptVersion: 3 }];
     const { d, call } = deps({ picks: [] });
     expect(await pressFitsRead("u", "card", d, ENV_VIEW)).toEqual({ ok: false, reason: "current" });
     expect(call).not.toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe("pressFitsRead: refusals that cost nothing", () => {
   it("a read still current but for a deck the reader added the card to is not asked again (F2)", async () => {
     const inp = inputs();
     const stored = candidateHashes(inp, MODEL);
-    store.rows = [{ id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: stored, picks: [] }];
+    store.rows = [{ id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: stored, picks: [], promptVersion: 3 }];
     // Kratos took the card: it holds it now and has left the candidates.
     const after = inputs(["deck-goblins"]);
     const { d, call } = deps({ picks: [] }, after);
@@ -96,8 +96,18 @@ describe("pressFitsRead: refusals that cost nothing", () => {
     expect(call).not.toHaveBeenCalled();
   });
 
+  it("a read stored with the prompt version inside its hash is still current, on the press and on the panel", async () => {
+    const hashes = candidateHashes(inputs(), MODEL, 2);
+    store.rows = [{ id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [], promptVersion: 2 }];
+    const { d, call } = deps({ picks: [] });
+    expect(await pressFitsRead("u", "card", d, ENV_VIEW)).toEqual({ ok: false, reason: "current" });
+    expect(call).not.toHaveBeenCalled();
+    const panel = await readFitsRead("u", "card", d, ENV_VIEW);
+    expect(panel?.view.stored?.current).toBe(true);
+  });
+
   it("a run in flight is returned as it stands, never charged twice (lock 5)", async () => {
-    store.rows = [{ id: "p", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [] }];
+    store.rows = [{ id: "p", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [], promptVersion: 3 }];
     const { d, call } = deps({ picks: [] });
     const r = await pressFitsRead("u", "card", d, ENV_VIEW);
     expect(r.ok && r.panel.view.pending?.readId).toBe("p");
@@ -109,7 +119,7 @@ describe("pressFitsRead: refusals that cost nothing", () => {
     store.started = { kind: "in_flight" };
     // The winner's pending row, which the loser's panel reads.
     vi.mocked(startFitsRead).mockImplementationOnce(async () => {
-      store.rows = [{ id: "winner", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [] }];
+      store.rows = [{ id: "winner", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [], promptVersion: 3 }];
       return { kind: "in_flight" };
     });
     const { d, call } = deps({ picks: [] });
@@ -177,7 +187,7 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
     d.load = async () => ({ fits: { holds: [] } as unknown as FitsReadLoad["fits"], inputs: (loads += 1) === 1 ? inputs() : edited, planOf: new Map() }) as FitsReadLoad;
     // The store hands back the row the press wrote, with the hashes it was written under.
     vi.mocked(startFitsRead).mockImplementationOnce(async (_u, _o, hashes) => {
-      store.rows = [{ id: "read-1", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [] }];
+      store.rows = [{ id: "read-1", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [], promptVersion: 3 }];
       return { kind: "started", readId: "read-1", callId: "call-1" };
     });
     const r = await pressFitsRead("u", "card", d, ENV_VIEW);
@@ -248,6 +258,18 @@ describe("the reader's env", () => {
 });
 
 describe("candidateHashes", () => {
+  it("does not hold the prompt version, and rebuilds the older form that did from a given one", () => {
+    const now = candidateHashes(inputs(), MODEL);
+    const v3 = candidateHashes(inputs(), MODEL, 3);
+    const v4 = candidateHashes(inputs(), MODEL, 4);
+    const deck = Object.keys(now)[0];
+    expect(v3[deck]).not.toBe(now[deck]);
+    expect(v3[deck]).not.toBe(v4[deck]);
+    // The plan half is the same in every form: a version never moves it.
+    expect(v3[deck].split(".")[0]).toBe(now[deck].split(".")[0]);
+    expect(candidateHashes(inputs(), MODEL)).toEqual(now);
+  });
+
   it("moves only for the deck whose inputs moved", () => {
     const a = candidateHashes(inputs(), MODEL);
     const inp = inputs();
