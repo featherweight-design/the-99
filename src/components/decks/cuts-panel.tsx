@@ -29,6 +29,7 @@ import { useReviewRun } from "./review-run";
 import { CreditsText } from "../ui/credits-text";
 import { useOptimisticVerdict, useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-verdict";
 import { CreditButton, FailMark } from "../ui/credit-button";
+import { hasCredit } from "../../lib/model/allowance-rule";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
@@ -221,7 +222,7 @@ export function CutsPanelView({
   const failed = !running && !priorRun && !panel.review && run?.status === "failed";
   const refusedRun = failed && run.errorClass === "ungrounded";
   const left = Math.max(0, panel.allowance.limit - panel.allowance.used);
-  const spent = panel.allowance.used >= panel.allowance.limit;
+  const spent = !hasCredit(panel.allowance);
   const blocked = spent || !!panel.allowance.paused || panel.allowance.ownerShare === true || panel.allLocked;
   const standing = panel.allowance.paused
     ? creditsCopy.paused(panel.allowance.paused.until)
@@ -374,7 +375,7 @@ function Band({ children, accent = false }: { children: ReactNode; accent?: bool
 function Offer({ panel, variant, blocked, standing, onPress }: {
   panel: CutsPanel; variant: "offer" | "retry"; blocked: boolean; standing: string; onPress: () => void;
 }) {
-  const spent = panel.allowance.used >= panel.allowance.limit;
+  const spent = !hasCredit(panel.allowance);
   const d = copy.deeper;
   return (
     <div className={variant === "offer" ? "" : "mt-[12px]"}>

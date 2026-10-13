@@ -7,6 +7,7 @@ import {
   MODEL_FRIEND_DAILY_ALLOWANCE,
   RESERVATION_TTL_MS,
   allowanceFrom,
+  freeRoom,
   ownerDailyAllowanceFrom,
   type Allowance,
   type LedgerRow,
@@ -277,7 +278,7 @@ export async function reserveModelCall(
   // The free allowance first, because it is use-it-or-lose-it; then a paid lot, plan before pack
   // (`pickGrant`). Both read under the lock above, so two presses cannot take one last credit.
   let creditGrantId: string | null = null;
-  if (allowance.used >= allowance.limit) {
+  if (!freeRoom(allowance)) {
     const grant = pickGrant(await grantBalances(tx, userId, now));
     if (!grant) return { refused: "allowance" };
     creditGrantId = grant.id;

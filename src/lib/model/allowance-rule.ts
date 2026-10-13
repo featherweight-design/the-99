@@ -95,6 +95,24 @@ export type Allowance = {
   pack?: number;
 };
 
+/**
+ * THE ONE PLACE "out of credits" IS DECIDED (payments plan, PR L2). Every reader that decides whether a
+ * press may start, server gate or panel, asks one of these two, and `credit-gates.test.ts` fails on a
+ * comparison of `used` against `limit` anywhere else.
+ *
+ * `freeRoom`: the free allowance can fund one more run. `hasCredit`: something can, the free allowance
+ * or a paid lot (`plan` and `pack`, spent once the free allowance is gone; `credit-rule.ts`). Neither
+ * says anything about the spend cap: `paused` and `ownerShare` refuse a press whatever the credits,
+ * and every caller checks them first.
+ */
+export function freeRoom(a: { used: number; limit: number }): boolean {
+  return a.used < a.limit;
+}
+
+export function hasCredit(a: { used: number; limit: number; plan?: number | null; pack?: number | null }): boolean {
+  return freeRoom(a) || (a.plan ?? 0) + (a.pack ?? 0) > 0;
+}
+
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */
 function expiresAt(row: LedgerRow): number {
   const ttl = row.status === "reserved" ? RESERVATION_TTL_MS : ALLOWANCE_WINDOW_MS;

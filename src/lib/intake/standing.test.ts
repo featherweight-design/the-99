@@ -10,6 +10,9 @@ describe("the form's credit line", () => {
     expect(closedBy({ ...base, used: 5, ownerShare: true })).toBe("ownerShare");
     expect(closedBy({ ...base, used: 5 })).toBe("spent");
     expect(closedBy(base)).toBeNull();
+    // A paid lot keeps the press open once the free allowance is spent, behind the cap's two states.
+    expect(closedBy({ ...base, used: 5, plan: 2 })).toBeNull();
+    expect(closedBy({ ...base, used: 5, plan: 2, ownerShare: true })).toBe("ownerShare");
   });
 
   it("names when a credit comes back as the results do: the oldest unit's leaving, past the limit", () => {

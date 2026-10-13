@@ -18,6 +18,8 @@
 //   h  readAllowance reports what each source has left
 //   i  the purge removes the account's lots and the runs that named them, with no FK refusal
 //   j  a paid run never counts toward the free window
+//   k  the gates (`hasCredit`, intake's `closedBy`, the synopsis's `wouldSpend`) read a lot through the
+//      real `readAllowance`: open over a spent allowance while the lot holds a credit, shut once it does not
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
@@ -26,6 +28,7 @@
 //   - `pickGrant` ordering pack before plan: fails c and h.
 //   - a refunded run read as spend (`grantBalances` counting every row it reads, refunded included):
 //     fails d.
+//   - `hasCredit` reduced to the free allowance (`freeRoom`): fails k.
 //
 // It writes `model_calls` and `credit_grants` rows under per-run `user_id`s and deletes them in a
 // `finally`, so it fails closed: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports, and
@@ -41,7 +44,9 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { readAllowance, reserveModelCall, settleModelCall } from "../src/lib/model/allowance";
-import { MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS } from "../src/lib/model/allowance-rule";
+import { MODEL_FRIEND_DAILY_ALLOWANCE, RESERVATION_TTL_MS, hasCredit } from "../src/lib/model/allowance-rule";
+import { closedBy, toStanding } from "../src/lib/intake/standing";
+import { synopsisStatus } from "../src/lib/synopsis/read";
 import { purgeAccount } from "../src/lib/account/purge";
 import { TUNING_MODEL } from "../src/lib/tuning/limits";
 
@@ -215,6 +220,26 @@ async function run() {
         values (${u}, 'tuning', 'spent', ${TUNING_MODEL}, ${pack}::uuid)`);
     }
     check("j · five paid runs today leave the free allowance whole", await fundedBy(await reserve(u)), null);
+  }
+
+  // k · The gates read the lot through the real `readAllowance` (payments L2): with the free
+  //     allowance spent, a pack keeps every gate open; once the pack is spent, every gate closes.
+  {
+    const u = newUser();
+    await spendAllowance(u);
+    await grant(u, "pack", 1);
+    const gates = async () => {
+      const now = new Date();
+      const a = await readAllowance(u, now);
+      return {
+        hasCredit: hasCredit(a),
+        intake: closedBy(toStanding(a, now)),
+        synopsis: synopsisStatus({ reading: { fresh: true, list: "L" }, synopsis: null, allowance: a, pending: false }).wouldSpend,
+      };
+    };
+    check("k · a pack over a spent allowance keeps every gate open", await gates(), { hasCredit: true, intake: null, synopsis: true });
+    await reserve(u);
+    check("k · and its last credit in flight closes every gate", await gates(), { hasCredit: false, intake: "spent", synopsis: false });
   }
 
   // i · The purge takes the lots and the runs that named them.

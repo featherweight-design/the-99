@@ -836,10 +836,13 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`src/lib/model/credit-rule.ts`), so a refunded run, or a reservation past its TTL, returns its credit to the lot
   that funded it with no second refund path, and a paid run never counts toward the free window. `Allowance` carries
   `plan` and `pack` when the player holds a lot. Nothing writes a lot yet (the Stripe webhook is K1), so every
-  reserve takes the pre-payments path. Every reader that decides whether a press may start still judges "spent" from
-  `used` against `limit` alone, the SERVER gates included (`tuning/gate.ts`, `intake/the-read-run.ts`'s `closedNow`,
-  `synopsis/read.ts`) as well as the panels, so a lot cannot fund those presses until L2 teaches them `plan` and `pack`;
-  L2 must merge before anything can write a lot. Purged
+  reserve takes the pre-payments path. **"Out of credits" is decided in one place** (L2): `hasCredit` (the free
+  allowance has room, or a lot holds a credit) and `freeRoom` (the free allowance alone) in `allowance-rule.ts`. Every
+  reader that decides whether a press may start asks `hasCredit`, the server gates (`tuning/gate.ts`,
+  `intake/the-read-run.ts`'s `closedNow`, `synopsis/read.ts`, intake's `closedBy`) and the panels alike, after the
+  spend cap's `paused` and `ownerShare`; `src/lib/model/credit-gates.test.ts` fails on a comparison of `used` against
+  `limit` anywhere else in `src/`. The free COUNT a line shows (`N of 5 left`) is still the free allowance's alone:
+  how a paid balance is drawn is the buying screens' design (U1). Purged
   with the account; unspent credits are forfeited (Q7). `pnpm probe:payments-ledger` proves it on a scratch branch.
 
 - `pnpm check:list-cache` fails when Home or `/decks` reads a per-user table the stamp does

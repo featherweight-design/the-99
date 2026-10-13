@@ -66,6 +66,11 @@ describe("gateReason", () => {
     expect(gateReason({ ...fresh, allowance: spent })?.kind).toBe("allowance");
   });
 
+  it("opens over a spent allowance while a paid lot holds a credit (payments L2)", () => {
+    expect(gateReason({ ...fresh, allowance: { ...spent, pack: 1 } })).toBeNull();
+    expect(gateReason({ ...fresh, allowance: { ...spent, plan: 0, pack: 0 } })?.kind).toBe("allowance");
+  });
+
   it("reports unchanged before the allowance, the more useful truth", () => {
     expect(gateReason({ ...settled, allowance: spent })?.kind).toBe("unchanged");
   });
