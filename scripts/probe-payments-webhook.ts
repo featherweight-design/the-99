@@ -14,16 +14,18 @@
 //   e  a Session naming another account than its customer maps to is refused: no lot, no record
 //   f  a paid Session whose customer maps to no account is kept `unattributed`, with no lot
 //   g  the purge takes the account's customer mapping and lots, and keeps the payment records
-//   h  a grant arriving while the purge holds the account's mapping waits, then keeps the payment
-//      unattributed: no lot outlives the account
+//   h  a grant arriving while the purge holds the account's mapping is seen waiting on it, then keeps
+//      the payment unattributed: no lot outlives the account
+//   i  a Session recorded unattributed and seen again once its customer maps is a duplicate, not a grant
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
 //   - the event row's conflict check dropped (`fulfilCheckoutSession` carries on after a conflict): fails d.
 //   - the lot's conflict target dropped (a plain insert): fails c.
 //   - the attribution check removed from `decideFulfilment`: fails e.
-//   - the mapping read without FOR SHARE: fails h (the grant reads the mapping the purge has not yet
-//     committed away, and writes a lot after the purge's delete of the lots).
+//   - the mapping read without FOR SHARE: fails h (the grant is never seen waiting, reads the mapping the
+//     purge has not yet committed away, and writes a lot after the purge's delete of the lots).
+//   - a record conflict let through to the grant: fails i.
 //
 // It writes under per-run ids and deletes them in a `finally`, so it fails closed: `PROBE_DB_BRANCH`
 // must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
@@ -184,6 +186,20 @@ async function run() {
     check("f · kept as such, with no lot", [await record(sf.id), await lots(ghost)], [["unattributed"], 0]);
   }
 
+  // i · A Session recorded unattributed, seen again under a new event once its customer maps to an
+  //     account, is a duplicate: never granted on top of the hand refund it is waiting for.
+  {
+    const ghost = id("user");
+    const customerId = id("cus");
+    const si = session(customerId, ghost);
+    const { stub } = stripeServing(si);
+    check("i · first seen with no account, it is unattributed", (await fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", si.id)).outcome, "unattributed");
+    users.push(ghost);
+    await fixture.execute(sql`insert into stripe_customers (user_id, stripe_customer_id) values (${ghost}, ${customerId})`);
+    check("i · seen again with a mapping, it is a duplicate", (await fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", si.id)).outcome, "duplicate");
+    check("i · and grants nothing", await lots(ghost), 0);
+  }
+
   // h · A purge holding the account's mapping when the grant arrives: the grant waits on the mapping
   //     row (FOR SHARE), finds it gone once the purge commits, and keeps the payment unattributed, so
   //     no lot outlives the account. The purge is played by hand, in the order PURGE_ORDER runs it.
@@ -198,7 +214,16 @@ async function run() {
       open = true;
       await purge.query("delete from stripe_customers where user_id = $1", [h.userId]);
       const granting = fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", sh.id);
-      await new Promise((r) => setTimeout(r, 1500));
+      // The grant must be SEEN waiting on the mapping row before the purge goes on: a fixed delay would
+      // also pass with the lock removed, whenever the purge happened to commit first.
+      let waiting = false;
+      for (let i = 0; i < 100 && !waiting; i += 1) {
+        const [w] = await rows<{ n: number }>(sql`select count(*)::int as n from pg_stat_activity
+          where wait_event_type = 'Lock' and query ilike '%"stripe_customers"%for share%'`);
+        waiting = w.n > 0;
+        if (!waiting) await new Promise((r) => setTimeout(r, 100));
+      }
+      check("h · the grant waits on the mapping the purge holds", waiting, true);
       await purge.query("delete from credit_grants where user_id = $1", [h.userId]);
       await purge.query("commit");
       open = false;

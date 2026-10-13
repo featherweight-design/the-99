@@ -42,7 +42,10 @@ export async function fulfilCheckoutSession(stripe: Stripe, eventId: string, eve
     const recorded = await tx.insert(paymentRecords)
       .values({ ...decision.record, status: decision.kind === "grant" ? "granted" : "unattributed" })
       .onConflictDoNothing().returning({ id: paymentRecords.paymentIntentId });
-    if (decision.kind === "unattributed") return { outcome: recorded.length > 0 ? "unattributed" as const : "duplicate" as const };
+    // A payment already recorded, by any earlier event and either way, is never granted again: a Session kept
+    // unattributed and later seen with a mapping would otherwise be both refunded by hand and granted.
+    if (recorded.length === 0) return { outcome: "duplicate" as const };
+    if (decision.kind === "unattributed") return { outcome: "unattributed" as const };
     const granted = await tx.insert(creditGrants)
       .values({ userId: decision.userId, source: "pack", units: decision.units, externalId: decision.record.checkoutSessionId })
       .onConflictDoNothing({ target: creditGrants.externalId }).returning({ id: creditGrants.id });
