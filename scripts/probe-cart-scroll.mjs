@@ -64,9 +64,19 @@ const READ = () => {
   if (!region || !controls) return null;
   const rows = [...region.querySelectorAll("li")];
   const vh = window.innerHeight;
+  // The usable bottom is the top of any full-width fixed bar on the screen's foot (the phone's tab bar), not the
+  // viewport edge: a row under that bar is on the screen and not readable.
+  const floor = Math.min(
+    vh,
+    ...[...document.querySelectorAll("body *")]
+      .filter((e) => getComputedStyle(e).position === "fixed")
+      .map((e) => e.getBoundingClientRect())
+      .filter((b) => b.width >= window.innerWidth * 0.9 && b.height > 0 && b.height < vh / 2 && b.bottom >= vh - 1)
+      .map((b) => b.top),
+  );
   const visible = rows.filter((r) => {
     const b = r.getBoundingClientRect();
-    return b.height > 0 && b.top >= controls.getBoundingClientRect().bottom - 1 && b.bottom <= vh;
+    return b.height > 0 && b.top >= controls.getBoundingClientRect().bottom - 1 && b.bottom <= floor;
   });
   return {
     docScrolls: document.documentElement.scrollHeight - vh,
@@ -76,6 +86,7 @@ const READ = () => {
     controlsPosition: getComputedStyle(controls).position,
     rows: rows.length,
     visibleRows: visible.length,
+    floor,
   };
 };
 
@@ -102,7 +113,7 @@ try {
       await page.waitForTimeout(250);
       const after = await page.evaluate(READ);
       check(after.controlsPosition === "sticky" && Math.abs(after.controlsTop) <= 1, "phone: the switch and heading stay pinned at the top after scrolling", `top ${after.controlsTop.toFixed(1)}px, ${after.controlsPosition}`);
-      check(after.visibleRows >= 5, "phone: at least five cards show under the pinned controls", `${after.visibleRows} rows`);
+      check(after.visibleRows >= 5, "phone: at least five cards show under the pinned controls", `${after.visibleRows} rows above y=${after.floor.toFixed(0)}`);
     } else {
       check(first.docScrolls <= 1, "desktop: the page fits the screen", `${first.docScrolls}px beyond it`);
       check(first.regionOverflowY === "auto" && first.regionScrolls > 0, "desktop: the list scrolls in its own box", `overflow-y ${first.regionOverflowY}, ${first.regionScrolls}px of inner scroll`);
