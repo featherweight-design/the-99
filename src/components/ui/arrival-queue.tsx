@@ -20,6 +20,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  *    the LCP is often row 2, whose bytes landed before row 1's; orchestrator ruling, 2026-10-12).
  *    Those rows still fade one at a time, top down.
  *
+ * SMALL art takes `ARRIVAL_SMALL_CAP_MS` (1,000ms) instead, first screen or not. A box under `SMALL_ART_AREA_PX`
+ * (a 34x48 list thumb is 1,632) can never be the page's largest paint, so the LCP reason for the short cap does
+ * not reach it, and a column of thumbs lands over several hundred ms in no order at all. Measured on the precon
+ * list's rows (`probe:precon-arrival`, pairs released out of order): deployed staging at the 80ms cap, 15 of 234
+ * at 1300 and 7 of 135 at 390; a local production build at 1,000ms, 0 of 234 (two batches of three runs) and 0 of
+ * 135. A row of only small art waits for the rows above it that long; a row with any larger art keeps the caps
+ * above.
+ *
  * Art that settled before it joined (cached, or already painted when the page hydrated) never
  * joins, so it is never held. With no `<ArrivalOrder>` above it, art fades as it lands. Under
  * reduced motion `pending` hides nothing (globals.css), so the queue's order is invisible there and
@@ -28,10 +36,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 export const ARRIVAL_CAP_MS = 150;
 export const ARRIVAL_FIRST_CAP_MS = 80;
 export const ARRIVAL_STAGGER_MS = 50;
+/** The cap for a row of only small art (`SMALL_ART_AREA_PX`): see the queue's header. */
+export const ARRIVAL_SMALL_CAP_MS = 1000;
+/** A box this small (in px squared) can never be the LCP element, so it need not hurry. */
+export const SMALL_ART_AREA_PX = 6000;
 /** Boxes whose tops are this close are one row: a grid's tiles can differ by a subpixel. */
 const ROW_TOLERANCE_PX = 4;
 
-type Item = { landedAt: number | null; release: () => void; onScreen: boolean };
+type Item = { landedAt: number | null; release: () => void; onScreen: boolean; small: boolean };
 
 export class ArrivalQueue {
   private items = new Map<HTMLElement, Item>();
@@ -43,6 +55,11 @@ export class ArrivalQueue {
     private readonly topOf: (el: HTMLElement) => number = (el) => el.getBoundingClientRect().top,
     private readonly viewportHeight: () => number = () => window.innerHeight,
     private readonly hasBox: (el: HTMLElement) => boolean = (el) => el.getClientRects().length > 0,
+    private readonly areaOf: (el: HTMLElement) => number = (el) => {
+      const r = el.getBoundingClientRect();
+      // No measured area (nothing laid out) is not small: unknown art keeps the caps the LCP ruling set.
+      return r.width * r.height || Infinity;
+    },
   ) {}
 
   /**
@@ -53,7 +70,7 @@ export class ArrivalQueue {
    */
   join(el: HTMLElement, release: () => void): boolean {
     if (!this.hasBox(el)) return false;
-    this.items.set(el, { landedAt: null, release, onScreen: this.topOf(el) < this.viewportHeight() });
+    this.items.set(el, { landedAt: null, release, onScreen: this.topOf(el) < this.viewportHeight(), small: this.areaOf(el) < SMALL_ART_AREA_PX });
     return true;
   }
 
@@ -107,9 +124,11 @@ export class ArrivalQueue {
       }
       const whole = landed.length === row.length;
       const firstLanded = Math.min(...landed.map((e) => e.item.landedAt as number));
-      // A row on the first screen takes the tighter cap.
+      // A row of only small art takes the longer cap (a thumb is never the LCP); otherwise a row on the
+      // first screen takes the tighter one.
       const onScreen = row.some((e) => e.item.onScreen);
-      const capAt = firstLanded + (onScreen ? ARRIVAL_FIRST_CAP_MS : ARRIVAL_CAP_MS);
+      const small = row.every((e) => e.item.small);
+      const capAt = firstLanded + (small ? ARRIVAL_SMALL_CAP_MS : onScreen ? ARRIVAL_FIRST_CAP_MS : ARRIVAL_CAP_MS);
       // In order: this row and every row above it have landed, a stagger behind the last release.
       // Else the cap lets it go anyway; and the stagger never outlasts the cap either, so a burst
       // of rows landing together still fills the screen inside it.
