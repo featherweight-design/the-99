@@ -31,4 +31,15 @@ describe("POST /api/csp-report", () => {
     expect((await post(report, { "content-length": "99999" })).status).toBe(204);
     expect(info).not.toHaveBeenCalled();
   });
+  it("stops reading a chunked body at the cap instead of buffering it", async () => {
+    const chunk = new TextEncoder().encode("x".repeat(4096));
+    let pulled = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(c) { pulled += 1; if (pulled > 1000) c.close(); else c.enqueue(chunk); },
+    });
+    const req = new NextRequest("http://localhost/api/csp-report", { method: "POST", body, duplex: "half" } as ConstructorParameters<typeof NextRequest>[1]);
+    expect((await POST(req)).status).toBe(204);
+    expect(pulled).toBeLessThan(20); // 16 KB cap / 4 KB chunks, plus read-ahead
+    expect(info).not.toHaveBeenCalled();
+  });
 });

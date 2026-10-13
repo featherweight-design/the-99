@@ -777,8 +777,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
 
 - **Security headers** (payments scope PR S, `boards/scope-payments-2026-10-13.md` §5.8).
   `next.config.ts` sends, on every path, `Strict-Transport-Security` (one year, no `includeSubDomains`, no
-  `preload`), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` and a `Permissions-Policy` that leaves only the
-  camera to this origin, all built in `src/lib/security/headers.ts`. The **Content-Security-Policy is REPORT-ONLY**
+  `preload`), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` and a `Permissions-Policy` that leaves the
+  camera to this origin and denies microphone, geolocation, payment and USB (any directive not named keeps its default), all built in `src/lib/security/headers.ts`. The **Content-Security-Policy is REPORT-ONLY**
   and production-only: an enforced policy written blind would take the app down, so the reports
   (`POST /api/csp-report`, public in `src/proxy.ts`, logs a directive, an origin and a page path per violation and
   answers 204) are the measurement the enforced policy is written from. It allows what `src/` loads today (Scryfall art

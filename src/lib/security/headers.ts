@@ -56,8 +56,9 @@ export const CSP_REPORT_PATH = "/api/csp-report";
 
 /**
  * Every header, for every path. HSTS omits `includeSubDomains` and `preload` on purpose: the apex
- * hosts other things, and a preload is not undoable. `camera=(self)` is left open for the card
- * scanner's own route; everything else a page could ask the browser for is off.
+ * hosts other things, and a preload is not undoable. `camera=(self)` leaves the camera to this origin for the card
+ * scanner's route. Microphone, geolocation, payment, USB and the interest cohort are denied. Every directive
+ * NOT named keeps its browser default, deliberately (the app uses the clipboard, for one).
  */
 export function securityHeaders(opts: { production: boolean; clerkHost: string | null }): HeaderEntry[] {
   const enforced: HeaderEntry[] = [
