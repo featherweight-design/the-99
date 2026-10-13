@@ -311,10 +311,14 @@ describe("TuningHub opening a tool", () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
     const answered = vi.fn();
+    read.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(empty), 30)));
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} onRequestAnswered={answered} />);
     // Its owner is told, so it can drop the request before the next visit remounts the hub.
     await waitFor(() => expect(answered).toHaveBeenCalledWith(1));
-    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    // The tool's panel draws once the hub's first read has landed, which is a beat after the request is answered: found
+    // by waiting for it, never by looking the instant `answered` is called (the read above is slowed on purpose, so the
+    // order the test must survive is the slow one, not whichever a fast machine happens to produce).
+    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
     // The Tuning heading is brought to the top, once the tool's heading has drawn.
     await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
     expect(scroll.mock.calls[0][0]).toBe(document.querySelector("[data-tuning-hub]"));
