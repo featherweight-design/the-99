@@ -2387,7 +2387,10 @@ export const flagGroups = pgTable("flag_groups", {
   description: text("description"),
   createdBy: text("created_by").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+  // The group's rolling-24-hour model credits (payments scope Q16). Null: its members take the
+  // owner's or the app-wide default (`dailyLimit` in `lib/model/allowance-rule.ts`).
+  dailyAllowance: integer("daily_allowance"),
+}, (t) => [check("flag_groups_daily_allowance_check", sql`${t.dailyAllowance} is null or ${t.dailyAllowance} between 1 and 1000`)]);
 
 /**
  * Which group an account is in: at most ONE, by the primary key on `user_id` (admin plan), so a

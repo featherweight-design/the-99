@@ -13,7 +13,8 @@ import type { OverrideRow, SwitchSnapshot } from "../switches/resolve";
 
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-vi.mock("../model/allowance", () => ({ dailyLimitFor: () => 5 }));
+// Mara is in a group with an allowance of 3, so the preview must carry each account's own limit.
+vi.mock("../model/allowance", () => ({ dailyLimitsFor: async (_q: unknown, ids: string[]) => new Map(ids.map((id) => [id, id === "u2" ? 3 : 5])) }));
 
 const { writeOverride } = await import("./switch-writes");
 
@@ -120,7 +121,7 @@ describe("writeOverride", () => {
     overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
     const r = await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app" }, deps());
-    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 2, names: ["Hugh", "Mara"], credits: [5], costs: [{ key: "intake", meanMicroUsd: null }] } });
+    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 2, names: ["Hugh", "Mara"], credits: [3, 5], costs: [{ key: "intake", meanMicroUsd: null }] } });
     expect(kinds()).not.toContain("delete");
     expect(afterCommit).not.toHaveBeenCalled();
 
