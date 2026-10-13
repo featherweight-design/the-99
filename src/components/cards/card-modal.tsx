@@ -2701,7 +2701,9 @@ export function CardModal({
         <div aria-live="polite" className="sr-only">{announcement}</div>
 
         {view ? (
-          <div data-testid="card-modal-view" className="absolute inset-0 z-10 flex flex-col md:left-[320px]">
+          // Inert under the zoom, as the details are: the zoom covers the whole dialog, and the view's controls
+          // must leave the focus trap with it.
+          <div data-testid="card-modal-view" inert={zoomed} className="absolute inset-0 z-10 flex flex-col md:left-[320px]">
             {view.node}
           </div>
         ) : null}

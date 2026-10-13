@@ -89,6 +89,8 @@ describe("CardModal with Find a deck's view", () => {
     expect(live).toBeDefined();
     fireEvent.click(live!);
     expect(screen.getByTestId("card-zoom")).toBeInTheDocument();
+    // The view leaves the focus trap with everything else under the zoom.
+    expect(screen.getByTestId("card-modal-view").closest("[inert]")).not.toBeNull();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onBack).not.toHaveBeenCalled();
     expect(screen.getByTestId("card-modal-view")).toBeInTheDocument();
