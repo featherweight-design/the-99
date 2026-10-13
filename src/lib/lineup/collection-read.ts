@@ -25,7 +25,7 @@ export const WANT_FLOOR_PCT = 20;
 type Need = { deckId: string; oracleId: string; quantity: number };
 type Head = { deckId: string; commander: string; partner: string | null };
 
-export async function readCollection(userId: string, needs: readonly Need[], heads: readonly Head[], brews: ReadonlySet<string>): Promise<{ collection: LineupCollection; asOf: Date | null }> {
+export async function readCollection(userId: string, needs: readonly Need[], heads: readonly Head[], brews: ReadonlySet<string>, env: NodeJS.ProcessEnv): Promise<{ collection: LineupCollection; asOf: Date | null }> {
   const owned = (await db
     .select({ oracleId: collectionItems.oracleId, name: cards.name, typeLine: cards.typeLine, imageUri: cards.imageUri, copies: sql<string>`sum(${collectionItems.quantity})` })
     .from(collectionItems)
@@ -92,7 +92,7 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
 
   const wanted = owned.filter((r) => hits.has(r.oracleId));
   // Each wanted name previews the printing card details opens: the one the player owns (the chain, at the draw).
-  const art = await chainArt(userId, null, wanted.map((r) => r.oracleId));
+  const art = await chainArt(userId, null, wanted.map((r) => r.oracleId), env);
   return {
     asOf: read.newestAsOf,
     collection: {

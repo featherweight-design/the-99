@@ -99,10 +99,10 @@ type ListRow = { deckId: string; oracleId: string; typeLine: string };
 
 type Built = { builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null; collection: LineupCollection | null };
 
-async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>): Promise<Built> {
+async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>, env: NodeJS.ProcessEnv): Promise<Built> {
   if (ids.length === 0) {
     try {
-      const { collection, asOf } = await readCollection(userId, [], [], brews);
+      const { collection, asOf } = await readCollection(userId, [], [], brews, env);
       return { builds: new Map(), asOf, shared: [], lists: [], collection };
     } catch (error) {
       recordSoftFailure();
@@ -122,7 +122,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
     const [labels, read, avail, buyRows] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
-      readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
+      readHeldPricePicks(userId, ids, env).then((picks) => loadPrices(priced, picks)),
       // The whole collection's claim model, once (lock 3, lock 4).
       loadAvailability(userId),
       // Shopping's own buy rows, so a row's to-buy count is the cart's.
@@ -136,7 +136,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
       const cs = lists.commanders.filter((c) => c.deckId === deckId);
       return { deckId, commander: cs[0].oracleId, partner: cs[1]?.oracleId ?? null };
     });
-    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews)).collection;
+    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews, env)).collection;
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
@@ -168,7 +168,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
   const every = [...lists.list, ...lists.commanders].filter((c) => bodied.has(c.deckId));
   const shared = sharedCards(every, availability, buys, bodied);
   // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
-  const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
+  const art = await chainArt(userId, null, shared.map((c) => c.oracleId), env);
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 
@@ -187,7 +187,7 @@ export async function loadLineup(userId: string, env: NodeJS.ProcessEnv): Promis
       .where(and(eq(deckGames.userId, userId), inArray(deckGames.deckId, ids)))
       // `listDeckGames`' order, so a deck's games read newest first here as on its Games tab.
       .orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt)),
-  readBuilds(userId, ids, brews)]);
+  readBuilds(userId, ids, brews, env)]);
   const games = new Map<string, LineupGame[]>();
   for (const r of rows) {
     const list = games.get(r.deckId) ?? [];

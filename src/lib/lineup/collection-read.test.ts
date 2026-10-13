@@ -19,7 +19,12 @@ vi.mock("../decks/price-query", () => ({
     newestAsOf: AS_OF,
   }),
 }));
-vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["boots", "owned-boots.jpg"]]) }));
+const artEnv = vi.hoisted(() => ({ seen: [] as unknown[] }));
+vi.mock("../cards/chain-art", () => ({
+  chainArt: async (_u: string, _d: string | null, _ids: string[], env?: unknown) => (artEnv.seen.push(env), new Map([["boots", "owned-boots.jpg"]])),
+}));
+// A sentinel, never `process.env`: a failing comparison prints it whole.
+const ENV = { DECK_PRINTINGS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
 import { readCollection } from "./collection-read";
 
@@ -42,7 +47,10 @@ describe("readCollection", () => {
       [{ deckId: "g", oracleId: "boots", quantity: 1 }, { deckId: "brew", oracleId: "boots", quantity: 1 }, { deckId: "brew", oracleId: "forest", quantity: 10 }],
       [{ deckId: "g", commander: "gishath", partner: null }, { deckId: "k", commander: "kratos", partner: "atreus" }],
       new Set(["brew"]),
+      ENV,
     );
+    // The owned-printing art follows the reader's resolved switches, not the environment's.
+    expect(artEnv.seen.at(-1) === ENV).toBe(true);
     expect(asOf).toEqual(AS_OF);
     // Basics are left out; the unpriced card counts as copies but not as value.
     expect([c.copies, c.cards, c.pricedCopies, c.valueCents]).toEqual([6, 3, 4, 2_000]);
