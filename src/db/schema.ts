@@ -3150,4 +3150,6 @@ export const rateHits = pgTable("rate_hits", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.bucket, t.windowStart] }),
   check("rate_hits_hits_check", sql`${t.hits} >= 0`),
+  // The retention sweep in `recordHit` deletes by age alone, across every player.
+  index("rate_hits_window_idx").on(t.windowStart),
 ]);

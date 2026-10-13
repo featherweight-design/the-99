@@ -1,5 +1,5 @@
 {
-  "id": "510e2437-830c-46f9-932e-5ff17cb98275",
+  "id": "a2a798e9-108a-41c5-9c9a-ed3ad0768f33",
   "prevId": "14af86a1-987c-4aa0-9224-a8051c0ee073",
   "version": "7",
   "dialect": "postgresql",
@@ -7765,7 +7765,23 @@
           "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "rate_hits_window_idx": {
+          "name": "rate_hits_window_idx",
+          "columns": [
+            {
+              "expression": "window_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "rate_hits_user_id_bucket_window_start_pk": {
