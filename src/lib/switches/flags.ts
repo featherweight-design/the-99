@@ -69,10 +69,12 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
 };
 
 /**
- * What a reader can press that spends model calls, per ledger feature (READINESS audit finding 2).
- * The Switches UI's confirm fires when a write raises how many accounts hold any of these, so a
- * parent's flip (the Analysis tab gates the Overview, Suggested changes and Proposed cuts) is caught
- * as surely as a child's. `overview_v2` moves the Overview's model and method, so it counts apart.
+ * What a reader can press that spends model calls, per ledger feature (READINESS audit finding 2):
+ * each capability's predicate over a reader's resolved env. A parent's flip (the Analysis tab gates
+ * the Overview, Suggested changes and Proposed cuts) moves these as surely as a child's, which is why
+ * `flags.test.ts` holds the registry's `model` tag to them. Admin PR 8c's confirm is planned to fire
+ * on a write that raises how many accounts hold any of these; nothing reads it for that yet.
+ * `overview_v2` moves the Overview's model and method, so it counts apart.
  */
 export const MODEL_CAPABILITIES: readonly { key: ModelFeature | "overview_v2"; on: (env: NodeJS.ProcessEnv) => boolean }[] = [
   { key: "synopsis", on: analysisTabEnabled },

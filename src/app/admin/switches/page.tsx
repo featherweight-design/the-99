@@ -9,5 +9,5 @@ export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>
 export default async function AdminSwitchesPage() {
   const { env } = await requireAdmin();
   const list = await loadSwitchesList();
-  return <SwitchesList rows={list.rows} total={list.total} env={env} overridesRead={list.overridesRead} />;
+  return <SwitchesList rows={list.rows} total={list.total} env={env} overridesRead={list.overridesRead} clerk={list.clerk} />;
 }

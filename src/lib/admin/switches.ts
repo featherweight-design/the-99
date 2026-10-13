@@ -3,7 +3,8 @@ import { readSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts } from "./accounts";
 import { switchRows, type SwitchRow } from "./switches-rule";
 
-export type SwitchesList = { rows: SwitchRow[]; total: number; overridesRead: boolean };
+/** `clerk` is "down" when the accounts are the stored ids (no names), so the page can say so (STATES A3). */
+export type SwitchesList = { rows: SwitchRow[]; total: number; overridesRead: boolean; clerk: "ok" | "down" };
 
 /**
  * The Switches list's data (admin STATES L1). The overrides are read fresh, never through the
@@ -12,11 +13,12 @@ export type SwitchesList = { rows: SwitchRow[]; total: number; overridesRead: bo
  * in that state too (`snapshot.ts`).
  */
 export async function loadSwitchesList(): Promise<SwitchesList> {
-  const [snapshot, { accounts }] = await Promise.all([readSwitchSnapshot(), listAccounts()]);
+  const [snapshot, { accounts, clerk }] = await Promise.all([readSwitchSnapshot(), listAccounts()]);
   const verdicts = explainForAccounts(snapshot, accounts.map((a) => a.id));
   return {
     rows: switchRows({ env: switchEnvValues(), overrides: snapshot?.overrides ?? [], verdicts }),
     total: accounts.length,
     overridesRead: snapshot !== null,
+    clerk,
   };
 }

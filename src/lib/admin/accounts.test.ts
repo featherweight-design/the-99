@@ -50,6 +50,38 @@ describe("listAccounts", () => {
   });
 });
 
+describe("listAccounts' deadline", () => {
+  it("falls back to the stored ids when Clerk never answers", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const listUsers = vi.fn(() => new Promise<{ data: never[] }>(() => {}));
+    const out = await listAccounts({ listUsers, storedUserIds: async () => ["user_a"], ownerIds: new Set(), deadlineMs: 20 });
+    expect(out).toEqual({ clerk: "down", accounts: [{ id: "user_a", name: null, email: null }] });
+    expect(listUsers).toHaveBeenCalledTimes(1);
+    error.mockRestore();
+  });
+
+  it("holds the deadline across every page, not each one", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const full = Array.from({ length: 500 }, (_, i) => user(`user_${i}`, null));
+    // Each page answers within 15ms; three pages pass a 30ms budget though no single page does.
+    const listUsers = vi.fn(({ offset }: { limit: number; offset: number }) =>
+      new Promise<{ data: typeof full }>((resolve) => setTimeout(() => resolve({ data: offset < 1500 ? full : [] }), 15)));
+    const out = await listAccounts({ listUsers, storedUserIds: async () => ["user_a"], ownerIds: new Set(), deadlineMs: 30 });
+    expect(out.clerk).toBe("down");
+    error.mockRestore();
+  });
+
+  it("uses Clerk's answer when it lands inside the deadline", async () => {
+    const out = await listAccounts({ listUsers: async () => ({ data: [user("user_a", "Ana")] }), storedUserIds: async () => [], ownerIds: new Set(), deadlineMs: 1000 });
+    expect(out).toEqual({ clerk: "ok", accounts: [{ id: "user_a", name: "Ana", email: null }] });
+  });
+
+  it("budgets five seconds by default", async () => {
+    const { CLERK_DEADLINE_MS } = await import("./accounts");
+    expect(CLERK_DEADLINE_MS).toBe(5_000);
+  });
+});
+
 describe("orderAccounts", () => {
   it("sorts by name, then email, then id, case-insensitively", () => {
     const out = orderAccounts(

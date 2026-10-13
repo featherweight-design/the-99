@@ -6,8 +6,9 @@ import { adminUserIds } from "./access";
 /**
  * The accounts this environment's admin counts (READINESS audit finding 6). The app stores only
  * Clerk ids, so the set comes from Clerk, server-side; nothing Clerk returns is stored (READINESS G4).
- * When Clerk cannot be read, the ids are the distinct `user_id`s of `user_data_stamps` and
- * `model_calls`, with no names, and the page says so (STATES A3). `system` is never an account.
+ * When Clerk cannot be read, or does not answer within `CLERK_DEADLINE_MS` across every page, the
+ * ids are the distinct `user_id`s of `user_data_stamps` and `model_calls`, with no names, and
+ * `clerk: "down"` tells the page to say so (STATES A3). `system` is never an account.
  *
  * Switches counts `N of T on` over this set and Check an account picks from it; the Accounts page
  * (admin PR 9) is built on it.
@@ -16,6 +17,12 @@ export type Account = { id: string; name: string | null; email: string | null };
 export type AccountList = { accounts: Account[]; clerk: "ok" | "down" };
 
 const PAGE = 500;
+/**
+ * The whole Clerk read's budget, every page together. `@clerk/backend` takes no abort signal, so a
+ * request that hangs would hang the admin page with it and the fallback would never run; past this,
+ * the page is drawn from the stored ids instead and the late answer is dropped.
+ */
+export const CLERK_DEADLINE_MS = 5_000;
 // Far past this admin's audience (Hugh and friends): a guard against an unbounded loop, not a cap.
 const MAX_PAGES = 20;
 
@@ -27,7 +34,26 @@ type ClerkUser = {
 };
 type ListUsers = (params: { limit: number; offset: number }) => Promise<{ data: ClerkUser[] }>;
 
-export type AccountsDeps = { listUsers: ListUsers; storedUserIds: () => Promise<string[]>; ownerIds: ReadonlySet<string> };
+export type AccountsDeps = { listUsers: ListUsers; storedUserIds: () => Promise<string[]>; ownerIds: ReadonlySet<string>; deadlineMs?: number };
+
+/** `work`, or a rejection once `ms` have passed, whichever comes first. */
+function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Clerk did not answer within ${ms}ms`)), ms);
+  });
+  return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
+
+async function readClerk(listUsers: ListUsers): Promise<ClerkUser[]> {
+  const users: ClerkUser[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const { data } = await listUsers({ limit: PAGE, offset: page * PAGE });
+    users.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return users;
+}
 
 async function clerkListUsers(params: { limit: number; offset: number }) {
   return (await clerkClient()).users.getUserList({ ...params, orderBy: "created_at" });
@@ -57,12 +83,7 @@ export async function listAccounts(
   deps: AccountsDeps = { listUsers: clerkListUsers, storedUserIds, ownerIds: adminUserIds() },
 ): Promise<AccountList> {
   try {
-    const users: ClerkUser[] = [];
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const { data } = await deps.listUsers({ limit: PAGE, offset: page * PAGE });
-      users.push(...data);
-      if (data.length < PAGE) break;
-    }
+    const users = await withDeadline(readClerk(deps.listUsers), deps.deadlineMs ?? CLERK_DEADLINE_MS);
     const accounts = users
       .filter((u) => u.id !== "system")
       .map((u) => ({ id: u.id, name: u.fullName || u.username || null, email: u.primaryEmailAddress?.emailAddress ?? null }));

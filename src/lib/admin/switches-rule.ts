@@ -20,8 +20,10 @@ export type SwitchRow = {
   app: OverrideValue | null;
   groups: number;
   accounts: number;
-  /** The environment is `off`, so every override this switch carries is refused (L4). */
+  /** The environment is `off`, so every override this switch carries, app-wide included, is refused (L4). */
   refused: boolean;
+  /** The app-wide override in particular is refused: set, under a killed env var. */
+  appRefused: boolean;
   /** Group or account rows on a plumbing switch, which the resolver never applies. */
   ignored: number;
   on: number;
@@ -45,6 +47,7 @@ export function switchRows({ env, overrides, verdicts }: SwitchesInput): SwitchR
     const groups = rows.filter((o) => o.scope === "group").length;
     const users = rows.filter((o) => o.scope === "user").length;
     const killed = env[name] === KILL;
+    const app = rows.find((o) => o.scope === "app")?.value ?? null;
     const on = accounts.filter((a) => a[name].on).length;
     const total = accounts.length;
     const state: ResolvedState = total > 0 && on === total ? "on" : on === 0 ? "off" : "mixed";
@@ -59,10 +62,11 @@ export function switchRows({ env, overrides, verdicts }: SwitchesInput): SwitchR
       kind,
       parent: switchParent(name),
       env: env[name],
-      app: rows.find((o) => o.scope === "app")?.value ?? null,
+      app,
       groups,
       accounts: users,
-      refused: killed && groups + users > 0,
+      refused: killed && (groups + users > 0 || app !== null),
+      appRefused: killed && app !== null,
       ignored: kind === "plumbing" ? groups + users : 0,
       on,
       total,

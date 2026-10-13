@@ -65,7 +65,11 @@ export function SwitchTags({ row }: { row: Pick<SwitchRow, "kind" | "parent"> })
 const resolvedSub = (row: SwitchRow) =>
   row.reason?.kind === "kill" ? copy.killed : row.reason?.kind === "parent" ? copy.parentOff(switchCopy[row.reason.parent].label) : copy.resolved.count(row.on, row.total);
 
-const appText = (row: SwitchRow) => (row.app === "on" ? copy.app.on : row.app === "off" ? copy.app.off : copy.app.notSet);
+/** The App-wide cell; a set override under a killed env var says it is refused, as the Overrides cell does (L4). */
+const appText = (row: SwitchRow) => {
+  const value = row.app === "on" ? copy.app.on : row.app === "off" ? copy.app.off : copy.app.notSet;
+  return row.appRefused ? `${value}, ${copy.overrides.refused}` : value;
+};
 
 /** The Overrides cell (L4's `1 account, refused`), or null when the switch carries none. */
 function overridesText(row: SwitchRow): string | null {
@@ -104,15 +108,18 @@ function Row({ row }: { row: SwitchRow }) {
         </div>
         <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{row.name}</span>
         <span className="text-pretty text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{switchCopy[row.name].description}</span>
-        <span className="mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
-          {[copy.metaEnv(env), copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides, sub].join(" · ")}
+        <span data-testid="switch-meta" className="mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-body)] md:hidden">
+          {[copy.metaEnv(env), copy.metaApp(appText(row)), ov ?? copy.metaNoOverrides].join(" · ")}
+          {" · "}
+          {/* One unbreakable piece: `N of T on` never leaves `on` alone on the next line. */}
+          <span className="whitespace-nowrap">{sub}</span>
         </span>
       </div>
       <span className={`hidden font-mono text-[12.5px] md:inline ${envClass(row.env)}`}>
         <span className="sr-only">{copy.cols.env} </span>
         {env}
       </span>
-      <span className={`hidden text-[13px] md:inline ${row.app ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}>
+      <span className={`hidden text-[13px] md:inline ${row.appRefused ? "text-[color:var(--danger)]" : row.app ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}>
         <span className="sr-only">{copy.cols.app} </span>
         {appText(row)}
       </span>
@@ -122,7 +129,7 @@ function Row({ row }: { row: SwitchRow }) {
       </span>
       <div className="hidden flex-col gap-[3px] md:flex">
         <Pill row={row} />
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>
+        <span className="whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>
       </div>
     </li>
   );
@@ -140,7 +147,20 @@ function GroupHead({ title, note, testId }: { title: string; note: string; testI
   );
 }
 
-export function SwitchesList({ rows, total, env, overridesRead }: { rows: SwitchRow[]; total: number; env: AdminEnv; overridesRead: boolean }) {
+export function SwitchesList({
+  rows,
+  total,
+  env,
+  overridesRead,
+  clerk,
+}: {
+  rows: SwitchRow[];
+  total: number;
+  env: AdminEnv;
+  overridesRead: boolean;
+  /** "down": the accounts counted are the stored ids, because Clerk could not be read (STATES A3). */
+  clerk: "ok" | "down";
+}) {
   const [filter, setFilter] = useState<SwitchFilter>("all");
   const [query, setQuery] = useState("");
   const pinRef = useRef<HTMLDivElement>(null);
@@ -194,6 +214,7 @@ export function SwitchesList({ rows, total, env, overridesRead }: { rows: Switch
         </div>
       </div>
       <div className="flex flex-col gap-[12px] px-[16px] pb-[12px] md:px-[28px] md:pb-[18px]">
+        {clerk === "down" && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{adminCopy.accounts.clerkDown}</p>}
         {!overridesRead && <p className="m-0 text-[13px] leading-[1.6] text-[color:var(--warning)]">{copy.overridesUnread}</p>}
         <div className="overflow-clip rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
           <div

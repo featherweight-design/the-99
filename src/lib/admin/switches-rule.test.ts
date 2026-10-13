@@ -50,6 +50,16 @@ describe("switchRows", () => {
     expect(rows({ COLLECTION_EDIT_ENABLED: "false" }).get("SHOPPING_MARK_BOUGHT_ENABLED")?.reason).toBeNull();
   });
 
+  it("refuses an app-wide override under the kill switch, with no group or account row", () => {
+    const r = rows({ DECK_BENCHMARKS_ENABLED: "off" }, [row({ switchName: "DECK_BENCHMARKS_ENABLED", scope: "app", value: "on" })]);
+    expect(r.get("DECK_BENCHMARKS_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
+    // Not killed: nothing refused.
+    expect(rows({}, [row({ scope: "app", value: "on" })]).get("DECK_NOTES_ENABLED")).toMatchObject({ refused: false, appRefused: false });
+    // Killed with only an account row: refused, but the app-wide cell has nothing to refuse.
+    const k = rows({ DECK_BENCHMARKS_ENABLED: "off" }, [row({ switchName: "DECK_BENCHMARKS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(k.get("DECK_BENCHMARKS_ENABLED")).toMatchObject({ refused: true, appRefused: false });
+  });
+
   it("counts group and account rows on a plumbing switch as ignored", () => {
     const r = rows({}, [row({ switchName: "LIST_CACHE_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(r.get("LIST_CACHE_ENABLED")).toMatchObject({ ignored: 1, on: 0 });

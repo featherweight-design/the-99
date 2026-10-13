@@ -185,6 +185,10 @@ export const adminCopy = {
     saveFailed: "Didn’t save. Nothing changed.",
   },
 
+  // From the handoff's `accounts` keys: what the Switches list (and, in PR 9, Accounts) says when the
+  // account list is the stored ids because Clerk could not be read (STATES A3).
+  accounts: { clerkDown: "Names didn’t load from Clerk." },
+
   // The Switches list (admin STATES L1 to L6), from the handoff's `switches` keys. The Overrides
   // cell, the App-wide cell and the phone's meta line take the canvas's own shapes (`flagRow` in
   // `Admin R2.dc.html`).

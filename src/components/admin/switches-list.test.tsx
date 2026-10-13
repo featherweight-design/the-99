@@ -16,11 +16,11 @@ const { AdminHead } = await import("./admin-head");
 type Env = Partial<Record<SwitchName, string>>;
 const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "DECK_NOTES_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 
-function draw(env: Env, overrides: OverrideRow[] = [], users = ["u1", "u2"], opts: { overridesRead?: boolean } = {}) {
+function draw(env: Env, overrides: OverrideRow[] = [], users = ["u1", "u2"], opts: { overridesRead?: boolean; clerk?: "ok" | "down" } = {}) {
   const verdicts = explainAccounts(env as NodeJS.ProcessEnv, { overrides, groupOf: new Map() }, users);
   const values = Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
   const rows = switchRows({ env: values, overrides, verdicts });
-  return render(<SwitchesList rows={rows} total={users.length} env="staging" overridesRead={opts.overridesRead ?? true} />);
+  return render(<SwitchesList rows={rows} total={users.length} env="staging" overridesRead={opts.overridesRead ?? true} clerk={opts.clerk ?? "ok"} />);
 }
 
 const rowOf = (name: SwitchName) => document.querySelector(`[data-switch="${name}"]`) as HTMLElement;
@@ -81,7 +81,7 @@ describe("SwitchesList", () => {
     expect(env.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
     expect(within(r).getByText("env var is off", { selector: "span.font-mono" })).toBeInTheDocument();
-    expect(within(r).getByText("env off · app-wide not set · 1 account, refused · env var is off")).toBeInTheDocument();
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide not set · 1 account, refused · env var is off");
     expect(within(r).getByText("1 account, refused", { selector: "span.hidden > *, span.hidden", exact: false })).toBeInTheDocument();
   });
 
@@ -97,7 +97,7 @@ describe("SwitchesList", () => {
     const r = rowOf("DECK_NOTES_ENABLED");
     expect(within(r).getAllByText("Mixed").length).toBe(2);
     expect(within(r).getByText("1 of 2 on", { selector: "span.font-mono" })).toBeInTheDocument();
-    expect(within(r).getByText("env true · app-wide not set · 1 account · 1 of 2 on")).toBeInTheDocument();
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("env true · app-wide not set · 1 account · 1 of 2 on");
     expect(r.querySelector('[class*="var(--success)_50%"]')).not.toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe("SwitchesList", () => {
     draw({}, [row({ scope: "app", value: "on" })]);
     const r = rowOf("DECK_NOTES_ENABLED");
     // The overrides slot is always drawn (design table: `env · app-wide · overrides · N of 7 on`).
-    expect(within(r).getByText("env unset · app-wide on · no overrides · 2 of 2 on")).toBeInTheDocument();
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("env unset · app-wide on · no overrides · 2 of 2 on");
   });
 
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
@@ -127,6 +127,35 @@ describe("SwitchesList", () => {
       expect(pill.parentElement!.className).not.toContain("flex-wrap");
     },
   );
+
+  it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
+    const first = draw({ DECK_BENCHMARKS_ENABLED: "off" }, [row({ switchName: "DECK_BENCHMARKS_ENABLED", scope: "app", value: "on" })]);
+    const r = rowOf("DECK_BENCHMARKS_ENABLED");
+    const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
+    expect(cell.className).toContain("var(--danger)");
+    expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide on, refused · no overrides · env var is off");
+    // An app-wide override that is not refused reads plainly.
+    first.unmount();
+    draw({}, [row({ switchName: "DECK_STATS_ENABLED", scope: "app", value: "on" })]);
+    expect(within(rowOf("DECK_STATS_ENABLED")).getByText("On", { selector: "span.hidden" }).className).not.toContain("var(--danger)");
+  });
+
+  it("keeps the resolved count in one unbreakable piece, on the phone and on desktop", () => {
+    draw({ DECK_NOTES_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
+    const counts = within(rowOf("DECK_NOTES_ENABLED")).getAllByText("1 of 2 on");
+    expect(counts).toHaveLength(2);
+    for (const c of counts) expect(c.className).toContain("whitespace-nowrap");
+  });
+
+  it("says so when the accounts are the stored ids because Clerk could not be read (STATES A3)", () => {
+    draw({}, [], ["u1"], { clerk: "down" });
+    expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
+  });
+
+  it("says nothing about Clerk when Clerk answered", () => {
+    draw({});
+    expect(screen.queryByText("Names didn’t load from Clerk.")).toBeNull();
+  });
 
   it("says so when the overrides could not be read", () => {
     draw({}, [], ["u1"], { overridesRead: false });
