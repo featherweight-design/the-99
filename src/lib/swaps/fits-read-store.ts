@@ -27,8 +27,8 @@ const facts = (c: ReadCardFacts) =>
 
 /**
  * Each candidate deck's input hash (lock 6): everything the prompt carries about the deck and the
- * card, plus the prompt version and the model, so a stored read is current only while the read
- * would be asked the same question. A list edit, a new Overview, a lock, a change in the deck's need
+ * card, plus the model, so a stored read is current only while the read would be asked the same
+ * question of the same deck. A list edit, a new Overview, a lock, a change in the deck's need
  * or the index's inclusion, the card's own text: each moves it.
  *
  * The PROMPT VERSION is not in the hash (Hugh, 2026-10-13): a version bump changes how the model is asked, not

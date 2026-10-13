@@ -96,6 +96,16 @@ describe("pressFitsRead: refusals that cost nothing", () => {
     expect(call).not.toHaveBeenCalled();
   });
 
+  it("a read stored with the prompt version inside its hash is still current, on the press and on the panel", async () => {
+    const hashes = candidateHashes(inputs(), MODEL, 2);
+    store.rows = [{ id: "r", status: "done", outcome: "picks", errorClass: null, refunded: false, createdAt: NOW, finishedAt: NOW, candidateHashes: hashes, picks: [], promptVersion: 2 }];
+    const { d, call } = deps({ picks: [] });
+    expect(await pressFitsRead("u", "card", d, ENV_VIEW)).toEqual({ ok: false, reason: "current" });
+    expect(call).not.toHaveBeenCalled();
+    const panel = await readFitsRead("u", "card", d, ENV_VIEW);
+    expect(panel?.view.stored?.current).toBe(true);
+  });
+
   it("a run in flight is returned as it stands, never charged twice (lock 5)", async () => {
     store.rows = [{ id: "p", status: "pending", outcome: null, errorClass: null, refunded: false, createdAt: NOW, finishedAt: null, candidateHashes: {}, picks: [], promptVersion: 3 }];
     const { d, call } = deps({ picks: [] });
