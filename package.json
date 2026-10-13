@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "vercel-build": "tsx scripts/vercel-migrate.ts && next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "vercel-build": "tsx scripts/vercel-migrate.ts && NODE_OPTIONS=--max-old-space-size=4096 next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --passWithNoTests",

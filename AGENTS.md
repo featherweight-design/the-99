@@ -848,7 +848,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   with the account; unspent credits are forfeited (Q7). `pnpm probe:payments-ledger` proves it on a scratch branch.
 
 - **Stripe, the webhook half** (payments K1a, scope `boards/scope-payments-2026-10-13.md` §5). `stripe` is pinned
-  EXACTLY, and so is the API version in `src/lib/payments/stripe.ts`; an upgrade is its own reviewed change.
+  EXACTLY, and so is the API version in `src/lib/payments/stripe.ts`; an upgrade is its own reviewed change. Its
+  types took the type check past Node's default heap in CI (about 2GB, where `main` already sat), so `typecheck`,
+  `build` and `vercel-build` run with `NODE_OPTIONS=--max-old-space-size=4096`.
   **Test mode everywhere but production**: `stripeClient()` refuses a live key unless `ADMIN_ENV_LABEL=production`
   and a test key when it is (`key-mode.ts`), and is then null, so a misconfigured deployment does nothing.
   `STRIPE_SECRET_KEY` must be a RESTRICTED key (`rk_`): an account secret key (`sk_`) is refused in either mode.
