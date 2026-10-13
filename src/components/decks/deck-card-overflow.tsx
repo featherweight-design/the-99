@@ -308,11 +308,12 @@ export function DeckCardOverflow({
               >
                 {refreshCopy.decks.menu.delete}
               </button>
-              {/* Appended after the shipped rows (handoff G6). The view leaves Tiles, so this panel goes with it. */}
+              {/* Appended after the shipped rows (handoff G6). Focus goes back to this card's trigger first, so a
+                  Stats read that fails leaves it there with Tiles; one that lands moves it to the Stats card. */}
               {onAmong ? (
                 <button
                   type="button"
-                  onClick={() => { setOpen(false); onAmong(); }}
+                  onClick={() => { handleClose(); onAmong(); }}
                   className={`${ITEM.replace(" transition-colors", "")} cursor-pointer bg-transparent text-[color:var(--fg)]`}
                 >
                   {decksStatsCopy.menu.among}

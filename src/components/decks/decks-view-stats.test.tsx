@@ -100,6 +100,18 @@ describe("DecksView: Stats on /decks", () => {
     expect(document.activeElement).toBe(document.querySelector("[data-stats-card] > button"));
   });
 
+  it("keeps focus on the tile's trigger when the Stats read fails", async () => {
+    read.stats.mockRejectedValue(new Error("down"));
+    draw({ data: null, view: "tiles", foldServer: null });
+    const trigger = screen.getByRole("button", { name: /HD - Gishath/, expanded: false });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    await waitFor(() => expect(read.stats).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(document.querySelector("[data-decks-stats]")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("draws no Stats row in a tile's menu with the switch off", () => {
     draw(null);
     fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
