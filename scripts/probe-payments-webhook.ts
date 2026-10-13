@@ -88,7 +88,7 @@ function session(customerId: string, userId: string, over: Partial<Stripe.Checko
     id: sid, object: "checkout.session", mode: "payment", payment_status: "paid", currency: "usd",
     amount_total: 531, total_details: { amount_tax: 31, amount_discount: 0, amount_shipping: 0 },
     line_items: { object: "list", data: [{ price: { id: PRICE }, quantity: 1 }], has_more: false, url: "" },
-    customer: customerId, client_reference_id: userId, metadata: { pack: "pack40", user_id: userId },
+    customer: customerId, client_reference_id: userId, metadata: { app: "the-99", pack: "pack40", user_id: userId },
     payment_intent: id("pi"), customer_details: { address: { country: "US" } },
     ...over,
   } as unknown as Stripe.Checkout.Session;

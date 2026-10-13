@@ -6,7 +6,7 @@ const env = { STRIPE_PRICE_PACK_40: "price_pack40" };
 const paid: FetchedSession = {
   id: "cs_1", mode: "payment", paymentStatus: "paid", currency: "usd", amountTotal: 531, amountTax: 31,
   lineItems: [{ priceId: "price_pack40", quantity: 1 }], customerId: "cus_1", clientReferenceId: "user_a",
-  metadata: { pack: "pack40", user_id: "user_a" }, paymentIntentId: "pi_1", country: "US",
+  metadata: { app: "the-99", pack: "pack40", user_id: "user_a" }, paymentIntentId: "pi_1", country: "US",
 };
 
 describe("packs", () => {
@@ -32,6 +32,8 @@ describe("decideFulfilment", () => {
 
   it("refuses each fact that does not agree, naming it", () => {
     const cases: [Partial<FetchedSession>, string][] = [
+      [{ metadata: { app: "concert-crawl", pack: "pack40", user_id: "user_a" } }, "not_ours"],
+      [{ metadata: { pack: "pack40", user_id: "user_a" } }, "not_ours"],
       [{ mode: "subscription" }, "not_payment_mode"],
       [{ paymentStatus: "unpaid" }, "not_paid"],
       [{ paymentIntentId: null }, "no_payment_intent"],
@@ -39,7 +41,7 @@ describe("decideFulfilment", () => {
       [{ lineItems: [{ priceId: "price_pack40", quantity: 2 }] }, "line_items"],
       [{ lineItems: [{ priceId: "price_pack40", quantity: 1 }, { priceId: "price_pack40", quantity: 1 }] }, "line_items"],
       [{ lineItems: [{ priceId: "price_other", quantity: 1 }] }, "unknown_price"],
-      [{ metadata: { pack: "pack99", user_id: "user_a" } }, "pack_mismatch"],
+      [{ metadata: { app: "the-99", pack: "pack99", user_id: "user_a" } }, "pack_mismatch"],
       [{ currency: "eur" }, "currency"],
       [{ amountTotal: 100, amountTax: 0 }, "amount"],
       [{ amountTotal: null }, "amount"],
@@ -51,7 +53,7 @@ describe("decideFulfilment", () => {
 
   it("refuses, never fixes, a Session naming a different account than its customer maps to", () => {
     expect(decideFulfilment({ ...paid, clientReferenceId: "user_b" }, "user_a", env)).toEqual({ kind: "refuse", reason: "attribution" });
-    expect(decideFulfilment({ ...paid, metadata: { pack: "pack40", user_id: "user_b" } }, "user_a", env)).toEqual({ kind: "refuse", reason: "attribution" });
+    expect(decideFulfilment({ ...paid, metadata: { app: "the-99", pack: "pack40", user_id: "user_b" } }, "user_a", env)).toEqual({ kind: "refuse", reason: "attribution" });
     expect(decideFulfilment(paid, "user_b", env)).toEqual({ kind: "refuse", reason: "attribution" });
   });
 

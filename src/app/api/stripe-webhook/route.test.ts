@@ -11,8 +11,9 @@ import { POST } from "./route";
 const SECRET = "whsec_test_fixture";
 const signer = new Stripe("sk_test_fixture");
 
-function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null } = {}) {
-  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: "cs_1", object: "checkout.session" } } });
+function delivery(type: string, opts: { secret?: string; timestamp?: number; signature?: string | null; metadata?: Record<string, string> | null } = {}) {
+  const metadata = opts.metadata === undefined ? { app: "the-99" } : opts.metadata;
+  const payload = JSON.stringify({ id: "evt_1", object: "event", type, data: { object: { id: "cs_1", object: "checkout.session", metadata } } });
   const header = opts.signature !== undefined
     ? opts.signature
     : signer.webhooks.generateTestHeaderString({ payload, secret: opts.secret ?? SECRET, timestamp: opts.timestamp });
@@ -73,6 +74,20 @@ describe("POST /api/stripe-webhook: what a verified event does", () => {
     configured.value = false;
     expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
     expect(fulfil).not.toHaveBeenCalled();
+  });
+
+  // The Stripe account is shared with Concert Crawl, whose Sessions reach this endpoint too.
+  it("acknowledges another app's Session with 200 and touches nothing, even while our Price is unset", async () => {
+    const others: (Record<string, string> | null)[] = [{ app: "concert-crawl" }, {}, null];
+    for (const metadata of others) {
+      configured.value = true;
+      expect((await POST(delivery("checkout.session.completed", { metadata }))).status).toBe(200);
+      configured.value = false;
+      expect((await POST(delivery("checkout.session.completed", { metadata }))).status).toBe(200);
+    }
+    expect(fulfil).not.toHaveBeenCalled();
+    const logged = [console.info, console.warn, console.error].flatMap((fn) => vi.mocked(fn).mock.calls).length;
+    expect(logged).toBe(0);
   });
 
   it("acknowledges an event type it does not handle, and acts on none", async () => {

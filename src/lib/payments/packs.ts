@@ -7,6 +7,19 @@
  * Prices are Hugh's starting point (Q3, 2026-10-13): $5 for 40 credits, which never expire. A Price
  * id differs between Stripe's test and live modes, so each pack names the variable holding it.
  */
+/**
+ * The tag on every Checkout Session this app creates (`metadata.app`). Hugh's Stripe account is SHARED
+ * with Concert Crawl (one LLC), and a webhook endpoint receives every `checkout.session.completed` on the
+ * account, theirs included. A Session without this tag is not ours: the webhook acknowledges it and does
+ * nothing else, never a retry and never a refusal.
+ */
+export const PAYMENTS_APP = "the-99";
+
+/** Whether a Session's metadata names this app. */
+export function isOurSession(metadata: Record<string, string> | null | undefined): boolean {
+  return metadata?.app === PAYMENTS_APP;
+}
+
 export const PACKS = {
   pack40: { units: 40, priceCents: 500, currency: "usd", priceEnv: "STRIPE_PRICE_PACK_40" },
 } as const;
