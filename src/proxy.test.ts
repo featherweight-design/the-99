@@ -163,6 +163,14 @@ describe("requests the gate keeps its hands off", () => {
     expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
   });
 
+  it("re-keys it on a client transition to /about too, and never on a prefetch", async () => {
+    const { cookieValue } = await import("./lib/about/gate");
+    const nav = await proxy(auth, request("/about", { RSC: "1" }, `${cookieValue("user_1")}+notes`));
+    expect(nav?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
+    const prefetch = await proxy(auth, request("/about", { RSC: "1", "Next-Router-Prefetch": "1" }, `${cookieValue("user_1")}+notes`));
+    expect(prefetch?.cookies.get("about_v")).toBeUndefined();
+  });
+
   it("never redirects a prefetch", async () => {
     const res = await proxy(auth, request("/decks", { RSC: "1", "Next-Router-Prefetch": "1" }));
     expectPassed(res);
