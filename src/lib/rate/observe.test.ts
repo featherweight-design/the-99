@@ -60,12 +60,21 @@ describe("observeHit", () => {
     expect(h.executed).toHaveLength(1);
     expect(warn).toHaveBeenCalledWith("[rate] would refuse bucket=card-detail hits=241 limit=240");
   });
-  it("does not warn at or under the limit, and never names the player", async () => {
+  it("counts a hit at the limit without warning", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     h.rows = [{ hits: 240 }];
+    await observeHit("user_1", "card-detail");
+    await flush();
+    expect(h.executed).toHaveLength(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+  it("never names the player in the line it logs", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    h.rows = [{ hits: 999 }];
     await observeHit("user_secret", "card-detail");
     await flush();
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0].join(" "))).not.toContain("user_secret");
   });
   it("swallows a failed write and a switch read outside a request", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
