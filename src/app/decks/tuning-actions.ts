@@ -35,11 +35,12 @@ import { intentTooLong, MAX_SUGGESTIONS, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
 import { buildPrompt } from "../../lib/tuning/prompt";
 import { tuningResponseSchema } from "../../lib/tuning/response-schema";
-import { finishRun, persistRun, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
+import { finishRun, persistRun, runIsPending, saveIntent, startRun, type Billed } from "../../lib/tuning/run-store";
 import type { TuningState } from "../../lib/tuning/state";
 import { chooseRefusal, sizeLists, type ValidationReport } from "../../lib/tuning/validate";
 import { resolveAnswer } from "../../lib/tuning/answer";
 import { refundsCredit } from "../../lib/tuning/refund";
+import { retryable } from "../../lib/tuning/retry";
 import { loadOwnedCandidates } from "../../lib/tuning/owned-candidates";
 import { applyItem, setDismissed, undoItem } from "../../lib/tuning/verdicts";
 
@@ -232,13 +233,14 @@ export async function runTuning(
   // What the call was billed for, once it returned. Every outcome write after that records it: a
   // failed one, since a refund still burned the tokens, and a late one that finds the run already
   // reaped, since the call billed all the same (`run-store.ts`, `recordLate`).
-  let billed: Billed | undefined;
+  // One entry per provider call (a retried run has two), settled together under the one reservation.
+  const billed: Billed[] = [];
   const fail = async (
     errorClass: Parameters<typeof finishRun>[1]["errorClass"],
     droppedCount?: number,
     validationReport?: ValidationReport,
   ) => {
-    if (await finishRun(run, { status: "failed", errorClass, droppedCount, validationReport }, billed)) revalidateDeck(deckId);
+    if (await finishRun(run, { status: "failed", errorClass, droppedCount, validationReport }, billed.length > 0 ? billed : undefined)) revalidateDeck(deckId);
     return { ok: true } as const;
   };
 
@@ -273,23 +275,43 @@ export async function runTuning(
         ownedNone,
       });
       const { system, user } = buildPrompt(pack);
-      const outcome = (await heldStubOutcome()) ?? await callModel({
-        model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-        schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS,
-        effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
-      });
-      if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "suggest", effort: TUNING_EFFORT };
-      // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
-      if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
+      // One ask, and at most one more when the first comes back with nothing to show (a degenerate answer, or
+      // every suggestion dropped: model tiering saw 1 in 24 Sonnet 5.5 answers be one word of "skip"). The
+      // credit is given back only when the second fails too. The reservation is two attempts of one call: the
+      // second ask is made only when the first cost no more than one attempt's worth of it, and gets no retry
+      // of its own inside `callModel` (a retry floor it can never meet), so the two stay inside what was set
+      // aside. It is made only for a run still pending and when a whole attempt still fits the deadline.
+      const startedAt = Date.now();
+      let resolved: Awaited<ReturnType<typeof resolveAnswer>>;
+      let sized: ReturnType<typeof sizeLists>;
+      // How many asks were made: after a second, whatever it kept is spent, never refunded as thin.
+      let asked = 1;
+      for (let attempt = 1; ; attempt++) {
+        const outcome = (attempt === 1 ? await heldStubOutcome() : null) ?? await callModel({
+          model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
+          schema: tuningResponseSchema, deadlineMs: MODEL_TIMEOUT_MS - (Date.now() - startedAt),
+          effort: TUNING_EFFORT, retryFloorMs: attempt === 1 ? TUNING_RETRY_FLOOR_MS : MODEL_TIMEOUT_MS,
+        });
+        if (outcome.usage) billed.push({ model: TUNING_MODEL, usage: outcome.usage, step: attempt === 1 ? "suggest" : "suggest_retry", effort: TUNING_EFFORT });
+        // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
+        if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-      const { kept, droppedCount, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
-      // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
-      // whatever order the validator already gives — no new ranking pass, no retry, no second model
-      // call. Fewer than 5 is shown as-is.
-      const sized = sizeLists(kept, MAX_SUGGESTIONS);
+        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
+        // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
+        // whatever order the validator already gives — no new ranking pass. Fewer than 5 is shown as-is.
+        sized = sizeLists(resolved.kept, MAX_SUGGESTIONS);
+        if (sized.length > 0 || attempt === 2) break;
+        // A Stop, a deleted deck or the reaper may have settled the run while the first ask was out: no second
+        // ask is made for a run that is no longer pending. The first ask's usage is recorded late, as ever.
+        if (!(await runIsPending(run.runId))) return await fail("upstream_busy");
+        // After that await, so the deadline it measures is the one left now.
+        if (!retryable(billed, resolved.drops, Date.now() - startedAt)) break;
+        asked = 2;
+      }
+      const { kept, droppedCount, drops, askedCount } = resolved;
       // An answer too thin to charge for still shows what held up, and gives the credit back. Never an
       // empty one: that is a failure below, refunded the same way, with no suggestions to show.
-      const refunded = sized.length > 0 && refundsCredit(sized.length, askedCount);
+      const refunded = sized.length > 0 && asked === 1 && refundsCredit(sized.length, askedCount);
       const report: ValidationReport = {
         askedCount, survivedCount: kept.length, keptCount: sized.length, hadNotes: notes !== null, drops,
         ...(ownedNone ? { ownedNone: true as const } : {}),

@@ -55,7 +55,7 @@ export type RunHandle = { runId: string; callId: string };
  * back (`recordModelUsage` writes them only while none are recorded, so this never counts a call
  * twice).
  */
-export async function recordLate(tx: Tx, callId: string, billed: Billed | undefined): Promise<void> {
+export async function recordLate(tx: Tx, callId: string, billed: Billed | readonly Billed[] | undefined): Promise<void> {
   if (billed) await recordModelUsage(tx, callId, billed);
 }
 
@@ -153,7 +153,7 @@ export async function finishRun(
   { runId, callId }: RunHandle,
   set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number; validationReport?: ValidationReport },
   /** The call's usage, when it got a response: a refund still records what it burned. */
-  billed?: Billed,
+  billed?: Billed | readonly Billed[],
 ): Promise<boolean> {
   const written = await db.transaction(async (tx) => {
     const rows = await tx.update(deckSuggestionRuns)
@@ -179,7 +179,7 @@ export async function persistRun(
   { runId, callId }: RunHandle,
   kept: ValidatedSuggestion[],
   droppedCount: number,
-  billed?: Billed,
+  billed?: Billed | readonly Billed[],
   validationReport?: ValidationReport,
   /** `refunded` for an answer too thin to charge for (`refundsCredit`): it is stored, shown and
    *  billed as an ok run, and the credit comes back. */
@@ -215,4 +215,14 @@ export async function persistRun(
     throw err;
   }
   return true;
+}
+
+/**
+ * Whether the run is still pending: a deck deleted under it or the reaper settles it, and a run
+ * so settled must not start another provider call (the retry asks first).
+ */
+export async function runIsPending(runId: string): Promise<boolean> {
+  const rows = await db.select({ id: deckSuggestionRuns.id }).from(deckSuggestionRuns)
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending"))).limit(1);
+  return rows.length > 0;
 }
