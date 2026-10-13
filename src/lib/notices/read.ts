@@ -143,16 +143,20 @@ export async function loadDeckNotices(deckId: string, userId: string): Promise<D
     .where(inArray(cards.oracleId, [...new Set([...currentIds, ...data.flatMap((d) => d.cards.map((c) => c.oracleId))])]));
   const byId = new Map(facts.map((f) => [f.oracleId, f]));
   const nameOf = (id: string) => byId.get(id)?.name ?? id;
+  const present = (ids: readonly string[]) => ids.map((id) => byId.get(id)).filter((f) => f !== undefined);
+  const violations = rulesViolations(present(currentIds.filter((id) => !commanderIds.includes(id))), present(commanderIds));
   // The art each row previews: the printing card details open for it, down the same chain (the deck's pick, the
-  // reader's own copy), under the catalog's art. Fail-soft inside `chainArt`: a failed read keeps the catalog's.
-  const art = await chainArt(userId, deckId, [...byId.keys()]);
+  // reader's own copy), under the catalog's art. Only for the cards a notice NAMES: the chain is the expensive
+  // read, and most decks have no notice at all. Fail-soft inside `chainArt`: a failed read keeps the catalog's.
+  const art = await chainArt(userId, deckId, [
+    ...data.flatMap((d) => d.cards.map((c) => c.oracleId)),
+    ...violations.notLegal,
+    ...violations.outsideColors.map((v) => v.oracleId),
+  ]);
   const artOf = (id: string) => art.get(id) ?? byId.get(id)?.imageUri ?? null;
   // The catalog's name first; the name the entry was written with when the catalog no longer has
   // the card (a removed combo keeps `detail.names` for exactly this).
   for (const d of data) d.cards = d.cards.map((c) => ({ oracleId: c.oracleId, name: byId.get(c.oracleId)?.name ?? c.name, imageUri: artOf(c.oracleId) }));
-
-  const present = (ids: readonly string[]) => ids.map((id) => byId.get(id)).filter((f) => f !== undefined);
-  const violations = rulesViolations(present(currentIds.filter((id) => !commanderIds.includes(id))), present(commanderIds));
   const violationItems: ViolationNotice[] = [
     ...violations.notLegal.map((id) => ({ kind: "violation" as const, group: "notLegal" as const, card: { oracleId: id, name: nameOf(id), imageUri: artOf(id) }, colors: [] })),
     ...violations.outsideColors.map((v) => ({ kind: "violation" as const, group: "outsideColors" as const, card: { oracleId: v.oracleId, name: nameOf(v.oracleId), imageUri: artOf(v.oracleId) }, colors: v.colors })),

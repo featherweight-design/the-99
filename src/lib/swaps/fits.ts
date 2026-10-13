@@ -244,21 +244,23 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
 }
 
 /**
- * The art each combo's other piece previews. The piece is a card of THAT deck (a completion means every other
- * piece is already in it), so it takes the printing card details open from the deck: the deck's pick, else the
- * copy the reader owns, else the catalog's. Fail-soft: a failed read leaves the piece without a preview.
+ * The art each combo's other piece previews: the printing card details open for it, which outside a deck's own
+ * page (and this picker opens from any page) is the copy the reader owns, else the catalog's. NOT a per-deck
+ * pick: a row naming another deck's pick would preview a printing the modal does not open. One batched read for
+ * every piece (`chainArt`), plus one `cards` read for the catalog fallback. Fail-soft: a failed read leaves the
+ * piece without a preview.
  */
 async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): Promise<void> {
-  const combos = [...reasons].flatMap(([deckId, r]) => (r.kind === "combo" ? [{ deckId, r }] : []));
+  const combos = [...reasons.values()].flatMap((r) => (r.kind === "combo" ? [r] : []));
   if (combos.length === 0) return;
-  const ids = [...new Set(combos.map(({ r }) => r.with.oracleId))];
-  const [chained, catalog] = await Promise.all([
-    Promise.all(combos.map(({ deckId, r }) => chainArt(userId, deckId, [r.with.oracleId]))),
+  const ids = [...new Set(combos.map((r) => r.with.oracleId))];
+  const [owned, catalog] = await Promise.all([
+    chainArt(userId, null, ids),
     db.execute<{ oracle_id: string; image_uri: string | null }>(sql`select oracle_id, image_uri from cards where oracle_id = any(${ids}::uuid[])`)
       .then((res) => new Map(res.rows.map((x) => [x.oracle_id, x.image_uri] as const)))
       .catch(() => new Map<string, string | null>()),
   ]);
-  combos.forEach(({ r }, i) => { r.with.imageUri = chained[i].get(r.with.oracleId) ?? catalog.get(r.with.oracleId) ?? null; });
+  for (const r of combos) r.with.imageUri = owned.get(r.with.oracleId) ?? catalog.get(r.with.oracleId) ?? null;
 }
 
 /**
