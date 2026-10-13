@@ -143,8 +143,9 @@ async function run() {
   // c · A second event for the same Session.
   {
     const { stub } = stripeServing(sa);
-    await fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", sa.id);
-    check("c · a second event for one Session still grants once", await lots(a.userId), 1);
+    const again = await fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", sa.id);
+    check("c · a second event for one Session is a duplicate", again.outcome, "duplicate");
+    check("c · and still grants once", await lots(a.userId), 1);
   }
 
   // d · Two concurrent deliveries of one new event.

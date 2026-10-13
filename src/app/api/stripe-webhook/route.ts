@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 /**
  * Stripe's webhook endpoint (payments scope §5.3). Public in `src/proxy.ts`, because Stripe calls it
  * with no session; what authorizes it is the signature, checked on the RAW body against the endpoint
- * secret on every call. It runs whatever `PAYMENTS_ENABLED` says: a payment already taken is processed
- * even while sales are stopped.
+ * secret on every call. It reads no feature switch, and must never: a payment already taken is processed
+ * even while sales are stopped (stopping sales is the Checkout side's switch, from K1b).
  *
  * - Not configured (no signing secret, or no client for this environment): 503, nothing runs.
  * - A missing, forged or stale signature (5-minute tolerance): 400, nothing runs.

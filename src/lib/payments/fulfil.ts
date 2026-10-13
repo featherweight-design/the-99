@@ -34,15 +34,15 @@ export async function fulfilCheckoutSession(stripe: Stripe, eventId: string, eve
       : [];
     const decision = decideFulfilment(fetched, mapped?.userId ?? null, priceEnv());
     if (decision.kind === "refuse") return { outcome: "refuse" as const, reason: decision.reason };
-    await tx.insert(paymentRecords)
+    const recorded = await tx.insert(paymentRecords)
       .values({ ...decision.record, status: decision.kind === "grant" ? "granted" : "unattributed" })
-      .onConflictDoNothing();
-    if (decision.kind === "grant") {
-      await tx.insert(creditGrants)
-        .values({ userId: decision.userId, source: "pack", units: decision.units, externalId: decision.record.checkoutSessionId })
-        .onConflictDoNothing({ target: creditGrants.externalId });
-    }
-    return { outcome: decision.kind };
+      .onConflictDoNothing().returning({ id: paymentRecords.paymentIntentId });
+    if (decision.kind === "unattributed") return { outcome: recorded.length > 0 ? "unattributed" as const : "duplicate" as const };
+    const granted = await tx.insert(creditGrants)
+      .values({ userId: decision.userId, source: "pack", units: decision.units, externalId: decision.record.checkoutSessionId })
+      .onConflictDoNothing({ target: creditGrants.externalId }).returning({ id: creditGrants.id });
+    // A Session already granted under another event id writes nothing here, and says so.
+    return { outcome: granted.length > 0 ? "grant" as const : "duplicate" as const };
   });
 }
 
