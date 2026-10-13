@@ -1,7 +1,7 @@
-import { and, eq, gt, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { modelCallParts, modelCalls } from "../../db/schema";
+import { creditGrants, modelCallParts, modelCalls } from "../../db/schema";
 import {
   ALLOWANCE_WINDOW_MS,
   MODEL_FRIEND_DAILY_ALLOWANCE,
@@ -13,6 +13,7 @@ import {
   type ModelFeature,
 } from "./allowance-rule";
 import type { RefundReason } from "./allowance-rule";
+import { creditTotals, pickGrant, remaining, type CreditGrant, type CreditSource, type GrantBalance } from "./credit-rule";
 import type { ModelUsage } from "./client";
 import { costMicroUsd, featureWorstCaseMicroUsd, FEATURE_CALLS } from "./prices";
 import { reportSpendThreshold } from "./spend-alerts";
@@ -147,8 +148,52 @@ async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise
       eq(modelCalls.origin, "player"),
       gt(modelCalls.createdAt, since),
       inArray(modelCalls.status, ["reserved", "spent"]),
+      // Only the free allowance's own runs: a run a paid lot funded spends that lot, never the window.
+      isNull(modelCalls.creditGrantId),
     ));
   return rows as LedgerRow[];
+}
+
+/**
+ * The player's paid lots that could still hold a credit, each with what it has left at `now`
+ * (`credit-rule.ts` decides; the SQL only narrows). One read of `credit_grants` by the player's
+ * index, and a read of the ledger only when a lot exists, so a player who never bought anything,
+ * which is every player before payments ship, costs one empty index lookup.
+ */
+async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Promise<GrantBalance[]> {
+  const grants = await q
+    .select({
+      id: creditGrants.id, source: creditGrants.source, units: creditGrants.units,
+      revokedUnits: creditGrants.revokedUnits, expiresAt: creditGrants.expiresAt, createdAt: creditGrants.createdAt,
+    })
+    .from(creditGrants)
+    .where(and(
+      eq(creditGrants.userId, userId),
+      sql`${creditGrants.revokedUnits} < ${creditGrants.units}`,
+      or(isNull(creditGrants.expiresAt), gt(creditGrants.expiresAt, now)),
+    ));
+  if (grants.length === 0) return [];
+  const ids = grants.map((g) => g.id);
+  const reservedSince = new Date(now.getTime() - RESERVATION_TTL_MS);
+  const usage = await q
+    .select({
+      grantId: modelCalls.creditGrantId,
+      spent: sql<string>`count(*) filter (where ${modelCalls.status} = 'spent')`,
+      // Epoch milliseconds, so no driver ever reads a zone-less timestamp in its own zone. The column
+      // holds UTC (Drizzle writes `toISOString()`), and `extract(epoch ...)` of a zone-less
+      // timestamp reads it as UTC. As JSON, because the driver hands a Postgres array back as its text.
+      reserved: sql<number[] | null>`json_agg((extract(epoch from ${modelCalls.createdAt}) * 1000)::float8) filter (where ${modelCalls.status} = 'reserved' and ${modelCalls.createdAt} > ${reservedSince.toISOString()}::timestamp)`,
+    })
+    .from(modelCalls)
+    .where(and(inArray(modelCalls.creditGrantId, ids), inArray(modelCalls.status, ["reserved", "spent"])))
+    .groupBy(modelCalls.creditGrantId);
+  const byGrant = new Map(usage.map((u) => [u.grantId, u]));
+  return grants.map((g) => {
+    const grant: CreditGrant = { ...g, source: g.source as CreditSource };
+    const u = byGrant.get(g.id);
+    const reserved = (u?.reserved ?? []).map((ms) => new Date(Number(ms)));
+    return { grant, remaining: remaining(grant, { spent: Number(u?.spent ?? 0), reserved }, now) };
+  });
 }
 
 /**
@@ -158,8 +203,13 @@ async function ledgerRows(q: Tx | typeof db, userId: string, now: Date): Promise
  * call at all would be let through.
  */
 export async function readAllowance(userId: string, now: Date = new Date(), feature?: ModelFeature): Promise<Allowance> {
-  const [rows, spend] = await Promise.all([ledgerRows(db, userId, now), monthSpend(db, userId, now)]);
-  const allowance = allowanceFrom(rows, now, dailyLimitFor(userId));
+  const [rows, spend, balances] = await Promise.all([
+    ledgerRows(db, userId, now), monthSpend(db, userId, now), grantBalances(db, userId, now),
+  ]);
+  const allowance: Allowance = {
+    ...allowanceFrom(rows, now, dailyLimitFor(userId)),
+    ...(balances.length > 0 ? creditTotals(balances) : {}),
+  };
   const refusal = spendRefusal({
     appMonthMicro: spend.app,
     ownerMonthMicro: isOwner(userId) ? spend.user : null,
@@ -224,10 +274,17 @@ export async function reserveModelCall(
   });
   if (refusal) return { refused: refusal };
   const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now, dailyLimitFor(userId));
-  if (allowance.used >= allowance.limit) return { refused: "allowance" };
+  // The free allowance first, because it is use-it-or-lose-it; then a paid lot, plan before pack
+  // (`pickGrant`). Both read under the lock above, so two presses cannot take one last credit.
+  let creditGrantId: string | null = null;
+  if (allowance.used >= allowance.limit) {
+    const grant = pickGrant(await grantBalances(tx, userId, now));
+    if (!grant) return { refused: "allowance" };
+    creditGrantId = grant.id;
+  }
   const [row] = await tx
     .insert(modelCalls)
-    .values({ userId, feature, model, origin: "player", createdAt: now })
+    .values({ userId, feature, model, origin: "player", createdAt: now, creditGrantId })
     .returning({ id: modelCalls.id });
   return row;
 }

@@ -2190,6 +2190,36 @@ export const deckProfiles = pgTable("deck_profiles", {
 ]);
 
 /**
+ * PAID CREDITS, one row per lot (payments plan, PR L, 2026-10-13). A `plan` lot is a subscription
+ * period's credits and a `pack` lot a one-time purchase. A lot is spent by the `model_calls` rows that
+ * name it (`credit_grant_id`), counted by the same rule as the allowance minus its 24-hour window
+ * (`src/lib/model/credit-rule.ts`), so a refunded run, or a reservation past its TTL, gives its credit
+ * back to the lot that funded it with no second refund path. `src/lib/model/allowance.ts` spends it.
+ *
+ * Plan credits roll over with no cap while the player is subscribed, so a plan lot's `expires_at` is
+ * null until the subscription is cancelled, when it becomes the end of the paid period. Pack credits
+ * never expire (Hugh, Q8), which the check holds. `revoked_units` is what a refund or a chargeback took
+ * back, never more than the lot. `external_id` is the Stripe object that paid for the lot, unique so a
+ * replayed webhook cannot grant twice. Purged with the account; unspent credits are forfeited (Q7).
+ */
+export const creditGrants = pgTable("credit_grants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  source: text("source").notNull(),
+  units: integer("units").notNull(),
+  revokedUnits: integer("revoked_units").notNull().default(0),
+  expiresAt: timestamp("expires_at"),
+  externalId: text("external_id").unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("credit_grants_source_check", sql`${t.source} in ('plan', 'pack')`),
+  check("credit_grants_units_check", sql`${t.units} > 0`),
+  check("credit_grants_revoked_check", sql`${t.revokedUnits} between 0 and ${t.units}`),
+  check("credit_grants_pack_never_expires_check", sql`${t.source} = 'plan' or ${t.expiresAt} is null`),
+  index("credit_grants_user_idx").on(t.userId),
+]);
+
+/**
  * The per-player model allowance's ledger, shared by every model feature (deck tuning, the
  * deck synopsis). One row per model RUN, never per HTTP attempt.
  *
@@ -2224,6 +2254,10 @@ export const modelCalls = pgTable("model_calls", {
   model: text("model"),
   costMicroUsd: bigint("cost_micro_usd", { mode: "number" }),
   refundReason: text("refund_reason"),
+  // THE PAID LOT THAT FUNDED THE RUN (payments plan, PR L). Null for a run the free allowance funded,
+  // which is every row from before it. Set at reserve, never moved: the row's status alone decides
+  // whether it still counts against its lot. No `on delete`: the purge deletes calls before lots.
+  creditGrantId: uuid("credit_grant_id").references(() => creditGrants.id),
 }, (t) => [
   check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
@@ -2236,6 +2270,8 @@ export const modelCalls = pgTable("model_calls", {
   index("model_calls_user_created_idx").on(t.userId, t.createdAt),
   // The admin's month reads, which filter on the month alone.
   index("model_calls_created_idx").on(t.createdAt),
+  // A lot's spend, read under the player's lock at every paid reserve.
+  index("model_calls_credit_grant_idx").on(t.creditGrantId).where(sql`${t.creditGrantId} is not null`),
 ]);
 
 /**
