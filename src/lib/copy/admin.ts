@@ -250,7 +250,7 @@ export const adminCopy = {
       allowance: "Enter a whole number from 1 to 1000, or leave it empty.",
       members: "An account in the list isn’t on this environment. Reload the page and try again.",
       group: "This group no longer exists. Reload the page.",
-      unknown: "The page lost touch with the server, so it may have saved. The page has reloaded; check it before saving again.",
+      unknown: "Lost touch with the server, so it may have saved. Check the page before saving again.",
     },
     history: {
       created: (who: string, name: string) => `${who} created ${name}`,

@@ -20,8 +20,8 @@ const { AdminHead } = await import("./admin-head");
 const T = "11111111-1111-4111-8111-111111111111";
 const F = "22222222-2222-4222-8222-222222222222";
 const ROWS: AccountRow[] = [
-  { id: "user_2hugh", name: "Hugh Hartigan", email: "hugh@example.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10" },
-  { id: "user_9mara", name: "Mara Quinn", email: "mara@example.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420" },
+  { id: "user_2hugh", name: "Hugh Hartigan", clerkName: "Hugh Hartigan", email: "hugh@example.com", initials: "HH", group: null, credits: "7 of 10 left", spend: "$2.10" },
+  { id: "user_9mara", name: "Mara Quinn", clerkName: "Mara Quinn", email: "mara@example.com", initials: "MQ", group: { id: F, name: "friends" }, credits: "3 of 5 left", spend: "$1.420" },
 ];
 
 const PAGE: AccountPage = {
@@ -82,6 +82,16 @@ describe("AccountsList (A1 to A3)", () => {
     fireEvent.change(search, { target: { value: "9mara" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
     expect(screen.getByText("No account matches 9mara.")).toBeInTheDocument();
+  });
+
+  it("matches an account with no Clerk name by its id's start only, not the id it draws in the name's place", () => {
+    const bare: AccountRow = { id: "user_7bare", name: "user_7bare", clerkName: null, email: null, initials: "U", group: null, credits: "", spend: "$0" };
+    render(<AccountsList rows={[bare]} clerk="down" month="October" env="staging" />);
+    const search = screen.getByRole("searchbox", { name: "Name, email or Clerk id" });
+    fireEvent.change(search, { target: { value: "7bare" } });
+    expect(screen.queryByTestId("account-rows")).toBeNull();
+    fireEvent.change(search, { target: { value: "user_7" } });
+    expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
   });
 
   it("says the names did not load when Clerk is down", () => {

@@ -59,7 +59,10 @@ export function creditsNow(
 
 export type AccountRow = {
   id: string;
+  /** What the row draws: the Clerk name, else the email, else the id. */
   name: string;
+  /** The Clerk name alone, for the search: a drawn fallback must not widen the id's prefix match. */
+  clerkName: string | null;
   email: string | null;
   initials: string;
   group: { id: string; name: string } | null;
@@ -82,6 +85,7 @@ export function accountRows(input: {
     return {
       id: a.id,
       name: accountName(a),
+      clerkName: a.name,
       email: a.email,
       initials: initials(a),
       group: groupId && groupName ? { id: groupId, name: groupName } : null,

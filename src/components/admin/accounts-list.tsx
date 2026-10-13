@@ -69,7 +69,7 @@ export function AccountsList({ rows, clerk, month, env }: { rows: AccountRow[]; 
   const pinRef = useRef<HTMLDivElement>(null);
   usePublishedHeight(pinRef, PIN_HEIGHT_VAR);
   const shown = useMemo(
-    () => rows.filter((r) => matchesAccount({ id: r.id, name: r.name, email: r.email }, query)),
+    () => rows.filter((r) => matchesAccount({ id: r.id, name: r.clerkName, email: r.email }, query)),
     [rows, query],
   );
 
