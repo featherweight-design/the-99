@@ -60,7 +60,7 @@ describe("fitsReadView", () => {
 
   it("reports a run in flight beside the stored read (lock 5)", () => {
     const v = fitsReadView([row({ id: "p", status: "pending", outcome: null, createdAt: at(5), finishedAt: null }), row({})], { a: "p.1", b: "p.2" });
-    expect(v.pending).toEqual({ readId: "p", startedAt: at(5).toISOString() });
+    expect(v.pending).toEqual({ readId: "p", startedAt: at(5).toISOString(), candidates: 2 });
     expect(v.stored?.readId).toBe("r");
   });
 
