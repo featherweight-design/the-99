@@ -141,7 +141,7 @@ describe("rankFree — wiring", () => {
   it("reports ok: false, not a classifier-counted ranking, when the label read fell back", async () => {
     basisMock.fellBack = true;
     try {
-      expect(await rankFree("user-1", [item("korvold")])).toEqual({ items: [], ok: false });
+      expect(await rankFree("user-1", [item("korvold")])).toEqual({ items: [], ok: false, labelFallback: true });
     } finally {
       basisMock.fellBack = false;
     }
