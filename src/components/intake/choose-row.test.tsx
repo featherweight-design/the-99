@@ -71,6 +71,8 @@ describe("a result row", () => {
     const { unmount } = draw(row(), pending);
     expect(screen.getByTestId("ownership-line").dataset.trial).toBe("pending");
     expect(screen.getByText("Counting what you own…")).toBeTruthy();
+    // The pending bar breathes (Hugh, 2026-10-12).
+    expect(screen.getByTestId("ownership-line").querySelectorAll(".anim-skeleton")).toHaveLength(1);
     unmount();
     draw(row(), { state: "ready", figures: { body: 99, owned: 41, buyCents: 12_049, unpricedCard: null } });
     // Each segment leads with its own separator: the text reads as the one sentence, dots between.

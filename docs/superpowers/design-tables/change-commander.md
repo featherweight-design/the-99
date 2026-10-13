@@ -370,6 +370,7 @@ handoff's §2.5 `Show more` (+8, To buy only, focus to the first new row).
 | | padding | 12px 0 | same | canvas |
 | | border-bottom | 1px solid `--border` | same | canvas |
 | | opacity | 1, 0.8, 0.6, 0.4 | same | canvas |
+| | motion | the four rows breathe together on one wrapper (`anim-skeleton`: opacity 1 to 0.55 over 1.4s, in-out, looping), over their stepped opacity; still under reduced motion | same | Hugh, 2026-10-12 |
 | Skeleton thumb | dimensions / radius / bg | 56×41, 6px, `--elevated` | same | canvas |
 | Skeleton text column | layout | flex 1, column, gap 9px, padding-top 3px | same | canvas |
 | | bar 1 | width 52%, height 11px, radius 3px, `--elevated` | same | canvas |

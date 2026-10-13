@@ -370,7 +370,7 @@ function OwnershipLine({
           ) : (
             <Segment>
               <span aria-busy="true" className="inline-flex items-center gap-[9px] text-[10.5px] text-[color:var(--fg-faint)]">
-                <span aria-hidden className={`block h-[8px] rounded-[4px] bg-[color:var(--elevated)] ${best ? "w-[90px]" : "w-[120px]"}`} />
+                <span aria-hidden className={`anim-skeleton block h-[8px] rounded-[4px] bg-[color:var(--elevated)] ${best ? "w-[90px]" : "w-[120px]"}`} />
                 {copy.results.rowPending}
               </span>
             </Segment>

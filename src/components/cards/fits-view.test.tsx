@@ -109,13 +109,15 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getByRole("link", { name: creditsCopy.link })).toHaveAttribute("href", "/about#credits");
   });
 
-  it("runs with still rows and the list live, then draws the read's rows and folds the list (P2, P3)", async () => {
+  it("runs with breathing skeleton rows and the list live, then draws the read's rows and folds the list (P2, P3)", async () => {
     await draw(panel());
     let resolve!: (v: unknown) => void;
     readActions.pressFitsReadAction.mockReturnValue(new Promise((res) => { resolve = res; }));
     fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
     expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
     expect(screen.getAllByTestId("read-skeleton")).toHaveLength(1);
+    // The skeleton breathes (Hugh, 2026-10-12).
+    expect(screen.getByTestId("read-skeleton")).toHaveClass("anim-skeleton");
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
     await act(async () => resolve({ ok: true, panel: panel({}, { stored: stored() }) }));
     await settle();

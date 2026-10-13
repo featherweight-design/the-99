@@ -21,7 +21,9 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 - **Feature flag (audit F3):** with `HELP_ME_CHOOSE_ENABLED` off, the route answers not-found.
 - **Motion (STATES invariant "zero net motion"):** no transition, animation, shimmer or transform-driven movement
   anywhere on either screen, including chips arriving. The only `transform` in scope is the static 45° rotation of
-  the held-mark square (a shape, not motion).
+  the held-mark square (a shape, not motion). **Except loading** (Hugh, 2026-10-12: every loader moves): the 5c
+  skeleton rows and the row's pending bar breathe (`anim-skeleton`, opacity only), and the route's loading screen
+  pulses its crown. Still under reduced motion.
 - **Hover:** the canvas declares only the global `a:hover { color: var(--accent-hover) }` (links default
   `--accent`). No other hover state is drawn for any element in scope.
 
@@ -810,7 +812,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 |---|---|---|
 | replaces | the ownership line only | same |
 | layout | flex, center, gap 9px | same |
-| bar | 120px (row) / 90px (best card) × 8px, radius 4px, `--elevated`, static | same |
+| bar | 120px (row) / 90px (best card) × 8px, radius 4px, `--elevated`; breathes (`anim-skeleton`, Hugh 2026-10-12, superseding "static") | same |
 | text | mono 10.5px `--fg-faint` | same |
 | copy key | `results.rowPending` | same |
 
@@ -1028,7 +1030,7 @@ panel (`DeeperLook`, §3 second half) — they ship later.
 | gap | 10px | 10px |
 | aria-busy | true | true |
 | rows | 5 | 5 |
-| motion | none (no shimmer) | same |
+| motion | `anim-skeleton`: the rows breathe, opacity 1 to 0.55 over 1.4s, in-out, looping; still under reduced motion (Hugh, 2026-10-12, superseding "none") | same |
 
 ### Skeleton row
 | Property | Mobile | Desktop |

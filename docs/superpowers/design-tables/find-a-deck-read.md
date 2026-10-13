@@ -22,7 +22,7 @@ Mobile = 390. Desktop = 900, from `md` up (the dialog is `md:w-[820px] md:h-[620
 | Press, spent / paused | 50% opacity, disabled, segment dropped | same |
 | Read again / Try again | outline `--accent`, same segment, rule `--accent` | same |
 | Standing line | mono 10.5 `--fg-faint` | same |
-| Skeleton rows | 3, `--surface-sunken`, bars `--elevated` 10 / `--surface-raised` 8, still (no shimmer) | same |
+| Skeleton rows | 3, `--surface-sunken`, bars `--elevated` 10 / `--surface-raised` 8; they breathe (`anim-skeleton`, opacity 1 to 0.55 over 1.4s, in-out; still under reduced motion; Hugh, 2026-10-12, superseding "still") | same |
 | Result head | 14/600 `--fg` + mono 10.5 `--fg-faint`, baseline row, wraps | same |
 | Row | radius 9, `--surface-sunken`, 1px `--border` (`--accent` when swapped), padding 12, gap 9 | padding 12 14 |
 | Row: deck | 13.5/600 `--fg`, underline `--border-strong`, opens the deck | same |

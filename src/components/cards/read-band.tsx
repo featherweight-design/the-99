@@ -65,7 +65,7 @@ export function RunningBand({ title, elapsed }: { title: string; elapsed: string
         <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{`${copy.runningSub} · ${elapsed}`}</p>
         <p className="m-0 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.runningKeep}</p>
       </Band>
-      <div aria-hidden data-testid="read-skeleton" className="flex flex-col gap-[10px]">
+      <div aria-hidden data-testid="read-skeleton" className="anim-skeleton flex flex-col gap-[10px]">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex flex-col gap-[8px] rounded-[9px] p-[12px] border border-solid border-[color:var(--border)]" style={{ background: "var(--surface-sunken)" }}>
             <span className="h-[10px] w-[42%] rounded-[3px]" style={{ background: "var(--elevated)" }} />

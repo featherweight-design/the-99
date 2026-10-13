@@ -750,6 +750,14 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   will-change: transform;
 }
 .anim-dots { animation: dots 1.2s ease-in-out infinite; }
+/* A loading skeleton breathing while its content is on the way (Hugh, 2026-10-12: every loader
+   moves). Opacity alone, so the compositor runs it with no layout or paint; gentle, from full to
+   0.55 and back over 1.4s on the in-out curve. It sits on the skeleton's wrapper, so a skeleton whose
+   rows step their own opacity down keeps those steps under it. Reduced motion: still. */
+@keyframes skeleton-breathe {
+  50% { opacity: 0.55; }
+}
+.anim-skeleton { animation: skeleton-breathe 1.4s ease-in-out infinite; }
 .anim-breathe {
   animation: breathe 5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
   will-change: transform;
@@ -969,6 +977,7 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
   .anim-dots,
+  .anim-skeleton,
   .anim-breathe,
   /* Reduced motion: the sheet appears in place, no translate. */
   .anim-sheet-in,

@@ -1,5 +1,5 @@
 // The route's loading screen reads its own address: a results address draws 5c (the results header,
-// Finding commanders… and five still rows) with no bar and no order sub, since both name answers by
+// Finding commanders… and five breathing skeleton rows) with no bar and no order sub, since both name answers by
 // labels only the database holds; the form's address keeps the shell's screen.
 
 import { render, screen } from "@testing-library/react";
@@ -44,5 +44,7 @@ describe("the choose route's loading screen", () => {
     render(<Loading />);
     expect(screen.queryByTestId("choose-loading")).toBeNull();
     expect(screen.getByText("Clearing a space")).toBeTruthy();
+    // Its crown pulses like every loader's (Hugh, 2026-10-12): not drawn `still`.
+    expect(document.querySelectorAll(".anim-dots")).toHaveLength(3);
   });
 });

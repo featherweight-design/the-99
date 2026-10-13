@@ -40,6 +40,15 @@ const mount = (pair = false, hasVersion = true) => render(
 beforeEach(() => { readChangeCandidates.mockReset(); changeCommander.mockReset(); refresh.mockReset(); });
 
 describe("ChangeCommanderSheet", () => {
+  it("breathes its four loading rows on one wrapper while the candidates are read", async () => {
+    readChangeCandidates.mockReturnValue(new Promise(() => {}));
+    mount();
+    const status = await screen.findByRole("status");
+    const breathing = status.querySelectorAll(".anim-skeleton");
+    expect(breathing).toHaveLength(1);
+    expect(breathing[0].querySelectorAll(":scope > [aria-hidden=true]")).toHaveLength(4);
+  });
+
   it("shortens a name at its comma", () => {
     expect(shortName("Korvold, Fae-Cursed King")).toBe("Korvold");
   });
