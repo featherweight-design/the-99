@@ -101,7 +101,10 @@ try {
     await signIn(page);
     await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded" });
     await onPageRole(page, "tab", /analysis/i).first().click();
+    // The hub draws a tile per tool (two or more on); one tool on mounts it directly.
     const tile = onPage(page, "button[data-tool-tile='suggested']");
+    const any = onPageRole(page, "radio", "Any card").first();
+    await Promise.race([tile.waitFor({ timeout: 60_000 }), any.waitFor({ timeout: 60_000 })]);
     if (await tile.count()) await tile.click();
     await onPageRole(page, "radio", "Any card").first().waitFor({ timeout: 60_000 });
     // Start from "Any card", whatever the deck held.
