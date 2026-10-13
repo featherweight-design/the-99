@@ -86,8 +86,15 @@ type DeckRow = { id: string; commander_oracle_id: string; partner_oracle_id: str
 type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null; color_identity: string[] | null };
 type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: string; oracle_text: string | null; keywords: string[] | null };
 
-export async function loadFitsReadInputs(userId: string, oracleId: string, opts: { allDecks?: boolean } = {}): Promise<FitsReadLoad | null> {
-  const fits = await loadFits(userId, oracleId);
+export async function loadFitsReadInputs(
+  userId: string,
+  oracleId: string,
+  opts: { allDecks?: boolean } = {},
+  /** The reader's resolved switches (`requestSwitchEnv`), for `loadFits`' claim read; the environment alone
+   *  when omitted (admin PR 7 makes it required). */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<FitsReadLoad | null> {
+  const fits = await loadFits(userId, oracleId, env);
   if (!fits) return null;
   const listed = fitsReadCandidates(fits);
 

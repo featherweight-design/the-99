@@ -119,16 +119,19 @@ describe("confirmUpload", () => {
     expect(stub.receipt.mock.calls[0][0].nowShort).toEqual([deck]);
   });
 
-  it("tells the receipt the reader's resolved ADDED_COPY_ENABLED, not the environment's", async () => {
-    // The environment has it off and the reader's override turns it on: a receipt left to read the
-    // switch itself (`writeArrivalsReceipt` defaults to `process.env`) would say off.
-    vi.stubEnv("ADDED_COPY_ENABLED", "false");
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(envViewWith({ ADDED_COPY_ENABLED: "true" }));
+  it("hands the write and the receipt the reader's resolved env, not the environment", async () => {
+    // The environment has every switch the two read off and the reader's env turns them on: the
+    // receipt's ADDED_COPY_ENABLED and both claim reads' NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED.
+    // Left to default (`process.env`), either would decide the other way, so the env is checked by identity.
+    for (const k of ["ADDED_COPY_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"]) vi.stubEnv(k, "false");
+    const env = envViewWith({ ADDED_COPY_ENABLED: "true", NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
     stub.ledger = true;
     stub.apply.mockResolvedValue(applied("upload_replace"));
     try {
       await confirmUpload(UPLOAD);
-      expect(stub.receipt.mock.calls[0][0].addedCopy).toBe(true);
+      expect(stub.apply.mock.calls[0][2].env === env).toBe(true);
+      expect(stub.receipt.mock.calls[0][0].env === env).toBe(true);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -182,6 +185,20 @@ describe("previewUploadChange", () => {
     expect(got).toHaveProperty("detail.copiesAfter", 24);
     expect(got).toHaveProperty("detail.unchanged", 9);
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
+  });
+
+  it("hands the dry run the reader's resolved env, not the environment", async () => {
+    for (const k of ["NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"]) vi.stubEnv(k, "false");
+    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
+    stub.ledger = true;
+    stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [] });
+    try {
+      await previewUploadChange(UPLOAD, "replace");
+      expect(stub.apply.mock.calls[0][2].env === env).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("says whether history reaches back to the last upload, and never quotes one older than the window", async () => {

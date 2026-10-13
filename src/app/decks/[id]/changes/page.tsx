@@ -157,7 +157,7 @@ export default async function ChangesPage({
     // PROXIED ADDS EXCLUDED. A printed card asks the collection for nothing — the draft buckets
     // it as `proxied` precisely because no physical copy is owed — so counting it here would
     // count a copy no deck is actually short of.
-    countContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId)
+    countContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId, env)
       .catch(() => 0),
     // "→ {n} cards" per candidate source — degrades to an empty map, same as the contested
     // count above: a failed read omits the figure rather than drawing a wrong one.

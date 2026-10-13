@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith, ENV_VIEW, ENV_VIEW as RESOLVED } from "@/test/env-view";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides. Through a stand-in object that
 // reads it, so a case can pin WHICH env the action handed on by identity, never by comparing the
 // environment itself.
-import { ENV_VIEW as RESOLVED } from "@/test/env-view";
 vi.mock("../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
   return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
@@ -17,6 +17,13 @@ const FORGED = "99999999-9999-9999-9999-999999999999";
 const line = { oracleId: ORACLE, setCode: "LEA", collectorNumber: "1", finish: "nonfoil", quantity: 2 };
 const edited = { ...line, expected: 2 };
 const deck = { deckId: "d", deckName: "Deck", oracleId: ORACLE, cardName: "Card", short: 1 };
+
+/** A write's options with the env taken off, which is checked by identity instead (never compared). */
+const optsOf = (call: unknown[]) => {
+  const { env, ...rest } = call[2] as { env?: unknown };
+  expect(env === RESOLVED).toBe(true);
+  return rest;
+};
 
 const stub = vi.hoisted(() => ({
   ledger: true,
@@ -94,7 +101,7 @@ describe("addToCollection", () => {
       kind: "add",
       items: [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil", quantity: 2, scryfallId: PRINTING, condition: null }],
     });
-    expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION });
+    expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION });
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
     expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
@@ -110,7 +117,7 @@ describe("addToCollection", () => {
     try {
       process.env.ADDED_COPY_ENABLED = "true";
       const out = await addToCollection(ACTION, [line]);
-      expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, placements: true });
+      expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION, placements: true });
       expect(out).toMatchObject({ applied: { id: ACTION, placed: [{
         oracleId: ORACLE, cardName: "Sol Ring",
         went: { kind: "held", decks: [{ deckId: "d1", copies: 1, picked: false }], copies: 2, ownedBefore: 0 },
@@ -118,7 +125,7 @@ describe("addToCollection", () => {
       delete process.env.ADDED_COPY_ENABLED;
       stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION, rows: [] } });
       expect(await addToCollection(ACTION, [line])).toEqual({ applied: { id: ACTION } });
-      expect(stub.apply.mock.calls[1][2]).toEqual({ id: ACTION });
+      expect(optsOf(stub.apply.mock.calls[1])).toEqual({ id: ACTION });
     } finally {
       delete process.env.ADDED_COPY_ENABLED;
     }
@@ -178,7 +185,7 @@ describe("editCollection", () => {
       kind: "edit",
       rows: [{ oracleId: ORACLE, setCode: "lea", collectorNumber: "1", finish: "nonfoil", quantity: 3, expected: 1, condition: "LP", scryfallId: PRINTING }],
     });
-    expect(stub.apply.mock.calls[0][2]).toEqual({ id: ACTION, confirmShort: [deck] });
+    expect(optsOf(stub.apply.mock.calls[0])).toEqual({ id: ACTION, confirmShort: [deck] });
     expect(stub.warm).toHaveBeenCalledWith("user_1", RESOLVED);
   });
 
@@ -279,5 +286,28 @@ describe("ids in any case", () => {
     stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
     expect(await addToCollection(ACTION, [{ ...line, oracleId: lettered.toUpperCase() }])).toEqual({ applied: { id: ACTION } });
     expect(stub.apply.mock.calls[0][1].items[0].oracleId).toBe(lettered);
+  });
+});
+
+// Admin PR 6f-2: the write's claim reads (the deck check, the placements) take the reader's env. Opposite to
+// the environment on both claim-model switches, so a dropped argument would read the other way.
+describe("the reader's env", () => {
+  it("reaches the write from an add and from an edit, by identity", async () => {
+    const { requestSwitchEnv } = await import("../../lib/switches/request");
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValue(env);
+    try {
+      catalogHolds();
+      stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
+      await addToCollection(ACTION, [line]);
+      await editCollection(ACTION, [{ ...line, quantity: 3, expected: 1 }]);
+      expect(stub.apply).toHaveBeenCalledTimes(2);
+      for (const call of stub.apply.mock.calls) expect(call[2].env === env).toBe(true);
+    } finally {
+      vi.mocked(requestSwitchEnv).mockResolvedValue(ENV_VIEW);
+      vi.unstubAllEnvs();
+    }
   });
 });

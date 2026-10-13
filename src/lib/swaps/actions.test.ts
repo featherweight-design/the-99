@@ -78,7 +78,10 @@ describe("addFromFits", () => {
 describe("loadFitsAction", () => {
   it("reads for the signed-in reader", async () => {
     await loadFitsAction(CARD);
-    expect(loadFits).toHaveBeenCalledWith("user_1", CARD);
+    const [user, card, env] = vi.mocked(loadFits).mock.calls[0] as unknown[];
+    expect([user, card]).toEqual(["user_1", CARD]);
+    // The reader's resolved switches, for the free list's claim read: a dropped argument reads the environment.
+    expect(env === ENV).toBe(true);
   });
 
   it("answers null with the flag off or a malformed id", async () => {

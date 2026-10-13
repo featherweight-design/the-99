@@ -129,13 +129,13 @@ export async function previewRevert(
   /** The pick this undo also drops (see `revertCollectionEntry`), so the preview's deck check is the save's. */
   undoPlacement?: UndoPlacement,
 ): Promise<RevertPreview | RevertRefusal> {
-  const userId = await signedInEditor();
+  const { userId, env } = await signedInEditorEnv();
   if (!isUuid(entryId)) return { notFound: true };
   const ignore = { ...ignoredDecks(ignoreDeckId), ...placementOf(undoPlacement) };
   const entry = await getHistoryEntry(userId, entryId);
   if (!entry) return { notFound: true };
   const result = await applyCollectionChange(
-    userId, { kind: "revert", entryId, ...ignore }, { id: randomUUID(), dryRun: true },
+    userId, { kind: "revert", entryId, ...ignore }, { id: randomUUID(), dryRun: true, env },
   );
   switch (result.status) {
     case "preview": break;
@@ -195,7 +195,7 @@ export async function revertCollectionEntry(
   const result = await applyCollectionChange(
     userId,
     { kind: "revert", entryId, expected: parseExpected(expected), ...ignore },
-    { id: actionId, confirmShort: parseShortDecks(confirmShort) },
+    { id: actionId, confirmShort: parseShortDecks(confirmShort), env },
   );
   switch (result.status) {
     // A retry of a revert that already committed is the same success, and invalidates again: the

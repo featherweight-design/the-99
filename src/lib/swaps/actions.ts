@@ -80,7 +80,7 @@ export async function loadFitsAction(oracleId: string): Promise<FitsRead | null>
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!swapToolsEnabled(env) || !isUuid(oracleId)) return null;
-  return loadFits(userId, oracleId);
+  return loadFits(userId, oracleId, env);
 }
 
 /**

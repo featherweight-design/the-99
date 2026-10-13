@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith, ENV_VIEW, ENV_VIEW as RESOLVED } from "@/test/env-view";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
@@ -134,10 +135,12 @@ describe("markBought", () => {
       oracleId: CARD, setCode: "khm", collectorNumber: "31", finish: "foil",
       quantity: 3, expected: 1, scryfallId: SCRY, condition: null,
     }]);
-    expect(opts).toEqual({
+    const { env, ...rest } = opts;
+    expect(rest).toEqual({
       id: ID, source: `shopping:${DECK}`, receipt: { oracleId: CARD, deckIds: [DECK] },
       requireMember: { deckIds: [DECK], oracleId: CARD },
     });
+    expect(env === RESOLVED).toBe(true);
     expect(out).toEqual({ applied: { id: ID, receipt: { tookCopy: [], stillNeeds: 0 } } });
   });
 
@@ -230,11 +233,13 @@ describe("markBoughtForDecks", () => {
     state.result = cartApplied();
     const out = await cartPress({ deckIds: [DECK.toUpperCase(), OTHER, DECK] });
     const [, , opts] = state.calls[0] as [string, unknown, Record<string, unknown>];
-    expect(opts).toEqual({
+    const { env, ...rest } = opts;
+    expect(rest).toEqual({
       id: ID, source: `shopping:cart:${DECK},${OTHER}`,
       receipt: { oracleId: CARD, deckIds: [], owesFor: [DECK, OTHER] },
       requireMember: { deckIds: [DECK, OTHER], oracleId: CARD },
     });
+    expect(env === RESOLVED).toBe(true);
     expect(out).toEqual({ applied: { id: ID, receipt: {
       covered: [{ deckId: DECK, deckName: "Gishath" }],
       still: [{ deckId: OTHER, deckName: "Kratos", need: 1 }],
@@ -307,7 +312,9 @@ describe("readCartChooser", () => {
   it("narrows the claimants to the line's decks, in the model's queue order", async () => {
     state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(C), claimant(B), claimant(A)] };
     const card = await readCartChooser(CARD.toUpperCase(), [A.toUpperCase(), B]);
-    expect(state.contestedArgs).toEqual([CARD, "user_1", { unownedAsZero: true }]);
+    const [oracleId, user, opts] = state.contestedArgs as [string, string, { unownedAsZero?: boolean; env?: unknown }];
+    expect([oracleId, user, opts.unownedAsZero]).toEqual([CARD, "user_1", true]);
+    expect(opts.env === RESOLVED).toBe(true);
     expect(card?.claimants.map((c) => c.deckId)).toEqual([B, A]);
   });
 
@@ -329,5 +336,28 @@ describe("readCartChooser", () => {
       await expect(readCartChooser(CARD, bad)).rejects.toThrow();
     }
     await expect(readCartChooser("nope", [A])).rejects.toThrow();
+  });
+});
+
+// Admin PR 6f-2: the purchase's claim reads and the cart chooser's read take the reader's env. Opposite to
+// the environment on both claim-model switches, so a dropped argument would read the other way.
+describe("the reader's env", () => {
+  it("reaches both writes and the chooser's read, by identity", async () => {
+    const { requestSwitchEnv } = await import("../../lib/switches/request");
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    vi.mocked(requestSwitchEnv).mockResolvedValue(env);
+    try {
+      await press();
+      await markBoughtForDecks(CARD, { deckIds: [DECK], scryfallId: SCRY, finish: "foil", quantity: 2, expected: 1, id: ID });
+      expect(state.calls).toHaveLength(2);
+      for (const call of state.calls) expect((call[2] as { env?: unknown }).env === env).toBe(true);
+      await readCartChooser(CARD, [DECK]);
+      expect((state.contestedArgs as unknown[] as [string, string, { env?: unknown }])[2].env === env).toBe(true);
+    } finally {
+      vi.mocked(requestSwitchEnv).mockResolvedValue(ENV_VIEW);
+      vi.unstubAllEnvs();
+    }
   });
 });

@@ -3,17 +3,20 @@
 // so a pick is never repeated and a free row never skipped. The search and the decorations are stubbed;
 // what is proved here is the order and the lines, which the page and the action only pass through.
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 
-const stub = vi.hoisted(() => ({ search: vi.fn() }));
-vi.mock("./search", () => ({ searchCommanders: stub.search, loadCardRow: vi.fn() }));
+const stub = vi.hoisted(() => ({ search: vi.fn(), cardRow: vi.fn(), chainArt: vi.fn(async () => new Map()) }));
+vi.mock("./search", () => ({ searchCommanders: stub.search, loadCardRow: stub.cardRow }));
+vi.mock("../cards/chain-art", () => ({ chainArt: stub.chainArt }));
 vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: [] })) } }));
 vi.mock("../collection/owned-printings", () => ({ resolveOwnedPrintings: vi.fn(async () => new Map()) }));
 vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map()), slotFor: () => ({ kind: "none" }) }));
 vi.mock("../sets/printed-in-read", () => ({ loadCommanderPrintings: vi.fn() }));
 
-const { loadResultsPage, RESULT_PAGE } = await import("./rows");
+const { loadCardChip, loadResultsPage, RESULT_PAGE } = await import("./rows");
+const { loadAvailability } = await import("../decks/availability-query");
 
 const id = (i: number) => `0000aaaa-0000-4000-8000-${String(i).padStart(12, "0")}`;
 const ranked = (i: number) => ({
@@ -47,5 +50,37 @@ describe("loadResultsPage under a read", () => {
   it("leaves the free order alone with no read", async () => {
     const page = await loadResultsPage("u", answers, 0, null);
     expect(page.rows.map((r) => r.name).slice(0, 2)).toEqual(["Commander 1", "Commander 2"]);
+  });
+});
+
+// Admin PR 6f-2: every claim read under the results and the card chip takes the reader's env. The env is
+// opposite to the environment on both claim-model switches, so a dropped argument would read the other way;
+// it is checked by identity, never compared.
+describe("the reader's env", () => {
+  const ENV = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+  beforeEach(() => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    vi.mocked(loadAvailability).mockClear();
+    stub.cardRow.mockReset().mockResolvedValue({ name: "Sol Ring", owned: true, held: null, gameChanger: false, imageUri: null });
+    stub.chainArt.mockClear();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("reaches the search and the owned rows' claim read from loadResultsPage", async () => {
+    const owned = (i: number) => ({ ...ranked(i), candidate: { ...ranked(i).candidate, owned: true } });
+    stub.search.mockResolvedValue({ rows: [owned(1), ranked(2)], order: "owned", tooNarrow: null, card: null });
+    await loadResultsPage("u", answers, 0, null, ENV);
+    expect(stub.search.mock.calls[0][2] === ENV).toBe(true);
+    const [, opts] = vi.mocked(loadAvailability).mock.calls[0];
+    expect(opts?.oracleIds).toEqual([id(1)]);
+    expect(opts?.env === ENV).toBe(true);
+  });
+
+  it("reaches the card's claim read and its art from loadCardChip", async () => {
+    await loadCardChip("u", id(7), ENV);
+    expect(stub.cardRow.mock.calls[0].slice(0, 2)).toEqual(["u", id(7)]);
+    expect(stub.cardRow.mock.calls[0][2] === ENV).toBe(true);
+    expect((stub.chainArt.mock.calls[0] as unknown[])[3] === ENV).toBe(true);
   });
 });

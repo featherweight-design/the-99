@@ -214,6 +214,13 @@ export type ChangeOptions = {
    * (`arrivalPlacement`) and build the chooser Change opens with no second read.
    */
   placements?: boolean;
+  /**
+   * The reader's resolved switches (`requestSwitchEnv`), which every claim read inside the write
+   * takes: the claim model's `locked` key (NEVER_CUT_ENABLED) and its pending clause
+   * (CHANGE_COMMANDER_ENABLED). Absent (a probe or a script, outside a request), the environment
+   * decides; admin PR 7 makes it required.
+   */
+  env?: NodeJS.ProcessEnv;
 };
 
 /** One raised card as the write saw it: the claims after, the copies it added, and its reservations. */
@@ -792,7 +799,7 @@ export async function applyCollectionChange(
       // ---- 5. The deck check brackets the write: claims before, the rows, claims after.
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
       const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
-      const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
+      const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered, env: opts.env }, tx) : null;
       // ONE claims snapshot for the receipt's before and after. Claim writers (a commit, a deck
       // edit) take no collection lock, so two reads either side of the write could straddle another
       // deck's commit and credit this purchase with it. `before` is that same snapshot less the
@@ -819,7 +826,7 @@ export async function applyCollectionChange(
           )),
           ...(opts.receipt!.owesFor
             ? {
-                owes: Object.fromEntries((await loadDeckBuyRows(userId, opts.receipt!.owesFor, tx))
+                owes: Object.fromEntries((await loadDeckBuyRows(userId, opts.receipt!.owesFor, tx, opts.env))
                   .filter((r) => r.oracleId === oracleId)
                   .map((r) => [r.deckId, r.quantity])),
               }
@@ -827,7 +834,7 @@ export async function applyCollectionChange(
         };
       };
       const receiptOf = async (excludeDeckId?: string) => opts.receipt
-        ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId }, tx))
+        ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId, env: opts.env }, tx))
           .get(opts.receipt.oracleId) ?? null
         : null;
 
@@ -873,7 +880,7 @@ export async function applyCollectionChange(
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
       if (claimsBefore) {
-        const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
+        const claimsAfter = await loadAvailability(userId, { oracleIds: lowered, env: opts.env }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
         const decks = newlyShort(claimsBefore, claimsAfter, lowered, names)
           .filter((d) => !ignoredDecks.has(d.deckId));
@@ -906,7 +913,7 @@ export async function applyCollectionChange(
         short,
         ...(ownedBefore ? { owned: { before: ownedBefore, after: await readOwnedCounts(tx, userId) } } : {}),
         ...(opts.receipt ? { receipt: await receiptSnapshots(opts.receipt.oracleId) } : {}),
-        ...(opts.placements ? { raised: await raisedCards(tx, userId, plan) } : {}),
+        ...(opts.placements ? { raised: await raisedCards(tx, userId, plan, opts.env) } : {}),
         ...(opts.assign ? { assigned } : {}),
       };
     });
@@ -920,7 +927,7 @@ export async function applyCollectionChange(
  * Every card `plan` raised, read after the write in one claim-model read, with its reservations in
  * the model's order. A card no deck claims is left out: it went nowhere.
  */
-async function raisedCards(tx: Tx, userId: string, plan: Planned[]): Promise<Record<string, RaisedCard>> {
+async function raisedCards(tx: Tx, userId: string, plan: Planned[], env: NodeJS.ProcessEnv | undefined): Promise<Record<string, RaisedCard>> {
   const brought = new Map<string, number>();
   for (const p of plan) {
     const d = qty(p.after) - qty(p.before);
@@ -932,7 +939,7 @@ async function raisedCards(tx: Tx, userId: string, plan: Planned[]): Promise<Rec
   // another tab cannot land between the allocation read and the reservation read below and pair one
   // with the other's order. Sorted, so two writes locking overlapping cards take them in one order.
   for (const id of ids) await lockCardClaims(tx, userId, id);
-  const availability = await loadAvailability(userId, { oracleIds: ids }, tx);
+  const availability = await loadAvailability(userId, { oracleIds: ids, env }, tx);
   const reservations = new Map<string, { deckId: string; copies: number }[]>();
   for (const r of await tx.select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
     .from(cardAssignments)

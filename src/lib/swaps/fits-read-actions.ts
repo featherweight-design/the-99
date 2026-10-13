@@ -17,12 +17,12 @@ export async function readFitsReadAction(oracleId: string): Promise<FitsReadPane
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!findADeckReadEnabled(env) || !isUuid(oracleId)) return null;
-  return readFitsRead(userId, oracleId);
+  return readFitsRead(userId, oracleId, undefined, env);
 }
 
 export async function pressFitsReadAction(oracleId: string): Promise<FitsReadPress> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!findADeckReadEnabled(env) || !isUuid(oracleId)) return { ok: false, reason: "notFound" };
-  return pressFitsRead(userId, oracleId);
+  return pressFitsRead(userId, oracleId, undefined, env);
 }

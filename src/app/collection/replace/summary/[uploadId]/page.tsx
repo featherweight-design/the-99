@@ -30,9 +30,11 @@ export default async function ImportSummaryPage({
   const userId = await requireUserId();
 
   // Read once, per request, and handed to both halves: the read loads each line's chooser and the
-  // receipt draws the line, so the two cannot disagree about whether the feature is on.
-  const addedCopy = addedCopyEnabled(await requestSwitchEnv(userId));
-  const view = await loadSummaryView(uploadId, userId, { addedCopy });
+  // receipt draws the line, so the two cannot disagree about whether the feature is on. The read's
+  // claim model takes the same resolved switches.
+  const env = await requestSwitchEnv(userId);
+  const addedCopy = addedCopyEnabled(env);
+  const view = await loadSummaryView(uploadId, userId, { addedCopy, env });
   if (!view) notFound();
   // An unconfirmed upload has no receipt to show and is not a page: the player is still in the
   // flow, or abandoned it.

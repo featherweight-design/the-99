@@ -47,7 +47,7 @@ export async function moreRows(queryString: string, offset: number): Promise<Res
   const p = parseLiveParams(new URLSearchParams(qs));
   // The read `r` names orders the list the same way on every slice, so a pick is never repeated.
   const read = p.readId ? await loadTheRead(p.readId, userId) : null;
-  return loadResultsPage(userId, answersOf(p), offset, read?.kind === "done" ? read.result : null);
+  return loadResultsPage(userId, answersOf(p), offset, read?.kind === "done" ? read.result : null, env);
 }
 
 /** At most one slice of rows is counted per call. */

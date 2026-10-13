@@ -45,7 +45,8 @@ export type FitsReadPress =
   | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "paused" | "ownerShare" };
 
 type Deps = {
-  load: (userId: string, oracleId: string) => Promise<FitsReadLoad | null>;
+  /** `env`: the reader's resolved switches, for `loadFits`' claim read and art. */
+  load: (userId: string, oracleId: string, env: NodeJS.ProcessEnv) => Promise<FitsReadLoad | null>;
   model: () => string;
   call: (req: { inputs: FitsReadLoad["inputs"]; prompt: ReturnType<typeof buildFitsReadPrompt>; model: string }) => Promise<ModelOutcome<FitsReadReply>>;
   now: () => Date;
@@ -54,7 +55,7 @@ type Deps = {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const LIVE_DEPS: Deps = {
-  load: (u, o) => loadFitsReadInputs(u, o),
+  load: (u, o, env) => loadFitsReadInputs(u, o, {}, env),
   model: () => (fitsReadLive() ? FITS_READ_MODEL : STUB_MODEL),
   call: async ({ inputs, prompt, model }) => {
     if (model === STUB_MODEL) {
@@ -70,27 +71,33 @@ export const LIVE_DEPS: Deps = {
   now: () => new Date(),
 };
 
-/** The view for one card: free, never a call. */
-export async function readFitsRead(userId: string, oracleId: string, deps: Deps = LIVE_DEPS): Promise<FitsReadPanel | null> {
+/**
+ * The view for one card: free, never a call. `env` is the reader's resolved switches (`requestSwitchEnv`),
+ * for the free list's claim read and every card's art; the environment alone when omitted (admin PR 7 makes
+ * it required).
+ */
+export async function readFitsRead(
+  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv = process.env,
+): Promise<FitsReadPanel | null> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);
-  const load = await deps.load(userId, oracleId);
+  const load = await deps.load(userId, oracleId, env);
   if (!load) return null;
-  return panelFor(userId, oracleId, load, deps.model(), now);
+  return panelFor(userId, oracleId, load, deps.model(), now, env);
 }
 
-async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date): Promise<FitsReadPanel> {
+async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date, env: NodeJS.ProcessEnv): Promise<FitsReadPanel> {
   const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read")]);
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
   const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding);
-  const { names, images, commanderIds } = await pickCards(userId, view, load);
+  const { names, images, commanderIds } = await pickCards(userId, view, load, env);
   return { fits: load.fits, view, candidates: load.inputs.candidates.length, planSources, names, images, commanderIds, allowance };
 }
 
 /** Names for the stored picks' cards: from the inputs where the deck still runs the card, else the
  *  catalog (a card a deck has since cut, on an out-of-date read). */
-async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad): Promise<
+async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad, env: NodeJS.ProcessEnv): Promise<
   Pick<FitsReadPanel, "names" | "images" | "commanderIds">
 > {
   const ids = new Set<string>();
@@ -127,7 +134,7 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad)
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, all))
       .catch(() => [] as { oracleId: string; name: string; imageUri: string | null }[]),
-    chainArt(userId, null, all).catch(() => new Map<string, string>()),
+    chainArt(userId, null, all, env).catch(() => new Map<string, string>()),
   ]);
   const images: Record<string, string | null> = {};
   for (const r of rows) {
@@ -144,24 +151,26 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad)
  * charged twice (lock 5). Otherwise one unit is reserved, the model is asked once, and the outcome
  * settles it: spent for a read that held up, refunded for a failure, a no fit or a thin read.
  */
-export async function pressFitsRead(userId: string, oracleId: string, deps: Deps = LIVE_DEPS): Promise<FitsReadPress> {
+export async function pressFitsRead(
+  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv = process.env,
+): Promise<FitsReadPress> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);
-  const load = await deps.load(userId, oracleId);
+  const load = await deps.load(userId, oracleId, env);
   if (!load) return { ok: false, reason: "notFound" };
   const { inputs } = load;
   if (inputs.candidates.length === 0) return { ok: false, reason: "noCandidates" };
   const model = deps.model();
   const hashes = candidateHashes(inputs, model);
   const before = fitsReadView(await readFitsReadRows(userId, oracleId), hashes, new Set(load.fits.holds.map((h) => h.id)));
-  if (before.pending) return { ok: true, panel: await panelFor(userId, oracleId, load, model, now) };
+  if (before.pending) return { ok: true, panel: await panelFor(userId, oracleId, load, model, now, env) };
   if (before.stored?.current) return { ok: false, reason: "current" };
 
   const prompt = buildFitsReadPrompt(inputs, "per-press");
   if (Math.ceil((prompt.system.length + prompt.user.length) / 3) > FITS_READ_INPUT_CEILING) return { ok: false, reason: "tooBig" };
 
   const started = await startFitsRead(userId, oracleId, hashes, model, now);
-  if (started.kind === "in_flight") return { ok: true, panel: await panelFor(userId, oracleId, load, model, now) };
+  if (started.kind === "in_flight") return { ok: true, panel: await panelFor(userId, oracleId, load, model, now, env) };
   if (started.kind === "current") return { ok: false, reason: "current" };
   if (started.kind !== "started") return { ok: false, reason: started.kind };
 
@@ -191,6 +200,6 @@ export async function pressFitsRead(userId: string, oracleId: string, deps: Deps
   }
   // Re-read: a call can run for most of two minutes, and a deck edited meanwhile must show the
   // stored read out of date, against today's free list, never as current.
-  const after = (await deps.load(userId, oracleId)) ?? load;
-  return { ok: true, panel: await panelFor(userId, oracleId, after, model, deps.now()) };
+  const after = (await deps.load(userId, oracleId, env)) ?? load;
+  return { ok: true, panel: await panelFor(userId, oracleId, after, model, deps.now(), env) };
 }

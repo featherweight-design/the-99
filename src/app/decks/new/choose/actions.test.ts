@@ -70,6 +70,9 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     stub.begin.mockResolvedValue({ kind: "started", readId: ID, finish });
     const to = await landed("?w=scary+horrors&c=b&m=exact");
     expect(stub.begin.mock.calls[0][1]).toMatchObject({ words: "scary horrors", filters: { colors: ["B"], match: "exactly" } });
+    // The reader's resolved env, for the pool read's search (by identity, never compared).
+    const { ENV_VIEW } = await import("@/test/env-view");
+    expect(stub.begin.mock.calls[0][1].env === ENV_VIEW).toBe(true);
     expect(stub.after).toHaveBeenCalledWith(finish);
     expect(to).toContain(`r=${ID}`);
     expect(to).toContain("w=scary+horrors");

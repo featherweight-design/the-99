@@ -131,7 +131,7 @@ const READERS = [
   "src/lib/discovery/payload.ts",
   "src/lib/discovery/resolve-slug.ts",
   // Admin PR 6e: the claim model (NEVER_CUT_ENABLED's lock key, CHANGE_COMMANDER_ENABLED's pending clause) and
-  // the deck readers that start it. Its callers elsewhere in lib pass the reader's env since 6f-1, but for CLAIM_PENDING.
+  // the deck readers that start it. Every caller in src passes the reader's env since 6f-2 (the claim scan below).
   "src/lib/decks/availability-query.ts",
   "src/lib/decks/cart-read.ts",
   "src/lib/decks/fill-plan.ts",
@@ -192,27 +192,21 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
 /**
  * Admin PR 6e: the claim model (`availability-query`) decides NEVER_CUT_ENABLED's `locked` key and
  * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
- * environment, so a caller that omits it compiles and reads the environment alone. Every call to
- * `loadAvailability` must name `env` in its options object, and every call to `loadDeckBuyRows` must pass
- * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below. Admin PR 6f-1
- * converted the deck, commander, discovery, tuning, lineup, swap and social readers. Left for 6f-2, whose callers resolve
- * no env yet: the collection's two writes, its contested-card reads (`summary-read`, which the deck changes page and
- * the replace summary page render and the assignment and mark-bought actions call), the new-deck search (`intake/rows`, `intake/search`) and Fits
- * your decks (`swaps/fits`). The list only shrinks:
- * a module on it whose every call passes an env fails until it is taken off.
+ * environment until admin PR 7 makes it required, so a caller that omits it compiles and reads the
+ * environment alone. Every call to `loadAvailability` must name `env` in its options object, and every call
+ * to `loadDeckBuyRows` must pass its fourth argument (and `loadCart`, which starts both, its second),
+ * everywhere in `src`. Admin PR 6f-1 converted the deck, commander, discovery, tuning, lineup, swap and social
+ * readers; 6f-2 the collection's writes and contested-card reads, the new-deck search and Fits your decks, and
+ * emptied the list of modules left to convert, so there is no exemption.
  */
-const CLAIM_PENDING = [
-  "src/lib/collection/arrivals-write.ts",
-  "src/lib/collection/summary-read.ts",
-  "src/lib/collection/write.ts",
-  "src/lib/intake/rows.ts",
-  "src/lib/intake/search.ts",
-  "src/lib/swaps/fits.ts",
-];
 
 /**
- * The claim readers and where each takes its env: in an options object (`opts`, which must name `env`) or
- * as a positional argument (`at`, which must be present). `listDecksWithStats` is a reader by way of its
+ * The readers whose DEFAULTED env decides a switch, and where each takes it: in an options object (`opts`,
+ * which must name `env`) or as a positional argument (`at`, which must be present). Most are the claim
+ * model and the wrappers that start it (NEVER_CUT_ENABLED's `locked` key, CHANGE_COMMANDER_ENABLED's pending
+ * clause); `chainArt` decides DECK_PRINTINGS_ENABLED, the deck's printing picks. A reader deeper than these
+ * that takes a defaulted env is not scanned: admin PR 7 makes `env` required, which catches that whole class
+ * at compile time. `listDecksWithStats` is a reader by way of its
  * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
  * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).
  * `loadShoppingRollup` hands its third argument to `loadDeckBuyRows` the same way (round 2).
@@ -223,6 +217,7 @@ const CLAIM_ENV = {
   loadCart: { at: 1 },
   listDecksWithStats: { opts: 2 },
   loadShoppingRollup: { at: 2 },
+  chainArt: { at: 3 },
 } as const satisfies Record<string, { opts: number } | { at: number }>;
 const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
 type ClaimReader = (typeof CLAIM_READERS)[number];
@@ -305,16 +300,18 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
       "listDecksWithStats(u, \"name\", { env });",
       "loadShoppingRollup(u, ids);",
       "loadShoppingRollup(u, undefined, env);",
+      // The art chain's printing picks (DECK_PRINTINGS_ENABLED).
+      "chainArt(u, deckId, ids);",
+      "chainArt(u, null, ids, env);",
     ].join("\n");
     expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
-      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true],
+      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true, false, true],
     );
   });
 
-  it("names no call without one outside the 6f modules, and no 6f module that has been converted", async () => {
-    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs");
+  it("names no call without one anywhere in src", async () => {
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
     const { join } = await import("node:path");
-    expect(CLAIM_PENDING.filter((path) => !existsSync(path))).toEqual([]);
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
       return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
@@ -322,8 +319,6 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
     const all = (await Promise.all(walk("src").map((path) => claimCalls(path, readFileSync(path, "utf8"))))).flat();
     // A scan that found nothing would pass over everything: the deck page, Home and the pull all read claims.
     expect(all.filter((c) => c.env).length).toBeGreaterThan(20);
-    const bare = all.filter((c) => !c.env);
-    expect(bare.filter((c) => !CLAIM_PENDING.some((p) => c.call.startsWith(`${p}:`))).map((c) => c.call)).toEqual([]);
-    expect(CLAIM_PENDING.filter((p) => !bare.some((c) => c.call.startsWith(`${p}:`)))).toEqual([]);
+    expect(all.filter((c) => !c.env).map((c) => c.call)).toEqual([]);
   });
 });
