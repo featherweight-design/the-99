@@ -10,6 +10,9 @@ export type RankedList = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /** Counted by the classifier only because the label read failed under a labels request: served,
+   *  never stored, and no cache filed under the labels basis may keep it (admin PR 6d-2). */
+  labelFallback?: true;
 };
 
 /**
@@ -147,5 +150,6 @@ async function assemble(
     degraded: recs.degraded,
     uniqueCardsRead: recs.uniqueCardsRead,
     candidateCount: recs.candidateCount,
+    ...(recs.labelFallback ? { labelFallback: true as const } : {}),
   };
 }

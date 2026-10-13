@@ -25,8 +25,9 @@ vi.mock("../profile/role-targets", async () => {
   };
 });
 vi.mock("./pool-role-basis", () => ({ loadPoolRoleBasis: async () => pool.basis }));
+vi.mock("../decks/committed", async (orig) => ({ ...(await orig<object>()), readCommittedDecks: async () => [] }));
 
-const { recommendCommanders } = await import("./recommend");
+const { recommendCommanders, scoreOneCommander } = await import("./recommend");
 
 const commander = {
   oracleId: "cmd", name: "Commander", typeLine: "Legendary Creature — Human", oracleText: "", keywords: [],
@@ -48,5 +49,18 @@ describe("recommendCommanders — the label fallback flag", () => {
     expect((await recommendCommanders("u1")).labelFallback).toBeUndefined();
     pool.basis = { basis: "labels", roleSets: new Map(), fellBack: false };
     expect((await recommendCommanders("u1")).labelFallback).toBeUndefined();
+  });
+});
+
+// Admin PR 6d-2 (Copilot round 5): the detail score says which basis it was COUNTED by, which the
+// page hands its coverage retry. A labels request whose label read failed was counted by the
+// classifier, and says so.
+describe("scoreOneCommander — the basis it was counted by", () => {
+  const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  it("is the classifier when the label read fell back, and labels when it was read", async () => {
+    pool.basis = { basis: "classifier", roleSets: undefined, fellBack: true };
+    expect((await scoreOneCommander("u1", "cmd", "commander", undefined, on))?.roleBasis).toBe("classifier");
+    pool.basis = { basis: "labels", roleSets: new Map(), fellBack: false };
+    expect((await scoreOneCommander("u1", "cmd", "commander", undefined, on))?.roleBasis).toBe("labels");
   });
 });

@@ -31,7 +31,11 @@ beforeEach(() => {
   vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
   stub.userId = "user_1";
   stub.load.mockReset();
-  stub.load.mockResolvedValue({ encoded: encodeDiscovery(list), oracleIds: [] });
+  // The entry answers with the basis it was counted by: the one the env asked for, unless a case says.
+  stub.load.mockImplementation(async (_u: string, _s: string, env: NodeJS.ProcessEnv) => ({
+    encoded: encodeDiscovery(list), oracleIds: [],
+    basis: env.LABEL_ROLE_COUNTS_ENABLED === "true" ? "labels" : "classifier",
+  }));
 });
 
 afterEach(() => {
@@ -75,6 +79,15 @@ describe("GET /api/discovery-fields", () => {
     expect(res.status).toBe(200);
     expect((await res.json()).fields).toEqual({});
     expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  // Admin PR 6d-2 (Copilot round 5): a labels page whose batch finds the label read down gets a
+  // classifier list back, and its figures are not the page's: no fields, so the page reads again.
+  it("answers a labels page no fields when the entry came back counted by the classifier", async () => {
+    stub.load.mockResolvedValue({ encoded: encodeDiscovery(list), oracleIds: [], basis: "classifier" });
+    const res = await get("sort=fit&b=labels&s=a,b");
+    expect(res.status).toBe(200);
+    expect((await res.json()).fields).toEqual({});
   });
 
   it("answers nothing for a slug the reader's list does not hold", async () => {

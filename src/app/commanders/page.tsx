@@ -72,7 +72,11 @@ export default async function CommandersPage({
   // (`LABEL_ROLE_COUNTS_ENABLED`) from this one env.
   const env = await requestSwitchEnv(userId);
   const [rankings, decks, savedAvail] = await Promise.all([
-    cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env)),
+    // A ranking counted by the classifier only because the label read failed is served and never
+    // filed under the labels key (admin PR 6d-2).
+    cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env), {
+      store: (r) => !r.labelFallback,
+    }),
     listRecentDecks(userId, 1),
     readCommandersAvail(userId),
   ]);

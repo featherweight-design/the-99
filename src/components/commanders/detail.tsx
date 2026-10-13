@@ -469,6 +469,7 @@ export function CommanderDetail({
           roleTargets={c.roleTargets}
           synergyState={c.synergyState}
           avail={avail}
+          roleBasis={c.roleBasis}
           retryCoverageFigures={retryCoverageFigures}
         />
 
@@ -717,6 +718,7 @@ export function CommanderDetail({
             roleTargets={c.roleTargets}
             synergyState={c.synergyState}
             avail={avail}
+            roleBasis={c.roleBasis}
             retryCoverageFigures={retryCoverageFigures}
           />
 

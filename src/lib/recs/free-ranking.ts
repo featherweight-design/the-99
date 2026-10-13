@@ -175,7 +175,7 @@ export async function rankFree(
   /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`, as the
    *  canonical list's does, or the two modes would count one collection two ways. */
   env: NodeJS.ProcessEnv = process.env,
-): Promise<{ items: CommanderListItem[]; ok: boolean }> {
+): Promise<{ items: CommanderListItem[]; ok: boolean; labelFallback?: true }> {
   // Slugs come only from the canonical list, so an empty one can only ever
   // produce an empty ranking. `ok` is still true: nothing failed, there is just
   // nothing to rank, and the toggle should stay live rather than read as an
@@ -262,7 +262,8 @@ export async function rankFree(
   // With the label read down this list would count by the classifier, and the toggle would draw
   // two bases as one ranking. The control is disabled for this response instead, like any other
   // missing prerequisite; the canonical list is still served.
-  if (fellBack) return { items: [], ok: false };
+  // Marked as the label read's, so a cache filed under the labels basis can refuse to keep it.
+  if (fellBack) return { items: [], ok: false, labelFallback: true };
   const [supportLists, roleTargets] = await Promise.all([
     loadSupportLists(buildable.map((c) => c.card.oracleId)),
     loadRoleTargetsForCommanders(buildable.map((c) => c.card), basis),

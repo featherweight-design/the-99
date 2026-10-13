@@ -59,6 +59,9 @@ export type CommanderRankings = {
   candidateCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
+  /** Either ranking was counted by the classifier only because the label read failed under a labels
+   *  request: served, and never filed under the labels key (admin PR 6d-2). */
+  labelFallback?: true;
 };
 
 /**
@@ -163,7 +166,9 @@ export async function loadCommanderRankings(
   /** The reader's resolved switches (`requestSwitchEnv`). */
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<CommanderRankings> {
-  const { items: ranked, degraded, uniqueCardsRead, candidateCount } = await getRankedList(userId, env);
+  const rankedList = await getRankedList(userId, env);
+  const { items: ranked, degraded, uniqueCardsRead, candidateCount } = rankedList;
+  let labelFallback = rankedList.labelFallback === true;
 
   // The art and the name from the copy the player owns, applied HERE rather than inside
   // `getRankedList`: this lane draws every row, and three of that function's five callers
@@ -221,6 +226,7 @@ export async function loadCommanderRankings(
   let freeRanking: FreeRankingDelta | null = null;
   if (availOk && availability) {
     const free = await rankFree(userId, items, { collection, availability }, env);
+    if (free.labelFallback) labelFallback = true;
     freeRanking = free.ok ? toFreeDelta(items, free.items) : null;
     if (!freeRanking) availOk = false;
   }
@@ -259,5 +265,6 @@ export async function loadCommanderRankings(
 
   return {
     items: rows, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk,
+    ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }

@@ -9,11 +9,23 @@ import { cacheForUser } from "../cache/user-lists";
 import { encodeDiscovery } from "./encode";
 import { discoveryKey, loadDiscoveryWithIds } from "./list";
 
-/** `env` is the reader's resolved switches (`requestSwitchEnv`): the key and the load decide the role
- *  basis from the same one, so an entry is never filed under a basis it was not counted by. */
+/**
+ * `env` is the reader's resolved switches (`requestSwitchEnv`): the key and the load decide the role
+ * basis from the same one, so an entry is never filed under a basis it was not counted by.
+ *
+ * The entry carries the basis it was COUNTED by (`basis`), which the page hands the view and the
+ * fields route checks against the basis a batch asks for. A payload counted by the classifier only
+ * because the label read failed is served and never filed (admin PR 6d-2): stored under the labels
+ * key, it would be served as the labels' ranking until the ceiling.
+ */
 export function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv = process.env) {
-  return cacheForUser(userId, discoveryKey(sort, env), async () => {
-    const { list, oracleIds } = await loadDiscoveryWithIds(userId, { sort }, env);
-    return { encoded: encodeDiscovery(list), oracleIds };
-  });
+  return cacheForUser(
+    userId,
+    discoveryKey(sort, env),
+    async () => {
+      const { list, oracleIds, basis, fellBack } = await loadDiscoveryWithIds(userId, { sort }, env);
+      return { encoded: encodeDiscovery(list), oracleIds, basis, fellBack };
+    },
+    { store: (payload) => !payload.fellBack },
+  );
 }

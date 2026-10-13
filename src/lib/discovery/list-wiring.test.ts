@@ -95,7 +95,7 @@ vi.mock("./novelty", async (importOriginal) => ({
   loadPlayedTags: async () => [],
 }));
 
-const { loadDiscovery, loadDiscoveryPool } = await import("./list");
+const { loadDiscovery, loadDiscoveryPool, loadDiscoveryWithIds } = await import("./list");
 
 /** One copy owned, claimed by a committed deck — nothing left free. */
 const committed: Availability = { owned: 1, hard: 1, soft: 0, free: 0, claims: [] };
@@ -188,6 +188,23 @@ describe("loadDiscovery — wiring", () => {
       expect(basisMock.enabledSeen).toEqual([false]);
     } finally {
       vi.unstubAllEnvs();
+    }
+  });
+
+  // Admin PR 6d-2 (Copilot round 5): the list reports the basis it was COUNTED by, which is not the
+  // requested one when the label read failed. The page hands the view this basis, and the payload
+  // refuses to file a fallback under the labels key.
+  it("reports the basis the list was counted by, and a fallback as one", async () => {
+    const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    try {
+      basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: true };
+      const fell = await loadDiscoveryWithIds("user-1", { sort: "fit" }, on);
+      expect([fell.basis, fell.fellBack]).toEqual(["classifier", true]);
+      basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
+      const read = await loadDiscoveryWithIds("user-1", { sort: "fit" }, on);
+      expect([read.basis, read.fellBack]).toEqual(["labels", false]);
+    } finally {
+      basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };
     }
   });
 

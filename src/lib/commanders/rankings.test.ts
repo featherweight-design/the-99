@@ -190,6 +190,20 @@ describe("loadCommanderRankings · the owned printing", () => {
     );
   });
 
+  // Admin PR 6d-2 (Copilot round 5): either ranking counted by the classifier only because the label
+  // read failed marks the payload, so the page serves it without filing it under the labels key.
+  it("marks the payload when either ranking fell back to the classifier", async () => {
+    expect((await loadCommanderRankings("user_1")).labelFallback).toBeUndefined();
+    vi.mocked(rankFree).mockResolvedValue({ ok: false, items: [], labelFallback: true } as never);
+    expect((await loadCommanderRankings("user_1")).labelFallback).toBe(true);
+    vi.mocked(rankFree).mockResolvedValue({ ok: false } as never);
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [item("a")], degraded: false, uniqueCardsRead: 10, candidateCount: 1, labelFallback: true,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    expect((await loadCommanderRankings("user_1")).labelFallback).toBe(true);
+  });
+
   it("enriches the rows it is about to draw", async () => {
     const { items } = await loadCommanderRankings("user_1");
 

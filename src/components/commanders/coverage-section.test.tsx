@@ -58,7 +58,8 @@ function renderSection(
     synergyState?: "ok" | "absent" | "degraded";
     markerElsewhere?: boolean;
     avail?: "all" | "free";
-    retryCoverageFigures?: (slug: string, avail: "all" | "free") => Promise<Record<RoleName, RoleCard[]> | null>;
+    roleBasis?: "labels" | "classifier";
+    retryCoverageFigures?: (slug: string, avail: "all" | "free", roleBasis: "labels" | "classifier") => Promise<Record<RoleName, RoleCard[]> | null>;
   } = {},
 ) {
   const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
@@ -74,7 +75,8 @@ function renderSection(
     // it explicitly.
     markerElsewhere = false,
     avail = "all",
-    retryCoverageFigures = vi.fn<(slug: string, avail: "all" | "free") => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null),
+    roleBasis = "classifier",
+    retryCoverageFigures = vi.fn<(slug: string, avail: "all" | "free", roleBasis: "labels" | "classifier") => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null),
   } = overrides;
 
   render(
@@ -87,6 +89,7 @@ function renderSection(
         roleTargets={roleTargets}
         synergyState={synergyState}
         avail={avail}
+        roleBasis={roleBasis}
         retryCoverageFigures={retryCoverageFigures}
        markerElsewhere={markerElsewhere}/>
     </CardDetailProvider>,
@@ -233,6 +236,7 @@ describe("absent vs degraded note rendering", () => {
           roleTargets={FLAT_TARGETS}
           synergyState="degraded"
           avail="all"
+          roleBasis="classifier"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
           markerElsewhere={false}
         />
@@ -253,6 +257,7 @@ describe("absent vs degraded note rendering", () => {
           roleTargets={FLAT_TARGETS}
           synergyState="absent"
           avail="all"
+          roleBasis="classifier"
           retryCoverageFigures={vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockResolvedValue(null)}
           markerElsewhere={false}
         />
@@ -301,6 +306,19 @@ describe("retry flow", () => {
     // rendered from the same compute the retry just repeated, so a recovered
     // section without this refresh sits beside a degraded headline.
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  // Admin PR 6d-2 (Copilot round 5): the retry asks for the basis the page's counts were drawn
+  // under, so its cards land beside counts of the same basis.
+  it("hands the retry the page's role basis", async () => {
+    const retryCoverageFigures = vi
+      .fn<(slug: string, avail: "all" | "free", roleBasis: "labels" | "classifier") => Promise<Record<RoleName, RoleCard[]> | null>>()
+      .mockResolvedValue(null);
+    renderSection({ synergyState: "degraded", avail: "free", roleBasis: "labels", retryCoverageFigures });
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
+    );
+    await waitFor(() => expect(retryCoverageFigures).toHaveBeenCalledWith("commander-slug", "free", "labels"));
   });
 
   it("leaves the route alone when the retry fails", async () => {
@@ -800,7 +818,7 @@ describe("the retry carries the page's mode", () => {
     fireEvent.click(
       screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
     );
-    await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "free"));
+    await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "free", "classifier"));
   });
 
   it("passes the default mode when the page is not in free", async () => {
@@ -811,7 +829,7 @@ describe("the retry carries the page's mode", () => {
     fireEvent.click(
       screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
     );
-    await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "all"));
+    await waitFor(() => expect(retry).toHaveBeenCalledWith("commander-slug", "all", "classifier"));
   });
 });
 
@@ -891,6 +909,7 @@ describe("the list it hands the card", () => {
           roleTargets={FLAT_TARGETS}
           synergyState="ok"
           avail="all"
+          roleBasis="classifier"
           retryCoverageFigures={vi.fn().mockResolvedValue(null)}
           markerElsewhere={false}
         />
@@ -919,6 +938,7 @@ describe("the list it hands the card", () => {
           roleTargets={FLAT_TARGETS}
           synergyState="ok"
           avail="all"
+          roleBasis="classifier"
           retryCoverageFigures={vi.fn().mockResolvedValue(null)}
           markerElsewhere={false}
         />

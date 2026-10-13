@@ -11,6 +11,7 @@ import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { loadPoolRoleBasis, type LabelCheck } from "./pool-role-basis";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import type { ProfileRoleTargets } from "../profile/types";
+import type { RoleBasis } from "../profile/build";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
@@ -46,6 +47,12 @@ export type CommanderDetailScore = RankedCommander & {
    * standard and draw its role panels against another.
    */
   roleTargets: ProfileRoleTargets;
+  /**
+   * The role basis this score was ACTUALLY counted by: the reader's, or the classifier when the
+   * label read failed. The page hands it to its coverage retry, which answers only on the same
+   * basis, so a retry's role cards never land beside counts of another (admin PR 6d-2).
+   */
+  roleBasis: RoleBasis;
 };
 
 /**
@@ -425,5 +432,6 @@ export async function scoreOneCommander(
     synergyState: scoringSynergyState(result, scored.fitSynergy !== null),
     committedSupport: committedSupport(ownedOverlapIds, committed),
     roleTargets: targets,
+    roleBasis: basis,
   };
 }

@@ -1,10 +1,14 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // CoverageSection refreshes the route after a recovered retry, so the whole
 // detail tree needs a router even where no test clicks Retry.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// The coverage retry, recorded: which basis the page hands it is pinned below.
+const retry = vi.hoisted(() => vi.fn(async () => null));
+vi.mock("../../app/commanders/[slug]/coverage-action", () => ({ retryCoverageFigures: retry }));
 import { availabilityCopy } from "../../lib/copy/availability";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { CommanderDetailScore } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
@@ -44,6 +48,7 @@ const synergyCards: SynergyCard[] = [
 function commander(overrides: Partial<CommanderDetailScore> = {}): CommanderDetailScore {
   return {
     oracleId: "oracle-1",
+    roleBasis: "classifier",
     roleTargets: { of: "flat", targets: { ramp: 10, draw: 10, removal: 8, wipes: 3 } },
     name: "Krenko, Mob Boss",
     colorIdentity: ["R"],
@@ -86,6 +91,13 @@ describe("CommanderDetail synergy states", () => {
   it("shows no synergy note when the state is ok", () => {
     render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
+  });
+
+  // Admin PR 6d-2 (Copilot round 5): the retry is handed the basis the page's score was counted by.
+  it("hands the coverage retry the basis the score was counted by", async () => {
+    render(<CommanderDetail commander={{ ...noSynergy("degraded"), roleBasis: "labels" }} rank={1} isBestFit={false} synergyCards={noSynergyCards} newestAsOf={null}  avail="all"/>);
+    fireEvent.click(screen.getAllByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria })[0]);
+    await waitFor(() => expect(retry).toHaveBeenCalledWith(expect.any(String), "all", "labels"));
   });
 
   it("says the data is unavailable when the state is degraded", () => {

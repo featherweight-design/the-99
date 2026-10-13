@@ -172,6 +172,8 @@ describe("getRankedList", () => {
 
     expect(list.items).toHaveLength(1);
     expect(persistScores).not.toHaveBeenCalled();
+    // And says so, so a cache filed under the labels basis can refuse it (admin PR 6d-2).
+    expect(list.labelFallback).toBe(true);
   });
 
   // Both fingerprints have to REACH the write, and neither is visible in its
