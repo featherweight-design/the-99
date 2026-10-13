@@ -5,7 +5,7 @@ import { readSheetState } from "./sheet-state";
 import { isSeen, resolveEntry, switchedIds, unseenEntries, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_BENCHMARKS_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", PRECONS_ENABLED: "true", DECK_TOKENS_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -62,6 +62,7 @@ describe("with every switch off, nothing changes (the invariance Hugh's ruling r
       ["card-marks", "ANALYSIS_TAB_ENABLED"],
       ["locked-cards", "NEVER_CUT_ENABLED"],
       ["fits-your-decks", "SWAP_TOOLS_ENABLED"],
+      ["find-a-deck-read", "FIND_A_DECK_READ_ENABLED"],
       ["deck-tokens", "DECK_TOKENS_ENABLED"],
       ["stand-ins", "SWAP_TOOLS_ENABLED"],
       ["shopping-got-it", "SHOPPING_MARK_BOUGHT_ENABLED"],
@@ -126,16 +127,16 @@ describe("an entry tied to a switch", () => {
     // `deck-stats` (2026-10-10) is the other: since: 11, the current version, with no bump of its own.
     // `deck-benchmarks` (2026-10-10) is since: 13, the evidence line's one bump, and
     // `shopping-got-it` and `deck-printings` (2026-10-11) since: 14, the collection home epic's, and
-    // `mana-balance`, `all-decks-cart`, `precons`, `deck-tokens`, `notes`, `added-copy` and `decks-stats` since: 14 too, the current
+    // `mana-balance`, `all-decks-cart`, `precons`, `deck-tokens`, `notes`, `added-copy`, `decks-stats` and `find-a-deck-read` since: 14 too, the current
     // version, with no bump of their own.
-    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "deck-tokens", "notes", "added-copy", "decks-stats"];
-    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, deckTokens, notes, addedCopy, decksStats] = later.map((id) => launch.filter((e) => e.id === id));
+    const later = ["suggested-changes", "deck-stats", "deck-benchmarks", "shopping-got-it", "deck-printings", "mana-balance", "all-decks-cart", "precons", "deck-tokens", "notes", "added-copy", "decks-stats", "find-a-deck-read"];
+    const [suggestedChanges, deckStats, deckBenchmarks, gotIt, deckPrintings, manaBalance, cart, precons, deckTokens, notes, addedCopy, decksStats, fitsRead] = later.map((id) => launch.filter((e) => e.id === id));
     const originalLaunch = launch.filter((e) => !later.includes(e.id));
     expect(originalLaunch.map((e) => e.since)).toEqual(originalLaunch.map(() => 9));
     expect(suggestedChanges.map((e) => e.since)).toEqual([10]);
     expect(deckStats.map((e) => e.since)).toEqual([11]);
     expect(deckBenchmarks.map((e) => e.since)).toEqual([13]);
-    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...deckTokens, ...notes, ...addedCopy, ...decksStats].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14, 14, 14]);
+    expect([...gotIt, ...deckPrintings, ...manaBalance, ...cart, ...precons, ...deckTokens, ...notes, ...addedCopy, ...decksStats, ...fitsRead].map((e) => e.since)).toEqual([14, 14, 14, 14, 14, 14, 14, 14, 14, 14]);
     expect(unseenEntries(visibleEntries(ON), seen(ABOUT_VERSION)).map((e) => e.id)).toEqual([
       "collection-add",
       "upload-choice",
@@ -150,6 +151,7 @@ describe("an entry tied to a switch", () => {
       "card-marks",
       "locked-cards",
       "fits-your-decks",
+      "find-a-deck-read",
       "deck-tokens",
       "stand-ins",
       "shopping-got-it",

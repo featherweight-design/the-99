@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,10 +21,19 @@ const actions = vi.hoisted(() => ({
 const readActions = vi.hoisted(() => ({ readFitsReadAction: vi.fn(), pressFitsReadAction: vi.fn() }));
 vi.mock("../../lib/swaps/actions", () => actions);
 vi.mock("../../lib/swaps/fits-read-actions", () => readActions);
+// The preview itself is `hover-preview.test.tsx`'s: here, which art each name hands it is the rule under test.
+vi.mock("../ui/preview-button", () => ({
+  PreviewButton: ({ imageUri, ...props }: { imageUri: string | null } & React.ButtonHTMLAttributes<HTMLButtonElement>) =>
+    <button data-preview={imageUri ?? ""} {...props} />,
+}));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
   useLinkStatus: () => ({ pending: false }),
 }));
+
+// The card details the view sits in: only its close is read here (the P3f link closes it first).
+const detail = vi.hoisted(() => ({ close: vi.fn() }));
+vi.mock("./card-detail-provider", async (orig) => ({ ...(await orig<object>()), useCardDetailIfAny: () => detail }));
 
 const { FitsView } = await import("./fits-view");
 
@@ -63,6 +72,8 @@ const stored = (over: Partial<StoredFitsRead> = {}): StoredFitsRead => ({
 const panel = (over: Partial<FitsReadPanel> = {}, view: Partial<FitsReadPanel["view"]> = {}): FitsReadPanel => ({
   fits: list(), candidates: 2, planSources: { "d-gob": "v2", "d-kra": "none" },
   names: { "o-ajani": "Ajani Unrelenting", "o-krenko": "Krenko, Mob Boss", "o-cut": "Goblin Instigator" },
+  images: { "o-ajani": "https://img/ajani.jpg", "o-krenko": "https://img/krenko.jpg", "o-cut": "https://img/cut.jpg" },
+  commanderIds: { "d-gob": ["o-krenko"] },
   allowance, view: { pending: null, stored: null, failed: null, ...view }, ...over,
 });
 
@@ -72,6 +83,7 @@ function Harness() {
   const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
   return <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} />;
 }
+const cleanupAll = () => cleanup();
 const settle = () => act(async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); });
 async function draw(p: FitsReadPanel, l: FitsRead = list()) {
   actions.loadFitsAction.mockResolvedValue(l);
@@ -131,7 +143,7 @@ describe("FitsView (Find a deck read, R2)", () => {
     fireEvent.click(screen.getByTestId("fits-fold"));
     expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
     // A card the sentence names opens over the dialog, with the way back to the view.
-    fireEvent.click(within(row).getByRole("button", { name: "Krenko, Mob Boss" }));
+    fireEvent.click(within(within(row).getByTestId("read-row-sentence")).getByRole("button", { name: "Krenko, Mob Boss" }));
     expect(onOpenCard).toHaveBeenCalledWith("o-krenko");
   });
 
@@ -282,10 +294,93 @@ describe("FitsView (Find a deck read, R2)", () => {
     expect(screen.getByText(/^read Oct 12/)).toBeInTheDocument();
   });
 
-  it("a stored read gone out of date never draws as current: the press is offered again", async () => {
+  it("a read gone out of date is marked so, never current: the changed row dims with its actions off (P10)", async () => {
     await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
-    expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
+    const note = screen.getByTestId("read-stale");
+    expect(note).toHaveTextContent(r.staleOne("Goblins", "Oct 12, 8:00 PM").slice(0, 30));
+    expect(within(note).getByRole("button", { name: `${r.readAgain}. Uses 1 credit.` })).toBeEnabled();
+    expect(note).toHaveTextContent(r.again(creditsCopy.standing(4, 5, null)));
+    expect(screen.queryByTestId("read-band-offer")).toBeNull();
+    expect(screen.getByText(/· out of date$/)).toBeInTheDocument();
+    const row = screen.getByTestId("read-row");
+    expect(within(row).getByTestId("read-row-changed")).toHaveTextContent(r.changedTag);
+    expect(row).toHaveTextContent(r.cutNoteChanged);
+    expect(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") })).toBeDisabled();
+    // Read again presses the read.
+    readActions.pressFitsReadAction.mockResolvedValue({ ok: true, panel: panel({}, { stored: stored({ readId: "r2" }) }) });
+    fireEvent.click(within(note).getByRole("button", { name: `${r.readAgain}. Uses 1 credit.` }));
+    await settle();
+    expect(readActions.pressFitsReadAction).toHaveBeenCalledWith("o-ajani");
+    expect(screen.queryByTestId("read-stale")).toBeNull();
+  });
+
+  it("paused, Read again is off and named alone, never as out of credits", async () => {
+    const paused = { ...allowance, paused: { until: new Date("2026-11-01T00:00:00Z") } } as unknown as FitsReadPanel["allowance"];
+    await draw(panel({ allowance: paused }, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+    const press = within(screen.getByTestId("read-stale")).getByRole("button", { name: r.readAgain });
+    expect(press).toBeDisabled();
+  });
+
+  it("a new overview tags the row and drops its source note (P3g); several or a set change say so (P10a)", async () => {
+    const at = new Date(stored().at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    // An older overview would draw a source note; a new one since the read drops it for the tag.
+    const pick = { ...stored().picks[0], planSource: "older" as const };
+    await draw(panel({}, { stored: stored({ current: false, picks: [pick], changed: [{ deckId: "d-gob", reason: "overview" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleOverview("Goblins", at));
+    expect(screen.getByTestId("read-row-changed")).toHaveTextContent(r.changedTagOverview);
+    expect(screen.queryByTestId("read-row-source-note")).toBeNull();
+    cleanupAll();
+    // Two decks changed: the note counts them rather than naming the first.
+    const two = [stored().picks[0], { ...stored().picks[0], deckId: "d-kra" }];
+    await draw(panel({}, { stored: stored({ current: false, picks: two, changed: [{ deckId: "d-gob", reason: "deck" }, { deckId: "d-kra", reason: "deck" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleMany(2, at));
+    cleanupAll();
+    // A set change wins over a deck's own, even when one moved in the same span: no deck named, no row tagged.
+    await draw(panel({}, { stored: stored({ current: false, setChanged: true, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+    expect(screen.getByTestId("read-stale")).toHaveTextContent(r.staleSet(at));
+    expect(screen.queryByTestId("read-row-changed")).toBeNull();
+  });
+
+  it("a deck no longer a candidate drops from the read (P10b)", async () => {
+    await draw(panel({}, { stored: stored({ current: false, setChanged: true }) }), list({ fits: [list().fits[1]] }));
     expect(screen.queryByTestId("read-row")).toBeNull();
+  });
+
+  it("a row whose own Swap in moved its deck into the holders stays, swapped (P10b keeps what took the card)", async () => {
+    await draw(panel({}, { stored: stored() }));
+    actions.swapFromReadAction.mockResolvedValue({ ok: true, swapId: "s1", addWasFree: true, cutLeft: 0 });
+    actions.loadFitsAction.mockResolvedValue(list({
+      free: 0, fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }],
+    }));
+    const row = screen.getByTestId("read-row");
+    fireEvent.click(within(row).getByRole("button", { name: r.swapInAria(card.name, "Goblins", "Goblin Instigator") }));
+    await settle();
+    expect(screen.getByTestId("read-row")).toBeInTheDocument();
+    expect(within(screen.getByTestId("read-row")).getByRole("button", { name: r.swappedAria(card.name, "Goblins", "Goblin Instigator") })).toBeEnabled();
+  });
+
+  it("a row read from an older overview, or none, says so and points at the deck page (P3f)", async () => {
+    const pick = stored().picks[0];
+    await draw(panel({}, { stored: stored({ picks: [{ ...pick, planSource: "older" }] }) }));
+    const older = screen.getByTestId("read-row-source-note");
+    expect(older).toHaveTextContent(r.srcNoteOlder);
+    expect(within(older).getByRole("link", { name: r.srcLinkOlder })).toHaveAttribute("href", "/decks/d-gob?tab=analysis");
+    // The link closes the dialog first, so the deck page is what the reader lands on.
+    fireEvent.click(within(older).getByRole("link", { name: r.srcLinkOlder }));
+    expect(detail.close).toHaveBeenCalledTimes(1);
+    cleanupAll();
+    await draw(panel({}, { stored: stored({ picks: [{ ...pick, planSource: "none" }] }) }));
+    const note = screen.getByTestId("read-row-source-note");
+    expect(note).toHaveTextContent(r.srcNoteNone("Krenko, Mob Boss"));
+    expect(within(note).getByRole("link", { name: r.srcLinkNone })).toHaveAttribute("href", "/decks/d-gob?tab=analysis");
+  });
+
+  it("a kept no fit whose decks changed fades under a note that offers the read again (P6c)", async () => {
+    await draw(panel({}, { stored: stored({ outcome: "noFit", picks: [], refunded: true, current: false, changed: [{ deckId: "d-kra", reason: "deck" }] }) }));
+    const note = screen.getByTestId("read-stale");
+    expect(note).toHaveTextContent(/Kratos has changed since this read/);
+    expect(note).toHaveTextContent(creditsCopy.first(4, 5, null));
+    expect(screen.getByTestId("read-band-nofit").parentElement).toHaveClass("opacity-[0.72]");
   });
 
   it("a no fit is a box with no press, the list open beneath (P6)", async () => {
@@ -461,6 +556,199 @@ describe("FitsView (Find a deck read, R2)", () => {
       readActions.readFitsReadAction.mockResolvedValue(panel({}, { pending: { readId: "r9", startedAt: new Date().toISOString() } }));
       await trip();
       expect(screen.getByTestId("read-band-running")).toHaveTextContent(r.running(2, card.name));
+    });
+  });
+
+  describe("Hugh's first walk (2026-10-12)", () => {
+    it("draws nothing in the body until the list and the panel have both answered, so the offer never pops in", async () => {
+      let listed!: (v: unknown) => void;
+      actions.loadFitsAction.mockReturnValue(new Promise((res) => { listed = res; }));
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Harness />);
+      await settle();
+      expect(screen.queryByTestId("read-band-offer")).toBeNull();
+      expect(screen.queryAllByTestId("fits-row")).toHaveLength(0);
+      await act(async () => listed(list()));
+      await settle();
+      expect(screen.getByTestId("read-band-offer")).toBeInTheDocument();
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+    });
+
+    it("every card a row names previews and opens, except the card the read is for, which only opens", async () => {
+      await draw(panel({}, { stored: stored() }));
+      const row = screen.getByTestId("read-row");
+      const sentence = within(row).getByTestId("read-row-sentence");
+      const krenko = within(sentence).getByRole("button", { name: "Krenko, Mob Boss" });
+      const ajani = within(sentence).getByRole("button", { name: "Ajani Unrelenting" });
+      expect(krenko).toHaveAttribute("data-preview", "https://img/krenko.jpg");
+      expect(ajani).toHaveAttribute("data-preview", "");
+      fireEvent.click(ajani);
+      expect(onOpenCard).toHaveBeenCalledWith("o-ajani");
+      // The commander line names its commander as a card, and the cut is one too.
+      fireEvent.click(within(within(row).getByTestId("read-row-source")).getByRole("button", { name: "Krenko, Mob Boss" }));
+      expect(onOpenCard).toHaveBeenCalledWith("o-krenko");
+      const cut = within(row).getByRole("button", { name: "Goblin Instigator" });
+      expect(cut).toHaveAttribute("data-preview", "https://img/cut.jpg");
+      expect(within(within(row).getByTestId("read-row-source")).getByRole("button", { name: "Krenko, Mob Boss" })).toHaveAttribute("data-preview", "https://img/krenko.jpg");
+      fireEvent.click(cut);
+      expect(onOpenCard).toHaveBeenCalledWith("o-cut");
+    });
+
+    it("a return draws what was there at once, with no entrance, and keeps it while the reads come again", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored() }));
+      render(<Trip />);
+      await settle();
+      expect(screen.getByTestId("fits-view").className).toContain("anim-view-in");
+      // Back in, both reads hang: the rows and the list are there anyway, from the visit's own snapshot.
+      actions.loadFitsAction.mockReturnValue(new Promise(() => {}));
+      readActions.readFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByTestId("fits-view").className).not.toContain("anim-view-in");
+      expect(screen.getByTestId("read-row")).toBeInTheDocument();
+      expect(screen.getByTestId("fits-fold")).toBeInTheDocument();
+    });
+
+    it("a return keeps the fold as the reader left it", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored() }));
+      render(<Trip />);
+      await settle();
+      fireEvent.click(screen.getByTestId("fits-fold"));
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+      await settle();
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+    });
+
+    it("a return whose background list read fails keeps the list it restored", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Trip />);
+      await settle();
+      actions.loadFitsAction.mockRejectedValue(new Error("down"));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      await settle();
+      expect(screen.getAllByTestId("fits-row")).toHaveLength(2);
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("a pick naming a card the panel has no name for is left out, never drawn under another card's name", async () => {
+      const pick = stored().picks[0];
+      await draw(panel({}, { stored: stored({ picks: [{ ...pick, parts: [{ card: "o-gone" }, { text: " helps." }] }] }) }));
+      expect(screen.queryByTestId("read-row")).toBeNull();
+    });
+
+    it("a read made this visit still reads just now on a return", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Trip />);
+      await settle();
+      readActions.pressFitsReadAction.mockResolvedValue({ ok: true, panel: panel({}, { stored: stored() }) });
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      expect(screen.getByText(r.resultSubNow(1, 2))).toBeInTheDocument();
+      readActions.readFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByText(r.resultSubNow(1, 2))).toBeInTheDocument();
+    });
+  });
+
+  describe("round 6", () => {
+    it("Read again keeps the old read drawn, its actions held, under the running band, with no still rows", async () => {
+      await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+      readActions.pressFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(within(screen.getByTestId("read-stale")).getByRole("button", { name: `${r.readAgain}. Uses 1 credit.` }));
+      await settle();
+      expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
+      expect(screen.queryByTestId("read-skeleton")).toBeNull();
+      expect(screen.getByTestId("read-row")).toBeInTheDocument();
+      for (const b of within(screen.getByTestId("read-row")).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
+    });
+
+    it("a read pressed this visit is still running on a return, from the first frame", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Trip />);
+      await settle();
+      readActions.pressFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      // Back in before the server has the run's row: the panel it answers predates the press, so the run stands.
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
+      await settle();
+      expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
+      expect(screen.queryByTestId("read-band-offer")).toBeNull();
+    });
+
+    it("an add from the free list reads the panel again, so a named deck that took the card reads resolved at once", async () => {
+      await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+      expect(screen.getByTestId("read-stale")).toBeInTheDocument();
+      actions.addFromFits.mockResolvedValue({ ok: true });
+      actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored({ resolved: ["d-gob"] }) }));
+      fireEvent.click(screen.getByTestId("fits-fold"));
+      fireEvent.click(within(screen.getAllByTestId("fits-row")[0]).getAllByRole("button").find((b) => b.textContent)!);
+      await settle();
+      expect(screen.queryByTestId("read-stale")).toBeNull();
+      expect(within(screen.getByTestId("read-row")).queryByTestId("read-row-changed")).toBeNull();
     });
   });
 });

@@ -2172,8 +2172,10 @@ export function CardModal({
         )}
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg --bg */}
+        {/* Live beside Find a deck's view, which sits to its right (md:left-[320px]): the art still says Click to
+            zoom, so it zooms, and closing the zoom lands back on the view as it was (Hugh, 2026-10-12). */}
         <div
-          inert={zoomed || viewOpen}
+          inert={zoomed}
           className="hidden md:flex items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
@@ -2699,7 +2701,9 @@ export function CardModal({
         <div aria-live="polite" className="sr-only">{announcement}</div>
 
         {view ? (
-          <div data-testid="card-modal-view" className="absolute inset-0 z-10 flex flex-col md:left-[320px]">
+          // Inert under the zoom, as the details are: the zoom covers the whole dialog, and the view's controls
+          // must leave the focus trap with it.
+          <div data-testid="card-modal-view" inert={zoomed} className="absolute inset-0 z-10 flex flex-col md:left-[320px]">
             {view.node}
           </div>
         ) : null}

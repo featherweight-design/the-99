@@ -10,8 +10,8 @@ import { analysisTabEnabled } from "../decks/analysis-flag";
 import { howItWorksEnabled } from "./how-it-works-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
-import { swapToolsEnabled } from "../swaps/flag";
-import { manaBalanceEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
+import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
+import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled } from "../collection/edit-flag";
@@ -58,6 +58,10 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
   LINEUP_ENABLED: lineupEnabled,
+  // Already reads ANALYSIS_TAB_ENABLED: Look deeper lives in the tab's Tuning hub.
+  PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
+  // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.
+  FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
 };
 
 /** Whether a line's switch keeps it: `!NAME` keeps it while NAME is off. */

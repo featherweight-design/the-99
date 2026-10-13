@@ -255,9 +255,17 @@ export function FitsStapleNote({ name, role }: { name: string; role: string }) {
  * when it opens, the rows in the order they opened in, and the Add with its re-read. `refresh` takes
  * the read again (after a swap from the read, say), so the copies come from the server's count.
  */
-export function useFitsList(card: BrowseCard) {
-  const [load, setLoad] = useState<Load>({ state: "loading" });
-  const [added, setAdded] = useState<Added[]>([]);
+/** What a list drew last, kept by its owner so a return draws it at once (Find a deck's view, a round trip). */
+export type FitsListSnapshot = {
+  read: FitsRead; rows: FitDeck[];
+  /** This visit's Add stamps and the decks an add found already holding the card, so a return keeps both. */
+  added: { deckId: string; note: string }[]; heldAlready: string[];
+};
+
+export function useFitsList(card: BrowseCard, initial: FitsListSnapshot | null = null) {
+  // A snapshot draws at once and is read again behind it: what is on screen stays until the new read lands.
+  const [load, setLoad] = useState<Load>(() => (initial ? { state: "ready", read: initial.read } : { state: "loading" }));
+  const [added, setAdded] = useState<Added[]>(() => initial?.added ?? []);
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   // One mutation at a time across the list and anything drawn beside it (the read's rows share it).
@@ -271,19 +279,24 @@ export function useFitsList(card: BrowseCard) {
   // A write made beside the list (a read row's Swap in or Add only): the payload's count is spent too.
   const [wrote, setWrote] = useState(false);
   // The rows as the picker opened: an add re-reads the counts, never the order.
-  const [rows, setRows] = useState<FitDeck[] | null>(null);
+  const [rows, setRows] = useState<FitDeck[] | null>(() => initial?.rows ?? null);
   // Decks an add found already holding the card: they leave the list for `already holds it`.
-  const [heldAlready, setHeldAlready] = useState<string[]>([]);
+  const [heldAlready, setHeldAlready] = useState<string[]>(() => initial?.heldAlready ?? []);
 
   // Every read of the list is numbered, and only the newest one asked lands: a slow read from before
   // a write must never replace what a later read says about the copies left or the decks holding it.
   const asked = useRef(0);
+  // The read behind a restored snapshot: if it fails, the snapshot stays (nothing newer landed), and the
+  // view is as it was. Any later read, a write's included, fails as before.
+  const restoring = useRef(initial !== null);
   const readList = useCallback(() => {
     const n = ++asked.current;
     return loadFitsAction(card.oracleId)
       .catch(() => null)
       .then((r) => {
-        if (n === asked.current) {
+        const keepRestored = restoring.current && !r;
+        restoring.current = false;
+        if (n === asked.current && !keepRestored) {
           setLoad(r ? { state: "ready", read: r } : { state: "failed" });
           if (r) setRows((prev) => prev ?? r.fits);
         }
@@ -348,11 +361,14 @@ export function useFitsList(card: BrowseCard) {
 
   /** Re-reads the list. `afterWrite`: the caller just wrote, so a failed re-read leaves no count. */
   const refresh = useCallback(async (afterWrite = false) => {
-    if (afterWrite) setWrote(true);
+    if (afterWrite) {
+      setWrote(true);
+      restoring.current = false;
+    }
     return readList();
   }, [readList]);
 
-  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, holds, role, retry, refresh, claim, release };
+  return { load, read, name, owned, freeNow, countsKnown, busy, refused, add, noteFor, shown, opened: rows, added, heldAlready, holds, role, retry, refresh, claim, release };
 }
 
 export function FitsPicker({ card, onClose }: { card: BrowseCard; onClose: () => void }) {

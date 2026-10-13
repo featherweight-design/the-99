@@ -1,7 +1,8 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cards } from "../../db/schema";
+import { chainArt } from "../cards/chain-art";
+import { cards, decks } from "../../db/schema";
 import { readAllowance, type Billed } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { callModel, type ModelOutcome } from "../model/client";
@@ -29,6 +30,13 @@ export type FitsReadPanel = {
   /** The name of every card the stored read's sentences and cuts name, by oracle id: the view draws
    *  the names, never the model (lock 1). */
   names: Record<string, string>;
+  /** The art each named card previews on hover: the printing card details opens for it outside a deck's own
+   *  page, the reader's owned copy else the catalog's (`chainArt`, as the free list's combo pieces do). */
+  images: Record<string, string | null>;
+  /** Each picked deck's commanders, by oracle id, so the row's commander line names cards a reader can
+   *  hover and open: from the inputs for a candidate, and from the deck itself for one that has since taken
+   *  the card (no longer a candidate, its row kept as resolved). */
+  commanderIds: Record<string, string[]>;
   allowance: Allowance;
 };
 
@@ -76,27 +84,57 @@ async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, mo
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
   const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding);
-  return { fits: load.fits, view, candidates: load.inputs.candidates.length, planSources, names: await pickNames(view, load), allowance };
+  const { names, images, commanderIds } = await pickCards(userId, view, load);
+  return { fits: load.fits, view, candidates: load.inputs.candidates.length, planSources, names, images, commanderIds, allowance };
 }
 
 /** Names for the stored picks' cards: from the inputs where the deck still runs the card, else the
  *  catalog (a card a deck has since cut, on an out-of-date read). */
-async function pickNames(view: FitsReadView, load: FitsReadLoad): Promise<Record<string, string>> {
+async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad): Promise<
+  Pick<FitsReadPanel, "names" | "images" | "commanderIds">
+> {
   const ids = new Set<string>();
+  const commanderIds: Record<string, string[]> = {};
+  const deckById = new Map(load.inputs.decks.map((d) => [d.deckId, d]));
   for (const p of view.stored?.picks ?? []) {
     if (p.cut) ids.add(p.cut);
     for (const part of p.parts) if ("card" in part) ids.add(part.card);
+    const deck = deckById.get(p.deckId);
+    if (deck) {
+      commanderIds[p.deckId] = deck.commanders.map((c) => c.oracleId);
+      for (const c of deck.commanders) ids.add(c.oracleId);
+    }
   }
-  if (ids.size === 0) return {};
+  // A picked deck that has since taken the card is no candidate, so the inputs do not carry it; its row stays,
+  // resolved, and its commanders are read from the deck itself so they still name cards.
+  const absent = (view.stored?.picks ?? []).map((p) => p.deckId).filter((id) => !deckById.has(id));
+  if (absent.length > 0) {
+    const rows = await db.select({ id: decks.id, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+      .from(decks).where(and(inArray(decks.id, absent), eq(decks.userId, userId))).catch(() => []);
+    for (const d of rows) {
+      const own = d.partner ? [d.commander, d.partner] : [d.commander];
+      commanderIds[d.id] = own;
+      for (const c of own) ids.add(c);
+    }
+  }
+  if (ids.size === 0) return { names: {}, images: {}, commanderIds };
   const out: Record<string, string> = {};
   const known = [load.inputs.card, ...load.inputs.decks.flatMap((d) => [...d.commanders, ...d.list])];
   for (const c of known) if (ids.has(c.oracleId)) out[c.oracleId] = c.name;
-  const missing = [...ids].filter((id) => !(id in out));
-  if (missing.length > 0) {
-    const rows = await db.select({ oracleId: cards.oracleId, name: cards.name }).from(cards).where(inArray(cards.oracleId, missing));
-    for (const r of rows) out[r.oracleId] = r.name;
+  const all = [...ids];
+  // One catalog read serves both the names the inputs lack and the art fallback; the art itself is fail-soft,
+  // so a failed read leaves the names standing and the cards with no preview.
+  const [rows, owned] = await Promise.all([
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, all))
+      .catch(() => [] as { oracleId: string; name: string; imageUri: string | null }[]),
+    chainArt(userId, null, all).catch(() => new Map<string, string>()),
+  ]);
+  const images: Record<string, string | null> = {};
+  for (const r of rows) {
+    if (!(r.oracleId in out)) out[r.oracleId] = r.name;
+    images[r.oracleId] = owned.get(r.oracleId) ?? r.imageUri ?? null;
   }
-  return out;
+  return { names: out, images, commanderIds };
 }
 
 /**

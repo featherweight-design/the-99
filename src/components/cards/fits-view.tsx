@@ -17,7 +17,10 @@ import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import { addFromFits, swapFromReadAction, undoReadAddAction, undoReadSwapAction } from "../../lib/swaps/actions";
 import { pressFitsReadAction, readFitsReadAction } from "../../lib/swaps/fits-read-actions";
 import type { FitsReadPanel } from "../../lib/swaps/fits-read-run";
-import { FitsHolds, FitsRows, FitsStapleNote, useFitsList } from "./fits-picker";
+import { HoverPreviewProvider } from "../decks/hover-preview";
+import { FitsHolds, FitsRows, FitsStapleNote, useFitsList, type FitsListSnapshot } from "./fits-picker";
+import { CreditButton } from "../ui/credit-button";
+import { CreditsText } from "../ui/credits-text";
 import { FailedBand, NoFitBox, OfferBand, RefusedBand, RunningBand } from "./read-band";
 import { ReadRow, type RowAct } from "./read-row";
 
@@ -36,6 +39,15 @@ export type FitsViewMemory = {
   tooBigFor?: string | null;
   /** The decks a running read was pressed for, so a reopened run keeps its count. */
   runCount?: number | null;
+  /** When the read running now started, as this visit saw it: a return draws the run at once, even one this
+   *  visit pressed before the server's panel knew of it. */
+  runStart?: number | null;
+  /** The panel as it stood when this visit pressed: a read that still shows exactly that (no pending row
+   *  yet, the same stored read, the same failure) predates the press and confirms nothing about it. */
+  runFrom?: { stored: string | null; failedAt: string | null } | null;
+  /** What the view last drew: a return (a card opened over it, then Back) draws this at once, with no
+   *  entrance, and reads both again behind it, keeping it on screen until the new reads land. */
+  snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null; fresh: string | null; foldOpen: boolean };
 };
 
 /** How often a read in flight is asked after while the view waits on it (lock 5: one run, polled). */
@@ -62,10 +74,21 @@ export function FitsView({
   /** Going back to the details: the view plays its leave before it unmounts. */
   leaving?: boolean;
 }) {
-  const list = useFitsList(card);
+  // A return draws what the view last drew, at once, and with no entrance (the view was never gone for the reader).
+  const [restored] = useState(() => memory.snapshot ?? null);
+  const list = useFitsList(card, restored?.list ?? null);
   const { name, freeNow, owned, countsKnown } = list;
-  const [panel, setPanel] = useState<FitsReadPanel | null>(null);
-  const [running, setRunning] = useState<number | null>(null);
+  const [panel, setPanel] = useState<FitsReadPanel | null>(() => restored?.panel ?? null);
+  // The panel's first read has answered (or failed): until then and the list's, the body draws nothing, so the
+  // band and the rows arrive with the list rather than after it.
+  const [panelRead, setPanelRead] = useState(() => restored !== null);
+  const pendingAtStart = restored?.panel.view.pending ?? null;
+  const [running, setRunning] = useState<number | null>(() =>
+    memory.runStart ?? (pendingAtStart ? Date.parse(pendingAtStart.startedAt) : null));
+  useEffect(() => {
+    setMemory((m) => ((m.runStart ?? null) === running ? m : { ...m, runStart: running }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
   // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
   // Kept by the provider, with the refusal and the write lock below, so a round trip keeps them.
   const runCount = memory.runCount ?? null;
@@ -75,9 +98,9 @@ export function FitsView({
   const tooBigFor = memory.tooBigFor ?? null;
   const writing = memory.writing === true;
   // The read this visit's press produced: its sub reads `just now` rather than a date.
-  const [fresh, setFresh] = useState<string | null>(null);
+  const [fresh, setFresh] = useState<string | null>(() => restored?.fresh ?? null);
   const [now, setNow] = useState(() => Date.now());
-  const [foldOpen, setFoldOpen] = useState(false);
+  const [foldOpen, setFoldOpen] = useState(() => restored?.foldOpen ?? false);
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState<{ deckId: string; kind: "swap" | "add" | "undo" } | null>(null);
   const [announced, setAnnounced] = useState("");
@@ -96,8 +119,27 @@ export function FitsView({
     if (!pressing.current) readingRef.current(false);
   }, []);
 
+  // What the view draws, kept for a return. Written as it changes, so the provider holds the latest.
+  useEffect(() => {
+    if (!panel) return;
+    const snap = list.read && list.opened ? { read: list.read, rows: list.opened, added: list.added, heldAlready: list.heldAlready } : null;
+    setMemory((m) => ({ ...m, snapshot: { panel, list: snap, fresh, foldOpen } }));
+    // `setMemory` is the provider's updater, rebuilt each render; the snapshot moves only with these.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel, list.read, list.opened, list.added, list.heldAlready, fresh, foldOpen]);
+
   // Focus starts on the view's heading (D1).
   useEffect(() => headingRef.current?.focus(), []);
+
+  // Read through a ref by the callbacks below, which outlive the render that made them (the poll, a press).
+  const memoryRef = useRef(memory);
+  useEffect(() => { memoryRef.current = memory; });
+  /** The panel predates this visit's press: no pending row yet, and nothing has settled since. */
+  const predatesPress = (p: FitsReadPanel) => {
+    const from = memoryRef.current.runFrom;
+    return !!from && !p.view.pending
+      && (p.view.stored?.readId ?? null) === from.stored && (p.view.failed?.at ?? null) === from.failedAt;
+  };
 
   const adopt = useCallback((p: FitsReadPanel | null) => {
     setPanel(p);
@@ -107,7 +149,16 @@ export function FitsView({
 
   useEffect(() => {
     let live = true;
-    readFitsReadAction(card.oracleId).then((p) => { if (live) adopt(p); }).catch(() => {});
+    readFitsReadAction(card.oracleId)
+      // A read that comes back empty keeps what is drawn: a return's snapshot stays rather than blanking.
+      // A panel from before this visit's own press, still in flight, is drawn but does not end the run.
+      .then((p) => {
+        if (!live || !p) return;
+        if (predatesPress(p)) setPanel(p);
+        else adopt(p);
+      })
+      .catch(() => {})
+      .finally(() => { if (live) setPanelRead(true); });
     return () => { live = false; };
   }, [card.oracleId, adopt]);
 
@@ -119,11 +170,11 @@ export function FitsView({
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, [running]);
-  const polling = running !== null && panel?.view.pending != null;
+  const polling = running !== null && (panel?.view.pending != null || memory.runFrom != null);
   useEffect(() => {
     if (!polling) return;
     const t = setInterval(() => {
-      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending) settle(p, null); }).catch(() => {});
+      readFitsReadAction(card.oracleId).then((p) => { if (p && !p.view.pending && !predatesPress(p)) settle(p, null); }).catch(() => {});
     }, POLL_MS);
     return () => clearInterval(t);
     // `settle` reads only setters and the card.
@@ -135,7 +186,7 @@ export function FitsView({
     const stored = p.view.stored;
     const failed = p.view.failed !== null;
     setPressFailed(failed);
-    setMemory((m) => (m.runCount == null ? m : { ...m, runCount: null }));
+    setMemory((m) => (m.runCount == null && m.runFrom == null ? m : { ...m, runCount: null, runFrom: null }));
     // Announced only when it is drawn: a read that settled after its decks moved comes back out of date.
     if (stored && stored.readId !== before && !failed && stored.current) {
       setFresh(stored.readId);
@@ -148,7 +199,9 @@ export function FitsView({
     if (running !== null || !panel) return;
     const before = panel.view.stored?.readId ?? null;
     setRunning(Date.now());
-    setMemory((m) => ({ ...m, runCount: candidates }));
+    const from = { stored: before, failedAt: panel.view.failed?.at ?? null };
+    setMemory((m) => ({ ...m, runCount: candidates, runFrom: from }));
+    memoryRef.current = { ...memoryRef.current, runFrom: from };
     setNow(Date.now());
     setPressFailed(false);
     setAnnounced(read.announceStarted);
@@ -158,10 +211,14 @@ export function FitsView({
       pressing.current = false;
       if (!(res.ok && res.panel.view.pending) || !mounted.current) readingRef.current(false);
       if (res.ok) {
-        if (res.panel.view.pending) adopt(res.panel);
-        else settle(res.panel, before);
+        if (res.panel.view.pending) {
+          // The server has the run now: its pending row is what a return or the poll follows from here.
+          setMemory((m) => ({ ...m, runFrom: null }));
+          adopt(res.panel);
+        } else settle(res.panel, before);
         return;
       }
+      setMemory((m) => ({ ...m, runFrom: null }));
       setRunning(null);
       // A refusal costs nothing: the panel is read again so the band says why (a current read, no
       // credit, the pause) rather than a failure the reader did not have.
@@ -174,6 +231,7 @@ export function FitsView({
     } catch {
       pressing.current = false;
       readingRef.current(false);
+      setMemory((m) => ({ ...m, runFrom: null }));
       setRunning(null);
       setPressFailed(true);
       setAnnounced(read.announceFailed);
@@ -204,7 +262,14 @@ export function FitsView({
   async function addFree(deck: Parameters<typeof list.add>[0]) {
     if (writing) return;
     setMemory((m) => ({ ...m, writing: true }));
-    try { await list.add(deck); } finally { setMemory((m) => ({ ...m, writing: false })); }
+    try {
+      await list.add(deck);
+      // The deck may be one the stored read names: once it holds the card it is resolved, not changed, so the
+      // panel is read again and the note and the row say so now rather than at the next open.
+      const again = await readFitsReadAction(card.oracleId).catch(() => null);
+      // Not over a press of this visit's still in flight: that press settles the band itself.
+      if (again && mounted.current && !pressing.current) adopt(again);
+    } finally { setMemory((m) => ({ ...m, writing: false })); }
   }
 
   const deckOf = (deckId: string) => {
@@ -283,9 +348,9 @@ export function FitsView({
         ? creditsCopy.spent(allowance.limit, allowance.reopensAt ?? allowance.nextAt)
         : creditsCopy.standing(left, allowance.limit, allowance.nextAt);
   const stored = panel?.view.stored ?? null;
-  // Shown only while CURRENT (lock 6). A read that has gone out of date offers the press again,
-  // and never draws as if it still held.
-  const current = stored?.current ? stored : null;
+  // A stored read that has gone out of date is drawn marked so, never as current (lock 6): a note
+  // names what moved and offers Read again, and a changed deck's row is dimmed with its actions off.
+  const stale = stored && !stored.current ? stored : null;
   const failed = pressFailed || (panel?.view.failed != null && running === null);
   // Who can take the card is the list as last read, never the panel's opening count: an add from the
   // free list leaves fewer decks to read. The panel's zero (no deck, or not Commander-legal) stands.
@@ -299,20 +364,76 @@ export function FitsView({
   const showsBand = panel !== null && candidates > 0 && !noList;
   // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
   // and the read still reopens with its rows settled.
-  const result = panel !== null && running === null && !failed && current?.outcome === "picks" ? current : null;
-  const noFit = showsBand && running === null && !failed && current?.outcome === "noFit" ? current : null;
+  // A run in flight does not take what was drawn away: a Read again keeps the old read on screen, under the
+  // running band and with its actions held, until the new one lands (only a first read draws still rows).
+  const result = panel !== null && !failed && stored?.outcome === "picks" ? stored : null;
+  const noFit = showsBand && !failed && stored?.outcome === "noFit" ? stored : null;
+  // A change in which decks can take the card is the set's (P10a): it names no deck and tags no row,
+  // even when a candidate's own inputs moved in the same span.
+  const changedOf = new Map((stale && !stale.setChanged ? stale.changed : []).map((c) => [c.deckId, c.reason]));
+  // A deck that is no longer a candidate drops from the read (P10b); one that took the card stays,
+  // resolved, whether before this visit, through the free list, or through the row's own press.
+  const fitsNow = list.read ?? panel?.fits ?? null;
+  const keptIds = new Set([...(fitsNow?.fits ?? []), ...(fitsNow?.holds ?? [])].map((d) => d.id));
+  // A pick naming a card the panel has no name for (its catalog read failed) is left out rather than drawn
+  // under another card's name, which would open the wrong card.
+  const named = (id: string) => id === card.oracleId || id in (panel?.names ?? {});
+  const nameable = (p: NonNullable<typeof result>["picks"][number]) =>
+    (p.cut === null || named(p.cut)) && p.parts.every((part) => !("card" in part) || named(part.card));
+  const rowsShown = result?.picks.filter((p) => nameable(p) && (keptIds.has(p.deckId) || result.resolved.includes(p.deckId) || !!actOf(p.deckId))) ?? [];
+  const staleText = !stale ? null
+    : stale.setChanged ? read.staleSet(when(stale.at))
+    : stale.changed.length > 1 ? read.staleMany(stale.changed.length, when(stale.at))
+    : stale.outcome === "noFit" ? read.noFitChanged(deckOf(stale.changed[0]?.deckId ?? "").name, when(stale.at))
+    : stale.changed[0]?.reason === "overview" ? read.staleOverview(deckOf(stale.changed[0].deckId).name, when(stale.at))
+    : stale.changed.length === 1 ? read.staleOne(deckOf(stale.changed[0].deckId).name, when(stale.at))
+    : read.staleSet(when(stale.at));
+  const staleLine = blocked
+    ? standing
+    : stale?.outcome === "noFit"
+      ? creditsCopy.first(left, allowance!.limit, allowance!.nextAt)
+      : read.again(creditsCopy.standing(left, allowance!.limit, allowance!.nextAt));
+  const staleNote = stale && staleText ? (
+    <section data-testid="read-stale" className="flex flex-col gap-[10px] rounded-[10px] px-[14px] py-[12px] border border-dashed border-[color:var(--border-dashed)]">
+      <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">{staleText}</p>
+      <div className="flex">
+        <CreditButton
+          label={read.readAgain}
+          credit={read.credit}
+          filled={false}
+          blocked={blocked}
+          spent={spent || closed}
+          onPress={() => void press()}
+          // Paused or the owner's share, no credit is out: the press is named alone, never `No credits left`.
+          ariaLabel={closed && !spent ? read.readAgain : undefined}
+        />
+      </div>
+      <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]"><CreditsText text={staleLine} /></p>
+    </section>
+  ) : null;
   const isFresh = (s: { readId: string }) => s.readId === fresh;
 
+  // Latched: once drawn, a later read (a Try again, a refresh) keeps the body on screen until it lands.
+  const [bodyReady, setBodyReady] = useState(() => restored !== null);
+  if (!bodyReady && panelRead && list.load.state !== "loading") setBodyReady(true);
   let band = null;
+  const noFitBox = noFit ? <NoFitBox
+    body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}
+    foot={isFresh(noFit) ? read.noFitFootNow : read.noFitFootStored(when(noFit.at))}
+  /> : null;
   if (showsBand) {
-    if (running !== null) band = <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} />;
-    else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
+    if (running !== null) {
+      band = <>
+        <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} still={!result && !noFit} />
+        {noFitBox ? <div className="opacity-[0.72]">{noFitBox}</div> : null}
+      </>;
+    } else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
     else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
-      band = <NoFitBox
-        body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}
-        foot={isFresh(noFit) ? read.noFitFootNow : read.noFitFootStored(when(noFit.at))}
-      />;
+      // P6c: the old no fit stays on screen, faded, under the note that re-offers the read.
+      band = stale ? <>{staleNote}<div className="opacity-[0.72]">{noFitBox}</div></> : noFitBox;
+    } else if (result && stale) {
+      band = staleNote;
     } else if (!result) {
       band = <OfferBand
         lead={oneDeck ? read.offerLeadOne(oneDeck, name) : read.offerLead(candidates, name)}
@@ -331,7 +452,7 @@ export function FitsView({
   // Every row action waits on any write in flight, the folded list's included, and on a count the
   // view does not have yet: the list's first read, a Try again in flight, or a re-read that failed
   // after a write, which leaves the opening count spent.
-  const rowsLocked = busy || writing || list.busy !== null || list.load.state !== "ready";
+  const rowsLocked = busy || writing || running !== null || list.busy !== null || list.load.state !== "ready";
   const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
   // The free list as last read, in the order it opened: a deck still listed is drawn as it reads now,
   // one that left (took the card, or no longer fits) stays only while it carries this visit's Add
@@ -359,7 +480,7 @@ export function FitsView({
   ) : null;
 
   return (
-    <div data-testid="fits-view" className={`${leaving ? "anim-view-out" : "anim-view-in"} relative flex flex-col h-full min-h-0 bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)]`}>
+    <div data-testid="fits-view" className={`${leaving ? "anim-view-out" : restored ? "" : "anim-view-in"} relative flex flex-col h-full min-h-0 bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)]`}>
       <header className="flex-none px-[16px] pt-[12px] pb-[14px] md:pl-[30px] md:pr-[22px] md:pt-[22px] md:pb-[16px] border-b border-b-[color:var(--border)] border-[color:var(--border)]">
         <div className="flex items-center justify-between gap-[12px] min-h-[44px]">
           <h2 ref={headingRef} tabIndex={-1} className="m-0 flex-none whitespace-nowrap font-display text-[19px] leading-[1.2] md:text-[22px] text-[color:var(--fg)] outline-none">
@@ -387,7 +508,12 @@ export function FitsView({
         </p>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-[16px] px-[16px] pt-[16px] pb-[28px] md:px-[30px] md:pt-[18px] md:pb-[30px]">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-[16px] pt-[16px] pb-[28px] md:px-[30px] md:pt-[18px] md:pb-[30px]">
+        {/* Every card the view names previews on hover (a row's marks, the free list's reasons). */}
+        <HoverPreviewProvider waitForMove className="flex flex-col gap-[16px]">
+        {/* Nothing until the list and the panel have both answered: the band and the read's rows arrive with
+            the list, never after it, so nothing shifts in under the reader. */}
+        {bodyReady ? <>
         {band}
 
         {result ? (
@@ -395,12 +521,14 @@ export function FitsView({
             <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px]">
               <h3 className="m-0 text-[14px] font-semibold text-[color:var(--fg)]">{read.resultHead}</h3>
               <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                {isFresh(result)
-                  ? (result.candidates === 1 ? read.resultSubNowOne : read.resultSubNow(result.picks.length, result.candidates))
-                  : read.resultSubStored(when(result.at), result.picks.length, result.candidates)}
+                {stale
+                  ? read.resultSubStale(when(result.at))
+                  : isFresh(result)
+                    ? (result.candidates === 1 ? read.resultSubNowOne : read.resultSubNow(result.picks.length, result.candidates))
+                    : read.resultSubStored(when(result.at), result.picks.length, result.candidates)}
               </span>
             </div>
-            {result.picks.map((p) => {
+            {rowsShown.map((p) => {
               const deck = deckOf(p.deckId);
               return (
                 <ReadRow
@@ -412,12 +540,16 @@ export function FitsView({
                   parts={p.parts}
                   cut={p.cut}
                   names={panel?.names ?? {}}
+                  images={panel?.images ?? {}}
+                  commanderIds={panel?.commanderIds?.[p.deckId] ?? []}
+                  readCard={card.oracleId}
                   cardName={name}
                   freeNow={freeNow}
                   act={actOf(p.deckId)}
                   // Took the card some other way since the read (the free list, another visit): resolved,
                   // not changed (READINESS-audit F2), and nothing left to press on this row.
                   settled={!actOf(p.deckId) && (result.resolved.includes(p.deckId) || heldNow.has(p.deckId))}
+                  changed={changedOf.get(p.deckId) ?? null}
                   busy={rowsLocked}
                   refused={refused?.deckId === p.deckId ? refused.kind : null}
                   onSwap={() => p.cut && void onSwap(p.deckId, p.cut, panel?.names[p.cut] ?? "")}
@@ -426,7 +558,7 @@ export function FitsView({
                 />
               );
             })}
-            {result.refunded ? (
+            {stale ? null : result.refunded ? (
               <div data-testid="read-thin" className="flex flex-col gap-[4px] rounded-[9px] px-[14px] py-[11px] border border-dashed border-[color:var(--border-dashed)]">
                 <p className="m-0 text-[12.5px] text-[color:var(--fg-body)]">{read.thin(result.picks.length)}</p>
                 <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{`${read.thinSub} · ${standing}`}</p>
@@ -485,6 +617,8 @@ export function FitsView({
         ) : freeList}
 
         {list.holds.length > 0 && (!result || foldOpen) ? <FitsHolds holds={list.holds} /> : null}
+        </> : null}
+        </HoverPreviewProvider>
       </div>
       {/* Desktop: the body fades to the rail at its foot (design table, Body). */}
       <div aria-hidden className="hidden md:block pointer-events-none absolute inset-x-0 bottom-0 h-[56px] bg-[linear-gradient(to_bottom,transparent,var(--surface-rail))]" />
