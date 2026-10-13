@@ -48,9 +48,11 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.getByText("$0.884 of $10")).toBeInTheDocument();
     expect(screen.getAllByText("$20 hard stop").length).toBeGreaterThan(0);
     expect(screen.getByText("$0.884 of $5")).toBeInTheDocument();
-    // Two IN CODE rows, two SET HERE rows.
+    // Two in-code rows, two recorded-here rows; the source label sits LEFT of the row's name.
     expect(screen.getAllByText("in code")).toHaveLength(2);
-    expect(screen.getAllByText("set here")).toHaveLength(2);
+    const here = screen.getAllByText("recorded here");
+    expect(here).toHaveLength(2);
+    for (const tag of here) expect(tag.previousElementSibling).toBeNull();
     expect(screen.getByText(/Elsewhere is not entered\./)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Enter elsewhere" })).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
@@ -341,11 +343,13 @@ describe("the pinned head and month bar", () => {
       observe(el: Element) { observed = el; this.cb(); }
       disconnect() { disconnect(); }
     });
-    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ height: 173 } as DOMRect);
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ height: 173, top: 0 } as DOMRect);
+    // From md up (the setup's matchMedia stub reports a match only when told to): the whole head pins.
+    const wide = vi.spyOn(window, "matchMedia").mockReturnValue({ matches: true, addEventListener: () => {}, removeEventListener: () => {} } as unknown as MediaQueryList);
     const head = render(<AdminHead env="staging" />);
     const header = head.container.querySelector("header")!;
     expect(header.className).toMatch(/(^|\s)sticky(\s|$)/);
-    expect(header.className).toMatch(/(^|\s)top-0(\s|$)/);
+    expect(header.style.top).toBe("0px");
     expect(header.className).toContain("bg-[color:var(--bg)]");
     expect(observed).toBe(header);
     expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("173px");
@@ -359,6 +363,28 @@ describe("the pinned head and month bar", () => {
     expect(disconnect).toHaveBeenCalled();
     expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("");
     rect.mockRestore();
+    wide.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it("on a phone, lets the eyebrow, title and sub scroll away and pins the tab strip alone", () => {
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(private cb: () => void) {}
+      observe() { this.cb(); }
+      disconnect() {}
+    });
+    vi.spyOn(window, "matchMedia").mockReturnValue({ matches: false, addEventListener: () => {}, removeEventListener: () => {} } as unknown as MediaQueryList);
+    // The head is 160.4px tall and its tab strip starts 117.6px down it: unrounded, as a 20.8px line leaves it.
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      return (this.tagName === "NAV" ? { top: 117.6, height: 42.8 } : { top: 0, height: 160.4 }) as DOMRect;
+    });
+    const head = render(<AdminHead env="staging" />);
+    const header = head.container.querySelector("header")!;
+    expect(header.style.top).toBe("-117.6px");
+    expect(parseFloat(document.documentElement.style.getPropertyValue("--admin-head-h"))).toBeCloseTo(42.8, 5);
+    head.unmount();
+    rect.mockRestore();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -374,7 +400,7 @@ describe("the pinned head and month bar", () => {
   it("re-measures the head on a window resize where ResizeObserver does not exist", () => {
     vi.stubGlobal("ResizeObserver", undefined);
     let height = 173;
-    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => ({ height }) as DOMRect);
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(() => ({ height, top: 0 }) as DOMRect);
     const head = render(<AdminHead env="staging" />);
     expect(document.documentElement.style.getPropertyValue("--admin-head-h")).toBe("173px");
     height = 201;

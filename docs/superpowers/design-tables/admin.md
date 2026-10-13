@@ -6,13 +6,14 @@
 | Property | Mobile | Desktop |
 |---|---|---|
 | page | `flex:1; min-height:0` column filling `ShellMain` (audit finding 14: never `100dvh`, the shell already reserves the header and tab bar); head and pinned `flex:none`; body `flex:1; min-height:0` | same |
+| head pinning | the eyebrow, title and sub scroll away; the tab strip stays pinned with the page's pinned bar under it (Hugh, 2026-10-13: the whole head took too much of the phone) | whole head pinned |
 | pinned bar | pad 14 16 12, `--bg`; holds search + chips (Switches, Accounts) or the month bar (Costs) | pad 18 28 14 |
 | list pages body | `overflow:hidden`, pad 0 16 12; table box `flex:1; min-height:0; overflow-y:auto` | pad 0 28 18 |
 | other pages body | `overflow-y:auto` | same |
 | sticky column head | `position:sticky; top:0; z-index:1` on `--surface-rail` | same |
 | account search | full width | full width (no 420 max) |
 | Clerk id line | mono 10.5 `--fg-muted`, under the email, breaks anywhere | same |
-| cap source tag | mono 9.5 upper, pad 2 6, radius 4; `in code` 1px `--border-strong` `--fg-muted`; `set here` 1px `--accent` `--accent` | same |
+| cap source tag | LEFT of the row's name; mono 9.5 upper .08em `--fg-faint`, no border or pad: a label, not a control (Hugh, 2026-10-13: the bordered `set here` chip read as a button). `in code` / `recorded here` | same |
 | trend cap lines | full-width rule at the value, 1.5px: plan solid `--fg-muted`; alarms dashed `--warning`; label mono 10 in the line's ink on `--surface`, above the rule. y scale ≥ plan + 10% | same |
 | by-model row | as a caps row; label mono 13; figure mono 13 + share mono 11 `--fg-faint` (w44); 10px stacked bar, gap 2, inks per origin; sub 12 `--fg-muted` | same |
 | group chip (account) | one chip, `Change group` | same |
