@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { chainArt } from "../cards/chain-art";
+import { loadOpeningArt } from "../cards/opening-printing";
 import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { hardDecks } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
@@ -98,12 +99,15 @@ async function decorate(userId: string, slice: readonly Ranked[], sets: readonly
   };
   const ids = slice.map((r) => r.candidate.oracleId);
   const owned = slice.filter((r) => r.candidate.owned).map((r) => r.candidate.oracleId);
-  const [art, printings, availability, prices] = await Promise.all([
+  const unowned = ids.filter((id) => !owned.includes(id));
+  const [art, printings, availability, prices, opening] = await Promise.all([
     db.execute(sql`select c.oracle_id, c.image_uri, c.art_crop_uri from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])`)
       .then((r) => new Map((r.rows as { oracle_id: string; image_uri: string | null; art_crop_uri: string | null }[]).map((x) => [x.oracle_id, x]))),
     owned.length === 0 ? Promise.resolve(new Map()) : resolveOwnedPrintings(userId, owned),
     owned.length === 0 ? Promise.resolve(new Map()) : loadAvailability(userId, { oracleIds: owned }),
     loadPrices(ids),
+    // A commander the reader does not own previews the printing card details open it on, not the catalog's arbitrary one.
+    loadOpeningArt(unowned),
   ]);
   return slice.map(({ candidate: c, themeFits, cardFit }) => {
     const mine = printings.get(c.oracleId);
@@ -119,7 +123,7 @@ async function decorate(userId: string, slice: readonly Ranked[], sets: readonly
       name: c.name,
       colorIdentity: c.colorIdentity,
       // The owned printing's art where the player owns one; the card's own otherwise.
-      imageUri: mine?.imageUri ?? art.get(c.oracleId)?.image_uri ?? null,
+      imageUri: mine?.imageUri ?? opening.get(c.oracleId) ?? art.get(c.oracleId)?.image_uri ?? null,
       artCropUri: mine?.artCropUri ?? art.get(c.oracleId)?.art_crop_uri ?? null,
       mark,
       themeFits,

@@ -67,6 +67,7 @@
     "probe:the-read": "tsx scripts/probe-the-read.ts",
     "probe:profile-store": "tsx scripts/probe-profile-store.ts",
     "probe:notices": "tsx scripts/probe-notices.ts",
+    "probe:opening-printing": "tsx scripts/probe-opening-printing.ts",
     "probe:notices-log": "tsx scripts/probe-notices-log.ts",
     "probe:notices-open": "node scripts/probe-notices-open.mjs",
     "probe:notices-sheet": "tsx scripts/probe-notices-sheet.mjs",

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadPrices } from "./price-query";
 import type { PriceFact } from "./price";
+import { loadOpeningPrintings } from "../cards/opening-printing";
 import { resolveOwnedPrintings } from "../collection/owned-printings";
 
 /**
@@ -136,10 +137,12 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
   // the liveness and finish rules — live before stale, real non-foil stock
   // before foil-only at any price — that `priceState` then reads to tell
   // `priced` from `soldOut` from `foilOnly` from absent.
-  const [prices, ownedArt] = await Promise.all([
+  const [prices, ownedArt, opening] = await Promise.all([
     loadPrices(rows.map((r) => r.oracle_id)),
-    // The printing the player owns (the one card details opens) where they own one; the catalog's otherwise.
+    // The printing the player owns (the one card details opens) where they own one...
     resolveOwnedPrintings(userId, rows.map((r) => r.oracle_id)),
+    // ...else the printing card details open an unowned card on, so the art, the set and the rarity are that one's.
+    loadOpeningPrintings(rows.map((r) => r.oracle_id)),
   ]);
 
   return {
@@ -151,10 +154,10 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     manaCost: r.mana_cost,
     cmc: r.cmc,
     // Art, set and rarity come from ONE printing: the owned one when the player has it (its rarity is not read, so
-    // the line names the set alone), else the catalog's newest.
-    imageUri: ownedArt.get(r.oracle_id)?.imageUri ?? r.image_uri,
-    setCode: ownedArt.get(r.oracle_id)?.setCode ?? r.set_code,
-    rarity: ownedArt.has(r.oracle_id) ? null : r.rarity,
+    // the line names the set alone), else the one card details open the card on, else the catalog's newest.
+    imageUri: ownedArt.get(r.oracle_id)?.imageUri ?? opening.get(r.oracle_id)?.imageUri ?? r.image_uri,
+    setCode: ownedArt.get(r.oracle_id)?.setCode ?? opening.get(r.oracle_id)?.setCode ?? r.set_code,
+    rarity: ownedArt.has(r.oracle_id) ? null : opening.get(r.oracle_id)?.rarity ?? r.rarity,
     decks: r.decks ?? [],
     commander: r.commander,
     price: prices.prices.get(r.oracle_id) ?? null,

@@ -1,11 +1,13 @@
 import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { resolveDeckOwnedPrintings } from "../decks/printings";
+import { loadOpeningArt } from "./opening-printing";
 
 /**
  * The art a card is drawn with for this player, down the chain card details uses: the deck's chosen
  * printing where a deck is in context (`deckPickFor`, then the Collection's), else the printing the
- * player owns, and for a card they do not own nothing at all, so the caller keeps the catalog
- * representative it already holds (`cards.image_uri`).
+ * player owns, and for a card they do not own the printing card details open it on (`loadOpeningArt`: the oracle's own
+ * when the shop carries it, else the cheapest it does). A card with no such printing is absent, and the caller keeps
+ * the catalog representative it already holds (`cards.image_uri`).
  *
  * ONE RULE FOR A SURFACE THAT DRAWS A CARD WITHOUT OPENING IT: Suggested changes, Proposed cuts, the
  * stand-ins sheet and Improve my mana's staples call this. The Top-off list shows only cards NOT in the deck, which have no deck pick, so
@@ -31,6 +33,10 @@ export async function chainArt(
     ? await resolveDeckOwnedPrintings(userId, deckId, ids)
     : await resolveOwnedPrintings(userId, ids);
   for (const [id, p] of printings) if (p.imageUri) art.set(id, p.imageUri);
+  // The cards nothing above resolved are cards the reader does not own (or whose copy has no art): they open on the
+  // opening printing, so the preview and the press show one picture. Fail-soft inside `loadOpeningArt`.
+  const open = ids.filter((id) => !art.has(id));
+  for (const [id, uri] of await loadOpeningArt(open)) art.set(id, uri);
   return art;
 }
 

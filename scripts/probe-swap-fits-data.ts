@@ -255,7 +255,8 @@ async function main() {
 
   // 6. The add Fits calls is the deck page's add.
   const added = await addCardToDeckFor(USER, fits, x.oracle_id, { relock: false });
-  check("add: written", added, { result: { ok: true }, wrote: "added" });
+  // `released` lists the decks whose asks the add released (`releaseAskers`): none in this fixture.
+  check("add: written", added, { result: { ok: true }, wrote: "added", released: [] });
   const after = await loadFits(USER, x.oracle_id);
   check("add: the deck moves from fits to holds", [after?.fits.some((d) => d.id === fits), after?.holds.some((d) => d.id === fits)], [false, true]);
   const again = await addCardToDeckFor(USER, fits, x.oracle_id, { relock: false });

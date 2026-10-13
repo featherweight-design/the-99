@@ -6,6 +6,7 @@ import type { ModalComboPartner } from "../combos/near-miss";
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
 
 import { cache } from "react";
+import { liveCents, openingScryfallId } from "../cards/opening-printing";
 import type { PrintingPrices } from "../cards/price-lookup";
 import type { BrowseCard, BrowsePrinting, ProxyingDeck } from "./browse";
 import {
@@ -146,21 +147,12 @@ export function catalogCard(
   // caption and price from the first printing with art (`resolvedPrinting`), not from this
   // card-level field; before, the two could name different printings.
   const oracleDefault = entries.find((e) => e.scryfallId === card.scryfallId);
-  const live = (scryfallId: string) => {
-    const fact = prices?.byScryfallId[scryfallId];
-    return prices?.newestAsOf != null && fact !== undefined && fact.cents !== null
-      && fact.asOf.getTime() === prices.newestAsOf.getTime() ? fact.cents : null;
-  };
-  const withArt = entries.filter((e) => e.ownArt);
-  const cheapestLive = withArt
-    .map((e) => ({ e, cents: live(e.scryfallId) }))
-    .filter((x): x is { e: (typeof entries)[number]; cents: number } => x.cents !== null)
-    .sort((a, b) => a.cents - b.cents)[0]?.e;
-  const opensOn =
-    (oracleDefault && oracleDefault.ownArt && live(oracleDefault.scryfallId) !== null
-      ? oracleDefault
-      : undefined)
-    ?? cheapestLive;
+  // The rule is `openingScryfallId`'s, shared with every surface that previews this card (`chainArt`'s fallback).
+  const openingId = openingScryfallId(
+    entries.map((e) => ({ scryfallId: e.scryfallId, ownArt: e.ownArt, liveCents: liveCents(prices, e.scryfallId) })),
+    card.scryfallId,
+  );
+  const opensOn = entries.find((e) => e.scryfallId === openingId);
   if (opensOn) {
     result.printings = [opensOn.printing, ...printings.filter((p) => p !== opensOn.printing)];
   }

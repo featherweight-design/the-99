@@ -325,12 +325,12 @@ export default async function DeckBuilderPage({
       openSlots > 0
         ? perf.timed("synergy", async () => {
             const read = await readDeckSynergy(userId, detail.commander.oracleId, detail.partner?.oracleId ?? null);
-            // The art an OWNED candidate is drawn with, so the Top-off hover shows the printing card details
-            // opens. `readSynergyCards` carries the catalog's one arbitrary printing per card, and an unowned
-            // card has no other. Read here, inside the synergy read's own slot in the wave, so it overlaps the
+            // The art a candidate is drawn with, so the Top-off hover shows the printing card details opens
+            // (the owned copy, else the printing an unowned card opens on). `readSynergyCards` carries the
+            // catalog's one arbitrary printing per card. Read here, inside the synergy read's own slot in the wave, so it overlaps the
             // other five reads rather than following them; overlaid below at the draw, not in the cached
             // loader `/commanders/[slug]` shares.
-            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.filter((c) => c.owned).map((c) => c.oracleId)));
+            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.map((c) => c.oracleId)));
             return { ranked: read, ownedArt: art };
           })
         : { ranked: [], ownedArt: new Map<string, string>() },

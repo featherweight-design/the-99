@@ -3,12 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const calls = vi.hoisted(() => ({
   owned: new Map<string, { imageUri: string | null }>(),
   deck: new Map<string, { imageUri: string | null }>(),
+  opening: new Map<string, string>(),
   ownedArgs: undefined as unknown,
   deckArgs: undefined as unknown,
+  openingArgs: undefined as unknown,
 }));
 
 vi.mock("../collection/owned-printings", () => ({
   resolveOwnedPrintings: async (...args: unknown[]) => { calls.ownedArgs = args; return calls.owned; },
+}));
+vi.mock("./opening-printing", () => ({
+  loadOpeningArt: async (ids: unknown) => { calls.openingArgs = ids; return calls.opening; },
 }));
 vi.mock("../decks/printings", () => ({
   resolveDeckOwnedPrintings: async (...args: unknown[]) => { calls.deckArgs = args; return calls.deck; },
@@ -19,8 +24,10 @@ import { chainArt, withChainArt } from "./chain-art";
 beforeEach(() => {
   calls.owned = new Map();
   calls.deck = new Map();
+  calls.opening = new Map();
   calls.ownedArgs = undefined;
   calls.deckArgs = undefined;
+  calls.openingArgs = undefined;
 });
 
 // The chain card details uses: the deck's pick, then the owned printing; a card the player does not
@@ -41,6 +48,16 @@ describe("chainArt", () => {
     const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"]);
     expect([...got]).toEqual([["a", "a.jpg"]]);
     expect(calls.deckArgs).toEqual(["u", "d", ["a", "b", "c"]]);
+  });
+
+  // A card nothing above resolves is one the reader does not own: it opens on the printing card details open an
+  // unowned card on, so a preview and a press show one picture. Only the unresolved ids are asked.
+  it("falls back to the opening printing for a card no owned printing resolves, and asks only for those", async () => {
+    calls.owned = new Map([["a", { imageUri: "owned-a.jpg" }]]);
+    calls.opening = new Map([["b", "opening-b.jpg"]]);
+    const got = await chainArt("u", null, ["a", "b", "c"]);
+    expect([...got].sort()).toEqual([["a", "owned-a.jpg"], ["b", "opening-b.jpg"]]);
+    expect(calls.openingArgs).toEqual(["b", "c"]);
   });
 
   it("reads nothing for no ids", async () => {
