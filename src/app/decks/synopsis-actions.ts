@@ -4,7 +4,8 @@ import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { isUuid } from "../../lib/uuid";
-import { retrySynopsisFor, writeSynopsisFor, type WriteResult } from "../../lib/synopsis/generate";
+import { defaultDeps, retrySynopsisFor, writeSynopsisFor, type WriteResult } from "../../lib/synopsis/generate";
+import { requestProfileDeps } from "../../lib/profile/stored";
 import { readSynopsisState, readVersionSynopsis, type SynopsisState } from "../../lib/synopsis/read";
 
 /**
@@ -26,7 +27,8 @@ export async function writeSynopsis(deckId: string): Promise<WriteResult | Refus
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId)) return { kind: "not_found" };
-  return writeSynopsisFor(deckId, userId);
+  // The profile the synopsis is written from, read under the reader's resolved switches (`requestProfileDeps`).
+  return writeSynopsisFor(deckId, userId, { ...defaultDeps(), profile: requestProfileDeps(env) });
 }
 
 export async function retrySynopsisSections(deckId: string, synopsisId: string): Promise<WriteResult | Refused> {
@@ -34,7 +36,7 @@ export async function retrySynopsisSections(deckId: string, synopsisId: string):
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId) || !isUuid(synopsisId)) return { kind: "not_found" };
-  return retrySynopsisFor(deckId, userId, synopsisId);
+  return retrySynopsisFor(deckId, userId, synopsisId, { ...defaultDeps(), profile: requestProfileDeps(env) });
 }
 
 export async function fetchSynopsis(deckId: string): Promise<SynopsisState | Refused> {
@@ -42,7 +44,7 @@ export async function fetchSynopsis(deckId: string): Promise<SynopsisState | Ref
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { kind: "disabled" };
   if (!isUuid(deckId)) return { kind: "not_found" };
-  return (await readSynopsisState(deckId, userId)) ?? { kind: "not_found" };
+  return (await readSynopsisState(deckId, userId, requestProfileDeps(env))) ?? { kind: "not_found" };
 }
 
 export async function fetchVersionSynopsis(versionId: string) {

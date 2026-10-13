@@ -127,8 +127,10 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
 /**
  * The profile of exactly this head — the one the fingerprint hashed and the bracket flag swaps.
  * `cachedDeckProfile` would read the head again, and an edit landing between the two reads would
- * pair a profile of one list with a fingerprint and a flag of another. The cache key is the one
- * `cachedDeckProfile` files under, so an analysis already pressed is still reused.
+ * pair a profile of one list with a fingerprint and a flag of another. The cache key is exactly the
+ * one `cachedDeckProfile` files under: the deck, the list's fingerprint and the reader's resolved
+ * switch bits (`switchBits(env)`). Every caller of either passes the env its action resolved for the
+ * reader, so an analysis already pressed is still reused, and never across a role basis.
  */
 export function profileOfHead(head: ProfileHead, env: NodeJS.ProcessEnv = process.env): Promise<DeckProfile> {
   return cacheForUser(head.userId, ["deck-profile", head.deckId, profileFingerprint(head), switchBits(env)], () =>

@@ -51,11 +51,28 @@ export type StoredProfileDeps = {
    * hand back the very reading a notice is about. Absent, `compute` stands in.
    */
   computeFresh?: (deckId: string, userId: string) => Promise<DeckProfile | null>;
+  /**
+   * The reader's resolved switches (`requestSwitchEnv`): the notices switch and the role basis a press
+   * is judged against. Absent, the environment alone decides, which only a probe should rely on.
+   */
+  env?: NodeJS.ProcessEnv;
 };
 
-const REQUEST_DEPS: StoredProfileDeps = {
-  generation: catalogGeneration, compute: cachedDeckProfile, computeFresh: loadDeckProfile,
-};
+/**
+ * The request's readers under the reader's resolved switches. Both builds take that env, so the
+ * profile cache files and finds an entry under the reader's switch bits (`cachedDeckProfile`), the
+ * same key `profileOfHead` uses, and a pressed analysis is reused by every other reader of it.
+ */
+export function requestProfileDeps(env: NodeJS.ProcessEnv): StoredProfileDeps {
+  return {
+    generation: catalogGeneration,
+    compute: (deckId, userId) => cachedDeckProfile(deckId, userId, env),
+    computeFresh: (deckId, userId) => loadDeckProfile(deckId, userId, env),
+    env,
+  };
+}
+
+const REQUEST_DEPS: StoredProfileDeps = requestProfileDeps(process.env);
 
 /** A stored reading, with whether it still describes the deck. */
 export type StoredReading = {
@@ -121,7 +138,7 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
  */
 export function storedBasisMoved(
   profile: Pick<DeckProfile, "skeleton"> | null | undefined,
-  basis: RoleBasis = roleBasisFromEnv(),
+  basis: RoleBasis = roleBasisFromEnv(process.env),
 ): boolean {
   return (profile?.skeleton?.roleBasis ?? "classifier") !== basis;
 }
@@ -138,9 +155,11 @@ export async function pressMustRecompute(args: {
   storedProfile: Pick<DeckProfile, "skeleton"> | null | undefined;
   noticesOn: boolean;
   logMoved: () => Promise<boolean>;
+  /** The reader's role basis; absent, the environment's. */
+  basis?: RoleBasis;
 }): Promise<boolean> {
   if (!args.isPress || !args.sameAnswer) return false;
-  if (storedBasisMoved(args.storedProfile)) return true;
+  if (storedBasisMoved(args.storedProfile, args.basis)) return true;
   return args.noticesOn ? args.logMoved() : false;
 }
 
@@ -358,7 +377,8 @@ export async function computeAndStoreProfile(
     isPress,
     sameAnswer: Boolean(row && sameAnswer),
     storedProfile: row?.profile,
-    noticesOn: noticesEnabled(),
+    noticesOn: noticesEnabled(deps.env ?? process.env),
+    basis: roleBasisFromEnv(deps.env ?? process.env),
     // Read only when nothing cheaper already said yes, and only for a row that exists.
     logMoved: () => readingMoved({
       seenSeq: row!.seenSeq,

@@ -98,6 +98,7 @@ const READERS = [
   "src/lib/decks/cuts-read.ts",
   "src/lib/decks/tuning-read.ts",
   "src/lib/profile/load.ts",
+  "src/lib/profile/stored.ts",
   "src/lib/swaps/draft-swap.ts",
   "src/lib/swaps/gather.ts",
   "src/lib/swaps/take.ts",

@@ -10,7 +10,7 @@ import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { deckBenchmarksEnabled } from "../../lib/decks/benchmarks-flag";
 import { readingBenchmarks } from "../../lib/benchmarks/reading";
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
-import { computeAndStoreProfile, readStoredReading } from "../../lib/profile/stored";
+import { computeAndStoreProfile, readStoredReading, requestProfileDeps } from "../../lib/profile/stored";
 import type { DeckProfile } from "../../lib/profile/types";
 
 export type ProfileFetch =
@@ -75,7 +75,7 @@ export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
 
   // Computed through the same cache as before, and now also STORED, so the next visit can show
   // it without a press. See `stored.ts`.
-  const result = await computeAndStoreProfile(deckId, userId);
+  const result = await computeAndStoreProfile(deckId, userId, requestProfileDeps(env));
   // A deck the reader does not own reads as ABSENT rather than forbidden: `loadProfileHead`
   // scopes by `user_id`, so there is no state in which this returns another player's deck.
   if (!result) return { ok: false, reason: "not-found" };
@@ -117,7 +117,7 @@ export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProf
   const env = await requestSwitchEnv(userId);
   if (!analysisTabEnabled(env)) return { ok: false, reason: "disabled" };
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
-  const stored = await readStoredReading(deckId, userId);
+  const stored = await readStoredReading(deckId, userId, requestProfileDeps(env));
   // A STALE reading is answered as one: the tab holds it under the banner (2i) rather than
   // withdrawing it.
   return stored

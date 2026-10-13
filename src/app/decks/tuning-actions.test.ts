@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+// The reader's resolved switches: a sentinel holding no variable (the flag is mocked below), so a write is
+// seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
+const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
@@ -732,11 +733,9 @@ describe("ids off the wire", () => {
   it("hands the panel's run id to startRun, and refuses one that is not a uuid", async () => {
     const RUN = "22222222-2222-4222-8222-222222222222";
     await runTuning(DECK, { anyway: true, runId: RUN });
-    // The run starts under the env the action resolved for the reader. Compared by identity as a boolean
-    // and kept out of the deep compare, so a failing diff never prints the environment.
-    const { env, ...startOpts } = calls.startOpts as { env?: unknown };
-    expect(startOpts).toEqual({ runId: RUN });
-    expect(env === process.env).toBe(true);
+    // The run starts under the env the action resolved for the reader, the sentinel itself.
+    expect(calls.startOpts).toEqual({ runId: RUN, env: ENV });
+    expect((calls.startOpts as { env?: unknown }).env).toBe(ENV);
     for (const runId of ["not-a-uuid", 7, {}]) {
       const result = await runTuning(DECK, { anyway: true, runId } as unknown as { runId: string });
       expect(result.ok).toBe(false);

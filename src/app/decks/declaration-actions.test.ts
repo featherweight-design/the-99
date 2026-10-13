@@ -31,6 +31,17 @@ const stub = vi.hoisted(() => ({
   /** When set, each read of the stored reading takes the next answer, so a read can differ from
    *  the one after it — an edit landing between the early check and the write. */
   storedQueue: null as null | { dirty: boolean }[][],
+  /** What each `cachedDeckProfile` call was handed: deck, reader and env. */
+  profileCalls: [] as unknown[][],
+  /** Whose switches the action resolved. */
+  resolvedFor: [] as string[],
+}));
+
+// The reader's resolved switches: a sentinel holding no variable, so the profile read is seen to receive
+// exactly the env the action resolved (never the environment), and a failing diff prints nothing real.
+const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
+vi.mock("../../lib/switches/request", () => ({
+  requestSwitchEnv: async (userId: string) => (stub.resolvedFor.push(userId), ENV),
 }));
 
 vi.mock("next/cache", () => ({
@@ -48,7 +59,7 @@ vi.mock("next/server", () => ({
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
 
 vi.mock("../../lib/profile/load", () => ({
-  cachedDeckProfile: async () => stub.profile,
+  cachedDeckProfile: async (...args: unknown[]) => (stub.profileCalls.push(args), stub.profile),
 }));
 
 vi.mock("../../lib/bracket/slot", () => ({
@@ -89,9 +100,21 @@ beforeEach(() => {
   stub.profile = { brackets: {} };
   stub.permits = [1, 2];
   stub.updateReturns = [{ id: "deck-1" }];
+  stub.profileCalls = [];
+  stub.resolvedFor = [];
 });
 
 describe("declareBracket", () => {
+  // Admin adoption 6c: the profile is read under the READER's resolved switches, so its cache key
+  // (`switchBits(env)`) is the one the analysis tab filed it under, and the role basis is the reader's.
+  it("reads the profile under the env it resolved for the signed-in reader", async () => {
+    await declareBracket(DECK, 2);
+    expect(stub.resolvedFor).toEqual(["user-1"]);
+    expect(stub.profileCalls).toHaveLength(1);
+    expect(stub.profileCalls[0]?.slice(0, 2)).toEqual([DECK, "user-1"]);
+    expect(stub.profileCalls[0]?.[2]).toBe(ENV);
+  });
+
   it("writes the named bracket and revalidates the deck's surfaces", async () => {
     const result = await declareBracket(DECK, 2);
     expect(result).toEqual({ ok: true, declared: 2 });

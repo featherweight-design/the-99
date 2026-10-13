@@ -581,9 +581,10 @@ async function loadStaples(
 export async function loadDeckProfile(
   deckId: string,
   userId: string,
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<DeckProfile | null> {
   const head = await loadProfileHead(deckId, userId);
-  return head ? loadDeckProfileFromHead(head) : null;
+  return head ? loadDeckProfileFromHead(head, env) : null;
 }
 
 /**
