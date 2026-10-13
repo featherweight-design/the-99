@@ -381,7 +381,9 @@ export function DecksView({
     mirrorUrl(url);
   };
   const statsOn = lineup !== null && view === "stats" && heldStats !== null;
-  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={onView} busy={statsPending} /> : null;
+  // The deck a tile's `See it among your decks` chose, for Stats to open on; a press on the switch clears it.
+  const [amongDeck, setAmongDeck] = useState<string | null>(null);
+  const viewSwitch = lineup ? <StatsViewSwitch view={statsOn ? "stats" : "tiles"} onView={(next) => { setAmongDeck(null); onView(next); }} busy={statsPending} /> : null;
 
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   // Which card's overflow panel a finished create-from-move should close, and a
@@ -933,7 +935,7 @@ export function DecksView({
               when there is at least one deck: a shelf for nothing is furniture
               (STATES W6/C5), and `zero` above has already taken that case. */}
           {statsOn ? (
-            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} cartEnabled={cartEnabled} />
+            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} cartEnabled={cartEnabled} amongDeck={amongDeck} />
           ) : (<>
           {wide ? (
             <ShelfLine
@@ -1313,6 +1315,7 @@ export function DecksView({
                       if (state.shelf !== ALL_DECKS) focusShelfControl();
                     }}
                     keepsFocus={state.shelf === ALL_DECKS}
+                    onAmong={lineup ? () => { setAmongDeck(deck.id); onView("stats"); } : undefined}
                     closeAfterCreate={
                       createFiled?.deckId === deck.id
                         ? { seq: createFiled.seq }

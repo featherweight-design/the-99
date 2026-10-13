@@ -1,0 +1,42 @@
+{
+  "feature": "Stats on /decks: Brackets and colors draws the tile chip's own BracketMark",
+  "note": "check:shared, plus the two surfaces side by side. Needs LINEUP_ENABLED=true and an account with an analyzed deck.",
+  "shares": {
+    "module": "src/components/decks/bracket-mark.tsx",
+    "binding": "BracketMark",
+    "note": "One bracket mark: the tile's chip and Stats' Brackets and colors rows import it, never a second drawing."
+  },
+  "out": "contact-sheets/lineup-shared",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "tile-chip",
+      "label": "/decks Tiles: a tile's bracket chip",
+      "view": "src/components/decks/bracket-chip.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=tiles",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "spread",
+      "label": "/decks Stats: Brackets and colors",
+      "view": "src/components/decks/lineup/spread-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-stats-expand]",
+          "settle": 800,
+          "scrollTo": "[data-stats-card=spread]"
+        }
+      ]
+    }
+  ]
+}

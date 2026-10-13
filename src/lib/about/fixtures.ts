@@ -1,4 +1,5 @@
 import type { ProfileRoleTargets } from "../profile/types";
+import type { LineupDeck, LineupShared } from "../lineup/types";
 import type { BuilderTabSpec } from "../../components/decks/builder-tabs";
 import { addPanelCopy } from "../copy/decks-builder";
 import { gameLogCopy } from "../copy/game-log";
@@ -2435,3 +2436,21 @@ export const NOTE_ROW = {
   ],
   date: "2 Oct",
 } as const;
+
+/**
+ * `decks-stats`: Cards your decks share, as the handoff's specimen draws it (README "Specimen": Sol Ring in 20
+ * decks against 17 owned), with two rows under it so the card reads as a list.
+ */
+const STATS_COMMANDERS = [
+  "Gishath", "Tovolar", "Brago", "Kratos", "Yuriko", "Meren", "Atraxa", "Edgar", "Krenko", "Lathril",
+  "Muldrotha", "Najeela", "Prossh", "Sythis", "Teysa", "Urza", "Wilhelt", "Xenagos", "Zur", "Chulane",
+];
+export const DECKS_STATS_DECKS: LineupDeck[] = STATS_COMMANDERS.map((c, i) => ({
+  id: `about-stats-${i}`, name: c, identity: [], brew: false, bracket: null, games: [], build: null, basis: c,
+}));
+const statsDecks = (k: number, held: number) => DECKS_STATS_DECKS.slice(0, k).map((d, i) => ({ id: d.id, wants: 1, held: i < held ? 1 : 0 }));
+export const DECKS_STATS_SHARED: LineupShared[] = [
+  { oracleId: "about-sol-ring", name: "Sol Ring", imageUri: null, owned: 17, decks: statsDecks(20, 17) },
+  { oracleId: "about-arcane-signet", name: "Arcane Signet", imageUri: null, owned: 14, decks: statsDecks(12, 12) },
+  { oracleId: "about-command-tower", name: "Command Tower", imageUri: null, owned: 9, decks: statsDecks(9, 9) },
+];

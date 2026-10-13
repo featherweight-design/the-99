@@ -238,6 +238,8 @@ interface DeckCardProps {
   eager?: boolean;
   /** Asked when this tile's prefetch would start; `false` cancels it (`IntentPrefetchLink`). */
   claimPrefetch?: () => boolean;
+  /** Passed through to the menu's `See it among your decks` row; absent while Stats is off. */
+  onAmong?: () => void;
 }
 
 /**
@@ -275,7 +277,7 @@ interface DeckCardProps {
 const YIELD = { faced: "@min-[330px]:@max-[336px]:hidden", marks: "hidden @min-[330px]:@max-[336px]:contents" };
 
 export function DeckCard({
-  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, claimPrefetch,
+  deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, cartLink = false, eager = false, claimPrefetch, onAmong,
 }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
@@ -436,6 +438,7 @@ export function DeckCard({
           onMove={onMove}
           keepsFocus={keepsFocus}
           closeAfterCreate={closeAfterCreate}
+          onAmong={onAmong}
         />
         {/* The block at the foot, carrying identity alone: the deck's name, its
             commander and its colour. The chip and the bar are both statements

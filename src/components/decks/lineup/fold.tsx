@@ -41,7 +41,11 @@ export function useDecksStatsFold(serverValue: string | null) {
   }, [open, choose]);
   const allOpen = STATS_CARDS.every((c) => open.has(c));
   const setAll = useCallback((on: boolean) => choose(serialise(on ? STATS_CARDS : [])), [choose]);
-  return { open, toggle, allOpen, setAll };
+  /** Opens one card, leaving the rest as they are. */
+  const show = useCallback((id: StatsCardId) => {
+    if (!open.has(id)) choose(serialise([...open, id]));
+  }, [open, choose]);
+  return { open, toggle, allOpen, setAll, show };
 }
 
 export function FoldCard({ id, title, denom, summary, open, onToggle, children }: {
@@ -70,7 +74,7 @@ export function FoldCard({ id, title, denom, summary, open, onToggle, children }
       >
         <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <span className="flex flex-wrap items-baseline gap-x-[10px]">
-            <span id={`stats-${id}-title`} className="font-display text-[16px] font-normal text-[color:var(--fg)] md:text-[17px]">{title}</span>
+            <span id={`stats-${id}-title`} className="font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{title}</span>
             <span id={`stats-${id}-denom`} className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span>
           </span>
           {open ? null : <span id={`stats-${id}-summary`} data-stats-summary className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{summary}</span>}

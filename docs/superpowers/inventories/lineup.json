@@ -1,0 +1,234 @@
+{
+  "feature": "Stats on /decks (Lineup), PRs 1-5: the switch, the seven cards, the tile's See it among your decks, and the About entry",
+  "note": "Needs LINEUP_ENABLED=true and LIST_CACHE_ENABLED on the server, an account with several decks (a pull:staging copy), and LINEUP_MENU_DECK naming a deck that is not the one played most recently, so the menu row's choice is visible. ALL_DECKS_CART_ENABLED adds the cart link to an opened shared row. Rows run in order in one context per width, and fold memory carries between them: `s1` runs before the menu row (whose press opens This deck among yours), `l2` opens every card once, and the rows after it read them open.",
+  "clearAbout": true,
+  "out": "contact-sheets/lineup",
+  "rows": [
+    {
+      "id": "p1-tiles",
+      "label": "/decks Tiles: the Tiles · Stats switch beside the shelves",
+      "view": "src/components/decks/lineup/stats-view-switch.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=tiles",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "label": "/decks?view=stats: the cards, folded to their summaries",
+      "view": "src/components/decks/lineup/lineup-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "label": "A tile's … menu: See it among your decks, appended after the shipped rows",
+      "view": "src/components/decks/deck-card-overflow.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=tiles",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for ${LINEUP_MENU_DECK}$",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "menu-among",
+      "label": "The menu row pressed: Stats with that deck chosen in This deck among yours, open",
+      "view": "src/components/decks/lineup/lineup-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=tiles",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Actions for ${LINEUP_MENU_DECK}$",
+          "settle": 400
+        },
+        {
+          "clickRole": "button",
+          "name": "^See it among your decks$"
+        },
+        {
+          "wait": "[data-stats-card=among]",
+          "settle": 1200,
+          "scrollTo": "[data-stats-card=among]"
+        }
+      ]
+    },
+    {
+      "id": "l2",
+      "label": "Expand all: every card open",
+      "view": "src/components/decks/lineup/lineup-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "click": "[data-stats-expand]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "f2",
+      "label": "Finished only: the scope line, brews out",
+      "view": "src/components/decks/lineup/lineup-view.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "radio",
+          "name": "^Finished only$",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "spread",
+      "label": "Brackets and colors",
+      "view": "src/components/decks/lineup/spread-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-stats-card=spread]"
+        }
+      ]
+    },
+    {
+      "id": "shared-open",
+      "label": "Cards your decks share: the first short row opened",
+      "view": "src/components/decks/lineup/shared-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Copies left of ",
+          "settle": 400,
+          "scrollTo": "[data-stats-card=shared]"
+        }
+      ]
+    },
+    {
+      "id": "card-detail",
+      "label": "A shared card's name opens its card details",
+      "view": "src/components/decks/lineup/shared-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^View details for Sol Ring$"
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "collection",
+      "label": "Your collection, put to work, and the wanted list",
+      "view": "src/components/decks/lineup/collection-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-stats-card=collection]"
+        }
+      ]
+    },
+    {
+      "id": "among",
+      "label": "This deck among yours",
+      "view": "src/components/decks/lineup/among-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-stats-card=among]"
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "label": "Jobs, deck by deck",
+      "view": "src/components/decks/lineup/jobs-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-stats-card=jobs]"
+        }
+      ]
+    },
+    {
+      "id": "worth",
+      "label": "What each deck is worth",
+      "view": "src/components/decks/lineup/worth-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks?view=stats",
+          "wait": "[data-decks-stats]",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-stats-card=worth]"
+        }
+      ]
+    },
+    {
+      "id": "about",
+      "label": "/about: the decks-stats entry and its figure",
+      "view": "src/components/about/stats-figures.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-specimen=decks-stats]",
+          "settle": 1200,
+          "scrollTo": "#decks-stats"
+        }
+      ]
+    }
+  ]
+}

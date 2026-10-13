@@ -5,7 +5,7 @@
 // The filter has two positions, held for this visit: `All decks` (brews included) and `Finished only`, which
 // leaves brews out of every chart.
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import { defaultChosen, jobsGrid, strip, worth } from "../../../lib/lineup/among";
 import { fullestSlot, recency, scoped, spread } from "../../../lib/lineup/figures";
@@ -58,7 +58,7 @@ function Filter({ filter, onFilter, phone }: { filter: LineupFilter; onFilter: (
   );
 }
 
-export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = false }: {
+export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = false, amongDeck = null }: {
   data: LineupData;
   /** The server's clock, ISO: every "N days ago" is measured against it. */
   now: string;
@@ -67,6 +67,8 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   viewSwitch: ReactNode;
   /** `ALL_DECKS_CART_ENABLED`: a shared row's to-buy line links to Shopping for all decks only while it is on. */
   cartEnabled?: boolean;
+  /** A tile's `See it among your decks`: the deck This deck among yours opens on, with that card open and focused. */
+  amongDeck?: string | null;
 }) {
   const [filter, setFilter] = useState<LineupFilter>("all");
   const fold = useDecksStatsFold(foldServer);
@@ -80,13 +82,25 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
   const top = fullestSlot(spr);
   // The deck This deck among yours compares, and that Worth and Jobs mark: the reader's pick while it is in
   // scope, else the one played most recently (a brew picked, then left out by Finished only, falls back).
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(amongDeck);
   // Held here, not in the card's body, so the folded summary counts what the select and the cut last showed.
   const [wantedPick, setWantedPick] = useState<WantedPick>({ deckId: null, cut: 40 });
   const chosen = decks.find((d) => d.id === picked) ?? defaultChosen(decks);
   // The build cards compare decks, so they need two with figures (T1: one deck draws none of them).
   const built = decks.filter((d) => d.build);
   const comparing = built.length >= 2 && chosen?.build ? chosen : null;
+  // Arriving from a tile: open This deck among yours and put focus on its head, since the tile's menu that had
+  // focus has gone with Tiles. Once per arrival (a later fold of that card is the reader's own). With no card to
+  // compare in (one deck, or no build figures), nothing is opened or remembered and focus goes to the first head.
+  const arrived = useRef<string | null>(null);
+  const { show } = fold;
+  const canCompare = comparing !== null;
+  useEffect(() => {
+    if (!amongDeck || arrived.current === amongDeck) return;
+    arrived.current = amongDeck;
+    if (canCompare) show("among");
+    document.querySelector<HTMLElement>(canCompare ? '[data-stats-card="among"] > button' : "[data-stats-card] > button")?.focus();
+  }, [amongDeck, canCompare, show]);
   const rank = (key: "valueCents" | "ramp") => {
     const s = comparing ? strip(decks, comparing, key) : null;
     return s ? copy.among.rank(s.chosen.rank, s.total, s.chosen.tied) : "";
@@ -122,7 +136,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
         {scopeLine}
       </div>
 
-      <div role="tabpanel" id={viewPanelId("stats")} aria-labelledby={viewTabId("stats")} className="flex flex-col gap-[10px] px-[16px] pt-[4px] pb-[20px] md:gap-[12px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:pt-[14px] md:pb-[28px]">
+      <div role="tabpanel" id={viewPanelId("stats")} aria-labelledby={viewTabId("stats")} className="flex flex-col gap-[10px] px-[16px] pt-[4px] pb-[20px] md:gap-[12px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:pt-[14px] md:pb-[18px]">
         {one ? <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.one}</p> : null}
         <FoldCard
           id="recency"

@@ -69,6 +69,55 @@ describe("DecksView: Stats on /decks", () => {
     expect(read.stats).toHaveBeenCalledTimes(1);
   });
 
+  it("opens Stats from a tile's menu with that deck chosen in This deck among yours, open and focused", async () => {
+    const build = (ramp: number) => ({ manaValue: 3, lands: 36, ramp, draw: 9, removal: 8, valueCents: 10_000 });
+    const second = { ...DECK, id: "d2", name: "HD - Brago", commanderName: "Brago", lastPlayedAt: new Date(NOW) } as unknown as DeckListItem;
+    read.stats.mockResolvedValue({
+      ...STATS,
+      decks: [
+        { ...STATS.decks[0], build: build(10) },
+        { id: "d2", name: "HD - Brago", identity: ["W", "U"], brew: false, bracket: null, games: [], build: build(12), basis: "Brago" },
+      ],
+    });
+    render(<DecksView decks={[DECK, second]} folders={[]} shopping={SHOPPING} buildable={0} cards={0} now={NOW} lineup={{ data: null, view: "tiles", foldServer: null }} />);
+    fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    const among = document.querySelector('[data-stats-card="among"]') as HTMLElement;
+    expect((among.querySelector("select") as HTMLSelectElement).value).toBe("d1");
+    expect(document.activeElement).toBe(among.querySelector(":scope > button"));
+    expect(window.location.search).toBe("?view=stats");
+  });
+
+  it("opens nothing and focuses the first card when there is no deck to compare", async () => {
+    read.stats.mockResolvedValue(STATS);
+    draw({ data: null, view: "tiles", foldServer: null });
+    fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
+    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
+    expect(document.querySelector('[data-stats-card="among"]')).toBeNull();
+    expect(localStorage.getItem("the99:decks:stats:open") ?? "").not.toContain("among");
+    expect(document.activeElement).toBe(document.querySelector("[data-stats-card] > button"));
+  });
+
+  it("keeps focus on the tile's trigger when the Stats read fails", async () => {
+    read.stats.mockRejectedValue(new Error("down"));
+    draw({ data: null, view: "tiles", foldServer: null });
+    const trigger = screen.getByRole("button", { name: /HD - Gishath/, expanded: false });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    await waitFor(() => expect(read.stats).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(document.querySelector("[data-decks-stats]")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("draws no Stats row in a tile's menu with the switch off", () => {
+    draw(null);
+    fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
+    expect(screen.queryByRole("button", { name: "See it among your decks" })).toBeNull();
+  });
+
   it("remembers nothing when the first read fails, so the next visit is not sent to Stats", async () => {
     read.stats.mockRejectedValue(new Error("down"));
     draw({ data: null, view: "tiles", foldServer: null });
