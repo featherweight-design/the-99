@@ -181,6 +181,41 @@ async function main() {
     }
     check("a purge racing an unfriend over shared pods settles, five times out of five, with nothing left", raced === 5, `${raced}/5`);
 
+    // A purge racing a friend ADDING the account to the friend's pod, in the order that could strand a
+    // membership: the add holds the pod (as `addMember` does, before reading the friendship), the purge
+    // starts, then the add inserts the membership and commits. The purge must wait and then leave it.
+    {
+      const q = `${P}_added`;
+      const o = `${F}_adder`;
+      racers.push(q, o);
+      await friends.ensureProfile(q, "Quin");
+      await friends.ensureProfile(o, "Oli");
+      const inv = await friends.createInvite(o);
+      if (!inv.ok) throw new Error("createInvite refused");
+      await friends.redeemInvite(q, inv.token);
+      const pod = await pods.createPod(o, "O's");
+      if (!pod) throw new Error("createPod refused");
+      let release = () => {};
+      const held = new Promise<void>((done) => { release = done; });
+      let locked = () => {};
+      const locking = new Promise<void>((done) => { locked = done; });
+      const add = db.transaction(async (tx) => {
+        await tx.execute(sql`select 1 from pods where id = ${pod.id} for update`);
+        locked();
+        await held;
+        await tx.execute(sql`insert into pod_members (pod_id, user_id) values (${pod.id}, ${q})`);
+      });
+      await locking;
+      const purging = purgeAccount(q);
+      await new Promise((done) => setTimeout(done, 1500));
+      release();
+      const results = await Promise.allSettled([add, purging]);
+      const bad = results.filter((x) => x.status === "rejected").map((x) => String((x as PromiseRejectedResult).reason?.cause?.code ?? (x as PromiseRejectedResult).reason));
+      const left = await rowsNaming(q);
+      check("a purge racing a friend adding it to a pod waits for the add and leaves nothing", bad.length === 0 && Object.keys(left).length === 0,
+        bad.join(", ") || JSON.stringify(left));
+    }
+
     // A purge racing the account's own write, in the order that deadlocks a purge taking stamps early: the
     // write holds a collection row the purge must delete, then commits, which takes the account's stamp.
     {

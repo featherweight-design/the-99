@@ -42,9 +42,15 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
     select i.token from ${friendInvites} i
     where i.inviter_user_id = ${userId} or i.redeemed_by = ${userId}
     order by i.token for update`);
+  // The pods: the ones it owns or is in, AND every pod one of its friends owns, since `addMember` lets that
+  // owner add it at any moment, holding the pod and reading the friendship. Locking those pods waits out an
+  // add already under way, which then shows below as a membership to leave; one that starts after finds
+  // the friendship gone. (The friend list read here cannot grow mid-purge: the invites are already held.)
   await tx.execute(sql`
     select p.id from ${pods} p
-    where p.owner_user_id = ${userId} or p.id in (select m.pod_id from ${podMembers} m where m.user_id = ${userId})
+    where p.owner_user_id = ${userId}
+      or p.id in (select m.pod_id from ${podMembers} m where m.user_id = ${userId})
+      or p.owner_user_id in (select l.friend_user_id from ${friendLinks} l where l.user_id = ${userId})
     order by p.id for update`);
   const links = await tx.execute<{ user_id: string; friend_user_id: string }>(sql`
     select l.user_id, l.friend_user_id from ${friendLinks} l
