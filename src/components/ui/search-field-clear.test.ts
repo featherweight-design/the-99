@@ -39,7 +39,7 @@ function searchFieldsWithoutClear(file: string, text?: string): string[] {
 describe("every SearchField passes onClear", () => {
   it("has no field under src that cannot clear itself", () => {
     const root = join(process.cwd(), "src");
-    expect(walk(root).flatMap(searchFieldsWithoutClear)).toEqual([]);
+    expect(walk(root).flatMap((f) => searchFieldsWithoutClear(f))).toEqual([]);
   });
 
   // Parser-only fixtures are passed as text: nothing is written under src, where other guards walk the tree.
