@@ -51,8 +51,9 @@ const FitsPicker = onDemand(() => import("./fits-picker").then((m) => m.FitsPick
 /**
  * A component loaded when first wanted, drawn at once from then on. Until its code has arrived it
  * draws nothing; the provider shows the press as pending meanwhile (`modalReady`). A download that
- * failed is forgotten, so the next `fetch`, which every press makes, tries again, and whichever
- * attempt lands tells every mounted reader.
+ * failed is forgotten, so the next `fetch` tries again, and whichever attempt lands tells every
+ * mounted reader. A mounted wrapper keeps trying on its own, backing off from 1s to 30s, because a
+ * view switched to inside the modal (the fits views) has no press of its own that would retry it.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each wrapper keeps its component's own props below
 function onDemand<P extends Record<string, any>>(load: () => Promise<React.ComponentType<P>>) {
@@ -75,7 +76,21 @@ function onDemand<P extends Record<string, any>>(load: () => Promise<React.Compo
   function OnDemand(props: P) {
     const ready = useSyncExternalStore(subscribe, isLoaded, () => false);
     useEffect(() => {
-      if (!ready) void fetch();
+      if (ready) return;
+      let live = true;
+      let wait = 1000;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const attempt = () =>
+        void fetch().then(() => {
+          if (!live || isLoaded()) return;
+          timer = setTimeout(attempt, wait);
+          wait = Math.min(wait * 2, 30_000);
+        });
+      attempt();
+      return () => {
+        live = false;
+        clearTimeout(timer);
+      };
     }, [ready]);
     const Loaded = ready ? loaded : null;
     return Loaded ? <Loaded {...props} /> : null;
