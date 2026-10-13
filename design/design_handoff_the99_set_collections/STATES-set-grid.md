@@ -123,7 +123,8 @@ here that costs money.
 **Owned cells under the price sort (Hugh, 2026-10-13, bug batch C).** Sorted by price, an owned cell
 also draws its figure, as plain text in the tag's slot and never as a tag (the tag stays a carrier
 of missing): `/collection`'s figure for the copies held, priced at the finish held, the dearest when
-several, with `no stock` when the store never carried it. The price order reads that same figure for
+several, with `no stock` when the store never carried it. A cell filled by name draws none, as `/collection` prices
+no inferred printing. The price order reads that same figure for
 an owned cell, so the order and the figures agree. Collector order draws no figure on an owned cell.
 
 ### S16 · Unpinned fill (ruling 4) — **ruled at R2: mark the cell**

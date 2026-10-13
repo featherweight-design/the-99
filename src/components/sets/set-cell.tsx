@@ -206,8 +206,12 @@ export function SetCell({
 /**
  * An owned cell's figure: `/collection`'s, over the finishes held of this printing. The grid read
  * its prices per printing id, so a printing with no row is one the store answered no about.
+ *
+ * A cell filled BY NAME has none. Its holding names no collector number, so this printing is
+ * placement's inference, and `/collection`'s `priceFor` never prices a guess: it answers for the
+ * one printing a set holds of the card, and stays silent otherwise. Silence here is that answer.
  */
 export function ownedPriceCode(cell: Cell, price: PriceFact | null, newestAsOf: Date | null): number | undefined {
-  if (!cell.owned) return undefined;
+  if (!cell.owned || cell.byName) return undefined;
   return copiesPriceCode([{ read: { fact: price }, finishes: cell.finishes }], newestAsOf);
 }
