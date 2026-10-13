@@ -197,16 +197,18 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   };
 }
 
-/** Gap kept between a floating list and the window's edges, and the narrowest room worth opening one in. */
+/** Gap kept between a floating list and the visible area's edges, and the room under the field below which it opens above instead. */
 const FLOAT_EDGE = 8;
 const FLOAT_MIN_ROOM = 96;
 const FLOAT_MAX_WIDTH = 440;
 
 /**
  * Where a list that floats over the page sits: under `anchor`, as wide as it (never past the window, never past the
- * list's own 440px), kept inside the window on both sides, and held to the room under the field so it scrolls inside
- * rather than running off the bottom. Measured again on every render and on scroll and resize, because the field
- * moves under it (the picker eases the field to the top of the window as it opens).
+ * list's own 440px), kept inside the window on both sides, and held to the VISIBLE room under the field so it scrolls
+ * inside rather than running off the bottom or behind a phone's keyboard (the visual viewport, not the layout one:
+ * a keyboard shrinks or pans the visual viewport and leaves `innerHeight` alone). With less than a row or two of
+ * room under the field and more above it, it opens above. Measured again on every render and on scroll and resize
+ * (the window's and the visual viewport's), because the field moves under it as the picker eases it to the top.
  */
 function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CSSProperties | undefined {
   const [place, setPlace] = useState<CSSProperties | undefined>(undefined);
@@ -216,21 +218,31 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
       const el = anchor.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
+      const vv = window.visualViewport;
+      const visibleTop = vv ? vv.offsetTop : 0;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
       const width = Math.min(r.width, FLOAT_MAX_WIDTH, window.innerWidth - 2 * FLOAT_EDGE);
       const left = Math.max(FLOAT_EDGE, Math.min(r.left, window.innerWidth - width - FLOAT_EDGE));
-      const top = r.bottom + 4;
-      const next: CSSProperties = {
-        position: "fixed", top, left, width, marginTop: 0, zIndex: 60,
-        maxHeight: Math.max(FLOAT_MIN_ROOM, window.innerHeight - top - FLOAT_EDGE),
-      };
-      setPlace((prev) => (prev && prev.top === next.top && prev.left === next.left && prev.width === next.width && prev.maxHeight === next.maxHeight ? prev : next));
+      const below = Math.floor(visibleBottom - (r.bottom + 4) - FLOAT_EDGE);
+      const above = Math.floor(r.top - 4 - visibleTop - FLOAT_EDGE);
+      const next: CSSProperties = below >= FLOAT_MIN_ROOM || below >= above
+        ? { position: "fixed", top: r.bottom + 4, left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, below) }
+        // `bottom` of a fixed box is measured from the LAYOUT viewport's bottom edge.
+        : { position: "fixed", top: "auto", bottom: window.innerHeight - (r.top - 4), left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, above) };
+      const same = (prev: CSSProperties | undefined) => prev !== undefined
+        && prev.top === next.top && prev.bottom === next.bottom && prev.left === next.left && prev.width === next.width && prev.maxHeight === next.maxHeight;
+      setPlace((prev) => (same(prev) ? prev : next));
     };
     measure();
     window.addEventListener("scroll", measure, true);
     window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("scroll", measure);
     return () => {
       window.removeEventListener("scroll", measure, true);
       window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("scroll", measure);
     };
   });
   return place;

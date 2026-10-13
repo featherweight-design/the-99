@@ -1,0 +1,60 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { CardTagList } from "./card-tag-picker";
+
+/** A field at `rect` in a window of `innerHeight`, with an optional visual viewport (a phone's keyboard shrinks it). */
+function place(rect: { top: number; bottom: number; left: number; width: number }, o: { innerHeight: number; innerWidth: number; vv?: { offsetTop: number; height: number } }) {
+  vi.stubGlobal("innerHeight", o.innerHeight);
+  vi.stubGlobal("innerWidth", o.innerWidth);
+  Object.defineProperty(window, "visualViewport", { configurable: true, value: o.vv ? { ...o.vv, addEventListener: () => {}, removeEventListener: () => {} } : null });
+  const field = document.createElement("textarea");
+  field.getBoundingClientRect = () => ({ ...rect, right: rect.left + rect.width, height: rect.bottom - rect.top, x: rect.left, y: rect.top, toJSON: () => ({}) });
+  document.body.appendChild(field);
+  render(
+    <CardTagList
+      id="t" listId="l" open query="sol" local={[]} activeIndex={0} remoteStatus="ok" scoped={false} pick={() => {}} anchor={{ current: field }}
+      options={[{ oracleId: "a", name: "Sol Ring", meta: "Artifact", group: "any" }]}
+    />,
+  );
+  return screen.getByRole("listbox");
+}
+
+afterEach(() => {
+  cleanup();
+  document.querySelectorAll("textarea").forEach((n) => n.remove());
+  vi.unstubAllGlobals();
+  Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
+});
+
+describe("CardTagList floating under an anchor", () => {
+  it("renders on <body>, under the field, as wide as it, held to the room left in the window", () => {
+    const ul = place({ top: 100, bottom: 140, left: 20, width: 300 }, { innerHeight: 800, innerWidth: 1000 });
+    expect(ul.parentElement).toBe(document.body);
+    expect(ul.style).toMatchObject({ position: "fixed", top: "144px", left: "20px", width: "300px", maxHeight: "648px" });
+  });
+
+  it("never wider than 440px or past the window's edges", () => {
+    expect(place({ top: 100, bottom: 140, left: 700, width: 600 }, { innerHeight: 800, innerWidth: 800 }).style).toMatchObject({ width: "440px", left: "352px" });
+  });
+
+  it("holds to the VISIBLE room above a phone's keyboard, not the layout viewport's", () => {
+    // The keyboard leaves 300px visible; the field's bottom is at 140, so 300 - 144 - 8 = 148px under it.
+    const ul = place({ top: 100, bottom: 140, left: 20, width: 300 }, { innerHeight: 800, innerWidth: 400, vv: { offsetTop: 0, height: 300 } });
+    expect(ul.style.maxHeight).toBe("148px");
+  });
+
+  it("opens above the field when the visible room under it is a row or less and there is more above", () => {
+    // Field low in a 400px visible area: 20px under it, 280px above it.
+    const ul = place({ top: 300, bottom: 372, left: 20, width: 300 }, { innerHeight: 800, innerWidth: 400, vv: { offsetTop: 0, height: 400 } });
+    expect(ul.style.top).toBe("auto");
+    expect(ul.style.bottom).toBe("504px");
+    expect(ul.style.maxHeight).toBe("288px");
+  });
+
+  it("claims no more room than is left, none at all when there is none", () => {
+    // Field filling a 400px visible area: nothing under it and nothing above it.
+    const ul = place({ top: 10, bottom: 390, left: 20, width: 300 }, { innerHeight: 800, innerWidth: 400, vv: { offsetTop: 0, height: 400 } });
+    expect(ul.style.maxHeight).toBe("0px");
+  });
+});
