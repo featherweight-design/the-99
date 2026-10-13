@@ -109,7 +109,7 @@ export function QuickAddBar({
   const { ref: rootRef, onEscape } = useSearchDismiss<HTMLDivElement>(query.length > 0, () => setQuery(""));
 
   const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed: false, deckId, search });
+    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
 
   // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
   // add must see the deck the add produced, and the optimistic list moves before that exists.

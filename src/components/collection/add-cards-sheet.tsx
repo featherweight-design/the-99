@@ -31,6 +31,7 @@ import { CopyLine } from "../decks/copy-line";
 import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
 import { SearchField } from "../ui/text-field";
+import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "./add-line";
 import { ReplaceIcon } from "./replace-icon";
@@ -240,11 +241,9 @@ function AddMode({
       if (searched !== trimmed) return;
       const card = results[active];
       if (card) void pick(card);
-    } else if (e.key === "Escape" && query !== "") {
+    } else {
       // The first Escape clears the query; the sheet's own handler never sees it.
-      e.preventDefault();
-      e.stopPropagation();
-      setQuery("");
+      escapeDismisses(e, query !== "", () => setQuery(""));
     }
   }
 

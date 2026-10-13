@@ -33,6 +33,7 @@ import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
 import { SearchField } from "./text-field";
+import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "./use-is-desktop";
 import { Chevron } from "./chevron";
 
@@ -423,6 +424,9 @@ export function FilterPanel({
   function toggle(option: FilterPanelOption, fromPointer: boolean) {
     if (option.disabled) return; // 0-count rows never toggle, by pointer or by key
     onToggle(option.code);
+    // A pick clears the search it came from (DECK INPUT UX, `useSearchDismiss`'s rule); the panel
+    // stays open for the next, since picking more than one is the point.
+    if (searchable && selectionMode === "multi") setQuery("");
     // Single-select commits and dismisses: with one row always chosen there is
     // nothing further to do in the panel, and leaving it up invites a second
     // choice that would silently discard the first.
@@ -450,7 +454,12 @@ export function FilterPanel({
     }
   }
 
-  function onPanelKeyDown(e: React.KeyboardEvent) {
+  function onPanelKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+    // With a search typed, the first Escape clears it; the next closes the panel.
+    if (escapeDismisses(e, searchable && hasQuery, () => {
+      setQuery("");
+      setActiveCode(null);
+    })) return;
     if (e.key === "Escape") {
       e.preventDefault();
       close(); // dismiss, never undo — the selections are already applied

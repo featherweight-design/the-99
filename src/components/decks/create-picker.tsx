@@ -28,6 +28,7 @@ import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { PartnerSlot } from "./partner-slot";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";
+import { escapeDismisses } from "@/lib/ui/search-dismiss";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { HelpMeChooseDoor } from "../intake/help-me-choose-door";
@@ -287,8 +288,24 @@ export function CreatePicker(props: CreatePickerProps) {
     // clearing the primary drops it rather than carrying it onto a pair that was
     // never checked.
     setPartnerId(null);
-    setSelectedId(selectedId === oracleId ? null : oracleId);
+    const picking = selectedId !== oracleId;
+    setSelectedId(picking ? oracleId : null);
+    // A pick clears the search it came from (DECK INPUT UX). The whole list comes back, so the
+    // picked row is brought to the middle of the view rather than left wherever the unfiltered list
+    // puts it: the middle, because a phone's dock covers the foot of the window.
+    if (picking && query !== "") {
+      setQuery("");
+      revealRef.current = oracleId;
+    }
   }
+
+  const revealRef = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const id = revealRef.current;
+    if (id === null) return;
+    revealRef.current = null;
+    document.querySelector(`[data-picker-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center" });
+  });
 
   const canCreate =
     selected !== null && deckName.trim().length > 0 && deckName.trim().length <= DECK_NAME_MAX;
@@ -426,6 +443,7 @@ export function CreatePicker(props: CreatePickerProps) {
               className="text-[14px] md:text-[15px]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => escapeDismisses(e, query !== "", () => setQuery(""))}
               placeholder={addPanelCopy.createPicker.searchPlaceholder}
               aria-label="Search commanders"
               trailing={
@@ -560,6 +578,7 @@ export function CreatePicker(props: CreatePickerProps) {
                   <li key={c.oracleId}>
                     <button
                       type="button"
+                      data-picker-row={c.oracleId}
                       onClick={() => pickRow(c.oracleId)}
                       className={[
                         "w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left transition-colors p-[10px_12px] md:p-[12px_15px] min-h-[44px] border border-solid",

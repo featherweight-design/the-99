@@ -60,13 +60,12 @@ export function ResolutionExpander({
   // under the toggle is what stops it looking like a malfunction. Per row, and
   // it resets on collapse: this component unmounts with the row's expansion.
   const [ownedOnly, setOwnedOnly] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const hintId = useId();
   const listId = `${id}-list`;
   const fieldRef = useRef<HTMLInputElement>(null);
 
   const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: null, ownedOnly, dismissed, deckId });
+    useCardSearch({ query, colorIdentity: null, ownedOnly, deckId });
 
   // `useCardSearch` passes `deckId`, so every figure comes back with this
   // deck's own claim already subtracted. `selfExcluded` may therefore be set
@@ -257,7 +256,6 @@ export function ResolutionExpander({
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              setDismissed(false);
             }}
             onKeyDown={handleKeyDown}
           />
@@ -284,10 +282,7 @@ export function ResolutionExpander({
                     type="checkbox"
                     className="sr-only peer"
                     checked={ownedOnly}
-                    onChange={(e) => {
-                      setOwnedOnly(e.target.checked);
-                      setDismissed(false);
-                    }}
+                    onChange={(e) => setOwnedOnly(e.target.checked)}
                     aria-label={copy.ownedToggleLabel}
                   />
                   <span

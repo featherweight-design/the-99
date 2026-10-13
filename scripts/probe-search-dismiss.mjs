@@ -1,11 +1,15 @@
 // probe:search-dismiss — one rule for a search field that picks from a list (DECK INPUT UX, Hugh
-// 2026-10-12), pressed in a real browser at 1300x900 and 390x844 on the two fields it first ships on:
-// the deck page's Quick add and Help me choose's Theme picker.
+// 2026-10-12), pressed in a real browser at 1300x900 and 390x844: the deck page's Quick add, Help me
+// choose's Theme picker, /collection's Set filter (a popover at 1300, the filter sheet's set list at
+// 390) and the Create deck picker.
 //
 // 1. ESCAPE clears the text and closes the list in ONE press.
 // 2. A PRESS OUTSIDE the field and its list clears the text and closes the list.
 // 3. A PRESS INSIDE (Quick add's owned toggle) keeps the text.
 // 4. A THEME PICK clears the typed text and leaves the list open for the next pick, focus in the field.
+// 5. INSIDE A PANEL OR SHEET (the Set filter), the first Escape clears a typed search and keeps the
+//    surface open, the next closes it, and a pick clears the search with the surface still open.
+// 6. A COMMANDER PICK on /decks/new clears the search and leaves the picked row pressed and in view.
 //
 // Quick add's clear-after-an-add is pinned by its unit test rather than pressed here: an add writes a
 // card to the deck. This probe writes the account's About row (`clearAboutSheet`) and nothing else,
@@ -17,7 +21,7 @@ import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
-import { onPage, onPageRole } from "./lib/surface.mjs";
+import { onPage, onPageRole, openSheet } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
@@ -170,6 +174,66 @@ try {
     await page.waitForTimeout(200);
     report(`${vp.label} Theme: a press outside clears the text and closes the list`,
       (await theme.inputValue()) === "" && (await theme.getAttribute("aria-expanded")) === "false");
+
+    // ── /collection, the Set filter ─────────────────────────────────────────
+    await page.goto(`${BASE}/collection`, { waitUntil: "networkidle" });
+    let surface;
+    let pickRole;
+    if (vp.width >= 768) {
+      await onPageRole(page, "button", /Filter by set/).filter({ visible: true }).first().click();
+      surface = onPage(page, '[role="dialog"]:has(input[role="combobox"])').first();
+      pickRole = '[role="option"]:not([aria-disabled="true"])';
+    } else {
+      const sheet = await openSheet(page);
+      if (!sheet) throw new Error("no filter sheet on /collection at 390");
+      await sheet.locator('button[aria-haspopup="dialog"]').filter({ visible: true }).first().click();
+      surface = onPage(page, '[role="dialog"]:has(input[type="search"])').last();
+      pickRole = '[role="switch"]:not([aria-disabled="true"])';
+    }
+    await surface.waitFor({ timeout: 10_000 });
+    const setField = surface.locator('input[role="combobox"], input[type="search"]').first();
+    const firstLabel = (await surface.locator(pickRole).first().innerText()).trim();
+    const setQuery = firstLabel.slice(0, 3);
+    await setField.click();
+    await setField.fill(setQuery);
+    await setField.press("Escape");
+    report(`${vp.label} Set filter: the first Escape clears the search and keeps the ${vp.width >= 768 ? "panel" : "sheet"} open`,
+      (await setField.inputValue()) === "" && (await surface.isVisible()));
+    await setField.fill(setQuery);
+    await surface.locator(pickRole).first().click();
+    await page.waitForTimeout(300);
+    report(`${vp.label} Set filter: a pick clears the search and keeps the surface open`,
+      (await setField.inputValue()) === "" && (await surface.isVisible()), JSON.stringify({ picked: firstLabel }));
+    // Put the pick back, so the probe leaves the filter as it found it.
+    await surface.locator(pickRole).first().click();
+    await setField.press("Escape");
+    await page.waitForTimeout(300);
+    report(`${vp.label} Set filter: with nothing typed, Escape closes the surface`, !(await surface.isVisible()));
+
+    // ── /decks/new, the Create deck picker ────────────────────────────────
+    await page.goto(`${BASE}/decks/new`, { waitUntil: "networkidle" });
+    const commanderField = onPageRole(page, "searchbox", "Search commanders").first();
+    await commanderField.waitFor({ timeout: 60_000 });
+    const rows = onPage(page, "button[data-picker-row]");
+    // A row from deep in the list, so bringing it into view after the clear is a real move.
+    const target = rows.nth(Math.min(12, (await rows.count()) - 1));
+    const targetId = await target.getAttribute("data-picker-row");
+    const targetName = (await target.innerText()).split("\n")[0].trim();
+    await commanderField.fill(targetName.slice(0, 6));
+    await onPage(page, `button[data-picker-row="${targetId}"]`).click();
+    await page.waitForTimeout(300);
+    const picked = await page.evaluate((id) => {
+      const el = document.querySelector(`main button[data-picker-row="${CSS.escape(id)}"]`);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 12));
+      return { pressed: el.getAttribute("aria-pressed"), inView: r.top >= 0 && r.bottom <= window.innerHeight, onTop: Boolean(hit && el.contains(hit)) };
+    }, targetId);
+    report(`${vp.label} Create deck: a pick clears the search, and the picked row is pressed and in view`,
+      (await commanderField.inputValue()) === "" && picked?.pressed === "true" && picked.inView && picked.onTop, JSON.stringify({ targetName, picked }));
+    await commanderField.fill("zz");
+    await commanderField.press("Escape");
+    report(`${vp.label} Create deck: Escape clears the search`, (await commanderField.inputValue()) === "");
 
     await context.close();
   }
