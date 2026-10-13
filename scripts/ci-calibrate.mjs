@@ -3,9 +3,9 @@
 //   node scripts/ci-calibrate.mjs compare <selection.txt> <vitest-results.json> <label>
 // `compare` exits 1 when a test failed that the selector did not choose.
 import { spawnSync } from "node:child_process";
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-import { compare, failingFiles, failureSummary, mutate } from "./lib/ci-calibrate.mjs";
+import { compare, failingFiles, failureSummary, mutate, splitMisses } from "./lib/ci-calibrate.mjs";
 
 const [cmd, ...args] = process.argv.slice(2);
 
@@ -26,19 +26,23 @@ if (cmd === "mutate") {
   let real = r.missed;
   let loadSensitive = [];
   if (r.missed.length > 0) {
-    const again = spawnSync("pnpm", ["exec", "vitest", "run", "--passWithNoTests", "--reporter=json", "--outputFile=recheck-results.json", ...r.missed], {
-      encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
-    });
-    let alone = [];
-    try {
-      alone = failingFiles(JSON.parse(readFileSync("recheck-results.json", "utf8")), process.cwd());
-    } catch {
-      // No report means the rerun itself broke; treat every candidate as a real miss.
-      alone = r.missed;
+    // One process per file, so "alone" is true; a stale report from an earlier run is removed first so a
+    // rerun that dies before writing one cannot be read as this run's.
+    const aloneFailing = [];
+    let complete = true;
+    for (const file of r.missed) {
+      rmSync("recheck-results.json", { force: true });
+      spawnSync("pnpm", ["exec", "vitest", "run", "--passWithNoTests", "--reporter=json", "--outputFile=recheck-results.json", file], {
+        encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
+      });
+      try {
+        const got = failingFiles(JSON.parse(readFileSync("recheck-results.json", "utf8")), process.cwd());
+        if (got.includes(file)) aloneFailing.push(file);
+      } catch {
+        complete = false;
+      }
     }
-    real = r.missed.filter((f) => alone.includes(f));
-    loadSensitive = r.missed.filter((f) => !alone.includes(f));
-    if (again.status === null) real = r.missed;
+    ({ real, loadSensitive } = splitMisses(r.missed, complete ? aloneFailing : null));
   }
   const why = failureSummary(report, r.missed, process.cwd());
   const lines = [

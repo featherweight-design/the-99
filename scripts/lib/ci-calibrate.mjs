@@ -61,3 +61,17 @@ export function failureSummary(report, files, root, max = 400) {
   }
   return out;
 }
+
+/**
+ * Split the files the selector missed by whether they fail when run by themselves.
+ * `aloneFailing` is the set that failed alone, or null when a rerun produced no report: with nothing to
+ * clear them, every candidate stays a real miss.
+ * @param {string[]} missed @param {string[] | null} aloneFailing
+ */
+export function splitMisses(missed, aloneFailing) {
+  if (aloneFailing === null) return { real: missed, loadSensitive: [] };
+  return {
+    real: missed.filter((f) => aloneFailing.includes(f)),
+    loadSensitive: missed.filter((f) => !aloneFailing.includes(f)),
+  };
+}

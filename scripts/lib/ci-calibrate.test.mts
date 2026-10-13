@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { describe, expect, it } from "vitest";
-import { compare, failingFiles, failureSummary, mutate } from "./ci-calibrate.mjs";
+import { compare, failingFiles, failureSummary, mutate, splitMisses } from "./ci-calibrate.mjs";
 
 describe("mutate", () => {
   it("appends a module-level throw to code", () => {
@@ -58,6 +58,18 @@ describe("failureSummary", () => {
   it("cuts a long message", () => {
     const report = { testResults: [{ name: "/r/a.test.ts", status: "failed", assertionResults: [{ failureMessages: ["x".repeat(900)] }] }] };
     expect(failureSummary(report, ["a.test.ts"], "/r", 50)["a.test.ts"]).toHaveLength(50);
+  });
+});
+
+describe("splitMisses", () => {
+  it("keeps as real only the files that also fail alone", () => {
+    expect(splitMisses(["a", "b", "c"], ["b"])).toEqual({ real: ["b"], loadSensitive: ["a", "c"] });
+  });
+  it("calls everything real when a rerun left no report", () => {
+    expect(splitMisses(["a", "b"], null)).toEqual({ real: ["a", "b"], loadSensitive: [] });
+  });
+  it("a file that fails alone is never cleared", () => {
+    expect(splitMisses(["a"], ["a"]).loadSensitive).toEqual([]);
   });
 });
 
