@@ -86,6 +86,7 @@ let prior = null;
 async function pressOutside(page, rootSelector) {
   const point = await page.evaluate((sel) => {
     const root = document.querySelector(sel);
+    if (!root) return { missing: true };
     for (const el of document.querySelectorAll("main h1, main h2, main p")) {
       if (root && root.contains(el)) continue;
       const r = el.getBoundingClientRect();
@@ -93,6 +94,7 @@ async function pressOutside(page, rootSelector) {
     }
     return null;
   }, rootSelector);
+  if (point?.missing) throw new Error(`the field's root ${rootSelector} is not on the page`);
   if (!point) throw new Error("no visible element outside the field to press");
   await page.mouse.click(point.x, point.y);
 }
@@ -114,7 +116,7 @@ try {
     if ((await deckTab.count()) > 0 && (await deckTab.isVisible())) await deckTab.click();
     const bar = onPage(page, 'input[role="combobox"]').first();
     await bar.waitFor({ timeout: 60_000 });
-    const barRoot = "main div:has(> div > div > input[role=combobox])";
+    const barRoot = 'main [data-testid="quick-add-dock"]';
     const openBar = async () => {
       await bar.click();
       await bar.fill("sol");

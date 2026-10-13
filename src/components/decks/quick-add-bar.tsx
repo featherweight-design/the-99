@@ -327,7 +327,9 @@ export function QuickAddBar({
                 active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
-                onAdded={() => setQuery("")}
+                // Only while the field still holds the search the add was made from: a reader who has
+                // typed the next one while the add was in flight keeps it.
+                onAdded={(addedFrom) => setQuery((current) => (current.trim() === addedFrom ? "" : current))}
               />
             ))}
           </ul>
@@ -388,9 +390,9 @@ interface QuickAddRowProps {
   active: boolean;
   onActivate: () => void;
   registerAdd?: (fn: (r: SearchResult) => void) => void;
-  /** The add landed: the bar clears its query for the next search. Not on a refusal, which this
-   *  row reports, so it has to stay on screen to say it. */
-  onAdded: () => void;
+  /** The add landed, made from the search `addedFrom`: the bar clears its query for the next one.
+   *  Not on a refusal, which this row reports, so it has to stay on screen to say it. */
+  onAdded: (addedFrom: string) => void;
 }
 
 function QuickAddRow({
@@ -437,10 +439,11 @@ function QuickAddRow({
   // while the optimistic row is showing but deckOracleIds has not caught up.
   const handleAdd = useCallback(() => {
     if (applied) return;
+    const addedFrom = query;
     run(
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
-        if (!outcome || outcome.ok) onAdded();
+        if (!outcome || outcome.ok) onAdded(addedFrom);
         return outcome;
       },
       () =>
@@ -468,7 +471,7 @@ function QuickAddRow({
           imageUri: result.imageUri,
         }),
     );
-  }, [applied, run, deckId, result, addOptimisticCard, onAdded]);
+  }, [applied, run, deckId, result, addOptimisticCard, onAdded, query]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which

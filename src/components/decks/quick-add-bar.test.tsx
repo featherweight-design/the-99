@@ -172,6 +172,19 @@ describe("QuickAddBar — dismissing and clearing", () => {
     await waitFor(() => expect(field()).toHaveValue(""));
   });
 
+  // Focus stays in the field after a press, so the next search can be typed while the add is in flight.
+  it("keeps a search typed while the add was in flight", async () => {
+    let land: (r: { ok: true }) => void = () => {};
+    addCardToDeck.mockReturnValueOnce(new Promise((res) => { land = res; }) as never);
+    mount();
+    await search();
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.change(field(), { target: { value: "rhy" } });
+    await act(async () => land({ ok: true }));
+    expect(field()).toHaveValue("rhy");
+  });
+
   // The row draws the refusal, so the list has to stay up to show it.
   it("keeps the query when the add is refused", async () => {
     addCardToDeck.mockResolvedValueOnce({ ok: false, message: "Nope." } as never);
