@@ -39,6 +39,12 @@ export async function GET(req: NextRequest) {
   if (slugs.length === 0 || slugs.length > MAX_FIELDS_BATCH || !slugs.every((s) => SLUG.test(s))) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });
   }
+  // A labels page that outlived the environment's kill switch (`off`, which no request raises): no
+  // entry of its basis may be read now, and another basis's rank and fit would be merged into its
+  // rows, so it answers no fields and the client's missing-row path reads the page again.
+  if (basis === "labels" && process.env.LABEL_ROLE_COUNTS_ENABLED === KILL) {
+    return NextResponse.json({ fields: {} }, { headers: HEADERS });
+  }
   // The reader's resolved switches, with the role basis set to the page's: the entry is keyed on the
   // basis, so this reaches the entry the page drew from whatever the switch reads now.
   const { encoded } = await loadDiscoveryPayload(userId, sort, withBasis(await requestSwitchEnv(userId), basis));
@@ -46,8 +52,9 @@ export async function GET(req: NextRequest) {
 }
 
 /** `env` with LABEL_ROLE_COUNTS_ENABLED set to `basis`, except under the ENVIRONMENT's kill switch
- *  (`off`), which no request raises: the page drew the classifier then too. Read off the environment
- *  itself, because the proxy's switch header carries a bit per switch and cannot say `off`. */
+ *  (`off`), which no request raises (a labels request has already been answered empty by then). Read
+ *  off the environment itself, because the proxy's switch header carries a bit per switch and cannot
+ *  say `off`. */
 function withBasis(env: NodeJS.ProcessEnv, basis: "labels" | "classifier"): NodeJS.ProcessEnv {
   if (process.env.LABEL_ROLE_COUNTS_ENABLED === KILL) return env;
   return { ...env, LABEL_ROLE_COUNTS_ENABLED: basis === "labels" ? "true" : "false" };

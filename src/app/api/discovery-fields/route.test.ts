@@ -63,9 +63,18 @@ describe("GET /api/discovery-fields", () => {
 
   it("never raises the environment's kill switch, whatever basis is asked for", async () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "off");
-    await get("sort=fit&b=labels&s=a");
+    await get("sort=fit&b=classifier&s=a");
     // The resolved env itself, untouched: no basis is written over a killed switch.
     expect(stub.load.mock.calls[0][2]).toBe(RESOLVED);
+  });
+
+  it("answers a labels page under the kill switch with no fields and reads nothing", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "off");
+    const res = await get("sort=fit&b=labels&s=a");
+    // No other basis's rank and fit are merged into the labels rows; the client reads the page again.
+    expect(res.status).toBe(200);
+    expect((await res.json()).fields).toEqual({});
+    expect(stub.load).not.toHaveBeenCalled();
   });
 
   it("answers nothing for a slug the reader's list does not hold", async () => {
