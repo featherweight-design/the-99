@@ -11,6 +11,11 @@ import { CLERK_JS_VERSION, CLERK_UI_VERSION } from "./src/lib/shell/clerk-script
 // allows: a ManaBox export over 1 MB was refused with a 413 before the action ran,
 // and the reader saw only a minified React error. It matches COLLECTION_FILE_MAX_BYTES
 // plus room for the multipart envelope, and stays under Vercel's 4.5 MB request cap.
+/** `INLINE_CSS_ENABLED`, `"true"` on the-99-staging only (speed plan, 2026-10-12). */
+export function inlineCssEnabled(env: Record<string, string | undefined>): boolean {
+  return env.INLINE_CSS_ENABLED === "true";
+}
+
 const nextConfig: NextConfig = {
   // One copy of the Neon driver, loaded from node_modules. drizzle-orm's `db.transaction` only checks a
   // connection out of the pool when `client instanceof Pool` against ITS copy of the driver; the server
@@ -29,6 +34,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { "/admin": ["./docs/superpowers/eval/ledger*.jsonl"] },
   experimental: {
     serverActions: { bodySizeLimit: "4.4mb" },
+    // The stylesheet inside the HTML instead of a <link>. On a slow phone the one render-blocking
+    // stylesheet (34KB) shared the line with ~750KB of scripts, and first paint waited for it until
+    // ~5.1s. Inlined, it arrives with the document. The cost is a heavier document on every full
+    // load, since the CSS is no longer cached on its own, so it is an EXPERIMENT behind a switch set
+    // on the staging project only. Read at BUILD time: turning it on or off is a redeploy.
+    inlineCss: inlineCssEnabled(process.env),
   },
 };
 
