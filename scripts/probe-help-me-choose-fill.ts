@@ -35,7 +35,7 @@ const check = (label: string, ok: boolean, detail: string) => {
 };
 
 async function main() {
-  const { buildFillPlan } = await import("../src/app/decks/actions");
+  const { buildFillPlan } = await import("../src/lib/decks/fill-plan");
   const { db } = await import("../src/db");
   const { loadPrices } = await import("../src/lib/discovery/price");
   const { loadAvailability } = await import("../src/lib/decks/availability-query");
