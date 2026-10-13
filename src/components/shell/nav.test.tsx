@@ -41,7 +41,7 @@ vi.mock("@clerk/nextjs", () => ({
       primaryEmailAddress: { emailAddress: "ana.ruiz@example.com" },
     },
   }),
-  useClerk: () => ({ openUserProfile: vi.fn(), signOut: vi.fn() }),
+  useClerk: () => ({ redirectToUserProfile: vi.fn(), signOut: vi.fn() }),
 }));
 
 describe("NavRail", () => {

@@ -10,7 +10,7 @@ vi.mock("./pending-report", async (importOriginal) => ({
 vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: { firstName: "Ana", fullName: "Ana Ruiz", primaryEmailAddress: { emailAddress: "a@example.com" } } }),
-  useClerk: () => ({ openUserProfile: vi.fn(), signOut: vi.fn() }),
+  useClerk: () => ({ redirectToUserProfile: vi.fn(), signOut: vi.fn() }),
 }));
 
 import { NavRail, TabBar } from "./nav";

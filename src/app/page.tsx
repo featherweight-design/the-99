@@ -67,7 +67,7 @@ export default async function HomePage() {
         {/* Sign in button per §Sign in button
             margin-top 34px mobile / 36px desktop
             padding 14px 0 (full width up to 260px) mobile / 14px 40px desktop */}
-        <SignInButton mode="modal">
+        <SignInButton mode="redirect">
           <button
             type="button"
             className="mt-[34px] md:mt-[36px] w-full max-w-[260px] md:w-auto md:max-w-none rounded-[8px] py-[14px] px-0 md:px-[40px] font-semibold text-[15px] font-sans bg-accent hover:bg-accent-hover text-bg transition-colors cursor-pointer border-none"

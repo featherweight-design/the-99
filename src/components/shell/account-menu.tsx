@@ -414,13 +414,11 @@ export function AccountMenu({
   const onAdmin = () => go("/admin");
   const admin = adminDoor ? (adminEnv ?? "") || null : null;
 
-  // Table ambiguity 13: the menu dismisses before Clerk's modal mounts, so the
-  // focus trap is handed over rather than nested. useDialogA11y returns focus
-  // to the trigger on unmount, which is where the handoff wants it after the
-  // modal closes too (X14).
+  // Clerk's hosted account page, not its modal (Hugh, 2026-10-12): the app loads none of Clerk's
+  // prebuilt UI, so the press navigates away. The menu closes first all the same.
   function onManage() {
     close();
-    clerk.openUserProfile();
+    void clerk.redirectToUserProfile();
   }
 
   // A successful sign-out navigates away, so `busy` is only ever released on

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import Shell from "../components/shell/shell";
-import { clerkAppearance } from "../lib/shell/clerk-appearance";
 import { resolveTheme } from "../lib/theme/server";
 import { preload } from "react-dom";
 import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
@@ -143,7 +142,10 @@ export default async function RootLayout({
   // painted showed an empty box first (Hugh, 2026-09-28). See `mana-sprite.ts`.
   preload(MANA_SPRITE_PATH, { as: "image", type: "image/svg+xml" });
   return (
-    <ClerkProvider appearance={clerkAppearance}>
+    // `prefetchUI={false}`: Clerk's prebuilt UI (261KB over five files) is never fetched. Nothing here
+    // renders it: signing in and managing the account both open Clerk's hosted pages (Hugh,
+    // 2026-10-12), so on a slow phone that bundle no longer shares the line with the app's own.
+    <ClerkProvider prefetchUI={false}>
       <html
         lang="en"
         data-theme={theme}

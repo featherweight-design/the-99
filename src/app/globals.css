@@ -550,9 +550,8 @@ html { --collection-head-h: 48px; }
 @media (min-width: 768px) { html { --collection-head-h: 149px; } }
 
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
-   the collection's confirm and issue dialogs, and Clerk's own popover, which is
-   skinned to match in `lib/shell/clerk-appearance.ts`. Five copies of the same
-   literal disagree the moment any one of them is tuned.
+   and the collection's confirm and issue dialogs. Copies of the same literal
+   disagree the moment any one of them is tuned.
 
    Not a theme token, for the same reason as `--tabbar-h`: the contract is a
    colour contract, and this is a geometry all six themes share. */
