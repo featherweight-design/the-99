@@ -31,6 +31,10 @@ vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
 }));
 
+// The card details the view sits in: only its close is read here (the P3f link closes it first).
+const detail = vi.hoisted(() => ({ close: vi.fn() }));
+vi.mock("./card-detail-provider", async (orig) => ({ ...(await orig<object>()), useCardDetailIfAny: () => detail }));
+
 const { FitsView } = await import("./fits-view");
 
 const copy = swapToolsCopy.fits;
@@ -357,6 +361,14 @@ describe("FitsView (Find a deck read, R2)", () => {
 
   it("a row read from an older overview, or none, says so and points at the deck page (P3f)", async () => {
     const pick = stored().picks[0];
+    await draw(panel({}, { stored: stored({ picks: [{ ...pick, planSource: "older" }] }) }));
+    const older = screen.getByTestId("read-row-source-note");
+    expect(older).toHaveTextContent(r.srcNoteOlder);
+    expect(within(older).getByRole("link", { name: r.srcLinkOlder })).toHaveAttribute("href", "/decks/d-gob?tab=analysis");
+    // The link closes the dialog first, so the deck page is what the reader lands on.
+    fireEvent.click(within(older).getByRole("link", { name: r.srcLinkOlder }));
+    expect(detail.close).toHaveBeenCalledTimes(1);
+    cleanupAll();
     await draw(panel({}, { stored: stored({ picks: [{ ...pick, planSource: "none" }] }) }));
     const note = screen.getByTestId("read-row-source-note");
     expect(note).toHaveTextContent(r.srcNoteNone("Krenko, Mob Boss"));
@@ -606,6 +618,57 @@ describe("FitsView (Find a deck read, R2)", () => {
       expect(screen.getByTestId("fits-view").className).not.toContain("anim-view-in");
       expect(screen.getByTestId("read-row")).toBeInTheDocument();
       expect(screen.getByTestId("fits-fold")).toBeInTheDocument();
+    });
+  });
+
+  describe("round 6", () => {
+    it("Read again keeps the old read drawn, its actions held, under the running band, with no still rows", async () => {
+      await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+      readActions.pressFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(within(screen.getByTestId("read-stale")).getByRole("button", { name: `${r.readAgain}. Uses 1 credit.` }));
+      await settle();
+      expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
+      expect(screen.queryByTestId("read-skeleton")).toBeNull();
+      expect(screen.getByTestId("read-row")).toBeInTheDocument();
+      for (const b of within(screen.getByTestId("read-row")).getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"))) expect(b).toBeDisabled();
+    });
+
+    it("a read pressed this visit is still running on a return, from the first frame", async () => {
+      function Trip() {
+        const [memory, setMemory] = useState<FitsViewMemory>({ acts: {} });
+        const [shown, setShown] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setShown((v) => !v)}>trip</button>
+            {shown ? <FitsView card={card} onBack={onBack} onOpenCard={onOpenCard} memory={memory} setMemory={(u) => setMemory(u)} onReading={() => {}} /> : null}
+          </>
+        );
+      }
+      actions.loadFitsAction.mockResolvedValue(list());
+      readActions.readFitsReadAction.mockResolvedValue(panel());
+      render(<Trip />);
+      await settle();
+      readActions.pressFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: r.pressAria(card.name) }));
+      await settle();
+      readActions.readFitsReadAction.mockReturnValue(new Promise(() => {}));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      fireEvent.click(screen.getByRole("button", { name: "trip" }));
+      expect(screen.getByTestId("read-band-running")).toBeInTheDocument();
+      expect(screen.queryByTestId("read-band-offer")).toBeNull();
+    });
+
+    it("an add from the free list reads the panel again, so a named deck that took the card reads resolved at once", async () => {
+      await draw(panel({}, { stored: stored({ current: false, changed: [{ deckId: "d-gob", reason: "deck" }] }) }));
+      expect(screen.getByTestId("read-stale")).toBeInTheDocument();
+      actions.addFromFits.mockResolvedValue({ ok: true });
+      actions.loadFitsAction.mockResolvedValue(list({ fits: [list().fits[1]], holds: [{ id: "d-gob", name: "Goblins", quantity: 1, commanders: ["Krenko, Mob Boss"] }] }));
+      readActions.readFitsReadAction.mockResolvedValue(panel({}, { stored: stored({ resolved: ["d-gob"] }) }));
+      fireEvent.click(screen.getByTestId("fits-fold"));
+      fireEvent.click(within(screen.getAllByTestId("fits-row")[0]).getAllByRole("button").find((b) => b.textContent)!);
+      await settle();
+      expect(screen.queryByTestId("read-stale")).toBeNull();
+      expect(within(screen.getByTestId("read-row")).queryByTestId("read-row-changed")).toBeNull();
     });
   });
 });

@@ -39,6 +39,9 @@ export type FitsViewMemory = {
   tooBigFor?: string | null;
   /** The decks a running read was pressed for, so a reopened run keeps its count. */
   runCount?: number | null;
+  /** When the read running now started, as this visit saw it: a return draws the run at once, even one this
+   *  visit pressed before the server's panel knew of it. */
+  runStart?: number | null;
   /** What the view last drew: a return (a card opened over it, then Back) draws this at once, with no
    *  entrance, and reads both again behind it, keeping it on screen until the new reads land. */
   snapshot?: { panel: FitsReadPanel; list: FitsListSnapshot | null };
@@ -77,7 +80,12 @@ export function FitsView({
   // band and the rows arrive with the list rather than after it.
   const [panelRead, setPanelRead] = useState(() => restored !== null);
   const pendingAtStart = restored?.panel.view.pending ?? null;
-  const [running, setRunning] = useState<number | null>(() => (pendingAtStart ? Date.parse(pendingAtStart.startedAt) : null));
+  const [running, setRunning] = useState<number | null>(() =>
+    memory.runStart ?? (pendingAtStart ? Date.parse(pendingAtStart.startedAt) : null));
+  useEffect(() => {
+    setMemory((m) => ((m.runStart ?? null) === running ? m : { ...m, runStart: running }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
   // The decks a press sent to be read, as it started: the list moving under a run never rewrites it.
   // Kept by the provider, with the refusal and the write lock below, so a round trip keeps them.
   const runCount = memory.runCount ?? null;
@@ -229,7 +237,14 @@ export function FitsView({
   async function addFree(deck: Parameters<typeof list.add>[0]) {
     if (writing) return;
     setMemory((m) => ({ ...m, writing: true }));
-    try { await list.add(deck); } finally { setMemory((m) => ({ ...m, writing: false })); }
+    try {
+      await list.add(deck);
+      // The deck may be one the stored read names: once it holds the card it is resolved, not changed, so the
+      // panel is read again and the note and the row say so now rather than at the next open.
+      const again = await readFitsReadAction(card.oracleId).catch(() => null);
+      // Not over a press of this visit's still in flight: that press settles the band itself.
+      if (again && mounted.current && !pressing.current) adopt(again);
+    } finally { setMemory((m) => ({ ...m, writing: false })); }
   }
 
   const deckOf = (deckId: string) => {
@@ -324,8 +339,10 @@ export function FitsView({
   const showsBand = panel !== null && candidates > 0 && !noList;
   // Not gated on the band: once every candidate has taken the card (resolved, F2) there is no band,
   // and the read still reopens with its rows settled.
-  const result = panel !== null && running === null && !failed && stored?.outcome === "picks" ? stored : null;
-  const noFit = showsBand && running === null && !failed && stored?.outcome === "noFit" ? stored : null;
+  // A run in flight does not take what was drawn away: a Read again keeps the old read on screen, under the
+  // running band and with its actions held, until the new one lands (only a first read draws still rows).
+  const result = panel !== null && !failed && stored?.outcome === "picks" ? stored : null;
+  const noFit = showsBand && !failed && stored?.outcome === "noFit" ? stored : null;
   // A change in which decks can take the card is the set's (P10a): it names no deck and tags no row,
   // even when a candidate's own inputs moved in the same span.
   const changedOf = new Map((stale && !stale.setChanged ? stale.changed : []).map((c) => [c.deckId, c.reason]));
@@ -370,17 +387,21 @@ export function FitsView({
   const [bodyReady, setBodyReady] = useState(() => restored !== null);
   if (!bodyReady && panelRead && list.load.state !== "loading") setBodyReady(true);
   let band = null;
+  const noFitBox = noFit ? <NoFitBox
+    body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}
+    foot={isFresh(noFit) ? read.noFitFootNow : read.noFitFootStored(when(noFit.at))}
+  /> : null;
   if (showsBand) {
-    if (running !== null) band = <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} />;
-    else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
+    if (running !== null) {
+      band = <>
+        <RunningBand title={read.running(runCount ?? candidates, name)} elapsed={clock(now - running)} still={!result && !noFit} />
+        {noFitBox ? <div className="opacity-[0.72]">{noFitBox}</div> : null}
+      </>;
+    } else if (tooBig && !failed) band = <RefusedBand head={read.tooBigHead} body={read.tooBigBody} standing={standing} />;
     else if (failed) band = <FailedBand blocked={blocked} spent={spent} closed={closed} standing={standing} onRetry={() => void press()} />;
     else if (noFit) {
-      const box = <NoFitBox
-        body={isFresh(noFit) ? (oneDeck ? read.noFitBodyOne(oneDeck, name) : read.noFitBody(noFit.candidates, name)) : read.noFitBodyStored(noFit.candidates, name)}
-        foot={isFresh(noFit) ? read.noFitFootNow : read.noFitFootStored(when(noFit.at))}
-      />;
       // P6c: the old no fit stays on screen, faded, under the note that re-offers the read.
-      band = stale ? <>{staleNote}<div className="opacity-[0.72]">{box}</div></> : box;
+      band = stale ? <>{staleNote}<div className="opacity-[0.72]">{noFitBox}</div></> : noFitBox;
     } else if (result && stale) {
       band = staleNote;
     } else if (!result) {
@@ -401,7 +422,7 @@ export function FitsView({
   // Every row action waits on any write in flight, the folded list's included, and on a count the
   // view does not have yet: the list's first read, a Try again in flight, or a re-read that failed
   // after a write, which leaves the opening count spent.
-  const rowsLocked = busy || writing || list.busy !== null || list.load.state !== "ready";
+  const rowsLocked = busy || writing || running !== null || list.busy !== null || list.load.state !== "ready";
   const heldNow = new Set(list.read?.holds.map((h) => h.id) ?? []);
   // The free list as last read, in the order it opened: a deck still listed is drawn as it reads now,
   // one that left (took the card, or no longer fits) stays only while it carries this visit's Add

@@ -1,8 +1,8 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db";
 import { chainArt } from "../cards/chain-art";
-import { cards } from "../../db/schema";
+import { cards, decks } from "../../db/schema";
 import { readAllowance, type Billed } from "../model/allowance";
 import type { Allowance } from "../model/allowance-rule";
 import { callModel, type ModelOutcome } from "../model/client";
@@ -102,6 +102,18 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad)
     if (deck) {
       commanderIds[p.deckId] = deck.commanders.map((c) => c.oracleId);
       for (const c of deck.commanders) ids.add(c.oracleId);
+    }
+  }
+  // A picked deck that has since taken the card is no candidate, so the inputs do not carry it; its row stays,
+  // resolved, and its commanders are read from the deck itself so they still name cards.
+  const absent = (view.stored?.picks ?? []).map((p) => p.deckId).filter((id) => !deckById.has(id));
+  if (absent.length > 0) {
+    const rows = await db.select({ id: decks.id, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+      .from(decks).where(and(inArray(decks.id, absent), eq(decks.userId, userId))).catch(() => []);
+    for (const d of rows) {
+      const own = d.partner ? [d.commander, d.partner] : [d.commander];
+      commanderIds[d.id] = own;
+      for (const c of own) ids.add(c);
     }
   }
   if (ids.size === 0) return { names: {}, images: {}, commanderIds };

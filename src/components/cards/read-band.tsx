@@ -54,7 +54,11 @@ export function OfferBand({ lead, cardName, blocked, spent, closed = false, stan
 }
 
 /** P2: running. Still rows hold the read's place; no Stop (the run outlives the view, lock 5). */
-export function RunningBand({ title, elapsed }: { title: string; elapsed: string }) {
+export function RunningBand({ title, elapsed, still = true }: {
+  title: string; elapsed: string;
+  /** Still rows hold the read's place on a first read; a Read again keeps the old read drawn instead. */
+  still?: boolean;
+}) {
   return (
     <>
       <Band testId="read-band-running" accent>
@@ -65,7 +69,7 @@ export function RunningBand({ title, elapsed }: { title: string; elapsed: string
         <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{`${copy.runningSub} · ${elapsed}`}</p>
         <p className="m-0 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.runningKeep}</p>
       </Band>
-      <div aria-hidden data-testid="read-skeleton" className="anim-skeleton flex flex-col gap-[10px]">
+      {still ? <div aria-hidden data-testid="read-skeleton" className="anim-skeleton flex flex-col gap-[10px]">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex flex-col gap-[8px] rounded-[9px] p-[12px] border border-solid border-[color:var(--border)]" style={{ background: "var(--surface-sunken)" }}>
             <span className="h-[10px] w-[42%] rounded-[3px]" style={{ background: "var(--elevated)" }} />
@@ -73,7 +77,7 @@ export function RunningBand({ title, elapsed }: { title: string; elapsed: string
             <span className="h-[8px] w-[70%] rounded-[3px]" style={{ background: "var(--surface-raised)" }} />
           </div>
         ))}
-      </div>
+      </div> : null}
     </>
   );
 }
