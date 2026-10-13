@@ -11,6 +11,12 @@ import { plainText } from "../../lib/decks/notes-body";
 const descriptionCopy = deckDescriptionCopy.description;
 
 /**
+ * What the description draws, trimmed: the draft is a BODY (a card tag as `[[id|Name]]`, card-tags plan PR 3) and the
+ * server stores each tag as the catalog's name, so "changed", "unedited" and the cap all read the drawn words.
+ */
+const drawn = (body: string) => plainText(body).trim();
+
+/**
  * The deck header's pencil (H35, STATES-deck-description.md §2, §3): the name and the
  * description as ONE editor, one commit. A separate hook from `use-deck-rename` rather than a
  * widening of it — `RenameForm` (the decks-list menu) keeps the name-only shape untouched, and
@@ -32,12 +38,6 @@ const descriptionCopy = deckDescriptionCopy.description;
  * wrapper wider than the editor's own controls (a header row also holding unrelated focusable
  * controls, such as a partner's card-details trigger, must not count as "inside the pair").
  */
-/**
- * What the description draws, trimmed: the draft is a BODY (a card tag as `[[id|Name]]`, card-tags plan PR 3) and the
- * server stores each tag as the catalog's name, so "changed", "unedited" and the cap all read the drawn words.
- */
-const drawn = (body: string) => plainText(body).trim();
-
 export function useDeckHeaderEdit(
   deckId: string,
   currentName: string,
