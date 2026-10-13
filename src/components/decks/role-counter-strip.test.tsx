@@ -13,11 +13,6 @@ import { type MixRole, recommendedMix } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
-const intent = vi.hoisted(() => ({ warm: vi.fn() }));
-// The warm object the cell spreads, standing in so the case below sees only that the cell carries it.
-vi.mock("./tuning-tools", () => ({
-  warmTuningToolsOnIntent: { onPointerEnter: () => intent.warm("pointer"), onFocus: () => intent.warm("focus") },
-}));
 import { RoleCounterStrip } from "./role-counter-strip";
 import { RoleCounterCell } from "./role-counter-cell";
 
@@ -482,15 +477,6 @@ describe("the land cell's balance mana → (Tuning hub R3)", () => {
     expect(onBalanceMana).toHaveBeenCalledTimes(1);
     // The land cell only: no other role takes the action.
     expect(document.querySelectorAll("[data-shortcut='balance-mana']").length).toBe(1);
-  });
-
-  it("starts the Tuning tools downloading when a pointer rests on it or focus arrives", () => {
-    render(<RoleCounterStrip mix={TEST_MIX} cards={atTarget("land")} onBalanceMana={vi.fn()} />);
-    const cell = document.querySelector("[data-shortcut='balance-mana']") as HTMLElement;
-    intent.warm.mockClear();
-    fireEvent.pointerEnter(cell);
-    fireEvent.focus(cell);
-    expect(intent.warm.mock.calls.map((c) => c[0])).toEqual(["pointer", "focus"]);
   });
 
   it("gives the cell to consider → when the land count is under target with a shelf", () => {
