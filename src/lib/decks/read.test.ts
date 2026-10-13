@@ -510,10 +510,12 @@ describe("readNoteFlags", () => {
 // The deck page's ONE availability read (speed plan, fix 1): passed in, it stands in for
 // getDeckDetail's own query, so the claim model runs once per render rather than twice.
 describe("deckAvailabilityRead", () => {
+  // The reader's resolved env, a SENTINEL: compared by identity, and a failure prints this, never the environment.
+  const ENV = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   it("uses the shared read and never runs its own query", async () => {
     const shared = Promise.resolve(new Map([["c1", { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]));
     const load = vi.fn();
-    const read = deckAvailabilityRead("u", "d", ["c1"], shared as never, load as never);
+    const read = deckAvailabilityRead("u", "d", ["c1"], shared as never, ENV, load as never);
     expect(read).toBe(shared);
     expect((await read)?.get("c1")?.free).toBe(1);
     expect(load).not.toHaveBeenCalled();
@@ -522,13 +524,25 @@ describe("deckAvailabilityRead", () => {
   it("runs its own query, narrowed to the deck's ids, when no shared read is passed", async () => {
     const own = new Map();
     const load = vi.fn().mockResolvedValue(own);
-    expect(await deckAvailabilityRead("u", "d", ["c1", "c2"], undefined, load as never)).toBe(own);
-    expect(load).toHaveBeenCalledWith("u", { excludeDeckId: "d", oracleIds: ["c1", "c2"] });
+    expect(await deckAvailabilityRead("u", "d", ["c1", "c2"], undefined, ENV, load as never)).toBe(own);
+    expect(load).toHaveBeenCalledWith("u", { excludeDeckId: "d", oracleIds: ["c1", "c2"], env: ENV });
+  });
+
+  // Admin PR 6e: its own query runs the claim model under the reader's resolved switches, the env
+  // getDeckDetail is handed (the lock key and the pending clause), never the environment alone.
+  it("hands the reader's env to its own query", async () => {
+    let handed: NodeJS.ProcessEnv | undefined;
+    const load = vi.fn(async (_u: string, opts?: { env?: NodeJS.ProcessEnv }) => {
+      handed = opts?.env;
+      return new Map();
+    });
+    await deckAvailabilityRead("u", "d", ["c1"], undefined, ENV, load as never);
+    expect(handed === ENV).toBe(true);
   });
 
   it("reads nothing for a deck that owns nothing", () => {
     const load = vi.fn();
-    expect(deckAvailabilityRead("u", "d", [], Promise.resolve(new Map()), load as never)).toBeNull();
+    expect(deckAvailabilityRead("u", "d", [], Promise.resolve(new Map()), ENV, load as never)).toBeNull();
     expect(load).not.toHaveBeenCalled();
   });
 });

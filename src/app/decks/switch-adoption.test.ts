@@ -130,6 +130,11 @@ const READERS = [
   "src/lib/discovery/list.ts",
   "src/lib/discovery/payload.ts",
   "src/lib/discovery/resolve-slug.ts",
+  // Admin PR 6e: the claim model (NEVER_CUT_ENABLED's lock key, CHANGE_COMMANDER_ENABLED's pending clause) and
+  // the deck readers that start it. Its callers elsewhere in lib take no env for it yet (6f).
+  "src/lib/decks/availability-query.ts",
+  "src/lib/decks/cart-read.ts",
+  "src/lib/decks/fill-plan.ts",
 ];
 
 /** A switch read from the environment alone: `fooEnabled()`, `roleBasisFromEnv()` or `scoreWriterVersion()`
@@ -181,5 +186,154 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
     expect(READERS.filter((path) => !existsSync(path))).toEqual([]);
     // A pending page converted is a page to take off the list.
     expect(PENDING.filter((path) => !found.some((f) => f.path === path))).toEqual([]);
+  });
+});
+
+/**
+ * Admin PR 6e: the claim model (`availability-query`) decides NEVER_CUT_ENABLED's `locked` key and
+ * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
+ * environment, so a caller that omits it compiles and reads the environment alone. Every call to
+ * `loadAvailability` must name `env` in its options object, and every call to `loadDeckBuyRows` must pass
+ * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below, left for admin PR 6f. The list only shrinks: a module
+ * on it whose every call passes an env fails until it is taken off.
+ */
+const CLAIM_PENDING = [
+  "src/lib/collection/arrivals-write.ts",
+  "src/lib/collection/card-detail.ts",
+  "src/lib/collection/summary-read.ts",
+  "src/lib/collection/write.ts",
+  "src/lib/commander-change/candidates.ts",
+  "src/lib/commanders/rankings.ts",
+  "src/lib/discovery/list.ts",
+  "src/lib/intake/fill-facts.ts",
+  "src/lib/intake/rows.ts",
+  "src/lib/intake/search.ts",
+  "src/lib/intake/trial.ts",
+  "src/lib/lineup/load.ts",
+  "src/lib/recs/free-ranking.ts",
+  "src/lib/social/spares.ts",
+  "src/lib/swaps/fits.ts",
+  "src/lib/swaps/gather.ts",
+  "src/lib/swaps/take.ts",
+  "src/lib/tuning/answer.ts",
+  "src/lib/tuning/mana-staples.ts",
+  "src/lib/tuning/owned-candidates.ts",
+];
+
+/**
+ * The claim readers and where each takes its env: in an options object (`opts`, which must name `env`) or
+ * as a positional argument (`at`, which must be present). `listDecksWithStats` is a reader by way of its
+ * seniority read: its own `opts.env` is handed on to `loadDeckBuyRows`, so a call that names none passes
+ * `undefined` there and the claim model reads the environment (round 1 of #1635 found the deck page doing it).
+ * `loadShoppingRollup` hands its third argument to `loadDeckBuyRows` the same way (round 2).
+ */
+const CLAIM_ENV = {
+  loadAvailability: { opts: 1 },
+  loadDeckBuyRows: { at: 3 },
+  loadCart: { at: 1 },
+  listDecksWithStats: { opts: 2 },
+  loadShoppingRollup: { at: 2 },
+} as const satisfies Record<string, { opts: number } | { at: number }>;
+const CLAIM_READERS = Object.keys(CLAIM_ENV) as (keyof typeof CLAIM_ENV)[];
+type ClaimReader = (typeof CLAIM_READERS)[number];
+
+/**
+ * Each call to a claim reader in `code`, and whether it hands the reader an env. A reader reached
+ * under ANOTHER NAME counts too, because that is how a call slips past a name match: a parameter
+ * whose default or `typeof` type names one (an injectable `load = loadAvailability`), a const or let
+ * initialized to one, or a property of that name (`deps.loadAvailability(...)`). The alias map is
+ * file-wide rather than scoped: a name bound to a claim reader anywhere in a module is held to the
+ * reader's rule everywhere in it, which can only over-report.
+ */
+async function claimCalls(path: string, code: string): Promise<{ call: string; env: boolean }[]> {
+  const { default: ts } = await import("typescript");
+  type Node = import("typescript").Node;
+  const file = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const isReader = (name: string): name is ClaimReader => (CLAIM_READERS as readonly string[]).includes(name);
+  // The reader an expression names: a bare identifier, or `typeof X` in a type.
+  const named = (node: Node | undefined): ClaimReader | null => {
+    if (!node) return null;
+    if (ts.isIdentifier(node) && isReader(node.text)) return node.text;
+    if (ts.isTypeQueryNode(node) && isReader(node.exprName.getText(file))) return node.exprName.getText(file) as ClaimReader;
+    return null;
+  };
+  const aliases = new Map<string, ClaimReader>();
+  const bind = (node: Node) => {
+    if ((ts.isParameter(node) || ts.isVariableDeclaration(node)) && ts.isIdentifier(node.name) && !isReader(node.name.text)) {
+      const reader = named(node.initializer) ?? named(node.type);
+      if (reader) aliases.set(node.name.text, reader);
+    }
+    ts.forEachChild(node, bind);
+  };
+  bind(file);
+  const readerOf = (callee: Node): ClaimReader | null => {
+    const id = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : null;
+    if (id === null) return null;
+    return isReader(id) ? id : aliases.get(id) ?? null;
+  };
+  const out: { call: string; env: boolean }[] = [];
+  const visit = (node: Node) => {
+    const reader = ts.isCallExpression(node) ? readerOf(node.expression) : null;
+    if (reader && ts.isCallExpression(node)) {
+      const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
+      const call = `${path}:${line}: ${node.expression.getText(file)} (${reader})`;
+      const where: { opts: number } | { at: number } = CLAIM_ENV[reader];
+      if ("opts" in where) {
+        const opts = node.arguments[where.opts];
+        const env = !!opts && ts.isObjectLiteralExpression(opts) && opts.properties.some((p) =>
+          (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.getText(file) === "env");
+        out.push({ call, env });
+      } else {
+        out.push({ call, env: node.arguments.length > where.at });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return out;
+}
+
+describe("every claim read is handed the reader's env (admin PR 6e)", () => {
+  it("finds a call that omits the env (the scan's own failure path)", async () => {
+    const code = [
+      "loadAvailability(u);",
+      "loadAvailability(u, { oracleIds });",
+      "loadAvailability(u, { oracleIds, env });",
+      "loadAvailability(u, { env: opts.env }, tx);",
+      "loadDeckBuyRows(u, ids);",
+      "loadDeckBuyRows(u, ids, undefined, env);",
+      "loadCart(u);",
+      "loadCart(u, keyed);",
+      // Under another name: an injectable parameter by default and by type, a const alias, a property.
+      "function f(load = loadAvailability) { load(u, { oracleIds }); }",
+      "function g(read: typeof loadDeckBuyRows) { read(u, ids); read(u, ids, tx, env); }",
+      "const bill = loadCart; bill(u);",
+      "deps.loadAvailability(u, { env });",
+      // The deck list hands its own opts.env to the seniority read.
+      "listDecksWithStats(u, \"name\");",
+      "listDecksWithStats(u, \"name\", { includeProxyStats: true });",
+      "listDecksWithStats(u, \"name\", { env });",
+      "loadShoppingRollup(u, ids);",
+      "loadShoppingRollup(u, undefined, env);",
+    ].join("\n");
+    expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
+      [false, false, true, true, false, true, false, true, false, false, true, false, true, false, false, true, false, true],
+    );
+  });
+
+  it("names no call without one outside the 6f modules, and no 6f module that has been converted", async () => {
+    const { readFileSync, readdirSync, statSync, existsSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    expect(CLAIM_PENDING.filter((path) => !existsSync(path))).toEqual([]);
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
+    });
+    const all = (await Promise.all(walk("src").map((path) => claimCalls(path, readFileSync(path, "utf8"))))).flat();
+    // A scan that found nothing would pass over everything: the deck page, Home and the pull all read claims.
+    expect(all.filter((c) => c.env).length).toBeGreaterThan(20);
+    const bare = all.filter((c) => !c.env);
+    expect(bare.filter((c) => !CLAIM_PENDING.some((p) => c.call.startsWith(`${p}:`))).map((c) => c.call)).toEqual([]);
+    expect(CLAIM_PENDING.filter((p) => !bare.some((c) => c.call.startsWith(`${p}:`)))).toEqual([]);
   });
 });

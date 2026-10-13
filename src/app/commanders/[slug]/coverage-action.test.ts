@@ -78,7 +78,10 @@ describe("retryCoverageFigures", () => {
     const out = await retryCoverageFigures("korvold", "all", "labels");
     expect(out!.ramp[0].availability).toEqual(CLAIMED);
     // Narrowed to the cards this payload actually carries, not the whole shelf.
-    expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"] });
+    expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"], env: RESOLVED });
+    // The claim read runs under the reader's resolved switches (admin PR 6e), the very env the retry
+    // resolved and scored under (the page's basis laid over the reader's): identity, not a deep match.
+    expect(loadAvailability.mock.calls[0][1].env === resolveCommanderSlug.mock.calls[0][2]).toBe(true);
   });
 
   // The page gives every role card the owned copy's art, which is what Role Coverage hands its

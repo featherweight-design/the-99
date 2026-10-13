@@ -639,13 +639,13 @@ export async function loadVersionDiff(
       .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) })),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
     // reading of ownership. User-wide claims inside, narrowed to this deck's rows.
-    ids.length > 0 ? loadDeckBuyRows(userId, [deckId]) : [],
+    ids.length > 0 ? loadDeckBuyRows(userId, [deckId], undefined, env) : [],
     // From THIS deck's vantage for every card: what is left over after its own draft ask, so a
     // version that ran more copies than the draft still counts the copies the deck could call on,
     // and a card the draft has cut (ask 0) counts the copy this deck's committed version still
     // sleeves, which an off-decklist read would hold against it (Copilot round 3).
     ids.length > 0
-      ? loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId })
+      ? loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId, env })
       : new Map<string, Availability>(),
   ]);
   const vantage = new Map([...fromDeck].map(([id, a]) => [id, a.free]));

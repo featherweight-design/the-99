@@ -211,7 +211,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     };
   }
 
-  const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in });
+  const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in }, env);
   const version = await newestVersion(input.deckId);
   // FAIL CLOSED, never the display read's empty set: this read decides what the review starts KEPT,
   // and a locked card that silently starts unticked is deleted by an Apply nobody touched. A failed
@@ -257,6 +257,8 @@ async function withFacts(
   userId: string,
   deckId: string,
   groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[] },
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. */
+  env: NodeJS.ProcessEnv,
 ): Promise<{ out: DeckUpdateChangedRow[]; in: DeckUpdateChangedRow[] }> {
   // Distinct ids, not rows: a basic land stacks, and nothing stops a plan from
   // naming the same card in both groups. Both reads below answer per card, so a
@@ -278,7 +280,7 @@ async function withFacts(
   const ownedIds = oracleIds.filter((id) => have.has(id));
   const availability =
     ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds, env }).catch(
           () => null,
         )
       : null;

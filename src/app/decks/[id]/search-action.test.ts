@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const stub = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
   chainArt: vi.fn(),
+  loadAvailability: vi.fn(async (..._args: unknown[]) => new Map()),
 }));
 
 // A select chain that answers `stub.rows` wherever it ends: every builder method returns the chain,
@@ -25,7 +26,7 @@ vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
 // The reader's resolved env, a SENTINEL: an assertion on it never prints the process environment.
 const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ENV }));
-vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => new Map() }));
+vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: (...args: unknown[]) => stub.loadAvailability(...args) }));
 vi.mock("../../../lib/cards/chain-art", () => ({ chainArt: (...args: unknown[]) => stub.chainArt(...args) }));
 
 const { searchCards } = await import("./search-action");
@@ -63,5 +64,16 @@ describe("searchCards art", () => {
     const out = await searchCards("zom", null, false);
     expect(out.map((r) => r.imageUri)).toEqual(["catalog-zombify.jpg", "catalog-unowned.jpg"]);
     expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify", "unowned"], ENV);
+  });
+});
+
+// Admin adoption 6e: the owned rows' claim read runs under the reader's resolved switches (the claim
+// model's `locked` key is NEVER_CUT_ENABLED's), the same env the art reads, never the environment alone.
+describe("searchCards claims", () => {
+  it("hands the reader's resolved env to the claim read", async () => {
+    await searchCards("zom", null, false, "deck-1");
+    expect(stub.loadAvailability).toHaveBeenCalledTimes(1);
+    const opts = stub.loadAvailability.mock.calls[0][1] as { env?: NodeJS.ProcessEnv };
+    expect(opts.env === ENV).toBe(true);
   });
 });

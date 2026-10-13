@@ -136,7 +136,7 @@ export async function retryCoverageFigures(
   // picture is what the plates drew before, and no reason to throw recovered figures away.
   const ids = [...new Set(roleCardIds)];
   const [availability, ownedArt] = await Promise.all([
-    loadAvailability(userId, { oracleIds: ids }),
+    loadAvailability(userId, { oracleIds: ids, env }),
     resolveOwnedPrintings(userId, ids),
   ]);
 
