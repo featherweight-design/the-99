@@ -51,13 +51,16 @@ export type BandHeight = 72 | 168 | 208 | 248 | 288;
     exists to catch. */
 export const PORTRAIT_HOLD = 78;
 
+/** How far above the block the ramp starts, as a share of the block. */
+export const RAMP_LEAD = 0.48;
+
 export const bottomScrimStops = (
   labelAtPx: number,
   band: number,
   hold = 73,
 ): ScrimStops => [
   [0, 0],
-  [0, Math.round(((band - 1.48 * labelAtPx) / band) * 100)],
+  [0, Math.round(((band - (1 + RAMP_LEAD) * labelAtPx) / band) * 100)],
   [hold, Math.round(((band - labelAtPx) / band) * 100)],
   [hold, 100],
 ];
@@ -66,6 +69,42 @@ const coverScrim = (stops: ScrimStops) =>
   `linear-gradient(180deg, ${stops
     .map(([alpha, pos]) => `${tint("--bg", alpha)} ${pos}%`)
     .join(", ")})`;
+
+/** The same ramp as `bottomScrimStops`, drawn INSIDE the label block rather
+    than across the band, for a `cover` band whose block changes height with its
+    content (`labelAtPx="block"`). The block must be positioned, reach the band's
+    foot (its bottom inset as padding, so its height is the `labelAtPx` the rule
+    takes), and isolate, so this layer paints under its ink and over the art.
+
+    `top: -48%` is 48% of the block's own height, so the ramp starts at 1.48× the
+    block from the foot and holds at the block's top: `bottomScrimStops` exactly,
+    with the block measured by layout instead of by hand. A ceiling keyed to the
+    tallest possible block (four intent lines) held a typical deck's hold 64px
+    from the band's top, over the commander's face. `insetX` is the block's own
+    horizontal inset, which the layer reaches back out across to the band edges. */
+export function BlockScrim({ insetX, hold = 73 }: { insetX: number; hold?: number }) {
+  const holdAt = (RAMP_LEAD / (1 + RAMP_LEAD)) * 100;
+  return (
+    <div
+      aria-hidden="true"
+      data-block-scrim
+      className="art-wash-scrim pointer-events-none absolute"
+      style={{
+        top: `${-RAMP_LEAD * 100}%`,
+        bottom: 0,
+        left: -insetX,
+        right: -insetX,
+        zIndex: -1,
+        background: coverScrim([
+          [0, 0],
+          [0, 0],
+          [hold, Number(holdAt.toFixed(3))],
+          [hold, 100],
+        ]),
+      }}
+    />
+  );
+}
 
 /** Exported so `wash-contrast.test.ts` measures the opacity that ships rather
     than a copy of it. */
@@ -251,8 +290,12 @@ export type ArtWashProps = ArtProps &
             Measured, never intended: a block costed at 57px whose title wraps to
             three lines is 83px, and a ramp derived from 57 holds where the block
             ends rather than where it starts, putting its first line on unscrimmed
-            art. */
-        labelAtPx: number;
+            art.
+
+            `block` means the ramp is drawn by the block itself, through
+            `BlockScrim`: the band then paints no scrim of its own, and the ramp
+            follows the block's real height rather than a ceiling. */
+        labelAtPx: number | "block";
         portrait?: never;
         /** Ask for the crop only after hydration, once the band is within a screen of the viewport.
             /decks sets it on every tile after its first nine (a desktop's first screen): its 24
@@ -409,6 +452,7 @@ export function ArtWash(props: ArtWashProps) {
           style={{ ...reducible(1, false), background: commanderGradient(colorIdentity) }}
         />
       )}
+      {props.labelAtPx === "block" ? null : (
       <div
         // No edge in the class any more, because there is no longer an edge to
         // choose. The `-top` variant existed so the reduced-transparency override
@@ -421,6 +465,7 @@ export function ArtWash(props: ArtWashProps) {
         className="art-wash-scrim art-wash-scrim-cover absolute inset-0"
         style={{ background: coverScrim(bottomScrimStops(props.labelAtPx, props.height)) }}
       />
+      )}
     </div>
   );
 }

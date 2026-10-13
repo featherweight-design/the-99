@@ -1,10 +1,33 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ArtWash } from "./art-wash";
+import { ArtWash, BlockScrim, bottomScrimStops, RAMP_LEAD } from "./art-wash";
 
 const layersOf = (c: HTMLElement) => Array.from(c.querySelectorAll("div"));
 
 describe("ArtWash — cover", () => {
+  // `block` hands the ramp to the label block, so the band paints none of its own: two ramps
+  // would stack to darker than either is measured at.
+  it("paints no scrim of its own when the block draws the ramp", () => {
+    const { container } = render(
+      <ArtWash strategy="cover" height={288} labelAtPx="block" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+    );
+    expect(container.querySelector(".art-wash-scrim")).toBeNull();
+    expect(container.firstElementChild).toHaveAttribute("data-art-wash-label-at", "block");
+  });
+
+  // The block's ramp is `bottomScrimStops` measured by layout: it starts RAMP_LEAD of the block
+  // above the block and holds at the block's top, at the same hold.
+  it("draws the block's ramp as the band's rule, keyed to the block", () => {
+    const { container } = render(<BlockScrim insetX={18} />);
+    const scrim = container.firstElementChild as HTMLElement;
+    expect(scrim.style.top).toBe(`${-RAMP_LEAD * 100}%`);
+    const holdAt = (RAMP_LEAD / (1 + RAMP_LEAD)) * 100;
+    expect(scrim.style.background).toContain(`${holdAt.toFixed(3)}%`);
+    expect(scrim.style.background).toContain("73%");
+    // Same hold the band's own ramp holds at.
+    expect(bottomScrimStops(100, 288)[2][0]).toBe(73);
+  });
+
   it("is decorative — hidden from the accessibility tree", () => {
     const { container } = render(
       <ArtWash strategy="cover" height={288} labelAtPx={46} artCropUri="crop.jpg" colorIdentity={["G"]} />,
