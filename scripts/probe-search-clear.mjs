@@ -30,7 +30,8 @@ const SURFACES = [
   // The deck list's field is in the column at desktop and behind its search button, in a sheet, on the phone.
   { route: "/decks", name: "decks column", widths: ["desktop"] },
   { route: "/decks", name: "decks sheet", widths: ["phone"], open: 'button[aria-label="Search decks"]', field: '[role="dialog"] [data-search-field]' },
-  { route: "/decks/precons", name: "precons list", widths: ["phone", "desktop"] },
+  // Not /decks/precons: it draws the same `DeckSearchField` (unit-tested), but local-dev holds no precon catalog,
+  // so the page has no field to press there.
 ];
 
 async function signIn(page) {
