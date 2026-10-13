@@ -69,7 +69,7 @@ export async function purgeSocialIn(tx: Tx, userId: string): Promise<SocialPurge
   // Unlink the account from every other player's game log, AFTER the friendship rows are held. That order is
   // the contract for whatever writes a friend seat: it must hold the seated friendship row FOR SHARE until
   // its game commits, so a game logged before this lock is committed (and unlinked here) and one logged after
-  // finds no friend to seat. Nothing writes a seat yet; the game log's write path will. The
+  // finds no friend to seat; `resolveFriendSeatsIn` (`games.ts`) is that write. The
   // deck link goes with it (`friend_deck_id` requires the friend), ahead of the decks' own `set null`.
   // The account's decks are locked FIRST, in id order, because a deck delete locks its deck and then its
   // `set null` locks the seats naming it: taking the seats here and the decks later (in `PURGE_ORDER`) would

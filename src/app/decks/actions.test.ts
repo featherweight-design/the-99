@@ -1321,6 +1321,45 @@ describe("logGame", () => {
       "/",
     ]);
   });
+
+  // Opponents (social Feature C) ride the same log. Dark: refused outright while the reader's resolved
+  // SOCIAL_GAMES_ENABLED is off, and nothing is written, not even the game.
+  describe("with opponents", () => {
+    afterEach(() => vi.unstubAllEnvs());
+    const seats = [{ label: "Sam", won: true }];
+
+    it("refuses opponents while the switch is off, writing nothing", async () => {
+      vi.stubEnv("SOCIAL_GAMES_ENABLED", "true");
+      vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "false");
+      const result = await logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents: seats });
+      expect(result.ok).toBe(false);
+      expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    it("writes a seat per opponent, numbered from 1, when the switch is on", async () => {
+      vi.stubEnv("SOCIAL_GAMES_ENABLED", "true");
+      vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
+      const result = await logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents: seats });
+      expect(result).toEqual({ ok: true });
+      const rows = stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents");
+      expect(rows).toHaveLength(1);
+      expect(rows[0].values).toEqual([expect.objectContaining({ seat: 1, label: "Sam", won: true, friendUserId: null })]);
+    });
+
+    it("refuses a winner on a game the player won", async () => {
+      vi.stubEnv("SOCIAL_GAMES_ENABLED", "true");
+      vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
+      const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: seats });
+      expect(result.ok).toBe(false);
+      expect(stub.state.insertCalls).toHaveLength(0);
+    });
+
+    it("logs no opponents with the switch off exactly as before", async () => {
+      const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: [] });
+      expect(result).toEqual({ ok: true });
+      expect(stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents")).toHaveLength(0);
+    });
+  });
 });
 
 describe("deleteGame", () => {
