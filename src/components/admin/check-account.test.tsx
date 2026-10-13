@@ -29,6 +29,7 @@ describe("CheckAccount", () => {
     render(<CheckAccount explanations={EXPLAINED} initial={null} />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "u2" } });
     expect(screen.getByTestId("check-result").textContent).toBe("Off · env var is off");
+    expect(screen.getByRole("status")).toContainElement(screen.getByTestId("check-result"));
     expect(String(mirror.mock.calls.at(-1)?.[0])).toMatch(/\?account=u2$/);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "" } });
     expect(String(mirror.mock.calls.at(-1)?.[0])).not.toContain("account=");

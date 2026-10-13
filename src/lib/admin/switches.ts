@@ -1,12 +1,11 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { adminEvents } from "../../db/schema";
 import { explainForAccounts, switchEnvValues } from "../switches/explain";
 import { isSwitchName, type SwitchName } from "../switches/registry";
 import type { SwitchSnapshot } from "../switches/resolve";
 import { readSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts } from "./accounts";
-import { switchPage, type GroupInfo, type OverrideDetail, type SwitchPage } from "./switch-page-rule";
+import { switchPage, type GroupInfo, type OverrideDetail, type SwitchEvent, type SwitchPage } from "./switch-page-rule";
 import { switchRows, type SwitchRow } from "./switches-rule";
 
 /** The history the switch page lists, newest first (admin plan 8b). */
@@ -34,18 +33,24 @@ export async function loadSwitchesList(): Promise<SwitchesList> {
 }
 
 /**
- * One switch's page (admin STATES F1 to F13): the snapshot every account is explained through, the
- * switch's own override rows with their notes, the groups, its last 100 events and the account
- * universe. Read fresh, as the list is.
+ * Every override with its note and author, every membership, every group and this switch's last
+ * events, in ONE statement, so the ladder's verdicts, the rows it draws and the history are one
+ * instant: an override and its `admin_events` row commit together, and two reads could fall either
+ * side of that commit (the reason `SNAPSHOT_SQL` is one statement too). Null when the read fails.
  */
-/**
- * Every override with its note and author, every membership and every group, in ONE statement, so
- * the ladder's verdicts and the rows it draws are one instant (the reason `SNAPSHOT_SQL` is one
- * statement too). Null when the read fails.
- */
-async function readSwitchState(): Promise<{ snapshot: SwitchSnapshot; overrides: (OverrideDetail & { switchName: string })[]; groups: GroupInfo[] } | null> {
+type RawState = {
+  overrides: (Omit<OverrideDetail, "updatedAt"> & { switchName: string; updatedAt: string })[];
+  members: { userId: string; groupId: string }[];
+  groups: GroupInfo[];
+  events: (Omit<SwitchEvent, "at"> & { at: string })[];
+};
+
+// A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
+const utc = (text: string) => new Date(`${text}Z`);
+
+async function readSwitchState(name: SwitchName) {
   try {
-    const { rows } = await db.execute<{ overrides: (Omit<OverrideDetail, "updatedAt"> & { switchName: string; updatedAt: string })[]; members: { userId: string; groupId: string }[]; groups: GroupInfo[] }>(sql`select
+    const { rows } = await db.execute<RawState>(sql`select
       coalesce((select json_agg(json_build_object(
         'switchName', o."switch", 'scope', o.scope, 'groupId', o.group_id, 'userId', o.user_id, 'value', o.value,
         'note', o.note, 'updatedBy', o.updated_by, 'updatedAt', o.updated_at
@@ -53,14 +58,24 @@ async function readSwitchState(): Promise<{ snapshot: SwitchSnapshot; overrides:
       coalesce((select json_agg(json_build_object('userId', m.user_id, 'groupId', m.group_id)) from flag_group_members m), '[]'::json) as members,
       coalesce((select json_agg(json_build_object(
         'id', g.id, 'name', g.name, 'members', (select count(*) from flag_group_members gm where gm.group_id = g.id)
-      )) from flag_groups g), '[]'::json) as groups`);
+      )) from flag_groups g), '[]'::json) as groups,
+      coalesce((select json_agg(json_build_object(
+        'at', e.at, 'actorId', e.actor_id, 'kind', e.kind, 'scope', e.scope, 'groupId', e.group_id, 'userId', e.user_id,
+        'oldValue', e.old_value, 'newValue', e.new_value, 'note', e.note
+      ) order by e.at desc, e.id desc) from (
+        -- One past the limit, so the page can say the list is cut.
+        select * from admin_events where "switch" = ${name} order by at desc, id desc limit ${HISTORY_LIMIT + 1}
+      ) e), '[]'::json) as events`);
     const [row] = rows;
-    // A timestamp inside json_build_object arrives as text, without a zone; the column holds UTC.
-    const overrides = row.overrides.filter((o) => isSwitchName(o.switchName)).map((o) => ({ ...o, updatedAt: new Date(`${o.updatedAt}Z`) }));
+    const overrides = row.overrides.filter((o) => isSwitchName(o.switchName)).map((o) => ({ ...o, updatedAt: utc(o.updatedAt) }));
     return {
-      snapshot: { overrides: overrides.map(({ switchName, scope, groupId, userId, value }) => ({ switchName: switchName as SwitchName, scope, groupId, userId, value })), groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) },
+      snapshot: {
+        overrides: overrides.map(({ switchName, scope, groupId, userId, value }) => ({ switchName: switchName as SwitchName, scope, groupId, userId, value })),
+        groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])),
+      } satisfies SwitchSnapshot,
       overrides,
       groups: row.groups,
+      events: row.events.map((e) => ({ ...e, at: utc(e.at) })),
     };
   } catch (error) {
     console.error("admin: switch overrides could not be read; drawing the env var alone", error);
@@ -68,28 +83,12 @@ async function readSwitchState(): Promise<{ snapshot: SwitchSnapshot; overrides:
   }
 }
 
+/**
+ * One switch's page (admin STATES F1 to F13): the state above and the account universe. Read fresh,
+ * as the list is.
+ */
 export async function loadSwitchPage(name: SwitchName, viewerId: string): Promise<SwitchPageData> {
-  const [state, { accounts, clerk }, events] = await Promise.all([
-    readSwitchState(),
-    listAccounts(),
-    db
-      .select({
-        at: adminEvents.at,
-        actorId: adminEvents.actorId,
-        kind: adminEvents.kind,
-        scope: adminEvents.scope,
-        groupId: adminEvents.groupId,
-        userId: adminEvents.userId,
-        oldValue: adminEvents.oldValue,
-        newValue: adminEvents.newValue,
-        note: adminEvents.note,
-      })
-      .from(adminEvents)
-      .where(eq(adminEvents.switchName, name))
-      .orderBy(desc(adminEvents.at), desc(adminEvents.id))
-      // One past the limit, so the page can say the list is cut.
-      .limit(HISTORY_LIMIT + 1),
-  ]);
+  const [state, { accounts, clerk }] = await Promise.all([readSwitchState(name), listAccounts()]);
   const page = switchPage({
     name,
     env: switchEnvValues(),
@@ -99,7 +98,7 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
     verdicts: explainForAccounts(state?.snapshot ?? null, accounts.map((a) => a.id)),
     accounts,
     groups: state?.groups ?? [],
-    events,
+    events: state?.events ?? [],
     historyLimit: HISTORY_LIMIT,
     viewerId,
   });

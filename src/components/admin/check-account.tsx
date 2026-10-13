@@ -41,16 +41,19 @@ export function CheckAccount({ explanations, initial }: { explanations: readonly
           </option>
         ))}
       </select>
-      {picked && (
-        <span data-testid="check-result" className="inline-flex min-w-0 items-center gap-[7px] text-[13.5px] text-[color:var(--fg)]">
-          <ResolvedDot state={picked.on ? "on" : "off"} />
-          <span>
-            {picked.on ? adminCopy.switches.resolved.on : adminCopy.switches.resolved.off}
-            {" · "}
-            <span className={picked.kill ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}>{picked.source}</span>
+      {/* A live region that is always there, so a pick's result is announced when it lands. */}
+      <span role="status" aria-live="polite" aria-atomic="true" className="min-w-0">
+        {picked && (
+          <span data-testid="check-result" className="inline-flex min-w-0 items-center gap-[7px] text-[13.5px] text-[color:var(--fg)]">
+            <ResolvedDot state={picked.on ? "on" : "off"} />
+            <span>
+              {picked.on ? adminCopy.switches.resolved.on : adminCopy.switches.resolved.off}
+              {" · "}
+              <span className={picked.kill ? "text-[color:var(--danger)]" : "text-[color:var(--fg-muted)]"}>{picked.source}</span>
+            </span>
           </span>
-        </span>
-      )}
+        )}
+      </span>
     </div>
   );
 }
