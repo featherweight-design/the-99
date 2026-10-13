@@ -5,7 +5,7 @@ import type { SQL } from "drizzle-orm";
 // The actions are public endpoints: what the tests pin is what they do with a wire value that
 // is not what the TypeScript type claims.
 const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | null } | undefined, inputs: 0, started: 0, applied: 0, saved: 0, startOpts: undefined as unknown, startKind: "in_flight",
-  resolveAsked: [] as unknown[], modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
+  resolveAsked: [] as unknown[], resolveText: undefined as string | undefined, modelQueue: [] as unknown[], modelCalls: 0, onModelCall: undefined as ((req: unknown) => void) | undefined, lockedIds: [] as string[], runPending: true, reachModel: false, finished: [] as unknown[][], modelRequest: undefined as unknown, modelOutcome: undefined as unknown,
   contextRead: 0, packInput: undefined as unknown, allLocked: null as string | null,
   // H35, PR 4a (8-asked/5-kept): a test-supplied pack and catalog, so a full run can reach the
   // real catalog read, price read and `validateSuggestions` rather than throwing on a bare `db`
@@ -41,7 +41,7 @@ vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: () => calls.tuningEnabl
 // every tag to the name it carried and records how it was asked.
 vi.mock("../../lib/cards/tagged-text", async () => {
   const { plainText } = await import("../../lib/decks/notes-body");
-  return { resolveTaggedText: async (raw: string, opts: unknown) => { calls.resolveAsked.push(opts); return { text: plainText(raw), body: raw, tagged: [] }; } };
+  return { resolveTaggedText: async (raw: string, opts: unknown) => { calls.resolveAsked.push(opts); return { text: calls.resolveText ?? plainText(raw), body: raw, tagged: [] }; } };
 });
 // `updateTag` too: `saveDeckHeader`'s name path reaches `revalidateClaims` → `revalidateUserLists`.
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
@@ -291,6 +291,17 @@ describe("runTuning's model call (v2)", () => {
     expect(await runTuning(DECK, { anyway: true, notes: `${tag(1)}${tag(2)}${tag(3)}${tag(4)}` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
     expect(await runTuning(DECK, { anyway: true, notes: `${"x".repeat(499)}${tag(1)}${tag(2)}` })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
     expect(calls.started).toBe(0);
+  });
+
+  it("refuses a tagged note whose resolved names outgrow the cap, before a credit is reserved", async () => {
+    calls.startKind = "started";
+    calls.resolveText = "x".repeat(501);
+    try {
+      expect(await runTuning(DECK, { anyway: true, notes: "[[c0ffee00-0000-4000-8000-000000000001|A]]" })).toEqual({ ok: false, message: deckTuningCopy.run.refused });
+      expect(calls.started).toBe(0);
+    } finally {
+      calls.resolveText = undefined;
+    }
   });
 
   it("refuses a notes string over its own character cap", async () => {

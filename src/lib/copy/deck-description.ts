@@ -82,7 +82,7 @@ export const deckDescriptionCopy = {
       infoAria: "How card tags work",
       lines: [
         "Type [[ and the start of a card’s name to tag it, or press [[ ]] to start one.",
-        "A tagged card is named exactly, so a suggestion can be about that card.",
+        "A tagged card is read by its exact name.",
         "A name typed without picking it from the list stays plain text.",
       ],
       insert: "[[ ]]",

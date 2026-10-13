@@ -212,6 +212,11 @@ export async function runTuning(
   // A tag is the catalog's name for its id, never the client's: an id the catalog does not hold, or a card
   // banned in Commander, is plain words. The prompt gets the names, through `playerText`, as ever.
   const trimmedNotes = trimmedBody === null ? null : (await resolveTaggedText(trimmedBody, { commanderLegalOnly: true })).text.trim();
+  // The catalog's name can be longer than the one the client sent, so the cap is checked again on the words
+  // the prompt will carry: `playerText` would otherwise throw after the credit is reserved.
+  if (trimmedNotes !== null && countCharacters(trimmedNotes) > notesCap) {
+    return { ok: false, message: deckTuningCopy.run.refused };
+  }
   const notes = trimmedNotes === "" ? null : trimmedNotes;
 
   const inputs = await tuningInputs(deckId, userId);
