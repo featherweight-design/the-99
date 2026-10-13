@@ -657,7 +657,12 @@ async function tabPress(browser, state, width, url) {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
     await page.waitForLoadState("load", { timeout: LOAD_CAP_MS }).catch(() => {});
     const tab = page.locator("#tab-analysis");
-    await tab.waitFor({ state: "visible", timeout: 30_000 });
+    // A deployment with Analysis off draws no such tab; that is a reading of null, not a failed run.
+    if (!(await tab.waitFor({ state: "visible", timeout: 30_000 }).then(() => true, () => false))) {
+      out[key] = null;
+      await context.close();
+      continue;
+    }
     if (key === "idle") await page.waitForTimeout(IDLE_WAIT_MS);
     if (key === "intent") {
       if (width.isMobile) { await page.keyboard.press("Shift"); await tab.focus(); }
@@ -672,7 +677,7 @@ async function tabPress(browser, state, width, url) {
         // The hub's landing itself, not just any text under a settled panel: a build that has not yet
         // drawn the Tuning tools must not read as done.
         return Boolean(panel && !panel.hasAttribute("aria-busy") && panel.querySelector("[data-tuning-hub]"));
-      }, null, { timeout: 60_000, polling: 16 })
+      }, null, { timeout: 20_000, polling: 16 })
       .then(() => Date.now() - pressed, () => null);
     await context.close();
   }
