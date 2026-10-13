@@ -148,7 +148,9 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     loadOpeningPrintings(rows.map((r) => r.oracle_id)),
   ]);
   const ownedArt = ownedRead ?? new Map<string, OwnedPrinting>();
-  const openingFor = (id: string) => (ownedRead === null ? undefined : opening.get(id));
+  // Never for a card the reader owns (even one whose copy has no art: it keeps the catalog's fields as a whole), and
+  // never after a failed ownership read.
+  const openingFor = (id: string) => (ownedRead === null || ownedArt.has(id) ? undefined : opening.get(id));
 
   return {
     newestAsOf: prices.newestAsOf,
