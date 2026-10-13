@@ -74,7 +74,7 @@ export function FoldCard({ id, title, denom, summary, open, onToggle, children }
       >
         <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
           <span className="flex flex-wrap items-baseline gap-x-[10px]">
-            <span id={`stats-${id}-title`} className="font-display text-[16px] font-normal text-[color:var(--fg)] md:text-[17px]">{title}</span>
+            <span id={`stats-${id}-title`} className="font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{title}</span>
             <span id={`stats-${id}-denom`} className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{denom}</span>
           </span>
           {open ? null : <span id={`stats-${id}-summary`} data-stats-summary className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{summary}</span>}

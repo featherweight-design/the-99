@@ -136,7 +136,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
         {scopeLine}
       </div>
 
-      <div role="tabpanel" id={viewPanelId("stats")} aria-labelledby={viewTabId("stats")} className="flex flex-col gap-[10px] px-[16px] pt-[4px] pb-[20px] md:gap-[12px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:pt-[14px] md:pb-[28px]">
+      <div role="tabpanel" id={viewPanelId("stats")} aria-labelledby={viewTabId("stats")} className="flex flex-col gap-[10px] px-[16px] pt-[4px] pb-[20px] md:gap-[12px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:pt-[14px] md:pb-[18px]">
         {one ? <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">{copy.one}</p> : null}
         <FoldCard
           id="recency"
