@@ -105,7 +105,7 @@ export function CommitmentsCard({
             would be the whole collection, which is not what "review" means here. */}
         {/* Beside it when the cart is on, two equal halves like `New deck` and `Import a deck`
             at every width: the figures say what is short, and the second button is where to buy it. */}
-        <div className="mt-[2px] grid grid-cols-1 gap-[8px] data-[two]:grid-cols-2" data-two={cartEnabled ? "" : undefined}>
+        <div className="mt-[2px] grid grid-cols-1 gap-[8px] min-[360px]:data-[two]:grid-cols-2" data-two={cartEnabled ? "" : undefined}>
           <GhostButton
             href="/collection?avail=over"
             // 44 on a phone, 32 above it. The card was desktop-only when this was

@@ -62,7 +62,7 @@ export function PreconSuggestion({ deckId, deckName, suggestions }: {
             </div>
             <button type="button" onClick={() => setConfirming(m)} className={`${LINK} self-start min-[360px]:self-auto`}>{copy.link}</button>
           </div>
-          <button type="button" onClick={dismiss} aria-label={copy.dismissAria(m.name)} className={`${CLOSE} self-start`}>✕</button>
+          <button type="button" onClick={dismiss} aria-label={copy.dismissAria(m.name)} className={CLOSE}>✕</button>
         </ArrivalBandShell>
         {dialog}
       </>

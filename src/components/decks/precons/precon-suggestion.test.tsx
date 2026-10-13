@@ -128,16 +128,15 @@ describe("LinkPreconRow", () => {
   });
 });
 
-// Hugh, 2026-10-13: the strip was too tall. Link it sits on the heading's line and ✕ in the corner; only
+// Hugh, 2026-10-13: the strip was too tall. Link it sits on the heading's line; only
 // a width under 360px stacks them.
 describe("PreconSuggestion layout", () => {
-  it("puts Link it beside the text from 360px up, stacks it only below, and pins ✕ to the top", () => {
+  it("puts Link it beside the text from 360px up, and stacks it only below", () => {
     render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
     const link = screen.getByRole("button", { name: "Link it" });
     const row = link.parentElement!;
     expect(row.className).toContain("min-[360px]:flex-row");
     expect(row.className).not.toContain("md:flex-row");
     expect(link.className).toContain("min-[360px]:self-auto");
-    expect(screen.getByRole("button", { name: /^Dismiss/ }).className).toContain("self-start");
   });
 });
