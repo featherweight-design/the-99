@@ -168,9 +168,9 @@ describe("CostsDetail, the split headline", () => {
   });
 
   it("rounds a floor down, never up past what is known", () => {
-    // 99.96% known, with a label run still collecting: at least 99.9%, never at least 100%.
-    draw({ calls: [call({ micro: 400 }), call({ feature: "synopsis", origin: "system", userId: "system", micro: 999_600 })], ledgers: [], labelRuns: [{ ...labelRun, batches: 1, collected: 0, open: 1, inTokens: 0, outTokens: 0 }] });
-    expect(screen.getByText("System is at least 99.9% of October, with some of its spend not in yet.")).toBeInTheDocument();
+    // 95.06% known, with a label run still collecting: at least 95.0%, never the rounded-up 95.1%.
+    draw({ calls: [call({ micro: 49_400 }), call({ feature: "synopsis", origin: "system", userId: "system", micro: 950_600 })], ledgers: [], labelRuns: [{ ...labelRun, batches: 1, collected: 0, open: 1, inTokens: 0, outTokens: 0 }] });
+    expect(screen.getByText("System is at least 95.0% of October, with some of its spend not in yet.")).toBeInTheDocument();
   });
 });
 
