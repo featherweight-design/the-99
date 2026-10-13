@@ -851,8 +851,8 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   EXACTLY, and so is the API version in `src/lib/payments/stripe.ts`; an upgrade is its own reviewed change.
   **Test mode everywhere but production**: `stripeClient()` refuses a live key unless `ADMIN_ENV_LABEL=production`
   and a test key when it is (`key-mode.ts`), and is then null, so a misconfigured deployment does nothing.
-  `STRIPE_SECRET_KEY` is a RESTRICTED key; on the production project it is live, Production scope alone and
-  Sensitive. `POST /api/stripe-webhook` is public in `src/proxy.ts` and authorized only by the signature over the
+  `STRIPE_SECRET_KEY` must be a RESTRICTED key (`rk_`): an account secret key (`sk_`) is refused in either mode.
+  On the production project it is live, Production scope alone and Sensitive. `POST /api/stripe-webhook` is public in `src/proxy.ts` and authorized only by the signature over the
   RAW body (`STRIPE_WEBHOOK_SECRET`, and `STRIPE_WEBHOOK_SECRET_PREVIOUS` while a roll overlaps; 5-minute
   tolerance). It answers 503 unconfigured, 400 unsigned or stale, 200 to an event type it ignores, and reads no
   feature switch: a payment already taken is processed even while sales are stopped. A `checkout.session.completed` is a TRIGGER: `fulfilCheckoutSession`
@@ -864,7 +864,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   conflict is a duplicate), then the `payment_records` row and the `credit_grants` lot, both idempotent on
   Stripe's ids. A refusal, a duplicate or an unattributed payment answers 200; a failure to reach Stripe or the
   database answers 500 and Stripe retries. Logs carry the type and the outcome, never an id or an amount.
-  `payment_records` holds no account id and is KEPT through the purge (Hugh, Q6); `stripe_customers` goes.
+  `payment_records` holds no account id and is KEPT through the purge (Hugh, Q6); `stripe_customers` goes, FIRST
+  of the payment rows: the grant reads that mapping `FOR SHARE`, so a purge holding it leaves a late payment
+  unattributed, and a grant holding it commits before the purge deletes the lots.
   `pnpm check:payments-reads` fails when code under `src/` outside `src/lib/payments/` imports `stripe` or names a
   Stripe table, and runs against the shipped tree inside `pnpm test`. `pnpm probe:payments-webhook` proves the
   grant transaction on a scratch branch. Creating a Checkout session is K1b.

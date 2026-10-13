@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { keyAllowed, keyMode } from "./key-mode";
 
 describe("keyMode", () => {
-  it("reads secret and restricted keys in both modes, and nothing else", () => {
-    expect(keyMode("sk_test_abc")).toBe("test");
+  it("reads restricted keys in both modes, and nothing else: an account secret key is refused", () => {
     expect(keyMode("rk_test_abc")).toBe("test");
-    expect(keyMode("sk_live_abc")).toBe("live");
     expect(keyMode("rk_live_abc")).toBe("live");
-    for (const k of [undefined, "", "pk_test_abc", "whsec_abc", "sk_abc", "sk_live_", "xsk_live_abc"]) expect(keyMode(k)).toBeNull();
+    for (const k of [undefined, "", "sk_test_abc", "sk_live_abc", "pk_test_abc", "whsec_abc", "rk_abc", "rk_live_", "xrk_live_abc"]) {
+      expect(keyMode(k)).toBeNull();
+    }
   });
 });
 
@@ -21,8 +21,10 @@ describe("keyAllowed: test mode everywhere but production (payments scope §5.2)
     }
   });
 
-  it("refuses a key it cannot read, wherever it is", () => {
+  it("refuses a key it cannot read, wherever it is, an account secret key included", () => {
     expect(keyAllowed("pk_live_abc", "production")).toBe(false);
+    expect(keyAllowed("sk_live_abc", "production")).toBe(false);
+    expect(keyAllowed("sk_test_abc", "staging")).toBe(false);
     expect(keyAllowed(undefined, "staging")).toBe(false);
   });
 });

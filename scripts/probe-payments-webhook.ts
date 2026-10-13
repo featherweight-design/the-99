@@ -14,12 +14,16 @@
 //   e  a Session naming another account than its customer maps to is refused: no lot, no record
 //   f  a paid Session whose customer maps to no account is kept `unattributed`, with no lot
 //   g  the purge takes the account's customer mapping and lots, and keeps the payment records
+//   h  a grant arriving while the purge holds the account's mapping waits, then keeps the payment
+//      unattributed: no lot outlives the account
 //
 // Mutations, each run against it (file copied to the scratchpad, broken by an exact replace, run,
 // restored by copying back), and each fails it:
 //   - the event row's conflict check dropped (`fulfilCheckoutSession` carries on after a conflict): fails d.
 //   - the lot's conflict target dropped (a plain insert): fails c.
 //   - the attribution check removed from `decideFulfilment`: fails e.
+//   - the mapping read without FOR SHARE: fails h (the grant reads the mapping the purge has not yet
+//     committed away, and writes a lot after the purge's delete of the lots).
 //
 // It writes under per-run ids and deletes them in a `finally`, so it fails closed: `PROBE_DB_BRANCH`
 // must name the branch `DATABASE_URL` reports, and staging and production are refused by id.
@@ -178,6 +182,28 @@ async function run() {
     const { stub } = stripeServing(sf);
     check("f · a payment from a customer with no account is unattributed", (await fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", sf.id)).outcome, "unattributed");
     check("f · kept as such, with no lot", [await record(sf.id), await lots(ghost)], [["unattributed"], 0]);
+  }
+
+  // h · A purge holding the account's mapping when the grant arrives: the grant waits on the mapping
+  //     row (FOR SHARE), finds it gone once the purge commits, and keeps the payment unattributed, so
+  //     no lot outlives the account. The purge is played by hand, in the order PURGE_ORDER runs it.
+  {
+    const h = await account();
+    const sh = session(h.customerId, h.userId);
+    const { stub } = stripeServing(sh);
+    const purge = await pool.connect();
+    try {
+      await purge.query("begin");
+      await purge.query("delete from stripe_customers where user_id = $1", [h.userId]);
+      const granting = fulfilCheckoutSession(stub, eventId(), "checkout.session.completed", sh.id);
+      await new Promise((r) => setTimeout(r, 1500));
+      await purge.query("delete from credit_grants where user_id = $1", [h.userId]);
+      await purge.query("commit");
+      check("h · a grant racing the purge of its account is kept unattributed", (await granting).outcome, "unattributed");
+      check("h · and leaves no lot behind", await lots(h.userId), 0);
+    } finally {
+      purge.release();
+    }
   }
 
   // g · The purge.

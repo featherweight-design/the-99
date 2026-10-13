@@ -11,8 +11,11 @@ import { join, relative, sep } from "node:path";
 export const PAYMENT_BINDINGS = ["stripeCustomers", "stripeEvents", "paymentRecords"];
 const RAW = /\b(?:stripe_customers|stripe_events|payment_records)\b/i;
 
-// The purge names `stripe_customers` in PURGE_ORDER, which is how an account's mapping goes with it.
-const ALLOWED = (path) => path.startsWith("src/lib/payments/") || path === "src/db/schema.ts" || path === "src/lib/account/purge.ts";
+// `src/lib/payments/` may do both. Two files may NAME the tables and nothing more: the schema declares
+// them, and the purge lists `stripe_customers` in PURGE_ORDER, which is how an account's mapping goes
+// with it. Neither may import the SDK, and that is still checked there.
+const ALLOWED = (path) => path.startsWith("src/lib/payments/");
+const NAMES_TABLES = (path) => path === "src/db/schema.ts" || path === "src/lib/account/purge.ts";
 const isTest = (path) => /\.test\.(?:t|j)sx?$|\.test\.mts$/.test(path);
 
 /** The findings for one file's source, as `{ line, why }`. Exported for the tests. */
@@ -76,7 +79,10 @@ export async function paymentReadFindings(root, dir = "src") {
       throw err;
     }
     read += 1;
-    for (const f of paymentReadsIn(source)) findings.push({ path, ...f });
+    for (const f of paymentReadsIn(source)) {
+      if (NAMES_TABLES(path) && f.why !== "imports the stripe package") continue;
+      findings.push({ path, ...f });
+    }
   }
   return { files: read, findings };
 }

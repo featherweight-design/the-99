@@ -44,6 +44,8 @@ describe("POST /api/stripe-webhook: fails closed", () => {
     expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
     vi.stubEnv("STRIPE_SECRET_KEY", "rk_live_fixture");
     expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_fixture");
+    expect((await POST(delivery("checkout.session.completed"))).status).toBe(503);
     expect(fulfil).not.toHaveBeenCalled();
   });
 

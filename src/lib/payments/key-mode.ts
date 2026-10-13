@@ -1,5 +1,5 @@
 /**
- * Which Stripe mode a key belongs to, and whether this deployment may use it (payments scope §5.2).
+ * Which Stripe mode a RESTRICTED key belongs to, and whether this deployment may use it (payments scope §5.2).
  * Pure. A LIVE key is allowed only where `ADMIN_ENV_LABEL` says `production`, and a TEST key only
  * where it does not, so staging, every Preview and a local server run in test mode and production
  * never does. `VERCEL_ENV` cannot tell the two Vercel projects apart (both read `production`), which is
@@ -9,8 +9,9 @@ export type KeyMode = "live" | "test";
 
 export function keyMode(key: string | undefined): KeyMode | null {
   const k = key?.trim() ?? "";
-  if (/^(?:sk|rk)_live_\w+$/.test(k)) return "live";
-  if (/^(?:sk|rk)_test_\w+$/.test(k)) return "test";
+  // RESTRICTED keys only: an account secret key (`sk_`) can move money, and is refused in either mode.
+  if (/^rk_live_\w+$/.test(k)) return "live";
+  if (/^rk_test_\w+$/.test(k)) return "test";
   return null;
 }
 

@@ -48,4 +48,18 @@ describe("the shipped tree", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("lets the schema and the purge name the tables, and still reports either importing the SDK", async () => {
+    const root = mkdtempSync(join(tmpdir(), "payments-reads-"));
+    try {
+      mkdirSync(join(root, "src/db"), { recursive: true });
+      mkdirSync(join(root, "src/lib/account"), { recursive: true });
+      writeFileSync(join(root, "src/db/schema.ts"), `export const t = pgTable("stripe_customers", {});\n`);
+      writeFileSync(join(root, "src/lib/account/purge.ts"), `const ORDER = ["stripe_customers"];\nimport Stripe from "stripe";\n`);
+      const { findings } = await paymentReadFindings(root);
+      expect(findings).toEqual([{ path: "src/lib/account/purge.ts", line: 2, why: "imports the stripe package" }]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
