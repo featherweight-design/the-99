@@ -220,25 +220,59 @@ const CLAIM_PENDING = [
   "src/lib/tuning/owned-candidates.ts",
 ];
 
-/** Each call to a claim reader in `code`, and whether it hands the reader an env. */
+const CLAIM_READERS = ["loadAvailability", "loadDeckBuyRows", "loadCart"] as const;
+type ClaimReader = (typeof CLAIM_READERS)[number];
+
+/**
+ * Each call to a claim reader in `code`, and whether it hands the reader an env. A reader reached
+ * under ANOTHER NAME counts too, because that is how a call slips past a name match: a parameter
+ * whose default or `typeof` type names one (an injectable `load = loadAvailability`), a const or let
+ * initialized to one, or a property of that name (`deps.loadAvailability(...)`). The alias map is
+ * file-wide rather than scoped: a name bound to a claim reader anywhere in a module is held to the
+ * reader's rule everywhere in it, which can only over-report.
+ */
 async function claimCalls(path: string, code: string): Promise<{ call: string; env: boolean }[]> {
   const { default: ts } = await import("typescript");
+  type Node = import("typescript").Node;
   const file = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const isReader = (name: string): name is ClaimReader => (CLAIM_READERS as readonly string[]).includes(name);
+  // The reader an expression names: a bare identifier, or `typeof X` in a type.
+  const named = (node: Node | undefined): ClaimReader | null => {
+    if (!node) return null;
+    if (ts.isIdentifier(node) && isReader(node.text)) return node.text;
+    if (ts.isTypeQueryNode(node) && isReader(node.exprName.getText(file))) return node.exprName.getText(file) as ClaimReader;
+    return null;
+  };
+  const aliases = new Map<string, ClaimReader>();
+  const bind = (node: Node) => {
+    if ((ts.isParameter(node) || ts.isVariableDeclaration(node)) && ts.isIdentifier(node.name) && !isReader(node.name.text)) {
+      const reader = named(node.initializer) ?? named(node.type);
+      if (reader) aliases.set(node.name.text, reader);
+    }
+    ts.forEachChild(node, bind);
+  };
+  bind(file);
+  const readerOf = (callee: Node): ClaimReader | null => {
+    const id = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : null;
+    if (id === null) return null;
+    return isReader(id) ? id : aliases.get(id) ?? null;
+  };
   const out: { call: string; env: boolean }[] = [];
-  const visit = (node: import("typescript").Node) => {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
-      const name = node.expression.text;
+  const visit = (node: Node) => {
+    const reader = ts.isCallExpression(node) ? readerOf(node.expression) : null;
+    if (reader && ts.isCallExpression(node)) {
       const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
-      if (name === "loadAvailability") {
+      const call = `${path}:${line}: ${node.expression.getText(file)} (${reader})`;
+      if (reader === "loadAvailability") {
         const opts = node.arguments[1];
         const env = !!opts && ts.isObjectLiteralExpression(opts) && opts.properties.some((p) =>
           (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.getText(file) === "env");
-        out.push({ call: `${path}:${line}: loadAvailability`, env });
-      } else if (name === "loadDeckBuyRows") {
-        out.push({ call: `${path}:${line}: loadDeckBuyRows`, env: node.arguments.length >= 4 });
-      } else if (name === "loadCart") {
+        out.push({ call, env });
+      } else if (reader === "loadDeckBuyRows") {
+        out.push({ call, env: node.arguments.length >= 4 });
+      } else {
         // The cart's whole read, inside the cached Shopping page's load: its env is the one the key holds.
-        out.push({ call: `${path}:${line}: loadCart`, env: node.arguments.length >= 2 });
+        out.push({ call, env: node.arguments.length >= 2 });
       }
     }
     ts.forEachChild(node, visit);
@@ -258,8 +292,15 @@ describe("every claim read is handed the reader's env (admin PR 6e)", () => {
       "loadDeckBuyRows(u, ids, undefined, env);",
       "loadCart(u);",
       "loadCart(u, keyed);",
+      // Under another name: an injectable parameter by default and by type, a const alias, a property.
+      "function f(load = loadAvailability) { load(u, { oracleIds }); }",
+      "function g(read: typeof loadDeckBuyRows) { read(u, ids); read(u, ids, tx, env); }",
+      "const bill = loadCart; bill(u);",
+      "deps.loadAvailability(u, { env });",
     ].join("\n");
-    expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual([false, false, true, true, false, true, false, true]);
+    expect((await claimCalls("x.ts", code)).map((c) => c.env)).toEqual(
+      [false, false, true, true, false, true, false, true, false, false, true, false, true],
+    );
   });
 
   it("names no call without one outside the 6f modules, and no 6f module that has been converted", async () => {

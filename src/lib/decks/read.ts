@@ -380,17 +380,21 @@ export function deckDetailReads(deckId: string, userId: string) {
  * `getDeckDetail`'s availability: the caller's shared read when it passed one (the deck page's,
  * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
  * to look up. Apart so a test can pin that a shared read stands in for the query.
+ *
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), which decide the claim model's lock key
+ * and pending clause. Required, so no caller of `getDeckDetail` reads them from the environment alone.
  */
 export function deckAvailabilityRead(
   userId: string,
   deckId: string,
   ids: readonly string[],
   shared: Promise<Map<string, Availability> | null> | undefined,
+  env: NodeJS.ProcessEnv,
   load: typeof loadAvailability = loadAvailability,
 ): Promise<Map<string, Availability> | null> | null {
   if (ids.length === 0) return null;
   if (shared) return shared;
-  return load(userId, { excludeDeckId: deckId, oracleIds: [...ids] }).catch(() => {
+  return load(userId, { excludeDeckId: deckId, oracleIds: [...ids], env }).catch(() => {
     recordSoftFailure();
     return null;
   });
@@ -505,7 +509,7 @@ export async function getDeckDetail(
     .map((r) => r.oracleId);
   const availabilityIds = [...new Set([...ownedIds, ...ownedCommanderIds])];
   const [availability, resolved, bracketFlags] = await Promise.all([
-    deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability),
+    deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability, env),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
     resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds], env),

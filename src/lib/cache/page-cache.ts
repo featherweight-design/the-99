@@ -43,8 +43,9 @@ export type PageLoad<T> = { value: T; store: boolean };
 /**
  * `load` is handed the env the key was built from, and must decide every switch from it: only then
  * is the key the whole story. Not yet true of every read a load reaches: the claim model in
- * `availability-query` takes `env` (admin adoption 6e), but some of its callers outside `lib/decks`
- * do not pass it yet and so read `NEVER_CUT_ENABLED` and `CHANGE_COMMANDER_ENABLED` from the
+ * `availability-query` takes `env` (admin adoption 6e), and every caller in `src/app` and `lib/decks`
+ * passes it, but the lib modules on `CLAIM_PENDING` in `switch-adoption.test.ts` (the lineup's load
+ * among them) do not yet, and so read `NEVER_CUT_ENABLED` and `CHANGE_COMMANDER_ENABLED` from the
  * environment (adoption 6f; nothing writes an override before the Switches page, which follows
  * adoption). A page that also decides switches OUTSIDE the cached load
  * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the
