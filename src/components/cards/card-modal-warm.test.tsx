@@ -27,6 +27,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// The modal's real code is imported and transformed on the first ask: 0.8 to 2s on an idle machine, so
+// the 1s default wait fails on a loaded CI runner and passes on a re-run.
+const COLD_IMPORT_MS = 15_000;
+
 const settle = () => new Promise((r) => setTimeout(r, 50));
 
 describe("warming the card details modal", () => {
@@ -82,7 +86,7 @@ describe("warming the card details modal", () => {
     expect(screen.getByText(cardDetailCopy.loading)).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
     release();
-    await screen.findByRole("dialog");
+    await screen.findByRole("dialog", undefined, { timeout: COLD_IMPORT_MS });
     expect(pending).toBeNull();
   });
 });
