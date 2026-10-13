@@ -26,13 +26,13 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const files = new Map(walk(SRC).map((path) => [path, readFileSync(path, "utf8")]));
+const tree = new Map(walk(SRC).map((path) => [path, readFileSync(path, "utf8")]));
 
 const directive = (source: string, name: string) =>
   new RegExp(`^(?:\\s*(?://[^\\n]*\\n|/\\*[\\s\\S]*?\\*/))*\\s*["']${name}["']`).test(source);
 
 /** A specifier resolved to a source file, or `npm:<package>` for anything outside `src`. */
-function resolve(from: string, spec: string): string | null {
+function resolve(files: Map<string, string>, from: string, spec: string): string | null {
   let base: string;
   if (spec.startsWith("@/")) base = join(SRC, spec.slice(2));
   else if (spec.startsWith(".")) base = normalize(join(dirname(from), spec));
@@ -55,14 +55,14 @@ function bringsValues(clause: string): boolean {
   return named[1].split(",").map((s) => s.trim()).filter(Boolean).some((s) => !s.startsWith("type "));
 }
 
-export function valueImports(path: string, source: string): string[] {
+export function valueImports(path: string, source: string, files: Map<string, string> = tree): string[] {
   const out: string[] = [];
   for (const m of source.matchAll(STATIC)) {
     if (m[5]) out.push(m[5]);
     else if (!m[2] && bringsValues(m[3].trim())) out.push(m[4]);
   }
   for (const m of source.matchAll(DYNAMIC)) out.push(m[1]);
-  return out.map((spec) => resolve(path, spec)).filter((r): r is string => r !== null);
+  return out.map((spec) => resolve(files, path, spec)).filter((r): r is string => r !== null);
 }
 
 const SERVER_ONLY = (target: string) =>
@@ -70,7 +70,7 @@ const SERVER_ONLY = (target: string) =>
   || relative(SRC, target).startsWith("db/");
 
 /** Every client module that reaches a server-only module, with the path it takes. */
-export function leaks(): string[] {
+export function leaks(files: Map<string, string> = tree): string[] {
   const found: string[] = [];
   for (const [entry, source] of files) {
     if (!directive(source, "use client")) continue;
@@ -87,7 +87,7 @@ export function leaks(): string[] {
       if (at.startsWith("npm:")) continue;
       const text = files.get(at)!;
       if (at !== entry && directive(text, "use server")) continue;
-      for (const next of valueImports(at, text)) {
+      for (const next of valueImports(at, text, files)) {
         if (!prev.has(next)) {
           prev.set(next, at);
           queue.push(next);
@@ -116,5 +116,18 @@ describe("client imports", () => {
       'type T = typeof import("drizzle-orm");',
     ].join("\n");
     expect(valueImports(at, source)).toEqual(["npm:drizzle-orm", "npm:@neondatabase/serverless", join(SRC, "db/index.ts")]);
+  });
+
+  it("reports a client module that reaches src/db, and skips a \"use server\" module", () => {
+    const at = (p: string) => join(SRC, p);
+    const files = new Map([
+      [at("components/a.tsx"), '"use client";\nimport { f } from "../lib/helper";\nimport { act } from "../app/actions";'],
+      [at("lib/helper.ts"), 'export { rows } from "../db/rows";'],
+      [at("db/rows.ts"), "export const rows = 1;"],
+      [at("app/actions.ts"), '"use server";\nimport { db } from "../db";'],
+      [at("db/index.ts"), "export const db = 1;"],
+      [at("components/b.tsx"), '"use client";\nimport { act } from "../app/actions";'],
+    ]);
+    expect(leaks(files)).toEqual(["components/a.tsx -> lib/helper.ts -> db/rows.ts"]);
   });
 });
