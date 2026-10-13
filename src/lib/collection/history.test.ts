@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { cartDecksOf, listColumns, revertDiffers } from "./history";
+import { listColumns, revertDiffers } from "./history";
+import { cartDecksOf } from "./deck-line";
 
 const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfoil" };
 const row = (before: number | null, after: number | null) => ({

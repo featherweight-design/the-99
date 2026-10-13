@@ -2217,7 +2217,7 @@ const aboutEntry = (
   e: Partial<import("../collection/history").HistoryListEntry> & Pick<import("../collection/history").HistoryListEntry, "id" | "seq" | "createdAt" | "kind">,
 ): import("../collection/history").HistoryListEntry => ({
   source: null, raised: 0, lowered: 0, rowCount: 1, copiesUp: 0, copiesDown: 0, removesOnly: false,
-  revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false, uploadFilename: null, firstName: null, shoppingDeck: null, shoppingCart: false, cartDecks: null,
+  revertsId: null, revertedBy: null, revertsVisible: false, revertedByVisible: false, uploadFilename: null, firstName: null, shoppingDeck: null, shoppingCart: false, cartDecks: null, wentTo: null,
   ...e,
 });
 

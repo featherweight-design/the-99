@@ -108,6 +108,11 @@ export const gotItCopy = {
       more: (n: number) => `${n} more`,
       gone: (n: number) => (n === 1 ? "a deck you’ve since deleted" : `${n} decks you’ve since deleted`),
     },
+    /**
+     * Under an add or an upload entry (and, in its detail, under a row): the decks the copies went to, kept at
+     * arrival. `soft` leads when only brews read the copy. The names, `more` and `gone` are `boughtFor`'s.
+     */
+    wentTo: { lead: "Went to", leadSoft: "Wanted by" },
   },
   /** ShortDeckWarning's `undo` verb; everything else is collection-edit.ts's shortWarning. */
   shortWarning: {
