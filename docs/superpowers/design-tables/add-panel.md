@@ -564,8 +564,9 @@ them / the brand sheet names them.
 | Quick add — focus | **DOM focus never leaves the input** | README §Accessibility contract |
 | Quick add — `↑` / `↓` | Move `aria-activedescendant` between options (focus does not move) | README §Accessibility contract |
 | Quick add — `↵` | Adds the **active row**; with no navigation, that is the top match | README §Accessibility contract; §Decision 9 |
-| Quick add — `Esc` (first press) | **Dismisses the results and keeps the query** | README §Accessibility contract; Canvas E:580 |
-| Quick add — `Esc` (second press) | **Clears the query** | README §Accessibility contract; Canvas E:580 |
+| Quick add — `Esc` | **Clears the query and closes the results in one press** (superseded the two-press shape: DECK INPUT UX, Hugh 2026-10-12, "clears on Escape"; `useSearchDismiss`) | priorities.md DECK INPUT UX; was README §Accessibility contract, Canvas E:580 |
+| Quick add — press outside | **Clears the query and closes the results** | DECK INPUT UX; `useSearchDismiss` |
+| Quick add — after an add | **Clears the query once the add lands** (not on a refusal, nor after the reader has edited the field); focus stays in the field | DECK INPUT UX |
 | Quick add — modality | No focus trap, no `aria-modal`, no scroll lock, no focus-return | README §Accessibility contract; §Notes for engineering |
 | Quick add — combobox attrs | `input[role="combobox"][aria-expanded][aria-controls="qa-results"][aria-activedescendant]` | README §Accessibility contract |
 | Quick add — implementation | `useState` plus key handling; **no new dependency** | README §Notes for engineering |

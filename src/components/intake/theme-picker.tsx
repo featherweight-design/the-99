@@ -46,8 +46,12 @@ export function ThemePicker({
     setOpen(false);
   });
 
-  const toggle = (slug: string) => {
+  const toggle = (slug: string) =>
     onChange(value.includes(slug) ? value.filter((s) => s !== slug) : [...value, slug]);
+  // A pick from the list clears the search it came from; removing a chip is not a pick, and leaves
+  // whatever is being typed alone.
+  const pick = (slug: string) => {
+    toggle(slug);
     setQuery("");
     setActive(0);
   };
@@ -112,7 +116,7 @@ export function ThemePicker({
               // Enter picks; it never submits the form from inside the list.
               if (expanded) {
                 e.preventDefault();
-                toggle(shown[activeIndex].slug);
+                pick(shown[activeIndex].slug);
               }
             } else if (onEscape(e)) {
               return;
@@ -141,7 +145,7 @@ export function ThemePicker({
               aria-selected={selected}
               // Keeps focus in the input, so the list stays open under a pointer.
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => toggle(t.slug)}
+              onClick={() => pick(t.slug)}
               onMouseMove={() => i !== activeIndex && setActive(i)}
               className={[
                 "flex items-center gap-[10px] h-[36px] px-[10px] rounded-[7px] cursor-pointer",

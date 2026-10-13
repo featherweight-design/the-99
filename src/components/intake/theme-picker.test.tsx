@@ -44,6 +44,17 @@ describe("the Theme picker", () => {
     expect(field()).toHaveValue("");
   });
 
+  it("leaves the typed text alone when a chip is removed", () => {
+    render(<Picker />);
+    fireEvent.focus(field());
+    fireEvent.change(field(), { target: { value: "orc" } });
+    fireEvent.click(screen.getByRole("option", { name: /Orcs/ }));
+    fireEvent.change(field(), { target: { value: "elf" } });
+    fireEvent.click(screen.getByRole("button", { name: /Orcs/ }));
+    expect(screen.queryAllByTestId("theme-chip")).toHaveLength(0);
+    expect(field()).toHaveValue("elf");
+  });
+
   it("clears the text and closes the list on one Escape", () => {
     render(<Picker />);
     fireEvent.focus(field());
