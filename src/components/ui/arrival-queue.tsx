@@ -14,7 +14,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  *    `ARRIVAL_STAGGER_MS` apart, so a screen fills from the top down;
  *  - nothing is held hidden past `ARRIVAL_CAP_MS` after its own bytes landed: a slow piece above
  *    it delays a row by that much at most, and the slow piece fades in on its own when it lands.
- *    A row on the first screen (its top inside the viewport when its art joined) holds for
+ *    A row on the first screen (its top above the viewport's foot when its art joined) holds for
  *    `ARRIVAL_FIRST_CAP_MS` only: the largest paint on the page is one of them, and its hold is
  *    what LCP pays (measured on slow 4G: about +100-180ms at 150ms everywhere; on a one-column list
  *    the LCP is often row 2, whose bytes landed before row 1's; orchestrator ruling, 2026-10-12).
@@ -102,8 +102,10 @@ export class ArrivalQueue {
       // A row on the first screen takes the tighter cap.
       const onScreen = row.some((e) => e.item.onScreen);
       const capAt = firstLanded + (onScreen ? ARRIVAL_FIRST_CAP_MS : ARRIVAL_CAP_MS);
-      // In order: this row and every row above it have landed. Else the cap lets it go anyway.
-      const due = !blocked && whole ? Math.max(now, this.lastRelease + ARRIVAL_STAGGER_MS) : capAt;
+      // In order: this row and every row above it have landed, a stagger behind the last release.
+      // Else the cap lets it go anyway; and the stagger never outlasts the cap either, so a burst
+      // of rows landing together still fills the screen inside it.
+      const due = !blocked && whole ? Math.min(Math.max(now, this.lastRelease + ARRIVAL_STAGGER_MS), capAt) : capAt;
       if (!whole) blocked = true;
       if (due <= now) {
         for (const e of landed) {

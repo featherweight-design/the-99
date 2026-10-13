@@ -35,7 +35,8 @@ export function ReadyToBuild({
         {c.readyHeading}
       </h2>
 
-      {/* The pair arrives together: one row, one fade (Hugh, 2026-10-12). */}
+      {/* The pair arrives together where it sits side by side: one row, one fade (Hugh, 2026-10-12).
+          Stacked on a phone it is two rows, and the lower follows the upper a stagger behind. */}
       <ArrivalOrder>
       <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2 sm:gap-[14px]">
         {ready.shown.map((item) => (

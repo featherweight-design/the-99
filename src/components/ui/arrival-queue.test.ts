@@ -50,7 +50,7 @@ describe("ArrivalQueue", () => {
   it("goes top to bottom: a row that landed first waits for the row above it", () => {
     const { q, cells, released } = setup(2, 2);
     cells[1].forEach((el) => q.landed(el));
-    advance(ARRIVAL_CAP_MS - 1);
+    advance(20);
     expect(released).toEqual([]);
     cells[0].forEach((el) => q.landed(el));
     expect(released).toEqual(cells[0]);
@@ -100,6 +100,17 @@ describe("ArrivalQueue", () => {
     expect(released).toEqual([]);
     advance(1);
     expect(released).toEqual([cells[0][0], cells[0][1]]);
+  });
+
+  it("never staggers a burst of whole rows past their cap", () => {
+    // Five rows on one tall screen land at once: the stagger would put the fifth 200ms out.
+    const { q, cells, released } = setup(5, 1, 2000);
+    cells.forEach(([el]) => q.landed(el));
+    expect(released).toEqual([cells[0][0]]);
+    advance(ARRIVAL_STAGGER_MS);
+    expect(released).toHaveLength(2);
+    advance(ARRIVAL_FIRST_CAP_MS - ARRIVAL_STAGGER_MS);
+    expect(released).toHaveLength(5);
   });
 
   it("stops waiting on a piece that left", () => {
