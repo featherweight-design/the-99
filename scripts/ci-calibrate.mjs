@@ -2,9 +2,10 @@
 //   node scripts/ci-calibrate.mjs mutate <path> [auto|throw|half]
 //   node scripts/ci-calibrate.mjs compare <selection.txt> <vitest-results.json> <label>
 // `compare` exits 1 when a test failed that the selector did not choose.
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { appendFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
-import { compare, failingFiles, mutate } from "./lib/ci-calibrate.mjs";
+import { compare, failingFiles, failureSummary, mutate, recheckAlone } from "./lib/ci-calibrate.mjs";
 
 const [cmd, ...args] = process.argv.slice(2);
 
@@ -17,17 +18,40 @@ if (cmd === "mutate") {
   const [selectionFile, resultsFile, label] = args;
   const selected = readFileSync(selectionFile, "utf8").split("\n").filter(Boolean);
   const failing = failingFiles(JSON.parse(readFileSync(resultsFile, "utf8")), process.cwd());
+  const report = JSON.parse(readFileSync(resultsFile, "utf8"));
   const r = compare({ selected, failing });
+  // The whole suite ran in one process on a two-core runner, so a test can fail from load alone. A file
+  // is a MISS only if it also fails when run by itself with the breakage in place; one that passes alone is
+  // reported as load-sensitive, with the message the full run gave it.
+  let real = r.missed;
+  let loadSensitive = [];
+  if (r.missed.length > 0) {
+    // One process per file, so "alone" is true; a stale report from an earlier run is removed first so a
+    // rerun that dies before writing one cannot be read as this run's.
+    ({ real, loadSensitive } = recheckAlone(r.missed, (file) => {
+      rmSync("recheck-results.json", { force: true });
+      spawnSync("pnpm", ["exec", "vitest", "run", "--passWithNoTests", "--reporter=json", "--outputFile=recheck-results.json", file], {
+        encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
+      });
+      try {
+        return failingFiles(JSON.parse(readFileSync("recheck-results.json", "utf8")), process.cwd());
+      } catch {
+        return null;
+      }
+    }));
+  }
+  const why = failureSummary(report, r.missed, process.cwd());
   const lines = [
     `### Calibration: ${label}`,
     `- selector chose ${selected.length} test files`,
     `- full suite: ${r.failing} test files failed`,
-    r.informative ? `- **missed by the selector: ${r.missed.length}**` : "- nothing failed, so this breakage says nothing about the selector",
-    ...r.missed.map((f) => `  - ${f}`),
+    r.informative ? `- **missed by the selector: ${real.length}**` : "- nothing failed, so this breakage says nothing about the selector",
+    ...real.map((f) => `  - ${f}: ${(why[f] ?? "").split("\n")[0]}`),
+    ...(loadSensitive.length ? [`- failed in the full run but passed alone (load-sensitive, not counted): ${loadSensitive.length}`, ...loadSensitive.map((f) => `  - ${f}: ${(why[f] ?? "").split("\n")[0]}`)] : []),
   ];
   console.log(lines.join("\n"));
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
-  if (r.missed.length > 0) process.exit(1);
+  if (real.length > 0) process.exit(1);
 } else {
   throw new Error("usage: mutate <path> | compare <selection> <results> <label>");
 }
