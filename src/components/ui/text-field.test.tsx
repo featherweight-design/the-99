@@ -131,6 +131,16 @@ describe("SearchField's clear", () => {
     expect(kids.slice(-2)).toEqual(["count", "button"]);
   });
 
+  it("does not clear a field the caller has disabled", () => {
+    const onClear = vi.fn();
+    render(<SearchField aria-label="Search" value="x" disabled onChange={() => {}} onClear={onClear} />);
+    const clear = screen.getByRole("button", { name: "Clear search" }) as HTMLButtonElement;
+    expect(clear.disabled).toBe(true);
+    expect(clear.tabIndex).toBe(-1);
+    fireEvent.click(clear);
+    expect(onClear).not.toHaveBeenCalled();
+  });
+
   it("draws no clear for a field that gives no onClear", () => {
     const { container } = render(<SearchField aria-label="Search" value="x" onChange={() => {}} />);
     expect(container.querySelector("button")).toBeNull();

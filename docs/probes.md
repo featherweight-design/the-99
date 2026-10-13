@@ -20,8 +20,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   search box). Surfaces: the commanders rack at both widths, /collection's compact field on the phone and its wide field on desktop, and the sets index at both widths. It exists
   because the defect it guards (Safari blurs the field on a button tap, a sibling reappears, and the ✕ moves out from
   under the finger so the first tap does nothing) needs an engine: `text-field.test.tsx` pins the mechanism and
-  jsdom cannot press. Run against the mutation (the mousedown guard and the refocus removed) it fails five checks,
-  including the collection ✕ moving 337 to 233 px.
+  jsdom cannot press. Run against the mutation (the mousedown guard and the refocus removed) it fails, including
+  /collection's phone ✕ moving 337 to 233 px.
 - `pnpm probe:catalog-copy` proves the harness and `db:copy:combos` against TWO SCRATCH branches
   cut from staging (`PROBE_COPY_SOURCE_URL`/`_BRANCH`, `PROBE_COPY_TARGET_URL`/`_BRANCH`; it
   refuses production, staging and local-dev by id). Every refusal is a fact about what two
