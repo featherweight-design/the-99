@@ -160,8 +160,8 @@ describe("the bar grow", () => {
 describe("the skeleton breathe", () => {
   it("animates opacity and nothing else, gently, looping on the in-out curve", () => {
     const frames = css.match(/@keyframes skeleton-breathe \{([\s\S]*?)\n\}/)?.[1] ?? "";
-    const properties = [...frames.matchAll(/([\w-]+)\s*:/g)].map((m) => m[1]);
-    expect(properties).toEqual(["opacity"]);
+    // One frame, at the midpoint, at 0.55: from full and back to full on either side.
+    expect(frames.trim()).toBe("50% { opacity: 0.55; }");
     expect(css).toContain(".anim-skeleton { animation: skeleton-breathe 1.4s ease-in-out infinite; }");
   });
 });
