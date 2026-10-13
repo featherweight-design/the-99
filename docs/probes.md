@@ -1862,6 +1862,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `PROBE_BASE` must be a server on this machine, and the database the worktree's `.env` names must not
   report the production or staging branch by `neon.branch_id` (exit 2 before signing in).
 
+- `pnpm probe:tuning-settings` proves that a "Kept for this deck" choice in Suggested changes holds
+  from the press, through its save and after it (Hugh, 2026-10-12: "Cards to add" flipped back to
+  "Any card" for a moment, because the save's ack cleared the field's hold before the page's facts
+  caught up). At 1300x900 and 390x844 it presses "Only cards I own" with every `next-action` POST
+  held, asserts the choice reads at once, releases the save and samples the toggle every 50ms for
+  8s, failing on any frame that reads "Any card"; then it checks the deck stored the choice and
+  presses back the same way. Needs a running server signed in as `E2E_AUDIT_USER_EMAIL` and
+  `SETTINGS_DECK`, one of that account's decks with Suggested changes offered. It writes the deck's
+  owned-only limit and restores the stored value and `last_edited_at` in a `finally`, and it FAILS CLOSED the same way
+  as `probe:tuning-optimistic`.
+
 - `pnpm probe:cuts-panel` draws Proposed cuts in a real browser at 1300x900 and 390x844 against a
   running server (`PROBE_BASE`, `next start` preferred; `PROBE_WIDTH=390` runs one width,
   `PROBE_SHOTS=<dir>` saves the panel). It clones an over-100 deck under the audit account (a

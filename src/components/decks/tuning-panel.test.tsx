@@ -742,6 +742,78 @@ describe("TuningPanel: Locked (never cut)", () => {
     }
   });
 
+  // Hugh, 2026-10-12: "Cards to add" flipped back to "Any card" for a moment after its save. The
+  // save answered and the panel's own re-read landed, but the page's `facts` prop had not yet
+  // caught up, so clearing the dirty marker on the ack let the stale prop redraw the old choice.
+  it("holds a saved choice until the page's facts catch up, never flipping back to the stale prop", async () => {
+    vi.useFakeTimers();
+    try {
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      const d = deps([fresh]);
+      let utils!: ReturnType<typeof render>;
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true, capDollars: 15 });
+      // The save and its re-read have both landed; the prop is still the old one.
+      expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByLabelText("Most per card")).toHaveValue("15");
+      // The prop catches up: still the choice made.
+      const caught: TuningFacts = { ...facts, limits: { capCents: 1500, sets: [], ownedOnly: true } };
+      await act(async () => {
+        utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={caught} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+      // And a LATER change from elsewhere (another tab) is followed again.
+      const later: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: false } };
+      await act(async () => {
+        utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={later} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Pre-open pass: a revert queued behind a slower save must take "the page's value" when it
+  // LEAVES, after the first save's revalidation, or that revalidation reads as a move from
+  // elsewhere and releases the revert's hold at once.
+  it("holds a revert queued behind an earlier save until the page reads the revert", async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveFirst!: (v: { ok: true }) => void;
+      let resolveSecond!: (v: { ok: true }) => void;
+      (saveDeckLimits as ReturnType<typeof vi.fn>).mockClear();
+      (saveDeckLimits as ReturnType<typeof vi.fn>)
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+      const d = deps([fresh]);
+      let utils!: ReturnType<typeof render>;
+      const draw = async (f: TuningFacts) => { await act(async () => { utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={f} onLogGame={vi.fn()} deps={d} printedInSets={[]} />); }); };
+      await act(async () => {
+        utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
+      });
+      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      fireEvent.click(screen.getByRole("radio", { name: "Any card" }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      // The first save answers and its revalidation lands; the revert's own save then leaves.
+      await act(async () => { resolveFirst({ ok: true }); await vi.advanceTimersByTimeAsync(0); });
+      await draw({ ...facts, limits: { capCents: null, sets: [], ownedOnly: true } });
+      await act(async () => { resolveSecond({ ok: true }); await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      await draw({ ...facts, limits: { capCents: null, sets: [], ownedOnly: false } });
+      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   // Pre-open review round 2: a REVERT while an earlier save for the same field is still in
   // flight must not be overwritten once that earlier save's response lands and revalidates the
   // page — an equality check against the old prop would wrongly call the revert "unedited".
