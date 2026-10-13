@@ -73,7 +73,17 @@ const READ = () => {
   return {
     snap: sheet?.getAttribute("data-sheet") ?? null,
     shelf: s ? window.innerHeight - s.top : null,
-    titleInView: t ? t.top >= (s?.top ?? 0) && t.bottom <= window.innerHeight : false,
+    // In view means inside every box that clips it, not just the viewport: the sheet body hides
+    // its overflow, and a padded sheet left the title 16px of it.
+    titleInView: (() => {
+      if (!t) return false;
+      let bottom = window.innerHeight;
+      for (let el = title.parentElement; el; el = el.parentElement) {
+        const o = getComputedStyle(el).overflowY;
+        if (o === "hidden" || o === "auto" || o === "scroll" || o === "clip") bottom = Math.min(bottom, el.getBoundingClientRect().bottom);
+      }
+      return t.top >= (s?.top ?? 0) && t.bottom <= bottom + 0.5;
+    })(),
     card: c ? { left: c.left, width: c.width, top: c.top, height: c.height } : null,
     bandWidth: band?.getBoundingClientRect().width ?? null,
     name: title?.textContent?.trim() ?? null,

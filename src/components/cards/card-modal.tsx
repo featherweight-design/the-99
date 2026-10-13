@@ -2325,7 +2325,9 @@ export function CardModal({
             // The teaser does not scroll, so a vertical drag anywhere on it is the sheet's; it fills
             // to the 34px home inset. The full sheet's body scrolls; its grip drags it, and so does
             // a pull down from the body's top, where a scroll has nowhere to go.
-            + (full ? "" : " max-md:touch-none max-md:pb-[34px]")
+            // At the min snap the shelf is the grip and the title row alone, 72 tall: no home inset,
+            // which would leave the title 16px of it.
+            + (full ? "" : min ? " max-md:touch-none" : " max-md:touch-none max-md:pb-[34px]")
           }
           style={{
             "--sheet-top": full
