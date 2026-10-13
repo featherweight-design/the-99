@@ -88,8 +88,12 @@ vi.mock("../../lib/decks/price-query", () => ({
     return { prices, newestAsOf: asOf };
   },
 }));
+// The env each mocked read or write was handed, by name.
+const envs = vi.hoisted(() => ({ seen: {} as Record<string, unknown[]> }));
+const sawEnv = (name: string, env: unknown) => { (envs.seen[name] ??= []).push(env); };
 vi.mock("../../lib/decks/tuning-read", () => ({
-  tuningInputs: async () => {
+  tuningInputs: async (_d: string, _u: string, env?: unknown) => {
+    sawEnv("tuningInputs", env);
     calls.inputs += 1;
     return {
       head: {}, games: [], intent: null, declared: null, fingerprint: "fp", locked: calls.lockedIds, allLocked: calls.allLocked,
@@ -97,20 +101,21 @@ vi.mock("../../lib/decks/tuning-read", () => ({
     };
   },
   // A deck whose last run saw exactly this fingerprint: the gate reads `unchanged`.
-  readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null; runId?: string | null }) => (calls.stateOpts = opts, {
+  readTuningState: async (_d: string, _u: string, _f: string, _n: Date, opts?: { allLocked?: string | null; runId?: string | null }, env?: unknown) => (sawEnv("readTuningState", env), calls.stateOpts = opts, {
     run: { id: "r", status: "ok" }, items: [], lastOkFingerprint: "fp", lastOkAt: new Date(),
     stale: false, modelVersionMoved: false, retired: null, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, gameCount: 0, newestPriceAsOf: null,
     allLocked: opts?.allLocked ?? null,
   }),
   readOwnedOracleIds: async () => calls.ownedIds,
   readTuningContext: async () => { calls.contextRead += 1; return { overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] }; },
-  profileOfHead: async () => {
+  profileOfHead: async (_head: unknown, env?: unknown) => {
+    sawEnv("profileOfHead", env);
     if (!calls.reachModel) throw new Error("stop after the gate");
     return { cards: [], skeleton: { staples: [] }, commanderOracleIds: ["cmd"], colours: { identity: ["W"] } };
   },
   // Echoes its own `sized` argument back: the real 8-to-5 slice happens before this call, so
   // this must never reshape what reaches `persistRun`.
-  withBracketAfter: async (..._args: unknown[]) => _args[3],
+  withBracketAfter: async (..._args: unknown[]) => (sawEnv("withBracketAfter", _args[4]), _args[3]),
   commanderName: async () => "Kykar, Wind's Fury",
 }));
 vi.mock("../../lib/tuning/run-store", () => ({
@@ -153,8 +158,8 @@ vi.mock("../../lib/model/client", () => ({
   },
 }));
 vi.mock("../../lib/tuning/verdicts", () => ({
-  applyItem: async () => { calls.applied += 1; return "deck"; },
-  undoItem: async () => "deck",
+  applyItem: async (_i: string, _u: string, env?: unknown) => { sawEnv("applyItem", env); calls.applied += 1; return "deck"; },
+  undoItem: async (_i: string, _u: string, env?: unknown) => { sawEnv("undoItem", env); return "deck"; },
   setDismissed: async () => "deck",
 }));
 
@@ -167,6 +172,7 @@ const NOTES_RAW_MAX = boxRawMax(500, 3);
 import {
   applySuggestion,
   readTuningPanel,
+  undoSuggestion,
   runTuning as runTuningRequest,
   saveDeckDescription,
   saveDeckHeader,
@@ -183,6 +189,7 @@ async function runTuning(...args: Parameters<typeof runTuningRequest>) {
 }
 
 beforeEach(() => {
+  envs.seen = {};
   calls.inputs = 0;
   calls.started = 0;
   calls.applied = 0;
@@ -380,6 +387,23 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
       { oracleId: `add${i}`, name: `Add ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
       { oracleId: `cut${i}`, name: `Cut ${i}`, colorIdentity: [], commanderLegal: true, printedInSelectedSets: true },
     ]);
+  });
+
+  // Admin adoption 6c: every read and write the tuning actions reach takes the env the action resolved for
+  // the reader. Identity with the sentinel as a boolean, so a failing diff prints nothing real.
+  it("hands the reader's resolved env to every read and write it reaches", async () => {
+    const ITEM = "44444444-4444-4444-8444-444444444444";
+    await runTuning(DECK, { anyway: true });
+    expect(calls.persisted).toHaveLength(1);
+    await readTuningPanel(DECK);
+    await applySuggestion(ITEM);
+    await undoSuggestion(ITEM);
+    const names = ["tuningInputs", "readTuningState", "profileOfHead", "withBracketAfter", "applyItem", "undoItem"];
+    for (const name of names) {
+      const seen = envs.seen[name] ?? [];
+      expect(seen.length, name).toBeGreaterThan(0);
+      for (const env of seen) expect(env === ENV, name).toBe(true);
+    }
   });
 
   it("keeps only the first five of six valid survivors in EACH list, additions first", async () => {
