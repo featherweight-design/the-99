@@ -80,7 +80,7 @@ export async function startCutsRun(
 export async function finishCutsRun(
   handle: RunHandle,
   set: { status: "failed"; errorClass: Parameters<typeof finishRun>[1]["errorClass"]; droppedCount?: number; report?: CutsReport },
-  billed?: Billed,
+  billed?: Billed | readonly Billed[],
 ): Promise<boolean> {
   const { report, ...rest } = set;
   return finishRun(handle, { ...rest, ...(report ? { validationReport: asStoredReport(report) } : {}) }, billed);
@@ -95,7 +95,7 @@ export async function persistCutsRun(
   { runId, callId }: RunHandle,
   kept: ValidatedCut[],
   report: CutsReport,
-  billed?: Billed,
+  billed?: Billed | readonly Billed[],
 ): Promise<boolean> {
   try {
     await db.transaction(async (tx) => {

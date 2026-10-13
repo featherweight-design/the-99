@@ -19,6 +19,8 @@ const calls = vi.hoisted(() => ({
   persistResult: true,
   modelCalls: [] as { system: string; user: string; effort?: string; deadlineMs?: number; retryFloorMs?: number; schema: unknown }[],
   modelOutcome: undefined as unknown,
+  modelQueue: [] as unknown[],
+  runPending: true,
   modelThrows: false,
   textRows: [] as { id: string; text: string | null; layout: string }[],
   keyCards: [] as string[],
@@ -66,6 +68,10 @@ vi.mock("../../lib/decks/cuts-plan-read", () => ({
     return { combos: [], nearCombos: [], commanderText: ["Gishath: Vigilance"], colourNeeds: [], basics: [], needs: new Map() };
   },
 }));
+vi.mock("../../lib/tuning/run-store", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/tuning/run-store")>()),
+  runIsPending: async () => calls.runPending,
+}));
 vi.mock("../../lib/tuning/cuts-run-store", () => ({
   startCutsRun: async () => {
     calls.started += 1;
@@ -84,7 +90,7 @@ vi.mock("../../lib/model/client", () => ({
   callModel: async (req: (typeof calls.modelCalls)[number]) => {
     calls.modelCalls.push(req);
     if (calls.modelThrows) throw new Error("boom");
-    return calls.modelOutcome ?? {
+    return calls.modelQueue.shift() ?? calls.modelOutcome ?? {
       ok: true,
       value: { cuts: [{ name: "bear1", reason: "Off the commander's list.", cites: [{ kind: "offList" }] }] },
       usage: USAGE,
@@ -139,6 +145,8 @@ beforeEach(() => {
   calls.modelCalls = [];
   later.queue.length = 0;
   calls.modelOutcome = undefined;
+  calls.modelQueue = [];
+  calls.runPending = true;
   calls.modelThrows = false;
   calls.textRows = [];
   calls.keyCards = [];
@@ -215,7 +223,7 @@ describe("runProposedCuts, a run that answers", () => {
     expect(handle).toEqual({ runId: "run_1", callId: "call_1" });
     expect(kept).toMatchObject([{ oracleId: "bear1", reason: "Off the commander's list.", position: 0 }]);
     expect(report).toMatchObject({ keptCount: 1, over: 2 });
-    expect((calls.persisted[0] as unknown[])[3]).toEqual({ model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" });
+    expect((calls.persisted[0] as unknown[])[3]).toEqual([{ model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" }]);
     expect(billed).toBeDefined();
   });
 
@@ -290,7 +298,7 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     expect(calls.finished).toEqual([[
       { runId: "run_1", callId: "call_1" },
       { status: "failed", errorClass: "malformed", droppedCount: undefined, report: undefined },
-      { model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" },
+      [{ model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" }],
     ]]);
   });
 
@@ -306,25 +314,74 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     expect(calls.finished).toMatchObject([[{ runId: "run_1" }, { errorClass: "timeout" }, undefined]]);
   });
 
-  it("fails as ungrounded, with the report, when no cut survives the checks", async () => {
-    calls.modelOutcome = {
-      ok: true,
-      // A card the deck does not hold, and a figure that is not true of the card.
-      value: { cuts: [
-        { name: "Not In The Deck", reason: "Off the list.", cites: [{ kind: "offList" }] },
-        { name: "ramp0", reason: "Off the list.", cites: [{ kind: "offList" }] },
-      ] },
-      usage: USAGE,
-    };
+  const NO_CARD = { ok: true, value: { cuts: [
+    { name: "Not In The Deck", reason: "Off the list.", cites: [{ kind: "offList" }] },
+    { name: "Also Not In The Deck", reason: "Off the list.", cites: [{ kind: "offList" }] },
+  ] }, usage: USAGE };
+  const ONE_BILL = { model: "claude-sonnet-5-5", usage: USAGE, effort: "medium" };
+
+  it("asks once more when no card survived, and fails as ungrounded with both bills when the second also leaves none", async () => {
+    calls.modelOutcome = NO_CARD;
     expect(await runProposedCuts(DECK)).toEqual({ ok: true });
+    expect(calls.modelCalls).toHaveLength(2);
+    // The second ask has no retry of its own inside callModel and only what the first left of the deadline.
+    expect(calls.modelCalls[1].retryFloorMs).toBeGreaterThanOrEqual(calls.modelCalls[1].deadlineMs ?? Infinity);
     expect(calls.persisted).toHaveLength(0);
     expect(calls.finished).toHaveLength(1);
     const [handle, set, billed] = calls.finished[0] as [unknown, { errorClass: string; droppedCount: number; report: { askedCount: number; keptCount: number; drops: { rule: string }[] } }, unknown];
     expect(handle).toEqual({ runId: "run_1", callId: "call_1" });
     expect(set).toMatchObject({ status: "failed", errorClass: "ungrounded", droppedCount: 2 });
     expect(set.report).toMatchObject({ askedCount: 2, keptCount: 0 });
-    expect(set.report.drops.map((d) => d.rule)).toEqual(["cardExists", "citeMismatch"]);
-    expect(billed).toEqual({ model: "claude-sonnet-5-5", usage: USAGE, step: "cuts", effort: "medium" });
+    expect(set.report.drops.map((d) => d.rule)).toEqual(["cardExists", "cardExists"]);
+    expect(billed).toEqual([{ ...ONE_BILL, step: "cuts" }, { ...ONE_BILL, step: "cuts_retry" }]);
+  });
+
+  it("asks again after a first ask that cost over half of ONE call's bound, since the reservation is two calls", async () => {
+    // 5,000 in and 7,000 out at $2 and $10 a million is $0.08: over half of Suggested changes' bound (so the wrong
+    // feature would refuse the second ask) and well inside half of Proposed cuts' two-call bound.
+    const big = { inputTokens: 5_000, outputTokens: 7_000, cacheReadTokens: 0, cacheWriteTokens: 0 };
+    calls.modelQueue = [{ ...NO_CARD, usage: big }];
+    expect(await runProposedCuts(DECK)).toEqual({ ok: true });
+    expect(calls.modelCalls).toHaveLength(2);
+    expect(calls.persisted).toHaveLength(1);
+  });
+
+  it("keeps the second ask's cuts, spent and billed for both asks, when the first left none", async () => {
+    calls.modelQueue = [NO_CARD];
+    expect(await runProposedCuts(DECK)).toEqual({ ok: true });
+    expect(calls.modelCalls).toHaveLength(2);
+    expect(calls.finished).toHaveLength(0);
+    const [, kept, , billed] = calls.persisted[0] as [unknown, { oracleId: string }[], unknown, unknown];
+    expect(kept.map((k) => k.oracleId)).toEqual(["bear1"]);
+    expect(billed).toEqual([{ ...ONE_BILL, step: "cuts" }, { ...ONE_BILL, step: "cuts_retry" }]);
+  });
+
+  it("does not ask again when the only drops were Key cards, which asking again cannot change", async () => {
+    calls.keyCards = ["bear1"];
+    calls.modelOutcome = { ok: true, value: { cuts: [{ name: "bear1", reason: "Off the list.", cites: [{ kind: "offList" }] }] }, usage: USAGE };
+    await runProposedCuts(DECK);
+    expect(calls.modelCalls.length).toBeLessThanOrEqual(1);
+  });
+
+  it("does not ask again for a run that is no longer pending", async () => {
+    calls.runPending = false;
+    calls.modelOutcome = NO_CARD;
+    await runProposedCuts(DECK);
+    expect(calls.modelCalls).toHaveLength(1);
+    expect(calls.finished[0]).toMatchObject([{ runId: "run_1" }, { errorClass: "upstream_busy" }, [{ usage: USAGE }]]);
+  });
+
+  it("keeps a cut whose cite is not true of the card, with the cites that held, and refunds nothing", async () => {
+    calls.modelOutcome = { ok: true, value: { cuts: [{ name: "ramp0", reason: "In no combo.", cites: [{ kind: "offList" }] }] }, usage: USAGE };
+    expect(await runProposedCuts(DECK)).toEqual({ ok: true });
+    expect(calls.modelCalls).toHaveLength(1);
+    expect(calls.finished).toHaveLength(0);
+    const [, kept, report] = calls.persisted[0] as [unknown, { oracleId: string; reason: string; cites: { kind: string }[] }[], { softened?: { rule: string; cite?: string }[]; drops: unknown[] }];
+    expect(kept.map((k) => k.oracleId)).toEqual(["ramp0"]);
+    expect(kept[0].reason).not.toBe("In no combo.");
+    expect(kept[0].cites.some((c) => c.kind === "offList")).toBe(false);
+    expect(report.softened).toMatchObject([{ rule: "citeMismatch", cite: "offList" }]);
+    expect(report.drops).toEqual([]);
   });
 
   it("refunds and logs, never throws, when something throws after the reservation", async () => {
@@ -349,7 +406,7 @@ describe("runProposedCuts, a run that fails refunds its unit", () => {
     await expect(runProposedCuts(DECK)).resolves.toEqual({ ok: true });
     log.mockRestore();
     spy.mockRestore();
-    expect(calls.finished).toMatchObject([[{ runId: "run_1" }, { errorClass: "upstream_busy" }, { usage: USAGE }]]);
+    expect(calls.finished).toMatchObject([[{ runId: "run_1" }, { errorClass: "upstream_busy" }, [{ usage: USAGE }]]]);
   });
 });
 

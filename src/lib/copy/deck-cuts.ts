@@ -50,6 +50,8 @@ export const deckCutsCopy = {
     ].join("\n"),
     reasonLength: "Write each reason in one plain line, 200 characters at most.",
   },
+  /** The reason a cut shows when what the model said of it could not be checked: the chips under it are the figures that were. */
+  unchecked: "We couldn\u2019t check the reasoning for this one, only the figures below.",
   /** Refusals from the run action. The in-flight, allowance and locked refusals reuse the Suggested
    *  changes copy, which says the same thing in the same words. */
   run: {

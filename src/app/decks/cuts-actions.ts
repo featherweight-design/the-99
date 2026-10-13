@@ -33,7 +33,8 @@ import { cutsResponseSchema } from "../../lib/tuning/cuts-schema";
 import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
 import { proposedCutsEnabled } from "../../lib/tuning/flag";
 import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
-import type { Billed } from "../../lib/tuning/run-store";
+import { retryable } from "../../lib/tuning/retry";
+import { runIsPending, type Billed } from "../../lib/tuning/run-store";
 import { listFingerprint } from "../../lib/profile/fingerprint";
 import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
@@ -142,13 +143,13 @@ export async function runProposedCuts(
   // The run and its ledger unit, held for the whole request: every settle below reaches the unit by
   // its own id, so a deck deleted mid-call still gets its bill onto the ledger.
   const run = { runId: started.runId, callId: started.callId };
-  // What the call was billed for, once it returned. Every outcome write after that records it.
-  let billed: Billed | undefined;
+  // What each call was billed for, once it returned. Every outcome write after that records them together.
+  const billed: Billed[] = [];
   const fail = async (
     errorClass: Parameters<typeof finishCutsRun>[1]["errorClass"],
     report?: CutsReport,
   ) => {
-    if (await finishCutsRun(run, { status: "failed", errorClass, droppedCount: report?.drops.length, report }, billed)) {
+    if (await finishCutsRun(run, { status: "failed", errorClass, droppedCount: report?.drops.length, report }, billed.length > 0 ? billed : undefined)) {
       revalidateDeck(deckId);
     }
     return { ok: true } as const;
@@ -159,22 +160,36 @@ export async function runProposedCuts(
   // reads the run until it settles.
   const work = async (): Promise<unknown> => {
     try {
-      const outcome = (await heldStubOutcome()) ?? await callModel({
-        model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
-        schema: cutsResponseSchema(pack.ask), deadlineMs: MODEL_TIMEOUT_MS,
-        effort: TUNING_EFFORT, retryFloorMs: TUNING_RETRY_FLOOR_MS,
-      });
-      if (outcome.usage) billed = { model: TUNING_MODEL, usage: outcome.usage, step: "cuts", effort: TUNING_EFFORT };
-      // A rejection is stored as busy: the distinction is kept for the overview only, for now.
-      if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
+      // One more ask when no card survived (a reply of hallucinated or repeated cards, or a degenerate one). The
+      // reservation is two attempts of one call: the second ask is made only when the first cost no more than one
+      // attempt's worth, and gets no retry of its own inside `callModel`, so the two stay inside what was set aside.
+      // The credit is given back only when the second ask also leaves no card to cut.
+      const startedAt = Date.now();
+      let checked: ReturnType<typeof validateCuts>;
+      for (let attempt = 1; ; attempt++) {
+        const outcome = (attempt === 1 ? await heldStubOutcome() : null) ?? await callModel({
+          model: TUNING_MODEL, system, user, maxTokens: TUNING_MAX_TOKENS,
+          schema: cutsResponseSchema(pack.ask), deadlineMs: attempt === 1 ? MODEL_TIMEOUT_MS : MODEL_TIMEOUT_MS - (Date.now() - startedAt),
+          effort: TUNING_EFFORT, retryFloorMs: attempt === 1 ? TUNING_RETRY_FLOOR_MS : MODEL_TIMEOUT_MS,
+        });
+        if (outcome.usage) billed.push({ model: TUNING_MODEL, usage: outcome.usage, step: attempt === 1 ? "cuts" : "cuts_retry", effort: TUNING_EFFORT });
+        // A rejection is stored as busy: the distinction is kept for the overview only, for now.
+        if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-      const checked = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+        checked = validateCuts({ reply: outcome.value, pack, resolveName: packNameResolver(pack) });
+        if (checked.kept.length > 0 || attempt === 2) break;
+        // A deleted deck or the reaper may have settled the run while the first ask was out: no second ask is
+        // made for a run that is no longer pending. The first ask's usage is recorded late, as ever.
+        if (!(await runIsPending(run.runId))) return await fail("upstream_busy");
+        // After that await, so the deadline it measures is the one left now.
+        if (!retryable(billed, checked.dropped, Date.now() - startedAt, { feature: "proposed_cuts", lockedRule: "keyCard" })) break;
+      }
       const { kept } = checked;
       const report: CutsReport = { ...checked.report, chips: cutCounts(facts, (head.declaredBracket as 1 | 2 | 3 | 4 | 5 | null) ?? null, name).chips };
-      // Nothing survived the checks: refunded like every failure, and the report says why.
+      // No card survived: refunded like every failure, and the report says why.
       if (kept.length === 0) return await fail("ungrounded", report);
 
-      if (await persistCutsRun(run, kept, report, billed)) revalidateDeck(deckId);
+      if (await persistCutsRun(run, kept, report, billed.length > 0 ? billed : undefined)) revalidateDeck(deckId);
       return undefined;
     } catch (err) {
       // Nobody is waiting on this request, so a throw is logged, not rethrown; the run is failed and refunded.

@@ -1,4 +1,5 @@
 import { costMicroUsd, featureWorstCaseMicroUsd } from "../model/prices";
+import type { ModelFeature } from "../model/allowance-rule";
 import type { Billed } from "../model/allowance";
 import { MODEL_TIMEOUT_MS, TUNING_RETRY_FLOOR_MS } from "./limits";
 
@@ -9,9 +10,13 @@ import { MODEL_TIMEOUT_MS, TUNING_RETRY_FLOOR_MS } from "./limits";
  * two attempts; the second ask is one attempt with no retry inside it, so the two stay within it only if the
  * first used no more than one attempt's worth), or when a whole attempt no longer fits the deadline.
  */
-export function retryable(billed: readonly Billed[], drops: readonly { rule: string }[], elapsedMs: number): boolean {
+export function retryable(
+  billed: readonly Billed[], drops: readonly { rule: string }[], elapsedMs: number,
+  /** The tool asking, whose reservation the two asks must stay inside, and the drop rule that is the player's own state. */
+  tool: { feature: ModelFeature; lockedRule: string } = { feature: "tuning", lockedRule: "neverCut" },
+): boolean {
   if (billed.length === 0) return false;
-  if (drops.length > 0 && drops.every((d) => d.rule === "neverCut")) return false;
-  if (billed.reduce((sum, b) => sum + costMicroUsd(b.model, b.usage), 0) * 2 > featureWorstCaseMicroUsd("tuning", billed[0].model)) return false;
+  if (drops.length > 0 && drops.every((d) => d.rule === tool.lockedRule)) return false;
+  if (billed.reduce((sum, b) => sum + costMicroUsd(b.model, b.usage), 0) * 2 > featureWorstCaseMicroUsd(tool.feature, billed[0].model)) return false;
   return MODEL_TIMEOUT_MS - elapsedMs >= TUNING_RETRY_FLOOR_MS;
 }

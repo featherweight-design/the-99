@@ -14,6 +14,10 @@
  *  - Mutant Menace (`draft`): the one committed version plus the DRAFT's additions; Hugh's removals
  *    are the committed cards the draft no longer holds (his intended cuts, not yet committed).
  *
+ *  - `LIVE` decks: the deck as the app reads it now (`readProfileHead`), to replay a real press. Their
+ *    picks.json also carries `dropDetail` (what the model cited next to what the pack says of the card)
+ *    and `comboCards`, which is how the 2026-10-13 `citeMismatch` runs were diagnosed.
+ *
  * THE CALL is built exactly as `runProposedCuts` builds it: `cutFacts`, the deck's stored intent, Key
  * cards, front-face oracle text, `buildCutsPack`, `buildCutsPrompt`, `cutsResponseSchema`, the app's
  * model, effort and output ceiling, one retry, and `validateCuts` with the action's name resolver.
@@ -69,12 +73,15 @@ const BASELINE = Number(args.baseline);
 const CAP = Number(args.cap);
 
 /** Hugh's staging decks. `draft` decks take their additions from the working list, not a version. */
-const DECKS: { name: string; id: string; mode: "versions" | "draft" }[] = [
+const DECKS: { name: string; id: string; mode: "versions" | "draft" | "live" }[] = [
   { name: "HD - Gods", id: "13a6dc28-958c-4591-a2bb-c0297bbe5d92", mode: "versions" },
   { name: "HD Tune - Counter Intelligence", id: "2829cf41-1e07-4ec7-8353-8b0d9dfd678b", mode: "versions" },
   { name: "HD Tune - Prismari Artistry", id: "1a352a97-00fc-4309-a60e-5d518d56d34f", mode: "versions" },
   { name: "HD - Avatar Aang", id: "0f585441-203e-475b-be7c-f11e67e20d79", mode: "versions" },
   { name: "HD Tune - Mutant Menace", id: "8da5f286-9c80-4330-a6f9-06f5fd6756f8", mode: "draft" },
+  // The decks as the app reads them NOW (`readProposedCuts`): a replay of a real press, with no removals of Hugh's to score against.
+  { name: "LIVE HD Tune - Mutant Menace", id: "8da5f286-9c80-4330-a6f9-06f5fd6756f8", mode: "live" },
+  { name: "LIVE HD - Kratos", id: "2bd462de-5f94-47e5-bd29-eabea5921c75", mode: "live" },
 ];
 
 const db = await connectStaging();
@@ -83,7 +90,7 @@ const schema = await import("../../src/db/schema");
 const { readCutSupport, readKeyCardNames } = await import("../../src/lib/decks/cuts-read");
 const { liveLockedIds } = await import("../../src/lib/decks/locks");
 const { neverCutEnabled } = await import("../../src/lib/decks/never-cut-flag");
-const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
+const { loadDeckProfileFromHead, readProfileHead } = await import("../../src/lib/profile/load");
 const { castFaceText } = await import("../../src/lib/cards/facet");
 const { FEATURE_CALLS } = await import("../../src/lib/model/prices");
 const { deckNameIndex, normalizeName } = await import("../../src/lib/synopsis/facts");
@@ -122,7 +129,23 @@ for (const d of want) {
   let head: Parameters<typeof loadDeckProfileFromHead>[0];
   let hughCutIds: string[];
   let addedN: number;
-  if (d.mode === "versions") {
+  let liveSnap: { intent: string | null; locked: string[] } | undefined;
+  if (d.mode === "live") {
+    // The app's own head read, minus `readProposedCuts`'s `unstable_cache` (a script has no incremental cache).
+    // Head, intent and locks in one repeatable-read transaction, as `readProposedCuts` reads them, so a concurrent
+    // edit cannot produce a prompt the app could never have built.
+    const snap = await db.transaction(async (tx) => {
+      const h = await readProfileHead(tx, d.id, deck.userId);
+      if (!h) return null;
+      const [row] = await tx.select({ intent: schema.decks.intent }).from(schema.decks).where(eq(schema.decks.id, d.id));
+      return { head: h, intent: row?.intent ?? null, locked: neverCutEnabled() ? [...(await liveLockedIds(tx, d.id))] : [] };
+    }, { isolationLevel: "repeatable read" });
+    if (!snap) throw new Error(`deck ${d.name}: the app's own head read found nothing`);
+    head = snap.head;
+    liveSnap = snap;
+    hughCutIds = [];
+    addedN = 0;
+  } else if (d.mode === "versions") {
     const [newest] = await db.select({ n: schema.deckVersions.number }).from(schema.deckVersions)
       .where(eq(schema.deckVersions.deckId, d.id)).orderBy(desc(schema.deckVersions.number)).limit(1);
     if (!newest || newest.n < 2) throw new Error(`deck ${d.name} has no second version`);
@@ -153,8 +176,9 @@ for (const d of want) {
     };
     hughCutIds = committed.rows.filter((r) => !inDraft.has(r.oracleId)).map((r) => r.oracleId);
   }
-  const locked = neverCutEnabled() ? [...(await liveLockedIds(db, d.id))] : [];
-  const intent = deck.intent?.trim() ? deck.intent : null;
+  const locked = liveSnap ? liveSnap.locked : neverCutEnabled() ? [...(await liveLockedIds(db, d.id))] : [];
+  const rawIntent = liveSnap ? liveSnap.intent : deck.intent;
+  const intent = rawIntent?.trim() ? rawIntent : null;
   const [profile, support] = await Promise.all([loadDeckProfileFromHead(head), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
   const facts = cutFacts({ profile, locked: new Set(locked), support, declaredBracket: (head.declaredBracket ?? null) as 1 | 2 | 3 | 4 | 5 | null });
   if (facts.over === 0) throw new Error(`deck ${d.name}: the rebuilt list is not over 100`);
@@ -249,7 +273,7 @@ if (args.reuse) {
 }
 
 type Pick = { name: string; reason: string; cites: unknown[]; hit: boolean };
-const results: { deck: string; over: number; size: number; hughCut: string[]; picks: Pick[]; asked: number; drops: string[]; usd: number; answered: boolean }[] = [];
+const results: { deck: string; over: number; size: number; hughCut: string[]; picks: Pick[]; asked: number; drops: string[]; dropDetail: unknown[]; comboCards: Record<string, string>; usd: number; answered: boolean }[] = [];
 for (const p of prepared) {
   const tries = attempts.get(p.customId) ?? [];
   let value = null;
@@ -267,6 +291,12 @@ for (const p of prepared) {
     deck: p.deckName, over: p.over, size: p.size, hughCut: [...p.hughCut.values()].sort(), asked: value?.cuts.length ?? 0,
     picks: (checked?.kept ?? []).map((k) => ({ name: k.name, reason: k.reason, cites: k.cites, hit: p.hughCut.has(k.oracleId) })),
     drops: (checked?.dropped ?? []).map((d) => `${d.rule}:${d.name ?? ""}`), usd, answered: value !== null,
+    // What the model cited next to what the pack says of the same card: the point of a citeMismatch (a softened cut since 2026-10-13: the cut is kept without it).
+    dropDetail: (checked?.report.softened ?? []).filter((d) => d.rule === "citeMismatch").map((d) => ({
+      name: d.name, failed: d.cite, cited: value?.cuts[d.position]?.cites,
+      pack: (() => { const c = p.pack.cards.find((x) => normalizeName(x.name) === normalizeName(d.name ?? "")); return c ? { comboState: c.comboState ?? null, roles: c.roles, inclusion: c.inclusion, mv: c.mv } : "NOT IN PACK"; })(),
+    })),
+    comboCards: Object.fromEntries(p.pack.cards.filter((c) => c.comboState).map((c) => [c.name, c.comboState!])),
   });
 }
 const outDir = new URL(`runs/${runId}/`, ROOT);

@@ -54,7 +54,7 @@ describe("FEATURE_CALLS", () => {
   it("prices each feature with its own model, ceiling and max_tokens", () => {
     expect(FEATURE_CALLS.tuning).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 12_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
     // Measured, not provisional: the largest cuts request was 15,266 input tokens.
-    expect(FEATURE_CALLS.proposed_cuts).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 1 });
+    expect(FEATURE_CALLS.proposed_cuts).toEqual({ model: TUNING_MODEL, inputCeilingTokens: 20_000, maxTokens: TUNING_MAX_TOKENS, callsPerWrite: 2 });
     // Measured 63,360 input tokens at most on the eval (21 candidates), 4,257 output. Two attempts at
     // the ceiling sum past 100,000, so the higher card: 2 x (100,000 x $0.50 + 8,000 x $2.50) per million.
     expect(FEATURE_CALLS.fits_read).toEqual({ model: "claude-haiku-5-5", inputCeilingTokens: 100_000, maxTokens: 8_000, callsPerWrite: 1 });
