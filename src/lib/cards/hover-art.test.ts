@@ -48,7 +48,7 @@ const FEEDERS: Record<string, string> = {
   "components/intake/read-as-bar.tsx": "lib/intake/rows.ts",
   // The deck's own printing for a matched card or a half it holds, the reader's copy for the rest (`resolveDeckOwnedPrintings`).
   "components/decks/change-commander-sheet.tsx": "lib/commander-change/candidates.ts",
-  // The combo's other piece is a card of that deck: its pick, else the owned copy, else the catalog's (`withPartnerArt`).
+  // The combo's other piece previews the printing card details open outside a deck's own page: the reader's owned copy, else the catalog's (`withPartnerArt`).
   "components/cards/fits-picker.tsx": "lib/swaps/fits.ts",
   // Every card a notice names, down the chain card details uses (`loadDeckNotices`).
   "components/decks/notices-body.tsx": "lib/notices/read.ts",
