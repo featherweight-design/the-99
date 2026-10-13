@@ -39,20 +39,26 @@ beforeEach(() => {
 });
 
 describe("searchCards art", () => {
-  it("draws an owned card with the printing the player owns and an unowned one with the catalog's", async () => {
+  it("draws an owned card with the printing the player owns and an unowned one with the printing it opens on", async () => {
+    stub.chainArt.mockResolvedValue(new Map([["zombify", "owned-soa-36.jpg"], ["unowned", "opening-unowned.jpg"]]));
+    const out = await searchCards("zom", null, false, "deck-1");
+    expect(out.map((r) => r.imageUri)).toEqual(["owned-soa-36.jpg", "opening-unowned.jpg"]);
+  });
+
+  it("keeps the catalog's art for a row the chain has none for", async () => {
     const out = await searchCards("zom", null, false, "deck-1");
     expect(out.map((r) => r.imageUri)).toEqual(["owned-soa-36.jpg", "catalog-unowned.jpg"]);
   });
 
-  it("asks the chain only about owned cards, in the deck's context", async () => {
+  it("asks the chain about every result, owned or not, in the deck's context", async () => {
     await searchCards("zom", null, false, "deck-1");
-    expect(stub.chainArt).toHaveBeenCalledWith("user-1", "deck-1", ["zombify"]);
+    expect(stub.chainArt).toHaveBeenCalledWith("user-1", "deck-1", ["zombify", "unowned"]);
   });
 
   it("keeps the catalog art for every row when the chain answers nothing", async () => {
     stub.chainArt.mockResolvedValue(new Map());
     const out = await searchCards("zom", null, false);
     expect(out.map((r) => r.imageUri)).toEqual(["catalog-zombify.jpg", "catalog-unowned.jpg"]);
-    expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify"]);
+    expect(stub.chainArt).toHaveBeenCalledWith("user-1", null, ["zombify", "unowned"]);
   });
 });

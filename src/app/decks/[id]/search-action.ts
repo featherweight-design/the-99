@@ -143,10 +143,10 @@ export async function searchCards(
     deckId && ownedIds.length > 0
       ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => null)
       : null,
-    // The art a row is drawn with: the printing the player owns (the deck's pick where it holds the card),
-    // the one card details opens, rather than the catalog's one arbitrary printing per card. An unowned
-    // card has no other, so it keeps `cards.image_uri`. Fail-soft inside `chainArt`.
-    chainArt(userId, deckId ?? null, ownedIds),
+    // The art a row is drawn with: the printing card details opens, rather than the catalog's one arbitrary
+    // printing per card (the player's own copy, the deck's pick where it holds the card, else the printing an
+    // unowned card opens on). Fail-soft inside `chainArt`.
+    chainArt(userId, deckId ?? null, rows.map((r) => r.oracleId)),
   ]);
   return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,

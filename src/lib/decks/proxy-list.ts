@@ -2,7 +2,9 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadPrices } from "./price-query";
 import type { PriceFact } from "./price";
-import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { loadOpeningPrintings } from "../cards/opening-printing";
+import { recordSoftFailure } from "../cache/soft-failure";
+import { readOwnedPrintings, type OwnedPrinting } from "../collection/owned-printings";
 
 /**
  * One printed card, and every deck printing it.
@@ -136,11 +138,19 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
   // the liveness and finish rules — live before stale, real non-foil stock
   // before foil-only at any price — that `priceState` then reads to tell
   // `priced` from `soldOut` from `foilOnly` from absent.
-  const [prices, ownedArt] = await Promise.all([
+  // The throwing read: a failed one must not read as "owns none", which would give every owned proxy the shop's
+  // printing instead of its own. On failure the rows keep their catalog fields.
+  const [prices, ownedRead, opening] = await Promise.all([
     loadPrices(rows.map((r) => r.oracle_id)),
-    // The printing the player owns (the one card details opens) where they own one; the catalog's otherwise.
-    resolveOwnedPrintings(userId, rows.map((r) => r.oracle_id)),
+    // The printing the player owns (the one card details opens) where they own one...
+    readOwnedPrintings(userId, rows.map((r) => r.oracle_id)).catch(() => { recordSoftFailure(); return null; }),
+    // ...else the printing card details open an unowned card on, so the art, the set and the rarity are that one's.
+    loadOpeningPrintings(rows.map((r) => r.oracle_id)),
   ]);
+  const ownedArt = ownedRead ?? new Map<string, OwnedPrinting>();
+  // Never for a card the reader owns (even one whose copy has no art: it keeps the catalog's fields as a whole), and
+  // never after a failed ownership read.
+  const openingFor = (id: string) => (ownedRead === null || ownedArt.has(id) ? undefined : opening.get(id));
 
   return {
     newestAsOf: prices.newestAsOf,
@@ -151,10 +161,10 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
     manaCost: r.mana_cost,
     cmc: r.cmc,
     // Art, set and rarity come from ONE printing: the owned one when the player has it (its rarity is not read, so
-    // the line names the set alone), else the catalog's newest.
-    imageUri: ownedArt.get(r.oracle_id)?.imageUri ?? r.image_uri,
-    setCode: ownedArt.get(r.oracle_id)?.setCode ?? r.set_code,
-    rarity: ownedArt.has(r.oracle_id) ? null : r.rarity,
+    // the line names the set alone), else the one card details open the card on, else the catalog's newest.
+    imageUri: ownedArt.get(r.oracle_id)?.imageUri ?? openingFor(r.oracle_id)?.imageUri ?? r.image_uri,
+    setCode: ownedArt.get(r.oracle_id)?.setCode ?? openingFor(r.oracle_id)?.setCode ?? r.set_code,
+    rarity: ownedArt.has(r.oracle_id) ? null : openingFor(r.oracle_id) ? openingFor(r.oracle_id)!.rarity : r.rarity,
     decks: r.decks ?? [],
     commander: r.commander,
     price: prices.prices.get(r.oracle_id) ?? null,

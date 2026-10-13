@@ -18,6 +18,8 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 /** The calls that apply the chain, or read the printing a version recorded (the version diff's own rule). */
 export const RESOLVERS = new Set([
   "chainArt", "resolveOwnedPrintings", "resolveDeckOwnedPrintings", "withOwnedCardArt", "readRecordedPrintingArt",
+  // The same reads that throw rather than swallow, for a caller that must tell "failed" from "owns none".
+  "readOwnedPrintings", "readDeckOwnedPrintings",
 ]);
 
 /** Components that draw a hover preview, mapped to the module whose read supplies the art they hand it. */
@@ -300,5 +302,73 @@ describe("every card row has a hover preview and a press that opens card details
   it("names only triggers that still are a header or a door", () => {
     const stale = [...NOT_A_ROW].filter((path) => !(path in files && rowGaps({ [path]: files[path] }, new Set()).length > 0));
     expect(stale).toEqual([]);
+  });
+});
+
+// ---- ONE opening printing for a card the reader does not own (PR D, Hugh 2026-10-12) ----
+//
+// Card details opens an unowned card on the printing `openingScryfallId` picks (the oracle's own when the shop
+// carries it, else the cheapest live one). A preview that drew `cards.image_uri` showed another printing for the
+// cards it matters for. The rule lives in `lib/cards/opening-printing.ts` alone: card details and `chainArt`'s
+// fallback apply it, and a surface that previews a card goes through `chainArt`. A module that reads the
+// primitives itself is a surface resolving its own printing, so it must be named here, which is a decision that
+// shows up in a diff rather than a habit.
+
+const OPENING_MODULE = "opening-printing";
+
+/** The modules that may import the primitives, each with why. */
+const OPENING_USERS: Record<string, string> = {
+  "lib/cards/chain-art.ts": "the fallback every `chainArt` caller gets",
+  "lib/collection/card-detail.ts": "the press itself: the printing the modal opens on",
+  "lib/intake/rows.ts": "Help me choose's commander rows read the whole opening art beside the owned printing",
+  "app/commanders/[slug]/page.tsx": "the synergy panel's unowned cards, beside its owned-printing read",
+  "lib/decks/proxy-list.ts": "a proxy row names the set and rarity of the printing it draws, so it takes the whole printing",
+};
+
+/**
+ * Source files (ts and tsx) that import the module in ANY value form: named, namespace or default import, a
+ * re-export, a dynamic `import()` or a `require`. Not the primitives by name, so `import * as opening` or a lazy
+ * `await import(...)` cannot reach them unlisted. Tests and the module itself aside.
+ */
+export function openingImporters(files: Record<string, string>): string[] {
+  const reaches = new RegExp(`(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\brequire\\s*\\(\\s*|^\\s*import\\s+)["'][^"']*${OPENING_MODULE}["']`, "m");
+  return Object.entries(files)
+    .filter(([path]) => !/\.test\.tsx?$/.test(path) && path !== "lib/cards/opening-printing.ts")
+    .filter(([, src]) => reaches.test(src))
+    .map(([path]) => path)
+    .sort();
+}
+
+describe("the opening-printing guard's own failure paths", () => {
+  it("finds a module reaching the primitives by any import form, and ignores a test, a comment and a sibling module", () => {
+    expect(openingImporters({
+      "lib/a.ts": `import { loadOpeningArt } from "../cards/opening-printing";`,
+      "lib/b.ts": `import { openingScryfallId, liveCents } from "./opening-printing";`,
+      "lib/ns.ts": `import * as opening from "../cards/opening-printing";`,
+      "lib/dyn.ts": `export const f = async () => (await import("../cards/opening-printing")).loadOpeningArt([]);`,
+      "lib/req.ts": `const o = require("../cards/opening-printing");`,
+      "lib/bare.ts": `import "../cards/opening-printing";`,
+      "lib/reexp.ts": `export { loadOpeningArt } from "../cards/opening-printing";`,
+      "lib/multi.ts": `import {\n  loadOpeningArt,\n} from "../cards/opening-printing";`,
+      "lib/c.test.ts": `import { loadOpeningArt } from "../cards/opening-printing";`,
+      "lib/d.ts": `// loadOpeningArt from opening-printing\nexport const x = 1;`,
+      "lib/e.ts": `import { somethingElse } from "../cards/opening-printing-other";`,
+    })).toEqual(["lib/a.ts", "lib/b.ts", "lib/bare.ts", "lib/dyn.ts", "lib/multi.ts", "lib/ns.ts", "lib/reexp.ts", "lib/req.ts"]);
+  });
+});
+
+describe("one opening printing", () => {
+  const sources: Record<string, string> = {};
+  for (const path of walk(SRC)) {
+    if (/\.tsx?$/.test(path)) sources[relative(SRC, path)] = readFileSync(path, "utf8");
+  }
+
+  it("is read only by the modules named for it, so a surface cannot resolve its own", () => {
+    expect(openingImporters(sources).filter((path) => !(path in OPENING_USERS))).toEqual([]);
+  });
+
+  it("names only modules that still import it", () => {
+    const importers = new Set(openingImporters(sources));
+    expect(Object.keys(OPENING_USERS).filter((path) => !importers.has(path))).toEqual([]);
   });
 });

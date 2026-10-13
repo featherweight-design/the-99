@@ -2018,3 +2018,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   A 300px window checks the same clearance with almost no room, where the list keeps a floor of 96px (a row or two,
   scrolling) rather than opening above the box: that flip was cut after three review rounds on its geometry.
   Measured 2026-10-12 on local-dev: all fifteen checks pass.
+
+- `pnpm probe:opening-printing` proves that a card the reader does not own previews the printing card details opens
+  it on. A hover preview drew `cards.image_uri` (one arbitrary printing per card) while the modal opens an unowned
+  card on `openingScryfallId`'s pick: the oracle's own printing when the shop carries it, else the cheapest live one
+  with art. For a card whose oracle default is not stocked those are two pictures, so the press changed the art the
+  tile had just shown. `loadOpeningPrintings` (`lib/cards/opening-printing.ts`) is now the one resolver every
+  previewing loader takes its art from, through `chainArt`'s fallback, and card details applies the same rule. The
+  probe samples 30 cards whose oracle default has no live price but another printing does, and 30 typical cards, and
+  asserts for every card the rule resolves that the preview's art equals `loadCardDetail`'s. READ-ONLY, so it may
+  point at staging as well as local-dev or a scratch branch. On local-dev the old read was wrong for 30 of 30
+  stranded-default cards and 1 of 30 typical ones. Its first run FAILED 4 of 30: two equally cheap printings tie, the
+  rule takes the first, and the modal's order is `comparePrintings` (set code, then collector number) where the
+  loader had no order; the loader now sorts the same way. `hover-art.test.ts` pins who may import the primitives.

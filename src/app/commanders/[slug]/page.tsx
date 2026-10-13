@@ -14,6 +14,7 @@ import { withAvailability, type Availability } from "../../../lib/decks/availabi
 import { loadPrices } from "../../../lib/decks/price-query";
 import type { RoleName, RoleCard } from "../../../lib/recs/score";
 import { withChainArt } from "../../../lib/cards/chain-art";
+import { loadOpeningArt } from "../../../lib/cards/opening-printing";
 
 export default async function CommanderDetailPage({
   params,
@@ -134,7 +135,7 @@ export default async function CommanderDetailPage({
   // Role Coverage is built from the owned pool), beside the other two, carrying the art and the name
   // printed on it together. The same read also carries the owned synergy cards' art, which `withChainArt` overlays below.
   // Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
-  const [availability, { prices, newestAsOf }, ownedArt] = await Promise.all([
+  const [availability, { prices, newestAsOf }, ownedArt, openingArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyRead.map((c) => c.oracleId)])],
     }).catch(() => new Map<string, Availability>()),
@@ -144,11 +145,13 @@ export default async function CommanderDetailPage({
     })),
     // ONE owned-printing read for the role cards and the owned synergy cards: the same heavy join, disjoint ids.
     resolveOwnedPrintings(userId, [...new Set([...coveredOracleIds, ...synergyRead.filter((c) => c.owned).map((c) => c.oracleId)])]),
+    // The cards they do not own open on the printing `loadOpeningArt` picks, the one card details opens.
+    loadOpeningArt(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId)),
   ]);
-  // The printing the player owns for the cards they own, which is the one card details opens.
+  // The printing the player owns for the cards they own, which is the one card details opens, else the opening one.
   const synergyCards = withChainArt(
     synergyRead,
-    new Map([...ownedArt].flatMap(([id, p]) => (p.imageUri ? [[id, p.imageUri] as const] : []))),
+    new Map([...openingArt, ...[...ownedArt].flatMap(([id, p]) => (p.imageUri ? [[id, p.imageUri] as const] : []))]),
   );
 
   const synergyWithClaims = withAvailability(synergyCards, availability).map((c) => ({
