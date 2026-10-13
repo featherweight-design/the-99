@@ -369,3 +369,19 @@ describe("the Clerk webhook", () => {
     expect(protect).toHaveBeenCalled();
   });
 });
+
+describe("the CSP report endpoint", () => {
+  // A browser sends a report with no session, so it must not be session-protected.
+  it("is public at its exact path, with or without the trailing slash", async () => {
+    for (const path of ["/api/csp-report", "/api/csp-report/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+  });
+
+  it("does not make a longer path public", async () => {
+    await proxy(auth, request("/api/csp-report-other"));
+    expect(protect).toHaveBeenCalled();
+  });
+});
