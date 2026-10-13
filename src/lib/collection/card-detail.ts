@@ -415,7 +415,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // run — either way the modal omits the block rather than losing the card.
     const availability = (async () => {
       const { loadAvailability } = await import("../decks/availability-query");
-      return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
+      return (await loadAvailability(userId, { oracleIds: [oracleId], env })).get(oracleId) ?? null;
     })().catch(() => null);
     const [a, p, pb, g] = await Promise.all([availability, prices, proxiedBy, gate]);
     return assemble({ ...owned[0], availability: a, prices: p, proxiedBy: pb, ...g });

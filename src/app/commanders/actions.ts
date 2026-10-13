@@ -9,6 +9,7 @@ import { loadNameMatches } from "../../lib/discovery/candidates";
 import { classifyMatches, type ExcludedMatch } from "../../lib/discovery/excluded-match";
 import { loadDiscoveryPool } from "../../lib/discovery/list";
 import { deleteAllScores } from "../../lib/recs/store";
+import { requestSwitchEnv } from "../../lib/switches/request";
 
 /**
  * Retry action for the commanders recommendations page.
@@ -55,7 +56,7 @@ export async function findExcludedMatches(
   // round trip; an empty one is not a search at all.
   if (trimmed.length < 2) return [];
 
-  const { collection } = await loadDiscoveryPool(userId);
+  const { collection } = await loadDiscoveryPool(userId, await requestSwitchEnv(userId));
   const [matches, builtOracleIds] = await Promise.all([
     // One oracle-id set and no second aggregate, exactly as `loadDiscovery`
     // asks it: the lane scores the whole collection, so the two support counts

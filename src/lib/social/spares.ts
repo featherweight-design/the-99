@@ -19,6 +19,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
+import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
 import { isUuid } from "./rules";
 
@@ -61,6 +62,12 @@ export type FriendSpare = { oracleId: string; friend: { publicId: string; displa
  * pooled connection: `draft-state-snapshot.test.ts`) that FIRST re-reads the viewer's
  * grants inside it, so the authorization and the friend's rows are one snapshot: a friend whose grant is
  * absent at that instant reads as `null` and nothing of theirs is read.
+ *
+ * Each model runs under the FRIEND's resolved switches (`resolveSwitchEnv(friend)`), never the viewer's:
+ * the claim model's `locked` key and pending clause describe the friend's decks, so they follow the switches
+ * the friend's own pages read them under (admin PR 6f). A spare is counted from `owned`, `hard` and `soft`
+ * alone, which neither switch moves today, so this keeps the two reads of one friend's model in step rather
+ * than changing a figure.
  */
 export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
   const models: (Awaited<ReturnType<typeof loadAvailability>> | null)[] = new Array(friends.length);
@@ -68,10 +75,11 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
   await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, friends.length) }, async () => {
     for (let i = next++; i < friends.length; i = next++) {
       const friend = friends[i];
+      const env = await resolveSwitchEnv(friend);
       models[i] = await db.transaction(async (tx) => {
         const granting = await spareGrantorsQuery(viewerId, tx);
         if (!granting.some((g) => g.userId === friend)) return null;
-        return loadAvailability(friend, { oracleIds: [...asked] }, tx);
+        return loadAvailability(friend, { oracleIds: [...asked], env }, tx);
       }, { isolationLevel: "repeatable read" });
     }
   }));

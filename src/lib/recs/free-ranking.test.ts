@@ -209,6 +209,24 @@ describe("loadFreePool", () => {
     loadAvailability.mockRejectedValue(new Error("rollup down"));
     expect(await loadFreePool("user-rollup-down")).toBeNull();
   });
+  // Admin PR 6f-1: the claim model decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it
+  // is handed, and both this pool and the free ranking that loads it take the environment when none is
+  // passed. The reader's env and the environment hold opposite values; identity is checked as a boolean.
+  it("runs the claim model under the reader's switches, when loaded by the free ranking too", async () => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    try {
+      loadCollectionPool.mockResolvedValue({ collection: [card("a")] });
+      loadAvailability.mockReset().mockResolvedValue(new Map());
+      await loadFreePool("user-free-pool-env", READER);
+      await rankFree("user-rank-free-env", [{ oracleId: "a", slug: "a" } as unknown as CommanderListItem], undefined, READER);
+      expect(loadAvailability).toHaveBeenCalledTimes(2);
+      expect(loadAvailability.mock.calls.every((c) => c[1]?.env === READER)).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
 
 // The membership rule. Free mode ranks the free pool and LISTS FROM IT: a

@@ -406,6 +406,9 @@ export function discoveryKey(sort: string, env: NodeJS.ProcessEnv = process.env)
  */
 export async function loadDiscoveryPool(
   userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`), which the claim model reads its `locked` key
+   *  and its pending clause from; the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
   /** Called the moment the collection resolves, before the availability read: lets a caller start a
    *  read that needs only the collection (the label read) beside it. */
   onCollection?: (collection: Awaited<ReturnType<typeof loadCollectionPool>>["collection"]) => void,
@@ -418,6 +421,7 @@ export async function loadDiscoveryPool(
   try {
     availability = await loadAvailability(userId, {
       oracleIds: collection.map((c) => c.oracleId),
+      env,
     });
   } catch {
     // Fail soft, exactly as the owned scope does: the receipt clause is lost,
@@ -466,7 +470,7 @@ export async function loadDiscoveryWithIds(
   // read is the classifier on both sides), so it cannot be left dangling.
   const labelsOn = labelRoleCountsEnabled(env);
   let basisStarted: ReturnType<typeof loadPoolRoleBasis> | undefined;
-  const { collection, availability, availOk } = await loadDiscoveryPool(userId, (c) => {
+  const { collection, availability, availOk } = await loadDiscoveryPool(userId, env, (c) => {
     basisStarted = loadPoolRoleBasis(c, labelsOn);
   });
   const basisRead = basisStarted ?? loadPoolRoleBasis(collection, labelsOn);

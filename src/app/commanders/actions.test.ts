@@ -11,12 +11,33 @@ vi.mock("../../lib/commanders/avail-pref", async (importOriginal) => ({
   writeCommandersAvail: (...a: unknown[]) => writeCommandersAvail(...(a as [])),
 }));
 vi.mock("../../lib/cache/user-lists", () => ({ revalidateUserLists: vi.fn() }));
-vi.mock("../../lib/discovery/candidates", () => ({}));
-vi.mock("../../lib/discovery/excluded-match", () => ({}));
-vi.mock("../../lib/discovery/list", () => ({}));
+// The excluded-matches lookup re-derives the discover pool, whose claim read takes the reader's env.
+const READER = vi.hoisted(() => ({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
+const loadDiscoveryPool = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({ collection: [{ oracleId: "c1" }] })));
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => READER }));
+vi.mock("../../lib/discovery/candidates", () => ({ loadNameMatches: async () => [] }));
+vi.mock("../../lib/decks/built", () => ({ loadBuiltCommanderIds: async () => new Set() }));
+vi.mock("../../lib/discovery/excluded-match", () => ({ classifyMatches: () => [] }));
+vi.mock("../../lib/discovery/list", () => ({ loadDiscoveryPool }));
 vi.mock("../../lib/recs/store", () => ({}));
 
-const { rememberCommandersAvail } = await import("./actions");
+const { findExcludedMatches, rememberCommandersAvail } = await import("./actions");
+
+// Admin PR 6f-1: `loadDiscoveryPool` takes the environment when no env is passed, and the environment
+// says the opposite of the reader's switches here. Identity, as a boolean.
+describe("findExcludedMatches", () => {
+  it("reads the pool under the reader's resolved switches, not the environment", async () => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    try {
+      expect(await findExcludedMatches("korvold", { sort: "fit" })).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(loadDiscoveryPool).toHaveBeenCalledTimes(1);
+    expect(loadDiscoveryPool.mock.calls[0][1] === READER).toBe(true);
+  });
+});
 
 beforeEach(() => {
   after.mockReset();

@@ -49,6 +49,9 @@ export async function loadOwnedCandidates(args: {
   inDeck: ReadonlySet<string>;
   limits: { capCents: number | null; sets: readonly string[] };
   max?: number;
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
+   *  pending clause; the environment alone when omitted (a probe). */
+  env?: NodeJS.ProcessEnv;
 }): Promise<OwnedCandidate[]> {
   const { userId, deckId, commanderOracleIds, colorIdentity, inDeck, limits } = args;
   const max = args.max ?? OWNED_SHORTLIST_MAX;
@@ -88,7 +91,7 @@ export async function loadOwnedCandidates(args: {
 
     const ids = rows.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
-      loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId }),
+      loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId, env: args.env }),
       capCents === null ? null : loadPrices(ids),
     ]);
     for (const r of rows) {

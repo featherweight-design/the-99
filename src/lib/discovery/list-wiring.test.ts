@@ -216,6 +216,24 @@ describe("loadDiscovery — wiring", () => {
     expect(got.cardsRead).toBe(2);
   });
 
+  // Admin PR 6f-1: the claim model decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it
+  // is handed, and the pool takes the environment when none is passed: the list must hand it the reader's.
+  // The environment says the opposite; identity is checked as a boolean.
+  it("runs the availability read under the reader's resolved switches, not the environment", async () => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    try {
+      loadAvailability.mockClear();
+      await loadDiscoveryWithIds("user-1", { sort: "fit" }, READER);
+      expect(loadAvailability).toHaveBeenCalledTimes(1);
+      const [, opts] = loadAvailability.mock.calls[0] as unknown as [string, { env?: unknown }];
+      expect(opts.env === READER).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("scopes the availability read to the collection it will score", async () => {
     await loadDiscoveryPool("user-1");
     const [userArg, opts] = loadAvailability.mock.calls[0] as unknown as [

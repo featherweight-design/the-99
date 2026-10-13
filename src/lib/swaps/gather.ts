@@ -211,7 +211,7 @@ export async function loadStandIns(
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
   const [availability, priced, labels] = await Promise.all([
-    ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId }) : new Map(),
+    ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId, env }) : new Map(),
     loadPrices([cutOracleId, ...candidates.map((r) => r.oracle_id)]),
     // The candidates' labels, beside the original's: a pair is compared by its labels only when both carry one.
     originalLabels

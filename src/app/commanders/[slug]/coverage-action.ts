@@ -89,7 +89,7 @@ export async function retryCoverageFigures(
   // reason, as the availability re-stamp below.
   let pool: NonNullable<Awaited<ReturnType<typeof loadFreePool>>> | undefined;
   if (avail === "free") {
-    const free = await loadFreePool(userId);
+    const free = await loadFreePool(userId, env);
     if (!free) return null;
     pool = free;
   }

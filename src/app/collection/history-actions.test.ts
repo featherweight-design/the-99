@@ -4,8 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // action reads the environment alone, as it did before overrides. Through a stand-in object that
 // reads it, so a case can pin WHICH env the action handed on by identity, never by comparing the
 // environment itself.
-const RESOLVED = vi.hoisted(() => new Proxy({}, { get: (_t, k) => process.env[k as string] }) as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => RESOLVED) }));
+import { ENV_VIEW as RESOLVED } from "@/test/env-view";
+vi.mock("../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+});
 
 const ENTRY = "33333333-3333-3333-3333-333333333333";
 const ACTION = "44444444-4444-4444-4444-444444444444";

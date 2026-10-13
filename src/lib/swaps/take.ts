@@ -53,7 +53,7 @@ export async function takeStandIn(
     // Before the swap moves anything: from this deck's vantage, is there a spare copy of the add?
     // Read inside the take's own transaction, so the receipt describes the copy this take used.
     const [card] = await tx.select({ typeLine: cards.typeLine }).from(cards).where(eq(cards.oracleId, addOracleId));
-    const availability = (await loadAvailability(userId, { oracleIds: [addOracleId], excludeDeckId: deckId }, tx))
+    const availability = (await loadAvailability(userId, { oracleIds: [addOracleId], excludeDeckId: deckId, env }, tx))
       .get(addOracleId);
     const addWasFree = freeAfterTake(card, availability?.owned ?? 0, availability?.free ?? null);
 

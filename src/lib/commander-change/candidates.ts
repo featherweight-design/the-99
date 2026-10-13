@@ -248,7 +248,7 @@ export async function loadChangeCandidates(
   // oracle-level art.
   const [availability, ownedArt] = await Promise.all([
     asked.length > 0
-      ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
+      ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId, env }).catch(() => null)
       : Promise.resolve(new Map<string, Availability>()),
     // The matched cards are the deck's own, so they take the deck's printing the way the details do.
     resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])], env),

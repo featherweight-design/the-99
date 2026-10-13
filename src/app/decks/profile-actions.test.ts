@@ -6,11 +6,15 @@
 // calls this export, because a server action needs a request and a signed-in reader.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { envViewWith } from "@/test/env-view";
 import { requestSwitchEnv } from "../../lib/switches/request";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => process.env) }));
+vi.mock("../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
+});
 
 const stub = vi.hoisted(() => ({
   enabled: true,
@@ -257,7 +261,7 @@ describe("the reading's benchmarks", () => {
     // `readingBenchmarks` defaults its switch to the environment's, so a dropped argument still
     // compiles; the environment has it off here and the reader's override turns it on.
     vi.stubEnv("DECK_BENCHMARKS_ENABLED", "false");
-    const resolved = { ...process.env, DECK_BENCHMARKS_ENABLED: "true" };
+    const resolved = envViewWith({ DECK_BENCHMARKS_ENABLED: "true" });
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(resolved).mockResolvedValueOnce(resolved);
     try {
       await fetchDeckProfile(DECK);

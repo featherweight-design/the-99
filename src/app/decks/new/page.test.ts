@@ -8,7 +8,10 @@ const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
 const stub = vi.hoisted(() => ({ on: true, precons: false, answers: vi.fn() }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => process.env }));
+vi.mock("../../../lib/switches/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestSwitchEnv: async () => ENV_VIEW };
+});
 vi.mock("../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
 vi.mock("../../../lib/precons/flag", () => ({ preconsEnabled: () => stub.precons }));
 vi.mock("../../../lib/decks/pre-filled-commander", () => ({

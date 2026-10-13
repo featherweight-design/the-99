@@ -54,8 +54,19 @@ describe("resolveCommanderSlug", () => {
       collection: [{ oracleId: "owned-committed" }, { oracleId: "owned-free" }],
     });
     loadCandidateSlugRows.mockResolvedValue([{ oracleId: "x", name: "X", ownedSupport: 1 }]);
-    await resolveCommanderSlug("user", "x");
-    expect(loadDiscoveryPool).toHaveBeenCalledWith("user");
+    // Under the reader's resolved switches (admin PR 6f-1): the pool's claim read takes the environment
+    // when none is passed, and the environment says the opposite here. Identity, as a boolean.
+    const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    try {
+      await resolveCommanderSlug("user", "x", READER);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(loadDiscoveryPool).toHaveBeenCalledTimes(1);
+    expect(loadDiscoveryPool.mock.calls[0][0]).toBe("user");
+    expect(loadDiscoveryPool.mock.calls[0][1] === READER).toBe(true);
     expect(loadCandidateSlugRows).toHaveBeenCalledWith("user", [
       "owned-committed",
       "owned-free",

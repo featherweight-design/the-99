@@ -54,7 +54,7 @@ export async function loadManaHelp(
   const basics = Object.fromEntries(entries) as BasicCatalog;
   const [locked, candidates, namedCuts, support, mix] = await Promise.all([
     liveLockedIds(db, deck.id),
-    loadManaStaples(deck, userId),
+    loadManaStaples(deck, userId, env),
     readNamedCuts(deck.id, userId),
     // The rarest off-plan land goes first; with no list every one reads 0 and they go by name.
     readCutSupport(deck.commander.oracleId, deck.partner?.oracleId ?? null).catch(() => null),

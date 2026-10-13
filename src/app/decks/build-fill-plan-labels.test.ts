@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // buildFillPlan's WIRING of the label basis (labels-everywhere PR 4): which skeleton basis it asks
 // for, which label map reaches the plan, and the one invariant that matters, that a plan never
@@ -7,6 +7,7 @@ const m = vi.hoisted(() => ({
   loadSkeleton: vi.fn(),
   readLabels: vi.fn(),
   planFill: vi.fn(),
+  loadFillGate: vi.fn(),
 }));
 
 vi.mock("../../db", () => ({ db: {} }));
@@ -32,6 +33,7 @@ vi.mock("../../lib/edhrec/client", () => ({ getEdhrecData: vi.fn(async () => ({ 
 vi.mock("../../lib/staples/fill-staples", () => ({ gatherFillStaples: vi.fn(async () => []) }));
 vi.mock("../../lib/decks/catalog-basics", () => ({ loadCatalogBasics: vi.fn(async () => []) }));
 vi.mock("../commanders/[slug]/synergy-read", () => ({ readSynergyCards: vi.fn(async () => []) }));
+vi.mock("../../lib/intake/fill-facts", () => ({ loadFillGate: m.loadFillGate }));
 vi.mock("../../lib/decks/fill", async (importActual) => ({
   ...(await importActual<typeof import("../../lib/decks/fill")>()),
   planFill: m.planFill,
@@ -91,5 +93,24 @@ describe("buildFillPlan by label", () => {
     expect(m.readLabels).not.toHaveBeenCalled();
     expect(planArgs().skeleton).toBeNull();
     expect(planArgs().labelRoles).toBeUndefined();
+  });
+});
+
+// Admin PR 6f-1: the fill's budget gate asks the claim model which owned cards are free, and that model
+// reads NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from the env it is handed. `loadFillGate` takes the
+// environment when none is passed, so the plan's env must reach it: the reader's env and the environment
+// hold opposite values here, and the handed env is checked by identity, as a boolean.
+describe("buildFillPlan's budget gate", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is handed the reader's resolved switches, not the environment", async () => {
+    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const READER = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    await buildFillPlan("u", commanders, new Set(), {
+      selected: [], env: READER, answers: { budgetCents: 5_000, bracket: null, cardOracleId: null },
+    });
+    expect(m.loadFillGate).toHaveBeenCalledTimes(1);
+    expect(m.loadFillGate.mock.calls[0][0].env === READER).toBe(true);
   });
 });

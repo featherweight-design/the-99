@@ -207,6 +207,7 @@ export async function loadCommanderRankings(
   try {
     availability = await loadAvailability(userId, {
       oracleIds: collection.map((c) => c.oracleId),
+      env,
     });
   } catch {
     // Fail soft: the list, the scores and the ranking are all unaffected. Only

@@ -65,6 +65,9 @@ export function freePool(
  */
 export const loadFreePool = cache(async function loadFreePool(
   userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model; the environment alone
+   *  when omitted. Memoised by identity, so the page and its ranking pass the same env to share a read. */
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<PoolCard[] | null> {
   const { collection } = await loadCollectionPool(userId);
   try {
@@ -73,6 +76,7 @@ export const loadFreePool = cache(async function loadFreePool(
     // make the rollup cheaper — every CTE in that query is keyed on the user.
     const availability = await loadAvailability(userId, {
       oracleIds: collection.map((c) => c.oracleId),
+      env,
     });
     return freePool(collection, availability);
   } catch {
@@ -233,7 +237,7 @@ export async function rankFree(
   if (preloaded) {
     pool = freePool(collection, preloaded.availability);
   } else {
-    const loaded = await loadFreePool(userId);
+    const loaded = await loadFreePool(userId, env);
     if (loaded === null) return { items: [], ok: false };
     pool = loaded;
   }

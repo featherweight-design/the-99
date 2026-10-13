@@ -65,7 +65,12 @@ export function rankStaples(candidates: readonly StapleCandidate[], helps: reado
 /** Every candidate the index offers for this deck that the deck does not hold and the colors allow,
  *  with the colors each adds. Empty when the index has nothing for it; null when a text read failed,
  *  which is not the same thing and must not read as an empty index. */
-export async function loadManaStaples(deck: DeckDetail, userId: string): Promise<StapleCandidate[] | null> {
+export async function loadManaStaples(
+  deck: DeckDetail,
+  userId: string,
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model; the environment alone when omitted. */
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<StapleCandidate[] | null> {
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
   const held = new Set([...deck.cards.map((c) => c.oracleId), ...commanders.map((c) => c.oracleId)]);
@@ -111,7 +116,7 @@ export async function loadManaStaples(deck: DeckDetail, userId: string): Promise
   ]);
   if (!lands || !sources) return null;
   const [availability, prices] = await Promise.all([
-    loadAvailability(userId, { oracleIds: pool.map((r) => r.oracleId), excludeDeckId: deck.id }),
+    loadAvailability(userId, { oracleIds: pool.map((r) => r.oracleId), excludeDeckId: deck.id, env }),
     loadPrices(pool.map((r) => r.oracleId)),
   ]);
   return pool.flatMap((r): StapleCandidate[] => {

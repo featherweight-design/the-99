@@ -131,7 +131,7 @@ const READERS = [
   "src/lib/discovery/payload.ts",
   "src/lib/discovery/resolve-slug.ts",
   // Admin PR 6e: the claim model (NEVER_CUT_ENABLED's lock key, CHANGE_COMMANDER_ENABLED's pending clause) and
-  // the deck readers that start it. Its callers elsewhere in lib take no env for it yet (6f).
+  // the deck readers that start it. Its callers elsewhere in lib pass the reader's env since 6f-1, but for CLAIM_PENDING.
   "src/lib/decks/availability-query.ts",
   "src/lib/decks/cart-read.ts",
   "src/lib/decks/fill-plan.ts",
@@ -194,30 +194,18 @@ describe("no Server Action, route handler, page, layout or deck-page reader read
  * CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed, and its `env` still defaults to the
  * environment, so a caller that omits it compiles and reads the environment alone. Every call to
  * `loadAvailability` must name `env` in its options object, and every call to `loadDeckBuyRows` must pass
- * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below, left for admin PR 6f. The list only shrinks: a module
- * on it whose every call passes an env fails until it is taken off.
+ * its fourth argument (and `loadCart`, which starts both, its second), except in the modules below. Admin PR 6f-1
+ * converted the deck, commander, discovery, tuning, lineup, swap and social readers; these, the collection writers,
+ * the intake search and Fits your decks, are left for 6f-2, whose callers resolve no env yet. The list only shrinks:
+ * a module on it whose every call passes an env fails until it is taken off.
  */
 const CLAIM_PENDING = [
   "src/lib/collection/arrivals-write.ts",
-  "src/lib/collection/card-detail.ts",
   "src/lib/collection/summary-read.ts",
   "src/lib/collection/write.ts",
-  "src/lib/commander-change/candidates.ts",
-  "src/lib/commanders/rankings.ts",
-  "src/lib/discovery/list.ts",
-  "src/lib/intake/fill-facts.ts",
   "src/lib/intake/rows.ts",
   "src/lib/intake/search.ts",
-  "src/lib/intake/trial.ts",
-  "src/lib/lineup/load.ts",
-  "src/lib/recs/free-ranking.ts",
-  "src/lib/social/spares.ts",
   "src/lib/swaps/fits.ts",
-  "src/lib/swaps/gather.ts",
-  "src/lib/swaps/take.ts",
-  "src/lib/tuning/answer.ts",
-  "src/lib/tuning/mana-staples.ts",
-  "src/lib/tuning/owned-candidates.ts",
 ];
 
 /**

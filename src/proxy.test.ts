@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV_VIEW, envViewWith } from "@/test/env-view";
 
 const protect = vi.fn(async () => ({ userId: "user_1" }));
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
@@ -19,7 +20,7 @@ vi.mock("@clerk/nextjs/server", () => ({
     routes.some((r) => r === req.nextUrl.pathname || (r.includes("(") && false)),
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
-const resolveSwitchEnv = vi.hoisted(() => vi.fn(async () => process.env));
+const resolveSwitchEnv = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
 vi.mock("./lib/switches/snapshot", () => ({ resolveSwitchEnv }));
 // The sheet reads the whole seen state; its version half is the same mock, so every test that
 // sets a version sets both. No switched entry exists yet, so the ids are always empty here.
@@ -165,12 +166,12 @@ describe("requests the gate keeps its hands off", () => {
 
   it("re-keys it on /about in sheet mode too, so a cookie the legacy gate left cannot outlive a mode switch", async () => {
     const { cookieValue } = await import("./lib/about/gate");
-    resolveSwitchEnv.mockImplementation(async () => ({ ...process.env, ABOUT_SHEET_ENABLED: "true" }));
+    resolveSwitchEnv.mockImplementation(async () => envViewWith({ ABOUT_SHEET_ENABLED: "true" }));
     try {
       const res = await proxy(auth, request("/about", {}, `${cookieValue("user_1")}+notes`));
       expect(res?.cookies.get("about_v")?.value).toBe(cookieValue("user_1"));
     } finally {
-      resolveSwitchEnv.mockImplementation(async () => process.env);
+      resolveSwitchEnv.mockImplementation(async () => ENV_VIEW);
     }
   });
 
@@ -319,10 +320,10 @@ describe("with the sheet switch on", () => {
 
 // The reader's RESOLVED switches decide, and the shell trusts only what the proxy forwards.
 describe("the sheet switch, per reader", () => {
-  afterEach(() => resolveSwitchEnv.mockImplementation(async () => process.env));
+  afterEach(() => resolveSwitchEnv.mockImplementation(async () => ENV_VIEW));
 
   it("turns the sheet on for a reader an override switches it on for", async () => {
-    resolveSwitchEnv.mockImplementation(async () => ({ ...process.env, ABOUT_SHEET_ENABLED: "true" }));
+    resolveSwitchEnv.mockImplementation(async () => envViewWith({ ABOUT_SHEET_ENABLED: "true" }));
     aboutVersionSeen.mockResolvedValue(8);
     const res = await proxy(auth, request("/decks"));
     expect(res?.headers.get("location")).toBeNull();
@@ -330,14 +331,14 @@ describe("the sheet switch, per reader", () => {
   });
 
   it("forwards the reader's resolved switches for the page to read, and never a client's", async () => {
-    resolveSwitchEnv.mockImplementation(async () => ({ ...process.env, ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" }));
+    resolveSwitchEnv.mockImplementation(async () => envViewWith({ ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" }));
     aboutVersionSeen.mockResolvedValue(99);
     const forged = "1".repeat(40);
     // `/about` itself, which the gate never redirects (the reader is behind on the notes entry).
     const res = await proxy(auth, request("/about", { "x-switches": forged }));
     const bits = res?.headers.get("x-middleware-request-x-switches");
     const { switchBits } = await import("./lib/switches/resolve");
-    expect(bits).toBe(switchBits({ ...process.env, ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" } as NodeJS.ProcessEnv));
+    expect(bits).toBe(switchBits(envViewWith({ ABOUT_SHEET_ENABLED: "false", DECK_NOTES_ENABLED: "true" })));
     session.mockResolvedValue({ userId: null });
     const out = await proxy(auth, request("/", { "x-switches": forged }));
     expect(out?.headers.get("x-middleware-request-x-switches")).toBeNull();
