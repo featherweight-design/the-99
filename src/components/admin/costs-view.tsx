@@ -83,14 +83,12 @@ function CapRow({ label, here, figure, children, sub, actions }: { label: string
   return (
     <div className="flex flex-col gap-[4px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] pb-[13px] pt-[12px] first:border-t-0 md:px-[16px] md:pb-[14px] md:pt-[13px]">
       <div className="flex flex-wrap items-baseline gap-[10px]">
-        <span className="text-[13.5px] font-medium text-[color:var(--fg)]">{label}</span>
-        <span
-          className={`whitespace-nowrap rounded-[4px] border border-solid px-[6px] py-[2px] font-mono text-[9.5px] uppercase tracking-[0.08em] ${
-            here ? "border-[color:var(--accent)] text-[color:var(--accent)]" : "border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
-          }`}
-        >
+        {/* Where the figure comes from, LEFT of the name (Hugh, 2026-10-13), drawn as a plain label
+            rather than a bordered chip, which read as a control to press. */}
+        <span className="whitespace-nowrap font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
           {here ? copy.capSource.here : copy.capSource.code}
         </span>
+        <span className="text-[13.5px] font-medium text-[color:var(--fg)]">{label}</span>
         <span className="flex-1" />
         <span className="font-mono text-[13px] text-[color:var(--fg)]">{figure}</span>
       </div>

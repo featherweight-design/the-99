@@ -62,16 +62,51 @@ export function usePublishedHeight(ref: RefObject<HTMLElement | null>, name: str
   }, [ref, name]);
 }
 
+/**
+ * Pins the head, and publishes the part of it that stays on screen as `--admin-head-h`. On a phone
+ * only the tab strip stays: the eyebrow, title and sub scroll away under a negative `top` (Hugh,
+ * 2026-10-13: the whole head took too much of the screen). From `md` up the whole head stays.
+ */
+function usePinnedHead(headRef: RefObject<HTMLElement | null>, tabsRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const head = headRef.current;
+    const tabs = tabsRef.current;
+    if (!head || !tabs) return;
+    const root = document.documentElement;
+    const wide = window.matchMedia("(min-width: 48rem)");
+    const publish = () => {
+      // The head is sticky, so it is the strip's offset parent: what sits above the strip.
+      const hidden = wide.matches ? 0 : tabs.offsetTop;
+      head.style.top = `${-hidden}px`;
+      root.style.setProperty(ADMIN_HEAD_HEIGHT_VAR, `${head.getBoundingClientRect().height - hidden}px`);
+    };
+    publish();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
+    observer?.observe(head);
+    if (!observer) window.addEventListener("resize", publish);
+    wide.addEventListener("change", publish);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", publish);
+      wide.removeEventListener("change", publish);
+      head.style.top = "";
+      root.style.removeProperty(ADMIN_HEAD_HEIGHT_VAR);
+    };
+  }, [headRef, tabsRef]);
+}
+
 export function AdminHead({ env }: { env: AdminEnv }) {
   const pathname = usePathname() ?? "/admin";
   const current = tabFor(pathname);
   // A switch's page keeps the tab strip, with Switches selected, and titles itself with the switch.
   const detail = switchOf(pathname);
   const ref = useRef<HTMLElement>(null);
-  usePublishedHeight(ref, ADMIN_HEAD_HEIGHT_VAR);
+  const tabsRef = useRef<HTMLElement>(null);
+  usePinnedHead(ref, tabsRef);
   return (
     // Pinned (design table R2 delta `page`): the shell scrolls the document, so the head is sticky
-    // at the top over the page's content, and a page's own pinned bar sits beneath it.
+    // over the page's content (on a phone only its tab strip, `usePinnedHead`), and a page's own
+    // pinned bar sits beneath it.
     <header ref={ref} className="sticky top-0 z-[2] flex flex-none flex-col bg-[color:var(--bg)] gap-[9px] border-0 border-solid border-[color:var(--border)] [border-bottom-width:1px] px-[16px] pt-[14px] md:px-[28px] md:pt-[26px]">
       <div className="flex flex-wrap items-center gap-[10px]">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">{adminCopy.eyebrow}</span>
@@ -101,7 +136,7 @@ export function AdminHead({ env }: { env: AdminEnv }) {
       <p className="m-0 max-w-[720px] text-pretty text-[13px] leading-[1.6] text-[color:var(--fg-body)] md:text-[13.5px]">
         {detail ? switchCopy[detail].description : current.sub}
       </p>
-      <nav aria-label={adminCopy.tabsLabel} className="mt-[4px] flex gap-[15px] overflow-hidden md:gap-[24px]">
+      <nav ref={tabsRef} aria-label={adminCopy.tabsLabel} className="mt-[4px] flex gap-[15px] overflow-hidden md:gap-[24px]">
         {ADMIN_TABS.map((tab) => {
           const selected = tab.key === current.key;
           return (

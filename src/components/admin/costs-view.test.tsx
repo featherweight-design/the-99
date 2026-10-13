@@ -48,9 +48,11 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.getByText("$0.884 of $10")).toBeInTheDocument();
     expect(screen.getAllByText("$20 hard stop").length).toBeGreaterThan(0);
     expect(screen.getByText("$0.884 of $5")).toBeInTheDocument();
-    // Two IN CODE rows, two SET HERE rows.
+    // Two in-code rows, two recorded-here rows; the source label sits LEFT of the row's name.
     expect(screen.getAllByText("in code")).toHaveLength(2);
-    expect(screen.getAllByText("set here")).toHaveLength(2);
+    const here = screen.getAllByText("recorded here");
+    expect(here).toHaveLength(2);
+    for (const tag of here) expect(tag.previousElementSibling).toBeNull();
     expect(screen.getByText(/Elsewhere is not entered\./)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Enter elsewhere" })).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();

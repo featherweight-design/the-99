@@ -48,7 +48,8 @@ export const adminCopy = {
     caps: "Against the caps",
     capsMeta: "set in code and read only, except the rows set here",
     capsReference: "The system ceiling and the Anthropic account cap are reference lines. Neither one blocks a call.",
-    capSource: { code: "in code", here: "set here" },
+    // `here` names a figure typed in on this page, not read from code; owed to /copy-review.
+    capSource: { code: "in code", here: "recorded here" },
     capRows: { plan: "Player presses, planned budget", owner: "Owner testing share", ceiling: "System ceiling", account: "Anthropic account cap" },
     of: (figure: string, cap: string) => `${figure} of ${cap}`,
     notSet: (figure: string) => `${figure} · not set`,
