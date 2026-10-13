@@ -41,7 +41,7 @@ describe("the sweeps filter locked cards", () => {
 
   // The EXACT gated form, never a bare count: an inverted condition (`? undefined : notLiveLocked()`)
   // filters only while the switch is OFF, and a count of the call passes over it.
-  const GATED = /neverCutEnabled\(\) \? notLiveLocked\(\) : undefined,\n\s*\)\)/g;
+  const GATED = /neverCutEnabled\(env\) \? notLiveLocked\(\) : undefined,\n\s*\)\)/g;
 
   it("clearAutoCards puts the gated filter last in its delete's where", () => {
     const fn = body(actions, "clearAutoCards");
@@ -68,7 +68,7 @@ describe("the lock's guards sit where the writes are", () => {
 
   it("pullCardFromDeck refuses a locked source before it takes the copy", () => {
     const fn = body(actions, "pullCardFromDeck");
-    const guard = fn.search(/if \(neverCutEnabled\(\) && \(await isLiveLocked\(tx, sourceDeckId, oracleId\)\)\) \{\n\s*return \{ ok: false, message: PULL_REFUSED_LOCKED \};/);
+    const guard = fn.search(/if \(neverCutEnabled\(env\) && \(await isLiveLocked\(tx, sourceDeckId, oracleId\)\)\) \{\n\s*return \{ ok: false, message: PULL_REFUSED_LOCKED \};/);
     expect(guard).toBeGreaterThan(-1);
     const firstWrite = Math.min(fn.indexOf("tx.update(deckCards)"), fn.indexOf("tx.delete(deckCards)"));
     expect(guard).toBeLessThan(firstWrite);
