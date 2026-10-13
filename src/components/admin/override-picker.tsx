@@ -47,7 +47,7 @@ export function OverridePicker({
     return (
       <div data-testid="pending-override" className={ROW}>
         <div className="flex min-w-0 flex-col gap-[2px] md:flex-1">
-          <span className="text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{picked.label}</span>
+          <span className="pr-[56px] text-[14px] font-medium text-[color:var(--fg)] [overflow-wrap:anywhere] md:pr-0">{picked.label}</span>
           <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] [overflow-wrap:anywhere]">{picked.sub}</span>
         </div>
         <RowControls

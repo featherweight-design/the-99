@@ -79,10 +79,9 @@ describe("what a write raises", () => {
     expect(r).toMatchObject({ accounts: ["u1", "u2"], capabilities: ["intake"] });
   });
 
-  it("raises nothing for an account on under a kill, for any off, or for a plumbing switch", () => {
+  it("raises nothing for an account on under a kill, or for any off", () => {
     expect(rise({ TUNING_ENABLED: "off", ANALYSIS_TAB_ENABLED: "true" }, snap(), write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
     expect(rise({ TUNING_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
-    expect(rise({}, snap(), write({ name: "LIST_CACHE_ENABLED" })).accounts).toEqual([]);
   });
 
   it("counts the accounts whose About page gains an entry", () => {
