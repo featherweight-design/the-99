@@ -1083,7 +1083,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   every run showed the dialog at 204-338ms. Card-press DIALOG figures from before 2026-10-13 carry
   that quantization, and the intent press carried ~15-40ms of harness overhead. The art, soft-navigation
   and tile figures were polled every 16ms, so they were never quantized: they read late by that
-  interval plus a harness round trip.
+  interval plus a harness round trip. One press is not on a probe: the `MEASURE_PRESS_AT` startup
+  pass reads the page's own clock at the push and at arrival, but finds arrival by polling every
+  16ms rather than on the first frame, because it also matches the destination's query.
 
   **Point it at `next start`, never `next dev`**, whose compile times swamp every figure. The
   server runs on a scratch Neon branch holding a `pull:staging` copy, and the worktree's `.env`
