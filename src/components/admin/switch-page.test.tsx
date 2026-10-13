@@ -9,7 +9,8 @@ import { explainAccounts } from "../../lib/switches/explain";
 import { SWITCH_NAMES, type SwitchName } from "../../lib/switches/registry";
 
 const path = vi.hoisted(() => ({ current: "/admin/switches/TUNING_ENABLED" }));
-vi.mock("next/navigation", () => ({ usePathname: () => path.current }));
+vi.mock("next/navigation", () => ({ usePathname: () => path.current, useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: vi.fn(), clearSwitchOverride: vi.fn() }));
 
 const { SwitchPageView } = await import("./switch-page");
 const { AdminHead } = await import("./admin-head");

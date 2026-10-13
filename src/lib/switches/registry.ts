@@ -11,7 +11,7 @@
  * - `feature`: a surface a reader sees. Overridable app-wide, per group and per account.
  * - `model`: as `feature`, and turning it on can let a reader spend model calls: the switch itself,
  *   or a parent of one (the Analysis tab gates the Overview; Swap tools gates Find a deck's read).
- *   The Switches list marks it, and admin PR 8c plans a confirm before a write raises one.
+ *   The Switches list marks it; the confirm fires on the capabilities a write raises, not on this tag.
  *   `flags.test.ts` holds the tag to exactly that.
  * - `plumbing`: infrastructure, or a surface no friend tries on its own (the About sheet and How it
  *   works, by Design's answer to the brief's open question 2). App-wide only: an account or group

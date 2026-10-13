@@ -709,7 +709,9 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in
   (`scoreWriterVersion(env)`), and `cachePageForUser` keys on every switch. The registry
   (`src/lib/switches/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
   `src/` reads a variable it does not name. `resolveSwitchEnv(userId)` reads the overrides through a 30-second
-  per-instance memo, falls back to the environment alone when the read fails, and returns an env-shaped object every
+  per-instance memo (an admin write, `src/lib/admin/switch-writes.ts`, commits and then clears its own instance's
+  memo; the proxy's memo, which feeds every page's switches, catches up within the 30 seconds), falls back to the
+  environment alone when the read fails, and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
   never raises its parent. Every page, layout, action and route handler decides a switch from
   `requestSwitchEnv(userId)` (a page that decides switches outside its load resolves once and passes the env in), and

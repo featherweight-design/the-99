@@ -106,7 +106,9 @@ describe("every admin action is gated first", () => {
   const modules = serverModules(HERE);
 
   it("finds the admin's action modules", () => {
-    expect(modules.map((m) => m.slice(HERE.length + 1))).toContain("actions.ts");
+    const found = modules.map((m) => m.slice(HERE.length + 1));
+    expect(found).toContain("actions.ts");
+    expect(found).toContain(join("switches", "actions.ts"));
   });
 
   it.each(modules.map((m) => [m.slice(HERE.length + 1), m]))("%s: requireAdmin() is the first statement of every export", (_name, path) => {

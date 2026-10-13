@@ -111,7 +111,7 @@ describe("switchPage", () => {
   });
 
   it("writes the app-wide meta and note, and the unset env value", () => {
-    expect(page("DECK_NOTES_ENABLED", {}).app).toEqual({ value: "Not set", set: false, meta: "not set: the env var decides", note: "Not set falls back to the env var.", refused: false });
+    expect(page("DECK_NOTES_ENABLED", {}).app).toEqual({ value: "Not set", current: null, set: false, meta: "not set: the env var decides", note: "Not set falls back to the env var.", refused: false });
     expect(rung(page("DECK_NOTES_ENABLED", {}), "env")?.value).toBe("unset");
     const set = page("DECK_NOTES_ENABLED", {}, [ov({ name: "DECK_NOTES_ENABLED", value: "off", note: "Held back", updatedBy: "u2" })]);
     expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, 11 Oct · 14:02", note: "Note: “Held back” Not set falls back to the env var." });
