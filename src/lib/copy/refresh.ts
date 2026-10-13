@@ -92,6 +92,7 @@ export const refreshCopy = {
     toBuyRow: 'To buy, all decks',
     toBuyValue: (n: number, cost: string) => `${n} · ${cost}`,
     reviewCommitments: 'Review commitments',
+    shopAllDecks: 'Shop all decks',
   },
 
   // ── Decks ─────────────────────────────────────────────────────────────

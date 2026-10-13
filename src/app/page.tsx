@@ -1,3 +1,4 @@
+import { allDecksCartEnabled } from "../lib/decks/all-decks-cart-flag";
 import type { ComponentProps } from "react";
 import { perfRoute } from "../lib/perf/timing";
 import { auth } from "@clerk/nextjs/server";
@@ -209,6 +210,7 @@ export default async function HomePage() {
       decks={data.decks}
       commitments={data.commitments}
       shopping={data.shopping}
+      cartEnabled={allDecksCartEnabled(env)}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}
