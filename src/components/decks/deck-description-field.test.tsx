@@ -65,12 +65,12 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
       return <DeckDescriptionField value={value} onChange={(b) => { onBody(b); setValue(b); }} onBlur={() => {}} saving={false} refused={null} />;
     }
 
-    it("looks a typed [[ up as the tuning surface, and a pick sends the stored tag up as the body", async () => {
+    it("looks a typed [[ up as the description surface, and a pick sends the stored tag up as the body", async () => {
       const seen = vi.fn();
       render(<Owner start="Fast mana, " onBody={seen} />);
       fireEvent.change(screen.getByRole("combobox"), { target: { value: "Fast mana, [[Sol" } });
       const option = await screen.findByRole("option", { name: /Sol Ring/ });
-      expect(search).toHaveBeenCalledWith("tuning", "Sol");
+      expect(search).toHaveBeenCalledWith("description", "Sol");
       fireEvent.mouseDown(option);
       expect(seen).toHaveBeenLastCalledWith(`Fast mana, [[${ID}|Sol Ring]] `);
     });

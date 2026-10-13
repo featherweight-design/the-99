@@ -5,7 +5,8 @@
 // second copy. The text rules (what opens the picker, what a pick writes, which `[[Name]]` count as
 // tags) are `lib/decks/notes-field.ts`, unchanged.
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { fieldCount, fieldText, insertOpenTag, taggedCount, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
@@ -196,9 +197,67 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   };
 }
 
-/** The dropdown, under its container's field. `maxHeightPx` holds it to the room the caller measured (it scrolls inside). */
+/** Gap kept between a floating list and the visible area's edges, and the room under the field below which it opens above instead. */
+const FLOAT_EDGE = 8;
+const FLOAT_MIN_ROOM = 96;
+const FLOAT_MAX_WIDTH = 440;
+
+/**
+ * Where a list that floats over the page sits: under `anchor`, as wide as it (never past the window, never past the
+ * list's own 440px), kept inside the window on both sides, and held to the VISIBLE room under the field so it scrolls
+ * inside rather than running off the bottom or behind a phone's keyboard (the visual viewport, not the layout one:
+ * a keyboard shrinks or pans the visual viewport and leaves `innerHeight` alone). With less than a row or two of
+ * room under the field and more above it, it opens above. Measured again on every render and on scroll and resize
+ * (the window's and the visual viewport's), because the field moves under it as the picker eases it to the top.
+ */
+function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CSSProperties | undefined {
+  const [place, setPlace] = useState<CSSProperties | undefined>(undefined);
+  useLayoutEffect(() => {
+    if (!anchor) return;
+    const measure = () => {
+      const el = anchor.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const vv = window.visualViewport;
+      const visibleTop = vv ? vv.offsetTop : 0;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      // Zoomed in, the visible interval is the visual viewport's too: `offsetLeft` to `offsetLeft + width`.
+      const visibleLeft = vv ? vv.offsetLeft : 0;
+      const visibleWidth = vv ? vv.width : window.innerWidth;
+      const width = Math.min(r.width, FLOAT_MAX_WIDTH, visibleWidth - 2 * FLOAT_EDGE);
+      const left = Math.max(visibleLeft + FLOAT_EDGE, Math.min(r.left, visibleLeft + visibleWidth - width - FLOAT_EDGE));
+      const below = Math.floor(visibleBottom - (r.bottom + 4) - FLOAT_EDGE);
+      const above = Math.floor(r.top - 4 - visibleTop - FLOAT_EDGE);
+      const next: CSSProperties = below >= FLOAT_MIN_ROOM || below >= above
+        ? { position: "fixed", top: r.bottom + 4, left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, below) }
+        // `bottom` of a fixed box is measured from the LAYOUT viewport's bottom edge.
+        : { position: "fixed", top: "auto", bottom: window.innerHeight - (r.top - 4), left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, above) };
+      const same = (prev: CSSProperties | undefined) => prev !== undefined
+        && prev.top === next.top && prev.bottom === next.bottom && prev.left === next.left && prev.width === next.width && prev.maxHeight === next.maxHeight;
+      setPlace((prev) => (same(prev) ? prev : next));
+    };
+    measure();
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("scroll", measure);
+    return () => {
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("scroll", measure);
+    };
+  });
+  return place;
+}
+
+/**
+ * The dropdown, under its container's field. `maxHeightPx` holds it to the room the caller measured (it scrolls inside).
+ * With `anchor` it floats over the page instead (a portal, fixed to the window): for a field whose ancestors clip
+ * what overflows them (the deck header's band), where an absolutely placed list would be cut to its first row.
+ */
 export function CardTagList({
-  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx,
+  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx, anchor,
 }: {
   id: string;
   listId: string;
@@ -211,15 +270,28 @@ export function CardTagList({
   scoped: boolean;
   pick: (o: Option) => void;
   maxHeightPx?: number;
+  /** The field the list floats under, in a portal; omitted, the list is placed in its container. */
+  anchor?: RefObject<HTMLElement | null>;
 }): ReactNode {
   const p = deckNotesCopy.picker;
-  return (
+  const floating = useFloatingPlace(anchor);
+  // A list held shorter than its options (a phone above its keyboard) must keep the option the arrow keys are on in
+  // view, or a keyboard reader picks a card they cannot see. Scrolled inside the list only, and only as far as it
+  // needs: the page itself is never moved (`scrollIntoView` would, and the picker places the field on its own).
+  useEffect(() => {
+    const ul = document.getElementById(listId);
+    const opt = document.getElementById(`${id}-opt-${activeIndex}`);
+    if (!ul || !opt) return;
+    if (opt.offsetTop < ul.scrollTop) ul.scrollTop = opt.offsetTop;
+    else if (opt.offsetTop + opt.offsetHeight > ul.scrollTop + ul.clientHeight) ul.scrollTop = opt.offsetTop + opt.offsetHeight - ul.clientHeight;
+  }, [id, listId, activeIndex, options.length]);
+  const list = (
     <div
       id={listId}
       role="listbox"
       aria-label={p.listAria}
       className={`absolute left-0 z-20 w-full overflow-y-auto rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] shadow-lg max-h-[220px] md:w-[440px] md:max-h-none top-full mt-[4px]`}
-      style={maxHeightPx === undefined ? undefined : { maxHeight: maxHeightPx }}
+      style={anchor ? floating : maxHeightPx === undefined ? undefined : { maxHeight: maxHeightPx }}
     >
       {query.length === 0 ? (
         <p className="m-0 px-[12px] py-[8px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">{scoped ? p.empty : p.emptyAny}</p>
@@ -251,4 +323,7 @@ export function CardTagList({
       <p className="m-0 hidden px-[12px] pb-[4px] pt-[6px] font-mono text-[10px] text-[color:var(--fg-locked)] md:block">{p.keys}</p>
     </div>
   );
+  // Unplaced until measured: a first frame at the wrong place would flash.
+  if (anchor) return floating && typeof document !== "undefined" ? createPortal(list, document.body) : null;
+  return list;
 }

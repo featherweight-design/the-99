@@ -7,10 +7,14 @@ import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { tuningEnabled } from "../../lib/tuning/flag";
 
-/** The boxes that can name a card, each behind its own feature's switch. */
-export type TagSurface = "intake" | "tuning";
+/**
+ * The boxes that can name a card, each behind its own feature's switch. `description` is a deck's description box:
+ * the header pencil that edits it is offered whatever the tuning switch says, so its lookup is behind no switch
+ * of its own (the reader still has to be signed in).
+ */
+export type TagSurface = "intake" | "tuning" | "description";
 
-const SWITCHES: Record<TagSurface, (env: NodeJS.ProcessEnv) => boolean> = { intake: helpMeChooseEnabled, tuning: tuningEnabled };
+const SWITCHES: Record<TagSurface, (env: NodeJS.ProcessEnv) => boolean> = { intake: helpMeChooseEnabled, tuning: tuningEnabled, description: () => true };
 
 /**
  * The `[[` picker's "any card" lookup for a box outside a deck's notes (the same lookup the notes

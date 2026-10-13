@@ -6,8 +6,15 @@ import { renameCopy } from "../../lib/copy/decks-builder";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { countCharacters } from "../../lib/copy/deck-tuning";
 import { DECK_NAME_MAX, hasControlChars } from "../../lib/decks/deck-name";
+import { plainText } from "../../lib/decks/notes-body";
 
 const descriptionCopy = deckDescriptionCopy.description;
+
+/**
+ * What the description draws, trimmed: the draft is a BODY (a card tag as `[[id|Name]]`, card-tags plan PR 3) and the
+ * server stores each tag as the catalog's name, so "changed", "unedited" and the cap all read the drawn words.
+ */
+const drawn = (body: string) => plainText(body).trim();
 
 /**
  * The deck header's pencil (H35, STATES-deck-description.md §2, §3): the name and the
@@ -59,14 +66,14 @@ export function useDeckHeaderEdit(
   }
   const [seenDescription, setSeenDescription] = useState(currentDescription ?? null);
   if (seenDescription !== currentDescription) {
-    const unedited = description.trim() === (seenDescription ?? "").trim();
+    const unedited = drawn(description) === (seenDescription ?? "").trim();
     setSeenDescription(currentDescription ?? null);
     if (unedited) setDescription(currentDescription ?? "");
   }
 
   const trimmedName = name.trim();
   const nameChanged = trimmedName !== currentName.trim();
-  const descriptionChanged = description.trim() !== (currentDescription ?? "").trim();
+  const descriptionChanged = drawn(description) !== (currentDescription ?? "").trim();
   const changed = nameChanged || descriptionChanged;
   const canSave = !isPending && trimmedName.length > 0 && changed;
 
@@ -88,7 +95,7 @@ export function useDeckHeaderEdit(
       setError(renameCopy.errorControl);
       return;
     }
-    if (countCharacters(description) > descriptionCopy.maxLength) {
+    if (countCharacters(plainText(description)) > descriptionCopy.maxLength) {
       setError(descriptionCopy.tooLong);
       return;
     }

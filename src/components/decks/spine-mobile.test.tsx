@@ -9,6 +9,9 @@ import { pairDeck, props } from "./spine-fixtures";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
 vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
+vi.mock("../../app/cards/tag-actions", () => ({
+  searchTagCards: async () => [{ oracleId: "c0ffee00-0000-4000-8000-000000000001", name: "Sol Ring", typeLine: "Artifact", imageUri: null, commanderLegal: true, flavorName: null }],
+}));
 
 beforeEach(() => {
   saveDeckHeader.mockClear();
@@ -457,5 +460,34 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     // is its sibling, not its child.
     expect(heading.textContent).toBe("HD Tune — A Very Long Deck Name That Keeps Going");
     expect(heading.querySelector("button")).toBeNull();
+  });
+  // Card tags (plan PR 3): the pencil's description takes the `[[` tag. A pick must not blur the pair (it would commit
+  // a half-made edit), Enter picks while the list is open rather than saving, and the save sends the BODY, which the
+  // server stores as the card's plain name.
+  it("tags a card in the description: a pick keeps the editor open, and Save sends the stored tag", async () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "Rocks: [[Sol" } });
+    const option = await screen.findByRole("option", { name: /Sol Ring/ });
+    // The header band clips what overflows it, so the list floats in a portal on <body> rather than sitting in the editor.
+    expect(screen.getByRole("listbox").parentElement).toBe(document.body);
+    fireEvent.mouseDown(option);
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await vi.waitFor(() => expect(saveDeckHeader).toHaveBeenCalledOnce());
+    expect(saveDeckHeader).toHaveBeenCalledWith(props.deck.id, { description: "Rocks: [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]]" });
+  });
+
+  it("picks on Enter while the tag list is open, instead of saving", async () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "Rocks: [[Sol" } });
+    await screen.findByRole("option", { name: /Sol Ring/ });
+    fireEvent.keyDown(description, { key: "Enter" });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect((description as HTMLTextAreaElement).value).toContain("Sol Ring");
   });
 });
